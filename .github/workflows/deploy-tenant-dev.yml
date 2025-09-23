@@ -4,13 +4,14 @@ on:
   push:
     branches:
       - development
-    # paths:
-    #   - 'TenantManagement/**'
+    paths:
+      - 'TenantManagement/**'
   pull_request:
     branches:
       - development
-    # paths:
-    #   - 'TenantManagement/**'
+    paths:
+      - 'TenantManagement/**'
+  workflow_dispatch:
 
 jobs:
   build:
@@ -44,16 +45,6 @@ jobs:
     if: github.event_name == 'push'
 
     steps:
-    - name: Copy docker-compose.yml to droplet
-      uses: appleboy/scp-action@v0.1.4
-      with:
-        host: ${{ secrets.DO_DROPLET_IP }}
-        username: ${{ secrets.DO_DROPLET_USER }}
-        key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
-        passphrase: ${{ secrets.DO_SSH_PASSPHRASE }}
-        source: "TenantManagement/docker-compose.yml"
-        target: "/home/${{ secrets.DO_DROPLET_USER }}/tenantmanagement/"
-
     - name: Deploy to DigitalOcean Droplet
       uses: appleboy/ssh-action@v1.0.3
       with:
@@ -62,10 +53,9 @@ jobs:
         key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
         passphrase: ${{ secrets.DO_SSH_PASSPHRASE }}
         script: |
-          mkdir -p /home/${{ secrets.DO_DROPLET_USER }}/tenantmanagement
           cd /home/${{ secrets.DO_DROPLET_USER }}/tenantmanagement
           export ASPNETCORE_ENVIRONMENT=Development
-          export CONNECTION_STRING="${{ secrets.DB_CONNECTION_STRING }}"
+          export CONNECTION_STRING=`
           docker-compose down
           docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/tenantmanagement:dev
           docker-compose up -d
