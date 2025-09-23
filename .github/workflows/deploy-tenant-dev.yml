@@ -5,6 +5,14 @@ on:
     branches:
       - never-run-this-branch
   workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'development'
+        type: choice
+        options:
+        - development
 
 jobs:
   build:
