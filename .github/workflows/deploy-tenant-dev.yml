@@ -1,0 +1,60 @@
+name: Deploy TenantManagement to DigitalOcean Droplet (Dev)
+
+on:
+  push:
+    branches:
+      - development
+    paths:
+      - 'TenantManagement/**'
+  pull_request:
+    branches:
+      - development
+    paths:
+      - 'TenantManagement/**'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    environment: Development
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: ./TenantManagement
+        push: true
+        tags: ${{ secrets.DOCKER_HUB_USERNAME }}/tenantmanagement:dev
+
+  deploy:
+    runs-on: ubuntu-latest
+    environment: Development
+    needs: build
+    if: github.event_name == 'push'
+
+    steps:
+    - name: Deploy to DigitalOcean Droplet
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.DO_DROPLET_IP }}
+        username: ${{ secrets.DO_DROPLET_USER }}
+        key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
+        passphrase: ${{ secrets.DO_SSH_PASSPHRASE }}
+        script: |
+          cd /home/${{ secrets.DO_DROPLET_USER }}/tenantmanagement
+          export ASPNETCORE_ENVIRONMENT=Development
+          export CONNECTION_STRING=${{ secrets.DB_CONNECTION_STRING }}
+          docker-compose down
+          docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/tenantmanagement:dev
+          docker-compose up -d
