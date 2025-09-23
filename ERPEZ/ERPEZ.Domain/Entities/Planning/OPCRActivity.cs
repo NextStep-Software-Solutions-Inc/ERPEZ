@@ -1,0 +1,12 @@
+﻿using ERPEZ.Domain.Common;
+
+namespace ERPEZ.Domain.Entities.Planning;
+
+public class OPCRActivity : BaseEntity
+{
+    public Guid OPCRKPIId { get; set; }
+    public string Name { get; set; } = string.Empty;
+    public string? Description { get; set; }
+    public decimal Budget { get; set; }
+    public virtual OPCRPAPDepartment OPCRPAPDepartment { get; set; } = null!;
+}
