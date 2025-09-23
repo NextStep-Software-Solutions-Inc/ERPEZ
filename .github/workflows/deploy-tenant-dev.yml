@@ -54,7 +54,7 @@ jobs:
         script: |
           cd /home/${{ secrets.DO_DROPLET_USER }}/tenantmanagement
           export ASPNETCORE_ENVIRONMENT=Development
-          export CONNECTION_STRING=${{ secrets.DB_CONNECTION_STRING }}
+          export CONNECTION_STRING="${{ secrets.DB_CONNECTION_STRING }}"
           docker-compose down
           docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/tenantmanagement:dev
           docker-compose up -d
