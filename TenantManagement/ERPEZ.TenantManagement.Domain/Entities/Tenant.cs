@@ -8,6 +8,6 @@ public class Tenant : BaseEntity
     public bool OnPremise { get; set; }
     public string BillingContactEmail { get; set; } = string.Empty;
     public virtual List<TenantModule> TenantModules { get; set; } = [];
-    public virtual List<TenantSettings> TenantSettings { get; set; } = [];
+    public virtual List<TenantSetting> TenantSettings { get; set; } = [];
     public virtual List<TenantSubscription> TenantSubscriptions { get; set; } = [];
 }

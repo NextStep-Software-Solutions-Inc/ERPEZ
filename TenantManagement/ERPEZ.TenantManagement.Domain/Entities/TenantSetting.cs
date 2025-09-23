@@ -2,7 +2,7 @@
 
 namespace ERPEZ.TenantManagement.Domain.Entities;
 
-public class TenantSettings : BaseEntity
+public class TenantSetting : BaseEntity
 {
     public Guid TenantId { get; set; }
     public string Name { get; set; } = string.Empty;

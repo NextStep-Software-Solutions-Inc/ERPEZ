@@ -5,11 +5,11 @@ namespace ERPEZ.TenantManagement.Infrastructure.Persistence;
 
 public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : DbContext(options)
 {
-    public DbSet<Tenant> Tenant { get; set; }
-    public DbSet<TenantModule> TenantModule { get; set; }
-    public DbSet<Module> Module { get; set; }
-    public DbSet<TenantSettings> TenantSetting { get; set; }
-    public DbSet<TenantSubscription> TenantSubscription { get; set; }
+    public DbSet<Tenant> Tenants { get; set; }
+    public DbSet<TenantModule> TenantModules { get; set; }
+    public DbSet<Module> Modules { get; set; }
+    public DbSet<TenantSetting> TenantSettings { get; set; }
+    public DbSet<TenantSubscription> TenantSubscriptions { get; set; }
 
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
@@ -46,13 +46,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .IsUnique();
 
 
-        modelBuilder.Entity<TenantSettings>()
+        modelBuilder.Entity<TenantSetting>()
             .HasOne(ts => ts.Tenant)
             .WithMany(t => t.TenantSettings)
             .HasForeignKey(ts => ts.TenantId)
             .OnDelete(DeleteBehavior.NoAction);
 
-        modelBuilder.Entity<TenantSettings>()
+        modelBuilder.Entity<TenantSetting>()
             .HasIndex(ts => new { ts.Name, ts.TenantId })
             .IsUnique();
 

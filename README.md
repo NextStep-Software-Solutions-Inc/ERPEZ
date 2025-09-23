@@ -6,32 +6,32 @@ A comprehensive, multi-tenant Enterprise Resource Planning (ERP) platform design
 
 This repository contains two primary services organized into subdirectories:
 
-* **`ERPEZ/`**: This subdirectory contains the core codebase for the main ERP application logic.
-* **`TenantManagement/`**: This subdirectory contains a separate service responsible for creating and configuring new tenants and managing all tenancy-related settings.
+- **`ERPEZ/`**: This subdirectory contains the core codebase for the main ERP application logic.
+- **`TenantManagement/`**: This subdirectory contains a separate service responsible for creating and configuring new tenants and managing all tenancy-related settings.
 
 ---
 
 ## Key Features & Architecture
 
-* **Clean Architecture**: A clear separation between Domain, Application, Infrastructure, and API layers to ensure maintainability and testability.
-* **CQRS Pattern**: Uses the MediatR library to separate commands (write operations) from queries (read operations), leading to a more focused and scalable design.
-* **Repository & Unit of Work Patterns**: Abstracts data access logic, keeping business rules clean and independent of the persistence technology.
-* **Advanced API Querying**: All API endpoints that return lists are paginated and utilize the **Sieve** library to handle complex filtering and sorting operations directly through query string parameters.
-* **Background Processing**: Integrated with **Hangfire** for scheduling and executing background jobs, such as sending reports or processing data.
+- **Clean Architecture**: A clear separation between Domain, Application, Infrastructure, and API layers to ensure maintainability and testability.
+- **CQRS Pattern**: Uses the MediatR library to separate commands (write operations) from queries (read operations), leading to a more focused and scalable design.
+- **Repository & Unit of Work Patterns**: Abstracts data access logic, keeping business rules clean and independent of the persistence technology.
+- **Advanced API Querying**: All API endpoints that return lists are paginated and utilize the **Sieve** library to handle complex filtering and sorting operations directly through query string parameters.
+- **Background Processing**: Integrated with **Hangfire** for scheduling and executing background jobs, such as sending reports or processing data.
 
 ---
 
 ## Tech Stack
 
-* **Framework**: .NET 8 / ASP.NET Core
-* **Database**: PostgreSQL
-* **ORM**: Entity Framework Core
-* **Key Libraries**:
-    * MediatR
-    * Sieve
-    * Hangfire
-    * Swashbuckle (Swagger)
-    * EFCore.BulkExtensions
+- **Framework**: .NET 8 / ASP.NET Core
+- **Database**: PostgreSQL
+- **ORM**: Entity Framework Core
+- **Key Libraries**:
+  - MediatR
+  - Sieve
+  - Hangfire
+  - Swashbuckle (Swagger)
+  - EFCore.BulkExtensions
 
 ---
 
@@ -40,12 +40,14 @@ This repository contains two primary services organized into subdirectories:
 ### 1. Prerequisites
 
 Ensure you have the following installed on your machine:
-* .NET 8 SDK
-* PostgreSQL Server
+
+- .NET 9 SDK
+- PostgreSQL Server
 
 ### 2. Configuration
 
 This project uses User Secrets to store the database connection string during development.
+
 1.  Navigate to the `ERPEZ/ERPEZ.Api` directory in your terminal.
 2.  Initialize user secrets for the project:
     ```bash
@@ -62,15 +64,19 @@ This project uses User Secrets to store the database connection string during de
 The project uses EF Core for database migrations.
 
 #### Important Note on Schemas
+
 When adding a migration for a new table, you **must** specify which schema it belongs to in the `DbContext`. If you forget, it will be added to the default `public` schema. Always be mindful of this to keep the database organized.
 
 To apply the existing migrations, run the following command from the solution root:
+
 ```bash
 dotnet ef database update --startup-project ERPEZ/ERPEZ.Api
 ```
+
 Repeat for the TenantManagement service as needed.
 
 ### 4. Running the Application
+
 Open the ERPEZ.sln file in your IDE (e.g., Visual Studio).
 
 Set ERPEZ.Api as the startup project.
@@ -78,8 +84,10 @@ Set ERPEZ.Api as the startup project.
 Run the application.
 
 #### Developer Guidelines
+
 It is crucial that all new development adheres to the established Clean Architecture and CQRS patterns. Please be mindful of the project structure and dependency rules to keep the codebase clean, maintainable, and consistent.
 
 #### Credits
+
 This project was developed by Next Steps Software Solution.
-© 2025 Next Steps Software Solution.
+ï¿½ 2025 Next Steps Software Solution.
