@@ -21,6 +21,11 @@ on:
         default: 'Manual deployment'
         type: string
 
+env:
+    CONTAINER_NAME: erpez-tenant-management-api
+    IMAGE_TAG: dev
+    ENVIRONMENT: Development
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -44,7 +49,7 @@ jobs:
       with:
         context: ./TenantManagement
         push: true
-        tags: ${{ secrets.DOCKER_HUB_USERNAME }}/erpez-tenant-management:dev
+        tags: ${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.CONTAINER_NAME }}:${{ env.IMAGE_TAG }}
 
   deploy:
     runs-on: ubuntu-latest
@@ -62,18 +67,18 @@ jobs:
         passphrase: ${{ secrets.DO_SSH_PASSPHRASE }}
         script: |
           # Stop and remove existing container if running
-          docker stop erpez-tenant-management-app || true
-          docker rm erpez-tenant-management-app || true
-          
+          docker stop ${{ env.CONTAINER_NAME }} || true
+          docker rm ${{ env.CONTAINER_NAME }} || true
+
           # Pull the latest image
-          docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/erpez-tenant-management:dev
-          
+          docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.CONTAINER_NAME }}:${{ env.IMAGE_TAG }}
+
           # Run the new container
           docker run -d \
-            --name erpez-tenant-management-app \
+            --name ${{ env.CONTAINER_NAME }} \
             --cpus=0.5 \
             -p 71:8080 \
-            -e ASPNETCORE_ENVIRONMENT=Development \
-            -e ConnectionStrings__DefaultConnection="${{ secrets.DB_CONNECTION_STRING }}" \
+            -e ASPNETCORE_ENVIRONMENT=${{ env.ENVIRONMENT }} \
+            -e ConnectionStrings__DefaultConnection="${{ secrets.ERPEZ_MANAGEMENT_DB_CONNECTION_STRING }}" \
             --restart unless-stopped \
-            ${{ secrets.DOCKER_HUB_USERNAME }}/erpez-tenant-management:dev
+            ${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.CONTAINER_NAME }}:${{ env.IMAGE_TAG }}
