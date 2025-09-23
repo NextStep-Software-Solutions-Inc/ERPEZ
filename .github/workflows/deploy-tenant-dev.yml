@@ -3,16 +3,17 @@ name: Deploy TenantManagement to DigitalOcean Droplet (Dev)
 on:
   push:
     branches:
-      - never-run-this-branch
+      - development
+    paths:
+      - 'TenantManagement/**'
+      - .github/workflows/deploy-tenant-dev.yml
+  pull_request:
+    branches:
+      - development
+    paths:
+      - 'TenantManagement/**'
+      - .github/workflows/deploy-tenant-dev.yml
   workflow_dispatch:
-    inputs:
-      environment:
-        description: 'Environment to deploy to'
-        required: true
-        default: 'development'
-        type: choice
-        options:
-        - development
 
 jobs:
   build:
