@@ -1,4 +1,4 @@
-name: Deploy ERPEZ Tenant Management to DigitalOcean Droplet (Dev)
+name: Deploy ERPEZ Tenant Management API to DigitalOcean Droplet (Dev)
 
 on:
   push:
