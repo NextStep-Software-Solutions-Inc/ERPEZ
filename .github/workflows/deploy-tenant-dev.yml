@@ -4,8 +4,8 @@ on:
   push:
     branches:
       - development
-    paths:
-      - 'TenantManagement/**'
+    # paths:
+    #   - 'TenantManagement/**'
   pull_request:
     branches:
       - development
