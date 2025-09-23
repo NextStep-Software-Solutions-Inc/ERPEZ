@@ -1,6 +1,9 @@
 name: Deploy TenantManagement to DigitalOcean Droplet (Dev)
 
 on:
+  push:
+    branches:
+      - never-run-this-branch
   workflow_dispatch:
 
 jobs:
