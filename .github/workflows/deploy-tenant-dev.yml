@@ -72,7 +72,7 @@ jobs:
           docker run -d \
             --name erpez-tenant-management-app \
             --cpus=0.5 \
-            -p 8080:80 \
+            -p 71:8080 \
             -e ASPNETCORE_ENVIRONMENT=Development \
             -e ConnectionStrings__DefaultConnection="${{ secrets.DB_CONNECTION_STRING }}" \
             --restart unless-stopped \

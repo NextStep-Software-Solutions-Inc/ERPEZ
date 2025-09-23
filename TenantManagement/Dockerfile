@@ -24,7 +24,7 @@ WORKDIR /app
 COPY --from=build /app/publish .
 
 # Expose ports
-EXPOSE 80
+EXPOSE 8080
 EXPOSE 443
 
 # Set the entry point
