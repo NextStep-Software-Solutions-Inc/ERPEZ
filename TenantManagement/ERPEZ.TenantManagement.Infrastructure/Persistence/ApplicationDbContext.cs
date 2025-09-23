@@ -28,14 +28,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<TenantModule>()
             .HasOne(tm => tm.Tenant)
             .WithMany(t => t.TenantModules)
-            .HasForeignKey(tm => tm.TenantId)
-            .OnDelete(DeleteBehavior.NoAction);
+            .HasForeignKey(tm => tm.TenantId);
 
         modelBuilder.Entity<TenantModule>()
             .HasOne(tm => tm.Module)
             .WithMany(m => m.TenantModules)
-            .HasForeignKey(tm => tm.ModuleId)
-            .OnDelete(DeleteBehavior.NoAction);
+            .HasForeignKey(tm => tm.ModuleId);
 
         modelBuilder.Entity<TenantModule>()
             .HasIndex(tm => new { tm.TenantId, tm.ModuleId })
@@ -49,8 +47,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<TenantSetting>()
             .HasOne(ts => ts.Tenant)
             .WithMany(t => t.TenantSettings)
-            .HasForeignKey(ts => ts.TenantId)
-            .OnDelete(DeleteBehavior.NoAction);
+            .HasForeignKey(ts => ts.TenantId);
 
         modelBuilder.Entity<TenantSetting>()
             .HasIndex(ts => new { ts.Name, ts.TenantId })
@@ -59,8 +56,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<TenantSubscription>()
             .HasOne(ts => ts.Tenant)
             .WithMany(t => t.TenantSubscriptions)
-            .HasForeignKey(ts => ts.TenantId)
-            .OnDelete(DeleteBehavior.NoAction);
+            .HasForeignKey(ts => ts.TenantId);
 
         base.OnModelCreating(modelBuilder);
 
