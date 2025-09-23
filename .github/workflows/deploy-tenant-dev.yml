@@ -1,16 +1,16 @@
 name: Deploy TenantManagement to DigitalOcean Droplet (Dev)
 
 on:
-  # push:
-  #   branches:
-  #     - development
-  #   paths:
-  #     - 'TenantManagement/**'
-  # pull_request:
-  #   branches:
-  #     - development
-  #   paths:
-  #     - 'TenantManagement/**'
+  push:
+    branches:
+      - development
+    paths:
+      - 'TenantManagement/**'
+  pull_request:
+    branches:
+      - development
+    paths:
+      - 'TenantManagement/**'
   workflow_dispatch:
 
 jobs:
