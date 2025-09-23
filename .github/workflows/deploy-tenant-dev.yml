@@ -14,6 +14,12 @@ on:
       - 'TenantManagement/**'
       - .github/workflows/deploy-tenant-dev.yml
   workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for manual deployment'
+        required: false
+        default: 'Manual deployment'
+        type: string
 
 jobs:
   build:
