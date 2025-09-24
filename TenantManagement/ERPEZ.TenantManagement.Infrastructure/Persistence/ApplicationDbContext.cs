@@ -31,11 +31,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasForeignKey(tm => tm.TenantId);
 
         modelBuilder.Entity<TenantModule>()
-            .HasOne(tm => tm.Module)
-            .WithMany(m => m.TenantModules)
-            .HasForeignKey(tm => tm.ModuleId);
-
-        modelBuilder.Entity<TenantModule>()
             .HasIndex(tm => new { tm.TenantId, tm.ModuleId })
             .IsUnique();
 
@@ -43,20 +38,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasIndex(tm => tm.Name)
             .IsUnique();
 
-
-        modelBuilder.Entity<TenantSetting>()
-            .HasOne(ts => ts.Tenant)
-            .WithMany(t => t.TenantSettings)
-            .HasForeignKey(ts => ts.TenantId);
-
         modelBuilder.Entity<TenantSetting>()
             .HasIndex(ts => new { ts.Name, ts.TenantId })
             .IsUnique();
 
         modelBuilder.Entity<TenantSubscription>()
-            .HasOne(ts => ts.Tenant)
-            .WithMany(t => t.TenantSubscriptions)
-            .HasForeignKey(ts => ts.TenantId);
+            .HasIndex(ts => new { ts.TenantId, ts.StartDate, ts.EndDate })
+            .IsUnique();
 
         base.OnModelCreating(modelBuilder);
 
