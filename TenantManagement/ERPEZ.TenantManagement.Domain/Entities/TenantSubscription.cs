@@ -3,8 +3,9 @@ using Sieve.Attributes;
 
 namespace ERPEZ.TenantManagement.Domain.Entities;
 
-public class TenantSubscription : BaseEntity
-{
+public sealed class TenantSubscription : BaseEntity
+{ 
+    public TenantSubscription() { }
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid TenantId { get; set; }
     [Sieve(CanFilter = true, CanSort = true)]
@@ -22,5 +23,5 @@ public class TenantSubscription : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public bool AutoRenew { get; set; }
 
-    public virtual Tenant Tenant { get; set; } = null!;
+    public Tenant Tenant { get; set; } = null!;
 }

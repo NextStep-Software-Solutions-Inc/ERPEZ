@@ -5,22 +5,16 @@ namespace ERPEZ.TenantManagement.Domain.Common
 {
     public abstract class BaseEntity : IEntity
     {
+        protected BaseEntity() { }
         [Key]
         [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
-        public Guid Id { get; set; }
-        public DateTime CreatedAt { get; set; }
-        public string CreatedBy { get; set; } = string.Empty;
-        public DateTime UpdatedAt { get; set; }
-        public Guid? UpdatedBy { get; set; }
-        public bool IsDeleted { get; set; }
-        public DateTime DeletedAt { get; set; }
-        public Guid? DeletedBy { get; set; }
-
-        public void SetNewId()
-        {
-            Id = Guid.NewGuid();
-            CreatedAt = DateTime.UtcNow;
-            UpdatedAt = DateTime.UtcNow;
-        }
+        public Guid Id { get; protected set; }
+        public DateTime CreatedAt { get; protected set; }
+        public string CreatedBy { get; protected set; } = string.Empty;
+        public DateTime UpdatedAt { get; protected set; }
+        public Guid? UpdatedBy { get; protected set; }
+        public bool IsDeleted { get; protected set; }
+        public DateTime DeletedAt { get; protected set; }
+        public Guid? DeletedBy { get; protected set; }
     }
 }
