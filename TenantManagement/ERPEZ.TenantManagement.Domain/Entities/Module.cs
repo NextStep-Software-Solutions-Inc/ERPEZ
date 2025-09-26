@@ -3,7 +3,7 @@ using Sieve.Attributes;
 
 namespace ERPEZ.TenantManagement.Domain.Entities;
 
-public sealed class Module : BaseEntity
+public class Module : BaseEntity
 {
     public Module() { }
     [Sieve(CanFilter = true, CanSort = true)]
@@ -15,5 +15,5 @@ public sealed class Module : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public bool IsActive { get; set; }
 
-    public List<Tenant> Tenants { get; set; } = null!;
+    public virtual List<Tenant> Tenants { get; set; } = null!;
 }
