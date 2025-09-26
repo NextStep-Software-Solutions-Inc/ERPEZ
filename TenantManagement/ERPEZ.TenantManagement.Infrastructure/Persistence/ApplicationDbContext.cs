@@ -7,7 +7,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     : DbContext(options)
 {
     public DbSet<Tenant> Tenants { get; set; }
-    public DbSet<TenantModule> TenantModules { get; set; }
     public DbSet<Module> Modules { get; set; }
     public DbSet<TenantSetting> TenantSettings { get; set; }
     public DbSet<TenantSubscription> TenantSubscriptions { get; set; }
@@ -23,9 +22,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .IsUnique();
 
         modelBuilder.Entity<Tenant>()
-            .HasMany(t => t.TenantModules)
-            .WithOne(tm => tm.Tenant)
-            .HasForeignKey(tm => tm.TenantId);
+            .HasMany(t => t.Modules)
+            .WithMany(m => m.Tenants);
 
         modelBuilder.Entity<Tenant>()
             .HasMany(t => t.TenantSettings)
@@ -40,16 +38,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         // Module
         modelBuilder.Entity<Module>()
             .HasIndex(m => m.Name)
-            .IsUnique();
-
-        modelBuilder.Entity<Module>()
-            .HasMany(m => m.TenantModules)
-            .WithOne(tm => tm.Module)
-            .HasForeignKey(tm => tm.ModuleId);
-
-        // TenantModule
-        modelBuilder.Entity<TenantModule>()
-            .HasIndex(tm => new { tm.TenantId, tm.ModuleId })
             .IsUnique();
 
         // TenantSetting

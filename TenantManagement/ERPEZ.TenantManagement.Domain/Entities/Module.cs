@@ -14,6 +14,6 @@ namespace ERPEZ.TenantManagement.Domain.Entities
         [Sieve(CanFilter = true, CanSort = true)]
         public bool IsActive { get; set; }
 
-        public virtual List<TenantModule> TenantModules { get; set; } = null!;
+        public virtual ICollection<Tenant> Tenants { get; set; } = null!;
     }
 }
