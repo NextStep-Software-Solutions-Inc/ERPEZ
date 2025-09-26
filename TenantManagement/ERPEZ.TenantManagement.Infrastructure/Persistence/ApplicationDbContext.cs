@@ -23,7 +23,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<Tenant>()
             .HasMany(t => t.Modules)
-            .WithMany(m => m.Tenants);
+            .WithMany(m => m.Tenants)
+            .UsingEntity(tm => tm.ToTable("TenantModule"));
 
         modelBuilder.Entity<Tenant>()
             .HasMany(t => t.TenantSettings)

@@ -11,7 +11,7 @@ public class Tenant : BaseEntity
     public bool OnPremise { get; set; }
     [Sieve(CanFilter = true, CanSort = true)]
     public string BillingContactEmail { get; set; } = string.Empty;
-    public virtual ICollection<Module> Modules { get; set; } = [];
+    public virtual List<Module> Modules { get; set; } = [];
     public virtual List<TenantSetting> TenantSettings { get; set; } = [];
     public virtual List<TenantSubscription> TenantSubscriptions { get; set; } = [];
 }
