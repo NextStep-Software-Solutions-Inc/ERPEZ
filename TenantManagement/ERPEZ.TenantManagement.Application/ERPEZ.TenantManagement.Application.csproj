@@ -30,10 +30,8 @@
     <Folder Include="Features\TenantSubscriptions\Commands\UpdateTenantSubscription\" />
     <Folder Include="Features\TenantSubscriptions\Queries\GetTenantSubscriptionById\" />
     <Folder Include="Features\TenantSubscriptions\Queries\GetTenantSubscriptions\" />
-    <Folder Include="Features\Tenants\Commands\CreateTenant\" />
     <Folder Include="Features\Tenants\Commands\DeleteTenant\" />
     <Folder Include="Features\Tenants\Commands\UpdateTenant\" />
-    <Folder Include="Features\Tenants\Queries\GetTenants\" />
     <Folder Include="Features\Tenants\Queries\GetTenantById\" />
   </ItemGroup>
 

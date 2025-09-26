@@ -1,4 +1,9 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using ERPEZ.TenantManagement.Application.Common;
+using ERPEZ.TenantManagement.Application.Features.Tenants.Commands.CreateTenant;
+using ERPEZ.TenantManagement.Application.Features.Tenants.Queries.GetTenants;
+using ERPEZ.TenantManagement.Domain.Entities;
+using MediatR;
+using Microsoft.AspNetCore.Mvc;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -6,13 +11,16 @@ namespace ERPEZ.TenantManagement.Api.Controllers
 {
     [Route("tenants")]
     [ApiController]
-    public class TenantsController : ControllerBase
+    public class TenantsController(ISender mediator) : ControllerBase
     {
         // GET: api/<TenantController>
         [HttpGet]
-        public IEnumerable<string> Get()
+        [ProducesResponseType(typeof(PaginatedApiResponse<Tenant>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetTenants([FromQuery] GetTenantsQuery query)
         {
-            return new string[] { "value1", "value2" };
+            var result = await mediator.Send(query);
+            return Ok(result);
         }
 
         // GET api/<TenantController>/5
@@ -24,8 +32,13 @@ namespace ERPEZ.TenantManagement.Api.Controllers
 
         // POST api/<TenantController>
         [HttpPost]
-        public void Post([FromBody] string value)
+        [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> CreateTenant([FromBody] CreateTenantCommand command)
         {
+            var tenantId = await mediator.Send(command);
+            var response = ApiResponse<Guid>.Success(tenantId, "Tenant created successfully.");
+            return CreatedAtAction(nameof(GetTenants), new { id = tenantId }, response);
         }
 
         // PUT api/<TenantController>/5
