@@ -14,7 +14,6 @@ namespace ERPEZ.TenantManagement.Api.Controllers
     [ApiController]
     public class TenantsController(ISender mediator) : ControllerBase
     {
-        // R - READ (List)
         [HttpGet]
         [ProducesResponseType(typeof(PaginatedApiResponse<Tenant>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetTenants([FromQuery] GetTenantsQuery query)
@@ -23,7 +22,6 @@ namespace ERPEZ.TenantManagement.Api.Controllers
             return Ok(result);
         }
 
-        // R - READ (Single by ID)
         [HttpGet("{id}")]
         [ProducesResponseType(typeof(ApiResponse<Tenant>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -40,7 +38,6 @@ namespace ERPEZ.TenantManagement.Api.Controllers
             return Ok(ApiResponse<Tenant>.Success(tenant, "Tenant retrieved successfully."));
         }
 
-        // C - CREATE
         [HttpPost]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -52,7 +49,6 @@ namespace ERPEZ.TenantManagement.Api.Controllers
             return CreatedAtAction(nameof(GetTenantById), new { id = tenantId }, response);
         }
 
-        // U - UPDATE
         [HttpPut("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -69,7 +65,6 @@ namespace ERPEZ.TenantManagement.Api.Controllers
             return NoContent();
         }
 
-        // D - DELETE
         [HttpDelete("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]

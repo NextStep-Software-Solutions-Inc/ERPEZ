@@ -25,8 +25,8 @@ public sealed class UpdateTenantCommandHandler(IUnitOfWork unitOfWork)
         {
             return new ApiResponse<Tenant>
             {
-                Succeeded = true,
-                Message = "Updated Successfully.",
+                Succeeded = false,
+                Message = "Tenant already exist.",
                 Data = tenant
             };
         }
