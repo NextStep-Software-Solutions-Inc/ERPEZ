@@ -13,5 +13,5 @@ public class TenantSetting : BaseEntity
     public string DbConnectionString { get; set; } = string.Empty;
     public string BillingContactEmail {  get; set; } = string.Empty;
 
-    public virtual Tenant Tenant { get; set; } = new ();
+    public virtual Tenant Tenant { get; set; } = null!;
 }
