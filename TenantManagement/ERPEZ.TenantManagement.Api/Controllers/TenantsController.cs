@@ -17,7 +17,6 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         // R - READ (List)
         [HttpGet]
         [ProducesResponseType(typeof(PaginatedApiResponse<Tenant>), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetTenants([FromQuery] GetTenantsQuery query)
         {
             var result = await mediator.Send(query);

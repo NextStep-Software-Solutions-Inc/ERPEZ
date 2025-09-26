@@ -1,4 +1,8 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using ERPEZ.TenantManagement.Application.Common;
+using ERPEZ.TenantManagement.Application.Features.Tenants.Queries.GetTenants;
+using ERPEZ.TenantManagement.Domain.Entities;
+using MediatR;
+using Microsoft.AspNetCore.Mvc;
 
 // For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
 
@@ -6,13 +10,15 @@ namespace ERPEZ.TenantManagement.Api.Controllers
 {
     [Route("tenant-settings")]
     [ApiController]
-    public class TenantSettingsController : ControllerBase
+    public class TenantSettingsController(ISender mediator) : ControllerBase
     {
         // GET: api/<TenantSettingsController>
         [HttpGet]
-        public IEnumerable<string> Get()
+        [ProducesResponseType(typeof(PaginatedApiResponse<TenantSetting>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetTenants([FromQuery] GetTenantSettingQuery query)
         {
-            return new string[] { "value1", "value2" };
+            var result = await mediator.Send(query);
+            return Ok(result);
         }
 
         // GET api/<TenantSettingsController>/5

@@ -18,7 +18,6 @@
     <Folder Include="Features\TenantSettings\Commands\CreateTenantSetting\" />
     <Folder Include="Features\TenantSettings\Commands\DeleteTenantSetting\" />
     <Folder Include="Features\TenantSettings\Commands\UpdateTenantSetting\" />
-    <Folder Include="Features\TenantSettings\Queries\GetTenantSettings\" />
     <Folder Include="Features\TenantSettings\Queries\GetTenantSettingById\" />
     <Folder Include="Features\TenantSubscriptions\Commands\CreateTenantSubscription\" />
     <Folder Include="Features\TenantSubscriptions\Commands\DeleteTenantSubscription\" />
