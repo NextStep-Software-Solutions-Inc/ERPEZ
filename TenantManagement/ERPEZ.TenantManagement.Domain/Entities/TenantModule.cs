@@ -11,5 +11,5 @@ public class TenantModule : BaseEntity
     public Guid ModuleId {  get; set; }
 
     public virtual Tenant Tenant { get; set; } = null!;
-    public virtual List<Module> Modules { get; set; } = null!;
+    public virtual Module Module { get; set; } = null!;
 }

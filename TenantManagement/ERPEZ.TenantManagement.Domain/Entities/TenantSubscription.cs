@@ -22,5 +22,5 @@ public class TenantSubscription : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public bool AutoRenew { get; set; }
 
-    public virtual List<Tenant> Tenants { get; set; } = null!;
+    public virtual Tenant Tenant { get; set; } = null!;
 }
