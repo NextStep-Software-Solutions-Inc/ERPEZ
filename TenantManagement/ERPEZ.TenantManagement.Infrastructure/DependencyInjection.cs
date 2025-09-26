@@ -24,7 +24,6 @@ public static class DependencyInjection
         services.AddScoped<IProductRepository, ProductRepository>();
         services.AddScoped<ITenantRepository, TenantRepository>();
         services.AddScoped<IModuleRepository, ModuleRepository>();
-        services.AddScoped<ITenantModuleRepository, TenantModuleRepository>();
         services.AddScoped<ITenantSettingRepository, TenantSettingRepository>();
         services.AddScoped<ITenantSubscriptionRepository, TenantSubscriptionRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();

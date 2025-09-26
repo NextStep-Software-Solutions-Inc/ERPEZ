@@ -15,11 +15,6 @@
     <Folder Include="Features\Modules\Commands\UpdateModule\" />
     <Folder Include="Features\Modules\Queries\GetModules\" />
     <Folder Include="Features\Modules\Queries\GetModuleById\" />
-    <Folder Include="Features\TenantModules\Commands\DeleteTenantModule\" />
-    <Folder Include="Features\TenantModules\Commands\UpdateTenantModule\" />
-    <Folder Include="Features\TenantModules\Commands\CreateTenantModule\" />
-    <Folder Include="Features\TenantModules\Queries\GetTenantModuleById\" />
-    <Folder Include="Features\TenantModules\Queries\GetTenantModules\" />
     <Folder Include="Features\TenantSettings\Commands\CreateTenantSetting\" />
     <Folder Include="Features\TenantSettings\Commands\DeleteTenantSetting\" />
     <Folder Include="Features\TenantSettings\Commands\UpdateTenantSetting\" />
@@ -30,9 +25,6 @@
     <Folder Include="Features\TenantSubscriptions\Commands\UpdateTenantSubscription\" />
     <Folder Include="Features\TenantSubscriptions\Queries\GetTenantSubscriptionById\" />
     <Folder Include="Features\TenantSubscriptions\Queries\GetTenantSubscriptions\" />
-    <Folder Include="Features\Tenants\Commands\DeleteTenant\" />
-    <Folder Include="Features\Tenants\Commands\UpdateTenant\" />
-    <Folder Include="Features\Tenants\Queries\GetTenantById\" />
   </ItemGroup>
 
   <PropertyGroup>
