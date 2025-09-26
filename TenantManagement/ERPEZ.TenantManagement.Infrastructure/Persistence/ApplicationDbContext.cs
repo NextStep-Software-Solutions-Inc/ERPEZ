@@ -1,5 +1,6 @@
 ﻿using ERPEZ.TenantManagement.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Metadata;
 
 namespace ERPEZ.TenantManagement.Infrastructure.Persistence;
 
@@ -13,8 +14,28 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
+
         const string schemaName = "catalog";
         modelBuilder.HasDefaultSchema(schemaName);
+
+        foreach (var entity in modelBuilder.Model.GetEntityTypes())
+        {
+            var idProperty = entity.FindProperty("Id");
+
+            if (idProperty == null)
+            {
+                continue;
+            }
+
+            if (idProperty.ClrType == typeof(Guid))
+            {
+                idProperty.SetDefaultValueSql("gen_random_uuid()");
+            }
+
+            entity.SetPrimaryKey(idProperty);
+
+            idProperty.ValueGenerated = ValueGenerated.OnAdd;
+        }
 
         // Tenant
         modelBuilder.Entity<Tenant>()
