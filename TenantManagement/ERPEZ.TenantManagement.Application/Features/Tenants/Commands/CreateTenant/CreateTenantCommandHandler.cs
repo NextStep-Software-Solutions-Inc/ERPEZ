@@ -1,10 +1,11 @@
-﻿using ERPEZ.TenantManagement.Domain.Entities;
+﻿using ERPEZ.TenantManagement.Application.Common;
+using ERPEZ.TenantManagement.Domain.Entities;
 using ERPEZ.TenantManagement.Domain.Interfaces;
 using MediatR;
 
 namespace ERPEZ.TenantManagement.Application.Features.Tenants.Commands.CreateTenant;
 
-public sealed class CreateTenantCommandHandler : IRequestHandler<CreateTenantCommand, Guid>
+public sealed class CreateTenantCommandHandler : IRequestHandler<CreateTenantCommand, ApiResponse<Tenant>>
 {
     private readonly ITenantRepository _tenantRepository;
     private readonly IUnitOfWork _unitOfWork;
@@ -15,8 +16,18 @@ public sealed class CreateTenantCommandHandler : IRequestHandler<CreateTenantCom
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<Guid> Handle(CreateTenantCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<Tenant>> Handle(CreateTenantCommand request, CancellationToken cancellationToken)
     {
+        var tenantExist = await _unitOfWork.TenantRepository.FindAsync(t => t.Name == request.Name && t.BillingContactEmail == request.BillingContactEmail && !t.IsDeleted);
+        if (tenantExist != null) 
+        {
+            return new()
+            {
+               Succeeded = false,
+               Data = null,
+               Message = "Tenant already exist."
+            };
+        }
         var tenant = new Tenant
         {
             Name = request.Name,
@@ -26,6 +37,11 @@ public sealed class CreateTenantCommandHandler : IRequestHandler<CreateTenantCom
 
         await _tenantRepository.AddAsync(tenant, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        return tenant.Id;
+        return new()
+        {
+            Data = tenant,
+            Succeeded = true,
+            Message = "Tenant created successfully."
+        };
     }
 }

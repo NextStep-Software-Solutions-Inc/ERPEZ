@@ -1,12 +1,13 @@
 ﻿using ERPEZ.TenantManagement.Application.Common;
 using ERPEZ.TenantManagement.Application.Features.Tenants.Commands.CreateTenant;
-using ERPEZ.TenantManagement.Application.Features.Tenants.Commands.UpdateTenant;
 using ERPEZ.TenantManagement.Application.Features.Tenants.Commands.DeleteTenant;
-using ERPEZ.TenantManagement.Application.Features.Tenants.Queries.GetTenants;
+using ERPEZ.TenantManagement.Application.Features.Tenants.Commands.UpdateTenant;
 using ERPEZ.TenantManagement.Application.Features.Tenants.Queries.GetTenantById;
+using ERPEZ.TenantManagement.Application.Features.Tenants.Queries.GetTenants;
 using ERPEZ.TenantManagement.Domain.Entities;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using System.Reflection.Metadata;
 
 namespace ERPEZ.TenantManagement.Api.Controllers
 {
@@ -22,35 +23,33 @@ namespace ERPEZ.TenantManagement.Api.Controllers
             return Ok(result);
         }
 
-        [HttpGet("{id}")]
+        [HttpGet("{id:guid}")]
         [ProducesResponseType(typeof(ApiResponse<Tenant>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetTenantById(Guid id)
         {
-            var query = new GetTenantByIdQuery(id);
-            var tenant = await mediator.Send(query);
-
+            var tenant = await mediator.Send(new GetTenantByIdQuery(id));
             if (tenant == null)
-            {
-                return NotFound(ApiResponse<Tenant>.Fail($"Tenant with ID {id} not found."));
-            }
+                return NotFound(ApiResponse<Tenant>.Fail("Tenant not found."));
 
-            return Ok(ApiResponse<Tenant>.Success(tenant, "Tenant retrieved successfully."));
+            return Ok(ApiResponse<Tenant>.Success(tenant));
         }
 
         [HttpPost]
-        [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<Tenant>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<Tenant>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateTenant([FromBody] CreateTenantCommand command)
         {
-            var tenantId = await mediator.Send(command);
-            var response = ApiResponse<Guid>.Success(tenantId, "Tenant created successfully.");
+            var tenant = await mediator.Send(command);
 
-            return CreatedAtAction(nameof(GetTenantById), new { id = tenantId }, response);
+            if (!tenant.Succeeded)
+                return BadRequest(tenant);
+
+            return CreatedAtAction(nameof(GetTenantById), new { id = tenant.Data!.Id }, tenant);
         }
 
         [HttpPut("{id}")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateTenant(Guid id, [FromBody] UpdateTenantCommand command)
@@ -60,9 +59,8 @@ namespace ERPEZ.TenantManagement.Api.Controllers
                 return BadRequest(ApiResponse<Tenant>.Fail("ID mismatch between route and body."));
             }
 
-            var response = await mediator.Send(command);
-
-            return NoContent();
+            var tenant = await mediator.Send(command);
+            return tenant.Succeeded ? Ok(tenant) : BadRequest(tenant);
         }
 
         [HttpDelete("{id}")]
@@ -72,9 +70,10 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         {
             var command = new DeleteTenantCommand(id);
 
-            await mediator.Send(command);
+            var tenant = await mediator.Send(command);
 
-            return NoContent();
+
+            return tenant.Succeeded ? Ok(tenant) : BadRequest(tenant);
         }
     }
 }

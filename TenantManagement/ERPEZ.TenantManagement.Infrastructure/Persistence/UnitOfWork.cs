@@ -1,21 +1,29 @@
 ﻿using ERPEZ.TenantManagement.Domain.Interfaces;
-using ERPEZ.TenantManagement.Infrastructure.Persistence.Repositories;
+using ERPEZ.TenantManagement.Infrastructure.Persistence;
 using Sieve.Services;
-
-namespace ERPEZ.TenantManagement.Infrastructure.Persistence;
 
 public sealed class UnitOfWork : IUnitOfWork, IDisposable
 {
     private readonly ApplicationDbContext _context;
+
     public IProductRepository ProductRepository { get; }
     public ITenantRepository TenantRepository { get; }
     public ITenantSettingRepository TenantSettingRepository { get; }
     public IModuleRepository ModuleRepository { get; }
 
-    public UnitOfWork(ApplicationDbContext context, ISieveProcessor sieveProcessor)
+    public UnitOfWork(
+        ApplicationDbContext context,
+        ISieveProcessor sieveProcessor,
+        ITenantRepository tenantRepository,
+        ITenantSettingRepository tenantSettingRepository,
+        IModuleRepository moduleRepository)
     {
-        _context = context;
-        ProductRepository = new ProductRepository(_context, sieveProcessor);
+        _context = context ?? throw new ArgumentNullException(nameof(context));
+
+        // mix of direct instantiation & DI
+        TenantRepository = tenantRepository ?? throw new ArgumentNullException(nameof(tenantRepository));
+        TenantSettingRepository = tenantSettingRepository ?? throw new ArgumentNullException(nameof(tenantSettingRepository));
+        ModuleRepository = moduleRepository ?? throw new ArgumentNullException(nameof(moduleRepository));
     }
 
     public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
@@ -23,8 +31,5 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         return _context.SaveChangesAsync(cancellationToken);
     }
 
-    public void Dispose()
-    {
-        _context.Dispose();
-    }
+    public void Dispose() => _context.Dispose();
 }

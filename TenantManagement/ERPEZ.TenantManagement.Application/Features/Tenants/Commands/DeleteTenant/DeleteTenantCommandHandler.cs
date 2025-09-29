@@ -9,7 +9,7 @@ public sealed class DeleteTenantCommandHandler(IUnitOfWork unitOfWork)
 {
     public async Task<ApiResponse<Unit>> Handle(DeleteTenantCommand request, CancellationToken cancellationToken)
     {
-        var tenant = await unitOfWork.TenantRepository.GetByIdAsync(request.Id, cancellationToken);
+        var tenant = await unitOfWork.TenantRepository.FindAsync(t => t.Id == request.Id && !t.IsDeleted, cancellationToken);
 
         if (tenant == null)
         {

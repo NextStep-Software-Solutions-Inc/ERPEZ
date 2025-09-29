@@ -1,10 +1,10 @@
 ﻿using EFCore.BulkExtensions;
 using ERPEZ.TenantManagement.Domain.Common;
 using ERPEZ.TenantManagement.Domain.Interfaces;
-using ERPEZ.TenantManagement.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Sieve.Models;
 using Sieve.Services;
+using System.Linq.Expressions;
 
 namespace ERPEZ.TenantManagement.Infrastructure.Persistence.Repositories;
 
@@ -54,6 +54,17 @@ public class Repository<T>(ApplicationDbContext context, ISieveProcessor sievePr
     public async Task UpdateBulkAsync(IList<T> entities, CancellationToken cancellationToken = default)
     {
         await context.BulkUpdateAsync(entities, cancellationToken: cancellationToken);
+    }
+    public async Task<T?> FindAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return await context.Set<T>().FindAsync([id], cancellationToken);
+    }
+
+    public async Task<T?> FindAsync(
+        Expression<Func<T, bool>> predicate,
+        CancellationToken cancellationToken = default)
+    {
+        return await context.Set<T>().FirstOrDefaultAsync(predicate, cancellationToken);
     }
 
     public async Task DeleteBulkAsync(IList<T> entities, CancellationToken cancellationToken = default)
