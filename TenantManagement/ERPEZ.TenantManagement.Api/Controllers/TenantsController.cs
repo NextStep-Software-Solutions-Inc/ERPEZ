@@ -2,12 +2,12 @@
 using ERPEZ.TenantManagement.Application.Features.Tenants.Commands.CreateTenant;
 using ERPEZ.TenantManagement.Application.Features.Tenants.Commands.DeleteTenant;
 using ERPEZ.TenantManagement.Application.Features.Tenants.Commands.UpdateTenant;
+using ERPEZ.TenantManagement.Application.Features.Tenants.Dtos;
 using ERPEZ.TenantManagement.Application.Features.Tenants.Queries.GetTenantById;
 using ERPEZ.TenantManagement.Application.Features.Tenants.Queries.GetTenants;
 using ERPEZ.TenantManagement.Domain.Entities;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using System.Reflection.Metadata;
 
 namespace ERPEZ.TenantManagement.Api.Controllers
 {
@@ -23,7 +23,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
             return Ok(result);
         }
 
-        [HttpGet("{id:guid}")]
+        [HttpGet("{id}")]
         [ProducesResponseType(typeof(ApiResponse<Tenant>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetTenantById(Guid id)
@@ -52,14 +52,20 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> UpdateTenant(Guid id, [FromBody] UpdateTenantCommand command)
+        public async Task<IActionResult> UpdateTenant(Guid id, [FromBody] UpdateTenantDto updateTenant)
         {
-            if (id != command.Id)
+            var request = new UpdateTenantCommand
             {
-                return BadRequest(ApiResponse<Tenant>.Fail("ID mismatch between route and body."));
+                Id = id,
+                UpdateTenant = updateTenant
+            };
+
+            if (id != request.Id)
+            {
+                return BadRequest(ApiResponse<Tenant>.Fail("ID mismatch."));
             }
 
-            var tenant = await mediator.Send(command);
+            var tenant = await mediator.Send(request);
             return tenant.Succeeded ? Ok(tenant) : BadRequest(tenant);
         }
 

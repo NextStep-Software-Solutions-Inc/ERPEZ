@@ -5,39 +5,72 @@ using MediatR;
 
 namespace ERPEZ.TenantManagement.Application.Features.TenantSettings.Commands.UpdateTenantSetting;
 
-public class UpdateTenantSettingCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateTenantSettingCommand, ApiResponse<TenantSetting>>
+public class UpdateTenantSettingCommandHandler(IUnitOfWork unitOfWork)
+    : IRequestHandler<UpdateTenantSettingCommand, ApiResponse<TenantSetting>>
 {
     public async Task<ApiResponse<TenantSetting>> Handle(UpdateTenantSettingCommand request, CancellationToken cancellationToken)
     {
-        var tenantSetting = await unitOfWork.TenantSettingRepository.GetByIdAsync(request.Id, cancellationToken);
-
-        if (tenantSetting == null) 
+        if (request?.UpdateTenantSetting == null)
         {
-            return new ApiResponse<TenantSetting>
-            {
-                Succeeded = false,
-                Message = "Tenant setting not found.",
-                Data = null
-            };
+            return ApiResponse<TenantSetting>.Fail("Invalid request. UpdateTenantSetting cannot be null.");
         }
 
-        if (tenantSetting.Name == request.Name)
+        var dto = request.UpdateTenantSetting;
+
+        var existTenant = await unitOfWork.TenantRepository.GetByIdAsync(dto.TenantId, cancellationToken: cancellationToken);
+        if (existTenant == null)
         {
-            return new ApiResponse<TenantSetting>
-            {
-                Succeeded = false,
-                Message = "Tenant setting already exist.",
-                Data = null
-            };
+            return ApiResponse<TenantSetting>.Fail("Tenant does not exist.");
         }
 
-        tenantSetting.Name = request.Name;
-        tenantSetting.BaseURL = request.BaseUrl;
-        tenantSetting.BillingContactEmail = request.BillingContactEmail;
-        tenantSetting.DbConnectionString = request.DbConnectionString;
-        tenantSetting.TenantId = request.Id;
+        var tenantSetting = await unitOfWork.TenantSettingRepository
+            .FindAsync(ts => ts.Id == request.Id && ts.TenantId == dto.TenantId,
+                       isDeleted: false,
+                       cancellationToken: cancellationToken);
+
+        if (tenantSetting == null)
+        {
+            return ApiResponse<TenantSetting>.Fail("Tenant setting not found.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(dto.Name) && dto.Name != tenantSetting.Name)
+        {
+            var duplicate = await unitOfWork.TenantSettingRepository
+                .FindAsync(ts => ts.Name == dto.Name && ts.TenantId == dto.TenantId && ts.Id != request.Id,
+                           isDeleted: false,
+                           cancellationToken: cancellationToken);
+
+            if (duplicate != null)
+            {
+                return ApiResponse<TenantSetting>.Fail("Another tenant setting with the same name already exists for this tenant.");
+            }
+        }
+
+        if (string.IsNullOrWhiteSpace(dto.Name) &&
+            string.IsNullOrWhiteSpace(dto.BaseUrl) &&
+            string.IsNullOrWhiteSpace(dto.BillingContactEmail) &&
+            string.IsNullOrWhiteSpace(dto.DBConnectionString))
+        {
+            return ApiResponse<TenantSetting>.Fail("No changes found.");
+        }
+
+        if (!string.IsNullOrWhiteSpace(dto.Name))
+            tenantSetting.Name = dto.Name;
+
+        if (!string.IsNullOrWhiteSpace(dto.BaseUrl))
+            tenantSetting.BaseURL = dto.BaseUrl;
+
+        if (!string.IsNullOrWhiteSpace(dto.BillingContactEmail))
+            tenantSetting.BillingContactEmail = dto.BillingContactEmail;
+
+        if (!string.IsNullOrWhiteSpace(dto.DBConnectionString))
+            tenantSetting.DbConnectionString = dto.DBConnectionString;
+
+        if (dto.TenantId != Guid.Empty && dto.TenantId != tenantSetting.TenantId)
+            tenantSetting.TenantId = dto.TenantId;
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
         return new ApiResponse<TenantSetting>
         {
             Succeeded = true,

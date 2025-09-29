@@ -2,6 +2,7 @@
 using ERPEZ.TenantManagement.Application.Features.TenantSettings.Commands.CreateTenantSetting;
 using ERPEZ.TenantManagement.Application.Features.TenantSettings.Commands.DeleteTenantSetting;
 using ERPEZ.TenantManagement.Application.Features.TenantSettings.Commands.UpdateTenantSetting;
+using ERPEZ.TenantManagement.Application.Features.TenantSettings.Dtos;
 using ERPEZ.TenantManagement.Application.Features.TenantSettings.Queries.GetTenantSettingById;
 using ERPEZ.TenantManagement.Application.Features.TenantSettings.Queries.GetTenantSettings;
 using ERPEZ.TenantManagement.Domain.Entities;
@@ -32,37 +33,43 @@ namespace ERPEZ.TenantManagement.Api.Controllers
 
             if (tenantSetting == null)
             {
-                return NotFound(ApiResponse<TenantSetting>.Fail($"Tenant with ID {id} not found."));
+                return BadRequest(ApiResponse<TenantSetting>.Fail("Tenant setting not found."));
             }
 
             return Ok(ApiResponse<TenantSetting>.Success(tenantSetting, "Tenant setting retrieved successfully."));
         }
 
         [HttpPost]
-        [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<ApiResponse<TenantSetting>>), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateTenantSetting([FromBody] CreateTenantSettingCommand command)
         {
-            var tenantSettingId = await mediator.Send(command);
-            var response = ApiResponse<Guid>.Success(tenantSettingId, "Tenant setting created successfully.");
+            var tenantSetting = await mediator.Send(command);
 
-            return CreatedAtAction(nameof(GetTenantSettingById), new { id = tenantSettingId }, response);
+            if (!tenantSetting.Succeeded)
+                return BadRequest(tenantSetting);
+
+            return tenantSetting.Succeeded ? Ok(tenantSetting) : BadRequest(tenantSetting);
         }
 
         [HttpPut("{id}")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> UpdateTenantSetting(Guid id, [FromBody] UpdateTenantSettingCommand command)
+        public async Task<IActionResult> UpdateTenantSetting(Guid id, [FromBody] UpdateTenantSettingDto tenantSettingDto)
         {
-            if (id != command.Id)
+            var request = new UpdateTenantSettingCommand
             {
-                return BadRequest(ApiResponse<TenantSetting>.Fail("ID mismatch between route and body."));
+                Id = id,
+                UpdateTenantSetting = tenantSettingDto
+            };
+            if (id != request.Id)
+            {
+                return BadRequest(ApiResponse<TenantSetting>.Fail("ID mismatch."));
             }
 
-            var response = await mediator.Send(command);
-
-            return NoContent();
+            var tenantSetting = await mediator.Send(request);
+            return tenantSetting.Succeeded ? Ok(tenantSetting) : BadRequest(tenantSetting);
         }
 
         [HttpDelete("{id}")]
@@ -72,9 +79,9 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         {
             var command = new DeleteTenantSettingCommand(id);
 
-            await mediator.Send(command);
-
-            return NoContent();
+           var tenantSetting = await mediator.Send(command);
+            
+            return tenantSetting.Succeeded ? Ok(tenantSetting) : BadRequest(tenantSetting);
         }
     }
 }

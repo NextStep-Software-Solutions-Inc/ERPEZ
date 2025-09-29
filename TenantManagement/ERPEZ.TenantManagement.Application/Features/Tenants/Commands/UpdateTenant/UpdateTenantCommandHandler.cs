@@ -10,7 +10,7 @@ public sealed class UpdateTenantCommandHandler(IUnitOfWork unitOfWork)
 {
     public async Task<ApiResponse<Tenant>> Handle(UpdateTenantCommand request, CancellationToken cancellationToken)
     {
-        var tenant = await unitOfWork.TenantRepository.GetByIdAsync(request.Id, cancellationToken);
+        var tenant = await unitOfWork.TenantRepository.GetByIdAsync(request.Id, isDeleted:false, cancellationToken: cancellationToken);
 
         if (tenant == null)
         {
@@ -21,7 +21,7 @@ public sealed class UpdateTenantCommandHandler(IUnitOfWork unitOfWork)
                 Data = null
             };
         }
-        if (tenant.Name == request.Name && tenant.BillingContactEmail == request.BillingContactEmail)
+        if (tenant.Name == request.UpdateTenant?.Name && tenant.BillingContactEmail == request.UpdateTenant?.BillingContactEmail)
         {
             return new ApiResponse<Tenant>
             {
@@ -31,9 +31,16 @@ public sealed class UpdateTenantCommandHandler(IUnitOfWork unitOfWork)
             };
         }
         // 2. Apply changes from the command to the domain entity
-        tenant.Name = request.Name;
-        tenant.BillingContactEmail = request.BillingContactEmail;
-        tenant.OnPremise = request.OnPremise;
+        tenant.Name = string.IsNullOrWhiteSpace(request.UpdateTenant?.Name)
+            ? tenant.Name
+            : request.UpdateTenant.Name;
+
+        tenant.BillingContactEmail = string.IsNullOrWhiteSpace(request.UpdateTenant?.BillingContactEmail)
+            ? tenant.BillingContactEmail
+            : request.UpdateTenant.BillingContactEmail;
+
+        tenant.OnPremise = request.UpdateTenant?.OnPremise ?? tenant.OnPremise;
+
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
 

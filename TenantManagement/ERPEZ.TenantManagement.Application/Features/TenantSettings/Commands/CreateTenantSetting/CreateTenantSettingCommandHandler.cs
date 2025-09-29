@@ -1,10 +1,11 @@
-﻿using ERPEZ.TenantManagement.Domain.Entities;
+﻿using ERPEZ.TenantManagement.Application.Common;
+using ERPEZ.TenantManagement.Domain.Entities;
 using ERPEZ.TenantManagement.Domain.Interfaces;
 using MediatR;
 
 namespace ERPEZ.TenantManagement.Application.Features.TenantSettings.Commands.CreateTenantSetting;
 
-public sealed class CreateTenantSettingCommandHandler : IRequestHandler<CreateTenantSettingCommand, Guid>
+public sealed class CreateTenantSettingCommandHandler : IRequestHandler<CreateTenantSettingCommand, ApiResponse<TenantSetting>>
 {
     private readonly ITenantSettingRepository _tenantSettingRepository;
     private readonly IUnitOfWork _unitOfWork;
@@ -15,8 +16,27 @@ public sealed class CreateTenantSettingCommandHandler : IRequestHandler<CreateTe
         _unitOfWork = unitOfWork;
     }
 
-    public async Task<Guid> Handle(CreateTenantSettingCommand command, CancellationToken cancellationToken)
+    public async Task<ApiResponse<TenantSetting>> Handle(CreateTenantSettingCommand command, CancellationToken cancellationToken)
     {
+        var existTenantSetting = await _unitOfWork.TenantSettingRepository.FindAsync(ts => ts.Name == command.Name &&
+        ts.TenantId == command.TenantId);
+        if (existTenantSetting != null)
+        {
+            return new()
+            {
+                Succeeded = false,
+                Message = "Tenant setting already exist."
+            };
+        }
+        var existTenant = await _unitOfWork.TenantRepository.GetByIdAsync(command.TenantId, cancellationToken: cancellationToken);
+        if(existTenant == null)
+        {
+            return new()
+            {
+                Succeeded = false,
+                Message = "Tenant does not exist."
+            };
+        }
         var tenantSetting = new TenantSetting
         {
             TenantId = command.TenantId,
@@ -28,6 +48,10 @@ public sealed class CreateTenantSettingCommandHandler : IRequestHandler<CreateTe
 
         await _tenantSettingRepository.AddAsync(tenantSetting);
         await _unitOfWork.SaveChangesAsync();
-        return tenantSetting.Id;
+        return new()
+        {
+            Succeeded = true,
+            Message = "Tenant setting created successfully."
+        };
     }
 }

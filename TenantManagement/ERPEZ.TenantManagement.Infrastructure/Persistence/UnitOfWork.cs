@@ -20,7 +20,6 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
 
-        // mix of direct instantiation & DI
         TenantRepository = tenantRepository ?? throw new ArgumentNullException(nameof(tenantRepository));
         TenantSettingRepository = tenantSettingRepository ?? throw new ArgumentNullException(nameof(tenantSettingRepository));
         ModuleRepository = moduleRepository ?? throw new ArgumentNullException(nameof(moduleRepository));

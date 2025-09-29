@@ -17,7 +17,7 @@ public sealed class GetTenantSettingsQueryHandler (IUnitOfWork unitOfWork) : IRe
             Filters = query.Filters,
             Sorts = query.Sorts
         };
-        var (tenantSettings, totalCount) = await unitOfWork.TenantSettingRepository.GetAllAsync(sieveModel, cancellationToken);
+        var (tenantSettings, totalCount) = await unitOfWork.TenantSettingRepository.GetAllAsync(sieveModel, isDeleted: false, cancellationToken: cancellationToken);
 
         return new PaginatedApiResponse<TenantSetting>(
             [.. tenantSettings],

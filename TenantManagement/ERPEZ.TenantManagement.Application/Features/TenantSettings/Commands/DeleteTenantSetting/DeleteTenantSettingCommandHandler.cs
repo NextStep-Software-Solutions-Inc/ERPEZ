@@ -8,7 +8,7 @@ public sealed class DeleteTenantSettingCommandHandler(IUnitOfWork unitOfWork) : 
 {
     public async Task<ApiResponse<Unit>> Handle(DeleteTenantSettingCommand request, CancellationToken cancellationToken)
     {
-        var tenantSetting = await unitOfWork.TenantSettingRepository.GetByIdAsync(request.Id, cancellationToken);
+        var tenantSetting = await unitOfWork.TenantSettingRepository.GetByIdAsync(request.Id, isDeleted:false, cancellationToken: cancellationToken);
 
         if (tenantSetting == null)
         {

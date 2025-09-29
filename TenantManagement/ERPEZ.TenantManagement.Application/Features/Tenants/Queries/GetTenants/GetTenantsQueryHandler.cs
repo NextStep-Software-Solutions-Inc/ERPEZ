@@ -18,7 +18,7 @@ public sealed class GetTenantsQueryHandler (IUnitOfWork unitOfWork) : IRequestHa
             Sorts = query.Sorts
         };
 
-        var (tenants, totalCount) = await unitOfWork.TenantRepository.GetAllAsync(sieveModel, cancellationToken);
+        var (tenants, totalCount) = await unitOfWork.TenantRepository.GetAllAsync(sieveModel, isDeleted: false, cancellationToken: cancellationToken);
 
         return new PaginatedApiResponse<Tenant>(
             [.. tenants],

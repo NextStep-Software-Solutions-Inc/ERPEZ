@@ -11,9 +11,9 @@ public sealed class GetTenantByIdQueryHandler(IUnitOfWork unitOfWork)
         GetTenantByIdQuery request,
         CancellationToken cancellationToken)
     {
-        var tenant = await unitOfWork.TenantRepository.GetByIdAsync(
-            request.Id,
-            cancellationToken);
+        var tenant = await unitOfWork.TenantRepository.FindAsync(
+           t => t.Id == request.Id && !t.IsDeleted,
+            cancellationToken: cancellationToken);
 
         return tenant;
     }
