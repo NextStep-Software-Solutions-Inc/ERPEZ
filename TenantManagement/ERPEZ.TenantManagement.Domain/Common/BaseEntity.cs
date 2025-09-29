@@ -1,11 +1,18 @@
-﻿namespace ERPEZ.TenantManagement.Domain.Common;
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
-public abstract class BaseEntity
+namespace ERPEZ.TenantManagement.Domain.Common
 {
-    public Guid Id { get; protected set; }
-
-    protected BaseEntity()
+    public abstract class BaseEntity : IEntity
     {
-        Id = Guid.NewGuid();
+        protected BaseEntity() { }
+        public Guid Id { get; protected set; }
+        public DateTime CreatedAt { get; protected set; }
+        public string CreatedBy { get; protected set; } = string.Empty;
+        public DateTime UpdatedAt { get; protected set; }
+        public Guid? UpdatedBy { get; protected set; }
+        public bool IsDeleted { get; protected set; }
+        public DateTime DeletedAt { get; protected set; }
+        public Guid? DeletedBy { get; protected set; }
     }
 }
