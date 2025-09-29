@@ -3,7 +3,7 @@ using Sieve.Attributes;
 
 namespace ERPEZ.TenantManagement.Domain.Entities;
 
-public sealed class TenantSetting : BaseEntity
+public class TenantSetting : BaseEntity
 {
     public TenantSetting() { }
     [Sieve(CanFilter = true, CanSort = true)]
@@ -14,5 +14,5 @@ public sealed class TenantSetting : BaseEntity
     public string DbConnectionString { get; set; } = string.Empty;
     public string BillingContactEmail {  get; set; } = string.Empty;
 
-    public Tenant Tenant { get; set; } = null!;
+    public virtual Tenant Tenant { get; set; } = null!;
 }

@@ -5,16 +5,7 @@ namespace ERPEZ.TenantManagement.Domain.Common
 {
     public abstract class BaseEntity : IEntity
     {
-        protected BaseEntity()
-        {   
-            Id = Guid.NewGuid();
-            CreatedAt = DateTime.UtcNow;
-            UpdatedAt = DateTime.UtcNow;
-            IsDeleted = false; 
-        }
-
-        [Key]
-        [DatabaseGenerated(DatabaseGeneratedOption.Identity)]
+        protected BaseEntity() { }
         public Guid Id { get; protected set; }
         public DateTime CreatedAt { get; protected set; }
         public string CreatedBy { get; protected set; } = string.Empty;
