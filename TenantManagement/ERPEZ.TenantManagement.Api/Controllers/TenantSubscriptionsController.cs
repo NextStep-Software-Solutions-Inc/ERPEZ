@@ -1,43 +1,88 @@
-﻿using Microsoft.AspNetCore.Mvc;
-
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+﻿using ERPEZ.TenantManagement.Application.Common;
+using ERPEZ.TenantManagement.Application.Features.TenantSubscriptions.Commands.CreateTenantSubscription;
+using ERPEZ.TenantManagement.Application.Features.TenantSubscriptions.Commands.DeleteTenantSubscription;
+using ERPEZ.TenantManagement.Application.Features.TenantSubscriptions.Commands.UpdateTenantSubscription;
+using ERPEZ.TenantManagement.Application.Features.TenantSubscriptions.Dtos;
+using ERPEZ.TenantManagement.Application.Features.TenantSubscriptions.Queries.GetTenantSubscriptionById;
+using ERPEZ.TenantManagement.Application.Features.TenantSubscriptions.Queries.GetTenantSubscriptions;
+using ERPEZ.TenantManagement.Domain.Entities;
+using MediatR;
+using Microsoft.AspNetCore.Mvc;
 
 namespace ERPEZ.TenantManagement.Api.Controllers
 {
     [Route("tenant-subscriptions")]
     [ApiController]
-    public class TenantSubscriptionsController : ControllerBase
+    public class TenantSubscriptionsController(ISender mediator) : ControllerBase
     {
-        // GET: api/<TenantSubscriptionsController>
         [HttpGet]
-        public IEnumerable<string> Get()
+        [ProducesResponseType(typeof(PaginatedApiResponse<TenantSubscription>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetTenantSubscriptions([FromQuery] GetTenantSubscriptionsQuery query)
         {
-            return new string[] { "value1", "value2" };
+            var result = await mediator.Send(query);
+            return Ok(result);
         }
 
-        // GET api/<TenantSubscriptionsController>/5
-        [HttpGet("{id}")]
-        public string Get(int id)
+    [HttpGet("{id}")]
+        [ProducesResponseType(typeof(ApiResponse<TenantSubscription>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetTenantSubscriptionById(Guid id)
         {
-            return "value";
+            var query = new GetTenantSubscriptionByIdQuery(id);
+            var tenantSubscription = await mediator.Send(query);
+
+            if (tenantSubscription == null)
+            {
+                return BadRequest(ApiResponse<TenantSubscription>.Fail("Tenant subscription not found."));
+            }
+
+            return Ok(ApiResponse<TenantSubscription>.Success(tenantSubscription, "Tenant subscription retrieved successfully."));
         }
 
-        // POST api/<TenantSubscriptionsController>
         [HttpPost]
-        public void Post([FromBody] string value)
+        [ProducesResponseType(typeof(ApiResponse<TenantSubscription>), StatusCodes.Status201Created)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> CreateTenantSubscription([FromBody] CreateTenantSubscriptionCommand command)
         {
+            var tenantSubscription = await mediator.Send(command);
+
+            if (!tenantSubscription.Succeeded)
+                return BadRequest(tenantSubscription);
+
+            return tenantSubscription.Succeeded ? Ok(tenantSubscription) : BadRequest(tenantSubscription);
         }
 
-        // PUT api/<TenantSubscriptionsController>/5
         [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> UpdateTenantSubscription(Guid id, [FromBody] UpdateTenantSubscriptionDto tenantSubscriptionDto)
         {
+            var request = new UpdateTenantSubscriptionCommand
+            {
+                Id = id,
+                UpdateTenantSubscription = tenantSubscriptionDto
+            };
+            if (id != request.Id)
+            {
+                return BadRequest(ApiResponse<TenantSubscription>.Fail("ID mismatch."));
+            }
+
+            var tenantSubscription = await mediator.Send(request);
+            return tenantSubscription.Succeeded ? Ok(tenantSubscription) : BadRequest(tenantSubscription);
         }
 
-        // DELETE api/<TenantSubscriptionsController>/5
         [HttpDelete("{id}")]
-        public void Delete(int id)
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> DeleteTenantSubscription(Guid id)
         {
+            var command = new DeleteTenantSubscriptionCommand(id);
+
+            var tenantSubscription = await mediator.Send(command);
+
+            return tenantSubscription.Succeeded ? Ok(tenantSubscription) : BadRequest(tenantSubscription);
         }
     }
+
 }

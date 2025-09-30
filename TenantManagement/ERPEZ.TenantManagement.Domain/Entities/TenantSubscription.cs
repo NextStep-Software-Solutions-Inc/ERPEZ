@@ -1,5 +1,6 @@
 ﻿using ERPEZ.TenantManagement.Domain.Common;
 using Sieve.Attributes;
+using System.Text.Json.Serialization;
 
 namespace ERPEZ.TenantManagement.Domain.Entities;
 
@@ -22,6 +23,6 @@ public class TenantSubscription : BaseEntity
     public string? BillingCycle { get; set; }
     [Sieve(CanFilter = true, CanSort = true)]
     public bool AutoRenew { get; set; }
-
+    [JsonIgnore]
     public virtual Tenant Tenant { get; set; } = null!;
 }

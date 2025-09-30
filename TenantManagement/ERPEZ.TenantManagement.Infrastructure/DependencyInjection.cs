@@ -21,7 +21,6 @@ public static class DependencyInjection
             options.UseNpgsql(connectionString));
 
         // Register repositories and Unit of Work
-        services.AddScoped<IProductRepository, ProductRepository>();
         services.AddScoped<ITenantRepository, TenantRepository>();
         services.AddScoped<IModuleRepository, ModuleRepository>();
         services.AddScoped<ITenantSettingRepository, TenantSettingRepository>();

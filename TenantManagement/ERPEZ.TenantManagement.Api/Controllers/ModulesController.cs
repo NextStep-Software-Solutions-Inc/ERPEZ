@@ -1,43 +1,85 @@
-﻿using Microsoft.AspNetCore.Mvc;
-
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+﻿using ERPEZ.TenantManagement.Application.Common;
+using ERPEZ.TenantManagement.Application.Features.Modules.Commands.CreateModule;
+using ERPEZ.TenantManagement.Application.Features.Modules.Commands.DeleteModule;
+using ERPEZ.TenantManagement.Application.Features.Modules.Commands.UpdateModule;
+using ERPEZ.TenantManagement.Application.Features.Modules.Dtos;
+using ERPEZ.TenantManagement.Application.Features.Modules.Queries.GetModuleById;
+using ERPEZ.TenantManagement.Application.Features.Modules.Queries.GetModules;
+using ERPEZ.TenantManagement.Domain.Entities;
+using MediatR;
+using Microsoft.AspNetCore.Mvc;
 
 namespace ERPEZ.TenantManagement.Api.Controllers
 {
     [Route("modules")]
     [ApiController]
-    public class ModulesController : ControllerBase
+    public class ModulesController(ISender mediator) : ControllerBase
     {
-        // GET: api/<ModulesController>
         [HttpGet]
-        public IEnumerable<string> Get()
+        [ProducesResponseType(typeof(PaginatedApiResponse<Module>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetModules([FromQuery] GetModulesQuery query)
         {
-            return new string[] { "value1", "value2" };
+            var result = await mediator.Send(query);
+            return Ok(result);
         }
 
-        // GET api/<ModulesController>/5
-        [HttpGet("{id}")]
-        public string Get(int id)
+    [HttpGet("{id}")]
+        [ProducesResponseType(typeof(ApiResponse<Module>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetModuleById(Guid id)
         {
-            return "value";
+            var module = await mediator.Send(new GetModuleByIdQuery(id));
+            if (module == null)
+                return NotFound(ApiResponse<Module>.Fail("Module not found."));
+
+            return Ok(ApiResponse<Module>.Success(module));
         }
 
-        // POST api/<ModulesController>
         [HttpPost]
-        public void Post([FromBody] string value)
+        [ProducesResponseType(typeof(ApiResponse<Module>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<Module>), StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> CreateModule([FromBody] CreateModuleCommand command)
         {
+            var module = await mediator.Send(command);
+
+            if (!module.Succeeded)
+                return BadRequest(module);
+
+            return CreatedAtAction(nameof(GetModuleById), new { id = module.Data!.Id }, module);
         }
 
-        // PUT api/<ModulesController>/5
         [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> UpdateModule(Guid id, [FromBody] UpdateModuleDto updateModule)
         {
+            var request = new UpdateModuleCommand
+            {
+                Id = id,
+                UpdateModule = updateModule
+            };
+
+            if (id != request.Id)
+            {
+                return BadRequest(ApiResponse<Module>.Fail("ID mismatch."));
+            }
+
+            var module = await mediator.Send(request);
+            return module.Succeeded ? Ok(module) : BadRequest(module);
         }
 
-        // DELETE api/<ModulesController>/5
         [HttpDelete("{id}")]
-        public void Delete(int id)
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> DeleteModule(Guid id)
         {
+            var command = new DeleteModuleCommand(id);
+
+            var module = await mediator.Send(command);
+
+            return module.Succeeded ? Ok(module) : BadRequest(module);
         }
     }
+
 }

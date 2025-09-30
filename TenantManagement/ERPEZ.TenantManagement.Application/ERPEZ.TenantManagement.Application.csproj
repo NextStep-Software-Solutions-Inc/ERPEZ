@@ -9,19 +9,6 @@
     <PackageReference Include="Sieve" Version="2.5.5" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Features\Modules\Commands\CreateModule\" />
-    <Folder Include="Features\Modules\Commands\DeleteModule\" />
-    <Folder Include="Features\Modules\Commands\UpdateModule\" />
-    <Folder Include="Features\Modules\Queries\GetModules\" />
-    <Folder Include="Features\Modules\Queries\GetModuleById\" />
-    <Folder Include="Features\TenantSubscriptions\Commands\CreateTenantSubscription\" />
-    <Folder Include="Features\TenantSubscriptions\Commands\DeleteTenantSubscription\" />
-    <Folder Include="Features\TenantSubscriptions\Commands\UpdateTenantSubscription\" />
-    <Folder Include="Features\TenantSubscriptions\Queries\GetTenantSubscriptionById\" />
-    <Folder Include="Features\TenantSubscriptions\Queries\GetTenantSubscriptions\" />
-  </ItemGroup>
-
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
