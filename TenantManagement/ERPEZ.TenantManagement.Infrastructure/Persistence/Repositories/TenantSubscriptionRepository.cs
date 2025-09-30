@@ -7,10 +7,9 @@ namespace ERPEZ.TenantManagement.Infrastructure.Persistence.Repositories;
 public class TenantSubscriptionRepository(ApplicationDbContext context, ISieveProcessor sieveProcessor) : Repository<TenantSubscription>(context, sieveProcessor), ITenantSubscriptionRepository
 {
 
-    // You can add product-specific methods here in the future.
+    // You can add tenant subscription-specific methods here in the future.
     // For example:
-    // public async Task<Product?> GetBySkuAsync(string sku)
+    // public async Task<TenantSubscription?> GetBySubscriptionCodeAsync(string subscriptionCode)
     // {
-    //     return await _context.Products.FirstOrDefaultAsync(p => p.Sku == sku);
-    // }
+    //     return await _context.TenantSubscriptions.FirstOrDefaultAsync(ts => ts.SubscriptionCode == subscriptionCode);
 }

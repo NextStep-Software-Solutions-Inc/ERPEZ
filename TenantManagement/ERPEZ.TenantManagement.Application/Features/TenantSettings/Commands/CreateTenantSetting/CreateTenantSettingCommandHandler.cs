@@ -46,8 +46,8 @@ public sealed class CreateTenantSettingCommandHandler : IRequestHandler<CreateTe
             DbConnectionString = command.DBConnectionString
         };
 
-        await _tenantSettingRepository.AddAsync(tenantSetting);
-        await _unitOfWork.SaveChangesAsync();
+        await _tenantSettingRepository.AddAsync(tenantSetting, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
         return new()
         {
             Succeeded = true,

@@ -72,8 +72,8 @@ public sealed class CreateTenantSubscriptionCommandHandler : IRequestHandler<Cre
             AutoRenew = command.AutoRenew
         };
 
-        await _tenantSubscriptionRepository.AddAsync(tenantSubscription);
-        await _unitOfWork.SaveChangesAsync();
+        await _tenantSubscriptionRepository.AddAsync(tenantSubscription, cancellationToken);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
         return new()
         {
             Succeeded = true,
