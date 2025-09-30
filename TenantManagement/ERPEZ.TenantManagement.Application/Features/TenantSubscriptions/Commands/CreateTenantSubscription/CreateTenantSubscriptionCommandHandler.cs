@@ -1,4 +1,5 @@
 ﻿using ERPEZ.TenantManagement.Application.Common;
+using ERPEZ.TenantManagement.Application.Features.TenantSubscriptions.Enums;
 using ERPEZ.TenantManagement.Domain.Entities;
 using ERPEZ.TenantManagement.Domain.Interfaces;
 using MediatR;
@@ -28,9 +29,9 @@ public sealed class CreateTenantSubscriptionCommandHandler : IRequestHandler<Cre
             };
         }
         var existTenantSubscription = await _unitOfWork.TenantSubscriptionRepository.FindAsync(ts =>
-        ts.TenantId == command.TenantId &&
-        ts.StartDate == command.StartDate &&
-        ts.EndDate == command.EndDate && !ts.IsDeleted);
+            ts.TenantId == command.TenantId &&
+            ts.StartDate == command.StartDate &&
+            ts.EndDate == command.EndDate && !ts.IsDeleted);
 
         if(existTenantSubscription != null)
         {
@@ -40,16 +41,34 @@ public sealed class CreateTenantSubscriptionCommandHandler : IRequestHandler<Cre
                Message = "Tenant subscription already exist."
             };
         }
+        var validation = EnumValidator.ValidateAll(
+            (typeof(TenantSettingPlanEnum), command.Plan, nameof(command.Plan)),
+            (typeof(TenantSettingBillingCycleEnum), command.BillingCycle, nameof(command.BillingCycle)),
+            (typeof(TenantSettingStatusEnum), command.Status, nameof(command.Status))
+        );
+
+        if (!validation.IsValid)
+        {
+            return new()
+            {
+                Succeeded = false,
+                Message = validation.ErrorMessage
+            };
+        }
+
+        var plan = Enum.Parse<TenantSettingPlanEnum>(command.Plan);
+        var billingCycle = Enum.Parse<TenantSettingBillingCycleEnum>(command.BillingCycle);
+        var status = Enum.Parse<TenantSettingStatusEnum>(command.Status);
 
         var tenantSubscription = new TenantSubscription
         {
             TenantId = command.TenantId,
             Amount = command.Amount,
-            Plan = command.Plan,
+            Plan = (int)plan ,
             StartDate = command.StartDate,
             EndDate = command.EndDate,
-            BillingCycle = command.BillingCycle,
-            Status = command.Status,
+            BillingCycle = (int)billingCycle,
+            Status = (int)status,
             AutoRenew = command.AutoRenew
         };
 

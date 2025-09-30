@@ -1,4 +1,5 @@
 ﻿using ERPEZ.TenantManagement.Application.Common;
+using ERPEZ.TenantManagement.Application.Features.TenantSubscriptions.Enums;
 using ERPEZ.TenantManagement.Domain.Entities;
 using ERPEZ.TenantManagement.Domain.Interfaces;
 using MediatR;
@@ -37,11 +38,25 @@ public class UpdateTenantSubscriptionCommandHandler(IUnitOfWork unitOfWork)
             tenantSubscription.TenantId = dto.TenantId.Value;
         }
 
+        var validation = EnumValidator.ValidateAll(
+            (typeof(TenantSettingPlanEnum), dto.Plan, nameof(dto.Plan)),
+            (typeof(TenantSettingBillingCycleEnum), dto.BillingCycle, nameof(dto.BillingCycle)),
+            (typeof(TenantSettingStatusEnum), dto.Status, nameof(dto.Status))
+        );
+
+        if (!validation.IsValid)
+        {
+            return new()
+            {
+                Succeeded = false,
+                Message = validation.ErrorMessage
+            };
+        }
         if (dto.Amount.HasValue)
             tenantSubscription.Amount = dto.Amount.Value;
 
         if (!string.IsNullOrWhiteSpace(dto.Plan))
-            tenantSubscription.Plan = dto.Plan;
+            tenantSubscription.Plan = (int)Enum.Parse<TenantSettingPlanEnum>(dto.Plan);
 
         if (dto.StartDate.HasValue)
             tenantSubscription.StartDate = dto.StartDate.Value;
@@ -50,10 +65,10 @@ public class UpdateTenantSubscriptionCommandHandler(IUnitOfWork unitOfWork)
             tenantSubscription.EndDate = dto.EndDate.Value;
 
         if (!string.IsNullOrWhiteSpace(dto.Status))
-            tenantSubscription.Status = dto.Status;
+            tenantSubscription.Status = (int)Enum.Parse<TenantSettingStatusEnum>(dto.Status);
 
         if (!string.IsNullOrWhiteSpace(dto.BillingCycle))
-            tenantSubscription.BillingCycle = dto.BillingCycle;
+            tenantSubscription.BillingCycle = (int)Enum.Parse<TenantSettingBillingCycleEnum>(dto.BillingCycle);
 
         if (dto.AutoRenew.HasValue)
             tenantSubscription.AutoRenew = dto.AutoRenew.Value;
