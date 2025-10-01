@@ -13,6 +13,7 @@ public class DeliveryUnit : BaseEntity
     public List<WFP> WFPs { get; set; } = null!;
     public List<WFPPAPDepartment> WFPPADepartments { get; set; } = null!;
     public List<OPCR> OPCRs { get; set; } = null!;
+    public List<OPCRActivity> OPCRActivities { get; set; } = null!;
     [JsonIgnore]
     public virtual Office Office { get; set; } = null!;
 }

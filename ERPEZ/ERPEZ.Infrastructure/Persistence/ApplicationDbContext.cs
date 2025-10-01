@@ -474,25 +474,25 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasForeignKey(wo => wo.WFPObjectiveId);
 
         //WFPPAP
-        modelBuilder.Entity<WFPPAP>()
-            .HasIndex(p => new { p.WFPId, p.Name });
+        //modelBuilder.Entity<WFPPAP>()
+        //    .HasIndex(p => new { p.WFPId, p.Name });
 
-        modelBuilder.Entity<WFPPAP>()
-            .HasOne(p => p.WFP)
-            .WithMany(w => w.WFPPAPs)
-            .HasForeignKey(p => p.WFPId)
-            .OnDelete(DeleteBehavior.Cascade);
+        //modelBuilder.Entity<WFPPAP>()
+        //    .HasOne(p => p.WFP)
+        //    .WithMany(w => w.WFPPAPs)
+        //    .HasForeignKey(p => p.WFPId)
+        //    .OnDelete(DeleteBehavior.Cascade);
 
-        modelBuilder.Entity<WFPPAP>()
-            .HasOne(p => p.WFPOutcome)
-            .WithMany(o => o.WFPPAPs)
-            .HasForeignKey(p => p.WFPOutcomeId)
-            .OnDelete(DeleteBehavior.SetNull);
+        //modelBuilder.Entity<WFPPAP>()
+        //    .HasOne(p => p.WFPOutcome)
+        //    .WithMany(o => o.WFPPAPs)
+        //    .HasForeignKey(p => p.WFPOutcomeId)
+        //    .OnDelete(DeleteBehavior.SetNull);
 
-        modelBuilder.Entity<WFPPAP>()
-            .HasMany(p => p.WFPPAPDepartments)
-            .WithOne(d => d.WFPPAP)
-            .HasForeignKey(d => d.WFPPAPId);
+        //modelBuilder.Entity<WFPPAP>()
+        //    .HasMany(p => p.WFPPAPDepartments)
+        //    .WithOne(d => d.WFPPAP)
+        //    .HasForeignKey(d => d.WFPPAPId);
 
         //WFPPAPDepartment
         modelBuilder.Entity<WFPPAPDepartment>()
@@ -581,15 +581,89 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .WithOne(a => a.OPCRKPI)
             .HasForeignKey(a => a.OPCRKPIId);
 
-        modelBuilder.Entity<OPCRKPI>()
-            .HasMany(o => o.OPCRPAPs)
-            .WithOne(p => p.OPCRKPI)
-            .HasForeignKey(p => p.OPCRKPIId);
+        //modelBuilder.Entity<OPCRKPI>()
+        //    .HasMany(o => o.OPCRPAPs)
+        //    .WithOne(p => p.OPCRKPI)
+        //    .HasForeignKey(p => p.OPCRKPIId);
 
         modelBuilder.Entity<OPCRKPI>()
             .HasMany(o => o.OPCRRatings)
             .WithOne(r => r.OPCRKPI)
             .HasForeignKey(r => r.OPCRKPIId);
+
+        // OPCRActivity
+        modelBuilder.Entity<OPCRActivity>()
+            .HasIndex(a => new { a.OPCRKPIId, a.Name });
+
+        modelBuilder.Entity<OPCRActivity>()
+            .HasOne(a => a.OPCRKPI)
+            .WithMany(k => k.OPCRActivities)
+            .HasForeignKey(a => a.OPCRKPIId);
+
+        // OPCREvaluation
+        modelBuilder.Entity<OPCREvaluation>()
+            .HasIndex(e => new { e.OPCRId, e.EvaluatorId, e.EvaluationDate });
+
+        modelBuilder.Entity<OPCREvaluation>()
+            .HasOne(e => e.OPCR)
+            .WithMany(o => o.OPCREvaluations)
+            .HasForeignKey(e => e.OPCRId);
+
+        modelBuilder.Entity<OPCREvaluation>()
+            .HasMany(e => e.OPCRRatings)
+            .WithOne(r => r.OPCREvaluation)
+            .HasForeignKey(r => r.OPCREvaluationId);
+
+        // OPCRKPI
+        modelBuilder.Entity<OPCRKPI>()
+            .HasIndex(k => new { k.OPCRId, k.KPIId })
+            .IsUnique();
+
+        modelBuilder.Entity<OPCRKPI>()
+            .HasOne(k => k.OPCR)
+            .WithMany(o => o.OPCRKPIs)
+            .HasForeignKey(k => k.OPCRId);
+
+        modelBuilder.Entity<OPCRKPI>()
+            .HasOne(k => k.KPI)
+            .WithMany()
+            .HasForeignKey(k => k.KPIId);
+
+        modelBuilder.Entity<OPCRKPI>()
+            .HasMany(k => k.OPCRActivities)
+            .WithOne(a => a.OPCRKPI)
+            .HasForeignKey(a => a.OPCRKPIId);
+
+        modelBuilder.Entity<OPCRKPI>()
+            .HasMany(k => k.OPCRRatings)
+            .WithOne(r => r.OPCRKPI)
+            .HasForeignKey(r => r.OPCRKPIId);
+
+        //OPCRPAPDepartment
+        modelBuilder.Entity<OPCRActivity>()
+            .HasMany(a => a.DeliveryUnits)
+            .WithMany(d => d.OPCRActivities)
+            .UsingEntity(j => j.ToTable("OPCRPAPDepartment"));
+
+        // OPCRRating
+        modelBuilder.Entity<OPCRRating>()
+            .HasIndex(r => new { r.OPCREvaluationId, r.PerformanceMeasureId, r.OPCRKPIId })
+            .IsUnique();
+
+        modelBuilder.Entity<OPCRRating>()
+            .HasOne(r => r.OPCRKPI)
+            .WithMany(k => k.OPCRRatings)
+            .HasForeignKey(r => r.OPCRKPIId);
+
+        modelBuilder.Entity<OPCRRating>()
+            .HasOne(r => r.OPCREvaluation)
+            .WithMany(e => e.OPCRRatings)
+            .HasForeignKey(r => r.OPCREvaluationId);
+
+        modelBuilder.Entity<OPCRRating>()
+            .HasOne(r => r.PerformanceMeasure)
+            .WithMany(m => m.OPCRRatings)
+            .HasForeignKey(r => r.PerformanceMeasureId);
 
 
         // MFOKPI

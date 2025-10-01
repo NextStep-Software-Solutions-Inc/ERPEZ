@@ -10,5 +10,4 @@ public class OPCRPAP : BaseEntity
     public decimal Budget { get; set; }
 
     public virtual OPCRKPI OPCRKPI { get; set; } = null!;
-    public List<OPCRPAPDepartment> OPCRPAPDepartments { get; set; } = null!;
 }
