@@ -2,6 +2,9 @@
 
 public interface IUnitOfWork
 {
-    IProductRepository ProductRepository { get; }
+    ITenantRepository TenantRepository { get; }
+    ITenantSettingRepository TenantSettingRepository { get; }
+    IModuleRepository ModuleRepository { get; }
+    ITenantSubscriptionRepository TenantSubscriptionRepository { get; }
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
