@@ -1,16 +1,15 @@
 ﻿using EFCore.BulkExtensions;
 using ERPEZ.TenantManagement.Domain.Common;
 using ERPEZ.TenantManagement.Domain.Interfaces;
-using ERPEZ.TenantManagement.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Sieve.Models;
 using Sieve.Services;
+using System.Linq.Expressions;
 
 namespace ERPEZ.TenantManagement.Infrastructure.Persistence.Repositories;
 
 public class Repository<T>(ApplicationDbContext context, ISieveProcessor sieveProcessor) : IRepository<T> where T : BaseEntity
 {
-
     public async Task AddAsync(T entity, CancellationToken cancellationToken = default)
     {
         await context.Set<T>().AddAsync(entity, cancellationToken);
@@ -18,21 +17,48 @@ public class Repository<T>(ApplicationDbContext context, ISieveProcessor sievePr
 
     public async Task<(IReadOnlyList<T> Entities, int TotalCount)> GetAllAsync(
         SieveModel sieveModel,
+        bool? isDeleted = null,
         CancellationToken cancellationToken = default)
     {
-        // Use context.Set<T>() to make it generic
-        var query = context.Set<T>().AsNoTracking();
+        IQueryable<T> query = context.Set<T>().AsNoTracking();
+        query = ApplyIsDeletedFilter(query, isDeleted);
 
         var filteredQuery = sieveProcessor.Apply(sieveModel, query, applyPagination: false);
+
         var totalCount = await filteredQuery.CountAsync(cancellationToken);
-        var paginatedResult = sieveProcessor.Apply(sieveModel, filteredQuery, applyFiltering: false, applySorting: false);
+
+        var paginatedResult = sieveProcessor.Apply(
+            sieveModel,
+            filteredQuery,
+            applyFiltering: false,
+            applySorting: false
+        );
 
         var entities = await paginatedResult.ToListAsync(cancellationToken);
+
         return (entities, totalCount);
     }
-    public async Task<T?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
+
+    public async Task<T?> GetByIdAsync(
+        Guid id,
+        bool? isDeleted = null,
+        CancellationToken cancellationToken = default)
     {
-        return await context.Set<T>().FindAsync([id], cancellationToken);
+        IQueryable<T> query = context.Set<T>();
+        query = ApplyIsDeletedFilter(query, isDeleted);
+
+        return await query.FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
+    }
+
+    public async Task<T?> FindAsync(
+        Expression<Func<T, bool>> predicate,
+        bool? isDeleted = null,
+        CancellationToken cancellationToken = default)
+    {
+        IQueryable<T> query = context.Set<T>();
+        query = ApplyIsDeletedFilter(query, isDeleted);
+
+        return await query.FirstOrDefaultAsync(predicate, cancellationToken);
     }
 
     public void Remove(T entity)
@@ -45,7 +71,6 @@ public class Repository<T>(ApplicationDbContext context, ISieveProcessor sievePr
         context.Set<T>().Update(entity);
     }
 
-    // Implementation of the new bulk methods
     public async Task AddBulkAsync(IList<T> entities, CancellationToken cancellationToken = default)
     {
         await context.BulkInsertAsync(entities, cancellationToken: cancellationToken);
@@ -59,5 +84,22 @@ public class Repository<T>(ApplicationDbContext context, ISieveProcessor sievePr
     public async Task DeleteBulkAsync(IList<T> entities, CancellationToken cancellationToken = default)
     {
         await context.BulkDeleteAsync(entities, cancellationToken: cancellationToken);
+    }
+
+    private static IQueryable<T> ApplyIsDeletedFilter(IQueryable<T> query, bool? isDeleted)
+    {
+        if (typeof(T).GetProperty("IsDeleted") != null)
+        {
+            if (isDeleted == true)
+            {
+                query = query.Where(e => EF.Property<bool>(e, "IsDeleted") == true);
+            }
+            else if (isDeleted == false)
+            {
+                query = query.Where(e => EF.Property<bool>(e, "IsDeleted") == false);
+            }
+        }
+
+        return query;
     }
 }
