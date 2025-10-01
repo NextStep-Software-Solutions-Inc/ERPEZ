@@ -1,43 +1,39 @@
 ﻿using Microsoft.AspNetCore.Mvc;
 
-// For more information on enabling Web API for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
-
 namespace ERPEZ.Api.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
     public class DUFundAllocationController : ControllerBase
     {
-        // GET: api/<DUFundAllocationController>
+        [HttpPost]
+        public IActionResult Post([FromBody] string value)
+        {
+            return Ok("Created");
+        }
+
         [HttpGet]
-        public IEnumerable<string> Get()
+        public IEnumerable<string> GetAll()
         {
             return new string[] { "value1", "value2" };
         }
 
-        // GET api/<DUFundAllocationController>/5
         [HttpGet("{id}")]
-        public string Get(int id)
+        public IActionResult GetById(int id)
         {
-            return "value";
+            return Ok("value");
         }
 
-        // POST api/<DUFundAllocationController>
-        [HttpPost]
-        public void Post([FromBody] string value)
-        {
-        }
-
-        // PUT api/<DUFundAllocationController>/5
         [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
+        public IActionResult Put(int id, [FromBody] string value)
         {
+            return Ok("Updated");
         }
 
-        // DELETE api/<DUFundAllocationController>/5
         [HttpDelete("{id}")]
-        public void Delete(int id)
+        public IActionResult Delete(int id)
         {
+            return Ok("Deleted");
         }
     }
 }
