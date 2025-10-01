@@ -15,26 +15,6 @@ namespace ERPEZ.TenantManagement.Api.Controllers
     [ApiController]
     public class ModulesController(ISender mediator) : ControllerBase
     {
-        [HttpGet]
-        [ProducesResponseType(typeof(PaginatedApiResponse<Module>), StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetModules([FromQuery] GetModulesQuery query)
-        {
-            var result = await mediator.Send(query);
-            return Ok(result);
-        }
-
-    [HttpGet("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<Module>), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> GetModuleById(Guid id)
-        {
-            var module = await mediator.Send(new GetModuleByIdQuery(id));
-            if (module == null)
-                return NotFound(ApiResponse<Module>.Fail("Module not found."));
-
-            return Ok(ApiResponse<Module>.Success(module));
-        }
-
         [HttpPost]
         [ProducesResponseType(typeof(ApiResponse<Module>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<Module>), StatusCodes.Status400BadRequest)]
@@ -46,6 +26,26 @@ namespace ERPEZ.TenantManagement.Api.Controllers
                 return BadRequest(module);
 
             return CreatedAtAction(nameof(GetModuleById), new { id = module.Data!.Id }, module);
+        }
+
+        [HttpGet]
+        [ProducesResponseType(typeof(PaginatedApiResponse<Module>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetModules([FromQuery] GetModulesQuery query)
+        {
+            var result = await mediator.Send(query);
+            return Ok(result);
+        }
+
+        [HttpGet("{id}")]
+        [ProducesResponseType(typeof(ApiResponse<Module>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetModuleById(Guid id)
+        {
+            var module = await mediator.Send(new GetModuleByIdQuery(id));
+            if (module == null)
+                return NotFound(ApiResponse<Module>.Fail("Module not found."));
+
+            return Ok(ApiResponse<Module>.Success(module));
         }
 
         [HttpPut("{id}")]
@@ -61,9 +61,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
             };
 
             if (id != request.Id)
-            {
                 return BadRequest(ApiResponse<Module>.Fail("ID mismatch."));
-            }
 
             var module = await mediator.Send(request);
             return module.Succeeded ? Ok(module) : BadRequest(module);
@@ -75,11 +73,9 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         public async Task<IActionResult> DeleteModule(Guid id)
         {
             var command = new DeleteModuleCommand(id);
-
             var module = await mediator.Send(command);
 
             return module.Succeeded ? Ok(module) : BadRequest(module);
         }
     }
-
 }

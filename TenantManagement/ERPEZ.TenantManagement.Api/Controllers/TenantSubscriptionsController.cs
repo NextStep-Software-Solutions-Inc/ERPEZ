@@ -15,30 +15,6 @@ namespace ERPEZ.TenantManagement.Api.Controllers
     [ApiController]
     public class TenantSubscriptionsController(ISender mediator) : ControllerBase
     {
-        [HttpGet]
-        [ProducesResponseType(typeof(PaginatedApiResponse<TenantSubscription>), StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetTenantSubscriptions([FromQuery] GetTenantSubscriptionsQuery query)
-        {
-            var result = await mediator.Send(query);
-            return Ok(result);
-        }
-
-    [HttpGet("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<TenantSubscription>), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> GetTenantSubscriptionById(Guid id)
-        {
-            var query = new GetTenantSubscriptionByIdQuery(id);
-            var tenantSubscription = await mediator.Send(query);
-
-            if (tenantSubscription == null)
-            {
-                return BadRequest(ApiResponse<TenantSubscription>.Fail("Tenant subscription not found."));
-            }
-
-            return Ok(ApiResponse<TenantSubscription>.Success(tenantSubscription, "Tenant subscription retrieved successfully."));
-        }
-
         [HttpPost]
         [ProducesResponseType(typeof(ApiResponse<TenantSubscription>), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -49,7 +25,29 @@ namespace ERPEZ.TenantManagement.Api.Controllers
             if (!tenantSubscription.Succeeded)
                 return BadRequest(tenantSubscription);
 
-            return tenantSubscription.Succeeded ? Ok(tenantSubscription) : BadRequest(tenantSubscription);
+            return CreatedAtAction(nameof(GetTenantSubscriptionById), new { id = tenantSubscription.Data!.Id }, tenantSubscription);
+        }
+
+        [HttpGet]
+        [ProducesResponseType(typeof(PaginatedApiResponse<TenantSubscription>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetTenantSubscriptions([FromQuery] GetTenantSubscriptionsQuery query)
+        {
+            var result = await mediator.Send(query);
+            return Ok(result);
+        }
+
+        [HttpGet("{id}")]
+        [ProducesResponseType(typeof(ApiResponse<TenantSubscription>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetTenantSubscriptionById(Guid id)
+        {
+            var query = new GetTenantSubscriptionByIdQuery(id);
+            var tenantSubscription = await mediator.Send(query);
+
+            if (tenantSubscription == null)
+                return NotFound(ApiResponse<TenantSubscription>.Fail("Tenant subscription not found."));
+
+            return Ok(ApiResponse<TenantSubscription>.Success(tenantSubscription, "Tenant subscription retrieved successfully."));
         }
 
         [HttpPut("{id}")]
@@ -63,10 +61,9 @@ namespace ERPEZ.TenantManagement.Api.Controllers
                 Id = id,
                 UpdateTenantSubscription = tenantSubscriptionDto
             };
+
             if (id != request.Id)
-            {
                 return BadRequest(ApiResponse<TenantSubscription>.Fail("ID mismatch."));
-            }
 
             var tenantSubscription = await mediator.Send(request);
             return tenantSubscription.Succeeded ? Ok(tenantSubscription) : BadRequest(tenantSubscription);
@@ -78,11 +75,9 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         public async Task<IActionResult> DeleteTenantSubscription(Guid id)
         {
             var command = new DeleteTenantSubscriptionCommand(id);
-
             var tenantSubscription = await mediator.Send(command);
 
             return tenantSubscription.Succeeded ? Ok(tenantSubscription) : BadRequest(tenantSubscription);
         }
     }
-
 }
