@@ -9,5 +9,5 @@ public class Organization : BaseEntity
     public string Code { get; set; } = string.Empty;
     public string Type { get; set; } = string.Empty;
     public bool IsActive { get; set; }
-    public virtual Transaction Transaction { get; set; } = null!;
+    public List<Transaction> Transactions { get; set; } = null!;
 }

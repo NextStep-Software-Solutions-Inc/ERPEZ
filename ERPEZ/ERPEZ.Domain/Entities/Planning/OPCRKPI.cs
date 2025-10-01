@@ -6,6 +6,9 @@ public class OPCRKPI : BaseEntity
 {
     public Guid KPIId { get; set; }
     public Guid OPCRId { get; set; }
-    public virtual OPCRActivity OPCRActivity { get; set; } = null!;
-    public virtual OPCRRating OPCRRating { get; set; } = null!;
+    public virtual OPCR OPCR { get; set; } = null!;
+    public virtual KPI KPI { get; set; } = null!;
+    public List<OPCRActivity> OPCRActivities { get; set; } = null!;
+    public List<OPCRPAP> OPCRPAPs { get; set; } = null!;
+    public List<OPCRRating> OPCRRatings { get; set; } = null!;
 }

@@ -8,5 +8,5 @@ public class OPCRActivity : BaseEntity
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
     public decimal Budget { get; set; }
-    public virtual OPCRPAPDepartment OPCRPAPDepartment { get; set; } = null!;
+    public virtual OPCRKPI OPCRKPI { get; set; } = null!;
 }

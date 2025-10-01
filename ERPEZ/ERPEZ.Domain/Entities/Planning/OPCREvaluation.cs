@@ -1,4 +1,5 @@
 ﻿using ERPEZ.Domain.Common;
+using System.Text.Json.Serialization;
 
 namespace ERPEZ.Domain.Entities.Planning;
 
@@ -10,4 +11,7 @@ public class OPCREvaluation : BaseEntity
     public string? Comments { get; set; }
     public string Status { get; set; } = string.Empty;
     public virtual OPCRRating OPCRRating { get; set; } = null!;
+    [JsonIgnore]
+    public virtual OPCR OPCR { get; set; } = null!;
+
 }

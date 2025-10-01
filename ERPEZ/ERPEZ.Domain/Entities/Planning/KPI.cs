@@ -1,17 +1,28 @@
 ﻿using ERPEZ.Domain.Common;
+using Sieve.Attributes;
+using System.Text.Json.Serialization;
 
 namespace ERPEZ.Domain.Entities.Planning;
 
 public class KPI : BaseEntity
 {
+    [Sieve(CanFilter = true, CanSort = true)]
     public Guid? ParentKPIId { get; set; }
-    public string FunctionPercentageAllocationId { get; set; } = string.Empty;
+    [Sieve(CanFilter = true, CanSort = true)]
+    public Guid FunctionPercentageAllocationId { get; set; }
+    [Sieve(CanFilter = true, CanSort = true)]
     public string Name { get; set; } = string.Empty;
+    [Sieve(CanFilter = true, CanSort = true)]
     public string? Description { get; set; } = string.Empty;
+    [Sieve(CanFilter = true, CanSort = true)]
     public bool? IsOfficeMandate { get; set; }
-    public virtual KPIRating KPIRating { get; set; } = null!;
-    public virtual KPIModeOfVerification KPIModeOfVerification { get; set; } = null!;
-    public virtual KPITarget KPITarget { get; set; } = null!;
-    public virtual KPIAssignment KPIAssignment { get; set; } = null!;
-    public virtual OPCRKPI OPCRKPI { get; set; } = null!;
+    public string Status { get; set; } = string.Empty;
+    public List<KPIRating> KPIRatings { get; set; } = null!;
+    public List<KPIModeOfVerification> KPIModeOfVerifications { get; set; } = null!;
+    public List<KPIAssignment> KPIAssignments { get; set; } = null!;
+    public List<MFOKPI> MFOKPIs { get; set; } = null!;
+    public List<OPCRKPI> OPCRKPIs { get; set; } = null!;
+    public List<KPITarget> KPITargets { get; set; } = null!;
+    [JsonIgnore]
+    public virtual FunctionPercentageAllocation FunctionPercentageAllocation { get; set; } = null!;
 }

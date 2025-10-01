@@ -4,6 +4,8 @@ namespace ERPEZ.Domain.Entities.Planning;
 
 public class WFPPAPDepartment : BaseEntity
 {
-    public Guid OPCRActivityId { get; set; }
-    public Guid DeliveryUnitId { get; set; }
+    public Guid WFPPAPId { get; set; }
+    public Guid SubDeliveryUnitId { get; set; }
+    public virtual SubDeliveryUnit SubDeliveryUnit { get; set; } = null!;
+    public virtual WFPPAP WFPPAP { get; set; } = null!;
 }

@@ -1,11 +1,45 @@
 ﻿namespace ERPEZ.Domain.Common;
 
-public abstract class BaseEntity
+public abstract class BaseEntity : IEntity
 {
+    protected BaseEntity() { }
     public Guid Id { get; protected set; }
+    public DateTime CreatedAt { get; protected set; }
+    public string CreatedBy { get; protected set; } = string.Empty;
+    public DateTime UpdatedAt { get; protected set; }
+    public Guid? UpdatedBy { get; protected set; }
+    public bool IsDeleted { get; protected set; }
+    public DateTime DeletedAt { get; protected set; }
+    public Guid? DeletedBy { get; protected set; }
 
-    protected BaseEntity()
+    // --- Public Methods for CQRS Handlers to use ---
+
+    public void MarkAsCreated(string createdBy)
     {
-        Id = Guid.NewGuid();
+        this.CreatedBy = createdBy;
+        this.UpdatedBy = null;
+        this.UpdatedAt = this.CreatedAt;
+    }
+
+    public void MarkAsUpdated(Guid? updatedBy)
+    {
+        this.UpdatedAt = DateTime.UtcNow;
+        this.UpdatedBy = updatedBy;
+    }
+
+    // Method to facilitate soft-deletion from a non-derived class (like a handler)
+    public void MarkAsDeleted(Guid? deletedBy)
+    {
+        this.IsDeleted = true;
+        this.DeletedAt = DateTime.UtcNow;
+        this.DeletedBy = deletedBy;
+    }
+
+    // Method to restore a soft-deleted entity
+    public void MarkAsUndeleted()
+    {
+        this.IsDeleted = false;
+        this.DeletedAt = default;
+        this.DeletedBy = null;
     }
 }

@@ -6,5 +6,6 @@ public class WFPObjective : BaseEntity
 {
     public Guid WFPId { get; set; }
     public string Description { get; set; } = string.Empty;
-    public virtual WFPOutcome WFPOutcome  { get; set; } = null!;
+    public List<WFPOutcome> WFPOutcomes  { get; set; } = null!;
+    public virtual WFP WFP { get; set; } = null!; 
 }

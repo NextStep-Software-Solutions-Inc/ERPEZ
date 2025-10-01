@@ -1,4 +1,5 @@
 ﻿using ERPEZ.Domain.Common;
+using System.Text.Json.Serialization;
 
 namespace ERPEZ.Domain.Entities.Planning;
 
@@ -9,5 +10,11 @@ public class OPCR : BaseEntity
     public int FiscalYear { get; set; }
     public string Status { get; set; } = string.Empty;
     public virtual OPCREvaluation OPCREvaluation { get; set; } = null!;
+    [JsonIgnore]
+    public virtual DUAllocation DUAllocation { get; set; } = null!;
+    [JsonIgnore]
+    public virtual DeliveryUnit DeliveryUnit { get; set; } = null!;
+    public List<OPCREvaluation> OPCREvaluations { get; set; } = null!;
+    public List<OPCRKPI> OPCRKPIs { get; set; } = null!;
 
 }
