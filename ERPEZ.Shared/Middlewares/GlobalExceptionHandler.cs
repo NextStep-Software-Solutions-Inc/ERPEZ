@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace ERPEZ.Shared.Middleware;
+namespace ERPEZ.Shared.Middlewares;
 
 public class GlobalExceptionHandler : IExceptionHandler
 {
