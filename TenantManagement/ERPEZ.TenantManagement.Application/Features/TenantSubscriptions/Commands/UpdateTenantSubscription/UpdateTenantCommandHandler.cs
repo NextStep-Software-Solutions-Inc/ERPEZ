@@ -39,9 +39,9 @@ public class UpdateTenantSubscriptionCommandHandler(IUnitOfWork unitOfWork)
         }
 
         var validation = EnumValidator.ValidateAll(
-            (typeof(TenantSettingPlanEnum), dto.Plan, nameof(dto.Plan)),
-            (typeof(TenantSettingBillingCycleEnum), dto.BillingCycle, nameof(dto.BillingCycle)),
-            (typeof(TenantSettingStatusEnum), dto.Status, nameof(dto.Status))
+            (typeof(TenantSubscriptionPlanEnum), dto.Plan, nameof(dto.Plan)),
+            (typeof(TenantSubscriptionBillingCycleEnum), dto.BillingCycle, nameof(dto.BillingCycle)),
+            (typeof(TenantSubscriptionStatusEnum), dto.Status, nameof(dto.Status))
         );
 
         if (!validation.IsValid)
@@ -56,7 +56,7 @@ public class UpdateTenantSubscriptionCommandHandler(IUnitOfWork unitOfWork)
             tenantSubscription.Amount = dto.Amount.Value;
 
         if (!string.IsNullOrWhiteSpace(dto.Plan))
-            tenantSubscription.Plan = (int)Enum.Parse<TenantSettingPlanEnum>(dto.Plan);
+            tenantSubscription.Plan = (int)Enum.Parse<TenantSubscriptionPlanEnum>(dto.Plan);
 
         if (dto.StartDate.HasValue)
             tenantSubscription.StartDate = dto.StartDate.Value;
@@ -65,10 +65,10 @@ public class UpdateTenantSubscriptionCommandHandler(IUnitOfWork unitOfWork)
             tenantSubscription.EndDate = dto.EndDate.Value;
 
         if (!string.IsNullOrWhiteSpace(dto.Status))
-            tenantSubscription.Status = (int)Enum.Parse<TenantSettingStatusEnum>(dto.Status);
+            tenantSubscription.Status = (int)Enum.Parse<TenantSubscriptionStatusEnum>(dto.Status);
 
         if (!string.IsNullOrWhiteSpace(dto.BillingCycle))
-            tenantSubscription.BillingCycle = (int)Enum.Parse<TenantSettingBillingCycleEnum>(dto.BillingCycle);
+            tenantSubscription.BillingCycle = (int)Enum.Parse<TenantSubscriptionBillingCycleEnum>(dto.BillingCycle);
 
         if (dto.AutoRenew.HasValue)
             tenantSubscription.AutoRenew = dto.AutoRenew.Value;

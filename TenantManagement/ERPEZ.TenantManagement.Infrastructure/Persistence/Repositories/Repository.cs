@@ -16,12 +16,18 @@ public class Repository<T>(ApplicationDbContext context, ISieveProcessor sievePr
     }
 
     public async Task<(IReadOnlyList<T> Entities, int TotalCount)> GetAllAsync(
-        SieveModel sieveModel,
-        bool? isDeleted = null,
-        CancellationToken cancellationToken = default)
+       SieveModel sieveModel,
+       bool? isDeleted = null,
+       Func<IQueryable<T>, IQueryable<T>>? include = null,
+       CancellationToken cancellationToken = default)
     {
         IQueryable<T> query = context.Set<T>().AsNoTracking();
+
         query = ApplyIsDeletedFilter(query, isDeleted);
+
+        // Apply optional includes
+        if (include != null)
+            query = include(query);
 
         var filteredQuery = sieveProcessor.Apply(sieveModel, query, applyPagination: false);
 
@@ -42,21 +48,31 @@ public class Repository<T>(ApplicationDbContext context, ISieveProcessor sievePr
     public async Task<T?> GetByIdAsync(
         Guid id,
         bool? isDeleted = null,
+        Func<IQueryable<T>, IQueryable<T>>? include = null,
         CancellationToken cancellationToken = default)
     {
         IQueryable<T> query = context.Set<T>();
+
         query = ApplyIsDeletedFilter(query, isDeleted);
 
-        return await query.FirstOrDefaultAsync(e => e.Id == id, cancellationToken);
+        if (include != null)
+            query = include(query);
+
+        return await query.FirstOrDefaultAsync(e => EF.Property<Guid>(e, "Id") == id, cancellationToken);
     }
 
     public async Task<T?> FindAsync(
-        Expression<Func<T, bool>> predicate,
-        bool? isDeleted = null,
-        CancellationToken cancellationToken = default)
+            Expression<Func<T, bool>> predicate,
+            bool? isDeleted = null,
+            Func<IQueryable<T>, IQueryable<T>>? include = null,
+            CancellationToken cancellationToken = default)
     {
         IQueryable<T> query = context.Set<T>();
+
         query = ApplyIsDeletedFilter(query, isDeleted);
+
+        if (include != null)
+            query = include(query);
 
         return await query.FirstOrDefaultAsync(predicate, cancellationToken);
     }

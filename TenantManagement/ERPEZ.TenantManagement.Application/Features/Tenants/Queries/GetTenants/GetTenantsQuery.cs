@@ -1,10 +1,11 @@
 ﻿using ERPEZ.TenantManagement.Application.Common;
+using ERPEZ.TenantManagement.Application.Features.Tenants.Dtos;
 using ERPEZ.TenantManagement.Domain.Entities;
 using MediatR;
 
 namespace ERPEZ.TenantManagement.Application.Features.Tenants.Queries.GetTenants;
 
-public class GetTenantsQuery : IRequest<PaginatedApiResponse<Tenant>>
+public class GetTenantsQuery : IRequest<PaginatedApiResponse<TenantDto>>
 {
     public int PageNumber {  get; set; } = 1;
     public int PageSize { get; set; } = 10;

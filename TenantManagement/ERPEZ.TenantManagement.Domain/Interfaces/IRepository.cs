@@ -9,6 +9,7 @@ public interface IRepository<T> where T : BaseEntity
     Task<T?> GetByIdAsync(
         Guid id,
         bool? isDeleted = null,
+        Func<IQueryable<T>, IQueryable<T>>? include = null,
         CancellationToken cancellationToken = default);
 
     Task AddAsync(T entity, CancellationToken cancellationToken = default);
@@ -26,10 +27,12 @@ public interface IRepository<T> where T : BaseEntity
     Task<T?> FindAsync(
         Expression<Func<T, bool>> predicate,
         bool? isDeleted = null,
+        Func<IQueryable<T>, IQueryable<T>>? include = null,
         CancellationToken cancellationToken = default);
 
     Task<(IReadOnlyList<T> Entities, int TotalCount)> GetAllAsync(
         SieveModel sieveModel,
         bool? isDeleted = null,
+        Func<IQueryable<T>, IQueryable<T>>? include = null,
         CancellationToken cancellationToken = default);
 }

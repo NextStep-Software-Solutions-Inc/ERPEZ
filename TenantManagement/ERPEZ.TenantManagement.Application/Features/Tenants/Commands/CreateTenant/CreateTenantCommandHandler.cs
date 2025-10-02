@@ -18,26 +18,52 @@ public sealed class CreateTenantCommandHandler : IRequestHandler<CreateTenantCom
 
     public async Task<ApiResponse<Tenant>> Handle(CreateTenantCommand request, CancellationToken cancellationToken)
     {
-        var tenantExist = await _unitOfWork.TenantRepository.FindAsync(t => t.Name == request.Name && t.BillingContactEmail == request.BillingContactEmail && !t.IsDeleted);
-        if (tenantExist != null) 
+        var tenantExist = await _unitOfWork.TenantRepository.FindAsync(
+            t => t.Name == request.Name && t.BillingContactEmail == request.BillingContactEmail && !t.IsDeleted
+        );
+
+        if (tenantExist != null)
         {
-            return new()
+            return new ApiResponse<Tenant>
             {
-               Succeeded = false,
-               Data = null,
-               Message = "Tenant already exist."
+                Succeeded = false,
+                Data = null,
+                Message = "Tenant already exists."
             };
         }
+
         var tenant = new Tenant
         {
             Name = request.Name,
             OnPremise = request.OnPremise,
-            BillingContactEmail = request.BillingContactEmail
+            BillingContactEmail = request.BillingContactEmail,
+            TenantSetting = new TenantSetting
+            {
+                Name = "",
+                BillingContactEmail = request.BillingContactEmail,
+                BaseURL = "",
+                DbConnectionString = ""
+
+            },
+            TenantSubscriptions =
+            [
+                new TenantSubscription
+                {
+                    Amount =0,
+                    Plan =5,
+                    StartDate = DateTime.UtcNow,
+                    EndDate = DateTime.UtcNow.AddMonths(1),
+                    Status = 1,
+                    AutoRenew = false
+                }
+            ]
         };
 
         await _tenantRepository.AddAsync(tenant, cancellationToken);
+
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        return new()
+
+        return new ApiResponse<Tenant>
         {
             Data = tenant,
             Succeeded = true,

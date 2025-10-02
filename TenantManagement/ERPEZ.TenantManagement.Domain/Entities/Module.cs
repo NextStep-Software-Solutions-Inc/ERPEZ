@@ -1,5 +1,6 @@
 ﻿using ERPEZ.TenantManagement.Domain.Common;
 using Sieve.Attributes;
+using System.Text.Json.Serialization;
 
 namespace ERPEZ.TenantManagement.Domain.Entities;
 
@@ -16,6 +17,6 @@ public class Module : BaseEntity
 
     [Sieve(CanFilter = true, CanSort = true)]
     public bool IsActive { get; set; }
-
+    [JsonIgnore]
     public virtual List<Tenant> Tenants { get; set; } = null!;
 }
