@@ -5,21 +5,12 @@ using MediatR;
 
 namespace ERPEZ.TenantManagement.Application.Features.Tenants.Commands.CreateTenant;
 
-public sealed class CreateTenantCommandHandler : IRequestHandler<CreateTenantCommand, ApiResponse<Tenant>>
+public sealed class CreateTenantCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<CreateTenantCommand, ApiResponse<Tenant>>
 {
-    private readonly ITenantRepository _tenantRepository;
-    private readonly IUnitOfWork _unitOfWork;
-
-    public CreateTenantCommandHandler(ITenantRepository tenantRepository, IUnitOfWork unitOfWork)
-    {
-        _tenantRepository = tenantRepository;
-        _unitOfWork = unitOfWork;
-    }
-
     public async Task<ApiResponse<Tenant>> Handle(CreateTenantCommand request, CancellationToken cancellationToken)
     {
         var tenantExist = await _unitOfWork.TenantRepository.FindAsync(
-            t => t.Name == request.Name && t.BillingContactEmail == request.BillingContactEmail && !t.IsDeleted
+            t => t.Name == request.Name && t.BillingContactEmail == request.BillingContactEmail, cancellationToken : cancellationToken
         );
 
         if (tenantExist != null)
@@ -44,23 +35,24 @@ public sealed class CreateTenantCommandHandler : IRequestHandler<CreateTenantCom
                 BaseURL = "",
                 DbConnectionString = ""
 
-            },
-            TenantSubscriptions =
-            [
-                new TenantSubscription
-                {
-                    Amount =0,
-                    Plan =5,
-                    StartDate = DateTime.UtcNow,
-                    EndDate = DateTime.UtcNow.AddMonths(1),
-                    Status = 1,
-                    AutoRenew = false
-                }
-            ]
+            }
         };
 
-        await _tenantRepository.AddAsync(tenant, cancellationToken);
+        tenant.TenantSubscriptions.Add(new TenantSubscription
+        {
+            Amount = 0,
+            Plan = 5,
+            StartDate = DateTime.UtcNow,
+            EndDate = DateTime.UtcNow.AddMonths(1),
+            Status = 1,
+            AutoRenew = false
+        });
 
+        var module = await _unitOfWork.ModuleRepository.FindAsync(m => m.Name == "AMS", cancellationToken: cancellationToken);
+
+        if (module != null) tenant.Modules.Add(module);
+
+        await _unitOfWork.TenantRepository.AddAsync(tenant, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
         return new ApiResponse<Tenant>
