@@ -2,8 +2,6 @@ using ERPEZ.TenantManagement.Application;
 using ERPEZ.TenantManagement.Infrastructure;
 using ERPEZ.TenantManagement.Api;
 using Hangfire;
-using ERPEZ.TenantManagement.Infrastructure.Persistence;
-using Microsoft.EntityFrameworkCore;
 
 var builder = WebApplication.CreateBuilder(args);
 var env = builder.Environment;
@@ -15,7 +13,7 @@ builder.Configuration.AddUserSecrets(typeof(Program).Assembly, true);
 builder.Services
     .AddApiServices()
     .AddApplicationServices()
-    .AddInfrastructureServices(builder.Configuration);
+    .AddInfrastructureServices(builder.Configuration, builder.Environment);
 
 var app = builder.Build();
 
@@ -24,11 +22,6 @@ if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI(); 
-    using(var scope = app.Services.CreateScope())
-    {
-        var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-        dbContext.Database.Migrate();
-    }
 }
 
 // 4. Add middleware
