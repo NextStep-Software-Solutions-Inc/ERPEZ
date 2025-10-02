@@ -194,7 +194,7 @@ namespace ERP_EZ.Infrastructure.Migrations
                     b.Property<bool>("AutoRenew")
                         .HasColumnType("boolean");
 
-                    b.Property<int?>("BillingCycle")
+                    b.Property<int>("BillingCycle")
                         .HasColumnType("integer");
 
                     b.Property<DateTime>("CreatedAt")

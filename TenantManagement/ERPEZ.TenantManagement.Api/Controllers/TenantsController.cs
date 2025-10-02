@@ -29,7 +29,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         }
 
         [HttpGet]
-        [ProducesResponseType(typeof(PaginatedApiResponse<Tenant>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(PaginatedApiResponse<TenantDto>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetTenants([FromQuery] GetTenantsQuery query)
         {
             var result = await mediator.Send(query);
@@ -37,15 +37,15 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         }
 
         [HttpGet("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<Tenant>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<TenantDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetTenantById(Guid id)
         {
             var tenant = await mediator.Send(new GetTenantByIdQuery(id));
             if (tenant == null)
-                return NotFound(ApiResponse<Tenant>.Fail("Tenant not found."));
+                return NotFound(ApiResponse<TenantDto>.Fail("Tenant not found."));
 
-            return Ok(ApiResponse<Tenant>.Success(tenant));
+            return tenant.Succeeded ? Ok(tenant) : BadRequest(tenant);
         }
 
         [HttpPut("{id}")]

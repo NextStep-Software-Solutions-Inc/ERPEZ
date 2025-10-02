@@ -44,7 +44,19 @@ public sealed class CreateTenantCommandHandler : IRequestHandler<CreateTenantCom
                 BaseURL = "",
                 DbConnectionString = ""
 
-            }
+            },
+            TenantSubscriptions =
+            [
+                new TenantSubscription
+                {
+                    Amount =0,
+                    Plan =5,
+                    StartDate = DateTime.UtcNow,
+                    EndDate = DateTime.UtcNow.AddMonths(1),
+                    Status = 1,
+                    AutoRenew = false
+                }
+            ]
         };
 
         await _tenantRepository.AddAsync(tenant, cancellationToken);
