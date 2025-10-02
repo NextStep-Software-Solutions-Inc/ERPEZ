@@ -1,5 +1,5 @@
-﻿using ERPEZ.Application.Common;
-using ERPEZ.Domain.Entities;
+﻿using ERPEZ.Domain.Entities;
+using ERPEZ.Shared.Common;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Products.Queries.GetProducts;

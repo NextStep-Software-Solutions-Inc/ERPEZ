@@ -1,5 +1,5 @@
-﻿using ERPEZ.TenantManagement.Application.Common;
-using ERPEZ.Shared.Exceptions;
+﻿using ERPEZ.Shared.Exceptions;
+using ERPEZ.Shared.Common;
 using ERPEZ.TenantManagement.Application.Features.Tenants.Dtos;
 using ERPEZ.TenantManagement.Application.Features.TenantSubscriptions.Dtos;
 using ERPEZ.TenantManagement.Domain.Interfaces;

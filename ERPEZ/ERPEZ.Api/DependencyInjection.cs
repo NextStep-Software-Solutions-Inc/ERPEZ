@@ -1,4 +1,4 @@
-﻿using ERPEZ.Api.Middleware;
+﻿using ERPEZ.Shared.Middleware;
 
 namespace ERPEZ.Api;
 

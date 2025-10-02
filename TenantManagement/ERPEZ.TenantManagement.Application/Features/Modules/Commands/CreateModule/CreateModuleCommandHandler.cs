@@ -1,21 +1,13 @@
-﻿using ERPEZ.TenantManagement.Application.Common;
-using ERPEZ.TenantManagement.Application.Features.Tenants.Commands.CreateTenant;
+﻿using ERPEZ.Shared.Common;
 using ERPEZ.TenantManagement.Domain.Entities;
 using ERPEZ.TenantManagement.Domain.Interfaces;
 using MediatR;
 
 namespace ERPEZ.TenantManagement.Application.Features.Modules.Commands.CreateModule;
 
-public class CreateModuleCommandHandler : IRequestHandler<CreateModuleCommand, ApiResponse<Module>>
+public class CreateModuleCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<CreateModuleCommand, ApiResponse<Module>>
 {
-    private readonly IModuleRepository _moduleRepository;
-    private readonly IUnitOfWork _unitOfWork;
 
-    public CreateModuleCommandHandler(IModuleRepository moduleRepository, IUnitOfWork unitOfWork)
-    {
-        _moduleRepository = moduleRepository;
-        _unitOfWork = unitOfWork;
-    }
     public async Task<ApiResponse<Module>> Handle(CreateModuleCommand request, CancellationToken cancellationToken)
     {
         var moduleExist = await _unitOfWork.ModuleRepository.FindAsync(t => t.Name == request.Name && !t.IsDeleted);
@@ -37,7 +29,7 @@ public class CreateModuleCommandHandler : IRequestHandler<CreateModuleCommand, A
 
         };
 
-        await _moduleRepository.AddAsync(module, cancellationToken);
+        await _unitOfWork.ModuleRepository.AddAsync(module, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return new()
         {

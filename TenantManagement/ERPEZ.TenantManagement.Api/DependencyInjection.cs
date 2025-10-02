@@ -1,4 +1,4 @@
-﻿using ERPEZ.TenantManagement.Api.Middleware;
+﻿using ERPEZ.Shared.Middleware;
 
 namespace ERPEZ.TenantManagement.Api;
 

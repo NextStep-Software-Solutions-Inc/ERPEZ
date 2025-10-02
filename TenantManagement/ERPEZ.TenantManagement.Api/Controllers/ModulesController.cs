@@ -1,4 +1,4 @@
-﻿using ERPEZ.TenantManagement.Application.Common;
+﻿using ERPEZ.Shared.Common;
 using ERPEZ.TenantManagement.Application.Features.Modules.Commands.CreateModule;
 using ERPEZ.TenantManagement.Application.Features.Modules.Commands.DeleteModule;
 using ERPEZ.TenantManagement.Application.Features.Modules.Commands.UpdateModule;

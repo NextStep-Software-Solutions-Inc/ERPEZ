@@ -1,7 +1,7 @@
-﻿using ERPEZ.Application.Common;
-using ERPEZ.Domain.Entities;
+﻿using ERPEZ.Domain.Entities;
 using ERPEZ.Application.Features.Products.Commands.CreateProduct;
 using ERPEZ.Application.Features.Products.Queries.GetProducts;
+using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 

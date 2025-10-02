@@ -1,18 +1,14 @@
-﻿using System.ComponentModel.DataAnnotations;
-using System.ComponentModel.DataAnnotations.Schema;
+﻿namespace ERPEZ.TenantManagement.Domain.Common;
 
-namespace ERPEZ.TenantManagement.Domain.Common
+public abstract class BaseEntity : IEntity
 {
-    public abstract class BaseEntity : IEntity
-    {
-        protected BaseEntity() { }
-        public Guid Id { get; protected set; }
-        public DateTime CreatedAt { get; protected set; }
-        public string CreatedBy { get; protected set; } = string.Empty;
-        public DateTime UpdatedAt { get; protected set; }
-        public Guid? UpdatedBy { get; protected set; }
-        public bool IsDeleted { get; protected set; }
-        public DateTime DeletedAt { get; protected set; }
-        public Guid? DeletedBy { get; protected set; }
-    }
+    protected BaseEntity() { }
+    public Guid Id { get; protected set; }
+    public DateTime CreatedAt { get; protected set; }
+    public string CreatedBy { get; protected set; } = string.Empty;
+    public DateTime UpdatedAt { get; protected set; }
+    public Guid? UpdatedBy { get; protected set; }
+    public bool IsDeleted { get; protected set; }
+    public DateTime DeletedAt { get; protected set; }
+    public Guid? DeletedBy { get; protected set; }
 }

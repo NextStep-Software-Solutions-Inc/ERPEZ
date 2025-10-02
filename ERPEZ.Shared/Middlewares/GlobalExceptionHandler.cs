@@ -1,17 +1,15 @@
 ﻿using System.Net;
-using ERPEZ.TenantManagement.Application.Common;
+using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using Microsoft.AspNetCore.Diagnostics;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace ERPEZ.TenantManagement.Api.Middleware;
+namespace ERPEZ.Shared.Middleware;
 
 public class GlobalExceptionHandler : IExceptionHandler
 {
-    public async ValueTask<bool> TryHandleAsync(
-        HttpContext httpContext,
-        Exception exception,
-        CancellationToken cancellationToken)
+    public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
     {
         var (statusCode, title) = exception switch
         {
@@ -28,9 +26,7 @@ public class GlobalExceptionHandler : IExceptionHandler
 
         httpContext.Response.StatusCode = problemDetails.Status.Value;
 
-        await httpContext.Response.WriteAsJsonAsync(
-            ApiResponse<object>.Fail(problemDetails.Detail),
-            cancellationToken);
+        await httpContext.Response.WriteAsJsonAsync(ApiResponse<object>.Fail(problemDetails.Detail), cancellationToken);
 
         return true;
     }
