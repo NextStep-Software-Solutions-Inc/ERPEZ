@@ -6,11 +6,15 @@ namespace ERPEZ.TenantManagement.Domain.Interfaces;
 
 public interface IRepository<T> where T : BaseEntity
 {
-    Task<T?> GetByIdAsync(
-        Guid id,
-        bool? isDeleted = null,
-        Func<IQueryable<T>, IQueryable<T>>? include = null,
-        CancellationToken cancellationToken = default);
+    Task<T?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);
+
+    Task<T?> FindAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default);
+
+    IQueryable<T> Query(Expression<Func<T, bool>> predicate, bool? isDeleted);
+
+    IQueryable<T> IgnoreQueryFilters();
+
+    Task<List<T>> ToListAsync(IQueryable<T> query, CancellationToken cancellationToken = default);
 
     Task AddAsync(T entity, CancellationToken cancellationToken = default);
 
@@ -23,16 +27,5 @@ public interface IRepository<T> where T : BaseEntity
     Task UpdateBulkAsync(IList<T> entities, CancellationToken cancellationToken = default);
     Task DeleteBulkAsync(IList<T> entities, CancellationToken cancellationToken = default);
 
-    // Exists / find
-    Task<T?> FindAsync(
-        Expression<Func<T, bool>> predicate,
-        bool? isDeleted = null,
-        Func<IQueryable<T>, IQueryable<T>>? include = null,
-        CancellationToken cancellationToken = default);
-
-    Task<(IReadOnlyList<T> Entities, int TotalCount)> GetAllAsync(
-        SieveModel sieveModel,
-        bool? isDeleted = null,
-        Func<IQueryable<T>, IQueryable<T>>? include = null,
-        CancellationToken cancellationToken = default);
+    Task<(IReadOnlyList<T> Entities, int TotalCount)> GetAllAsync(SieveModel sieveModel, CancellationToken cancellationToken = default);
 }
