@@ -45,9 +45,9 @@ namespace ERPEZ.TenantManagement.Api.Controllers
             var tenantSubscription = await mediator.Send(query);
 
             if (tenantSubscription == null)
-                return NotFound(ApiResponse<TenantSubscription>.Fail("Tenant subscription not found."));
+                return NotFound(ApiResponse<TenantSubscriptionDto>.Fail("Tenant subscription not found."));
 
-            return Ok(ApiResponse<TenantSubscription>.Success(tenantSubscription, "Tenant subscription retrieved successfully."));
+            return tenantSubscription.Succeeded ? Ok(tenantSubscription) : BadRequest(tenantSubscription);
         }
 
         [HttpPut("{id}")]

@@ -48,9 +48,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .UsingEntity(tm => tm.ToTable("TenantModule"));
 
         modelBuilder.Entity<Tenant>()
-            .HasMany(t => t.TenantSettings)
+            .HasOne(t => t.TenantSetting)
             .WithOne(ts => ts.Tenant)
-            .HasForeignKey(ts => ts.TenantId);
+            .HasForeignKey<TenantSetting>(ts => ts.TenantId);
 
         modelBuilder.Entity<Tenant>()
             .HasMany(t => t.TenantSubscriptions)

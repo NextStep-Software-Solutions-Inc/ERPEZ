@@ -42,9 +42,9 @@ public sealed class CreateTenantSubscriptionCommandHandler : IRequestHandler<Cre
             };
         }
         var validation = EnumValidator.ValidateAll(
-            (typeof(TenantSettingPlanEnum), command.Plan, nameof(command.Plan)),
-            (typeof(TenantSettingBillingCycleEnum), command.BillingCycle, nameof(command.BillingCycle)),
-            (typeof(TenantSettingStatusEnum), command.Status, nameof(command.Status))
+            (typeof(TenantSubscriptionPlanEnum), command.Plan, nameof(command.Plan)),
+            (typeof(TenantSubscriptionBillingCycleEnum), command.BillingCycle, nameof(command.BillingCycle)),
+            (typeof(TenantSubscriptionStatusEnum), command.Status, nameof(command.Status))
         );
 
         if (!validation.IsValid)
@@ -56,9 +56,9 @@ public sealed class CreateTenantSubscriptionCommandHandler : IRequestHandler<Cre
             };
         }
 
-        var plan = Enum.Parse<TenantSettingPlanEnum>(command.Plan);
-        var billingCycle = Enum.Parse<TenantSettingBillingCycleEnum>(command.BillingCycle);
-        var status = Enum.Parse<TenantSettingStatusEnum>(command.Status);
+        var plan = Enum.Parse<TenantSubscriptionPlanEnum>(command.Plan);
+        var billingCycle = Enum.Parse<TenantSubscriptionBillingCycleEnum>(command.BillingCycle);
+        var status = Enum.Parse<TenantSubscriptionStatusEnum>(command.Status);
 
         var tenantSubscription = new TenantSubscription
         {
