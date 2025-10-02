@@ -10,11 +10,15 @@ public interface IRepository<T> where T : BaseEntity
 
     Task<T?> FindAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default);
 
-    IQueryable<T> Query(Expression<Func<T, bool>> predicate, bool? isDeleted);
+    IQueryable<T> Query(Expression<Func<T, bool>>? predicate = default, bool? ignoreQueryFilters = false);
 
     IQueryable<T> IgnoreQueryFilters();
 
     Task<List<T>> ToListAsync(IQueryable<T> query, CancellationToken cancellationToken = default);
+
+    Task<TEntity?> GetSingleAsync<TEntity>(IQueryable<TEntity> query, CancellationToken cancellationToken = default);
+
+    Task<TEntity?> GetFirstAsync<TEntity>(IQueryable<TEntity> query, CancellationToken cancellationToken = default);
 
     Task AddAsync(T entity, CancellationToken cancellationToken = default);
 
@@ -28,4 +32,6 @@ public interface IRepository<T> where T : BaseEntity
     Task DeleteBulkAsync(IList<T> entities, CancellationToken cancellationToken = default);
 
     Task<(IReadOnlyList<T> Entities, int TotalCount)> GetAllAsync(SieveModel sieveModel, CancellationToken cancellationToken = default);
+
+    Task<(IReadOnlyList<TDto> Entities, int TotalCount)> GetAllAsync<TDto>(SieveModel sieveModel, Expression<Func<T, TDto>> projection, CancellationToken cancellationToken = default);
 }

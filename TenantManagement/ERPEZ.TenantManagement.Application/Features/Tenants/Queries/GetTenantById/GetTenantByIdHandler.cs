@@ -1,69 +1,50 @@
 ﻿using ERPEZ.TenantManagement.Application.Common;
+using ERPEZ.Shared.Exceptions;
 using ERPEZ.TenantManagement.Application.Features.Tenants.Dtos;
-using ERPEZ.TenantManagement.Application.Features.TenantSettings.Dtos;
 using ERPEZ.TenantManagement.Application.Features.TenantSubscriptions.Dtos;
-using ERPEZ.TenantManagement.Application.Features.TenantSubscriptions.Enums;
 using ERPEZ.TenantManagement.Domain.Interfaces;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.TenantManagement.Application.Features.Tenants.Queries.GetTenantById;
 
-public sealed class GetTenantByIdQueryHandler(IUnitOfWork unitOfWork)
-    : IRequestHandler<GetTenantByIdQuery, ApiResponse<TenantDto>>
+public sealed class GetTenantByIdQueryHandler(IUnitOfWork unitOfWork): IRequestHandler<GetTenantByIdQuery, ApiResponse<TenantDto>>
 {
-    public async Task<ApiResponse<TenantDto>> Handle(
-        GetTenantByIdQuery request,
-        CancellationToken cancellationToken)
+    public async Task<ApiResponse<TenantDto>> Handle(GetTenantByIdQuery request, CancellationToken cancellationToken)
     {
-        var tenant = await unitOfWork.TenantRepository.FindAsync(
-           t => t.Id == request.Id && !t.IsDeleted,
-            include: q => q
-                .Include(t => t.TenantSetting)
-                .Include(t => t.TenantSubscriptions)
-                .Include(t => t.Modules),
-            cancellationToken: cancellationToken);
-
-        if (tenant == null)
-            return new ApiResponse<TenantDto>
+        var tenantQuery = unitOfWork.TenantRepository
+            .Query(t => t.Id == request.Id, ignoreQueryFilters: false)
+            .Select(t => new TenantDto
             {
-                Succeeded = false,
-                Data = null,
-                Message = "Tenant not found."
-            };
+                Id = t.Id,
+                Name = t.Name,
+                OnPremise = t.OnPremise,
+                BillingContactEmail = t.BillingContactEmail,
+                TenantSetting = new()
+                {
+                    Id = t.TenantSetting.Id,
+                    Name = t.TenantSetting.Name,
+                    BaseURL = t.TenantSetting.BaseURL,
+                    DbConnectionString = t.TenantSetting.DbConnectionString,
+                    BillingContactEmail = t.TenantSetting.BillingContactEmail
+                },
+                TenantSubscriptions = t.TenantSubscriptions.Select(ts => new TenantSubscriptionDto
+                {
+                    Id = ts.Id,
+                    TenantId = ts.TenantId,
+                    Amount = ts.Amount,
+                    Plan = ts.Plan.ToString(),
+                    Status = ts.Status.ToString(),
+                    BillingCycle = ts.BillingCycle.ToString(),
+                    StartDate = ts.StartDate,
+                    EndDate = ts.EndDate,
+                    AutoRenew = ts.AutoRenew
+                }).ToList()
+            });
 
-        var tenantDto = new TenantDto
-        {
-            Id = tenant.Id,
-            Name = tenant.Name,
-            OnPremise = tenant.OnPremise,
-            BillingContactEmail = tenant.BillingContactEmail,
-            TenantSetting = tenant.TenantSetting is not null ? new TenantSettingDto
-            {
-                Id = tenant.TenantSetting.Id,
-                Name = tenant.TenantSetting.Name,
-                BaseURL = tenant.TenantSetting.BaseURL,
-                DbConnectionString = tenant.TenantSetting.DbConnectionString,
-                BillingContactEmail = tenant.TenantSetting.BillingContactEmail
-            } : null,
-            TenantSubscriptions = [.. tenant.TenantSubscriptions.Select(ts => new TenantSubscriptionDto
-            {
-                Id = ts.Id,
-                Amount = ts.Amount,
-                Plan = ((TenantSubscriptionPlanEnum)ts.Plan).ToString(),
-                Status = ((TenantSubscriptionStatusEnum)ts.Status).ToString(),
-                BillingCycle = ((TenantSubscriptionBillingCycleEnum)ts.BillingCycle).ToString(),
-                StartDate = ts.StartDate,
-                EndDate = ts.EndDate,
-                AutoRenew = ts.AutoRenew
-            })]
-        };
+        var tenant = await unitOfWork.TenantRepository.GetSingleAsync(tenantQuery, cancellationToken: cancellationToken);
 
-        return new ApiResponse<TenantDto>
-        {
-            Succeeded = true,
-            Message = "Retrived Successfully.",
-            Data = tenantDto
-        };
+        if (tenant == null) return ApiResponse<TenantDto>.Fail("Tenant not found.");
+
+        return ApiResponse<TenantDto>.Success(tenant, "Tenant retrieved successfully.");
     }
 }

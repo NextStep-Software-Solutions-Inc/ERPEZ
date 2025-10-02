@@ -1,6 +1,6 @@
-﻿using ERPEZ.TenantManagement.Application.Common;
+﻿using System.Linq.Expressions;
+using ERPEZ.TenantManagement.Application.Common;
 using ERPEZ.TenantManagement.Application.Features.TenantSubscriptions.Dtos;
-using ERPEZ.TenantManagement.Application.Features.TenantSubscriptions.Enums;
 using ERPEZ.TenantManagement.Domain.Entities;
 using ERPEZ.TenantManagement.Domain.Interfaces;
 using MediatR;
@@ -19,23 +19,24 @@ public sealed class GetTenantSubscriptionsQueryHandler (IUnitOfWork unitOfWork) 
             Filters = query.Filters,
             Sorts = query.Sorts
         };
-        var (tenantSubscriptions, totalCount) = await unitOfWork.TenantSubscriptionRepository.GetAllAsync(sieveModel, isDeleted: false, cancellationToken: cancellationToken);
 
-        var subscriptionDtos = tenantSubscriptions.Select(ts => new TenantSubscriptionDto
+        Expression<Func<TenantSubscription, TenantSubscriptionDto>> projection = ts => new()
         {
             Id = ts.Id,
             TenantId = ts.TenantId,
             Amount = ts.Amount,
-            Plan = ((TenantSubscriptionPlanEnum)ts.Plan).ToString(), 
-            Status = ((TenantSubscriptionStatusEnum)ts.Status).ToString(),
-            BillingCycle = ((TenantSubscriptionBillingCycleEnum)ts.BillingCycle).ToString(),
+            Plan = ts.Plan.ToString(),
+            Status = ts.Status.ToString(),
+            BillingCycle = ts.BillingCycle.ToString(),
             StartDate = ts.StartDate,
             EndDate = ts.EndDate,
             AutoRenew = ts.AutoRenew
-        }).ToList();
+        };
+
+        var (tenantSubscriptions, totalCount) = await unitOfWork.TenantSubscriptionRepository.GetAllAsync(sieveModel, projection, cancellationToken: cancellationToken);
 
         return new PaginatedApiResponse<TenantSubscriptionDto>(
-            subscriptionDtos,
+            [..tenantSubscriptions],
             query.PageNumber,
             query.PageSize,
             totalCount);

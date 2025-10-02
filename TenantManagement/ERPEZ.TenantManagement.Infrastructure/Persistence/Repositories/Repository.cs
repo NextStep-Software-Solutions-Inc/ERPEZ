@@ -15,7 +15,7 @@ public class Repository<T>(ApplicationDbContext context, ISieveProcessor sievePr
         await context.Set<T>().AddAsync(entity, cancellationToken);
     }
 
-    public async Task<(IReadOnlyList<T> Entities, int TotalCount)> GetAllAsync(SieveModel sieveModel,  CancellationToken cancellationToken = default)
+    public async Task<(IReadOnlyList<T> Entities, int TotalCount)> GetAllAsync(SieveModel sieveModel, CancellationToken cancellationToken = default)
     {
         IQueryable<T> query = context.Set<T>().AsNoTracking();
 
@@ -30,12 +30,34 @@ public class Repository<T>(ApplicationDbContext context, ISieveProcessor sievePr
         return (entities, totalCount);
     }
 
+    public async Task<(IReadOnlyList<TDto> Entities, int TotalCount)> GetAllAsync<TDto>(SieveModel sieveModel, Expression<Func<T, TDto>> projection, CancellationToken cancellationToken = default)
+    {
+        IQueryable<T> baseQuery = context.Set<T>();
+
+        // Apply projection first
+        IQueryable<TDto> projectedQuery = baseQuery.Select(projection);
+
+        // Apply Sieve filtering to the projected query
+        var filteredQuery = sieveProcessor.Apply(sieveModel, projectedQuery, applyPagination: false);
+
+        // Get total count from the filtered query
+        var totalCount = await filteredQuery.CountAsync(cancellationToken);
+
+        // Apply pagination to the filtered query
+        var paginatedResult = sieveProcessor.Apply(sieveModel, filteredQuery, applyFiltering: false, applySorting: false);
+
+        // Execute the query
+        var entities = await paginatedResult.ToListAsync(cancellationToken);
+
+        return (entities, totalCount);
+    }
+
     public async Task<T?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await context.Set<T>().FirstOrDefaultAsync(e => EF.Property<Guid>(e, "Id") == id, cancellationToken);
     }
 
-    public async Task<T?> FindAsync(Expression<Func<T, bool>> predicate,  CancellationToken cancellationToken = default)
+    public async Task<T?> FindAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
     {
         return await context.Set<T>().FirstOrDefaultAsync(predicate, cancellationToken);
     }
@@ -65,13 +87,11 @@ public class Repository<T>(ApplicationDbContext context, ISieveProcessor sievePr
         await context.BulkDeleteAsync(entities, cancellationToken: cancellationToken);
     }
 
-    public IQueryable<T> Query(Expression<Func<T, bool>>? predicate, bool? ignoreQueryFilters = false)
+    public IQueryable<T> Query(Expression<Func<T, bool>>? predicate = null, bool? ignoreQueryFilters = false)
     {
-        ArgumentNullException.ThrowIfNull(predicate);
-
         IQueryable<T> query = context.Set<T>();
         if (ignoreQueryFilters == true) query = query.IgnoreQueryFilters();
-        query = query.Where(predicate);
+        if (predicate != null) query = query.Where(predicate);
 
         return query;
     }
@@ -85,5 +105,17 @@ public class Repository<T>(ApplicationDbContext context, ISieveProcessor sievePr
     {
         ArgumentNullException.ThrowIfNull(query);
         return await query.ToListAsync(cancellationToken);
+    }
+
+    public Task<TEntity?> GetSingleAsync<TEntity>(IQueryable<TEntity> query, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        return query.SingleOrDefaultAsync(cancellationToken);
+    }
+    
+    public Task<TEntity?> GetFirstAsync<TEntity>(IQueryable<TEntity> query, CancellationToken cancellationToken = default)
+    {
+        ArgumentNullException.ThrowIfNull(query);
+        return query.FirstOrDefaultAsync(cancellationToken);
     }
 }

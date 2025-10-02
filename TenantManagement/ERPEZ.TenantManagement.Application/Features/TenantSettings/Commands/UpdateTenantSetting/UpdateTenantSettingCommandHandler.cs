@@ -24,9 +24,7 @@ public class UpdateTenantSettingCommandHandler(IUnitOfWork unitOfWork)
         }
 
         var tenantSetting = await unitOfWork.TenantSettingRepository
-            .FindAsync(ts => ts.Id == request.Id && ts.TenantId == dto.TenantId,
-                       isDeleted: false,
-                       cancellationToken: cancellationToken);
+            .FindAsync(ts => ts.Id == request.Id && ts.TenantId == dto.TenantId, cancellationToken: cancellationToken);
 
         if (tenantSetting == null)
         {
@@ -36,9 +34,7 @@ public class UpdateTenantSettingCommandHandler(IUnitOfWork unitOfWork)
         if (!string.IsNullOrWhiteSpace(dto.Name) && dto.Name != tenantSetting.Name)
         {
             var duplicate = await unitOfWork.TenantSettingRepository
-                .FindAsync(ts => ts.Name == dto.Name && ts.TenantId == dto.TenantId && ts.Id != request.Id,
-                           isDeleted: false,
-                           cancellationToken: cancellationToken);
+                .FindAsync(ts => ts.Name == dto.Name && ts.TenantId == dto.TenantId && ts.Id != request.Id, cancellationToken: cancellationToken);
 
             if (duplicate != null)
             {

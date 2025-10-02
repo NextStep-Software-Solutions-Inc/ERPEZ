@@ -19,9 +19,7 @@ public class UpdateTenantSubscriptionCommandHandler(IUnitOfWork unitOfWork)
         var dto = request.UpdateTenantSubscription;
 
         var tenantSubscription = await unitOfWork.TenantSubscriptionRepository
-            .FindAsync(ts => ts.Id == request.Id,
-                       isDeleted: false,
-                       cancellationToken: cancellationToken);
+            .FindAsync(ts => ts.Id == request.Id, cancellationToken: cancellationToken);
 
         if (tenantSubscription == null)
         {
@@ -30,7 +28,7 @@ public class UpdateTenantSubscriptionCommandHandler(IUnitOfWork unitOfWork)
 
         if (dto.TenantId.HasValue)
         {
-            var existTenant = await unitOfWork.TenantRepository.GetByIdAsync(dto.TenantId.Value, isDeleted: false, cancellationToken: cancellationToken);
+            var existTenant = await unitOfWork.TenantRepository.GetByIdAsync(dto.TenantId.Value, cancellationToken: cancellationToken);
             if (existTenant == null)
             {
                 return ApiResponse<TenantSubscription>.Fail("Tenant does not exist.");

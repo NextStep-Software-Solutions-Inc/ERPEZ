@@ -12,10 +12,7 @@ public sealed class GetTenantSubscriptionQueryHandler(IUnitOfWork unitOfWork) : 
         GetTenantSubscriptionByIdQuery request,
         CancellationToken cancellationToken)
     {
-        var tenantSubscription = await unitOfWork.TenantSubscriptionRepository.GetByIdAsync(
-            request.Id,
-            isDeleted: false,
-            cancellationToken: cancellationToken);
+        var tenantSubscription = await unitOfWork.TenantSubscriptionRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken);
 
         if (tenantSubscription == null)
             return new ApiResponse<TenantSubscriptionDto>

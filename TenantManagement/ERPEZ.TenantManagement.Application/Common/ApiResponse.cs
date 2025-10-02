@@ -8,9 +8,9 @@ public class ApiResponse<T>
 
     public T? Data { get; set; }
 
-    public static ApiResponse<T> Success(T data, string? message = null)
+    public static ApiResponse<TEntity> Success<TEntity>(TEntity data, string? message = null)
     {
-        return new ApiResponse<T> { Succeeded = true, Data = data, Message = message };
+        return new ApiResponse<TEntity> { Succeeded = true, Data = data, Message = message };
     }
 
     public static ApiResponse<T> Fail(string message)

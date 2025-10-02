@@ -10,7 +10,7 @@ public sealed class UpdateTenantCommandHandler(IUnitOfWork unitOfWork)
 {
     public async Task<ApiResponse<Tenant>> Handle(UpdateTenantCommand request, CancellationToken cancellationToken)
     {
-        var tenant = await unitOfWork.TenantRepository.GetByIdAsync(request.Id, isDeleted:false, cancellationToken: cancellationToken);
+        var tenant = await unitOfWork.TenantRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken);
 
         if (tenant == null)
         {

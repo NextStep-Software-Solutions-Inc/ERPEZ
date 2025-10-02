@@ -8,19 +8,11 @@ public sealed class DeleteTenantSettingCommandHandler(IUnitOfWork unitOfWork) : 
 {
     public async Task<ApiResponse<Unit>> Handle(DeleteTenantSettingCommand request, CancellationToken cancellationToken)
     {
-        var tenantSetting = await unitOfWork.TenantSettingRepository.GetByIdAsync(request.Id, isDeleted:false, cancellationToken: cancellationToken);
+        var tenantSetting = await unitOfWork.TenantSettingRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken);
 
-        if (tenantSetting == null)
-        {
-            return new ApiResponse<Unit>()
-            {
-                Succeeded = false,
-                Message = "Tenant setting not found."
-            };
-        }
+        if (tenantSetting == null) return ApiResponse<Unit>.Fail("Tenant setting not found.");
 
-        tenantSetting.MarkAsDeleted(request.Id);
-
+        unitOfWork.TenantSettingRepository.Remove(tenantSetting);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return ApiResponse<Unit>.Success(Unit.Value, $"Tenant setting deleted successfully.");

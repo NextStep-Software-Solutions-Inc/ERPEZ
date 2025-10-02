@@ -5,10 +5,10 @@ public class TenantSubscriptionDto
     public Guid Id { get; set; }
     public Guid TenantId { get; set; }
     public int Amount { get; set; }
-    public string Plan { get; set; } = string.Empty;
-    public string Status { get; set; } = string.Empty;
-    public string BillingCycle { get; set; } = string.Empty;
-    public DateTime StartDate { get; set; }
-    public DateTime EndDate { get; set; }
-    public bool AutoRenew { get; set; }
+    public required string Plan { get; set; }
+    public required string Status { get; set; }
+    public required string BillingCycle { get; set; }
+    public required DateTime StartDate { get; set; }
+    public required DateTime EndDate { get; set; }
+    public required bool AutoRenew { get; set; }
 }

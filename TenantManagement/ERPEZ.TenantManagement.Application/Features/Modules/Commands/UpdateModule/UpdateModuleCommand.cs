@@ -8,5 +8,5 @@ namespace ERPEZ.TenantManagement.Application.Features.Modules.Commands.UpdateMod
 public sealed class UpdateModuleCommand :IRequest<ApiResponse<Module>>
 {
     public Guid Id { get; set; }
-    public UpdateModuleDto UpdateModule { get; set; }
+    public required UpdateModuleDto UpdateModule { get; set; }
 }

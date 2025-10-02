@@ -9,7 +9,7 @@ public sealed class UpdateModuleCommandHandler(IUnitOfWork unitOfWork) : IReques
 {
     public async Task<ApiResponse<Module>> Handle(UpdateModuleCommand request, CancellationToken cancellationToken)
     {
-        var module = await unitOfWork.ModuleRepository.GetByIdAsync(request.Id, isDeleted: false, cancellationToken: cancellationToken);
+        var module = await unitOfWork.ModuleRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken);
 
         if (module == null)
         {

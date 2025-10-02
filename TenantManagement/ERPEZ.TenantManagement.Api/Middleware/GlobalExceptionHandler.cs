@@ -1,5 +1,6 @@
 ﻿using System.Net;
 using ERPEZ.TenantManagement.Application.Common;
+using ERPEZ.Shared.Exceptions;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,10 +13,16 @@ public class GlobalExceptionHandler : IExceptionHandler
         Exception exception,
         CancellationToken cancellationToken)
     {
+        var (statusCode, title) = exception switch
+        {
+            NotFoundException => ((int)HttpStatusCode.NotFound, "Resource not found"),
+            _ => ((int)HttpStatusCode.InternalServerError, "An unexpected error occurred")
+        };
+
         var problemDetails = new ProblemDetails
         {
-            Status = (int)HttpStatusCode.InternalServerError,
-            Title = "An unexpected error occurred",
+            Status = statusCode,
+            Title = title,
             Detail = exception.Message
         };
 
