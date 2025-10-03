@@ -1,4 +1,4 @@
-﻿using ERPEZ.TenantManagement.Application.Common;
+﻿using ERPEZ.Shared.Common;
 using ERPEZ.TenantManagement.Application.Features.TenantSubscriptions.Enums;
 using ERPEZ.TenantManagement.Domain.Entities;
 using ERPEZ.TenantManagement.Domain.Interfaces;
@@ -19,9 +19,7 @@ public class UpdateTenantSubscriptionCommandHandler(IUnitOfWork unitOfWork)
         var dto = request.UpdateTenantSubscription;
 
         var tenantSubscription = await unitOfWork.TenantSubscriptionRepository
-            .FindAsync(ts => ts.Id == request.Id,
-                       isDeleted: false,
-                       cancellationToken: cancellationToken);
+            .FindAsync(ts => ts.Id == request.Id, cancellationToken: cancellationToken);
 
         if (tenantSubscription == null)
         {
@@ -30,7 +28,7 @@ public class UpdateTenantSubscriptionCommandHandler(IUnitOfWork unitOfWork)
 
         if (dto.TenantId.HasValue)
         {
-            var existTenant = await unitOfWork.TenantRepository.GetByIdAsync(dto.TenantId.Value, isDeleted: false, cancellationToken: cancellationToken);
+            var existTenant = await unitOfWork.TenantRepository.GetByIdAsync(dto.TenantId.Value, cancellationToken: cancellationToken);
             if (existTenant == null)
             {
                 return ApiResponse<TenantSubscription>.Fail("Tenant does not exist.");
@@ -39,9 +37,9 @@ public class UpdateTenantSubscriptionCommandHandler(IUnitOfWork unitOfWork)
         }
 
         var validation = EnumValidator.ValidateAll(
-            (typeof(TenantSettingPlanEnum), dto.Plan, nameof(dto.Plan)),
-            (typeof(TenantSettingBillingCycleEnum), dto.BillingCycle, nameof(dto.BillingCycle)),
-            (typeof(TenantSettingStatusEnum), dto.Status, nameof(dto.Status))
+            (typeof(TenantSubscriptionPlanEnum), dto.Plan, nameof(dto.Plan)),
+            (typeof(TenantSubscriptionBillingCycleEnum), dto.BillingCycle, nameof(dto.BillingCycle)),
+            (typeof(TenantSubscriptionStatusEnum), dto.Status, nameof(dto.Status))
         );
 
         if (!validation.IsValid)
@@ -56,7 +54,7 @@ public class UpdateTenantSubscriptionCommandHandler(IUnitOfWork unitOfWork)
             tenantSubscription.Amount = dto.Amount.Value;
 
         if (!string.IsNullOrWhiteSpace(dto.Plan))
-            tenantSubscription.Plan = (int)Enum.Parse<TenantSettingPlanEnum>(dto.Plan);
+            tenantSubscription.Plan = (int)Enum.Parse<TenantSubscriptionPlanEnum>(dto.Plan);
 
         if (dto.StartDate.HasValue)
             tenantSubscription.StartDate = dto.StartDate.Value;
@@ -65,10 +63,10 @@ public class UpdateTenantSubscriptionCommandHandler(IUnitOfWork unitOfWork)
             tenantSubscription.EndDate = dto.EndDate.Value;
 
         if (!string.IsNullOrWhiteSpace(dto.Status))
-            tenantSubscription.Status = (int)Enum.Parse<TenantSettingStatusEnum>(dto.Status);
+            tenantSubscription.Status = (int)Enum.Parse<TenantSubscriptionStatusEnum>(dto.Status);
 
         if (!string.IsNullOrWhiteSpace(dto.BillingCycle))
-            tenantSubscription.BillingCycle = (int)Enum.Parse<TenantSettingBillingCycleEnum>(dto.BillingCycle);
+            tenantSubscription.BillingCycle = (int)Enum.Parse<TenantSubscriptionBillingCycleEnum>(dto.BillingCycle);
 
         if (dto.AutoRenew.HasValue)
             tenantSubscription.AutoRenew = dto.AutoRenew.Value;

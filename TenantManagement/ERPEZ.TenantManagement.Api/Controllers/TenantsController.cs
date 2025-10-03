@@ -1,4 +1,4 @@
-﻿using ERPEZ.TenantManagement.Application.Common;
+﻿using ERPEZ.Shared.Common;
 using ERPEZ.TenantManagement.Application.Features.Tenants.Commands.CreateTenant;
 using ERPEZ.TenantManagement.Application.Features.Tenants.Commands.DeleteTenant;
 using ERPEZ.TenantManagement.Application.Features.Tenants.Commands.UpdateTenant;
@@ -15,26 +15,6 @@ namespace ERPEZ.TenantManagement.Api.Controllers
     [ApiController]
     public class TenantsController(ISender mediator) : ControllerBase
     {
-        [HttpGet]
-        [ProducesResponseType(typeof(PaginatedApiResponse<Tenant>), StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetTenants([FromQuery] GetTenantsQuery query)
-        {
-            var result = await mediator.Send(query);
-            return Ok(result);
-        }
-
-        [HttpGet("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<Tenant>), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> GetTenantById(Guid id)
-        {
-            var tenant = await mediator.Send(new GetTenantByIdQuery(id));
-            if (tenant == null)
-                return NotFound(ApiResponse<Tenant>.Fail("Tenant not found."));
-
-            return Ok(ApiResponse<Tenant>.Success(tenant));
-        }
-
         [HttpPost]
         [ProducesResponseType(typeof(ApiResponse<Tenant>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<Tenant>), StatusCodes.Status400BadRequest)]
@@ -46,6 +26,24 @@ namespace ERPEZ.TenantManagement.Api.Controllers
                 return BadRequest(tenant);
 
             return CreatedAtAction(nameof(GetTenantById), new { id = tenant.Data!.Id }, tenant);
+        }
+
+        [HttpGet]
+        [ProducesResponseType(typeof(PaginatedApiResponse<TenantDto>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetTenants([FromQuery] GetTenantsQuery query)
+        {
+            var result = await mediator.Send(query);
+            return Ok(result);
+        }
+
+        [HttpGet("{id}")]
+        [ProducesResponseType(typeof(ApiResponse<TenantDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetTenantById(Guid id)
+        {
+            var tenant = await mediator.Send(new GetTenantByIdQuery(id));
+
+            return tenant.Succeeded ? Ok(tenant) : BadRequest(tenant);
         }
 
         [HttpPut("{id}")]
@@ -60,11 +58,6 @@ namespace ERPEZ.TenantManagement.Api.Controllers
                 UpdateTenant = updateTenant
             };
 
-            if (id != request.Id)
-            {
-                return BadRequest(ApiResponse<Tenant>.Fail("ID mismatch."));
-            }
-
             var tenant = await mediator.Send(request);
             return tenant.Succeeded ? Ok(tenant) : BadRequest(tenant);
         }
@@ -75,9 +68,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         public async Task<IActionResult> DeleteTenant(Guid id)
         {
             var command = new DeleteTenantCommand(id);
-
             var tenant = await mediator.Send(command);
-
 
             return tenant.Succeeded ? Ok(tenant) : BadRequest(tenant);
         }

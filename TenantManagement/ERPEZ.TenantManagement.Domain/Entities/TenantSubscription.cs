@@ -20,7 +20,7 @@ public class TenantSubscription : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public int Status { get; set; }
     [Sieve(CanFilter = true, CanSort = true)]
-    public int? BillingCycle { get; set; }
+    public int BillingCycle { get; set; }
     [Sieve(CanFilter = true, CanSort = true)]
     public bool AutoRenew { get; set; }
     [JsonIgnore]

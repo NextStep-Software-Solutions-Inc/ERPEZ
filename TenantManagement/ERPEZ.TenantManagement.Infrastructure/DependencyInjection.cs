@@ -1,11 +1,13 @@
 ﻿using ERPEZ.TenantManagement.Domain.Interfaces;
+using ERPEZ.TenantManagement.Infrastructure.Persistence;
+using ERPEZ.TenantManagement.Infrastructure.Persistence.Interceptors;
+using ERPEZ.TenantManagement.Infrastructure.Persistence.Repositories;
+using Hangfire;
+using Hangfire.PostgreSql;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
-using Hangfire;
-using Hangfire.PostgreSql;
-using ERPEZ.TenantManagement.Infrastructure.Persistence;
-using ERPEZ.TenantManagement.Infrastructure.Persistence.Repositories;
+using Microsoft.Extensions.Hosting;
 
 namespace ERPEZ.TenantManagement.Infrastructure;
 
@@ -13,12 +15,20 @@ public static class DependencyInjection
 {
     public static IServiceCollection AddInfrastructureServices(
         this IServiceCollection services,
-        IConfiguration configuration)
+        IConfiguration configuration,
+        IHostEnvironment env)
     {
         var connectionString = configuration.GetConnectionString("DefaultConnection");
 
-        services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseNpgsql(connectionString));
+        services.AddHttpContextAccessor();
+
+        services.AddDbContext<ApplicationDbContext>((sp, options) =>
+        {
+            options.UseNpgsql(connectionString);
+            options.AddInterceptors(sp.GetRequiredService<SoftDeleteInterceptor>());
+        });
+
+        services.AddScoped<SoftDeleteInterceptor>();
 
         // Register repositories and Unit of Work
         services.AddScoped<ITenantRepository, TenantRepository>();
@@ -34,6 +44,12 @@ public static class DependencyInjection
             .UsePostgreSqlStorage(c => c.UseNpgsqlConnection(connectionString)));
 
         services.AddHangfireServer();
+        if (env != null && env.IsDevelopment())
+        {
+            using var scope = services.BuildServiceProvider().CreateScope();
+            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            dbContext.Database.Migrate();
+        }
         return services;
     }
 }

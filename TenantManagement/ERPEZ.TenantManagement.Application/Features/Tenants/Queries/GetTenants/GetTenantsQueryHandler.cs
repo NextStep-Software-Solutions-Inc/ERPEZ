@@ -1,14 +1,18 @@
-﻿using ERPEZ.TenantManagement.Application.Common;
+﻿using ERPEZ.Shared.Common;
+using ERPEZ.TenantManagement.Application.Features.Tenants.Dtos;
+using ERPEZ.TenantManagement.Application.Features.TenantSettings.Dtos;
+using ERPEZ.TenantManagement.Application.Features.TenantSubscriptions.Dtos;
 using ERPEZ.TenantManagement.Domain.Entities;
 using ERPEZ.TenantManagement.Domain.Interfaces;
 using MediatR;
 using Sieve.Models;
+using System.Linq.Expressions;
 
 namespace ERPEZ.TenantManagement.Application.Features.Tenants.Queries.GetTenants;
 
-public sealed class GetTenantsQueryHandler (IUnitOfWork unitOfWork) : IRequestHandler<GetTenantsQuery, PaginatedApiResponse<Tenant>>
+public sealed class GetTenantsQueryHandler (IUnitOfWork unitOfWork) : IRequestHandler<GetTenantsQuery, PaginatedApiResponse<TenantDto>>
 {
-    public async Task<PaginatedApiResponse<Tenant>> Handle(GetTenantsQuery query, CancellationToken cancellationToken)
+    public async Task<PaginatedApiResponse<TenantDto>> Handle(GetTenantsQuery query, CancellationToken cancellationToken)
     {
         var sieveModel = new SieveModel
         {
@@ -18,10 +22,41 @@ public sealed class GetTenantsQueryHandler (IUnitOfWork unitOfWork) : IRequestHa
             Sorts = query.Sorts
         };
 
-        var (tenants, totalCount) = await unitOfWork.TenantRepository.GetAllAsync(sieveModel, isDeleted: false, cancellationToken: cancellationToken);
+        // Define projection to reduce data transfer from database
+        Expression<Func<Tenant, TenantDto>> projection = t => new ()
+        {
+            Id = t.Id,
+            Name = t.Name,
+            OnPremise = t.OnPremise,
+            BillingContactEmail = t.BillingContactEmail,
+            TenantSetting = new TenantSettingDto
+            {
+                Id = t.TenantSetting.Id,
+                Name = t.TenantSetting.Name,
+                BaseURL = t.TenantSetting.BaseURL,
+                DbConnectionString = t.TenantSetting.DbConnectionString,
+                BillingContactEmail = t.TenantSetting.BillingContactEmail
+            },
+            TenantSubscriptions = t.TenantSubscriptions
+                .Where(ts => ts.TenantId == t.Id)
+                .Select(ts => new TenantSubscriptionDto
+                {
+                    Id = ts.Id,
+                    Amount = ts.Amount,
+                    Plan = ts.Plan.ToString(),
+                    Status = ts.Status.ToString(),
+                    BillingCycle = ts.BillingCycle.ToString(),
+                    StartDate = ts.StartDate,
+                    EndDate = ts.EndDate,
+                    AutoRenew = ts.AutoRenew
+                })
+                .ToList()
+        };
 
-        return new PaginatedApiResponse<Tenant>(
-            [.. tenants],
+        var (tenantDtos, totalCount) = await unitOfWork.TenantRepository.GetAllAsync(sieveModel, projection, cancellationToken);
+
+        return new PaginatedApiResponse<TenantDto>(
+            [.. tenantDtos],
             query.PageNumber,
             query.PageSize,
             totalCount);

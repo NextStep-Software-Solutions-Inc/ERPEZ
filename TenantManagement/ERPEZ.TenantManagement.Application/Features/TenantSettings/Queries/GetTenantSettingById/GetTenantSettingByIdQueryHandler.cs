@@ -10,10 +10,7 @@ public sealed class GetTenantSettingByIdQueryHandler(IUnitOfWork unitOfWork) : I
         GetTenantSettingByIdQuery request,
         CancellationToken cancellationToken)
     {
-        var tenantSetting = await unitOfWork.TenantSettingRepository.GetByIdAsync(
-            request.Id,
-            isDeleted: false,
-            cancellationToken: cancellationToken);
+        var tenantSetting = await unitOfWork.TenantSettingRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken);
 
         return tenantSetting;
     }

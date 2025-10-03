@@ -1,6 +1,8 @@
-﻿using ERPEZ.TenantManagement.Domain.Entities;
+﻿using ERPEZ.TenantManagement.Domain.Common;
+using ERPEZ.TenantManagement.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
+using System.Linq.Expressions;
 
 namespace ERPEZ.TenantManagement.Infrastructure.Persistence;
 
@@ -37,6 +39,19 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             idProperty.ValueGenerated = ValueGenerated.OnAdd;
         }
 
+        // Apply soft delete query filter
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            if (typeof(IEntity).IsAssignableFrom(entityType.ClrType))
+            {
+                var parameter = Expression.Parameter(entityType.ClrType, "e");
+                var property = Expression.Property(parameter, nameof(IEntity.IsDeleted));
+                var notDeleted = Expression.Not(property);
+                var lambda = Expression.Lambda(notDeleted, parameter);
+                entityType.SetQueryFilter(lambda);
+            }
+        }
+
         // Tenant
         modelBuilder.Entity<Tenant>()
             .HasIndex(t => new { t.BillingContactEmail, t.Name })
@@ -48,9 +63,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .UsingEntity(tm => tm.ToTable("TenantModule"));
 
         modelBuilder.Entity<Tenant>()
-            .HasMany(t => t.TenantSettings)
+            .HasOne(t => t.TenantSetting)
             .WithOne(ts => ts.Tenant)
-            .HasForeignKey(ts => ts.TenantId);
+            .HasForeignKey<TenantSetting>(ts => ts.TenantId);
 
         modelBuilder.Entity<Tenant>()
             .HasMany(t => t.TenantSubscriptions)

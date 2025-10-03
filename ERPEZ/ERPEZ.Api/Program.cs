@@ -13,7 +13,7 @@ builder.Configuration.AddUserSecrets(typeof(Program).Assembly, true);
 builder.Services
     .AddApiServices()
     .AddApplicationServices()
-    .AddInfrastructureServices(builder.Configuration);
+    .AddInfrastructureServices(builder.Configuration, builder.Environment);
 
 var app = builder.Build();
 

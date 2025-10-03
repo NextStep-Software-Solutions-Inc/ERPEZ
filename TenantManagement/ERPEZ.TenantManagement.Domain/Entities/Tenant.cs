@@ -13,6 +13,7 @@ public class Tenant : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public string BillingContactEmail { get; set; } = string.Empty;
     public virtual List<Module> Modules { get; set; } = [];
-    public virtual List<TenantSetting> TenantSettings { get; set; } = [];
+    public virtual TenantSetting TenantSetting { get; set; } = null!;
     public virtual List<TenantSubscription> TenantSubscriptions { get; set; } = [];
+
 }
