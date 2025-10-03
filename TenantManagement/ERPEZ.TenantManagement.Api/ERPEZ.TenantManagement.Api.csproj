@@ -20,6 +20,7 @@
   <ItemGroup>
     <ProjectReference Include="..\ERPEZ.TenantManagement.Application\ERPEZ.TenantManagement.Application.csproj" />
     <ProjectReference Include="..\ERPEZ.TenantManagement.Infrastructure\ERPEZ.TenantManagement.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\ERPEZ.Shared\ERPEZ.Shared.csproj" />
   </ItemGroup>
 
 </Project>

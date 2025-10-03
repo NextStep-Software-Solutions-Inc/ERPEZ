@@ -6,12 +6,14 @@ on:
       - development
     paths:
       - 'ERPEZ/**'
+      - 'ERPEZ.Shared/**'
       - .github/workflows/deploy-erpez-api-dev.yml
   pull_request:
     branches:
       - development
     paths:
       - 'ERPEZ/**'
+      - 'ERPEZ.Shared/**'
       - .github/workflows/deploy-erpez-api-dev.yml
   workflow_dispatch:
     inputs:
@@ -28,6 +30,7 @@ env:
 
 jobs:
   build:
+    name: Build and Push Docker Image
     runs-on: ubuntu-latest
     environment: Development
 
@@ -47,11 +50,13 @@ jobs:
     - name: Build and push Docker image
       uses: docker/build-push-action@v5
       with:
-        context: ./ERPEZ
+        context: .
+        file: ERPEZ/Dockerfile
         push: true
         tags: ${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.CONTAINER_NAME }}:${{ env.IMAGE_TAG }}
 
   deploy:
+    name: Deploy to DigitalOcean Droplet
     runs-on: ubuntu-latest
     environment: Development
     needs: build

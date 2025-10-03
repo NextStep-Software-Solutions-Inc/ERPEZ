@@ -1,5 +1,6 @@
 ﻿using ERPEZ.TenantManagement.Domain.Interfaces;
 using ERPEZ.TenantManagement.Infrastructure.Persistence;
+using ERPEZ.TenantManagement.Infrastructure.Persistence.Interceptors;
 using ERPEZ.TenantManagement.Infrastructure.Persistence.Repositories;
 using Hangfire;
 using Hangfire.PostgreSql;
@@ -19,8 +20,15 @@ public static class DependencyInjection
     {
         var connectionString = configuration.GetConnectionString("DefaultConnection");
 
-        services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseNpgsql(connectionString));
+        services.AddHttpContextAccessor();
+
+        services.AddDbContext<ApplicationDbContext>((sp, options) =>
+        {
+            options.UseNpgsql(connectionString);
+            options.AddInterceptors(sp.GetRequiredService<SoftDeleteInterceptor>());
+        });
+
+        services.AddScoped<SoftDeleteInterceptor>();
 
         // Register repositories and Unit of Work
         services.AddScoped<ITenantRepository, TenantRepository>();

@@ -21,6 +21,7 @@
   <ItemGroup>
     <ProjectReference Include="..\ERPEZ.Application\ERPEZ.Application.csproj" />
     <ProjectReference Include="..\ERPEZ.Infrastructure\ERPEZ.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\ERPEZ.Shared\ERPEZ.Shared.csproj" />
   </ItemGroup>
 
 </Project>

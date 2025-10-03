@@ -1,4 +1,4 @@
-﻿using ERPEZ.TenantManagement.Application.Common;
+﻿using ERPEZ.Shared.Common;
 using ERPEZ.TenantManagement.Application.Features.TenantSubscriptions.Dtos;
 using ERPEZ.TenantManagement.Application.Features.TenantSubscriptions.Enums;
 using ERPEZ.TenantManagement.Domain.Interfaces;
@@ -12,10 +12,7 @@ public sealed class GetTenantSubscriptionQueryHandler(IUnitOfWork unitOfWork) : 
         GetTenantSubscriptionByIdQuery request,
         CancellationToken cancellationToken)
     {
-        var tenantSubscription = await unitOfWork.TenantSubscriptionRepository.GetByIdAsync(
-            request.Id,
-            isDeleted: false,
-            cancellationToken: cancellationToken);
+        var tenantSubscription = await unitOfWork.TenantSubscriptionRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken);
 
         if (tenantSubscription == null)
             return new ApiResponse<TenantSubscriptionDto>

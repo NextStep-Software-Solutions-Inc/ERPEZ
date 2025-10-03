@@ -40,8 +40,8 @@ namespace ERP_EZ.Infrastructure.Migrations
                     b.Property<DateTime>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("DeletedBy")
-                        .HasColumnType("uuid");
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
 
                     b.Property<string>("Description")
                         .HasColumnType("text");
@@ -63,8 +63,8 @@ namespace ERP_EZ.Infrastructure.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("UpdatedBy")
-                        .HasColumnType("uuid");
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
@@ -95,8 +95,8 @@ namespace ERP_EZ.Infrastructure.Migrations
                     b.Property<DateTime>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("DeletedBy")
-                        .HasColumnType("uuid");
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
@@ -111,8 +111,8 @@ namespace ERP_EZ.Infrastructure.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("UpdatedBy")
-                        .HasColumnType("uuid");
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
@@ -151,8 +151,8 @@ namespace ERP_EZ.Infrastructure.Migrations
                     b.Property<DateTime>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("DeletedBy")
-                        .HasColumnType("uuid");
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
@@ -167,8 +167,8 @@ namespace ERP_EZ.Infrastructure.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("UpdatedBy")
-                        .HasColumnType("uuid");
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 
@@ -207,8 +207,8 @@ namespace ERP_EZ.Infrastructure.Migrations
                     b.Property<DateTime>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("DeletedBy")
-                        .HasColumnType("uuid");
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("EndDate")
                         .HasColumnType("timestamp with time zone");
@@ -231,8 +231,8 @@ namespace ERP_EZ.Infrastructure.Migrations
                     b.Property<DateTime>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("UpdatedBy")
-                        .HasColumnType("uuid");
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
 
                     b.HasKey("Id");
 

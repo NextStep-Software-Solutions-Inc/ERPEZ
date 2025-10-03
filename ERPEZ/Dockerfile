@@ -3,16 +3,17 @@ FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
 # Copy csproj files and restore dependencies
-COPY ["ERPEZ.Api/ERPEZ.Api.csproj", "ERPEZ.Api/"]
-COPY ["ERPEZ.Application/ERPEZ.Application.csproj", "ERPEZ.Application/"]
-COPY ["ERPEZ.Domain/ERPEZ.Domain.csproj", "ERPEZ.Domain/"]
-COPY ["ERPEZ.Infrastructure/ERPEZ.Infrastructure.csproj", "ERPEZ.Infrastructure/"]
+COPY ["ERPEZ/ERPEZ.Api/ERPEZ.Api.csproj", "ERPEZ/ERPEZ.Api/"]
+COPY ["ERPEZ/ERPEZ.Application/ERPEZ.Application.csproj", "ERPEZ/ERPEZ.Application/"]
+COPY ["ERPEZ/ERPEZ.Domain/ERPEZ.Domain.csproj", "ERPEZ/ERPEZ.Domain/"]
+COPY ["ERPEZ/ERPEZ.Infrastructure/ERPEZ.Infrastructure.csproj", "ERPEZ/ERPEZ.Infrastructure/"]
+COPY ["ERPEZ.Shared/ERPEZ.Shared.csproj", "ERPEZ.Shared/"]
 
-RUN dotnet restore "ERPEZ.Api/ERPEZ.Api.csproj"
+RUN dotnet restore "ERPEZ/ERPEZ.Api/ERPEZ.Api.csproj"
 
 # Copy everything else and build
 COPY . .
-WORKDIR "/src/ERPEZ.Api"
+WORKDIR "/src/ERPEZ/ERPEZ.Api"
 RUN dotnet build "ERPEZ.Api.csproj" -c Release -o /app/build
 
 # Publish the application

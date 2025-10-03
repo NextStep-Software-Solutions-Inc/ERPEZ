@@ -1,4 +1,4 @@
-﻿using ERPEZ.TenantManagement.Application.Common;
+﻿using ERPEZ.Shared.Common;
 using ERPEZ.TenantManagement.Application.Features.TenantSettings.Commands.CreateTenantSetting;
 using ERPEZ.TenantManagement.Application.Features.TenantSettings.Commands.DeleteTenantSetting;
 using ERPEZ.TenantManagement.Application.Features.TenantSettings.Commands.UpdateTenantSetting;

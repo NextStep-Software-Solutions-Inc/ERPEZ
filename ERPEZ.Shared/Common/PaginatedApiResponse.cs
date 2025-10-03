@@ -1,4 +1,4 @@
-﻿namespace ERPEZ.Application.Common;
+namespace ERPEZ.Shared.Common;
 
 public class PaginatedApiResponse<T>(List<T> data, int pageNumber, int pageSize, int totalCount)
 {
