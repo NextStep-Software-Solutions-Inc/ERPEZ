@@ -4,7 +4,6 @@ using ERPEZ.TenantManagement.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Sieve.Models;
 using Sieve.Services;
-using System.Linq;
 using System.Linq.Expressions;
 
 namespace ERPEZ.TenantManagement.Infrastructure.Persistence.Repositories;
@@ -14,10 +13,6 @@ public class Repository<T>(ApplicationDbContext context, ISieveProcessor sievePr
     public async Task AddAsync(T entity, CancellationToken cancellationToken = default)
     {
         await context.Set<T>().AddAsync(entity, cancellationToken);
-    }
-    public IQueryable<T> Query(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
-    {
-        return context.Set<T>().Where(predicate, cancellationToken);
     }
     public async Task<(IReadOnlyList<T> Entities, int TotalCount)> GetAllAsync(
        SieveModel sieveModel,

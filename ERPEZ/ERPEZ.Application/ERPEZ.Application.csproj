@@ -9,6 +9,51 @@
     <PackageReference Include="Sieve" Version="2.5.5" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Features\Planning\ActivityBudgetRequirement\Commands\" />
+    <Folder Include="Features\Planning\ActivityBudgetRequirement\Dtos\" />
+    <Folder Include="Features\Planning\ActivityBudgetRequirement\Queries\" />
+    <Folder Include="Features\Planning\DUFundAllocation\" />
+    <Folder Include="Features\Planning\KPI\" />
+    <Folder Include="Features\Planning\DeliveryUnit\" />
+    <Folder Include="Features\Planning\DUAllocation\" />
+    <Folder Include="Features\Planning\FunctionPercentageAllocation\" />
+    <Folder Include="Features\Planning\FundSource\" />
+    <Folder Include="Features\Planning\KPIAssignment\" />
+    <Folder Include="Features\Planning\KPIModeOfVerification\" />
+    <Folder Include="Features\Planning\KPIRating\" />
+    <Folder Include="Features\Planning\KPITarget\" />
+    <Folder Include="Features\Planning\Location\Commands\" />
+    <Folder Include="Features\Planning\Location\Dtos\" />
+    <Folder Include="Features\Planning\Location\Queries\" />
+    <Folder Include="Features\Planning\MFOKPI\" />
+    <Folder Include="Features\Planning\MFOPAP\Queries\" />
+    <Folder Include="Features\Planning\Organization\Commands\" />
+    <Folder Include="Features\Planning\Organization\Dtos\" />
+    <Folder Include="Features\Planning\Organization\Queries\" />
+    <Folder Include="Features\Planning\Transaction\Commands\" />
+    <Folder Include="Features\Planning\Transaction\Dtos\" />
+    <Folder Include="Features\Planning\Transaction\Queries\" />
+    <Folder Include="Features\Planning\WFPPAP\" />
+    <Folder Include="Features\Planning\WFPPAPDepartment\" />
+    <Folder Include="Features\Planning\WFPOutcome\" />
+    <Folder Include="Features\Planning\WFPObjective\" />
+    <Folder Include="Features\Planning\WFP\" />
+    <Folder Include="Features\Planning\WFPActivity\" />
+    <Folder Include="Features\Planning\SubDUAllocation\" />
+    <Folder Include="Features\Planning\SubDeliveryUnit\" />
+    <Folder Include="Features\Planning\ReceivedFund\" />
+    <Folder Include="Features\Planning\PerformanceMeasure\" />
+    <Folder Include="Features\Planning\OPCRRating\" />
+    <Folder Include="Features\Planning\OPCRPAP\" />
+    <Folder Include="Features\Planning\OPCRKPI\" />
+    <Folder Include="Features\Planning\OPCREvaluation\" />
+    <Folder Include="Features\Planning\OPCRActivity\" />
+    <Folder Include="Features\Planning\OPCR\" />
+    <Folder Include="Features\Planning\Office\" />
+    <Folder Include="Features\Planning\Object\" />
+  </ItemGroup>
+
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
     <RootNamespace>ERPEZ.Application</RootNamespace>
