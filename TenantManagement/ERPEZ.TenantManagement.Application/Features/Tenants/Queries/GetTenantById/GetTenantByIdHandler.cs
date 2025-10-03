@@ -41,9 +41,7 @@ public sealed class GetTenantByIdQueryHandler(IUnitOfWork unitOfWork): IRequestH
                 }).ToList()
             });
 
-        var tenant = await unitOfWork.TenantRepository.GetSingleAsync(tenantQuery, cancellationToken: cancellationToken);
-
-        if (tenant == null) return ApiResponse<TenantDto>.Fail("Tenant not found.");
+        var tenant = await unitOfWork.TenantRepository.GetSingleAsync(tenantQuery, cancellationToken: cancellationToken) ?? throw new NotFoundException("Tenant not found.");
 
         return ApiResponse<TenantDto>.Success(tenant, "Tenant retrieved successfully.");
     }

@@ -62,9 +62,11 @@ public class Repository<T>(ApplicationDbContext context, ISieveProcessor sievePr
         return await context.Set<T>().FirstOrDefaultAsync(predicate, cancellationToken);
     }
 
-    public void Remove(T entity)
+    public void Remove(T entity, bool hardDelete = false)
     {
+        entity.AllowHardDelete = hardDelete;
         context.Set<T>().Remove(entity);
+
     }
 
     public void Update(T entity)

@@ -13,6 +13,7 @@ public class GlobalExceptionHandler : IExceptionHandler
     {
         var (statusCode, title) = exception switch
         {
+            ConflictException => ((int)HttpStatusCode.Conflict, "Conflict occurred"),
             NotFoundException => ((int)HttpStatusCode.NotFound, "Resource not found"),
             _ => ((int)HttpStatusCode.InternalServerError, "An unexpected error occurred")
         };

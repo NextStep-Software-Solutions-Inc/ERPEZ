@@ -24,7 +24,7 @@ public interface IRepository<T> where T : BaseEntity
 
     void Update(T entity);
 
-    void Remove(T entity);
+    void Remove(T entity, bool hardDelete = false);
 
     // Bulk operations
     Task AddBulkAsync(IList<T> entities, CancellationToken cancellationToken = default);
