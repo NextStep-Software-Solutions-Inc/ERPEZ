@@ -2,7 +2,6 @@
 using ERPEZ.TenantManagement.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
-using Microsoft.EntityFrameworkCore.Metadata.Internal;
 using System.Linq.Expressions;
 
 namespace ERPEZ.TenantManagement.Infrastructure.Persistence;
@@ -38,9 +37,19 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             entity.SetPrimaryKey(idProperty);
 
             idProperty.ValueGenerated = ValueGenerated.OnAdd;
+        }
 
-            //Add query filter for soft deleted (isDeleted = true)
-            if (typeof(IEntity).IsAssignableFrom(entity.ClrType)) modelBuilder.Entity(entity.ClrType).HasQueryFilter((Expression<Func<IEntity, bool>>)(e => !e.IsDeleted));
+        // Apply soft delete query filter
+        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
+        {
+            if (typeof(IEntity).IsAssignableFrom(entityType.ClrType))
+            {
+                var parameter = Expression.Parameter(entityType.ClrType, "e");
+                var property = Expression.Property(parameter, nameof(IEntity.IsDeleted));
+                var notDeleted = Expression.Not(property);
+                var lambda = Expression.Lambda(notDeleted, parameter);
+                entityType.SetQueryFilter(lambda);
+            }
         }
 
         // Tenant

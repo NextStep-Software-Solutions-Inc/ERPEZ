@@ -1,4 +1,4 @@
-﻿using ERPEZ.TenantManagement.Application.Common;
+﻿using ERPEZ.Shared.Common;
 using ERPEZ.TenantManagement.Application.Features.Tenants.Commands.CreateTenant;
 using ERPEZ.TenantManagement.Application.Features.Tenants.Commands.DeleteTenant;
 using ERPEZ.TenantManagement.Application.Features.Tenants.Commands.UpdateTenant;
@@ -42,8 +42,6 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         public async Task<IActionResult> GetTenantById(Guid id)
         {
             var tenant = await mediator.Send(new GetTenantByIdQuery(id));
-            if (tenant == null)
-                return NotFound(ApiResponse<TenantDto>.Fail("Tenant not found."));
 
             return tenant.Succeeded ? Ok(tenant) : BadRequest(tenant);
         }
@@ -59,9 +57,6 @@ namespace ERPEZ.TenantManagement.Api.Controllers
                 Id = id,
                 UpdateTenant = updateTenant
             };
-
-            if (id != request.Id)
-                return BadRequest(ApiResponse<Tenant>.Fail("ID mismatch."));
 
             var tenant = await mediator.Send(request);
             return tenant.Succeeded ? Ok(tenant) : BadRequest(tenant);

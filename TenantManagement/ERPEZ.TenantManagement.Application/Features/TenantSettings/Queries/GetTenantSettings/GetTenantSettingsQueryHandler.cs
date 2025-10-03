@@ -1,4 +1,5 @@
-﻿using ERPEZ.TenantManagement.Application.Common;
+﻿using ERPEZ.Shared.Common;
+using ERPEZ.TenantManagement.Application.Common;
 using ERPEZ.TenantManagement.Domain.Entities;
 using ERPEZ.TenantManagement.Domain.Interfaces;
 using MediatR;
@@ -17,7 +18,7 @@ public sealed class GetTenantSettingsQueryHandler (IUnitOfWork unitOfWork) : IRe
             Filters = query.Filters,
             Sorts = query.Sorts
         };
-        var (tenantSettings, totalCount) = await unitOfWork.TenantSettingRepository.GetAllAsync(sieveModel, isDeleted: false, cancellationToken: cancellationToken);
+        var (tenantSettings, totalCount) = await unitOfWork.TenantSettingRepository.GetAllAsync(sieveModel, cancellationToken: cancellationToken);
 
         return new PaginatedApiResponse<TenantSetting>(
             [.. tenantSettings],

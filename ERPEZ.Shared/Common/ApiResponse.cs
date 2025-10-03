@@ -1,4 +1,4 @@
-﻿namespace ERPEZ.TenantManagement.Application.Common;
+namespace ERPEZ.Shared.Common;
 
 public class ApiResponse<T>
 {

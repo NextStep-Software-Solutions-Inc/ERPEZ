@@ -1,4 +1,4 @@
-﻿using ERPEZ.TenantManagement.Application.Common;
+﻿using ERPEZ.Shared.Common;
 using MediatR;
 
 namespace ERPEZ.TenantManagement.Application.Features.TenantSubscriptions.Commands.DeleteTenantSubscription;

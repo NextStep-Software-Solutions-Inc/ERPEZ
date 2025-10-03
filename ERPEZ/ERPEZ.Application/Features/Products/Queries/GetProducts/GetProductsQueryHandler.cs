@@ -1,6 +1,6 @@
-﻿using ERPEZ.Application.Common;
-using ERPEZ.Domain.Entities;
+﻿using ERPEZ.Domain.Entities;
 using ERPEZ.Domain.Interfaces;
+using ERPEZ.Shared.Common;
 using MediatR;
 using Sieve.Models;
 

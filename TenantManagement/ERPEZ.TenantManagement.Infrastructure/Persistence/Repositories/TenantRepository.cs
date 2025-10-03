@@ -1,5 +1,6 @@
 ﻿using ERPEZ.TenantManagement.Domain.Entities;
 using ERPEZ.TenantManagement.Domain.Interfaces;
+using Microsoft.EntityFrameworkCore;
 using Sieve.Services;
 
 namespace ERPEZ.TenantManagement.Infrastructure.Persistence.Repositories;

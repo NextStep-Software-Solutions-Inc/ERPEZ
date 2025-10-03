@@ -1,4 +1,5 @@
-﻿    using ERPEZ.TenantManagement.Application.Common;
+﻿using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Exceptions;
 using ERPEZ.TenantManagement.Domain.Entities;
 using ERPEZ.TenantManagement.Domain.Interfaces;
 using MediatR;
@@ -10,41 +11,21 @@ public sealed class UpdateTenantCommandHandler(IUnitOfWork unitOfWork)
 {
     public async Task<ApiResponse<Tenant>> Handle(UpdateTenantCommand request, CancellationToken cancellationToken)
     {
-        var tenant = await unitOfWork.TenantRepository.GetByIdAsync(request.Id, isDeleted:false, cancellationToken: cancellationToken);
-
-        if (tenant == null)
+        
+        var tenant = await unitOfWork.TenantRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("Tenant not found.");
+       
+        if (tenant.Name == request.UpdateTenant?.Name && tenant.BillingContactEmail == request.UpdateTenant?.BillingContactEmail) 
         {
-            return new ApiResponse<Tenant>
-            {
-                Succeeded = false,
-                Message = "Tenant not found.",
-                Data = null
-            };
+            throw new ConflictException("No changes detected to update.");
         }
-        if (tenant.Name == request.UpdateTenant?.Name && tenant.BillingContactEmail == request.UpdateTenant?.BillingContactEmail)
-        {
-            return new ApiResponse<Tenant>
-            {
-                Succeeded = false,
-                Message = "Tenant already exist.",
-                Data = tenant
-            };
-        }
-        // 2. Apply changes from the command to the domain entity
-        tenant.Name = string.IsNullOrWhiteSpace(request.UpdateTenant?.Name)
-            ? tenant.Name
-            : request.UpdateTenant.Name;
 
-        tenant.BillingContactEmail = string.IsNullOrWhiteSpace(request.UpdateTenant?.BillingContactEmail)
-            ? tenant.BillingContactEmail
-            : request.UpdateTenant.BillingContactEmail;
-
+        tenant.Name = request.UpdateTenant?.Name ?? tenant.Name;
+        tenant.BillingContactEmail = request.UpdateTenant?.BillingContactEmail ?? tenant.BillingContactEmail;
         tenant.OnPremise = request.UpdateTenant?.OnPremise ?? tenant.OnPremise;
 
-
+        unitOfWork.TenantRepository.Update(tenant);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        // 4. Return MediatR's void equivalent (Unit.Value)
         return new ApiResponse<Tenant>
         {
             Succeeded = true,

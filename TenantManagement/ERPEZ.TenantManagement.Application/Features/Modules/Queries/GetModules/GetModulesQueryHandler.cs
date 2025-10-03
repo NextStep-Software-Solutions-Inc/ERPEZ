@@ -1,4 +1,5 @@
-﻿using ERPEZ.TenantManagement.Application.Common;
+﻿using ERPEZ.Shared.Common;
+using ERPEZ.TenantManagement.Application.Common;
 using ERPEZ.TenantManagement.Domain.Entities;
 using ERPEZ.TenantManagement.Domain.Interfaces;
 using MediatR;
@@ -18,7 +19,7 @@ public class GetModulesQueryHandler (IUnitOfWork unitOfWork) : IRequestHandler<G
             Filters = query.Filters,
             Sorts = query.Sorts
         };
-        var (modules, totalCount) = await unitOfWork.ModuleRepository.GetAllAsync(sieveModel, isDeleted: false, cancellationToken: cancellationToken);
+        var (modules, totalCount) = await unitOfWork.ModuleRepository.GetAllAsync(sieveModel, cancellationToken: cancellationToken);
 
         return new PaginatedApiResponse<Module>(
             [.. modules],
