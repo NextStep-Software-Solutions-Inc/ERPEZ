@@ -7,6 +7,7 @@ COPY ["ERPEZ.Api/ERPEZ.Api.csproj", "ERPEZ.Api/"]
 COPY ["ERPEZ.Application/ERPEZ.Application.csproj", "ERPEZ.Application/"]
 COPY ["ERPEZ.Domain/ERPEZ.Domain.csproj", "ERPEZ.Domain/"]
 COPY ["ERPEZ.Infrastructure/ERPEZ.Infrastructure.csproj", "ERPEZ.Infrastructure/"]
+COPY ["ERPEZ.Shared/ERPEZ.Shared.csproj", "ERPEZ.Shared/"]
 
 RUN dotnet restore "ERPEZ.Api/ERPEZ.Api.csproj"
 

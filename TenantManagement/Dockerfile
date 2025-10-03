@@ -7,6 +7,7 @@ COPY ["ERPEZ.TenantManagement.Api/ERPEZ.TenantManagement.Api.csproj", "ERPEZ.Ten
 COPY ["ERPEZ.TenantManagement.Application/ERPEZ.TenantManagement.Application.csproj", "ERPEZ.TenantManagement.Application/"]
 COPY ["ERPEZ.TenantManagement.Domain/ERPEZ.TenantManagement.Domain.csproj", "ERPEZ.TenantManagement.Domain/"]
 COPY ["ERPEZ.TenantManagement.Infrastructure/ERPEZ.TenantManagement.Infrastructure.csproj", "ERPEZ.TenantManagement.Infrastructure/"]
+COPY ["../ERPEZ.Shared/ERPEZ.Shared.csproj", "ERPEZ.Shared/"]
 
 RUN dotnet restore "ERPEZ.TenantManagement.Api/ERPEZ.TenantManagement.Api.csproj"
 
