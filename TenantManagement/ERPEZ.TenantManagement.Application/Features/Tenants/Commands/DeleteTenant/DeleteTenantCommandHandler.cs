@@ -1,4 +1,5 @@
 ﻿using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Exceptions;
 using ERPEZ.TenantManagement.Domain.Interfaces;
 using MediatR;
 
@@ -8,9 +9,7 @@ public sealed class DeleteTenantCommandHandler(IUnitOfWork unitOfWork): IRequest
 {
     public async Task<ApiResponse<Unit>> Handle(DeleteTenantCommand request, CancellationToken cancellationToken)
     {
-        var tenant = await unitOfWork.TenantRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken);
-
-        if (tenant == null) return ApiResponse<Unit>.Fail("Tenant not found.");
+        var tenant = await unitOfWork.TenantRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("Tenant not found.");
 
         unitOfWork.TenantRepository.Remove(tenant);
         await unitOfWork.SaveChangesAsync(cancellationToken);
