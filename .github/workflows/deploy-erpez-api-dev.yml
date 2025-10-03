@@ -30,6 +30,7 @@ env:
 
 jobs:
   build:
+    name: Build and Push Docker Image
     runs-on: ubuntu-latest
     environment: Development
 
@@ -55,6 +56,7 @@ jobs:
         tags: ${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.CONTAINER_NAME }}:${{ env.IMAGE_TAG }}
 
   deploy:
+    name: Deploy to DigitalOcean Droplet
     runs-on: ubuntu-latest
     environment: Development
     needs: build
