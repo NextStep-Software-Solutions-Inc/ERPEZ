@@ -12,7 +12,7 @@ public sealed class GetTenantByIdQueryHandler(IUnitOfWork unitOfWork): IRequestH
     public async Task<ApiResponse<TenantDto>> Handle(GetTenantByIdQuery request, CancellationToken cancellationToken)
     {
         var tenantQuery = unitOfWork.TenantRepository
-            .Query(t => t.Id == request.Id, ignoreQueryFilters: false)
+            .Query(t => t.Id == request.Id)
             .Select(t => new TenantDto
             {
                 Id = t.Id,

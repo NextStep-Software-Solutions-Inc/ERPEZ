@@ -32,22 +32,16 @@ public class Repository<T>(ApplicationDbContext context, ISieveProcessor sievePr
 
     public async Task<(IReadOnlyList<TDto> Entities, int TotalCount)> GetAllAsync<TDto>(SieveModel sieveModel, Expression<Func<T, TDto>> projection, CancellationToken cancellationToken = default)
     {
-        IQueryable<T> baseQuery = context.Set<T>();
 
-        // Apply projection first
-        IQueryable<TDto> projectedQuery = baseQuery.Select(projection);
+        IQueryable<T> query = context.Set<T>().AsNoTracking();
 
-        // Apply Sieve filtering to the projected query
-        var filteredQuery = sieveProcessor.Apply(sieveModel, projectedQuery, applyPagination: false);
+        var filteredQuery = sieveProcessor.Apply(sieveModel, query, applyPagination: false);
 
-        // Get total count from the filtered query
         var totalCount = await filteredQuery.CountAsync(cancellationToken);
 
-        // Apply pagination to the filtered query
         var paginatedResult = sieveProcessor.Apply(sieveModel, filteredQuery, applyFiltering: false, applySorting: false);
 
-        // Execute the query
-        var entities = await paginatedResult.ToListAsync(cancellationToken);
+        var entities = await paginatedResult.Select(projection).ToListAsync(cancellationToken);
 
         return (entities, totalCount);
     }

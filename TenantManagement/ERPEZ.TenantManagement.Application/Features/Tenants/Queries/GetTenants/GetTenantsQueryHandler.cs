@@ -1,5 +1,4 @@
 ﻿using ERPEZ.Shared.Common;
-using ERPEZ.TenantManagement.Application.Common;
 using ERPEZ.TenantManagement.Application.Features.Tenants.Dtos;
 using ERPEZ.TenantManagement.Application.Features.TenantSettings.Dtos;
 using ERPEZ.TenantManagement.Application.Features.TenantSubscriptions.Dtos;
@@ -38,17 +37,20 @@ public sealed class GetTenantsQueryHandler (IUnitOfWork unitOfWork) : IRequestHa
                 DbConnectionString = t.TenantSetting.DbConnectionString,
                 BillingContactEmail = t.TenantSetting.BillingContactEmail
             },
-            TenantSubscriptions = t.TenantSubscriptions.Select(ts => new TenantSubscriptionDto
-            {
-                Id = ts.Id,
-                Amount = ts.Amount,
-                Plan = ts.Plan.ToString(),
-                Status = ts.Status.ToString(),
-                BillingCycle = ts.BillingCycle.ToString(),
-                StartDate = ts.StartDate,
-                EndDate = ts.EndDate,
-                AutoRenew = ts.AutoRenew
-            }).ToList()
+            TenantSubscriptions = t.TenantSubscriptions
+                .Where(ts => ts.TenantId == t.Id)
+                .Select(ts => new TenantSubscriptionDto
+                {
+                    Id = ts.Id,
+                    Amount = ts.Amount,
+                    Plan = ts.Plan.ToString(),
+                    Status = ts.Status.ToString(),
+                    BillingCycle = ts.BillingCycle.ToString(),
+                    StartDate = ts.StartDate,
+                    EndDate = ts.EndDate,
+                    AutoRenew = ts.AutoRenew
+                })
+                .ToList()
         };
 
         var (tenantDtos, totalCount) = await unitOfWork.TenantRepository.GetAllAsync(sieveModel, projection, cancellationToken);
