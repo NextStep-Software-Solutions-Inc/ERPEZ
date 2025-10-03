@@ -1,4 +1,5 @@
 ﻿using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Exceptions;
 using ERPEZ.TenantManagement.Application.Features.TenantSubscriptions.Dtos;
 using ERPEZ.TenantManagement.Application.Features.TenantSubscriptions.Enums;
 using ERPEZ.TenantManagement.Domain.Interfaces;
@@ -12,17 +13,8 @@ public sealed class GetTenantSubscriptionQueryHandler(IUnitOfWork unitOfWork) : 
         GetTenantSubscriptionByIdQuery request,
         CancellationToken cancellationToken)
     {
-        var tenantSubscription = await unitOfWork.TenantSubscriptionRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken);
+        var tenantSubscription = await unitOfWork.TenantSubscriptionRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("Tenant subscription not found.");
 
-        if (tenantSubscription == null)
-            return new ApiResponse<TenantSubscriptionDto>
-            {
-                Succeeded = false,
-                Data = null,
-                Message = "Tenant subscription not found."
-            };
-
-        // Map to DTO
         var dto = new TenantSubscriptionDto
         {
             Id = tenantSubscription.Id,
@@ -35,11 +27,6 @@ public sealed class GetTenantSubscriptionQueryHandler(IUnitOfWork unitOfWork) : 
             EndDate = tenantSubscription.EndDate,
             AutoRenew = tenantSubscription.AutoRenew
         };
-        return new ApiResponse<TenantSubscriptionDto>
-        {
-            Succeeded = true,
-            Data = dto,
-            Message = "Tenant subscription retrieved successfully."
-        };
+        return ApiResponse<TenantSubscriptionDto>.Success(dto, "Tenant subscription retrieved successfully.");
     }
 }

@@ -1,7 +1,5 @@
 ﻿using ERPEZ.Shared.Common;
-using ERPEZ.TenantManagement.Application.Common;
 using ERPEZ.TenantManagement.Application.Features.TenantSubscriptions.Dtos;
-using ERPEZ.TenantManagement.Domain.Entities;
 using MediatR;
 
 namespace ERPEZ.TenantManagement.Application.Features.TenantSubscriptions.Queries.GetTenantSubscriptions;

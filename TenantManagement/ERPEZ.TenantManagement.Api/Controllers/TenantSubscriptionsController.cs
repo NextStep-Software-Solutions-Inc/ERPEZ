@@ -44,9 +44,6 @@ namespace ERPEZ.TenantManagement.Api.Controllers
             var query = new GetTenantSubscriptionByIdQuery(id);
             var tenantSubscription = await mediator.Send(query);
 
-            if (tenantSubscription == null)
-                return NotFound(ApiResponse<TenantSubscriptionDto>.Fail("Tenant subscription not found."));
-
             return tenantSubscription.Succeeded ? Ok(tenantSubscription) : BadRequest(tenantSubscription);
         }
 
@@ -61,9 +58,6 @@ namespace ERPEZ.TenantManagement.Api.Controllers
                 Id = id,
                 UpdateTenantSubscription = tenantSubscriptionDto
             };
-
-            if (id != request.Id)
-                return BadRequest(ApiResponse<TenantSubscription>.Fail("ID mismatch."));
 
             var tenantSubscription = await mediator.Send(request);
             return tenantSubscription.Succeeded ? Ok(tenantSubscription) : BadRequest(tenantSubscription);

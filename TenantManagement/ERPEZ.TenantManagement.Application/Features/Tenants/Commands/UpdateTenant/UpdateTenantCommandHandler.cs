@@ -26,11 +26,6 @@ public sealed class UpdateTenantCommandHandler(IUnitOfWork unitOfWork)
         unitOfWork.TenantRepository.Update(tenant);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return new ApiResponse<Tenant>
-        {
-            Succeeded = true,
-            Message = "Updated Successfully.",
-            Data = tenant
-        };
+        return ApiResponse<Tenant>.Success(tenant, "Tenant updated successfully.");
     }
 }
