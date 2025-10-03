@@ -3,17 +3,17 @@ FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 
 # Copy csproj files and restore dependencies
-COPY ["ERPEZ.TenantManagement.Api/ERPEZ.TenantManagement.Api.csproj", "ERPEZ.TenantManagement.Api/"]
-COPY ["ERPEZ.TenantManagement.Application/ERPEZ.TenantManagement.Application.csproj", "ERPEZ.TenantManagement.Application/"]
-COPY ["ERPEZ.TenantManagement.Domain/ERPEZ.TenantManagement.Domain.csproj", "ERPEZ.TenantManagement.Domain/"]
-COPY ["ERPEZ.TenantManagement.Infrastructure/ERPEZ.TenantManagement.Infrastructure.csproj", "ERPEZ.TenantManagement.Infrastructure/"]
-COPY ["../ERPEZ.Shared/ERPEZ.Shared.csproj", "ERPEZ.Shared/"]
+COPY ["TenantManagement/ERPEZ.TenantManagement.Api/ERPEZ.TenantManagement.Api.csproj", "TenantManagement/ERPEZ.TenantManagement.Api/"]
+COPY ["TenantManagement/ERPEZ.TenantManagement.Application/ERPEZ.TenantManagement.Application.csproj", "TenantManagement/ERPEZ.TenantManagement.Application/"]
+COPY ["TenantManagement/ERPEZ.TenantManagement.Domain/ERPEZ.TenantManagement.Domain.csproj", "TenantManagement/ERPEZ.TenantManagement.Domain/"]
+COPY ["TenantManagement/ERPEZ.TenantManagement.Infrastructure/ERPEZ.TenantManagement.Infrastructure.csproj", "TenantManagement/ERPEZ.TenantManagement.Infrastructure/"]
+COPY ["ERPEZ.Shared/ERPEZ.Shared.csproj", "ERPEZ.Shared/"]
 
-RUN dotnet restore "ERPEZ.TenantManagement.Api/ERPEZ.TenantManagement.Api.csproj"
+RUN dotnet restore "TenantManagement/ERPEZ.TenantManagement.Api/ERPEZ.TenantManagement.Api.csproj"
 
 # Copy everything else and build
 COPY . .
-WORKDIR "/src/ERPEZ.TenantManagement.Api"
+WORKDIR "/src/TenantManagement/ERPEZ.TenantManagement.Api"
 RUN dotnet build "ERPEZ.TenantManagement.Api.csproj" -c Release -o /app/build
 
 # Publish the application
