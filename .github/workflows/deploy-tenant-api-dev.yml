@@ -6,12 +6,14 @@ on:
       - development
     paths:
       - 'TenantManagement/**'
+      - 'ERPEZ.Shared/**'
       - .github/workflows/deploy-tenant-dev.yml
   pull_request:
     branches:
       - development
     paths:
       - 'TenantManagement/**'
+      - 'ERPEZ.Shared/**'
       - .github/workflows/deploy-tenant-dev.yml
   workflow_dispatch:
     inputs:
