@@ -1,17 +1,15 @@
-﻿using ERPEZ.Application.Common;
+﻿using ERPEZ.Application.Features.Planning.Location.Commands.CreateLocation;
+using ERPEZ.Application.Features.Planning.Location.Commands.DeleteLocation;
+using ERPEZ.Application.Features.Planning.Location.Commands.UpdateLocation;
+using ERPEZ.Application.Features.Planning.Location.Dtos;
+using ERPEZ.Application.Features.Planning.Location.Queries.GetLocationById;
+using ERPEZ.Application.Features.Planning.Location.Queries.GetLocations;
 using ERPEZ.Domain.Entities.Planning;
-using ERPEZ.TenantManagement.Application.Common;
-using ERPEZ.TenantManagement.Application.Features.Locations.Commands.CreateLocation;
-using ERPEZ.TenantManagement.Application.Features.Locations.Commands.DeleteLocation;
-using ERPEZ.TenantManagement.Application.Features.Locations.Commands.UpdateLocation;
-using ERPEZ.TenantManagement.Application.Features.Locations.Dtos;
-using ERPEZ.TenantManagement.Application.Features.Locations.Queries.GetLocationById;
-using ERPEZ.TenantManagement.Application.Features.Locations.Queries.GetLocations;
-using ERPEZ.TenantManagement.Domain.Entities;
+using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
-namespace ERPEZ.TenantManagement.Api.Controllers
+namespace ERPEZ.Api.Controllers
 {
     [Route("locations")]
     [ApiController]
@@ -44,8 +42,6 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         public async Task<IActionResult> GetLocationById(Guid id)
         {
             var location = await mediator.Send(new GetLocationByIdQuery(id));
-            if (location == null)
-                return NotFound(ApiResponse<LocationDto>.Fail("Location not found."));
 
             return location.Succeeded ? Ok(location) : BadRequest(location);
         }
@@ -61,9 +57,6 @@ namespace ERPEZ.TenantManagement.Api.Controllers
                 Id = id,
                 UpdateLocation = updateLocation
             };
-
-            if (id != request.Id)
-                return BadRequest(ApiResponse<Location>.Fail("ID mismatch."));
 
             var location = await mediator.Send(request);
             return location.Succeeded ? Ok(location) : BadRequest(location);

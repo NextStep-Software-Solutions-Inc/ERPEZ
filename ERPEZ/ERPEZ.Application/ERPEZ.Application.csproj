@@ -24,9 +24,6 @@
     <Folder Include="Features\Planning\KPIModeOfVerification\" />
     <Folder Include="Features\Planning\KPIRating\" />
     <Folder Include="Features\Planning\KPITarget\" />
-    <Folder Include="Features\Planning\Location\Commands\" />
-    <Folder Include="Features\Planning\Location\Dtos\" />
-    <Folder Include="Features\Planning\Location\Queries\" />
     <Folder Include="Features\Planning\MFOKPI\" />
     <Folder Include="Features\Planning\MFOPAP\Queries\" />
     <Folder Include="Features\Planning\Organization\Commands\" />
