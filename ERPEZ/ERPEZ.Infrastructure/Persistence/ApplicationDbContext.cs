@@ -1,5 +1,4 @@
-﻿using ERPEZ.Domain.Entities;
-using ERPEZ.Domain.Entities.Planning;
+﻿using ERPEZ.Domain.Entities.Planning;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Object = ERPEZ.Domain.Entities.Planning.Object;
@@ -8,7 +7,6 @@ namespace ERPEZ.Infrastructure.Persistence;
 
 public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : DbContext(options)
 {
-    public DbSet<Product> Products { get; set; }
     //Planning
     public DbSet<ActivityBudgetRequirement> ActivityBudgetRequirements { get; set; }
     public DbSet<DUAllocation> DUAllocations { get; set; }

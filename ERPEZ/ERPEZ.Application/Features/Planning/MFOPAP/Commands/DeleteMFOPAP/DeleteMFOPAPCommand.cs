@@ -1,5 +1,6 @@
-﻿namespace ERPEZ.Application.Features.Planning.MFOPAP.Commands.DeleteMFOPAP;
+﻿using ERPEZ.Shared.Common;
+using MediatR;
 
-public class DeleteMFOPAPCommand
-{
-}
+namespace ERPEZ.Application.Features.Planning.MFOPAP.Commands.DeleteMFOPAP;
+
+public record class DeleteMFOPAPCommand(Guid Id) : IRequest<ApiResponse<Unit>>;

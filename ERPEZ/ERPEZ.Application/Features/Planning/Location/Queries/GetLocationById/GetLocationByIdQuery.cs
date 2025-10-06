@@ -1,6 +1,4 @@
-﻿using ERPEZ.Application.Features.Planning.Transaction.Dtos;
-using ERPEZ.Domain.Entities.Planning;
-using ERPEZ.Shared.Common;
+﻿using ERPEZ.Shared.Common;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Location.Queries.GetLocationById;
