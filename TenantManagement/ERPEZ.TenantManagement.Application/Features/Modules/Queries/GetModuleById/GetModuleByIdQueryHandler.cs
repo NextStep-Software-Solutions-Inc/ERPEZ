@@ -13,7 +13,7 @@ public sealed class GetModuleByIdQueryHandler(IUnitOfWork unitOfWork) : IRequest
         CancellationToken cancellationToken)
     {
         var module = await unitOfWork.ModuleRepository.FindAsync(
-           t => t.Id == request.Id && !t.IsDeleted,
+           t => t.Id == request.Id,
             cancellationToken: cancellationToken) ?? throw new NotFoundException("No data found.");
 
         return ApiResponse<Module>.Success(module, "Retrieved successfully");

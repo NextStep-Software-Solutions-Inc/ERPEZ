@@ -10,7 +10,7 @@ public class CreateModuleCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandl
 
     public async Task<ApiResponse<Module>> Handle(CreateModuleCommand request, CancellationToken cancellationToken)
     {
-        var moduleExist = await _unitOfWork.ModuleRepository.FindAsync(t => t.Name == request.Name && !t.IsDeleted);
+        var moduleExist = await _unitOfWork.ModuleRepository.FindAsync(t => t.Name == request.Name);
         if (moduleExist != null)
         {
             return new()

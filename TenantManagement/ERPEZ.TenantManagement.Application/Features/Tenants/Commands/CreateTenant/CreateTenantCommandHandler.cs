@@ -11,7 +11,7 @@ public sealed class CreateTenantCommandHandler(IUnitOfWork _unitOfWork) : IReque
     public async Task<ApiResponse<Tenant>> Handle(CreateTenantCommand request, CancellationToken cancellationToken)
     {
         var tenantExist = await _unitOfWork.TenantRepository.FindAsync(
-            t => t.Name == request.Name && t.BillingContactEmail == request.BillingContactEmail, cancellationToken : cancellationToken
+            t => t.Name == request.Name && t.BillingContactEmail == request.BillingContactEmail, cancellationToken
         );
         if (tenantExist != null) throw new ConflictException("Tenant already exists.");
 

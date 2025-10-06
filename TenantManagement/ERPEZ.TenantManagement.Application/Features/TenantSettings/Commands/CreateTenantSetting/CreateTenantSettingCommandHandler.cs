@@ -6,21 +6,26 @@ using MediatR;
 
 namespace ERPEZ.TenantManagement.Application.Features.TenantSettings.Commands.CreateTenantSetting;
 
-public sealed class CreateTenantSettingCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<CreateTenantSettingCommand, ApiResponse<TenantSetting>>
+public sealed class CreateTenantSettingCommandHandler(IUnitOfWork _unitOfWork)
+    : IRequestHandler<CreateTenantSettingCommand, ApiResponse<TenantSetting>>
 {
     public async Task<ApiResponse<TenantSetting>> Handle(CreateTenantSettingCommand command, CancellationToken cancellationToken)
     {
-        var existTenantSetting = await _unitOfWork.TenantSettingRepository.FindAsync(ts => ts.Name == command.Name &&
-        ts.TenantId == command.TenantId, cancellationToken);
+        var tenantSettingExists = await _unitOfWork.TenantSettingRepository
+            .FindAsync(ts => ts.Name == command.Name && ts.TenantId == command.TenantId, cancellationToken);
 
-        if (existTenantSetting != null) throw new ConflictException("Tenant setting already exist.");
-        
-        var existTenant = await _unitOfWork.TenantRepository.GetByIdAsync(command.TenantId, cancellationToken: cancellationToken) ?? throw new NotFoundException("Tenant setting not found.");
+        if (tenantSettingExists != null)
+            throw new ConflictException("Tenant setting already exists.");
+
+        var tenantExists = await _unitOfWork.TenantRepository
+            .FindAsync(t => t.Id == command.TenantId, cancellationToken);
+
+        if (tenantExists == null)
+            throw new NotFoundException("Tenant not found.");
 
         var tenantSetting = new TenantSetting
         {
             TenantId = command.TenantId,
-            Name = command.Name,
             BaseURL = command.BaseUrl,
             BillingContactEmail = command.BillingContactEmail,
             DbConnectionString = command.DBConnectionString
@@ -28,6 +33,7 @@ public sealed class CreateTenantSettingCommandHandler(IUnitOfWork _unitOfWork) :
 
         await _unitOfWork.TenantSettingRepository.AddAsync(tenantSetting, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
         return ApiResponse<TenantSetting>.Success(tenantSetting, "Tenant setting created successfully.");
     }
 }
