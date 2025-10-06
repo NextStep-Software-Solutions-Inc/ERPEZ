@@ -24,6 +24,7 @@ public class UpdateTenantSubscriptionCommandHandler(IUnitOfWork unitOfWork)
         if (dto.TenantId.HasValue)
         {
             var existTenant = await unitOfWork.TenantRepository.GetByIdAsync(dto.TenantId.Value, cancellationToken: cancellationToken) ?? throw new NotFoundException("Tenant not found.");
+            tenantSubscription.TenantId = dto.TenantId.Value;
         }
 
         var validation = EnumValidator.ValidateAll(
