@@ -1,5 +1,6 @@
-﻿namespace ERPEZ.Application.Features.Planning.Location.Commands.DeleteLocation;
+﻿using ERPEZ.Shared.Common;
+using MediatR;
 
-public class DeleteLocationCommand
-{
-}
+namespace ERPEZ.Application.Features.Planning.Location.Commands.DeleteLocation;
+
+public record class DeleteLocationCommand(Guid Id) : IRequest<ApiResponse<Unit>>;

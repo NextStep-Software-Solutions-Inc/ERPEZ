@@ -1,18 +1,15 @@
-﻿using ERPEZ.Application.Common;
+﻿using ERPEZ.Application.Features.Planning.MFOPAP.Commands.CreateMFOPAP;
+using ERPEZ.Application.Features.Planning.MFOPAP.Commands.DeleteMFOPAP;
+using ERPEZ.Application.Features.Planning.MFOPAP.Commands.UpdateMFOPAP;
 using ERPEZ.Application.Features.Planning.MFOPAP.Dtos;
+using ERPEZ.Application.Features.Planning.MFOPAP.Queries.GetMFOPAPById;
+using ERPEZ.Application.Features.Planning.MFOPAP.Queries.GetMFOPAPs;
 using ERPEZ.Domain.Entities.Planning;
-using ERPEZ.TenantManagement.Application.Common;
-using ERPEZ.TenantManagement.Application.Features.Planning.MFOPAP.Commands.CreateMFOPAP;
-using ERPEZ.TenantManagement.Application.Features.Planning.MFOPAP.Commands.DeleteMFOPAP;
-using ERPEZ.TenantManagement.Application.Features.Planning.MFOPAP.Commands.UpdateMFOPAP;
-using ERPEZ.TenantManagement.Application.Features.Planning.MFOPAP.Dtos;
-using ERPEZ.TenantManagement.Application.Features.Planning.MFOPAP.Queries.GetMFOPAPById;
-using ERPEZ.TenantManagement.Application.Features.Planning.MFOPAP.Queries.GetMFOPAPs;
-using ERPEZ.TenantManagement.Domain.Entities;
+using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
-namespace ERPEZ.TenantManagement.Api.Controllers
+namespace ERPEZ.Api.Controllers
 {
     [Route("mfopaps")]
     [ApiController]
@@ -24,9 +21,6 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         public async Task<IActionResult> CreateMFOPAP([FromBody] CreateMFOPAPCommand command)
         {
             var mfopap = await mediator.Send(command);
-
-            if (!mfopap.Succeeded)
-                return BadRequest(mfopap);
 
             return CreatedAtAction(nameof(GetMFOPAPById), new { id = mfopap.Data!.Id }, mfopap);
         }
@@ -45,8 +39,6 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         public async Task<IActionResult> GetMFOPAPById(Guid id)
         {
             var mfopap = await mediator.Send(new GetMFOPAPByIdQuery(id));
-            if (mfopap == null)
-                return NotFound(ApiResponse<MFOPAPDto>.Fail("MFOPAP not found."));
 
             return mfopap.Succeeded ? Ok(mfopap) : BadRequest(mfopap);
         }
@@ -62,9 +54,6 @@ namespace ERPEZ.TenantManagement.Api.Controllers
                 Id = id,
                 UpdateMFOPAP = updateMFOPAP
             };
-
-            if (id != request.Id)
-                return BadRequest(ApiResponse<MFOPAP>.Fail("ID mismatch."));
 
             var mfopap = await mediator.Send(request);
             return mfopap.Succeeded ? Ok(mfopap) : BadRequest(mfopap);

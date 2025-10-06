@@ -1,5 +1,8 @@
-﻿namespace ERPEZ.Application.Features.Planning.Location.Queries.GetLocationById;
+﻿using ERPEZ.Application.Features.Planning.Transaction.Dtos;
+using ERPEZ.Domain.Entities.Planning;
+using ERPEZ.Shared.Common;
+using MediatR;
 
-public class GetLocationByIdQuery
-{
-}
+namespace ERPEZ.Application.Features.Planning.Location.Queries.GetLocationById;
+
+public record GetLocationByIdQuery(Guid Id) : IRequest<ApiResponse<Domain.Entities.Planning.Location>>;

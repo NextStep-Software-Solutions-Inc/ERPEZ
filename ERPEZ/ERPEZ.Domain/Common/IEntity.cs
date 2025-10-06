@@ -1,13 +1,15 @@
-﻿namespace ERPEZ.Domain.Common;
-
-public interface IEntity
+﻿namespace ERPEZ.Domain.Common
 {
-    Guid Id { get; }
-    DateTime CreatedAt { get; }
-    string CreatedBy { get; }
-    DateTime UpdatedAt { get; }
-    Guid? UpdatedBy { get; }
-    bool IsDeleted { get; }
-    DateTime DeletedAt { get; }
-    Guid? DeletedBy { get; }
+    public interface IEntity
+    {
+        Guid Id { get; set; }
+        DateTime CreatedAt { get; set; }
+        string CreatedBy { get; set; }
+        DateTime UpdatedAt { get; set; }
+        string? UpdatedBy { get; set; }
+        bool IsDeleted { get; set; }
+        DateTime DeletedAt { get; set; }
+        string? DeletedBy { get; set; }
+        bool AllowHardDelete { get; set; }
+    }
 }

@@ -1,5 +1,6 @@
 ﻿using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Exceptions;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Location.Commands.CreateLocation;
@@ -8,16 +9,8 @@ public class CreateLocationCommandHandler(IUnitOfWork _unitOfWork) : IRequestHan
 {
     public async Task<ApiResponse<Domain.Entities.Planning.Location>> Handle(CreateLocationCommand request, CancellationToken cancellationToken)
     {
-        var locationExist = await _unitOfWork.LocationRepository.FindAsync(t => t.Name == request.Name && !t.IsDeleted);
-        if (locationExist != null)
-        {
-            return new()
-            {
-                Succeeded = false,
-                Data = null,
-                Message = "Location already exist."
-            };
-        }
+        var locationExist = await _unitOfWork.LocationRepository.FindAsync(t => t.Name == request.Name, cancellationToken: cancellationToken);
+        if (locationExist != null) throw new ConflictException("Location already exists.");
         var location = new Domain.Entities.Planning.Location
         {
             ParentId = request.ParentId,
@@ -28,12 +21,6 @@ public class CreateLocationCommandHandler(IUnitOfWork _unitOfWork) : IRequestHan
         };
         await _unitOfWork.LocationRepository.AddAsync(location, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        return throw
-            new()
-        {
-            Data = location,
-            Succeeded = true,
-            Message = "Location created successfully."
-        };
+        return ApiResponse<Domain.Entities.Planning.Location>.Success(location, "Location created successfully.");
     }
 }

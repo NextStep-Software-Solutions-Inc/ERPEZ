@@ -1,17 +1,15 @@
-﻿using ERPEZ.Application.Common;
+﻿using ERPEZ.Application.Features.Planning.Organization.Commands.CreateLocation;
+using ERPEZ.Application.Features.Planning.Organization.Commands.DeleteOrganization;
+using ERPEZ.Application.Features.Planning.Organization.Commands.UpdateOrganization;
+using ERPEZ.Application.Features.Planning.Organization.Dtos;
+using ERPEZ.Application.Features.Planning.Organization.Queries.GetOrganizationById;
+using ERPEZ.Application.Features.Planning.Organization.Queries.GetOrganizations;
 using ERPEZ.Domain.Entities.Planning;
-using ERPEZ.TenantManagement.Application.Common;
-using ERPEZ.TenantManagement.Application.Features.Planning.Organization.Commands.CreateOrganization;
-using ERPEZ.TenantManagement.Application.Features.Planning.Organization.Commands.DeleteOrganization;
-using ERPEZ.TenantManagement.Application.Features.Planning.Organization.Commands.UpdateOrganization;
-using ERPEZ.TenantManagement.Application.Features.Planning.Organization.Dtos;
-using ERPEZ.TenantManagement.Application.Features.Planning.Organization.Queries.GetOrganizationById;
-using ERPEZ.TenantManagement.Application.Features.Planning.Organization.Queries.GetOrganizations;
-using ERPEZ.TenantManagement.Domain.Entities;
+using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
-namespace ERPEZ.TenantManagement.Api.Controllers
+namespace ERPEZ.Api.Controllers
 {
     [Route("organizations")]
     [ApiController]
@@ -44,8 +42,6 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         public async Task<IActionResult> GetOrganizationById(Guid id)
         {
             var organization = await mediator.Send(new GetOrganizationByIdQuery(id));
-            if (organization == null)
-                return NotFound(ApiResponse<OrganizationDto>.Fail("Organization not found."));
 
             return organization.Succeeded ? Ok(organization) : BadRequest(organization);
         }
@@ -61,10 +57,6 @@ namespace ERPEZ.TenantManagement.Api.Controllers
                 Id = id,
                 UpdateOrganization = updateOrganization
             };
-
-            if (id != request.Id)
-                return BadRequest(ApiResponse<Organization>.Fail("ID mismatch."));
-
             var organization = await mediator.Send(request);
             return organization.Succeeded ? Ok(organization) : BadRequest(organization);
         }

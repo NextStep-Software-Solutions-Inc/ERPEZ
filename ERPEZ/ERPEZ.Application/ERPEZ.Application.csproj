@@ -25,13 +25,6 @@
     <Folder Include="Features\Planning\KPIRating\" />
     <Folder Include="Features\Planning\KPITarget\" />
     <Folder Include="Features\Planning\MFOKPI\" />
-    <Folder Include="Features\Planning\MFOPAP\Queries\" />
-    <Folder Include="Features\Planning\Organization\Commands\" />
-    <Folder Include="Features\Planning\Organization\Dtos\" />
-    <Folder Include="Features\Planning\Organization\Queries\" />
-    <Folder Include="Features\Planning\Transaction\Commands\" />
-    <Folder Include="Features\Planning\Transaction\Dtos\" />
-    <Folder Include="Features\Planning\Transaction\Queries\" />
     <Folder Include="Features\Planning\WFPPAP\" />
     <Folder Include="Features\Planning\WFPPAPDepartment\" />
     <Folder Include="Features\Planning\WFPOutcome\" />

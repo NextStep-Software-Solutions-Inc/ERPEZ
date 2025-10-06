@@ -1,16 +1,15 @@
-﻿using ERPEZ.Application.Common;
-using ERPEZ.TenantManagement.Application.Common;
-using ERPEZ.TenantManagement.Application.Features.Planning.Transaction.Commands.CreateTransaction;
-using ERPEZ.TenantManagement.Application.Features.Planning.Transaction.Commands.DeleteTransaction;
-using ERPEZ.TenantManagement.Application.Features.Planning.Transaction.Commands.UpdateTransaction;
-using ERPEZ.TenantManagement.Application.Features.Planning.Transaction.Dtos;
-using ERPEZ.TenantManagement.Application.Features.Planning.Transaction.Queries.GetTransactionById;
-using ERPEZ.TenantManagement.Application.Features.Planning.Transaction.Queries.GetTransactions;
-using ERPEZ.TenantManagement.Domain.Entities;
+﻿using ERPEZ.Application.Features.Planning.Transaction.Commands.CreateTransaction;
+using ERPEZ.Application.Features.Planning.Transaction.Commands.DeleteTransaction;
+using ERPEZ.Application.Features.Planning.Transaction.Commands.UpdateTransaction;
+using ERPEZ.Application.Features.Planning.Transaction.Dtos;
+using ERPEZ.Application.Features.Planning.Transaction.Queries.GetTransactionById;
+using ERPEZ.Application.Features.Planning.Transaction.Queries.GetTransactions;
+using ERPEZ.Domain.Entities.Planning;
+using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
-namespace ERPEZ.TenantManagement.Api.Controllers
+namespace ERPEZ.Api.Controllers
 {
     [Route("transactions")]
     [ApiController]
@@ -43,8 +42,6 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         public async Task<IActionResult> GetTransactionById(Guid id)
         {
             var transaction = await mediator.Send(new GetTransactionByIdQuery(id));
-            if (transaction == null)
-                return NotFound(ApiResponse<TransactionDto>.Fail("Transaction not found."));
 
             return transaction.Succeeded ? Ok(transaction) : BadRequest(transaction);
         }
@@ -60,9 +57,6 @@ namespace ERPEZ.TenantManagement.Api.Controllers
                 Id = id,
                 UpdateTransaction = updateTransaction
             };
-
-            if (id != request.Id)
-                return BadRequest(ApiResponse<Transaction>.Fail("ID mismatch."));
 
             var transaction = await mediator.Send(request);
             return transaction.Succeeded ? Ok(transaction) : BadRequest(transaction);
