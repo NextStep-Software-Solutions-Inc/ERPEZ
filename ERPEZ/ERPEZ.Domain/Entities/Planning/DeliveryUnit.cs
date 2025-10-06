@@ -14,7 +14,7 @@ public class DeliveryUnit : BaseEntity
     public List<DUAllocation> DUAllocations { get; set; } = null!;
     public List<SubDeliveryUnit> SubDeliveryUnits { get; set; } = null!;
     public List<WFP> WFPs { get; set; } = null!;
-    public List<WFPPAPDepartment> WFPPADepartments { get; set; } = null!;
+    public List<WFPPAPDepartment> WFPPAPDepartments { get; set; } = null!;
     public List<OPCR> OPCRs { get; set; } = null!;
     public List<OPCRActivity> OPCRActivities { get; set; } = null!;
     [JsonIgnore]

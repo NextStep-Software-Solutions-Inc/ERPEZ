@@ -561,36 +561,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         //    .WithOne(d => d.OPCRPAP)
         //    .HasForeignKey(d => d.OPCRPAPId);
 
-        // OPCRKPI
-        modelBuilder.Entity<OPCRKPI>()
-            .HasIndex(o => new { o.OPCRId, o.KPIId })
-            .IsUnique();
-
-        modelBuilder.Entity<OPCRKPI>()
-            .HasOne(o => o.OPCR)
-            .WithMany(op => op.OPCRKPIs)
-            .HasForeignKey(o => o.OPCRId);
-
-        modelBuilder.Entity<OPCRKPI>()
-            .HasOne(o => o.KPI)
-            .WithMany(k => k.OPCRKPIs)
-            .HasForeignKey(o => o.KPIId);
-
-        modelBuilder.Entity<OPCRKPI>()
-            .HasMany(o => o.OPCRActivities)
-            .WithOne(a => a.OPCRKPI)
-            .HasForeignKey(a => a.OPCRKPIId);
-
-        //modelBuilder.Entity<OPCRKPI>()
-        //    .HasMany(o => o.OPCRPAPs)
-        //    .WithOne(p => p.OPCRKPI)
-        //    .HasForeignKey(p => p.OPCRKPIId);
-
-        modelBuilder.Entity<OPCRKPI>()
-            .HasMany(o => o.OPCRRatings)
-            .WithOne(r => r.OPCRKPI)
-            .HasForeignKey(r => r.OPCRKPIId);
-
         // OPCRActivity
         modelBuilder.Entity<OPCRActivity>()
             .HasIndex(a => new { a.OPCRKPIId, a.Name });
