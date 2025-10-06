@@ -1,4 +1,5 @@
 ﻿using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Exceptions;
 using ERPEZ.TenantManagement.Application.Features.TenantSubscriptions.Enums;
 using ERPEZ.TenantManagement.Domain.Entities;
 using ERPEZ.TenantManagement.Domain.Interfaces;
@@ -19,20 +20,10 @@ public class UpdateTenantSubscriptionCommandHandler(IUnitOfWork unitOfWork)
         var dto = request.UpdateTenantSubscription;
 
         var tenantSubscription = await unitOfWork.TenantSubscriptionRepository
-            .FindAsync(ts => ts.Id == request.Id, cancellationToken: cancellationToken);
-
-        if (tenantSubscription == null)
-        {
-            return ApiResponse<TenantSubscription>.Fail("Tenant subscription not found.");
-        }
-
+            .FindAsync(ts => ts.Id == request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("Tenant subscription not found.");
         if (dto.TenantId.HasValue)
         {
-            var existTenant = await unitOfWork.TenantRepository.GetByIdAsync(dto.TenantId.Value, cancellationToken: cancellationToken);
-            if (existTenant == null)
-            {
-                return ApiResponse<TenantSubscription>.Fail("Tenant does not exist.");
-            }
+            var existTenant = await unitOfWork.TenantRepository.GetByIdAsync(dto.TenantId.Value, cancellationToken: cancellationToken) ?? throw new NotFoundException("Tenant not found.");
             tenantSubscription.TenantId = dto.TenantId.Value;
         }
 
@@ -50,17 +41,13 @@ public class UpdateTenantSubscriptionCommandHandler(IUnitOfWork unitOfWork)
                 Message = validation.ErrorMessage
             };
         }
-        if (dto.Amount.HasValue)
-            tenantSubscription.Amount = dto.Amount.Value;
+        tenantSubscription.Amount = dto.Amount ?? tenantSubscription.Amount;
+        tenantSubscription.StartDate = dto.StartDate ?? tenantSubscription.StartDate;
+        tenantSubscription.EndDate = dto.EndDate ?? tenantSubscription.EndDate;
+        tenantSubscription.AutoRenew = dto.AutoRenew ?? tenantSubscription.AutoRenew;
 
         if (!string.IsNullOrWhiteSpace(dto.Plan))
             tenantSubscription.Plan = (int)Enum.Parse<TenantSubscriptionPlanEnum>(dto.Plan);
-
-        if (dto.StartDate.HasValue)
-            tenantSubscription.StartDate = dto.StartDate.Value;
-
-        if (dto.EndDate.HasValue)
-            tenantSubscription.EndDate = dto.EndDate.Value;
 
         if (!string.IsNullOrWhiteSpace(dto.Status))
             tenantSubscription.Status = (int)Enum.Parse<TenantSubscriptionStatusEnum>(dto.Status);
@@ -68,16 +55,9 @@ public class UpdateTenantSubscriptionCommandHandler(IUnitOfWork unitOfWork)
         if (!string.IsNullOrWhiteSpace(dto.BillingCycle))
             tenantSubscription.BillingCycle = (int)Enum.Parse<TenantSubscriptionBillingCycleEnum>(dto.BillingCycle);
 
-        if (dto.AutoRenew.HasValue)
-            tenantSubscription.AutoRenew = dto.AutoRenew.Value;
-
+        unitOfWork.TenantSubscriptionRepository.Update(tenantSubscription);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return new ApiResponse<TenantSubscription>
-        {
-            Succeeded = true,
-            Message = "Tenant subscription updated successfully.",
-            Data = tenantSubscription
-        };
+        return ApiResponse<TenantSubscription>.Success(tenantSubscription, "Tenant subscription updated successfully.");
     }
 }

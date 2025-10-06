@@ -1,4 +1,5 @@
 ﻿using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Exceptions;
 using ERPEZ.TenantManagement.Domain.Interfaces;
 using MediatR;
 
@@ -8,9 +9,7 @@ public sealed class DeleteModuleCommandHandler(IUnitOfWork unitOfWork) : IReques
 {
     public async Task<ApiResponse<Unit>> Handle(DeleteModuleCommand request, CancellationToken cancellationToken)
     {
-        var module = await unitOfWork.ModuleRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken);
-
-        if (module == null) return ApiResponse<Unit>.Fail("Module not found.");
+        var module = await unitOfWork.ModuleRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("Module not found.");
 
         unitOfWork.ModuleRepository.Remove(module);
         await unitOfWork.SaveChangesAsync(cancellationToken);

@@ -1,4 +1,5 @@
 ﻿using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Exceptions;
 using ERPEZ.TenantManagement.Domain.Interfaces;
 using MediatR;
 
@@ -8,9 +9,7 @@ public sealed class DeleteTenantSettingCommandHandler(IUnitOfWork unitOfWork) : 
 {
     public async Task<ApiResponse<Unit>> Handle(DeleteTenantSettingCommand request, CancellationToken cancellationToken)
     {
-        var tenantSetting = await unitOfWork.TenantSettingRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken);
-
-        if (tenantSetting == null) return ApiResponse<Unit>.Fail("Tenant setting not found.");
+        var tenantSetting = await unitOfWork.TenantSettingRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("Tenant setting not found.");
 
         unitOfWork.TenantSettingRepository.Remove(tenantSetting);
         await unitOfWork.SaveChangesAsync(cancellationToken);
