@@ -1,11 +1,10 @@
-﻿using System.Linq.Expressions;
-using ERPEZ.Shared.Common;
-using ERPEZ.TenantManagement.Application.Common;
+﻿using ERPEZ.Shared.Common;
 using ERPEZ.TenantManagement.Application.Features.TenantSubscriptions.Dtos;
 using ERPEZ.TenantManagement.Domain.Entities;
 using ERPEZ.TenantManagement.Domain.Interfaces;
 using MediatR;
 using Sieve.Models;
+using System.Linq.Expressions;
 
 namespace ERPEZ.TenantManagement.Application.Features.TenantSubscriptions.Queries.GetTenantSubscriptions;
 

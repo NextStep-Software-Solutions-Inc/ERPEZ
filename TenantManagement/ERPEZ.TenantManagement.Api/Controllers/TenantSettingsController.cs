@@ -43,11 +43,8 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         {
             var query = new GetTenantSettingByIdQuery(id);
             var tenantSetting = await mediator.Send(query);
-
-            if (tenantSetting == null)
-                return NotFound(ApiResponse<TenantSetting>.Fail("Tenant setting not found."));
-
-            return Ok(ApiResponse<TenantSetting>.Success(tenantSetting, "Tenant setting retrieved successfully."));
+                        
+            return tenantSetting.Succeeded ? Ok(tenantSetting) : BadRequest(tenantSetting);
         }
 
         [HttpPut("{id}")]
@@ -61,9 +58,6 @@ namespace ERPEZ.TenantManagement.Api.Controllers
                 Id = id,
                 UpdateTenantSetting = tenantSettingDto
             };
-
-            if (id != request.Id)
-                return BadRequest(ApiResponse<TenantSetting>.Fail("ID mismatch."));
 
             var tenantSetting = await mediator.Send(request);
             return tenantSetting.Succeeded ? Ok(tenantSetting) : BadRequest(tenantSetting);

@@ -1,57 +1,28 @@
 ﻿using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Exceptions;
 using ERPEZ.TenantManagement.Domain.Entities;
 using ERPEZ.TenantManagement.Domain.Interfaces;
 using MediatR;
 
 namespace ERPEZ.TenantManagement.Application.Features.Modules.Commands.UpdateModule;
 
-public sealed class UpdateModuleCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateModuleCommand, ApiResponse<Module>>
+public sealed class UpdateModuleCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<UpdateModuleCommand, ApiResponse<Module>>
 {
     public async Task<ApiResponse<Module>> Handle(UpdateModuleCommand request, CancellationToken cancellationToken)
     {
-        var module = await unitOfWork.ModuleRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken);
-
-        if (module == null)
-        {
-            return new ApiResponse<Module>
-            {
-                Succeeded = false,
-                Message = "Module not found.",
-                Data = null
-            };
-        }
-        if (module.Name == request.UpdateModule?.Name)
-        {
-            return new ApiResponse<Module>
-            {
-                Succeeded = false,
-                Message = "Module already exist.",
-                Data = module
-            };
-        }
-
-        module.Name = string.IsNullOrWhiteSpace(request.UpdateModule?.Name)
-            ? module.Name
-            : request.UpdateModule.Name;
-
-        module.Key = string.IsNullOrWhiteSpace(request.UpdateModule?.Key)
-            ? module.Key
-            : request.UpdateModule.Key;
-
-        module.Description = string.IsNullOrWhiteSpace(request.UpdateModule?.Description)
-            ? module.Description
-            : request.UpdateModule.Description;
-
-        module.IsActive = request.UpdateModule?.IsActive ?? module.IsActive;
+        var module = await _unitOfWork.ModuleRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("Module not found.");
+        if (module.Name == request.UpdateModule?.Name) throw new ConflictException("Module already exist.");
+       
+        var dto = request.UpdateModule;
+        module.Name = dto?.Name ?? module.Name;
+        module.Key = dto?.Key ?? module.Key;
+        module.Description = dto?.Description ?? module.Description;
+        module.IsActive = dto?.IsActive ?? module.IsActive;
 
 
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        _unitOfWork.ModuleRepository.Update(module);
+        await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return new ApiResponse<Module>
-        {
-            Succeeded = true,
-            Message = "Updated Successfully.",
-            Data = module
-        };
+        return ApiResponse<Module>.Success(module, "Module updated successfully.");
     }
 }
