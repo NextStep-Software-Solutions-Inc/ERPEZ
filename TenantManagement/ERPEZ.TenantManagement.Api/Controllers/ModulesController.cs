@@ -42,10 +42,8 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         public async Task<IActionResult> GetModuleById(Guid id)
         {
             var module = await mediator.Send(new GetModuleByIdQuery(id));
-            if (module == null)
-                return NotFound(ApiResponse<Module>.Fail("Module not found."));
 
-            return Ok(ApiResponse<Module>.Success(module));
+            return module.Succeeded ? Ok(module) : BadRequest(module);
         }
 
         [HttpPut("{id}")]
@@ -59,9 +57,6 @@ namespace ERPEZ.TenantManagement.Api.Controllers
                 Id = id,
                 UpdateModule = updateModule
             };
-
-            if (id != request.Id)
-                return BadRequest(ApiResponse<Module>.Fail("ID mismatch."));
 
             var module = await mediator.Send(request);
             return module.Succeeded ? Ok(module) : BadRequest(module);

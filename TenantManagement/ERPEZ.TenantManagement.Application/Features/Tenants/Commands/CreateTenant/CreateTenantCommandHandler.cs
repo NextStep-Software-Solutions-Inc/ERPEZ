@@ -1,4 +1,5 @@
 ﻿using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Exceptions;
 using ERPEZ.TenantManagement.Domain.Entities;
 using ERPEZ.TenantManagement.Domain.Interfaces;
 using MediatR;
@@ -12,16 +13,7 @@ public sealed class CreateTenantCommandHandler(IUnitOfWork _unitOfWork) : IReque
         var tenantExist = await _unitOfWork.TenantRepository.FindAsync(
             t => t.Name == request.Name && t.BillingContactEmail == request.BillingContactEmail, cancellationToken : cancellationToken
         );
-
-        if (tenantExist != null)
-        {
-            return new ApiResponse<Tenant>
-            {
-                Succeeded = false,
-                Data = null,
-                Message = "Tenant already exists."
-            };
-        }
+        if (tenantExist != null) throw new ConflictException("Tenant already exists.");
 
         var tenant = new Tenant
         {
@@ -36,8 +28,8 @@ public sealed class CreateTenantCommandHandler(IUnitOfWork _unitOfWork) : IReque
                 DbConnectionString = ""
 
             }
-        };
-
+        }; 
+        
         tenant.TenantSubscriptions.Add(new TenantSubscription
         {
             Amount = 0,
@@ -55,11 +47,6 @@ public sealed class CreateTenantCommandHandler(IUnitOfWork _unitOfWork) : IReque
         await _unitOfWork.TenantRepository.AddAsync(tenant, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return new ApiResponse<Tenant>
-        {
-            Data = tenant,
-            Succeeded = true,
-            Message = "Tenant created successfully."
-        };
+        return ApiResponse<Tenant>.Success(tenant, "Tenant created successfully.");
     }
 }

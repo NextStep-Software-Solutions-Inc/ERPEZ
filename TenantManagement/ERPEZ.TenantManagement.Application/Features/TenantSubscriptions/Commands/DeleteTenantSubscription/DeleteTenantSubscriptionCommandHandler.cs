@@ -1,4 +1,5 @@
 ﻿using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Exceptions;
 using ERPEZ.TenantManagement.Domain.Interfaces;
 using MediatR;
 
@@ -8,9 +9,7 @@ public sealed class DeleteTenantSubscriptionCommandHandler(IUnitOfWork unitOfWor
 {
     public async Task<ApiResponse<Unit>> Handle(DeleteTenantSubscriptionCommand request, CancellationToken cancellationToken)
     {
-        var tenantSubscription = await unitOfWork.TenantSubscriptionRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken);
-
-        if (tenantSubscription == null) return ApiResponse<Unit>.Fail("Tenant subscription not found.");
+        var tenantSubscription = await unitOfWork.TenantSubscriptionRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("Tenant subscription not found.");
 
         unitOfWork.TenantSubscriptionRepository.Remove(tenantSubscription);
         await unitOfWork.SaveChangesAsync(cancellationToken);

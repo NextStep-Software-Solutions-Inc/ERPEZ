@@ -22,14 +22,13 @@ public sealed class GetTenantsQueryHandler (IUnitOfWork unitOfWork) : IRequestHa
             Sorts = query.Sorts
         };
 
-        // Define projection to reduce data transfer from database
         Expression<Func<Tenant, TenantDto>> projection = t => new ()
         {
             Id = t.Id,
             Name = t.Name,
             OnPremise = t.OnPremise,
             BillingContactEmail = t.BillingContactEmail,
-            TenantSetting = new TenantSettingDto
+            TenantSetting = t.TenantSetting == null ? null : new TenantSettingDto
             {
                 Id = t.TenantSetting.Id,
                 Name = t.TenantSetting.Name,
