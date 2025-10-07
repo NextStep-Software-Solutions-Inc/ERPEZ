@@ -9,6 +9,6 @@ public class OPCREvaluation : BaseEntity
     public DateTime EvaluationDate { get; set; }
     public string? Comments { get; set; }
     public string Status { get; set; } = string.Empty;
-    public List<OPCRRating> OPCRRatings { get; set; } = [];
+    public virtual List<OPCRRating> OPCRRatings { get; set; } = [];
     public virtual OPCR OPCR { get; set; } = null!;
 }

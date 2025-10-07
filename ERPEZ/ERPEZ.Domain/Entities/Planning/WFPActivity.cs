@@ -14,7 +14,7 @@ public class WFPActivity : BaseEntity
     public List<string>? PersonsInvolved { get; set; }
     public virtual WFP WFP { get; set; } = null!;
     public virtual WFPOutcome WFPOutcome { get; set; } = null!;
-    public List<ActivityBudgetRequirement> ActivityBudgetRequirements { get; set; } = [];
-    public List<WFPPAPDepartment> WFPPAPDepartments { get; set; } = [];
+    public virtual List<ActivityBudgetRequirement> ActivityBudgetRequirements { get; set; } = [];
+    public virtual List<WFPPAPDepartment> WFPPAPDepartments { get; set; } = [];
 
 }

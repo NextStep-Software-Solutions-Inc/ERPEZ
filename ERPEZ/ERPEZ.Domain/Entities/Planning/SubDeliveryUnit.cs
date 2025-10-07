@@ -14,6 +14,6 @@ public class SubDeliveryUnit : BaseEntity
     public string? ResponsibilityCenterCode {  get; set; }
 
     public virtual DeliveryUnit DeliveryUnit { get; set; } = null!;
-    public List<SubDUAllocation> SubDUAllocations { get; set; } = [];
-    public List<WFPPAPDepartment> WFPPAPDepartments { get; set; } = [];
+    public virtual List<SubDUAllocation> SubDUAllocations { get; set; } = [];
+    public virtual List<WFPPAPDepartment> WFPPAPDepartments { get; set; } = [];
 }

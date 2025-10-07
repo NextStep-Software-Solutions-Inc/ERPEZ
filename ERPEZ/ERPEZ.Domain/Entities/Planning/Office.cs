@@ -19,5 +19,5 @@ public class Office : BaseEntity
     public string ContactNumber {  get; set; } = string.Empty;
     [Sieve(CanFilter = true, CanSort = true)]
     public string? ResponsibilityCenterCode {  get; set; }
-    public List<DeliveryUnit> DeliveryUnits { get; set; } = [];
+    public virtual List<DeliveryUnit> DeliveryUnits { get; set; } = [];
 }

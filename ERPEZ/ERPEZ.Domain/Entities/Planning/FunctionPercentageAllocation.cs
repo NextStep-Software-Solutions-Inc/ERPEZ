@@ -13,5 +13,5 @@ public class FunctionPercentageAllocation : BaseEntity
     public string? Description { get; set; }
     [Sieve(CanFilter = true, CanSort = true)]
     public decimal Percentage { get; set; }
-    public List<KPI> KPIs { get; set; } = [];
+    public virtual List<KPI> KPIs { get; set; } = [];
 }

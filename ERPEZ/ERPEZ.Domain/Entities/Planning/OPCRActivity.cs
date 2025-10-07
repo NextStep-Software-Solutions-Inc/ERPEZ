@@ -9,5 +9,5 @@ public class OPCRActivity : BaseEntity
     public string? Description { get; set; }
     public decimal Budget { get; set; }
     public virtual OPCRKPI OPCRKPI { get; set; } = null!;
-    public List<DeliveryUnit> DeliveryUnits { get; set; } = [];
+    public virtual List<DeliveryUnit> DeliveryUnits { get; set; } = [];
 }

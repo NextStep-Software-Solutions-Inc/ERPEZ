@@ -26,5 +26,5 @@ public class WFP : BaseEntity
     public virtual WFPActivity WFPActivity { get; set; } = null!;
     public virtual WFPObjective WFPObjective { get; set; } = null!;
     public virtual DeliveryUnit DeliveryUnit { get; set; } = null!;
-    public List<WFPPAP> WFPPAPs { get; set; } = [];
+    public virtual List<WFPPAP> WFPPAPs { get; set; } = [];
 }

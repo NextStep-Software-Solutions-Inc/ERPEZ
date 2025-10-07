@@ -14,5 +14,5 @@ public class WFPPAP : BaseEntity
 
     public virtual WFP WFP { get; set; } = null!;
     public virtual WFPOutcome WFPOutcome { get; set; } = null!;
-    public List<WFPPAPDepartment> WFPPAPDepartments { get; set; } = [];
+    public virtual List<WFPPAPDepartment> WFPPAPDepartments { get; set; } = [];
 }

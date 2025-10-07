@@ -10,12 +10,12 @@ public class DeliveryUnit : BaseEntity
     public Guid OfficeId { get; set; }
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid? ParentDUId { get; set; }
-    public List<KPIAssignment> KPIAssignments { get; set; } = [];
-    public List<DUAllocation> DUAllocations { get; set; } = [];
-    public List<SubDeliveryUnit> SubDeliveryUnits { get; set; } = [];
-    public List<WFP> WFPs { get; set; } = [];
-    public List<WFPPAPDepartment> WFPPAPDepartments { get; set; } = [];
-    public List<OPCR> OPCRs { get; set; } = [];
-    public List<OPCRActivity> OPCRActivities { get; set; } = [];
+    public virtual List<KPIAssignment> KPIAssignments { get; set; } = [];
+    public virtual List<DUAllocation> DUAllocations { get; set; } = [];
+    public virtual List<SubDeliveryUnit> SubDeliveryUnits { get; set; } = [];
+    public virtual List<WFP> WFPs { get; set; } = [];
+    public virtual List<WFPPAPDepartment> WFPPAPDepartments { get; set; } = [];
+    public virtual List<OPCR> OPCRs { get; set; } = [];
+    public virtual List<OPCRActivity> OPCRActivities { get; set; } = [];
     public virtual Office Office { get; set; } = null!;
 }

@@ -17,7 +17,7 @@ public class OPCR : BaseEntity
     public virtual OPCREvaluation OPCREvaluation { get; set; } = null!;
     public virtual DUAllocation DUAllocation { get; set; } = null!;
     public virtual DeliveryUnit DeliveryUnit { get; set; } = null!;
-    public List<OPCREvaluation> OPCREvaluations { get; set; } = [];
-    public List<OPCRKPI> OPCRKPIs { get; set; } = [];
+    public virtual List<OPCREvaluation> OPCREvaluations { get; set; } = [];
+    public virtual List<OPCRKPI> OPCRKPIs { get; set; } = [];
 
 }
