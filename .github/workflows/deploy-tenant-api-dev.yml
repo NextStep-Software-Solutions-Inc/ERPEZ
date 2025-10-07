@@ -7,14 +7,14 @@ on:
     paths:
       - 'TenantManagement/**'
       - 'ERPEZ.Shared/**'
-      - .github/workflows/deploy-tenant-dev.yml
+      - .github/workflows/deploy-tenant-api-dev.yml
   pull_request:
     branches:
       - development
     paths:
       - 'TenantManagement/**'
       - 'ERPEZ.Shared/**'
-      - .github/workflows/deploy-tenant-dev.yml
+      - .github/workflows/deploy-tenant-api-dev.yml
   workflow_dispatch:
     inputs:
       reason:
@@ -81,7 +81,8 @@ jobs:
           # Run the new container
           docker run -d \
             --name ${{ env.CONTAINER_NAME }} \
-            --cpus=0.5 \
+            --cpus=0.3 \
+            --memory=384m \
             -p 71:8080 \
             -e ASPNETCORE_ENVIRONMENT=${{ env.ENVIRONMENT }} \
             -e ConnectionStrings__DefaultConnection="${{ secrets.ERPEZ_MANAGEMENT_DB_CONNECTION_STRING }}" \

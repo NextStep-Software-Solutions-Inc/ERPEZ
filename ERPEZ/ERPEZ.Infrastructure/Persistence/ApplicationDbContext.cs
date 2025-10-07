@@ -52,14 +52,15 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 continue;
             }
 
-            if (idProperty.ClrType == typeof(Guid))
+            if (entity.FindPrimaryKey() == null)
             {
-                idProperty.SetDefaultValueSql("gen_random_uuid()");
+                if (idProperty.ClrType == typeof(Guid))
+                {
+                    idProperty.SetDefaultValueSql("gen_random_uuid()");
+                }
+                entity.SetPrimaryKey(idProperty);
+                idProperty.ValueGenerated = ValueGenerated.OnAdd;
             }
-
-            entity.SetPrimaryKey(idProperty);
-
-            idProperty.ValueGenerated = ValueGenerated.OnAdd;
         }
         //FunctionPercentageAllocation
         modelBuilder.Entity<FunctionPercentageAllocation>()
@@ -558,36 +559,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         //    .HasMany(p => p.OPCRPAPDepartments)
         //    .WithOne(d => d.OPCRPAP)
         //    .HasForeignKey(d => d.OPCRPAPId);
-
-        // OPCRKPI
-        modelBuilder.Entity<OPCRKPI>()
-            .HasIndex(o => new { o.OPCRId, o.KPIId })
-            .IsUnique();
-
-        modelBuilder.Entity<OPCRKPI>()
-            .HasOne(o => o.OPCR)
-            .WithMany(op => op.OPCRKPIs)
-            .HasForeignKey(o => o.OPCRId);
-
-        modelBuilder.Entity<OPCRKPI>()
-            .HasOne(o => o.KPI)
-            .WithMany(k => k.OPCRKPIs)
-            .HasForeignKey(o => o.KPIId);
-
-        modelBuilder.Entity<OPCRKPI>()
-            .HasMany(o => o.OPCRActivities)
-            .WithOne(a => a.OPCRKPI)
-            .HasForeignKey(a => a.OPCRKPIId);
-
-        //modelBuilder.Entity<OPCRKPI>()
-        //    .HasMany(o => o.OPCRPAPs)
-        //    .WithOne(p => p.OPCRKPI)
-        //    .HasForeignKey(p => p.OPCRKPIId);
-
-        modelBuilder.Entity<OPCRKPI>()
-            .HasMany(o => o.OPCRRatings)
-            .WithOne(r => r.OPCRKPI)
-            .HasForeignKey(r => r.OPCRKPIId);
 
         // OPCRActivity
         modelBuilder.Entity<OPCRActivity>()

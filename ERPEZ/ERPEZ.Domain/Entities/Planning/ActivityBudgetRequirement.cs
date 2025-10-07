@@ -14,8 +14,6 @@ public class ActivityBudgetRequirement : BaseEntity
     public int Quantity { get; set; }
     [Sieve(CanFilter = true, CanSort = true)]
     public decimal CostEstimates { get; set; }
-    [JsonIgnore]
     public virtual WFPActivity WFPActivity { get; set; } = null!;
-    [JsonIgnore]
     public virtual Object Object { get; set; } = null!;
 }

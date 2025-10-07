@@ -14,6 +14,5 @@ public class KPITarget : BaseEntity
     public string Period { get; set; } = string.Empty;
     [Sieve(CanFilter = true, CanSort = true)]
     public string? QuarterName { get; set; }
-    [JsonIgnore]
     public virtual KPI KPI { get; set; } = null!;
 }

@@ -1,19 +1,21 @@
 ﻿using ERPEZ.Domain.Common;
+using Sieve.Attributes;
 using System.Text.Json.Serialization;
 
 namespace ERPEZ.Domain.Entities.Planning;
 
 public class DeliveryUnit : BaseEntity
 {
+    [Sieve(CanFilter = true, CanSort = true)]
     public Guid OfficeId { get; set; }
+    [Sieve(CanFilter = true, CanSort = true)]
     public Guid? ParentDUId { get; set; }
-    public List<KPIAssignment> KPIAssignments { get; set; } = null!;
-    public List<DUAllocation> DUAllocations { get; set; } = null!;
-    public List<SubDeliveryUnit> SubDeliveryUnits { get; set; } = null!;
-    public List<WFP> WFPs { get; set; } = null!;
-    public List<WFPPAPDepartment> WFPPADepartments { get; set; } = null!;
-    public List<OPCR> OPCRs { get; set; } = null!;
-    public List<OPCRActivity> OPCRActivities { get; set; } = null!;
-    [JsonIgnore]
+    public virtual List<KPIAssignment> KPIAssignments { get; set; } = [];
+    public virtual List<DUAllocation> DUAllocations { get; set; } = [];
+    public virtual List<SubDeliveryUnit> SubDeliveryUnits { get; set; } = [];
+    public virtual List<WFP> WFPs { get; set; } = [];
+    public virtual List<WFPPAPDepartment> WFPPAPDepartments { get; set; } = [];
+    public virtual List<OPCR> OPCRs { get; set; } = [];
+    public virtual List<OPCRActivity> OPCRActivities { get; set; } = [];
     public virtual Office Office { get; set; } = null!;
 }

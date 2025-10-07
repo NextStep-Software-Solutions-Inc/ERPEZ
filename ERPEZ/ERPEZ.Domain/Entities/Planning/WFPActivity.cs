@@ -12,11 +12,8 @@ public class WFPActivity : BaseEntity
     public string Deliverable { get; set; } = string.Empty;
     public string Timeframe { get; set; } = string.Empty;
     public List<string>? PersonsInvolved { get; set; }
-    [JsonIgnore]
     public virtual WFP WFP { get; set; } = null!;
-    [JsonIgnore]
     public virtual WFPOutcome WFPOutcome { get; set; } = null!;
-    public List<ActivityBudgetRequirement> ActivityBudgetRequirements { get; set; } = null!;
-    public List<WFPPAPDepartment> WFPPAPDepartments { get; set; } = null!;
+    public virtual List<ActivityBudgetRequirement> ActivityBudgetRequirements { get; set; } = [];
 
 }

@@ -13,7 +13,6 @@ public class KPIModeOfVerification : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public string? Description { get; set; }
     public string? Url { get; set; }
-    [JsonIgnore]
     public virtual KPI KPI { get; set; } = null!;
 
 }

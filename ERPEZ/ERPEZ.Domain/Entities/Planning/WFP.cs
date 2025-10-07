@@ -22,12 +22,9 @@ public class WFP : BaseEntity
     public string? GeneralObjective { get; set; }
     [Sieve(CanFilter = true, CanSort = true)]
     public string Status { get; set; } = string.Empty;
-    [JsonIgnore]
     public virtual DUAllocation DUAllocation { get; set; } = null!;
-    [JsonIgnore]
     public virtual WFPActivity WFPActivity { get; set; } = null!;
-    [JsonIgnore]
     public virtual WFPObjective WFPObjective { get; set; } = null!;
     public virtual DeliveryUnit DeliveryUnit { get; set; } = null!;
-    public List<WFPPAP> WFPPAPs { get; set; } = null!;
+    public virtual List<WFPPAP> WFPPAPs { get; set; } = [];
 }
