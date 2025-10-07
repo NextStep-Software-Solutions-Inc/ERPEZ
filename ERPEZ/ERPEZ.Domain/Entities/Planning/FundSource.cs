@@ -15,6 +15,6 @@ public class FundSource : BaseEntity
     public string Type { get; set; } = string.Empty;
     [Sieve(CanFilter = true, CanSort = true)]
     public bool IsActive { get; set; }
-    public List<ReceivedFund> ReceivedFunds { get; set; } = null!;
-    public List<Transaction> Transactions { get; set; } = null!;
+    public List<ReceivedFund> ReceivedFunds { get; set; } = [];
+    public List<Transaction> Transactions { get; set; } = [];
 }

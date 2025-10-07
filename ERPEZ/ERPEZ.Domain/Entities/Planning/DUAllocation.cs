@@ -13,11 +13,11 @@ public class DUAllocation : BaseEntity
     public string Purpose { get; set; } = string.Empty;
     [Sieve(CanFilter = true, CanSort = true)]
     public string Amount { get; set; } = string.Empty;
-    public List<OPCR> OPCRs { get; set; } = null!;
-    public List<SubDUAllocation> SubDUAllocations { get; set; } = null!;
-    public List<DUAllocation> DUAllocations { get; set; } = null!;
-    public List<WFP> WFPs { get; set; } = null!;
-    public List<DUFundAllocation> DUFundAllocations { get; set; } = null!;
+    public List<OPCR> OPCRs { get; set; } = [];
+    public List<SubDUAllocation> SubDUAllocations { get; set; } = [];
+    public List<DUAllocation> DUAllocations { get; set; } = [];
+    public List<WFP> WFPs { get; set; } = [];
+    public List<DUFundAllocation> DUFundAllocations { get; set; } = [];
     public virtual DeliveryUnit DeliveryUnit { get; set; } = null!;
     public virtual ReceivedFund ReceivedFund { get; set; } = null!;
 }

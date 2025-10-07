@@ -13,6 +13,6 @@ public class Object : BaseEntity
     public string Code { get; set; } = string.Empty;
     [Sieve(CanFilter = true, CanSort = true)]
     public bool IsActive { get; set; }
-    public List<ActivityBudgetRequirement> ActivityBudgetRequirements { get; set; } = null!;
-    public List<Transaction> Transactions { get; set; } = null!;
+    public List<ActivityBudgetRequirement> ActivityBudgetRequirements { get; set; } = [];
+    public List<Transaction> Transactions { get; set; } = [];
 }

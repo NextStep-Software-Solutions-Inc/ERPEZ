@@ -7,8 +7,7 @@ public class WFPOutcome : BaseEntity
 {
     public Guid WFPObjectiveId { get; set; }
     public string Description { get; set; } = string.Empty;
-    public List<WFPActivity> WFPActivities { get; set; } = null!;
-    public List<WFPPAP> WFPPAPs { get; set; } = null!;
-    [JsonIgnore]
+    public List<WFPActivity> WFPActivities { get; set; } = [];
+    public List<WFPPAP> WFPPAPs { get; set; } = [];
     public virtual WFPObjective WFPObjective { get; set; } = null!;
 }

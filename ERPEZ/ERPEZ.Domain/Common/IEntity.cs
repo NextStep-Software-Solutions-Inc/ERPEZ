@@ -6,8 +6,8 @@ public interface IEntity
     DateTime CreatedAt { get; }
     string CreatedBy { get; }
     DateTime UpdatedAt { get; }
-    Guid? UpdatedBy { get; }
+    string? UpdatedBy { get; }
     bool IsDeleted { get; }
     DateTime DeletedAt { get; }
-    Guid? DeletedBy { get; }
+    string? DeletedBy { get; }
 }

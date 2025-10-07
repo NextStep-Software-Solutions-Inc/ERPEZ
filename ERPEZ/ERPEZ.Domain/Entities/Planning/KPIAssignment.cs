@@ -12,8 +12,6 @@ public class KPIAssignment : BaseEntity
 
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid DeliveryUnitId { get; set; }
-    [JsonIgnore]
     public virtual KPI KPI { get; set; } = null!;
-    [JsonIgnore]
     public virtual DeliveryUnit DeliveryUnit { get; set; } = null!;
 }

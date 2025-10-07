@@ -6,6 +6,6 @@ public class PerformanceMeasure : BaseEntity
 {
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
-    public List<KPIRating> KPIRatings { get; set; } = null!;
-    public List<OPCRRating> OPCRRatings { get; set; } = null!;
+    public List<KPIRating> KPIRatings { get; set; } = [];
+    public List<OPCRRating> OPCRRatings { get; set; } = [];
 }

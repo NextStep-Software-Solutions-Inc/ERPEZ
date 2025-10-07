@@ -17,12 +17,11 @@ public class KPI : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public bool? IsOfficeMandate { get; set; }
     public string Status { get; set; } = string.Empty;
-    public List<KPIRating> KPIRatings { get; set; } = null!;
-    public List<KPIModeOfVerification> KPIModeOfVerifications { get; set; } = null!;
-    public List<KPIAssignment> KPIAssignments { get; set; } = null!;
-    public List<MFOKPI> MFOKPIs { get; set; } = null!;
-    public List<OPCRKPI> OPCRKPIs { get; set; } = null!;
-    public List<KPITarget> KPITargets { get; set; } = null!;
-    [JsonIgnore]
+    public List<KPIRating> KPIRatings { get; set; } = [];
+    public List<KPIModeOfVerification> KPIModeOfVerifications { get; set; } = [];
+    public List<KPIAssignment> KPIAssignments { get; set; } = [];
+    public List<MFOKPI> MFOKPIs { get; set; } = [];
+    public List<OPCRKPI> OPCRKPIs { get; set; } = [];
+    public List<KPITarget> KPITargets { get; set; } = [];
     public virtual FunctionPercentageAllocation FunctionPercentageAllocation { get; set; } = null!;
 }

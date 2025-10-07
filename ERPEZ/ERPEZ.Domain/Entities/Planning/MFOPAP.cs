@@ -15,6 +15,6 @@ public class MFOPAP : BaseEntity
     public string Type { get; set; } = string.Empty;
     [Sieve(CanFilter = true, CanSort = true)]
     public bool IsActive { get; set; }
-    public List<Transaction> Transactions { get; set; } = null!;
-    public List<MFOKPI> MFOKPIs { get; set; } = null!;
+    public List<Transaction> Transactions { get; set; } = [];
+    public List<MFOKPI> MFOKPIs { get; set; } = [];
 }

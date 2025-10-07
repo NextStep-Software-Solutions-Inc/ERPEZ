@@ -24,15 +24,10 @@ public class Transaction : BaseEntity
     public decimal? ObligatedAmount { get; set; }
     [Sieve(CanFilter = true, CanSort = true)]
     public decimal? DisbursementAmount { get; set; }
-    [JsonIgnore]
     public virtual FundSource FundSource { get; set; } = null!;
-    [JsonIgnore]
     public virtual Organization Organization { get; set; } = null!;
-    [JsonIgnore]
     public virtual Location Location { get; set; } = null!;
-    [JsonIgnore]
     public virtual MFOPAP MFOPAP { get; set; } = null!;
-    [JsonIgnore]
     public virtual Object Object { get; set; } = null!;
 
 }
