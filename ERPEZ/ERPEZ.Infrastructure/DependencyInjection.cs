@@ -22,6 +22,11 @@ public static class DependencyInjection
         services.AddDbContext<ApplicationDbContext>(options =>
             options.UseNpgsql(connectionString));
         // Register repositories and Unit of Work
+        services.AddScoped<IOrganizationRepository, OrganizationRepository>();
+        services.AddScoped<IFundSourceRepository, FundSourceRepository>();
+        services.AddScoped<ILocationRepository, LocationRepository>();
+        services.AddScoped<ITransactionRepository, TransactionRepository>();
+        services.AddScoped<IMFOPAPRepository, MFOPAPRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         // Add Hangfire

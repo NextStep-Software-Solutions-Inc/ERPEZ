@@ -1,5 +1,7 @@
-﻿namespace ERPEZ.Domain.Interfaces;
+﻿using ERPEZ.Domain.Entities.Planning;
 
-public interface IOrganizationRepository : IRepository<Entities.Planning.Organization>
+namespace ERPEZ.Domain.Interfaces;
+
+public interface IOrganizationRepository : IRepository<Organization>
 {
 }
