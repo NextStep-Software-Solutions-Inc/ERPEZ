@@ -7,14 +7,14 @@ on:
     paths:
       - 'TenantManagement/**'
       - 'ERPEZ.Shared/**'
-      - .github/workflows/deploy-tenant-dev.yml
+      - .github/workflows/deploy-tenant-api-dev.yml
   pull_request:
     branches:
       - development
     paths:
       - 'TenantManagement/**'
       - 'ERPEZ.Shared/**'
-      - .github/workflows/deploy-tenant-dev.yml
+      - .github/workflows/deploy-tenant-api-dev.yml
   workflow_dispatch:
     inputs:
       reason:
