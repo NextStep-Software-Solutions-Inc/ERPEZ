@@ -1,12 +1,11 @@
-﻿using ERPEZ.Application.Features.Planning.Location.Commands.CreateLocation;
-using ERPEZ.Domain.Interfaces;
+﻿using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
 
-namespace ERPEZ.Application.Features.Planning.Organization.Commands.CreateLocation;
+namespace ERPEZ.Application.Features.Planning.Organization.Commands.CreateOrganization;
 
-public class CreateOrganizationCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<CreateOrganizationCommand, ApiResponse<Domain.Entities.Planning.Organization>>
+public class CreateFundSourceCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<CreateOrganizationCommand, ApiResponse<Domain.Entities.Planning.Organization>>
 {
     public async Task<ApiResponse<Domain.Entities.Planning.Organization>> Handle(CreateOrganizationCommand request, CancellationToken cancellationToken)
     {

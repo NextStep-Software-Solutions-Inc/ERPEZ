@@ -4,6 +4,7 @@ public interface IUnitOfWork
 {
     ILocationRepository LocationRepository { get; }
     IOrganizationRepository OrganizationRepository { get; }
+    IFundSourceRepository FundSourceRepository { get; }
     ITransactionRepository TransactionRepository { get; }
     IMFOPAPRepository MFOPAPRepository { get; }
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);

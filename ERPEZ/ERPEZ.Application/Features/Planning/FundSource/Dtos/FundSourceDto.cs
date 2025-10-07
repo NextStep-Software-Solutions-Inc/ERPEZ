@@ -1,10 +1,8 @@
-﻿using ERPEZ.Shared.Common;
-using MediatR;
+﻿namespace ERPEZ.Application.Features.Planning.FundSource.Dtos;
 
-namespace ERPEZ.Application.Features.Planning.Organization.Commands.CreateLocation;
-
-public class CreateOrganizationCommand : IRequest<ApiResponse<Domain.Entities.Planning.Organization>>
+public class FundSourceDto
 {
+    public Guid Id { get; set; }
     public Guid? ParentId { get; set; }
     public string Name { get; set; } = string.Empty;
     public string Code { get; set; } = string.Empty;

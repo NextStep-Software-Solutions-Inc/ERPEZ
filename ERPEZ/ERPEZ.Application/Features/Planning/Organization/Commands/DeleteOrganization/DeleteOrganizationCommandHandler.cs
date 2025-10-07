@@ -9,7 +9,7 @@ public class DeleteOrganizationCommandHandler(IUnitOfWork unitOfWork) : IRequest
 {
     public async Task<ApiResponse<Unit>> Handle(DeleteOrganizationCommand request, CancellationToken cancellationToken)
     {
-        var organization = await unitOfWork.OrganizationRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("Location not found.");
+        var organization = await unitOfWork.OrganizationRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("Organization not found.");
 
         unitOfWork.OrganizationRepository.Remove(organization);
         await unitOfWork.SaveChangesAsync(cancellationToken);
