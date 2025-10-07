@@ -23,7 +23,7 @@ public sealed class GetProductsQueryHandler(IUnitOfWork unitOfWork)
         };
 
         // Call the repository to get the data
-        var (products, totalCount) = await unitOfWork.ProductRepository.GetAllAsync(sieveModel, cancellationToken);
+        var (products, totalCount) = await unitOfWork.ProductRepository.GetAllAsync(sieveModel, cancellationToken : cancellationToken);
 
         // Create the response
         return new PaginatedApiResponse<Product>(

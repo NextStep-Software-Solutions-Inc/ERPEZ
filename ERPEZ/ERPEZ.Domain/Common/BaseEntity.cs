@@ -1,11 +1,18 @@
-﻿namespace ERPEZ.Domain.Common;
+﻿using System.ComponentModel.DataAnnotations.Schema;
 
-public abstract class BaseEntity
+namespace ERPEZ.Domain.Common;
+
+public abstract class BaseEntity : IEntity
 {
-    public Guid Id { get; protected set; }
-
-    protected BaseEntity()
-    {
-        Id = Guid.NewGuid();
-    }
+    protected BaseEntity() { }
+    public Guid Id { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public string CreatedBy { get; set; } = string.Empty;
+    public DateTime? UpdatedAt { get; set; }
+    public string? UpdatedBy { get; set; }
+    public bool IsDeleted { get; set; }
+    public DateTime? DeletedAt { get; set; }
+    public string? DeletedBy { get; set; }
+    [NotMapped]
+    public bool AllowHardDelete { get; set; }
 }
