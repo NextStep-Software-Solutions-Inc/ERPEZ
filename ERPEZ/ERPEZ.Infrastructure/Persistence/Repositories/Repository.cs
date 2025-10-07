@@ -14,8 +14,7 @@ public class Repository<T>(ApplicationDbContext context, ISieveProcessor sievePr
     {
         await context.Set<T>().AddAsync(entity, cancellationToken);
     }
-
-    public async Task<(IReadOnlyList<T> Entities, int TotalCount)> GetAllAsync(SieveModel sieveModel, CancellationToken cancellationToken = default)
+        public async Task<(IReadOnlyList<T> Entities, int TotalCount)> GetAllAsync(SieveModel sieveModel, CancellationToken cancellationToken = default)
     {
         IQueryable<T> query = context.Set<T>().AsNoTracking();
 
@@ -32,7 +31,6 @@ public class Repository<T>(ApplicationDbContext context, ISieveProcessor sievePr
 
     public async Task<(IReadOnlyList<TDto> Entities, int TotalCount)> GetAllAsync<TDto>(SieveModel sieveModel, Expression<Func<T, TDto>> projection, CancellationToken cancellationToken = default)
     {
-
         IQueryable<T> query = context.Set<T>().AsNoTracking();
 
         var filteredQuery = sieveProcessor.Apply(sieveModel, query, applyPagination: false);
@@ -60,7 +58,6 @@ public class Repository<T>(ApplicationDbContext context, ISieveProcessor sievePr
     {
         entity.AllowHardDelete = hardDelete;
         context.Set<T>().Remove(entity);
-
     }
 
     public void Update(T entity)
@@ -77,7 +74,6 @@ public class Repository<T>(ApplicationDbContext context, ISieveProcessor sievePr
     {
         await context.BulkUpdateAsync(entities, cancellationToken: cancellationToken);
     }
-
     public async Task DeleteBulkAsync(IList<T> entities, CancellationToken cancellationToken = default)
     {
         await context.BulkDeleteAsync(entities, cancellationToken: cancellationToken);
