@@ -15,7 +15,6 @@ public class DUAllocation : BaseEntity
     public decimal Amount { get; set; }
     public virtual List<OPCR> OPCRs { get; set; } = [];
     public virtual List<SubDUAllocation> SubDUAllocations { get; set; } = [];
-    public virtual List<DUAllocation> DUAllocations { get; set; } = [];
     public virtual List<WFP> WFPs { get; set; } = [];
     public virtual List<DUFundAllocation> DUFundAllocations { get; set; } = [];
     public virtual DeliveryUnit DeliveryUnit { get; set; } = null!;
