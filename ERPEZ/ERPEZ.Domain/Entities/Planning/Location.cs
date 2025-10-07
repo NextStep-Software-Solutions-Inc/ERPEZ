@@ -15,5 +15,7 @@ public class Location : BaseEntity
     public string Type { get; set; } = string.Empty;
     [Sieve(CanFilter = true, CanSort = true)]
     public bool IsActive { get; set; }
+    public virtual Location? ParentLocation { get; set; }
+    public virtual List<Location> Locations { get; set; } = [];
     public virtual List<Transaction> Transactions  { get; set; } = [];
 }
