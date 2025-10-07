@@ -14,7 +14,6 @@ public class OPCR : BaseEntity
     public int FiscalYear { get; set; }
     [Sieve(CanFilter = true, CanSort = true)]
     public string Status { get; set; } = string.Empty;
-    public virtual OPCREvaluation OPCREvaluation { get; set; } = null!;
     public virtual DUAllocation DUAllocation { get; set; } = null!;
     public virtual DeliveryUnit DeliveryUnit { get; set; } = null!;
     public virtual List<OPCREvaluation> OPCREvaluations { get; set; } = [];

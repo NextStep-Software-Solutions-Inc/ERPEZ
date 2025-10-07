@@ -10,7 +10,7 @@ public class DUFundAllocation : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid ReceivedFundId { get; set; }
     [Sieve(CanFilter = true, CanSort = true)]
-    public string Amount { get; set; } = string.Empty;
+    public decimal Amount { get; set; }
     public virtual DUAllocation DUAllocation { get; set; } = null!;
     public virtual ReceivedFund ReceivedFund { get; set; } = null!;
 }

@@ -54,14 +54,15 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 continue;
             }
 
-            if (idProperty.ClrType == typeof(Guid))
+            if (entity.FindPrimaryKey() == null)
             {
-                idProperty.SetDefaultValueSql("gen_random_uuid()");
+                if (idProperty.ClrType == typeof(Guid))
+                {
+                    idProperty.SetDefaultValueSql("gen_random_uuid()");
+                }
+                entity.SetPrimaryKey(idProperty);
+                idProperty.ValueGenerated = ValueGenerated.OnAdd;
             }
-
-            entity.SetPrimaryKey(idProperty);
-
-            idProperty.ValueGenerated = ValueGenerated.OnAdd;
         }
         //FunctionPercentageAllocation
         modelBuilder.Entity<FunctionPercentageAllocation>()

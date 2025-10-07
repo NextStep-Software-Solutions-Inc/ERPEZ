@@ -12,7 +12,7 @@ public class DUAllocation : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public string Purpose { get; set; } = string.Empty;
     [Sieve(CanFilter = true, CanSort = true)]
-    public string Amount { get; set; } = string.Empty;
+    public decimal Amount { get; set; }
     public virtual List<OPCR> OPCRs { get; set; } = [];
     public virtual List<SubDUAllocation> SubDUAllocations { get; set; } = [];
     public virtual List<DUAllocation> DUAllocations { get; set; } = [];
