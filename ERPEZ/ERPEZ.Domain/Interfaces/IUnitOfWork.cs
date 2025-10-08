@@ -7,5 +7,6 @@ public interface IUnitOfWork
     IFundSourceRepository FundSourceRepository { get; }
     ITransactionRepository TransactionRepository { get; }
     IMFOPAPRepository MFOPAPRepository { get; }
+    IFunctionPercentageAllocationRepository FunctionPercentageAllocationRepository { get; }
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
