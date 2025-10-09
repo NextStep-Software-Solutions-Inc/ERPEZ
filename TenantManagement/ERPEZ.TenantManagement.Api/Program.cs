@@ -32,9 +32,4 @@ app.UseHangfireDashboard(); // Add Hangfire Dashboard endpoint
 
 // 5. Tell the app to use controllers
 app.MapControllers();
-using (var scope = app.Services.CreateScope())
-{
-    var seeder = scope.ServiceProvider.GetRequiredService<IDatabaseSeeder>();
-    await seeder.SeedAsync();
-}
 app.Run();

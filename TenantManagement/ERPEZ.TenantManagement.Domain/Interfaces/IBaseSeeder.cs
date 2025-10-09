@@ -1,6 +1,6 @@
 ﻿namespace ERPEZ.TenantManagement.Domain.Interfaces;
 
-public interface IDatabaseSeeder
+public interface IBaseSeeder
 {
     Task SeedAsync(CancellationToken cancellationToken = default);
 }

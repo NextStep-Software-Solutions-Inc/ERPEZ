@@ -4,11 +4,10 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.TenantManagement.Infrastructure.Persistence.Repositories;
 
-public class DatabaseSeeder(IUnitOfWork _unitOfWork) : IDatabaseSeeder
+public class ModuleSeeder(IUnitOfWork _unitOfWork) : IBaseSeeder
 {
     public async Task SeedAsync(CancellationToken cancellationToken = default)
     {
-        // Step 1: Prepare DTOs
         var modules = new List<Module>
         {
             new()
@@ -42,13 +41,12 @@ public class DatabaseSeeder(IUnitOfWork _unitOfWork) : IDatabaseSeeder
         };
 
         var existingModules = await _unitOfWork.ModuleRepository.Query()
-            .Select(m => m.Name.ToLower())
+            .Select(m => m.Name)
             .ToListAsync(cancellationToken);
 
         var newModules = modules
-            .Where(m => !existingModules.Any(e => e.Equals(m.Name, StringComparison.CurrentCultureIgnoreCase)))
+            .Where(m => !existingModules.Any(e => e.Equals(m.Name, StringComparison.OrdinalIgnoreCase)))
             .ToList();
-
 
         if (newModules.Count != 0)
         {

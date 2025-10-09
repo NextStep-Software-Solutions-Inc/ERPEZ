@@ -31,7 +31,7 @@ public static class DependencyInjection
         services.AddScoped<SoftDeleteInterceptor>();
 
         // Register repositories and Unit of Work
-        services.AddScoped<IDatabaseSeeder, DatabaseSeeder>();
+        services.AddScoped<IBaseSeeder, ModuleSeeder>();
         services.AddScoped<ITenantRepository, TenantRepository>();
         services.AddScoped<IModuleRepository, ModuleRepository>();
         services.AddScoped<ITenantSettingRepository, TenantSettingRepository>();
@@ -50,7 +50,12 @@ public static class DependencyInjection
             using var scope = services.BuildServiceProvider().CreateScope();
             var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             dbContext.Database.Migrate();
+
+            var seeders = scope.ServiceProvider.GetServices<IBaseSeeder>();
+            foreach (var seeder in seeders)
+                seeder.SeedAsync().GetAwaiter().GetResult();
         }
+
         return services;
     }
 }
