@@ -1,6 +1,7 @@
-using ERPEZ.TenantManagement.Application;
-using ERPEZ.TenantManagement.Infrastructure;
 using ERPEZ.TenantManagement.Api;
+using ERPEZ.TenantManagement.Application;
+using ERPEZ.TenantManagement.Domain.Interfaces;
+using ERPEZ.TenantManagement.Infrastructure;
 using Hangfire;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -31,5 +32,9 @@ app.UseHangfireDashboard(); // Add Hangfire Dashboard endpoint
 
 // 5. Tell the app to use controllers
 app.MapControllers();
-
+using (var scope = app.Services.CreateScope())
+{
+    var seeder = scope.ServiceProvider.GetRequiredService<IDatabaseSeeder>();
+    await seeder.SeedAsync();
+}
 app.Run();

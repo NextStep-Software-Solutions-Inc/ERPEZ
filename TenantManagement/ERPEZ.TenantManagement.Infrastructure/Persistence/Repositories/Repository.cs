@@ -72,7 +72,10 @@ public class Repository<T>(ApplicationDbContext context, ISieveProcessor sievePr
     {
         await context.BulkInsertAsync(entities, cancellationToken: cancellationToken);
     }
-
+    public async Task AddRangeAsync(IList<T> entities, CancellationToken cancellationToken = default)
+    {
+        await context.Set<T>().AddRangeAsync(entities, cancellationToken);
+    }
     public async Task UpdateBulkAsync(IList<T> entities, CancellationToken cancellationToken = default)
     {
         await context.BulkUpdateAsync(entities, cancellationToken: cancellationToken);

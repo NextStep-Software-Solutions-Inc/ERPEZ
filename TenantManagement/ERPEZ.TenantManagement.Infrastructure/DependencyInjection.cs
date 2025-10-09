@@ -31,6 +31,7 @@ public static class DependencyInjection
         services.AddScoped<SoftDeleteInterceptor>();
 
         // Register repositories and Unit of Work
+        services.AddScoped<IDatabaseSeeder, DatabaseSeeder>();
         services.AddScoped<ITenantRepository, TenantRepository>();
         services.AddScoped<IModuleRepository, ModuleRepository>();
         services.AddScoped<ITenantSettingRepository, TenantSettingRepository>();
