@@ -55,7 +55,20 @@ public static class DependencyInjection
             foreach (var seeder in seeders)
                 seeder.SeedAsync().GetAwaiter().GetResult();
         }
-
+      
+        services.AddCors(options =>
+        {
+            options.AddPolicy("AllowFrontend", policy =>
+            {
+                policy.WithOrigins(
+                    "http://localhost:5173",
+                    "https://your-frontend-domain.com"
+                )
+                .AllowAnyHeader()
+                .AllowAnyMethod()
+                .AllowCredentials();
+            });
+        });
         return services;
     }
 }

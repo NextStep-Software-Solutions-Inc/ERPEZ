@@ -29,7 +29,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseExceptionHandler(); // Use our global exception handler
 app.UseHangfireDashboard(); // Add Hangfire Dashboard endpoint
-
+app.UseCors("AllowFrontend");
 // 5. Tell the app to use controllers
 app.MapControllers();
 app.Run();
