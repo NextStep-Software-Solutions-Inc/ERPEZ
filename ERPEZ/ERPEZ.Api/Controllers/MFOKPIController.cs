@@ -1,36 +1,75 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using ERPEZ.Application.Features.Planning.MFOKPI.Dtos;
+using ERPEZ.Domain.Entities.Planning;
+using ERPEZ.Shared.Common;
+using MediatR;
+using Microsoft.AspNetCore.Mvc;
+using ERPEZ.Application.Features.Planning.MFOKPI.Queries.GetMFOKPIsQuery;
+using ERPEZ.Application.Features.Planning.MFOKPI.Commands.CreateMFOKPI;
+using ERPEZ.Application.Features.Planning.MFOKPI.Queries.GetMFOKPIByIdQuery;
+using ERPEZ.Application.Features.Planning.MFOKPI.Commands.UpdateMFOKPI;
+using ERPEZ.Application.Features.Planning.MFOKPI.Commands.DeleteMFOKPI;
 
 namespace ERPEZ.Api.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("mfo-kpis")]
     [ApiController]
-    public class MFOKPIController : ControllerBase
+    public class MFOKPIController(ISender mediator) : ControllerBase
     {
         [HttpPost]
-        public void Post([FromBody] string value)
+        [ProducesResponseType(typeof(ApiResponse<MFOKPI>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<MFOKPI>), StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> CreateMFOKPI([FromBody] CreateMFOKPICommand command)
         {
+            var result = await mediator.Send(command);
+
+            if (!result.Succeeded)
+                return BadRequest(result);
+
+            return CreatedAtAction(nameof(GetMFOKPIById), new { id = result.Data!.Id }, result);
         }
 
         [HttpGet]
-        public IEnumerable<string> Get()
+        [ProducesResponseType(typeof(PaginatedApiResponse<MFOKPIDto>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetMFOKPIs([FromQuery] GetMFOKPIsQuery query)
         {
-            return new string[] { "value1", "value2" };
+            var result = await mediator.Send(query);
+            return Ok(result);
         }
 
         [HttpGet("{id}")]
-        public string Get(int id)
+        [ProducesResponseType(typeof(ApiResponse<MFOKPIDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetMFOKPIById(Guid id)
         {
-            return "value";
+            var result = await mediator.Send(new GetMFOKPIByIdQuery(id));
+            return result.Succeeded ? Ok(result) : NotFound(result);
         }
 
         [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
+        [ProducesResponseType(typeof(ApiResponse<MFOKPIDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> UpdateMFOKPI(Guid id, [FromBody] UpdateMFOKPIDto dto)
         {
+            var command = new UpdateMFOKPICommand
+            {
+                Id = id,
+                UpdateMFOKPI = dto
+            };
+
+            var result = await mediator.Send(command);
+            return result.Succeeded ? Ok(result) : BadRequest(result);
         }
 
         [HttpDelete("{id}")]
-        public void Delete(int id)
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> DeleteMFOKPI(Guid id)
         {
+            var command = new DeleteMFOKPICommand(id);
+            var result = await mediator.Send(command);
+
+            return result.Succeeded ? Ok(result) : BadRequest(result);
         }
     }
 }

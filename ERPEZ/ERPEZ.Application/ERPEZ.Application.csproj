@@ -15,13 +15,11 @@
     <Folder Include="Features\Planning\ActivityBudgetRequirement\Dtos\" />
     <Folder Include="Features\Planning\ActivityBudgetRequirement\Queries\" />
     <Folder Include="Features\Planning\DUFundAllocation\" />
-    <Folder Include="Features\Planning\KPI\" />
     <Folder Include="Features\Planning\DUAllocation\" />
     <Folder Include="Features\Planning\KPIAssignment\" />
     <Folder Include="Features\Planning\KPIModeOfVerification\" />
     <Folder Include="Features\Planning\KPIRating\" />
     <Folder Include="Features\Planning\KPITarget\" />
-    <Folder Include="Features\Planning\MFOKPI\" />
     <Folder Include="Features\Planning\WFPPAP\" />
     <Folder Include="Features\Planning\WFPPAPDepartment\" />
     <Folder Include="Features\Planning\WFPOutcome\" />
