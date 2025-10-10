@@ -7,6 +7,8 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
 {
     private readonly ApplicationDbContext _context;
 
+    public IDeliveryUnitRepository DeliveryUnitRepository { get; }
+    public IOfficeRepository OfficeRepository { get; }
     public IOrganizationRepository OrganizationRepository { get; }
     public IFundSourceRepository FundSourceRepository { get; }
     public ILocationRepository LocationRepository { get; }
@@ -16,6 +18,8 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
 
     public UnitOfWork(ApplicationDbContext context,
                       ISieveProcessor sieveProcessor,
+                      IDeliveryUnitRepository deliveryUnitRepository,
+                      IOfficeRepository officeRepository,
                       IOrganizationRepository organizationRepository,
                       IFundSourceRepository fundSourceRepository,
                       ILocationRepository locationRepository,
@@ -25,6 +29,8 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
 
+        DeliveryUnitRepository = deliveryUnitRepository ?? throw new ArgumentNullException(nameof(deliveryUnitRepository));
+        OfficeRepository = officeRepository ?? throw new ArgumentNullException(nameof(officeRepository));
         OrganizationRepository = organizationRepository ?? throw new ArgumentNullException(nameof(organizationRepository));
         FundSourceRepository = fundSourceRepository ?? throw new ArgumentNullException(nameof(fundSourceRepository));
         LocationRepository = locationRepository ?? throw new ArgumentNullException(nameof(locationRepository));
