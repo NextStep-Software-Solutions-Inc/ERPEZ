@@ -30,17 +30,7 @@ public sealed class CreateTenantCommandHandler(IUnitOfWork _unitOfWork) : IReque
             }
         }; 
         
-        tenant.TenantSubscriptions.Add(new TenantSubscription
-        {
-            Amount = 0,
-            Plan = 5,
-            StartDate = DateTime.UtcNow,
-            EndDate = DateTime.UtcNow.AddMonths(1),
-            Status = 1,
-            AutoRenew = false
-        });
-
-        var module = await _unitOfWork.ModuleRepository.FindAsync(m => m.Name == "AMS", cancellationToken: cancellationToken);
+        var module = await _unitOfWork.ModuleRepository.FindAsync(m => m.Key == "ams", cancellationToken: cancellationToken);
 
         if (module != null) tenant.Modules.Add(module);
 
