@@ -16,7 +16,6 @@
     <Folder Include="Features\Planning\ActivityBudgetRequirement\Queries\" />
     <Folder Include="Features\Planning\DUFundAllocation\" />
     <Folder Include="Features\Planning\KPI\" />
-    <Folder Include="Features\Planning\DeliveryUnit\" />
     <Folder Include="Features\Planning\DUAllocation\" />
     <Folder Include="Features\Planning\KPIAssignment\" />
     <Folder Include="Features\Planning\KPIModeOfVerification\" />
@@ -39,7 +38,6 @@
     <Folder Include="Features\Planning\OPCREvaluation\" />
     <Folder Include="Features\Planning\OPCRActivity\" />
     <Folder Include="Features\Planning\OPCR\" />
-    <Folder Include="Features\Planning\Office\" />
     <Folder Include="Features\Planning\Object\" />
   </ItemGroup>
 
