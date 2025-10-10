@@ -7,6 +7,8 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
 {
     private readonly ApplicationDbContext _context;
 
+    public IMFOKPIRepository MFOKPIRepository { get; }
+    public IKPIRepository KPIRepository { get; }
     public IDeliveryUnitRepository DeliveryUnitRepository { get; }
     public IOfficeRepository OfficeRepository { get; }
     public IOrganizationRepository OrganizationRepository { get; }
@@ -17,18 +19,22 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IFunctionPercentageAllocationRepository FunctionPercentageAllocationRepository { get; }
 
     public UnitOfWork(ApplicationDbContext context,
-                      ISieveProcessor sieveProcessor,
-                      IDeliveryUnitRepository deliveryUnitRepository,
-                      IOfficeRepository officeRepository,
-                      IOrganizationRepository organizationRepository,
-                      IFundSourceRepository fundSourceRepository,
-                      ILocationRepository locationRepository,
-                      ITransactionRepository transactionRepository,
-                      IMFOPAPRepository mFOPAPRepository,
-                      IFunctionPercentageAllocationRepository functionPercentageAllocationRepository)
+                        ISieveProcessor sieveProcessor,
+                        IMFOKPIRepository mFOKPIRepository,
+                        IKPIRepository kPIRepository,
+                        IDeliveryUnitRepository deliveryUnitRepository,
+                        IOfficeRepository officeRepository,
+                        IOrganizationRepository organizationRepository,
+                        IFundSourceRepository fundSourceRepository,
+                        ILocationRepository locationRepository,
+                        ITransactionRepository transactionRepository,
+                        IMFOPAPRepository mFOPAPRepository,
+                        IFunctionPercentageAllocationRepository functionPercentageAllocationRepository)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
 
+        MFOKPIRepository = mFOKPIRepository ?? throw new ArgumentNullException(nameof(mFOKPIRepository));
+        KPIRepository = kPIRepository ?? throw new ArgumentNullException(nameof(kPIRepository));
         DeliveryUnitRepository = deliveryUnitRepository ?? throw new ArgumentNullException(nameof(deliveryUnitRepository));
         OfficeRepository = officeRepository ?? throw new ArgumentNullException(nameof(officeRepository));
         OrganizationRepository = organizationRepository ?? throw new ArgumentNullException(nameof(organizationRepository));

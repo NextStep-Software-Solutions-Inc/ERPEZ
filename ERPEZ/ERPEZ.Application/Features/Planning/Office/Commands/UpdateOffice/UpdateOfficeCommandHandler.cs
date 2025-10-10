@@ -9,8 +9,8 @@ public class UpdateOfficeCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandl
 {
     public async Task<ApiResponse<Domain.Entities.Planning.Office>> Handle(UpdateOfficeCommand request, CancellationToken cancellationToken)
     {
-        var office = await _unitOfWork.OfficeRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("Function Percentage Allocation not found.");
-        if (office.Name == request.UpdateOffice?.Name) throw new ConflictException("Function Percentage Allocation already exist.");
+        var office = await _unitOfWork.OfficeRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("Office not found.");
+        if (office.Name == request.UpdateOffice?.Name) throw new ConflictException("Office already exist.");
 
         var dto = request.UpdateOffice;
 

@@ -22,6 +22,8 @@ public static class DependencyInjection
         services.AddDbContext<ApplicationDbContext>(options =>
             options.UseNpgsql(connectionString));
         // Register repositories and Unit of Work
+        services.AddScoped<IMFOKPIRepository, MFOKPIRepository>();
+        services.AddScoped<IKPIRepository, KPIRepository>();
         services.AddScoped<IOfficeRepository, OfficeRepository>();
         services.AddScoped<IDeliveryUnitRepository, DeliveryUnitRepository>();
         services.AddScoped<IOrganizationRepository, OrganizationRepository>();

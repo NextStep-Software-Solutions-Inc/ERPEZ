@@ -2,6 +2,8 @@
 
 public interface IUnitOfWork
 {
+    IMFOKPIRepository MFOKPIRepository { get; }
+    IKPIRepository KPIRepository { get; }
     ILocationRepository LocationRepository { get; }
     IDeliveryUnitRepository DeliveryUnitRepository { get; }
     IOfficeRepository OfficeRepository { get; }
