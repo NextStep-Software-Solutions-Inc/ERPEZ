@@ -15,11 +15,7 @@
     <Folder Include="Features\Planning\ActivityBudgetRequirement\Dtos\" />
     <Folder Include="Features\Planning\ActivityBudgetRequirement\Queries\" />
     <Folder Include="Features\Planning\DUFundAllocation\" />
-    <Folder Include="Features\Planning\DUAllocation\" />
-    <Folder Include="Features\Planning\KPIAssignment\" />
-    <Folder Include="Features\Planning\KPIModeOfVerification\" />
     <Folder Include="Features\Planning\KPIRating\" />
-    <Folder Include="Features\Planning\KPITarget\" />
     <Folder Include="Features\Planning\WFPPAP\" />
     <Folder Include="Features\Planning\WFPPAPDepartment\" />
     <Folder Include="Features\Planning\WFPOutcome\" />
@@ -28,7 +24,6 @@
     <Folder Include="Features\Planning\WFPActivity\" />
     <Folder Include="Features\Planning\SubDUAllocation\" />
     <Folder Include="Features\Planning\SubDeliveryUnit\" />
-    <Folder Include="Features\Planning\ReceivedFund\" />
     <Folder Include="Features\Planning\PerformanceMeasure\" />
     <Folder Include="Features\Planning\OPCRRating\" />
     <Folder Include="Features\Planning\OPCRPAP\" />

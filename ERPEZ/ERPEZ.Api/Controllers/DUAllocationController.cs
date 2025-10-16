@@ -1,44 +1,76 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using ERPEZ.Application.Features.Planning.DUAllocation.Commands.CreateDUAllocation;
+using ERPEZ.Application.Features.Planning.DUAllocation.Commands.DeleteDUAllocation;
+using ERPEZ.Application.Features.Planning.DUAllocation.Commands.UpdateDUAllocation;
+using ERPEZ.Application.Features.Planning.DUAllocation.Dtos;
+using ERPEZ.Application.Features.Planning.DUAllocation.Queries.GetDUAllocationById;
+using ERPEZ.Application.Features.Planning.DUAllocation.Queries.GetDUAllocations;
+using ERPEZ.Application.Features.Planning.KPI.Dtos;
+using ERPEZ.Domain.Entities.Planning;
+using ERPEZ.Shared.Common;
+using MediatR;
+using Microsoft.AspNetCore.Mvc;
 
 namespace ERPEZ.Api.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("du-allocations")]
     [ApiController]
-    public class DUAllocationController : ControllerBase
+    public class DUAllocationController(ISender mediator) : ControllerBase
     {
-        // POST api/<DUAllocationController>
         [HttpPost]
-        public IActionResult Post([FromBody] string value)
+        [ProducesResponseType(typeof(ApiResponse<KPI>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<KPI>), StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> CreateDUAllocation([FromBody] CreateDUAllocationCommand command)
         {
-            return Ok("Created");
+            var result = await mediator.Send(command);
+
+            if (!result.Succeeded)
+                return BadRequest(result);
+
+            return CreatedAtAction(nameof(GetDUAllocationById), new { id = result.Data!.Id }, result);
         }
 
-        // GET: api/<DUAllocationController>
         [HttpGet]
-        public IEnumerable<string> GetAll()
+        [ProducesResponseType(typeof(PaginatedApiResponse<DUAllocationDto>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetDUAllocations([FromQuery] GetDUAllocationsQuery query)
         {
-            return new string[] { "value1", "value2" };
+            var result = await mediator.Send(query);
+            return Ok(result);
         }
 
-        // GET api/<DUAllocationController>/5
         [HttpGet("{id}")]
-        public IActionResult GetById(int id)
+        [ProducesResponseType(typeof(ApiResponse<DUAllocationDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetDUAllocationById(Guid id)
         {
-            return Ok("value");
+            var result = await mediator.Send(new GetDUAllocationByIdQuery(id));
+            return result.Succeeded ? Ok(result) : NotFound(result);
         }
 
-        // PUT api/<DUAllocationController>/5
         [HttpPut("{id}")]
-        public IActionResult Put(int id, [FromBody] string value)
+        [ProducesResponseType(typeof(ApiResponse<KPIDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> UpdateDUAllocation(Guid id, [FromBody] UpdateDUAllocationDto dto)
         {
-            return Ok("Updated");
+            var command = new UpdateDUAllocationCommand
+            {
+                Id = id,
+                UpdateDUAllocation = dto
+            };
+
+            var result = await mediator.Send(command);
+            return result.Succeeded ? Ok(result) : BadRequest(result);
         }
 
-        // DELETE api/<DUAllocationController>/5
         [HttpDelete("{id}")]
-        public IActionResult Delete(int id)
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> DeleteDUAllocation(Guid id)
         {
-            return Ok("Deleted");
+            var command = new DeleteDUAllocationCommand(id);
+            var result = await mediator.Send(command);
+
+            return result.Succeeded ? Ok(result) : BadRequest(result);
         }
     }
 }

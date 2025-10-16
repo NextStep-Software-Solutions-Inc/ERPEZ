@@ -7,6 +7,11 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
 {
     private readonly ApplicationDbContext _context;
 
+    public IDUAllocationRepository DUAllocationRepository { get; }
+    public IKPITargetRepository KPITargetRepository { get; }
+    public IKPIAssignmentRepository KPIAssignmentRepository { get; }
+    public IKPIModeOfVerificationRepository KPIModeOfVerificationRepository { get; }
+    public IReceivedFundRepository ReceivedFundRepository { get; }
     public IMFOKPIRepository MFOKPIRepository { get; }
     public IKPIRepository KPIRepository { get; }
     public IDeliveryUnitRepository DeliveryUnitRepository { get; }
@@ -20,7 +25,12 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
 
     public UnitOfWork(ApplicationDbContext context,
                         ISieveProcessor sieveProcessor,
+                        IReceivedFundRepository receivedFundRepository,
+                        IKPIAssignmentRepository kPIAssignmentRepository,
+                        IKPITargetRepository kPITargetRepository,
+                        IKPIModeOfVerificationRepository kPIModeOfVerificationRepository,
                         IMFOKPIRepository mFOKPIRepository,
+                        IDUAllocationRepository dUAllocationRepository,
                         IKPIRepository kPIRepository,
                         IDeliveryUnitRepository deliveryUnitRepository,
                         IOfficeRepository officeRepository,
@@ -34,6 +44,11 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         _context = context ?? throw new ArgumentNullException(nameof(context));
 
         MFOKPIRepository = mFOKPIRepository ?? throw new ArgumentNullException(nameof(mFOKPIRepository));
+        KPIAssignmentRepository = kPIAssignmentRepository ?? throw new ArgumentNullException(nameof(kPIAssignmentRepository));
+        KPITargetRepository = kPITargetRepository ?? throw new ArgumentNullException(nameof(kPITargetRepository));
+        KPIModeOfVerificationRepository = kPIModeOfVerificationRepository ?? throw new ArgumentNullException(nameof(kPIModeOfVerificationRepository));
+        ReceivedFundRepository = receivedFundRepository ?? throw new ArgumentNullException(nameof(receivedFundRepository));
+        DUAllocationRepository = dUAllocationRepository ?? throw new ArgumentNullException(nameof(dUAllocationRepository));
         KPIRepository = kPIRepository ?? throw new ArgumentNullException(nameof(kPIRepository));
         DeliveryUnitRepository = deliveryUnitRepository ?? throw new ArgumentNullException(nameof(deliveryUnitRepository));
         OfficeRepository = officeRepository ?? throw new ArgumentNullException(nameof(officeRepository));
