@@ -21,7 +21,12 @@ var app = builder.Build();
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    // Configure UseSwaggerUI to show both documents
+    app.UseSwaggerUI(c =>
+    {
+        c.SwaggerEndpoint("/swagger/catalog/swagger.json", "1. Planning & Catalog API");
+        c.SwaggerEndpoint("/swagger/ams/swagger.json", "2. AMS (Auth & Mgmt) API");
+    });
 }
 
 // 4. Add middleware

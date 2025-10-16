@@ -1,4 +1,5 @@
-﻿using ERPEZ.Domain.Entities.Planning;
+﻿using ERPEZ.Domain.Entities.AMS;
+using ERPEZ.Domain.Entities.Planning;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Object = ERPEZ.Domain.Entities.Planning.Object;
@@ -34,12 +35,17 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<WFPObjective> WFPObjectives { get; set; }
     public DbSet<WFPOutcome> WFPOutcomes { get; set; }
 
+    //AMS
+    public DbSet<Permission> Permissions { get; set; }
+    public DbSet<Role> Roles { get; set; }
+    public DbSet<User> Users { get; set; }
+    public DbSet<Supplier> Suppliers { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         const string schemaName = "catalog";
         //const string planningSchemaName = "planning";
         //const string procurementSchemaName = "procurement";
-        //const string samsSchemaName = "sams";
 
         modelBuilder.HasDefaultSchema(schemaName);
 
@@ -472,27 +478,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .WithOne(wo => wo.WFPObjective)
             .HasForeignKey(wo => wo.WFPObjectiveId);
 
-        //WFPPAP
-        //modelBuilder.Entity<WFPPAP>()
-        //    .HasIndex(p => new { p.WFPId, p.Name });
-
-        //modelBuilder.Entity<WFPPAP>()
-        //    .HasOne(p => p.WFP)
-        //    .WithMany(w => w.WFPPAPs)
-        //    .HasForeignKey(p => p.WFPId)
-        //    .OnDelete(DeleteBehavior.Cascade);
-
-        //modelBuilder.Entity<WFPPAP>()
-        //    .HasOne(p => p.WFPOutcome)
-        //    .WithMany(o => o.WFPPAPs)
-        //    .HasForeignKey(p => p.WFPOutcomeId)
-        //    .OnDelete(DeleteBehavior.SetNull);
-
-        //modelBuilder.Entity<WFPPAP>()
-        //    .HasMany(p => p.WFPPAPDepartments)
-        //    .WithOne(d => d.WFPPAP)
-        //    .HasForeignKey(d => d.WFPPAPId);
-
         //WFPPAPDepartment
         modelBuilder.Entity<WFPPAPDepartment>()
             .HasIndex(d => new { d.WFPPAPId, d.SubDeliveryUnitId })
@@ -548,17 +533,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasMany(o => o.OPCRKPIs)
             .WithOne(k => k.OPCR)
             .HasForeignKey(k => k.OPCRId);
-
-        // OPCRPAP
-        //modelBuilder.Entity<OPCRPAP>()
-        //    .HasOne(p => p.OPCRKPI)
-        //    .WithMany(k => k.OPCRPAPs)
-        //    .HasForeignKey(p => p.OPCRKPIId);
-
-        //modelBuilder.Entity<OPCRPAP>()
-        //    .HasMany(p => p.OPCRPAPDepartments)
-        //    .WithOne(d => d.OPCRPAP)
-        //    .HasForeignKey(d => d.OPCRPAPId);
 
         // OPCRActivity
         modelBuilder.Entity<OPCRActivity>()
@@ -650,6 +624,66 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .WithMany(k => k.MFOKPIs)
             .HasForeignKey(m => m.KPIId);
 
+        //----------------AMS--------------------------
+        const string amsSchema = "ams";
+
+        modelBuilder.Entity<Permission>().ToTable(nameof(Permissions), schema: amsSchema);
+        modelBuilder.Entity<Role>().ToTable(nameof(Roles), schema: amsSchema);
+        modelBuilder.Entity<User>().ToTable(nameof(Users), schema: amsSchema);
+        modelBuilder.Entity<Supplier>().ToTable(nameof(Suppliers), schema: amsSchema);
+
+        // User
+        modelBuilder.Entity<User>()
+            .HasIndex(u => new { u.AuthUserId, u.RoleId, u.FirstName, u.LastName })
+            .IsUnique();
+
+        modelBuilder.Entity<User>()
+            .HasOne(u => u.Role)
+            .WithMany(r => r.Users)
+            .HasForeignKey(u => u.RoleId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<User>()
+            .HasMany(u => u.Suppliers)
+            .WithOne(s => s.User)
+            .HasForeignKey(s => s.UserId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Permission
+        modelBuilder.Entity<Permission>()
+            .HasIndex(p => new { p.Key, p.Name, p.Module })
+            .IsUnique();
+
+        modelBuilder.Entity<Permission>()
+            .HasMany(p => p.Roles)
+            .WithMany(r => r.Permissions)
+            .UsingEntity(j => j.ToTable("RolePermission", schema: amsSchema));
+
+        modelBuilder.Entity<Permission>()
+            .HasMany(p => p.Users)
+            .WithMany(u => u.Permissions)
+            .UsingEntity(j => j.ToTable("UserPermission", schema: amsSchema));
+
+        // Role
+        modelBuilder.Entity<Role>()
+            .HasIndex(r => new { r.Name, r.Key })
+            .IsUnique();
+
+        modelBuilder.Entity<Role>()
+            .HasMany(r => r.Users)
+            .WithOne(u => u.Role)
+            .HasForeignKey(u => u.RoleId);
+
+        // Supplier
+        modelBuilder.Entity<Supplier>()
+            .HasIndex(s => new { s.Name , s.UserId})
+            .IsUnique();
+
+        modelBuilder.Entity<Supplier>()
+            .HasOne(s => s.User)
+            .WithMany(u => u.Suppliers)
+            .HasForeignKey(s => s.UserId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         base.OnModelCreating(modelBuilder);
 

@@ -39,6 +39,231 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.ToTable("OPCRPAPDepartment", "catalog");
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.AMS.Permission", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("Module")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Key", "Name", "Module")
+                        .IsUnique();
+
+                    b.ToTable("Permissions", "ams");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.AMS.Role", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Key")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name", "Key")
+                        .IsUnique();
+
+                    b.ToTable("Roles", "ams");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.AMS.Supplier", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Address")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ContactNumber")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ContactPerson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.HasIndex("Name", "UserId")
+                        .IsUnique();
+
+                    b.ToTable("Suppliers", "ams");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.AMS.User", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Address")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("AuthUserId")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ContactNumber")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("FirstName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("LastName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("RoleId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RoleId");
+
+                    b.HasIndex("AuthUserId", "RoleId", "FirstName", "LastName")
+                        .IsUnique();
+
+                    b.ToTable("Users", "ams");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.ActivityBudgetRequirement", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1782,6 +2007,36 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.ToTable("WFPPAPDepartment", "catalog");
                 });
 
+            modelBuilder.Entity("PermissionRole", b =>
+                {
+                    b.Property<Guid>("PermissionsId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("RolesId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("PermissionsId", "RolesId");
+
+                    b.HasIndex("RolesId");
+
+                    b.ToTable("RolePermission", "ams");
+                });
+
+            modelBuilder.Entity("PermissionUser", b =>
+                {
+                    b.Property<Guid>("PermissionsId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("UsersId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("PermissionsId", "UsersId");
+
+                    b.HasIndex("UsersId");
+
+                    b.ToTable("UserPermission", "ams");
+                });
+
             modelBuilder.Entity("DeliveryUnitOPCRActivity", b =>
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Planning.DeliveryUnit", null)
@@ -1795,6 +2050,28 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasForeignKey("OPCRActivitiesId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.AMS.Supplier", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.AMS.User", "User")
+                        .WithMany("Suppliers")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.AMS.User", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.AMS.Role", "Role")
+                        .WithMany("Users")
+                        .HasForeignKey("RoleId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Role");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.ActivityBudgetRequirement", b =>
@@ -1883,7 +2160,7 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired();
 
                     b.HasOne("ERPEZ.Domain.Entities.Planning.KPI", "ParentKPI")
-                        .WithMany("ParentKPIs")
+                        .WithMany()
                         .HasForeignKey("ParentKPIId");
 
                     b.Navigation("FunctionPercentageAllocation");
@@ -2297,6 +2574,46 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("WFPPAP");
                 });
 
+            modelBuilder.Entity("PermissionRole", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.AMS.Permission", null)
+                        .WithMany()
+                        .HasForeignKey("PermissionsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERPEZ.Domain.Entities.AMS.Role", null)
+                        .WithMany()
+                        .HasForeignKey("RolesId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("PermissionUser", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.AMS.Permission", null)
+                        .WithMany()
+                        .HasForeignKey("PermissionsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERPEZ.Domain.Entities.AMS.User", null)
+                        .WithMany()
+                        .HasForeignKey("UsersId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.AMS.Role", b =>
+                {
+                    b.Navigation("Users");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.AMS.User", b =>
+                {
+                    b.Navigation("Suppliers");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.DUAllocation", b =>
                 {
                     b.Navigation("DUFundAllocations");
@@ -2350,8 +2667,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("MFOKPIs");
 
                     b.Navigation("OPCRKPIs");
-
-                    b.Navigation("ParentKPIs");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.Location", b =>
