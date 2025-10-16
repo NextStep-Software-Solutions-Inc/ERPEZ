@@ -2,6 +2,11 @@
 
 public interface IUnitOfWork
 {
+    IDUAllocationRepository DUAllocationRepository { get; }
+    IKPITargetRepository KPITargetRepository { get; }
+    IKPIAssignmentRepository KPIAssignmentRepository { get; }
+    IKPIModeOfVerificationRepository KPIModeOfVerificationRepository { get; }
+    IReceivedFundRepository ReceivedFundRepository { get; }
     IMFOKPIRepository MFOKPIRepository { get; }
     IKPIRepository KPIRepository { get; }
     ILocationRepository LocationRepository { get; }
