@@ -36,6 +36,7 @@ public static class DependencyInjection
         services.AddScoped<IModuleRepository, ModuleRepository>();
         services.AddScoped<ITenantSettingRepository, TenantSettingRepository>();
         services.AddScoped<ITenantSubscriptionRepository, TenantSubscriptionRepository>();
+        services.AddScoped<ITenantMemberRepository, TenantMemberRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         // Add Hangfire

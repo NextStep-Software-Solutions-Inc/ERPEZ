@@ -1,6 +1,5 @@
 using ERPEZ.TenantManagement.Api;
 using ERPEZ.TenantManagement.Application;
-using ERPEZ.TenantManagement.Domain.Interfaces;
 using ERPEZ.TenantManagement.Infrastructure;
 using Hangfire;
 

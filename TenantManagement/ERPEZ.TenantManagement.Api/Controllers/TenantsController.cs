@@ -5,6 +5,7 @@ using ERPEZ.TenantManagement.Application.Features.Tenants.Commands.UpdateTenant;
 using ERPEZ.TenantManagement.Application.Features.Tenants.Dtos;
 using ERPEZ.TenantManagement.Application.Features.Tenants.Queries.GetTenantById;
 using ERPEZ.TenantManagement.Application.Features.Tenants.Queries.GetTenants;
+using ERPEZ.TenantManagement.Application.Features.Tenants.Queries.GetTenantsByMe;
 using ERPEZ.TenantManagement.Domain.Entities;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -42,6 +43,15 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         public async Task<IActionResult> GetTenantById(Guid id)
         {
             var tenant = await mediator.Send(new GetTenantByIdQuery(id));
+
+            return tenant.Succeeded ? Ok(tenant) : BadRequest(tenant);
+        }
+        [HttpGet("my")]
+        [ProducesResponseType(typeof(ApiResponse<TenantDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetTenantByMe([FromQuery]string userId)
+        {
+            var tenant = await mediator.Send(new GetTenantByMeQuery(userId));
 
             return tenant.Succeeded ? Ok(tenant) : BadRequest(tenant);
         }

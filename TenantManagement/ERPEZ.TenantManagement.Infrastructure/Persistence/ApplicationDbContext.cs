@@ -87,6 +87,16 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasIndex(ts => new { ts.TenantId, ts.StartDate, ts.EndDate })
             .IsUnique();
 
+        //TenantMember
+        modelBuilder.Entity<TenantMember>()
+            .HasIndex(tm => new {tm.TenantId, tm.UserId})
+            .IsUnique();
+
+        modelBuilder.Entity<TenantMember>()
+            .HasOne(tm => tm.Tenant)
+            .WithMany(t => t.TenantMembers)
+            .HasForeignKey(tm => tm.TenantId);
+
         base.OnModelCreating(modelBuilder);
     }
 }

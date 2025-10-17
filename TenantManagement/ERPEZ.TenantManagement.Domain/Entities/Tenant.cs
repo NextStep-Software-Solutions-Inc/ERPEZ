@@ -15,5 +15,6 @@ public class Tenant : BaseEntity
     public virtual List<Module> Modules { get; set; } = [];
     public virtual TenantSetting TenantSetting { get; set; } = null!;
     public virtual List<TenantSubscription> TenantSubscriptions { get; set; } = [];
+    public virtual List<TenantMember> TenantMembers { get; set; } = [];
 
 }

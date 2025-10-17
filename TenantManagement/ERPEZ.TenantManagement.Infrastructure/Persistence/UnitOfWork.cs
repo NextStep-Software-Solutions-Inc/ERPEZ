@@ -9,6 +9,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
 
     public ITenantRepository TenantRepository { get; }
     public ITenantSettingRepository TenantSettingRepository { get; }
+    public ITenantMemberRepository TenantMemberRepository { get; }
     public ITenantSubscriptionRepository TenantSubscriptionRepository { get; }
     public IModuleRepository ModuleRepository { get; }
 
@@ -17,6 +18,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public UnitOfWork(
         ApplicationDbContext context,
         ISieveProcessor sieveProcessor,
+        ITenantMemberRepository tenantMemberRepository,
         ITenantRepository tenantRepository,
         ITenantSubscriptionRepository tenantSubscriptionRepository,
         ITenantSettingRepository tenantSettingRepository,
@@ -25,6 +27,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
         HttpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
+        TenantMemberRepository = tenantMemberRepository ?? throw new ArgumentNullException(nameof(tenantMemberRepository));
         TenantRepository = tenantRepository ?? throw new ArgumentNullException(nameof(tenantRepository));
         TenantSettingRepository = tenantSettingRepository ?? throw new ArgumentNullException(nameof(tenantSettingRepository));
         ModuleRepository = moduleRepository ?? throw new ArgumentNullException(nameof(moduleRepository));
