@@ -1,5 +1,5 @@
 ﻿using ERPEZ.TenantManagement.Domain.Interfaces;
-using Microsoft.AspNetCore.Http;
+using ERPEZ.Shared.Interfaces;
 using Sieve.Services;
 
 namespace ERPEZ.TenantManagement.Infrastructure.Persistence;
@@ -13,7 +13,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public ITenantSubscriptionRepository TenantSubscriptionRepository { get; }
     public IModuleRepository ModuleRepository { get; }
 
-    public IHttpContextAccessor HttpContextAccessor { get; }
+    private ICurrentUserService CurrentUser { get; }
 
     public UnitOfWork(
         ApplicationDbContext context,
@@ -22,11 +22,11 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         ITenantRepository tenantRepository,
         ITenantSubscriptionRepository tenantSubscriptionRepository,
         ITenantSettingRepository tenantSettingRepository,
-        IHttpContextAccessor httpContextAccessor,
+    ICurrentUserService currentUser,
         IModuleRepository moduleRepository)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
-        HttpContextAccessor = httpContextAccessor ?? throw new ArgumentNullException(nameof(httpContextAccessor));
+    CurrentUser = currentUser ?? throw new ArgumentNullException(nameof(currentUser));
         TenantMemberRepository = tenantMemberRepository ?? throw new ArgumentNullException(nameof(tenantMemberRepository));
         TenantRepository = tenantRepository ?? throw new ArgumentNullException(nameof(tenantRepository));
         TenantSettingRepository = tenantSettingRepository ?? throw new ArgumentNullException(nameof(tenantSettingRepository));

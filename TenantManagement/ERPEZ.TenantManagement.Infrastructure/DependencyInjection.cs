@@ -1,7 +1,9 @@
-﻿using ERPEZ.TenantManagement.Domain.Interfaces;
+﻿using ERPEZ.Shared.Interfaces;
+using ERPEZ.TenantManagement.Domain.Interfaces;
 using ERPEZ.TenantManagement.Infrastructure.Persistence;
 using ERPEZ.TenantManagement.Infrastructure.Persistence.Interceptors;
 using ERPEZ.TenantManagement.Infrastructure.Persistence.Repositories;
+using ERPEZ.TenantManagement.Infrastructure.Services;
 using Hangfire;
 using Hangfire.PostgreSql;
 using Microsoft.EntityFrameworkCore;
@@ -28,6 +30,8 @@ public static class DependencyInjection
             options.AddInterceptors(sp.GetRequiredService<SoftDeleteInterceptor>());
         });
 
+        // Current user service backed by IHttpContextAccessor
+        services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<SoftDeleteInterceptor>();
 
         // Register repositories and Unit of Work

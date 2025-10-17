@@ -1,13 +1,12 @@
 ﻿using ERPEZ.Shared.Common;
-using ERPEZ.TenantManagement.Domain.Entities;
 using MediatR;
 
 namespace ERPEZ.TenantManagement.Application.Features.TenantSettings.Commands.CreateTenantSetting;
 
-public class CreateTenantSettingCommand : IRequest<ApiResponse<TenantSetting>>
+public class CreateTenantSettingCommand : IRequest<ApiResponse<Guid>>
 {
     public Guid TenantId { get; set; }
-    public string Name { get; set; } = string.Empty;
+    public bool OnPremise { get; set; }
     public string BaseUrl { get; set; } = string.Empty;
     public string DBConnectionString { get; set; } = string.Empty;
     public string BillingContactEmail { get; set; } = string.Empty;

@@ -54,7 +54,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         // Tenant
         modelBuilder.Entity<Tenant>()
-            .HasIndex(t => new { t.BillingContactEmail, t.Name })
+            .HasIndex(t => t.Name )
             .IsUnique();
 
         modelBuilder.Entity<Tenant>()
@@ -79,7 +79,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         // TenantSetting
         modelBuilder.Entity<TenantSetting>()
-            .HasIndex(ts => new { ts.Name, ts.TenantId })
+            .HasIndex(ts => ts.TenantId )
             .IsUnique();
 
         // TenantSubscription

@@ -21,38 +21,41 @@ public class GetTenantByMeQueryHandler(IUnitOfWork UnitOfWork)
             {
                 Id = t.Id,
                 Name = t.Name,
-                OnPremise = t.OnPremise,
-                BillingContactEmail = t.BillingContactEmail,
-
-                TenantSetting = t.TenantSetting == null ? null : new TenantSettingDto
+                Description = t.Description,
+                TenantSetting = new TenantSettingDto
                 {
                     Id = t.TenantSetting.Id,
-                    Name = t.TenantSetting.Name,
+                    OnPremise = t.TenantSetting.OnPremise,
                     BaseURL = t.TenantSetting.BaseURL,
                     DbConnectionString = t.TenantSetting.DbConnectionString,
                     BillingContactEmail = t.TenantSetting.BillingContactEmail
                 },
 
-                TenantSubscriptions = t.TenantSubscriptions.Select(ts => new TenantSubscriptionDto
-                {
-                    Id = ts.Id,
-                    TenantId = ts.TenantId,
-                    Amount = ts.Amount,
-                    Plan = ts.Plan.ToString(),
-                    Status = ts.Status.ToString(),
-                    BillingCycle = ts.BillingCycle.ToString(),
-                    StartDate = ts.StartDate,
-                    EndDate = ts.EndDate,
-                    AutoRenew = ts.AutoRenew
-                }).ToList(),
+                TenantSubscriptions = t.TenantSubscriptions
+                    .Where(ts => ts.TenantId == t.Id)
+                    .Select(ts => new TenantSubscriptionDto
+                        {
+                            Id = ts.Id,
+                            TenantId = ts.TenantId,
+                            Amount = ts.Amount,
+                            Plan = ts.Plan.ToString(),
+                            Status = ts.Status.ToString(),
+                            BillingCycle = ts.BillingCycle.ToString(),
+                            StartDate = ts.StartDate,
+                            EndDate = ts.EndDate,
+                            AutoRenew = ts.AutoRenew
+                        }).ToList(),
 
-                TenantMembers = t.TenantMembers.Select(tm => new TenantMemberDto
-                {
-                    Id = tm.Id,
-                    UserId = tm.UserId,
-                    Role = tm.Role.ToString(),
-                    Status = tm.Status.ToString()
-                }).ToList()
+                TenantMembers = t.TenantMembers
+                    .Where(tm => tm.TenantId == t.Id)
+                    .Select(tm => new TenantMemberDto
+                    {
+                        Id = tm.Id,
+                        UserId = tm.UserId,
+                        Role = tm.Role.ToString(),
+                        Status = tm.Status.ToString()
+                    })
+                    .ToList()
             });
 
         var tenants = await tenantQuery.ToListAsync(cancellationToken);
