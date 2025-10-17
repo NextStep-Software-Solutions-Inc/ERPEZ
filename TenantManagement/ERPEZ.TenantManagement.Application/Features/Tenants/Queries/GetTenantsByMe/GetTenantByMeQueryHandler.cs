@@ -50,8 +50,8 @@ public class GetTenantByMeQueryHandler(IUnitOfWork UnitOfWork)
                 {
                     Id = tm.Id,
                     UserId = tm.UserId,
-                    Role = tm.Role,
-                    Status = tm.Status
+                    Role = tm.Role.ToString(),
+                    Status = tm.Status.ToString()
                 }).ToList()
             });
 

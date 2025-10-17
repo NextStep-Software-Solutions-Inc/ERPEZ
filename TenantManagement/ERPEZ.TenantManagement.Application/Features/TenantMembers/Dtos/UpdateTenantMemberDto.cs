@@ -1,9 +1,11 @@
-﻿namespace ERPEZ.TenantManagement.Application.Features.TenantMembers.Dtos;
+﻿using ERPEZ.TenantManagement.Domain.Enums;
+
+namespace ERPEZ.TenantManagement.Application.Features.TenantMembers.Dtos;
 
 public class UpdateTenantMemberDto
 {
     public Guid? TenantId { get; set; }
     public string? UserId { get; set; }
-    public string? Role { get; set; }
-    public string? Status { get; set; }
+    public TenantMemberRole? Role { get; set; }
+    public Status? Status { get; set; }
 }

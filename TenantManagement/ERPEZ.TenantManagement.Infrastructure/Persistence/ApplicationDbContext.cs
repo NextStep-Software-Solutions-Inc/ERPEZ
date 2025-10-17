@@ -97,6 +97,15 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .WithMany(t => t.TenantMembers)
             .HasForeignKey(tm => tm.TenantId);
 
+        // Persist TenantMember enums as strings
+        modelBuilder.Entity<TenantMember>()
+            .Property(tm => tm.Role)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<TenantMember>()
+            .Property(tm => tm.Status)
+            .HasConversion<string>();
+
         base.OnModelCreating(modelBuilder);
     }
 }
