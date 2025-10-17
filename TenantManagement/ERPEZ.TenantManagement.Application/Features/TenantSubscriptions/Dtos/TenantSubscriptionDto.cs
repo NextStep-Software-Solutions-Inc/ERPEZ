@@ -4,7 +4,7 @@ public class TenantSubscriptionDto
 {
     public Guid Id { get; set; }
     public Guid TenantId { get; set; }
-    public int Amount { get; set; }
+    public decimal Amount { get; set; }
     public required string Plan { get; set; }
     public required string Status { get; set; }
     public required string BillingCycle { get; set; }

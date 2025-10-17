@@ -1,6 +1,5 @@
 ﻿using ERPEZ.Shared.Common;
 using ERPEZ.TenantManagement.Application.Features.TenantSubscriptions.Dtos;
-using ERPEZ.TenantManagement.Application.Features.TenantSubscriptions.Enums;
 using ERPEZ.TenantManagement.Domain.Entities;
 using ERPEZ.TenantManagement.Domain.Interfaces;
 using MediatR;
@@ -26,9 +25,9 @@ public sealed class GetTenantSubscriptionsQueryHandler (IUnitOfWork unitOfWork) 
             Id = ts.Id,
             TenantId = ts.TenantId,
             Amount = ts.Amount,
-            Plan = ((TenantSubscriptionPlanEnum)ts.Plan).ToString(),
-            Status = ((TenantSubscriptionStatusEnum)ts.Status).ToString(),
-            BillingCycle = ((TenantSubscriptionBillingCycleEnum)ts.BillingCycle).ToString(),
+            Plan = ts.Plan.ToString(),
+            Status = ts.Status.ToString(),
+            BillingCycle = ts.BillingCycle.ToString(),
             StartDate = ts.StartDate,
             EndDate = ts.EndDate,
             AutoRenew = ts.AutoRenew
