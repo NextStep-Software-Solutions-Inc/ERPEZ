@@ -1,11 +1,10 @@
 ﻿using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
+using ERPEZ.TenantManagement.Application.Features.TenantMembers.Dtos;
 using ERPEZ.TenantManagement.Application.Features.Tenants.Dtos;
 using ERPEZ.TenantManagement.Application.Features.Tenants.Queries.GetTenantsByMe;
 using ERPEZ.TenantManagement.Application.Features.TenantSettings.Dtos;
 using ERPEZ.TenantManagement.Application.Features.TenantSubscriptions.Dtos;
-using ERPEZ.TenantManagement.Application.Features.TenantSubscriptions.Enums;
-using ERPEZ.TenantManagement.Domain.Entities;
 using ERPEZ.TenantManagement.Domain.Interfaces;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
@@ -18,7 +17,6 @@ public class GetTenantByMeQueryHandler(IUnitOfWork UnitOfWork)
         var tenantQuery = UnitOfWork.TenantRepository
             .Query()
             .Where(t => t.TenantMembers.Any(tm => tm.UserId == request.UserId))
-
             .Select(t => new TenantDto
             {
                 Id = t.Id,
@@ -40,12 +38,20 @@ public class GetTenantByMeQueryHandler(IUnitOfWork UnitOfWork)
                     Id = ts.Id,
                     TenantId = ts.TenantId,
                     Amount = ts.Amount,
-                    Plan = ((TenantSubscriptionPlanEnum)ts.Plan).ToString(),
-                    Status = ((TenantSubscriptionStatusEnum)ts.Status).ToString(),
-                    BillingCycle = ((TenantSubscriptionBillingCycleEnum)ts.BillingCycle).ToString(),
+                    Plan = ts.Plan.ToString(),
+                    Status = ts.Status.ToString(),
+                    BillingCycle = ts.BillingCycle.ToString(),
                     StartDate = ts.StartDate,
                     EndDate = ts.EndDate,
                     AutoRenew = ts.AutoRenew
+                }).ToList(),
+
+                TenantMembers = t.TenantMembers.Select(tm => new TenantMemberDto
+                {
+                    Id = tm.Id,
+                    UserId = tm.UserId,
+                    Role = tm.Role,
+                    Status = tm.Status
                 }).ToList()
             });
 
