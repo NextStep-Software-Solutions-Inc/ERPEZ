@@ -22,11 +22,11 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         ITenantRepository tenantRepository,
         ITenantSubscriptionRepository tenantSubscriptionRepository,
         ITenantSettingRepository tenantSettingRepository,
-    ICurrentUserService currentUser,
+        ICurrentUserService currentUser,
         IModuleRepository moduleRepository)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
-    CurrentUser = currentUser ?? throw new ArgumentNullException(nameof(currentUser));
+        CurrentUser = currentUser ?? throw new ArgumentNullException(nameof(currentUser));
         TenantMemberRepository = tenantMemberRepository ?? throw new ArgumentNullException(nameof(tenantMemberRepository));
         TenantRepository = tenantRepository ?? throw new ArgumentNullException(nameof(tenantRepository));
         TenantSettingRepository = tenantSettingRepository ?? throw new ArgumentNullException(nameof(tenantSettingRepository));

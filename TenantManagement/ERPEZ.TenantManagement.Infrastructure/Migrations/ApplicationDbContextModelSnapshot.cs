@@ -81,10 +81,6 @@ namespace ERP_EZ.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasDefaultValueSql("gen_random_uuid()");
 
-                    b.Property<string>("BillingContactEmail")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -98,15 +94,15 @@ namespace ERP_EZ.Infrastructure.Migrations
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text");
 
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<bool>("OnPremise")
-                        .HasColumnType("boolean");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -116,7 +112,7 @@ namespace ERP_EZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("BillingContactEmail", "Name")
+                    b.HasIndex("Name")
                         .IsUnique();
 
                     b.ToTable("Tenants", "catalog");
@@ -209,9 +205,8 @@ namespace ERP_EZ.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<bool>("OnPremise")
+                        .HasColumnType("boolean");
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
@@ -227,9 +222,6 @@ namespace ERP_EZ.Infrastructure.Migrations
                     b.HasIndex("TenantId")
                         .IsUnique();
 
-                    b.HasIndex("Name", "TenantId")
-                        .IsUnique();
-
                     b.ToTable("TenantSettings", "catalog");
                 });
 
@@ -240,8 +232,8 @@ namespace ERP_EZ.Infrastructure.Migrations
                         .HasColumnType("uuid")
                         .HasDefaultValueSql("gen_random_uuid()");
 
-                    b.Property<int>("Amount")
-                        .HasColumnType("integer");
+                    b.Property<decimal>("Amount")
+                        .HasColumnType("numeric");
 
                     b.Property<bool>("AutoRenew")
                         .HasColumnType("boolean");

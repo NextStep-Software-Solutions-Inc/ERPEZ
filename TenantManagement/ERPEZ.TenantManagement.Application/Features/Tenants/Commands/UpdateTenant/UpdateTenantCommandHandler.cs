@@ -13,7 +13,7 @@ public sealed class UpdateTenantCommandHandler(IUnitOfWork unitOfWork)
         
         var tenant = await unitOfWork.TenantRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("Tenant not found.");
 
-        if (tenant.Name == request.UpdateTenant.Name || tenant.Description == request.UpdateTenant.Description) throw new ConflictException("No changes detected to update.");
+        if (tenant.Name == request.UpdateTenant.Name && tenant.Description == request.UpdateTenant.Description) throw new ConflictException("No changes detected to update.");
 
         tenant.Name = request.UpdateTenant?.Name ?? tenant.Name;
         tenant.Description = request.UpdateTenant?.Description ?? tenant.Description;
