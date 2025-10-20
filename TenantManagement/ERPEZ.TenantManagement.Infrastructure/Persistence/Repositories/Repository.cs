@@ -45,6 +45,23 @@ public class Repository<T>(ApplicationDbContext context, ISieveProcessor sievePr
 
         return (entities, totalCount);
     }
+    public async Task<(IReadOnlyList<TDto> Entities, int TotalCount)> GetAllAsync<TDto>(SieveModel sieveModel, Expression<Func<T, TDto>> projection, Expression<Func<T, bool>> customFilter, CancellationToken cancellationToken = default)
+    {
+
+        IQueryable<T> query = context.Set<T>().AsNoTracking();
+
+        query = query.Where(customFilter);
+
+        var filteredQuery = sieveProcessor.Apply(sieveModel, query, applyPagination: false);
+
+        var totalCount = await filteredQuery.CountAsync(cancellationToken);
+
+        var paginatedResult = sieveProcessor.Apply(sieveModel, filteredQuery, applyFiltering: false, applySorting: false);
+
+        var entities = await paginatedResult.Select(projection).ToListAsync(cancellationToken);
+
+        return (entities, totalCount);
+    }
 
     public async Task<T?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
