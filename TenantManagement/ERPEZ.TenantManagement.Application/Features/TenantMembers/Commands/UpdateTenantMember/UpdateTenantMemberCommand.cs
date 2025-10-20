@@ -8,5 +8,5 @@ namespace ERPEZ.TenantManagement.Application.Features.TenantMembers.Commands.Upd
 public class UpdateTenantMemberCommand : IRequest<ApiResponse<Guid>>
 {
     public Guid Id { get; set; }
-    public UpdateTenantMemberDto? UpdateTenantMember { get; set; }
+    public required UpdateTenantMemberDto UpdateTenantMember { get; set; }
 }

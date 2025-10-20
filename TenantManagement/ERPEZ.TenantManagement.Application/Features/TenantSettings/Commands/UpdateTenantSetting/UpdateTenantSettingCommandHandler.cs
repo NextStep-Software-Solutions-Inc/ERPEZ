@@ -1,6 +1,5 @@
 ﻿using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
-using ERPEZ.TenantManagement.Domain.Entities;
 using ERPEZ.TenantManagement.Domain.Interfaces;
 using MediatR;
 
@@ -11,15 +10,15 @@ public class UpdateTenantSettingCommandHandler(IUnitOfWork _unitOfWork)
 {
     public async Task<ApiResponse<Guid>> Handle(UpdateTenantSettingCommand request, CancellationToken cancellationToken)
     {
-        if (request?.UpdateTenantSetting == null) throw new NotFoundException("Update tenant setting cannot be null.");
+        if (request.UpdateTenantSetting == null) throw new NotFoundException("Update tenant setting cannot be null.");
 
-        var dto = request.UpdateTenantSetting;
+        var tenantSettingDto = request.UpdateTenantSetting;
 
-        var tenantSetting = await _unitOfWork.TenantSettingRepository.FindAsync(ts => ts.TenantId == dto.TenantId, cancellationToken: cancellationToken) ?? throw new NotFoundException("Tenant settings cannot be found.");
+        var tenantSetting = await _unitOfWork.TenantSettingRepository.FindAsync(ts => ts.TenantId == tenantSettingDto.TenantId, cancellationToken: cancellationToken) ?? throw new NotFoundException("Tenant settings cannot be found.");
 
-        tenantSetting.BaseURL = dto.BaseUrl ?? tenantSetting.BaseURL;
-        tenantSetting.BillingContactEmail = dto.BillingContactEmail ?? tenantSetting.BillingContactEmail;
-        tenantSetting.DbConnectionString = dto.DBConnectionString ?? tenantSetting.DbConnectionString;
+        tenantSetting.BaseURL = tenantSettingDto.BaseUrl ?? tenantSetting.BaseURL;
+        tenantSetting.BillingContactEmail = tenantSettingDto.BillingContactEmail ?? tenantSetting.BillingContactEmail;
+        tenantSetting.DbConnectionString = tenantSettingDto.DBConnectionString ?? tenantSetting.DbConnectionString;
 
          _unitOfWork.TenantSettingRepository.Update(tenantSetting);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
