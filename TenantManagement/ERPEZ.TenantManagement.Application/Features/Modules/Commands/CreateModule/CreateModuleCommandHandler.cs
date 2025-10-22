@@ -1,25 +1,18 @@
 ﻿using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Exceptions;
 using ERPEZ.TenantManagement.Domain.Entities;
 using ERPEZ.TenantManagement.Domain.Interfaces;
 using MediatR;
 
 namespace ERPEZ.TenantManagement.Application.Features.Modules.Commands.CreateModule;
 
-public class CreateModuleCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<CreateModuleCommand, ApiResponse<Module>>
+public class CreateModuleCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<CreateModuleCommand, ApiResponse<Guid>>
 {
 
-    public async Task<ApiResponse<Module>> Handle(CreateModuleCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<Guid>> Handle(CreateModuleCommand request, CancellationToken cancellationToken)
     {
         var moduleExist = await _unitOfWork.ModuleRepository.FindAsync(t => t.Name == request.Name, cancellationToken);
-        if (moduleExist != null)
-        {
-            return new()
-            {
-                Succeeded = false,
-                Data = null,
-                Message = "Module already exist."
-            };
-        }
+        if (moduleExist != null) throw new ConflictException("Module already exists.");
         var module = new Module
         {
             Name = request.Name,
@@ -33,7 +26,7 @@ public class CreateModuleCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandl
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         return new()
         {
-            Data = module,
+            Data =  module.Id,
             Succeeded = true,
             Message = "Module created successfully."
         };

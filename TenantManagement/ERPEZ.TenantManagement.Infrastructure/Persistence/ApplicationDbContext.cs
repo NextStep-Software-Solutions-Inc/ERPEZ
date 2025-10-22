@@ -54,7 +54,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         // Tenant
         modelBuilder.Entity<Tenant>()
-            .HasIndex(t => new { t.BillingContactEmail, t.Name })
+            .HasIndex(t => t.Name )
             .IsUnique();
 
         modelBuilder.Entity<Tenant>()
@@ -79,13 +79,32 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         // TenantSetting
         modelBuilder.Entity<TenantSetting>()
-            .HasIndex(ts => new { ts.Name, ts.TenantId })
+            .HasIndex(ts => ts.TenantId )
             .IsUnique();
 
         // TenantSubscription
         modelBuilder.Entity<TenantSubscription>()
             .HasIndex(ts => new { ts.TenantId, ts.StartDate, ts.EndDate })
             .IsUnique();
+
+        //TenantMember
+        modelBuilder.Entity<TenantMember>()
+            .HasIndex(tm => new {tm.TenantId, tm.UserId})
+            .IsUnique();
+
+        modelBuilder.Entity<TenantMember>()
+            .HasOne(tm => tm.Tenant)
+            .WithMany(t => t.TenantMembers)
+            .HasForeignKey(tm => tm.TenantId);
+
+        // Persist TenantMember enums as strings
+        modelBuilder.Entity<TenantMember>()
+            .Property(tm => tm.Role)
+            .HasConversion<string>();
+
+        modelBuilder.Entity<TenantMember>()
+            .Property(tm => tm.Status)
+            .HasConversion<string>();
 
         base.OnModelCreating(modelBuilder);
     }

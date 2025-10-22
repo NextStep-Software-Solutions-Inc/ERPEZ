@@ -1,11 +1,12 @@
 using ERPEZ.TenantManagement.Domain.Common;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Diagnostics;
-using Microsoft.AspNetCore.Http;
 
 namespace ERPEZ.TenantManagement.Infrastructure.Persistence.Interceptors;
 
-public class SoftDeleteInterceptor(IHttpContextAccessor httpContextAccessor) : SaveChangesInterceptor
+using ERPEZ.Shared.Interfaces;
+
+public class SoftDeleteInterceptor(ICurrentUserService currentUser) : SaveChangesInterceptor
 {
     public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
     {
@@ -23,7 +24,7 @@ public class SoftDeleteInterceptor(IHttpContextAccessor httpContextAccessor) : S
     {
         if (context is null) return;
 
-        var userId = httpContextAccessor.HttpContext?.User?.FindFirst("sub")?.Value ?? "system";
+    var userId = currentUser.UserId ?? "system";
         var now = DateTime.UtcNow;
 
         foreach (var entry in context.ChangeTracker.Entries<IEntity>())

@@ -25,7 +25,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
             if (!module.Succeeded)
                 return BadRequest(module);
 
-            return CreatedAtAction(nameof(GetModuleById), new { id = module.Data!.Id }, module);
+            return CreatedAtAction(nameof(GetModuleById), new { id = module.Data }, module);
         }
 
         [HttpGet]

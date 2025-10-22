@@ -22,10 +22,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         {
             var tenantSubscription = await mediator.Send(command);
 
-            if (!tenantSubscription.Succeeded)
-                return BadRequest(tenantSubscription);
-
-            return CreatedAtAction(nameof(GetTenantSubscriptionById), new { id = tenantSubscription.Data!.Id }, tenantSubscription);
+            return tenantSubscription.Succeeded ? CreatedAtAction(nameof(GetTenantSubscriptionById), new { id = tenantSubscription.Data }, tenantSubscription) : BadRequest(tenantSubscription);
         }
 
         [HttpGet]
@@ -33,7 +30,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         public async Task<IActionResult> GetTenantSubscriptions([FromQuery] GetTenantSubscriptionsQuery query)
         {
             var result = await mediator.Send(query);
-            return Ok(result);
+            return result.Succeeded ? Ok(result) : BadRequest(result);
         }
 
         [HttpGet("{id}")]

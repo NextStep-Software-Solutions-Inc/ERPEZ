@@ -1,6 +1,5 @@
 ﻿using ERPEZ.Shared.Common;
 using ERPEZ.TenantManagement.Application.Features.Tenants.Dtos;
-using ERPEZ.TenantManagement.Application.Features.TenantSettings.Dtos;
 using ERPEZ.TenantManagement.Application.Features.TenantSubscriptions.Dtos;
 using ERPEZ.TenantManagement.Domain.Entities;
 using ERPEZ.TenantManagement.Domain.Interfaces;
@@ -26,12 +25,11 @@ public sealed class GetTenantsQueryHandler (IUnitOfWork unitOfWork) : IRequestHa
         {
             Id = t.Id,
             Name = t.Name,
-            OnPremise = t.OnPremise,
-            BillingContactEmail = t.BillingContactEmail,
-            TenantSetting = t.TenantSetting == null ? null : new TenantSettingDto
+            Description = t.Description,
+            TenantSetting = new()
             {
                 Id = t.TenantSetting.Id,
-                Name = t.TenantSetting.Name,
+                OnPremise = t.TenantSetting.OnPremise,
                 BaseURL = t.TenantSetting.BaseURL,
                 DbConnectionString = t.TenantSetting.DbConnectionString,
                 BillingContactEmail = t.TenantSetting.BillingContactEmail
