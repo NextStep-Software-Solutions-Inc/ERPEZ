@@ -20,7 +20,8 @@ public sealed class CreateTenantCommandHandler(IUnitOfWork _unitOfWork, ICurrent
         var tenant = new Tenant
         {
             Name = request.Name,
-            TenantSetting = new ()
+            Description = request.Description,
+            TenantSetting = new()
             {
                 BillingContactEmail = request.BillingContactEmail,
                 OnPremise = request.OnPremise,

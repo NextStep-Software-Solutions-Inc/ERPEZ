@@ -6,6 +6,7 @@ namespace ERPEZ.TenantManagement.Application.Features.Tenants.Commands.CreateTen
 public class CreateTenantCommand : IRequest<ApiResponse<Guid>>
 {
     public required string Name { get; set; }
+    public string? Description { get; set; }
     public bool OnPremise { get; set; }
     public required string BillingContactEmail { get; set; }
 }
