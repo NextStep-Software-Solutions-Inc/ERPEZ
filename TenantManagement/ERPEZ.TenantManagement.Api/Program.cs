@@ -3,6 +3,7 @@ using ERPEZ.TenantManagement.Application;
 using ERPEZ.TenantManagement.Infrastructure;
 using Hangfire;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.IdentityModel.Tokens;
 using System.Security.Claims;
 
@@ -62,9 +63,10 @@ builder.Services
     .AddInfrastructureServices(builder.Configuration, builder.Environment);
 
 var app = builder.Build();
+bool isDevelopment = app.Environment.IsDevelopment();
 
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+if (isDevelopment)
 {
     app.UseSwagger();
     app.UseSwaggerUI(s =>
@@ -80,7 +82,7 @@ if (app.Environment.IsDevelopment())
 app.UseHttpsRedirection();
 app.UseExceptionHandler(); // Use our global exception handler
 app.UseHangfireDashboard(); // Add Hangfire Dashboard endpoint
-app.UseCors("AllowFrontend");
+app.UseCors(isDevelopment ? "development" : "production");
 
 // IMPORTANT: Authentication MUST run before Authorization
 app.UseAuthentication();
