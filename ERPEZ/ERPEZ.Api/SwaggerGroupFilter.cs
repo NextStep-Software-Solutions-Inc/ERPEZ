@@ -5,10 +5,6 @@ namespace ERPEZ.Api;
 /// <summary>
 /// Ensures only APIs explicitly tagged with a GroupName appear in that specific Swagger document.
 /// </summary>
-// <summary>
-/// Ensures only APIs explicitly tagged with a GroupName appear in that specific Swagger document.
-/// FIX: Iterates over KeyValuePair to access the OperationType (Key).
-/// </summary>
 public class SwaggerGroupFilter : IDocumentFilter
 {
     public void Apply(OpenApiDocument swaggerDoc, DocumentFilterContext context)
