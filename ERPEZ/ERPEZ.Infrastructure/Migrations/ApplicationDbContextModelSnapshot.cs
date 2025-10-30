@@ -135,9 +135,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DeliveryUnitId");
+                    b.HasIndex("ReceivedFundId");
 
-                    b.HasIndex("ReceivedFundId", "DeliveryUnitId", "Purpose");
+                    b.HasIndex("DeliveryUnitId", "Purpose");
 
                     b.ToTable("DUAllocations", "catalog");
                 });
@@ -251,16 +251,12 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("text");
 
-                    b.Property<string>("Function")
+                    b.Property<string>("FunctionType")
                         .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text");
 
                     b.Property<decimal>("Percentage")
                         .HasColumnType("numeric");
@@ -272,8 +268,6 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("Function", "Name");
 
                     b.ToTable("FunctionPercentageAllocations", "catalog");
                 });
@@ -361,6 +355,10 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Property<Guid>("FunctionPercentageAllocationId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("FunctionType")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
@@ -799,9 +797,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DeliveryUnitId");
+                    b.HasIndex("DUAllocationId");
 
-                    b.HasIndex("DUAllocationId", "DeliveryUnitId", "FiscalYear")
+                    b.HasIndex("DeliveryUnitId", "FiscalYear")
                         .IsUnique();
 
                     b.ToTable("OPCRs", "catalog");
@@ -1508,9 +1506,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DeliveryUnitId");
+                    b.HasIndex("DUAllocationId");
 
-                    b.HasIndex("DUAllocationId", "DeliveryUnitId", "FiscalYear");
+                    b.HasIndex("DeliveryUnitId", "FiscalYear");
 
                     b.ToTable("WFPs", "catalog");
                 });
@@ -1570,8 +1568,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("WFPId")
-                        .IsUnique();
+                    b.HasIndex("WFPId");
 
                     b.HasIndex("WFPOutcomeId");
 
@@ -1614,9 +1611,6 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("WFPId")
-                        .IsUnique();
 
                     b.HasIndex("WFPId", "Description");
 
@@ -1827,7 +1821,7 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasOne("ERPEZ.Domain.Entities.Planning.ReceivedFund", "ReceivedFund")
                         .WithMany("DUAllocations")
                         .HasForeignKey("ReceivedFundId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("DeliveryUnit");
@@ -1876,17 +1870,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.KPI", b =>
                 {
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.FunctionPercentageAllocation", "FunctionPercentageAllocation")
-                        .WithMany("KPIs")
-                        .HasForeignKey("FunctionPercentageAllocationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("ERPEZ.Domain.Entities.Planning.KPI", "ParentKPI")
-                        .WithMany("ParentKPIs")
+                        .WithMany()
                         .HasForeignKey("ParentKPIId");
-
-                    b.Navigation("FunctionPercentageAllocation");
 
                     b.Navigation("ParentKPI");
                 });
@@ -1999,9 +1985,9 @@ namespace ERPEZ.Infrastructure.Migrations
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OPCR", b =>
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Planning.DUAllocation", "DUAllocation")
-                        .WithMany("OPCRs")
+                        .WithMany()
                         .HasForeignKey("DUAllocationId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("ERPEZ.Domain.Entities.Planning.DeliveryUnit", "DeliveryUnit")
@@ -2196,9 +2182,9 @@ namespace ERPEZ.Infrastructure.Migrations
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WFP", b =>
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Planning.DUAllocation", "DUAllocation")
-                        .WithMany("WFPs")
+                        .WithMany()
                         .HasForeignKey("DUAllocationId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("ERPEZ.Domain.Entities.Planning.DeliveryUnit", "DeliveryUnit")
@@ -2215,8 +2201,8 @@ namespace ERPEZ.Infrastructure.Migrations
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WFPActivity", b =>
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Planning.WFP", "WFP")
-                        .WithOne("WFPActivity")
-                        .HasForeignKey("ERPEZ.Domain.Entities.Planning.WFPActivity", "WFPId")
+                        .WithMany("WFPActivities")
+                        .HasForeignKey("WFPId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -2234,8 +2220,8 @@ namespace ERPEZ.Infrastructure.Migrations
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WFPObjective", b =>
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Planning.WFP", "WFP")
-                        .WithOne("WFPObjective")
-                        .HasForeignKey("ERPEZ.Domain.Entities.Planning.WFPObjective", "WFPId")
+                        .WithMany("WFPObjectives")
+                        .HasForeignKey("WFPId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -2256,7 +2242,7 @@ namespace ERPEZ.Infrastructure.Migrations
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WFPPAP", b =>
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Planning.WFP", "WFP")
-                        .WithMany("WFPPAPs")
+                        .WithMany()
                         .HasForeignKey("WFPId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -2301,11 +2287,7 @@ namespace ERPEZ.Infrastructure.Migrations
                 {
                     b.Navigation("DUFundAllocations");
 
-                    b.Navigation("OPCRs");
-
                     b.Navigation("SubDUAllocations");
-
-                    b.Navigation("WFPs");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.DeliveryUnit", b =>
@@ -2321,11 +2303,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("WFPPAPDepartments");
 
                     b.Navigation("WFPs");
-                });
-
-            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.FunctionPercentageAllocation", b =>
-                {
-                    b.Navigation("KPIs");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.FundSource", b =>
@@ -2350,8 +2327,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("MFOKPIs");
 
                     b.Navigation("OPCRKPIs");
-
-                    b.Navigation("ParentKPIs");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.Location", b =>
@@ -2433,13 +2408,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WFP", b =>
                 {
-                    b.Navigation("WFPActivity")
-                        .IsRequired();
+                    b.Navigation("WFPActivities");
 
-                    b.Navigation("WFPObjective")
-                        .IsRequired();
-
-                    b.Navigation("WFPPAPs");
+                    b.Navigation("WFPObjectives");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WFPActivity", b =>
