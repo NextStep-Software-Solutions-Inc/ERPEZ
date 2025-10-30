@@ -6,7 +6,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace ERPEZ.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class ApplicationForPlanningEntityChanges : Migration
+    public partial class AjustmentForPlanningERD : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
