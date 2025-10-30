@@ -31,6 +31,9 @@ public class CreateTenantMemberCommandHandler(IUnitOfWork _unitOfWork)
 
         await _unitOfWork.TenantMemberRepository.AddAsync(tenantMember, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+
+      
+
         return ApiResponse<Guid>.Success(tenantMember.Id, "Tenant member created successfully.");
     }
 }

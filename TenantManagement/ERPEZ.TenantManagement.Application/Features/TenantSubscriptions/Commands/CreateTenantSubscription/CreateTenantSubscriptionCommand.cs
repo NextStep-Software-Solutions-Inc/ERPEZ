@@ -1,11 +1,9 @@
 ﻿using ERPEZ.Shared.Common;
-using ERPEZ.TenantManagement.Application.Common;
-using ERPEZ.TenantManagement.Domain.Entities;
 using MediatR;
 
 namespace ERPEZ.TenantManagement.Application.Features.TenantSubscriptions.Commands.CreateTenantSubscription;
 
-public class CreateTenantSubscriptionCommand : IRequest<ApiResponse<TenantSubscription>>
+public class CreateTenantSubscriptionCommand : IRequest<ApiResponse<Guid>>
 {
     public Guid TenantId { get; set; }
     public int Amount { get; set; }

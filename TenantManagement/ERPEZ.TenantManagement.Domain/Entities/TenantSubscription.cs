@@ -1,4 +1,5 @@
 ﻿using ERPEZ.TenantManagement.Domain.Common;
+using ERPEZ.TenantManagement.Domain.Enums;
 using Sieve.Attributes;
 using System.Text.Json.Serialization;
 
@@ -10,19 +11,20 @@ public class TenantSubscription : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid TenantId { get; set; }
     [Sieve(CanFilter = true, CanSort = true)]
-    public int Amount { get; set; }
+    public decimal Amount { get; set; }
     [Sieve(CanFilter = true, CanSort = true)]
-    public int Plan { get; set; }
+    public Plan Plan { get; set; }
+
     [Sieve(CanFilter = true, CanSort = true)]
     public DateTime StartDate { get; set; }
     [Sieve(CanFilter = true, CanSort = true)]
     public DateTime EndDate { get; set; }
     [Sieve(CanFilter = true, CanSort = true)]
-    public int Status { get; set; }
+    public Status Status { get; set; }
     [Sieve(CanFilter = true, CanSort = true)]
-    public int BillingCycle { get; set; }
+    public BillingCycle BillingCycle { get; set; }
     [Sieve(CanFilter = true, CanSort = true)]
-    public bool AutoRenew { get; set; }
+    public bool AutoRenew { get; set; } = true;
     [JsonIgnore]
     public virtual Tenant Tenant { get; set; } = null!;
 }

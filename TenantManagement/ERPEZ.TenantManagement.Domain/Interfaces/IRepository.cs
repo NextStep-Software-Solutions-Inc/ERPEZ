@@ -27,6 +27,7 @@ public interface IRepository<T> where T : BaseEntity
     void Remove(T entity, bool hardDelete = false);
 
     // Bulk operations
+    Task AddRangeAsync(IList<T> entities, CancellationToken cancellationToken = default);
     Task AddBulkAsync(IList<T> entities, CancellationToken cancellationToken = default);
     Task UpdateBulkAsync(IList<T> entities, CancellationToken cancellationToken = default);
     Task DeleteBulkAsync(IList<T> entities, CancellationToken cancellationToken = default);
@@ -34,4 +35,5 @@ public interface IRepository<T> where T : BaseEntity
     Task<(IReadOnlyList<T> Entities, int TotalCount)> GetAllAsync(SieveModel sieveModel, CancellationToken cancellationToken = default);
 
     Task<(IReadOnlyList<TDto> Entities, int TotalCount)> GetAllAsync<TDto>(SieveModel sieveModel, Expression<Func<T, TDto>> projection, CancellationToken cancellationToken = default);
+    Task<(IReadOnlyList<TDto> Entities, int TotalCount)> GetAllAsync<TDto>(SieveModel sieveModel, Expression<Func<T, TDto>> projection, Expression<Func<T, bool>> customFilter, CancellationToken cancellationToken = default);
 }
