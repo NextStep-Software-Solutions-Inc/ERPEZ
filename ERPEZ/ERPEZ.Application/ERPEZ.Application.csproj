@@ -24,7 +24,6 @@
     <Folder Include="Features\Planning\WFPActivity\" />
     <Folder Include="Features\Planning\SubDUAllocation\" />
     <Folder Include="Features\Planning\SubDeliveryUnit\" />
-    <Folder Include="Features\Planning\PerformanceMeasure\" />
     <Folder Include="Features\Planning\OPCRRating\" />
     <Folder Include="Features\Planning\OPCRPAP\" />
     <Folder Include="Features\Planning\OPCRKPI\" />

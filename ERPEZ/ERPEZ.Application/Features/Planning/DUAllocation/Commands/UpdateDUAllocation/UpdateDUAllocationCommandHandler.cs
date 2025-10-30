@@ -12,7 +12,6 @@ public class UpdateDUAllocationCommandHandler(IUnitOfWork _unitOfWork) : IReques
         var dto = request.UpdateDUAllocation;
         var duAllocation = await _unitOfWork.DUAllocationRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("Delivery Unit Allocation not found.");
         
-        duAllocation.ReceivedFundId = dto?.ReceivedFundId ?? duAllocation.ReceivedFundId;
         duAllocation.DeliveryUnitId = dto?.DeliveryUnitId ?? duAllocation.DeliveryUnitId;
         duAllocation.Purpose = dto?.Purpose ?? duAllocation.Purpose;
         duAllocation.Amount = dto?.Amount ?? duAllocation.Amount;

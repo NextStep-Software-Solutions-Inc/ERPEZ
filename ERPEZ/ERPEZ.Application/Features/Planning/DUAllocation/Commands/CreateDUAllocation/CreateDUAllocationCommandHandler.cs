@@ -13,7 +13,6 @@ public class CreateDUAllocationCommandHandler(IUnitOfWork _unitOfWork) : IReques
         var deliveryUnitExist = await _unitOfWork.DeliveryUnitRepository.FindAsync(du => du.Id == request.DeliveryUnitId, cancellationToken) ?? throw new NotFoundException("Delivery Unit not found");
         var dUAllocation = new Domain.Entities.Planning.DUAllocation
         {
-            ReceivedFundId = request.ReceivedFundId,
             DeliveryUnitId = request.DeliveryUnitId,
             Purpose = request.Purpose,
             Amount = request.Amount

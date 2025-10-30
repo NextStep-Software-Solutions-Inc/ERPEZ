@@ -1,36 +1,76 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using ERPEZ.Shared.Common;
+using MediatR;
+using Microsoft.AspNetCore.Mvc;
+using ERPEZ.Domain.Entities.Planning;
+using ERPEZ.Application.Features.Planning.PerformanceMeasure.Commands.CreatePM;
+using ERPEZ.Application.Features.Planning.PerformanceMeasure.Dtos;
+using ERPEZ.Application.Features.Planning.PerformanceMeasure.Queries.GetPMs;
+using ERPEZ.Application.Features.Planning.PerformanceMeasure.Queries.GetPMById;
+using ERPEZ.Application.Features.Planning.PerformanceMeasure.Commands.UpdatePM;
+using ERPEZ.Application.Features.Planning.PerformanceMeasure.Commands.DeletePM;
+
 
 namespace ERPEZ.Api.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("performance-measures")]
     [ApiController]
-    public class PerformanceMeasureController : ControllerBase
+    public class PerformanceMeasureController(ISender mediator) : ControllerBase
     {
         [HttpPost]
-        public void Post([FromBody] string value)
+        [ProducesResponseType(typeof(ApiResponse<PerformanceMeasure>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<PerformanceMeasure>), StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> CreatePerformanceMeasure([FromBody] CreatePerformanceMeasureCommand command)
         {
+            var result = await mediator.Send(command);
+
+            if (!result.Succeeded)
+                return BadRequest(result);
+
+            return CreatedAtAction(nameof(GetPerformanceMeasureById), new { id = result.Data!.Id }, result);
         }
 
         [HttpGet]
-        public IEnumerable<string> Get()
+        [ProducesResponseType(typeof(PaginatedApiResponse<PerformanceMeasureDto>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetPerformanceMeasures([FromQuery] GetPerformanceMeasuresQuery query)
         {
-            return new string[] { "value1", "value2" };
+            var result = await mediator.Send(query);
+            return Ok(result);
         }
 
         [HttpGet("{id}")]
-        public string Get(int id)
+        [ProducesResponseType(typeof(ApiResponse<PerformanceMeasureDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetPerformanceMeasureById(Guid id)
         {
-            return "value";
+            var result = await mediator.Send(new GetPerformanceMeasureByIdQuery(id));
+            return result.Succeeded ? Ok(result) : NotFound(result);
         }
 
         [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
+        [ProducesResponseType(typeof(ApiResponse<PerformanceMeasureDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> UpdatePerformanceMeasure(Guid id, [FromBody] UpdatePerformanceMeasureDto dto)
         {
+            var command = new UpdatePerformanceMeasureCommand
+            {
+                Id = id,
+                UpdatePerformanceMeasure = dto
+            };
+
+            var result = await mediator.Send(command);
+            return result.Succeeded ? Ok(result) : BadRequest(result);
         }
 
         [HttpDelete("{id}")]
-        public void Delete(int id)
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> DeletePerformanceMeasure(Guid id)
         {
+            var command = new DeletePerformanceMeasureCommand(id);
+            var result = await mediator.Send(command);
+
+            return result.Succeeded ? Ok(result) : BadRequest(result);
         }
     }
 }

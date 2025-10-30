@@ -10,13 +10,12 @@ public class UpdateFunctionPercentageAllocationCommandHandler(IUnitOfWork _unitO
     public async Task<ApiResponse<Domain.Entities.Planning.FunctionPercentageAllocation>> Handle(UpdateFunctionPercentageAllocationCommand request, CancellationToken cancellationToken)
     {
         var fpa = await _unitOfWork.FunctionPercentageAllocationRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("Function Percentage Allocation not found.");
-        if (fpa.Name == request.UpdateFPA?.Name) throw new ConflictException("Function Percentage Allocation already exist.");
+        if (fpa.FunctionType == request.UpdateFPA?.FunctionType) throw new ConflictException("Function Percentage Allocation already exist.");
 
         var dto = request.UpdateFPA;
-        fpa.Function = dto?.Function ?? fpa.Function;
+        fpa.FunctionType = dto?.FunctionType ?? fpa.FunctionType;
         fpa.Percentage = dto?.Percentage ?? fpa.Percentage;
         fpa.Description = dto?.Description ?? fpa.Description;
-        fpa.Name = dto?.Name ?? fpa.Name;
 
 
 

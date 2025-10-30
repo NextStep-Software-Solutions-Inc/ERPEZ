@@ -9,12 +9,11 @@ public class CreateFunctionPercentageAllocationCommandHandler(IUnitOfWork _unitO
 {
     public async Task<ApiResponse<Domain.Entities.Planning.FunctionPercentageAllocation>> Handle(CreateFunctionPercentageAllocationCommand request, CancellationToken cancellationToken)
     {
-        var fpaExist = await _unitOfWork.FunctionPercentageAllocationRepository.FindAsync(t => t.Name == request.Name, cancellationToken: cancellationToken);
+        var fpaExist = await _unitOfWork.FunctionPercentageAllocationRepository.FindAsync(t => t.FunctionType == request.FunctionType, cancellationToken: cancellationToken);
         if (fpaExist != null) throw new ConflictException("Function Percentage Allocation already exists.");
         var fpa = new Domain.Entities.Planning.FunctionPercentageAllocation
         {
-            Function = request.Function,
-            Name = request.Name,
+            FunctionType = request.FunctionType,
             Description = request.Description,
             Percentage = request.Percentage
         };
