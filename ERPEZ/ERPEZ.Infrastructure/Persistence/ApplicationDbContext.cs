@@ -111,9 +111,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .WithMany(k => k.KPIModeOfVerifications)
             .HasForeignKey(mv => mv.KPIId);
         // KPIRating
-        modelBuilder.Entity<KPIRating>()
-            .HasIndex(r => new { r.KPIId, r.PerformanceMeasureId })
-            .IsUnique();
 
         modelBuilder.Entity<KPIRating>()
             .HasOne(r => r.KPI)

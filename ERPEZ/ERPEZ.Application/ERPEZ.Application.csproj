@@ -15,7 +15,6 @@
     <Folder Include="Features\Planning\ActivityBudgetRequirement\Dtos\" />
     <Folder Include="Features\Planning\ActivityBudgetRequirement\Queries\" />
     <Folder Include="Features\Planning\DUFundAllocation\" />
-    <Folder Include="Features\Planning\KPIRating\" />
     <Folder Include="Features\Planning\WFPPAP\" />
     <Folder Include="Features\Planning\WFPPAPDepartment\" />
     <Folder Include="Features\Planning\WFPOutcome\" />

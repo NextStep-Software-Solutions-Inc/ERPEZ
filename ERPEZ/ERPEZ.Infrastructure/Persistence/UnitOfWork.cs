@@ -8,6 +8,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly ApplicationDbContext _context;
 
     public IPerformanceMeasureRepository PerformanceMeasureRepository { get; }
+    public IKPIRatingRepository KPIRatingRepository { get; }
     public IDUAllocationRepository DUAllocationRepository { get; }
     public IKPITargetRepository KPITargetRepository { get; }
     public IKPIAssignmentRepository KPIAssignmentRepository { get; }
@@ -26,6 +27,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
 
     public UnitOfWork(ApplicationDbContext context,
                         ISieveProcessor sieveProcessor,
+                        IKPIRatingRepository kPIRatingRepository,
                         IPerformanceMeasureRepository performanceMeasureRepository,
                         IReceivedFundRepository receivedFundRepository,
                         IKPIAssignmentRepository kPIAssignmentRepository,
@@ -46,6 +48,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         _context = context ?? throw new ArgumentNullException(nameof(context));
 
         MFOKPIRepository = mFOKPIRepository ?? throw new ArgumentNullException(nameof(mFOKPIRepository));
+        KPIRatingRepository = kPIRatingRepository ?? throw new ArgumentNullException(nameof(kPIRatingRepository));
         PerformanceMeasureRepository = performanceMeasureRepository ?? throw new ArgumentNullException(nameof(performanceMeasureRepository));
         KPIAssignmentRepository = kPIAssignmentRepository ?? throw new ArgumentNullException(nameof(kPIAssignmentRepository));
         KPITargetRepository = kPITargetRepository ?? throw new ArgumentNullException(nameof(kPITargetRepository));

@@ -23,6 +23,7 @@ public static class DependencyInjection
             options.UseNpgsql(connectionString));
         // Register repositories and Unit of Work
         services.AddScoped<IDUAllocationRepository, DUAllocationRepository>();
+        services.AddScoped<IKPIRatingRepository, KPIRatingRepository>();
         services.AddScoped<IPerformanceMeasureRepository, PerformanceMeasureRepository>();
         services.AddScoped<IKPITargetRepository, KPITargetRepository>();
         services.AddScoped<IKPIAssignmentRepository, KPIAssignmentRepository>();

@@ -531,10 +531,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("PerformanceMeasureId");
+                    b.HasIndex("KPIId");
 
-                    b.HasIndex("KPIId", "PerformanceMeasureId")
-                        .IsUnique();
+                    b.HasIndex("PerformanceMeasureId");
 
                     b.ToTable("KPIRatings", "catalog");
                 });

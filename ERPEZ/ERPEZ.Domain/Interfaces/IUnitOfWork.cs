@@ -3,6 +3,7 @@
 public interface IUnitOfWork
 {
     IPerformanceMeasureRepository PerformanceMeasureRepository { get; }
+    IKPIRatingRepository KPIRatingRepository { get; }
     IDUAllocationRepository DUAllocationRepository { get; }
     IKPITargetRepository KPITargetRepository { get; }
     IKPIAssignmentRepository KPIAssignmentRepository { get; }
