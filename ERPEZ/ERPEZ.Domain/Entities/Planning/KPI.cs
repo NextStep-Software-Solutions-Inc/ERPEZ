@@ -10,6 +10,8 @@ public class KPI : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid FunctionPercentageAllocationId { get; set; }
     [Sieve(CanFilter = true, CanSort = true)]
+    public string FunctionType { get; set; } = string.Empty;
+    [Sieve(CanFilter = true, CanSort = true)]
     public string Name { get; set; } = string.Empty;
     [Sieve(CanFilter = true, CanSort = true)]
     public string? Description { get; set; } = string.Empty;
@@ -23,5 +25,4 @@ public class KPI : BaseEntity
     public virtual List<MFOKPI> MFOKPIs { get; set; } = [];
     public virtual List<OPCRKPI> OPCRKPIs { get; set; } = [];
     public virtual List<KPITarget> KPITargets { get; set; } = [];
-    public virtual FunctionPercentageAllocation FunctionPercentageAllocation { get; set; } = null!;
 }

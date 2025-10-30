@@ -1,13 +1,10 @@
 ﻿using ERPEZ.Domain.Common;
 using Sieve.Attributes;
-using System.Text.Json.Serialization;
 
 namespace ERPEZ.Domain.Entities.Planning;
 
 public class OPCR : BaseEntity
 {
-    [Sieve(CanFilter = true, CanSort = true)]
-    public Guid DUAllocationId { get; set; }
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid DeliveryUnitId { get; set; }
     [Sieve(CanFilter = true, CanSort = true)]
