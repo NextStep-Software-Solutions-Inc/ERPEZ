@@ -14,6 +14,6 @@ public class DeleteKPIModeOfVerificationCommandHandler(IUnitOfWork unitOfWork) :
         unitOfWork.KPIModeOfVerificationRepository.Remove(kPIModeOfVerification);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return ApiResponse<Unit>.Success(Unit.Value, $"KPI mode of verifiacation with ID {request.Id} deleted successfully.");
+        return ApiResponse<Unit>.Success(Unit.Value, $"KPI mode of verification with ID {request.Id} deleted successfully.");
     }
 }

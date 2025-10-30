@@ -46,12 +46,6 @@ public class CreateKPIAssignmentCommandHandler(IUnitOfWork _unitOfWork)
 
         await _unitOfWork.KPIAssignmentRepository.AddAsync(kpiAssignment, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        var dto = new Domain.Entities.Planning.KPIAssignment
-        {
-            Id = kpiAssignment.Id,
-            KPIId = kpiAssignment.KPIId,
-            DeliveryUnitId = kpiAssignment.DeliveryUnitId
-        };
-        return ApiResponse<Domain.Entities.Planning.KPIAssignment>.Success(dto, "KPI Assignment created successfully.");
+        return ApiResponse<Domain.Entities.Planning.KPIAssignment>.Success(kpiAssignment, "KPI Assignment created successfully.");
     }
 }

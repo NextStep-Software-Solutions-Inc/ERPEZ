@@ -42,14 +42,6 @@ public class CreateKPITargetCommandHandler(IUnitOfWork _unitOfWork)
 
         await _unitOfWork.KPITargetRepository.AddAsync(kpiTarget, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        var dto = new Domain.Entities.Planning.KPITarget
-        {
-            Id = kpiTarget.Id,
-            KPIId = kpiTarget.KPIId,
-            TargetValue = kpiTarget.TargetValue,
-            Period = kpiTarget.Period,
-            QuarterName = kpiTarget.QuarterName
-        };
-        return ApiResponse<Domain.Entities.Planning.KPITarget>.Success(dto, "KPI Target created successfully.");
+        return ApiResponse<Domain.Entities.Planning.KPITarget>.Success(kpiTarget, "KPI Target created successfully.");
     }
 }

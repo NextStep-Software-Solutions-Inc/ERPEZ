@@ -40,12 +40,6 @@ public class CreateKPIModeOfVerificationCommandHandler(IUnitOfWork _unitOfWork)
 
         await _unitOfWork.KPIModeOfVerificationRepository.AddAsync(kpiModeOfVerification, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        var dto = new Domain.Entities.Planning.KPIModeOfVerification
-        {
-            KPIId = kpiModeOfVerification.KPIId,
-            Name = kpiModeOfVerification.Name,
-            Description = kpiModeOfVerification.Description
-        };
-        return ApiResponse<Domain.Entities.Planning.KPIModeOfVerification>.Success(dto, "KPI Mode of verification created successfully.");
+        return ApiResponse<Domain.Entities.Planning.KPIModeOfVerification>.Success(kpiModeOfVerification, "KPI Mode of verification created successfully.");
     }
 }

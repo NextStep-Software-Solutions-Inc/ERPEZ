@@ -27,11 +27,6 @@ public class CreateReceivedFundCommandHandler(IUnitOfWork _unitOfWork)
 
         await _unitOfWork.ReceivedFundRepository.AddAsync(receivedFund, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        var dto = new Domain.Entities.Planning.ReceivedFund
-        {
-            Amount = request.Amount,
-            FundSourceId = request.FundSourceId
-        };
-        return ApiResponse<Domain.Entities.Planning.ReceivedFund>.Success(dto, "Received Fund created successfully.");
+        return ApiResponse<Domain.Entities.Planning.ReceivedFund>.Success(receivedFund, "Received Fund created successfully.");
     }
 }

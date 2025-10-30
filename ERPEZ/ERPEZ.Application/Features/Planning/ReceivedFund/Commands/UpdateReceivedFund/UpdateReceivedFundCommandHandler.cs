@@ -14,8 +14,8 @@ public class UpdateReceivedFundCommandHandler(IUnitOfWork _unitOfWork) : IReques
 
         if (dto.FundSourceId.HasValue && dto.FundSourceId.Value != Guid.Empty)
         {
-            var du = await _unitOfWork.ReceivedFundRepository.GetByIdAsync(dto.FundSourceId.Value, cancellationToken: cancellationToken)
-                ?? throw new NotFoundException("Received Fund not found.");
+            _ = await _unitOfWork.FundSourceRepository.GetByIdAsync(dto.FundSourceId.Value, cancellationToken: cancellationToken)
+                ?? throw new NotFoundException("Fund Source not found.");
         }
 
         var receivedFund = await _unitOfWork.ReceivedFundRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken)
@@ -27,6 +27,6 @@ public class UpdateReceivedFundCommandHandler(IUnitOfWork _unitOfWork) : IReques
         _unitOfWork.ReceivedFundRepository.Update(receivedFund);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return ApiResponse<Domain.Entities.Planning.ReceivedFund>.Success(receivedFund, "KPI Assignment updated successfully.");
+        return ApiResponse<Domain.Entities.Planning.ReceivedFund>.Success(receivedFund, "Received Fund updated successfully.");
     }
 }
