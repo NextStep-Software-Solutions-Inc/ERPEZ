@@ -14,5 +14,4 @@ public class DUAllocation : BaseEntity
     public virtual List<SubDUAllocation> SubDUAllocations { get; set; } = [];
     public virtual List<DUFundAllocation> DUFundAllocations { get; set; } = [];
     public virtual DeliveryUnit DeliveryUnit { get; set; } = null!;
-    public virtual ReceivedFund ReceivedFund { get; set; } = null!;
 }

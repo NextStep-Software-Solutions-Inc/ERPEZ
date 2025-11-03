@@ -1,36 +1,75 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using ERPEZ.Shared.Common;
+using MediatR;
+using Microsoft.AspNetCore.Mvc;
+using ERPEZ.Domain.Entities.Planning;
+using ERPEZ.Application.Features.Planning.OPCRActivity.Commands.CreateOPCRActivity;
+using ERPEZ.Application.Features.Planning.OPCRActivity.Dtos;
+using ERPEZ.Application.Features.Planning.OPCRActivity.Queries.GetOPCRActivities;
+using ERPEZ.Application.Features.Planning.OPCRActivity.Queries.GetOPCRActivityById;
+using ERPEZ.Application.Features.Planning.OPCRActivity.Commands.UpdateOPCRActivity;
+using ERPEZ.Application.Features.Planning.OPCRActivity.Commands.DeleteOPCRActivity;
 
 namespace ERPEZ.Api.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("opcr-activities")]
     [ApiController]
-    public class OPCRActivityController : ControllerBase
+    public class OPCRActivityController(ISender mediator) : ControllerBase
     {
         [HttpPost]
-        public void Post([FromBody] string value)
+        [ProducesResponseType(typeof(ApiResponse<OPCRActivity>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<OPCRActivity>), StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> CreateOPCRActivity([FromBody] CreateOPCRActivityCommand command)
         {
+            var result = await mediator.Send(command);
+
+            if (!result.Succeeded)
+                return BadRequest(result);
+
+            return CreatedAtAction(nameof(GetOPCRActivityById), new { id = result.Data!.Id }, result);
         }
 
         [HttpGet]
-        public IEnumerable<string> Get()
+        [ProducesResponseType(typeof(PaginatedApiResponse<OPCRActivityDto>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetOPCRActivities([FromQuery] GetOPCRActivitiesQuery query)
         {
-            return new string[] { "value1", "value2" };
+            var result = await mediator.Send(query);
+            return Ok(result);
         }
 
         [HttpGet("{id}")]
-        public string Get(int id)
+        [ProducesResponseType(typeof(ApiResponse<OPCRActivityDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetOPCRActivityById(Guid id)
         {
-            return "value";
+            var result = await mediator.Send(new GetOPCRActivityByIdQuery(id));
+            return result.Succeeded ? Ok(result) : NotFound(result);
         }
 
         [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
+        [ProducesResponseType(typeof(ApiResponse<OPCRActivityDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> UpdateOPCRActivity(Guid id, [FromBody] UpdateOPCRActivityDto dto)
         {
+            var command = new UpdateOPCRActivityCommand
+            {
+                Id = id,
+                UpdateOPCRActivity = dto
+            };
+
+            var result = await mediator.Send(command);
+            return result.Succeeded ? Ok(result) : BadRequest(result);
         }
 
         [HttpDelete("{id}")]
-        public void Delete(int id)
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> DeleteOPCRActivity(Guid id)
         {
+            var command = new DeleteOPCRActivityCommand(id);
+            var result = await mediator.Send(command);
+
+            return result.Succeeded ? Ok(result) : BadRequest(result);
         }
     }
 }

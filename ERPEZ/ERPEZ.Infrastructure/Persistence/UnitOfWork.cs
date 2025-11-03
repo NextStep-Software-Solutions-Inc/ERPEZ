@@ -8,6 +8,19 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly ApplicationDbContext _context;
 
     public IPerformanceMeasureRepository PerformanceMeasureRepository { get; }
+    public IOPCRRepository OPCRRepository { get; }
+    public IOPCRKPIRepository OPCRKPIRepository { get; }
+    public IOPCRActivityRepository OPCRActivityRepository { get; }
+    public IOPCRPAPDepartmentRepository OPCRPAPDepartmentRepository { get; }
+    public IWFPRepository WFPRepository { get; }
+    public IWFPObjectiveRepository WFPObjectiveRepository { get; }
+    public IWFPOutcomeRepository WFPOutcomeRepository { get; }
+    public IWFPActivityRepository WFPActivityRepository { get; }
+    public IActivityBudgetRequirementRepository ActivityBudgetRequirementRepository { get; }
+    public IWFPPAPDepartmentRepository WFPPAPDepartmentRepository { get; }
+    public IOPCREvaluationRepository OPCREvaluationRepository { get; }
+    public IOPCRRatingRepository OPCRRatingRepository { get; }
+    public IDUFundAllocationRepository DUFundAllocationRepository { get; }
     public IKPIRatingRepository KPIRatingRepository { get; }
     public IDUAllocationRepository DUAllocationRepository { get; }
     public IKPITargetRepository KPITargetRepository { get; }
@@ -27,6 +40,19 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
 
     public UnitOfWork(ApplicationDbContext context,
                         ISieveProcessor sieveProcessor,
+                        IOPCRRepository oPCRRepository,
+                        IOPCRKPIRepository oPCRKPIRepository,
+                        IOPCRActivityRepository oPCRActivityRepository,
+                        IOPCRPAPDepartmentRepository oPCRPAPDepartmentRepository,
+                        IWFPRepository wFPRepository,
+                        IWFPObjectiveRepository wFPObjectiveRepository,
+                        IWFPOutcomeRepository wFPOutcomeRepository,
+                        IWFPActivityRepository wFPActivityRepository,
+                        IActivityBudgetRequirementRepository activityBudgetRequirementRepository,
+                        IWFPPAPDepartmentRepository wFPPAPDepartmentRepository,
+                        IOPCREvaluationRepository oPCREvaluationRepository,
+                        IOPCRRatingRepository oPCRRatingRepository,
+                        IDUFundAllocationRepository dUFundAllocationRepository,
                         IKPIRatingRepository kPIRatingRepository,
                         IPerformanceMeasureRepository performanceMeasureRepository,
                         IReceivedFundRepository receivedFundRepository,
@@ -48,6 +74,19 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         _context = context ?? throw new ArgumentNullException(nameof(context));
 
         MFOKPIRepository = mFOKPIRepository ?? throw new ArgumentNullException(nameof(mFOKPIRepository));
+        OPCRRepository = oPCRRepository ?? throw new ArgumentNullException(nameof(oPCRRepository));
+        OPCRKPIRepository = oPCRKPIRepository ?? throw new ArgumentNullException(nameof(oPCRKPIRepository));
+        OPCRActivityRepository = oPCRActivityRepository ?? throw new ArgumentNullException(nameof(oPCRActivityRepository));
+        OPCRPAPDepartmentRepository = oPCRPAPDepartmentRepository ?? throw new ArgumentNullException(nameof(oPCRPAPDepartmentRepository));
+        WFPRepository = wFPRepository ?? throw new ArgumentNullException(nameof(wFPRepository));
+        WFPObjectiveRepository = wFPObjectiveRepository ?? throw new ArgumentNullException(nameof(wFPObjectiveRepository));
+        WFPOutcomeRepository = wFPOutcomeRepository ?? throw new ArgumentNullException(nameof(wFPOutcomeRepository));
+        WFPActivityRepository = wFPActivityRepository ?? throw new ArgumentNullException(nameof(wFPActivityRepository));
+        ActivityBudgetRequirementRepository = activityBudgetRequirementRepository ?? throw new ArgumentNullException(nameof(activityBudgetRequirementRepository));
+        WFPPAPDepartmentRepository = wFPPAPDepartmentRepository ?? throw new ArgumentNullException(nameof(wFPPAPDepartmentRepository));
+        OPCREvaluationRepository = oPCREvaluationRepository ?? throw new ArgumentNullException(nameof(oPCREvaluationRepository));
+        OPCRRatingRepository = oPCRRatingRepository ?? throw new ArgumentNullException(nameof(oPCRRatingRepository));
+        DUFundAllocationRepository = dUFundAllocationRepository ?? throw new ArgumentNullException(nameof(dUFundAllocationRepository));
         KPIRatingRepository = kPIRatingRepository ?? throw new ArgumentNullException(nameof(kPIRatingRepository));
         PerformanceMeasureRepository = performanceMeasureRepository ?? throw new ArgumentNullException(nameof(performanceMeasureRepository));
         KPIAssignmentRepository = kPIAssignmentRepository ?? throw new ArgumentNullException(nameof(kPIAssignmentRepository));

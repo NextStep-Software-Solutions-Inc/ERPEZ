@@ -1,16 +1,16 @@
-﻿using ERPEZ.Domain.Interfaces;
+﻿using ERPEZ.Application.Features.Planning.DUAllocation.Dtos;
+using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.DUAllocation.Commands.CreateDUAllocation;
 
-public class CreateDUAllocationCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<CreateDUAllocationCommand, ApiResponse<Domain.Entities.Planning.DUAllocation>>
+public class CreateDUAllocationCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<CreateDUAllocationCommand, ApiResponse<DUAllocationDto>>
 {
-    public async Task<ApiResponse<Domain.Entities.Planning.DUAllocation>> Handle(CreateDUAllocationCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<DUAllocationDto>> Handle(CreateDUAllocationCommand request, CancellationToken cancellationToken)
     {
-        var receivedFundExist = await _unitOfWork.ReceivedFundRepository.FindAsync(rf => rf.Id == request.ReceivedFundId, cancellationToken) ?? throw new NotFoundException("Received Fund not found");
-        var deliveryUnitExist = await _unitOfWork.DeliveryUnitRepository.FindAsync(du => du.Id == request.DeliveryUnitId, cancellationToken) ?? throw new NotFoundException("Delivery Unit not found");
+        _ = await _unitOfWork.DeliveryUnitRepository.FindAsync(du => du.Id == request.DeliveryUnitId, cancellationToken) ?? throw new NotFoundException("Delivery Unit not found");
         var dUAllocation = new Domain.Entities.Planning.DUAllocation
         {
             DeliveryUnitId = request.DeliveryUnitId,
@@ -19,6 +19,13 @@ public class CreateDUAllocationCommandHandler(IUnitOfWork _unitOfWork) : IReques
         };
         await _unitOfWork.DUAllocationRepository.AddAsync(dUAllocation, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        return ApiResponse<Domain.Entities.Planning.DUAllocation>.Success(dUAllocation, "Delivery Unit Allocation created successfully.");
+        var dUAllocationDto = new DUAllocationDto
+        {
+            Id = dUAllocation.Id,
+            DeliveryUnitId = dUAllocation.DeliveryUnitId,
+            Purpose = dUAllocation.Purpose,
+            Amount = dUAllocation.Amount
+        };
+        return ApiResponse<DUAllocationDto>.Success(dUAllocationDto, "Delivery Unit Allocation created successfully.");
     }
 }

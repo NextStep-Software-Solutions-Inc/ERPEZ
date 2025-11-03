@@ -1,4 +1,5 @@
-﻿using ERPEZ.Domain.Interfaces;
+﻿using ERPEZ.Application.Features.Planning.ReceivedFund.Dtos;
+using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
@@ -6,19 +7,19 @@ using MediatR;
 namespace ERPEZ.Application.Features.Planning.ReceivedFund.Commands.CreateReceivedFund;
 
 public class CreateReceivedFundCommandHandler(IUnitOfWork _unitOfWork)
-    : IRequestHandler<CreateReceivedFundCommand, ApiResponse<Domain.Entities.Planning.ReceivedFund>>
+    : IRequestHandler<CreateReceivedFundCommand, ApiResponse<ReceivedFundDto>>
 {
-    public async Task<ApiResponse<Domain.Entities.Planning.ReceivedFund>> Handle(CreateReceivedFundCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<ReceivedFundDto>> Handle(CreateReceivedFundCommand request, CancellationToken cancellationToken)
     {
         if (request.FundSourceId == Guid.Empty)
         {
-            return new ApiResponse<Domain.Entities.Planning.ReceivedFund>
+            return new ApiResponse<ReceivedFundDto>
             {
                 Message = "Received Fund is required.",
                 Succeeded = false
             };
         }
-        var fundSourceIdExist = await _unitOfWork.FundSourceRepository.GetByIdAsync(request.FundSourceId, cancellationToken) ?? throw new NotFoundException("Fund Source not found.");
+        _ = await _unitOfWork.FundSourceRepository.GetByIdAsync(request.FundSourceId, cancellationToken) ?? throw new NotFoundException("Fund Source not found.");
         var receivedFund = new Domain.Entities.Planning.ReceivedFund
         {
             FundSourceId = request.FundSourceId,
@@ -27,6 +28,12 @@ public class CreateReceivedFundCommandHandler(IUnitOfWork _unitOfWork)
 
         await _unitOfWork.ReceivedFundRepository.AddAsync(receivedFund, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        return ApiResponse<Domain.Entities.Planning.ReceivedFund>.Success(receivedFund, "Received Fund created successfully.");
+        var receivedFundDto = new ReceivedFundDto
+        {
+            Id = receivedFund.Id,
+            FundSourceId = receivedFund.FundSourceId,
+            Amount = receivedFund.Amount
+        };
+        return ApiResponse<ReceivedFundDto>.Success(receivedFundDto, "Received Fund created successfully.");
     }
 }

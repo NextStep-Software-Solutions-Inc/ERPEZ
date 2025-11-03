@@ -22,7 +22,21 @@ public static class DependencyInjection
         services.AddDbContext<ApplicationDbContext>(options =>
             options.UseNpgsql(connectionString));
         // Register repositories and Unit of Work
+        services.AddScoped<IActivityBudgetRequirementRepository, ActivityBudgetRequirementRepository>();
         services.AddScoped<IDUAllocationRepository, DUAllocationRepository>();
+        services.AddScoped<IOPCRRepository, OPCRRepository>();
+        services.AddScoped<IOPCRKPIRepository, OPCRKPIRepository>();
+        services.AddScoped<IOPCRActivityRepository, OPCRActivityRepository>();
+        services.AddScoped<IOPCREvaluationRepository, OPCREvaluationRepository>();
+        services.AddScoped<IOPCRPAPDepartmentRepository, OPCRPAPDepartmentRepository>();
+        services.AddScoped<IOPCRRatingRepository, OPCRRatingRepository>();
+        services.AddScoped<IWFPRepository, WFPRepository>();
+        services.AddScoped<IWFPPAPDepartmentRepository, WFPPAPDepartmentRepository>();
+        services.AddScoped<IWFPObjectiveRepository, WFPObjectiveRepository>();
+        services.AddScoped<IWFPActivityRepository, WFPActivityRepository>();
+        services.AddScoped<IWFPOutcomeRepository, WFPOutcomeRepository>();
+        services.AddScoped<IOPCRPAPDepartmentRepository, OPCRPAPDepartmentRepository>();
+        services.AddScoped<IOPCREvaluationRepository, OPCREvaluationRepository>();
         services.AddScoped<IKPIRatingRepository, KPIRatingRepository>();
         services.AddScoped<IPerformanceMeasureRepository, PerformanceMeasureRepository>();
         services.AddScoped<IKPITargetRepository, KPITargetRepository>();
@@ -39,6 +53,7 @@ public static class DependencyInjection
         services.AddScoped<ITransactionRepository, TransactionRepository>();
         services.AddScoped<IMFOPAPRepository, MFOPAPRepository>();
         services.AddScoped<IFunctionPercentageAllocationRepository, FunctionPercentageAllocationRepository>();
+        services.AddScoped<IDUFundAllocationRepository, DUFundAllocationRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         // Add Hangfire

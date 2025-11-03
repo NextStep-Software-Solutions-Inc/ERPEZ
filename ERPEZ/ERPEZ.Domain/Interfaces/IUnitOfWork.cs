@@ -3,6 +3,7 @@
 public interface IUnitOfWork
 {
     IPerformanceMeasureRepository PerformanceMeasureRepository { get; }
+    IDUFundAllocationRepository DUFundAllocationRepository { get; }
     IKPIRatingRepository KPIRatingRepository { get; }
     IDUAllocationRepository DUAllocationRepository { get; }
     IKPITargetRepository KPITargetRepository { get; }
@@ -18,6 +19,12 @@ public interface IUnitOfWork
     IFundSourceRepository FundSourceRepository { get; }
     ITransactionRepository TransactionRepository { get; }
     IMFOPAPRepository MFOPAPRepository { get; }
+    IOPCRRepository OPCRRepository { get; }
+    IOPCRKPIRepository OPCRKPIRepository { get; }
+    IOPCRActivityRepository OPCRActivityRepository { get; }
+    IOPCRPAPDepartmentRepository OPCRPAPDepartmentRepository { get; }
+    IOPCREvaluationRepository OPCREvaluationRepository { get; }
+    IWFPPAPDepartmentRepository WFPPAPDepartmentRepository { get; }
     IFunctionPercentageAllocationRepository FunctionPercentageAllocationRepository { get; }
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

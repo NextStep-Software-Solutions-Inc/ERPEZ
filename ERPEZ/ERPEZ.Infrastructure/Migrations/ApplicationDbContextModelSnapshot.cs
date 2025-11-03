@@ -124,7 +124,7 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<Guid>("ReceivedFundId")
+                    b.Property<Guid?>("ReceivedFundId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
@@ -766,9 +766,6 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<Guid>("DUAllocationId")
-                        .HasColumnType("uuid");
-
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -795,8 +792,6 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("DUAllocationId");
 
                     b.HasIndex("DeliveryUnitId", "FiscalYear")
                         .IsUnique();
@@ -1817,15 +1812,11 @@ namespace ERPEZ.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.ReceivedFund", "ReceivedFund")
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.ReceivedFund", null)
                         .WithMany("DUAllocations")
-                        .HasForeignKey("ReceivedFundId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("ReceivedFundId");
 
                     b.Navigation("DeliveryUnit");
-
-                    b.Navigation("ReceivedFund");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.DUFundAllocation", b =>
@@ -1983,19 +1974,11 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OPCR", b =>
                 {
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.DUAllocation", "DUAllocation")
-                        .WithMany()
-                        .HasForeignKey("DUAllocationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("ERPEZ.Domain.Entities.Planning.DeliveryUnit", "DeliveryUnit")
                         .WithMany("OPCRs")
                         .HasForeignKey("DeliveryUnitId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("DUAllocation");
 
                     b.Navigation("DeliveryUnit");
                 });
