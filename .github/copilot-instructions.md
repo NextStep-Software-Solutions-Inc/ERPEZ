@@ -148,6 +148,16 @@ The project has automated validation coverage checks:
 - **Fails if:** Any command is missing a validator
 - **Action:** Build will fail in CI/CD pipeline
 
+### Warnings as Errors (Enforced in CI)
+
+All CI builds treat compiler warnings as errors. Copilot must avoid producing code that generates compiler warnings and should proactively fix or suggest fixes for any warnings that would be produced by the generated code. Specifically:
+
+- CI build commands include the MSBuild property `TreatWarningsAsErrors=true` or the equivalent `-warnaserror` flag.
+- Generated code must compile with zero warnings on .NET 9.0 with the project `Release` configuration.
+- If Copilot suggests code that could produce warnings (unused usings, obsolete APIs, implicit type usages that cause warnings, nullable-reference misuse, etc.), it should include fixes or comments explaining how to avoid the warning.
+
+This policy ensures the pipeline fails on warnings so we keep the codebase clean and prevent regressions.
+
 ## References
 
 - **Implementation Guide:** See `VALIDATION_GUIDE.md` for detailed examples
