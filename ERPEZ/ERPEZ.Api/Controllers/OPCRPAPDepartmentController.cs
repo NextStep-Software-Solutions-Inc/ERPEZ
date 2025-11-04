@@ -36,7 +36,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<OPCRPAPDepartmentDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<OPCRPAPDepartment>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetOPCRPAPDepartmentById(Guid id)
         {
