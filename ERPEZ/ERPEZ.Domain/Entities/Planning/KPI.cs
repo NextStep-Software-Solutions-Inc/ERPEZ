@@ -8,7 +8,7 @@ public class KPI : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid? ParentKPIId { get; set; }
     [Sieve(CanFilter = true, CanSort = true)]
-    public Guid FunctionPercentageAllocationId { get; set; }
+    public string FunctionType { get; set; } = string.Empty;
     [Sieve(CanFilter = true, CanSort = true)]
     public string Name { get; set; } = string.Empty;
     [Sieve(CanFilter = true, CanSort = true)]
@@ -17,12 +17,10 @@ public class KPI : BaseEntity
     public bool? IsOfficeMandate { get; set; }
     public string Status { get; set; } = string.Empty;
     public virtual KPI? ParentKPI { get; set; }
-    public virtual List<KPI> ParentKPIs { get; set; } = [];
     public virtual List<KPIRating> KPIRatings { get; set; } = [];
     public virtual List<KPIModeOfVerification> KPIModeOfVerifications { get; set; } = [];
     public virtual List<KPIAssignment> KPIAssignments { get; set; } = [];
     public virtual List<MFOKPI> MFOKPIs { get; set; } = [];
     public virtual List<OPCRKPI> OPCRKPIs { get; set; } = [];
     public virtual List<KPITarget> KPITargets { get; set; } = [];
-    public virtual FunctionPercentageAllocation FunctionPercentageAllocation { get; set; } = null!;
 }

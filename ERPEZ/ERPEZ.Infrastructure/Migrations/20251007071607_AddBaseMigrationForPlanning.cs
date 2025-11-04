@@ -12,58 +12,6 @@ namespace ERPEZ.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.AddColumn<DateTime>(
-                name: "CreatedAt",
-                schema: "catalog",
-                table: "Products",
-                type: "timestamp with time zone",
-                nullable: false,
-                defaultValue: new DateTime(1, 1, 1, 0, 0, 0, 0, DateTimeKind.Unspecified));
-
-            migrationBuilder.AddColumn<string>(
-                name: "CreatedBy",
-                schema: "catalog",
-                table: "Products",
-                type: "text",
-                nullable: false,
-                defaultValue: "");
-
-            migrationBuilder.AddColumn<DateTime>(
-                name: "DeletedAt",
-                schema: "catalog",
-                table: "Products",
-                type: "timestamp with time zone",
-                nullable: true);
-
-            migrationBuilder.AddColumn<string>(
-                name: "DeletedBy",
-                schema: "catalog",
-                table: "Products",
-                type: "text",
-                nullable: true);
-
-            migrationBuilder.AddColumn<bool>(
-                name: "IsDeleted",
-                schema: "catalog",
-                table: "Products",
-                type: "boolean",
-                nullable: false,
-                defaultValue: false);
-
-            migrationBuilder.AddColumn<DateTime>(
-                name: "UpdatedAt",
-                schema: "catalog",
-                table: "Products",
-                type: "timestamp with time zone",
-                nullable: true);
-
-            migrationBuilder.AddColumn<string>(
-                name: "UpdatedBy",
-                schema: "catalog",
-                table: "Products",
-                type: "text",
-                nullable: true);
-
             migrationBuilder.CreateTable(
                 name: "FunctionPercentageAllocations",
                 schema: "catalog",

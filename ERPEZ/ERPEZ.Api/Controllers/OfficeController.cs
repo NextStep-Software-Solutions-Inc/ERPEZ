@@ -1,36 +1,75 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using ERPEZ.Application.Features.Planning.Office.Commands.CreateOffice;
+using ERPEZ.Application.Features.Planning.Office.Commands.DeleteOffice;
+using ERPEZ.Application.Features.Planning.Office.Commands.UpdateOffice;
+using ERPEZ.Application.Features.Planning.Office.Dtos;
+using ERPEZ.Application.Features.Planning.Office.Queries.GetOfficeByIdQuery;
+using ERPEZ.Application.Features.Planning.Office.Queries.GetOfficesQuery;
+using ERPEZ.Domain.Entities.Planning;
+using ERPEZ.Shared.Common;
+using MediatR;
+using Microsoft.AspNetCore.Mvc;
 
 namespace ERPEZ.Api.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("offices")]
     [ApiController]
-    public class OfficeController : ControllerBase
+    public class OfficeController(ISender mediator) : ControllerBase
     {
         [HttpPost]
-        public void Post([FromBody] string value)
+        [ProducesResponseType(typeof(ApiResponse<Office>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<Office>), StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> CreateOffice([FromBody] CreateOfficeCommand command)
         {
+            var office = await mediator.Send(command);
+
+            if (!office.Succeeded)
+                return BadRequest(office);
+
+            return CreatedAtAction(nameof(GetOfficeById), new { id = office.Data!.Id }, office);
         }
 
         [HttpGet]
-        public IEnumerable<string> Get()
+        [ProducesResponseType(typeof(PaginatedApiResponse<OfficeDto>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetOffices([FromQuery] GetOfficesQuery query)
         {
-            return new string[] { "value1", "value2" };
+            var result = await mediator.Send(query);
+            return Ok(result);
         }
 
         [HttpGet("{id}")]
-        public string Get(int id)
+        [ProducesResponseType(typeof(ApiResponse<OfficeDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetOfficeById(Guid id)
         {
-            return "value";
+            var office = await mediator.Send(new GetOfficeByIdQuery(id));
+            return office.Succeeded ? Ok(office) : BadRequest(office);
         }
 
         [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> UpdateOffice(Guid id, [FromBody] UpdateOfficeDto updateOffice)
         {
+            var request = new UpdateOfficeCommand
+            {
+                Id = id,
+                UpdateOffice = updateOffice
+            };
+
+            var office = await mediator.Send(request);
+            return office.Succeeded ? Ok(office) : BadRequest(office);
         }
 
         [HttpDelete("{id}")]
-        public void Delete(int id)
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> DeleteOffice(Guid id)
         {
+            var command = new DeleteOfficeCommand(id);
+            var office = await mediator.Send(command);
+
+            return office.Succeeded ? Ok(office) : BadRequest(office);
         }
     }
 }

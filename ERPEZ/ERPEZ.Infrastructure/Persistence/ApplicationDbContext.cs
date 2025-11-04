@@ -1,5 +1,4 @@
-﻿using ERPEZ.Domain.Entities;
-using ERPEZ.Domain.Entities.Planning;
+﻿using ERPEZ.Domain.Entities.Planning;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Object = ERPEZ.Domain.Entities.Planning.Object;
@@ -8,7 +7,6 @@ namespace ERPEZ.Infrastructure.Persistence;
 
 public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : DbContext(options)
 {
-    public DbSet<Product> Products { get; set; }
     //Planning
     public DbSet<ActivityBudgetRequirement> ActivityBudgetRequirements { get; set; }
     public DbSet<DUAllocation> DUAllocations { get; set; }
@@ -64,17 +62,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 idProperty.ValueGenerated = ValueGenerated.OnAdd;
             }
         }
-        //FunctionPercentageAllocation
-        modelBuilder.Entity<FunctionPercentageAllocation>()
-            .HasIndex(f => new { f.Function, f.Name });
 
-        modelBuilder.Entity<FunctionPercentageAllocation>()
-            .HasMany(fp => fp.KPIs)
-            .WithOne(k => k.FunctionPercentageAllocation)
-            .HasForeignKey(k => k.FunctionPercentageAllocationId);
         //KPI
         modelBuilder.Entity<KPI>()
-        .HasIndex(k => new { k.FunctionPercentageAllocationId, k.Name });
+        .HasIndex(k => new { k.Name });
 
         modelBuilder.Entity<KPI>()
             .HasIndex(k => k.Name)
@@ -120,9 +111,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .WithMany(k => k.KPIModeOfVerifications)
             .HasForeignKey(mv => mv.KPIId);
         // KPIRating
-        modelBuilder.Entity<KPIRating>()
-            .HasIndex(r => new { r.KPIId, r.PerformanceMeasureId })
-            .IsUnique();
 
         modelBuilder.Entity<KPIRating>()
             .HasOne(r => r.KPI)
@@ -284,12 +272,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<ReceivedFund>()
-            .HasMany(rf => rf.DUAllocations)
-            .WithOne(du => du.ReceivedFund)
-            .HasForeignKey(du => du.ReceivedFundId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        modelBuilder.Entity<ReceivedFund>()
             .HasOne(rf => rf.FundSource)
             .WithMany(f => f.ReceivedFunds)
             .HasForeignKey(rf => rf.FundSourceId)
@@ -297,13 +279,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         //DUAllocation
         modelBuilder.Entity<DUAllocation>()
-            .HasIndex(dua => new { dua.ReceivedFundId, dua.DeliveryUnitId, dua.Purpose });
-
-        modelBuilder.Entity<DUAllocation>()
-            .HasMany(du => du.OPCRs)
-            .WithOne(opcr => opcr.DUAllocation)
-            .HasForeignKey(opcr => opcr.DUAllocationId)
-            .OnDelete(DeleteBehavior.Restrict);
+            .HasIndex(dua => new { dua.DeliveryUnitId, dua.Purpose });
 
         modelBuilder.Entity<DUAllocation>()
             .HasMany(du => du.SubDUAllocations)
@@ -311,12 +287,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasForeignKey(sub => sub.DUAllocationId)
             .OnDelete(DeleteBehavior.Restrict);
         
-        modelBuilder.Entity<DUAllocation>()
-            .HasMany(du => du.WFPs)
-            .WithOne(wfp => wfp.DUAllocation)
-            .HasForeignKey(wfp => wfp.DUAllocationId)
-            .OnDelete(DeleteBehavior.Restrict);
-
         modelBuilder.Entity<DUAllocation>()
             .HasMany(du => du.DUFundAllocations)
             .WithOne(fa => fa.DUAllocation)
@@ -327,12 +297,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasOne(du => du.DeliveryUnit)
             .WithMany(d => d.DUAllocations)
             .HasForeignKey(du => du.DeliveryUnitId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        modelBuilder.Entity<DUAllocation>()
-            .HasOne(du => du.ReceivedFund)
-            .WithMany(rf => rf.DUAllocations)
-            .HasForeignKey(du => du.ReceivedFundId)
             .OnDelete(DeleteBehavior.Restrict);
 
         //DUFund Allocation
@@ -419,27 +383,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         //WFP
         modelBuilder.Entity<WFP>()
-            .HasIndex(w => new { w.DUAllocationId, w.DeliveryUnitId, w.FiscalYear });
-
-        modelBuilder.Entity<WFP>()
-            .HasOne(w => w.DUAllocation)
-            .WithMany(dua => dua.WFPs)
-            .HasForeignKey(w => w.DUAllocationId);
+            .HasIndex(w => new { w.DeliveryUnitId, w.FiscalYear });
 
         modelBuilder.Entity<WFP>()
             .HasOne(w => w.DeliveryUnit)
             .WithMany(du => du.WFPs)
             .HasForeignKey(w => w.DeliveryUnitId);
-
-        modelBuilder.Entity<WFP>()
-            .HasOne(w => w.WFPActivity)
-            .WithOne(wa => wa.WFP)
-            .HasForeignKey<WFPActivity>(wa => wa.WFPId);
-
-        modelBuilder.Entity<WFP>()
-            .HasOne(w => w.WFPObjective)
-            .WithOne(wo => wo.WFP)
-            .HasForeignKey<WFPObjective>(wo => wo.WFPId);
 
         //WFP Outcome
         modelBuilder.Entity<WFPOutcome>()
@@ -463,11 +412,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         //WFPObjective
         modelBuilder.Entity<WFPObjective>()
             .HasIndex(o => new { o.WFPId, o.Description });
-
-        modelBuilder.Entity<WFPObjective>()
-            .HasOne(o => o.WFP)
-            .WithOne(w => w.WFPObjective)
-            .HasForeignKey<WFPObjective>(o => o.WFPId);
 
         modelBuilder.Entity<WFPObjective>()
             .HasMany(o => o.WFPOutcomes)
@@ -528,13 +472,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         // OPCR
         modelBuilder.Entity<OPCR>()
-            .HasIndex(o => new { o.DUAllocationId, o.DeliveryUnitId, o.FiscalYear })
+            .HasIndex(o => new { o.DeliveryUnitId, o.FiscalYear })
             .IsUnique();
-
-        modelBuilder.Entity<OPCR>()
-            .HasOne(o => o.DUAllocation)
-            .WithMany(d => d.OPCRs)
-            .HasForeignKey(o => o.DUAllocationId);
 
         modelBuilder.Entity<OPCR>()
             .HasOne(o => o.DeliveryUnit)

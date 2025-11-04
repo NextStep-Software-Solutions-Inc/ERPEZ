@@ -74,6 +74,7 @@ public class Repository<T>(ApplicationDbContext context, ISieveProcessor sievePr
     {
         await context.BulkUpdateAsync(entities, cancellationToken: cancellationToken);
     }
+
     public async Task DeleteBulkAsync(IList<T> entities, CancellationToken cancellationToken = default)
     {
         await context.BulkDeleteAsync(entities, cancellationToken: cancellationToken);

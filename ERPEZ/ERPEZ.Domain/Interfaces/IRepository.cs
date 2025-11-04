@@ -4,7 +4,6 @@ using System.Linq.Expressions;
 
 namespace ERPEZ.Domain.Interfaces;
 
-
 public interface IRepository<T> where T : BaseEntity
 {
     Task<T?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default);

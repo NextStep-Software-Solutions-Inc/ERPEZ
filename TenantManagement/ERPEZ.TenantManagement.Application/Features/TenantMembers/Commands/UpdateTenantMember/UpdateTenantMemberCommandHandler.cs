@@ -16,7 +16,7 @@ public class UpdateTenantMemberCommandHandler(IUnitOfWork _unitOfWork)
         var dto = request.UpdateTenantMember;
         if (dto.TenantId.HasValue)
         {
-            var existTenant = await _unitOfWork.TenantRepository.GetByIdAsync(dto.TenantId.Value, cancellationToken: cancellationToken) ?? throw new NotFoundException("Tenant cannot be found.");
+            _ = await _unitOfWork.TenantRepository.GetByIdAsync(dto.TenantId.Value, cancellationToken: cancellationToken) ?? throw new NotFoundException("Tenant cannot be found.");
         }
         var tenantMember = await _unitOfWork.TenantMemberRepository
             .FindAsync(ts => ts.Id == request.Id && ts.TenantId == dto.TenantId, cancellationToken: cancellationToken) ?? throw new NotFoundException("Tenant member not found");

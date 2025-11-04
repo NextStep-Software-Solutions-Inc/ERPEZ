@@ -2,6 +2,8 @@
 
 namespace ERPEZ.Domain.Common;
 
+using System.ComponentModel.DataAnnotations.Schema;
+
 public abstract class BaseEntity : IEntity
 {
     protected BaseEntity() { }

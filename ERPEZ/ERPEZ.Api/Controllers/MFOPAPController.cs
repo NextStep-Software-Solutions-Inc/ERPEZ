@@ -1,36 +1,73 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using ERPEZ.Application.Features.Planning.MFOPAP.Commands.CreateMFOPAP;
+using ERPEZ.Application.Features.Planning.MFOPAP.Commands.DeleteMFOPAP;
+using ERPEZ.Application.Features.Planning.MFOPAP.Commands.UpdateMFOPAP;
+using ERPEZ.Application.Features.Planning.MFOPAP.Dtos;
+using ERPEZ.Application.Features.Planning.MFOPAP.Queries.GetMFOPAPById;
+using ERPEZ.Application.Features.Planning.MFOPAP.Queries.GetMFOPAPs;
+using ERPEZ.Domain.Entities.Planning;
+using ERPEZ.Shared.Common;
+using MediatR;
+using Microsoft.AspNetCore.Mvc;
 
 namespace ERPEZ.Api.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("mfopaps")]
     [ApiController]
-    public class MFOPAPController : ControllerBase
+    public class MFOPAPController(ISender mediator) : ControllerBase
     {
         [HttpPost]
-        public void Post([FromBody] string value)
+        [ProducesResponseType(typeof(ApiResponse<MFOPAP>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<MFOPAP>), StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> CreateMFOPAP([FromBody] CreateMFOPAPCommand command)
         {
+            var mfopap = await mediator.Send(command);
+
+            return CreatedAtAction(nameof(GetMFOPAPById), new { id = mfopap.Data!.Id }, mfopap);
         }
 
         [HttpGet]
-        public IEnumerable<string> Get()
+        [ProducesResponseType(typeof(PaginatedApiResponse<MFOPAPDto>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetMFOPAPs([FromQuery] GetMFOPAPsQuery query)
         {
-            return new string[] { "value1", "value2" };
+            var result = await mediator.Send(query);
+            return Ok(result);
         }
 
         [HttpGet("{id}")]
-        public string Get(int id)
+        [ProducesResponseType(typeof(ApiResponse<MFOPAPDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetMFOPAPById(Guid id)
         {
-            return "value";
+            var mfopap = await mediator.Send(new GetMFOPAPByIdQuery(id));
+
+            return mfopap.Succeeded ? Ok(mfopap) : BadRequest(mfopap);
         }
 
         [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> UpdateMFOPAP(Guid id, [FromBody] UpdateMFOPAPDto updateMFOPAP)
         {
+            var request = new UpdateMFOPAPCommand
+            {
+                Id = id,
+                UpdateMFOPAP = updateMFOPAP
+            };
+
+            var mfopap = await mediator.Send(request);
+            return mfopap.Succeeded ? Ok(mfopap) : BadRequest(mfopap);
         }
 
         [HttpDelete("{id}")]
-        public void Delete(int id)
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> DeleteMFOPAP(Guid id)
         {
+            var command = new DeleteMFOPAPCommand(id);
+            var mfopap = await mediator.Send(command);
+
+            return mfopap.Succeeded ? Ok(mfopap) : BadRequest(mfopap);
         }
     }
 }

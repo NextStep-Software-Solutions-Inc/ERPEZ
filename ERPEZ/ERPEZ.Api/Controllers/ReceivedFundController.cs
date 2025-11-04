@@ -1,36 +1,75 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using ERPEZ.Application.Features.Planning.ReceivedFund.Commands.CreateReceivedFund;
+using ERPEZ.Application.Features.Planning.ReceivedFund.Commands.DeleteReceivedFund;
+using ERPEZ.Application.Features.Planning.ReceivedFund.Commands.UpdateReceivedFund;
+using ERPEZ.Application.Features.Planning.ReceivedFund.Dtos;
+using ERPEZ.Application.Features.Planning.ReceivedFund.Queries.GetReceivedFundById;
+using ERPEZ.Application.Features.Planning.ReceivedFund.Queries.GetReceivedFunds;
+using ERPEZ.Domain.Entities.Planning;
+using ERPEZ.Shared.Common;
+using MediatR;
+using Microsoft.AspNetCore.Mvc;
 
 namespace ERPEZ.Api.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("received-funds")]
     [ApiController]
-    public class ReceivedFundController : ControllerBase
+    public class ReceivedFundController(ISender mediator) : ControllerBase
     {
         [HttpPost]
-        public void Post([FromBody] string value)
+        [ProducesResponseType(typeof(ApiResponse<ReceivedFund>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<ReceivedFund>), StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> CreateReceivedFund([FromBody] CreateReceivedFundCommand command)
         {
+            var receivedFund = await mediator.Send(command);
+
+            if (!receivedFund.Succeeded)
+                return BadRequest(receivedFund);
+
+            return CreatedAtAction(nameof(GetReceivedFundById), new { id = receivedFund.Data!.Id }, receivedFund);
         }
 
         [HttpGet]
-        public IEnumerable<string> Get()
+        [ProducesResponseType(typeof(PaginatedApiResponse<ReceivedFundDto>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetReceivedFunds([FromQuery] GetReceivedFundsQuery query)
         {
-            return new string[] { "value1", "value2" };
+            var result = await mediator.Send(query);
+            return Ok(result);
         }
 
         [HttpGet("{id}")]
-        public string Get(int id)
+        [ProducesResponseType(typeof(ApiResponse<ReceivedFundDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetReceivedFundById(Guid id)
         {
-            return "value";
+            var receivedFund = await mediator.Send(new GetReceivedFundByIdQuery(id));
+            return receivedFund.Succeeded ? Ok(receivedFund) : BadRequest(receivedFund);
         }
 
         [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> UpdateOffice(Guid id, [FromBody] UpdateReceivedFundDto updateReceivedFund)
         {
+            var request = new UpdateReceivedFundCommand
+            {
+                Id = id,
+                UpdateReceivedFund = updateReceivedFund
+            };
+
+            var receivedFund = await mediator.Send(request);
+            return receivedFund.Succeeded ? Ok(receivedFund) : BadRequest(receivedFund);
         }
 
         [HttpDelete("{id}")]
-        public void Delete(int id)
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> DeleteReceivedFund(Guid id)
         {
+            var command = new DeleteReceivedFundCommand(id);
+            var receivedFund = await mediator.Send(command);
+
+            return receivedFund.Succeeded ? Ok(receivedFund) : BadRequest(receivedFund);
         }
     }
 }

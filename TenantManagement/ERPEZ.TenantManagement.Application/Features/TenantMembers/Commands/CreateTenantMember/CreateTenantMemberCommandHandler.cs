@@ -18,7 +18,7 @@ public class CreateTenantMemberCommandHandler(IUnitOfWork _unitOfWork)
             throw new ConflictException("Tenant member already exists.");
 
         // Check if the tenant exists before creating the member
-        var tenantExists = await _unitOfWork.TenantRepository
+        _ = await _unitOfWork.TenantRepository
             .FindAsync(t => t.Id == command.TenantId, cancellationToken) ?? throw new NotFoundException("Tenant not found.");
 
         var tenantMember = new TenantMember

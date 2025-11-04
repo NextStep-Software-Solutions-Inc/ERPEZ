@@ -7,8 +7,6 @@ namespace ERPEZ.Domain.Entities.Planning;
 public class WFP : BaseEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
-    public Guid DUAllocationId { get; set; }
-    [Sieve(CanFilter = true, CanSort = true)]
     public Guid DeliveryUnitId { get; set; }
     [Sieve(CanFilter = true, CanSort = true)]
     public string ProgramTitle { get; set; } = string.Empty;
@@ -23,8 +21,7 @@ public class WFP : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public string Status { get; set; } = string.Empty;
     public virtual DUAllocation DUAllocation { get; set; } = null!;
-    public virtual WFPActivity WFPActivity { get; set; } = null!;
-    public virtual WFPObjective WFPObjective { get; set; } = null!;
+    public virtual List<WFPActivity> WFPActivities { get; set; } = [];
+    public virtual List<WFPObjective> WFPObjectives { get; set; } = [];
     public virtual DeliveryUnit DeliveryUnit { get; set; } = null!;
-    public virtual List<WFPPAP> WFPPAPs { get; set; } = [];
 }

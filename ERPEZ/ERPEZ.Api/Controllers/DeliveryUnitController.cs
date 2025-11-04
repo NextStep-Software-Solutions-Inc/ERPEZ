@@ -1,44 +1,75 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using ERPEZ.Application.Features.Planning.DeliveryUnit.Commands.CreateDU;
+using ERPEZ.Application.Features.Planning.DeliveryUnit.Commands.DeleteDU;
+using ERPEZ.Application.Features.Planning.DeliveryUnit.Commands.UpdateDU;
+using ERPEZ.Application.Features.Planning.DeliveryUnit.Dtos;
+using ERPEZ.Application.Features.Planning.DeliveryUnit.Queries.GetDUByIdQuery;
+using ERPEZ.Application.Features.Planning.DeliveryUnit.Queries.GetDUsQuery;
+using ERPEZ.Domain.Entities.Planning;
+using ERPEZ.Shared.Common;
+using MediatR;
+using Microsoft.AspNetCore.Mvc;
 
 namespace ERPEZ.Api.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("delivery-units")]
     [ApiController]
-    public class DeliveryUnitController : ControllerBase
+    public class DeliveryUnitController(ISender mediator) : ControllerBase
     {
-        // POST api/<DeliveryUnitController>
         [HttpPost]
-        public IActionResult Post([FromBody] string value)
+        [ProducesResponseType(typeof(ApiResponse<DeliveryUnit>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<DeliveryUnit>), StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> CreateDeliveryUnit([FromBody] CreateDeliveryUnitCommand command)
         {
-            return Ok("Created");
+            var deliveryUnit = await mediator.Send(command);
+
+            if (!deliveryUnit.Succeeded)
+                return BadRequest(deliveryUnit);
+
+            return CreatedAtAction(nameof(GetDeliveryUnitById), new { id = deliveryUnit.Data!.Id }, deliveryUnit);
         }
 
-        // GET: api/<DeliveryUnitController>
         [HttpGet]
-        public IEnumerable<string> GetAll()
+        [ProducesResponseType(typeof(PaginatedApiResponse<DeliveryUnitDto>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetDeliveryUnits([FromQuery] GetDeliveryUnitsQuery query)
         {
-            return new string[] { "value1", "value2" };
+            var result = await mediator.Send(query);
+            return Ok(result);
         }
 
-        // GET api/<DeliveryUnitController>/5
         [HttpGet("{id}")]
-        public IActionResult GetById(int id)
+        [ProducesResponseType(typeof(ApiResponse<DeliveryUnitDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetDeliveryUnitById(Guid id)
         {
-            return Ok("value");
+            var deliveryUnit = await mediator.Send(new GetDeliveryUnitByIdQuery(id));
+            return deliveryUnit.Succeeded ? Ok(deliveryUnit) : BadRequest(deliveryUnit);
         }
 
-        // PUT api/<DeliveryUnitController>/5
         [HttpPut("{id}")]
-        public IActionResult Put(int id, [FromBody] string value)
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> UpdateDeliveryUnit(Guid id, [FromBody] UpdateDeliveryUnitDto updateDeliveryUnit)
         {
-            return Ok("Updated");
+            var request = new UpdateDeliveryUnitCommand
+            {
+                Id = id,
+                UpdateDU = updateDeliveryUnit
+            };
+
+            var deliveryUnit = await mediator.Send(request);
+            return deliveryUnit.Succeeded ? Ok(deliveryUnit) : BadRequest(deliveryUnit);
         }
 
-        // DELETE api/<DeliveryUnitController>/5
         [HttpDelete("{id}")]
-        public IActionResult Delete(int id)
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> DeleteDeliveryUnit(Guid id)
         {
-            return Ok("Deleted");
+            var command = new DeleteDeliveryUnitCommand(id);
+            var deliveryUnit = await mediator.Send(command);
+
+            return deliveryUnit.Succeeded ? Ok(deliveryUnit) : BadRequest(deliveryUnit);
         }
     }
 }

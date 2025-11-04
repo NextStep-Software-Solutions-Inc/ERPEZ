@@ -1,36 +1,76 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using ERPEZ.Application.Features.Planning.Location.Commands.CreateLocation;
+using ERPEZ.Application.Features.Planning.Location.Commands.DeleteLocation;
+using ERPEZ.Application.Features.Planning.Location.Commands.UpdateLocation;
+using ERPEZ.Application.Features.Planning.Location.Dtos;
+using ERPEZ.Application.Features.Planning.Location.Queries.GetLocationById;
+using ERPEZ.Application.Features.Planning.Location.Queries.GetLocations;
+using ERPEZ.Domain.Entities.Planning;
+using ERPEZ.Shared.Common;
+using MediatR;
+using Microsoft.AspNetCore.Mvc;
 
 namespace ERPEZ.Api.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("locations")]
     [ApiController]
-    public class LocationController : ControllerBase
+    public class LocationsController(ISender mediator) : ControllerBase
     {
         [HttpPost]
-        public void Post([FromBody] string value)
+        [ProducesResponseType(typeof(ApiResponse<Location>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<Location>), StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> CreateLocation([FromBody] CreateLocationCommand command)
         {
+            var location = await mediator.Send(command);
+
+            if (!location.Succeeded)
+                return BadRequest(location);
+
+            return CreatedAtAction(nameof(GetLocationById), new { id = location.Data!.Id }, location);
         }
 
         [HttpGet]
-        public IEnumerable<string> Get()
+        [ProducesResponseType(typeof(PaginatedApiResponse<LocationDto>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetLocations([FromQuery] GetLocationsQuery query)
         {
-            return new string[] { "value1", "value2" };
+            var result = await mediator.Send(query);
+            return Ok(result);
         }
 
         [HttpGet("{id}")]
-        public string Get(int id)
+        [ProducesResponseType(typeof(ApiResponse<LocationDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetLocationById(Guid id)
         {
-            return "value";
+            var location = await mediator.Send(new GetLocationByIdQuery(id));
+
+            return location.Succeeded ? Ok(location) : BadRequest(location);
         }
 
         [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> UpdateLocation(Guid id, [FromBody] UpdateLocationDto updateLocation)
         {
+            var request = new UpdateLocationCommand
+            {
+                Id = id,
+                UpdateLocation = updateLocation
+            };
+
+            var location = await mediator.Send(request);
+            return location.Succeeded ? Ok(location) : BadRequest(location);
         }
 
         [HttpDelete("{id}")]
-        public void Delete(int id)
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> DeleteLocation(Guid id)
         {
+            var command = new DeleteLocationCommand(id);
+            var location = await mediator.Send(command);
+
+            return location.Succeeded ? Ok(location) : BadRequest(location);
         }
     }
 }
