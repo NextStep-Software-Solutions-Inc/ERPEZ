@@ -8,8 +8,6 @@ public class KPI : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid? ParentKPIId { get; set; }
     [Sieve(CanFilter = true, CanSort = true)]
-    public Guid FunctionPercentageAllocationId { get; set; }
-    [Sieve(CanFilter = true, CanSort = true)]
     public string FunctionType { get; set; } = string.Empty;
     [Sieve(CanFilter = true, CanSort = true)]
     public string Name { get; set; } = string.Empty;
