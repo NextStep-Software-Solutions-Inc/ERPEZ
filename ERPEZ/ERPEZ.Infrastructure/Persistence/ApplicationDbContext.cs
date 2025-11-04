@@ -66,7 +66,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         //KPI
         modelBuilder.Entity<KPI>()
-        .HasIndex(k => new { k.FunctionPercentageAllocationId, k.Name });
+        .HasIndex(k => new { k.Name });
 
         modelBuilder.Entity<KPI>()
             .HasIndex(k => k.Name)

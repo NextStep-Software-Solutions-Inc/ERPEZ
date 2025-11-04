@@ -14,14 +14,8 @@ public class UpdateKPICommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<
         var kpi = await _unitOfWork.KPIRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken)
             ?? throw new NotFoundException("KPI not found.");
 
-        if (dto.FunctionPercentageAllocationId != null)
-        {
-            var fpa = await _unitOfWork.FunctionPercentageAllocationRepository.GetByIdAsync(dto.FunctionPercentageAllocationId ?? Guid.Empty, cancellationToken: cancellationToken)
-                ?? throw new NotFoundException("Function Percentage Allocation not found.");
-        }
-
         var duplicate = await _unitOfWork.KPIRepository.FindAsync(
-            x => x.Name == dto.Name && x.FunctionPercentageAllocationId == dto.FunctionPercentageAllocationId,
+            x => x.Name == dto.Name,
             cancellationToken
         );
 
@@ -31,7 +25,7 @@ public class UpdateKPICommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<
         kpi.Name = dto.Name ?? kpi.Name;
         kpi.Description = dto.Description ?? kpi.Description;
         kpi.ParentKPIId = dto.ParentKPIId ?? kpi.ParentKPIId;
-        kpi.FunctionPercentageAllocationId = dto.FunctionPercentageAllocationId ?? kpi.FunctionPercentageAllocationId;
+        kpi.FunctionType = dto.Functiontype ?? kpi.FunctionType;
         kpi.IsOfficeMandate = dto.IsOfficeMandate ?? kpi.IsOfficeMandate;
         kpi.Status = dto.Status ?? kpi.Status;
 

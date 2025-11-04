@@ -353,9 +353,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("text");
 
-                    b.Property<Guid>("FunctionPercentageAllocationId")
-                        .HasColumnType("uuid");
-
                     b.Property<string>("FunctionType")
                         .IsRequired()
                         .HasColumnType("text");
@@ -389,8 +386,6 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsUnique();
 
                     b.HasIndex("ParentKPIId");
-
-                    b.HasIndex("FunctionPercentageAllocationId", "Name");
 
                     b.ToTable("KPIs", "catalog");
                 });

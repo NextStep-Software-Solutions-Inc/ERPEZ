@@ -11,19 +11,12 @@ public class CreateKPICommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<
     public async Task<ApiResponse<KPIDto>> Handle(CreateKPICommand request, CancellationToken cancellationToken)
     {
         var existingKpi = await _unitOfWork.KPIRepository.FindAsync(
-            x => x.Name == request.Name && x.FunctionPercentageAllocationId == request.FunctionPercentageAllocationId,
+            x => x.Name == request.Name,
             cancellationToken
         );
 
         if (existingKpi != null)
             throw new ConflictException("KPI with the same name and Function Percentage Allocation already exists.");
-
-        if (request.FunctionPercentageAllocationId != Guid.Empty)
-        {
-            var fpa = await _unitOfWork.FunctionPercentageAllocationRepository
-                .GetByIdAsync(request.FunctionPercentageAllocationId, cancellationToken)
-                ?? throw new NotFoundException("Function Percentage Allocation not found.");
-        }
 
         if (request.ParentKPIId != null)
         {
@@ -34,7 +27,7 @@ public class CreateKPICommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<
         var kpi = new Domain.Entities.Planning.KPI
         {
             ParentKPIId = request.ParentKPIId,
-            FunctionPercentageAllocationId = request.FunctionPercentageAllocationId,
+            FunctionType = request.FunctionType,
             Name = request.Name,
             Description = request.Description,
             IsOfficeMandate = request.IsOfficeMandate,
@@ -48,7 +41,7 @@ public class CreateKPICommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<
         {
             Id = kpi.Id,
             ParentKPIId = kpi.ParentKPIId,
-            FunctionPercentageAllocationId = kpi.FunctionPercentageAllocationId,
+            FunctionType = request.FunctionType,
             Name = kpi.Name,
             Description = kpi.Description,
             IsOfficeMandate = kpi.IsOfficeMandate,
