@@ -1,0 +1,121 @@
+name: Deploy ERPEZ Tenant Management API to DigitalOcean Droplet (Prod)
+
+on:
+  push:
+    branches:
+      - master
+    paths:
+      - 'TenantManagement/**'
+      - 'ERPEZ.Shared/**'
+      - .github/workflows/deploy-tenant-api-prod.yml
+  pull_request:
+    branches:
+      - master
+    paths:
+      - 'TenantManagement/**'
+      - 'ERPEZ.Shared/**'
+      - .github/workflows/deploy-tenant-api-prod.yml
+  workflow_dispatch:
+    inputs:
+      reason:
+        description: 'Reason for manual deployment'
+        required: false
+        default: 'Manual deployment'
+        type: string
+
+env:
+    CONTAINER_NAME: erpez-tenant-management-api
+    IMAGE_TAG: prod
+    ENVIRONMENT: Production
+
+jobs:
+  test:
+    name: Run Tests and Validation Checks
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+
+    - name: Restore dependencies
+      run: dotnet restore ERPEZ.sln
+
+    - name: Build solution
+      run: dotnet build ERPEZ.sln --no-restore --configuration Release
+
+    - name: Check Validation Coverage
+      run: |
+        echo "Checking FluentValidation coverage..."
+        bash scripts/check-validators.sh
+      shell: bash
+      continue-on-error: false
+
+    - name: Run Tests
+      run: dotnet test ERPEZ.sln --no-build --configuration Release --verbosity normal
+      continue-on-error: false
+
+  build:
+    name: Build and Push Docker Image
+    runs-on: ubuntu-latest
+    environment: Production
+    needs: test
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Set up Docker Buildx
+      uses: docker/setup-buildx-action@v3
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKER_HUB_USERNAME }}
+        password: ${{ secrets.DOCKER_HUB_TOKEN }}
+
+    - name: Build and push Docker image
+      uses: docker/build-push-action@v5
+      with:
+        context: .
+        file: TenantManagement/Dockerfile
+        push: true
+        tags: ${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.CONTAINER_NAME }}:${{ env.IMAGE_TAG }}
+
+  deploy:
+    name: Deploy to DigitalOcean Droplet
+    runs-on: ubuntu-latest
+    environment: Production
+    needs: build
+    if: github.event_name == 'push' || github.event_name == 'workflow_dispatch'
+
+    steps:
+    - name: Deploy to DigitalOcean Droplet
+      uses: appleboy/ssh-action@v1.0.3
+      with:
+        host: ${{ secrets.DO_PROD_DROPLET_IP }}
+        username: ${{ secrets.DO_PROD_DROPLET_USER }}
+        key: ${{ secrets.DO_PROD_SSH_PRIVATE_KEY }}
+        passphrase: ${{ secrets.DO_PROD_SSH_PASSPHRASE }}
+        script: |
+          # Stop and remove existing container if running
+          docker stop ${{ env.CONTAINER_NAME }} || true
+          docker rm ${{ env.CONTAINER_NAME }} || true
+
+          # Pull the latest image
+          docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.CONTAINER_NAME }}:${{ env.IMAGE_TAG }}
+
+          # Run the new container
+          docker run -d \
+            --name ${{ env.CONTAINER_NAME }} \
+            --cpus=0.5 \
+            --memory=512m \
+            -p 80:8080 \
+            -e ASPNETCORE_ENVIRONMENT=${{ env.ENVIRONMENT }} \
+            -e ConnectionStrings__DefaultConnection="${{ secrets.ERPEZ_MANAGEMENT_PROD_DB_CONNECTION_STRING }}" \
+            --restart unless-stopped \
+            ${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.CONTAINER_NAME }}:${{ env.IMAGE_TAG }}
