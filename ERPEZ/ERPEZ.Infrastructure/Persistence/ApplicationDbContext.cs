@@ -25,6 +25,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<OPCRActivity> OPCRActivities { get; set; }
     public DbSet<OPCREvaluation> OPCREvaluations { get; set; }
     public DbSet<OPCRRating> OPCRRatings { get; set; }
+    public DbSet<OPCRPAPDepartment> OPCRPAPDepartments { get; set; }
     public DbSet<Organization> Organizations { get; set; }
     public DbSet<PerformanceMeasure> PerformanceMeasures { get; set; }
     public DbSet<ReceivedFund> ReceivedFunds { get; set; }
@@ -490,16 +491,20 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .WithOne(k => k.OPCR)
             .HasForeignKey(k => k.OPCRId);
 
-        // OPCRPAP
-        //modelBuilder.Entity<OPCRPAP>()
-        //    .HasOne(p => p.OPCRKPI)
-        //    .WithMany(k => k.OPCRPAPs)
-        //    .HasForeignKey(p => p.OPCRKPIId);
+        // OPCRPAPDepartment
+        modelBuilder.Entity<OPCRPAPDepartment>()
+            .HasIndex(d => new { d.OPCRActivityId, d.DeliveryUnitId })
+            .IsUnique();
 
-        //modelBuilder.Entity<OPCRPAP>()
-        //    .HasMany(p => p.OPCRPAPDepartments)
-        //    .WithOne(d => d.OPCRPAP)
-        //    .HasForeignKey(d => d.OPCRPAPId);
+        modelBuilder.Entity<OPCRPAPDepartment>()
+            .HasOne(d => d.OPCRActivity)
+            .WithMany(a => a.OPCRPAPDepartments)
+            .HasForeignKey(d => d.OPCRActivityId);
+
+        modelBuilder.Entity<OPCRPAPDepartment>()
+            .HasOne(d => d.DeliveryUnit)
+            .WithMany(d => d.OPCRPAPDepartments)
+            .HasForeignKey(d => d.DeliveryUnitId);
 
         // OPCRActivity
         modelBuilder.Entity<OPCRActivity>()

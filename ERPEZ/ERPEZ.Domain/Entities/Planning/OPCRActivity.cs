@@ -14,4 +14,5 @@ public class OPCRActivity : BaseEntity
     public decimal Budget { get; set; }
     public virtual OPCRKPI OPCRKPI { get; set; } = null!;
     public virtual List<DeliveryUnit> DeliveryUnits { get; set; } = [];
+    public virtual List<OPCRPAPDepartment> OPCRPAPDepartments { get; set; } = [];
 }
