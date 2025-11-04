@@ -28,7 +28,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet]
-        [ProducesResponseType(typeof(PaginatedApiResponse<OPCRPAPDepartmentDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(PaginatedApiResponse<OPCRPAPDepartment>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetOPCRPAPDepartments([FromQuery] GetOPCRPAPDepartmentsQuery query)
         {
             var result = await mediator.Send(query);
