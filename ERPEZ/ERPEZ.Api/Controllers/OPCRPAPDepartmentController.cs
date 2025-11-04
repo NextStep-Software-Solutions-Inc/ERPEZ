@@ -6,7 +6,6 @@ using ERPEZ.Application.Features.Planning.OPCRPAPDepartment.Commands.CreateOPCRP
 using ERPEZ.Application.Features.Planning.OPCRPAPDepartment.Dtos;
 using ERPEZ.Application.Features.Planning.OPCRPAPDepartment.Queries.GetOPCRPAPDepartments;
 using ERPEZ.Application.Features.Planning.OPCRPAPDepartment.Queries.GetOPCRPAPDepartmentById;
-using ERPEZ.Application.Features.Planning.OPCRPAPDepartment.Commands.UpdateOPCRPAPDepartment;
 using ERPEZ.Application.Features.Planning.OPCRPAPDepartment.Commands.DeleteOPCRPAPDepartment;
 
 namespace ERPEZ.Api.Controllers
@@ -43,22 +42,6 @@ namespace ERPEZ.Api.Controllers
         {
             var result = await mediator.Send(new GetOPCRPAPDepartmentByIdQuery(id));
             return result.Succeeded ? Ok(result) : NotFound(result);
-        }
-
-        [HttpPut("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<OPCRPAPDepartmentDto>), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> UpdateOPCRPAPDepartment(Guid id, [FromBody] UpdateOPCRPAPDepartmentDto dto)
-        {
-            var command = new UpdateOPCRPAPDepartmentCommand
-            {
-                Id = id,
-                UpdateOPCRPAPDepartment = dto
-            };
-
-            var result = await mediator.Send(command);
-            return result.Succeeded ? Ok(result) : BadRequest(result);
         }
 
         [HttpDelete("{id}")]
