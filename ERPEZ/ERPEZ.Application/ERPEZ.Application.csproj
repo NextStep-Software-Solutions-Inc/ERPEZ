@@ -1,6 +1,10 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
+    <Compile Remove="Features\Planning\OPCRKPI\Dtos\UpdateOPCRKPIDto.cs" />
+  </ItemGroup>
+
+  <ItemGroup>
     <ProjectReference Include="..\ERPEZ.Domain\ERPEZ.Domain.csproj" />
     <ProjectReference Include="..\..\ERPEZ.Shared\ERPEZ.Shared.csproj" />
   </ItemGroup>
@@ -17,9 +21,6 @@
     <Folder Include="Features\Planning\OPCREvaluation\Commands\" />
     <Folder Include="Features\Planning\OPCREvaluation\Dtos\" />
     <Folder Include="Features\Planning\OPCREvaluation\Queries\" />
-    <Folder Include="Features\Planning\OPCRPAPDepartment\Commands\" />
-    <Folder Include="Features\Planning\OPCRPAPDepartment\Dtos\" />
-    <Folder Include="Features\Planning\OPCRPAPDepartment\Queries\" />
     <Folder Include="Features\Planning\OPCRRating\Commands\" />
     <Folder Include="Features\Planning\OPCRRating\Dtos\" />
     <Folder Include="Features\Planning\OPCRRating\Queries\" />
