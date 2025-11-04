@@ -42,9 +42,6 @@
     <Folder Include="Features\Planning\WFPPAP\Commands\" />
     <Folder Include="Features\Planning\WFPPAP\Dtos\" />
     <Folder Include="Features\Planning\WFPPAP\Queries\" />
-    <Folder Include="Features\Planning\WFP\Commands\" />
-    <Folder Include="Features\Planning\WFP\Dtos\" />
-    <Folder Include="Features\Planning\WFP\Queries\" />
   </ItemGroup>
 
   <PropertyGroup>
