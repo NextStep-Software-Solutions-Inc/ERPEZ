@@ -3,17 +3,14 @@
 namespace ERPEZ.TenantManagement.Application.Features.Tenants.Commands.DeleteTenant;
 
 /// <summary>
-/// Validator for DeleteTenantCommand.
-/// TODO: Add validation rules
+/// Validator for DeleteTenantCommand ensuring the tenant ID is valid.
 /// </summary>
 public class DeleteTenantCommandValidator : AbstractValidator<DeleteTenantCommand>
 {
     public DeleteTenantCommandValidator()
     {
-        // TODO: Add validation rules here
-        // Example:
-        // RuleFor(x => x.PropertyName)
-        //     .NotEmpty()
-        //     .WithMessage("PropertyName is required.");
+        RuleFor(x => x.Id)
+            .NotEmpty()
+            .WithMessage("Tenant ID is required.");
     }
 }

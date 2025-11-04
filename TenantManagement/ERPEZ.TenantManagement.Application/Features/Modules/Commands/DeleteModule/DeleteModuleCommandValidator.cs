@@ -3,17 +3,14 @@
 namespace ERPEZ.TenantManagement.Application.Features.Modules.Commands.DeleteModule;
 
 /// <summary>
-/// Validator for DeleteModuleCommand.
-/// TODO: Add validation rules
+/// Validator for DeleteModuleCommand ensuring the module ID is valid.
 /// </summary>
 public class DeleteModuleCommandValidator : AbstractValidator<DeleteModuleCommand>
 {
     public DeleteModuleCommandValidator()
     {
-        // TODO: Add validation rules here
-        // Example:
-        // RuleFor(x => x.PropertyName)
-        //     .NotEmpty()
-        //     .WithMessage("PropertyName is required.");
+        RuleFor(x => x.Id)
+            .NotEmpty()
+            .WithMessage("Module ID is required.");
     }
 }
