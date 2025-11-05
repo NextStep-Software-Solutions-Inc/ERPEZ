@@ -20,70 +20,80 @@ missing_validators=0
 total_queries=0
 missing_query_validators=0
 
-# Check Application directory exists
-APP_DIR="./TenantManagement/ERPEZ.TenantManagement.Application"
-if [ ! -d "$APP_DIR" ]; then
-    echo -e "${RED}Error: Application directory not found at $APP_DIR${NC}"
-    exit 1
-fi
+# Application directories to scan (relative to repo root)
+APP_DIRS=("./TenantManagement/ERPEZ.TenantManagement.Application" "./ERPEZ/ERPEZ.Application")
 
-echo "Scanning for Commands without Validators..."
-echo "-------------------------------------------"
+echo "Scanning application layers for Commands without Validators..."
+echo "---------------------------------------------------------------"
 
-# Find all Command.cs files (excluding Validator files)
-while IFS= read -r command_file; do
-    total_commands=$((total_commands + 1))
-    
-    dir=$(dirname "$command_file")
-    filename=$(basename "$command_file")
-    
-    # Skip if this is a validator file
-    if [[ "$filename" == *"Validator.cs" ]]; then
+# We'll aggregate totals across all application projects
+total_commands=0
+missing_validators=0
+total_queries=0
+
+for APP_DIR in "${APP_DIRS[@]}"; do
+    if [ ! -d "$APP_DIR" ]; then
+        echo -e "${YELLOW}Warning: Application directory not found at $APP_DIR - skipping${NC}"
         continue
     fi
-    
-    # Generate expected validator filename
-    validator_file="${filename/.cs/Validator.cs}"
-    validator_path="$dir/$validator_file"
-    
-    # Check if validator exists
-    if [ ! -f "$validator_path" ]; then
-        echo -e "${RED}✗ MISSING${NC} - $command_file"
-        echo -e "  ${YELLOW}Expected: $validator_path${NC}"
-        missing_validators=$((missing_validators + 1))
-    else
-        echo -e "${GREEN}✓ FOUND${NC}    - $command_file"
-    fi
-done < <(find "$APP_DIR/Features" -path "*/Commands/*" -name "*Command.cs" 2>/dev/null)
 
-echo ""
-echo "Scanning for Queries with Complex Validation..."
-echo "------------------------------------------------"
+    echo "Scanning $APP_DIR"
+    echo "-------------------------------------------"
 
-# Find all Query.cs files
-while IFS= read -r query_file; do
-    total_queries=$((total_queries + 1))
-    
-    dir=$(dirname "$query_file")
-    filename=$(basename "$query_file")
-    
-    # Skip if this is a validator file
-    if [[ "$filename" == *"Validator.cs" ]]; then
-        continue
-    fi
-    
-    # Generate expected validator filename
-    validator_file="${filename/.cs/Validator.cs}"
-    validator_path="$dir/$validator_file"
-    
-    # Check if validator exists
-    if [ ! -f "$validator_path" ]; then
-        # For queries, we just report but don't count as critical
-        echo -e "${YELLOW}⚠ NO VALIDATOR${NC} - $query_file"
-    else
-        echo -e "${GREEN}✓ FOUND${NC}        - $query_file"
-    fi
-done < <(find "$APP_DIR/Features" -path "*/Queries/*" -name "*Query.cs" 2>/dev/null)
+    # Find all Command.cs files (excluding Validator files) for this app
+    while IFS= read -r command_file; do
+        total_commands=$((total_commands + 1))
+        
+        dir=$(dirname "$command_file")
+        filename=$(basename "$command_file")
+        
+        # Skip if this is a validator file
+        if [[ "$filename" == *"Validator.cs" ]]; then
+            continue
+        fi
+        
+        # Generate expected validator filename
+        validator_file="${filename/.cs/Validator.cs}"
+        validator_path="$dir/$validator_file"
+        
+        # Check if validator exists
+        if [ ! -f "$validator_path" ]; then
+            echo -e "${RED}✗ MISSING${NC} - $command_file"
+            echo -e "  ${YELLOW}Expected: $validator_path${NC}"
+            missing_validators=$((missing_validators + 1))
+        else
+            echo -e "${GREEN}✓ FOUND${NC}    - $command_file"
+        fi
+    done < <(find "$APP_DIR/Features" -path "*/Commands/*" -name "*Command.cs" 2>/dev/null)
+
+    echo ""
+    # Find all Query.cs files for this app
+    while IFS= read -r query_file; do
+        total_queries=$((total_queries + 1))
+        
+        dir=$(dirname "$query_file")
+        filename=$(basename "$query_file")
+        
+        # Skip if this is a validator file
+        if [[ "$filename" == *"Validator.cs" ]]; then
+            continue
+        fi
+        
+        # Generate expected validator filename
+        validator_file="${filename/.cs/Validator.cs}"
+        validator_path="$dir/$validator_file"
+        
+        # Check if validator exists
+        if [ ! -f "$validator_path" ]; then
+            # For queries, we just report but don't count as critical
+            echo -e "${YELLOW}⚠ NO VALIDATOR${NC} - $query_file"
+        else
+            echo -e "${GREEN}✓ FOUND${NC}        - $query_file"
+        fi
+    done < <(find "$APP_DIR/Features" -path "*/Queries/*" -name "*Query.cs" 2>/dev/null)
+
+    echo ""
+done
 
 # Summary
 echo ""
