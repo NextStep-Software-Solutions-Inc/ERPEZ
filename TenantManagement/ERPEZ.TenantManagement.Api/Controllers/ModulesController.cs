@@ -7,6 +7,7 @@ using ERPEZ.TenantManagement.Application.Features.Modules.Queries.GetModuleById;
 using ERPEZ.TenantManagement.Application.Features.Modules.Queries.GetModules;
 using ERPEZ.TenantManagement.Domain.Entities;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ERPEZ.TenantManagement.Api.Controllers
@@ -16,6 +17,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
     public class ModulesController(ISender mediator) : ControllerBase
     {
         [HttpPost]
+        [Authorize]
         [ProducesResponseType(typeof(ApiResponse<Module>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<Module>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateModule([FromBody] CreateModuleCommand command)
@@ -29,6 +31,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         }
 
         [HttpGet]
+        [Authorize]
         [ProducesResponseType(typeof(PaginatedApiResponse<Module>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetModules([FromQuery] GetModulesQuery query)
         {
@@ -37,6 +40,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         }
 
         [HttpGet("{id}")]
+        [Authorize]
         [ProducesResponseType(typeof(ApiResponse<Module>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetModuleById(Guid id)
@@ -47,6 +51,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -63,6 +68,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteModule(Guid id)
