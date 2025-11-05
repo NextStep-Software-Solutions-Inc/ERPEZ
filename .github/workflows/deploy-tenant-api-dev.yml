@@ -29,10 +29,41 @@ env:
     ENVIRONMENT: Development
 
 jobs:
+  test:
+    name: Run Tests and Validation Checks
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+    
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '9.0.x'
+    
+    - name: Restore dependencies
+      run: dotnet restore ERPEZ.sln
+    
+    - name: Build solution (treat warnings as errors)
+      run: dotnet build ERPEZ.sln --no-restore --configuration Release /p:TreatWarningsAsErrors=true
+    
+    - name: Check Validation Coverage
+      run: |
+        echo "Checking FluentValidation coverage..."
+        bash scripts/check-validators.sh
+      shell: bash
+      continue-on-error: false
+    
+    - name: Run Tests
+      run: dotnet test ERPEZ.sln --no-build --configuration Release --verbosity normal --nologo
+      continue-on-error: false
+
   build:
     name: Build and Push Docker Image
     runs-on: ubuntu-latest
     environment: Development
+    needs: test
 
     steps:
     - name: Checkout code
