@@ -26,9 +26,6 @@
     <Folder Include="Features\Planning\WFPActivity\Commands\" />
     <Folder Include="Features\Planning\WFPActivity\Dtos\" />
     <Folder Include="Features\Planning\WFPActivity\Queries\" />
-    <Folder Include="Features\Planning\WFPObjective\Commands\" />
-    <Folder Include="Features\Planning\WFPObjective\Dtos\" />
-    <Folder Include="Features\Planning\WFPObjective\Queries\" />
     <Folder Include="Features\Planning\WFPOutcome\Commands\" />
     <Folder Include="Features\Planning\WFPOutcome\Dtos\" />
     <Folder Include="Features\Planning\WFPOutcome\Queries\" />
