@@ -1,9 +1,4 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
-  <ItemGroup>
-    <Compile Remove="Features\Planning\OPCRKPI\Dtos\UpdateOPCRKPIDto.cs" />
-  </ItemGroup>
-
   <ItemGroup>
     <ProjectReference Include="..\ERPEZ.Domain\ERPEZ.Domain.csproj" />
     <ProjectReference Include="..\..\ERPEZ.Shared\ERPEZ.Shared.csproj" />
