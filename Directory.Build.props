@@ -1,0 +1,6 @@
+<Project>
+  <PropertyGroup>
+    <!-- Treat all compiler warnings as errors in CI and local builds unless overridden -->
+    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+  </PropertyGroup>
+</Project>
