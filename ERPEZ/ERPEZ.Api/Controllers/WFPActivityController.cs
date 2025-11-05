@@ -1,36 +1,75 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using ERPEZ.Shared.Common;
+using MediatR;
+using Microsoft.AspNetCore.Mvc;
+using ERPEZ.Domain.Entities.Planning;
+using ERPEZ.Application.Features.Planning.WFPActivity.Dtos;
+using ERPEZ.Application.Features.Planning.WFPActivity.Commands.CreateWFPActivity;
+using ERPEZ.Application.Features.Planning.WFPActivity.Queries.GetWFPActivities;
+using ERPEZ.Application.Features.Planning.WFPActivity.Queries.GetWFPActivityById;
+using ERPEZ.Application.Features.Planning.WFPActivity.Commands.UpdateWFPActivity;
+using ERPEZ.Application.Features.Planning.WFPActivity.Commands.DeleteWFPActivity;
 
 namespace ERPEZ.Api.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("wfp-activities")]
     [ApiController]
-    public class WFPActivityController : ControllerBase
+    public class WFPActivityController(ISender mediator) : ControllerBase
     {
         [HttpPost]
-        public void Post([FromBody] string value)
+        [ProducesResponseType(typeof(ApiResponse<WFPActivityDto>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<WFPActivityDto>), StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> CreateWFPActivity([FromBody] CreateWFPActivityCommand command)
         {
+            var result = await mediator.Send(command);
+
+            if (!result.Succeeded)
+                return BadRequest(result);
+
+            return CreatedAtAction(nameof(GetWFPActivityById), new { id = result.Data!.Id }, result);
         }
 
         [HttpGet]
-        public IEnumerable<string> Get()
+        [ProducesResponseType(typeof(PaginatedApiResponse<WFPActivity>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetWFPActivities([FromQuery] GetWFPActivitiesQuery query)
         {
-            return new string[] { "value1", "value2" };
+            var result = await mediator.Send(query);
+            return Ok(result);
         }
 
         [HttpGet("{id}")]
-        public string Get(int id)
+        [ProducesResponseType(typeof(ApiResponse<WFPActivity>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetWFPActivityById(Guid id)
         {
-            return "value";
+            var result = await mediator.Send(new GetWFPActivityByIdQuery(id));
+            return result.Succeeded ? Ok(result) : NotFound(result);
         }
 
         [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
+        [ProducesResponseType(typeof(ApiResponse<WFPActivity>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> UpdateWFPActivity(Guid id, [FromBody] UpdateWFPActivityDto dto)
         {
+            var command = new UpdateWFPActivityCommand
+            {
+                Id = id,
+                UpdateWFPActivity = dto
+            };
+
+            var result = await mediator.Send(command);
+            return result.Succeeded ? Ok(result) : BadRequest(result);
         }
 
         [HttpDelete("{id}")]
-        public void Delete(int id)
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> DeleteWFPActivity(Guid id)
         {
+            var command = new DeleteWFPActivityCommand(id);
+            var result = await mediator.Send(command);
+
+            return result.Succeeded ? Ok(result) : BadRequest(result);
         }
     }
 }
