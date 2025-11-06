@@ -1,6 +1,6 @@
-﻿namespace ERPEZ.Application.Features.Planning.KPIAssignment.Dtos;
+﻿namespace ERPEZ.Application.Features.Planning.DUKPIAssignment.Dtos;
 
-public class KPIAssignmentDto
+public class DUKPIAssignmentDto
 {
     public Guid Id { get; set; }
     public Guid KPIId { get; set; }

@@ -40,7 +40,7 @@ public static class DependencyInjection
         services.AddScoped<IKPIRatingRepository, KPIRatingRepository>();
         services.AddScoped<IPerformanceMeasureRepository, PerformanceMeasureRepository>();
         services.AddScoped<IKPITargetRepository, KPITargetRepository>();
-        services.AddScoped<IKPIAssignmentRepository, KPIAssignmentRepository>();
+        services.AddScoped<IDUKPIAssignmentRepository, DUKPIAssignmentRepository>();
         services.AddScoped<IKPIModeOfVerificationRepository, KPIModeOfVerificationRepository>();
         services.AddScoped<IReceivedFundRepository, ReceivedFundRepository>();
         services.AddScoped<IMFOKPIRepository, MFOKPIRepository>();

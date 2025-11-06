@@ -87,16 +87,16 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasForeignKey(kv => kv.KPIId);
 
         //KPI Assignment
-        modelBuilder.Entity<KPIAssignment>()
+        modelBuilder.Entity<DUKPIAssignment>()
             .HasIndex(a => new { a.KPIId, a.DeliveryUnitId })
             .IsUnique();
 
-        modelBuilder.Entity<KPIAssignment>()
+        modelBuilder.Entity<DUKPIAssignment>()
             .HasOne(a => a.KPI)
             .WithMany(k => k.KPIAssignments)
             .HasForeignKey(a => a.KPIId);
 
-        modelBuilder.Entity<KPIAssignment>()
+        modelBuilder.Entity<DUKPIAssignment>()
             .HasOne(a => a.DeliveryUnit)
             .WithMany(d => d.KPIAssignments)
             .HasForeignKey(a => a.DeliveryUnitId);

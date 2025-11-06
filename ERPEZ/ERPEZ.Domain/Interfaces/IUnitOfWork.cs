@@ -7,7 +7,7 @@ public interface IUnitOfWork
     IKPIRatingRepository KPIRatingRepository { get; }
     IDUAllocationRepository DUAllocationRepository { get; }
     IKPITargetRepository KPITargetRepository { get; }
-    IKPIAssignmentRepository KPIAssignmentRepository { get; }
+    IDUKPIAssignmentRepository DUKPIAssignmentRepository { get; }
     IKPIModeOfVerificationRepository KPIModeOfVerificationRepository { get; }
     IReceivedFundRepository ReceivedFundRepository { get; }
     IMFOKPIRepository MFOKPIRepository { get; }

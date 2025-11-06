@@ -1,4 +1,4 @@
-﻿using ERPEZ.Application.Features.Planning.KPIAssignment.Commands.UpdateKPIAssignment;
+﻿using ERPEZ.Application.Features.Planning.DUKPIAssignment.Commands.UpdateDUKPIAssignment;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
