@@ -4,6 +4,7 @@ using ERPEZ.Shared.Exceptions;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using System.Linq;
 
 namespace ERPEZ.Shared.Middlewares;
 
@@ -11,7 +12,6 @@ public class GlobalExceptionHandler : IExceptionHandler
 {
     public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
     {
-        // Handle FluentValidation.ValidationException specifically
         if (exception is FluentValidation.ValidationException fluentValidationException)
         {
             httpContext.Response.StatusCode = (int)HttpStatusCode.BadRequest;
@@ -27,10 +27,18 @@ public class GlobalExceptionHandler : IExceptionHandler
             {
                 Status = (int)HttpStatusCode.BadRequest,
                 Title = "Validation failed",
-                Detail = "One or more validation errors occurred."
+                Detail = "One or more validation errors occurred. Check the data property for details."
             };
 
-            await httpContext.Response.WriteAsJsonAsync(ApiResponse<object>.Fail(validationProblem.Detail ?? "Validation failed"), cancellationToken);
+            // Pass the detailed ValidationProblemDetails object as the data payload
+            var failResponse = new ApiResponse<object>
+            {
+                Succeeded = false,
+                Message = validationProblem.Title,
+                Data = validationProblem
+            };
+
+            await httpContext.Response.WriteAsJsonAsync(failResponse, cancellationToken);
             return true;
         }
 
