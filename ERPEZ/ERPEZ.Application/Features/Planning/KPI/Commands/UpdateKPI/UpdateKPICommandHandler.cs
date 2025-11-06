@@ -25,7 +25,7 @@ public class UpdateKPICommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<
         kpi.Name = dto.Name ?? kpi.Name;
         kpi.Description = dto.Description ?? kpi.Description;
         kpi.ParentKPIId = dto.ParentKPIId ?? kpi.ParentKPIId;
-        kpi.FunctionType = dto.Functiontype ?? kpi.FunctionType;
+        kpi.FunctionType = dto.FunctionType ?? kpi.FunctionType;
         kpi.IsOfficeMandate = dto.IsOfficeMandate ?? kpi.IsOfficeMandate;
         kpi.Status = dto.Status ?? kpi.Status;
 

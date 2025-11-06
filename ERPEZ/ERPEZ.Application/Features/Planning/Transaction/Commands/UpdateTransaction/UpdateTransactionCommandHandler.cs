@@ -5,7 +5,7 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Transaction.Commands.UpdateTransaction;
 
-public class UpdateTransactionCommanHandler(IUnitOfWork _unitOfWork) : IRequestHandler<UpdateTransactionCommand, ApiResponse<Domain.Entities.Planning.Transaction>>
+public class UpdateTransactionCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<UpdateTransactionCommand, ApiResponse<Domain.Entities.Planning.Transaction>>
 {
     public async Task<ApiResponse<Domain.Entities.Planning.Transaction>> Handle(UpdateTransactionCommand request, CancellationToken cancellationToken)
     {
