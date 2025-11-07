@@ -24,6 +24,10 @@ public interface IUnitOfWork
     IOPCRActivityRepository OPCRActivityRepository { get; }
     IOPCRPAPDepartmentRepository OPCRPAPDepartmentRepository { get; }
     IOPCREvaluationRepository OPCREvaluationRepository { get; }
+    IWFPRepository WFPRepository { get; }
+    IWFPActivityRepository WFPActivityRepository { get; }
+    IWFPObjectiveRepository WFPObjectiveRepository { get; }
+    IWFPOutcomeRepository WFPOutcomeRepository { get; }
     IWFPPAPDepartmentRepository WFPPAPDepartmentRepository { get; }
     IFunctionPercentageAllocationRepository FunctionPercentageAllocationRepository { get; }
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);

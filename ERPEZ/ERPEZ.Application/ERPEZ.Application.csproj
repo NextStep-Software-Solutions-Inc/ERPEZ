@@ -5,6 +5,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.0" />
     <PackageReference Include="MediatR" Version="13.0.0" />
     <PackageReference Include="Sieve" Version="2.5.5" />
   </ItemGroup>
@@ -19,15 +20,9 @@
     <Folder Include="Features\Planning\OPCRRating\Commands\" />
     <Folder Include="Features\Planning\OPCRRating\Dtos\" />
     <Folder Include="Features\Planning\OPCRRating\Queries\" />
-    <Folder Include="Features\Planning\WFPActivity\Commands\" />
-    <Folder Include="Features\Planning\WFPActivity\Dtos\" />
-    <Folder Include="Features\Planning\WFPActivity\Queries\" />
     <Folder Include="Features\Planning\WFPObjective\Commands\" />
     <Folder Include="Features\Planning\WFPObjective\Dtos\" />
     <Folder Include="Features\Planning\WFPObjective\Queries\" />
-    <Folder Include="Features\Planning\WFPOutcome\Commands\" />
-    <Folder Include="Features\Planning\WFPOutcome\Dtos\" />
-    <Folder Include="Features\Planning\WFPOutcome\Queries\" />
     <Folder Include="Features\Planning\SubDUAllocation\" />
     <Folder Include="Features\Planning\SubDeliveryUnit\" />
     <Folder Include="Features\Planning\OPCRPAP\" />
@@ -38,7 +33,6 @@
     <Folder Include="Features\Planning\WFPPAP\Commands\" />
     <Folder Include="Features\Planning\WFPPAP\Dtos\" />
     <Folder Include="Features\Planning\WFPPAP\Queries\" />
-    <Folder Include="Features\Planning\WFP\Commands\" />
     <Folder Include="Features\Planning\WFP\Dtos\" />
     <Folder Include="Features\Planning\WFP\Queries\" />
   </ItemGroup>
