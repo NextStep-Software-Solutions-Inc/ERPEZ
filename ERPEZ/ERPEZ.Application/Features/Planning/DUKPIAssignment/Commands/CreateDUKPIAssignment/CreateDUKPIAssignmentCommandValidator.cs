@@ -15,5 +15,17 @@ public class CreateDUKPIAssignmentCommandValidator : AbstractValidator<CreateDUK
         RuleFor(x => x.DeliveryUnitId)
             .NotEmpty()
             .WithMessage("Delivery Unit ID is required and must be a valid, non-empty GUID.");
+
+        // KPITargetId (Required GUID)
+        RuleFor(x => x.KPITargetId)
+            .NotEmpty()
+            .WithMessage("KPI Target ID is required and must be a valid, non-empty GUID.");
+
+        // AllocatedTargetValue (Required Decimal, Must be positive)
+        RuleFor(x => x.AllocatedTargetValue)
+            .NotEmpty()
+            .WithMessage("Allocated Target Value is required.")
+            .GreaterThan(0)
+            .WithMessage("Allocated Target Value must be greater than zero.");
     }
 }

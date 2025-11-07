@@ -1,8 +1,11 @@
 ﻿using ERPEZ.Application.Features.Planning.DUKPIAssignment.Commands.CreateDUKPIAssignment;
 using ERPEZ.Application.Features.Planning.DUKPIAssignment.Commands.DeleteDUKPIAssignment;
+using ERPEZ.Application.Features.Planning.DUKPIAssignment.Commands.UpdateDUKPIAssignment;
 using ERPEZ.Application.Features.Planning.DUKPIAssignment.Dtos;
 using ERPEZ.Application.Features.Planning.DUKPIAssignment.Queries.GetDUKPIAssignmentById;
 using ERPEZ.Application.Features.Planning.DUKPIAssignment.Queries.GetDUKPIAssignments;
+using ERPEZ.Application.Features.Planning.FundSource.Commands.UpdateFundSource;
+using ERPEZ.Application.Features.Planning.FundSource.Dtos;
 using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -43,6 +46,21 @@ namespace ERPEZ.Api.Controllers
             return result.Succeeded ? Ok(result) : NotFound(result);
         }
 
+        [HttpPut("{id}")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> UpdateDUKPIAssignment(Guid id, [FromBody] UpdateDUKPIAssignmentDto dto)
+        {
+            var request = new UpdateDUKPIAssignmentCommand
+            {
+                Id = id,
+                UpdateDUKPIAssignment = dto
+            };
+
+            var response = await mediator.Send(request);
+            return response.Succeeded ? Ok(response) : BadRequest(response);
+        }
         [HttpDelete("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
