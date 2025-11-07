@@ -7,6 +7,7 @@ using ERPEZ.TenantManagement.Application.Features.TenantSubscriptions.Queries.Ge
 using ERPEZ.TenantManagement.Application.Features.TenantSubscriptions.Queries.GetTenantSubscriptions;
 using ERPEZ.TenantManagement.Domain.Entities;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ERPEZ.TenantManagement.Api.Controllers
@@ -16,6 +17,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
     public class TenantSubscriptionsController(ISender mediator) : ControllerBase
     {
         [HttpPost]
+        [Authorize]
         [ProducesResponseType(typeof(ApiResponse<TenantSubscription>), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateTenantSubscription([FromBody] CreateTenantSubscriptionCommand command)
@@ -26,6 +28,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         }
 
         [HttpGet]
+        [Authorize]
         [ProducesResponseType(typeof(PaginatedApiResponse<TenantSubscription>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetTenantSubscriptions([FromQuery] GetTenantSubscriptionsQuery query)
         {
@@ -34,6 +37,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         }
 
         [HttpGet("{id}")]
+        [Authorize]
         [ProducesResponseType(typeof(ApiResponse<TenantSubscription>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetTenantSubscriptionById(Guid id)
@@ -45,6 +49,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -61,6 +66,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteTenantSubscription(Guid id)

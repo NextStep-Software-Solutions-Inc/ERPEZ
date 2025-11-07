@@ -7,6 +7,7 @@ using ERPEZ.TenantManagement.Application.Features.TenantSettings.Queries.GetTena
 using ERPEZ.TenantManagement.Application.Features.TenantSettings.Queries.GetTenantSettings;
 using ERPEZ.TenantManagement.Domain.Entities;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ERPEZ.TenantManagement.Api.Controllers
@@ -16,6 +17,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
     public class TenantSettingsController(ISender mediator) : ControllerBase
     {
         [HttpPost]
+        [Authorize]
         [ProducesResponseType(typeof(ApiResponse<TenantSetting>), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateTenantSetting([FromBody] CreateTenantSettingCommand command)
@@ -26,6 +28,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         }
 
         [HttpGet]
+        [Authorize]
         [ProducesResponseType(typeof(PaginatedApiResponse<TenantSetting>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetTenantSettings([FromQuery] GetTenantSettingsQuery query)
         {
@@ -35,6 +38,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         }
 
         [HttpGet("{id}")]
+        [Authorize]
         [ProducesResponseType(typeof(ApiResponse<TenantSetting>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetTenantSettingById(Guid id)
@@ -46,6 +50,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         }
 
         [HttpPut("{id}")]
+        [Authorize]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -62,6 +67,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         }
 
         [HttpDelete("{id}")]
+        [Authorize]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteTenantSetting(Guid id)
