@@ -1,6 +1,5 @@
 ﻿using ERPEZ.Application.Features.Planning.DeliveryUnit.Commands.CreateDU;
 using ERPEZ.Application.Features.Planning.DeliveryUnit.Commands.DeleteDU;
-using ERPEZ.Application.Features.Planning.DeliveryUnit.Commands.UpdateDU;
 using ERPEZ.Application.Features.Planning.DeliveryUnit.Dtos;
 using ERPEZ.Application.Features.Planning.DeliveryUnit.Queries.GetDUByIdQuery;
 using ERPEZ.Application.Features.Planning.DeliveryUnit.Queries.GetDUsQuery;
@@ -42,22 +41,6 @@ namespace ERPEZ.Api.Controllers
         public async Task<IActionResult> GetDeliveryUnitById(Guid id)
         {
             var deliveryUnit = await mediator.Send(new GetDeliveryUnitByIdQuery(id));
-            return deliveryUnit.Succeeded ? Ok(deliveryUnit) : BadRequest(deliveryUnit);
-        }
-
-        [HttpPut("{id}")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> UpdateDeliveryUnit(Guid id, [FromBody] UpdateDeliveryUnitDto updateDeliveryUnit)
-        {
-            var request = new UpdateDeliveryUnitCommand
-            {
-                Id = id,
-                UpdateDU = updateDeliveryUnit
-            };
-
-            var deliveryUnit = await mediator.Send(request);
             return deliveryUnit.Succeeded ? Ok(deliveryUnit) : BadRequest(deliveryUnit);
         }
 
