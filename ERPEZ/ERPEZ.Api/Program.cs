@@ -31,6 +31,7 @@ if (isDevelopment)
 }
 
 // 4. Add middleware
+app.UseCors(environment.EnvironmentName.ToLower()); // Use CORS policy based on environment
 app.UseHttpsRedirection();
 app.UseExceptionHandler();
 app.UseHangfireDashboard();

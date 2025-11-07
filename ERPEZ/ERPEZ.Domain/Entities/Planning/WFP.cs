@@ -20,7 +20,6 @@ public class WFP : BaseEntity
     public string? GeneralObjective { get; set; }
     [Sieve(CanFilter = true, CanSort = true)]
     public string Status { get; set; } = string.Empty;
-    public virtual DUAllocation DUAllocation { get; set; } = null!;
     public virtual List<WFPActivity> WFPActivities { get; set; } = [];
     public virtual List<WFPObjective> WFPObjectives { get; set; } = [];
     public virtual DeliveryUnit DeliveryUnit { get; set; } = null!;
