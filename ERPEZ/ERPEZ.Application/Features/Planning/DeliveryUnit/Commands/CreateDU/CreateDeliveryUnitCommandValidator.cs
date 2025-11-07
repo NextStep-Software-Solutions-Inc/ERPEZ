@@ -14,8 +14,7 @@ public class CreateDeliveryUnitCommandValidator : AbstractValidator<CreateDelive
 
         // 2. ParentDUId (Optional GUID)
         RuleFor(x => x.ParentDUId)
-            .Must(id => id.HasValue && id.Value != Guid.Empty)
-            .WithMessage("If provided, the Parent Delivery Unit ID must be a valid, non-empty GUID.")
-            .When(x => x.ParentDUId.HasValue);
+            .Must(id => !id.HasValue || id.Value != Guid.Empty)
+            .WithMessage("If provided, the Parent Delivery Unit ID must be a valid, non-empty GUID.");
     }
 }
