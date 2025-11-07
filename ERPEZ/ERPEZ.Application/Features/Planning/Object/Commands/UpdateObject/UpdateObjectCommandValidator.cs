@@ -29,10 +29,6 @@ public class UpdateObjectCommandValidator : AbstractValidator<UpdateObjectComman
             .WithMessage("Code cannot exceed 20 characters.")
             .When(x => !string.IsNullOrWhiteSpace(x.UpdateObject.Code));
 
-        // IsActive (Optional Bool?) - Validate only if present
-        RuleFor(x => x.UpdateObject.IsActive)
-             .NotNull()
-             .WithMessage("IsActive must be true or false if provided.")
-             .When(x => x.UpdateObject.IsActive);
+        // IsActive (Optional Bool?) - No validation needed for non-nullable bool
     }
 }
