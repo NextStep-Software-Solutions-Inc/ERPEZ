@@ -20,6 +20,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IWFPPAPDepartmentRepository WFPPAPDepartmentRepository { get; }
     public IOPCREvaluationRepository OPCREvaluationRepository { get; }
     public IOPCRRatingRepository OPCRRatingRepository { get; }
+    public IObjectRepository ObjectRepository { get; }
     public IDUFundAllocationRepository DUFundAllocationRepository { get; }
     public IKPIRatingRepository KPIRatingRepository { get; }
     public IDUAllocationRepository DUAllocationRepository { get; }
@@ -44,6 +45,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
                         IOPCRKPIRepository oPCRKPIRepository,
                         IOPCRActivityRepository oPCRActivityRepository,
                         IOPCRPAPDepartmentRepository oPCRPAPDepartmentRepository,
+                        IObjectRepository objectRepository,
                         IWFPRepository wFPRepository,
                         IWFPObjectiveRepository wFPObjectiveRepository,
                         IWFPOutcomeRepository wFPOutcomeRepository,
@@ -78,6 +80,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         OPCRKPIRepository = oPCRKPIRepository ?? throw new ArgumentNullException(nameof(oPCRKPIRepository));
         OPCRActivityRepository = oPCRActivityRepository ?? throw new ArgumentNullException(nameof(oPCRActivityRepository));
         OPCRPAPDepartmentRepository = oPCRPAPDepartmentRepository ?? throw new ArgumentNullException(nameof(oPCRPAPDepartmentRepository));
+        ObjectRepository = objectRepository ?? throw new ArgumentNullException(nameof(objectRepository));
         WFPRepository = wFPRepository ?? throw new ArgumentNullException(nameof(wFPRepository));
         WFPObjectiveRepository = wFPObjectiveRepository ?? throw new ArgumentNullException(nameof(wFPObjectiveRepository));
         WFPOutcomeRepository = wFPOutcomeRepository ?? throw new ArgumentNullException(nameof(wFPOutcomeRepository));
