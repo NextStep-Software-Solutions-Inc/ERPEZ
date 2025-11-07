@@ -13,7 +13,7 @@ public class Attribute : BaseEntity
     public string? Description { get; set; }
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid? ParentAttributeId { get; set; }
-    public virtual Attribute ParentAttribute { get; set; } = null!;
+    public virtual Attribute? ParentAttribute { get; set; }
     public virtual List<Attribute> ParentAttributes { get; set; } = [];
     public virtual List<KPIAttribute> KPIAttributes { get; set; } = [];
 }
