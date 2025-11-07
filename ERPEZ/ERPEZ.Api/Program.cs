@@ -25,6 +25,7 @@ if (app.Environment.IsDevelopment())
 }
 
 // 4. Add middleware
+app.UseCors("AllowAll");
 app.UseHttpsRedirection();
 app.UseExceptionHandler(); // Use our global exception handler
 app.UseHangfireDashboard(); // Add Hangfire Dashboard endpoint
