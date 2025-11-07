@@ -1,3 +1,4 @@
+using ERPEZ.Application.Features.Planning.WFPObjective.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -5,9 +6,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.WFPObjective.Commands.UpdateWFPObjective;
 
-public class UpdateWFPObjectiveCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<UpdateWFPObjectiveCommand, ApiResponse<Domain.Entities.Planning.WFPObjective>>
+public class UpdateWFPObjectiveCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<UpdateWFPObjectiveCommand, ApiResponse<WFPObjectiveDto>>
 {
-    public async Task<ApiResponse<Domain.Entities.Planning.WFPObjective>> Handle(UpdateWFPObjectiveCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<WFPObjectiveDto>> Handle(UpdateWFPObjectiveCommand request, CancellationToken cancellationToken)
     {
         var dto = request.UpdateWFPObjective;
 
@@ -32,6 +33,12 @@ public class UpdateWFPObjectiveCommandHandler(IUnitOfWork _unitOfWork) : IReques
         _unitOfWork.WFPObjectiveRepository.Update(wfpObjective);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return ApiResponse<Domain.Entities.Planning.WFPObjective>.Success(wfpObjective, "WFP Objective updated successfully.");
+        var result = new WFPObjectiveDto
+        {
+            Id = wfpObjective.Id,
+            WFPId = wfpObjective.WFPId,
+            Description = wfpObjective.Description
+        };
+        return ApiResponse<WFPObjectiveDto>.Success(result, "WFP Objective updated successfully.");
     }
 }
