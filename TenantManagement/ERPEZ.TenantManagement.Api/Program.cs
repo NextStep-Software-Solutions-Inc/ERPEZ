@@ -1,4 +1,4 @@
-using ERPEZ.TenantManagement.Api;
+﻿using ERPEZ.TenantManagement.Api;
 using ERPEZ.TenantManagement.Application;
 using ERPEZ.TenantManagement.Infrastructure;
 using Hangfire;
@@ -13,8 +13,6 @@ builder.Configuration.AddJsonFile("appsettings.json", false, true);
 builder.Configuration.AddJsonFile($"appsettings.{env.EnvironmentName}.json", true, true);
 builder.Configuration.AddUserSecrets(typeof(Program).Assembly, true);
 
-// 0. Add Authentication and Authorization Services
-// IMPORTANT: This block must define the authentication scheme
 builder.Services
     .AddAuthentication(options =>
     {
@@ -23,36 +21,38 @@ builder.Services
     })
     .AddJwtBearer(options =>
     {
-        // These values MUST be correctly configured in appsettings.json
-        options.Authority = builder.Configuration["Clerk:Authority"];
+        // 1. Check Config Keys
+        options.Authority = builder.Configuration["Keycloak:Authority"];
+        options.Audience = builder.Configuration["Keycloak:Audience"];
 
-        // This parameter block configures how the token is validated
         options.TokenValidationParameters = new TokenValidationParameters
         {
             NameClaimType = ClaimTypes.NameIdentifier,
-            ValidateAudience = false
+
+            // 2. Ensure Aud/Iss Validation is TRUE
+            ValidateAudience = true,
+            ValidateIssuer = true
         };
+
+        // 3. Ensure this events block is clean (no old Clerk/AZP logic)
         options.Events = new JwtBearerEvents
         {
-            //OnAuthenticationFailed = context =>
-            //{
-            //    Console.WriteLine($"JWT AUTH FAILURE: Token validation failed with exception: {context.Exception.Message}");
-            //    return Task.CompletedTask;
-            //},
-            // Additional validation for AZP claim
+            // You may keep this if you added custom logic for Keycloak claims (e.g., roles)
             OnTokenValidated = context =>
             {
-                var azp = context.Principal?.FindFirstValue("azp");
-                var authorizedParties = builder.Configuration.GetSection("Clerk:AuthorizedParties").Get<List<string>>();
-
-                if (string.IsNullOrEmpty(azp) || authorizedParties == null || !authorizedParties.Contains(azp))
+                // Simple example of mapping preferred_username
+                var preferredUsername = context.Principal?.FindFirstValue("preferred_username");
+                if (!string.IsNullOrEmpty(preferredUsername))
                 {
-                    context.Fail("AZP Claim is invalid or missing");
+                    var claimsIdentity = context.Principal?.Identity as ClaimsIdentity;
+                    if (claimsIdentity != null)
+                    {
+                        claimsIdentity.AddClaim(new Claim(ClaimTypes.Name, preferredUsername));
+                    }
                 }
-
                 return Task.CompletedTask;
             }
-        }; 
+        };
     });
 builder.Services.AddAuthorization();
 
