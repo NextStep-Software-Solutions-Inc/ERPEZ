@@ -13,6 +13,15 @@ public class CreateWFPCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<
         _ = await _unitOfWork.DeliveryUnitRepository.FindAsync(
             x => x.Id == request.DeliveryUnitId,
             cancellationToken) ?? throw new NotFoundException("Delivery Unit not found.");
+        var duplicate = await _unitOfWork.WFPRepository.FindAsync(w => w.ProgramTitle == request.ProgramTitle
+        && w.DeliveryUnitId == request.DeliveryUnitId
+        && w.Description == request.Description
+        && w.FiscalYear == request.FiscalYear,
+        cancellationToken
+        );
+
+        if (duplicate != null)
+            throw new ConflictException("WFP with the same Delivery Unit, Fiscal Year, Program Title, and Description already exists.");
 
         var wfp = new Domain.Entities.Planning.WFP
         {
