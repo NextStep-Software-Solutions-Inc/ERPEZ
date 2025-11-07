@@ -1,44 +1,77 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using ERPEZ.Application.Features.Planning.ActivityBudgetRequirement.Commands.CreateABR;
+using ERPEZ.Application.Features.Planning.ActivityBudgetRequirement.Commands.DeleteABR;
+using ERPEZ.Application.Features.Planning.ActivityBudgetRequirement.Commands.UpdateABR;
+using ERPEZ.Application.Features.Planning.ActivityBudgetRequirement.Dtos;
+using ERPEZ.Application.Features.Planning.ActivityBudgetRequirement.Queries.GetABRById;
+using ERPEZ.Application.Features.Planning.ActivityBudgetRequirement.Queries.GetABRs;
+using ERPEZ.Domain.Entities.Planning;
+using ERPEZ.Shared.Common;
+using MediatR;
+using Microsoft.AspNetCore.Mvc;
 
 namespace ERPEZ.Api.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("activitybudgetrequirements")]
     [ApiController]
-    public class ActivityBudgetRequirementController : ControllerBase
+    public class ActivityBudgetRequirementController(ISender mediator) : ControllerBase
     {
-        // POST api/<ActivityBudgetRequirementController>
         [HttpPost]
-        public IActionResult Post([FromBody] string value)
+        [ProducesResponseType(typeof(ApiResponse<ActivityBudgetRequirementDto>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<ActivityBudgetRequirementDto>), StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> CreateActivityBudgetRequirement([FromBody] CreateActivityBudgetRequirementCommand command)
         {
-            return Ok("Created");
+            var result = await mediator.Send(command);
+
+            if (!result.Succeeded)
+                return BadRequest(result);
+
+            // Assuming the successful response returns a DTO
+            return CreatedAtAction(nameof(GetActivityBudgetRequirementById), new { id = result.Data!.Id }, result);
         }
 
-        // GET: api/<ActivityBudgetRequirementController>
         [HttpGet]
-        public IEnumerable<string> GetAll()
+        [ProducesResponseType(typeof(PaginatedApiResponse<ActivityBudgetRequirement>), StatusCodes.Status200OK)] // Changed to Entity
+        public async Task<IActionResult> GetActivityBudgetRequirements([FromQuery] GetActivityBudgetRequirementsQuery query)
         {
-            return new string[] { "value1", "value2" };
+            var result = await mediator.Send(query);
+            return Ok(result);
         }
 
-        // GET api/<ActivityBudgetRequirementController>/5
         [HttpGet("{id}")]
-        public IActionResult GetById(int id)
+        [ProducesResponseType(typeof(ApiResponse<ActivityBudgetRequirement>), StatusCodes.Status200OK)] // Changed to Entity
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetActivityBudgetRequirementById(Guid id)
         {
-            return Ok("value");
+            var result = await mediator.Send(new GetActivityBudgetRequirementByIdQuery(id));
+
+            return result.Succeeded ? Ok(result) : NotFound(result);
         }
 
-        // PUT api/<ActivityBudgetRequirementController>/5
         [HttpPut("{id}")]
-        public IActionResult Put(int id, [FromBody] string value)
+        [ProducesResponseType(typeof(ApiResponse<ActivityBudgetRequirementDto>), StatusCodes.Status200OK)] // Returns DTO
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> UpdateActivityBudgetRequirement(Guid id, [FromBody] UpdateActivityBudgetRequirementDto dto)
         {
-            return Ok("Updated");
+            var command = new UpdateActivityBudgetRequirementCommand
+            {
+                Id = id,
+                UpdateActivityBudgetRequirement = dto
+            };
+
+            var result = await mediator.Send(command);
+            return result.Succeeded ? Ok(result) : BadRequest(result);
         }
 
-        // DELETE api/<ActivityBudgetRequirementController>/5
         [HttpDelete("{id}")]
-        public IActionResult Delete(int id)
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> DeleteActivityBudgetRequirement(Guid id)
         {
-            return Ok("Deleted");
+            var command = new DeleteActivityBudgetRequirementCommand(id);
+            var result = await mediator.Send(command);
+
+            return result.Succeeded ? NoContent() : BadRequest(result);
         }
     }
 }

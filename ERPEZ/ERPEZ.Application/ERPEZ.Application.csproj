@@ -11,9 +11,6 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Features\Planning\ActivityBudgetRequirement\Commands\" />
-    <Folder Include="Features\Planning\ActivityBudgetRequirement\Dtos\" />
-    <Folder Include="Features\Planning\ActivityBudgetRequirement\Queries\" />
     <Folder Include="Features\Planning\OPCREvaluation\Commands\" />
     <Folder Include="Features\Planning\OPCREvaluation\Dtos\" />
     <Folder Include="Features\Planning\OPCREvaluation\Queries\" />
@@ -23,6 +20,12 @@
     <Folder Include="Features\Planning\WFPObjective\Commands\" />
     <Folder Include="Features\Planning\WFPObjective\Dtos\" />
     <Folder Include="Features\Planning\WFPObjective\Queries\" />
+    <Folder Include="Features\Planning\WFPActivity\Commands\" />
+    <Folder Include="Features\Planning\WFPActivity\Dtos\" />
+    <Folder Include="Features\Planning\WFPActivity\Queries\" />
+    <Folder Include="Features\Planning\WFPOutcome\Commands\" />
+    <Folder Include="Features\Planning\WFPOutcome\Dtos\" />
+    <Folder Include="Features\Planning\WFPOutcome\Queries\" />
     <Folder Include="Features\Planning\SubDUAllocation\" />
     <Folder Include="Features\Planning\SubDeliveryUnit\" />
     <Folder Include="Features\Planning\OPCRPAP\" />
@@ -33,6 +36,7 @@
     <Folder Include="Features\Planning\WFPPAP\Commands\" />
     <Folder Include="Features\Planning\WFPPAP\Dtos\" />
     <Folder Include="Features\Planning\WFPPAP\Queries\" />
+    <Folder Include="Features\Planning\WFP\Commands\" />
     <Folder Include="Features\Planning\WFP\Dtos\" />
     <Folder Include="Features\Planning\WFP\Queries\" />
   </ItemGroup>
