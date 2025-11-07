@@ -15,9 +15,9 @@ public class GetWFPObjectivesQueryHandler(IUnitOfWork _unitOfWork) : IRequestHan
             Filters = query.Filters,
             Sorts = query.Sorts
         };
-        var (wfpObjectves, totalCount) = await _unitOfWork.WFPObjectiveRepository.GetAllAsync(sieveModel, cancellationToken: cancellationToken);
+        var (wfpObjectives, totalCount) = await _unitOfWork.WFPObjectiveRepository.GetAllAsync(sieveModel, cancellationToken: cancellationToken);
         return new PaginatedApiResponse<Domain.Entities.Planning.WFPObjective>(
-            [.. wfpObjectves],
+            [.. wfpObjectives],
             query.PageNumber,
             query.PageSize,
             totalCount);
