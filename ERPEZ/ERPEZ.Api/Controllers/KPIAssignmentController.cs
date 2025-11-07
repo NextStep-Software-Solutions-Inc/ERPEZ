@@ -1,6 +1,5 @@
 ﻿using ERPEZ.Application.Features.Planning.KPIAssignment.Commands.CreateKPIAssignment;
 using ERPEZ.Application.Features.Planning.KPIAssignment.Commands.DeleteKPIAssignment;
-using ERPEZ.Application.Features.Planning.KPIAssignment.Commands.UpdateKPIAssignment;
 using ERPEZ.Application.Features.Planning.KPIAssignment.Dtos;
 using ERPEZ.Application.Features.Planning.KPIAssignment.Queries.GetKPIAssignmentById;
 using ERPEZ.Application.Features.Planning.KPIAssignment.Queries.GetKPIAssignments;
@@ -42,22 +41,6 @@ namespace ERPEZ.Api.Controllers
         {
             var result = await mediator.Send(new GetKPIAssignmentByIdQuery(id));
             return result.Succeeded ? Ok(result) : NotFound(result);
-        }
-
-        [HttpPut("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<KPIAssignmentDto>), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> UpdateKPIAssignment(Guid id, [FromBody] UpdateKPIAssignmentDto dto)
-        {
-            var command = new UpdateKPIAssignmentCommand
-            {
-                Id = id,
-                UpdateKPIAssignment = dto
-            };
-
-            var result = await mediator.Send(command);
-            return result.Succeeded ? Ok(result) : BadRequest(result);
         }
 
         [HttpDelete("{id}")]

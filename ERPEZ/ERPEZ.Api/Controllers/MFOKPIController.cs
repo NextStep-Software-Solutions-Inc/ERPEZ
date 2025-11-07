@@ -6,7 +6,6 @@ using Microsoft.AspNetCore.Mvc;
 using ERPEZ.Application.Features.Planning.MFOKPI.Queries.GetMFOKPIsQuery;
 using ERPEZ.Application.Features.Planning.MFOKPI.Commands.CreateMFOKPI;
 using ERPEZ.Application.Features.Planning.MFOKPI.Queries.GetMFOKPIByIdQuery;
-using ERPEZ.Application.Features.Planning.MFOKPI.Commands.UpdateMFOKPI;
 using ERPEZ.Application.Features.Planning.MFOKPI.Commands.DeleteMFOKPI;
 
 namespace ERPEZ.Api.Controllers
@@ -43,22 +42,6 @@ namespace ERPEZ.Api.Controllers
         {
             var result = await mediator.Send(new GetMFOKPIByIdQuery(id));
             return result.Succeeded ? Ok(result) : NotFound(result);
-        }
-
-        [HttpPut("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<MFOKPIDto>), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> UpdateMFOKPI(Guid id, [FromBody] UpdateMFOKPIDto dto)
-        {
-            var command = new UpdateMFOKPICommand
-            {
-                Id = id,
-                UpdateMFOKPI = dto
-            };
-
-            var result = await mediator.Send(command);
-            return result.Succeeded ? Ok(result) : BadRequest(result);
         }
 
         [HttpDelete("{id}")]
