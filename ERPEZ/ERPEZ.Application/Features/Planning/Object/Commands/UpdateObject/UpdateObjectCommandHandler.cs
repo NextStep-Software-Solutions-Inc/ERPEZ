@@ -23,8 +23,8 @@ public class UpdateObjectCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandl
         if (duplicate != null && duplicate.Id != request.Id)
             throw new ConflictException("Object already exists.");
 
-        reqObject.Code = dto.Code ?? reqObject.Code;
-        reqObject.Name = dto.Name ?? reqObject.Name;
+        reqObject.Code = dto.Code;
+        reqObject.Name = dto.Name;
         reqObject.IsActive = dto.IsActive;
 
         _unitOfWork.ObjectRepository.Update(reqObject);
