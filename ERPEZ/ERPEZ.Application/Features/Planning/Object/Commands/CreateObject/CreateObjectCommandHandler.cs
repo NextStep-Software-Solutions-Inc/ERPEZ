@@ -13,7 +13,7 @@ public class CreateObjectCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandl
         if (request.ParentId != null)
         {
             _ = await _unitOfWork.ObjectRepository.FindAsync(wo => wo.Id == request.ParentId,
-                cancellationToken) ?? throw new NotFoundException("Parent Object should exist.");
+                cancellationToken) ?? throw new NotFoundException("Parent Object not found.");
         }
 
         var duplicate = await _unitOfWork.ObjectRepository.FindAsync(o => o.ParentId == request.ParentId &&
