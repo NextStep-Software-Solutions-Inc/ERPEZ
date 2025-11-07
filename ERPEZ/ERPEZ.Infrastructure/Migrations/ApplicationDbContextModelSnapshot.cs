@@ -942,6 +942,50 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.ToTable("OPCRKPI", "catalog");
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OPCRPAPDepartment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("DeliveryUnitId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("OPCRActivityId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("DeliveryUnitId");
+
+                    b.HasIndex("OPCRActivityId", "DeliveryUnitId")
+                        .IsUnique();
+
+                    b.ToTable("OPCRPAPDepartments", "catalog");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OPCRRating", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1452,9 +1496,6 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<Guid>("DUAllocationId")
-                        .HasColumnType("uuid");
-
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -1494,8 +1535,6 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("DUAllocationId");
 
                     b.HasIndex("DeliveryUnitId", "FiscalYear");
 
@@ -2023,6 +2062,25 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("OPCR");
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OPCRPAPDepartment", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.DeliveryUnit", "DeliveryUnit")
+                        .WithMany("OPCRPAPDepartments")
+                        .HasForeignKey("DeliveryUnitId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.OPCRActivity", "OPCRActivity")
+                        .WithMany("OPCRPAPDepartments")
+                        .HasForeignKey("OPCRActivityId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("DeliveryUnit");
+
+                    b.Navigation("OPCRActivity");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OPCRRating", b =>
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Planning.OPCREvaluation", "OPCREvaluation")
@@ -2158,19 +2216,11 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WFP", b =>
                 {
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.DUAllocation", "DUAllocation")
-                        .WithMany()
-                        .HasForeignKey("DUAllocationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("ERPEZ.Domain.Entities.Planning.DeliveryUnit", "DeliveryUnit")
                         .WithMany("WFPs")
                         .HasForeignKey("DeliveryUnitId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("DUAllocation");
 
                     b.Navigation("DeliveryUnit");
                 });
@@ -2273,6 +2323,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Navigation("KPIAssignments");
 
+                    b.Navigation("OPCRPAPDepartments");
+
                     b.Navigation("OPCRs");
 
                     b.Navigation("SubDeliveryUnits");
@@ -2327,6 +2379,11 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("OPCREvaluations");
 
                     b.Navigation("OPCRKPIs");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OPCRActivity", b =>
+                {
+                    b.Navigation("OPCRPAPDepartments");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OPCREvaluation", b =>

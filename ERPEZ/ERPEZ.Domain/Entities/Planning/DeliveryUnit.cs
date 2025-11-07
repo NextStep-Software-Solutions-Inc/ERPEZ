@@ -15,6 +15,7 @@ public class DeliveryUnit : BaseEntity
     public virtual List<SubDeliveryUnit> SubDeliveryUnits { get; set; } = [];
     public virtual List<WFP> WFPs { get; set; } = [];
     public virtual List<WFPPAPDepartment> WFPPAPDepartments { get; set; } = [];
+    public virtual List<OPCRPAPDepartment> OPCRPAPDepartments { get; set; } = [];
     public virtual List<OPCR> OPCRs { get; set; } = [];
     public virtual List<OPCRActivity> OPCRActivities { get; set; } = [];
     public virtual Office Office { get; set; } = null!;
