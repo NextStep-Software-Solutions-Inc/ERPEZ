@@ -6,7 +6,6 @@ using ERPEZ.Application.Features.Planning.OPCRKPI.Commands.CreateOPCRKPI;
 using ERPEZ.Application.Features.Planning.OPCRKPI.Dtos;
 using ERPEZ.Application.Features.Planning.OPCRKPI.Queries.GetOPCRKPIs;
 using ERPEZ.Application.Features.Planning.OPCRKPI.Queries.GetOPCRKPIById;
-using ERPEZ.Application.Features.Planning.OPCRKPI.Commands.UpdateOPCRKPI;
 using ERPEZ.Application.Features.Planning.OPCRKPI.Commands.DeleteOPCRKPI;
 
 namespace ERPEZ.Api.Controllers
@@ -43,22 +42,6 @@ namespace ERPEZ.Api.Controllers
         {
             var result = await mediator.Send(new GetOPCRKPIByIdQuery(id));
             return result.Succeeded ? Ok(result) : NotFound(result);
-        }
-
-        [HttpPut("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<OPCRKPIDto>), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> UpdateOPCRKPI(Guid id, [FromBody] UpdateOPCRKPIDto dto)
-        {
-            var command = new UpdateOPCRKPICommand
-            {
-                Id = id,
-                UpdateOPCRKPI = dto
-            };
-
-            var result = await mediator.Send(command);
-            return result.Succeeded ? Ok(result) : BadRequest(result);
         }
 
         [HttpDelete("{id}")]
