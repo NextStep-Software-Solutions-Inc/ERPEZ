@@ -9,9 +9,7 @@ public class CreateDeliveryUnitCommandValidator : AbstractValidator<CreateDelive
         // 1. OfficeId (Required GUID)
         RuleFor(x => x.OfficeId)
             .NotEmpty()
-            .WithMessage("Office ID is required and must be a valid, non-empty GUID.")
-            ;
-
+            .WithMessage("Office ID is required and must be a valid, non-empty GUID.");
         // 2. ParentDUId (Optional GUID)
         RuleFor(x => x.ParentDUId)
             .Must(id => !id.HasValue || id.Value != Guid.Empty)
