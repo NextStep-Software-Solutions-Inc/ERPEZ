@@ -14,18 +14,19 @@ public class UpdateObjectCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandl
         var reqObject = await _unitOfWork.ObjectRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken)
             ?? throw new NotFoundException("Object not found.");
 
-        var duplicate = await _unitOfWork.ObjectRepository.FindAsync( o => 
+        var duplicate = await _unitOfWork.ObjectRepository.FindAsync(o =>
+            o.Id != request.Id &&
             o.Name == dto.Name &&
             o.Code == dto.Code,
             cancellationToken
         );
 
-        if (duplicate != null && duplicate.Id != request.Id)
-            throw new ConflictException("Object already exists.");
+        if (duplicate != null)
+            throw new ConflictException("Object already exist.");
 
-        reqObject.Code = dto.Code;
-        reqObject.Name = dto.Name;
-        reqObject.IsActive = dto.IsActive;
+        reqObject.Code = dto.Code ?? reqObject.Code;
+        reqObject.Name = dto.Name ?? reqObject.Name;
+        reqObject.IsActive = dto.IsActive ?? reqObject.IsActive;
 
         _unitOfWork.ObjectRepository.Update(reqObject);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
@@ -36,7 +37,7 @@ public class UpdateObjectCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandl
             ParentId = reqObject.ParentId,
             Name = reqObject.Name,
             Code = reqObject.Code,
-            IsActive = dto.IsActive
+            IsActive = reqObject.IsActive
         };
         return ApiResponse<ObjectDto>.Success(result, "Object updated successfully.");
     }
