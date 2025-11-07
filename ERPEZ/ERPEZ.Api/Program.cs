@@ -16,18 +16,25 @@ builder.Services
     .AddInfrastructureServices(builder.Configuration, builder.Environment);
 
 var app = builder.Build();
-
+bool isDevelopment = app.Environment.IsDevelopment();
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+if (isDevelopment)
 {
     app.UseSwagger();
-    app.UseSwaggerUI();
+    app.UseSwaggerUI(s =>
+    {
+        s.DocExpansion(Swashbuckle.AspNetCore.SwaggerUI.DocExpansion.None);
+        s.ConfigObject.AdditionalItems.Add("persistAuthorization", "true");
+        s.ConfigObject.DeepLinking = true;
+        s.ConfigObject.DisplayRequestDuration = true;
+    });
 }
 
 // 4. Add middleware
 app.UseHttpsRedirection();
-app.UseExceptionHandler(); // Use our global exception handler
-app.UseHangfireDashboard(); // Add Hangfire Dashboard endpoint
+app.UseExceptionHandler();
+app.UseHangfireDashboard();
+app.UseCors(isDevelopment ? "development" : "production");
 
 // 5. Tell the app to use controllers
 app.MapControllers();

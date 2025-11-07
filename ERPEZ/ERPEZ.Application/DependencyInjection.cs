@@ -23,7 +23,24 @@ public static class DependencyInjection
 
         services.AddValidatorsFromAssembly(assembly);
 
+        services.AddCors(options =>
+        {
+            options.AddPolicy("development", policy =>
+            {
+                policy
+                    .AllowAnyOrigin()
+                    .AllowAnyHeader()
+                    .AllowAnyMethod();
+            });
 
+            options.AddPolicy("production", policy =>
+            {
+                policy
+                    .WithOrigins("https://erpez-portal-pro.vercel.app")
+                    .AllowAnyHeader()
+                    .AllowAnyMethod();
+            });
+        });
         return services;
     }
 }
