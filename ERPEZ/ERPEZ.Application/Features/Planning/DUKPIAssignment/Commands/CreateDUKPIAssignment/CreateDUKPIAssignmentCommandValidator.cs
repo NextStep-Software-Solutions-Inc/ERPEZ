@@ -2,9 +2,9 @@
 
 namespace ERPEZ.Application.Features.Planning.DUKPIAssignment.Commands.CreateDUKPIAssignment;
 
-public class CreateKPIAssignmentCommandValidator : AbstractValidator<CreateDUKPIAssignmentCommand>
+public class CreateDUKPIAssignmentCommandValidator : AbstractValidator<CreateDUKPIAssignmentCommand>
 {
-    public CreateKPIAssignmentCommandValidator()
+    public CreateDUKPIAssignmentCommandValidator()
     {
         // KPIId (Required GUID)
         RuleFor(x => x.KPIId)

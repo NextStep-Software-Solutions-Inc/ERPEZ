@@ -2,9 +2,9 @@
 
 namespace ERPEZ.Application.Features.Planning.DUKPIAssignment.Commands.DeleteDUKPIAssignment;
 
-public class DeleteKPIAssignmentCommandValidator : AbstractValidator<DeleteDUKPIAssignmentCommand>
+public class DeleteDUKPIAssignmentCommandValidator : AbstractValidator<DeleteDUKPIAssignmentCommand>
 {
-    public DeleteKPIAssignmentCommandValidator()
+    public DeleteDUKPIAssignmentCommandValidator()
     {
         // Primary ID Validation (Required for deletion)
         RuleFor(x => x.Id)
