@@ -17,15 +17,17 @@ builder.Services
 
 var app = builder.Build();
 
+var environment = app.Environment;
+
 // Configure the HTTP request pipeline.
-if (app.Environment.IsDevelopment())
+if (environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
 // 4. Add middleware
-app.UseCors("AllowAll");
+app.UseCors(environment.EnvironmentName.ToLower()); // Use CORS policy based on environment
 app.UseHttpsRedirection();
 app.UseExceptionHandler(); // Use our global exception handler
 app.UseHangfireDashboard(); // Add Hangfire Dashboard endpoint

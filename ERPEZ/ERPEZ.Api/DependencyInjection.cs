@@ -11,10 +11,17 @@ public static class DependencyInjection
         services.AddSwaggerGen();
         services.AddCors(options =>
         {
-            options.AddPolicy("AllowAll",
+            options.AddPolicy("development",
                 builder =>
                 {
                     builder.AllowAnyOrigin()
+                           .AllowAnyMethod()
+                           .AllowAnyHeader();
+                });
+            options.AddPolicy("production",
+                builder =>
+                {
+                    builder.WithOrigins("https://erpez.api.nextstep-software.com")
                            .AllowAnyMethod()
                            .AllowAnyHeader();
                 });
