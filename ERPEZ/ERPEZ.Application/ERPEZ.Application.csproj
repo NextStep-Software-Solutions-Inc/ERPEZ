@@ -1,5 +1,4 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-
   <ItemGroup>
     <ProjectReference Include="..\ERPEZ.Domain\ERPEZ.Domain.csproj" />
     <ProjectReference Include="..\..\ERPEZ.Shared\ERPEZ.Shared.csproj" />
