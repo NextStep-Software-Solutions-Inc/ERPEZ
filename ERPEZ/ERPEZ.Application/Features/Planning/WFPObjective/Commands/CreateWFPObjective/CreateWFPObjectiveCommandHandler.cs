@@ -28,6 +28,7 @@ public class CreateWFPObjectiveCommandHandler(IUnitOfWork _unitOfWork) : IReques
 
         var dto = new WFPObjectiveDto
         {
+            Id = wfpObjective.Id,
             WFPId = request.WFPId,
             Description = request.Description,
         };
