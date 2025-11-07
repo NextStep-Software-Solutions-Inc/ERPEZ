@@ -58,7 +58,7 @@ namespace ERPEZ.Api.Controllers
             var command = new UpdateObjectCommand
             {
                 Id = id,
-                UpdateObject = dto // Assumed nested DTO property
+                UpdateObject = dto
             };
 
             var result = await mediator.Send(command);
