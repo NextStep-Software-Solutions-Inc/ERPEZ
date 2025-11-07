@@ -11,7 +11,7 @@ using ERPEZ.Application.Features.Planning.WFPOutcome.Commands.DeleteWFPOutcome;
 
 namespace ERPEZ.Api.Controllers
 {
-    [Route("wfpoutcomes")]
+    [Route("wfp-outcomes")]
     [ApiController]
     public class WFPOutcomeController(ISender mediator) : ControllerBase
     {

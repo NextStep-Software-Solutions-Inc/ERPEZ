@@ -4,7 +4,7 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.WFPOutcome.Commands.UpdateWFPOutcome;
 
-public class UpdateWFPOutcomeCommand : IRequest<ApiResponse<Domain.Entities.Planning.WFPOutcome>>
+public class UpdateWFPOutcomeCommand : IRequest<ApiResponse<WFPOutcomeDto>>
 {
     public Guid Id { get; set; }
     public required UpdateWFPOutcomeDto UpdateWFPOutcome {  get; set; }
