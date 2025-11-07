@@ -11,16 +11,11 @@ public class UpdateWFPObjectiveCommandHandler(IUnitOfWork _unitOfWork) : IReques
     public async Task<ApiResponse<WFPObjectiveDto>> Handle(UpdateWFPObjectiveCommand request, CancellationToken cancellationToken)
     {
         var dto = request.UpdateWFPObjective;
-
-        if(dto.WFPId != null)
-        {
-            _ = await _unitOfWork.WFPRepository.FindAsync(w => w.Id == dto.WFPId, cancellationToken) ?? throw new NotFoundException("WFP not found.");
-        }
         var wfpObjective = await _unitOfWork.WFPObjectiveRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken)
             ?? throw new NotFoundException("WFP Objective not found.");
 
         var duplicate = await _unitOfWork.WFPObjectiveRepository.FindAsync(
-            x => x.WFPId == dto.WFPId && x.Description == dto.Description,
+            x => x.Description == dto.Description,
             cancellationToken
         );
 
@@ -28,7 +23,6 @@ public class UpdateWFPObjectiveCommandHandler(IUnitOfWork _unitOfWork) : IReques
             throw new ConflictException("WFP Objective already exists.");
         
         wfpObjective.Description = dto.Description ?? wfpObjective.Description;
-        wfpObjective.WFPId = dto.WFPId ?? wfpObjective.WFPId;
 
         _unitOfWork.WFPObjectiveRepository.Update(wfpObjective);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
