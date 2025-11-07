@@ -1,6 +1,5 @@
 ﻿using ERPEZ.Application.Features.Planning.DUKPIAssignment.Commands.CreateDUKPIAssignment;
 using ERPEZ.Application.Features.Planning.DUKPIAssignment.Commands.DeleteDUKPIAssignment;
-using ERPEZ.Application.Features.Planning.DUKPIAssignment.Commands.UpdateDUKPIAssignment;
 using ERPEZ.Application.Features.Planning.DUKPIAssignment.Dtos;
 using ERPEZ.Application.Features.Planning.DUKPIAssignment.Queries.GetDUKPIAssignmentById;
 using ERPEZ.Application.Features.Planning.DUKPIAssignment.Queries.GetDUKPIAssignments;
@@ -42,22 +41,6 @@ namespace ERPEZ.Api.Controllers
         {
             var result = await mediator.Send(new GetDUKPIAssignmentByIdQuery(id));
             return result.Succeeded ? Ok(result) : NotFound(result);
-        }
-
-        [HttpPut("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<DUKPIAssignmentDto>), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> UpdateKPIAssignment(Guid id, [FromBody] UpdateDUKPIAssignmentDto dto)
-        {
-            var command = new UpdateDUKPIAssignmentCommand
-            {
-                Id = id,
-                UpdateDUKPIAssignment = dto
-            };
-
-            var result = await mediator.Send(command);
-            return result.Succeeded ? Ok(result) : BadRequest(result);
         }
 
         [HttpDelete("{id}")]
