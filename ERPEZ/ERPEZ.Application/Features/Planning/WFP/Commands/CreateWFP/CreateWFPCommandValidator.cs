@@ -4,9 +4,7 @@ namespace ERPEZ.Application.Features.Planning.WFP.Commands.CreateWFP;
 
 public class CreateWFPCommandValidator : AbstractValidator<CreateWFPCommand>
 {
-    private static readonly string[] strings = ["Draft", "Submitted", "Approved", "Rejected", "Completed"];
-    private readonly string[] ValidStatuses = strings;
-
+    private static readonly string[] ValidStatuses = [ "Draft", "Submitted", "Approved", "Rejected", "Completed" ];
     public CreateWFPCommandValidator()
     {
         // 1. DeliveryUnitId (Guid)

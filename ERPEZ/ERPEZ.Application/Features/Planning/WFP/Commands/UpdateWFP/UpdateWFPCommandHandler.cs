@@ -14,7 +14,7 @@ public class UpdateWFPCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<
         var wfp = await _unitOfWork.WFPRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken)
             ?? throw new NotFoundException("WFP not found.");
 
-        var coalescedDeliveryUnitId = dto.DeliveryUnitId ?? wfp.DeliveryUnitId;
+        var coalescedDeliveryUnitId = dto.DeliveryUnitId;
         var coalescedFiscalYear = dto.FiscalYear ?? wfp.FiscalYear;
         var coalescedProgramTitle = dto.ProgramTitle ?? wfp.ProgramTitle;
         var coalescedDescription = dto.Description ?? wfp.Description;
@@ -30,7 +30,7 @@ public class UpdateWFPCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<
         if (duplicate != null)
             throw new ConflictException("WFP with the same Delivery Unit, Fiscal Year, Program Title, and Description already exists.");
 
-        wfp.DeliveryUnitId = dto.DeliveryUnitId ?? wfp.DeliveryUnitId;
+        wfp.DeliveryUnitId = dto.DeliveryUnitId;
         wfp.FiscalYear = dto.FiscalYear ?? wfp.FiscalYear;
         wfp.ProgramTitle = dto.ProgramTitle ?? wfp.ProgramTitle;
         wfp.Description = dto.Description ?? wfp.Description;

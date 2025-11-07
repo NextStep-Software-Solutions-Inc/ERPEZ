@@ -1,10 +1,9 @@
-﻿using System.Net;
-using ERPEZ.Shared.Common;
+﻿using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
-using System.Linq;
+using System.Net;
 
 namespace ERPEZ.Shared.Middlewares;
 

@@ -2,7 +2,7 @@
 
 public class UpdateWFPDto
 {
-    public Guid? DeliveryUnitId { get; set; }
+    public Guid DeliveryUnitId { get; set; }
     public string? ProgramTitle { get; set; }
     public string? Description { get; set; }
     public int? FiscalYear { get; set; }
