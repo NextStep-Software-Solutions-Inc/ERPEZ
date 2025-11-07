@@ -23,7 +23,7 @@ public class UpdateWFPObjectiveCommandHandler(IUnitOfWork _unitOfWork) : IReques
             cancellationToken
         );
 
-        if (duplicate != null)
+        if (duplicate != null && duplicate.Id != request.Id)
             throw new ConflictException("WFP Objective already exists.");
         
         wfpObjective.Description = dto.Description ?? wfpObjective.Description;
