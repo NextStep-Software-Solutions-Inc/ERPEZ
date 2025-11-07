@@ -87,20 +87,28 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .WithOne(kv => kv.KPI)
             .HasForeignKey(kv => kv.KPIId);
 
-        //KPI Assignment
+        // DUKPIAssignment (Delivery Unit KPI Assignment)
         modelBuilder.Entity<DUKPIAssignment>()
-            .HasIndex(a => new { a.KPIId, a.DeliveryUnitId })
+            .HasOne(da => da.KPI)
+            .WithMany()
+            .HasForeignKey(da => da.KPIId)
+            .IsRequired();
+
+        modelBuilder.Entity<DUKPIAssignment>()
+            .HasOne(da => da.DeliveryUnit)
+            .WithMany()
+            .HasForeignKey(da => da.DeliveryUnitId)
+            .IsRequired();
+
+        modelBuilder.Entity<DUKPIAssignment>()
+            .HasOne(da => da.KPITarget)
+            .WithMany()
+            .HasForeignKey(da => da.KPITargetId)
+            .IsRequired();
+
+        modelBuilder.Entity<DUKPIAssignment>()
+            .HasIndex(da => new { da.DeliveryUnitId, da.KPITargetId })
             .IsUnique();
-
-        modelBuilder.Entity<DUKPIAssignment>()
-            .HasOne(a => a.KPI)
-            .WithMany(k => k.KPIAssignments)
-            .HasForeignKey(a => a.KPIId);
-
-        modelBuilder.Entity<DUKPIAssignment>()
-            .HasOne(a => a.DeliveryUnit)
-            .WithMany(d => d.KPIAssignments)
-            .HasForeignKey(a => a.DeliveryUnitId);
 
         // KPIModeOfVerification
         modelBuilder.Entity<KPIModeOfVerification>()
@@ -125,13 +133,20 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         // KPITarget
         modelBuilder.Entity<KPITarget>()
-            .HasIndex(t => new { t.KPIId, t.Period, t.QuarterName })
-            .IsUnique();
+            .HasOne(kt => kt.KPI)
+            .WithMany()
+            .HasForeignKey(kt => kt.KPIId)
+            .IsRequired();
 
         modelBuilder.Entity<KPITarget>()
-            .HasOne(t => t.KPI)
-            .WithMany(k => k.KPITargets)
-            .HasForeignKey(t => t.KPIId);
+            .HasMany(kt => kt.KPITargets)
+            .WithOne()
+            .HasForeignKey("ParentKPITargetId")
+            .IsRequired(false);
+
+        modelBuilder.Entity<KPITarget>()
+            .HasIndex(kt => new { kt.KPIId, kt.Period })
+            .IsUnique();
 
         //PerformanceMeasure
         modelBuilder.Entity<PerformanceMeasure>()
