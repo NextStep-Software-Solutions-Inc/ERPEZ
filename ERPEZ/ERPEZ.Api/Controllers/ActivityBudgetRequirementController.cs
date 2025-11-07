@@ -11,7 +11,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ERPEZ.Api.Controllers
 {
-    [Route("activitybudgetrequirements")]
+    [Route("activity-budget-requirements")]
     [ApiController]
     public class ActivityBudgetRequirementController(ISender mediator) : ControllerBase
     {
@@ -30,7 +30,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet]
-        [ProducesResponseType(typeof(PaginatedApiResponse<ActivityBudgetRequirement>), StatusCodes.Status200OK)] // Changed to Entity
+        [ProducesResponseType(typeof(PaginatedApiResponse<ActivityBudgetRequirement>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetActivityBudgetRequirements([FromQuery] GetActivityBudgetRequirementsQuery query)
         {
             var result = await mediator.Send(query);
@@ -38,7 +38,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<ActivityBudgetRequirement>), StatusCodes.Status200OK)] // Changed to Entity
+        [ProducesResponseType(typeof(ApiResponse<ActivityBudgetRequirement>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetActivityBudgetRequirementById(Guid id)
         {
@@ -48,7 +48,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpPut("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<ActivityBudgetRequirementDto>), StatusCodes.Status200OK)] // Returns DTO
+        [ProducesResponseType(typeof(ApiResponse<ActivityBudgetRequirementDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateActivityBudgetRequirement(Guid id, [FromBody] UpdateActivityBudgetRequirementDto dto)

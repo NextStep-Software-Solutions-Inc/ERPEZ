@@ -1,5 +1,6 @@
-﻿namespace ERPEZ.Application.Features.Planning.ActivityBudgetRequirement.Commands.DeleteABR;
+﻿using ERPEZ.Shared.Common;
+using MediatR;
 
-public record class DeleteActivityBudgetRequirementCommand
-{
-}
+namespace ERPEZ.Application.Features.Planning.ActivityBudgetRequirement.Commands.DeleteABR;
+
+public record class DeleteActivityBudgetRequirementCommand(Guid Id) : IRequest<ApiResponse<Unit>>;

@@ -2,6 +2,7 @@
 
 public interface IUnitOfWork
 {
+    IActivityBudgetRequirementRepository ActivityBudgetRequirementRepository { get; }
     IPerformanceMeasureRepository PerformanceMeasureRepository { get; }
     IDUFundAllocationRepository DUFundAllocationRepository { get; }
     IKPIRatingRepository KPIRatingRepository { get; }
@@ -24,6 +25,7 @@ public interface IUnitOfWork
     IOPCRActivityRepository OPCRActivityRepository { get; }
     IOPCRPAPDepartmentRepository OPCRPAPDepartmentRepository { get; }
     IOPCREvaluationRepository OPCREvaluationRepository { get; }
+    IObjectRepository ObjectRepository { get; }
     IWFPRepository WFPRepository { get; }
     IWFPActivityRepository WFPActivityRepository { get; }
     IWFPObjectiveRepository WFPObjectiveRepository { get; }

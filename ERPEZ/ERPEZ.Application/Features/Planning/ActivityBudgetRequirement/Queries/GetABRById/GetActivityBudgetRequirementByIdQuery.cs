@@ -1,5 +1,6 @@
-﻿namespace ERPEZ.Application.Features.Planning.ActivityBudgetRequirement.Queries.GetABRById;
+﻿using ERPEZ.Shared.Common;
+using MediatR;
 
-public record class GetActivityBudgetRequirementByIdQuery
-{
-}
+namespace ERPEZ.Application.Features.Planning.ActivityBudgetRequirement.Queries.GetABRById;
+
+public record class GetActivityBudgetRequirementByIdQuery(Guid Id) : IRequest<ApiResponse<Domain.Entities.Planning.ActivityBudgetRequirement>>;
