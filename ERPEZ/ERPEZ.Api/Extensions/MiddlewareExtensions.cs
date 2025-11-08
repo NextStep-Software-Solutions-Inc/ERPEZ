@@ -21,6 +21,7 @@ public static class MiddlewareExtensions
                 options.DocExpansion(Swashbuckle.AspNetCore.SwaggerUI.DocExpansion.None);
                 options.DefaultModelsExpandDepth(-1);
                 options.EnableDeepLinking();
+                options.RoutePrefix = string.Empty;
             });
         }
 
