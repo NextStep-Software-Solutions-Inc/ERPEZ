@@ -8,7 +8,7 @@ public class UpdateKPICommandValidator : AbstractValidator<UpdateKPICommand>
     [
         "Core Function", "Strategic Priority", "Mandatory Support Functions"
     ];
-    private readonly string[] ValidStatuses = ["Draft", "Active", "Archived"];
+    private readonly string[] ValidStatuses = ["Draft", "Submitted", "Approved", "Active", "Archived"]; // Added Active/Archived for typical update statuses
 
     public UpdateKPICommandValidator()
     {
@@ -19,7 +19,7 @@ public class UpdateKPICommandValidator : AbstractValidator<UpdateKPICommand>
             .Must(id => id != Guid.Empty)
             .WithMessage("KPI ID must be a valid, non-empty GUID.");
 
-        // 2. ParentKPIId (Optional GUID)
+        // 2. ParentKPIId (Optional GUID?)
         RuleFor(x => x.UpdateKPI.ParentKPIId)
             .Must(id => !id.HasValue || id.Value != Guid.Empty)
             .WithMessage("If provided, the Parent KPI ID must be a valid, non-empty GUID.")
@@ -31,35 +31,39 @@ public class UpdateKPICommandValidator : AbstractValidator<UpdateKPICommand>
             .When(x => x.UpdateKPI.ParentKPIId.HasValue)
             .WithMessage("A KPI cannot be its own parent.");
 
-        // 4. FunctionType (Required String, Valid Value)
+        // 4. FunctionType (Optional String?) - Check only if provided
         RuleFor(x => x.UpdateKPI.FunctionType)
-            .NotEmpty()
-            .WithMessage("Function Type is required.")
             .MaximumLength(100)
             .WithMessage("Function Type cannot exceed 100 characters.")
             .Must(type => ValidFunctionTypes.Contains(type, StringComparer.OrdinalIgnoreCase))
-            .WithMessage($"Function Type must be one of the following: {string.Join(", ", ValidFunctionTypes)}.");
+            .WithMessage($"Function Type must be one of the following: {string.Join(", ", ValidFunctionTypes)}.")
+            // Validation only runs if the string is NOT null or empty
+            .When(x => !string.IsNullOrWhiteSpace(x.UpdateKPI.FunctionType));
 
-        // 5. Name (Required String, Min/Max Length)
+        // 5. Name (Optional String?) - Check only if provided
         RuleFor(x => x.UpdateKPI.Name)
-            .NotEmpty()
-            .WithMessage("KPI Name is required.")
             .MinimumLength(5)
             .WithMessage("KPI Name must be at least 5 characters long.")
             .MaximumLength(250)
-            .WithMessage("KPI Name cannot exceed 250 characters.");
+            .WithMessage("KPI Name cannot exceed 250 characters.")
+            .When(x => !string.IsNullOrWhiteSpace(x.UpdateKPI.Name));
 
-        // 6. Description (Optional String, Max Length)
+        // 6. Description (Optional String?) - Check only if provided
         RuleFor(x => x.UpdateKPI.Description)
             .MaximumLength(1000)
             .WithMessage("Description cannot exceed 1000 characters.")
             .When(x => !string.IsNullOrWhiteSpace(x.UpdateKPI.Description));
 
-        // 7. Status (Required String, Must be one of the defined valid statuses)
+        // 7. IsOfficeMandate (Optional Bool?) - Check only if value is explicitly set (i.e., not null)
+        RuleFor(x => x.UpdateKPI.IsOfficeMandate)
+            .NotNull()
+            .When(x => x.UpdateKPI.IsOfficeMandate.HasValue)
+            .WithMessage("IsOfficeMandate must be a boolean value (true or false) if provided.");
+
+        // 8. Status (Optional String?) - Check only if provided
         RuleFor(x => x.UpdateKPI.Status)
-            .NotEmpty()
-            .WithMessage("Status is required.")
             .Must(status => ValidStatuses.Contains(status, StringComparer.OrdinalIgnoreCase))
-            .WithMessage($"Status must be one of the following: {string.Join(", ", ValidStatuses)}.");
+            .WithMessage($"Status must be one of the following: {string.Join(", ", ValidStatuses)}.")
+            .When(x => !string.IsNullOrWhiteSpace(x.UpdateKPI.Status));
     }
 }

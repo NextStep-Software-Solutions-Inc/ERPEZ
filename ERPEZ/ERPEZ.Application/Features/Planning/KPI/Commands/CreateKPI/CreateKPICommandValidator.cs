@@ -8,7 +8,6 @@ public class CreateKPICommandValidator : AbstractValidator<CreateKPICommand>
     [
         "Core Function", "Strategic Priority", "Mandatory Support Functions"
     ];
-    private readonly string[] ValidStatuses = ["Draft", "Active", "Archived"];
 
     public CreateKPICommandValidator()
     {
@@ -41,12 +40,5 @@ public class CreateKPICommandValidator : AbstractValidator<CreateKPICommand>
             .MaximumLength(1000)
             .WithMessage("Description cannot exceed 1000 characters.")
             .When(x => !string.IsNullOrWhiteSpace(x.Description));
-
-        // Status (Required String, Must be one of the defined valid statuses)
-        RuleFor(x => x.Status)
-            .NotEmpty()
-            .WithMessage("Status is required.")
-            .Must(status => ValidStatuses.Contains(status, StringComparer.OrdinalIgnoreCase))
-            .WithMessage($"Status must be one of the following: {string.Join(", ", ValidStatuses)}.");
     }
 }

@@ -31,7 +31,7 @@ public class CreateKPICommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<
             Name = request.Name,
             Description = request.Description,
             IsOfficeMandate = request.IsOfficeMandate,
-            Status = request.Status
+            Status = "Draft"
         };
 
         await _unitOfWork.KPIRepository.AddAsync(kpi, cancellationToken);
