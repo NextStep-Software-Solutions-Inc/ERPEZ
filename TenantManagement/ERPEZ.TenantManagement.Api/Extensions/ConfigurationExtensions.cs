@@ -1,6 +1,7 @@
-using ERPEZ.Api.Configuration;
 
-namespace ERPEZ.Api.Extensions;
+using ERPEZ.TenantManagement.Api.Configuration;
+
+namespace ERPEZ.TenantManagement.Api.Extensions;
 
 public static class ConfigurationExtensions
 {

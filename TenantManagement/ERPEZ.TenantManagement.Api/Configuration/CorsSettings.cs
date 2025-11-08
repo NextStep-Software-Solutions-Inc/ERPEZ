@@ -1,4 +1,4 @@
-namespace ERPEZ.Api.Configuration;
+namespace ERPEZ.TenantManagement.Api.Configuration;
 
 public class CorsSettings
 {

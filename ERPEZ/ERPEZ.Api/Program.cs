@@ -4,8 +4,6 @@ using ERPEZ.Application;
 using ERPEZ.Infrastructure;
 
 var builder = WebApplication.CreateBuilder(args);
-
-// Centralized configuration registration (appsettings + environment + user secrets)
 builder.ConfigureAppConfiguration();
 
 builder

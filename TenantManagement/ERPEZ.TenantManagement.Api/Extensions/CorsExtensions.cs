@@ -1,6 +1,6 @@
-using ERPEZ.Api.Configuration;
+using ERPEZ.TenantManagement.Api.Configuration;
 
-namespace ERPEZ.Api.Extensions;
+namespace ERPEZ.TenantManagement.Api.Extensions;
 
 public static class CorsExtensions
 {
