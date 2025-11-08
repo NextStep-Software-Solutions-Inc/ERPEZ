@@ -1,4 +1,5 @@
 ﻿using ERPEZ.Shared.Middlewares;
+using ERPEZ.Api.Extensions;
 
 namespace ERPEZ.Api;
 
@@ -9,23 +10,7 @@ public static class DependencyInjection
         services.AddControllers();
         services.AddEndpointsApiExplorer();
         services.AddSwaggerGen();
-        services.AddCors(options =>
-        {
-            options.AddPolicy("development",
-                builder =>
-                {
-                    builder.AllowAnyOrigin()
-                           .AllowAnyMethod()
-                           .AllowAnyHeader();
-                });
-            options.AddPolicy("production",
-                builder =>
-                {
-                    builder.WithOrigins("https://erpez.api.nextstep-software.com")
-                           .AllowAnyMethod()
-                           .AllowAnyHeader();
-                });
-        });
+        services.AddCorsPolicies(); // Register CORS policies from extension method
 
         // 3. Add our custom global exception handler
         services.AddExceptionHandler<GlobalExceptionHandler>();
