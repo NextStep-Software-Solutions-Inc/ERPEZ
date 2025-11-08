@@ -3,17 +3,19 @@ using ERPEZ.TenantManagement.Application.Common.Behaviors;
 using Microsoft.Extensions.DependencyInjection;
 using Sieve.Services;
 using System.Reflection;
+using Microsoft.AspNetCore.Builder;
 
 namespace ERPEZ.TenantManagement.Application;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddApplicationServices(this IServiceCollection services)
+    public static WebApplicationBuilder AddApplicationServices(this WebApplicationBuilder builder)
     {
+        var services = builder.Services;
         var assembly = Assembly.GetExecutingAssembly();
 
         services.AddScoped<ISieveProcessor, SieveProcessor>();
-        
+
         // Register MediatR with pipeline behaviors
         services.AddMediatR(config =>
         {
@@ -43,6 +45,6 @@ public static class DependencyInjection
                     .AllowAnyMethod();
             });
         });
-        return services;
+        return builder;
     }
 }

@@ -6,6 +6,7 @@ using ERPEZ.TenantManagement.Infrastructure.Persistence.Repositories;
 using ERPEZ.TenantManagement.Infrastructure.Services;
 using Hangfire;
 using Hangfire.PostgreSql;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -15,12 +16,10 @@ namespace ERPEZ.TenantManagement.Infrastructure;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddInfrastructureServices(
-        this IServiceCollection services,
-        IConfiguration configuration,
-        IHostEnvironment env)
+    public static WebApplicationBuilder AddInfrastructureServices(this WebApplicationBuilder builder)
     {
-        var connectionString = configuration.GetConnectionString("DefaultConnection");
+        var services = builder.Services;
+        var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
         services.AddHttpContextAccessor();
 
@@ -51,7 +50,7 @@ public static class DependencyInjection
             .UsePostgreSqlStorage(c => c.UseNpgsqlConnection(connectionString)));
 
         services.AddHangfireServer();
-        if (env != null && env.IsDevelopment())
+        if (builder.Environment.IsDevelopment())
         {
             using var scope = services.BuildServiceProvider().CreateScope();
             var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
@@ -61,6 +60,6 @@ public static class DependencyInjection
             foreach (var seeder in seeders)
                 seeder.SeedAsync().GetAwaiter().GetResult();
         }
-        return services;
+        return builder;
     }
 }

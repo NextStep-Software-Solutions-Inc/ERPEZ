@@ -5,8 +5,9 @@ namespace ERPEZ.TenantManagement.Api;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddApiServices(this IServiceCollection services)
+    public static WebApplicationBuilder AddApiServices(this WebApplicationBuilder builder)
     {
+        var services = builder.Services;
         services.AddControllers();
         services.AddEndpointsApiExplorer();
         
@@ -44,6 +45,6 @@ public static class DependencyInjection
         // 3. Add our custom global exception handler
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddProblemDetails();
-        return services;
+        return builder;
     }
 }

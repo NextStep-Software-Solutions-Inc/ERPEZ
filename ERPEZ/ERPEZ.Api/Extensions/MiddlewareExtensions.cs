@@ -9,7 +9,13 @@ public static class MiddlewareExtensions
     /// </summary>
     public static WebApplication UseApiMiddlewares(this WebApplication app)
     {
-        // Configure the HTTP request pipeline.
+        // 1. Exception handling FIRST (catches errors from all middleware)
+        app.UseExceptionHandler();
+
+        // 2. HTTPS redirection
+        app.UseHttpsRedirection();
+
+        // 3. Swagger (development only)
         if (app.Environment.IsDevelopment())
         {
             app.UseSwagger();
@@ -24,17 +30,23 @@ public static class MiddlewareExtensions
             });
         }
 
-        // Use CORS policy based on environment name (development/production)
+        // 4. Routing (required for endpoint-based middleware)
+        app.UseRouting();
+
+        // 5. CORS (after routing)
         app.UseCors(app.Environment.EnvironmentName.ToLower());
-        app.UseResponseCaching(); // Enable response caching
-        app.UseResponseCompression(); // Enable response compression
 
-        app.UseHttpsRedirection();
+        // 6. Authentication (after routing)
+        app.UseAuthentication();
 
-        // Use our global exception handler (registered via DI)
-        app.UseExceptionHandler();
+        // 7. Authorization (after authentication)
+        app.UseAuthorization();
 
-        // Add Hangfire Dashboard endpoint
+        // 8. Response caching/compression (after auth, before endpoints)
+        app.UseResponseCaching();
+        app.UseResponseCompression();
+
+        // 9. Hangfire Dashboard endpoint
         app.UseHangfireDashboard();
 
         return app;
