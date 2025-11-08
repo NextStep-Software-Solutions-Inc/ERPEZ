@@ -1,14 +1,18 @@
-using Microsoft.Extensions.DependencyInjection;
+using ERPEZ.Api.Configuration;
 
 namespace ERPEZ.Api.Extensions;
 
-public static class ServiceCollectionExtensions
+public static class CorsExtensions
 {
     /// <summary>
     /// Registers CORS policies used by the API.
     /// </summary>
-    public static IServiceCollection AddCorsPolicies(this IServiceCollection services)
+    public static IServiceCollection AddCorsPolicies(this IServiceCollection services, IConfiguration configuration)
     {
+
+        var corsSettings = new CorsSettings();
+        configuration.GetSection("Cors").Bind(corsSettings);  // Manual bind for static CORS policies
+
         services.AddCors(options =>
         {
             options.AddPolicy("development",
@@ -22,7 +26,7 @@ public static class ServiceCollectionExtensions
             options.AddPolicy("production",
                 builder =>
                 {
-                    builder.WithOrigins("https://erpez.api.nextstep-software.com")
+                    builder.WithOrigins(corsSettings.Origins)
                            .AllowAnyMethod()
                            .AllowAnyHeader();
                 });

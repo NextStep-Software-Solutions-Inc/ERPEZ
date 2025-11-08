@@ -9,9 +9,11 @@
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <RunAnalyzersDuringBuild>true</RunAnalyzersDuringBuild>
     <RunAnalyzersDuringLiveAnalysis>true</RunAnalyzersDuringLiveAnalysis>
-    <CodeAnalysisTreatWarningsAsErrors>true</CodeAnalysisTreatWarningsAsErrors>
-    <!-- Enforce code-style rules during build as errors -->
-    <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
+    <!-- Treat analyzer warnings as errors only in CI to avoid blocking local developer workflows.
+      CI environments typically set the 'CI' environment variable to 'true'. -->
+    <CodeAnalysisTreatWarningsAsErrors Condition="'$(CI)' == 'true'">true</CodeAnalysisTreatWarningsAsErrors>
+    <!-- Enforce code-style rules during build as errors only in CI -->
+    <EnforceCodeStyleInBuild Condition="'$(CI)' == 'true'">true</EnforceCodeStyleInBuild>
     <!-- Ensure nullable reference types are enabled by default -->
     <Nullable>enable</Nullable>
     <!-- Deterministic builds preferred -->

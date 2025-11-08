@@ -10,8 +10,24 @@ public static class MiddlewareExtensions
     /// </summary>
     public static WebApplication UseApiMiddlewares(this WebApplication app)
     {
+        // Configure the HTTP request pipeline.
+        if (app.Environment.IsDevelopment())
+        {
+            app.UseSwagger();
+            app.UseSwaggerUI(options =>
+            {
+                options.EnablePersistAuthorization();
+                options.DisplayRequestDuration();
+                options.DocExpansion(Swashbuckle.AspNetCore.SwaggerUI.DocExpansion.None);
+                options.DefaultModelsExpandDepth(-1);
+                options.EnableDeepLinking();
+            });
+        }
+
         // Use CORS policy based on environment name (development/production)
         app.UseCors(app.Environment.EnvironmentName.ToLower());
+        app.UseResponseCaching(); // Enable response caching
+        app.UseResponseCompression(); // Enable response compression
 
         app.UseHttpsRedirection();
 
