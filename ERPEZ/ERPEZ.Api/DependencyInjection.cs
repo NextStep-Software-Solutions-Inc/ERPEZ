@@ -14,8 +14,6 @@ public static class DependencyInjection
         services.AddCorsPolicies(builder.Configuration); // Register CORS policies from extension method
         services.AddResponseCaching();
         services.AddResponseCompression();
-
-        // 3. Add our custom global exception handler
         services.AddExceptionHandler<GlobalExceptionHandler>();
         services.AddProblemDetails();
         return builder;
