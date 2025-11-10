@@ -54,6 +54,7 @@ public static class DependencyInjection
         services.AddScoped<IMFOPAPRepository, MFOPAPRepository>();
         services.AddScoped<IFunctionPercentageAllocationRepository, FunctionPercentageAllocationRepository>();
         services.AddScoped<IDUFundAllocationRepository, DUFundAllocationRepository>();
+        services.AddScoped<IClusterRepository, ClusterRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         // Add Hangfire

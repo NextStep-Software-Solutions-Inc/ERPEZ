@@ -30,5 +30,6 @@ public interface IUnitOfWork
     IWFPOutcomeRepository WFPOutcomeRepository { get; }
     IWFPPAPDepartmentRepository WFPPAPDepartmentRepository { get; }
     IFunctionPercentageAllocationRepository FunctionPercentageAllocationRepository { get; }
+    IClusterRepository ClusterRepository { get; }
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

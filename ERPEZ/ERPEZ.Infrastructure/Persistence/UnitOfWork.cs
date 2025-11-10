@@ -37,6 +37,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public ITransactionRepository TransactionRepository { get; }
     public IMFOPAPRepository MFOPAPRepository { get; }
     public IFunctionPercentageAllocationRepository FunctionPercentageAllocationRepository { get; }
+    public IClusterRepository ClusterRepository { get; }
 
     public UnitOfWork(ApplicationDbContext context,
                         ISieveProcessor sieveProcessor,
@@ -69,7 +70,8 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
                         ILocationRepository locationRepository,
                         ITransactionRepository transactionRepository,
                         IMFOPAPRepository mFOPAPRepository,
-                        IFunctionPercentageAllocationRepository functionPercentageAllocationRepository)
+                        IFunctionPercentageAllocationRepository functionPercentageAllocationRepository,
+                        IClusterRepository clusterRepository)
     {
         _context = context ?? throw new ArgumentNullException(nameof(context));
 
@@ -103,6 +105,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         TransactionRepository = transactionRepository ?? throw new ArgumentNullException(nameof(transactionRepository));
         MFOPAPRepository = mFOPAPRepository ?? throw new ArgumentNullException(nameof(mFOPAPRepository));
         FunctionPercentageAllocationRepository = functionPercentageAllocationRepository ?? throw new ArgumentNullException(nameof(functionPercentageAllocationRepository));
+        ClusterRepository = clusterRepository ?? throw new ArgumentNullException(nameof(clusterRepository));
     }
 
     public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
