@@ -11,14 +11,6 @@ public class CreateDUKPIAssignmentCommandHandler(IUnitOfWork _unitOfWork)
 {
     public async Task<ApiResponse<DUKPIAssignmentDto>> Handle(CreateDUKPIAssignmentCommand request, CancellationToken cancellationToken)
     {
-        if (request.DeliveryUnitId == Guid.Empty || request.KPIId == Guid.Empty)
-        {
-            return new ApiResponse<DUKPIAssignmentDto>
-            {
-                Message = "KPI and Delivery Unit are required.",
-                Succeeded = false
-            };
-        }
         var deliveryUnit = await _unitOfWork.DUKPIAssignmentRepository.FindAsync(
             t => t.KPIId == request.KPIId && t.DeliveryUnitId == request.DeliveryUnitId,
             cancellationToken: cancellationToken
