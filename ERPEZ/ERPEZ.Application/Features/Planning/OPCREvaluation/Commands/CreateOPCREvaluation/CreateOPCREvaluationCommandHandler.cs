@@ -15,8 +15,7 @@ public class CreateOPCREvaluationCommandHandler(IUnitOfWork _unitOfWork) : IRequ
 
         var duplicate = await _unitOfWork.OPCREvaluationRepository.FindAsync(o => 
         o.OPCRId == request.OPCRId && 
-        o.EvaluatorId == request.EvaluatorId &&
-        o.EvaluationDate == request.EvaluationDate
+        o.EvaluatorId == request.EvaluatorId
         , cancellationToken);
         if (duplicate != null) throw new ConflictException("OPCR Evaluation already exist.");
 
