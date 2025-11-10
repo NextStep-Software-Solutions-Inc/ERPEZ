@@ -30,7 +30,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet]
-        [ProducesResponseType(typeof(PaginatedApiResponse<OPCREvaluation>), StatusCodes.Status200OK)] // Returns Entity
+        [ProducesResponseType(typeof(PaginatedApiResponse<OPCREvaluationDto>), StatusCodes.Status200OK)] // Returns DTO
         public async Task<IActionResult> GetOPCREvaluations([FromQuery] GetOPCREvaluationsQuery query)
         {
             var result = await mediator.Send(query);
