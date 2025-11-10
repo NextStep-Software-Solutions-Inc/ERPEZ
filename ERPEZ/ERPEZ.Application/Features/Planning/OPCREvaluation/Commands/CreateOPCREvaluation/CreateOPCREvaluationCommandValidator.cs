@@ -34,13 +34,18 @@ public class CreateOPCREvaluationCommandValidator : AbstractValidator<CreateOPCR
             .WithMessage("Comments cannot exceed 2000 characters.")
             .When(x => !string.IsNullOrEmpty(x.Comments));
 
-        // Status (Required String, Valid Value)
+        // Status (Required String, Valid Value, Normalized to canonical casing)
         RuleFor(x => x.Status)
             .NotEmpty()
             .WithMessage("Status is required.")
             .MaximumLength(50)
             .WithMessage("Status cannot exceed 50 characters.")
-            .Must(status => ValidEvaluationStatuses.Contains(status, StringComparer.OrdinalIgnoreCase))
+            .Transform(status => 
+                ValidEvaluationStatuses.FirstOrDefault(
+                    s => string.Equals(s, status, StringComparison.OrdinalIgnoreCase)
+                ) ?? status
+            )
+            .Must(status => ValidEvaluationStatuses.Contains(status))
             .WithMessage($"Status must be one of the following: {string.Join(", ", ValidEvaluationStatuses)}.");
     }
 }
