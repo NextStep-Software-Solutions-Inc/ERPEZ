@@ -29,7 +29,7 @@ public class CreateDUKPIAssignmentCommandHandler(IUnitOfWork _unitOfWork)
 
         if (request.KPIId != Guid.Empty)
         {
-            var kpi = await _unitOfWork.KPIRepository.GetByIdAsync(request.KPIId, cancellationToken: cancellationToken)
+            await _unitOfWork.KPIRepository.GetByIdAsync(request.KPIId, cancellationToken: cancellationToken)
                 ?? throw new NotFoundException("KPI not found.");
         }
 
