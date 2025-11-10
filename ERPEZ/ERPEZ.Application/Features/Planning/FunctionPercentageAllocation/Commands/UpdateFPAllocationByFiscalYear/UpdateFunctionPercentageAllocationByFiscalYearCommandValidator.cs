@@ -1,0 +1,6 @@
+﻿namespace ERPEZ.Application.Features.Planning.FunctionPercentageAllocation.Commands.UpdateFPAllocationByFiscalYear
+{
+    public class UpdateFunctionPercentageAllocationByFiscalYearCommandValidator
+    {
+    }
+}

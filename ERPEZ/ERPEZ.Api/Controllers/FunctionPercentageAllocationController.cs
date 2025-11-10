@@ -1,6 +1,7 @@
 ﻿using ERPEZ.Application.Features.Planning.FunctionPercentageAllocation.Commands.CreateFPAllocation;
 using ERPEZ.Application.Features.Planning.FunctionPercentageAllocation.Commands.DeleteFPAllocation;
 using ERPEZ.Application.Features.Planning.FunctionPercentageAllocation.Commands.UpdateFPAllocation;
+using ERPEZ.Application.Features.Planning.FunctionPercentageAllocation.Commands.UpdateFPAllocationByFiscalYear;
 using ERPEZ.Application.Features.Planning.FunctionPercentageAllocation.Dtos;
 using ERPEZ.Application.Features.Planning.FunctionPercentageAllocation.Queries.GetFPAllocationById;
 using ERPEZ.Application.Features.Planning.FunctionPercentageAllocation.Queries.GetFPAllocations;
@@ -54,6 +55,21 @@ namespace ERPEZ.Api.Controllers
             var query = new GetFunctionTypesQuery();
             var result = await mediator.Send(query);
             return Ok(result);
+        }
+        [HttpPut("/fiscalYear")]
+        [ProducesResponseType(StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> UpdateFunctionPercentageAllocation(int fiscalYear, [FromBody] Funct updateDto)
+        {
+            var request = new UpdateFunctionPercentageAllocationByFiscalYearCommand
+            {
+                FiscalYear = fiscalYear,
+                FunctionPercentageAllocationsRequests = updateDto
+            };
+
+            var response = await mediator.Send(request);
+            return response.Succeeded ? Ok(response) : BadRequest(response);
         }
         [HttpPut("{id}")]
         [ProducesResponseType(StatusCodes.Status200OK)]
