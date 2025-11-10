@@ -4,5 +4,5 @@ public class UpdateOPCREvaluationDto
 {
     public DateTime? EvaluationDate { get; set; }
     public string? Comments { get; set; }
-    public string? Status { get; set; } = string.Empty;
+    public string? Status { get; set; }
 }
