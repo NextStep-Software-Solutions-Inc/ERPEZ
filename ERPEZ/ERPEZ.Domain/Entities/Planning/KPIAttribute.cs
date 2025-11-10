@@ -9,6 +9,4 @@ public class KPIAttribute : BaseEntity
     public Guid AttributeId { get; set; }
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid KPIId { get; set; }
-    public virtual KPI KPI { get; set; } = null!;
-    public virtual Attribute Attribute { get; set; } = null!;
 }

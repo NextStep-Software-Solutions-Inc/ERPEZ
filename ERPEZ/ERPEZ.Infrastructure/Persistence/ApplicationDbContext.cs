@@ -638,16 +638,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .IsUnique();
 
         modelBuilder.Entity<KPIAttribute>()
-            .HasOne(ka => ka.KPI)
-            .WithMany()
-            .HasForeignKey(ka => ka.KPIId)
-            .IsRequired();
-
-        modelBuilder.Entity<KPIAttribute>()
-            .HasOne(ka => ka.Attribute)
-            .WithMany()
-            .HasForeignKey(ka => ka.AttributeId)
-            .IsRequired();
+            .HasKey(ks => new { ks.KPIId, ks.AttributeId });
 
         //SDG
         modelBuilder.Entity<SDG>()
@@ -655,26 +646,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .IsRequired()
             .HasMaxLength(1000);
 
-        modelBuilder.Entity<SDG>()
-            .HasMany(s => s.KPISDGs)
-            .WithOne(ks => ks.SDG)
-            .HasForeignKey(ks => ks.SDGId)
-            .IsRequired();
-
         //KPISDG
         modelBuilder.Entity<KPISDG>()
             .HasIndex(ks => new { ks.KPIId, ks.SDGId })
             .IsUnique();
 
         modelBuilder.Entity<KPISDG>()
-            .HasOne(ks => ks.KPI)
-            .WithMany(k => k.KPISDGs)
-            .HasForeignKey(ks => ks.KPIId);
-
-        modelBuilder.Entity<KPISDG>()
-            .HasOne(ks => ks.SDG)
-            .WithMany(s => s.KPISDGs)
-            .HasForeignKey(ks => ks.SDGId);
+            .HasKey(ks => new { ks.KPIId, ks.SDGId });
 
         //WFPObjectiveTarget
         modelBuilder.Entity<WFPObjectiveTarget>()
