@@ -30,6 +30,7 @@ public static class DependencyInjection
         services.AddScoped<IOPCREvaluationRepository, OPCREvaluationRepository>();
         services.AddScoped<IOPCRPAPDepartmentRepository, OPCRPAPDepartmentRepository>();
         services.AddScoped<IOPCRRatingRepository, OPCRRatingRepository>();
+        services.AddScoped<IObjectRepository, ObjectRepository>();
         services.AddScoped<IWFPRepository, WFPRepository>();
         services.AddScoped<IWFPPAPDepartmentRepository, WFPPAPDepartmentRepository>();
         services.AddScoped<IWFPObjectiveRepository, WFPObjectiveRepository>();

@@ -24,6 +24,7 @@ public interface IUnitOfWork
     IOPCRActivityRepository OPCRActivityRepository { get; }
     IOPCRPAPDepartmentRepository OPCRPAPDepartmentRepository { get; }
     IOPCREvaluationRepository OPCREvaluationRepository { get; }
+    IObjectRepository ObjectRepository { get; }
     IWFPRepository WFPRepository { get; }
     IWFPActivityRepository WFPActivityRepository { get; }
     IWFPObjectiveRepository WFPObjectiveRepository { get; }
