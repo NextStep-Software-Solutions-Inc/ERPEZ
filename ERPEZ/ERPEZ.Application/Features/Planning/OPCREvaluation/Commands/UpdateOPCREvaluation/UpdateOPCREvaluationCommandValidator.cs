@@ -35,8 +35,8 @@ public class UpdateOPCREvaluationCommandValidator : AbstractValidator<UpdateOPCR
             .When(x => !string.IsNullOrEmpty(x.UpdateOPCREvaluation.Status));
 
         RuleFor(x => x.UpdateOPCREvaluation.Status)
-            .Must(status => ValidEvaluationStatuses.Contains(status, StringComparer.OrdinalIgnoreCase))
-            .WithMessage($"Status must be one of the following: {string.Join(", ", ValidEvaluationStatuses)}.")
+            .Must(status => ValidEvaluationStatuses.Contains(status))
+            .WithMessage($"Status must be one of the following (case-sensitive): {string.Join(", ", ValidEvaluationStatuses)}.")
             .When(x => !string.IsNullOrEmpty(x.UpdateOPCREvaluation.Status));
     }
 }
