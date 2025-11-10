@@ -16,7 +16,8 @@ public class UpdateOPCREvaluationCommandHandler(IUnitOfWork _unitOfWork) : IRequ
 
         opcrEvaluation.EvaluationDate = dto.EvaluationDate ?? opcrEvaluation.EvaluationDate;
         opcrEvaluation.Comments = dto.Comments ?? opcrEvaluation.Comments;
-        opcrEvaluation.Status = dto.Status ?? opcrEvaluation.Status;
+        if (!string.IsNullOrEmpty(dto.Status))
+            opcrEvaluation.Status = dto.Status;
 
         _unitOfWork.OPCREvaluationRepository.Update(opcrEvaluation);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
