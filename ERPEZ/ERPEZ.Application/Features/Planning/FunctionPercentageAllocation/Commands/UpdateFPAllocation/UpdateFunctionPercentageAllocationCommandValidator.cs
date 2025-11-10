@@ -1,11 +1,11 @@
-﻿using ERPEZ.Application.Features.Planning.FunctionPercentageAllocation.Commands.UpdateFPAllocation;
+﻿using ERPEZ.Application.Common.Constants;
+using ERPEZ.Application.Features.Planning.FunctionPercentageAllocation.Commands.UpdateFPAllocation;
 using FluentValidation;
 
 namespace ERPEZ.Application.Features.Planning.FunctionPercentageAllocation.Validators
 {
     public class UpdateFunctionPercentageAllocationCommandValidator : AbstractValidator<UpdateFunctionPercentageAllocationCommand>
     {
-        private readonly string[] ValidFunctionTypes = ["Core Function", "Strategic", "Priority", "Mandatory Support"];
 
         public UpdateFunctionPercentageAllocationCommandValidator()
         {
@@ -21,12 +21,10 @@ namespace ERPEZ.Application.Features.Planning.FunctionPercentageAllocation.Valid
                 .WithMessage("Fiscal Year must be a realistic year (e.g., 2000-2100).");
 
             RuleFor(x => x.UpdateFPA.FunctionType)
-                .NotEmpty()
-                .WithMessage("Function Type is required.")
-                .MaximumLength(100)
-                .WithMessage("Function Type cannot exceed 100 characters.")
-                .Must(type => ValidFunctionTypes.Contains(type, StringComparer.OrdinalIgnoreCase))
-                .WithMessage($"Function Type must be one of the following: {string.Join(", ", ValidFunctionTypes)}.");
+                .NotEmpty().WithMessage("Function Type is required.")
+                .MaximumLength(100).WithMessage("Function Type cannot exceed 100 characters.")
+                .Must(type => FunctionTypeConstants.ValidFunctionTypes.Contains(type, StringComparer.OrdinalIgnoreCase))
+                .WithMessage($"Function Type must be one of the following: {string.Join(", ", FunctionTypeConstants.ValidFunctionTypes)}.");
 
             RuleFor(x => x.UpdateFPA.Description)
                 .MaximumLength(500)

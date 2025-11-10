@@ -1,6 +1,6 @@
-﻿using ERPEZ.Application.Features.Planning.FunctionPercentageAllocation.Dtos;
+﻿using ERPEZ.Application.Common.Constants;
+using ERPEZ.Application.Features.Planning.FunctionPercentageAllocation.Dtos;
 using FluentValidation;
-using System.Linq;
 
 namespace ERPEZ.Application.Features.Planning.FunctionPercentageAllocation.Commands.CreateFPAllocation;
 
@@ -27,7 +27,6 @@ public class CreateFunctionPercentageAllocationCommandValidator : AbstractValida
 }
 public class FunctionPercentageAllocationRequestValidator : AbstractValidator<FunctionPercentageAllocationRequest>
 {
-    private readonly string[] ValidFunctionTypes = ["Core Function", "Strategic", "Priority", "Mandatory Support"];
 
     public FunctionPercentageAllocationRequestValidator()
     {
@@ -38,8 +37,8 @@ public class FunctionPercentageAllocationRequestValidator : AbstractValidator<Fu
         RuleFor(x => x.FunctionType)
             .NotEmpty().WithMessage("Function Type is required.")
             .MaximumLength(100).WithMessage("Function Type cannot exceed 100 characters.")
-            .Must(type => ValidFunctionTypes.Contains(type, StringComparer.OrdinalIgnoreCase))
-            .WithMessage($"Function Type must be one of the following: {string.Join(", ", ValidFunctionTypes)}.");
+            .Must(type => FunctionTypeConstants.ValidFunctionTypes.Contains(type, StringComparer.OrdinalIgnoreCase))
+            .WithMessage($"Function Type must be one of the following: {string.Join(", ", FunctionTypeConstants.ValidFunctionTypes)}.");
 
         RuleFor(x => x.Description)
             .MaximumLength(500).When(x => !string.IsNullOrWhiteSpace(x.Description)).WithMessage("Description cannot exceed 500 characters.");
