@@ -646,14 +646,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .IsRequired()
             .HasMaxLength(1000);
 
-        //KPISDG
-        modelBuilder.Entity<KPISDG>()
-            .HasIndex(ks => new { ks.KPIId, ks.SDGId })
-            .IsUnique();
-
-        modelBuilder.Entity<KPISDG>()
-            .HasKey(ks => new { ks.KPIId, ks.SDGId });
-
         //WFPObjectiveTarget
         modelBuilder.Entity<WFPObjectiveTarget>()
             .HasOne(wot => wot.WFPObjective)
