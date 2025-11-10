@@ -2,6 +2,7 @@
 
 public class UpdateFunctionPercentageAllocationDto
 {
+    public int FiscalYear {  get; set; }
     public string? FunctionType { get; set; }
     public string? Description { get; set; }
     public decimal? Percentage { get; set; }
