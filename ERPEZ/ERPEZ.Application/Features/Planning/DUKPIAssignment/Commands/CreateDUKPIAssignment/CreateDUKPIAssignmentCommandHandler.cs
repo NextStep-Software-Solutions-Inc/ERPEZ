@@ -11,27 +11,21 @@ public class CreateDUKPIAssignmentCommandHandler(IUnitOfWork _unitOfWork)
 {
     public async Task<ApiResponse<DUKPIAssignmentDto>> Handle(CreateDUKPIAssignmentCommand request, CancellationToken cancellationToken)
     {
-        var deliveryUnit = await _unitOfWork.DUKPIAssignmentRepository.FindAsync(
+        var dukpi = await _unitOfWork.DUKPIAssignmentRepository.FindAsync(
             t => t.KPIId == request.KPIId && t.DeliveryUnitId == request.DeliveryUnitId,
             cancellationToken: cancellationToken
         );
 
-        if (deliveryUnit != null)
-            throw new ConflictException("KPIAssigment already exists.");
+        if (dukpi != null)
+            throw new ConflictException("DU KPI Assigment already exists.");
 
-        if (request.KPIId != Guid.Empty)
-        {
-            _ = await _unitOfWork.KPIRepository.GetByIdAsync(request.KPIId, cancellationToken: cancellationToken)
-                ?? throw new NotFoundException("KPI not found.");
-        }
+        _ = await _unitOfWork.KPIRepository.GetByIdAsync(request.KPIId, cancellationToken: cancellationToken)
+            ?? throw new NotFoundException("KPI not found.");
+        
+        _ = await _unitOfWork.DeliveryUnitRepository.GetByIdAsync(request.DeliveryUnitId, cancellationToken: cancellationToken)
+            ?? throw new NotFoundException("Delivery Unit not found.");
 
-        if (request.DeliveryUnitId != Guid.Empty)
-        {
-           _ = await _unitOfWork.DeliveryUnitRepository.GetByIdAsync(request.DeliveryUnitId, cancellationToken: cancellationToken)
-                ?? throw new NotFoundException("Delivery Unit not found.");
-        }
-
-        var kpiAssignment = new Domain.Entities.Planning.DUKPIAssignment
+        var duKpiAssignment = new Domain.Entities.Planning.DUKPIAssignment
         {
             KPIId = request.KPIId,
             DeliveryUnitId = request.DeliveryUnitId,
@@ -39,15 +33,15 @@ public class CreateDUKPIAssignmentCommandHandler(IUnitOfWork _unitOfWork)
             AllocatedTargetValue = request.AllocatedTargetValue,
         };
 
-        await _unitOfWork.DUKPIAssignmentRepository.AddAsync(kpiAssignment, cancellationToken);
+        await _unitOfWork.DUKPIAssignmentRepository.AddAsync(duKpiAssignment, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
         var res = new DUKPIAssignmentDto
         {
-            Id = kpiAssignment.Id,
-            KPIId = kpiAssignment.KPIId,
-            DeliveryUnitId = kpiAssignment.DeliveryUnitId,
-            KPITargetId = kpiAssignment.KPITargetId,
-            AllocatedTargetValue = kpiAssignment.AllocatedTargetValue
+            Id = duKpiAssignment.Id,
+            KPIId = duKpiAssignment.KPIId,
+            DeliveryUnitId = duKpiAssignment.DeliveryUnitId,
+            KPITargetId = duKpiAssignment.KPITargetId,
+            AllocatedTargetValue = duKpiAssignment.AllocatedTargetValue
         };
         return ApiResponse<DUKPIAssignmentDto>.Success(res, "DU KPI Assignment created successfully.");
     }
