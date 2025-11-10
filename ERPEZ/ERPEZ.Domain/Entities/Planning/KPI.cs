@@ -24,6 +24,6 @@ public class KPI : BaseEntity
     public virtual List<OPCRKPI> OPCRKPIs { get; set; } = [];
     public virtual List<KPITarget> KPITargets { get; set; } = [];
     public virtual List<KPI> ParentKPIs { get; set; } = [];
-    public virtual List<KPISDG> KPISDGs { get; set; } = [];
-    public virtual List<KPIAttribute> KPIAttributes { get; set; } = [];
+    public virtual List<SDG> SDGs { get; set; } = [];
+    public virtual List<Attribute> Attributes { get; set; } = [];
 }

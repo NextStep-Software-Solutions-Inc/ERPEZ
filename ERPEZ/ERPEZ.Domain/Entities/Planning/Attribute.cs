@@ -15,5 +15,5 @@ public class Attribute : BaseEntity
     public Guid? ParentAttributeId { get; set; }
     public virtual Attribute? ParentAttribute { get; set; }
     public virtual List<Attribute> ParentAttributes { get; set; } = [];
-    public virtual List<KPIAttribute> KPIAttributes { get; set; } = [];
+    public virtual List<KPI> KPIs { get; set; } = null!;
 }

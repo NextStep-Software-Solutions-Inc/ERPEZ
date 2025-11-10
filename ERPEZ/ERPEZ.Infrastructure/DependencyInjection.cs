@@ -3,6 +3,7 @@ using ERPEZ.Infrastructure.Persistence;
 using ERPEZ.Infrastructure.Persistence.Repositories;
 using Hangfire;
 using Hangfire.PostgreSql;
+using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,12 +13,11 @@ namespace ERPEZ.Infrastructure;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddInfrastructureServices(
-        this IServiceCollection services,
-        IConfiguration configuration,
-        IHostEnvironment? env = null)
+    public static WebApplicationBuilder AddInfrastructureServices(
+        this WebApplicationBuilder builder)
     {
-        var connectionString = configuration.GetConnectionString("DefaultConnection");
+        var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+        var services = builder.Services;
 
         services.AddDbContext<ApplicationDbContext>(options =>
             options.UseNpgsql(connectionString));
@@ -30,6 +30,7 @@ public static class DependencyInjection
         services.AddScoped<IOPCREvaluationRepository, OPCREvaluationRepository>();
         services.AddScoped<IOPCRPAPDepartmentRepository, OPCRPAPDepartmentRepository>();
         services.AddScoped<IOPCRRatingRepository, OPCRRatingRepository>();
+        services.AddScoped<IObjectRepository, ObjectRepository>();
         services.AddScoped<IWFPRepository, WFPRepository>();
         services.AddScoped<IWFPPAPDepartmentRepository, WFPPAPDepartmentRepository>();
         services.AddScoped<IWFPObjectiveRepository, WFPObjectiveRepository>();
@@ -64,6 +65,7 @@ public static class DependencyInjection
             .UsePostgreSqlStorage(c => c.UseNpgsqlConnection(connectionString)));
 
         services.AddHangfireServer(); 
+        var env = builder.Environment;
         
         if (env != null && env.IsDevelopment())
         {
@@ -71,6 +73,6 @@ public static class DependencyInjection
             var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
             dbContext.Database.Migrate();
         }
-        return services;
+        return builder;
     }
 }

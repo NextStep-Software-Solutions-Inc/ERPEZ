@@ -37,9 +37,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<WFPOutcome> WFPOutcomes { get; set; }
     public DbSet<Attribute> Attributes { get; set; }
     public DbSet<Cluster> Clusters { get; set; }
-    public DbSet<KPIAttribute> KPIAttributes { get; set; }
     public DbSet<SDG> SDGs { get; set; }
-    public DbSet<KPISDG> KPISDGs { get; set; }
     public DbSet<WFPObjectiveTarget> WFPObjectiveTargets { get; set; }
     public DbSet<WFPObjectiveTimeline> WFPObjectiveTimelines { get; set; }
 
@@ -94,6 +92,16 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasMany(k => k.KPIModeOfVerifications)
             .WithOne(kv => kv.KPI)
             .HasForeignKey(kv => kv.KPIId);
+
+        modelBuilder.Entity<KPI>()
+            .HasMany(t => t.Attributes)
+            .WithMany(m => m.KPIs)
+            .UsingEntity(tm => tm.ToTable("KPIAttribute"));
+
+        modelBuilder.Entity<KPI>()
+            .HasMany(t => t.SDGs)
+            .WithMany(m => m.KPIs)
+            .UsingEntity(tm => tm.ToTable("KPISDGs"));
 
         // DUKPIAssignment (Delivery Unit KPI Assignment)
         modelBuilder.Entity<DUKPIAssignment>()
@@ -310,7 +318,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .WithOne(sub => sub.DUAllocation)
             .HasForeignKey(sub => sub.DUAllocationId)
             .OnDelete(DeleteBehavior.Restrict);
-        
+
         modelBuilder.Entity<DUAllocation>()
             .HasMany(du => du.DUFundAllocations)
             .WithOne(fa => fa.DUAllocation)
@@ -320,7 +328,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<DUAllocation>()
             .HasOne(du => du.DeliveryUnit)
             .WithMany(d => d.DUAllocations)
-            .HasForeignKey(du => du.DeliveryUnitId)
+            .HasForeignKey(dua => dua.DeliveryUnitId)
             .OnDelete(DeleteBehavior.Restrict);
 
         //DUFund Allocation
@@ -442,14 +450,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<WFPObjective>()
             .HasMany(wo => wo.WFPOutcomes)
-            .WithOne()
-            .HasForeignKey("WFPObjectiveId")
+            .WithOne(wo => wo.WFPObjective)
+            .HasForeignKey(wo => wo.WFPObjectiveId)
             .IsRequired();
 
         modelBuilder.Entity<WFPObjective>()
             .HasMany(wo => wo.WFPObjectiveTargets)
-            .WithOne()
-            .HasForeignKey("WFPObjectiveId")
+            .WithOne(wot => wot.WFPObjective)
+            .HasForeignKey(wot => wot.WFPObjectiveId)
             .IsRequired();
 
         modelBuilder.Entity<WFPObjective>()
@@ -570,11 +578,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .WithOne(r => r.OPCRKPI)
             .HasForeignKey(r => r.OPCRKPIId);
 
-        //OPCRPAPDepartment
-        modelBuilder.Entity<OPCRActivity>()
-            .HasMany(a => a.DeliveryUnits)
-            .WithMany(d => d.OPCRActivities)
-            .UsingEntity(j => j.ToTable("OPCRPAPDepartment"));
+        // **REMOVED THE CONFLICTING USING ENTITY BLOCK HERE**
 
         // OPCRRating
         modelBuilder.Entity<OPCRRating>()
@@ -628,25 +632,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<Cluster>()
             .HasMany(c => c.Offices)
-            .WithOne()
-            .HasForeignKey("ClusterId")
-            .IsRequired();
-
-        //KPI Attribute
-        modelBuilder.Entity<KPIAttribute>()
-            .HasIndex(ka => new { ka.KPIId, ka.AttributeId })
-            .IsUnique();
-
-        modelBuilder.Entity<KPIAttribute>()
-            .HasOne(ka => ka.KPI)
-            .WithMany()
-            .HasForeignKey(ka => ka.KPIId)
-            .IsRequired();
-
-        modelBuilder.Entity<KPIAttribute>()
-            .HasOne(ka => ka.Attribute)
-            .WithMany()
-            .HasForeignKey(ka => ka.AttributeId)
+            .WithOne(o => o.Cluster)
+            .HasForeignKey(o => o.ClusterId)
             .IsRequired();
 
         //SDG
@@ -654,27 +641,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .Property(s => s.Description)
             .IsRequired()
             .HasMaxLength(1000);
-
-        modelBuilder.Entity<SDG>()
-            .HasMany(s => s.KPISDGs)
-            .WithOne(ks => ks.SDG)
-            .HasForeignKey(ks => ks.SDGId)
-            .IsRequired();
-
-        //KPISDG
-        modelBuilder.Entity<KPISDG>()
-            .HasIndex(ks => new { ks.KPIId, ks.SDGId })
-            .IsUnique();
-
-        modelBuilder.Entity<KPISDG>()
-            .HasOne(ks => ks.KPI)
-            .WithMany(k => k.KPISDGs)
-            .HasForeignKey(ks => ks.KPIId);
-
-        modelBuilder.Entity<KPISDG>()
-            .HasOne(ks => ks.SDG)
-            .WithMany(s => s.KPISDGs)
-            .HasForeignKey(ks => ks.SDGId);
 
         //WFPObjectiveTarget
         modelBuilder.Entity<WFPObjectiveTarget>()
@@ -685,14 +651,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<WFPObjectiveTarget>()
             .HasMany(wot => wot.WFPObjectiveTimelines)
-            .WithOne()
-            .HasForeignKey("WFPObjectiveTargetId")
+            .WithOne(wotl => wotl.WFPObjectiveTarget)
+            .HasForeignKey(wotl => wotl.WFPObjectiveTargetId)
             .IsRequired();
 
         modelBuilder.Entity<WFPObjectiveTarget>()
             .HasMany(wot => wot.ActivityBudgetRequirements)
-            .WithOne()
-            .HasForeignKey("WFPObjectiveTargetId")
+            .WithOne(abr => abr.WFPObjectiveTarget)
+            .HasForeignKey(abr => abr.WFPObjectiveTargetId)
             .IsRequired();
 
         modelBuilder.Entity<WFPObjectiveTarget>()
@@ -711,9 +677,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .IsUnique();
 
         modelBuilder.Entity<WFPObjectiveTimeline>()
-            .ToTable(t => t.HasCheckConstraint("CK_WFPObjectiveTimeline_Dates", "StartDate < EndDate"));
+            .ToTable(t => t.HasCheckConstraint("CK_WFPObjectiveTimeline_Dates", "\"StartDate\" < \"EndDate\""));
 
         base.OnModelCreating(modelBuilder);
-
     }
 }
