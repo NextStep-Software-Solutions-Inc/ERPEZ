@@ -8,6 +8,7 @@ using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using System.Collections.Generic;
 
 namespace ERPEZ.Api.Controllers
 {
@@ -16,16 +17,17 @@ namespace ERPEZ.Api.Controllers
     public class FunctionPercentageAllocationController(ISender mediator) : ControllerBase
     {
         [HttpPost]
-        [ProducesResponseType(typeof(ApiResponse<FunctionPercentageAllocation>), StatusCodes.Status201Created)]
-        [ProducesResponseType(typeof(ApiResponse<FunctionPercentageAllocation>), StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> CreateFunctionPercentageAllocation([FromBody] CreateFunctionPercentageAllocationCommand command)
+        [ProducesResponseType(typeof(ApiResponse<List<FunctionPercentageAllocationResponse>>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<List<FunctionPercentageAllocationResponse>>), StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> CreateFunctionPercentageAllocation([FromBody] List<FunctionPercentageAllocationRequest> dto)
         {
+            var command = new CreateFunctionPercentageAllocationCommand 
+            { 
+                FunctionPercentageAllocationsRequests = dto,
+            };
             var response = await mediator.Send(command);
 
-            if (!response.Succeeded)
-                return BadRequest(response);
-
-            return CreatedAtAction(nameof(GetFunctionPercentageAllocationById), new { id = response.Data!.Id }, response);
+            return response.Succeeded ? Ok(response) : BadRequest(response);
         }
 
         [HttpGet]

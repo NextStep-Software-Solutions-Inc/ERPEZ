@@ -13,6 +13,7 @@ public class UpdateFunctionPercentageAllocationCommandHandler(IUnitOfWork _unitO
         if (fpa.FunctionType == request.UpdateFPA?.FunctionType) throw new ConflictException("Function Percentage Allocation already exist.");
 
         var dto = request.UpdateFPA;
+        fpa.FiscalYear = dto?.FiscalYear ?? fpa.FiscalYear;
         fpa.FunctionType = dto?.FunctionType ?? fpa.FunctionType;
         fpa.Percentage = dto?.Percentage ?? fpa.Percentage;
         fpa.Description = dto?.Description ?? fpa.Description;

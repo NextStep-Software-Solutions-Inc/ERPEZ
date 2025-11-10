@@ -421,6 +421,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("text");
 
+                    b.Property<int>("FiscalYear")
+                        .HasColumnType("integer");
+
                     b.Property<string>("FunctionType")
                         .IsRequired()
                         .HasColumnType("text");
