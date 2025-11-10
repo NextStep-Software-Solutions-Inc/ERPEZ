@@ -35,7 +35,7 @@ public class CreateDUKPIAssignmentCommandHandler(IUnitOfWork _unitOfWork)
 
         if (request.DeliveryUnitId != Guid.Empty)
         {
-            var du = await _unitOfWork.DeliveryUnitRepository.GetByIdAsync(request.DeliveryUnitId, cancellationToken: cancellationToken)
+            await _unitOfWork.DeliveryUnitRepository.GetByIdAsync(request.DeliveryUnitId, cancellationToken: cancellationToken)
                 ?? throw new NotFoundException("Delivery Unit not found.");
         }
 
