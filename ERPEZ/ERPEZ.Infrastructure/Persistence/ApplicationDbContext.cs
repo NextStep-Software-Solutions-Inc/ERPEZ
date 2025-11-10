@@ -37,9 +37,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<WFPOutcome> WFPOutcomes { get; set; }
     public DbSet<Attribute> Attributes { get; set; }
     public DbSet<Cluster> Clusters { get; set; }
-    public DbSet<KPIAttribute> KPIAttributes { get; set; }
     public DbSet<SDG> SDGs { get; set; }
-    public DbSet<KPISDG> KPISDGs { get; set; }
     public DbSet<WFPObjectiveTarget> WFPObjectiveTargets { get; set; }
     public DbSet<WFPObjectiveTimeline> WFPObjectiveTimelines { get; set; }
 
@@ -94,6 +92,16 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasMany(k => k.KPIModeOfVerifications)
             .WithOne(kv => kv.KPI)
             .HasForeignKey(kv => kv.KPIId);
+
+        modelBuilder.Entity<KPI>()
+            .HasMany(t => t.Attributes)
+            .WithMany(m => m.KPIs)
+            .UsingEntity(tm => tm.ToTable("KPIAttribute"));
+
+        modelBuilder.Entity<KPI>()
+            .HasMany(t => t.SDGs)
+            .WithMany(m => m.KPIs)
+            .UsingEntity(tm => tm.ToTable("KPISDGs"));
 
         // DUKPIAssignment (Delivery Unit KPI Assignment)
         modelBuilder.Entity<DUKPIAssignment>()
@@ -631,14 +639,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .WithOne()
             .HasForeignKey("ClusterId")
             .IsRequired();
-
-        //KPI Attribute
-        modelBuilder.Entity<KPIAttribute>()
-            .HasIndex(ka => new { ka.KPIId, ka.AttributeId })
-            .IsUnique();
-
-        modelBuilder.Entity<KPIAttribute>()
-            .HasKey(ks => new { ks.KPIId, ks.AttributeId });
 
         //SDG
         modelBuilder.Entity<SDG>()
