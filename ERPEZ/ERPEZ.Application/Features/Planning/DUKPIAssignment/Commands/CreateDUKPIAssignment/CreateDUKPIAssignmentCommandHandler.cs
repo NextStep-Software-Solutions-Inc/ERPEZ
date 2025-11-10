@@ -21,13 +21,13 @@ public class CreateDUKPIAssignmentCommandHandler(IUnitOfWork _unitOfWork)
 
         if (request.KPIId != Guid.Empty)
         {
-            await _unitOfWork.KPIRepository.GetByIdAsync(request.KPIId, cancellationToken: cancellationToken)
+            _ = await _unitOfWork.KPIRepository.GetByIdAsync(request.KPIId, cancellationToken: cancellationToken)
                 ?? throw new NotFoundException("KPI not found.");
         }
 
         if (request.DeliveryUnitId != Guid.Empty)
         {
-            await _unitOfWork.DeliveryUnitRepository.GetByIdAsync(request.DeliveryUnitId, cancellationToken: cancellationToken)
+           _ = await _unitOfWork.DeliveryUnitRepository.GetByIdAsync(request.DeliveryUnitId, cancellationToken: cancellationToken)
                 ?? throw new NotFoundException("Delivery Unit not found.");
         }
 
