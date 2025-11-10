@@ -1,4 +1,6 @@
 ﻿using FluentValidation;
+using System;
+using System.Linq; // Required for the .Contains() extension method
 
 namespace ERPEZ.Application.Features.Planning.OPCREvaluation.Commands.CreateOPCREvaluation;
 
@@ -34,18 +36,13 @@ public class CreateOPCREvaluationCommandValidator : AbstractValidator<CreateOPCR
             .WithMessage("Comments cannot exceed 2000 characters.")
             .When(x => !string.IsNullOrEmpty(x.Comments));
 
-        // Status (Required String, Valid Value, Normalized to canonical casing)
+        // Status (Required String, Valid Value)
         RuleFor(x => x.Status)
             .NotEmpty()
             .WithMessage("Status is required.")
             .MaximumLength(50)
             .WithMessage("Status cannot exceed 50 characters.")
-            .Transform(status => 
-                ValidEvaluationStatuses.FirstOrDefault(
-                    s => string.Equals(s, status, StringComparison.OrdinalIgnoreCase)
-                ) ?? status
-            )
-            .Must(status => ValidEvaluationStatuses.Contains(status))
+            .Must(status => ValidEvaluationStatuses.Contains(status, StringComparer.OrdinalIgnoreCase))
             .WithMessage($"Status must be one of the following: {string.Join(", ", ValidEvaluationStatuses)}.");
     }
 }
