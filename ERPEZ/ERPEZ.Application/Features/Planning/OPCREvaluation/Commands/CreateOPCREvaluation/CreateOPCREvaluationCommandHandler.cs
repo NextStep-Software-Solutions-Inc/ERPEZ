@@ -17,7 +17,7 @@ public class CreateOPCREvaluationCommandHandler(IUnitOfWork _unitOfWork) : IRequ
         o.OPCRId == request.OPCRId && 
         o.EvaluatorId == request.EvaluatorId
         , cancellationToken);
-        if (duplicate != null) throw new ConflictException("OPCR Evaluation already exist.");
+        if (duplicate != null) throw new ConflictException("OPCR Evaluation already exists.");
 
         var opcrEvaluation = new Domain.Entities.Planning.OPCREvaluation
         {
