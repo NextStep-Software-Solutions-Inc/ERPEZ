@@ -8,8 +8,6 @@ public class DeleteOPCREvaluationCommandValidator : AbstractValidator<DeleteOPCR
     {
         RuleFor(x => x.Id)
             .NotEmpty()
-            .WithMessage("OPCREvaluation ID is required for deletion.")
-            .Must(id => id != Guid.Empty)
-            .WithMessage("OPCREvaluation ID must be a valid, non-empty GUID.");
+            .WithMessage("OPCREvaluation ID is required for deletion.");
     }
 }
