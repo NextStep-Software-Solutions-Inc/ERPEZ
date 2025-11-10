@@ -38,7 +38,7 @@ public class CreateObjectCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandl
             ParentId = requestObject.ParentId,
             Name = requestObject.Name,
             Code = requestObject.Code,
-            IsActive = request.IsActive
+            IsActive = requestObject.IsActive
         };
         return ApiResponse<ObjectDto>.Success(dto, "Object created successfully.");
     }
