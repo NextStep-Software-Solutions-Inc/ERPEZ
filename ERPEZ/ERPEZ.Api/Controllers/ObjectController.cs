@@ -62,7 +62,6 @@ namespace ERPEZ.Api.Controllers
             };
 
             var result = await mediator.Send(command);
-            // Returns 200 OK on success (DTO is returned), or 400 Bad Request on failure
             return result.Succeeded ? Ok(result) : BadRequest(result);
         }
 
@@ -75,7 +74,7 @@ namespace ERPEZ.Api.Controllers
             var result = await mediator.Send(command);
 
             // Returns 204 No Content on successful deletion
-            return result.Succeeded ? NoContent() : BadRequest(result);
+            return result.Succeeded ? NoContent() : NotFound(result);
         }
     }
 }
