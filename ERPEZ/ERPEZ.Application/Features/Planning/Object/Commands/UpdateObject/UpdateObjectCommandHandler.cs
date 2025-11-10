@@ -25,7 +25,7 @@ public class UpdateObjectCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandl
         );
 
         if (duplicate != null)
-            throw new ConflictException("Object already exist.");
+            throw new ConflictException("Object already exists.");
 
         reqObject.Code = newCode;
         reqObject.Name = newName;
