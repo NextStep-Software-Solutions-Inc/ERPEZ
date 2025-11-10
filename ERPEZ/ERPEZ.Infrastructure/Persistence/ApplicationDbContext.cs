@@ -2,6 +2,7 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Object = ERPEZ.Domain.Entities.Planning.Object;
+using Attribute = ERPEZ.Domain.Entities.Planning.Attribute;
 
 namespace ERPEZ.Infrastructure.Persistence;
 
@@ -34,6 +35,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<WFPActivity> WFPActivities { get; set; }
     public DbSet<WFPObjective> WFPObjectives { get; set; }
     public DbSet<WFPOutcome> WFPOutcomes { get; set; }
+    public DbSet<Attribute> Attributes { get; set; }
+    public DbSet<Cluster> Clusters { get; set; }
+    public DbSet<SDG> SDGs { get; set; }
+    public DbSet<WFPObjectiveTarget> WFPObjectiveTargets { get; set; }
+    public DbSet<WFPObjectiveTimeline> WFPObjectiveTimelines { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -87,20 +93,38 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .WithOne(kv => kv.KPI)
             .HasForeignKey(kv => kv.KPIId);
 
-        //KPI Assignment
-        modelBuilder.Entity<KPIAssignment>()
-            .HasIndex(a => new { a.KPIId, a.DeliveryUnitId })
+        modelBuilder.Entity<KPI>()
+            .HasMany(t => t.Attributes)
+            .WithMany(m => m.KPIs)
+            .UsingEntity(tm => tm.ToTable("KPIAttribute"));
+
+        modelBuilder.Entity<KPI>()
+            .HasMany(t => t.SDGs)
+            .WithMany(m => m.KPIs)
+            .UsingEntity(tm => tm.ToTable("KPISDGs"));
+
+        // DUKPIAssignment (Delivery Unit KPI Assignment)
+        modelBuilder.Entity<DUKPIAssignment>()
+            .HasOne(da => da.KPI)
+            .WithMany()
+            .HasForeignKey(da => da.KPIId)
+            .IsRequired();
+
+        modelBuilder.Entity<DUKPIAssignment>()
+            .HasOne(da => da.DeliveryUnit)
+            .WithMany()
+            .HasForeignKey(da => da.DeliveryUnitId)
+            .IsRequired();
+
+        modelBuilder.Entity<DUKPIAssignment>()
+            .HasOne(da => da.KPITarget)
+            .WithMany()
+            .HasForeignKey(da => da.KPITargetId)
+            .IsRequired();
+
+        modelBuilder.Entity<DUKPIAssignment>()
+            .HasIndex(da => new { da.DeliveryUnitId, da.KPITargetId })
             .IsUnique();
-
-        modelBuilder.Entity<KPIAssignment>()
-            .HasOne(a => a.KPI)
-            .WithMany(k => k.KPIAssignments)
-            .HasForeignKey(a => a.KPIId);
-
-        modelBuilder.Entity<KPIAssignment>()
-            .HasOne(a => a.DeliveryUnit)
-            .WithMany(d => d.KPIAssignments)
-            .HasForeignKey(a => a.DeliveryUnitId);
 
         // KPIModeOfVerification
         modelBuilder.Entity<KPIModeOfVerification>()
@@ -125,13 +149,20 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         // KPITarget
         modelBuilder.Entity<KPITarget>()
-            .HasIndex(t => new { t.KPIId, t.Period, t.QuarterName })
-            .IsUnique();
+            .HasOne(kt => kt.KPI)
+            .WithMany()
+            .HasForeignKey(kt => kt.KPIId)
+            .IsRequired();
 
         modelBuilder.Entity<KPITarget>()
-            .HasOne(t => t.KPI)
-            .WithMany(k => k.KPITargets)
-            .HasForeignKey(t => t.KPIId);
+            .HasMany(kt => kt.KPITargets)
+            .WithOne()
+            .HasForeignKey("ParentKPITargetId")
+            .IsRequired(false);
+
+        modelBuilder.Entity<KPITarget>()
+            .HasIndex(kt => new { kt.KPIId, kt.Period })
+            .IsUnique();
 
         //PerformanceMeasure
         modelBuilder.Entity<PerformanceMeasure>()
@@ -412,33 +443,26 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         //WFPObjective
         modelBuilder.Entity<WFPObjective>()
-            .HasIndex(o => new { o.WFPId, o.Description });
+            .HasOne(wo => wo.WFP)
+            .WithMany()
+            .HasForeignKey(wo => wo.WFPId)
+            .IsRequired();
 
         modelBuilder.Entity<WFPObjective>()
-            .HasMany(o => o.WFPOutcomes)
-            .WithOne(wo => wo.WFPObjective)
-            .HasForeignKey(wo => wo.WFPObjectiveId);
+            .HasMany(wo => wo.WFPOutcomes)
+            .WithOne()
+            .HasForeignKey("WFPObjectiveId")
+            .IsRequired();
 
-        //WFPPAP
-        //modelBuilder.Entity<WFPPAP>()
-        //    .HasIndex(p => new { p.WFPId, p.Name });
+        modelBuilder.Entity<WFPObjective>()
+            .HasMany(wo => wo.WFPObjectiveTargets)
+            .WithOne()
+            .HasForeignKey("WFPObjectiveId")
+            .IsRequired();
 
-        //modelBuilder.Entity<WFPPAP>()
-        //    .HasOne(p => p.WFP)
-        //    .WithMany(w => w.WFPPAPs)
-        //    .HasForeignKey(p => p.WFPId)
-        //    .OnDelete(DeleteBehavior.Cascade);
-
-        //modelBuilder.Entity<WFPPAP>()
-        //    .HasOne(p => p.WFPOutcome)
-        //    .WithMany(o => o.WFPPAPs)
-        //    .HasForeignKey(p => p.WFPOutcomeId)
-        //    .OnDelete(DeleteBehavior.SetNull);
-
-        //modelBuilder.Entity<WFPPAP>()
-        //    .HasMany(p => p.WFPPAPDepartments)
-        //    .WithOne(d => d.WFPPAP)
-        //    .HasForeignKey(d => d.WFPPAPId);
+        modelBuilder.Entity<WFPObjective>()
+            .HasIndex(wo => new { wo.WFPId, wo.Description })
+            .IsUnique();
 
         //WFPPAPDepartment
         modelBuilder.Entity<WFPPAPDepartment>()
@@ -459,12 +483,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         //ActivityBudgetRequirement
         modelBuilder.Entity<ActivityBudgetRequirement>()
-            .HasIndex(ab => new { ab.WFPActivityId, ab.ObjectId, ab.ItemDescription });
+            .HasIndex(ab => new { ab.WFPObjectiveTargetId, ab.ObjectId, ab.ItemDescription });
 
         modelBuilder.Entity<ActivityBudgetRequirement>()
-            .HasOne(ab => ab.WFPActivity)
+            .HasOne(ab => ab.WFPObjectiveTarget)
             .WithMany(a => a.ActivityBudgetRequirements)
-            .HasForeignKey(ab => ab.WFPActivityId);
+            .HasForeignKey(ab => ab.WFPObjectiveTargetId);
 
         modelBuilder.Entity<ActivityBudgetRequirement>()
             .HasOne(ab => ab.Object)
@@ -596,6 +620,68 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .WithMany(k => k.MFOKPIs)
             .HasForeignKey(m => m.KPIId);
 
+        //Cluster
+        modelBuilder.Entity<Cluster>()
+            .HasIndex(c => c.Name)
+            .IsUnique();
+
+        modelBuilder.Entity<Cluster>()
+            .Property(c => c.Name)
+            .IsRequired()
+            .HasMaxLength(256);
+
+        modelBuilder.Entity<Cluster>()
+            .Property(c => c.Description)
+            .HasMaxLength(1000);
+
+        modelBuilder.Entity<Cluster>()
+            .HasMany(c => c.Offices)
+            .WithOne()
+            .HasForeignKey("ClusterId")
+            .IsRequired();
+
+        //SDG
+        modelBuilder.Entity<SDG>()
+            .Property(s => s.Description)
+            .IsRequired()
+            .HasMaxLength(1000);
+
+        //WFPObjectiveTarget
+        modelBuilder.Entity<WFPObjectiveTarget>()
+            .HasOne(wot => wot.WFPObjective)
+            .WithMany(wo => wo.WFPObjectiveTargets)
+            .HasForeignKey(wot => wot.WFPObjectiveId)
+            .IsRequired();
+
+        modelBuilder.Entity<WFPObjectiveTarget>()
+            .HasMany(wot => wot.WFPObjectiveTimelines)
+            .WithOne()
+            .HasForeignKey("WFPObjectiveTargetId")
+            .IsRequired();
+
+        modelBuilder.Entity<WFPObjectiveTarget>()
+            .HasMany(wot => wot.ActivityBudgetRequirements)
+            .WithOne()
+            .HasForeignKey("WFPObjectiveTargetId")
+            .IsRequired();
+
+        modelBuilder.Entity<WFPObjectiveTarget>()
+            .HasIndex(wot => new { wot.WFPObjectiveId, wot.ActivityName, wot.Indicator })
+            .IsUnique();
+
+        //WFPObjectiveTimeline
+        modelBuilder.Entity<WFPObjectiveTimeline>()
+            .HasOne(wotl => wotl.WFPObjectiveTarget)
+            .WithMany(wot => wot.WFPObjectiveTimelines)
+            .HasForeignKey(wotl => wotl.WFPObjectiveTargetId)
+            .IsRequired();
+
+        modelBuilder.Entity<WFPObjectiveTimeline>()
+            .HasIndex(wotl => new { wotl.WFPObjectiveTargetId, wotl.StartDate, wotl.EndDate })
+            .IsUnique();
+
+        modelBuilder.Entity<WFPObjectiveTimeline>()
+            .ToTable(t => t.HasCheckConstraint("CK_WFPObjectiveTimeline_Dates", "StartDate < EndDate"));
 
         base.OnModelCreating(modelBuilder);
 

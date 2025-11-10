@@ -2,7 +2,7 @@
 
 namespace ERPEZ.Domain.Interfaces;
 
-public interface IKPIAssignmentRepository : IRepository<KPIAssignment>
+public interface IDUKPIAssignmentRepository : IRepository<DUKPIAssignment>
 {
 }
 

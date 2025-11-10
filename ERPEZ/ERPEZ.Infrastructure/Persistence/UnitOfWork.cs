@@ -24,7 +24,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IKPIRatingRepository KPIRatingRepository { get; }
     public IDUAllocationRepository DUAllocationRepository { get; }
     public IKPITargetRepository KPITargetRepository { get; }
-    public IKPIAssignmentRepository KPIAssignmentRepository { get; }
+    public IDUKPIAssignmentRepository DUKPIAssignmentRepository { get; }
     public IKPIModeOfVerificationRepository KPIModeOfVerificationRepository { get; }
     public IReceivedFundRepository ReceivedFundRepository { get; }
     public IMFOKPIRepository MFOKPIRepository { get; }
@@ -56,7 +56,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
                         IKPIRatingRepository kPIRatingRepository,
                         IPerformanceMeasureRepository performanceMeasureRepository,
                         IReceivedFundRepository receivedFundRepository,
-                        IKPIAssignmentRepository kPIAssignmentRepository,
+                        IDUKPIAssignmentRepository dUKPIAssignmentRepository,
                         IKPITargetRepository kPITargetRepository,
                         IKPIModeOfVerificationRepository kPIModeOfVerificationRepository,
                         IMFOKPIRepository mFOKPIRepository,
@@ -89,7 +89,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         DUFundAllocationRepository = dUFundAllocationRepository ?? throw new ArgumentNullException(nameof(dUFundAllocationRepository));
         KPIRatingRepository = kPIRatingRepository ?? throw new ArgumentNullException(nameof(kPIRatingRepository));
         PerformanceMeasureRepository = performanceMeasureRepository ?? throw new ArgumentNullException(nameof(performanceMeasureRepository));
-        KPIAssignmentRepository = kPIAssignmentRepository ?? throw new ArgumentNullException(nameof(kPIAssignmentRepository));
+        DUKPIAssignmentRepository = dUKPIAssignmentRepository ?? throw new ArgumentNullException(nameof(dUKPIAssignmentRepository));
         KPITargetRepository = kPITargetRepository ?? throw new ArgumentNullException(nameof(kPITargetRepository));
         KPIModeOfVerificationRepository = kPIModeOfVerificationRepository ?? throw new ArgumentNullException(nameof(kPIModeOfVerificationRepository));
         ReceivedFundRepository = receivedFundRepository ?? throw new ArgumentNullException(nameof(receivedFundRepository));
