@@ -14,18 +14,21 @@ public class UpdateObjectCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandl
         var reqObject = await _unitOfWork.ObjectRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken)
             ?? throw new NotFoundException("Object not found.");
 
+        var newName = dto.Name ?? reqObject.Name;
+        var newCode = dto.Code ?? reqObject.Code;
+
         var duplicate = await _unitOfWork.ObjectRepository.FindAsync(o =>
             o.Id != request.Id &&
-            o.Name == dto.Name &&
-            o.Code == dto.Code,
+            o.Name == newName &&
+            o.Code == newCode,
             cancellationToken
         );
 
         if (duplicate != null)
             throw new ConflictException("Object already exist.");
 
-        reqObject.Code = dto.Code ?? reqObject.Code;
-        reqObject.Name = dto.Name ?? reqObject.Name;
+        reqObject.Code = newCode;
+        reqObject.Name = newName;
         reqObject.IsActive = dto.IsActive ?? reqObject.IsActive;
 
         _unitOfWork.ObjectRepository.Update(reqObject);
