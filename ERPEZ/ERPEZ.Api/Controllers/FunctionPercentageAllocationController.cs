@@ -5,11 +5,9 @@ using ERPEZ.Application.Features.Planning.FunctionPercentageAllocation.Dtos;
 using ERPEZ.Application.Features.Planning.FunctionPercentageAllocation.Queries.GetFPAllocationById;
 using ERPEZ.Application.Features.Planning.FunctionPercentageAllocation.Queries.GetFPAllocations;
 using ERPEZ.Application.Features.Planning.FunctionPercentageAllocation.Queries.GetFunctionTypesQuery;
-using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using System.Collections.Generic;
 
 namespace ERPEZ.Api.Controllers
 {

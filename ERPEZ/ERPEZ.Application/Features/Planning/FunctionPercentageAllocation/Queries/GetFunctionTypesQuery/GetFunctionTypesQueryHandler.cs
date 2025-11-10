@@ -8,7 +8,7 @@ public class GetFunctionTypesQueryHandler : IRequestHandler<GetFunctionTypesQuer
 {
     public Task<ApiResponse<List<string>>> Handle(GetFunctionTypesQuery request, CancellationToken cancellationToken)
     {
-        var functionTypes = FunctionTypeConstants.ValidFunctionTypes;
+        var functionTypes = FunctionTypeConstants.ValidFunctionTypes.ToList();
 
         return Task.FromResult(
             ApiResponse<List<string>>.Success(
