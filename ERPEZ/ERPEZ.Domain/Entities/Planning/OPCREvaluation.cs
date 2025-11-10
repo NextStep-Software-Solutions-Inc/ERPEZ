@@ -13,7 +13,7 @@ public class OPCREvaluation : BaseEntity
     public DateTime EvaluationDate { get; set; }
     [Sieve(CanFilter = true, CanSort = true)]
     public string? Comments { get; set; }
-    [Sieve(CanFilter = true, CanSort = true)]   
+    [Sieve(CanFilter = true, CanSort = true)]
     public string Status { get; set; } = string.Empty;
     public virtual List<OPCRRating> OPCRRatings { get; set; } = [];
     public virtual OPCR OPCR { get; set; } = null!;
