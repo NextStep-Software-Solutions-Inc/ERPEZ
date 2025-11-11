@@ -18,19 +18,6 @@ public class UpdateFiscalYearCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
         await unitOfWork.ExecuteInTransactionAsync(async () =>
         {
             fiscalYear.Description = request.Description;
-            fiscalYear.UpdatedAt = DateTime.UtcNow;
-            unitOfWork.FiscalYearRepository.Update(fiscalYear);
-            await unitOfWork.SaveChangesAsync(cancellationToken);
-
-            // delete existing allocations
-            var existingQuery = unitOfWork.FunctionAllocationRepository.Query(f => f.FiscalYearId == fiscalYear.Id);
-            var existing = await unitOfWork.FunctionAllocationRepository.ToListAsync(existingQuery, cancellationToken);
-            if (existing.Any())
-            {
-                await unitOfWork.FunctionAllocationRepository.DeleteBulkAsync(existing, cancellationToken);
-                await unitOfWork.SaveChangesAsync(cancellationToken);
-            }
-
             var allocations = request.FunctionAllocations.Select(a => new Domain.Entities.Planning.FunctionAllocation
             {
                 FiscalYearId = fiscalYear.Id,
@@ -38,11 +25,10 @@ public class UpdateFiscalYearCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
                 Percentage = a.Percentage
             }).ToList();
 
-            if (allocations.Any())
-            {
-                await unitOfWork.FunctionAllocationRepository.AddBulkAsync(allocations, cancellationToken);
-                await unitOfWork.SaveChangesAsync(cancellationToken);
-            }
+            if (allocations.Count != 0) fiscalYear.FunctionAllocations = allocations;
+
+            unitOfWork.FiscalYearRepository.Update(fiscalYear);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
         }, cancellationToken);
 
         var dto = new FiscalYearResponse

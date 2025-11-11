@@ -33,11 +33,10 @@ public class CreateFiscalYearCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
                 Percentage = a.Percentage
             }).ToList();
 
-            if (allocations.Any())
-            {
-                await unitOfWork.FunctionAllocationRepository.AddBulkAsync(allocations, cancellationToken);
-                await unitOfWork.SaveChangesAsync(cancellationToken);
-            }
+            if (allocations.Count != 0) fiscalYear.FunctionAllocations = allocations;
+            unitOfWork.FiscalYearRepository.Update(fiscalYear);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+
         }, cancellationToken);
 
         var dto = new FiscalYearResponse
