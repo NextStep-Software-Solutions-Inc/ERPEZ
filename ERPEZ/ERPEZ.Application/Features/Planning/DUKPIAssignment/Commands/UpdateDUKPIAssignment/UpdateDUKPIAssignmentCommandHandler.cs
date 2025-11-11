@@ -26,12 +26,9 @@ public class UpdateDUKPIAssignmentCommandHandler(IUnitOfWork _unitOfWork) : IReq
         var kPITarget = await _unitOfWork.KPITargetRepository.GetByIdAsync(dukpi.KPITargetId, cancellationToken: cancellationToken)
             ?? throw new NotFoundException("KPI Target not found.");
 
-        var baseQuery = _unitOfWork.DUKPIAssignmentRepository.Query( kt => kt.KPITargetId == dukpi.KPITargetId);
-
-        var queryExcludingCurrent = baseQuery
-            .Where(t => t.Id != dukpi.Id);
-
-        var existingTotalExcludingCurrent = await queryExcludingCurrent
+        var existingTotalExcludingCurrent = await _unitOfWork.DUKPIAssignmentRepository
+            .Query(kt => kt.KPITargetId == dukpi.KPITargetId)
+            .Where(t => t.Id != dukpi.Id)
             .SumAsync(target => target.AllocatedTargetValue, cancellationToken);
         var newTotalAllocatedValue = existingTotalExcludingCurrent + dto.AllocatedTargetValue;
         if (newTotalAllocatedValue > kPITarget.TargetValue) throw new BadRequestException($"The total allocated value ({newTotalAllocatedValue}) exceeds the KPI's overall target value of [ {kPITarget.TargetValue} ]. Please reduce the allocation.");
