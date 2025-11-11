@@ -2,7 +2,6 @@
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
-using System.Runtime.Intrinsics.X86;
 
 namespace ERPEZ.Application.Features.Planning.FunctionPercentageAllocation.Queries.GetFPAllocations;
 

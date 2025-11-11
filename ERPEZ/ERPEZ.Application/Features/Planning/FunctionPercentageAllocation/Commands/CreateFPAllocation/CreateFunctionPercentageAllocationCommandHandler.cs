@@ -1,7 +1,6 @@
 ﻿using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using DomainFPA = ERPEZ.Domain.Entities.Planning.FunctionPercentageAllocation;
 using FPAResponse = ERPEZ.Application.Features.Planning.FunctionPercentageAllocation.Dtos.FunctionPercentageAllocationResponse;
 
@@ -23,29 +22,15 @@ public class CreateFunctionPercentageAllocationCommandHandler(IUnitOfWork _unitO
             .Select(req => new { req.FunctionType, req.FiscalYear })
             .ToList();
 
-        var uniqueKeysInRequest = new HashSet<(string FunctionType, int FiscalYear)>();
-        var batchConflictErrors = new List<string>();
-
-        foreach (var req in allocationsToCreate)
-        {
-            if (!uniqueKeysInRequest.Add((req.FunctionType, req.FiscalYear)))
-            {
-                batchConflictErrors.Add($"Duplicate entry found in the request batch for FunctionType '{req.FunctionType}' and FiscalYear '{req.FiscalYear}'.");
-            }
-        }
-
-        if (batchConflictErrors.Count > 0)
-        {
-            var message = "One or more entries in the batch are duplicates: " + string.Join("; ", batchConflictErrors);
-            return ApiResponse<List<FPAResponse>>.Fail(message);
-        }
-
         var functionTypes = incomingKeys.Select(k => k.FunctionType).ToList();
         var fiscalYears = incomingKeys.Select(k => k.FiscalYear).Distinct().ToList();
 
-        var existingAllocationsList = await _unitOfWork.FunctionPercentageAllocationRepository.Query(
+        var fpaRepository = _unitOfWork.FunctionPercentageAllocationRepository;
+        var filteredQuery = fpaRepository.Query(
             t => functionTypes.Contains(t.FunctionType) && fiscalYears.Contains(t.FiscalYear)
-        ).ToListAsync(cancellationToken: cancellationToken);
+        );
+
+        var existingAllocationsList = await fpaRepository.ToListAsync(filteredQuery, cancellationToken);
 
         var existingKeysSet = existingAllocationsList
             .Select(a => (a.FunctionType, a.FiscalYear))
@@ -63,7 +48,6 @@ public class CreateFunctionPercentageAllocationCommandHandler(IUnitOfWork _unitO
                 }
                 return true;
             })
-
             .Select(req => new DomainFPA
             {
                 Id = Guid.NewGuid(),
