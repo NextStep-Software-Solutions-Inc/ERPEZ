@@ -6,7 +6,7 @@ namespace ERPEZ.Domain.Entities.Planning;
 public class Office : BaseEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
-    public Guid ClusterId { get; set; }
+    public Guid? ClusterId { get; set; }
     [Sieve(CanFilter = true, CanSort = true)]
     public string OfficeHead {  get; set; } = string.Empty;
     [Sieve(CanFilter = true, CanSort = true)]

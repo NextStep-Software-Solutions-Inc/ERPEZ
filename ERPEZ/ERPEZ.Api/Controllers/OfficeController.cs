@@ -16,8 +16,8 @@ namespace ERPEZ.Api.Controllers
     public class OfficeController(ISender mediator) : ControllerBase
     {
         [HttpPost]
-        [ProducesResponseType(typeof(ApiResponse<Office>), StatusCodes.Status201Created)]
-        [ProducesResponseType(typeof(ApiResponse<Office>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<Domain.Entities.Planning.Office>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<Domain.Entities.Planning.Office>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateOffice([FromBody] CreateOfficeCommand command)
         {
             var office = await mediator.Send(command);
@@ -29,7 +29,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet]
-        [ProducesResponseType(typeof(PaginatedApiResponse<OfficeDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(PaginatedApiResponse<Application.Features.Planning.Office.Dtos.OfficeResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetOffices([FromQuery] GetOfficesQuery query)
         {
             var result = await mediator.Send(query);
@@ -37,7 +37,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<OfficeDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<Application.Features.Planning.Office.Dtos.OfficeResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetOfficeById(Guid id)
         {
@@ -49,7 +49,7 @@ namespace ERPEZ.Api.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> UpdateOffice(Guid id, [FromBody] UpdateOfficeDto updateOffice)
+        public async Task<IActionResult> UpdateOffice(Guid id, [FromBody] UpdateOfficeRequest updateOffice)
         {
             var request = new UpdateOfficeCommand
             {

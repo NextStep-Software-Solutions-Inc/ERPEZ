@@ -5,6 +5,7 @@ namespace ERPEZ.Application.Features.Planning.Office.Commands.CreateOffice;
 
 public class CreateOfficeCommand : IRequest<ApiResponse<Domain.Entities.Planning.Office>>
 {
+    public Guid? ClusterId { get; set; }
     public string OfficeHead { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
