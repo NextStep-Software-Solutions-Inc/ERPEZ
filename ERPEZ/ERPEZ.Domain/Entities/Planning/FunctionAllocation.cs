@@ -7,7 +7,7 @@ public class FunctionAllocation : BaseEntity
 {
     
     [Sieve(CanFilter = true, CanSort = true)]
-    public int FiscalYearId { get; set; }
+    public Guid FiscalYearId { get; set; }
     public FiscalYear FiscalYear { get; set; } = null!;
     
     public string FunctionType { get; set; } = string.Empty;

@@ -42,6 +42,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly ITransactionRepository transactionRepository;
     private readonly IMFOPAPRepository mfoPapRepository;
     private readonly IFunctionAllocationRepository functionAllocationRepository;
+    private readonly IFiscalYearRepository fiscalYearRepository;
 
     // Constructor initializes all repositories once
     public UnitOfWork(ApplicationDbContext context, IServiceProvider serviceProvider)
@@ -81,6 +82,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         transactionRepository = new TransactionRepository(context, sieveProcessor);
         mfoPapRepository = new MFOPAPRepository(context, sieveProcessor);
         functionAllocationRepository = new FunctionAllocationRepository(context, sieveProcessor);
+        fiscalYearRepository = new FiscalYearRepository(context, sieveProcessor);
     }
 
     // Public properties return cached instances
@@ -115,6 +117,22 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public ITransactionRepository TransactionRepository => transactionRepository;
     public IMFOPAPRepository MFOPAPRepository => mfoPapRepository;
     public IFunctionAllocationRepository FunctionAllocationRepository => functionAllocationRepository;
+    public IFiscalYearRepository FiscalYearRepository => fiscalYearRepository;
+
+    public async Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default)
+    {
+        await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            await operation();
+            await transaction.CommitAsync(cancellationToken);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
+        }
+    }
 
     public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
