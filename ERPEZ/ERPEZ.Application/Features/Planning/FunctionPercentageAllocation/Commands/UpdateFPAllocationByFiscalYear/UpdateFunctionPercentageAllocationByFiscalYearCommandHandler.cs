@@ -2,7 +2,7 @@
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
+using DomainFPA = ERPEZ.Domain.Entities.Planning.FunctionPercentageAllocation;
 
 namespace ERPEZ.Application.Features.Planning.FunctionPercentageAllocation.Commands.UpdateFPAllocationByFiscalYear;
 
@@ -13,16 +13,18 @@ public class UpdateFunctionPercentageAllocationByFiscalYearCommandHandler(IUnitO
     {
         var targetFiscalYear = request.FiscalYear;
         var updates = request.UpdateFunctionPercentageAllocationsRequests;
+        var fpaRepository = _unitOfWork.FunctionPercentageAllocationRepository;
 
         var newPercentages = updates.ToDictionary(
             u => u.FunctionType!,
-            u => u.Percentage,
+            u => u.Percentage!,
             StringComparer.OrdinalIgnoreCase
         );
 
-        var allExistingAllocations = await _unitOfWork.FunctionPercentageAllocationRepository.Query()
-            .Where(f => f.FiscalYear == targetFiscalYear)
-            .ToListAsync(cancellationToken);
+        var queryForExisting = fpaRepository.Query()
+            .Where(f => f.FiscalYear == targetFiscalYear);
+
+        var allExistingAllocations = await fpaRepository.ToListAsync(queryForExisting, cancellationToken);
 
         var existingTypes = allExistingAllocations.Select(a => a.FunctionType).ToHashSet(StringComparer.OrdinalIgnoreCase);
         foreach (var newType in newPercentages.Keys)
@@ -33,10 +35,15 @@ public class UpdateFunctionPercentageAllocationByFiscalYearCommandHandler(IUnitO
             }
         }
 
+        var modifiedEntities = new List<DomainFPA>();
+
         var combinedTotal = allExistingAllocations.Sum(existing =>
         {
             if (newPercentages.TryGetValue(existing.FunctionType!, out var newP))
             {
+                existing.Percentage = newP;
+                modifiedEntities.Add(existing);
+
                 return newP;
             }
             return existing.Percentage;
@@ -47,26 +54,15 @@ public class UpdateFunctionPercentageAllocationByFiscalYearCommandHandler(IUnitO
             throw new BadRequestException($"The combined total percentage must equal exactly 100%. Calculated total: {combinedTotal:F2}%.");
         }
 
-        int totalRowsAffected = 0;
-
-        foreach (var update in updates)
+        if (modifiedEntities.Count == 0)
         {
-            var affected = await _unitOfWork.FunctionPercentageAllocationRepository.Query()
-                .Where(f => f.FiscalYear == targetFiscalYear && f.FunctionType == update.FunctionType)
-                .ExecuteUpdateAsync(
-                    setters => setters.SetProperty(f => f.Percentage, update.Percentage),
-                    cancellationToken
-                );
-
-            if (affected == 0)
-            {
-                throw new NotFoundException($"Update failed: Function Type '{update.FunctionType}' was unexpectedly not found during the write operation.");
-            }
-            totalRowsAffected += affected;
+            return ApiResponse<string>.Success($"No relevant allocations were modified for Fiscal Year {targetFiscalYear}.", "Update completed.");
         }
 
+        await fpaRepository.UpdateBulkAsync(modifiedEntities, cancellationToken);
+
         return ApiResponse<string>.Success(
-            $"Successfully updated percentages for {totalRowsAffected} allocations in Fiscal Year {targetFiscalYear}.",
+            $"Successfully updated percentages for {modifiedEntities.Count} allocations in Fiscal Year {targetFiscalYear}.",
             "Percentage update completed."
         );
     }
