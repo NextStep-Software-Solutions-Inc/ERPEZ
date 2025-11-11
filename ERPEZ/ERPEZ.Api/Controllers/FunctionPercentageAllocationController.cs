@@ -6,11 +6,9 @@ using ERPEZ.Application.Features.Planning.FunctionPercentageAllocation.Dtos;
 using ERPEZ.Application.Features.Planning.FunctionPercentageAllocation.Queries.GetFPAllocationById;
 using ERPEZ.Application.Features.Planning.FunctionPercentageAllocation.Queries.GetFPAllocations;
 using ERPEZ.Application.Features.Planning.FunctionPercentageAllocation.Queries.GetFunctionTypesQuery;
-using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using System.Collections.Generic;
 
 namespace ERPEZ.Api.Controllers
 {
@@ -33,7 +31,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet]
-        [ProducesResponseType(typeof(PaginatedApiResponse<FunctionPercentageAllocationDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(PaginatedApiResponse<FunctionPercentageAllocationResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetFunctionPercentageAllocations([FromQuery] GetFunctionPercentageAllocationsQuery query)
         {
             var result = await mediator.Send(query);
@@ -41,7 +39,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<FunctionPercentageAllocationDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<FunctionPercentageAllocationResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetFunctionPercentageAllocationById(Guid id)
         {

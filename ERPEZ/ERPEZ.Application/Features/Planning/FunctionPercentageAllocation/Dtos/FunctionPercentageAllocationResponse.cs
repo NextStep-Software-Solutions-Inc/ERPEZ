@@ -7,4 +7,6 @@ public class FunctionPercentageAllocationResponse
     public string FunctionType { get; set; } = string.Empty;
     public string? Description { get; set; }
     public decimal Percentage { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public string CreatedBy { get; set; } = string.Empty;
 }

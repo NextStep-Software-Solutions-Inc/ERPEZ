@@ -241,3 +241,33 @@ This is enforced by:
 - ✅ This Copilot instruction
 
 Always create validators alongside commands to maintain code quality and prevent CI/CD failures.
+
+## Additional Code Quality Rules
+
+### 1. Avoid Abbreviations and Initials
+- Do not use initials or abbreviated messages or strings. As much as possible, use the full word.
+- Examples:
+  - ❌ `msg` → ✅ `message`
+  - ❌ `usr` → ✅ `user`
+  - ❌ `err` → ✅ `error`
+  - ❌ `resp` → ✅ `response`
+- This improves readability and maintainability.
+
+### 2. Logging Best Practices
+- Do not leave console logs like `Console.WriteLine` and similar. Instead, use proper logging frameworks (e.g., `ILogger` in ASP.NET Core).
+- Examples:
+  - ❌ `Console.WriteLine("Error occurred");`
+  - ✅ `_logger.LogError("Error occurred: {ErrorMessage}", errorMessage);`
+- Proper logging allows for better monitoring, filtering, and production debugging.
+
+### 3. Variable Naming Patterns
+- **Variable names must be descriptive**: Always use clear, meaningful names that convey the purpose or content of the variable. Avoid vague or generic names.
+- Enforce proper and consistent variable naming patterns following C# conventions (e.g., camelCase for locals, PascalCase for properties/methods).
+- Use descriptive names; avoid single-letter variables except in loops (e.g., `i` for index).
+- Examples:
+  - ✅ `var userName = "John";`
+  - ✅ `public string FirstName { get; set; }`
+  - ❌ `var un = "John";` (abbreviated)
+  - ❌ `var UserName` (incorrect casing for local)
+  - ❌ `var x = 10;` (non-descriptive)
+- Consistency ensures code is easier to read and maintain across the team.
