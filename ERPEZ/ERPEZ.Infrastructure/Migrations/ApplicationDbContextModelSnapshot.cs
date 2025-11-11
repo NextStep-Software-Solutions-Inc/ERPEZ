@@ -421,6 +421,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("text");
 
+                    b.Property<int>("FiscalYear")
+                        .HasColumnType("integer");
+
                     b.Property<string>("FunctionType")
                         .IsRequired()
                         .HasColumnType("text");
@@ -438,6 +441,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("FunctionType", "FiscalYear")
+                        .IsUnique();
 
                     b.ToTable("FunctionPercentageAllocations", "catalog");
                 });
