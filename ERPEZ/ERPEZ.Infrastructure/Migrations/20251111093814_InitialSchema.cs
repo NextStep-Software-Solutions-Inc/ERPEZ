@@ -13,11 +13,11 @@ namespace ERPEZ.Infrastructure.Migrations
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.EnsureSchema(
-                name: "catalog");
+                name: "planning");
 
             migrationBuilder.CreateTable(
                 name: "Attributes",
-                schema: "catalog",
+                schema: "planning",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -39,14 +39,14 @@ namespace ERPEZ.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "FK_Attributes_Attributes_ParentAttributeId",
                         column: x => x.ParentAttributeId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "Attributes",
                         principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
                 name: "Clusters",
-                schema: "catalog",
+                schema: "planning",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -67,7 +67,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
             migrationBuilder.CreateTable(
                 name: "FiscalYear",
-                schema: "catalog",
+                schema: "planning",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -89,7 +89,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
             migrationBuilder.CreateTable(
                 name: "FundSources",
-                schema: "catalog",
+                schema: "planning",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -113,14 +113,14 @@ namespace ERPEZ.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "FK_FundSources_FundSources_ParentSourceId",
                         column: x => x.ParentSourceId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "FundSources",
                         principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
                 name: "KPIs",
-                schema: "catalog",
+                schema: "planning",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -144,14 +144,14 @@ namespace ERPEZ.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "FK_KPIs_KPIs_ParentKPIId",
                         column: x => x.ParentKPIId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "KPIs",
                         principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
                 name: "Locations",
-                schema: "catalog",
+                schema: "planning",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -175,20 +175,20 @@ namespace ERPEZ.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "FK_Locations_Locations_ParentId",
                         column: x => x.ParentId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "Locations",
                         principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_Locations_Locations_ParentLocationId",
                         column: x => x.ParentLocationId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "Locations",
                         principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
                 name: "MFOPAPs",
-                schema: "catalog",
+                schema: "planning",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -212,20 +212,20 @@ namespace ERPEZ.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "FK_MFOPAPs_MFOPAPs_ParentId",
                         column: x => x.ParentId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "MFOPAPs",
                         principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_MFOPAPs_MFOPAPs_ParentMFOPAPId",
                         column: x => x.ParentMFOPAPId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "MFOPAPs",
                         principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
                 name: "Objects",
-                schema: "catalog",
+                schema: "planning",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -248,14 +248,14 @@ namespace ERPEZ.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "FK_Objects_Objects_ParentObjectId",
                         column: x => x.ParentObjectId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "Objects",
                         principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
                 name: "Organizations",
-                schema: "catalog",
+                schema: "planning",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -279,20 +279,20 @@ namespace ERPEZ.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "FK_Organizations_Organizations_ParentId",
                         column: x => x.ParentId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "Organizations",
                         principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_Organizations_Organizations_ParentOrganizationId",
                         column: x => x.ParentOrganizationId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "Organizations",
                         principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
                 name: "PerformanceMeasures",
-                schema: "catalog",
+                schema: "planning",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -313,7 +313,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
             migrationBuilder.CreateTable(
                 name: "SDGs",
-                schema: "catalog",
+                schema: "planning",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -334,7 +334,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
             migrationBuilder.CreateTable(
                 name: "Offices",
-                schema: "catalog",
+                schema: "planning",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -360,7 +360,7 @@ namespace ERPEZ.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "FK_Offices_Clusters_ClusterId",
                         column: x => x.ClusterId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "Clusters",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -368,7 +368,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
             migrationBuilder.CreateTable(
                 name: "FunctionAllocations",
-                schema: "catalog",
+                schema: "planning",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -390,7 +390,7 @@ namespace ERPEZ.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "FK_FunctionAllocations_FiscalYear_FiscalYearId1",
                         column: x => x.FiscalYearId1,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "FiscalYear",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -398,7 +398,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
             migrationBuilder.CreateTable(
                 name: "ReceivedFunds",
-                schema: "catalog",
+                schema: "planning",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -418,7 +418,7 @@ namespace ERPEZ.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "FK_ReceivedFunds_FundSources_FundSourceId",
                         column: x => x.FundSourceId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "FundSources",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
@@ -426,7 +426,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
             migrationBuilder.CreateTable(
                 name: "KPIAttribute",
-                schema: "catalog",
+                schema: "planning",
                 columns: table => new
                 {
                     AttributesId = table.Column<Guid>(type: "uuid", nullable: false),
@@ -438,14 +438,14 @@ namespace ERPEZ.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "FK_KPIAttribute_Attributes_AttributesId",
                         column: x => x.AttributesId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "Attributes",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_KPIAttribute_KPIs_KPIsId",
                         column: x => x.KPIsId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "KPIs",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -453,7 +453,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
             migrationBuilder.CreateTable(
                 name: "KPIModeOfVerifications",
-                schema: "catalog",
+                schema: "planning",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -475,7 +475,7 @@ namespace ERPEZ.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "FK_KPIModeOfVerifications_KPIs_KPIId",
                         column: x => x.KPIId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "KPIs",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -483,7 +483,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
             migrationBuilder.CreateTable(
                 name: "KPITargets",
-                schema: "catalog",
+                schema: "planning",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -507,27 +507,27 @@ namespace ERPEZ.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "FK_KPITargets_KPITargets_ParentKPITargetId",
                         column: x => x.ParentKPITargetId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "KPITargets",
                         principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_KPITargets_KPIs_KPIId",
                         column: x => x.KPIId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "KPIs",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_KPITargets_KPIs_KPIId1",
                         column: x => x.KPIId1,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "KPIs",
                         principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
                 name: "MFOKPI",
-                schema: "catalog",
+                schema: "planning",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -547,14 +547,14 @@ namespace ERPEZ.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "FK_MFOKPI_KPIs_KPIId",
                         column: x => x.KPIId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "KPIs",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_MFOKPI_MFOPAPs_MFOPAPId",
                         column: x => x.MFOPAPId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "MFOPAPs",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -562,7 +562,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
             migrationBuilder.CreateTable(
                 name: "Transactions",
-                schema: "catalog",
+                schema: "planning",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -589,35 +589,35 @@ namespace ERPEZ.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "FK_Transactions_FundSources_FundSourceId",
                         column: x => x.FundSourceId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "FundSources",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_Transactions_Locations_LocationId",
                         column: x => x.LocationId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "Locations",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_Transactions_MFOPAPs_MFOPAPId",
                         column: x => x.MFOPAPId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "MFOPAPs",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_Transactions_Objects_ObjectId",
                         column: x => x.ObjectId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "Objects",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_Transactions_Organizations_OrganizationId",
                         column: x => x.OrganizationId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "Organizations",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
@@ -625,7 +625,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
             migrationBuilder.CreateTable(
                 name: "KPIRatings",
-                schema: "catalog",
+                schema: "planning",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -647,14 +647,14 @@ namespace ERPEZ.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "FK_KPIRatings_KPIs_KPIId",
                         column: x => x.KPIId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "KPIs",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_KPIRatings_PerformanceMeasures_PerformanceMeasureId",
                         column: x => x.PerformanceMeasureId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "PerformanceMeasures",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -662,7 +662,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
             migrationBuilder.CreateTable(
                 name: "KPISDGs",
-                schema: "catalog",
+                schema: "planning",
                 columns: table => new
                 {
                     KPIsId = table.Column<Guid>(type: "uuid", nullable: false),
@@ -674,14 +674,14 @@ namespace ERPEZ.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "FK_KPISDGs_KPIs_KPIsId",
                         column: x => x.KPIsId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "KPIs",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_KPISDGs_SDGs_SDGsId",
                         column: x => x.SDGsId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "SDGs",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -689,7 +689,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
             migrationBuilder.CreateTable(
                 name: "DeliveryUnit",
-                schema: "catalog",
+                schema: "planning",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -709,7 +709,7 @@ namespace ERPEZ.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "FK_DeliveryUnit_Offices_OfficeId",
                         column: x => x.OfficeId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "Offices",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -717,7 +717,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
             migrationBuilder.CreateTable(
                 name: "DUAllocations",
-                schema: "catalog",
+                schema: "planning",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -739,21 +739,21 @@ namespace ERPEZ.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "FK_DUAllocations_DeliveryUnit_DeliveryUnitId",
                         column: x => x.DeliveryUnitId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "DeliveryUnit",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_DUAllocations_ReceivedFunds_ReceivedFundId",
                         column: x => x.ReceivedFundId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "ReceivedFunds",
                         principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
                 name: "DUKPIAssignment",
-                schema: "catalog",
+                schema: "planning",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -776,35 +776,35 @@ namespace ERPEZ.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "FK_DUKPIAssignment_DeliveryUnit_DeliveryUnitId",
                         column: x => x.DeliveryUnitId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "DeliveryUnit",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_DUKPIAssignment_KPITargets_KPITargetId",
                         column: x => x.KPITargetId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "KPITargets",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_DUKPIAssignment_KPIs_KPIId",
                         column: x => x.KPIId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "KPIs",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_DUKPIAssignment_KPIs_KPIId1",
                         column: x => x.KPIId1,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "KPIs",
                         principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
                 name: "OPCRs",
-                schema: "catalog",
+                schema: "planning",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -825,7 +825,7 @@ namespace ERPEZ.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "FK_OPCRs_DeliveryUnit_DeliveryUnitId",
                         column: x => x.DeliveryUnitId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "DeliveryUnit",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -833,7 +833,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
             migrationBuilder.CreateTable(
                 name: "SubDeliveryUnit",
-                schema: "catalog",
+                schema: "planning",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -859,7 +859,7 @@ namespace ERPEZ.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "FK_SubDeliveryUnit_DeliveryUnit_DeliveryUnitId",
                         column: x => x.DeliveryUnitId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "DeliveryUnit",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -867,7 +867,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
             migrationBuilder.CreateTable(
                 name: "WFPs",
-                schema: "catalog",
+                schema: "planning",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -892,7 +892,7 @@ namespace ERPEZ.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "FK_WFPs_DeliveryUnit_DeliveryUnitId",
                         column: x => x.DeliveryUnitId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "DeliveryUnit",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -900,7 +900,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
             migrationBuilder.CreateTable(
                 name: "DUFundAllocations",
-                schema: "catalog",
+                schema: "planning",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -921,14 +921,14 @@ namespace ERPEZ.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "FK_DUFundAllocations_DUAllocations_DUAllocationId",
                         column: x => x.DUAllocationId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "DUAllocations",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_DUFundAllocations_ReceivedFunds_ReceivedFundId",
                         column: x => x.ReceivedFundId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "ReceivedFunds",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
@@ -936,7 +936,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
             migrationBuilder.CreateTable(
                 name: "OPCREvaluations",
-                schema: "catalog",
+                schema: "planning",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -959,7 +959,7 @@ namespace ERPEZ.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "FK_OPCREvaluations_OPCRs_OPCRId",
                         column: x => x.OPCRId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "OPCRs",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -967,7 +967,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
             migrationBuilder.CreateTable(
                 name: "OPCRKPI",
-                schema: "catalog",
+                schema: "planning",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -988,20 +988,20 @@ namespace ERPEZ.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "FK_OPCRKPI_KPIs_KPIId",
                         column: x => x.KPIId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "KPIs",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_OPCRKPI_KPIs_KPIId1",
                         column: x => x.KPIId1,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "KPIs",
                         principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_OPCRKPI_OPCRs_OPCRId",
                         column: x => x.OPCRId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "OPCRs",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -1009,7 +1009,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
             migrationBuilder.CreateTable(
                 name: "SubDUAllocation",
-                schema: "catalog",
+                schema: "planning",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -1030,14 +1030,14 @@ namespace ERPEZ.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "FK_SubDUAllocation_DUAllocations_DUAllocationId",
                         column: x => x.DUAllocationId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "DUAllocations",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_SubDUAllocation_SubDeliveryUnit_SubDeliveryUnitId",
                         column: x => x.SubDeliveryUnitId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "SubDeliveryUnit",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -1045,7 +1045,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
             migrationBuilder.CreateTable(
                 name: "WFPObjectives",
-                schema: "catalog",
+                schema: "planning",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -1067,21 +1067,21 @@ namespace ERPEZ.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "FK_WFPObjectives_WFPs_WFPId",
                         column: x => x.WFPId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "WFPs",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_WFPObjectives_WFPs_WFPId1",
                         column: x => x.WFPId1,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "WFPs",
                         principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
                 name: "OPCRActivities",
-                schema: "catalog",
+                schema: "planning",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -1103,7 +1103,7 @@ namespace ERPEZ.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "FK_OPCRActivities_OPCRKPI_OPCRKPIId",
                         column: x => x.OPCRKPIId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "OPCRKPI",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -1111,7 +1111,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
             migrationBuilder.CreateTable(
                 name: "OPCRRatings",
-                schema: "catalog",
+                schema: "planning",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -1134,21 +1134,21 @@ namespace ERPEZ.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "FK_OPCRRatings_OPCREvaluations_OPCREvaluationId",
                         column: x => x.OPCREvaluationId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "OPCREvaluations",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_OPCRRatings_OPCRKPI_OPCRKPIId",
                         column: x => x.OPCRKPIId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "OPCRKPI",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_OPCRRatings_PerformanceMeasures_PerformanceMeasureId",
                         column: x => x.PerformanceMeasureId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "PerformanceMeasures",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -1156,7 +1156,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
             migrationBuilder.CreateTable(
                 name: "WFPObjectiveTargets",
-                schema: "catalog",
+                schema: "planning",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -1178,7 +1178,7 @@ namespace ERPEZ.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "FK_WFPObjectiveTargets_WFPObjectives_WFPObjectiveId",
                         column: x => x.WFPObjectiveId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "WFPObjectives",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -1186,7 +1186,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
             migrationBuilder.CreateTable(
                 name: "WFPOutcomes",
-                schema: "catalog",
+                schema: "planning",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -1206,7 +1206,7 @@ namespace ERPEZ.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "FK_WFPOutcomes_WFPObjectives_WFPObjectiveId",
                         column: x => x.WFPObjectiveId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "WFPObjectives",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -1214,7 +1214,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
             migrationBuilder.CreateTable(
                 name: "DeliveryUnitOPCRActivity",
-                schema: "catalog",
+                schema: "planning",
                 columns: table => new
                 {
                     DeliveryUnitsId = table.Column<Guid>(type: "uuid", nullable: false),
@@ -1226,14 +1226,14 @@ namespace ERPEZ.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "FK_DeliveryUnitOPCRActivity_DeliveryUnit_DeliveryUnitsId",
                         column: x => x.DeliveryUnitsId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "DeliveryUnit",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_DeliveryUnitOPCRActivity_OPCRActivities_OPCRActivitiesId",
                         column: x => x.OPCRActivitiesId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "OPCRActivities",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -1241,7 +1241,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
             migrationBuilder.CreateTable(
                 name: "OPCRPAPDepartments",
-                schema: "catalog",
+                schema: "planning",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -1261,14 +1261,14 @@ namespace ERPEZ.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "FK_OPCRPAPDepartments_DeliveryUnit_DeliveryUnitId",
                         column: x => x.DeliveryUnitId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "DeliveryUnit",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_OPCRPAPDepartments_OPCRActivities_OPCRActivityId",
                         column: x => x.OPCRActivityId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "OPCRActivities",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -1276,7 +1276,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
             migrationBuilder.CreateTable(
                 name: "WFPObjectiveTimelines",
-                schema: "catalog",
+                schema: "planning",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -1299,7 +1299,7 @@ namespace ERPEZ.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "FK_WFPObjectiveTimelines_WFPObjectiveTargets_WFPObjectiveTarge~",
                         column: x => x.WFPObjectiveTargetId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "WFPObjectiveTargets",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -1307,7 +1307,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
             migrationBuilder.CreateTable(
                 name: "WFPActivities",
-                schema: "catalog",
+                schema: "planning",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -1332,14 +1332,14 @@ namespace ERPEZ.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "FK_WFPActivities_WFPOutcomes_WFPOutcomeId",
                         column: x => x.WFPOutcomeId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "WFPOutcomes",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
                         name: "FK_WFPActivities_WFPs_WFPId",
                         column: x => x.WFPId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "WFPs",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -1347,7 +1347,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
             migrationBuilder.CreateTable(
                 name: "WFPPAP",
-                schema: "catalog",
+                schema: "planning",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -1372,13 +1372,13 @@ namespace ERPEZ.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "FK_WFPPAP_WFPOutcomes_WFPOutcomeId",
                         column: x => x.WFPOutcomeId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "WFPOutcomes",
                         principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_WFPPAP_WFPs_WFPId",
                         column: x => x.WFPId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "WFPs",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -1386,7 +1386,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
             migrationBuilder.CreateTable(
                 name: "ActivityBudgetRequirements",
-                schema: "catalog",
+                schema: "planning",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -1410,20 +1410,20 @@ namespace ERPEZ.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "FK_ActivityBudgetRequirements_Objects_ObjectId",
                         column: x => x.ObjectId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "Objects",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_ActivityBudgetRequirements_WFPActivities_WFPActivityId",
                         column: x => x.WFPActivityId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "WFPActivities",
                         principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_ActivityBudgetRequirements_WFPObjectiveTargets_WFPObjective~",
                         column: x => x.WFPObjectiveTargetId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "WFPObjectiveTargets",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -1431,7 +1431,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
             migrationBuilder.CreateTable(
                 name: "WFPPAPDepartment",
-                schema: "catalog",
+                schema: "planning",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -1453,26 +1453,26 @@ namespace ERPEZ.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "FK_WFPPAPDepartment_DeliveryUnit_DeliveryUnitId",
                         column: x => x.DeliveryUnitId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "DeliveryUnit",
                         principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_WFPPAPDepartment_SubDeliveryUnit_SubDeliveryUnitId",
                         column: x => x.SubDeliveryUnitId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "SubDeliveryUnit",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
                     table.ForeignKey(
                         name: "FK_WFPPAPDepartment_SubDeliveryUnit_SubDeliveryUnitId1",
                         column: x => x.SubDeliveryUnitId1,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "SubDeliveryUnit",
                         principalColumn: "Id");
                     table.ForeignKey(
                         name: "FK_WFPPAPDepartment_WFPPAP_WFPPAPId",
                         column: x => x.WFPPAPId,
-                        principalSchema: "catalog",
+                        principalSchema: "planning",
                         principalTable: "WFPPAP",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -1480,493 +1480,493 @@ namespace ERPEZ.Infrastructure.Migrations
 
             migrationBuilder.CreateIndex(
                 name: "IX_ActivityBudgetRequirements_ObjectId",
-                schema: "catalog",
+                schema: "planning",
                 table: "ActivityBudgetRequirements",
                 column: "ObjectId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ActivityBudgetRequirements_WFPActivityId",
-                schema: "catalog",
+                schema: "planning",
                 table: "ActivityBudgetRequirements",
                 column: "WFPActivityId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_ActivityBudgetRequirements_WFPObjectiveTargetId_ObjectId_It~",
-                schema: "catalog",
+                schema: "planning",
                 table: "ActivityBudgetRequirements",
                 columns: new[] { "WFPObjectiveTargetId", "ObjectId", "ItemDescription" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_Attributes_ParentAttributeId",
-                schema: "catalog",
+                schema: "planning",
                 table: "Attributes",
                 column: "ParentAttributeId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Clusters_Name",
-                schema: "catalog",
+                schema: "planning",
                 table: "Clusters",
                 column: "Name",
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_DeliveryUnit_OfficeId_ParentDUId",
-                schema: "catalog",
+                schema: "planning",
                 table: "DeliveryUnit",
                 columns: new[] { "OfficeId", "ParentDUId" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_DeliveryUnitOPCRActivity_OPCRActivitiesId",
-                schema: "catalog",
+                schema: "planning",
                 table: "DeliveryUnitOPCRActivity",
                 column: "OPCRActivitiesId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_DUAllocations_DeliveryUnitId_Purpose",
-                schema: "catalog",
+                schema: "planning",
                 table: "DUAllocations",
                 columns: new[] { "DeliveryUnitId", "Purpose" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_DUAllocations_ReceivedFundId",
-                schema: "catalog",
+                schema: "planning",
                 table: "DUAllocations",
                 column: "ReceivedFundId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_DUFundAllocations_DUAllocationId_ReceivedFundId",
-                schema: "catalog",
+                schema: "planning",
                 table: "DUFundAllocations",
                 columns: new[] { "DUAllocationId", "ReceivedFundId" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_DUFundAllocations_ReceivedFundId",
-                schema: "catalog",
+                schema: "planning",
                 table: "DUFundAllocations",
                 column: "ReceivedFundId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_DUKPIAssignment_DeliveryUnitId_KPITargetId",
-                schema: "catalog",
+                schema: "planning",
                 table: "DUKPIAssignment",
                 columns: new[] { "DeliveryUnitId", "KPITargetId" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_DUKPIAssignment_KPIId",
-                schema: "catalog",
+                schema: "planning",
                 table: "DUKPIAssignment",
                 column: "KPIId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_DUKPIAssignment_KPIId1",
-                schema: "catalog",
+                schema: "planning",
                 table: "DUKPIAssignment",
                 column: "KPIId1");
 
             migrationBuilder.CreateIndex(
                 name: "IX_DUKPIAssignment_KPITargetId",
-                schema: "catalog",
+                schema: "planning",
                 table: "DUKPIAssignment",
                 column: "KPITargetId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_FunctionAllocations_FiscalYearId1",
-                schema: "catalog",
+                schema: "planning",
                 table: "FunctionAllocations",
                 column: "FiscalYearId1");
 
             migrationBuilder.CreateIndex(
                 name: "IX_FunctionAllocations_FunctionType_FiscalYearId",
-                schema: "catalog",
+                schema: "planning",
                 table: "FunctionAllocations",
                 columns: new[] { "FunctionType", "FiscalYearId" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_FundSources_ParentId_Code",
-                schema: "catalog",
+                schema: "planning",
                 table: "FundSources",
                 columns: new[] { "ParentId", "Code" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_FundSources_ParentSourceId",
-                schema: "catalog",
+                schema: "planning",
                 table: "FundSources",
                 column: "ParentSourceId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_KPIAttribute_KPIsId",
-                schema: "catalog",
+                schema: "planning",
                 table: "KPIAttribute",
                 column: "KPIsId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_KPIModeOfVerifications_KPIId_Name",
-                schema: "catalog",
+                schema: "planning",
                 table: "KPIModeOfVerifications",
                 columns: new[] { "KPIId", "Name" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_KPIRatings_KPIId",
-                schema: "catalog",
+                schema: "planning",
                 table: "KPIRatings",
                 column: "KPIId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_KPIRatings_PerformanceMeasureId",
-                schema: "catalog",
+                schema: "planning",
                 table: "KPIRatings",
                 column: "PerformanceMeasureId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_KPIs_Name",
-                schema: "catalog",
+                schema: "planning",
                 table: "KPIs",
                 column: "Name",
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_KPIs_ParentKPIId",
-                schema: "catalog",
+                schema: "planning",
                 table: "KPIs",
                 column: "ParentKPIId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_KPISDGs_SDGsId",
-                schema: "catalog",
+                schema: "planning",
                 table: "KPISDGs",
                 column: "SDGsId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_KPITargets_KPIId_Period",
-                schema: "catalog",
+                schema: "planning",
                 table: "KPITargets",
                 columns: new[] { "KPIId", "Period" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_KPITargets_KPIId1",
-                schema: "catalog",
+                schema: "planning",
                 table: "KPITargets",
                 column: "KPIId1");
 
             migrationBuilder.CreateIndex(
                 name: "IX_KPITargets_ParentKPITargetId",
-                schema: "catalog",
+                schema: "planning",
                 table: "KPITargets",
                 column: "ParentKPITargetId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Locations_Name_Code",
-                schema: "catalog",
+                schema: "planning",
                 table: "Locations",
                 columns: new[] { "Name", "Code" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Locations_ParentId",
-                schema: "catalog",
+                schema: "planning",
                 table: "Locations",
                 column: "ParentId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Locations_ParentLocationId",
-                schema: "catalog",
+                schema: "planning",
                 table: "Locations",
                 column: "ParentLocationId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_MFOKPI_KPIId",
-                schema: "catalog",
+                schema: "planning",
                 table: "MFOKPI",
                 column: "KPIId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_MFOKPI_MFOPAPId_KPIId",
-                schema: "catalog",
+                schema: "planning",
                 table: "MFOKPI",
                 columns: new[] { "MFOPAPId", "KPIId" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_MFOPAPs_Name_Code",
-                schema: "catalog",
+                schema: "planning",
                 table: "MFOPAPs",
                 columns: new[] { "Name", "Code" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_MFOPAPs_ParentId",
-                schema: "catalog",
+                schema: "planning",
                 table: "MFOPAPs",
                 column: "ParentId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_MFOPAPs_ParentMFOPAPId",
-                schema: "catalog",
+                schema: "planning",
                 table: "MFOPAPs",
                 column: "ParentMFOPAPId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Objects_ParentId_Code",
-                schema: "catalog",
+                schema: "planning",
                 table: "Objects",
                 columns: new[] { "ParentId", "Code" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Objects_ParentObjectId",
-                schema: "catalog",
+                schema: "planning",
                 table: "Objects",
                 column: "ParentObjectId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Offices_ClusterId",
-                schema: "catalog",
+                schema: "planning",
                 table: "Offices",
                 column: "ClusterId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_OPCRActivities_OPCRKPIId_Name",
-                schema: "catalog",
+                schema: "planning",
                 table: "OPCRActivities",
                 columns: new[] { "OPCRKPIId", "Name" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_OPCREvaluations_OPCRId_EvaluatorId_EvaluationDate",
-                schema: "catalog",
+                schema: "planning",
                 table: "OPCREvaluations",
                 columns: new[] { "OPCRId", "EvaluatorId", "EvaluationDate" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_OPCRKPI_KPIId",
-                schema: "catalog",
+                schema: "planning",
                 table: "OPCRKPI",
                 column: "KPIId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_OPCRKPI_KPIId1",
-                schema: "catalog",
+                schema: "planning",
                 table: "OPCRKPI",
                 column: "KPIId1");
 
             migrationBuilder.CreateIndex(
                 name: "IX_OPCRKPI_OPCRId_KPIId",
-                schema: "catalog",
+                schema: "planning",
                 table: "OPCRKPI",
                 columns: new[] { "OPCRId", "KPIId" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_OPCRPAPDepartments_DeliveryUnitId",
-                schema: "catalog",
+                schema: "planning",
                 table: "OPCRPAPDepartments",
                 column: "DeliveryUnitId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_OPCRPAPDepartments_OPCRActivityId_DeliveryUnitId",
-                schema: "catalog",
+                schema: "planning",
                 table: "OPCRPAPDepartments",
                 columns: new[] { "OPCRActivityId", "DeliveryUnitId" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_OPCRRatings_OPCREvaluationId_PerformanceMeasureId_OPCRKPIId",
-                schema: "catalog",
+                schema: "planning",
                 table: "OPCRRatings",
                 columns: new[] { "OPCREvaluationId", "PerformanceMeasureId", "OPCRKPIId" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_OPCRRatings_OPCRKPIId",
-                schema: "catalog",
+                schema: "planning",
                 table: "OPCRRatings",
                 column: "OPCRKPIId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_OPCRRatings_PerformanceMeasureId",
-                schema: "catalog",
+                schema: "planning",
                 table: "OPCRRatings",
                 column: "PerformanceMeasureId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_OPCRs_DeliveryUnitId_FiscalYear",
-                schema: "catalog",
+                schema: "planning",
                 table: "OPCRs",
                 columns: new[] { "DeliveryUnitId", "FiscalYear" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Organizations_Name_Code",
-                schema: "catalog",
+                schema: "planning",
                 table: "Organizations",
                 columns: new[] { "Name", "Code" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Organizations_ParentId",
-                schema: "catalog",
+                schema: "planning",
                 table: "Organizations",
                 column: "ParentId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Organizations_ParentOrganizationId",
-                schema: "catalog",
+                schema: "planning",
                 table: "Organizations",
                 column: "ParentOrganizationId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_PerformanceMeasures_Name",
-                schema: "catalog",
+                schema: "planning",
                 table: "PerformanceMeasures",
                 column: "Name",
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_ReceivedFunds_FundSourceId_Amount",
-                schema: "catalog",
+                schema: "planning",
                 table: "ReceivedFunds",
                 columns: new[] { "FundSourceId", "Amount" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_SubDeliveryUnit_DeliveryUnitId_Name",
-                schema: "catalog",
+                schema: "planning",
                 table: "SubDeliveryUnit",
                 columns: new[] { "DeliveryUnitId", "Name" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_SubDUAllocation_DUAllocationId_SubDeliveryUnitId",
-                schema: "catalog",
+                schema: "planning",
                 table: "SubDUAllocation",
                 columns: new[] { "DUAllocationId", "SubDeliveryUnitId" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_SubDUAllocation_SubDeliveryUnitId",
-                schema: "catalog",
+                schema: "planning",
                 table: "SubDUAllocation",
                 column: "SubDeliveryUnitId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Transactions_FundSourceId_OrganizationId_LocationId_MFOPAPI~",
-                schema: "catalog",
+                schema: "planning",
                 table: "Transactions",
                 columns: new[] { "FundSourceId", "OrganizationId", "LocationId", "MFOPAPId", "ObjectId", "TransactionDate" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Transactions_LocationId",
-                schema: "catalog",
+                schema: "planning",
                 table: "Transactions",
                 column: "LocationId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Transactions_MFOPAPId",
-                schema: "catalog",
+                schema: "planning",
                 table: "Transactions",
                 column: "MFOPAPId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Transactions_ObjectId",
-                schema: "catalog",
+                schema: "planning",
                 table: "Transactions",
                 column: "ObjectId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Transactions_OrganizationId",
-                schema: "catalog",
+                schema: "planning",
                 table: "Transactions",
                 column: "OrganizationId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_WFPActivities_WFPId",
-                schema: "catalog",
+                schema: "planning",
                 table: "WFPActivities",
                 column: "WFPId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_WFPActivities_WFPOutcomeId",
-                schema: "catalog",
+                schema: "planning",
                 table: "WFPActivities",
                 column: "WFPOutcomeId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_WFPObjectives_WFPId_Description",
-                schema: "catalog",
+                schema: "planning",
                 table: "WFPObjectives",
                 columns: new[] { "WFPId", "Description" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_WFPObjectives_WFPId1",
-                schema: "catalog",
+                schema: "planning",
                 table: "WFPObjectives",
                 column: "WFPId1");
 
             migrationBuilder.CreateIndex(
                 name: "IX_WFPObjectiveTargets_WFPObjectiveId_ActivityName_Indicator",
-                schema: "catalog",
+                schema: "planning",
                 table: "WFPObjectiveTargets",
                 columns: new[] { "WFPObjectiveId", "ActivityName", "Indicator" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_WFPObjectiveTimelines_WFPObjectiveTargetId_StartDate_EndDate",
-                schema: "catalog",
+                schema: "planning",
                 table: "WFPObjectiveTimelines",
                 columns: new[] { "WFPObjectiveTargetId", "StartDate", "EndDate" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_WFPOutcomes_WFPObjectiveId_Description",
-                schema: "catalog",
+                schema: "planning",
                 table: "WFPOutcomes",
                 columns: new[] { "WFPObjectiveId", "Description" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_WFPPAP_WFPId",
-                schema: "catalog",
+                schema: "planning",
                 table: "WFPPAP",
                 column: "WFPId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_WFPPAP_WFPOutcomeId",
-                schema: "catalog",
+                schema: "planning",
                 table: "WFPPAP",
                 column: "WFPOutcomeId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_WFPPAPDepartment_DeliveryUnitId",
-                schema: "catalog",
+                schema: "planning",
                 table: "WFPPAPDepartment",
                 column: "DeliveryUnitId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_WFPPAPDepartment_SubDeliveryUnitId",
-                schema: "catalog",
+                schema: "planning",
                 table: "WFPPAPDepartment",
                 column: "SubDeliveryUnitId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_WFPPAPDepartment_SubDeliveryUnitId1",
-                schema: "catalog",
+                schema: "planning",
                 table: "WFPPAPDepartment",
                 column: "SubDeliveryUnitId1");
 
             migrationBuilder.CreateIndex(
                 name: "IX_WFPPAPDepartment_WFPPAPId_SubDeliveryUnitId",
-                schema: "catalog",
+                schema: "planning",
                 table: "WFPPAPDepartment",
                 columns: new[] { "WFPPAPId", "SubDeliveryUnitId" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_WFPs_DeliveryUnitId_FiscalYear",
-                schema: "catalog",
+                schema: "planning",
                 table: "WFPs",
                 columns: new[] { "DeliveryUnitId", "FiscalYear" });
         }
@@ -1976,175 +1976,175 @@ namespace ERPEZ.Infrastructure.Migrations
         {
             migrationBuilder.DropTable(
                 name: "ActivityBudgetRequirements",
-                schema: "catalog");
+                schema: "planning");
 
             migrationBuilder.DropTable(
                 name: "DeliveryUnitOPCRActivity",
-                schema: "catalog");
+                schema: "planning");
 
             migrationBuilder.DropTable(
                 name: "DUFundAllocations",
-                schema: "catalog");
+                schema: "planning");
 
             migrationBuilder.DropTable(
                 name: "DUKPIAssignment",
-                schema: "catalog");
+                schema: "planning");
 
             migrationBuilder.DropTable(
                 name: "FunctionAllocations",
-                schema: "catalog");
+                schema: "planning");
 
             migrationBuilder.DropTable(
                 name: "KPIAttribute",
-                schema: "catalog");
+                schema: "planning");
 
             migrationBuilder.DropTable(
                 name: "KPIModeOfVerifications",
-                schema: "catalog");
+                schema: "planning");
 
             migrationBuilder.DropTable(
                 name: "KPIRatings",
-                schema: "catalog");
+                schema: "planning");
 
             migrationBuilder.DropTable(
                 name: "KPISDGs",
-                schema: "catalog");
+                schema: "planning");
 
             migrationBuilder.DropTable(
                 name: "MFOKPI",
-                schema: "catalog");
+                schema: "planning");
 
             migrationBuilder.DropTable(
                 name: "OPCRPAPDepartments",
-                schema: "catalog");
+                schema: "planning");
 
             migrationBuilder.DropTable(
                 name: "OPCRRatings",
-                schema: "catalog");
+                schema: "planning");
 
             migrationBuilder.DropTable(
                 name: "SubDUAllocation",
-                schema: "catalog");
+                schema: "planning");
 
             migrationBuilder.DropTable(
                 name: "Transactions",
-                schema: "catalog");
+                schema: "planning");
 
             migrationBuilder.DropTable(
                 name: "WFPObjectiveTimelines",
-                schema: "catalog");
+                schema: "planning");
 
             migrationBuilder.DropTable(
                 name: "WFPPAPDepartment",
-                schema: "catalog");
+                schema: "planning");
 
             migrationBuilder.DropTable(
                 name: "WFPActivities",
-                schema: "catalog");
+                schema: "planning");
 
             migrationBuilder.DropTable(
                 name: "KPITargets",
-                schema: "catalog");
+                schema: "planning");
 
             migrationBuilder.DropTable(
                 name: "FiscalYear",
-                schema: "catalog");
+                schema: "planning");
 
             migrationBuilder.DropTable(
                 name: "Attributes",
-                schema: "catalog");
+                schema: "planning");
 
             migrationBuilder.DropTable(
                 name: "SDGs",
-                schema: "catalog");
+                schema: "planning");
 
             migrationBuilder.DropTable(
                 name: "OPCRActivities",
-                schema: "catalog");
+                schema: "planning");
 
             migrationBuilder.DropTable(
                 name: "OPCREvaluations",
-                schema: "catalog");
+                schema: "planning");
 
             migrationBuilder.DropTable(
                 name: "PerformanceMeasures",
-                schema: "catalog");
+                schema: "planning");
 
             migrationBuilder.DropTable(
                 name: "DUAllocations",
-                schema: "catalog");
+                schema: "planning");
 
             migrationBuilder.DropTable(
                 name: "Locations",
-                schema: "catalog");
+                schema: "planning");
 
             migrationBuilder.DropTable(
                 name: "MFOPAPs",
-                schema: "catalog");
+                schema: "planning");
 
             migrationBuilder.DropTable(
                 name: "Objects",
-                schema: "catalog");
+                schema: "planning");
 
             migrationBuilder.DropTable(
                 name: "Organizations",
-                schema: "catalog");
+                schema: "planning");
 
             migrationBuilder.DropTable(
                 name: "WFPObjectiveTargets",
-                schema: "catalog");
+                schema: "planning");
 
             migrationBuilder.DropTable(
                 name: "SubDeliveryUnit",
-                schema: "catalog");
+                schema: "planning");
 
             migrationBuilder.DropTable(
                 name: "WFPPAP",
-                schema: "catalog");
+                schema: "planning");
 
             migrationBuilder.DropTable(
                 name: "OPCRKPI",
-                schema: "catalog");
+                schema: "planning");
 
             migrationBuilder.DropTable(
                 name: "ReceivedFunds",
-                schema: "catalog");
+                schema: "planning");
 
             migrationBuilder.DropTable(
                 name: "WFPOutcomes",
-                schema: "catalog");
+                schema: "planning");
 
             migrationBuilder.DropTable(
                 name: "KPIs",
-                schema: "catalog");
+                schema: "planning");
 
             migrationBuilder.DropTable(
                 name: "OPCRs",
-                schema: "catalog");
+                schema: "planning");
 
             migrationBuilder.DropTable(
                 name: "FundSources",
-                schema: "catalog");
+                schema: "planning");
 
             migrationBuilder.DropTable(
                 name: "WFPObjectives",
-                schema: "catalog");
+                schema: "planning");
 
             migrationBuilder.DropTable(
                 name: "WFPs",
-                schema: "catalog");
+                schema: "planning");
 
             migrationBuilder.DropTable(
                 name: "DeliveryUnit",
-                schema: "catalog");
+                schema: "planning");
 
             migrationBuilder.DropTable(
                 name: "Offices",
-                schema: "catalog");
+                schema: "planning");
 
             migrationBuilder.DropTable(
                 name: "Clusters",
-                schema: "catalog");
+                schema: "planning");
         }
     }
 }

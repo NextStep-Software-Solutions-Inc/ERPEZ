@@ -1278,7 +1278,7 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("ParentId", "Code")
                         .IsUnique();
 
-                    b.ToTable("[Object]s", (string)null);
+                    b.ToTable("Objects", "planning");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.Office", b =>
