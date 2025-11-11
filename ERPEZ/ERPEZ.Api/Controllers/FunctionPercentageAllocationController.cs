@@ -56,7 +56,7 @@ namespace ERPEZ.Api.Controllers
             var result = await mediator.Send(query);
             return Ok(result);
         }
-        [HttpPut("/fiscalYear")]
+        [HttpPut("fiscalYear")]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
