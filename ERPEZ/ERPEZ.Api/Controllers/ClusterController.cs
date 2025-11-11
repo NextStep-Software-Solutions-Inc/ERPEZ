@@ -4,7 +4,6 @@ using ERPEZ.Application.Features.Planning.Cluster.Commands.UpdateCluster;
 using ERPEZ.Application.Features.Planning.Cluster.Dtos;
 using ERPEZ.Application.Features.Planning.Cluster.Queries.GetClusterById;
 using ERPEZ.Application.Features.Planning.Cluster.Queries.GetClusters;
-using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
