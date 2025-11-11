@@ -1,4 +1,4 @@
-﻿using ERPEZ.Application.Features.Planning.KPIRating.Dtos;
+using ERPEZ.Application.Features.Planning.KPIRating.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -6,18 +6,18 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.KPIRating.Commands.CreateKPIRating;
 
-public class CreateKPIRatingCommandHandler(IUnitOfWork _unitOfWork)
+public class CreateKPIRatingCommandHandler(IUnitOfWork unitOfWork)
     : IRequestHandler<CreateKPIRatingCommand, ApiResponse<KPIRatingDto>>
 {
     public async Task<ApiResponse<KPIRatingDto>> Handle(CreateKPIRatingCommand request, CancellationToken cancellationToken)
     {
-        _ = await _unitOfWork.PerformanceMeasureRepository.FindAsync(
+        _ = await unitOfWork.PerformanceMeasureRepository.FindAsync(
             t => t.Id == request.PerformanceMeasureId,
             cancellationToken: cancellationToken) ?? throw new NotFoundException("Performance Measure should exist");
         
         if (request.KPIId != Guid.Empty)
         {
-            _ = await _unitOfWork.KPIRepository.GetByIdAsync(request.KPIId, cancellationToken: cancellationToken)
+            _ = await unitOfWork.KPIRepository.GetByIdAsync(request.KPIId, cancellationToken: cancellationToken)
                 ?? throw new NotFoundException("KPI not found.");
         }
 
@@ -29,8 +29,8 @@ public class CreateKPIRatingCommandHandler(IUnitOfWork _unitOfWork)
             Remarks = request.Remarks
         };
 
-        await _unitOfWork.KPIRatingRepository.AddAsync(kPIRating, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await unitOfWork.KPIRatingRepository.AddAsync(kPIRating, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
         var result = new KPIRatingDto
         {
             Remarks = request.Remarks,

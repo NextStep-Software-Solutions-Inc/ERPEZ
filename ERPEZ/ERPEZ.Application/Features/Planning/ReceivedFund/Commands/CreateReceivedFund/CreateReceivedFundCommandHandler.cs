@@ -1,4 +1,4 @@
-﻿using ERPEZ.Application.Features.Planning.ReceivedFund.Dtos;
+using ERPEZ.Application.Features.Planning.ReceivedFund.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -6,7 +6,7 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.ReceivedFund.Commands.CreateReceivedFund;
 
-public class CreateReceivedFundCommandHandler(IUnitOfWork _unitOfWork)
+public class CreateReceivedFundCommandHandler(IUnitOfWork unitOfWork)
     : IRequestHandler<CreateReceivedFundCommand, ApiResponse<ReceivedFundDto>>
 {
     public async Task<ApiResponse<ReceivedFundDto>> Handle(CreateReceivedFundCommand request, CancellationToken cancellationToken)
@@ -19,15 +19,15 @@ public class CreateReceivedFundCommandHandler(IUnitOfWork _unitOfWork)
                 Succeeded = false
             };
         }
-        _ = await _unitOfWork.FundSourceRepository.GetByIdAsync(request.FundSourceId, cancellationToken) ?? throw new NotFoundException("Fund Source not found.");
+        _ = await unitOfWork.FundSourceRepository.GetByIdAsync(request.FundSourceId, cancellationToken) ?? throw new NotFoundException("Fund Source not found.");
         var receivedFund = new Domain.Entities.Planning.ReceivedFund
         {
             FundSourceId = request.FundSourceId,
             Amount = request.Amount
         };
 
-        await _unitOfWork.ReceivedFundRepository.AddAsync(receivedFund, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await unitOfWork.ReceivedFundRepository.AddAsync(receivedFund, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
         var receivedFundDto = new ReceivedFundDto
         {
             Id = receivedFund.Id,

@@ -1,11 +1,11 @@
-﻿using ERPEZ.Domain.Interfaces;
+using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.ReceivedFund.Commands.UpdateReceivedFund;
 
-public class UpdateReceivedFundCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<UpdateReceivedFundCommand, ApiResponse<Domain.Entities.Planning.ReceivedFund>>
+public class UpdateReceivedFundCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateReceivedFundCommand, ApiResponse<Domain.Entities.Planning.ReceivedFund>>
 {
     public async Task<ApiResponse<Domain.Entities.Planning.ReceivedFund>> Handle(UpdateReceivedFundCommand request, CancellationToken cancellationToken)
     {
@@ -13,18 +13,18 @@ public class UpdateReceivedFundCommandHandler(IUnitOfWork _unitOfWork) : IReques
 
         if (dto.FundSourceId.HasValue && dto.FundSourceId.Value != Guid.Empty)
         {
-            _ = await _unitOfWork.FundSourceRepository.GetByIdAsync(dto.FundSourceId.Value, cancellationToken: cancellationToken)
+            _ = await unitOfWork.FundSourceRepository.GetByIdAsync(dto.FundSourceId.Value, cancellationToken: cancellationToken)
                 ?? throw new NotFoundException("Fund Source not found.");
         }
 
-        var receivedFund = await _unitOfWork.ReceivedFundRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken)
+        var receivedFund = await unitOfWork.ReceivedFundRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken)
             ?? throw new NotFoundException("Received Fund not found.");
         
         receivedFund.FundSourceId = dto?.FundSourceId ?? receivedFund.FundSourceId;
         receivedFund.Amount = dto?.Amount ?? receivedFund.Amount;
 
-        _unitOfWork.ReceivedFundRepository.Update(receivedFund);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        unitOfWork.ReceivedFundRepository.Update(receivedFund);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return ApiResponse<Domain.Entities.Planning.ReceivedFund>.Success(receivedFund, "Received Fund updated successfully.");
     }
