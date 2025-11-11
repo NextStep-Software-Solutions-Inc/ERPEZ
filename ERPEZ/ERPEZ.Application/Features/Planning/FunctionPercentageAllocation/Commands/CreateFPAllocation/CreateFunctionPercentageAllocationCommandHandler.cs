@@ -1,4 +1,4 @@
-﻿using ERPEZ.Domain.Interfaces;
+using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
 using DomainFPA = ERPEZ.Domain.Entities.Planning.FunctionPercentageAllocation;
@@ -6,7 +6,7 @@ using FPAResponse = ERPEZ.Application.Features.Planning.FunctionPercentageAlloca
 
 namespace ERPEZ.Application.Features.Planning.FunctionPercentageAllocation.Commands.CreateFPAllocation;
 
-public class CreateFunctionPercentageAllocationCommandHandler(IUnitOfWork _unitOfWork)
+public class CreateFunctionPercentageAllocationCommandHandler(IUnitOfWork unitOfWork)
     : IRequestHandler<CreateFunctionPercentageAllocationCommand, ApiResponse<List<FPAResponse>>>
 {
     public async Task<ApiResponse<List<FPAResponse>>> Handle(CreateFunctionPercentageAllocationCommand request, CancellationToken cancellationToken)
@@ -25,7 +25,7 @@ public class CreateFunctionPercentageAllocationCommandHandler(IUnitOfWork _unitO
         var functionTypes = incomingKeys.Select(k => k.FunctionType).ToList();
         var fiscalYears = incomingKeys.Select(k => k.FiscalYear).Distinct().ToList();
 
-        var fpaRepository = _unitOfWork.FunctionPercentageAllocationRepository;
+        var fpaRepository = unitOfWork.FunctionPercentageAllocationRepository;
         var filteredQuery = fpaRepository.Query(
             t => functionTypes.Contains(t.FunctionType) && fiscalYears.Contains(t.FiscalYear)
         );
@@ -69,8 +69,8 @@ public class CreateFunctionPercentageAllocationCommandHandler(IUnitOfWork _unitO
             return ApiResponse<List<FPAResponse>>.Success([], "No unique, non-conflicting allocations provided for creation.");
         }
 
-        await _unitOfWork.FunctionPercentageAllocationRepository.AddBulkAsync(entitiesToAdd, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await unitOfWork.FunctionPercentageAllocationRepository.AddBulkAsync(entitiesToAdd, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         var responseDtos = entitiesToAdd.Select(entity => new FPAResponse
         {

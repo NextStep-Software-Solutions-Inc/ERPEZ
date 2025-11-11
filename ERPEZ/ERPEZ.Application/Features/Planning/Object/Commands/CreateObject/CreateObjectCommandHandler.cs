@@ -1,4 +1,4 @@
-﻿using ERPEZ.Application.Features.Planning.Object.Dtos;
+using ERPEZ.Application.Features.Planning.Object.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -6,17 +6,17 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Object.Commands.CreateObject;
 
-public class CreateObjectCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<CreateObjectCommand, ApiResponse<ObjectDto>>
+public class CreateObjectCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateObjectCommand, ApiResponse<ObjectDto>>
 {
     public async Task<ApiResponse<ObjectDto>> Handle(CreateObjectCommand request, CancellationToken cancellationToken)
     {
         if (request.ParentId != null)
         {
-            _ = await _unitOfWork.ObjectRepository.FindAsync(wo => wo.Id == request.ParentId,
+            _ = await unitOfWork.ObjectRepository.FindAsync(wo => wo.Id == request.ParentId,
                 cancellationToken) ?? throw new NotFoundException("Parent Object not found.");
         }
 
-        var duplicate = await _unitOfWork.ObjectRepository.FindAsync(o => o.ParentId == request.ParentId &&
+        var duplicate = await unitOfWork.ObjectRepository.FindAsync(o => o.ParentId == request.ParentId &&
         o.Name == request.Name &&
         o.Code == request.Code, cancellationToken);
         if (duplicate != null) throw new ConflictException("Object already exist.");
@@ -29,8 +29,8 @@ public class CreateObjectCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandl
             IsActive = request.IsActive
         };
 
-        await _unitOfWork.ObjectRepository.AddAsync(requestObject, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await unitOfWork.ObjectRepository.AddAsync(requestObject, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         var dto = new ObjectDto
         {
