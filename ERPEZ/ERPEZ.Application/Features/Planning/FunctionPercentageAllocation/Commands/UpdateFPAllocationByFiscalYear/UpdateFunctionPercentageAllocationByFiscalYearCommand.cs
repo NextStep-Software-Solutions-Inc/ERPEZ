@@ -4,8 +4,8 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.FunctionPercentageAllocation.Commands.UpdateFPAllocationByFiscalYear;
 
-public class UpdateFunctionPercentageAllocationByFiscalYearCommand : IRequest<ApiResponse<List<FunctionPercentageAllocationResponse>>>
+public class UpdateFunctionPercentageAllocationByFiscalYearCommand : IRequest<ApiResponse<string>>
 {
-    public List<FunctionPercentageAllocationRequest> FunctionPercentageAllocationsRequests { get; set; } = [];
+    public List<UpdateFunctionPercentageAllocationByFiscalYearRequest> UpdateFunctionPercentageAllocationsRequests { get; set; } = [];
     public int FiscalYear { get; set; }
 }

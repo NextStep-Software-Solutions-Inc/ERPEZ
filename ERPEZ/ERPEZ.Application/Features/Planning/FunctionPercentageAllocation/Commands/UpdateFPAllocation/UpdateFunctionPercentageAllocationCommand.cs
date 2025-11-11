@@ -7,5 +7,5 @@ namespace ERPEZ.Application.Features.Planning.FunctionPercentageAllocation.Comma
 public class UpdateFunctionPercentageAllocationCommand : IRequest<ApiResponse<Domain.Entities.Planning.FunctionPercentageAllocation>>
 {
     public Guid Id { get; set; }
-    public required UpdateFunctionPercentageAllocationDto UpdateFPA { get; set; }
+    public required UpdateFunctionPercentageAllocationRequest UpdateFPA { get; set; }
 }

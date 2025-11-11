@@ -60,12 +60,12 @@ namespace ERPEZ.Api.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> UpdateFunctionPercentageAllocation(int fiscalYear, [FromBody] Funct updateDto)
+        public async Task<IActionResult> UpdateFunctionPercentageAllocation(int fiscalYear, [FromBody] List<UpdateFunctionPercentageAllocationByFiscalYearRequest> updateDto)
         {
             var request = new UpdateFunctionPercentageAllocationByFiscalYearCommand
             {
                 FiscalYear = fiscalYear,
-                FunctionPercentageAllocationsRequests = updateDto
+                UpdateFunctionPercentageAllocationsRequests = updateDto
             };
 
             var response = await mediator.Send(request);
@@ -75,7 +75,7 @@ namespace ERPEZ.Api.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> UpdateFunctionPercentageAllocation(Guid id, [FromBody] UpdateFunctionPercentageAllocationDto updateDto)
+        public async Task<IActionResult> UpdateFunctionPercentageAllocation(Guid id, [FromBody] UpdateFunctionPercentageAllocationRequest updateDto)
         {
             var request = new UpdateFunctionPercentageAllocationCommand
             {
