@@ -1,4 +1,4 @@
-﻿using ERPEZ.Application.Features.Planning.Cluster.Commands.CreateCluster;
+using ERPEZ.Application.Features.Planning.Cluster.Commands.CreateCluster;
 using ERPEZ.Application.Features.Planning.Cluster.Commands.DeleteCluster;
 using ERPEZ.Application.Features.Planning.Cluster.Commands.UpdateCluster;
 using ERPEZ.Application.Features.Planning.Cluster.Dtos;
@@ -17,8 +17,8 @@ namespace ERPEZ.Api.Controllers
     public class ClusterController(ISender mediator) : ControllerBase
     {
         [HttpPost]
-        [ProducesResponseType(typeof(ApiResponse<ClusterDto>), StatusCodes.Status201Created)]
-        [ProducesResponseType(typeof(ApiResponse<ClusterDto>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<ClusterResponse>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<ClusterResponse>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateCluster([FromBody] CreateClusterCommand command)
         {
             var result = await mediator.Send(command);
@@ -30,7 +30,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet]
-        [ProducesResponseType(typeof(PaginatedApiResponse<Cluster>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(PaginatedApiResponse<ClusterResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetClusters([FromQuery] GetClustersQuery query)
         {
             var result = await mediator.Send(query);
@@ -38,7 +38,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<Cluster>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<ClusterResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetClusterById(Guid id)
         {
@@ -48,10 +48,10 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpPut("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<ClusterDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<ClusterResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> UpdateCluster(Guid id, [FromBody] UpdateClusterDto dto)
+        public async Task<IActionResult> UpdateCluster(Guid id, [FromBody] UpdateClusterRequest dto)
         {
             var command = new UpdateClusterCommand
             {

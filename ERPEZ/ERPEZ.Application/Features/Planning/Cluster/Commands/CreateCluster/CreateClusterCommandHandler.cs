@@ -1,13 +1,14 @@
-﻿using ERPEZ.Domain.Interfaces;
+using ERPEZ.Application.Features.Planning.Cluster.Dtos;
+using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Cluster.Commands.CreateCluster;
 
-public class CreateClusterCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<CreateClusterCommand, ApiResponse<Domain.Entities.Planning.Cluster>>
+public class CreateClusterCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<CreateClusterCommand, ApiResponse<ClusterResponse>>
 {
-    public async Task<ApiResponse<Domain.Entities.Planning.Cluster>> Handle(CreateClusterCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<ClusterResponse>> Handle(CreateClusterCommand request, CancellationToken cancellationToken)
     {
         var duplicate = await _unitOfWork.ClusterRepository.FindAsync(w => w.Name == request.Name && w.Description == request.Description, cancellationToken);
         if (duplicate != null) throw new ConflictException("Cluster already exist.");
@@ -21,6 +22,14 @@ public class CreateClusterCommandHandler(IUnitOfWork _unitOfWork) : IRequestHand
 
         await _unitOfWork.ClusterRepository.AddAsync(cluster, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
-        return ApiResponse<Domain.Entities.Planning.Cluster>.Success(cluster, "Cluster created successfully.");
+        var res = new ClusterResponse()
+        {
+            Id = cluster.Id,
+            Name = cluster.Name,
+            Description = cluster.Description,
+            CreatedAt = cluster.CreatedAt,
+            CreatedBy = cluster.CreatedBy
+        };
+        return ApiResponse<ClusterResponse>.Success(res, "Cluster created successfully.");
     }
 }

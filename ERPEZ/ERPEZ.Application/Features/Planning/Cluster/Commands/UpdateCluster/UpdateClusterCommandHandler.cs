@@ -1,13 +1,14 @@
-﻿using ERPEZ.Domain.Interfaces;
+using ERPEZ.Application.Features.Planning.Cluster.Dtos;
+using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Cluster.Commands.UpdateCluster;
 
-public class UpdateClusterCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<UpdateClusterCommand, ApiResponse<Domain.Entities.Planning.Cluster>>
+public class UpdateClusterCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<UpdateClusterCommand, ApiResponse<ClusterResponse>>
 {
-    public async Task<ApiResponse<Domain.Entities.Planning.Cluster>> Handle(UpdateClusterCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<ClusterResponse>> Handle(UpdateClusterCommand request, CancellationToken cancellationToken)
     {
         var dto = request.UpdateCluster;
         var cluster = await _unitOfWork.ClusterRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken)
@@ -27,7 +28,15 @@ public class UpdateClusterCommandHandler(IUnitOfWork _unitOfWork) : IRequestHand
 
         _unitOfWork.ClusterRepository.Update(cluster);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
+        var res = new ClusterResponse()
+        {
+            Id = cluster.Id,
+            Name = cluster.Name,
+            Description = cluster.Description,
+            CreatedAt = cluster.CreatedAt,
+            CreatedBy = cluster.CreatedBy
+        };
 
-        return ApiResponse<Domain.Entities.Planning.Cluster>.Success(cluster, "Cluster updated successfully.");
+        return ApiResponse<ClusterResponse>.Success(res, "Cluster updated successfully.");
     }
 }
