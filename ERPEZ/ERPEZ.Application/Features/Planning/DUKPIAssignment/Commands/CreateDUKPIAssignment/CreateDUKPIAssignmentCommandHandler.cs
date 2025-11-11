@@ -18,7 +18,7 @@ public class CreateDUKPIAssignmentCommandHandler(IUnitOfWork _unitOfWork)
         );
 
         if (dukpi != null)
-            throw new ConflictException("DU KPI Assigment already exists for this Delivery Unit.");
+            throw new ConflictException("DU KPI Assignment already exists for this Delivery Unit.");
 
         _ = await _unitOfWork.KPIRepository.GetByIdAsync(request.KPIId, cancellationToken: cancellationToken)
             ?? throw new NotFoundException("KPI not found.");
