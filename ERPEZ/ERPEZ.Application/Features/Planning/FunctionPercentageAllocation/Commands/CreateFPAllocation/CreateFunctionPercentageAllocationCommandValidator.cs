@@ -15,6 +15,11 @@ public class CreateFunctionPercentageAllocationCommandValidator : AbstractValida
             .WithMessage("Atleast one Function Percentage Allocation is required.");
 
         RuleFor(x => x.FunctionPercentageAllocationsRequests)
+            .Must(list => list.Select(r => r.FunctionType).Distinct(StringComparer.OrdinalIgnoreCase).Count() == list.Count)
+            .When(list => list.FunctionPercentageAllocationsRequests != null && list.FunctionPercentageAllocationsRequests.Count > 1)
+            .WithMessage("The batch must not contain duplicate Function Types.");
+
+        RuleFor(x => x.FunctionPercentageAllocationsRequests)
             .Must(x => x.Sum(f=> f.Percentage) == 100m)
             .When(x => x.FunctionPercentageAllocationsRequests.Count != 0)
             .WithMessage(x => $"The total percentage allocated in this batch must equal exactly 100%. Received {x.FunctionPercentageAllocationsRequests.Sum(x=> x.Percentage)}%.");

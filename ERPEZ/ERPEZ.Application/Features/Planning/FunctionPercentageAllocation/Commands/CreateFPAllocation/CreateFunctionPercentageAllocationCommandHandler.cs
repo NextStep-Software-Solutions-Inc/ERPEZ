@@ -1,7 +1,7 @@
 ﻿using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
-using ERPEZ.Shared.Exceptions;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 using DomainFPA = ERPEZ.Domain.Entities.Planning.FunctionPercentageAllocation;
 using FPAResponse = ERPEZ.Application.Features.Planning.FunctionPercentageAllocation.Dtos.FunctionPercentageAllocationResponse;
 
@@ -19,33 +19,70 @@ public class CreateFunctionPercentageAllocationCommandHandler(IUnitOfWork _unitO
             return ApiResponse<List<FPAResponse>>.Success([], "No allocations provided for creation.");
         }
 
-        var entitiesToAdd = new List<DomainFPA>();
-        var functionTypesInRequest = new HashSet<string>();
+        var incomingKeys = allocationsToCreate
+            .Select(req => new { req.FunctionType, req.FiscalYear })
+            .ToList();
+
+        var uniqueKeysInRequest = new HashSet<(string FunctionType, int FiscalYear)>();
+        var batchConflictErrors = new List<string>();
 
         foreach (var req in allocationsToCreate)
         {
-            if (!functionTypesInRequest.Add(req.FunctionType))
+            if (!uniqueKeysInRequest.Add((req.FunctionType, req.FiscalYear)))
             {
-                throw new ConflictException($"Duplicate FunctionType '{req.FunctionType}' found in the incoming request batch.");
+                batchConflictErrors.Add($"Duplicate entry found in the request batch for FunctionType '{req.FunctionType}' and FiscalYear '{req.FiscalYear}'.");
             }
-            var fpaExist = await _unitOfWork.FunctionPercentageAllocationRepository.FindAsync(
-                t => t.FunctionType == req.FunctionType,
-                cancellationToken: cancellationToken
-            );
+        }
 
-            if (fpaExist != null)
-            {
-                throw new ConflictException($"Function Percentage Allocation for type '{req.FunctionType}' already exists in the database.");
-            }
+        if (batchConflictErrors.Count > 0)
+        {
+            var message = "One or more entries in the batch are duplicates: " + string.Join("; ", batchConflictErrors);
+            return ApiResponse<List<FPAResponse>>.Fail(message);
+        }
 
-            var fpa = new DomainFPA
+        var functionTypes = incomingKeys.Select(k => k.FunctionType).ToList();
+        var fiscalYears = incomingKeys.Select(k => k.FiscalYear).Distinct().ToList();
+
+        var existingAllocationsList = await _unitOfWork.FunctionPercentageAllocationRepository.Query(
+            t => functionTypes.Contains(t.FunctionType) && fiscalYears.Contains(t.FiscalYear)
+        ).ToListAsync(cancellationToken: cancellationToken);
+
+        var existingKeysSet = existingAllocationsList
+            .Select(a => (a.FunctionType, a.FiscalYear))
+            .ToHashSet();
+
+        var dbConflictErrors = new List<string>();
+
+        var entitiesToAdd = allocationsToCreate
+            .Where(req =>
             {
+                if (existingKeysSet.Contains((req.FunctionType, req.FiscalYear)))
+                {
+                    dbConflictErrors.Add($"Function Percentage Allocation for FunctionType '{req.FunctionType}' and FiscalYear '{req.FiscalYear}' already exists in the database.");
+                    return false;
+                }
+                return true;
+            })
+
+            .Select(req => new DomainFPA
+            {
+                Id = Guid.NewGuid(),
                 FiscalYear = req.FiscalYear,
                 FunctionType = req.FunctionType,
                 Description = req.Description,
                 Percentage = req.Percentage
-            };
-            entitiesToAdd.Add(fpa);
+            })
+            .ToList();
+
+        if (dbConflictErrors.Count > 0)
+        {
+            var message = "One or more Function Percentage Allocations already exist in the database. Details: " + string.Join("; ", dbConflictErrors);
+            return ApiResponse<List<FPAResponse>>.Fail(message);
+        }
+
+        if (entitiesToAdd.Count == 0)
+        {
+            return ApiResponse<List<FPAResponse>>.Success([], "No unique, non-conflicting allocations provided for creation.");
         }
 
         await _unitOfWork.FunctionPercentageAllocationRepository.AddBulkAsync(entitiesToAdd, cancellationToken);
