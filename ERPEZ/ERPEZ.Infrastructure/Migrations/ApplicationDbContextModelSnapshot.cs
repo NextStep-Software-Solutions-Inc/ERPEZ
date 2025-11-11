@@ -459,10 +459,7 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text");
 
-                    b.Property<int>("FiscalYearId")
-                        .HasColumnType("integer");
-
-                    b.Property<Guid>("FiscalYearId1")
+                    b.Property<Guid>("FiscalYearId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("FunctionType")
@@ -483,7 +480,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("FiscalYearId1");
+                    b.HasIndex("FiscalYearId");
 
                     b.HasIndex("FunctionType", "FiscalYearId")
                         .IsUnique();
@@ -2302,8 +2299,8 @@ namespace ERPEZ.Infrastructure.Migrations
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.FunctionAllocation", b =>
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Planning.FiscalYear", "FiscalYear")
-                        .WithMany()
-                        .HasForeignKey("FiscalYearId1")
+                        .WithMany("FunctionAllocations")
+                        .HasForeignKey("FiscalYearId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -2810,6 +2807,11 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("WFPPAPDepartments");
 
                     b.Navigation("WFPs");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.FiscalYear", b =>
+                {
+                    b.Navigation("FunctionAllocations");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.FundSource", b =>
