@@ -442,6 +442,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("FunctionType", "FiscalYear")
+                        .IsUnique();
+
                     b.ToTable("FunctionPercentageAllocations", "catalog");
                 });
 
