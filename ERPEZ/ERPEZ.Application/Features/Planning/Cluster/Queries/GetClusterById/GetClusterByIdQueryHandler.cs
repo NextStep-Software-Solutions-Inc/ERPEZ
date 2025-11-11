@@ -6,15 +6,15 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Cluster.Queries.GetClusterById;
 
-public class GetClusterByIdQueryHandler(IUnitOfWork _unitOfWork) : IRequestHandler<GetClusterByIdQuery, ApiResponse<ClusterResponse>>
+public class GetClusterByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetClusterByIdQuery, ApiResponse<ClusterResponse>>
 {
     public async Task<ApiResponse<ClusterResponse>> Handle(GetClusterByIdQuery request, CancellationToken cancellationToken)
     {
-        var cluster = await _unitOfWork.ClusterRepository.FindAsync(
+        var cluster = await unitOfWork.ClusterRepository.FindAsync(
            t => t.Id == request.Id,
             cancellationToken: cancellationToken) ?? throw new NotFoundException("No data found.");
 
-        var res = new ClusterResponse()
+        var result = new ClusterResponse()
         {
             Id = cluster.Id,
             Name = cluster.Name,
@@ -22,6 +22,6 @@ public class GetClusterByIdQueryHandler(IUnitOfWork _unitOfWork) : IRequestHandl
             CreatedAt = cluster.CreatedAt,
             CreatedBy = cluster.CreatedBy
         };
-        return ApiResponse<ClusterResponse>.Success(res, "Retrieved successfully");
+        return ApiResponse<ClusterResponse>.Success(result, "Retrieved successfully");
     }
 }

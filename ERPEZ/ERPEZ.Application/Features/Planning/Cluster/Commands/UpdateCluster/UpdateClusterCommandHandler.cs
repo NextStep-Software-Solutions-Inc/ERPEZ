@@ -6,15 +6,15 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Cluster.Commands.UpdateCluster;
 
-public class UpdateClusterCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<UpdateClusterCommand, ApiResponse<ClusterResponse>>
+public class UpdateClusterCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateClusterCommand, ApiResponse<ClusterResponse>>
 {
     public async Task<ApiResponse<ClusterResponse>> Handle(UpdateClusterCommand request, CancellationToken cancellationToken)
     {
         var dto = request.UpdateCluster;
-        var cluster = await _unitOfWork.ClusterRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken)
+        var cluster = await unitOfWork.ClusterRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken)
             ?? throw new NotFoundException("Cluster not found.");
 
-        var duplicate = await _unitOfWork.ClusterRepository.FindAsync(
+        var duplicate = await unitOfWork.ClusterRepository.FindAsync(
             x => x.Name == dto.Name &&
             x.Description == dto.Description,
             cancellationToken
@@ -26,9 +26,9 @@ public class UpdateClusterCommandHandler(IUnitOfWork _unitOfWork) : IRequestHand
         cluster.Name = dto.Name ?? cluster.Name;
         cluster.Description = dto.Description ?? cluster.Description;
 
-        _unitOfWork.ClusterRepository.Update(cluster);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
-        var res = new ClusterResponse()
+        unitOfWork.ClusterRepository.Update(cluster);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+        var result = new ClusterResponse()
         {
             Id = cluster.Id,
             Name = cluster.Name,
@@ -37,6 +37,6 @@ public class UpdateClusterCommandHandler(IUnitOfWork _unitOfWork) : IRequestHand
             CreatedBy = cluster.CreatedBy
         };
 
-        return ApiResponse<ClusterResponse>.Success(res, "Cluster updated successfully.");
+        return ApiResponse<ClusterResponse>.Success(result, "Cluster updated successfully.");
     }
 }
