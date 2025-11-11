@@ -12,7 +12,7 @@ public class CreateFunctionPercentageAllocationCommandValidator : AbstractValida
         RuleFor(x => x.FunctionPercentageAllocationsRequests)
             .NotEmpty()
             .NotNull()
-            .WithMessage("Atleast one Function Percentage Allocation is required.");
+            .WithMessage("At least one Function Percentage Allocation is required.");
 
         RuleFor(x => x.FunctionPercentageAllocationsRequests)
             .Must(list => list
