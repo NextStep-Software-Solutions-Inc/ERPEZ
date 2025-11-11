@@ -1,20 +1,20 @@
-﻿using ERPEZ.Domain.Interfaces;
+using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.KPI.Commands.UpdateKPI;
 
-public class UpdateKPICommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<UpdateKPICommand, ApiResponse<Domain.Entities.Planning.KPI>>
+public class UpdateKPICommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateKPICommand, ApiResponse<Domain.Entities.Planning.KPI>>
 {
     public async Task<ApiResponse<Domain.Entities.Planning.KPI>> Handle(UpdateKPICommand request, CancellationToken cancellationToken)
     {
         var dto = request.UpdateKPI;
 
-        var kpi = await _unitOfWork.KPIRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken)
+        var kpi = await unitOfWork.KPIRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken)
             ?? throw new NotFoundException("KPI not found.");
 
-        var duplicate = await _unitOfWork.KPIRepository.FindAsync(
+        var duplicate = await unitOfWork.KPIRepository.FindAsync(
             x => x.Name == dto.Name,
             cancellationToken
         );
@@ -29,8 +29,8 @@ public class UpdateKPICommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<
         kpi.IsOfficeMandate = dto.IsOfficeMandate ?? kpi.IsOfficeMandate;
         kpi.Status = dto.Status ?? kpi.Status;
 
-        _unitOfWork.KPIRepository.Update(kpi);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        unitOfWork.KPIRepository.Update(kpi);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return ApiResponse<Domain.Entities.Planning.KPI>.Success(kpi, "KPI updated successfully.");
     }

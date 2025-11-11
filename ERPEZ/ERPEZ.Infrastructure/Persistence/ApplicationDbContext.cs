@@ -679,6 +679,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<WFPObjectiveTimeline>()
             .ToTable(t => t.HasCheckConstraint("CK_WFPObjectiveTimeline_Dates", "\"StartDate\" < \"EndDate\""));
 
+        //FunctionPercentageAllocations
+        modelBuilder.Entity<FunctionPercentageAllocation>()
+            .HasIndex(fpa => new { fpa.FunctionType, fpa.FiscalYear })
+            .IsUnique();
+
         base.OnModelCreating(modelBuilder);
     }
 }

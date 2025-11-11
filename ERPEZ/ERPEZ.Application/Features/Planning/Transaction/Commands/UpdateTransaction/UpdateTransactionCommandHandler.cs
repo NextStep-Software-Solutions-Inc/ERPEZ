@@ -1,15 +1,15 @@
-﻿using ERPEZ.Domain.Interfaces;
+using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Transaction.Commands.UpdateTransaction;
 
-public class UpdateTransactionCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<UpdateTransactionCommand, ApiResponse<Domain.Entities.Planning.Transaction>>
+public class UpdateTransactionCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateTransactionCommand, ApiResponse<Domain.Entities.Planning.Transaction>>
 {
     public async Task<ApiResponse<Domain.Entities.Planning.Transaction>> Handle(UpdateTransactionCommand request, CancellationToken cancellationToken)
     {
-        var transaction = await _unitOfWork.TransactionRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("Transaction not found.");
+        var transaction = await unitOfWork.TransactionRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("Transaction not found.");
         var dto = request.UpdateTransaction;
         if (transaction.FundSourceId == dto.FundSourceId &&
             transaction.LocationId == dto.LocationId &&
@@ -27,8 +27,8 @@ public class UpdateTransactionCommandHandler(IUnitOfWork _unitOfWork) : IRequest
         transaction.ObligatedAmount = dto?.ObligatedAmount ?? transaction.ObligatedAmount;
         transaction.DisbursementAmount = dto?.DisbursementAmount ?? transaction.DisbursementAmount;
 
-        _unitOfWork.TransactionRepository.Update(transaction);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        unitOfWork.TransactionRepository.Update(transaction);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return ApiResponse<Domain.Entities.Planning.Transaction>.Success(transaction, "Transaction updated successfully.");
     }
