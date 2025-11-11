@@ -26,6 +26,8 @@ namespace ERPEZ.Infrastructure.Migrations
                 schema: "planning",
                 table: "FunctionAllocations");
 
+            migrationBuilder.Sql("DELETE FROM planning.\"FunctionAllocations\" WHERE \"FiscalYearId\" IS NOT NULL");
+
             migrationBuilder.AlterColumn<Guid>(
                 name: "FiscalYearId",
                 schema: "planning",
