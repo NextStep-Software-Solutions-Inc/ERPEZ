@@ -7,21 +7,24 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace ERPEZ.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class AddBaseMigrationForPlanning : Migration
+    public partial class InitialSchema : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
+            migrationBuilder.EnsureSchema(
+                name: "catalog");
+
             migrationBuilder.CreateTable(
-                name: "FunctionPercentageAllocations",
+                name: "Attributes",
                 schema: "catalog",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    Function = table.Column<string>(type: "text", nullable: false),
                     Name = table.Column<string>(type: "text", nullable: false),
+                    Code = table.Column<string>(type: "text", nullable: true),
                     Description = table.Column<string>(type: "text", nullable: true),
-                    Percentage = table.Column<decimal>(type: "numeric", nullable: false),
+                    ParentAttributeId = table.Column<Guid>(type: "uuid", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     CreatedBy = table.Column<string>(type: "text", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
@@ -32,7 +35,56 @@ namespace ERPEZ.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_FunctionPercentageAllocations", x => x.Id);
+                    table.PrimaryKey("PK_Attributes", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Attributes_Attributes_ParentAttributeId",
+                        column: x => x.ParentAttributeId,
+                        principalSchema: "catalog",
+                        principalTable: "Attributes",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Clusters",
+                schema: "catalog",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Name = table.Column<string>(type: "character varying(256)", maxLength: 256, nullable: false),
+                    Description = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    CreatedBy = table.Column<string>(type: "text", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    DeletedBy = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Clusters", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "FiscalYear",
+                schema: "catalog",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    Year = table.Column<int>(type: "integer", nullable: false),
+                    Description = table.Column<string>(type: "text", nullable: true),
+                    IsLocked = table.Column<bool>(type: "boolean", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    CreatedBy = table.Column<string>(type: "text", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    DeletedBy = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_FiscalYear", x => x.Id);
                 });
 
             migrationBuilder.CreateTable(
@@ -63,6 +115,37 @@ namespace ERPEZ.Infrastructure.Migrations
                         column: x => x.ParentSourceId,
                         principalSchema: "catalog",
                         principalTable: "FundSources",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "KPIs",
+                schema: "catalog",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ParentKPIId = table.Column<Guid>(type: "uuid", nullable: true),
+                    FunctionType = table.Column<string>(type: "text", nullable: false),
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    Description = table.Column<string>(type: "text", nullable: true),
+                    IsOfficeMandate = table.Column<bool>(type: "boolean", nullable: true),
+                    Status = table.Column<string>(type: "text", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    CreatedBy = table.Column<string>(type: "text", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    DeletedBy = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_KPIs", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_KPIs_KPIs_ParentKPIId",
+                        column: x => x.ParentKPIId,
+                        principalSchema: "catalog",
+                        principalTable: "KPIs",
                         principalColumn: "Id");
                 });
 
@@ -171,32 +254,6 @@ namespace ERPEZ.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "Offices",
-                schema: "catalog",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    OfficeHead = table.Column<string>(type: "text", nullable: false),
-                    Name = table.Column<string>(type: "text", nullable: false),
-                    Description = table.Column<string>(type: "text", nullable: true),
-                    Address = table.Column<string>(type: "text", nullable: false),
-                    Email = table.Column<string>(type: "text", nullable: false),
-                    ContactNumber = table.Column<string>(type: "text", nullable: false),
-                    ResponsibilityCenterCode = table.Column<string>(type: "text", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
-                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
-                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    DeletedBy = table.Column<string>(type: "text", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Offices", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "Organizations",
                 schema: "catalog",
                 columns: table => new
@@ -255,17 +312,13 @@ namespace ERPEZ.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "KPIs",
+                name: "SDGs",
                 schema: "catalog",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ParentKPIId = table.Column<Guid>(type: "uuid", nullable: true),
-                    FunctionPercentageAllocationId = table.Column<Guid>(type: "uuid", nullable: false),
                     Name = table.Column<string>(type: "text", nullable: false),
-                    Description = table.Column<string>(type: "text", nullable: true),
-                    IsOfficeMandate = table.Column<bool>(type: "boolean", nullable: true),
-                    Status = table.Column<string>(type: "text", nullable: false),
+                    Description = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     CreatedBy = table.Column<string>(type: "text", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
@@ -276,20 +329,71 @@ namespace ERPEZ.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_KPIs", x => x.Id);
+                    table.PrimaryKey("PK_SDGs", x => x.Id);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Offices",
+                schema: "catalog",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ClusterId = table.Column<Guid>(type: "uuid", nullable: false),
+                    OfficeHead = table.Column<string>(type: "text", nullable: false),
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    Description = table.Column<string>(type: "text", nullable: true),
+                    Address = table.Column<string>(type: "text", nullable: false),
+                    Email = table.Column<string>(type: "text", nullable: false),
+                    ContactNumber = table.Column<string>(type: "text", nullable: false),
+                    ResponsibilityCenterCode = table.Column<string>(type: "text", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    CreatedBy = table.Column<string>(type: "text", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    DeletedBy = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Offices", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_KPIs_FunctionPercentageAllocations_FunctionPercentageAlloca~",
-                        column: x => x.FunctionPercentageAllocationId,
+                        name: "FK_Offices_Clusters_ClusterId",
+                        column: x => x.ClusterId,
                         principalSchema: "catalog",
-                        principalTable: "FunctionPercentageAllocations",
+                        principalTable: "Clusters",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "FunctionAllocations",
+                schema: "catalog",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    FiscalYearId = table.Column<int>(type: "integer", nullable: false),
+                    FiscalYearId1 = table.Column<Guid>(type: "uuid", nullable: false),
+                    FunctionType = table.Column<string>(type: "text", nullable: false),
+                    Percentage = table.Column<decimal>(type: "numeric", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    CreatedBy = table.Column<string>(type: "text", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    DeletedBy = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_FunctionAllocations", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_KPIs_KPIs_ParentKPIId",
-                        column: x => x.ParentKPIId,
+                        name: "FK_FunctionAllocations_FiscalYear_FiscalYearId1",
+                        column: x => x.FiscalYearId1,
                         principalSchema: "catalog",
-                        principalTable: "KPIs",
-                        principalColumn: "Id");
+                        principalTable: "FiscalYear",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -321,13 +425,42 @@ namespace ERPEZ.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "DeliveryUnit",
+                name: "KPIAttribute",
+                schema: "catalog",
+                columns: table => new
+                {
+                    AttributesId = table.Column<Guid>(type: "uuid", nullable: false),
+                    KPIsId = table.Column<Guid>(type: "uuid", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_KPIAttribute", x => new { x.AttributesId, x.KPIsId });
+                    table.ForeignKey(
+                        name: "FK_KPIAttribute_Attributes_AttributesId",
+                        column: x => x.AttributesId,
+                        principalSchema: "catalog",
+                        principalTable: "Attributes",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_KPIAttribute_KPIs_KPIsId",
+                        column: x => x.KPIsId,
+                        principalSchema: "catalog",
+                        principalTable: "KPIs",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "KPIModeOfVerifications",
                 schema: "catalog",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    OfficeId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ParentDUId = table.Column<Guid>(type: "uuid", nullable: true),
+                    KPIId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    Description = table.Column<string>(type: "text", nullable: true),
+                    Url = table.Column<string>(type: "text", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     CreatedBy = table.Column<string>(type: "text", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
@@ -338,12 +471,91 @@ namespace ERPEZ.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_DeliveryUnit", x => x.Id);
+                    table.PrimaryKey("PK_KPIModeOfVerifications", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_DeliveryUnit_Offices_OfficeId",
-                        column: x => x.OfficeId,
+                        name: "FK_KPIModeOfVerifications_KPIs_KPIId",
+                        column: x => x.KPIId,
                         principalSchema: "catalog",
-                        principalTable: "Offices",
+                        principalTable: "KPIs",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "KPITargets",
+                schema: "catalog",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    KPIId = table.Column<Guid>(type: "uuid", nullable: false),
+                    TargetValue = table.Column<decimal>(type: "numeric", nullable: false),
+                    Period = table.Column<string>(type: "text", nullable: false),
+                    QuarterName = table.Column<string>(type: "text", nullable: true),
+                    KPIId1 = table.Column<Guid>(type: "uuid", nullable: true),
+                    ParentKPITargetId = table.Column<Guid>(type: "uuid", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    CreatedBy = table.Column<string>(type: "text", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    DeletedBy = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_KPITargets", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_KPITargets_KPITargets_ParentKPITargetId",
+                        column: x => x.ParentKPITargetId,
+                        principalSchema: "catalog",
+                        principalTable: "KPITargets",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_KPITargets_KPIs_KPIId",
+                        column: x => x.KPIId,
+                        principalSchema: "catalog",
+                        principalTable: "KPIs",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_KPITargets_KPIs_KPIId1",
+                        column: x => x.KPIId1,
+                        principalSchema: "catalog",
+                        principalTable: "KPIs",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "MFOKPI",
+                schema: "catalog",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    MFOPAPId = table.Column<Guid>(type: "uuid", nullable: false),
+                    KPIId = table.Column<Guid>(type: "uuid", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    CreatedBy = table.Column<string>(type: "text", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    DeletedBy = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_MFOKPI", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_MFOKPI_KPIs_KPIId",
+                        column: x => x.KPIId,
+                        principalSchema: "catalog",
+                        principalTable: "KPIs",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_MFOKPI_MFOPAPs_MFOPAPId",
+                        column: x => x.MFOPAPId,
+                        principalSchema: "catalog",
+                        principalTable: "MFOPAPs",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -412,36 +624,6 @@ namespace ERPEZ.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "KPIModeOfVerifications",
-                schema: "catalog",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    KPIId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Name = table.Column<string>(type: "text", nullable: false),
-                    Description = table.Column<string>(type: "text", nullable: true),
-                    Url = table.Column<string>(type: "text", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
-                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
-                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    DeletedBy = table.Column<string>(type: "text", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_KPIModeOfVerifications", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_KPIModeOfVerifications_KPIs_KPIId",
-                        column: x => x.KPIId,
-                        principalSchema: "catalog",
-                        principalTable: "KPIs",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "KPIRatings",
                 schema: "catalog",
                 columns: table => new
@@ -479,43 +661,40 @@ namespace ERPEZ.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "KPITargets",
+                name: "KPISDGs",
                 schema: "catalog",
                 columns: table => new
                 {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    KPIId = table.Column<Guid>(type: "uuid", nullable: false),
-                    TargetValue = table.Column<decimal>(type: "numeric", nullable: false),
-                    Period = table.Column<string>(type: "text", nullable: false),
-                    QuarterName = table.Column<string>(type: "text", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
-                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
-                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    DeletedBy = table.Column<string>(type: "text", nullable: true)
+                    KPIsId = table.Column<Guid>(type: "uuid", nullable: false),
+                    SDGsId = table.Column<Guid>(type: "uuid", nullable: false)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_KPITargets", x => x.Id);
+                    table.PrimaryKey("PK_KPISDGs", x => new { x.KPIsId, x.SDGsId });
                     table.ForeignKey(
-                        name: "FK_KPITargets_KPIs_KPIId",
-                        column: x => x.KPIId,
+                        name: "FK_KPISDGs_KPIs_KPIsId",
+                        column: x => x.KPIsId,
                         principalSchema: "catalog",
                         principalTable: "KPIs",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_KPISDGs_SDGs_SDGsId",
+                        column: x => x.SDGsId,
+                        principalSchema: "catalog",
+                        principalTable: "SDGs",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
-                name: "MFOKPI",
+                name: "DeliveryUnit",
                 schema: "catalog",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    MFOPAPId = table.Column<Guid>(type: "uuid", nullable: false),
-                    KPIId = table.Column<Guid>(type: "uuid", nullable: false),
+                    OfficeId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ParentDUId = table.Column<Guid>(type: "uuid", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     CreatedBy = table.Column<string>(type: "text", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
@@ -526,19 +705,12 @@ namespace ERPEZ.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_MFOKPI", x => x.Id);
+                    table.PrimaryKey("PK_DeliveryUnit", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_MFOKPI_KPIs_KPIId",
-                        column: x => x.KPIId,
+                        name: "FK_DeliveryUnit_Offices_OfficeId",
+                        column: x => x.OfficeId,
                         principalSchema: "catalog",
-                        principalTable: "KPIs",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_MFOKPI_MFOPAPs_MFOPAPId",
-                        column: x => x.MFOPAPId,
-                        principalSchema: "catalog",
-                        principalTable: "MFOPAPs",
+                        principalTable: "Offices",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -549,10 +721,10 @@ namespace ERPEZ.Infrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ReceivedFundId = table.Column<Guid>(type: "uuid", nullable: false),
                     DeliveryUnitId = table.Column<Guid>(type: "uuid", nullable: false),
                     Purpose = table.Column<string>(type: "text", nullable: false),
                     Amount = table.Column<decimal>(type: "numeric", nullable: false),
+                    ReceivedFundId = table.Column<Guid>(type: "uuid", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     CreatedBy = table.Column<string>(type: "text", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
@@ -576,18 +748,20 @@ namespace ERPEZ.Infrastructure.Migrations
                         column: x => x.ReceivedFundId,
                         principalSchema: "catalog",
                         principalTable: "ReceivedFunds",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
-                name: "KPIAssignment",
+                name: "DUKPIAssignment",
                 schema: "catalog",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     KPIId = table.Column<Guid>(type: "uuid", nullable: false),
                     DeliveryUnitId = table.Column<Guid>(type: "uuid", nullable: false),
+                    KPITargetId = table.Column<Guid>(type: "uuid", nullable: false),
+                    AllocatedTargetValue = table.Column<decimal>(type: "numeric", nullable: false),
+                    KPIId1 = table.Column<Guid>(type: "uuid", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     CreatedBy = table.Column<string>(type: "text", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
@@ -598,19 +772,61 @@ namespace ERPEZ.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_KPIAssignment", x => x.Id);
+                    table.PrimaryKey("PK_DUKPIAssignment", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_KPIAssignment_DeliveryUnit_DeliveryUnitId",
+                        name: "FK_DUKPIAssignment_DeliveryUnit_DeliveryUnitId",
                         column: x => x.DeliveryUnitId,
                         principalSchema: "catalog",
                         principalTable: "DeliveryUnit",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_KPIAssignment_KPIs_KPIId",
+                        name: "FK_DUKPIAssignment_KPITargets_KPITargetId",
+                        column: x => x.KPITargetId,
+                        principalSchema: "catalog",
+                        principalTable: "KPITargets",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_DUKPIAssignment_KPIs_KPIId",
                         column: x => x.KPIId,
                         principalSchema: "catalog",
                         principalTable: "KPIs",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_DUKPIAssignment_KPIs_KPIId1",
+                        column: x => x.KPIId1,
+                        principalSchema: "catalog",
+                        principalTable: "KPIs",
+                        principalColumn: "Id");
+                });
+
+            migrationBuilder.CreateTable(
+                name: "OPCRs",
+                schema: "catalog",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    DeliveryUnitId = table.Column<Guid>(type: "uuid", nullable: false),
+                    FiscalYear = table.Column<int>(type: "integer", nullable: false),
+                    Status = table.Column<string>(type: "text", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    CreatedBy = table.Column<string>(type: "text", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    DeletedBy = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_OPCRs", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_OPCRs_DeliveryUnit_DeliveryUnitId",
+                        column: x => x.DeliveryUnitId,
+                        principalSchema: "catalog",
+                        principalTable: "DeliveryUnit",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -642,6 +858,39 @@ namespace ERPEZ.Infrastructure.Migrations
                     table.PrimaryKey("PK_SubDeliveryUnit", x => x.Id);
                     table.ForeignKey(
                         name: "FK_SubDeliveryUnit_DeliveryUnit_DeliveryUnitId",
+                        column: x => x.DeliveryUnitId,
+                        principalSchema: "catalog",
+                        principalTable: "DeliveryUnit",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "WFPs",
+                schema: "catalog",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    DeliveryUnitId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ProgramTitle = table.Column<string>(type: "text", nullable: false),
+                    Description = table.Column<string>(type: "text", nullable: true),
+                    FiscalYear = table.Column<int>(type: "integer", nullable: true),
+                    ProposedBudget = table.Column<decimal>(type: "numeric", nullable: false),
+                    GeneralObjective = table.Column<string>(type: "text", nullable: true),
+                    Status = table.Column<string>(type: "text", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    CreatedBy = table.Column<string>(type: "text", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    DeletedBy = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_WFPs", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_WFPs_DeliveryUnit_DeliveryUnitId",
                         column: x => x.DeliveryUnitId,
                         principalSchema: "catalog",
                         principalTable: "DeliveryUnit",
@@ -683,120 +932,6 @@ namespace ERPEZ.Infrastructure.Migrations
                         principalTable: "ReceivedFunds",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Restrict);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "OPCRs",
-                schema: "catalog",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    DUAllocationId = table.Column<Guid>(type: "uuid", nullable: false),
-                    DeliveryUnitId = table.Column<Guid>(type: "uuid", nullable: false),
-                    FiscalYear = table.Column<int>(type: "integer", nullable: false),
-                    Status = table.Column<string>(type: "text", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
-                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
-                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    DeletedBy = table.Column<string>(type: "text", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_OPCRs", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_OPCRs_DUAllocations_DUAllocationId",
-                        column: x => x.DUAllocationId,
-                        principalSchema: "catalog",
-                        principalTable: "DUAllocations",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_OPCRs_DeliveryUnit_DeliveryUnitId",
-                        column: x => x.DeliveryUnitId,
-                        principalSchema: "catalog",
-                        principalTable: "DeliveryUnit",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "WFPs",
-                schema: "catalog",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    DUAllocationId = table.Column<Guid>(type: "uuid", nullable: false),
-                    DeliveryUnitId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ProgramTitle = table.Column<string>(type: "text", nullable: false),
-                    Description = table.Column<string>(type: "text", nullable: true),
-                    FiscalYear = table.Column<int>(type: "integer", nullable: true),
-                    ProposedBudget = table.Column<decimal>(type: "numeric", nullable: false),
-                    GeneralObjective = table.Column<string>(type: "text", nullable: true),
-                    Status = table.Column<string>(type: "text", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
-                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
-                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    DeletedBy = table.Column<string>(type: "text", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_WFPs", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_WFPs_DUAllocations_DUAllocationId",
-                        column: x => x.DUAllocationId,
-                        principalSchema: "catalog",
-                        principalTable: "DUAllocations",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_WFPs_DeliveryUnit_DeliveryUnitId",
-                        column: x => x.DeliveryUnitId,
-                        principalSchema: "catalog",
-                        principalTable: "DeliveryUnit",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "SubDUAllocation",
-                schema: "catalog",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    DUAllocationId = table.Column<Guid>(type: "uuid", nullable: false),
-                    SubDeliveryUnitId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Amount = table.Column<decimal>(type: "numeric", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
-                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
-                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    DeletedBy = table.Column<string>(type: "text", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_SubDUAllocation", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_SubDUAllocation_DUAllocations_DUAllocationId",
-                        column: x => x.DUAllocationId,
-                        principalSchema: "catalog",
-                        principalTable: "DUAllocations",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_SubDUAllocation_SubDeliveryUnit_SubDeliveryUnitId",
-                        column: x => x.SubDeliveryUnitId,
-                        principalSchema: "catalog",
-                        principalTable: "SubDeliveryUnit",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -873,6 +1008,42 @@ namespace ERPEZ.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "SubDUAllocation",
+                schema: "catalog",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    DUAllocationId = table.Column<Guid>(type: "uuid", nullable: false),
+                    SubDeliveryUnitId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Amount = table.Column<decimal>(type: "numeric", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    CreatedBy = table.Column<string>(type: "text", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    DeletedBy = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_SubDUAllocation", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_SubDUAllocation_DUAllocations_DUAllocationId",
+                        column: x => x.DUAllocationId,
+                        principalSchema: "catalog",
+                        principalTable: "DUAllocations",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_SubDUAllocation_SubDeliveryUnit_SubDeliveryUnitId",
+                        column: x => x.SubDeliveryUnitId,
+                        principalSchema: "catalog",
+                        principalTable: "SubDeliveryUnit",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "WFPObjectives",
                 schema: "catalog",
                 columns: table => new
@@ -880,6 +1051,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     WFPId = table.Column<Guid>(type: "uuid", nullable: false),
                     Description = table.Column<string>(type: "text", nullable: false),
+                    Weight = table.Column<decimal>(type: "numeric", nullable: false),
+                    WFPId1 = table.Column<Guid>(type: "uuid", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     CreatedBy = table.Column<string>(type: "text", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
@@ -898,6 +1071,12 @@ namespace ERPEZ.Infrastructure.Migrations
                         principalTable: "WFPs",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_WFPObjectives_WFPs_WFPId1",
+                        column: x => x.WFPId1,
+                        principalSchema: "catalog",
+                        principalTable: "WFPs",
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -976,6 +1155,36 @@ namespace ERPEZ.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "WFPObjectiveTargets",
+                schema: "catalog",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    WFPObjectiveId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ActivityName = table.Column<string>(type: "text", nullable: false),
+                    Indicator = table.Column<string>(type: "text", nullable: false),
+                    Weight = table.Column<decimal>(type: "numeric", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    CreatedBy = table.Column<string>(type: "text", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    DeletedBy = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_WFPObjectiveTargets", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_WFPObjectiveTargets_WFPObjectives_WFPObjectiveId",
+                        column: x => x.WFPObjectiveId,
+                        principalSchema: "catalog",
+                        principalTable: "WFPObjectives",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "WFPOutcomes",
                 schema: "catalog",
                 columns: table => new
@@ -1004,7 +1213,7 @@ namespace ERPEZ.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "OPCRPAPDepartment",
+                name: "DeliveryUnitOPCRActivity",
                 schema: "catalog",
                 columns: table => new
                 {
@@ -1013,19 +1222,85 @@ namespace ERPEZ.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_OPCRPAPDepartment", x => new { x.DeliveryUnitsId, x.OPCRActivitiesId });
+                    table.PrimaryKey("PK_DeliveryUnitOPCRActivity", x => new { x.DeliveryUnitsId, x.OPCRActivitiesId });
                     table.ForeignKey(
-                        name: "FK_OPCRPAPDepartment_DeliveryUnit_DeliveryUnitsId",
+                        name: "FK_DeliveryUnitOPCRActivity_DeliveryUnit_DeliveryUnitsId",
                         column: x => x.DeliveryUnitsId,
                         principalSchema: "catalog",
                         principalTable: "DeliveryUnit",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_OPCRPAPDepartment_OPCRActivities_OPCRActivitiesId",
+                        name: "FK_DeliveryUnitOPCRActivity_OPCRActivities_OPCRActivitiesId",
                         column: x => x.OPCRActivitiesId,
                         principalSchema: "catalog",
                         principalTable: "OPCRActivities",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "OPCRPAPDepartments",
+                schema: "catalog",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    OPCRActivityId = table.Column<Guid>(type: "uuid", nullable: false),
+                    DeliveryUnitId = table.Column<Guid>(type: "uuid", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    CreatedBy = table.Column<string>(type: "text", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    DeletedBy = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_OPCRPAPDepartments", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_OPCRPAPDepartments_DeliveryUnit_DeliveryUnitId",
+                        column: x => x.DeliveryUnitId,
+                        principalSchema: "catalog",
+                        principalTable: "DeliveryUnit",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_OPCRPAPDepartments_OPCRActivities_OPCRActivityId",
+                        column: x => x.OPCRActivityId,
+                        principalSchema: "catalog",
+                        principalTable: "OPCRActivities",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "WFPObjectiveTimelines",
+                schema: "catalog",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    WFPObjectiveTargetId = table.Column<Guid>(type: "uuid", nullable: false),
+                    StartDate = table.Column<DateOnly>(type: "date", nullable: false),
+                    EndDate = table.Column<DateOnly>(type: "date", nullable: false),
+                    TargetValue = table.Column<decimal>(type: "numeric", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    CreatedBy = table.Column<string>(type: "text", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    DeletedBy = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_WFPObjectiveTimelines", x => x.Id);
+                    table.CheckConstraint("CK_WFPObjectiveTimeline_Dates", "\"StartDate\" < \"EndDate\"");
+                    table.ForeignKey(
+                        name: "FK_WFPObjectiveTimelines_WFPObjectiveTargets_WFPObjectiveTarge~",
+                        column: x => x.WFPObjectiveTargetId,
+                        principalSchema: "catalog",
+                        principalTable: "WFPObjectiveTargets",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -1115,11 +1390,12 @@ namespace ERPEZ.Infrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    WFPActivityId = table.Column<Guid>(type: "uuid", nullable: false),
+                    WFPObjectiveTargetId = table.Column<Guid>(type: "uuid", nullable: false),
                     ObjectId = table.Column<Guid>(type: "uuid", nullable: false),
                     ItemDescription = table.Column<string>(type: "text", nullable: false),
                     Quantity = table.Column<int>(type: "integer", nullable: false),
                     CostEstimates = table.Column<decimal>(type: "numeric", nullable: false),
+                    WFPActivityId = table.Column<Guid>(type: "uuid", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     CreatedBy = table.Column<string>(type: "text", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
@@ -1143,6 +1419,12 @@ namespace ERPEZ.Infrastructure.Migrations
                         column: x => x.WFPActivityId,
                         principalSchema: "catalog",
                         principalTable: "WFPActivities",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_ActivityBudgetRequirements_WFPObjectiveTargets_WFPObjective~",
+                        column: x => x.WFPObjectiveTargetId,
+                        principalSchema: "catalog",
+                        principalTable: "WFPObjectiveTargets",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -1203,10 +1485,29 @@ namespace ERPEZ.Infrastructure.Migrations
                 column: "ObjectId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_ActivityBudgetRequirements_WFPActivityId_ObjectId_ItemDescr~",
+                name: "IX_ActivityBudgetRequirements_WFPActivityId",
                 schema: "catalog",
                 table: "ActivityBudgetRequirements",
-                columns: new[] { "WFPActivityId", "ObjectId", "ItemDescription" });
+                column: "WFPActivityId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_ActivityBudgetRequirements_WFPObjectiveTargetId_ObjectId_It~",
+                schema: "catalog",
+                table: "ActivityBudgetRequirements",
+                columns: new[] { "WFPObjectiveTargetId", "ObjectId", "ItemDescription" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Attributes_ParentAttributeId",
+                schema: "catalog",
+                table: "Attributes",
+                column: "ParentAttributeId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_Clusters_Name",
+                schema: "catalog",
+                table: "Clusters",
+                column: "Name",
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_DeliveryUnit_OfficeId_ParentDUId",
@@ -1215,16 +1516,22 @@ namespace ERPEZ.Infrastructure.Migrations
                 columns: new[] { "OfficeId", "ParentDUId" });
 
             migrationBuilder.CreateIndex(
-                name: "IX_DUAllocations_DeliveryUnitId",
+                name: "IX_DeliveryUnitOPCRActivity_OPCRActivitiesId",
                 schema: "catalog",
-                table: "DUAllocations",
-                column: "DeliveryUnitId");
+                table: "DeliveryUnitOPCRActivity",
+                column: "OPCRActivitiesId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_DUAllocations_ReceivedFundId_DeliveryUnitId_Purpose",
+                name: "IX_DUAllocations_DeliveryUnitId_Purpose",
                 schema: "catalog",
                 table: "DUAllocations",
-                columns: new[] { "ReceivedFundId", "DeliveryUnitId", "Purpose" });
+                columns: new[] { "DeliveryUnitId", "Purpose" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_DUAllocations_ReceivedFundId",
+                schema: "catalog",
+                table: "DUAllocations",
+                column: "ReceivedFundId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_DUFundAllocations_DUAllocationId_ReceivedFundId",
@@ -1239,10 +1546,42 @@ namespace ERPEZ.Infrastructure.Migrations
                 column: "ReceivedFundId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_FunctionPercentageAllocations_Function_Name",
+                name: "IX_DUKPIAssignment_DeliveryUnitId_KPITargetId",
                 schema: "catalog",
-                table: "FunctionPercentageAllocations",
-                columns: new[] { "Function", "Name" });
+                table: "DUKPIAssignment",
+                columns: new[] { "DeliveryUnitId", "KPITargetId" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_DUKPIAssignment_KPIId",
+                schema: "catalog",
+                table: "DUKPIAssignment",
+                column: "KPIId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_DUKPIAssignment_KPIId1",
+                schema: "catalog",
+                table: "DUKPIAssignment",
+                column: "KPIId1");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_DUKPIAssignment_KPITargetId",
+                schema: "catalog",
+                table: "DUKPIAssignment",
+                column: "KPITargetId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_FunctionAllocations_FiscalYearId1",
+                schema: "catalog",
+                table: "FunctionAllocations",
+                column: "FiscalYearId1");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_FunctionAllocations_FunctionType_FiscalYearId",
+                schema: "catalog",
+                table: "FunctionAllocations",
+                columns: new[] { "FunctionType", "FiscalYearId" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_FundSources_ParentId_Code",
@@ -1258,17 +1597,10 @@ namespace ERPEZ.Infrastructure.Migrations
                 column: "ParentSourceId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_KPIAssignment_DeliveryUnitId",
+                name: "IX_KPIAttribute_KPIsId",
                 schema: "catalog",
-                table: "KPIAssignment",
-                column: "DeliveryUnitId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_KPIAssignment_KPIId_DeliveryUnitId",
-                schema: "catalog",
-                table: "KPIAssignment",
-                columns: new[] { "KPIId", "DeliveryUnitId" },
-                unique: true);
+                table: "KPIAttribute",
+                column: "KPIsId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_KPIModeOfVerifications_KPIId_Name",
@@ -1278,23 +1610,16 @@ namespace ERPEZ.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_KPIRatings_KPIId_PerformanceMeasureId",
+                name: "IX_KPIRatings_KPIId",
                 schema: "catalog",
                 table: "KPIRatings",
-                columns: new[] { "KPIId", "PerformanceMeasureId" },
-                unique: true);
+                column: "KPIId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_KPIRatings_PerformanceMeasureId",
                 schema: "catalog",
                 table: "KPIRatings",
                 column: "PerformanceMeasureId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_KPIs_FunctionPercentageAllocationId_Name",
-                schema: "catalog",
-                table: "KPIs",
-                columns: new[] { "FunctionPercentageAllocationId", "Name" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_KPIs_Name",
@@ -1310,11 +1635,29 @@ namespace ERPEZ.Infrastructure.Migrations
                 column: "ParentKPIId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_KPITargets_KPIId_Period_QuarterName",
+                name: "IX_KPISDGs_SDGsId",
+                schema: "catalog",
+                table: "KPISDGs",
+                column: "SDGsId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_KPITargets_KPIId_Period",
                 schema: "catalog",
                 table: "KPITargets",
-                columns: new[] { "KPIId", "Period", "QuarterName" },
+                columns: new[] { "KPIId", "Period" },
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_KPITargets_KPIId1",
+                schema: "catalog",
+                table: "KPITargets",
+                column: "KPIId1");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_KPITargets_ParentKPITargetId",
+                schema: "catalog",
+                table: "KPITargets",
+                column: "ParentKPITargetId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Locations_Name_Code",
@@ -1381,6 +1724,12 @@ namespace ERPEZ.Infrastructure.Migrations
                 column: "ParentObjectId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_Offices_ClusterId",
+                schema: "catalog",
+                table: "Offices",
+                column: "ClusterId");
+
+            migrationBuilder.CreateIndex(
                 name: "IX_OPCRActivities_OPCRKPIId_Name",
                 schema: "catalog",
                 table: "OPCRActivities",
@@ -1412,10 +1761,17 @@ namespace ERPEZ.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_OPCRPAPDepartment_OPCRActivitiesId",
+                name: "IX_OPCRPAPDepartments_DeliveryUnitId",
                 schema: "catalog",
-                table: "OPCRPAPDepartment",
-                column: "OPCRActivitiesId");
+                table: "OPCRPAPDepartments",
+                column: "DeliveryUnitId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_OPCRPAPDepartments_OPCRActivityId_DeliveryUnitId",
+                schema: "catalog",
+                table: "OPCRPAPDepartments",
+                columns: new[] { "OPCRActivityId", "DeliveryUnitId" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_OPCRRatings_OPCREvaluationId_PerformanceMeasureId_OPCRKPIId",
@@ -1437,16 +1793,10 @@ namespace ERPEZ.Infrastructure.Migrations
                 column: "PerformanceMeasureId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_OPCRs_DeliveryUnitId",
+                name: "IX_OPCRs_DeliveryUnitId_FiscalYear",
                 schema: "catalog",
                 table: "OPCRs",
-                column: "DeliveryUnitId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_OPCRs_DUAllocationId_DeliveryUnitId_FiscalYear",
-                schema: "catalog",
-                table: "OPCRs",
-                columns: new[] { "DUAllocationId", "DeliveryUnitId", "FiscalYear" },
+                columns: new[] { "DeliveryUnitId", "FiscalYear" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -1536,8 +1886,7 @@ namespace ERPEZ.Infrastructure.Migrations
                 name: "IX_WFPActivities_WFPId",
                 schema: "catalog",
                 table: "WFPActivities",
-                column: "WFPId",
-                unique: true);
+                column: "WFPId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_WFPActivities_WFPOutcomeId",
@@ -1546,17 +1895,31 @@ namespace ERPEZ.Infrastructure.Migrations
                 column: "WFPOutcomeId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_WFPObjectives_WFPId",
-                schema: "catalog",
-                table: "WFPObjectives",
-                column: "WFPId",
-                unique: true);
-
-            migrationBuilder.CreateIndex(
                 name: "IX_WFPObjectives_WFPId_Description",
                 schema: "catalog",
                 table: "WFPObjectives",
-                columns: new[] { "WFPId", "Description" });
+                columns: new[] { "WFPId", "Description" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WFPObjectives_WFPId1",
+                schema: "catalog",
+                table: "WFPObjectives",
+                column: "WFPId1");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WFPObjectiveTargets_WFPObjectiveId_ActivityName_Indicator",
+                schema: "catalog",
+                table: "WFPObjectiveTargets",
+                columns: new[] { "WFPObjectiveId", "ActivityName", "Indicator" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WFPObjectiveTimelines_WFPObjectiveTargetId_StartDate_EndDate",
+                schema: "catalog",
+                table: "WFPObjectiveTimelines",
+                columns: new[] { "WFPObjectiveTargetId", "StartDate", "EndDate" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_WFPOutcomes_WFPObjectiveId_Description",
@@ -1602,16 +1965,10 @@ namespace ERPEZ.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_WFPs_DeliveryUnitId",
+                name: "IX_WFPs_DeliveryUnitId_FiscalYear",
                 schema: "catalog",
                 table: "WFPs",
-                column: "DeliveryUnitId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_WFPs_DUAllocationId_DeliveryUnitId_FiscalYear",
-                schema: "catalog",
-                table: "WFPs",
-                columns: new[] { "DUAllocationId", "DeliveryUnitId", "FiscalYear" });
+                columns: new[] { "DeliveryUnitId", "FiscalYear" });
         }
 
         /// <inheritdoc />
@@ -1622,11 +1979,23 @@ namespace ERPEZ.Infrastructure.Migrations
                 schema: "catalog");
 
             migrationBuilder.DropTable(
+                name: "DeliveryUnitOPCRActivity",
+                schema: "catalog");
+
+            migrationBuilder.DropTable(
                 name: "DUFundAllocations",
                 schema: "catalog");
 
             migrationBuilder.DropTable(
-                name: "KPIAssignment",
+                name: "DUKPIAssignment",
+                schema: "catalog");
+
+            migrationBuilder.DropTable(
+                name: "FunctionAllocations",
+                schema: "catalog");
+
+            migrationBuilder.DropTable(
+                name: "KPIAttribute",
                 schema: "catalog");
 
             migrationBuilder.DropTable(
@@ -1638,7 +2007,7 @@ namespace ERPEZ.Infrastructure.Migrations
                 schema: "catalog");
 
             migrationBuilder.DropTable(
-                name: "KPITargets",
+                name: "KPISDGs",
                 schema: "catalog");
 
             migrationBuilder.DropTable(
@@ -1646,7 +2015,7 @@ namespace ERPEZ.Infrastructure.Migrations
                 schema: "catalog");
 
             migrationBuilder.DropTable(
-                name: "OPCRPAPDepartment",
+                name: "OPCRPAPDepartments",
                 schema: "catalog");
 
             migrationBuilder.DropTable(
@@ -1662,11 +2031,31 @@ namespace ERPEZ.Infrastructure.Migrations
                 schema: "catalog");
 
             migrationBuilder.DropTable(
+                name: "WFPObjectiveTimelines",
+                schema: "catalog");
+
+            migrationBuilder.DropTable(
                 name: "WFPPAPDepartment",
                 schema: "catalog");
 
             migrationBuilder.DropTable(
                 name: "WFPActivities",
+                schema: "catalog");
+
+            migrationBuilder.DropTable(
+                name: "KPITargets",
+                schema: "catalog");
+
+            migrationBuilder.DropTable(
+                name: "FiscalYear",
+                schema: "catalog");
+
+            migrationBuilder.DropTable(
+                name: "Attributes",
+                schema: "catalog");
+
+            migrationBuilder.DropTable(
+                name: "SDGs",
                 schema: "catalog");
 
             migrationBuilder.DropTable(
@@ -1679,6 +2068,10 @@ namespace ERPEZ.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "PerformanceMeasures",
+                schema: "catalog");
+
+            migrationBuilder.DropTable(
+                name: "DUAllocations",
                 schema: "catalog");
 
             migrationBuilder.DropTable(
@@ -1698,6 +2091,10 @@ namespace ERPEZ.Infrastructure.Migrations
                 schema: "catalog");
 
             migrationBuilder.DropTable(
+                name: "WFPObjectiveTargets",
+                schema: "catalog");
+
+            migrationBuilder.DropTable(
                 name: "SubDeliveryUnit",
                 schema: "catalog");
 
@@ -1707,6 +2104,10 @@ namespace ERPEZ.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "OPCRKPI",
+                schema: "catalog");
+
+            migrationBuilder.DropTable(
+                name: "ReceivedFunds",
                 schema: "catalog");
 
             migrationBuilder.DropTable(
@@ -1722,11 +2123,11 @@ namespace ERPEZ.Infrastructure.Migrations
                 schema: "catalog");
 
             migrationBuilder.DropTable(
-                name: "WFPObjectives",
+                name: "FundSources",
                 schema: "catalog");
 
             migrationBuilder.DropTable(
-                name: "FunctionPercentageAllocations",
+                name: "WFPObjectives",
                 schema: "catalog");
 
             migrationBuilder.DropTable(
@@ -1734,15 +2135,7 @@ namespace ERPEZ.Infrastructure.Migrations
                 schema: "catalog");
 
             migrationBuilder.DropTable(
-                name: "DUAllocations",
-                schema: "catalog");
-
-            migrationBuilder.DropTable(
                 name: "DeliveryUnit",
-                schema: "catalog");
-
-            migrationBuilder.DropTable(
-                name: "ReceivedFunds",
                 schema: "catalog");
 
             migrationBuilder.DropTable(
@@ -1750,43 +2143,8 @@ namespace ERPEZ.Infrastructure.Migrations
                 schema: "catalog");
 
             migrationBuilder.DropTable(
-                name: "FundSources",
+                name: "Clusters",
                 schema: "catalog");
-
-            migrationBuilder.DropColumn(
-                name: "CreatedAt",
-                schema: "catalog",
-                table: "Products");
-
-            migrationBuilder.DropColumn(
-                name: "CreatedBy",
-                schema: "catalog",
-                table: "Products");
-
-            migrationBuilder.DropColumn(
-                name: "DeletedAt",
-                schema: "catalog",
-                table: "Products");
-
-            migrationBuilder.DropColumn(
-                name: "DeletedBy",
-                schema: "catalog",
-                table: "Products");
-
-            migrationBuilder.DropColumn(
-                name: "IsDeleted",
-                schema: "catalog",
-                table: "Products");
-
-            migrationBuilder.DropColumn(
-                name: "UpdatedAt",
-                schema: "catalog",
-                table: "Products");
-
-            migrationBuilder.DropColumn(
-                name: "UpdatedBy",
-                schema: "catalog",
-                table: "Products");
         }
     }
 }

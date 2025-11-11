@@ -53,7 +53,7 @@ public static class DependencyInjection
         services.AddScoped<ILocationRepository, LocationRepository>();
         services.AddScoped<ITransactionRepository, TransactionRepository>();
         services.AddScoped<IMFOPAPRepository, MFOPAPRepository>();
-        services.AddScoped<IFunctionPercentageAllocationRepository, FunctionPercentageAllocationRepository>();
+        services.AddScoped<IFunctionAllocationRepository, FunctionAllocationRepository>();
         services.AddScoped<IDUFundAllocationRepository, DUFundAllocationRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 

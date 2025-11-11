@@ -5,7 +5,7 @@ namespace ERPEZ.Application.Features.Planning.MFOPAP.Commands.CreateMFOPAP;
 public class CreateMFOPAPCommandValidator : AbstractValidator<CreateMFOPAPCommand>
 {
     // Updated list of expected MFO/PAP Types
-    private readonly string[] ValidTypes = new[]
+    private readonly string[] validTypes = new[]
     {
         "Major Final Output", "Program", "Activity", "Project",
         "SubProject", "LowerLevelOperatingUnit"
@@ -43,7 +43,7 @@ public class CreateMFOPAPCommandValidator : AbstractValidator<CreateMFOPAPComman
         RuleFor(x => x.Type)
             .NotEmpty()
             .WithMessage("Type is required.")
-            .Must(type => ValidTypes.Contains(type, StringComparer.OrdinalIgnoreCase))
-            .WithMessage($"Type must be one of the following: {string.Join(", ", ValidTypes)}.");
+            .Must(type => validTypes.Contains(type, StringComparer.OrdinalIgnoreCase))
+            .WithMessage($"Type must be one of the following: {string.Join(", ", validTypes)}.");
     }
 }

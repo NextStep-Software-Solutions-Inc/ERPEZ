@@ -5,11 +5,11 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.OPCR.Queries.GetOPCRById;
 
-public class GetOPCRByIdQueryHandler(IUnitOfWork _unitOfWork) : IRequestHandler<GetOPCRByIdQuery, ApiResponse<Domain.Entities.Planning.OPCR>>
+public class GetOPCRByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetOPCRByIdQuery, ApiResponse<Domain.Entities.Planning.OPCR>>
 {
     public async Task<ApiResponse<Domain.Entities.Planning.OPCR>> Handle(GetOPCRByIdQuery request, CancellationToken cancellationToken)
     {
-        var duAllocation = await _unitOfWork.OPCRRepository.FindAsync(
+        var duAllocation = await unitOfWork.OPCRRepository.FindAsync(
            t => t.Id == request.Id,
             cancellationToken: cancellationToken) ?? throw new NotFoundException("No data found.");
 

@@ -2,7 +2,7 @@
 
 public static class FunctionTypeConstants
 {
-    public static readonly List<string> ValidFunctionTypes =
+    public static readonly List<string> validFunctionTypes =
     [
         "Core Function",
         "Strategic Priority",

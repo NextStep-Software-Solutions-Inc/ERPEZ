@@ -4,7 +4,7 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Object.Queries.GetObjects;
 
-public class GetObjectsQueryHandler(IUnitOfWork _unitOfWork) : IRequestHandler<GetObjectsQuery, PaginatedApiResponse<Domain.Entities.Planning.Object>>
+public class GetObjectsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetObjectsQuery, PaginatedApiResponse<Domain.Entities.Planning.Object>>
 {
     public async Task<PaginatedApiResponse<Domain.Entities.Planning.Object>> Handle(GetObjectsQuery query, CancellationToken cancellationToken)
     {
@@ -15,7 +15,7 @@ public class GetObjectsQueryHandler(IUnitOfWork _unitOfWork) : IRequestHandler<G
             Filters = query.Filters,
             Sorts = query.Sorts
         };
-        var (objectives, totalCount) = await _unitOfWork.ObjectRepository.GetAllAsync(sieveModel, cancellationToken: cancellationToken);
+        var (objectives, totalCount) = await unitOfWork.ObjectRepository.GetAllAsync(sieveModel, cancellationToken: cancellationToken);
         return new PaginatedApiResponse<Domain.Entities.Planning.Object>(
             [.. objectives],
             query.PageNumber,

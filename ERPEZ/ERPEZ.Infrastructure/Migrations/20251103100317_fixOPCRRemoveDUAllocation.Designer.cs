@@ -13,8 +13,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ERPEZ.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20251103100317_fixOPCRRemoveDUAllocation")]
-    partial class fixOPCRRemoveDUAllocation
+    [Migration("20251103100317_FixOPCRRemoveDUAllocation")]
+    partial class FixOPCRRemoveDUAllocation
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -232,7 +232,7 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.ToTable("DeliveryUnit", "catalog");
                 });
 
-            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.FunctionPercentageAllocation", b =>
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.FunctionAllocation", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -272,7 +272,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.ToTable("FunctionPercentageAllocations", "catalog");
+                    b.ToTable("FunctionAllocations", "catalog");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.FundSource", b =>
@@ -356,7 +356,7 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("text");
 
-                    b.Property<Guid>("FunctionPercentageAllocationId")
+                    b.Property<Guid>("FunctionAllocationId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("FunctionType")
@@ -393,7 +393,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("ParentKPIId");
 
-                    b.HasIndex("FunctionPercentageAllocationId", "Name");
+                    b.HasIndex("FunctionAllocationId", "Name");
 
                     b.ToTable("KPIs", "catalog");
                 });

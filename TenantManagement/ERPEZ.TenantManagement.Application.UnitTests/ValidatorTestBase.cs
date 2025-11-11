@@ -11,11 +11,11 @@ public abstract class ValidatorTestBase<TValidator, TCommand>
     where TValidator : AbstractValidator<TCommand>, new()
     where TCommand : class
 {
-    protected readonly TValidator Validator;
+    protected readonly TValidator validator;
 
     protected ValidatorTestBase()
     {
-        Validator = new TValidator();
+        validator = new TValidator();
     }
 
     /// <summary>
@@ -23,7 +23,7 @@ public abstract class ValidatorTestBase<TValidator, TCommand>
     /// </summary>
     protected void AssertValidationPasses(TCommand command)
     {
-        var result = Validator.TestValidate(command);
+        var result = validator.TestValidate(command);
         result.ShouldNotHaveAnyValidationErrors();
     }
 
@@ -32,7 +32,7 @@ public abstract class ValidatorTestBase<TValidator, TCommand>
     /// </summary>
     protected void AssertValidationFails(TCommand command, params string[] expectedErrorMessages)
     {
-        var result = Validator.TestValidate(command);
+        var result = validator.TestValidate(command);
         result.ShouldHaveAnyValidationError();
 
         foreach (var expectedMessage in expectedErrorMessages)
@@ -46,7 +46,7 @@ public abstract class ValidatorTestBase<TValidator, TCommand>
     /// </summary>
     protected void AssertPropertyHasError(TCommand command, string propertyName, string expectedErrorMessage)
     {
-        var result = Validator.TestValidate(command);
+        var result = validator.TestValidate(command);
         result.ShouldHaveValidationErrorFor(propertyName)
               .WithErrorMessage(expectedErrorMessage);
     }

@@ -5,7 +5,7 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.FundSource.Queries.GetFundSources;
 
-public class GetFundSourcesQueryHandler(IUnitOfWork _unitOfWork) : IRequestHandler<GetFundSourcesQuery, PaginatedApiResponse<Domain.Entities.Planning.FundSource>>
+public class GetFundSourcesQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetFundSourcesQuery, PaginatedApiResponse<Domain.Entities.Planning.FundSource>>
 {
     public async Task<PaginatedApiResponse<Domain.Entities.Planning.FundSource>> Handle(GetFundSourcesQuery query, CancellationToken cancellationToken)
     {
@@ -16,7 +16,7 @@ public class GetFundSourcesQueryHandler(IUnitOfWork _unitOfWork) : IRequestHandl
             Filters = query.Filters,
             Sorts = query.Sorts
         };
-        var (fundSources, totalCount) = await _unitOfWork.FundSourceRepository.GetAllAsync(sieveModel, cancellationToken: cancellationToken);
+        var (fundSources, totalCount) = await unitOfWork.FundSourceRepository.GetAllAsync(sieveModel, cancellationToken: cancellationToken);
         return new PaginatedApiResponse<Domain.Entities.Planning.FundSource>(
             [.. fundSources],
             query.PageNumber,

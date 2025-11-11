@@ -6,7 +6,7 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.MFOKPI.Commands.CreateMFOKPI;
 
-public class CreateMFOKPICommandHandler(IUnitOfWork _unitOfWork)
+public class CreateMFOKPICommandHandler(IUnitOfWork unitOfWork)
     : IRequestHandler<CreateMFOKPICommand, ApiResponse<MFOKPIDto>>
 {
     public async Task<ApiResponse<MFOKPIDto>> Handle(CreateMFOKPICommand request, CancellationToken cancellationToken)
@@ -19,7 +19,7 @@ public class CreateMFOKPICommandHandler(IUnitOfWork _unitOfWork)
                 Succeeded = false
             };
         }
-        var mfoKPIExist = await _unitOfWork.MFOKPIRepository.FindAsync(
+        var mfoKPIExist = await unitOfWork.MFOKPIRepository.FindAsync(
             t => t.MFOPAPId == request.MFOPAPId && t.KPIId == request.KPIId,
             cancellationToken: cancellationToken
         );
@@ -29,13 +29,13 @@ public class CreateMFOKPICommandHandler(IUnitOfWork _unitOfWork)
 
         if (request.MFOPAPId != Guid.Empty)
         {
-            var mfopap = await _unitOfWork.MFOPAPRepository.GetByIdAsync(request.MFOPAPId, cancellationToken: cancellationToken)
+            var mfopap = await unitOfWork.MFOPAPRepository.GetByIdAsync(request.MFOPAPId, cancellationToken: cancellationToken)
                 ?? throw new NotFoundException("MFOPAP not found.");
         }
 
         if (request.KPIId != Guid.Empty)
         {
-            var kpi = await _unitOfWork.KPIRepository.GetByIdAsync(request.KPIId, cancellationToken: cancellationToken)
+            var kpi = await unitOfWork.KPIRepository.GetByIdAsync(request.KPIId, cancellationToken: cancellationToken)
                 ?? throw new NotFoundException("KPI not found.");
         }
 
@@ -45,8 +45,8 @@ public class CreateMFOKPICommandHandler(IUnitOfWork _unitOfWork)
             MFOPAPId = request.MFOPAPId
         };
 
-        await _unitOfWork.MFOKPIRepository.AddAsync(mfokpi, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await unitOfWork.MFOKPIRepository.AddAsync(mfokpi, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
         var dto = new MFOKPIDto
         {
             Id = mfokpi.Id,

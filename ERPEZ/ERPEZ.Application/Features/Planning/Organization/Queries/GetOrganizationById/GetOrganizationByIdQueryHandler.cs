@@ -5,11 +5,11 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Organization.Queries.GetOrganizationById;
 
-public class GetFundSourceByIdQueryHandler(IUnitOfWork _unitOfWork) : IRequestHandler<GetOrganizationByIdQuery, ApiResponse<Domain.Entities.Planning.Organization>>
+public class GetFundSourceByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetOrganizationByIdQuery, ApiResponse<Domain.Entities.Planning.Organization>>
 {
     public async Task<ApiResponse<Domain.Entities.Planning.Organization>> Handle(GetOrganizationByIdQuery request, CancellationToken cancellationToken)
     {
-        var organization = await _unitOfWork.OrganizationRepository.FindAsync(
+        var organization = await unitOfWork.OrganizationRepository.FindAsync(
            t => t.Id == request.Id,
             cancellationToken: cancellationToken) ?? throw new NotFoundException("No data found.");
 

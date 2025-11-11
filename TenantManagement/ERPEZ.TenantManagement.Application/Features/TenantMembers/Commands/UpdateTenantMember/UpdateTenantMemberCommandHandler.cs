@@ -6,7 +6,7 @@ using MediatR;
 
 namespace ERPEZ.TenantManagement.Application.Features.TenantMembers.Commands.UpdateTenantMember;
 
-public class UpdateTenantMemberCommandHandler(IUnitOfWork _unitOfWork)
+public class UpdateTenantMemberCommandHandler(IUnitOfWork unitOfWork)
     : IRequestHandler<UpdateTenantMemberCommand, ApiResponse<Guid>>
 {
     public async Task<ApiResponse<Guid>> Handle(UpdateTenantMemberCommand request, CancellationToken cancellationToken)
@@ -16,12 +16,12 @@ public class UpdateTenantMemberCommandHandler(IUnitOfWork _unitOfWork)
         var dto = request.UpdateTenantMember;
         if (dto.TenantId.HasValue)
         {
-            _ = await _unitOfWork.TenantRepository.GetByIdAsync(dto.TenantId.Value, cancellationToken: cancellationToken) ?? throw new NotFoundException("Tenant cannot be found.");
+            _ = await unitOfWork.TenantRepository.GetByIdAsync(dto.TenantId.Value, cancellationToken: cancellationToken) ?? throw new NotFoundException("Tenant cannot be found.");
         }
-        var tenantMember = await _unitOfWork.TenantMemberRepository
+        var tenantMember = await unitOfWork.TenantMemberRepository
             .FindAsync(ts => ts.Id == request.Id && ts.TenantId == dto.TenantId, cancellationToken: cancellationToken) ?? throw new NotFoundException("Tenant member not found");
 
-        var duplicate = await _unitOfWork.TenantMemberRepository
+        var duplicate = await unitOfWork.TenantMemberRepository
             .FindAsync(tm => tm.UserId == dto.UserId && tm.Role == dto.Role && tm.TenantId == dto.TenantId && tm.Id != request.Id, cancellationToken: cancellationToken);
 
         if (duplicate != null) throw new ConflictException("Another tenant member with the same UserId and Role already exists for this tenant.");
@@ -31,8 +31,8 @@ public class UpdateTenantMemberCommandHandler(IUnitOfWork _unitOfWork)
         tenantMember.Role = dto?.Role ?? tenantMember.Role;
         tenantMember.Status = dto?.Status ?? tenantMember.Status;
 
-        _unitOfWork.TenantMemberRepository.Update(tenantMember);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        unitOfWork.TenantMemberRepository.Update(tenantMember);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return ApiResponse<Guid>.Success(tenantMember.Id, "Tenant member updated successfully.");
     }
