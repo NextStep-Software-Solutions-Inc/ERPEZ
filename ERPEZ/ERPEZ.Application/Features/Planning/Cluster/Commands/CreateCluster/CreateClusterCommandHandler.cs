@@ -10,7 +10,7 @@ public class CreateClusterCommandHandler(IUnitOfWork _unitOfWork) : IRequestHand
 {
     public async Task<ApiResponse<ClusterResponse>> Handle(CreateClusterCommand request, CancellationToken cancellationToken)
     {
-        var duplicate = await _unitOfWork.ClusterRepository.FindAsync(w => w.Name == request.Name && w.Description == request.Description, cancellationToken);
+        var duplicate = await _unitOfWork.ClusterRepository.FindAsync(w => w.Name == request.Name, cancellationToken);
         if (duplicate != null) throw new ConflictException("Cluster already exist.");
 
         var cluster = new Domain.Entities.Planning.Cluster
