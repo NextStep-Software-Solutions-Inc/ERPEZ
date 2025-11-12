@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore.Migrations;
+using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -21,13 +21,13 @@ namespace ERPEZ.Infrastructure.Migrations
                 oldType: "boolean",
                 oldNullable: true);
 
-            migrationBuilder.AddColumn<bool>(
-                name: "IsPercentage",
-                schema: "planning",
-                table: "KPIs",
-                type: "boolean",
-                nullable: false,
-                defaultValue: false);
+            //migrationBuilder.AddColumn<bool>(
+            //    name: "IsPercentage",
+            //    schema: "planning",
+            //    table: "KPIs",
+            //    type: "boolean",
+            //    nullable: false,
+            //    defaultValue: false);
         }
 
         /// <inheritdoc />

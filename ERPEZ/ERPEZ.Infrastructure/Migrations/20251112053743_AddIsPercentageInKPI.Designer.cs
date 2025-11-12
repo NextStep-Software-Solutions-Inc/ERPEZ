@@ -13,7 +13,7 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ERPEZ.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20251112031102_AddIsPercentageInKPI")]
+    [Migration("20251112053743_AddIsPercentageInKPI")]
     partial class AddIsPercentageInKPI
     {
         /// <inheritdoc />
