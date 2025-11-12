@@ -6,7 +6,7 @@ using System.Linq.Expressions;
 
 namespace ERPEZ.Application.Features.Planning.ActivityBudgetRequirement.Queries.GetABRs;
 
-public class GetActivityBudgetRequirementsQueryHandler(IUnitOfWork _unitOfWork) : IRequestHandler<GetActivityBudgetRequirementsQuery, PaginatedApiResponse<ActivityBudgetRequirementResponse>>
+public class GetActivityBudgetRequirementsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetActivityBudgetRequirementsQuery, PaginatedApiResponse<ActivityBudgetRequirementResponse>>
 {
     public async Task<PaginatedApiResponse<ActivityBudgetRequirementResponse>> Handle(GetActivityBudgetRequirementsQuery query, CancellationToken cancellationToken)
     {
@@ -29,7 +29,7 @@ public class GetActivityBudgetRequirementsQueryHandler(IUnitOfWork _unitOfWork) 
             CreatedAt = abr.CreatedAt,
             CreatedBy = abr.CreatedBy
         };
-        var (abrs, totalCount) = await _unitOfWork.ActivityBudgetRequirementRepository.GetAllAsync(sieveModel, projection, cancellationToken: cancellationToken);
+        var (abrs, totalCount) = await unitOfWork.ActivityBudgetRequirementRepository.GetAllAsync(sieveModel, projection, cancellationToken: cancellationToken);
         return new PaginatedApiResponse<ActivityBudgetRequirementResponse>(
             [.. abrs],
             query.PageNumber,
