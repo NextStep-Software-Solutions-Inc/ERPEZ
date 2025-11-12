@@ -17,6 +17,9 @@
     <Folder Include="Features\Planning\OPCREvaluation\Commands\" />
     <Folder Include="Features\Planning\OPCREvaluation\Dtos\" />
     <Folder Include="Features\Planning\OPCREvaluation\Queries\" />
+    <Folder Include="Features\Planning\OPCRRating\Commands\" />
+    <Folder Include="Features\Planning\OPCRRating\Dtos\" />
+    <Folder Include="Features\Planning\OPCRRating\Queries\" />
     <Folder Include="Features\Planning\WFPObjective\Commands\" />
     <Folder Include="Features\Planning\WFPObjective\Dtos\" />
     <Folder Include="Features\Planning\WFPObjective\Queries\" />

@@ -1,36 +1,77 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using ERPEZ.Application.Features.Planning.OPCREvaluation.Commands.CreateOPCREvaluation;
+using ERPEZ.Application.Features.Planning.OPCREvaluation.Commands.DeleteOPCREvaluation;
+using ERPEZ.Application.Features.Planning.OPCREvaluation.Commands.UpdateOPCREvaluation;
+using ERPEZ.Application.Features.Planning.OPCREvaluation.Dtos;
+using ERPEZ.Application.Features.Planning.OPCREvaluation.Queries.GetOPCREvaluationById;
+using ERPEZ.Application.Features.Planning.OPCREvaluation.Queries.GetOPCREvaluations;
+using ERPEZ.Domain.Entities.Planning;
+using ERPEZ.Shared.Common;
+using MediatR;
+using Microsoft.AspNetCore.Mvc;
 
 namespace ERPEZ.Api.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("opcr-evaluations")]
     [ApiController]
-    public class OPCREvaluationController : ControllerBase
+    public class OPCREvaluationController(ISender mediator) : ControllerBase
     {
         [HttpPost]
-        public void Post([FromBody] string value)
+        [ProducesResponseType(typeof(ApiResponse<OPCREvaluationResponse>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<OPCREvaluationResponse>), StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> CreateOPCREvaluation([FromBody] CreateOPCREvaluationCommand command)
         {
+            var result = await mediator.Send(command);
+
+            if (!result.Succeeded)
+                return BadRequest(result);
+
+            // Returns 201 Created and links to the GetById endpoint, returning the DTO
+            return CreatedAtAction(nameof(GetOPCREvaluationById), new { id = result.Data!.Id }, result);
         }
 
         [HttpGet]
-        public IEnumerable<string> Get()
+        [ProducesResponseType(typeof(PaginatedApiResponse<OPCREvaluationResponse>), StatusCodes.Status200OK)] // Returns DTO
+        public async Task<IActionResult> GetOPCREvaluations([FromQuery] GetOPCREvaluationsQuery query)
         {
-            return new string[] { "value1", "value2" };
+            var result = await mediator.Send(query);
+            return Ok(result);
         }
 
         [HttpGet("{id}")]
-        public string Get(int id)
+        [ProducesResponseType(typeof(ApiResponse<OPCREvaluation>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetOPCREvaluationById(Guid id)
         {
-            return "value";
+            var result = await mediator.Send(new GetOPCREvaluationByIdQuery(id));
+
+            return result.Succeeded ? Ok(result) : NotFound(result);
         }
 
         [HttpPut("{id}")]
-        public void Put(int id, [FromBody] string value)
+        [ProducesResponseType(typeof(ApiResponse<OPCREvaluationResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> UpdateOPCREvaluation(Guid id, [FromBody] UpdateOPCREvaluationRequest dto)
         {
+            var command = new UpdateOPCREvaluationCommand
+            {
+                Id = id,
+                UpdateOPCREvaluation = dto
+            };
+
+            var result = await mediator.Send(command);
+            return result.Succeeded ? Ok(result) : BadRequest(result);
         }
 
         [HttpDelete("{id}")]
-        public void Delete(int id)
+        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> DeleteOPCREvaluation(Guid id)
         {
+            var command = new DeleteOPCREvaluationCommand(id);
+            var result = await mediator.Send(command);
+
+            return result.Succeeded ? NoContent() : BadRequest(result);
         }
     }
 }

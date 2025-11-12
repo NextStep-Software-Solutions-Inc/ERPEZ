@@ -1,4 +1,4 @@
-﻿using ERPEZ.Application.Features.Planning.DUAllocation.Commands.CreateDUAllocation;
+using ERPEZ.Application.Features.Planning.DUAllocation.Commands.CreateDUAllocation;
 using ERPEZ.Application.Features.Planning.DUAllocation.Commands.DeleteDUAllocation;
 using ERPEZ.Application.Features.Planning.DUAllocation.Commands.UpdateDUAllocation;
 using ERPEZ.Application.Features.Planning.DUAllocation.Dtos;
@@ -47,7 +47,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpPut("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<KPIDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<DUAllocationDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateDUAllocation(Guid id, [FromBody] UpdateDUAllocationDto dto)
