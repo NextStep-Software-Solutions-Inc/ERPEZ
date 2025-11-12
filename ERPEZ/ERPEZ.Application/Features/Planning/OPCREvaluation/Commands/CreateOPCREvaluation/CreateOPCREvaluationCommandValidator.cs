@@ -1,7 +1,4 @@
 ﻿using FluentValidation;
-using System;
-using System.Linq; // Required for the .Contains() extension method
-
 namespace ERPEZ.Application.Features.Planning.OPCREvaluation.Commands.CreateOPCREvaluation;
 
 public class CreateOPCREvaluationCommandValidator : AbstractValidator<CreateOPCREvaluationCommand>

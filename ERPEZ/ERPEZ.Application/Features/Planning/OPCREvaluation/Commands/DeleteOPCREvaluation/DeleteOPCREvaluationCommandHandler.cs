@@ -14,6 +14,6 @@ public class DeleteOPCREvaluationCommandHandler(IUnitOfWork unitOfWork) : IReque
         unitOfWork.OPCREvaluationRepository.Remove(opcrEvaluation);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return ApiResponse<Unit>.Success(Unit.Value, $"OPCR Evaluation with ID {request.Id} deleted successfully.");
+        return ApiResponse<Unit>.Success(Unit.Value);
     }
 }
