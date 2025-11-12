@@ -29,7 +29,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet]
-        [ProducesResponseType(typeof(PaginatedApiResponse<OPCRRating>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(PaginatedApiResponse<OPCRRatingResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetOPCRRatings([FromQuery] GetOPCRRatingsQuery query)
         {
             var result = await mediator.Send(query);
@@ -37,7 +37,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<OPCRRating>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<OPCRRatingResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetOPCRRatingById(Guid id)
         {
@@ -70,7 +70,7 @@ namespace ERPEZ.Api.Controllers
             var command = new DeleteOPCRRatingCommand(id);
             var result = await mediator.Send(command);
 
-            return result.Succeeded ? NoContent() : BadRequest(result);
+            return result.Succeeded ? Ok(result) : NoContent();
         }
     }
 }
