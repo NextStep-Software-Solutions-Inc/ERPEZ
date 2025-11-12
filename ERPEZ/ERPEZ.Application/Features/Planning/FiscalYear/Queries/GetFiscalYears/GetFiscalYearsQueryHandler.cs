@@ -20,13 +20,18 @@ public class GetFiscalYearsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandle
             Sorts = query.Sorts
         };
 
-        // Project to DTO without allocations (lightweight list)
         Expression<Func<Domain.Entities.Planning.FiscalYear, FiscalYearResponse>> projection = fy => new FiscalYearResponse
         {
             Id = fy.Id,
             Year = fy.Year,
             Description = fy.Description,
-            IsLocked = fy.IsLocked
+            IsLocked = fy.IsLocked,
+            FunctionAllocations = fy.FunctionAllocations.Select(fa => new FunctionAllocationResponse
+            {
+                Id = fa.Id,
+                FunctionType = fa.FunctionType,
+                Percentage = fa.Percentage
+            }).ToList()
         };
 
         var (items, totalCount) = await unitOfWork.FiscalYearRepository.GetAllAsync(sieveModel, projection, cancellationToken: cancellationToken);
