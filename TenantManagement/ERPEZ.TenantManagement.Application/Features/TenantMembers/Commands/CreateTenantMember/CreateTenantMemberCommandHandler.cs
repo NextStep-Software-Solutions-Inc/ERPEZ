@@ -6,19 +6,19 @@ using MediatR;
 
 namespace ERPEZ.TenantManagement.Application.Features.TenantMembers.Commands.CreateTenantMember;
 
-public class CreateTenantMemberCommandHandler(IUnitOfWork _unitOfWork)
+public class CreateTenantMemberCommandHandler(IUnitOfWork unitOfWork)
     : IRequestHandler<CreateTenantMemberCommand, ApiResponse<Guid>>
 {
     public async Task<ApiResponse<Guid>> Handle(CreateTenantMemberCommand command, CancellationToken cancellationToken)
     {
-        var tenantMemberExist = await _unitOfWork.TenantMemberRepository
+        var tenantMemberExist = await unitOfWork.TenantMemberRepository
             .FindAsync(tm => tm.TenantId == command.TenantId && tm.UserId == command.UserId, cancellationToken);
 
         if (tenantMemberExist != null)
             throw new ConflictException("Tenant member already exists.");
 
         // Check if the tenant exists before creating the member
-        _ = await _unitOfWork.TenantRepository
+        _ = await unitOfWork.TenantRepository
             .FindAsync(t => t.Id == command.TenantId, cancellationToken) ?? throw new NotFoundException("Tenant not found.");
 
         var tenantMember = new TenantMember
@@ -29,8 +29,8 @@ public class CreateTenantMemberCommandHandler(IUnitOfWork _unitOfWork)
             Status = command.Status
         };
 
-        await _unitOfWork.TenantMemberRepository.AddAsync(tenantMember, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await unitOfWork.TenantMemberRepository.AddAsync(tenantMember, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
       
 

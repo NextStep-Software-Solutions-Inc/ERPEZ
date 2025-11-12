@@ -4,7 +4,7 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.OPCRKPI.Queries.GetOPCRKPIs;
 
-public class GetOPCRKPIsQueryHandler(IUnitOfWork _unitOfWork) : IRequestHandler<GetOPCRKPIsQuery, PaginatedApiResponse<Domain.Entities.Planning.OPCRKPI>>
+public class GetOPCRKPIsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetOPCRKPIsQuery, PaginatedApiResponse<Domain.Entities.Planning.OPCRKPI>>
 {
     public async Task<PaginatedApiResponse<Domain.Entities.Planning.OPCRKPI>> Handle(GetOPCRKPIsQuery query, CancellationToken cancellationToken)
     {
@@ -15,7 +15,7 @@ public class GetOPCRKPIsQueryHandler(IUnitOfWork _unitOfWork) : IRequestHandler<
             Filters = query.Filters,
             Sorts = query.Sorts
         };
-        var (opcrKpis, totalCount) = await _unitOfWork.OPCRKPIRepository.GetAllAsync(sieveModel, cancellationToken: cancellationToken);
+        var (opcrKpis, totalCount) = await unitOfWork.OPCRKPIRepository.GetAllAsync(sieveModel, cancellationToken: cancellationToken);
         return new PaginatedApiResponse<Domain.Entities.Planning.OPCRKPI>(
             [.. opcrKpis],
             query.PageNumber,

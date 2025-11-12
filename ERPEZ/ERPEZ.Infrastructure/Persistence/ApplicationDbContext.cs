@@ -12,7 +12,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ActivityBudgetRequirement> ActivityBudgetRequirements { get; set; }
     public DbSet<DUAllocation> DUAllocations { get; set; }
     public DbSet<DUFundAllocation> DUFundAllocations { get; set; }
-    public DbSet<FunctionPercentageAllocation> FunctionPercentageAllocations { get; set; }
+    public DbSet<FunctionAllocation> FunctionAllocations { get; set; }
     public DbSet<FundSource> FundSources { get; set; }
     public DbSet<KPI> KPIs { get; set; }
     public DbSet<KPIModeOfVerification> KPIModeOfVerifications { get; set; }
@@ -43,12 +43,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-        const string schemaName = "catalog";
-        //const string planningSchemaName = "planning";
-        //const string procurementSchemaName = "procurement";
-        //const string samsSchemaName = "sams";
-
-        modelBuilder.HasDefaultSchema(schemaName);
 
         foreach (var entity in modelBuilder.Model.GetEntityTypes())
         {
@@ -67,6 +61,24 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 }
                 entity.SetPrimaryKey(idProperty);
                 idProperty.ValueGenerated = ValueGenerated.OnAdd;
+            }
+        }
+
+        // Configure schema for entities based on their subdirectory (automatic detection)
+        foreach (var entity in modelBuilder.Model.GetEntityTypes())
+        {
+            if (entity.ClrType.Namespace != null)
+            {
+                // Extract subdirectory name from namespace (e.g., "Planning" from "ERPEZ.Domain.Entities.Planning")
+                var namespaceParts = entity.ClrType.Namespace.Split('.');
+                var entitiesIndex = Array.IndexOf(namespaceParts, "Entities");
+
+                if (entitiesIndex >= 0 && entitiesIndex < namespaceParts.Length - 1)
+                {
+                    var subDir = namespaceParts[entitiesIndex + 1];
+                    var schemaName = subDir.ToLowerInvariant();
+                    entity.SetSchema(schemaName);
+                }
             }
         }
 
@@ -678,6 +690,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<WFPObjectiveTimeline>()
             .ToTable(t => t.HasCheckConstraint("CK_WFPObjectiveTimeline_Dates", "\"StartDate\" < \"EndDate\""));
+
+        //FunctionAllocations
+        modelBuilder.Entity<FunctionAllocation>()
+            .HasIndex(fpa => new { fpa.FunctionType, fpa.FiscalYearId })
+            .IsUnique();
 
         base.OnModelCreating(modelBuilder);
     }

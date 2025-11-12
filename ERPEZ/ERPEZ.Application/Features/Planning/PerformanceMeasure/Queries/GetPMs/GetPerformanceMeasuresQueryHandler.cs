@@ -4,7 +4,7 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.PerformanceMeasure.Queries.GetPMs;
 
-public class GetPerformanceMeasuresQueryHandler(IUnitOfWork _unitOfWork) : IRequestHandler<GetPerformanceMeasuresQuery, PaginatedApiResponse<Domain.Entities.Planning.PerformanceMeasure>>
+public class GetPerformanceMeasuresQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetPerformanceMeasuresQuery, PaginatedApiResponse<Domain.Entities.Planning.PerformanceMeasure>>
 {
     public async Task<PaginatedApiResponse<Domain.Entities.Planning.PerformanceMeasure>> Handle(GetPerformanceMeasuresQuery query, CancellationToken cancellationToken)
     {
@@ -15,7 +15,7 @@ public class GetPerformanceMeasuresQueryHandler(IUnitOfWork _unitOfWork) : IRequ
             Filters = query.Filters,
             Sorts = query.Sorts
         };
-        var (pms, totalCount) = await _unitOfWork.PerformanceMeasureRepository.GetAllAsync(sieveModel, cancellationToken: cancellationToken);
+        var (pms, totalCount) = await unitOfWork.PerformanceMeasureRepository.GetAllAsync(sieveModel, cancellationToken: cancellationToken);
         return new PaginatedApiResponse<Domain.Entities.Planning.PerformanceMeasure>(
             [.. pms],
             query.PageNumber,

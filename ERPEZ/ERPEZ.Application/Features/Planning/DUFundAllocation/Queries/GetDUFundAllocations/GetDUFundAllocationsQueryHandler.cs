@@ -4,7 +4,7 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.DUFundAllocation.Queries.GetDUFundAllocations;
 
-public class GetDUFundAllocationsQueryHandler(IUnitOfWork _unitOfWork) : IRequestHandler<GetDUFundAllocationsQuery, PaginatedApiResponse<Domain.Entities.Planning.DUFundAllocation>>
+public class GetDUFundAllocationsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetDUFundAllocationsQuery, PaginatedApiResponse<Domain.Entities.Planning.DUFundAllocation>>
 {
     public async Task<PaginatedApiResponse<Domain.Entities.Planning.DUFundAllocation>> Handle(GetDUFundAllocationsQuery query, CancellationToken cancellationToken)
     {
@@ -15,7 +15,7 @@ public class GetDUFundAllocationsQueryHandler(IUnitOfWork _unitOfWork) : IReques
             Filters = query.Filters,
             Sorts = query.Sorts
         };
-        var (duFundAllocations, totalCount) = await _unitOfWork.DUFundAllocationRepository.GetAllAsync(sieveModel, cancellationToken: cancellationToken);
+        var (duFundAllocations, totalCount) = await unitOfWork.DUFundAllocationRepository.GetAllAsync(sieveModel, cancellationToken: cancellationToken);
         return new PaginatedApiResponse<Domain.Entities.Planning.DUFundAllocation>(
             [.. duFundAllocations],
             query.PageNumber,

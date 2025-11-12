@@ -4,11 +4,11 @@ namespace ERPEZ.Application.Features.Planning.KPI.Commands.UpdateKPI;
 
 public class UpdateKPICommandValidator : AbstractValidator<UpdateKPICommand>
 {
-    private readonly string[] ValidFunctionTypes =
+    private readonly string[] validFunctionTypes =
     [
         "Core Function", "Strategic Priority", "Mandatory Support Functions"
     ];
-    private readonly string[] ValidStatuses = ["Draft", "Submitted", "Approved", "Active", "Archived"]; // Added Active/Archived for typical update statuses
+    private readonly string[] validStatuses = ["Draft", "Submitted", "Approved", "Active", "Archived"]; // Added Active/Archived for typical update statuses
 
     public UpdateKPICommandValidator()
     {
@@ -35,8 +35,8 @@ public class UpdateKPICommandValidator : AbstractValidator<UpdateKPICommand>
         RuleFor(x => x.UpdateKPI.FunctionType)
             .MaximumLength(100)
             .WithMessage("Function Type cannot exceed 100 characters.")
-            .Must(type => ValidFunctionTypes.Contains(type, StringComparer.OrdinalIgnoreCase))
-            .WithMessage($"Function Type must be one of the following: {string.Join(", ", ValidFunctionTypes)}.")
+            .Must(type => validFunctionTypes.Contains(type, StringComparer.OrdinalIgnoreCase))
+            .WithMessage($"Function Type must be one of the following: {string.Join(", ", validFunctionTypes)}.")
             // Validation only runs if the string is NOT null or empty
             .When(x => !string.IsNullOrWhiteSpace(x.UpdateKPI.FunctionType));
 
@@ -62,8 +62,8 @@ public class UpdateKPICommandValidator : AbstractValidator<UpdateKPICommand>
 
         // 8. Status (Optional String?) - Check only if provided
         RuleFor(x => x.UpdateKPI.Status)
-            .Must(status => ValidStatuses.Contains(status, StringComparer.OrdinalIgnoreCase))
-            .WithMessage($"Status must be one of the following: {string.Join(", ", ValidStatuses)}.")
+            .Must(status => validStatuses.Contains(status, StringComparer.OrdinalIgnoreCase))
+            .WithMessage($"Status must be one of the following: {string.Join(", ", validStatuses)}.")
             .When(x => !string.IsNullOrWhiteSpace(x.UpdateKPI.Status));
     }
 }

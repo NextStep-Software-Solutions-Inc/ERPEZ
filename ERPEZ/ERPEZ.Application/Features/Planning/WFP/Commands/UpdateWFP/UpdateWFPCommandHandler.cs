@@ -1,24 +1,24 @@
-﻿using ERPEZ.Domain.Interfaces;
+using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.WFP.Commands.UpdateWFP;
 
-public class UpdateWFPCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<UpdateWFPCommand, ApiResponse<Domain.Entities.Planning.WFP>>
+public class UpdateWFPCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateWFPCommand, ApiResponse<Domain.Entities.Planning.WFP>>
 {
     public async Task<ApiResponse<Domain.Entities.Planning.WFP>> Handle(UpdateWFPCommand request, CancellationToken cancellationToken)
     {
         var dto = request.UpdateWFP;
 
-        var wfp = await _unitOfWork.WFPRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken)
+        var wfp = await unitOfWork.WFPRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken)
             ?? throw new NotFoundException("WFP not found.");
 
         var coalescedDeliveryUnitId = dto.DeliveryUnitId;
         var coalescedFiscalYear = dto.FiscalYear ?? wfp.FiscalYear;
         var coalescedProgramTitle = dto.ProgramTitle ?? wfp.ProgramTitle;
         var coalescedDescription = dto.Description ?? wfp.Description;
-        var duplicate = await _unitOfWork.WFPRepository.FindAsync(
+        var duplicate = await unitOfWork.WFPRepository.FindAsync(
             w => w.Id != request.Id
                 && w.DeliveryUnitId == coalescedDeliveryUnitId
                 && w.FiscalYear == coalescedFiscalYear
@@ -38,8 +38,8 @@ public class UpdateWFPCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<
         wfp.GeneralObjective = dto.GeneralObjective ?? wfp.GeneralObjective;
         wfp.Status = dto.Status ?? wfp.Status;
 
-        _unitOfWork.WFPRepository.Update(wfp);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        unitOfWork.WFPRepository.Update(wfp);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return ApiResponse<Domain.Entities.Planning.WFP>.Success(wfp, "WFP updated successfully.");
     }

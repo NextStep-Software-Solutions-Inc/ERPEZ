@@ -1,4 +1,4 @@
-﻿using ERPEZ.Application.Features.Planning.Office.Dtos;
+using ERPEZ.Application.Features.Planning.Office.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -6,11 +6,11 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Office.Commands.CreateOffice;
 
-public class CreateOfficeCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<CreateOfficeCommand, ApiResponse<OfficeResponse>>
+public class CreateOfficeCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateOfficeCommand, ApiResponse<Domain.Entities.Planning.Office>>
 {
     public async Task<ApiResponse<OfficeResponse>> Handle(CreateOfficeCommand request, CancellationToken cancellationToken)
     {
-        var officeExist = await _unitOfWork.OfficeRepository.FindAsync(t => t.Name == request.Name, cancellationToken: cancellationToken);
+        var officeExist = await unitOfWork.OfficeRepository.FindAsync(t => t.Name == request.Name, cancellationToken: cancellationToken);
         if (officeExist != null) throw new ConflictException("Office already exists.");
 
         if(request.ClusterId != null) _ = _unitOfWork.ClusterRepository.GetByIdAsync(request.ClusterId.Value, cancellationToken: cancellationToken) ?? 

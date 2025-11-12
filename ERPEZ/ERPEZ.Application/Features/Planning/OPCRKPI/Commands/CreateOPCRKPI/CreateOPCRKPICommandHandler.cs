@@ -1,4 +1,4 @@
-﻿using ERPEZ.Application.Features.Planning.OPCRKPI.Dtos;
+using ERPEZ.Application.Features.Planning.OPCRKPI.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -6,13 +6,13 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.OPCRKPI.Commands.CreateOPCRKPI;
 
-public class CreateOPCRKPICommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<CreateOPCRKPICommand, ApiResponse<OPCRKPIDto>>
+public class CreateOPCRKPICommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateOPCRKPICommand, ApiResponse<OPCRKPIDto>>
 {
     public async Task<ApiResponse<OPCRKPIDto>> Handle(CreateOPCRKPICommand request, CancellationToken cancellationToken)
     {
-        _ = await _unitOfWork.KPIRepository.FindAsync(k => k.Id == request.KPIId, cancellationToken) ?? throw new NotFoundException("KPI not found.");
-        _ = await _unitOfWork.OPCRRepository.FindAsync(o => o.Id == request.OPCRId, cancellationToken) ?? throw new NotFoundException("OPCR not found.");
-        var opcrkpiExist = await _unitOfWork.OPCRKPIRepository.FindAsync(
+        _ = await unitOfWork.KPIRepository.FindAsync(k => k.Id == request.KPIId, cancellationToken) ?? throw new NotFoundException("KPI not found.");
+        _ = await unitOfWork.OPCRRepository.FindAsync(o => o.Id == request.OPCRId, cancellationToken) ?? throw new NotFoundException("OPCR not found.");
+        var opcrkpiExist = await unitOfWork.OPCRKPIRepository.FindAsync(
             x => x.KPIId == request.KPIId && x.OPCRId == request.OPCRId,
             cancellationToken
         );
@@ -25,8 +25,8 @@ public class CreateOPCRKPICommandHandler(IUnitOfWork _unitOfWork) : IRequestHand
             OPCRId = request.OPCRId
         };
 
-        await _unitOfWork.OPCRKPIRepository.AddAsync(opcrKpi, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await unitOfWork.OPCRKPIRepository.AddAsync(opcrKpi, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         var dto = new OPCRKPIDto
         {

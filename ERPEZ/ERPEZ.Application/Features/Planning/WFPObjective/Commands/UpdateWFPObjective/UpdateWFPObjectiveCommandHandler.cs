@@ -6,15 +6,15 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.WFPObjective.Commands.UpdateWFPObjective;
 
-public class UpdateWFPObjectiveCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<UpdateWFPObjectiveCommand, ApiResponse<WFPObjectiveDto>>
+public class UpdateWFPObjectiveCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateWFPObjectiveCommand, ApiResponse<WFPObjectiveDto>>
 {
     public async Task<ApiResponse<WFPObjectiveDto>> Handle(UpdateWFPObjectiveCommand request, CancellationToken cancellationToken)
     {
         var dto = request.UpdateWFPObjective;
-        var wfpObjective = await _unitOfWork.WFPObjectiveRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken)
+        var wfpObjective = await unitOfWork.WFPObjectiveRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken)
             ?? throw new NotFoundException("WFP Objective not found.");
 
-        var duplicate = await _unitOfWork.WFPObjectiveRepository.FindAsync(
+        var duplicate = await unitOfWork.WFPObjectiveRepository.FindAsync(
             x => x.Description == dto.Description,
             cancellationToken
         );
@@ -24,8 +24,8 @@ public class UpdateWFPObjectiveCommandHandler(IUnitOfWork _unitOfWork) : IReques
         
         wfpObjective.Description = dto.Description ?? wfpObjective.Description;
 
-        _unitOfWork.WFPObjectiveRepository.Update(wfpObjective);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        unitOfWork.WFPObjectiveRepository.Update(wfpObjective);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         var result = new WFPObjectiveDto
         {
