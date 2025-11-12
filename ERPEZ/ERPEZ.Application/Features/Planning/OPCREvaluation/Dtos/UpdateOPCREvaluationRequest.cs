@@ -1,6 +1,6 @@
-﻿namespace ERPEZ.Application.Features.Planning.OPCREvaluation.Dtos;
+namespace ERPEZ.Application.Features.Planning.OPCREvaluation.Dtos;
 
-public class UpdateOPCREvaluationDto
+public class UpdateOPCREvaluationRequest
 {
     public DateTime? EvaluationDate { get; set; }
     public string? Comments { get; set; }

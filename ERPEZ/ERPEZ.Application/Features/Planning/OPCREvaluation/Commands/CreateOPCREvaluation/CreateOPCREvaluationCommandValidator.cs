@@ -1,9 +1,9 @@
-﻿using FluentValidation;
+using FluentValidation;
 namespace ERPEZ.Application.Features.Planning.OPCREvaluation.Commands.CreateOPCREvaluation;
 
 public class CreateOPCREvaluationCommandValidator : AbstractValidator<CreateOPCREvaluationCommand>
 {
-    private readonly string[] ValidEvaluationStatuses =
+    private readonly string[] validEvaluationStatuses =
     [
         "Pending", "ReturnedForRevision", "Approved", "Finalized"
     ];
@@ -39,7 +39,7 @@ public class CreateOPCREvaluationCommandValidator : AbstractValidator<CreateOPCR
             .WithMessage("Status is required.")
             .MaximumLength(50)
             .WithMessage("Status cannot exceed 50 characters.")
-            .Must(status => ValidEvaluationStatuses.Contains(status, StringComparer.OrdinalIgnoreCase))
-            .WithMessage($"Status must be one of the following: {string.Join(", ", ValidEvaluationStatuses)}.");
+            .Must(status => validEvaluationStatuses.Contains(status, StringComparer.OrdinalIgnoreCase))
+            .WithMessage($"Status must be one of the following: {string.Join(", ", validEvaluationStatuses)}.");
     }
 }

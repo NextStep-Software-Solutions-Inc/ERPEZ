@@ -1,4 +1,4 @@
-﻿using ERPEZ.Application.Features.Planning.OPCREvaluation.Commands.CreateOPCREvaluation;
+using ERPEZ.Application.Features.Planning.OPCREvaluation.Commands.CreateOPCREvaluation;
 using ERPEZ.Application.Features.Planning.OPCREvaluation.Commands.DeleteOPCREvaluation;
 using ERPEZ.Application.Features.Planning.OPCREvaluation.Commands.UpdateOPCREvaluation;
 using ERPEZ.Application.Features.Planning.OPCREvaluation.Dtos;
@@ -16,8 +16,8 @@ namespace ERPEZ.Api.Controllers
     public class OPCREvaluationController(ISender mediator) : ControllerBase
     {
         [HttpPost]
-        [ProducesResponseType(typeof(ApiResponse<OPCREvaluationDto>), StatusCodes.Status201Created)]
-        [ProducesResponseType(typeof(ApiResponse<OPCREvaluationDto>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<OPCREvaluationResponse>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<OPCREvaluationResponse>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateOPCREvaluation([FromBody] CreateOPCREvaluationCommand command)
         {
             var result = await mediator.Send(command);
@@ -30,7 +30,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet]
-        [ProducesResponseType(typeof(PaginatedApiResponse<OPCREvaluationDto>), StatusCodes.Status200OK)] // Returns DTO
+        [ProducesResponseType(typeof(PaginatedApiResponse<OPCREvaluationResponse>), StatusCodes.Status200OK)] // Returns DTO
         public async Task<IActionResult> GetOPCREvaluations([FromQuery] GetOPCREvaluationsQuery query)
         {
             var result = await mediator.Send(query);
@@ -48,10 +48,10 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpPut("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<OPCREvaluationDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<OPCREvaluationResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> UpdateOPCREvaluation(Guid id, [FromBody] UpdateOPCREvaluationDto dto)
+        public async Task<IActionResult> UpdateOPCREvaluation(Guid id, [FromBody] UpdateOPCREvaluationRequest dto)
         {
             var command = new UpdateOPCREvaluationCommand
             {

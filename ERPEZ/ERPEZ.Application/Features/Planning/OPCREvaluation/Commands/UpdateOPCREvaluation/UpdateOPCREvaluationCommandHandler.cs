@@ -1,4 +1,4 @@
-﻿using ERPEZ.Application.Features.Planning.OPCREvaluation.Dtos;
+using ERPEZ.Application.Features.Planning.OPCREvaluation.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -6,12 +6,12 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.OPCREvaluation.Commands.UpdateOPCREvaluation;
 
-public class UpdateOPCREvaluationCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<UpdateOPCREvaluationCommand, ApiResponse<OPCREvaluationDto>>
+public class UpdateOPCREvaluationCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateOPCREvaluationCommand, ApiResponse<OPCREvaluationResponse>>
 {
-    public async Task<ApiResponse<OPCREvaluationDto>> Handle(UpdateOPCREvaluationCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<OPCREvaluationResponse>> Handle(UpdateOPCREvaluationCommand request, CancellationToken cancellationToken)
     {
         var dto = request.UpdateOPCREvaluation;
-        var opcrEvaluation = await _unitOfWork.OPCREvaluationRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken)
+        var opcrEvaluation = await unitOfWork.OPCREvaluationRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken)
             ?? throw new NotFoundException("OPCR Evaluation not found.");
 
         opcrEvaluation.EvaluationDate = dto.EvaluationDate ?? opcrEvaluation.EvaluationDate;
@@ -19,18 +19,20 @@ public class UpdateOPCREvaluationCommandHandler(IUnitOfWork _unitOfWork) : IRequ
         if (!string.IsNullOrEmpty(dto.Status))
             opcrEvaluation.Status = dto.Status;
 
-        _unitOfWork.OPCREvaluationRepository.Update(opcrEvaluation);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        unitOfWork.OPCREvaluationRepository.Update(opcrEvaluation);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var result = new OPCREvaluationDto
+        var result = new OPCREvaluationResponse
         {
             Id = opcrEvaluation.Id,
             OPCRId = opcrEvaluation.OPCRId,
             EvaluatorId = opcrEvaluation.EvaluatorId,
             EvaluationDate = opcrEvaluation.EvaluationDate,
             Comments = opcrEvaluation.Comments,
-            Status = opcrEvaluation.Status
+            Status = opcrEvaluation.Status,
+            CreatedAt = opcrEvaluation.CreatedAt,
+            CreatedBy = opcrEvaluation.CreatedBy
         };
-        return ApiResponse<OPCREvaluationDto>.Success(result, "OPCR Evaluation updated successfully.");
+        return ApiResponse<OPCREvaluationResponse>.Success(result, "OPCR Evaluation updated successfully.");
     }
 }

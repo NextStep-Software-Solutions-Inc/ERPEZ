@@ -1,10 +1,10 @@
-﻿using ERPEZ.Application.Features.Planning.OPCREvaluation.Dtos;
+using ERPEZ.Application.Features.Planning.OPCREvaluation.Dtos;
 using ERPEZ.Shared.Common;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.OPCREvaluation.Commands.CreateOPCREvaluation;
 
-public class CreateOPCREvaluationCommand : IRequest<ApiResponse<OPCREvaluationDto>>
+public class CreateOPCREvaluationCommand : IRequest<ApiResponse<OPCREvaluationResponse>>
 {
     public Guid OPCRId { get; set; }
     public Guid EvaluatorId { get; set; }

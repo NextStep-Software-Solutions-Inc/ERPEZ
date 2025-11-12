@@ -1,10 +1,10 @@
-﻿using FluentValidation;
+using FluentValidation;
 
 namespace ERPEZ.Application.Features.Planning.OPCREvaluation.Commands.UpdateOPCREvaluation;
 
 public class UpdateOPCREvaluationCommandValidator : AbstractValidator<UpdateOPCREvaluationCommand>
 {
-    private readonly string[] ValidEvaluationStatuses =
+    private readonly string[] validEvaluationStatuses =
     [
         "Pending", "ReturnedForRevision", "Approved", "Finalized"
     ];
@@ -35,8 +35,8 @@ public class UpdateOPCREvaluationCommandValidator : AbstractValidator<UpdateOPCR
             .When(x => !string.IsNullOrEmpty(x.UpdateOPCREvaluation.Status));
 
         RuleFor(x => x.UpdateOPCREvaluation.Status)
-            .Must(status => ValidEvaluationStatuses.Contains(status))
-            .WithMessage($"Status must be one of the following (case-sensitive): {string.Join(", ", ValidEvaluationStatuses)}.")
+            .Must(status => validEvaluationStatuses.Contains(status))
+            .WithMessage($"Status must be one of the following (case-sensitive): {string.Join(", ", validEvaluationStatuses)}.")
             .When(x => !string.IsNullOrEmpty(x.UpdateOPCREvaluation.Status));
     }
 }
