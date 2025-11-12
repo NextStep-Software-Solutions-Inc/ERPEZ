@@ -1,4 +1,4 @@
-﻿using ERPEZ.Domain.Interfaces;
+using ERPEZ.Domain.Interfaces;
 using ERPEZ.Infrastructure.Persistence.Repositories;
 using Microsoft.Extensions.DependencyInjection;
 using Sieve.Services;
@@ -43,6 +43,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IMFOPAPRepository mfoPapRepository;
     private readonly IFunctionAllocationRepository functionAllocationRepository;
     private readonly IFiscalYearRepository fiscalYearRepository;
+    private readonly IClusterRepository clusterRepository;
 
     // Constructor initializes all repositories once
     public UnitOfWork(ApplicationDbContext context, IServiceProvider serviceProvider)
@@ -83,6 +84,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         mfoPapRepository = new MFOPAPRepository(context, sieveProcessor);
         functionAllocationRepository = new FunctionAllocationRepository(context, sieveProcessor);
         fiscalYearRepository = new FiscalYearRepository(context, sieveProcessor);
+        clusterRepository = new ClusterRepository(context, sieveProcessor);
     }
 
     // Public properties return cached instances
@@ -118,6 +120,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IMFOPAPRepository MFOPAPRepository => mfoPapRepository;
     public IFunctionAllocationRepository FunctionAllocationRepository => functionAllocationRepository;
     public IFiscalYearRepository FiscalYearRepository => fiscalYearRepository;
+    public IClusterRepository ClusterRepository => clusterRepository;
 
     public async Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default)
     {

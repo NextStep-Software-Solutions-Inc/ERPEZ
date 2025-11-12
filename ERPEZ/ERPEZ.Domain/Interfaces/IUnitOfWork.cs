@@ -1,4 +1,4 @@
-﻿namespace ERPEZ.Domain.Interfaces;
+namespace ERPEZ.Domain.Interfaces;
 
 public interface IUnitOfWork
 {
@@ -32,6 +32,7 @@ public interface IUnitOfWork
     IWFPPAPDepartmentRepository WFPPAPDepartmentRepository { get; }
     IFunctionAllocationRepository FunctionAllocationRepository { get; }
     IFiscalYearRepository FiscalYearRepository { get; }
+    IClusterRepository ClusterRepository { get; }
     Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default);
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
