@@ -1,6 +1,6 @@
 ﻿namespace ERPEZ.Application.Features.Planning.ActivityBudgetRequirement.Dtos;
 
-public class UpdateActivityBudgetRequirementDto
+public class UpdateActivityBudgetRequirementRequest
 {
     public string? ItemDescription { get; set; }
     public int Quantity { get; set; }

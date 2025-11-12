@@ -1,6 +1,6 @@
 ﻿namespace ERPEZ.Application.Features.Planning.ActivityBudgetRequirement.Dtos;
 
-public class ActivityBudgetRequirementDto
+public class ActivityBudgetRequirementResponse
 {
     public Guid Id { get; set; }
     public Guid WFPObjectiveTargetId { get; set; }
@@ -8,4 +8,6 @@ public class ActivityBudgetRequirementDto
     public string ItemDescription { get; set; } = string.Empty;
     public int Quantity { get; set; }
     public decimal CostEstimates { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public string CreatedBy { get; set; } = string.Empty;
 }

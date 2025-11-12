@@ -6,9 +6,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.ActivityBudgetRequirement.Commands.UpdateABR;
 
-public class UpdateActivityBudgetRequirementCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<UpdateActivityBudgetRequirementCommand, ApiResponse<ActivityBudgetRequirementDto>>
+public class UpdateActivityBudgetRequirementCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<UpdateActivityBudgetRequirementCommand, ApiResponse<ActivityBudgetRequirementResponse>>
 {
-    public async Task<ApiResponse<ActivityBudgetRequirementDto>> Handle(UpdateActivityBudgetRequirementCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<ActivityBudgetRequirementResponse>> Handle(UpdateActivityBudgetRequirementCommand request, CancellationToken cancellationToken)
     {
         var dto = request.UpdateActivityBudgetRequirement;
         var abr = await _unitOfWork.ActivityBudgetRequirementRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken)
@@ -31,15 +31,17 @@ public class UpdateActivityBudgetRequirementCommandHandler(IUnitOfWork _unitOfWo
         _unitOfWork.ActivityBudgetRequirementRepository.Update(abr);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var result = new ActivityBudgetRequirementDto
+        var result = new ActivityBudgetRequirementResponse
         {
             Id = abr.Id,
-            WFPActivityId = abr.WFPActivityId,
+            WFPObjectiveTargetId = abr.WFPObjectiveTargetId,
             ObjectId = abr.ObjectId,
             ItemDescription =abr.ItemDescription,
             Quantity = abr.Quantity,
-            CostEstimates = abr.CostEstimates
+            CostEstimates = abr.CostEstimates,
+            CreatedAt = abr.CreatedAt,
+            CreatedBy = abr.CreatedBy
         };
-        return ApiResponse<ActivityBudgetRequirementDto>.Success(result, "WFP Objective updated successfully.");
+        return ApiResponse<ActivityBudgetRequirementResponse>.Success(result, "Activity Budget Requirement updated successfully.");
     }
 }

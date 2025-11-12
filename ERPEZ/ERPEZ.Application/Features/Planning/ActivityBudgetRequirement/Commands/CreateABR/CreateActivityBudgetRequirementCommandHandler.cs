@@ -6,12 +6,12 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.ActivityBudgetRequirement.Commands.CreateABR;
 
-public class CreateActivityBudgetRequirementCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<CreateActivityBudgetRequirementCommand, ApiResponse<ActivityBudgetRequirementDto>>
+public class CreateActivityBudgetRequirementCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<CreateActivityBudgetRequirementCommand, ApiResponse<ActivityBudgetRequirementResponse>>
 {
-    public async Task<ApiResponse<ActivityBudgetRequirementDto>> Handle(CreateActivityBudgetRequirementCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<ActivityBudgetRequirementResponse>> Handle(CreateActivityBudgetRequirementCommand request, CancellationToken cancellationToken)
     {
         var existingABR = await _unitOfWork.ActivityBudgetRequirementRepository.FindAsync(abr =>
-        abr.WFPActivityId == request.WFPActivityId &&
+        abr.WFPObjectiveTargetId == request.WFPObjectiveTargetId &&
         abr.ObjectId == request.ObjectId &&
         abr.ItemDescription == request.ItemDescription,
             cancellationToken
@@ -22,7 +22,7 @@ public class CreateActivityBudgetRequirementCommandHandler(IUnitOfWork _unitOfWo
 
         var abr = new Domain.Entities.Planning.ActivityBudgetRequirement
         {
-            WFPActivityId = request.WFPActivityId,
+            WFPObjectiveTargetId = request.WFPObjectiveTargetId,
             ObjectId = request.ObjectId,
             ItemDescription = request.ItemDescription,
             Quantity = request.Quantity,
@@ -32,15 +32,15 @@ public class CreateActivityBudgetRequirementCommandHandler(IUnitOfWork _unitOfWo
         await _unitOfWork.ActivityBudgetRequirementRepository.AddAsync(abr, cancellationToken);
         await _unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var dto = new ActivityBudgetRequirementDto
+        var dto = new ActivityBudgetRequirementResponse
         {
             Id = abr.Id,
-            WFPActivityId= abr.WFPActivityId,
+            WFPObjectiveTargetId = abr.WFPObjectiveTargetId,
             ObjectId = abr.ObjectId,
             ItemDescription = abr.ItemDescription,
             Quantity = abr.Quantity,
             CostEstimates= abr.CostEstimates
         };
-        return ApiResponse<ActivityBudgetRequirementDto>.Success(dto, "Activity Budget Requirement created successfully.");
+        return ApiResponse<ActivityBudgetRequirementResponse>.Success(dto, "Activity Budget Requirement created successfully.");
     }
 }
