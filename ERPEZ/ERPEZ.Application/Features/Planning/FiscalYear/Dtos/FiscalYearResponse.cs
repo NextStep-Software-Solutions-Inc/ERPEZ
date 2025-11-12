@@ -6,5 +6,5 @@ public class FiscalYearResponse
     public int Year { get; set; }
     public string? Description { get; set; }
     public bool IsLocked { get; set; }
-    public List<FunctionAllocationResponse> FunctionAllocations { get; set; } = new();
+    public List<FunctionAllocationResponse> FunctionAllocations { get; set; } = [];
 }
