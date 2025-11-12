@@ -1,5 +1,3 @@
-using ERPEZ.Application.Features.Planning.FiscalYear.Dtos;
-
 namespace ERPEZ.Application.Features.Planning.FiscalYear.Dtos;
 
 public class FiscalYearResponse
