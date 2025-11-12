@@ -43,7 +43,7 @@ public class CreateOfficeCommandHandler(IUnitOfWork unitOfWork) : IRequestHandle
             Email = office.Email,
             ContactNumber = office.ContactNumber,
             OfficeHead = office.OfficeHead,
-            ResponsibilityCenterCode= office.ResponsibilityCenterCode,
+            ResponsibilityCenterCode = office.ResponsibilityCenterCode,
             ClusterId = office.ClusterId,
             CreatedAt = office.CreatedAt,
             CreatedBy = office.CreatedBy
