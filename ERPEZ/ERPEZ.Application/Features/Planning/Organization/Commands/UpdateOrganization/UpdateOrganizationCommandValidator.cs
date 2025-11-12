@@ -5,7 +5,7 @@ namespace ERPEZ.Application.Features.Planning.Organization.Commands.UpdateOrgani
 public class UpdateOrganizationCommandValidator : AbstractValidator<UpdateOrganizationCommand>
 {
     // Updated list of expected organization types
-    private readonly string[] ValidTypes =
+    private readonly string[] validTypes =
     [
         "Department", "Agency", "OperatingUnitClass", "LowerLevelOperatingUnit"
     ];
@@ -49,8 +49,8 @@ public class UpdateOrganizationCommandValidator : AbstractValidator<UpdateOrgani
         RuleFor(x => x.UpdateOrganization.Type)
             .NotEmpty()
             .WithMessage("Organization Type is required.")
-            .Must(type => ValidTypes.Contains(type, StringComparer.OrdinalIgnoreCase))
-            .WithMessage($"Organization Type must be one of the following: {string.Join(", ", ValidTypes)}.");
+            .Must(type => validTypes.Contains(type, StringComparer.OrdinalIgnoreCase))
+            .WithMessage($"Organization Type must be one of the following: {string.Join(", ", validTypes)}.");
 
         // 6. Self-Parenting Check (Cannot be its own parent)
         RuleFor(x => x.UpdateOrganization.ParentId)

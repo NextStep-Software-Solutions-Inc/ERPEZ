@@ -1,4 +1,4 @@
-﻿namespace ERPEZ.Domain.Interfaces;
+namespace ERPEZ.Domain.Interfaces;
 
 public interface IUnitOfWork
 {
@@ -8,7 +8,7 @@ public interface IUnitOfWork
     IKPIRatingRepository KPIRatingRepository { get; }
     IDUAllocationRepository DUAllocationRepository { get; }
     IKPITargetRepository KPITargetRepository { get; }
-    IKPIAssignmentRepository KPIAssignmentRepository { get; }
+    IDUKPIAssignmentRepository DUKPIAssignmentRepository { get; }
     IKPIModeOfVerificationRepository KPIModeOfVerificationRepository { get; }
     IReceivedFundRepository ReceivedFundRepository { get; }
     IMFOKPIRepository MFOKPIRepository { get; }
@@ -31,6 +31,9 @@ public interface IUnitOfWork
     IWFPObjectiveRepository WFPObjectiveRepository { get; }
     IWFPOutcomeRepository WFPOutcomeRepository { get; }
     IWFPPAPDepartmentRepository WFPPAPDepartmentRepository { get; }
-    IFunctionPercentageAllocationRepository FunctionPercentageAllocationRepository { get; }
+    IFunctionAllocationRepository FunctionAllocationRepository { get; }
+    IFiscalYearRepository FiscalYearRepository { get; }
+    IClusterRepository ClusterRepository { get; }
+    Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default);
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

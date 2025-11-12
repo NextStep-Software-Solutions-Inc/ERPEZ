@@ -1,14 +1,11 @@
-﻿using FluentValidation;
+using ERPEZ.Domain.Constants;
+using FluentValidation;
 
 namespace ERPEZ.Application.Features.Planning.KPI.Commands.UpdateKPI;
 
 public class UpdateKPICommandValidator : AbstractValidator<UpdateKPICommand>
 {
-    private readonly string[] ValidFunctionTypes =
-    [
-        "Core Function", "Strategic Priority", "Mandatory Support Functions"
-    ];
-    private readonly string[] ValidStatuses = ["Draft", "Active", "Archived"];
+    private readonly string[] validStatuses = ["Draft", "Submitted", "Approved", "Active", "Archived"];
 
     public UpdateKPICommandValidator()
     {
@@ -19,7 +16,7 @@ public class UpdateKPICommandValidator : AbstractValidator<UpdateKPICommand>
             .Must(id => id != Guid.Empty)
             .WithMessage("KPI ID must be a valid, non-empty GUID.");
 
-        // 2. ParentKPIId (Optional GUID)
+        // 2. ParentKPIId (Optional GUID?)
         RuleFor(x => x.UpdateKPI.ParentKPIId)
             .Must(id => !id.HasValue || id.Value != Guid.Empty)
             .WithMessage("If provided, the Parent KPI ID must be a valid, non-empty GUID.")
@@ -31,35 +28,39 @@ public class UpdateKPICommandValidator : AbstractValidator<UpdateKPICommand>
             .When(x => x.UpdateKPI.ParentKPIId.HasValue)
             .WithMessage("A KPI cannot be its own parent.");
 
-        // 4. FunctionType (Required String, Valid Value)
+        // 4. FunctionType (Optional String?) - Check only if provided
         RuleFor(x => x.UpdateKPI.FunctionType)
-            .NotEmpty()
-            .WithMessage("Function Type is required.")
             .MaximumLength(100)
             .WithMessage("Function Type cannot exceed 100 characters.")
-            .Must(type => ValidFunctionTypes.Contains(type, StringComparer.OrdinalIgnoreCase))
-            .WithMessage($"Function Type must be one of the following: {string.Join(", ", ValidFunctionTypes)}.");
+                .Must(type => FunctionTypeConstants.validFunctionTypes.Contains(type))
+                .WithMessage($"FunctionType must be one of: {string.Join(", ", FunctionTypeConstants.validFunctionTypes)}.")
+            .When(x => !string.IsNullOrWhiteSpace(x.UpdateKPI.FunctionType));
 
-        // 5. Name (Required String, Min/Max Length)
+        // 5. Name (Optional String?) - Check only if provided
         RuleFor(x => x.UpdateKPI.Name)
-            .NotEmpty()
-            .WithMessage("KPI Name is required.")
             .MinimumLength(5)
             .WithMessage("KPI Name must be at least 5 characters long.")
             .MaximumLength(250)
-            .WithMessage("KPI Name cannot exceed 250 characters.");
+            .WithMessage("KPI Name cannot exceed 250 characters.")
+            .When(x => !string.IsNullOrWhiteSpace(x.UpdateKPI.Name));
 
-        // 6. Description (Optional String, Max Length)
+        // 6. Description (Optional String?) - Check only if provided
         RuleFor(x => x.UpdateKPI.Description)
             .MaximumLength(1000)
             .WithMessage("Description cannot exceed 1000 characters.")
             .When(x => !string.IsNullOrWhiteSpace(x.UpdateKPI.Description));
 
-        // 7. Status (Required String, Must be one of the defined valid statuses)
         RuleFor(x => x.UpdateKPI.Status)
-            .NotEmpty()
-            .WithMessage("Status is required.")
-            .Must(status => ValidStatuses.Contains(status, StringComparer.OrdinalIgnoreCase))
-            .WithMessage($"Status must be one of the following: {string.Join(", ", ValidStatuses)}.");
+            .Must(status => validStatuses.Contains(status, StringComparer.OrdinalIgnoreCase))
+            .WithMessage($"Status must be one of the following: {string.Join(", ", validStatuses)}.")
+            .When(x => !string.IsNullOrWhiteSpace(x.UpdateKPI.Status));
+
+        RuleFor(x => x.UpdateKPI.IsOfficeMandate)
+            .NotNull()
+            .WithMessage("Is Office Mandate must be provided (true or false).");
+
+        RuleFor(x => x.UpdateKPI.IsPercentage)
+            .NotNull()
+            .WithMessage("Is Percentage must be provided (true or false).");
     }
 }

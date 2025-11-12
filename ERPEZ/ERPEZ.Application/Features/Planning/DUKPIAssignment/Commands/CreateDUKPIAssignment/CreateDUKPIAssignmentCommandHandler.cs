@@ -1,0 +1,48 @@
+using ERPEZ.Application.Features.Planning.DUKPIAssignment.Dtos;
+using ERPEZ.Domain.Interfaces;
+using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Exceptions;
+using MediatR;
+
+namespace ERPEZ.Application.Features.Planning.DUKPIAssignment.Commands.CreateDUKPIAssignment;
+
+public class CreateDUKPIAssignmentCommandHandler(IUnitOfWork unitOfWork)
+    : IRequestHandler<CreateDUKPIAssignmentCommand, ApiResponse<DUKPIAssignmentDto>>
+{
+    public async Task<ApiResponse<DUKPIAssignmentDto>> Handle(CreateDUKPIAssignmentCommand request, CancellationToken cancellationToken)
+    {
+        var dukpi = await unitOfWork.DUKPIAssignmentRepository.FindAsync(
+            t => t.KPIId == request.KPIId && t.DeliveryUnitId == request.DeliveryUnitId,
+            cancellationToken: cancellationToken
+        );
+
+        if (dukpi != null)
+            throw new ConflictException("DU KPI Assigment already exists.");
+
+        _ = await unitOfWork.KPIRepository.GetByIdAsync(request.KPIId, cancellationToken: cancellationToken)
+            ?? throw new NotFoundException("KPI not found.");
+        
+        _ = await unitOfWork.DeliveryUnitRepository.GetByIdAsync(request.DeliveryUnitId, cancellationToken: cancellationToken)
+            ?? throw new NotFoundException("Delivery Unit not found.");
+
+        var duKpiAssignment = new Domain.Entities.Planning.DUKPIAssignment
+        {
+            KPIId = request.KPIId,
+            DeliveryUnitId = request.DeliveryUnitId,
+            KPITargetId = request.KPITargetId,
+            AllocatedTargetValue = request.AllocatedTargetValue,
+        };
+
+        await unitOfWork.DUKPIAssignmentRepository.AddAsync(duKpiAssignment, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+        var res = new DUKPIAssignmentDto
+        {
+            Id = duKpiAssignment.Id,
+            KPIId = duKpiAssignment.KPIId,
+            DeliveryUnitId = duKpiAssignment.DeliveryUnitId,
+            KPITargetId = duKpiAssignment.KPITargetId,
+            AllocatedTargetValue = duKpiAssignment.AllocatedTargetValue
+        };
+        return ApiResponse<DUKPIAssignmentDto>.Success(res, "DU KPI Assignment created successfully.");
+    }
+}

@@ -2,6 +2,6 @@
 
 namespace ERPEZ.Domain.Interfaces;
 
-public interface IFunctionPercentageAllocationRepository : IRepository<FunctionPercentageAllocation>
+public interface IFunctionAllocationRepository : IRepository<FunctionAllocation>
 {
 }

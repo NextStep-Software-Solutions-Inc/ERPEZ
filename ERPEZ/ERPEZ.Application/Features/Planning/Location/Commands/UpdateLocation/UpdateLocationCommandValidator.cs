@@ -4,7 +4,7 @@ namespace ERPEZ.Application.Features.Planning.Location.Commands.UpdateLocation;
 
 public class UpdateLocationCommandValidator : AbstractValidator<UpdateLocationCommand>
 {
-    private readonly string[] ValidTypes =
+    private readonly string[] validTypes =
     [
         "Region", "Province", "City", "Municipality", "Barangay"
     ];
@@ -48,8 +48,8 @@ public class UpdateLocationCommandValidator : AbstractValidator<UpdateLocationCo
         RuleFor(x => x.UpdateLocation.Type)
             .NotEmpty()
             .WithMessage("Location Type is required.")
-            .Must(type => ValidTypes.Contains(type, StringComparer.OrdinalIgnoreCase))
-            .WithMessage($"Location Type must be one of the following: {string.Join(", ", ValidTypes)}.");
+            .Must(type => validTypes.Contains(type, StringComparer.OrdinalIgnoreCase))
+            .WithMessage($"Location Type must be one of the following: {string.Join(", ", validTypes)}.");
 
         // 6. Self-Parenting Check (Cannot be its own parent)
         RuleFor(x => x.UpdateLocation.ParentId)

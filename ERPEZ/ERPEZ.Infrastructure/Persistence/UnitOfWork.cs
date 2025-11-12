@@ -1,117 +1,146 @@
-﻿using ERPEZ.Domain.Interfaces;
+using ERPEZ.Domain.Interfaces;
+using ERPEZ.Infrastructure.Persistence.Repositories;
+using Microsoft.Extensions.DependencyInjection;
 using Sieve.Services;
 
 namespace ERPEZ.Infrastructure.Persistence;
 
 public sealed class UnitOfWork : IUnitOfWork, IDisposable
 {
-    private readonly ApplicationDbContext _context;
+    private readonly ApplicationDbContext context;
+    private readonly ISieveProcessor sieveProcessor;
 
-    public IPerformanceMeasureRepository PerformanceMeasureRepository { get; }
-    public IOPCRRepository OPCRRepository { get; }
-    public IOPCRKPIRepository OPCRKPIRepository { get; }
-    public IOPCRActivityRepository OPCRActivityRepository { get; }
-    public IOPCRPAPDepartmentRepository OPCRPAPDepartmentRepository { get; }
-    public IObjectRepository ObjectRepository { get; }
-    public IWFPRepository WFPRepository { get; }
-    public IWFPObjectiveRepository WFPObjectiveRepository { get; }
-    public IWFPOutcomeRepository WFPOutcomeRepository { get; }
-    public IWFPActivityRepository WFPActivityRepository { get; }
-    public IActivityBudgetRequirementRepository ActivityBudgetRequirementRepository { get; }
-    public IWFPPAPDepartmentRepository WFPPAPDepartmentRepository { get; }
-    public IOPCREvaluationRepository OPCREvaluationRepository { get; }
-    public IOPCRRatingRepository OPCRRatingRepository { get; }
-    public IDUFundAllocationRepository DUFundAllocationRepository { get; }
-    public IKPIRatingRepository KPIRatingRepository { get; }
-    public IDUAllocationRepository DUAllocationRepository { get; }
-    public IKPITargetRepository KPITargetRepository { get; }
-    public IKPIAssignmentRepository KPIAssignmentRepository { get; }
-    public IKPIModeOfVerificationRepository KPIModeOfVerificationRepository { get; }
-    public IReceivedFundRepository ReceivedFundRepository { get; }
-    public IMFOKPIRepository MFOKPIRepository { get; }
-    public IKPIRepository KPIRepository { get; }
-    public IDeliveryUnitRepository DeliveryUnitRepository { get; }
-    public IOfficeRepository OfficeRepository { get; }
-    public IOrganizationRepository OrganizationRepository { get; }
-    public IFundSourceRepository FundSourceRepository { get; }
-    public ILocationRepository LocationRepository { get; }
-    public ITransactionRepository TransactionRepository { get; }
-    public IMFOPAPRepository MFOPAPRepository { get; }
-    public IFunctionPercentageAllocationRepository FunctionPercentageAllocationRepository { get; }
+    // Cached repositories with shared DbContext (created once)
+    private readonly IPerformanceMeasureRepository performanceMeasureRepository;
+    private readonly IOPCRRepository opcrRepository;
+    private readonly IOPCRKPIRepository opcrKpiRepository;
+    private readonly IOPCRActivityRepository opcrActivityRepository;
+    private readonly IOPCRPAPDepartmentRepository opcrPapDepartmentRepository;
+    private readonly IWFPRepository wfpRepository;
+    private readonly IWFPObjectiveRepository wfpObjectiveRepository;
+    private readonly IWFPOutcomeRepository wfpOutcomeRepository;
+    private readonly IWFPActivityRepository wfpActivityRepository;
+    private readonly IActivityBudgetRequirementRepository activityBudgetRequirementRepository;
+    private readonly IWFPPAPDepartmentRepository wfpPapDepartmentRepository;
+    private readonly IOPCREvaluationRepository opcrEvaluationRepository;
+    private readonly IOPCRRatingRepository opcrRatingRepository;
+    private readonly IObjectRepository objectRepository;
+    private readonly IDUFundAllocationRepository duFundAllocationRepository;
+    private readonly IKPIRatingRepository kpiRatingRepository;
+    private readonly IDUAllocationRepository duAllocationRepository;
+    private readonly IKPITargetRepository kpiTargetRepository;
+    private readonly IDUKPIAssignmentRepository dukpiAssignmentRepository;
+    private readonly IKPIModeOfVerificationRepository kpiModeOfVerificationRepository;
+    private readonly IReceivedFundRepository receivedFundRepository;
+    private readonly IMFOKPIRepository mfoKpiRepository;
+    private readonly IKPIRepository kpiRepository;
+    private readonly IDeliveryUnitRepository deliveryUnitRepository;
+    private readonly IOfficeRepository officeRepository;
+    private readonly IOrganizationRepository organizationRepository;
+    private readonly IFundSourceRepository fundSourceRepository;
+    private readonly ILocationRepository locationRepository;
+    private readonly ITransactionRepository transactionRepository;
+    private readonly IMFOPAPRepository mfoPapRepository;
+    private readonly IFunctionAllocationRepository functionAllocationRepository;
+    private readonly IFiscalYearRepository fiscalYearRepository;
+    private readonly IClusterRepository clusterRepository;
 
-    public UnitOfWork(ApplicationDbContext context,
-                        ISieveProcessor sieveProcessor,
-                        IOPCRRepository oPCRRepository,
-                        IOPCRKPIRepository oPCRKPIRepository,
-                        IOPCRActivityRepository oPCRActivityRepository,
-                        IOPCRPAPDepartmentRepository oPCRPAPDepartmentRepository,
-                        IObjectRepository objectRepository,
-                        IWFPRepository wFPRepository,
-                        IWFPObjectiveRepository wFPObjectiveRepository,
-                        IWFPOutcomeRepository wFPOutcomeRepository,
-                        IWFPActivityRepository wFPActivityRepository,
-                        IActivityBudgetRequirementRepository activityBudgetRequirementRepository,
-                        IWFPPAPDepartmentRepository wFPPAPDepartmentRepository,
-                        IOPCREvaluationRepository oPCREvaluationRepository,
-                        IOPCRRatingRepository oPCRRatingRepository,
-                        IDUFundAllocationRepository dUFundAllocationRepository,
-                        IKPIRatingRepository kPIRatingRepository,
-                        IPerformanceMeasureRepository performanceMeasureRepository,
-                        IReceivedFundRepository receivedFundRepository,
-                        IKPIAssignmentRepository kPIAssignmentRepository,
-                        IKPITargetRepository kPITargetRepository,
-                        IKPIModeOfVerificationRepository kPIModeOfVerificationRepository,
-                        IMFOKPIRepository mFOKPIRepository,
-                        IDUAllocationRepository dUAllocationRepository,
-                        IKPIRepository kPIRepository,
-                        IDeliveryUnitRepository deliveryUnitRepository,
-                        IOfficeRepository officeRepository,
-                        IOrganizationRepository organizationRepository,
-                        IFundSourceRepository fundSourceRepository,
-                        ILocationRepository locationRepository,
-                        ITransactionRepository transactionRepository,
-                        IMFOPAPRepository mFOPAPRepository,
-                        IFunctionPercentageAllocationRepository functionPercentageAllocationRepository)
+    // Constructor initializes all repositories once
+    public UnitOfWork(ApplicationDbContext context, IServiceProvider serviceProvider)
     {
-        _context = context ?? throw new ArgumentNullException(nameof(context));
+        this.context = context ?? throw new ArgumentNullException(nameof(context));
+        sieveProcessor = serviceProvider.GetRequiredService<ISieveProcessor>();
 
-        MFOKPIRepository = mFOKPIRepository ?? throw new ArgumentNullException(nameof(mFOKPIRepository));
-        OPCRRepository = oPCRRepository ?? throw new ArgumentNullException(nameof(oPCRRepository));
-        OPCRKPIRepository = oPCRKPIRepository ?? throw new ArgumentNullException(nameof(oPCRKPIRepository));
-        OPCRActivityRepository = oPCRActivityRepository ?? throw new ArgumentNullException(nameof(oPCRActivityRepository));
-        OPCRPAPDepartmentRepository = oPCRPAPDepartmentRepository ?? throw new ArgumentNullException(nameof(oPCRPAPDepartmentRepository));
-        ObjectRepository = objectRepository ?? throw new ArgumentNullException(nameof(objectRepository));
-        WFPRepository = wFPRepository ?? throw new ArgumentNullException(nameof(wFPRepository));
-        WFPObjectiveRepository = wFPObjectiveRepository ?? throw new ArgumentNullException(nameof(wFPObjectiveRepository));
-        WFPOutcomeRepository = wFPOutcomeRepository ?? throw new ArgumentNullException(nameof(wFPOutcomeRepository));
-        WFPActivityRepository = wFPActivityRepository ?? throw new ArgumentNullException(nameof(wFPActivityRepository));
-        ActivityBudgetRequirementRepository = activityBudgetRequirementRepository ?? throw new ArgumentNullException(nameof(activityBudgetRequirementRepository));
-        WFPPAPDepartmentRepository = wFPPAPDepartmentRepository ?? throw new ArgumentNullException(nameof(wFPPAPDepartmentRepository));
-        OPCREvaluationRepository = oPCREvaluationRepository ?? throw new ArgumentNullException(nameof(oPCREvaluationRepository));
-        OPCRRatingRepository = oPCRRatingRepository ?? throw new ArgumentNullException(nameof(oPCRRatingRepository));
-        DUFundAllocationRepository = dUFundAllocationRepository ?? throw new ArgumentNullException(nameof(dUFundAllocationRepository));
-        KPIRatingRepository = kPIRatingRepository ?? throw new ArgumentNullException(nameof(kPIRatingRepository));
-        PerformanceMeasureRepository = performanceMeasureRepository ?? throw new ArgumentNullException(nameof(performanceMeasureRepository));
-        KPIAssignmentRepository = kPIAssignmentRepository ?? throw new ArgumentNullException(nameof(kPIAssignmentRepository));
-        KPITargetRepository = kPITargetRepository ?? throw new ArgumentNullException(nameof(kPITargetRepository));
-        KPIModeOfVerificationRepository = kPIModeOfVerificationRepository ?? throw new ArgumentNullException(nameof(kPIModeOfVerificationRepository));
-        ReceivedFundRepository = receivedFundRepository ?? throw new ArgumentNullException(nameof(receivedFundRepository));
-        DUAllocationRepository = dUAllocationRepository ?? throw new ArgumentNullException(nameof(dUAllocationRepository));
-        KPIRepository = kPIRepository ?? throw new ArgumentNullException(nameof(kPIRepository));
-        DeliveryUnitRepository = deliveryUnitRepository ?? throw new ArgumentNullException(nameof(deliveryUnitRepository));
-        OfficeRepository = officeRepository ?? throw new ArgumentNullException(nameof(officeRepository));
-        OrganizationRepository = organizationRepository ?? throw new ArgumentNullException(nameof(organizationRepository));
-        FundSourceRepository = fundSourceRepository ?? throw new ArgumentNullException(nameof(fundSourceRepository));
-        LocationRepository = locationRepository ?? throw new ArgumentNullException(nameof(locationRepository));
-        TransactionRepository = transactionRepository ?? throw new ArgumentNullException(nameof(transactionRepository));
-        MFOPAPRepository = mFOPAPRepository ?? throw new ArgumentNullException(nameof(mFOPAPRepository));
-        FunctionPercentageAllocationRepository = functionPercentageAllocationRepository ?? throw new ArgumentNullException(nameof(functionPercentageAllocationRepository));
+        // Create and cache all repositories with shared context
+        performanceMeasureRepository = new PerformanceMeasureRepository(context, sieveProcessor);
+        opcrRepository = new OPCRRepository(context, sieveProcessor);
+        opcrKpiRepository = new OPCRKPIRepository(context, sieveProcessor);
+        opcrActivityRepository = new OPCRActivityRepository(context, sieveProcessor);
+        opcrPapDepartmentRepository = new OPCRPAPDepartmentRepository(context, sieveProcessor);
+        wfpRepository = new WFPRepository(context, sieveProcessor);
+        wfpObjectiveRepository = new WFPObjectiveRepository(context, sieveProcessor);
+        wfpOutcomeRepository = new WFPOutcomeRepository(context, sieveProcessor);
+        wfpActivityRepository = new WFPActivityRepository(context, sieveProcessor);
+        activityBudgetRequirementRepository = new ActivityBudgetRequirementRepository(context, sieveProcessor);
+        wfpPapDepartmentRepository = new WFPPAPDepartmentRepository(context, sieveProcessor);
+        opcrEvaluationRepository = new OPCREvaluationRepository(context, sieveProcessor);
+        opcrRatingRepository = new OPCRRatingRepository(context, sieveProcessor);
+        objectRepository = new ObjectRepository(context, sieveProcessor);
+        duFundAllocationRepository = new DUFundAllocationRepository(context, sieveProcessor);
+        kpiRatingRepository = new KPIRatingRepository(context, sieveProcessor);
+        duAllocationRepository = new DUAllocationRepository(context, sieveProcessor);
+        kpiTargetRepository = new KPITargetRepository(context, sieveProcessor);
+        dukpiAssignmentRepository = new DUKPIAssignmentRepository(context, sieveProcessor);
+        kpiModeOfVerificationRepository = new KPIModeOfVerificationRepository(context, sieveProcessor);
+        receivedFundRepository = new ReceivedFundRepository(context, sieveProcessor);
+        mfoKpiRepository = new MFOKPIRepository(context, sieveProcessor);
+        kpiRepository = new KPIRepository(context, sieveProcessor);
+        deliveryUnitRepository = new DeliveryUnitRepository(context, sieveProcessor);
+        officeRepository = new OfficeRepository(context, sieveProcessor);
+        organizationRepository = new OrganizationRepository(context, sieveProcessor);
+        fundSourceRepository = new FundSourceRepository(context, sieveProcessor);
+        locationRepository = new LocationRepository(context, sieveProcessor);
+        transactionRepository = new TransactionRepository(context, sieveProcessor);
+        mfoPapRepository = new MFOPAPRepository(context, sieveProcessor);
+        functionAllocationRepository = new FunctionAllocationRepository(context, sieveProcessor);
+        fiscalYearRepository = new FiscalYearRepository(context, sieveProcessor);
+        clusterRepository = new ClusterRepository(context, sieveProcessor);
+    }
+
+    // Public properties return cached instances
+    public IPerformanceMeasureRepository PerformanceMeasureRepository => performanceMeasureRepository;
+    public IOPCRRepository OPCRRepository => opcrRepository;
+    public IOPCRKPIRepository OPCRKPIRepository => opcrKpiRepository;
+    public IOPCRActivityRepository OPCRActivityRepository => opcrActivityRepository;
+    public IOPCRPAPDepartmentRepository OPCRPAPDepartmentRepository => opcrPapDepartmentRepository;
+    public IWFPRepository WFPRepository => wfpRepository;
+    public IWFPObjectiveRepository WFPObjectiveRepository => wfpObjectiveRepository;
+    public IWFPOutcomeRepository WFPOutcomeRepository => wfpOutcomeRepository;
+    public IWFPActivityRepository WFPActivityRepository => wfpActivityRepository;
+    public IActivityBudgetRequirementRepository ActivityBudgetRequirementRepository => activityBudgetRequirementRepository;
+    public IWFPPAPDepartmentRepository WFPPAPDepartmentRepository => wfpPapDepartmentRepository;
+    public IOPCREvaluationRepository OPCREvaluationRepository => opcrEvaluationRepository;
+    public IOPCRRatingRepository OPCRRatingRepository => opcrRatingRepository;
+    public IObjectRepository ObjectRepository => objectRepository;
+    public IDUFundAllocationRepository DUFundAllocationRepository => duFundAllocationRepository;
+    public IKPIRatingRepository KPIRatingRepository => kpiRatingRepository;
+    public IDUAllocationRepository DUAllocationRepository => duAllocationRepository;
+    public IKPITargetRepository KPITargetRepository => kpiTargetRepository;
+    public IDUKPIAssignmentRepository DUKPIAssignmentRepository => dukpiAssignmentRepository;
+    public IKPIModeOfVerificationRepository KPIModeOfVerificationRepository => kpiModeOfVerificationRepository;
+    public IReceivedFundRepository ReceivedFundRepository => receivedFundRepository;
+    public IMFOKPIRepository MFOKPIRepository => mfoKpiRepository;
+    public IKPIRepository KPIRepository => kpiRepository;
+    public IDeliveryUnitRepository DeliveryUnitRepository => deliveryUnitRepository;
+    public IOfficeRepository OfficeRepository => officeRepository;
+    public IOrganizationRepository OrganizationRepository => organizationRepository;
+    public IFundSourceRepository FundSourceRepository => fundSourceRepository;
+    public ILocationRepository LocationRepository => locationRepository;
+    public ITransactionRepository TransactionRepository => transactionRepository;
+    public IMFOPAPRepository MFOPAPRepository => mfoPapRepository;
+    public IFunctionAllocationRepository FunctionAllocationRepository => functionAllocationRepository;
+    public IFiscalYearRepository FiscalYearRepository => fiscalYearRepository;
+    public IClusterRepository ClusterRepository => clusterRepository;
+
+    public async Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default)
+    {
+        await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
+        try
+        {
+            await operation();
+            await transaction.CommitAsync(cancellationToken);
+        }
+        catch
+        {
+            await transaction.RollbackAsync(cancellationToken);
+            throw;
+        }
     }
 
     public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        return _context.SaveChangesAsync(cancellationToken);
+        return context.SaveChangesAsync(cancellationToken);
     }
 
-    public void Dispose() => _context.Dispose();
+    public void Dispose() => context.Dispose();
 }

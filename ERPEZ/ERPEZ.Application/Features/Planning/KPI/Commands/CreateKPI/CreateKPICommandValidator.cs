@@ -1,15 +1,10 @@
-﻿using FluentValidation;
+using ERPEZ.Domain.Constants;
+using FluentValidation;
 
 namespace ERPEZ.Application.Features.Planning.KPI.Commands.CreateKPI;
 
 public class CreateKPICommandValidator : AbstractValidator<CreateKPICommand>
 {
-    private readonly string[] ValidFunctionTypes =
-    [
-        "Core Function", "Strategic Priority", "Mandatory Support Functions"
-    ];
-    private readonly string[] ValidStatuses = ["Draft", "Active", "Archived"];
-
     public CreateKPICommandValidator()
     {
         // ParentKPIId (Optional GUID)
@@ -24,8 +19,8 @@ public class CreateKPICommandValidator : AbstractValidator<CreateKPICommand>
             .WithMessage("Function Type is required.")
             .MaximumLength(100)
             .WithMessage("Function Type cannot exceed 100 characters.")
-            .Must(type => ValidFunctionTypes.Contains(type, StringComparer.OrdinalIgnoreCase))
-            .WithMessage($"Function Type must be one of the following: {string.Join(", ", ValidFunctionTypes)}.");
+            .Must(type => FunctionTypeConstants.validFunctionTypes.Contains(type))
+            .WithMessage($"FunctionType must be one of: {string.Join(", ", FunctionTypeConstants.validFunctionTypes)}.");
 
         // Name (Required String, Min/Max Length)
         RuleFor(x => x.Name)
@@ -42,11 +37,12 @@ public class CreateKPICommandValidator : AbstractValidator<CreateKPICommand>
             .WithMessage("Description cannot exceed 1000 characters.")
             .When(x => !string.IsNullOrWhiteSpace(x.Description));
 
-        // Status (Required String, Must be one of the defined valid statuses)
-        RuleFor(x => x.Status)
-            .NotEmpty()
-            .WithMessage("Status is required.")
-            .Must(status => ValidStatuses.Contains(status, StringComparer.OrdinalIgnoreCase))
-            .WithMessage($"Status must be one of the following: {string.Join(", ", ValidStatuses)}.");
+        RuleFor(x => x.IsOfficeMandate)
+            .NotNull()
+            .WithMessage("Is Office Mandate must be provided (true or false).");
+
+        RuleFor(x => x.IsPercentage)
+            .NotNull()
+            .WithMessage("Is Percentage must be provided (true or false).");
     }
 }

@@ -5,11 +5,11 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.ReceivedFund.Queries.GetReceivedFundById;
 
-public class GetReceivedFundByIdQueryHandler(IUnitOfWork _unitOfWork) : IRequestHandler<GetReceivedFundByIdQuery, ApiResponse<Domain.Entities.Planning.ReceivedFund>>
+public class GetReceivedFundByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetReceivedFundByIdQuery, ApiResponse<Domain.Entities.Planning.ReceivedFund>>
 {
     public async Task<ApiResponse<Domain.Entities.Planning.ReceivedFund>> Handle(GetReceivedFundByIdQuery request, CancellationToken cancellationToken)
     {
-        var receivedFund = await _unitOfWork.ReceivedFundRepository.FindAsync(
+        var receivedFund = await unitOfWork.ReceivedFundRepository.FindAsync(
            t => t.Id == request.Id,
             cancellationToken: cancellationToken) ?? throw new NotFoundException("No data found.");
 

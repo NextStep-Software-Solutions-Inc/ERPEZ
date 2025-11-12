@@ -1,11 +1,11 @@
-﻿using ERPEZ.Application.Features.Planning.PerformanceMeasure.Dtos;
+using ERPEZ.Application.Features.Planning.PerformanceMeasure.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.PerformanceMeasure.Commands.CreatePM;
 
-public class CreatePerformanceMeasureCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<CreatePerformanceMeasureCommand, ApiResponse<PerformanceMeasureDto>>
+public class CreatePerformanceMeasureCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreatePerformanceMeasureCommand, ApiResponse<PerformanceMeasureDto>>
 {
     public async Task<ApiResponse<PerformanceMeasureDto>> Handle(CreatePerformanceMeasureCommand request, CancellationToken cancellationToken)
     {
@@ -15,8 +15,8 @@ public class CreatePerformanceMeasureCommandHandler(IUnitOfWork _unitOfWork) : I
             Description = request.Description
         };
 
-        await _unitOfWork.PerformanceMeasureRepository.AddAsync(pm, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await unitOfWork.PerformanceMeasureRepository.AddAsync(pm, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         var dto = new PerformanceMeasureDto
         {

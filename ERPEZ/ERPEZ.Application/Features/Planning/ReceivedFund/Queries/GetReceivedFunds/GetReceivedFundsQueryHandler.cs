@@ -4,7 +4,7 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.ReceivedFund.Queries.GetReceivedFunds;
 
-public class GetReceivedFundsQueryHandler(IUnitOfWork _unitOfWork) : IRequestHandler<GetReceivedFundsQuery, PaginatedApiResponse<Domain.Entities.Planning.ReceivedFund>>
+public class GetReceivedFundsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetReceivedFundsQuery, PaginatedApiResponse<Domain.Entities.Planning.ReceivedFund>>
 {
     public async Task<PaginatedApiResponse<Domain.Entities.Planning.ReceivedFund>> Handle(GetReceivedFundsQuery query, CancellationToken cancellationToken)
     {
@@ -15,7 +15,7 @@ public class GetReceivedFundsQueryHandler(IUnitOfWork _unitOfWork) : IRequestHan
             Filters = query.Filters,
             Sorts = query.Sorts
         };
-        var (receivedFunds, totalCount) = await _unitOfWork.ReceivedFundRepository.GetAllAsync(sieveModel, cancellationToken: cancellationToken);
+        var (receivedFunds, totalCount) = await unitOfWork.ReceivedFundRepository.GetAllAsync(sieveModel, cancellationToken: cancellationToken);
         return new PaginatedApiResponse<Domain.Entities.Planning.ReceivedFund>(
             [.. receivedFunds],
             query.PageNumber,

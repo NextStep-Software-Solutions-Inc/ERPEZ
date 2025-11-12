@@ -4,7 +4,7 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.MFOKPI.Queries.GetMFOKPIsQuery;
 
-public class GetMFOKPIsQueryHandler(IUnitOfWork _unitOfWork) : IRequestHandler<GetMFOKPIsQuery, PaginatedApiResponse<Domain.Entities.Planning.MFOKPI>>
+public class GetMFOKPIsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetMFOKPIsQuery, PaginatedApiResponse<Domain.Entities.Planning.MFOKPI>>
 {
     public async Task<PaginatedApiResponse<Domain.Entities.Planning.MFOKPI>> Handle(GetMFOKPIsQuery query, CancellationToken cancellationToken)
     {
@@ -15,7 +15,7 @@ public class GetMFOKPIsQueryHandler(IUnitOfWork _unitOfWork) : IRequestHandler<G
             Filters = query.Filters,
             Sorts = query.Sorts
         };
-        var (mfokpis, totalCount) = await _unitOfWork.MFOKPIRepository.GetAllAsync(sieveModel, cancellationToken: cancellationToken);
+        var (mfokpis, totalCount) = await unitOfWork.MFOKPIRepository.GetAllAsync(sieveModel, cancellationToken: cancellationToken);
         return new PaginatedApiResponse<Domain.Entities.Planning.MFOKPI>(
             [.. mfokpis],
             query.PageNumber,
