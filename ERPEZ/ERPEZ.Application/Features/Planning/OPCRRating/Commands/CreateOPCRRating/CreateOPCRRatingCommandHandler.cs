@@ -1,4 +1,4 @@
-﻿using ERPEZ.Application.Features.Planning.OPCRRating.Dtos;
+using ERPEZ.Application.Features.Planning.OPCRRating.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -6,17 +6,17 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.OPCRRating.Commands.CreateOPCRRating;
 
-public class CreateOPCRRatingCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<CreateOPCRRatingCommand, ApiResponse<OPCRRatingDto>>
+public class CreateOPCRRatingCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateOPCRRatingCommand, ApiResponse<OPCRRatingResponse>>
 {
-    public async Task<ApiResponse<OPCRRatingDto>> Handle(CreateOPCRRatingCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<OPCRRatingResponse>> Handle(CreateOPCRRatingCommand request, CancellationToken cancellationToken)
     {
-        _ = await _unitOfWork.OPCREvaluationRepository.FindAsync(o => o.Id == request.OPCREvaluationId,
+        _ = await unitOfWork.OPCREvaluationRepository.FindAsync(o => o.Id == request.OPCREvaluationId,
             cancellationToken) ?? throw new NotFoundException("OPCR Evaluation not found.");
 
-        _ = await _unitOfWork.PerformanceMeasureRepository.FindAsync(o => o.Id == request.PerformanceMeasureId,
+        _ = await unitOfWork.PerformanceMeasureRepository.FindAsync(o => o.Id == request.PerformanceMeasureId,
             cancellationToken) ?? throw new NotFoundException("Performance Measure not found.");
 
-        _ = await _unitOfWork.OPCRKPIRepository.FindAsync(o => o.Id == request.OPCRKPIId,
+        _ = await unitOfWork.OPCRKPIRepository.FindAsync(o => o.Id == request.OPCRKPIId,
             cancellationToken) ?? throw new NotFoundException("OPCR KPI not found.");
 
         var opcrRating = new Domain.Entities.Planning.OPCRRating
@@ -28,18 +28,20 @@ public class CreateOPCRRatingCommandHandler(IUnitOfWork _unitOfWork) : IRequestH
             Remarks = request.Remarks
         };
 
-        await _unitOfWork.OPCRRatingRepository.AddAsync(opcrRating, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await unitOfWork.OPCRRatingRepository.AddAsync(opcrRating, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var dto = new OPCRRatingDto
+        var dto = new OPCRRatingResponse
         {
             Id = opcrRating.Id,
             OPCREvaluationId = opcrRating.OPCREvaluationId,
             OPCRKPIId = opcrRating.OPCRKPIId,
             PerformanceMeasureId= opcrRating.PerformanceMeasureId,
             NumericalRating = opcrRating.NumericalRating,
-            Remarks = opcrRating.Remarks
+            Remarks = opcrRating.Remarks,
+            CreatedAt = opcrRating.CreatedAt,
+            CreatedBy = opcrRating.CreatedBy
         };
-        return ApiResponse<OPCRRatingDto>.Success(dto, "OPCR Rating created successfully.");
+        return ApiResponse<OPCRRatingResponse>.Success(dto, "OPCR Rating created successfully.");
     }
 }

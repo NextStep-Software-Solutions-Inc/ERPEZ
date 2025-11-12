@@ -1,4 +1,4 @@
-﻿using ERPEZ.Application.Features.Planning.OPCRRating.Commands.CreateOPCRRating;
+using ERPEZ.Application.Features.Planning.OPCRRating.Commands.CreateOPCRRating;
 using ERPEZ.Application.Features.Planning.OPCRRating.Commands.DeleteOPCRRating;
 using ERPEZ.Application.Features.Planning.OPCRRating.Commands.UpdateOPCRRating;
 using ERPEZ.Application.Features.Planning.OPCRRating.Dtos;
@@ -16,8 +16,8 @@ namespace ERPEZ.Api.Controllers
     public class OPCRRatingController(ISender mediator) : ControllerBase
     {
         [HttpPost]
-        [ProducesResponseType(typeof(ApiResponse<OPCRRatingDto>), StatusCodes.Status201Created)]
-        [ProducesResponseType(typeof(ApiResponse<OPCRRatingDto>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<OPCRRatingResponse>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<OPCRRatingResponse>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateOPCRRating([FromBody] CreateOPCRRatingCommand command)
         {
             var result = await mediator.Send(command);
@@ -47,10 +47,10 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpPut("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<OPCRRatingDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<OPCRRatingResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> UpdateOPCRRating(Guid id, [FromBody] UpdateOPCRRatingDto dto)
+        public async Task<IActionResult> UpdateOPCRRating(Guid id, [FromBody] UpdateOPCRRatingRequest dto)
         {
             var command = new UpdateOPCRRatingCommand
             {
