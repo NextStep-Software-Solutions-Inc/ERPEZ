@@ -1,12 +1,14 @@
-﻿using ERPEZ.Domain.Interfaces;
+using ERPEZ.Application.Features.Planning.OPCREvaluation.Dtos;
+using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
+using System.Linq.Expressions;
 
 namespace ERPEZ.Application.Features.Planning.OPCREvaluation.Queries.GetOPCREvaluations;
 
-public class GetOPCREvaluationsQueryHandler(IUnitOfWork _unitOfWork) : IRequestHandler<GetOPCREvaluationsQuery, PaginatedApiResponse<Domain.Entities.Planning.OPCREvaluation>>
+public class GetOPCREvaluationsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetOPCREvaluationsQuery, PaginatedApiResponse<OPCREvaluationResponse>>
 {
-    public async Task<PaginatedApiResponse<Domain.Entities.Planning.OPCREvaluation>> Handle(GetOPCREvaluationsQuery query, CancellationToken cancellationToken)
+    public async Task<PaginatedApiResponse<OPCREvaluationResponse>> Handle(GetOPCREvaluationsQuery query, CancellationToken cancellationToken)
     {
         var sieveModel = new Sieve.Models.SieveModel
         {
@@ -15,8 +17,20 @@ public class GetOPCREvaluationsQueryHandler(IUnitOfWork _unitOfWork) : IRequestH
             Filters = query.Filters,
             Sorts = query.Sorts
         };
-        var (opcrEvaluations, totalCount) = await _unitOfWork.OPCREvaluationRepository.GetAllAsync(sieveModel, cancellationToken: cancellationToken);
-        return new PaginatedApiResponse<Domain.Entities.Planning.OPCREvaluation>(
+
+        Expression<Func<Domain.Entities.Planning.OPCREvaluation, OPCREvaluationResponse>> projection = opcrEvaluation => new OPCREvaluationResponse
+        {
+            Id = opcrEvaluation.Id,
+            OPCRId = opcrEvaluation.OPCRId,
+            EvaluatorId = opcrEvaluation.EvaluatorId,
+            EvaluationDate = opcrEvaluation.EvaluationDate,
+            Comments = opcrEvaluation.Comments,
+            Status = opcrEvaluation.Status,
+            CreatedAt = opcrEvaluation.CreatedAt,
+            CreatedBy = opcrEvaluation.CreatedBy
+        };
+        var (opcrEvaluations, totalCount) = await unitOfWork.OPCREvaluationRepository.GetAllAsync(sieveModel, projection, cancellationToken: cancellationToken);
+        return new PaginatedApiResponse<OPCREvaluationResponse>(
             [.. opcrEvaluations],
             query.PageNumber,
             query.PageSize,
