@@ -36,7 +36,7 @@ public class CreateOPCRRatingCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
             Id = opcrRating.Id,
             OPCREvaluationId = opcrRating.OPCREvaluationId,
             OPCRKPIId = opcrRating.OPCRKPIId,
-            PerformanceMeasureId= opcrRating.PerformanceMeasureId,
+            PerformanceMeasureId = opcrRating.PerformanceMeasureId,
             NumericalRating = opcrRating.NumericalRating,
             Remarks = opcrRating.Remarks,
             CreatedAt = opcrRating.CreatedAt,
