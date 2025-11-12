@@ -1,4 +1,4 @@
-﻿using ERPEZ.Application.Features.Planning.KPI.Commands.CreateKPI;
+using ERPEZ.Application.Features.Planning.KPI.Commands.CreateKPI;
 using ERPEZ.Application.Features.Planning.KPI.Dtos;
 using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Shared.Common;
@@ -29,7 +29,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet]
-        [ProducesResponseType(typeof(PaginatedApiResponse<KPIDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(PaginatedApiResponse<KPIResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetKPIs([FromQuery] GetKPIsQuery query)
         {
             var result = await mediator.Send(query);
@@ -37,7 +37,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<KPIDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<KPIResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetKPIById(Guid id)
         {
@@ -46,10 +46,10 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpPut("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<KPIDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<KPIResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> UpdateKPI(Guid id, [FromBody] UpdateKPIDto dto)
+        public async Task<IActionResult> UpdateKPI(Guid id, [FromBody] UpdateKPIRequest dto)
         {
             var command = new UpdateKPICommand
             {

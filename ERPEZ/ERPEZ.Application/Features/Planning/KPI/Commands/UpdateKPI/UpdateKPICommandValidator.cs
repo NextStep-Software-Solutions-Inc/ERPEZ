@@ -1,14 +1,11 @@
-﻿using FluentValidation;
+using ERPEZ.Domain.Constants;
+using FluentValidation;
 
 namespace ERPEZ.Application.Features.Planning.KPI.Commands.UpdateKPI;
 
 public class UpdateKPICommandValidator : AbstractValidator<UpdateKPICommand>
 {
-    private readonly string[] validFunctionTypes =
-    [
-        "Core Function", "Strategic Priority", "Mandatory Support Functions"
-    ];
-    private readonly string[] validStatuses = ["Draft", "Submitted", "Approved", "Active", "Archived"]; // Added Active/Archived for typical update statuses
+    private readonly string[] validStatuses = ["Draft", "Submitted", "Approved", "Active", "Archived"];
 
     public UpdateKPICommandValidator()
     {
@@ -35,9 +32,8 @@ public class UpdateKPICommandValidator : AbstractValidator<UpdateKPICommand>
         RuleFor(x => x.UpdateKPI.FunctionType)
             .MaximumLength(100)
             .WithMessage("Function Type cannot exceed 100 characters.")
-            .Must(type => validFunctionTypes.Contains(type, StringComparer.OrdinalIgnoreCase))
-            .WithMessage($"Function Type must be one of the following: {string.Join(", ", validFunctionTypes)}.")
-            // Validation only runs if the string is NOT null or empty
+                .Must(type => FunctionTypeConstants.validFunctionTypes.Contains(type))
+                .WithMessage($"FunctionType must be one of: {string.Join(", ", FunctionTypeConstants.validFunctionTypes)}.")
             .When(x => !string.IsNullOrWhiteSpace(x.UpdateKPI.FunctionType));
 
         // 5. Name (Optional String?) - Check only if provided
@@ -54,16 +50,17 @@ public class UpdateKPICommandValidator : AbstractValidator<UpdateKPICommand>
             .WithMessage("Description cannot exceed 1000 characters.")
             .When(x => !string.IsNullOrWhiteSpace(x.UpdateKPI.Description));
 
-        // 7. IsOfficeMandate (Optional Bool?) - Check only if value is explicitly set (i.e., not null)
-        RuleFor(x => x.UpdateKPI.IsOfficeMandate)
-            .NotNull()
-            .When(x => x.UpdateKPI.IsOfficeMandate.HasValue)
-            .WithMessage("IsOfficeMandate must be a boolean value (true or false) if provided.");
-
-        // 8. Status (Optional String?) - Check only if provided
         RuleFor(x => x.UpdateKPI.Status)
             .Must(status => validStatuses.Contains(status, StringComparer.OrdinalIgnoreCase))
             .WithMessage($"Status must be one of the following: {string.Join(", ", validStatuses)}.")
             .When(x => !string.IsNullOrWhiteSpace(x.UpdateKPI.Status));
+
+        RuleFor(x => x.UpdateKPI.IsOfficeMandate)
+            .NotNull()
+            .WithMessage("Is Office Mandate must be provided (true or false).");
+
+        RuleFor(x => x.UpdateKPI.IsPercentage)
+            .NotNull()
+            .WithMessage("Is Percentage must be provided (true or false).");
     }
 }
