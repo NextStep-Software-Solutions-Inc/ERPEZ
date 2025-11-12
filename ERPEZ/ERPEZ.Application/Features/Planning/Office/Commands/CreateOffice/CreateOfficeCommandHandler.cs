@@ -10,11 +10,14 @@ public class CreateOfficeCommandHandler(IUnitOfWork unitOfWork) : IRequestHandle
 {
     public async Task<ApiResponse<OfficeResponse>> Handle(CreateOfficeCommand request, CancellationToken cancellationToken)
     {
+        if (request.ClusterId.HasValue)
+        {
+            _ = await unitOfWork.ClusterRepository.GetByIdAsync(request.ClusterId.Value, cancellationToken: cancellationToken) ??
+                throw new NotFoundException("Cluster not found.");
+        }
+
         var officeExist = await unitOfWork.OfficeRepository.FindAsync(t => t.Name == request.Name, cancellationToken: cancellationToken);
         if (officeExist != null) throw new ConflictException("Office already exists.");
-
-        if(request.ClusterId != null) _ = unitOfWork.ClusterRepository.GetByIdAsync(request.ClusterId.Value, cancellationToken: cancellationToken) ?? 
-                throw new NotFoundException("Cluster not found.");
 
         var office = new Domain.Entities.Planning.Office
         {
