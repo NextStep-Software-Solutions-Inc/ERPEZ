@@ -1,4 +1,4 @@
-﻿using ERPEZ.Application.Features.Planning.KPI.Dtos;
+using ERPEZ.Application.Features.Planning.KPI.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -6,11 +6,11 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.KPI.Commands.CreateKPI;
 
-public class CreateKPICommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<CreateKPICommand, ApiResponse<KPIDto>>
+public class CreateKPICommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateKPICommand, ApiResponse<KPIDto>>
 {
     public async Task<ApiResponse<KPIDto>> Handle(CreateKPICommand request, CancellationToken cancellationToken)
     {
-        var existingKpi = await _unitOfWork.KPIRepository.FindAsync(
+        var existingKpi = await unitOfWork.KPIRepository.FindAsync(
             x => x.Name == request.Name,
             cancellationToken
         );
@@ -20,7 +20,7 @@ public class CreateKPICommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<
 
         if (request.ParentKPIId != null)
         {
-            var parentKpi = await _unitOfWork.KPIRepository.GetByIdAsync(request.ParentKPIId.Value, cancellationToken: cancellationToken)
+            var parentKpi = await unitOfWork.KPIRepository.GetByIdAsync(request.ParentKPIId.Value, cancellationToken: cancellationToken)
                 ?? throw new NotFoundException("Parent KPI not found.");
         }
 
@@ -31,11 +31,11 @@ public class CreateKPICommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<
             Name = request.Name,
             Description = request.Description,
             IsOfficeMandate = request.IsOfficeMandate,
-            Status = request.Status
+            Status = "Draft"
         };
 
-        await _unitOfWork.KPIRepository.AddAsync(kpi, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await unitOfWork.KPIRepository.AddAsync(kpi, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         var dto = new KPIDto
         {

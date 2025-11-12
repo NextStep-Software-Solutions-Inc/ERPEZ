@@ -6,16 +6,16 @@ using MediatR;
 
 namespace ERPEZ.TenantManagement.Application.Features.TenantSettings.Commands.CreateTenantSetting;
 
-public sealed class CreateTenantSettingCommandHandler(IUnitOfWork _unitOfWork)
+public sealed class CreateTenantSettingCommandHandler(IUnitOfWork unitOfWork)
     : IRequestHandler<CreateTenantSettingCommand, ApiResponse<Guid>>
 {
     public async Task<ApiResponse<Guid>> Handle(CreateTenantSettingCommand command, CancellationToken cancellationToken)
     {
-        var tenantSettingExists = await _unitOfWork.TenantSettingRepository.FindAsync(ts => ts.TenantId == command.TenantId, cancellationToken);
+        var tenantSettingExists = await unitOfWork.TenantSettingRepository.FindAsync(ts => ts.TenantId == command.TenantId, cancellationToken);
 
         if (tenantSettingExists != null) throw new ConflictException("Tenant setting already exists.");
 
-        var tenantExists = await _unitOfWork.TenantRepository.FindAsync(t => t.Id == command.TenantId, cancellationToken) ?? throw new NotFoundException("Tenant not found.");
+        var tenantExists = await unitOfWork.TenantRepository.FindAsync(t => t.Id == command.TenantId, cancellationToken) ?? throw new NotFoundException("Tenant not found.");
         
         var tenantSetting = new TenantSetting
         {
@@ -25,8 +25,8 @@ public sealed class CreateTenantSettingCommandHandler(IUnitOfWork _unitOfWork)
             DbConnectionString = command.DBConnectionString
         };
 
-        await _unitOfWork.TenantSettingRepository.AddAsync(tenantSetting, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await unitOfWork.TenantSettingRepository.AddAsync(tenantSetting, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return ApiResponse<Guid>.Success(tenantSetting.Id, "Tenant setting created successfully.");
     }

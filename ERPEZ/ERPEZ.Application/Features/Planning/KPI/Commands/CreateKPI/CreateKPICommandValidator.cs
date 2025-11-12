@@ -4,11 +4,10 @@ namespace ERPEZ.Application.Features.Planning.KPI.Commands.CreateKPI;
 
 public class CreateKPICommandValidator : AbstractValidator<CreateKPICommand>
 {
-    private readonly string[] ValidFunctionTypes =
+    private readonly string[] validFunctionTypes =
     [
         "Core Function", "Strategic Priority", "Mandatory Support Functions"
     ];
-    private readonly string[] ValidStatuses = ["Draft", "Active", "Archived"];
 
     public CreateKPICommandValidator()
     {
@@ -24,8 +23,8 @@ public class CreateKPICommandValidator : AbstractValidator<CreateKPICommand>
             .WithMessage("Function Type is required.")
             .MaximumLength(100)
             .WithMessage("Function Type cannot exceed 100 characters.")
-            .Must(type => ValidFunctionTypes.Contains(type, StringComparer.OrdinalIgnoreCase))
-            .WithMessage($"Function Type must be one of the following: {string.Join(", ", ValidFunctionTypes)}.");
+            .Must(type => validFunctionTypes.Contains(type, StringComparer.OrdinalIgnoreCase))
+            .WithMessage($"Function Type must be one of the following: {string.Join(", ", validFunctionTypes)}.");
 
         // Name (Required String, Min/Max Length)
         RuleFor(x => x.Name)
@@ -41,12 +40,5 @@ public class CreateKPICommandValidator : AbstractValidator<CreateKPICommand>
             .MaximumLength(1000)
             .WithMessage("Description cannot exceed 1000 characters.")
             .When(x => !string.IsNullOrWhiteSpace(x.Description));
-
-        // Status (Required String, Must be one of the defined valid statuses)
-        RuleFor(x => x.Status)
-            .NotEmpty()
-            .WithMessage("Status is required.")
-            .Must(status => ValidStatuses.Contains(status, StringComparer.OrdinalIgnoreCase))
-            .WithMessage($"Status must be one of the following: {string.Join(", ", ValidStatuses)}.");
     }
 }

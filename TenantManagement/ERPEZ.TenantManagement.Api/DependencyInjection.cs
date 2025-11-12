@@ -1,16 +1,23 @@
 ﻿using ERPEZ.Shared.Middlewares;
+using ERPEZ.TenantManagement.Api.Extensions;
 using Microsoft.OpenApi.Models;
 
 namespace ERPEZ.TenantManagement.Api;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddApiServices(this IServiceCollection services)
+    public static WebApplicationBuilder AddApiServices(this WebApplicationBuilder builder)
     {
+        var services = builder.Services;
         services.AddControllers();
         services.AddEndpointsApiExplorer();
-        
-        // 1. Configure SwaggerGen to include the JWT Bearer Security Scheme
+        services.AddAuthentication();
+        services.AddAuthorization();
+        services.AddResponseCaching();
+        services.AddResponseCompression();
+        services.AddCorsPolicies(builder.Configuration);
+        services.AddExceptionHandler<GlobalExceptionHandler>();
+        services.AddProblemDetails();
         services.AddSwaggerGen(c =>
         {
             // Define the Security Scheme (Bearer token input box in Swagger UI)
@@ -40,10 +47,6 @@ public static class DependencyInjection
                 }
             });
         });
-
-        // 3. Add our custom global exception handler
-        services.AddExceptionHandler<GlobalExceptionHandler>();
-        services.AddProblemDetails();
-        return services;
+        return builder;
     }
 }

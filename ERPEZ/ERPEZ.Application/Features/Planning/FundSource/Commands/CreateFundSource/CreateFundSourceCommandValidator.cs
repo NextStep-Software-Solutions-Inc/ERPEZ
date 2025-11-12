@@ -4,7 +4,7 @@ namespace ERPEZ.Application.Features.Planning.FundSource.Commands.CreateFundSour
 
 public class CreateFundSourceCommandValidator : AbstractValidator<CreateFundSourceCommand>
 {
-    private readonly string[] ValidTypes =
+    private readonly string[] validTypes =
     [
         "Local", "Foreign", "Grant", "Donation",
         "FundCluster", "FinancingSource", "AuthorizationCode", "FundCategory"
@@ -42,7 +42,7 @@ public class CreateFundSourceCommandValidator : AbstractValidator<CreateFundSour
         RuleFor(x => x.Type)
             .NotEmpty()
             .WithMessage("Fund Source Type is required.")
-            .Must(type => ValidTypes.Contains(type, StringComparer.OrdinalIgnoreCase))
-            .WithMessage($"Fund Source Type must be one of the following: {string.Join(", ", ValidTypes)}.");
+            .Must(type => validTypes.Contains(type, StringComparer.OrdinalIgnoreCase))
+            .WithMessage($"Fund Source Type must be one of the following: {string.Join(", ", validTypes)}.");
     }
 }

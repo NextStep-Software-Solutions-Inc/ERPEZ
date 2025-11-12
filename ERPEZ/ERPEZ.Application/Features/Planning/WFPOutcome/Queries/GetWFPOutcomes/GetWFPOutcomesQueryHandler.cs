@@ -4,7 +4,7 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.WFPOutcome.Queries.GetWFPOutcomes;
 
-public class GetWFPOutcomesQueryHandler(IUnitOfWork _unitOfWork) : IRequestHandler<GetWFPOutcomesQuery, PaginatedApiResponse<Domain.Entities.Planning.WFPOutcome>>
+public class GetWFPOutcomesQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetWFPOutcomesQuery, PaginatedApiResponse<Domain.Entities.Planning.WFPOutcome>>
 {
     public async Task<PaginatedApiResponse<Domain.Entities.Planning.WFPOutcome>> Handle(GetWFPOutcomesQuery query, CancellationToken cancellationToken)
     {
@@ -15,7 +15,7 @@ public class GetWFPOutcomesQueryHandler(IUnitOfWork _unitOfWork) : IRequestHandl
             Filters = query.Filters,
             Sorts = query.Sorts
         };
-        var (wfpOutcomes, totalCount) = await _unitOfWork.WFPOutcomeRepository.GetAllAsync(sieveModel, cancellationToken: cancellationToken);
+        var (wfpOutcomes, totalCount) = await unitOfWork.WFPOutcomeRepository.GetAllAsync(sieveModel, cancellationToken: cancellationToken);
         return new PaginatedApiResponse<Domain.Entities.Planning.WFPOutcome>(
             [.. wfpOutcomes],
             query.PageNumber,

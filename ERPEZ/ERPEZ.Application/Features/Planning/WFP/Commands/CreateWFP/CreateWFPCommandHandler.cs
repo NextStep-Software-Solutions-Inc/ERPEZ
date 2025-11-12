@@ -1,4 +1,4 @@
-﻿using ERPEZ.Application.Features.Planning.WFP.Dtos;
+using ERPEZ.Application.Features.Planning.WFP.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -6,14 +6,14 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.WFP.Commands.CreateWFP;
 
-public class CreateWFPCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<CreateWFPCommand, ApiResponse<WFPDto>>
+public class CreateWFPCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateWFPCommand, ApiResponse<WFPDto>>
 {
     public async Task<ApiResponse<WFPDto>> Handle(CreateWFPCommand request, CancellationToken cancellationToken)
     {
-        _ = await _unitOfWork.DeliveryUnitRepository.FindAsync(
+        _ = await unitOfWork.DeliveryUnitRepository.FindAsync(
             x => x.Id == request.DeliveryUnitId,
             cancellationToken) ?? throw new NotFoundException("Delivery Unit not found.");
-        var duplicate = await _unitOfWork.WFPRepository.FindAsync(w => w.ProgramTitle == request.ProgramTitle
+        var duplicate = await unitOfWork.WFPRepository.FindAsync(w => w.ProgramTitle == request.ProgramTitle
         && w.DeliveryUnitId == request.DeliveryUnitId
         && w.Description == request.Description
         && w.FiscalYear == request.FiscalYear,
@@ -34,8 +34,8 @@ public class CreateWFPCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<
             Status = request.Status
         };
 
-        await _unitOfWork.WFPRepository.AddAsync(wfp, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await unitOfWork.WFPRepository.AddAsync(wfp, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         var dto = new WFPDto
         {

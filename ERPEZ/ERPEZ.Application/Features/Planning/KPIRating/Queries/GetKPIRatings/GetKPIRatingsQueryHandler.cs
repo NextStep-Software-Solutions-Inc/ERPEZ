@@ -4,7 +4,7 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.KPIRating.Queries.GetKPIRatings;
 
-public class GetKPIRatingsQueryHandler(IUnitOfWork _unitOfWork) : IRequestHandler<GetKPIRatingsQuery, PaginatedApiResponse<Domain.Entities.Planning.KPIRating>>
+public class GetKPIRatingsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetKPIRatingsQuery, PaginatedApiResponse<Domain.Entities.Planning.KPIRating>>
 {
     public async Task<PaginatedApiResponse<Domain.Entities.Planning.KPIRating>> Handle(GetKPIRatingsQuery query, CancellationToken cancellationToken)
     {
@@ -15,7 +15,7 @@ public class GetKPIRatingsQueryHandler(IUnitOfWork _unitOfWork) : IRequestHandle
             Filters = query.Filters,
             Sorts = query.Sorts
         };
-        var (kpiRatings, totalCount) = await _unitOfWork.KPIRatingRepository.GetAllAsync(sieveModel, cancellationToken: cancellationToken);
+        var (kpiRatings, totalCount) = await unitOfWork.KPIRatingRepository.GetAllAsync(sieveModel, cancellationToken: cancellationToken);
         return new PaginatedApiResponse<Domain.Entities.Planning.KPIRating>(
             [.. kpiRatings],
             query.PageNumber,

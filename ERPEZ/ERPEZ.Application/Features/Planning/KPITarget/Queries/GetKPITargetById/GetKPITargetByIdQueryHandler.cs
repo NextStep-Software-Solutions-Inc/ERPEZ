@@ -5,11 +5,11 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.KPITarget.Queries.GetKPITargetById;
 
-public class GetKPITargetByIdQueryHandler(IUnitOfWork _unitOfWork) : IRequestHandler<GetKPITargetByIdQuery, ApiResponse<Domain.Entities.Planning.KPITarget>>
+public class GetKPITargetByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetKPITargetByIdQuery, ApiResponse<Domain.Entities.Planning.KPITarget>>
 {
     public async Task<ApiResponse<Domain.Entities.Planning.KPITarget>> Handle(GetKPITargetByIdQuery request, CancellationToken cancellationToken)
     {
-        var kpiTarget = await _unitOfWork.KPITargetRepository.FindAsync(
+        var kpiTarget = await unitOfWork.KPITargetRepository.FindAsync(
            t => t.Id == request.Id,
             cancellationToken: cancellationToken) ?? throw new NotFoundException("No data found.");
 

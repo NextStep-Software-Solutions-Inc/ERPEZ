@@ -4,7 +4,7 @@ namespace ERPEZ.Application.Features.Planning.WFP.Commands.UpdateWFP;
 
 public class UpdateWFPCommandValidator : AbstractValidator<UpdateWFPCommand>
 {
-    private readonly string[] ValidStatuses = ["Draft", "Submitted", "Approved", "Rejected", "Completed", "Canceled"];
+    private readonly string[] validStatuses = ["Draft", "Submitted", "Approved", "Rejected", "Completed", "Canceled"];
 
     public UpdateWFPCommandValidator()
     {
@@ -55,7 +55,7 @@ public class UpdateWFPCommandValidator : AbstractValidator<UpdateWFPCommand>
         RuleFor(x => x.UpdateWFP.Status)
             .NotEmpty()
             .WithMessage("Status is required.")
-            .Must(status => ValidStatuses.Contains(status, StringComparer.OrdinalIgnoreCase))
-            .WithMessage($"Status must be one of the following: {string.Join(", ", ValidStatuses)}.");
+            .Must(status => validStatuses.Contains(status, StringComparer.OrdinalIgnoreCase))
+            .WithMessage($"Status must be one of the following: {string.Join(", ", validStatuses)}.");
     }
 }

@@ -8,13 +8,13 @@ using MediatR;
 
 namespace ERPEZ.TenantManagement.Application.Features.Tenants.Commands.CreateTenant;
 
-public sealed class CreateTenantCommandHandler(IUnitOfWork _unitOfWork, ICurrentUserService _currentUserService) : IRequestHandler<CreateTenantCommand, ApiResponse<Guid>>
+public sealed class CreateTenantCommandHandler(IUnitOfWork unitOfWork, ICurrentUserService currentUserService) : IRequestHandler<CreateTenantCommand, ApiResponse<Guid>>
 {
     public async Task<ApiResponse<Guid>> Handle(CreateTenantCommand request, CancellationToken cancellationToken)
     {
-        if (string.IsNullOrWhiteSpace(_currentUserService.UserId)) throw new UnauthorizedAccessException("Current user is not authenticated.");
+        if (string.IsNullOrWhiteSpace(currentUserService.UserId)) throw new UnauthorizedAccessException("Current user is not authenticated.");
 
-        var tenantExist = await _unitOfWork.TenantRepository.FindAsync(t => t.Name == request.Name, cancellationToken);
+        var tenantExist = await unitOfWork.TenantRepository.FindAsync(t => t.Name == request.Name, cancellationToken);
         if (tenantExist != null) throw new ConflictException("Tenant already exists.");
 
         var tenant = new Tenant
@@ -30,19 +30,19 @@ public sealed class CreateTenantCommandHandler(IUnitOfWork _unitOfWork, ICurrent
             }
         };
 
-        var module = await _unitOfWork.ModuleRepository.FindAsync(m => m.Key == "ams", cancellationToken: cancellationToken);
+        var module = await unitOfWork.ModuleRepository.FindAsync(m => m.Key == "ams", cancellationToken: cancellationToken);
         if (module != null) tenant.Modules.Add(module);
 
-        await _unitOfWork.TenantRepository.AddAsync(tenant, cancellationToken);
+        await unitOfWork.TenantRepository.AddAsync(tenant, cancellationToken);
 
         var tenantMember = new TenantMember
         {
-            UserId = _currentUserService.UserId,
+            UserId = currentUserService.UserId,
             Role = TenantMemberRole.Owner,
             Status = Status.Active
         };
         tenant.TenantMembers.Add(tenantMember);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
         return ApiResponse<Guid>.Success(tenant.Id, "Tenant created successfully.");
     }
 }

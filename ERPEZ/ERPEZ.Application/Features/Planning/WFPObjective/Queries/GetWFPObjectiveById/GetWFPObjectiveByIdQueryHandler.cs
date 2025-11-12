@@ -5,11 +5,11 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.WFPObjective.Queries.GetWFPObjectiveById;
 
-public class GetWFPObjectiveByIdQueryHandler(IUnitOfWork _unitOfWork) : IRequestHandler<GetWFPObjectiveByIdQuery, ApiResponse<Domain.Entities.Planning.WFPObjective>>
+public class GetWFPObjectiveByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetWFPObjectiveByIdQuery, ApiResponse<Domain.Entities.Planning.WFPObjective>>
 {
     public async Task<ApiResponse<Domain.Entities.Planning.WFPObjective>> Handle(GetWFPObjectiveByIdQuery request, CancellationToken cancellationToken)
     {
-        var wfpObjective = await _unitOfWork.WFPObjectiveRepository.FindAsync(
+        var wfpObjective = await unitOfWork.WFPObjectiveRepository.FindAsync(
            t => t.Id == request.Id,
             cancellationToken: cancellationToken) ?? throw new NotFoundException("No data found.");
 

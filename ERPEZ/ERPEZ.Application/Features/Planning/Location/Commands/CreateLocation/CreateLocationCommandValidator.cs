@@ -5,7 +5,7 @@ namespace ERPEZ.Application.Features.Planning.Location.Commands.CreateLocation;
 public class CreateLocationCommandValidator : AbstractValidator<CreateLocationCommand>
 {
     // Define a list of expected location types (e.g., Region, Province, City, etc.)
-    private readonly string[] ValidTypes =
+    private readonly string[] validTypes =
     [
         "Region", "Province", "City", "Municipality", "Barangay"
     ];
@@ -43,7 +43,7 @@ public class CreateLocationCommandValidator : AbstractValidator<CreateLocationCo
         RuleFor(x => x.Type)
             .NotEmpty()
             .WithMessage("Location Type is required.")
-            .Must(type => ValidTypes.Contains(type, StringComparer.OrdinalIgnoreCase))
-            .WithMessage($"Location Type must be one of the following: {string.Join(", ", ValidTypes)}.");
+            .Must(type => validTypes.Contains(type, StringComparer.OrdinalIgnoreCase))
+            .WithMessage($"Location Type must be one of the following: {string.Join(", ", validTypes)}.");
     }
 }

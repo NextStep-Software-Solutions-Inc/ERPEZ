@@ -14,4 +14,5 @@ public class KPITarget : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public string? QuarterName { get; set; }
     public virtual KPI KPI { get; set; } = null!;
+    public List<KPITarget> KPITargets { get; set; } = [];
 }

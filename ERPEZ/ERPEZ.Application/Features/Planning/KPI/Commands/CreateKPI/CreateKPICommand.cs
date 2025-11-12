@@ -11,5 +11,4 @@ public class CreateKPICommand : IRequest<ApiResponse<KPIDto>>
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; } = string.Empty;
     public bool? IsOfficeMandate { get; set; }
-    public string Status { get; set; } = string.Empty;
 }

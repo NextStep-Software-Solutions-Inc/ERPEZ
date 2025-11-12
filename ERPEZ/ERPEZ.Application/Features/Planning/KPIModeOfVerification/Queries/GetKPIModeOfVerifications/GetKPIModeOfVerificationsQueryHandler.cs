@@ -4,7 +4,7 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.KPIModeOfVerification.Queries.GetKPIModeOfVerifications;
 
-public class GetKPIModeOfVerificationsQueryHandler(IUnitOfWork _unitOfWork) : IRequestHandler<GetKPIModeOfVerificationsQuery, PaginatedApiResponse<Domain.Entities.Planning.KPIModeOfVerification>>
+public class GetKPIModeOfVerificationsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetKPIModeOfVerificationsQuery, PaginatedApiResponse<Domain.Entities.Planning.KPIModeOfVerification>>
 {
     public async Task<PaginatedApiResponse<Domain.Entities.Planning.KPIModeOfVerification>> Handle(GetKPIModeOfVerificationsQuery query, CancellationToken cancellationToken)
     {
@@ -15,7 +15,7 @@ public class GetKPIModeOfVerificationsQueryHandler(IUnitOfWork _unitOfWork) : IR
             Filters = query.Filters,
             Sorts = query.Sorts
         };
-        var (kpiMoVs, totalCount) = await _unitOfWork.KPIModeOfVerificationRepository.GetAllAsync(sieveModel, cancellationToken: cancellationToken);
+        var (kpiMoVs, totalCount) = await unitOfWork.KPIModeOfVerificationRepository.GetAllAsync(sieveModel, cancellationToken: cancellationToken);
         return new PaginatedApiResponse<Domain.Entities.Planning.KPIModeOfVerification>(
             [.. kpiMoVs],
             query.PageNumber,

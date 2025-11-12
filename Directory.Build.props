@@ -1,16 +1,18 @@
 <Project>
   <PropertyGroup>
-    <!-- Intensified warnings-as-errors policy for repository -->
-    <!-- Treat all compiler warnings as errors in CI and local builds unless overridden -->
-    <TreatWarningsAsErrors>true</TreatWarningsAsErrors>
+    <!-- Flexible warnings policy allowing naming flexibility -->
+    <!-- Only treat warnings as errors in CI environment, not locally -->
+    <TreatWarningsAsErrors Condition="'$(CI)' == 'true'">true</TreatWarningsAsErrors>
+    <TreatWarningsAsErrors Condition="'$(CI)' != 'true'">false</TreatWarningsAsErrors>
     <!-- Use highest standard warning level -->
     <WarningLevel>5</WarningLevel>
     <!-- Enable .NET analyzers and fail build on their warnings -->
     <EnableNETAnalyzers>true</EnableNETAnalyzers>
     <RunAnalyzersDuringBuild>true</RunAnalyzersDuringBuild>
     <RunAnalyzersDuringLiveAnalysis>true</RunAnalyzersDuringLiveAnalysis>
+    <!-- Treat analyzer warnings as errors locally for strict code quality -->
     <CodeAnalysisTreatWarningsAsErrors>true</CodeAnalysisTreatWarningsAsErrors>
-    <!-- Enforce code-style rules during build as errors -->
+    <!-- Enforce code-style rules during build as errors always (not just in CI) -->
     <EnforceCodeStyleInBuild>true</EnforceCodeStyleInBuild>
     <!-- Ensure nullable reference types are enabled by default -->
     <Nullable>enable</Nullable>
