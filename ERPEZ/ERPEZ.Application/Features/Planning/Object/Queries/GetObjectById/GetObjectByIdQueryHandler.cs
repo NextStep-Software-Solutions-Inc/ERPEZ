@@ -5,11 +5,11 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Object.Queries.GetObjectById;
 
-public class GetObjectByIdQueryHandler(IUnitOfWork _unitOfWork) : IRequestHandler<GetObjectByIdQuery, ApiResponse<Domain.Entities.Planning.Object>>
+public class GetObjectByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetObjectByIdQuery, ApiResponse<Domain.Entities.Planning.Object>>
 {
     public async Task<ApiResponse<Domain.Entities.Planning.Object>> Handle(GetObjectByIdQuery request, CancellationToken cancellationToken)
     {
-        var req = await _unitOfWork.ObjectRepository.FindAsync(
+        var req = await unitOfWork.ObjectRepository.FindAsync(
            t => t.Id == request.Id,
             cancellationToken: cancellationToken) ?? throw new NotFoundException("No data found.");
 

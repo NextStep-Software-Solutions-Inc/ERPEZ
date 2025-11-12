@@ -13,7 +13,7 @@ namespace ERPEZ.Application.Common.Behaviors;
 public class ValidationBehavior<TRequest, TResponse>(IEnumerable<IValidator<TRequest>> validators) : IPipelineBehavior<TRequest, TResponse>
     where TRequest : notnull
 {
-    private readonly IEnumerable<IValidator<TRequest>> _validators = validators;
+    private readonly IEnumerable<IValidator<TRequest>> validatorCollection = validators;
 
     public async Task<TResponse> Handle(
         TRequest request,
@@ -21,7 +21,7 @@ public class ValidationBehavior<TRequest, TResponse>(IEnumerable<IValidator<TReq
         CancellationToken cancellationToken)
     {
         // If no validators are registered for this request type, skip validation
-        if (!_validators.Any())
+        if (!validatorCollection.Any())
         {
             return await next(cancellationToken);
         }
@@ -31,7 +31,7 @@ public class ValidationBehavior<TRequest, TResponse>(IEnumerable<IValidator<TReq
 
         // Run all validators in parallel for better performance
         var validationResults = await Task.WhenAll(
-            _validators.Select(v => v.ValidateAsync(context, cancellationToken)));
+            validatorCollection.Select(v => v.ValidateAsync(context, cancellationToken)));
 
         // Collect all validation failures
         var failures = validationResults

@@ -5,7 +5,7 @@ using Sieve.Services;
 namespace ERPEZ.TenantManagement.Infrastructure.Persistence;
 public sealed class UnitOfWork : IUnitOfWork, IDisposable
 {
-    private readonly ApplicationDbContext _context;
+    private readonly ApplicationDbContext context;
 
     public ITenantRepository TenantRepository { get; }
     public ITenantSettingRepository TenantSettingRepository { get; }
@@ -25,7 +25,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         ICurrentUserService currentUser,
         IModuleRepository moduleRepository)
     {
-        _context = context ?? throw new ArgumentNullException(nameof(context));
+        this.context = context ?? throw new ArgumentNullException(nameof(context));
         CurrentUser = currentUser ?? throw new ArgumentNullException(nameof(currentUser));
         TenantMemberRepository = tenantMemberRepository ?? throw new ArgumentNullException(nameof(tenantMemberRepository));
         TenantRepository = tenantRepository ?? throw new ArgumentNullException(nameof(tenantRepository));
@@ -36,10 +36,10 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
 
     public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        return _context.SaveChangesAsync(cancellationToken);
+        return this.context.SaveChangesAsync(cancellationToken);
     }
 
 
 
-    public void Dispose() => _context.Dispose();
+    public void Dispose() => this.context.Dispose();
 }

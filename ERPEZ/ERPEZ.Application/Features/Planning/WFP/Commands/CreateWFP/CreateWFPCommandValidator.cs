@@ -4,7 +4,7 @@ namespace ERPEZ.Application.Features.Planning.WFP.Commands.CreateWFP;
 
 public class CreateWFPCommandValidator : AbstractValidator<CreateWFPCommand>
 {
-    private static readonly string[] ValidStatuses = [ "Draft", "Submitted", "Approved", "Rejected", "Completed" ];
+    private static readonly string[] validStatuses = [ "Draft", "Submitted", "Approved", "Rejected", "Completed" ];
     public CreateWFPCommandValidator()
     {
         // 1. DeliveryUnitId (Guid)
@@ -49,7 +49,7 @@ public class CreateWFPCommandValidator : AbstractValidator<CreateWFPCommand>
         RuleFor(x => x.Status)
             .NotEmpty()
             .WithMessage("Status is required.")
-            .Must(status => ValidStatuses.Contains(status, StringComparer.OrdinalIgnoreCase))
-            .WithMessage($"Status must be one of the following: {string.Join(", ", ValidStatuses)}.");
+            .Must(status => validStatuses.Contains(status, StringComparer.OrdinalIgnoreCase))
+            .WithMessage($"Status must be one of the following: {string.Join(", ", validStatuses)}.");
     }
 }
