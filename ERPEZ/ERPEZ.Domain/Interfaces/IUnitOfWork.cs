@@ -34,6 +34,7 @@ public interface IUnitOfWork
     IFunctionAllocationRepository FunctionAllocationRepository { get; }
     IFiscalYearRepository FiscalYearRepository { get; }
     IClusterRepository ClusterRepository { get; }
+    IWFPObjectiveTargetRepository WFPObjectiveTargetRepository { get; }
     Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default);
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
