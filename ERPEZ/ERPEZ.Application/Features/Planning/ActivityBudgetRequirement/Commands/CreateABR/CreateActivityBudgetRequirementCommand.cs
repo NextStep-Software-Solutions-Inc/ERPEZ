@@ -4,7 +4,7 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.ActivityBudgetRequirement.Commands.CreateABR;
 
-public class CreateActivityBudgetRequirementCommand : IRequest<ApiResponse<ActivityBudgetRequirementDto>>
+public class CreateActivityBudgetRequirementCommand : IRequest<ApiResponse<ActivityBudgetRequirementResponse>>
 {
     public Guid WFPObjectiveTargetId { get; set; }
     public Guid ObjectId { get; set; }

@@ -6,15 +6,15 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.ActivityBudgetRequirement.Commands.UpdateABR;
 
-public class UpdateActivityBudgetRequirementCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<UpdateActivityBudgetRequirementCommand, ApiResponse<ActivityBudgetRequirementDto>>
+public class UpdateActivityBudgetRequirementCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateActivityBudgetRequirementCommand, ApiResponse<ActivityBudgetRequirementResponse>>
 {
-    public async Task<ApiResponse<ActivityBudgetRequirementDto>> Handle(UpdateActivityBudgetRequirementCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<ActivityBudgetRequirementResponse>> Handle(UpdateActivityBudgetRequirementCommand request, CancellationToken cancellationToken)
     {
         var dto = request.UpdateActivityBudgetRequirement;
-        var abr = await _unitOfWork.ActivityBudgetRequirementRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken)
+        var abr = await unitOfWork.ActivityBudgetRequirementRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken)
             ?? throw new NotFoundException("Activity Budget Requirement not found.");
 
-        var duplicate = await _unitOfWork.ActivityBudgetRequirementRepository.FindAsync(
+        var duplicate = await unitOfWork.ActivityBudgetRequirementRepository.FindAsync(
             abr => abr.ItemDescription == dto.ItemDescription &&
             abr.Quantity == dto.Quantity &&
             abr.CostEstimates == dto.CostEstimates,
@@ -28,18 +28,20 @@ public class UpdateActivityBudgetRequirementCommandHandler(IUnitOfWork _unitOfWo
         abr.Quantity = dto.Quantity;
         abr.CostEstimates = dto.CostEstimates;
 
-        _unitOfWork.ActivityBudgetRequirementRepository.Update(abr);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        unitOfWork.ActivityBudgetRequirementRepository.Update(abr);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var result = new ActivityBudgetRequirementDto
+        var result = new ActivityBudgetRequirementResponse
         {
             Id = abr.Id,
-            WFPActivityId = abr.WFPActivityId,
+            WFPObjectiveTargetId = abr.WFPObjectiveTargetId,
             ObjectId = abr.ObjectId,
             ItemDescription =abr.ItemDescription,
             Quantity = abr.Quantity,
-            CostEstimates = abr.CostEstimates
+            CostEstimates = abr.CostEstimates,
+            CreatedAt = abr.CreatedAt,
+            CreatedBy = abr.CreatedBy
         };
-        return ApiResponse<ActivityBudgetRequirementDto>.Success(result, "WFP Objective updated successfully.");
+        return ApiResponse<ActivityBudgetRequirementResponse>.Success(result, "Activity Budget Requirement updated successfully.");
     }
 }

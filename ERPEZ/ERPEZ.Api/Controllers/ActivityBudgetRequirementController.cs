@@ -16,8 +16,8 @@ namespace ERPEZ.Api.Controllers
     public class ActivityBudgetRequirementController(ISender mediator) : ControllerBase
     {
         [HttpPost]
-        [ProducesResponseType(typeof(ApiResponse<ActivityBudgetRequirementDto>), StatusCodes.Status201Created)]
-        [ProducesResponseType(typeof(ApiResponse<ActivityBudgetRequirementDto>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<ActivityBudgetRequirementResponse>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<ActivityBudgetRequirementResponse>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateActivityBudgetRequirement([FromBody] CreateActivityBudgetRequirementCommand command)
         {
             var result = await mediator.Send(command);
@@ -25,12 +25,11 @@ namespace ERPEZ.Api.Controllers
             if (!result.Succeeded)
                 return BadRequest(result);
 
-            // Assuming the successful response returns a DTO
             return CreatedAtAction(nameof(GetActivityBudgetRequirementById), new { id = result.Data!.Id }, result);
         }
 
         [HttpGet]
-        [ProducesResponseType(typeof(PaginatedApiResponse<ActivityBudgetRequirement>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(PaginatedApiResponse<ActivityBudgetRequirementResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetActivityBudgetRequirements([FromQuery] GetActivityBudgetRequirementsQuery query)
         {
             var result = await mediator.Send(query);
@@ -38,7 +37,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<ActivityBudgetRequirement>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<ActivityBudgetRequirementResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetActivityBudgetRequirementById(Guid id)
         {
@@ -48,10 +47,10 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpPut("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<ActivityBudgetRequirementDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<ActivityBudgetRequirementResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> UpdateActivityBudgetRequirement(Guid id, [FromBody] UpdateActivityBudgetRequirementDto dto)
+        public async Task<IActionResult> UpdateActivityBudgetRequirement(Guid id, [FromBody] UpdateActivityBudgetRequirementRequest dto)
         {
             var command = new UpdateActivityBudgetRequirementCommand
             {

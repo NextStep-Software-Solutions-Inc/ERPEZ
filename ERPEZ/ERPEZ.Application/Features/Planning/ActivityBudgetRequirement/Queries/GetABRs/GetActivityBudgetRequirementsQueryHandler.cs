@@ -1,13 +1,14 @@
-﻿using ERPEZ.Application.Features.Planning.KPI.Queries.GetKPIsQuery;
+﻿using ERPEZ.Application.Features.Planning.ActivityBudgetRequirement.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
+using System.Linq.Expressions;
 
 namespace ERPEZ.Application.Features.Planning.ActivityBudgetRequirement.Queries.GetABRs;
 
-public class GetActivityBudgetRequirementsQueryHandler(IUnitOfWork _unitOfWork) : IRequestHandler<GetActivityBudgetRequirementsQuery, PaginatedApiResponse<Domain.Entities.Planning.ActivityBudgetRequirement>>
+public class GetActivityBudgetRequirementsQueryHandler(IUnitOfWork _unitOfWork) : IRequestHandler<GetActivityBudgetRequirementsQuery, PaginatedApiResponse<ActivityBudgetRequirementResponse>>
 {
-    public async Task<PaginatedApiResponse<Domain.Entities.Planning.ActivityBudgetRequirement>> Handle(GetActivityBudgetRequirementsQuery query, CancellationToken cancellationToken)
+    public async Task<PaginatedApiResponse<ActivityBudgetRequirementResponse>> Handle(GetActivityBudgetRequirementsQuery query, CancellationToken cancellationToken)
     {
         var sieveModel = new Sieve.Models.SieveModel
         {
@@ -16,8 +17,20 @@ public class GetActivityBudgetRequirementsQueryHandler(IUnitOfWork _unitOfWork) 
             Filters = query.Filters,
             Sorts = query.Sorts
         };
-        var (abrs, totalCount) = await _unitOfWork.ActivityBudgetRequirementRepository.GetAllAsync(sieveModel, cancellationToken: cancellationToken);
-        return new PaginatedApiResponse<Domain.Entities.Planning.ActivityBudgetRequirement>(
+
+        Expression<Func<Domain.Entities.Planning.ActivityBudgetRequirement, ActivityBudgetRequirementResponse>> projection = abr => new ActivityBudgetRequirementResponse
+        {
+            Id = abr.Id,
+            WFPObjectiveTargetId = abr.WFPObjectiveTargetId,
+            ObjectId = abr.ObjectId,
+            ItemDescription = abr.ItemDescription,
+            Quantity = abr.Quantity,
+            CostEstimates = abr.CostEstimates,
+            CreatedAt = abr.CreatedAt,
+            CreatedBy = abr.CreatedBy
+        };
+        var (abrs, totalCount) = await _unitOfWork.ActivityBudgetRequirementRepository.GetAllAsync(sieveModel, projection, cancellationToken: cancellationToken);
+        return new PaginatedApiResponse<ActivityBudgetRequirementResponse>(
             [.. abrs],
             query.PageNumber,
             query.PageSize,
