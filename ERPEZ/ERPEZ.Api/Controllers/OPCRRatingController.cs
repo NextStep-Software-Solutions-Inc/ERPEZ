@@ -4,7 +4,6 @@ using ERPEZ.Application.Features.Planning.OPCRRating.Commands.UpdateOPCRRating;
 using ERPEZ.Application.Features.Planning.OPCRRating.Dtos;
 using ERPEZ.Application.Features.Planning.OPCRRating.Queries.GetOPCRRatingById;
 using ERPEZ.Application.Features.Planning.OPCRRating.Queries.GetOPCRRatings;
-using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
