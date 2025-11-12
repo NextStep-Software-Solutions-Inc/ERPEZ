@@ -5,7 +5,7 @@
 namespace ERPEZ.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class AddIsPecentageInKPI : Migration
+    public partial class AddIsPercentageInKPI : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
