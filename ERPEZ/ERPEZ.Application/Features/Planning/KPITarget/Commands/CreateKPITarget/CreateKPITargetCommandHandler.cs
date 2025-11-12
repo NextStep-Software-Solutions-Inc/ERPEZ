@@ -1,11 +1,11 @@
-﻿using ERPEZ.Domain.Interfaces;
+using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.KPITarget.Commands.CreateKPITarget;
 
-public class CreateKPITargetCommandHandler(IUnitOfWork _unitOfWork)
+public class CreateKPITargetCommandHandler(IUnitOfWork unitOfWork)
     : IRequestHandler<CreateKPITargetCommand, ApiResponse<Domain.Entities.Planning.KPITarget>>
 {
     public async Task<ApiResponse<Domain.Entities.Planning.KPITarget>> Handle(CreateKPITargetCommand request, CancellationToken cancellationToken)
@@ -18,7 +18,7 @@ public class CreateKPITargetCommandHandler(IUnitOfWork _unitOfWork)
                 Succeeded = false
             };
         }
-        var kPITarget = await _unitOfWork.KPITargetRepository.FindAsync(
+        var kPITarget = await unitOfWork.KPITargetRepository.FindAsync(
             t => t.KPIId == request.KPIId && t.QuarterName == request.QuarterName,
             cancellationToken: cancellationToken
         );
@@ -28,7 +28,7 @@ public class CreateKPITargetCommandHandler(IUnitOfWork _unitOfWork)
 
         if (request.KPIId != Guid.Empty)
         {
-            var kpi = await _unitOfWork.KPIRepository.GetByIdAsync(request.KPIId, cancellationToken: cancellationToken)
+            var kpi = await unitOfWork.KPIRepository.GetByIdAsync(request.KPIId, cancellationToken: cancellationToken)
                 ?? throw new NotFoundException("KPI not found.");
         }
 
@@ -40,8 +40,8 @@ public class CreateKPITargetCommandHandler(IUnitOfWork _unitOfWork)
             QuarterName = request.QuarterName
         };
 
-        await _unitOfWork.KPITargetRepository.AddAsync(kpiTarget, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await unitOfWork.KPITargetRepository.AddAsync(kpiTarget, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
         return ApiResponse<Domain.Entities.Planning.KPITarget>.Success(kpiTarget, "KPI Target created successfully.");
     }
 }

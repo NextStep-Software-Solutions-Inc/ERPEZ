@@ -4,7 +4,7 @@ namespace ERPEZ.Application.Features.Planning.OPCR.Commands.CreateOPCR;
 
 public class CreateOPCRCommandValidator : AbstractValidator<CreateOPCRCommand>
 {
-    private readonly string[] ValidStatuses = ["Draft", "Submitted", "Approved", "Revising"];
+    private readonly string[] validStatuses = ["Draft", "Submitted", "Approved", "Revising"];
 
     public CreateOPCRCommandValidator()
     {
@@ -25,7 +25,7 @@ public class CreateOPCRCommandValidator : AbstractValidator<CreateOPCRCommand>
             .WithMessage("Status is required.")
             .MaximumLength(50)
             .WithMessage("Status cannot exceed 50 characters.")
-            .Must(status => ValidStatuses.Contains(status, StringComparer.OrdinalIgnoreCase))
-            .WithMessage($"Status must be one of the following: {string.Join(", ", ValidStatuses)}.");
+            .Must(status => validStatuses.Contains(status, StringComparer.OrdinalIgnoreCase))
+            .WithMessage($"Status must be one of the following: {string.Join(", ", validStatuses)}.");
     }
 }

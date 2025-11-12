@@ -1,12 +1,11 @@
 ﻿using ERPEZ.Domain.Common;
 using Sieve.Attributes;
-using System.Text.Json.Serialization;
 
 namespace ERPEZ.Domain.Entities.Planning;
 
 public class ActivityBudgetRequirement : BaseEntity
 {
-    public Guid WFPActivityId { get; set; }
+    public Guid WFPObjectiveTargetId { get; set; }
     public Guid ObjectId { get; set; }
     [Sieve(CanFilter = true, CanSort = true)]
     public string ItemDescription { get; set; } = string.Empty;
@@ -14,6 +13,6 @@ public class ActivityBudgetRequirement : BaseEntity
     public int Quantity { get; set; }
     [Sieve(CanFilter = true, CanSort = true)]
     public decimal CostEstimates { get; set; }
-    public virtual WFPActivity WFPActivity { get; set; } = null!;
+    public virtual WFPObjectiveTarget WFPObjectiveTarget { get; set; } = null!;
     public virtual Object Object { get; set; } = null!;
 }

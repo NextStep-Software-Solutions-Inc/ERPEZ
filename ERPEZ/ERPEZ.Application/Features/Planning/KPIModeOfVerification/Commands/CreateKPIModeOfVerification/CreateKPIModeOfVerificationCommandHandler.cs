@@ -1,11 +1,11 @@
-﻿using ERPEZ.Domain.Interfaces;
+using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.KPIModeOfVerification.Commands.CreateKPIModeOfVerification;
 
-public class CreateKPIModeOfVerificationCommandHandler(IUnitOfWork _unitOfWork)
+public class CreateKPIModeOfVerificationCommandHandler(IUnitOfWork unitOfWork)
     : IRequestHandler<CreateKPIModeOfVerificationCommand, ApiResponse<Domain.Entities.Planning.KPIModeOfVerification>>
 {
     public async Task<ApiResponse<Domain.Entities.Planning.KPIModeOfVerification>> Handle(CreateKPIModeOfVerificationCommand request, CancellationToken cancellationToken)
@@ -18,7 +18,7 @@ public class CreateKPIModeOfVerificationCommandHandler(IUnitOfWork _unitOfWork)
                 Succeeded = false
             };
         }
-        var kPIModeOfVerification = await _unitOfWork.KPIModeOfVerificationRepository.FindAsync(
+        var kPIModeOfVerification = await unitOfWork.KPIModeOfVerificationRepository.FindAsync(
             t => t.KPIId == request.KPIId && t.Name == request.Name,
             cancellationToken: cancellationToken
         );
@@ -28,7 +28,7 @@ public class CreateKPIModeOfVerificationCommandHandler(IUnitOfWork _unitOfWork)
 
         if (request.KPIId != Guid.Empty)
         {
-            var kpi = await _unitOfWork.KPIRepository.GetByIdAsync(request.KPIId, cancellationToken: cancellationToken)
+            var kpi = await unitOfWork.KPIRepository.GetByIdAsync(request.KPIId, cancellationToken: cancellationToken)
                 ?? throw new NotFoundException("KPI not found.");
         }
         var kpiModeOfVerification = new Domain.Entities.Planning.KPIModeOfVerification
@@ -38,8 +38,8 @@ public class CreateKPIModeOfVerificationCommandHandler(IUnitOfWork _unitOfWork)
             Description = request.Description
         };
 
-        await _unitOfWork.KPIModeOfVerificationRepository.AddAsync(kpiModeOfVerification, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await unitOfWork.KPIModeOfVerificationRepository.AddAsync(kpiModeOfVerification, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
         return ApiResponse<Domain.Entities.Planning.KPIModeOfVerification>.Success(kpiModeOfVerification, "KPI Mode of verification created successfully.");
     }
 }

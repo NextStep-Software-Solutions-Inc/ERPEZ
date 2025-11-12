@@ -7,7 +7,7 @@ public interface IUnitOfWork
     IKPIRatingRepository KPIRatingRepository { get; }
     IDUAllocationRepository DUAllocationRepository { get; }
     IKPITargetRepository KPITargetRepository { get; }
-    IKPIAssignmentRepository KPIAssignmentRepository { get; }
+    IDUKPIAssignmentRepository DUKPIAssignmentRepository { get; }
     IKPIModeOfVerificationRepository KPIModeOfVerificationRepository { get; }
     IReceivedFundRepository ReceivedFundRepository { get; }
     IMFOKPIRepository MFOKPIRepository { get; }
@@ -24,12 +24,15 @@ public interface IUnitOfWork
     IOPCRActivityRepository OPCRActivityRepository { get; }
     IOPCRPAPDepartmentRepository OPCRPAPDepartmentRepository { get; }
     IOPCREvaluationRepository OPCREvaluationRepository { get; }
+    IObjectRepository ObjectRepository { get; }
     IOPCRRatingRepository OPCRRatingRepository { get; }
     IWFPRepository WFPRepository { get; }
     IWFPActivityRepository WFPActivityRepository { get; }
     IWFPObjectiveRepository WFPObjectiveRepository { get; }
     IWFPOutcomeRepository WFPOutcomeRepository { get; }
     IWFPPAPDepartmentRepository WFPPAPDepartmentRepository { get; }
-    IFunctionPercentageAllocationRepository FunctionPercentageAllocationRepository { get; }
+    IFunctionAllocationRepository FunctionAllocationRepository { get; }
+    IFiscalYearRepository FiscalYearRepository { get; }
+    Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default);
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

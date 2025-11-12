@@ -5,7 +5,7 @@ namespace ERPEZ.Application.Features.Planning.Organization.Commands.CreateOrgani
 public class CreateOrganizationCommandValidator : AbstractValidator<CreateOrganizationCommand>
 {
     // Updated list of expected organization types
-    private readonly string[] ValidTypes =
+    private readonly string[] validTypes =
     [
         "Department", "Agency", "OperatingUnitClass", "LowerLevelOperatingUnit"
     ];
@@ -42,7 +42,7 @@ public class CreateOrganizationCommandValidator : AbstractValidator<CreateOrgani
         RuleFor(x => x.Type)
             .NotEmpty()
             .WithMessage("Organization Type is required.")
-            .Must(type => ValidTypes.Contains(type, StringComparer.OrdinalIgnoreCase))
-            .WithMessage($"Organization Type must be one of the following: {string.Join(", ", ValidTypes)}.");
+            .Must(type => validTypes.Contains(type, StringComparer.OrdinalIgnoreCase))
+            .WithMessage($"Organization Type must be one of the following: {string.Join(", ", validTypes)}.");
     }
 }

@@ -3,27 +3,27 @@ using Sieve.Services;
 using System.Reflection;
 using FluentValidation;
 using ERPEZ.Application.Common.Behaviors;
+using Microsoft.AspNetCore.Builder;
 
 namespace ERPEZ.Application;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddApplicationServices(this IServiceCollection services)
+    public static WebApplicationBuilder AddApplicationServices(this WebApplicationBuilder builder)
     {
         var assembly = Assembly.GetExecutingAssembly();
 
-        services.AddScoped<ISieveProcessor, SieveProcessor>();
+        builder.Services.AddScoped<ISieveProcessor, SieveProcessor>();
 
-        services.AddMediatR(config =>
+        builder.Services.AddMediatR(config =>
         {
             config.RegisterServicesFromAssembly(assembly);
 
             config.AddOpenBehavior(typeof(ValidationBehavior<,>));
         });
 
-        services.AddValidatorsFromAssembly(assembly);
+        builder.Services.AddValidatorsFromAssembly(assembly);
 
-
-        return services;
+        return builder;
     }
 }

@@ -5,7 +5,7 @@ namespace ERPEZ.Application.Features.Planning.MFOPAP.Commands.UpdateMFOPAP;
 public class UpdateMFOPAPCommandValidator : AbstractValidator<UpdateMFOPAPCommand>
 {
     // Updated list of expected MFO/PAP Types
-    private readonly string[] ValidTypes = new[]
+    private readonly string[] validTypes = new[]
     {
         "Major Final Output", "Program", "Activity", "Project",
         "SubProject", "LowerLevelOperatingUnit"
@@ -50,8 +50,8 @@ public class UpdateMFOPAPCommandValidator : AbstractValidator<UpdateMFOPAPComman
         RuleFor(x => x.UpdateMFOPAP.Type)
             .NotEmpty()
             .WithMessage("Type is required.")
-            .Must(type => ValidTypes.Contains(type, StringComparer.OrdinalIgnoreCase))
-            .WithMessage($"Type must be one of the following: {string.Join(", ", ValidTypes)}.");
+            .Must(type => validTypes.Contains(type, StringComparer.OrdinalIgnoreCase))
+            .WithMessage($"Type must be one of the following: {string.Join(", ", validTypes)}.");
 
         // 6. Self-Parenting Check (Cannot be its own parent)
         RuleFor(x => x.UpdateMFOPAP.ParentId)
