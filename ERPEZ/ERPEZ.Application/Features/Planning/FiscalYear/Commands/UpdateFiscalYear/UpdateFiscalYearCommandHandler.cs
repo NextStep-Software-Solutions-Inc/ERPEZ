@@ -25,7 +25,7 @@ public class UpdateFiscalYearCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
                 Percentage = a.Percentage
             }).ToList();
 
-            if (allocations.Count != 0) fiscalYear.FunctionAllocations = allocations;
+            fiscalYear.FunctionAllocations = allocations;
 
             unitOfWork.FiscalYearRepository.Update(fiscalYear);
             await unitOfWork.SaveChangesAsync(cancellationToken);
