@@ -6,7 +6,7 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Office.Commands.CreateOffice;
 
-public class CreateOfficeCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateOfficeCommand, ApiResponse<Domain.Entities.Planning.Office>>
+public class CreateOfficeCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateOfficeCommand, ApiResponse<OfficeResponse>>
 {
     public async Task<ApiResponse<OfficeResponse>> Handle(CreateOfficeCommand request, CancellationToken cancellationToken)
     {

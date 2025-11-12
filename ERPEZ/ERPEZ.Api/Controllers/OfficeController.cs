@@ -1,10 +1,9 @@
-﻿using ERPEZ.Application.Features.Planning.Office.Commands.CreateOffice;
+using ERPEZ.Application.Features.Planning.Office.Commands.CreateOffice;
 using ERPEZ.Application.Features.Planning.Office.Commands.DeleteOffice;
 using ERPEZ.Application.Features.Planning.Office.Commands.UpdateOffice;
 using ERPEZ.Application.Features.Planning.Office.Dtos;
 using ERPEZ.Application.Features.Planning.Office.Queries.GetOfficeByIdQuery;
 using ERPEZ.Application.Features.Planning.Office.Queries.GetOfficesQuery;
-using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -16,8 +15,8 @@ namespace ERPEZ.Api.Controllers
     public class OfficeController(ISender mediator) : ControllerBase
     {
         [HttpPost]
-        [ProducesResponseType(typeof(ApiResponse<Domain.Entities.Planning.Office>), StatusCodes.Status201Created)]
-        [ProducesResponseType(typeof(ApiResponse<Domain.Entities.Planning.Office>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<OfficeResponse>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<OfficeResponse>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateOffice([FromBody] CreateOfficeCommand command)
         {
             var office = await mediator.Send(command);
@@ -29,7 +28,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet]
-        [ProducesResponseType(typeof(PaginatedApiResponse<Application.Features.Planning.Office.Dtos.OfficeResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(PaginatedApiResponse<OfficeResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetOffices([FromQuery] GetOfficesQuery query)
         {
             var result = await mediator.Send(query);
@@ -37,7 +36,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<Application.Features.Planning.Office.Dtos.OfficeResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<OfficeResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetOfficeById(Guid id)
         {
