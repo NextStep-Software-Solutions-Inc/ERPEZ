@@ -1,5 +1,5 @@
 using FluentValidation;
-using ERPEZ.Application.Common.Constants;
+using ERPEZ.Domain.Constants;
 
 namespace ERPEZ.Application.Features.Planning.FiscalYear.Commands.UpdateFiscalYear;
 

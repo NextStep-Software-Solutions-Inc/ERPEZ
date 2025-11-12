@@ -1,4 +1,4 @@
-﻿namespace ERPEZ.Application.Common.Constants;
+﻿namespace ERPEZ.Domain.Constants;
 
 public static class FunctionTypeConstants
 {
