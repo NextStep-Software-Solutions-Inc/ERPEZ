@@ -54,7 +54,7 @@ public static class DependencyInjection
         services.AddScoped<ITransactionRepository, TransactionRepository>();
         services.AddScoped<IMFOPAPRepository, MFOPAPRepository>();
         services.AddScoped<IFunctionAllocationRepository, FunctionAllocationRepository>();
-    services.AddScoped<IFiscalYearRepository, FiscalYearRepository>();
+        services.AddScoped<IFiscalYearRepository, FiscalYearRepository>();
         services.AddScoped<IDUFundAllocationRepository, DUFundAllocationRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
