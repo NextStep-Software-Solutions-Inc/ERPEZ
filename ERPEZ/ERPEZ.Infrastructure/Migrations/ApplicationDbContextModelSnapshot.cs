@@ -576,7 +576,10 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
-                    b.Property<bool?>("IsOfficeMandate")
+                    b.Property<bool>("IsOfficeMandate")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsPercentage")
                         .HasColumnType("boolean");
 
                     b.Property<string>("Name")

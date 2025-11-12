@@ -6,17 +6,17 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.KPI.Commands.CreateKPI;
 
-public class CreateKPICommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateKPICommand, ApiResponse<KPIDto>>
+public class CreateKPICommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateKPICommand, ApiResponse<KPIResponse>>
 {
-    public async Task<ApiResponse<KPIDto>> Handle(CreateKPICommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<KPIResponse>> Handle(CreateKPICommand request, CancellationToken cancellationToken)
     {
         var existingKpi = await unitOfWork.KPIRepository.FindAsync(
-            x => x.Name == request.Name,
+            x => x.Name == request.Name && x.FunctionType == request.FunctionType,
             cancellationToken
         );
 
         if (existingKpi != null)
-            throw new ConflictException("KPI with the same name and Function Percentage Allocation already exists.");
+            throw new ConflictException("KPI with the same name and Function type already exists.");
 
         if (request.ParentKPIId != null)
         {
@@ -31,13 +31,14 @@ public class CreateKPICommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<C
             Name = request.Name,
             Description = request.Description,
             IsOfficeMandate = request.IsOfficeMandate,
+            IsPercentage = request.IsPercentage,
             Status = "Draft"
         };
 
         await unitOfWork.KPIRepository.AddAsync(kpi, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var dto = new KPIDto
+        var dto = new KPIResponse
         {
             Id = kpi.Id,
             ParentKPIId = kpi.ParentKPIId,
@@ -45,8 +46,11 @@ public class CreateKPICommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<C
             Name = kpi.Name,
             Description = kpi.Description,
             IsOfficeMandate = kpi.IsOfficeMandate,
-            Status = kpi.Status
+            IsPercentage = kpi.IsPercentage,
+            Status = kpi.Status,
+            CreatedAt = kpi.CreatedAt,
+            CreatedBy = kpi.CreatedBy
         };
-        return ApiResponse<KPIDto>.Success(dto, "KPI created successfully.");
+        return ApiResponse<KPIResponse>.Success(dto, "KPI created successfully.");
     }
 }
