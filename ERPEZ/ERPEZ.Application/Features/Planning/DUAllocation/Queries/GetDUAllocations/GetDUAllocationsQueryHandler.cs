@@ -4,7 +4,7 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.DUAllocation.Queries.GetDUAllocations;
 
-public class GetDUAllocationsQueryHandler(IUnitOfWork _unitOfWork) : IRequestHandler<GetDUAllocationsQuery, PaginatedApiResponse<Domain.Entities.Planning.DUAllocation>>
+public class GetDUAllocationsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetDUAllocationsQuery, PaginatedApiResponse<Domain.Entities.Planning.DUAllocation>>
 {
     public async Task<PaginatedApiResponse<Domain.Entities.Planning.DUAllocation>> Handle(GetDUAllocationsQuery query, CancellationToken cancellationToken)
     {
@@ -15,7 +15,7 @@ public class GetDUAllocationsQueryHandler(IUnitOfWork _unitOfWork) : IRequestHan
             Filters = query.Filters,
             Sorts = query.Sorts
         };
-        var (duallocations, totalCount) = await _unitOfWork.DUAllocationRepository.GetAllAsync(sieveModel, cancellationToken: cancellationToken);
+        var (duallocations, totalCount) = await unitOfWork.DUAllocationRepository.GetAllAsync(sieveModel, cancellationToken: cancellationToken);
         return new PaginatedApiResponse<Domain.Entities.Planning.DUAllocation>(
             [.. duallocations],
             query.PageNumber,

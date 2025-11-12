@@ -5,11 +5,11 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.KPIRating.Queries.GetKPIRatingById;
 
-public class GetKPIRatingByIdQueryHandler(IUnitOfWork _unitOfWork) : IRequestHandler<GetKPIRatingByIdQuery, ApiResponse<Domain.Entities.Planning.KPIRating>>
+public class GetKPIRatingByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetKPIRatingByIdQuery, ApiResponse<Domain.Entities.Planning.KPIRating>>
 {
     public async Task<ApiResponse<Domain.Entities.Planning.KPIRating>> Handle(GetKPIRatingByIdQuery request, CancellationToken cancellationToken)
     {
-        var kPIRating = await _unitOfWork.KPIRatingRepository.FindAsync(
+        var kPIRating = await unitOfWork.KPIRatingRepository.FindAsync(
            t => t.Id == request.Id,
             cancellationToken: cancellationToken) ?? throw new NotFoundException("No data found.");
 

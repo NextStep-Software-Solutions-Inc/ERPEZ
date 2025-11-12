@@ -7,12 +7,12 @@ using MediatR;
 
 namespace ERPEZ.TenantManagement.Application.Features.TenantSubscriptions.Commands.CreateTenantSubscription;
 
-public sealed class CreateTenantSubscriptionCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<CreateTenantSubscriptionCommand, ApiResponse<Guid>>
+public sealed class CreateTenantSubscriptionCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateTenantSubscriptionCommand, ApiResponse<Guid>>
 {
     public async Task<ApiResponse<Guid>> Handle(CreateTenantSubscriptionCommand command, CancellationToken cancellationToken)
     {
-        var existTenant = await _unitOfWork.TenantRepository.GetByIdAsync(command.TenantId, cancellationToken: cancellationToken) ?? throw new NotFoundException("Tenant does not exist.");
-        var existTenantSubscription = await _unitOfWork.TenantSubscriptionRepository.FindAsync(ts =>
+        var existTenant = await unitOfWork.TenantRepository.GetByIdAsync(command.TenantId, cancellationToken: cancellationToken) ?? throw new NotFoundException("Tenant does not exist.");
+        var existTenantSubscription = await unitOfWork.TenantSubscriptionRepository.FindAsync(ts =>
             ts.TenantId == command.TenantId &&
             ts.StartDate == command.StartDate &&
             ts.EndDate == command.EndDate && !ts.IsDeleted, cancellationToken);
@@ -52,8 +52,8 @@ public sealed class CreateTenantSubscriptionCommandHandler(IUnitOfWork _unitOfWo
             AutoRenew = command.AutoRenew
         };
 
-        await _unitOfWork.TenantSubscriptionRepository.AddAsync(tenantSubscription, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await unitOfWork.TenantSubscriptionRepository.AddAsync(tenantSubscription, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
         return ApiResponse<Guid>.Success(tenantSubscription.Id, "Tenant subscription created successfully.");
     }
 }
