@@ -22,7 +22,6 @@ public class UpdateOPCRRatingCommandValidator : AbstractValidator<UpdateOPCRRati
         // Remarks (Optional String?, Max Length if present)
         RuleFor(x => x.UpdateOPCRRating.Remarks)
             .MaximumLength(1000)
-            .WithMessage("Remarks cannot exceed 1000 characters.")
-            .When(x => x.UpdateOPCRRating.Remarks is not null); 
+            .WithMessage("Remarks cannot exceed 1000 characters.");
     }
 }
