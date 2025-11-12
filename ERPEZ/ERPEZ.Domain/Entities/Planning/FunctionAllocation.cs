@@ -11,7 +11,6 @@ public class FunctionAllocation : BaseEntity
     public FiscalYear FiscalYear { get; set; } = null!;
     
     public string FunctionType { get; set; } = string.Empty;
-
     [Sieve(CanFilter = true, CanSort = true)]
     public decimal Percentage { get; set; }
 }
