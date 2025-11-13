@@ -1,5 +1,4 @@
 using ERPEZ.Application.Features.Planning.KPITarget.Dtos;
-using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -15,21 +14,30 @@ public class UpdateKPITargetCommandHandler(IUnitOfWork unitOfWork) : IRequestHan
 
         var kpiTarget = await unitOfWork.KPITargetRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken)
             ?? throw new NotFoundException("KPI Target not found.");
+        var kpi = await unitOfWork.KPIRepository.GetByIdAsync(kpiTarget.KPIId, cancellationToken: cancellationToken);
 
         var duplicate = await unitOfWork.KPITargetRepository.FindAsync(x =>
+            x.KPIId == kpiTarget.KPIId &&
             x.QuarterName == dto.QuarterName &&
             x.Period == dto.Period &&
             x.Id != request.Id, cancellationToken);
         if (duplicate != null)
-            throw new ConflictException("KPI Target already exists.");
+            throw new ConflictException($"A KPI Target with Quarter '{dto.QuarterName}' and Period '{dto.Period}' already exists for this KPI.");
 
         var targetValue = dto?.TargetValue ?? kpiTarget.TargetValue;
-        decimal targetValueToSave = targetValue;
 
-        var kpi = await unitOfWork.KPIRepository.GetByIdAsync(kpiTarget.KPIId, cancellationToken: cancellationToken);
-        if (kpi != null && kpi.IsPercentage)
+        decimal targetValueToSave;
+        if (dto != null && dto.TargetValue.HasValue)
         {
-            targetValueToSave = targetValue / 100;
+            targetValueToSave = dto.TargetValue.Value;
+            if (kpi != null && kpi.IsPercentage)
+            {
+                targetValueToSave = dto.TargetValue.Value / 100;
+            }
+        }
+        else
+        {
+            targetValueToSave = kpiTarget.TargetValue;
         }
 
         kpiTarget.QuarterName = dto?.QuarterName ?? kpiTarget.QuarterName;
