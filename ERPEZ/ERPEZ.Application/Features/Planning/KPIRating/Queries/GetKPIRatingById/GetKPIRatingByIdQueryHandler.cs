@@ -16,7 +16,7 @@ public class GetKPIRatingByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHand
 
         var result = new KPIRatingResponse()
         {
-            Id = kPIRating.KPIId,
+            Id = kPIRating.Id,
             KPIId = kPIRating.KPIId,
             NumericalRating = kPIRating.NumericalRating,
             PerformanceMeasureId = kPIRating.PerformanceMeasureId,
