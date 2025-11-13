@@ -1,4 +1,4 @@
-﻿using ERPEZ.Domain.Entities.Planning;
+using ERPEZ.Domain.Entities.Planning;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
 using Object = ERPEZ.Domain.Entities.Planning.Object;
@@ -147,7 +147,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasOne(mv => mv.KPI)
             .WithMany(k => k.KPIModeOfVerifications)
             .HasForeignKey(mv => mv.KPIId);
+
         // KPIRating
+        modelBuilder.Entity<KPIRating>()
+            .HasIndex(kr => new { kr.KPIId, kr.PerformanceMeasureId, kr.NumericalRating })
+            .IsUnique();
 
         modelBuilder.Entity<KPIRating>()
             .HasOne(r => r.KPI)
