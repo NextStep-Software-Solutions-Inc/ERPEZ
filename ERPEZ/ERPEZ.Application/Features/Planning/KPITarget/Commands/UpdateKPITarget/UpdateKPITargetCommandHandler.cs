@@ -23,7 +23,7 @@ public class UpdateKPITargetCommandHandler(IUnitOfWork unitOfWork) : IRequestHan
         if (duplicate != null)
             throw new ConflictException("KPI Target already exists.");
 
-        var targetValue = dto.TargetValue ?? kpiTarget.TargetValue;
+        var targetValue = dto?.TargetValue ?? kpiTarget.TargetValue;
         decimal targetValueToSave = targetValue;
 
         var kpi = await unitOfWork.KPIRepository.GetByIdAsync(kpiTarget.KPIId, cancellationToken: cancellationToken);
@@ -43,7 +43,9 @@ public class UpdateKPITargetCommandHandler(IUnitOfWork unitOfWork) : IRequestHan
         {
             Id = kpiTarget.Id,
             KPIId = kpiTarget.KPIId,
-            TargetValue = kpiTarget.TargetValue,
+            TargetValue = kpiTarget.KPI.IsPercentage
+                ? kpiTarget.TargetValue * 100M
+                : kpiTarget.TargetValue,
             Period = kpiTarget.Period,
             QuarterName = kpiTarget.QuarterName,
             CreatedAt = kpiTarget.CreatedAt,

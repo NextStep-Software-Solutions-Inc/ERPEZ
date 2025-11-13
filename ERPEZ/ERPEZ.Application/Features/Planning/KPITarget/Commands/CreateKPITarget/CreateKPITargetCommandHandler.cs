@@ -41,7 +41,10 @@ public class CreateKPITargetCommandHandler(IUnitOfWork unitOfWork)
         var result = new KPITargetResponse()
         {
             Id = kpiTarget.Id,
-            TargetValue = kpiTarget.TargetValue,
+            KPIId = kpiTarget.KPIId,
+            TargetValue = kpiTarget.KPI.IsPercentage
+                ? kpiTarget.TargetValue * 100M
+                : kpiTarget.TargetValue,
             Period = kpiTarget.Period,
             QuarterName= kpiTarget.QuarterName,
             CreatedAt = kpiTarget.CreatedAt,
