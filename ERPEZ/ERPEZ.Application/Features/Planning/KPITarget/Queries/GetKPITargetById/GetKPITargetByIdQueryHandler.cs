@@ -17,7 +17,10 @@ public class GetKPITargetByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHand
         decimal kpiTargetValue = kpiTarget.TargetValue;
 
         var kpi = await unitOfWork.KPIRepository.GetByIdAsync(kpiTarget.KPIId, cancellationToken: cancellationToken);
-        if (kpi != null && kpi.IsPercentage)  kpiTargetValue = kpiTarget.TargetValue * 100;
+        if (kpi != null && kpi.IsPercentage)
+        {
+            kpiTargetValue = kpiTarget.TargetValue * 100;
+        }
 
         var result = new KPITargetResponse()
         {
