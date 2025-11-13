@@ -15,7 +15,7 @@ public class CreateWFPObjectiveTargetCommandHandler(IUnitOfWork unitOfWork) : IR
         w.ActivityName == request.ActivityName, cancellationToken);
         if (duplicate != null) throw new ConflictException("WFP Objective Target already exists.");
 
-        _ = unitOfWork.WFPObjectiveRepository.GetByIdAsync(request.WFPObjectiveId, cancellationToken) ?? throw new NotFoundException("WFP Objective not found.");
+        _ = await unitOfWork.WFPObjectiveRepository.GetByIdAsync(request.WFPObjectiveId, cancellationToken) ?? throw new NotFoundException("WFP Objective not found.");
 
         var wFPObjectiveTarget = new Domain.Entities.Planning.WFPObjectiveTarget
         {

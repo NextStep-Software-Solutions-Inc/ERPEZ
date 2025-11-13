@@ -16,7 +16,7 @@ public class UpdateWFPObjectiveTargetCommandHandler(IUnitOfWork unitOfWork) : IR
 
         var duplicate = await unitOfWork.WFPObjectiveTargetRepository.FindAsync(
             x => x.Id != request.Id &&
-            x.ObjectiveId != wfpObjectiveTarget.ObjectiveId &&
+            x.WFPObjectiveId != wfpObjectiveTarget.WFPObjectiveId &&
             x.ActivityName == dto.ActivityName &&
             x.Indicator == dto.Indicator,
             cancellationToken
@@ -28,7 +28,7 @@ public class UpdateWFPObjectiveTargetCommandHandler(IUnitOfWork unitOfWork) : IR
         wfpObjectiveTarget.Indicator = dto.Indicator ?? wfpObjectiveTarget.Indicator;
         wfpObjectiveTarget.Weight = dto.Weight ?? wfpObjectiveTarget.Weight;
 
-        unitOfWork.ClusterRepository.Update(wfpObjectiveTarget);
+        unitOfWork.WFPObjectiveTargetRepository.Update(wfpObjectiveTarget);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         var result = new WFPObjectiveTargetResponse()

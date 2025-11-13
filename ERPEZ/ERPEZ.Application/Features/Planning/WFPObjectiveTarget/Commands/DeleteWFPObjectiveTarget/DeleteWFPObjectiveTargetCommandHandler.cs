@@ -9,7 +9,7 @@ public class DeleteWFPObjectiveTargetCommandHandler(IUnitOfWork unitOfWork) : IR
 {
     public async Task<ApiResponse<Unit>> Handle(DeleteWFPObjectiveTargetCommand request, CancellationToken cancellationToken)
     {
-        var wfpObjectiveTarget = await unitOfWork.ClusterRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("WFP Objective Target not found.");
+        var wfpObjectiveTarget = await unitOfWork.WFPObjectiveTargetRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("WFP Objective Target not found.");
 
         unitOfWork.WFPObjectiveTargetRepository.Remove(wfpObjectiveTarget);
         await unitOfWork.SaveChangesAsync(cancellationToken);

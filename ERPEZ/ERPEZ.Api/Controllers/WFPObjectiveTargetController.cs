@@ -71,12 +71,7 @@ namespace ERPEZ.Api.Controllers
             var command = new DeleteWFPObjectiveTargetCommand(id);
             var result = await mediator.Send(command);
 
-            if (result.Succeeded)
-            {
-                return NoContent();
-            }
-
-            return BadRequest(result);
+            return result.Succeeded ? Ok(result) : NoContent();
         }
     }
 }
