@@ -39,7 +39,7 @@ public class CreateKPIRatingCommandHandler(IUnitOfWork unitOfWork)
         await unitOfWork.SaveChangesAsync(cancellationToken);
         var result = new KPIRatingResponse()
         {
-            Id = kPIRating.KPIId,
+            Id = kPIRating.Id,
             KPIId = kPIRating.KPIId,
             NumericalRating = kPIRating.NumericalRating,
             PerformanceMeasureId = kPIRating.PerformanceMeasureId,
