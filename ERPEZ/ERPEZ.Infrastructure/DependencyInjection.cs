@@ -1,4 +1,4 @@
-﻿using ERPEZ.Domain.Interfaces;
+using ERPEZ.Domain.Interfaces;
 using ERPEZ.Infrastructure.Persistence;
 using ERPEZ.Infrastructure.Persistence.Repositories;
 using Hangfire;
@@ -49,6 +49,7 @@ public static class DependencyInjection
         services.AddScoped<IOfficeRepository, OfficeRepository>();
         services.AddScoped<IDeliveryUnitRepository, DeliveryUnitRepository>();
         services.AddScoped<IOrganizationRepository, OrganizationRepository>();
+        services.AddScoped<IObjectRepository, ObjectRepository>();
         services.AddScoped<IFundSourceRepository, FundSourceRepository>();
         services.AddScoped<ILocationRepository, LocationRepository>();
         services.AddScoped<ITransactionRepository, TransactionRepository>();
@@ -57,6 +58,8 @@ public static class DependencyInjection
         services.AddScoped<IFiscalYearRepository, FiscalYearRepository>();
         services.AddScoped<IDUFundAllocationRepository, DUFundAllocationRepository>();
         services.AddScoped<IClusterRepository, ClusterRepository>();
+        services.AddScoped<IActivityBudgetRequirementRepository, ActivityBudgetRequirementRepository>();
+        services.AddScoped<IWFPObjectiveTargetRepository, WFPObjectiveTargetRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         // Add Hangfire

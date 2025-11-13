@@ -1870,15 +1870,10 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid>("WFPId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("WFPId1")
-                        .HasColumnType("uuid");
-
                     b.Property<decimal>("Weight")
-                        .HasColumnType("numeric");
+                        .HasColumnType("decimal(18, 2)");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("WFPId1");
 
                     b.HasIndex("WFPId", "Description")
                         .IsUnique();
@@ -1926,9 +1921,12 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<decimal>("Weight")
-                        .HasColumnType("numeric");
+                        .HasColumnType("decimal(18, 2)");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("WFPObjectiveId", "ActivityName")
+                        .IsUnique();
 
                     b.HasIndex("WFPObjectiveId", "ActivityName", "Indicator")
                         .IsUnique();
@@ -1965,7 +1963,7 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("date");
 
                     b.Property<decimal>("TargetValue")
-                        .HasColumnType("numeric");
+                        .HasColumnType("decimal(18, 2)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -1977,6 +1975,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("WFPObjectiveTargetId", "StartDate")
+                        .IsUnique();
 
                     b.HasIndex("WFPObjectiveTargetId", "StartDate", "EndDate")
                         .IsUnique();
@@ -2674,14 +2675,10 @@ namespace ERPEZ.Infrastructure.Migrations
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WFPObjective", b =>
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Planning.WFP", "WFP")
-                        .WithMany()
+                        .WithMany("WFPObjectives")
                         .HasForeignKey("WFPId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.WFP", null)
-                        .WithMany("WFPObjectives")
-                        .HasForeignKey("WFPId1");
 
                     b.Navigation("WFP");
                 });
