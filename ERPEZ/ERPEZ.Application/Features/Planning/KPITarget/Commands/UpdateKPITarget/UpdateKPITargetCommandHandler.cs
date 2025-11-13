@@ -22,7 +22,7 @@ public class UpdateKPITargetCommandHandler(IUnitOfWork unitOfWork) : IRequestHan
             x.Period == dto.Period &&
             x.Id != request.Id, cancellationToken);
         if (duplicate != null)
-            throw new ConflictException("KPI Target already exists.");
+            throw new ConflictException($"A KPI Target with Quarter '{dto.QuarterName}' and Period '{dto.Period}' already exists for this KPI.");
 
         var kpi = await unitOfWork.KPIRepository.GetByIdAsync(kpiTarget.KPIId, cancellationToken: cancellationToken);
 
