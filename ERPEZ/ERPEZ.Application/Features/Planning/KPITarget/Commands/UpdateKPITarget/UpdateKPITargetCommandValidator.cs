@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 
 namespace ERPEZ.Application.Features.Planning.KPITarget.Commands.UpdateKPITarget;
 
@@ -15,11 +15,6 @@ public class UpdateKPITargetCommandValidator : AbstractValidator<UpdateKPITarget
             .WithMessage("KPI Target ID is required for update.")
             .Must(id => id != Guid.Empty)
             .WithMessage("KPI Target ID must be a valid, non-empty GUID.");
-
-        // 2. KPIId (Required GUID)
-        RuleFor(x => x.UpdateKPITarget.KPIId)
-            .NotEmpty()
-            .WithMessage("KPI ID is required and must be a valid, non-empty GUID.");
 
         // 3. TargetValue (Required Decimal, Non-Negative Value)
         RuleFor(x => x.UpdateKPITarget.TargetValue)

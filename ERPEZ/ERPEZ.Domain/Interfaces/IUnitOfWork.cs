@@ -2,6 +2,7 @@ namespace ERPEZ.Domain.Interfaces;
 
 public interface IUnitOfWork
 {
+    IActivityBudgetRequirementRepository ActivityBudgetRequirementRepository { get; }
     IPerformanceMeasureRepository PerformanceMeasureRepository { get; }
     IDUFundAllocationRepository DUFundAllocationRepository { get; }
     IKPIRatingRepository KPIRatingRepository { get; }
@@ -33,6 +34,7 @@ public interface IUnitOfWork
     IFunctionAllocationRepository FunctionAllocationRepository { get; }
     IFiscalYearRepository FiscalYearRepository { get; }
     IClusterRepository ClusterRepository { get; }
+    IWFPObjectiveTargetRepository WFPObjectiveTargetRepository { get; }
     Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default);
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

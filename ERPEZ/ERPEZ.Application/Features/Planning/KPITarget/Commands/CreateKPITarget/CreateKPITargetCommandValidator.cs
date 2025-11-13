@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 
 namespace ERPEZ.Application.Features.Planning.KPITarget.Commands.CreateKPITarget;
 
@@ -30,7 +30,6 @@ public class CreateKPITargetCommandValidator : AbstractValidator<CreateKPITarget
         RuleFor(x => x.QuarterName)
             .Must(quarter => validQuarters.Contains(quarter, StringComparer.OrdinalIgnoreCase))
             .WithMessage($"Quarter Name must be one of the following: {string.Join(", ", validQuarters)}.")
-            // Allow QuarterName to be null or empty if the period is NOT Quarterly
             .When(x => !string.IsNullOrWhiteSpace(x.QuarterName) || !x.Period.Equals("Quarterly", StringComparison.OrdinalIgnoreCase));
 
         // Conditional requirement: QuarterName must be set if Period is "Quarterly"
