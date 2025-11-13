@@ -1,6 +1,7 @@
-﻿using ERPEZ.Shared.Common;
+using ERPEZ.Application.Features.Planning.KPITarget.Dtos;
+using ERPEZ.Shared.Common;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.KPITarget.Queries.GetKPITargetById;
 
-public record class GetKPITargetByIdQuery(Guid Id) : IRequest<ApiResponse<Domain.Entities.Planning.KPITarget>>;
+public record class GetKPITargetByIdQuery(Guid Id) : IRequest<ApiResponse<KPITargetResponse>>;
