@@ -24,13 +24,20 @@ public class UpdateKPITargetCommandHandler(IUnitOfWork unitOfWork) : IRequestHan
         if (duplicate != null)
             throw new ConflictException("KPI Target already exists.");
 
-        var targetValue = dto.TargetValue ?? kpiTarget.TargetValue;
-        decimal targetValueToSave = targetValue;
-
         var kpi = await unitOfWork.KPIRepository.GetByIdAsync(kpiTarget.KPIId, cancellationToken: cancellationToken);
-        if (kpi != null && kpi.IsPercentage)
+
+        decimal targetValueToSave;
+        if (dto.TargetValue.HasValue)
         {
-            targetValueToSave = targetValue / 100;
+            targetValueToSave = dto.TargetValue.Value;
+            if (kpi != null && kpi.IsPercentage)
+            {
+                targetValueToSave = dto.TargetValue.Value / 100;
+            }
+        }
+        else
+        {
+            targetValueToSave = kpiTarget.TargetValue; // Already in correct format
         }
 
         kpiTarget.QuarterName = dto?.QuarterName ?? kpiTarget.QuarterName;
