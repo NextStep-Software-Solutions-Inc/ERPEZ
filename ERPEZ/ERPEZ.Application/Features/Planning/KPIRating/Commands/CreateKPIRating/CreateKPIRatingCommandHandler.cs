@@ -18,7 +18,7 @@ public class CreateKPIRatingCommandHandler(IUnitOfWork unitOfWork)
         _ = await unitOfWork.KPIRepository.GetByIdAsync(request.KPIId, cancellationToken: cancellationToken)
             ?? throw new NotFoundException("KPI not found.");
 
-        var duplicate = unitOfWork.KPIRatingRepository.FindAsync(kr =>
+        var duplicate = await unitOfWork.KPIRatingRepository.FindAsync(kr =>
                         kr.KPIId == request.KPIId &&
                         kr.PerformanceMeasureId == request.PerformanceMeasureId &&
                         kr.NumericalRating == request.NumericalRating, cancellationToken);
