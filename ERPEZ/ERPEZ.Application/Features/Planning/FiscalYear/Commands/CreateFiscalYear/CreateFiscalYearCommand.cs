@@ -8,5 +8,5 @@ public class CreateFiscalYearCommand : IRequest<ApiResponse<FiscalYearResponse>>
 {
     public int Year { get; set; }
     public string? Description { get; set; }
-    public List<FunctionAllocationRequest> FunctionAllocations { get; set; } = new();
+    public List<FunctionAllocationRequest> FunctionAllocations { get; set; } = [];
 }
