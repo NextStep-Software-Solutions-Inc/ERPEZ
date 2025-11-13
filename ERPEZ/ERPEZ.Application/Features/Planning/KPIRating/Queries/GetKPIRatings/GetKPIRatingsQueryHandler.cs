@@ -20,7 +20,7 @@ public class GetKPIRatingsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler
 
         Expression<Func<Domain.Entities.Planning.KPIRating, KPIRatingResponse>> projection = kPIRating => new KPIRatingResponse
         {
-            Id = kPIRating.KPIId,
+            Id = kPIRating.Id,
             KPIId = kPIRating.KPIId,
             NumericalRating = kPIRating.NumericalRating,
             PerformanceMeasureId = kPIRating.PerformanceMeasureId,

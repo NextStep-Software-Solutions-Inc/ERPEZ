@@ -15,7 +15,7 @@ public class UpdateKPIRatingCommandValidator : AbstractValidator<UpdateKPIRating
 
         // 4. NumericalRating (Required Int, Valid Range)
         RuleFor(x => x.UpdateKPIRating.NumericalRating)
-            .NotEmpty()
+            .NotNull()
             .WithMessage("Numerical Rating is required.")
             .InclusiveBetween(1, 5)
             .WithMessage("Numerical Rating must be between 1 and 5 (inclusive).");
