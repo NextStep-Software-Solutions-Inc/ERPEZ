@@ -44,6 +44,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IFunctionAllocationRepository functionAllocationRepository;
     private readonly IFiscalYearRepository fiscalYearRepository;
     private readonly IClusterRepository clusterRepository;
+    private readonly IWFPObjectiveTargetRepository wfpObjectiveTargetRepository;
 
     // Constructor initializes all repositories once
     public UnitOfWork(ApplicationDbContext context, IServiceProvider serviceProvider)
@@ -85,6 +86,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         functionAllocationRepository = new FunctionAllocationRepository(context, sieveProcessor);
         fiscalYearRepository = new FiscalYearRepository(context, sieveProcessor);
         clusterRepository = new ClusterRepository(context, sieveProcessor);
+        wfpObjectiveTargetRepository = new WFPObjectiveTargetRepository(context, sieveProcessor);
     }
 
     // Public properties return cached instances
@@ -121,6 +123,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IFunctionAllocationRepository FunctionAllocationRepository => functionAllocationRepository;
     public IFiscalYearRepository FiscalYearRepository => fiscalYearRepository;
     public IClusterRepository ClusterRepository => clusterRepository;
+    public IWFPObjectiveTargetRepository WFPObjectiveTargetRepository => wfpObjectiveTargetRepository;
 
     public async Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default)
     {

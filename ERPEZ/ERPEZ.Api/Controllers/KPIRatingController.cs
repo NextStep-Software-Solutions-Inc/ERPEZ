@@ -1,4 +1,4 @@
-﻿using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using ERPEZ.Domain.Entities.Planning;
@@ -16,8 +16,8 @@ namespace ERPEZ.Api.Controllers
     public class KPIRatingController(ISender mediator) : ControllerBase
     {
         [HttpPost]
-        [ProducesResponseType(typeof(ApiResponse<KPIRating>), StatusCodes.Status201Created)]
-        [ProducesResponseType(typeof(ApiResponse<KPIRating>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<KPIRatingResponse>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<KPIRatingResponse>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateKPIRating([FromBody] CreateKPIRatingCommand command)
         {
             var result = await mediator.Send(command);
@@ -29,7 +29,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet]
-        [ProducesResponseType(typeof(PaginatedApiResponse<KPIRatingDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(PaginatedApiResponse<KPIRatingResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetKPIRatings([FromQuery] GetKPIRatingsQuery query)
         {
             var result = await mediator.Send(query);
@@ -37,7 +37,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<KPIRatingDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<KPIRatingResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetKPIRatingById(Guid id)
         {
@@ -46,10 +46,10 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpPut("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<KPIRatingDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<KPIRatingResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> UpdateKPIRating(Guid id, [FromBody] UpdateKPIRatingDto dto)
+        public async Task<IActionResult> UpdateKPIRating(Guid id, [FromBody] UpdateKPIRatingRequest dto)
         {
             var command = new UpdateKPIRatingCommand
             {

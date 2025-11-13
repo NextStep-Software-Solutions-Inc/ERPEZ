@@ -1,4 +1,4 @@
-﻿using ERPEZ.Application.Features.Planning.KPITarget.Commands.CreateKPITarget;
+using ERPEZ.Application.Features.Planning.KPITarget.Commands.CreateKPITarget;
 using ERPEZ.Application.Features.Planning.KPITarget.Commands.DeleteKPITarget;
 using ERPEZ.Application.Features.Planning.KPITarget.Commands.UpdateKPITarget;
 using ERPEZ.Application.Features.Planning.KPITarget.Dtos;
@@ -15,8 +15,8 @@ namespace ERPEZ.Api.Controllers
     public class KPITargetController(ISender mediator) : ControllerBase
     {
         [HttpPost]
-        [ProducesResponseType(typeof(ApiResponse<KPITargetDto>), StatusCodes.Status201Created)]
-        [ProducesResponseType(typeof(ApiResponse<KPITargetDto>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<KPITargetResponse>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<KPITargetResponse>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateKPITarget([FromBody] CreateKPITargetCommand command)
         {
             var result = await mediator.Send(command);
@@ -28,7 +28,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet]
-        [ProducesResponseType(typeof(PaginatedApiResponse<KPITargetDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(PaginatedApiResponse<KPITargetResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetKPITargets([FromQuery] GetKPITargetsQuery query)
         {
             var result = await mediator.Send(query);
@@ -36,7 +36,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<KPITargetDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<KPITargetResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetKPITargetById(Guid id)
         {
@@ -45,10 +45,10 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpPut("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<KPITargetDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<KPITargetResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> UpdateKPITarget(Guid id, [FromBody] UpdateKPITargetDto dto)
+        public async Task<IActionResult> UpdateKPITarget(Guid id, [FromBody] UpdateKPITargetRequest dto)
         {
             var command = new UpdateKPITargetCommand
             {
