@@ -10,8 +10,7 @@ public class GetKPIRatingByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHand
 {
     public async Task<ApiResponse<KPIRatingResponse>> Handle(GetKPIRatingByIdQuery request, CancellationToken cancellationToken)
     {
-        var kPIRating = await unitOfWork.KPIRatingRepository.FindAsync(
-           t => t.Id == request.Id,
+        var kPIRating = await unitOfWork.KPIRatingRepository.GetByIdAsync(request.Id,
             cancellationToken: cancellationToken) ?? throw new NotFoundException("No data found.");
 
         var result = new KPIRatingResponse()
