@@ -17,6 +17,7 @@ public class UpdateKPITargetCommandHandler(IUnitOfWork unitOfWork) : IRequestHan
             ?? throw new NotFoundException("KPI Target not found.");
 
         var duplicate = await unitOfWork.KPITargetRepository.FindAsync(x =>
+            x.KPIId == kpiTarget.KPIId &&
             x.QuarterName == dto.QuarterName &&
             x.Period == dto.Period &&
             x.Id != request.Id, cancellationToken);
