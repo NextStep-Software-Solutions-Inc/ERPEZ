@@ -7,9 +7,9 @@ using MediatR;
 namespace ERPEZ.Application.Features.Planning.KPIRating.Commands.CreateKPIRating;
 
 public class CreateKPIRatingCommandHandler(IUnitOfWork unitOfWork)
-    : IRequestHandler<CreateKPIRatingCommand, ApiResponse<KPIRatingDto>>
+    : IRequestHandler<CreateKPIRatingCommand, ApiResponse<KPIRatingResponse>>
 {
-    public async Task<ApiResponse<KPIRatingDto>> Handle(CreateKPIRatingCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<KPIRatingResponse>> Handle(CreateKPIRatingCommand request, CancellationToken cancellationToken)
     {
         _ = await unitOfWork.PerformanceMeasureRepository.FindAsync(
             t => t.Id == request.PerformanceMeasureId,
@@ -31,13 +31,13 @@ public class CreateKPIRatingCommandHandler(IUnitOfWork unitOfWork)
 
         await unitOfWork.KPIRatingRepository.AddAsync(kPIRating, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
-        var result = new KPIRatingDto
+        var result = new KPIRatingResponse
         {
             Remarks = request.Remarks,
             NumericalRating = request.NumericalRating,
             PerformanceMeasureId = request.PerformanceMeasureId,
             KPIId = request.KPIId
         };
-        return ApiResponse<KPIRatingDto>.Success(result, "KPI Rating created successfully.");
+        return ApiResponse<KPIRatingResponse>.Success(result, "KPI Rating created successfully.");
     }
 }

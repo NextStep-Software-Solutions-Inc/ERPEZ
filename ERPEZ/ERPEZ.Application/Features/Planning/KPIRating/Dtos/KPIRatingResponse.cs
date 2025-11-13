@@ -1,6 +1,6 @@
-﻿namespace ERPEZ.Application.Features.Planning.KPIRating.Dtos;
+namespace ERPEZ.Application.Features.Planning.KPIRating.Dtos;
 
-public class KPIRatingDto
+public class KPIRatingResponse
 {
     public Guid Id { get; set; }
     public Guid KPIId { get; set; }
