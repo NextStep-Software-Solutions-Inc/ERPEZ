@@ -18,8 +18,6 @@ public class CreateKPIRatingCommandValidator : AbstractValidator<CreateKPIRating
 
         // NumericalRating (Required Int, Valid Range)
         RuleFor(x => x.NumericalRating)
-            .NotEmpty()
-            .WithMessage("Numerical Rating is required.")
             .InclusiveBetween(1, 5)
             .WithMessage("Numerical Rating must be between 1 and 5 (inclusive).");
 
