@@ -6,7 +6,7 @@ using Sieve.Models;
 
 namespace ERPEZ.Application.Features.Planning.MFOPAP.Queries.GetMFOPAPs;
 
-public class GetMFOPAPsQueryHandler(IUnitOfWork _unitOfWork) : IRequestHandler<GetMFOPAPsQuery, PaginatedApiResponse<Domain.Entities.Planning.MFOPAP>>
+public class GetMFOPAPsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetMFOPAPsQuery, PaginatedApiResponse<Domain.Entities.Planning.MFOPAP>>
 {
     public async Task<PaginatedApiResponse<Domain.Entities.Planning.MFOPAP>> Handle(GetMFOPAPsQuery query, CancellationToken cancellationToken)
     {
@@ -17,7 +17,7 @@ public class GetMFOPAPsQueryHandler(IUnitOfWork _unitOfWork) : IRequestHandler<G
             Filters = query.Filters,
             Sorts = query.Sorts
         };
-        var (mfoPAPs, totalCount) = await _unitOfWork.MFOPAPRepository.GetAllAsync(sieveModel, cancellationToken: cancellationToken);
+        var (mfoPAPs, totalCount) = await unitOfWork.MFOPAPRepository.GetAllAsync(sieveModel, cancellationToken: cancellationToken);
 
         return new PaginatedApiResponse<Domain.Entities.Planning.MFOPAP>(
             [.. mfoPAPs],

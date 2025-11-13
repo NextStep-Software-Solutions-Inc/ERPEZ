@@ -1,19 +1,19 @@
-﻿using ERPEZ.Domain.Interfaces;
+using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.KPIModeOfVerification.Commands.UpdateKPIModeOfVerification;
 
-public class UpdateKPIModeOfVerificationCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<UpdateKPIModeOfVerificationCommand, ApiResponse<Domain.Entities.Planning.KPIModeOfVerification>>
+public class UpdateKPIModeOfVerificationCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateKPIModeOfVerificationCommand, ApiResponse<Domain.Entities.Planning.KPIModeOfVerification>>
 {
     public async Task<ApiResponse<Domain.Entities.Planning.KPIModeOfVerification>> Handle(UpdateKPIModeOfVerificationCommand request, CancellationToken cancellationToken)
     {
         var dto = request.UpdateKPIModeOfVerification;
-        var kPIModeOfVerification = await _unitOfWork.KPIModeOfVerificationRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken)
+        var kPIModeOfVerification = await unitOfWork.KPIModeOfVerificationRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken)
             ?? throw new NotFoundException("KPI mode of verification assignment not found.");
 
-        var duplicate = await _unitOfWork.KPIModeOfVerificationRepository
+        var duplicate = await unitOfWork.KPIModeOfVerificationRepository
             .FindAsync(x => x.KPIId == dto.KPIId && x.Name == dto.Name, cancellationToken);
 
         if (duplicate != null)
@@ -23,8 +23,8 @@ public class UpdateKPIModeOfVerificationCommandHandler(IUnitOfWork _unitOfWork) 
         kPIModeOfVerification.Name = dto?.Name ?? kPIModeOfVerification.Name;
         kPIModeOfVerification.Description = dto?.Description ?? kPIModeOfVerification.Description;
 
-        _unitOfWork.KPIModeOfVerificationRepository.Update(kPIModeOfVerification);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        unitOfWork.KPIModeOfVerificationRepository.Update(kPIModeOfVerification);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return ApiResponse<Domain.Entities.Planning.KPIModeOfVerification>.Success(kPIModeOfVerification, "KPI mode of verification updated successfully.");
     }

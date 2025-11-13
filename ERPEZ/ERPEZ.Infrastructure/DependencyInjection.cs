@@ -30,6 +30,7 @@ public static class DependencyInjection
         services.AddScoped<IOPCREvaluationRepository, OPCREvaluationRepository>();
         services.AddScoped<IOPCRPAPDepartmentRepository, OPCRPAPDepartmentRepository>();
         services.AddScoped<IOPCRRatingRepository, OPCRRatingRepository>();
+        services.AddScoped<IObjectRepository, ObjectRepository>();
         services.AddScoped<IWFPRepository, WFPRepository>();
         services.AddScoped<IWFPPAPDepartmentRepository, WFPPAPDepartmentRepository>();
         services.AddScoped<IWFPObjectiveRepository, WFPObjectiveRepository>();
@@ -52,8 +53,10 @@ public static class DependencyInjection
         services.AddScoped<ILocationRepository, LocationRepository>();
         services.AddScoped<ITransactionRepository, TransactionRepository>();
         services.AddScoped<IMFOPAPRepository, MFOPAPRepository>();
-        services.AddScoped<IFunctionPercentageAllocationRepository, FunctionPercentageAllocationRepository>();
+        services.AddScoped<IFunctionAllocationRepository, FunctionAllocationRepository>();
+        services.AddScoped<IFiscalYearRepository, FiscalYearRepository>();
         services.AddScoped<IDUFundAllocationRepository, DUFundAllocationRepository>();
+        services.AddScoped<IClusterRepository, ClusterRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         // Add Hangfire

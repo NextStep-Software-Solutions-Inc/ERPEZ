@@ -2,8 +2,8 @@
 
 namespace ERPEZ.Infrastructure.Persistence.Repositories;
 
-public class FunctionPercentageAllocationRepository(ApplicationDbContext context, ISieveProcessor sieveProcessor) 
-    : Repository<Domain.Entities.Planning.FunctionPercentageAllocation>(context, sieveProcessor), 
-      Domain.Interfaces.IFunctionPercentageAllocationRepository
+public class FunctionAllocationRepository(ApplicationDbContext context, ISieveProcessor sieveProcessor) 
+    : Repository<Domain.Entities.Planning.FunctionAllocation>(context, sieveProcessor), 
+      Domain.Interfaces.IFunctionAllocationRepository
 {
 }

@@ -1,15 +1,15 @@
-﻿using ERPEZ.Domain.Interfaces;
+using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Office.Commands.UpdateOffice;
 
-public class UpdateOfficeCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandler<UpdateOfficeCommand, ApiResponse<Domain.Entities.Planning.Office>>
+public class UpdateOfficeCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateOfficeCommand, ApiResponse<Domain.Entities.Planning.Office>>
 {
     public async Task<ApiResponse<Domain.Entities.Planning.Office>> Handle(UpdateOfficeCommand request, CancellationToken cancellationToken)
     {
-        var office = await _unitOfWork.OfficeRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("Office not found.");
+        var office = await unitOfWork.OfficeRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("Office not found.");
         if (office.Name == request.UpdateOffice?.Name) throw new ConflictException("Office already exist.");
 
         var dto = request.UpdateOffice;
@@ -24,8 +24,8 @@ public class UpdateOfficeCommandHandler(IUnitOfWork _unitOfWork) : IRequestHandl
 
 
 
-        _unitOfWork.OfficeRepository.Update(office);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        unitOfWork.OfficeRepository.Update(office);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return ApiResponse<Domain.Entities.Planning.Office>.Success(office, "Office updated successfully.");
     }

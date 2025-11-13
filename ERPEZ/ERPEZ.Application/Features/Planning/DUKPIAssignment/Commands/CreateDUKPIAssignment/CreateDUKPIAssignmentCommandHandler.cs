@@ -1,4 +1,4 @@
-﻿using ERPEZ.Application.Features.Planning.DUKPIAssignment.Dtos;
+using ERPEZ.Application.Features.Planning.DUKPIAssignment.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -7,12 +7,12 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.Application.Features.Planning.DUKPIAssignment.Commands.CreateDUKPIAssignment;
 
-public class CreateDUKPIAssignmentCommandHandler(IUnitOfWork _unitOfWork)
-    : IRequestHandler<CreateDUKPIAssignmentCommand, ApiResponse<DUKPIAssignmentDto>>
+public class CreateDUKPIAssignmentCommandHandler(IUnitOfWork unitOfWork)
+    : IRequestHandler<CreateDUKPIAssignmentCommand, ApiResponse<DUKPIAssignmentResponse>>
 {
-    public async Task<ApiResponse<DUKPIAssignmentDto>> Handle(CreateDUKPIAssignmentCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<DUKPIAssignmentResponse>> Handle(CreateDUKPIAssignmentCommand request, CancellationToken cancellationToken)
     {
-        var dukpi = await _unitOfWork.DUKPIAssignmentRepository.FindAsync(
+        var dukpi = await unitOfWork.DUKPIAssignmentRepository.FindAsync(
             t => t.KPIId == request.KPIId && t.DeliveryUnitId == request.DeliveryUnitId,
             cancellationToken: cancellationToken
         );
@@ -20,16 +20,16 @@ public class CreateDUKPIAssignmentCommandHandler(IUnitOfWork _unitOfWork)
         if (dukpi != null)
             throw new ConflictException("DU KPI Assignment already exists for this Delivery Unit.");
 
-        _ = await _unitOfWork.KPIRepository.GetByIdAsync(request.KPIId, cancellationToken: cancellationToken)
+        _ = await unitOfWork.KPIRepository.GetByIdAsync(request.KPIId, cancellationToken: cancellationToken)
             ?? throw new NotFoundException("KPI not found.");
-
-        _ = await _unitOfWork.DeliveryUnitRepository.GetByIdAsync(request.DeliveryUnitId, cancellationToken: cancellationToken)
+        
+        _ = await unitOfWork.DeliveryUnitRepository.GetByIdAsync(request.DeliveryUnitId, cancellationToken: cancellationToken)
             ?? throw new NotFoundException("Delivery Unit not found.");
 
-        var kPITarget = await _unitOfWork.KPITargetRepository.GetByIdAsync(request.KPITargetId, cancellationToken: cancellationToken)
+        var kPITarget = await unitOfWork.KPITargetRepository.GetByIdAsync(request.KPITargetId, cancellationToken: cancellationToken)
             ?? throw new NotFoundException("KPI Target not found.");
 
-        var existingAllocationsQuery = _unitOfWork.DUKPIAssignmentRepository.Query(
+        var existingAllocationsQuery = unitOfWork.DUKPIAssignmentRepository.Query(
             t => t.KPITargetId == request.KPITargetId
         );
 
@@ -50,10 +50,9 @@ public class CreateDUKPIAssignmentCommandHandler(IUnitOfWork _unitOfWork)
             AllocatedTargetValue = request.AllocatedTargetValue,
         };
 
-        await _unitOfWork.DUKPIAssignmentRepository.AddAsync(duKpiAssignment, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
-
-        var res = new DUKPIAssignmentDto
+        await unitOfWork.DUKPIAssignmentRepository.AddAsync(duKpiAssignment, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+        var res = new DUKPIAssignmentResponse
         {
             Id = duKpiAssignment.Id,
             KPIId = duKpiAssignment.KPIId,
@@ -61,6 +60,6 @@ public class CreateDUKPIAssignmentCommandHandler(IUnitOfWork _unitOfWork)
             KPITargetId = duKpiAssignment.KPITargetId,
             AllocatedTargetValue = duKpiAssignment.AllocatedTargetValue
         };
-        return ApiResponse<DUKPIAssignmentDto>.Success(res, "DU KPI Assignment created successfully.");
+        return ApiResponse<DUKPIAssignmentResponse>.Success(res, "DU KPI Assignment created successfully.");
     }
 }

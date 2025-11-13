@@ -4,7 +4,7 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Organization.Queries.GetOrganizations;
 
-public class GetOrganizationsQueryHandler(IUnitOfWork _unitOfWork) : IRequestHandler<GetOrganizationsQuery, PaginatedApiResponse<Domain.Entities.Planning.Organization>>
+public class GetOrganizationsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetOrganizationsQuery, PaginatedApiResponse<Domain.Entities.Planning.Organization>>
 {
     public async Task<PaginatedApiResponse<Domain.Entities.Planning.Organization>> Handle(GetOrganizationsQuery query, CancellationToken cancellationToken)
     {
@@ -15,7 +15,7 @@ public class GetOrganizationsQueryHandler(IUnitOfWork _unitOfWork) : IRequestHan
             Filters = query.Filters,
             Sorts = query.Sorts
         };
-        var (organizations, totalCount) = await _unitOfWork.OrganizationRepository.GetAllAsync(sieveModel, cancellationToken: cancellationToken);
+        var (organizations, totalCount) = await unitOfWork.OrganizationRepository.GetAllAsync(sieveModel, cancellationToken: cancellationToken);
         return new PaginatedApiResponse<Domain.Entities.Planning.Organization>(
             [.. organizations],
             query.PageNumber,

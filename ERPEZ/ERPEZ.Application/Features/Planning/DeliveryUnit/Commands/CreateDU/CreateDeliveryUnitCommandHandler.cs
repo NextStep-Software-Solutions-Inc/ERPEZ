@@ -1,4 +1,4 @@
-﻿using ERPEZ.Application.Features.Planning.DeliveryUnit.Dtos;
+using ERPEZ.Application.Features.Planning.DeliveryUnit.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -6,24 +6,24 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.DeliveryUnit.Commands.CreateDU;
 
-public class CreateDeliveryUnitCommandHandler(IUnitOfWork _unitOfWork)
+public class CreateDeliveryUnitCommandHandler(IUnitOfWork unitOfWork)
     : IRequestHandler<CreateDeliveryUnitCommand, ApiResponse<DeliveryUnitDto>>
 {
     public async Task<ApiResponse<DeliveryUnitDto>> Handle(CreateDeliveryUnitCommand request, CancellationToken cancellationToken)
     {
-        var existingDU = await _unitOfWork.DeliveryUnitRepository.FindAsync(
+        var existingDU = await unitOfWork.DeliveryUnitRepository.FindAsync(
             du => du.OfficeId == request.OfficeId && du.ParentDUId == request.ParentDUId,
             cancellationToken: cancellationToken);
 
         if (existingDU != null)
             throw new ConflictException("Delivery Unit already exists.");
 
-        var office = await _unitOfWork.OfficeRepository.GetByIdAsync(request.OfficeId, cancellationToken)
+        var office = await unitOfWork.OfficeRepository.GetByIdAsync(request.OfficeId, cancellationToken)
             ?? throw new NotFoundException("Office not found.");
 
         if (request.ParentDUId != null)
         {
-            var parentDU = await _unitOfWork.DeliveryUnitRepository.GetByIdAsync(request.ParentDUId.Value, cancellationToken)
+            var parentDU = await unitOfWork.DeliveryUnitRepository.GetByIdAsync(request.ParentDUId.Value, cancellationToken)
                 ?? throw new NotFoundException("Parent Delivery Unit not found.");
 
             if (parentDU.ParentDUId != null)
@@ -47,8 +47,8 @@ public class CreateDeliveryUnitCommandHandler(IUnitOfWork _unitOfWork)
             ParentDUId = request.ParentDUId
         };
 
-        await _unitOfWork.DeliveryUnitRepository.AddAsync(deliveryUnit, cancellationToken);
-        await _unitOfWork.SaveChangesAsync(cancellationToken);
+        await unitOfWork.DeliveryUnitRepository.AddAsync(deliveryUnit, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         var dto = new DeliveryUnitDto
         {

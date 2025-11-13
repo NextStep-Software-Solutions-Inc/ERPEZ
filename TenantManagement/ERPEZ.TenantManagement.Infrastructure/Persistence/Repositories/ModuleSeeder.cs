@@ -4,7 +4,7 @@ using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.TenantManagement.Infrastructure.Persistence.Repositories;
 
-public class ModuleSeeder(IUnitOfWork _unitOfWork) : IBaseSeeder
+public class ModuleSeeder(IUnitOfWork unitOfWork) : IBaseSeeder
 {
     public async Task SeedAsync(CancellationToken cancellationToken = default)
     {
@@ -40,7 +40,7 @@ public class ModuleSeeder(IUnitOfWork _unitOfWork) : IBaseSeeder
             },
         };
 
-        var existingModules = await _unitOfWork.ModuleRepository.Query()
+        var existingModules = await unitOfWork.ModuleRepository.Query()
             .Select(m => m.Name)
             .ToListAsync(cancellationToken);
 
@@ -50,8 +50,8 @@ public class ModuleSeeder(IUnitOfWork _unitOfWork) : IBaseSeeder
 
         if (newModules.Count != 0)
         {
-            await _unitOfWork.ModuleRepository.AddRangeAsync(newModules, cancellationToken);
-            await _unitOfWork.SaveChangesAsync(cancellationToken);
+            await unitOfWork.ModuleRepository.AddRangeAsync(newModules, cancellationToken);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
         }
     }
 }
