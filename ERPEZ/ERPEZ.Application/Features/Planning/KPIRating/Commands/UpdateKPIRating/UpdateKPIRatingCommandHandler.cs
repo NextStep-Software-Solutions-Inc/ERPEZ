@@ -23,7 +23,7 @@ public class UpdateKPIRatingCommandHandler(IUnitOfWork unitOfWork) : IRequestHan
 
         var result = new KPIRatingResponse()
         {
-            Id = kpiRating.KPIId,
+            Id = kpiRating.Id,
             KPIId = kpiRating.KPIId,
             NumericalRating = kpiRating.NumericalRating,
             PerformanceMeasureId = kpiRating.PerformanceMeasureId,
