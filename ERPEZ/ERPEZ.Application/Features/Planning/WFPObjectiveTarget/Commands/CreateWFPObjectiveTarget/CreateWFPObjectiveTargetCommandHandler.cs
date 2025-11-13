@@ -1,5 +1,3 @@
-using ERPEZ.Application.Features.Planning.Cluster.Commands.CreateCluster;
-using ERPEZ.Application.Features.Planning.Cluster.Dtos;
 using ERPEZ.Application.Features.Planning.WFPObjectiveTarget.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
@@ -12,26 +10,35 @@ public class CreateWFPObjectiveTargetCommandHandler(IUnitOfWork unitOfWork) : IR
 {
     public async Task<ApiResponse<WFPObjectiveTargetResponse>> Handle(CreateWFPObjectiveTargetCommand request, CancellationToken cancellationToken)
     {
-        var duplicate = await unitOfWork.WFPObjectiveRepository.FindAsync(w => w. == request.Name && w.Description == request.Description, cancellationToken);
-        if (duplicate != null) throw new ConflictException("Cluster already exists.");
+        var duplicate = await unitOfWork.WFPObjectiveTargetRepository.FindAsync(w =>
+        w.WFPObjectiveId == request.WFPObjectiveId &&
+        w.ActivityName == request.ActivityName, cancellationToken);
+        if (duplicate != null) throw new ConflictException("WFP Objective Target already exists.");
 
-        var cluster = new Domain.Entities.Planning.Cluster
+        _ = unitOfWork.WFPObjectiveRepository.GetByIdAsync(request.WFPObjectiveId, cancellationToken) ?? throw new NotFoundException("WFP Objective not found.");
+
+        var wFPObjectiveTarget = new Domain.Entities.Planning.WFPObjectiveTarget
         {
-            Name = request.Name,
-            Description = request.Description
-
+            WFPObjectiveId = request.WFPObjectiveId,
+            ActivityName = request.ActivityName,
+            Indicator = request.Indicator,
+            Weight = request.Weight
         };
 
-        await unitOfWork.ClusterRepository.AddAsync(cluster, cancellationToken);
+        await unitOfWork.WFPObjectiveTargetRepository.AddAsync(wFPObjectiveTarget, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
-        var result = new ClusterResponse()
+        
+        var result = new WFPObjectiveTargetResponse()
         {
-            Id = cluster.Id,
-            Name = cluster.Name,
-            Description = cluster.Description,
-            CreatedAt = cluster.CreatedAt,
-            CreatedBy = cluster.CreatedBy
+            Id = wFPObjectiveTarget.Id,
+            WFPObjectiveId = wFPObjectiveTarget.WFPObjectiveId,
+            ActivityName = wFPObjectiveTarget.ActivityName,
+            Indicator = wFPObjectiveTarget.Indicator,
+            Weight = wFPObjectiveTarget.Weight,
+            CreatedAt = wFPObjectiveTarget.CreatedAt,
+            CreatedBy = wFPObjectiveTarget.CreatedBy
         };
-        return ApiResponse<ClusterResponse>.Success(result, "Cluster created successfully.");
+
+        return ApiResponse<WFPObjectiveTargetResponse>.Success(result, "WFP Objective Target created successfully.");
     }
 }

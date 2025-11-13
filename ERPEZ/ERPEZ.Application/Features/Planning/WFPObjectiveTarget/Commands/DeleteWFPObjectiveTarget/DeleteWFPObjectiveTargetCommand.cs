@@ -1,5 +1,6 @@
+using ERPEZ.Shared.Common;
+using MediatR;
+
 namespace ERPEZ.Application.Features.Planning.WFPObjectiveTarget.Commands.DeleteWFPObjectiveTarget;
 
-public class DeleteWFPObjectiveTargetCommand
-{
-}
+public record class DeleteWFPObjectiveTargetCommand(Guid Id) : IRequest<ApiResponse<Unit>>;
