@@ -43,7 +43,7 @@ public class CreateKPITargetCommandHandler(IUnitOfWork unitOfWork)
             Id = kpiTarget.Id,
             TargetValue = kpiTarget.TargetValue,
             Period = kpiTarget.Period,
-            QuarterName= kpiTarget.QuarterName,
+            QuarterName = kpiTarget.QuarterName,
             CreatedAt = kpiTarget.CreatedAt,
             CreatedBy = kpiTarget.CreatedBy
         };
