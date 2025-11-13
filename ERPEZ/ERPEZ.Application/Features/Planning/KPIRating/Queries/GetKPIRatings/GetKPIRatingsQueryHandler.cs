@@ -1,12 +1,14 @@
-﻿using ERPEZ.Domain.Interfaces;
+using ERPEZ.Application.Features.Planning.KPIRating.Dtos;
+using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
+using System.Linq.Expressions;
 
 namespace ERPEZ.Application.Features.Planning.KPIRating.Queries.GetKPIRatings;
 
-public class GetKPIRatingsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetKPIRatingsQuery, PaginatedApiResponse<Domain.Entities.Planning.KPIRating>>
+public class GetKPIRatingsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetKPIRatingsQuery, PaginatedApiResponse<KPIRatingResponse>>
 {
-    public async Task<PaginatedApiResponse<Domain.Entities.Planning.KPIRating>> Handle(GetKPIRatingsQuery query, CancellationToken cancellationToken)
+    public async Task<PaginatedApiResponse<KPIRatingResponse>> Handle(GetKPIRatingsQuery query, CancellationToken cancellationToken)
     {
         var sieveModel = new Sieve.Models.SieveModel
         {
@@ -15,8 +17,19 @@ public class GetKPIRatingsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler
             Filters = query.Filters,
             Sorts = query.Sorts
         };
-        var (kpiRatings, totalCount) = await unitOfWork.KPIRatingRepository.GetAllAsync(sieveModel, cancellationToken: cancellationToken);
-        return new PaginatedApiResponse<Domain.Entities.Planning.KPIRating>(
+
+        Expression<Func<Domain.Entities.Planning.KPIRating, KPIRatingResponse>> projection = kPIRating => new KPIRatingResponse
+        {
+            Id = kPIRating.KPIId,
+            KPIId = kPIRating.KPIId,
+            NumericalRating = kPIRating.NumericalRating,
+            PerformanceMeasureId = kPIRating.PerformanceMeasureId,
+            Remarks = kPIRating.Remarks,
+            CreatedAt = kPIRating.CreatedAt,
+            CreatedBy = kPIRating.CreatedBy
+        };
+        var (kpiRatings, totalCount) = await unitOfWork.KPIRatingRepository.GetAllAsync(sieveModel, projection, cancellationToken: cancellationToken);
+        return new PaginatedApiResponse<KPIRatingResponse>(
             [.. kpiRatings],
             query.PageNumber,
             query.PageSize,

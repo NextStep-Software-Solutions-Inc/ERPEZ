@@ -1,6 +1,7 @@
-﻿using ERPEZ.Shared.Common;
+using ERPEZ.Application.Features.Planning.KPIRating.Dtos;
+using ERPEZ.Shared.Common;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.KPIRating.Queries.GetKPIRatingById;
 
-public record class GetKPIRatingByIdQuery(Guid Id) : IRequest<ApiResponse<Domain.Entities.Planning.KPIRating>>;
+public record class GetKPIRatingByIdQuery(Guid Id) : IRequest<ApiResponse<KPIRatingResponse>>;

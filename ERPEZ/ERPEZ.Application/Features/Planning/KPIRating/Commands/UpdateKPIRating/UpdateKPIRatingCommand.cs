@@ -4,7 +4,7 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.KPIRating.Commands.UpdateKPIRating;
 
-public class UpdateKPIRatingCommand : IRequest<ApiResponse<Domain.Entities.Planning.KPIRating>>
+public class UpdateKPIRatingCommand : IRequest<ApiResponse<KPIRatingResponse>>
 {
     public Guid Id { get; set; }
     public required UpdateKPIRatingRequest UpdateKPIRating { get; set; }
