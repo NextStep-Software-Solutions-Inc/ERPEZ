@@ -20,7 +20,7 @@ public class KPIResponse
     public DateTime CreatedAt { get; set; }
     public string CreatedBy { get; set; } = string.Empty;
     [JsonPropertyName("KPITargets")]
-    public List<KPITargetResponse> KPITargets { get; set; } = null!;
+    public List<KPITargetResponse> KPITargets { get; set; } = [];
     [JsonPropertyName("KPIRatings")]
     public List<KPIRatingResponse> KPIRatings { get; set; } = [];
     [JsonPropertyName("KPIModeOfVerifications")]
