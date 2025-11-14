@@ -2,8 +2,9 @@ namespace ERPEZ.Application.Features.Planning.KPI.Dtos;
 
 public class CreateKPITargetRequest
 {
-    public List<TargetValueDto> TargetValues { get; set; } = [];
+    public Guid KPIId { get; set; }
     public string Period { get; set; } = string.Empty;
+    public List<TargetValueDto> TargetValues { get; set; } = [];
 }
 public class TargetValueDto
 {

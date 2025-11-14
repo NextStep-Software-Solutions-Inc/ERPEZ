@@ -13,11 +13,16 @@ public class CreateKPICommand : IRequest<ApiResponse<KPIResponse>>
     public string? Description { get; set; } = string.Empty;
     public bool IsOfficeMandate { get; set; }
     public bool IsPercentage { get; set; }
-    //[JsonIgnore(nameof"SDGs")]
+    [JsonPropertyName("SDGs")]
     public List<CreateSDGRequest> SDGs { get; set; } = [];
+    [JsonPropertyName("KPIRatings")]
     public List<CreateKPIRatingRequest> KPIRatings { get; set; } = [];
-    public List<CreateKPITargetRequest> KPITargets { get; set; } = [];
+    [JsonPropertyName("KPITargets")]
+    public CreateKPITargetRequest KPITarget { get; set; } = null!;
+    [JsonPropertyName("KPIModeOfVerifications")]
     public List<CreateKPIModeOfVerificationRequest> KPIModeOfVerifications { get; set; } = [];
+    [JsonPropertyName("MFOKPIs")]
     public List<CreateMFOKPIRequest> MFOKPIs { get; set; } = [];
+    [JsonPropertyName("KPIAttribute")]
     public List<CreateKPIAttributeRequest> KPIAttribute { get; set; } = [];
 }
