@@ -20,6 +20,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IWFPObjectiveRepository wfpObjectiveRepository;
     private readonly IWFPOutcomeRepository wfpOutcomeRepository;
     private readonly IWFPActivityRepository wfpActivityRepository;
+    private readonly IWFPObjectiveTimelineRepository wfpObjectiveTimelineRepository;
     private readonly IActivityBudgetRequirementRepository activityBudgetRequirementRepository;
     private readonly IWFPPAPDepartmentRepository wfpPapDepartmentRepository;
     private readonly IOPCREvaluationRepository opcrEvaluationRepository;
@@ -61,6 +62,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         wfpRepository = new WFPRepository(context, sieveProcessor);
         wfpObjectiveRepository = new WFPObjectiveRepository(context, sieveProcessor);
         wfpOutcomeRepository = new WFPOutcomeRepository(context, sieveProcessor);
+        wfpObjectiveTimelineRepository = new WFPObjectiveTimelineRepository(context, sieveProcessor);
         wfpActivityRepository = new WFPActivityRepository(context, sieveProcessor);
         activityBudgetRequirementRepository = new ActivityBudgetRequirementRepository(context, sieveProcessor);
         wfpPapDepartmentRepository = new WFPPAPDepartmentRepository(context, sieveProcessor);
@@ -99,6 +101,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IWFPObjectiveRepository WFPObjectiveRepository => wfpObjectiveRepository;
     public IWFPOutcomeRepository WFPOutcomeRepository => wfpOutcomeRepository;
     public IWFPActivityRepository WFPActivityRepository => wfpActivityRepository;
+    public IWFPObjectiveTimelineRepository WFPObjectiveTimelineRepository => wfpObjectiveTimelineRepository;
     public IActivityBudgetRequirementRepository ActivityBudgetRequirementRepository => activityBudgetRequirementRepository;
     public IWFPPAPDepartmentRepository WFPPAPDepartmentRepository => wfpPapDepartmentRepository;
     public IOPCREvaluationRepository OPCREvaluationRepository => opcrEvaluationRepository;

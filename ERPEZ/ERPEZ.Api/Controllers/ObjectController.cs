@@ -1,20 +1,17 @@
-﻿using ERPEZ.Application.Features.Planning.Object.Commands.CreateObject;
+using ERPEZ.Application.Features.Planning.Object.Commands.CreateObject;
 using ERPEZ.Application.Features.Planning.Object.Commands.DeleteObject;
 using ERPEZ.Application.Features.Planning.Object.Commands.UpdateObject;
 using ERPEZ.Application.Features.Planning.Object.Dtos;
 using ERPEZ.Application.Features.Planning.Object.Queries.GetObjectById;
 using ERPEZ.Application.Features.Planning.Object.Queries.GetObjects;
-using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ERPEZ.Api.Controllers
 {
-    // Sets the route to 'objects'
     [Route("objects")]
     [ApiController]
-    // Uses primary constructor injection for ISender (MediatR)
     public class ObjectController(ISender mediator) : ControllerBase
     {
         [HttpPost]
@@ -27,7 +24,6 @@ namespace ERPEZ.Api.Controllers
             if (!result.Succeeded)
                 return BadRequest(result);
 
-            // Returns 201 Created and links to the GetById endpoint
             return CreatedAtAction(nameof(GetObjectById), new { id = result.Data!.Id }, result);
         }
 

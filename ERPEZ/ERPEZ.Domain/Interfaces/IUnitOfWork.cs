@@ -29,6 +29,7 @@ public interface IUnitOfWork
     IWFPRepository WFPRepository { get; }
     IWFPActivityRepository WFPActivityRepository { get; }
     IWFPObjectiveRepository WFPObjectiveRepository { get; }
+    IWFPObjectiveTimelineRepository WFPObjectiveTimelineRepository { get; }
     IWFPOutcomeRepository WFPOutcomeRepository { get; }
     IWFPPAPDepartmentRepository WFPPAPDepartmentRepository { get; }
     IFunctionAllocationRepository FunctionAllocationRepository { get; }

@@ -34,6 +34,7 @@ public static class DependencyInjection
         services.AddScoped<IWFPRepository, WFPRepository>();
         services.AddScoped<IWFPPAPDepartmentRepository, WFPPAPDepartmentRepository>();
         services.AddScoped<IWFPObjectiveRepository, WFPObjectiveRepository>();
+        services.AddScoped<IWFPObjectiveTimelineRepository, WFPObjectiveTimelineRepository>();
         services.AddScoped<IWFPActivityRepository, WFPActivityRepository>();
         services.AddScoped<IWFPOutcomeRepository, WFPOutcomeRepository>();
         services.AddScoped<IOPCRPAPDepartmentRepository, OPCRPAPDepartmentRepository>();
