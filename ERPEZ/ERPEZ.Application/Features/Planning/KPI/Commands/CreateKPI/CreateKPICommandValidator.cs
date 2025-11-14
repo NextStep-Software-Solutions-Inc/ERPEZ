@@ -48,11 +48,11 @@ namespace ERPEZ.Application.Features.Planning.KPI.Commands.CreateKPI;
                         sdg.RuleFor(s => s.Name).NotEmpty().MaximumLength(200);
                     });
 
-            RuleFor(x => x.KPITarget)
+            RuleFor(x => x.KPITargets)
                     .NotNull()
                     .WithMessage("KPI Target is required.");
 
-            RuleFor(x => x.KPIAttribute)
+            RuleFor(x => x.KPIAttributes)
                     .NotNull()
                     .WithMessage("KPI Attribute is required.");
 

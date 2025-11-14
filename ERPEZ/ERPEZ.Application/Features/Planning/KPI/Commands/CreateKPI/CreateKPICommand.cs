@@ -18,11 +18,11 @@ public class CreateKPICommand : IRequest<ApiResponse<KPIResponse>>
     [JsonPropertyName("KPIRatings")]
     public List<CreateKPIRatingRequest> KPIRatings { get; set; } = [];
     [JsonPropertyName("KPITargets")]
-    public CreateKPITargetRequest KPITarget { get; set; } = null!;
+    public CreateKPITargetRequest KPITargets { get; set; } = null!;
     [JsonPropertyName("KPIModeOfVerifications")]
     public List<CreateKPIModeOfVerificationRequest> KPIModeOfVerifications { get; set; } = [];
     [JsonPropertyName("MFOKPIs")]
     public List<CreateMFOKPIRequest> MFOKPIs { get; set; } = [];
-    [JsonPropertyName("KPIAttribute")]
-    public List<CreateKPIAttributeRequest> KPIAttribute { get; set; } = [];
+    [JsonPropertyName("KPIAttributes")]
+    public List<CreateKPIAttributeRequest> KPIAttributes { get; set; } = [];
 }

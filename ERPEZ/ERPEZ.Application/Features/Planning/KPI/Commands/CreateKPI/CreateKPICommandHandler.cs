@@ -104,13 +104,13 @@ public class CreateKPICommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<C
                     Remarks = targetValueDto.Remarks
                 })).ToList();
 
-            var kpiTargets = request.KPITarget.TargetValues
+            var kpiTargets = request.KPITargets.TargetValues
                 .Select(targetValueDto => new Domain.Entities.Planning.KPITarget
                 {
                     KPIId = kpi.Id,
                     TargetValue = targetValueDto.TargetValue,
                     QuarterName = targetValueDto.QuarterName,
-                    Period = request.KPITarget.Period,
+                    Period = request.KPITargets.Period,
                 }).ToList();
 
             var kpiModeOfVerifications = request.KPIModeOfVerifications.Select(m => new Domain.Entities.Planning.KPIModeOfVerification
@@ -121,7 +121,7 @@ public class CreateKPICommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<C
                 Url = m.Url
             }).ToList();
 
-            var attributes = request.KPIAttribute.Select(a => new Domain.Entities.Planning.Attribute
+            var attributes = request.KPIAttributes.Select(a => new Domain.Entities.Planning.Attribute
             {
                 Name = a.Name
             }).ToList();

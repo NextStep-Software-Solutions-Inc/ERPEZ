@@ -100,7 +100,7 @@ public class GetKPIsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetKP
             k => k.SDGs
         };
 
-        var (kpiDtos, totalCount) = await unitOfWork.KPIRepository.GetAllKPIsWithDetailsAsync(
+        var (kpiDtos, totalCount) = await unitOfWork.KPIRepository.GetKPIsWithDetailsAsync(
             sieveModel,
             projection,
             includes,
