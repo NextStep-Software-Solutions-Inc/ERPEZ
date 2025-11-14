@@ -11,9 +11,11 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Features\Planning\KPIAttribute\Dtos\" />
     <Folder Include="Features\Planning\OPCRRating\Commands\" />
     <Folder Include="Features\Planning\OPCRRating\Dtos\" />
     <Folder Include="Features\Planning\OPCRRating\Queries\" />
+    <Folder Include="Features\Planning\SDG\Dtos\" />
     <Folder Include="Features\Planning\WFPObjective\Commands\" />
     <Folder Include="Features\Planning\WFPObjective\Dtos\" />
     <Folder Include="Features\Planning\WFPObjective\Queries\" />
