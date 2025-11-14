@@ -66,13 +66,24 @@ public class CreateKPICommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<C
             await unitOfWork.KPIRepository.AddAsync(kpi, cancellationToken);
             await unitOfWork.SaveChangesAsync(cancellationToken);
 
-            var mfoKpis = new List<Domain.Entities.Planning.MFOKPI>();
+            var mfoKPIs = new List<Domain.Entities.Planning.MFOKPI>();
+
+            var mfopapNames = request.MFOKPIs.Select(m => m.Name).Distinct().ToList();
+
+            var existingMfopaps = await unitOfWork.MFOPAPRepository
+                .Query()
+                .Where(m => mfopapNames.Contains(m.Name))
+                .ToDictionaryAsync(m => m.Name, cancellationToken);
+
             foreach (var req in request.MFOKPIs)
             {
-                var mfopap = await unitOfWork.MFOPAPRepository.FindAsync(x => x.Name == req.Name, cancellationToken) ??
-                             new Domain.Entities.Planning.MFOPAP { Name = req.Name };
+                if (!existingMfopaps.TryGetValue(req.Name, out var mfopap))
+                {
+                    mfopap = new Domain.Entities.Planning.MFOPAP { Name = req.Name };
+                    existingMfopaps.Add(req.Name, mfopap);
+                }
 
-                mfoKpis.Add(new Domain.Entities.Planning.MFOKPI
+                mfoKPIs.Add(new Domain.Entities.Planning.MFOKPI
                 {
                     KPIId = kpi.Id,
                     MFOPAP = mfopap
@@ -115,7 +126,7 @@ public class CreateKPICommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<C
                 Name = a.Name
             }).ToList();
 
-            kpi.MFOKPIs = mfoKpis;
+            kpi.MFOKPIs = mfoKPIs;
             kpi.SDGs = sdgs;
             kpi.KPIRatings = kpiRatings;
             kpi.KPITargets = kpiTargets;

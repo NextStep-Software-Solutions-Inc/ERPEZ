@@ -47,7 +47,7 @@ public class GetKPIByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
                 Url = m.Url
             }).ToList();
 
-        var mfoKPI = kpi.MFOKPIs
+        var mfoKPIs = kpi.MFOKPIs
             .Select(m => new MFOKPIDto
             {
                 Id = m.Id,
@@ -66,10 +66,9 @@ public class GetKPIByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
                 Code = m.Code,
                 Description = m.Description,
                 ParentAttributeId = m.ParentAttributeId
-
             }).ToList();
 
-        var sDGs = kpi.SDGs.Select(m => new SDGResponse
+        var sdgs = kpi.SDGs.Select(m => new SDGResponse
         {
             Id = m.Id,
             Name = m.Name,
@@ -92,9 +91,9 @@ public class GetKPIByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
             KPIRatings = kpiRatings,
             KPITargets  = kpiTargets,
             KPIModeOfVerifications = modeOfVerification,
-            MFOKPIs = mfoKPI,
+            MFOKPIs = mfoKPIs,
             Attributes = attributes,
-            SDGs = sDGs
+            SDGs = sdgs
         };
         return ApiResponse<KPIResponse>.Success(dto, "Retrieved successfully");
     }

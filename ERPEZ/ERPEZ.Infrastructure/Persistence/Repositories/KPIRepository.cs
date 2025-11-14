@@ -31,7 +31,7 @@ public class KPIRepository : Repository<Domain.Entities.Planning.KPI>, IKPIRepos
             .FirstOrDefaultAsync(k => EF.Property<Guid>(k, "Id") == id, cancellationToken);
     }
 
-    public async Task<(IReadOnlyList<TDto> Entities, int TotalCount)> GetKPIsWithDetailsAsyncGetAllAsync<TDto>(
+    public async Task<(IReadOnlyList<TDto> Entities, int TotalCount)> GetAllKPIsWithDetailsAsync<TDto>(
         SieveModel sieveModel,
         Expression<Func<Domain.Entities.Planning.KPI, TDto>> projection,
         List<Expression<Func<Domain.Entities.Planning.KPI, object>>> includes,
