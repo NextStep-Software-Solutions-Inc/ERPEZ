@@ -15,8 +15,9 @@ public class UpdateWFPObjectiveTimelineCommandHandler(IUnitOfWork unitOfWork) : 
             ?? throw new NotFoundException("WFP Objective Timeline not found.");
 
         var duplicate = await unitOfWork.WFPObjectiveTimelineRepository.FindAsync(
-            x => x.WFPObjectiveTargetId != wfpObjectiveTimeline.Id &&
-            x.StartDate == dto.StartDate,
+            x => x.WFPObjectiveTargetId == wfpObjectiveTimeline.Id &&
+            x.StartDate == dto.StartDate &&
+            x.EndDate == dto.EndDate,
             cancellationToken
         );
 
