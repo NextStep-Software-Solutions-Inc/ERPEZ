@@ -1,6 +1,6 @@
 ﻿namespace ERPEZ.Application.Features.Planning.Office.Dtos;
 
-public class UpdateOfficeDto
+public class UpdateOfficeRequest
 {
     public string? OfficeHead { get; set; }
     public string? Name { get; set; }

@@ -1,18 +1,34 @@
-﻿using ERPEZ.Domain.Interfaces;
+using ERPEZ.Application.Features.Planning.Office.Dtos;
+using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Office.Queries.GetOfficeByIdQuery;
 
-public class GetOfficeByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetOfficeByIdQuery, ApiResponse<Domain.Entities.Planning.Office>>
+public class GetOfficeByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetOfficeByIdQuery, ApiResponse<OfficeResponse>>
 {
-    public async Task<ApiResponse<Domain.Entities.Planning.Office>> Handle(GetOfficeByIdQuery request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<OfficeResponse>> Handle(GetOfficeByIdQuery request, CancellationToken cancellationToken)
     {
         var office = await unitOfWork.OfficeRepository.FindAsync(
            t => t.Id == request.Id,
             cancellationToken: cancellationToken) ?? throw new NotFoundException("No data found.");
 
-        return ApiResponse<Domain.Entities.Planning.Office>.Success(office, "Retrieved successfully");
+        var result = new OfficeResponse()
+        {
+            Id = office.Id,
+            ClusterId = office.ClusterId,
+            OfficeHead = office.OfficeHead,
+            Name = office.Name,
+            Description = office.Description,
+            Address = office.Address,
+            Email = office.Email,
+            ContactNumber = office.ContactNumber,
+            ResponsibilityCenterCode = office.ResponsibilityCenterCode,
+            CreatedBy = office.CreatedBy,
+            CreatedAt = office.CreatedAt
+        };
+
+        return ApiResponse<OfficeResponse>.Success(result, "Retrieved successfully");
     }
 }
