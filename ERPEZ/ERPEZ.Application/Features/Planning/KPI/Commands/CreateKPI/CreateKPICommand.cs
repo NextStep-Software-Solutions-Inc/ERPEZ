@@ -23,6 +23,6 @@ public class CreateKPICommand : IRequest<ApiResponse<KPIResponse>>
     public List<CreateKPIModeOfVerificationRequest> KPIModeOfVerifications { get; set; } = [];
     [JsonPropertyName("MFOKPIs")]
     public List<CreateMFOKPIRequest> MFOKPIs { get; set; } = [];
-    [JsonPropertyName("KPIAttribute")]
-    public List<CreateKPIAttributeRequest> KPIAttribute { get; set; } = [];
+    [JsonPropertyName("KPIAttributes")]
+    public List<CreateKPIAttributeRequest> KPIAttributes { get; set; } = [];
 }
