@@ -5,7 +5,8 @@ namespace ERPEZ.Domain.Interfaces;
 
 public interface IKPIRepository : IRepository<KPI>
 {
-    Task<KPI?> GetKPIWithDetailsAsync(Guid id, CancellationToken cancellationToken = default); Task<(IReadOnlyList<TDto> Entities, int TotalCount)> GetKPIsWithDetailsAsyncGetAllAsync<TDto>(
+    Task<KPI?> GetKPIWithDetailsAsync(Guid id, CancellationToken cancellationToken = default);
+    Task<(IReadOnlyList<TDto> Entities, int TotalCount)> GetKPIsWithDetailsAsyncGetAllAsync<TDto>(
         Sieve.Models.SieveModel sieveModel,
         Expression<Func<KPI, TDto>> projection,
         List<Expression<Func<KPI, object>>> includes,
