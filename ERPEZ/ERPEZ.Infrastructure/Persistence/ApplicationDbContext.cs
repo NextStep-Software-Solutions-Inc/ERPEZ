@@ -135,7 +135,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .IsRequired();
 
         modelBuilder.Entity<DUKPIAssignment>()
-            .HasIndex(da => new { da.DeliveryUnitId, da.KPITargetId })
+            .HasIndex(da => new { da.DeliveryUnitId, da.KPIId })
             .IsUnique();
 
         // KPIModeOfVerification

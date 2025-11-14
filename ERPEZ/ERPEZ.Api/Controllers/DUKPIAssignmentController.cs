@@ -1,4 +1,4 @@
-﻿using ERPEZ.Application.Features.Planning.DUKPIAssignment.Commands.CreateDUKPIAssignment;
+using ERPEZ.Application.Features.Planning.DUKPIAssignment.Commands.CreateDUKPIAssignment;
 using ERPEZ.Application.Features.Planning.DUKPIAssignment.Commands.DeleteDUKPIAssignment;
 using ERPEZ.Application.Features.Planning.DUKPIAssignment.Commands.UpdateDUKPIAssignment;
 using ERPEZ.Application.Features.Planning.DUKPIAssignment.Dtos;
@@ -15,8 +15,8 @@ namespace ERPEZ.Api.Controllers
     public class DUKPIAssignmentController(ISender mediator) : ControllerBase
     {
         [HttpPost]
-        [ProducesResponseType(typeof(ApiResponse<DUKPIAssignmentDto>), StatusCodes.Status201Created)]
-        [ProducesResponseType(typeof(ApiResponse<DUKPIAssignmentDto>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<DUKPIAssignmentResponse>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<DUKPIAssignmentResponse>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateKPIAssignment([FromBody] CreateDUKPIAssignmentCommand command)
         {
             var result = await mediator.Send(command);
@@ -28,7 +28,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet]
-        [ProducesResponseType(typeof(PaginatedApiResponse<DUKPIAssignmentDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(PaginatedApiResponse<DUKPIAssignmentResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetKPIAssignments([FromQuery] GetDUKPIAssignmentsQuery query)
         {
             var result = await mediator.Send(query);
@@ -36,7 +36,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<DUKPIAssignmentDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<DUKPIAssignmentResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetKPIAssignmentById(Guid id)
         {
@@ -48,7 +48,7 @@ namespace ERPEZ.Api.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> UpdateDUKPIAssignment(Guid id, [FromBody] UpdateDUKPIAssignmentDto dto)
+        public async Task<IActionResult> UpdateDUKPIAssignment(Guid id, [FromBody] UpdateDUKPIAssignmentResponse dto)
         {
             var request = new UpdateDUKPIAssignmentCommand
             {
