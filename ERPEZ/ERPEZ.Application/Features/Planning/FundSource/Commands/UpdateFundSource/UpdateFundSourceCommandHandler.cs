@@ -12,7 +12,7 @@ public class UpdateFundSourceCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
     {
         var dto = request.UpdateFundSource;
 
-        if (dto.ParentId != null && dto.ParentId.HasValue)
+        if (dto.ParentId.HasValue)
         {
             _ = await unitOfWork.FundSourceRepository.GetByIdAsync(dto.ParentId.Value, cancellationToken) ?? throw new NotFoundException("Parent ID should exist.");
         }
