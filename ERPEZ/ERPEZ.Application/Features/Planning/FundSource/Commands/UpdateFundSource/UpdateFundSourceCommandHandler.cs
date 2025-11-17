@@ -18,9 +18,13 @@ public class UpdateFundSourceCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
         }
 
         var fundSource = await unitOfWork.FundSourceRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("Fund Source not found.");
-        if (fundSource.Name == dto.Name &&
-            fundSource.Type == dto.Type
-            ) throw new ConflictException("Fund Source already exist.");
+        // Check if another fund source (with a different ID) exists with the same name and type
+        var existingFundSource = await unitOfWork.FundSourceRepository
+            .FindAsync(x => x.Name == dto.Name && x.Type == dto.Type && x.Id != fundSource.Id, cancellationToken);
+        if (existingFundSource != null)
+        {
+            throw new ConflictException("Fund Source already exist.");
+        }
 
         fundSource.ParentId = dto?.ParentId ?? fundSource.ParentId;
         fundSource.Name = dto?.Name ?? fundSource.Name;
