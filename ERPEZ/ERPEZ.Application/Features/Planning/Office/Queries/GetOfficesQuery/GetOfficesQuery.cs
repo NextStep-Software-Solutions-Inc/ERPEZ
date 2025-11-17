@@ -1,9 +1,10 @@
-﻿using ERPEZ.Shared.Common;
+using ERPEZ.Application.Features.Planning.Office.Dtos;
+using ERPEZ.Shared.Common;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Office.Queries.GetOfficesQuery;
 
-public class GetOfficesQuery : IRequest<PaginatedApiResponse<Domain.Entities.Planning.Office>>
+public class GetOfficesQuery : IRequest<PaginatedApiResponse<OfficeResponse>>
 {
     public int PageNumber { get; set; } = 1;
     public int PageSize { get; set; } = 10;

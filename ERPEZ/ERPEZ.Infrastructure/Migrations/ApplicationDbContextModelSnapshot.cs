@@ -351,7 +351,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("KPITargetId");
 
-                    b.HasIndex("DeliveryUnitId", "KPITargetId")
+                    b.HasIndex("DeliveryUnitId", "KPIId")
                         .IsUnique();
 
                     b.ToTable("DUKPIAssignment", "planning");
@@ -690,7 +690,6 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("Remarks")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<DateTime?>("UpdatedAt")
@@ -701,9 +700,10 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("KPIId");
-
                     b.HasIndex("PerformanceMeasureId");
+
+                    b.HasIndex("KPIId", "PerformanceMeasureId", "NumericalRating")
+                        .IsUnique();
 
                     b.ToTable("KPIRatings", "planning");
                 });
