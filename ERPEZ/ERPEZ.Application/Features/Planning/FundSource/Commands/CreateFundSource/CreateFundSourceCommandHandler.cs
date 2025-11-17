@@ -10,7 +10,7 @@ public class CreateFundSourceCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
 {
     public async Task<ApiResponse<FundSourceResponse>> Handle(CreateFundSourceCommand request, CancellationToken cancellationToken)
     {
-        if (request.ParentId != null && request.ParentId.HasValue)
+        if (request.ParentId.HasValue)
         {
             _ = await unitOfWork.FundSourceRepository.GetByIdAsync(request.ParentId.Value, cancellationToken) 
                 ?? throw new NotFoundException($"Parent Fund Source with the specified ID ({request.ParentId.Value}) does not exist.");
