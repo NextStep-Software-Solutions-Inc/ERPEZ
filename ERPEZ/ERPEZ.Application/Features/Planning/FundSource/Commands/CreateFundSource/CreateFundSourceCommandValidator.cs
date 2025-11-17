@@ -5,7 +5,7 @@ namespace ERPEZ.Application.Features.Planning.FundSource.Commands.CreateFundSour
 
 public class CreateFundSourceCommandValidator : AbstractValidator<CreateFundSourceCommand>
 {
-    private readonly string[] validTypes = Enum.GetNames<FundSourceTypeEnum>();  
+    private readonly string[] validTypes = Enum.GetNames<FundSourceTypeEnum>();
 
     public CreateFundSourceCommandValidator()
     {

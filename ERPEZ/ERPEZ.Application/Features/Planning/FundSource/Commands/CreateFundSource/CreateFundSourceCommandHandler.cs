@@ -11,10 +11,9 @@ public class CreateFundSourceCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
 {
     public async Task<ApiResponse<FundSourceResponse>> Handle(CreateFundSourceCommand request, CancellationToken cancellationToken)
     {
-
         if (request.ParentId.HasValue)
         {
-            _ = await unitOfWork.FundSourceRepository.GetByIdAsync(request.ParentId.Value, cancellationToken)  ?? throw new NotFoundException($"Parent Fund Source with the specified ID ({request.ParentId.Value}) does not exist.");
+            _ = await unitOfWork.FundSourceRepository.GetByIdAsync(request.ParentId.Value, cancellationToken) ?? throw new NotFoundException($"Parent Fund Source with the specified ID ({request.ParentId.Value}) does not exist.");
         }
         
         var fundSourceType = Enum.Parse<FundSourceTypeEnum>(request.Type);
@@ -38,7 +37,7 @@ public class CreateFundSourceCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
             ParentId = fundSource.ParentId,
             Name = fundSource.Name,
             Code = fundSource.Code,
-            Type =  fundSource.Type.ToString(),
+            Type = fundSource.Type.ToString(),
             IsActive = fundSource.IsActive,
             CreatedBy = fundSource.CreatedBy,
             CreatedAt = fundSource.CreatedAt
