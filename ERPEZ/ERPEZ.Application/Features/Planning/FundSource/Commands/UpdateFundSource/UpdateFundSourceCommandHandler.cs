@@ -12,6 +12,10 @@ public class UpdateFundSourceCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
     {
         var dto = request.UpdateFundSource;
 
+        if (dto == null)
+        {
+            throw new BadRequestException("UpdateFundSource data must be provided.");
+        }
         if (dto.ParentId.HasValue)
         {
             _ = await unitOfWork.FundSourceRepository.GetByIdAsync(dto.ParentId.Value, cancellationToken) ?? throw new NotFoundException("Parent Fund Source with the specified ID does not exist.");
