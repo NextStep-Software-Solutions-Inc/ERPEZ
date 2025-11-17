@@ -17,7 +17,7 @@ namespace ERPEZ.Api.Controllers
     {
         [HttpPost]
         [ProducesResponseType(typeof(ApiResponse<FundSourceResponse>), StatusCodes.Status201Created)]
-        [ProducesResponseType(typeof(ApiResponse<FundSource>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<FundSourceResponse>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateFundSource([FromBody] CreateFundSourceCommand command)
         {
             var response = await mediator.Send(command);
