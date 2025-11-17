@@ -12,7 +12,8 @@ public class CreateFundSourceCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
     {
         if (request.ParentId != null && request.ParentId.HasValue)
         {
-            _ = await unitOfWork.FundSourceRepository.GetByIdAsync(request.ParentId.Value, cancellationToken) ?? throw new NotFoundException("Parent ID should exist.");
+            _ = await unitOfWork.FundSourceRepository.GetByIdAsync(request.ParentId.Value, cancellationToken) 
+                ?? throw new NotFoundException($"Parent Fund Source with the specified ID ({request.ParentId.Value}) does not exist.");
         }
         var fundSourceExist = await unitOfWork.FundSourceRepository.FindAsync(t => t.Name == request.Name && t.Type == request.Type, cancellationToken: cancellationToken);
         if (fundSourceExist != null) throw new ConflictException("Fund Source already exists.");
