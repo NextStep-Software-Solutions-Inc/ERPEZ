@@ -1,10 +1,12 @@
-﻿using ERPEZ.Shared.Common;
+using ERPEZ.Application.Features.Planning.Office.Dtos;
+using ERPEZ.Shared.Common;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Office.Commands.CreateOffice;
 
-public class CreateOfficeCommand : IRequest<ApiResponse<Domain.Entities.Planning.Office>>
+public class CreateOfficeCommand : IRequest<ApiResponse<OfficeResponse>>
 {
+    public Guid? ClusterId { get; set; }
     public string OfficeHead { get; set; } = string.Empty;
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
