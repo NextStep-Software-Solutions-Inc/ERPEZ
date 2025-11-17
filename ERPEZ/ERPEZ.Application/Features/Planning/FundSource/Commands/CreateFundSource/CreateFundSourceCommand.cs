@@ -1,9 +1,10 @@
-﻿using ERPEZ.Shared.Common;
+using ERPEZ.Application.Features.Planning.FundSource.Dtos;
+using ERPEZ.Shared.Common;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.FundSource.Commands.CreateFundSource;
 
-public class CreateFundSourceCommand : IRequest<ApiResponse<Domain.Entities.Planning.FundSource>>
+public class CreateFundSourceCommand : IRequest<ApiResponse<FundSourceResponse>>
 {
     public Guid? ParentId { get; set; }
     public string Name { get; set; } = string.Empty;

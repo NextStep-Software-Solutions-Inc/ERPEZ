@@ -1,6 +1,6 @@
-﻿namespace ERPEZ.Application.Features.Planning.FundSource.Dtos;
+namespace ERPEZ.Application.Features.Planning.FundSource.Dtos;
 
-public class FundSourceDto
+public class FundSourceResponse
 {
     public Guid Id { get; set; }
     public Guid? ParentId { get; set; }
@@ -8,4 +8,6 @@ public class FundSourceDto
     public string Code { get; set; } = string.Empty;
     public string Type { get; set; } = string.Empty;
     public bool IsActive { get; set; }
+    public DateTime CreatedAt { get; set; }
+    public string CreatedBy { get; set; } = string.Empty;
 }

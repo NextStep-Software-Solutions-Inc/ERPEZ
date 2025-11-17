@@ -1,4 +1,4 @@
-﻿using ERPEZ.Application.Features.Planning.FundSource.Commands.CreateFundSource;
+using ERPEZ.Application.Features.Planning.FundSource.Commands.CreateFundSource;
 using ERPEZ.Application.Features.Planning.FundSource.Commands.DeleteFundSource;
 using ERPEZ.Application.Features.Planning.FundSource.Commands.UpdateFundSource;
 using ERPEZ.Application.Features.Planning.FundSource.Dtos;
@@ -16,8 +16,8 @@ namespace ERPEZ.Api.Controllers
     public class FundSourcesController(ISender mediator) : ControllerBase
     {
         [HttpPost]
-        [ProducesResponseType(typeof(ApiResponse<FundSource>), StatusCodes.Status201Created)]
-        [ProducesResponseType(typeof(ApiResponse<FundSource>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<FundSourceResponse>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<FundSourceResponse>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateFundSource([FromBody] CreateFundSourceCommand command)
         {
             var response = await mediator.Send(command);
@@ -29,7 +29,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet]
-        [ProducesResponseType(typeof(PaginatedApiResponse<FundSourceDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(PaginatedApiResponse<FundSourceResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetFundSources([FromQuery] GetFundSourcesQuery query)
         {
             var result = await mediator.Send(query);
@@ -37,7 +37,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<FundSourceDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<FundSourceResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetFundSourceById(Guid id)
         {
