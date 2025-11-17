@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 
 namespace ERPEZ.Application.Features.Planning.Office.Commands.CreateOffice;
 
@@ -6,6 +6,11 @@ public class CreateOfficeCommandValidator : AbstractValidator<CreateOfficeComman
 {
     public CreateOfficeCommandValidator()
     {
+        RuleFor(x => x.ClusterId)
+            .Must(id => id != Guid.Empty)
+            .WithMessage("If provided, the Cluster ID must be a valid, non-empty GUID.")
+            .When(x => x.ClusterId.HasValue);
+
         // OfficeHead (Required String, Min/Max Length)
         RuleFor(x => x.OfficeHead)
             .NotEmpty()
