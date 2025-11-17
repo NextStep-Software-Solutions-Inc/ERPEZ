@@ -25,7 +25,7 @@ public class GetFundSourcesQueryHandler(IUnitOfWork unitOfWork) : IRequestHandle
             ParentId = fundSource.ParentId,
             Name = fundSource.Name,
             Code = fundSource.Code,
-            Type = fundSource.Type,
+            Type = fundSource.Type.ToString(),
             IsActive = fundSource.IsActive,
             CreatedBy = fundSource.CreatedBy,
             CreatedAt = fundSource.CreatedAt

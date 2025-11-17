@@ -1,4 +1,5 @@
 ﻿using ERPEZ.Domain.Common;
+using ERPEZ.Domain.Enums;
 using Sieve.Attributes;
 
 namespace ERPEZ.Domain.Entities.Planning;
@@ -12,7 +13,7 @@ public class FundSource : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public string Code { get; set; } = string.Empty;
     [Sieve(CanFilter = true, CanSort = true)]
-    public string Type { get; set; } = string.Empty;
+    public FundSourceTypeEnum Type { get; set; } = FundSourceTypeEnum.FundCluster;
     [Sieve(CanFilter = true, CanSort = true)]
     public bool IsActive { get; set; }
     public virtual FundSource? ParentSource { get; set; }

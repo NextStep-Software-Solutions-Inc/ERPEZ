@@ -1,13 +1,11 @@
+using ERPEZ.Domain.Enums;
 using FluentValidation;
 
 namespace ERPEZ.Application.Features.Planning.FundSource.Commands.CreateFundSource;
 
 public class CreateFundSourceCommandValidator : AbstractValidator<CreateFundSourceCommand>
 {
-    private readonly string[] validTypes =
-    [
-        "FundCluster", "FinancingSource", "AuthorizationCode", "FundCategory"
-    ];
+    private readonly string[] validTypes = Enum.GetNames<FundSourceTypeEnum>();  
 
     public CreateFundSourceCommandValidator()
     {
