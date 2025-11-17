@@ -11,6 +11,12 @@
   </ItemGroup>
 
   <ItemGroup>
+    <Folder Include="Features\Planning\ActivityBudgetRequirement\Commands\" />
+    <Folder Include="Features\Planning\ActivityBudgetRequirement\Dtos\" />
+    <Folder Include="Features\Planning\ActivityBudgetRequirement\Queries\" />
+    <Folder Include="Features\Planning\OPCREvaluation\Commands\" />
+    <Folder Include="Features\Planning\OPCREvaluation\Dtos\" />
+    <Folder Include="Features\Planning\OPCREvaluation\Queries\" />
     <Folder Include="Features\Planning\OPCRRating\Commands\" />
     <Folder Include="Features\Planning\OPCRRating\Dtos\" />
     <Folder Include="Features\Planning\OPCRRating\Queries\" />
