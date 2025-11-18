@@ -45,8 +45,7 @@ public class UpdateDUAllocationCommandValidator : AbstractValidator<UpdateDUAllo
 
                 // b. Amount (Required Decimal, Positive Value)
                 duFundAllocation.RuleFor(fund => fund.Amount)
-                    .NotEmpty()
-                    .WithMessage("Fund Allocation Amount is required.")
+
                     .GreaterThan(0)
                     .WithMessage("Fund Allocation Amount must be a positive value greater than zero.");
             });

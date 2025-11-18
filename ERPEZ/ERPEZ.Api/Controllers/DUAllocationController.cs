@@ -20,7 +20,7 @@ namespace ERPEZ.Api.Controllers
         public async Task<IActionResult> CreateDUAllocation([FromBody] CreateDUAllocationCommand command)
         {
             var result = await mediator.Send(command);
-            return result.Succeeded ? CreatedAtAction(nameof(GetDUAllocationById), new { id = result.Data}, result) : BadRequest(result);
+            return result.Succeeded ? CreatedAtAction(nameof(GetDUAllocationById), new { id = result.Data }, result) : BadRequest(result);
         }
 
         [HttpGet]

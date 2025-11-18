@@ -22,8 +22,6 @@ public class CreateDUAllocationCommandValidator : AbstractValidator<CreateDUAllo
 
         // 3. Amount (Required Decimal, Positive Value)
         RuleFor(x => x.Amount)
-            .NotEmpty()
-            .WithMessage("Amount is required.")
             .GreaterThan(0)
             .WithMessage("Amount must be a positive value greater than zero.");
 
@@ -37,8 +35,6 @@ public class CreateDUAllocationCommandValidator : AbstractValidator<CreateDUAllo
 
             // b. Amount (Required Decimal, Positive Value)
             duFundAllocation.RuleFor(fund => fund.Amount)
-                .NotEmpty()
-                .WithMessage("Fund Allocation Amount is required.")
                 .GreaterThan(0)
                 .WithMessage("Fund Allocation Amount must be a positive value greater than zero.");
         });
