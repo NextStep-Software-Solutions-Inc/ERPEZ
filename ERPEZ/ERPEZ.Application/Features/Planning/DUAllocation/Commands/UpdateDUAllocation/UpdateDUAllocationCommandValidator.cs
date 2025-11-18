@@ -29,8 +29,8 @@ public class UpdateDUAllocationCommandValidator : AbstractValidator<UpdateDUAllo
         When(x => x.UpdateDUAllocation?.Amount.HasValue == true, () =>
         {
             RuleFor(x => x.UpdateDUAllocation!.Amount)
-                .GreaterThan(0)
-                .WithMessage("Amount must be a positive value greater than zero.");
+                .GreaterThanOrEqualTo(0)
+                .WithMessage("Amount must be zero or greater.");
         });
 
         // 4. DUFundAllocations (Collection Validation)
@@ -64,7 +64,7 @@ public class UpdateDUAllocationCommandValidator : AbstractValidator<UpdateDUAllo
                     var totalAllocation = x.UpdateDUAllocation.DUFundAllocations.Sum(fund => fund.Amount);
                     return totalAllocation <= x.UpdateDUAllocation.Amount.Value;
                 })
-                .WithMessage("The total of DU Fund Allocations must not exceed the Amount.");
+                .WithMessage("The total of DU Fund Allocations must not exceed the Amount. When Amount is 0, all fund allocations must also be 0.");
         });
     }
 }

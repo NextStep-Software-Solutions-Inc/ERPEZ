@@ -20,10 +20,10 @@ public class CreateDUAllocationCommandValidator : AbstractValidator<CreateDUAllo
             .MaximumLength(500)
             .WithMessage("Purpose cannot exceed 500 characters.");
 
-        // 3. Amount (Required Decimal, Positive Value)
+        // 3. Amount (Required Decimal, Zero or Positive Value)
         RuleFor(x => x.Amount)
-            .GreaterThan(0)
-            .WithMessage("Amount must be a positive value greater than zero.");
+            .GreaterThanOrEqualTo(0)
+            .WithMessage("Amount must be zero or greater.");
 
         // 4. DUFundAllocations (Collection Validation)
         RuleForEach(x => x.DUFundAllocations).ChildRules(duFundAllocation =>
@@ -45,6 +45,6 @@ public class CreateDUAllocationCommandValidator : AbstractValidator<CreateDUAllo
 
         RuleFor(x => x)
             .Must(x => x.DUFundAllocations != null && x.DUFundAllocations.Sum(fund => fund.Amount) <= x.Amount)
-            .WithMessage("The total of DU Fund Allocations must not exceed the Amount.");
+            .WithMessage("The total of DU Fund Allocations must not exceed the Amount. When Amount is 0, all fund allocations must also be 0.");
     }
 }
