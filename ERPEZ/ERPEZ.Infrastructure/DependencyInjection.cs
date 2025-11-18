@@ -1,3 +1,4 @@
+using System.Threading.Tasks;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Infrastructure.Persistence;
 using ERPEZ.Infrastructure.Persistence.Repositories;
@@ -13,7 +14,7 @@ namespace ERPEZ.Infrastructure;
 
 public static class DependencyInjection
 {
-    public static WebApplicationBuilder AddInfrastructureServices(
+    public static async Task<WebApplicationBuilder> AddInfrastructureServices(
         this WebApplicationBuilder builder)
     {
         var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
@@ -75,7 +76,7 @@ public static class DependencyInjection
         {
             using var scope = services.BuildServiceProvider().CreateScope();
             var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            dbContext.Database.Migrate();
+            await dbContext.Database.MigrateAsync();
         }
         return builder;
     }
