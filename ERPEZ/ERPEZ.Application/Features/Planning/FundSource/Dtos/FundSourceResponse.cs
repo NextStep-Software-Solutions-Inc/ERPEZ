@@ -8,8 +8,8 @@ public class FundSourceResponse
     public required string Code { get; set; }
     public required string Type { get; set; }
     public bool IsActive { get; set; }
-    public required decimal TotalReceivedFunds { get; set; }
-    public required decimal TotalDUAllocatedFunds { get; set; }
+    public required decimal TotalReceivedFunds { get; set; } = 0m;
+    public required decimal TotalDUAllocatedFunds { get; set; } = 0m;
     public DateTime CreatedAt { get; set; }
     public required string CreatedBy { get; set; }
 }
