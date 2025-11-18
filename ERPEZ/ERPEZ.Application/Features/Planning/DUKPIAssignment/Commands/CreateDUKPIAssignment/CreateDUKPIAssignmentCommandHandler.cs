@@ -1,9 +1,7 @@
-using ERPEZ.Application.Features.Planning.DUKPIAssignment.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.Application.Features.Planning.DUKPIAssignment.Commands.CreateDUKPIAssignment;
 
@@ -21,8 +19,9 @@ public class CreateDUKPIAssignmentCommandHandler(IUnitOfWork unitOfWork)
             ?? throw new NotFoundException("Delivery Unit not found.");
 
         // Fetch all targets for the KPI
-        var kpiTargets = await unitOfWork.KPITargetRepository.Query(t => t.KPIId == kpi.Id)
-            .ToListAsync(cancellationToken);
+        var kpiTargets = await unitOfWork.KPITargetRepository.ToListAsync(
+            unitOfWork.KPITargetRepository.Query(t => t.KPIId == kpi.Id),
+            cancellationToken);
 
         // Verify that all provided targets match the KPI's targets
         var providedTargetIds = request.DUKPITargets.Select(t => t.TargetId).ToHashSet();
@@ -33,17 +32,17 @@ public class CreateDUKPIAssignmentCommandHandler(IUnitOfWork unitOfWork)
         await unitOfWork.ExecuteInTransactionAsync(async () =>
         {
             // Fetch all existing assignments for this Delivery Unit and the provided targets
-            var existingAssignments = await unitOfWork.DUKPIAssignmentRepository.Query(a => a.DeliveryUnitId == request.DeliveryUnitId && providedTargetIds.Contains(a.KPITargetId)).ToListAsync(cancellationToken);
+            var existingAssignments = await unitOfWork.DUKPIAssignmentRepository.ToListAsync(
+                unitOfWork.DUKPIAssignmentRepository.Query(a => a.DeliveryUnitId == request.DeliveryUnitId && providedTargetIds.Contains(a.KPITargetId)),
+                cancellationToken);
 
             // Fetch total allocated values for each target
-            var allocationSums = await unitOfWork.DUKPIAssignmentRepository
-                .Query(a => providedTargetIds.Contains(a.KPITargetId)).GroupBy(a => a.KPITargetId)
-                .Select(g => new
-                {
-                    TargetId = g.Key,
-                    Total = g.Sum(a => a.AllocatedTargetValue)
-                })
-                .ToDictionaryAsync(x => x.TargetId, x => x.Total, cancellationToken);
+            var allocationAssignments = await unitOfWork.DUKPIAssignmentRepository.ToListAsync(
+                unitOfWork.DUKPIAssignmentRepository.Query(a => providedTargetIds.Contains(a.KPITargetId)),
+                cancellationToken);
+            var allocationSums = allocationAssignments
+                .GroupBy(a => a.KPITargetId)
+                .ToDictionary(g => g.Key, g => g.Sum(a => a.AllocatedTargetValue));
 
             foreach (var duKpiTarget in request.DUKPITargets)
             {

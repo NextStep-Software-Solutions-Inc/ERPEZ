@@ -6,18 +6,30 @@ public class UpdateDUKPIAssignmentCommandValidator : AbstractValidator<UpdateDUK
 {
     public UpdateDUKPIAssignmentCommandValidator()
     {
-        // Primary ID Validation (Crucial for updates)
+        // Delivery Unit ID Validation
         RuleFor(x => x.Id)
             .NotEmpty()
-            .WithMessage("DUKPI Assignment ID is required for update.")
+            .WithMessage("Delivery Unit ID is required for update.")
             .Must(id => id != Guid.Empty)
-            .WithMessage("DUKPI Assignment ID must be a valid, non-empty GUID.");
+            .WithMessage("Delivery Unit ID must be a valid, non-empty GUID.");
 
-        // AllocatedTargetValue (Optional Decimal, Must be positive if present)
-        RuleFor(x => x.UpdateDUKPIAssignment.AllocatedTargetValue)
+        // Update list validation
+        RuleFor(x => x.UpdateDUKPIAssignments)
             .NotEmpty()
-            .WithMessage("Allocated Target Value is required.")
-            .GreaterThan(0)
-            .WithMessage("Allocated Target Value must be greater than zero.");
+            .WithMessage("At least one KPI assignment update is required.");
+
+        RuleForEach(x => x.UpdateDUKPIAssignments)
+            .ChildRules(child =>
+            {
+                child.RuleFor(c => c.TargetId)
+                    .NotEmpty()
+                    .WithMessage("Target ID is required for each update.")
+                    .Must(id => id != Guid.Empty)
+                    .WithMessage("Target ID must be a valid, non-empty GUID.");
+
+                child.RuleFor(c => c.AllocatedTargetValue)
+                    .GreaterThan(0)
+                    .WithMessage("Allocated Target Value must be greater than zero.");
+            });
     }
 }

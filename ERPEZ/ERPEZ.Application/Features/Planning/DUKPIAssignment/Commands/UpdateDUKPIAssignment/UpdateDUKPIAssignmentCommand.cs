@@ -7,6 +7,6 @@ namespace ERPEZ.Application.Features.Planning.DUKPIAssignment.Commands.UpdateDUK
 public record UpdateDUKPIAssignmentCommand : IRequest<ApiResponse<Unit>>
 {
     public Guid Id { get; init; }
-    public required UpdateDUKPIAssignmentResponse UpdateDUKPIAssignment { get; init; }
+    public required List<UpdateDUKPIAssignmentRequest> UpdateDUKPIAssignments { get; init; }
 }
 
