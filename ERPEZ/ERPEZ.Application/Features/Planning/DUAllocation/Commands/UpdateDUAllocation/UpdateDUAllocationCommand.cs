@@ -4,9 +4,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.DUAllocation.Commands.UpdateDUAllocation;
 
-public class UpdateDUAllocationCommand : IRequest<ApiResponse<Domain.Entities.Planning.DUAllocation>>
+public class UpdateDUAllocationCommand : IRequest<ApiResponse<Guid>>
 {
     public Guid Id { get; set; }
-    public required UpdateDUAllocationDto UpdateDUAllocation { get; set; }
+    public required UpdateDUAllocationRequest UpdateDUAllocation { get; set; }
 }
 

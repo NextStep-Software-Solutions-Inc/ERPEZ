@@ -22,7 +22,33 @@ public class CreateDUAllocationCommandValidator : AbstractValidator<CreateDUAllo
 
         // 3. Amount (Required Decimal, Positive Value)
         RuleFor(x => x.Amount)
+            .NotEmpty()
+            .WithMessage("Amount is required.")
             .GreaterThan(0)
             .WithMessage("Amount must be a positive value greater than zero.");
+
+        // 4. DUFundAllocations (Collection Validation)
+        RuleForEach(x => x.DUFundAllocations).ChildRules(duFundAllocation =>
+        {
+            // a. ReceivedFundId (Required GUID)
+            duFundAllocation.RuleFor(fund => fund.ReceivedFundId)
+                .NotEmpty()
+                .WithMessage("Received Fund ID is required and must be a valid, non-empty GUID.");
+
+            // b. Amount (Required Decimal, Positive Value)
+            duFundAllocation.RuleFor(fund => fund.Amount)
+                .NotEmpty()
+                .WithMessage("Fund Allocation Amount is required.")
+                .GreaterThan(0)
+                .WithMessage("Fund Allocation Amount must be a positive value greater than zero.");
+        });
+
+        RuleFor(x => x.DUFundAllocations)
+            .Must(duFundAllocations => duFundAllocations != null && duFundAllocations.Count > 0)
+            .WithMessage("At least one DU Fund Allocation is required.");
+
+        RuleFor(x => x)
+            .Must(x => x.DUFundAllocations != null && x.DUFundAllocations.Sum(fund => fund.Amount) <= x.Amount)
+            .WithMessage("The total of DU Fund Allocations must not exceed the Amount.");
     }
 }

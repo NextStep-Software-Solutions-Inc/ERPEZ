@@ -4,8 +4,6 @@ using ERPEZ.Application.Features.Planning.DUAllocation.Commands.UpdateDUAllocati
 using ERPEZ.Application.Features.Planning.DUAllocation.Dtos;
 using ERPEZ.Application.Features.Planning.DUAllocation.Queries.GetDUAllocationById;
 using ERPEZ.Application.Features.Planning.DUAllocation.Queries.GetDUAllocations;
-using ERPEZ.Application.Features.Planning.KPI.Dtos;
-using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -17,16 +15,12 @@ namespace ERPEZ.Api.Controllers
     public class DUAllocationController(ISender mediator) : ControllerBase
     {
         [HttpPost]
-        [ProducesResponseType(typeof(ApiResponse<KPI>), StatusCodes.Status201Created)]
-        [ProducesResponseType(typeof(ApiResponse<KPI>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<DUAllocationDto>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<DUAllocationDto>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateDUAllocation([FromBody] CreateDUAllocationCommand command)
         {
             var result = await mediator.Send(command);
-
-            if (!result.Succeeded)
-                return BadRequest(result);
-
-            return CreatedAtAction(nameof(GetDUAllocationById), new { id = result.Data!.Id }, result);
+            return result.Succeeded ? CreatedAtAction(nameof(GetDUAllocationById), new { id = result.Data}, result) : BadRequest(result);
         }
 
         [HttpGet]
@@ -34,7 +28,7 @@ namespace ERPEZ.Api.Controllers
         public async Task<IActionResult> GetDUAllocations([FromQuery] GetDUAllocationsQuery query)
         {
             var result = await mediator.Send(query);
-            return Ok(result);
+            return result.Succeeded ? Ok(result) : BadRequest(result);
         }
 
         [HttpGet("{id}")]
@@ -50,12 +44,12 @@ namespace ERPEZ.Api.Controllers
         [ProducesResponseType(typeof(ApiResponse<DUAllocationDto>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> UpdateDUAllocation(Guid id, [FromBody] UpdateDUAllocationDto dto)
+        public async Task<IActionResult> UpdateDUAllocation(Guid id, [FromBody] UpdateDUAllocationRequest request)
         {
             var command = new UpdateDUAllocationCommand
             {
                 Id = id,
-                UpdateDUAllocation = dto
+                UpdateDUAllocation = request
             };
 
             var result = await mediator.Send(command);
