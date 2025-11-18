@@ -15,8 +15,8 @@ namespace ERPEZ.Api.Controllers
     public class DUKPIAssignmentController(ISender mediator) : ControllerBase
     {
         [HttpPost]
-        [ProducesResponseType(typeof(ApiResponse<DUKPIAssignmentResponse>), StatusCodes.Status201Created)]
-        [ProducesResponseType(typeof(ApiResponse<DUKPIAssignmentResponse>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateKPIAssignment([FromBody] CreateDUKPIAssignmentCommand command)
         {
             var result = await mediator.Send(command);
@@ -24,7 +24,7 @@ namespace ERPEZ.Api.Controllers
             if (!result.Succeeded)
                 return BadRequest(result);
 
-            return CreatedAtAction(nameof(GetKPIAssignmentById), new { id = result.Data!.Id }, result);
+            return Ok(result);
         }
 
         [HttpGet]

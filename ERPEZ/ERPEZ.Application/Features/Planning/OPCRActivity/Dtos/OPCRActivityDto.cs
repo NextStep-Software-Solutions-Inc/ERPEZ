@@ -1,4 +1,4 @@
-﻿namespace ERPEZ.Application.Features.Planning.OPCRActivity.Dtos;
+namespace ERPEZ.Application.Features.Planning.OPCRActivity.Dtos;
 
 public class OPCRActivityDto
 {

@@ -1,4 +1,4 @@
-﻿using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Common;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.OPCRActivity.Queries.GetOPCRActivities;

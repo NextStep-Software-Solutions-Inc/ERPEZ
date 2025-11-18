@@ -1,4 +1,4 @@
-﻿using ERPEZ.TenantManagement.Domain.Interfaces;
+using ERPEZ.TenantManagement.Domain.Interfaces;
 using ERPEZ.Shared.Interfaces;
 using Sieve.Services;
 
@@ -36,10 +36,10 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
 
     public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        return this.context.SaveChangesAsync(cancellationToken);
+        return context.SaveChangesAsync(cancellationToken);
     }
 
 
 
-    public void Dispose() => this.context.Dispose();
+    public void Dispose() => context.Dispose();
 }

@@ -1,4 +1,4 @@
-using ERPEZ.Domain.Constants;
+using ERPEZ.Domain.Enums;
 using ERPEZ.Shared.Common;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,7 +12,7 @@ public class FunctionTypeController : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<List<string>>), StatusCodes.Status200OK)]
     public IActionResult GetFunctionTypes()
     {
-        var functionTypes = FunctionTypeConstants.validFunctionTypes;
+        var functionTypes = Enum.GetNames<FunctionTypeEnum>().ToList();
         return Ok(ApiResponse<List<string>>.Success(functionTypes, "Function types retrieved successfully."));
     }
 }

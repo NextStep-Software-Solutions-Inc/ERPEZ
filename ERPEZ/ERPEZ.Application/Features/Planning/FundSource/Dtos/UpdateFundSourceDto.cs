@@ -1,4 +1,4 @@
-﻿namespace ERPEZ.Application.Features.Planning.FundSource.Dtos;
+namespace ERPEZ.Application.Features.Planning.FundSource.Dtos;
 
 public class UpdateFundSourceDto
 {

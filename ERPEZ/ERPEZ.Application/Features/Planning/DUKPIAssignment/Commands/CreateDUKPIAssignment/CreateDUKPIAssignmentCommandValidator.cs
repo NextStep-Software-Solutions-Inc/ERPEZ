@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 
 namespace ERPEZ.Application.Features.Planning.DUKPIAssignment.Commands.CreateDUKPIAssignment;
 
@@ -17,15 +17,18 @@ public class CreateDUKPIAssignmentCommandValidator : AbstractValidator<CreateDUK
             .WithMessage("Delivery Unit ID is required and must be a valid, non-empty GUID.");
 
         // KPITargetId (Required GUID)
-        RuleFor(x => x.KPITargetId)
-            .NotEmpty()
-            .WithMessage("KPI Target ID is required and must be a valid, non-empty GUID.");
+        RuleForEach(x => x.DUKPITargets)
+            .ChildRules(target =>
+            {
+                target.RuleFor(x => x.TargetId)
+                    .NotEmpty()
+                    .WithMessage("Target ID is required and must be a valid, non-empty GUID.");
+                target.RuleFor(x => x.AllocatedTargetValue)
+                    .NotEmpty()
+                    .WithMessage("Allocated Target Value is required.")
+                    .GreaterThan(0)
+                    .WithMessage("Allocated Target Value must be greater than zero.");
 
-        // AllocatedTargetValue (Required Decimal, Must be positive)
-        RuleFor(x => x.AllocatedTargetValue)
-            .NotEmpty()
-            .WithMessage("Allocated Target Value is required.")
-            .GreaterThan(0)
-            .WithMessage("Allocated Target Value must be greater than zero.");
+            });
     }
 }

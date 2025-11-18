@@ -19,7 +19,7 @@ public class UpdateReceivedFundCommandHandler(IUnitOfWork unitOfWork) : IRequest
 
         var receivedFund = await unitOfWork.ReceivedFundRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken)
             ?? throw new NotFoundException("Received Fund not found.");
-        
+
         receivedFund.FundSourceId = dto?.FundSourceId ?? receivedFund.FundSourceId;
         receivedFund.Amount = dto?.Amount ?? receivedFund.Amount;
 

@@ -1,4 +1,4 @@
-﻿namespace ERPEZ.TenantManagement.Domain.Common
+namespace ERPEZ.TenantManagement.Domain.Common
 {
     public interface IEntity
     {

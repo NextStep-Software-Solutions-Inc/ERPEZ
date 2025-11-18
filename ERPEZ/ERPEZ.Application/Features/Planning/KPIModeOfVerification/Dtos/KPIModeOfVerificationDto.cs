@@ -1,4 +1,4 @@
-﻿using Sieve.Attributes;
+using Sieve.Attributes;
 
 namespace ERPEZ.Application.Features.Planning.KPIModeOfVerification.Dtos;
 

@@ -1,4 +1,4 @@
-﻿using ERPEZ.Shared.Middlewares;
+using ERPEZ.Shared.Middlewares;
 using ERPEZ.TenantManagement.Api.Extensions;
 using Microsoft.OpenApi.Models;
 

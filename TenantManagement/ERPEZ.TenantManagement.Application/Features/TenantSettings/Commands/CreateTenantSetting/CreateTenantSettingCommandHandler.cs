@@ -1,4 +1,4 @@
-﻿using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using ERPEZ.TenantManagement.Domain.Entities;
 using ERPEZ.TenantManagement.Domain.Interfaces;
@@ -16,7 +16,7 @@ public sealed class CreateTenantSettingCommandHandler(IUnitOfWork unitOfWork)
         if (tenantSettingExists != null) throw new ConflictException("Tenant setting already exists.");
 
         var tenantExists = await unitOfWork.TenantRepository.FindAsync(t => t.Id == command.TenantId, cancellationToken) ?? throw new NotFoundException("Tenant not found.");
-        
+
         var tenantSetting = new TenantSetting
         {
             TenantId = command.TenantId,

@@ -1,4 +1,4 @@
-﻿namespace ERPEZ.Application.Features.Planning.OPCRPAPDepartment.Dtos;
+namespace ERPEZ.Application.Features.Planning.OPCRPAPDepartment.Dtos;
 
 public class OPCRPAPDepartmentDto
 {

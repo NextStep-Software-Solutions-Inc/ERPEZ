@@ -24,7 +24,7 @@ public class SoftDeleteInterceptor(ICurrentUserService currentUser) : SaveChange
     {
         if (context is null) return;
 
-    var userId = currentUser.UserId ?? "system";
+        var userId = currentUser.UserId ?? "system";
         var now = DateTime.UtcNow;
 
         foreach (var entry in context.ChangeTracker.Entries<IEntity>())

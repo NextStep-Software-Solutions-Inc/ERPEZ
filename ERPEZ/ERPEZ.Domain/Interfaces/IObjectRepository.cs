@@ -1,4 +1,4 @@
-﻿namespace ERPEZ.Domain.Interfaces;
+namespace ERPEZ.Domain.Interfaces;
 
 public interface IObjectRepository : IRepository<Entities.Planning.Object>
 {

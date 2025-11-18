@@ -4,9 +4,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.DUKPIAssignment.Commands.UpdateDUKPIAssignment;
 
-public class UpdateDUKPIAssignmentCommand : IRequest<ApiResponse<DUKPIAssignmentResponse>>
+public record UpdateDUKPIAssignmentCommand : IRequest<ApiResponse<Unit>>
 {
-    public Guid Id { get; set; }
-    public required UpdateDUKPIAssignmentResponse UpdateDUKPIAssignment { get; set; }
+    public Guid Id { get; init; }
+    public required UpdateDUKPIAssignmentResponse UpdateDUKPIAssignment { get; init; }
 }
 

@@ -1,4 +1,4 @@
-﻿using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Common;
 using ERPEZ.TenantManagement.Application.Features.TenantSettings.Commands.CreateTenantSetting;
 using ERPEZ.TenantManagement.Application.Features.TenantSettings.Commands.DeleteTenantSetting;
 using ERPEZ.TenantManagement.Application.Features.TenantSettings.Commands.UpdateTenantSetting;
@@ -33,7 +33,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         public async Task<IActionResult> GetTenantSettings([FromQuery] GetTenantSettingsQuery query)
         {
             var result = await mediator.Send(query);
-            
+
             return result.Succeeded ? Ok(result) : BadRequest(result);
         }
 
@@ -45,7 +45,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         {
             var query = new GetTenantSettingByIdQuery(id);
             var tenantSetting = await mediator.Send(query);
-                        
+
             return tenantSetting.Succeeded ? Ok(tenantSetting) : BadRequest(tenantSetting);
         }
 

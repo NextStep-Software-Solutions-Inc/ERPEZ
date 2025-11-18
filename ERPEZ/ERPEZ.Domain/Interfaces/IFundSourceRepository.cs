@@ -1,4 +1,4 @@
-﻿namespace ERPEZ.Domain.Interfaces;
+namespace ERPEZ.Domain.Interfaces;
 
 public interface IFundSourceRepository : IRepository<Entities.Planning.FundSource>
 {

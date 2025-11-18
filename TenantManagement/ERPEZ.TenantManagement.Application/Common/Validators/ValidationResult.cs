@@ -1,4 +1,4 @@
-﻿namespace ERPEZ.TenantManagement.Application.Common.Exceptions
+namespace ERPEZ.TenantManagement.Application.Common.Exceptions
 {
     public class ValidationResult
     {

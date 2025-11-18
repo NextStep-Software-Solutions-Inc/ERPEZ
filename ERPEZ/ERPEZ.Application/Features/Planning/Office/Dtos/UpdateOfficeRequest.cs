@@ -1,4 +1,4 @@
-﻿namespace ERPEZ.Application.Features.Planning.Office.Dtos;
+namespace ERPEZ.Application.Features.Planning.Office.Dtos;
 
 public class UpdateOfficeRequest
 {

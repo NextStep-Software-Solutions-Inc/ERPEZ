@@ -1,10 +1,12 @@
-using ERPEZ.Domain.Constants;
 using FluentValidation;
+using ERPEZ.Domain.Enums;
 
 namespace ERPEZ.Application.Features.Planning.KPI.Commands.CreateKPI;
 
 public class CreateKPICommandValidator : AbstractValidator<CreateKPICommand>
 {
+    private readonly string[] validFunctionTypes = Enum.GetNames<FunctionTypeEnum>();
+
     public CreateKPICommandValidator()
     {
         // ParentKPIId (Optional GUID)
@@ -19,8 +21,8 @@ public class CreateKPICommandValidator : AbstractValidator<CreateKPICommand>
             .WithMessage("Function Type is required.")
             .MaximumLength(100)
             .WithMessage("Function Type cannot exceed 100 characters.")
-            .Must(type => FunctionTypeConstants.validFunctionTypes.Contains(type))
-            .WithMessage($"FunctionType must be one of: {string.Join(", ", FunctionTypeConstants.validFunctionTypes)}.");
+            .Must(type => validFunctionTypes.Contains(type))
+            .WithMessage($"FunctionType must be one of: {string.Join(", ", validFunctionTypes)}.");
 
         // Name (Required String, Min/Max Length)
         RuleFor(x => x.Name)
@@ -44,5 +46,9 @@ public class CreateKPICommandValidator : AbstractValidator<CreateKPICommand>
         RuleFor(x => x.IsPercentage)
             .NotNull()
             .WithMessage("Is Percentage must be provided (true or false).");
+
+        RuleFor(x => x.IsTargetValueAllocable)
+            .NotNull()
+            .WithMessage("Is Target Value Allocable must be provided (true or false).");
     }
 }

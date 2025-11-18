@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 
 namespace ERPEZ.Application.Features.Planning.MFOKPI.Commands.DeleteMFOKPI;
 

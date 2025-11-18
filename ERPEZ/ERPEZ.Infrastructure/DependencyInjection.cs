@@ -68,9 +68,9 @@ public static class DependencyInjection
             .UseRecommendedSerializerSettings()
             .UsePostgreSqlStorage(c => c.UseNpgsqlConnection(connectionString)));
 
-        services.AddHangfireServer(); 
+        services.AddHangfireServer();
         var env = builder.Environment;
-        
+
         if (env != null && env.IsDevelopment())
         {
             using var scope = services.BuildServiceProvider().CreateScope();

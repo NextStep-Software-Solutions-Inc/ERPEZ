@@ -1,4 +1,4 @@
-﻿using ERPEZ.TenantManagement.Domain.Entities;
+using ERPEZ.TenantManagement.Domain.Entities;
 
 namespace ERPEZ.TenantManagement.Domain.Interfaces;
 

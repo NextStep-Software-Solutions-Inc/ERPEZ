@@ -1,4 +1,4 @@
-﻿namespace ERPEZ.Application.Features.Planning.OPCRKPI.Dtos;
+namespace ERPEZ.Application.Features.Planning.OPCRKPI.Dtos;
 
 public class UpdateOPCRKPIDto
 {

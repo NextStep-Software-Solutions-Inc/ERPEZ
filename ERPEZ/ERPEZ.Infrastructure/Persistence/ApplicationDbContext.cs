@@ -9,37 +9,37 @@ namespace ERPEZ.Infrastructure.Persistence;
 public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : DbContext(options)
 {
     //Planning
-    public DbSet<ActivityBudgetRequirement> ActivityBudgetRequirements { get; set; }
-    public DbSet<DUAllocation> DUAllocations { get; set; }
-    public DbSet<DUFundAllocation> DUFundAllocations { get; set; }
-    public DbSet<FunctionAllocation> FunctionAllocations { get; set; }
-    public DbSet<FundSource> FundSources { get; set; }
-    public DbSet<KPI> KPIs { get; set; }
-    public DbSet<KPIModeOfVerification> KPIModeOfVerifications { get; set; }
-    public DbSet<KPIRating> KPIRatings { get; set; }
-    public DbSet<KPITarget> KPITargets { get; set; }
-    public DbSet<Location> Locations { get; set; }
-    public DbSet<MFOPAP> MFOPAPs { get; set; }
-    public DbSet<Object> Objects { get; set; }
-    public DbSet<Office> Offices { get; set; }
-    public DbSet<OPCR> OPCRs { get; set; }
-    public DbSet<OPCRActivity> OPCRActivities { get; set; }
-    public DbSet<OPCREvaluation> OPCREvaluations { get; set; }
-    public DbSet<OPCRRating> OPCRRatings { get; set; }
-    public DbSet<OPCRPAPDepartment> OPCRPAPDepartments { get; set; }
-    public DbSet<Organization> Organizations { get; set; }
-    public DbSet<PerformanceMeasure> PerformanceMeasures { get; set; }
-    public DbSet<ReceivedFund> ReceivedFunds { get; set; }
-    public DbSet<Transaction> Transactions { get; set; }
-    public DbSet<WFP> WFPs { get; set; }
-    public DbSet<WFPActivity> WFPActivities { get; set; }
-    public DbSet<WFPObjective> WFPObjectives { get; set; }
-    public DbSet<WFPObjectiveTarget> WFPObjectiveTargets { get; set; }
-    public DbSet<WFPObjectiveTimeline> WFPObjectiveTimelines { get; set; }
-    public DbSet<WFPOutcome> WFPOutcomes { get; set; }
-    public DbSet<Attribute> Attributes { get; set; }
-    public DbSet<Cluster> Clusters { get; set; }
-    public DbSet<SDG> SDGs { get; set; }
+    public DbSet<ActivityBudgetRequirement>? ActivityBudgetRequirements { get; set; }
+    public DbSet<DUAllocation>? DUAllocations { get; set; }
+    public DbSet<DUFundAllocation>? DUFundAllocations { get; set; }
+    public DbSet<FunctionAllocation>? FunctionAllocations { get; set; }
+    public DbSet<FundSource>? FundSources { get; set; }
+    public DbSet<KPI>? KPIs { get; set; }
+    public DbSet<KPIModeOfVerification>? KPIModeOfVerifications { get; set; }
+    public DbSet<KPIRating>? KPIRatings { get; set; }
+    public DbSet<KPITarget>? KPITargets { get; set; }
+    public DbSet<Location>? Locations { get; set; }
+    public DbSet<MFOPAP>? MFOPAPs { get; set; }
+    public DbSet<Object>? Objects { get; set; }
+    public DbSet<Office>? Offices { get; set; }
+    public DbSet<OPCR>? OPCRs { get; set; }
+    public DbSet<OPCRActivity>? OPCRActivities { get; set; }
+    public DbSet<OPCREvaluation>? OPCREvaluations { get; set; }
+    public DbSet<OPCRRating>? OPCRRatings { get; set; }
+    public DbSet<OPCRPAPDepartment>? OPCRPAPDepartments { get; set; }
+    public DbSet<Organization>? Organizations { get; set; }
+    public DbSet<PerformanceMeasure>? PerformanceMeasures { get; set; }
+    public DbSet<ReceivedFund>? ReceivedFunds { get; set; }
+    public DbSet<Transaction>? Transactions { get; set; }
+    public DbSet<WFP>? WFPs { get; set; }
+    public DbSet<WFPActivity>? WFPActivities { get; set; }
+    public DbSet<WFPObjective>? WFPObjectives { get; set; }
+    public DbSet<WFPObjectiveTarget>? WFPObjectiveTargets { get; set; }
+    public DbSet<WFPObjectiveTimeline>? WFPObjectiveTimelines { get; set; }
+    public DbSet<WFPOutcome>? WFPOutcomes { get; set; }
+    public DbSet<Attribute>? Attributes { get; set; }
+    public DbSet<Cluster>? Clusters { get; set; }
+    public DbSet<SDG>? SDGs { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

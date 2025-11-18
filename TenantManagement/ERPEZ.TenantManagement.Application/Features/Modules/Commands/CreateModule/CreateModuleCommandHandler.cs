@@ -1,4 +1,4 @@
-﻿using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using ERPEZ.TenantManagement.Domain.Entities;
 using ERPEZ.TenantManagement.Domain.Interfaces;
@@ -26,7 +26,7 @@ public class CreateModuleCommandHandler(IUnitOfWork unitOfWork) : IRequestHandle
         await unitOfWork.SaveChangesAsync(cancellationToken);
         return new()
         {
-            Data =  module.Id,
+            Data = module.Id,
             Succeeded = true,
             Message = "Module created successfully."
         };

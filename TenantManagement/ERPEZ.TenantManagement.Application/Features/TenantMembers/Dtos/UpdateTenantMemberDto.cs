@@ -1,4 +1,4 @@
-﻿using ERPEZ.TenantManagement.Domain.Enums;
+using ERPEZ.TenantManagement.Domain.Enums;
 
 namespace ERPEZ.TenantManagement.Application.Features.TenantMembers.Dtos;
 

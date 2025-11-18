@@ -1,4 +1,4 @@
-﻿using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Common;
 using ERPEZ.TenantManagement.Application.Features.TenantSettings.Dtos;
 using ERPEZ.TenantManagement.Domain.Entities;
 using MediatR;

@@ -1,4 +1,4 @@
-﻿using EFCore.BulkExtensions;
+using EFCore.BulkExtensions;
 using ERPEZ.TenantManagement.Domain.Common;
 using ERPEZ.TenantManagement.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -128,7 +128,7 @@ public class Repository<T>(ApplicationDbContext context, ISieveProcessor sievePr
         ArgumentNullException.ThrowIfNull(query);
         return query.SingleOrDefaultAsync(cancellationToken);
     }
-    
+
     public Task<TEntity?> GetFirstAsync<TEntity>(IQueryable<TEntity> query, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(query);

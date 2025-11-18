@@ -1,4 +1,4 @@
-﻿using ERPEZ.Domain.Common;
+using ERPEZ.Domain.Common;
 using ERPEZ.Domain.Enums;
 using Sieve.Attributes;
 

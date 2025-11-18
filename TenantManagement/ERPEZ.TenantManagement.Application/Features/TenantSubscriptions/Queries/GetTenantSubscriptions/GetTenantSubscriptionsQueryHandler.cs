@@ -1,4 +1,4 @@
-﻿using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Common;
 using ERPEZ.TenantManagement.Application.Features.TenantSubscriptions.Dtos;
 using ERPEZ.TenantManagement.Domain.Entities;
 using ERPEZ.TenantManagement.Domain.Interfaces;
@@ -8,7 +8,7 @@ using System.Linq.Expressions;
 
 namespace ERPEZ.TenantManagement.Application.Features.TenantSubscriptions.Queries.GetTenantSubscriptions;
 
-public sealed class GetTenantSubscriptionsQueryHandler (IUnitOfWork unitOfWork) : IRequestHandler<GetTenantSubscriptionsQuery, PaginatedApiResponse<TenantSubscriptionDto>>
+public sealed class GetTenantSubscriptionsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetTenantSubscriptionsQuery, PaginatedApiResponse<TenantSubscriptionDto>>
 {
     public async Task<PaginatedApiResponse<TenantSubscriptionDto>> Handle(GetTenantSubscriptionsQuery query, CancellationToken cancellationToken)
     {
@@ -36,7 +36,7 @@ public sealed class GetTenantSubscriptionsQueryHandler (IUnitOfWork unitOfWork) 
         var (tenantSubscriptions, totalCount) = await unitOfWork.TenantSubscriptionRepository.GetAllAsync(sieveModel, projection, cancellationToken: cancellationToken);
 
         return new PaginatedApiResponse<TenantSubscriptionDto>(
-            [..tenantSubscriptions],
+            [.. tenantSubscriptions],
             query.PageNumber,
             query.PageSize,
             totalCount);

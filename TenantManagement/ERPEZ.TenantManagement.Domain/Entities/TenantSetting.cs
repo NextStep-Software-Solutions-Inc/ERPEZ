@@ -1,4 +1,4 @@
-﻿using ERPEZ.TenantManagement.Domain.Common;
+using ERPEZ.TenantManagement.Domain.Common;
 using Sieve.Attributes;
 using System.Text.Json.Serialization;
 
@@ -13,7 +13,7 @@ public class TenantSetting : BaseEntity
     public bool OnPremise { get; set; }
     public string BaseURL { get; set; } = string.Empty;
     public string DbConnectionString { get; set; } = string.Empty;
-    public string BillingContactEmail {  get; set; } = string.Empty;
+    public string BillingContactEmail { get; set; } = string.Empty;
     [JsonIgnore]
     public virtual Tenant Tenant { get; set; } = null!;
 }

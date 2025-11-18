@@ -1,4 +1,4 @@
-﻿namespace ERPEZ.Application.Features.Planning.KPIModeOfVerification.Dtos;
+namespace ERPEZ.Application.Features.Planning.KPIModeOfVerification.Dtos;
 
 public class UpdateKPIModeOfVerificationDto
 {
