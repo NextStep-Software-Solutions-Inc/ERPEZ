@@ -37,6 +37,10 @@ public class UpdateFundSourceCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
             ParentId = fundSource.ParentId,
             Name = fundSource.Name,
             Code = fundSource.Code,
+            TotalDUAllocatedFunds = fundSource.ReceivedFunds
+                .SelectMany(rf => rf.DUFundAllocations)
+                .Sum(dufa => dufa.Amount),
+            TotalReceivedFunds = fundSource.ReceivedFunds.Sum(rf => rf.Amount),
             Type = fundSource.Type.ToString(),
             IsActive = fundSource.IsActive,
             CreatedBy = fundSource.CreatedBy,
