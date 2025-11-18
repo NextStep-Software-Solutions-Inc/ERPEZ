@@ -54,7 +54,7 @@ public class GetKPIByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
                 KPIId = m.KPIId,
                 MFOPAP = new()
                 {
-                    Name = m.KPI.Name
+                    Name = m.MFOPAP!.Name
                 }
             }).ToList();
 
