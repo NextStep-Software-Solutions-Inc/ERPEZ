@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 
 namespace ERPEZ.Application.Features.Planning.FundSource.Commands.UpdateFundSource;
 
@@ -6,7 +6,6 @@ public class UpdateFundSourceCommandValidator : AbstractValidator<UpdateFundSour
 {
     private readonly string[] validTypes =
     [
-        "Local", "Foreign", "Grant", "Donation",
         "FundCluster", "FinancingSource", "AuthorizationCode", "FundCategory"
     ];
 

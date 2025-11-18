@@ -1,3 +1,5 @@
+using ERPEZ.Application.Features.Planning.FundSource.Dtos;
+using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -5,24 +7,42 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.FundSource.Commands.UpdateFundSource;
 
-public class UpdateFundSourceCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateFundSourceCommand, ApiResponse<Domain.Entities.Planning.FundSource>>
+public class UpdateFundSourceCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateFundSourceCommand, ApiResponse<FundSourceResponse>>
 {
-    public async Task<ApiResponse<Domain.Entities.Planning.FundSource>> Handle(UpdateFundSourceCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<FundSourceResponse>> Handle(UpdateFundSourceCommand request, CancellationToken cancellationToken)
     {
-        var fundSource = await unitOfWork.FundSourceRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("Fund Source not found.");
-        if (fundSource.Name == request.UpdateFundSource?.Name) throw new ConflictException("Fund Source already exist.");
-
         var dto = request.UpdateFundSource;
-        fundSource.ParentId = dto?.ParentId ?? fundSource.ParentId;
-        fundSource.Name = dto?.Name ?? fundSource.Name;
-        fundSource.Code = dto?.Code ?? fundSource.Code;
-        fundSource.Type = dto?.Type ?? fundSource.Type;
-        fundSource.IsActive = dto?.IsActive ?? fundSource.IsActive;
 
+        if (dto.ParentId.HasValue)
+        {
+            _ = await unitOfWork.FundSourceRepository.GetByIdAsync(dto.ParentId.Value, cancellationToken) ?? throw new NotFoundException("Parent Fund Source with the specified ID does not exist.");
+        }
+
+        var fundSourceType = Enum.Parse<FundSourceTypeEnum>(dto.Type);
+        var fundSource = await unitOfWork.FundSourceRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("Fund Source not found.");
+        if (fundSource.Name == dto.Name && fundSource.Type == fundSourceType) throw new ConflictException("Fund Source already exists.");
+
+        fundSource.ParentId = dto!.ParentId ?? fundSource.ParentId;
+        fundSource.Name = dto!.Name ?? fundSource.Name;
+        fundSource.Code = dto!.Code ?? fundSource.Code;
+        fundSource.Type = fundSourceType;
+        fundSource.IsActive = dto!.IsActive ?? fundSource.IsActive;
 
         unitOfWork.FundSourceRepository.Update(fundSource);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return ApiResponse<Domain.Entities.Planning.FundSource>.Success(fundSource, "Fund Source updated successfully.");
+        var result = new FundSourceResponse()
+        {
+            Id = fundSource.Id,
+            ParentId = fundSource.ParentId,
+            Name = fundSource.Name,
+            Code = fundSource.Code,
+            Type = fundSource.Type.ToString(),
+            IsActive = fundSource.IsActive,
+            CreatedBy = fundSource.CreatedBy,
+            CreatedAt = fundSource.CreatedAt
+        };
+
+        return ApiResponse<FundSourceResponse>.Success(result, "Fund Source updated successfully.");
     }
 }
