@@ -26,6 +26,10 @@ public class GetFundSourcesQueryHandler(IUnitOfWork unitOfWork) : IRequestHandle
             Name = fundSource.Name,
             Code = fundSource.Code,
             Type = fundSource.Type.ToString(),
+            TotalDUAllocatedFunds = fundSource.ReceivedFunds
+                .SelectMany(rf => rf.DUFundAllocations)
+                .Sum(dufa => dufa.Amount),
+            TotalReceivedFunds = fundSource.ReceivedFunds.Sum(rf => rf.Amount),
             IsActive = fundSource.IsActive,
             CreatedBy = fundSource.CreatedBy,
             CreatedAt = fundSource.CreatedAt

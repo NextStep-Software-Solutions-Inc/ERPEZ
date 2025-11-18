@@ -2,6 +2,7 @@
 
 public class UpdateReceivedFundDto
 {
-    public Guid? FundSourceId { get; set; }
-    public decimal? Amount { get; set; }
+    public decimal Amount { get; set; }
+    public DateTime ReceivedDate { get; set; }
+    public string? Description { get; set; }
 }
