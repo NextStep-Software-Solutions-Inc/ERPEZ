@@ -13,9 +13,9 @@ public class UpdateReceivedFundCommandHandler(IUnitOfWork unitOfWork) : IRequest
 
         var receivedFund = await unitOfWork.ReceivedFundRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("Received Fund not found.");
         
-        receivedFund.Amount = receivedFundDto?.Amount ?? receivedFund.Amount;
-        receivedFund.ReceivedDate = receivedFundDto?.ReceivedDate ?? receivedFund.ReceivedDate;
-        receivedFund.Description = receivedFundDto?.Description ?? receivedFund.Description;
+        receivedFund.Amount = receivedFundDto.Amount;
+        receivedFund.ReceivedDate = receivedFundDto.ReceivedDate;
+        receivedFund.Description = receivedFundDto.Description;
 
         unitOfWork.ReceivedFundRepository.Update(receivedFund);
         await unitOfWork.SaveChangesAsync(cancellationToken);

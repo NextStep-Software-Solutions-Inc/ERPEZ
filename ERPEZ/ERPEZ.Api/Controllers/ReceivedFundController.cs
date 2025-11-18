@@ -23,7 +23,7 @@ namespace ERPEZ.Api.Controllers
             var receivedFund = await mediator.Send(command);
 
             return receivedFund.Succeeded
-                ? CreatedAtAction(nameof(GetReceivedFundById), new { id = receivedFund.Data }, receivedFund)
+                ? StatusCode(StatusCodes.Status201Created, receivedFund)
                 : BadRequest(receivedFund);
         }
 

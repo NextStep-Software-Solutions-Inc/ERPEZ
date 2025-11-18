@@ -11,5 +11,5 @@ public class FundSourceResponse
     public required decimal TotalReceivedFunds { get; set; }
     public required decimal TotalDUAllocatedFunds { get; set; }
     public DateTime CreatedAt { get; set; }
-    public string? CreatedBy { get; set; }
+    public required string CreatedBy { get; set; }
 }

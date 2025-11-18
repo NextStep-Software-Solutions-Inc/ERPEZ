@@ -10,10 +10,7 @@ public class CreateReceivedFundCommandHandler(IUnitOfWork unitOfWork)
 {
     public async Task<ApiResponse<Unit>> Handle(CreateReceivedFundCommand request, CancellationToken cancellationToken)
     {
-        if (request.FundSourceId == Guid.Empty)
-        {
-            return ApiResponse<Unit>.Fail("Fund Source Id is required.");
-        }
+
         _ = await unitOfWork.FundSourceRepository.GetByIdAsync(request.FundSourceId, cancellationToken) ?? throw new NotFoundException("Fund Source not found.");
         var receivedFund = new Domain.Entities.Planning.ReceivedFund
         {
