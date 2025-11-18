@@ -13,4 +13,11 @@ public record CreateKPICommand : IRequest<ApiResponse<KPIResponse>>
     public bool IsOfficeMandate { get; init; } = false;
     public bool IsPercentage { get; init; } = false;
     public bool IsTargetValueAllocable { get; init; } = false;
+
+    public List<CreateSDGRequest> SDGs { get; set; } = [];
+    public List<CreateKPIRatingRequest> KPIRatings { get; set; } = [];
+    public CreateKPITargetRequest KPITargets { get; set; } = null!;
+    public List<CreateKPIModeOfVerificationRequest> KPIModeOfVerifications { get; set; } = [];
+    public List<CreateMFOKPIRequest> MFOKPIs { get; set; } = [];
+    public List<CreateKPIAttributeRequest> KPIAttributes { get; set; } = [];
 }

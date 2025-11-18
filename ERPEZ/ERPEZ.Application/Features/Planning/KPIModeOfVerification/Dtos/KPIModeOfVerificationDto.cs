@@ -1,5 +1,3 @@
-using Sieve.Attributes;
-
 namespace ERPEZ.Application.Features.Planning.KPIModeOfVerification.Dtos;
 
 public class KPIModeOfVerificationDto
