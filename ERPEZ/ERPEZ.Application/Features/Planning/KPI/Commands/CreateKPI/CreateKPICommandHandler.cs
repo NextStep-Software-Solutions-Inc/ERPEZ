@@ -1,4 +1,3 @@
-using ERPEZ.Application.Features.Planning.KPI.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -6,9 +5,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.KPI.Commands.CreateKPI;
 
-public class CreateKPICommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateKPICommand, ApiResponse<KPIResponse>>
+public class CreateKPICommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateKPICommand, ApiResponse<Guid>>
 {
-    public async Task<ApiResponse<KPIResponse>> Handle(CreateKPICommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<Guid>> Handle(CreateKPICommand request, CancellationToken cancellationToken)
     {
         var existingKpi = await unitOfWork.KPIRepository.FindAsync(
             x => x.Name == request.Name && x.FunctionType == request.FunctionType,
@@ -137,19 +136,6 @@ public class CreateKPICommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<C
 
         }, cancellationToken);
 
-        var dto = new KPIResponse
-        {
-            Id = kpi.Id,
-            ParentKPIId = kpi.ParentKPIId,
-            FunctionType = request.FunctionType,
-            Name = kpi.Name,
-            Description = kpi.Description,
-            IsOfficeMandate = kpi.IsOfficeMandate,
-            IsPercentage = kpi.IsPercentage,
-            Status = kpi.Status,
-            CreatedAt = kpi.CreatedAt,
-            CreatedBy = kpi.CreatedBy
-        };
-        return ApiResponse<KPIResponse>.Success(dto, "KPI created successfully.");
+        return ApiResponse<Guid>.Success(kpi.Id, "KPI created successfully.");
     }
 }

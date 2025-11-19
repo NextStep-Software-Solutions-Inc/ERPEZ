@@ -4,7 +4,7 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.KPI.Commands.CreateKPI;
 
-public record CreateKPICommand : IRequest<ApiResponse<KPIResponse>>
+public record CreateKPICommand : IRequest<ApiResponse<Guid>>
 {
     public Guid? ParentKPIId { get; init; }
     public string FunctionType { get; init; } = string.Empty;
