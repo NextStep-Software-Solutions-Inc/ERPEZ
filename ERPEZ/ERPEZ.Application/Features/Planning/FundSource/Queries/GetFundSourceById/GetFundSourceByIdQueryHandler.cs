@@ -10,25 +10,25 @@ public class GetFundSourceByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHan
 {
     public async Task<ApiResponse<FundSourceResponse>> Handle(GetFundSourceByIdQuery request, CancellationToken cancellationToken)
     {
-        var fundSource = await unitOfWork.FundSourceRepository.FindAsync(
-           t => t.Id == request.Id,
-            cancellationToken: cancellationToken) ?? throw new NotFoundException("No data found.");
+        var query = unitOfWork.FundSourceRepository.Query(f => f.Id == request.Id)
+            .Select(fundSource => new FundSourceResponse
+            {
+                Id = fundSource.Id,
+                ParentId = fundSource.ParentId,
+                Name = fundSource.Name,
+                Code = fundSource.Code,
+                TotalDUAllocatedFunds = fundSource.ReceivedFunds
+                    .SelectMany(rf => rf.DUFundAllocations)
+                    .Sum(dufa => dufa.Amount),
+                TotalReceivedFunds = fundSource.ReceivedFunds.Sum(rf => rf.Amount),
+                Type = fundSource.Type.ToString(),
+                IsActive = fundSource.IsActive,
+                CreatedBy = fundSource.CreatedBy,
+                CreatedAt = fundSource.CreatedAt
+            });
 
-        var result = new FundSourceResponse()
-        {
-            Id = fundSource.Id,
-            ParentId = fundSource.ParentId,
-            Name = fundSource.Name,
-            Code = fundSource.Code,
-            TotalDUAllocatedFunds = fundSource.ReceivedFunds
-                .SelectMany(rf => rf.DUFundAllocations)
-                .Sum(dufa => dufa.Amount),
-            TotalReceivedFunds = fundSource.ReceivedFunds.Sum(rf => rf.Amount),
-            Type = fundSource.Type.ToString(),
-            IsActive = fundSource.IsActive,
-            CreatedBy = fundSource.CreatedBy,
-            CreatedAt = fundSource.CreatedAt
-        };
+        var result = await unitOfWork.FundSourceRepository.GetFirstAsync(query, cancellationToken) ?? throw new NotFoundException("No data found.");
+
         return ApiResponse<FundSourceResponse>.Success(result, "Retrieved successfully");
     }
 }
