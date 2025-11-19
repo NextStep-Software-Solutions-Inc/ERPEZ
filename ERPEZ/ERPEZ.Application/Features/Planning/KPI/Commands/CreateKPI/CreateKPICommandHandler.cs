@@ -3,7 +3,6 @@ using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.Application.Features.Planning.KPI.Commands.CreateKPI;
 
@@ -32,11 +31,10 @@ public class CreateKPICommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<C
 
         if (requiredMeasureIds.Count > 0)
         {
-            var existingMeasureQuery = unitOfWork.PerformanceMeasureRepository.Query()
-                .Where(pm => requiredMeasureIds.Contains(pm.Id))
-                .Select(pm => pm.Id);
+            var existingMeasures = await unitOfWork.PerformanceMeasureRepository.ToListAsync(
+                unitOfWork.PerformanceMeasureRepository.Query(pm => requiredMeasureIds.Contains(pm.Id)), cancellationToken);
 
-            var existingMeasureIds = await existingMeasureQuery.ToListAsync(cancellationToken);
+            var existingMeasureIds = existingMeasures.Select(pm => pm.Id).ToList();
 
             var missingMeasureIds = requiredMeasureIds
                 .Where(id => !existingMeasureIds.Contains(id))
@@ -69,10 +67,12 @@ public class CreateKPICommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<C
 
             var mfopapNames = request.MFOKPIs.Select(m => m.Name).Distinct().ToList();
 
-            var existingMfopaps = await unitOfWork.MFOPAPRepository
+            var existingMfopapsQuery = unitOfWork.MFOPAPRepository
                 .Query()
-                .Where(m => mfopapNames.Contains(m.Name))
-                .ToDictionaryAsync(m => m.Name, cancellationToken);
+                .Where(m => mfopapNames.Contains(m.Name));
+
+            var existingMfopapsList = await unitOfWork.MFOPAPRepository.ToListAsync(existingMfopapsQuery, cancellationToken);
+            var existingMfopaps = existingMfopapsList.ToDictionary(m => m.Name);
 
             foreach (var req in request.MFOKPIs)
             {

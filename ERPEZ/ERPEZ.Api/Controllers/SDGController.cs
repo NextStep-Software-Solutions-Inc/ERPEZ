@@ -31,7 +31,7 @@ namespace ERPEZ.Api.Controllers
         {
             if (id != command.Id)
             {
-                return BadRequest("ID mismatch");
+                return BadRequest("The ID in the URL does not match the ID in the request body.");
             }
             var response = await mediator.Send(command);
             return Ok(response);

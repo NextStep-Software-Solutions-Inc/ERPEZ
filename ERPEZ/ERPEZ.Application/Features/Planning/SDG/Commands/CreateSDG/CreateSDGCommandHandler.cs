@@ -1,4 +1,3 @@
-using ERPEZ.Application.Features.Planning.SDG.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -24,13 +23,6 @@ public class CreateSDGCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<C
 
         await unitOfWork.SDGRepository.AddAsync(sdg, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
-
-        var response = new SDGResponse
-        {
-            Id = sdg.Id,
-            Name = sdg.Name,
-            Description = sdg.Description
-        };
 
         return ApiResponse<Guid>.Success(sdg.Id, "SDG created successfully.");
     }
