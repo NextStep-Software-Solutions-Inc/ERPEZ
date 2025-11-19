@@ -24,11 +24,12 @@ public class GetDUKPIAssignmentsQueryHandler(IUnitOfWork unitOfWork) : IRequestH
             {
                 KPIId = group.Key.KPIId,
                 DeliveryUnitId = group.Key.DeliveryUnitId,
-                DUKPITargets = group.Select(assignment => new DUKPITarget
+                DUKPITargets = [.. group.Select(assignment => new DUKPITargetResponse
                 {
+                    DUKPIAssignmentId = assignment.Id,
                     TargetId = assignment.KPITargetId,
                     AllocatedTargetValue = assignment.AllocatedTargetValue
-                }).ToList()
+                })]
             })
             .ToList();
         
