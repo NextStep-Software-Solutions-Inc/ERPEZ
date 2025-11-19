@@ -17,7 +17,7 @@ public class GetDUKPIAssignmentsQueryHandler(IUnitOfWork unitOfWork) : IRequestH
             Sorts = query.Sorts
         };
         var (kpiAssignments, totalCount) = await unitOfWork.DUKPIAssignmentRepository.GetAllAsync(sieveModel, cancellationToken: cancellationToken);
-        
+
         var groupedAssignments = kpiAssignments
             .GroupBy(a => new { a.KPIId, a.DeliveryUnitId })
             .Select(group => new DUKPIAssignmentsResponse
@@ -32,7 +32,7 @@ public class GetDUKPIAssignmentsQueryHandler(IUnitOfWork unitOfWork) : IRequestH
                 })]
             })
             .ToList();
-        
+
         return new PaginatedApiResponse<DUKPIAssignmentsResponse>(
             groupedAssignments,
             query.PageNumber,

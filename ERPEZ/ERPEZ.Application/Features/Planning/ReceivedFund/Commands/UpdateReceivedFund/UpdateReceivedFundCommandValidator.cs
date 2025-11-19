@@ -17,14 +17,14 @@ public class UpdateReceivedFundCommandValidator : AbstractValidator<UpdateReceiv
         RuleFor(x => x.UpdateReceivedFund.Amount)
             .GreaterThan(0) // Funds received should typically be greater than zero
             .WithMessage("Amount must be a positive number.");
-        
+
         // 3. ReceivedDate (Required DateTime, Must not be in the future)
         RuleFor(x => x.UpdateReceivedFund.ReceivedDate)
             .NotEmpty()
             .WithMessage("Received Date is required.")
             .Must(receivedDate => receivedDate <= DateTime.UtcNow)
             .WithMessage("Received Date cannot be in the future.");
-            
+
         // 4. Description (Optional, Max Length 500)
         RuleFor(x => x.UpdateReceivedFund.Description)
             .MaximumLength(500)

@@ -89,7 +89,7 @@ public class GetKPIByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
             CreatedBy = kpi.CreatedBy,
             CreatedAt = kpi.CreatedAt,
             KPIRatings = kpiRatings,
-            KPITargets  = kpiTargets,
+            KPITargets = kpiTargets,
             KPIModeOfVerifications = modeOfVerification,
             MFOKPIs = mfoKPIs,
             Attributes = attributes,

@@ -9,7 +9,7 @@ builder.ConfigureAppConfiguration();
 builder
     .AddApiServices()
     .AddApplicationServices();
-    
+
 await builder.AddInfrastructureServices();
 
 var app = builder.Build();
