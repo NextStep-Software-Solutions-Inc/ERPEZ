@@ -2,34 +2,33 @@ using ERPEZ.Application.Features.Planning.KPIModeOfVerification.Dtos;
 using ERPEZ.Application.Features.Planning.KPIRating.Dtos;
 using ERPEZ.Application.Features.Planning.KPITarget.Dtos;
 using ERPEZ.Application.Features.Planning.MFOKPI.Dtos;
-using ERPEZ.Domain.Entities.Planning;
 using System.Text.Json.Serialization;
 
 namespace ERPEZ.Application.Features.Planning.KPI.Dtos;
 
-public class KPIResponse
+public record KPIResponse
 {
-    public Guid Id { get; set; }
-    public Guid? ParentKPIId { get; set; }
-    public string FunctionType { get; set; } = string.Empty;
-    public string Name { get; set; } = string.Empty;
-    public string? Description { get; set; } = string.Empty;
-    public bool IsOfficeMandate { get; set; }
-    public bool IsPercentage { get; set; }
-    public string Status { get; set; } = string.Empty;
-    public DateTime CreatedAt { get; set; }
-    public string CreatedBy { get; set; } = string.Empty;
+    public Guid Id { get; init; }
+    public Guid? ParentKPIId { get; init; }
+    public string FunctionType { get; init; } = string.Empty;
+    public string Name { get; init; } = string.Empty;
+    public string? Description { get; init; } = string.Empty;
+    public bool IsOfficeMandate { get; init; }
+    public bool IsPercentage { get; init; }
+    public string Status { get; init; } = string.Empty;
+    public DateTime CreatedAt { get; init; }
+    public string CreatedBy { get; init; } = string.Empty;
     [JsonPropertyName("KPITargets")]
-    public List<KPITargetResponse> KPITargets { get; set; } = [];
+    public List<KPITargetResponse> KPITargets { get; init; } = [];
     [JsonPropertyName("KPIRatings")]
-    public List<KPIRatingResponse> KPIRatings { get; set; } = [];
+    public List<KPIRatingResponse> KPIRatings { get; init; } = [];
     [JsonPropertyName("KPIModeOfVerifications")]
-    public List<KPIModeOfVerificationDto> KPIModeOfVerifications { get; set; } = [];
+    public List<KPIModeOfVerificationDto> KPIModeOfVerifications { get; init; } = [];
     [JsonPropertyName("MFOKPIs")]
-    public List<MFOKPIDto> MFOKPIs { get; set; } = [];
+    public List<MFOKPIDto> MFOKPIs { get; init; } = [];
     [JsonPropertyName("Attributes")]
-    public List<AttributeResponse> Attributes { get; set; } = [];
+    public List<AttributeResponse> Attributes { get; init; } = [];
     [JsonPropertyName("SDGs")]
-    public List<SDGResponse> SDGs { get; set; } = [];
-
+    public List<SDGResponse> SDGs { get; init; } = [];
+    public bool IsTargetValueAllocable { get; init; }
 }

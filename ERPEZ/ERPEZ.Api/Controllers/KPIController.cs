@@ -1,6 +1,5 @@
 using ERPEZ.Application.Features.Planning.KPI.Commands.CreateKPI;
 using ERPEZ.Application.Features.Planning.KPI.Dtos;
-using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -16,8 +15,8 @@ namespace ERPEZ.Api.Controllers
     public class KPIController(ISender mediator) : ControllerBase
     {
         [HttpPost]
-        [ProducesResponseType(typeof(ApiResponse<KPI>), StatusCodes.Status201Created)]
-        [ProducesResponseType(typeof(ApiResponse<KPI>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateKPI([FromBody] CreateKPICommand command)
         {
             var result = await mediator.Send(command);
@@ -25,7 +24,7 @@ namespace ERPEZ.Api.Controllers
             if (!result.Succeeded)
                 return BadRequest(result);
 
-            return CreatedAtAction(nameof(GetKPIById), new { id = result.Data!.Id }, result);
+            return CreatedAtAction(nameof(GetKPIById), new { id = result.Data }, result);
         }
 
         [HttpGet]
@@ -46,7 +45,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpPut("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<KPIResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateKPI(Guid id, [FromBody] UpdateKPIRequest dto)

@@ -1,4 +1,3 @@
-using ERPEZ.Application.Features.Planning.KPITarget.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -6,9 +5,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.KPITarget.Commands.UpdateKPITarget;
 
-public class UpdateKPITargetCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateKPITargetCommand, ApiResponse<KPITargetResponse>>
+public class UpdateKPITargetCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateKPITargetCommand, ApiResponse<Unit>>
 {
-    public async Task<ApiResponse<KPITargetResponse>> Handle(UpdateKPITargetCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<Unit>> Handle(UpdateKPITargetCommand request, CancellationToken cancellationToken)
     {
         var dto = request.UpdateKPITarget;
 
@@ -47,19 +46,6 @@ public class UpdateKPITargetCommandHandler(IUnitOfWork unitOfWork) : IRequestHan
         unitOfWork.KPITargetRepository.Update(kpiTarget);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var result = new KPITargetResponse()
-        {
-            Id = kpiTarget.Id,
-            KPIId = kpiTarget.KPIId,
-            TargetValue = kpiTarget.KPI.IsPercentage
-                ? kpiTarget.TargetValue * 100M
-                : kpiTarget.TargetValue,
-            Period = kpiTarget.Period,
-            QuarterName = kpiTarget.QuarterName,
-            CreatedAt = kpiTarget.CreatedAt,
-            CreatedBy = kpiTarget.CreatedBy
-        };
-
-        return ApiResponse<KPITargetResponse>.Success(result, "KPI Target updated successfully.");
+        return ApiResponse<Unit>.Success(Unit.Value, "KPI Target updated successfully.");
     }
 }

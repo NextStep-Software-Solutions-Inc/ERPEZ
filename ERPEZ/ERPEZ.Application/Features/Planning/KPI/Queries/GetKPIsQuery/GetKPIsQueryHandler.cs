@@ -32,6 +32,7 @@ public class GetKPIsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetKP
                 Name = kpi.Name,
                 IsOfficeMandate = kpi.IsOfficeMandate,
                 IsPercentage = kpi.IsPercentage,
+                IsTargetValueAllocable = kpi.IsTargetValueAllocable,
                 Status = kpi.Status,
                 CreatedBy = kpi.CreatedBy,
                 CreatedAt = kpi.CreatedAt,

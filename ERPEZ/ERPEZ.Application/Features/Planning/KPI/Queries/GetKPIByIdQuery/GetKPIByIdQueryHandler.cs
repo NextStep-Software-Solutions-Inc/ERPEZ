@@ -3,7 +3,6 @@ using ERPEZ.Application.Features.Planning.KPIModeOfVerification.Dtos;
 using ERPEZ.Application.Features.Planning.KPIRating.Dtos;
 using ERPEZ.Application.Features.Planning.KPITarget.Dtos;
 using ERPEZ.Application.Features.Planning.MFOKPI.Dtos;
-using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -85,11 +84,12 @@ public class GetKPIByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
             Name = kpi.Name,
             IsOfficeMandate = kpi.IsOfficeMandate,
             IsPercentage = kpi.IsPercentage,
+            IsTargetValueAllocable = kpi.IsTargetValueAllocable,
             Status = kpi.Status,
             CreatedBy = kpi.CreatedBy,
             CreatedAt = kpi.CreatedAt,
             KPIRatings = kpiRatings,
-            KPITargets  = kpiTargets,
+            KPITargets = kpiTargets,
             KPIModeOfVerifications = modeOfVerification,
             MFOKPIs = mfoKPIs,
             Attributes = attributes,
