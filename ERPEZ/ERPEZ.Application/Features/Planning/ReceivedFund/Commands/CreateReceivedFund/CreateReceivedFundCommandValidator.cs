@@ -22,7 +22,7 @@ public class CreateReceivedFundCommandValidator : AbstractValidator<CreateReceiv
             .WithMessage("Received Date is required.")
             .LessThanOrEqualTo(DateTime.UtcNow)
             .WithMessage("Received Date cannot be in the future.");
-        
+
         // Description (Optional, Max Length 500)
         RuleFor(x => x.Description)
             .MaximumLength(500)

@@ -8,6 +8,6 @@ public class SDG : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public string Name { get; set; } = string.Empty;
     [Sieve(CanFilter = true, CanSort = true)]
-    public string Description { get; set; } = string.Empty;
+    public string? Description { get; set; }
     public virtual List<KPI> KPIs { get; set; } = null!;
 }

@@ -11,4 +11,4 @@ public class TargetValueDto
     public decimal TargetValue { get; set; }
     public string? QuarterName { get; set; }
 
-} 
+}
