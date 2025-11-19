@@ -46,6 +46,9 @@ public static class DependencyInjection
                     Array.Empty<string>()
                 }
             });
+            
+            // Ensure unique schema ids across assemblies (avoid collisions when classes share names)
+            c.CustomSchemaIds(type => type.FullName?.Replace('+', '.') ?? type.Name);
         });
         return builder;
     }
