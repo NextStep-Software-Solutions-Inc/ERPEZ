@@ -1,4 +1,4 @@
-﻿namespace ERPEZ.Domain.Common;
+namespace ERPEZ.Domain.Common;
 
 using System.ComponentModel.DataAnnotations.Schema;
 

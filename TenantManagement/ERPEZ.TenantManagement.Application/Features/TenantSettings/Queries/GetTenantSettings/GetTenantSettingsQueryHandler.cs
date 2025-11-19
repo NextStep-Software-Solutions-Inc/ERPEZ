@@ -1,4 +1,4 @@
-﻿using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Common;
 using ERPEZ.TenantManagement.Domain.Entities;
 using ERPEZ.TenantManagement.Domain.Interfaces;
 using MediatR;
@@ -6,7 +6,7 @@ using Sieve.Models;
 
 namespace ERPEZ.TenantManagement.Application.Features.TenantSettings.Queries.GetTenantSettings;
 
-public sealed class GetTenantSettingsQueryHandler (IUnitOfWork unitOfWork) : IRequestHandler<GetTenantSettingsQuery, PaginatedApiResponse<TenantSetting>>
+public sealed class GetTenantSettingsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetTenantSettingsQuery, PaginatedApiResponse<TenantSetting>>
 {
     public async Task<PaginatedApiResponse<TenantSetting>> Handle(GetTenantSettingsQuery query, CancellationToken cancellationToken)
     {

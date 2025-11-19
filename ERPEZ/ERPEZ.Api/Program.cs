@@ -8,8 +8,9 @@ builder.ConfigureAppConfiguration();
 
 builder
     .AddApiServices()
-    .AddApplicationServices()
-    .AddInfrastructureServices();
+    .AddApplicationServices();
+    
+await builder.AddInfrastructureServices();
 
 var app = builder.Build();
 

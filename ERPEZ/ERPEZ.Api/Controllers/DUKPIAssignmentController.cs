@@ -15,8 +15,8 @@ namespace ERPEZ.Api.Controllers
     public class DUKPIAssignmentController(ISender mediator) : ControllerBase
     {
         [HttpPost]
-        [ProducesResponseType(typeof(ApiResponse<DUKPIAssignmentResponse>), StatusCodes.Status201Created)]
-        [ProducesResponseType(typeof(ApiResponse<DUKPIAssignmentResponse>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateKPIAssignment([FromBody] CreateDUKPIAssignmentCommand command)
         {
             var result = await mediator.Send(command);
@@ -24,7 +24,7 @@ namespace ERPEZ.Api.Controllers
             if (!result.Succeeded)
                 return BadRequest(result);
 
-            return CreatedAtAction(nameof(GetKPIAssignmentById), new { id = result.Data!.Id }, result);
+            return Ok(result);
         }
 
         [HttpGet]
@@ -45,18 +45,18 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpPut("{id}")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> UpdateDUKPIAssignment(Guid id, [FromBody] UpdateDUKPIAssignmentResponse dto)
+        public async Task<IActionResult> UpdateDUKPIAssignment(Guid id, [FromBody] List<UpdateDUKPIAssignmentRequest> updates)
         {
-            var request = new UpdateDUKPIAssignmentCommand
+            var command = new UpdateDUKPIAssignmentCommand
             {
                 Id = id,
-                UpdateDUKPIAssignment = dto
+                UpdateDUKPIAssignments = updates
             };
 
-            var response = await mediator.Send(request);
+            var response = await mediator.Send(command);
             return response.Succeeded ? Ok(response) : BadRequest(response);
         }
         [HttpDelete("{id}")]

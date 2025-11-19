@@ -1,50 +1,78 @@
-using ERPEZ.Application.Features.Planning.DUKPIAssignment.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.Application.Features.Planning.DUKPIAssignment.Commands.UpdateDUKPIAssignment;
 
-public class UpdateDUKPIAssignmentCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateDUKPIAssignmentCommand, ApiResponse<DUKPIAssignmentResponse>>
+public class UpdateDUKPIAssignmentCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateDUKPIAssignmentCommand, ApiResponse<Unit>>
 {
-    public async Task<ApiResponse<DUKPIAssignmentResponse>> Handle(UpdateDUKPIAssignmentCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<Unit>> Handle(UpdateDUKPIAssignmentCommand request, CancellationToken cancellationToken)
     {
-        var dto = request.UpdateDUKPIAssignment;
-        var dukpi = await unitOfWork.DUKPIAssignmentRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken)
-            ?? throw new NotFoundException("DU KPI Assignment not found.");
+        var targetIds = request.UpdateDUKPIAssignments.Select(u => u.TargetId).ToHashSet();
 
-        var duplicate = await unitOfWork.DUKPIAssignmentRepository.FindAsync(
-            x => x.AllocatedTargetValue == dto.AllocatedTargetValue,
-            cancellationToken
-        );
+        // Pre-fetch all assignments for the Delivery Unit and provided targets
+        var assignments = await unitOfWork.DUKPIAssignmentRepository.ToListAsync(
+            unitOfWork.DUKPIAssignmentRepository.Query(a => a.DeliveryUnitId == request.Id && targetIds.Contains(a.KPITargetId)),
+            cancellationToken);
 
-        if (duplicate != null && duplicate.Id != request.Id)
-            throw new ConflictException("DU KPI Assignment already exists.");
+        // Verify all required assignments exist
+        var missingTargets = targetIds.Except(assignments.Select(a => a.KPITargetId)).ToList();
+        if (missingTargets.Count != 0)
+            throw new NotFoundException($"DU KPI Assignments not found for Delivery Unit {request.Id} and targets: {string.Join(", ", missingTargets)}.");
 
-        var kPITarget = await unitOfWork.KPITargetRepository.GetByIdAsync(dukpi.KPITargetId, cancellationToken: cancellationToken)
-            ?? throw new NotFoundException("KPI Target not found.");
+        // Pre-fetch KPIs
+        var kpiIds = assignments.Select(a => a.KPIId).Distinct().ToList();
+        var kpisList = await unitOfWork.KPIRepository.ToListAsync(
+            unitOfWork.KPIRepository.Query(k => kpiIds.Contains(k.Id)),
+            cancellationToken);
+        var kpis = kpisList.ToDictionary(k => k.Id);
 
-        var existingTotalExcludingCurrent = await unitOfWork.DUKPIAssignmentRepository
-            .Query(kt => kt.KPITargetId == dukpi.KPITargetId)
-            .Where(t => t.Id != dukpi.Id)
-            .SumAsync(target => target.AllocatedTargetValue, cancellationToken);
-        var newTotalAllocatedValue = existingTotalExcludingCurrent + dto.AllocatedTargetValue;
-        if (newTotalAllocatedValue > kPITarget.TargetValue) throw new BadRequestException($"The total allocated value ({newTotalAllocatedValue}) exceeds the KPI's overall target value of [ {kPITarget.TargetValue} ]. Please reduce the allocation.");
-        
-        dukpi.AllocatedTargetValue = dto.AllocatedTargetValue;
+        // Pre-fetch KPI Targets
+        var kpiTargetsList = await unitOfWork.KPITargetRepository.ToListAsync(
+            unitOfWork.KPITargetRepository.Query(t => targetIds.Contains(t.Id)),
+            cancellationToken);
+        var kpiTargets = kpiTargetsList.ToDictionary(t => t.Id);
 
-        unitOfWork.DUKPIAssignmentRepository.Update(dukpi);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        // Pre-fetch total allocated values for each target
+        var allocationAssignments = await unitOfWork.DUKPIAssignmentRepository.ToListAsync(
+            unitOfWork.DUKPIAssignmentRepository.Query(a => targetIds.Contains(a.KPITargetId)),
+            cancellationToken);
+        var allocationSums = allocationAssignments
+            .GroupBy(a => a.KPITargetId)
+            .ToDictionary(g => g.Key, g => g.Sum(a => a.AllocatedTargetValue));
 
-        var result = new DUKPIAssignmentResponse
+        await unitOfWork.ExecuteInTransactionAsync(async () =>
         {
-            Id = dukpi.Id,
-            DeliveryUnitId = dukpi.DeliveryUnitId,
-            KPITargetId = dukpi.KPITargetId,
-            AllocatedTargetValue = dto.AllocatedTargetValue
-        };
-        return ApiResponse<DUKPIAssignmentResponse>.Success(result, "DU KPI Assignment updated successfully.");
+            foreach (var update in request.UpdateDUKPIAssignments)
+            {
+                var assignment = assignments.First(a => a.KPITargetId == update.TargetId);
+                var kpi = kpis[assignment.KPIId];
+                var kPITarget = kpiTargets[update.TargetId];
+
+                decimal allocatedValue = update.AllocatedTargetValue;
+
+                if (!kpi.IsTargetValueAllocable)
+                {
+                    // Automatically set to the full KPI target value for better UX
+                    allocatedValue = kPITarget.TargetValue;
+                }
+                else
+                {
+                    // Calculate existing total excluding current assignment
+                    var totalAllocatedForTarget = allocationSums.GetValueOrDefault(update.TargetId, 0);
+                    var existingTotalExcludingCurrent = totalAllocatedForTarget - assignment.AllocatedTargetValue;
+                    var newTotalAllocatedValue = existingTotalExcludingCurrent + allocatedValue;
+                    if (newTotalAllocatedValue > kPITarget.TargetValue)
+                        throw new BadRequestException($"The total allocated value ({newTotalAllocatedValue}) exceeds the KPI's overall target value of {kPITarget.TargetValue}. Please reduce the allocation.");
+                }
+
+                assignment.AllocatedTargetValue = allocatedValue;
+            }
+
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+        }, cancellationToken);
+
+        return ApiResponse<Unit>.Success(Unit.Value, "DU KPI Assignments updated successfully.");
     }
 }

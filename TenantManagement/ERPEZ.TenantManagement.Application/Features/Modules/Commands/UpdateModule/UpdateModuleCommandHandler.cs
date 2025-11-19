@@ -1,4 +1,4 @@
-﻿using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using ERPEZ.TenantManagement.Domain.Entities;
 using ERPEZ.TenantManagement.Domain.Interfaces;
@@ -12,7 +12,7 @@ public sealed class UpdateModuleCommandHandler(IUnitOfWork unitOfWork) : IReques
     {
         var module = await unitOfWork.ModuleRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("Module not found.");
         if (module.Name == request.UpdateModule?.Name) throw new ConflictException("Module already exist.");
-       
+
         var dto = request.UpdateModule;
         module.Name = dto?.Name ?? module.Name;
         module.Key = dto?.Key ?? module.Key;

@@ -1,4 +1,4 @@
-﻿using ERPEZ.Application.Features.Planning.Location.Queries.GetLocations;
+using ERPEZ.Application.Features.Planning.Location.Queries.GetLocations;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;

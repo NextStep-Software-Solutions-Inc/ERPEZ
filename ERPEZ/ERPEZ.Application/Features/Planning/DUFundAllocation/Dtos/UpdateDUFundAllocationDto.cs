@@ -1,4 +1,4 @@
-﻿namespace ERPEZ.Application.Features.Planning.DUFundAllocation.Dtos;
+namespace ERPEZ.Application.Features.Planning.DUFundAllocation.Dtos;
 
 public class UpdateDUFundAllocationDto
 {

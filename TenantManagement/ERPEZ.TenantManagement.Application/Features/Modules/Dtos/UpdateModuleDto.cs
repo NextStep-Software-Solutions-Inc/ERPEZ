@@ -1,4 +1,4 @@
-﻿namespace ERPEZ.TenantManagement.Application.Features.Modules.Dtos;
+namespace ERPEZ.TenantManagement.Application.Features.Modules.Dtos;
 
 public class UpdateModuleDto
 {

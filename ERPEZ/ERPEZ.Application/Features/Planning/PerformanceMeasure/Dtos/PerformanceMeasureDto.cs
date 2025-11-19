@@ -1,4 +1,4 @@
-﻿namespace ERPEZ.Application.Features.Planning.PerformanceMeasure.Dtos;
+namespace ERPEZ.Application.Features.Planning.PerformanceMeasure.Dtos;
 
 public class PerformanceMeasureDto
 {

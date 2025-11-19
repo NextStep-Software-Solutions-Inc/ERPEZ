@@ -1,4 +1,4 @@
-﻿namespace ERPEZ.Application.Features.Planning.DUAllocation.Dtos;
+namespace ERPEZ.Application.Features.Planning.DUAllocation.Dtos;
 
 public class UpdateDUAllocationDto
 {

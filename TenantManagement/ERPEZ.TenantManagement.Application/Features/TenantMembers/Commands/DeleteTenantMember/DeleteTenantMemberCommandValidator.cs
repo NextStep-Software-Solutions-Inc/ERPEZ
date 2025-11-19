@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 
 namespace ERPEZ.TenantManagement.Application.Features.TenantMembers.Commands.DeleteTenantMember;
 

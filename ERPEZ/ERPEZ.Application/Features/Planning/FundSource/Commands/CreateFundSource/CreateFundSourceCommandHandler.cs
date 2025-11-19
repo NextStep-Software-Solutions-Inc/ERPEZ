@@ -15,7 +15,7 @@ public class CreateFundSourceCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
         {
             _ = await unitOfWork.FundSourceRepository.GetByIdAsync(request.ParentId.Value, cancellationToken) ?? throw new NotFoundException($"Parent Fund Source with the specified ID ({request.ParentId.Value}) does not exist.");
         }
-        
+
         var fundSourceType = Enum.Parse<FundSourceTypeEnum>(request.Type);
         var fundSourceExist = await unitOfWork.FundSourceRepository.FindAsync(t => t.Name == request.Name && t.Type == fundSourceType, cancellationToken: cancellationToken);
         if (fundSourceExist != null) throw new ConflictException("Fund Source already exists.");

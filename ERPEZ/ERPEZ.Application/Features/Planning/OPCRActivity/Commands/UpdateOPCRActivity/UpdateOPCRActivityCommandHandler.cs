@@ -1,4 +1,4 @@
-﻿using ERPEZ.Domain.Interfaces;
+using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
@@ -10,7 +10,7 @@ public class UpdateOPCRActivityCommandHandler(IUnitOfWork unitOfWork) : IRequest
     public async Task<ApiResponse<Domain.Entities.Planning.OPCRActivity>> Handle(UpdateOPCRActivityCommand request, CancellationToken cancellationToken)
     {
         var dto = request.UpdateOPCRActivity;
-        if(dto.OPCRKPIId != null)
+        if (dto.OPCRKPIId != null)
         {
             var opcrKPI = await unitOfWork.OPCRKPIRepository.FindAsync(
                 x => x.Id == dto.OPCRKPIId,
@@ -19,7 +19,7 @@ public class UpdateOPCRActivityCommandHandler(IUnitOfWork unitOfWork) : IRequest
 
         }
         var opcrActivity = await unitOfWork.OPCRActivityRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("OPCR Activity not found.");
-        
+
         opcrActivity.Name = dto.Name ?? opcrActivity.Name;
         opcrActivity.Description = dto.Description ?? opcrActivity.Description;
         opcrActivity.OPCRKPIId = dto.OPCRKPIId ?? opcrActivity.OPCRKPIId;

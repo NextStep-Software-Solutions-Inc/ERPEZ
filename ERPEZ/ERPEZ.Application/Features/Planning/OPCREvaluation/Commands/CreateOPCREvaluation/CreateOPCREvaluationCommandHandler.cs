@@ -10,11 +10,11 @@ public class CreateOPCREvaluationCommandHandler(IUnitOfWork unitOfWork) : IReque
 {
     public async Task<ApiResponse<OPCREvaluationResponse>> Handle(CreateOPCREvaluationCommand request, CancellationToken cancellationToken)
     {
-        _ = await unitOfWork.OPCRRepository.GetByIdAsync(request.OPCRId, cancellationToken) 
+        _ = await unitOfWork.OPCRRepository.GetByIdAsync(request.OPCRId, cancellationToken)
             ?? throw new NotFoundException("OPCR not found.");
 
-        var duplicate = await unitOfWork.OPCREvaluationRepository.FindAsync(o => 
-        o.OPCRId == request.OPCRId && 
+        var duplicate = await unitOfWork.OPCREvaluationRepository.FindAsync(o =>
+        o.OPCRId == request.OPCRId &&
         o.EvaluatorId == request.EvaluatorId
         , cancellationToken);
         if (duplicate != null) throw new ConflictException("OPCR Evaluation already exists.");

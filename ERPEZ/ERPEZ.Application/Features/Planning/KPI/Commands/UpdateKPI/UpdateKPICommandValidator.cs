@@ -1,11 +1,12 @@
-using ERPEZ.Domain.Constants;
+using ERPEZ.Domain.Enums;
 using FluentValidation;
 
 namespace ERPEZ.Application.Features.Planning.KPI.Commands.UpdateKPI;
 
 public class UpdateKPICommandValidator : AbstractValidator<UpdateKPICommand>
 {
-    private readonly string[] validStatuses = ["Draft", "Submitted", "Approved", "Active", "Archived"];
+    private readonly string[] validStatuses = Enum.GetNames<StatusEnum>();
+    private readonly string[] validFunctionTypes = Enum.GetNames<FunctionTypeEnum>();
 
     public UpdateKPICommandValidator()
     {
@@ -32,8 +33,8 @@ public class UpdateKPICommandValidator : AbstractValidator<UpdateKPICommand>
         RuleFor(x => x.UpdateKPI.FunctionType)
             .MaximumLength(100)
             .WithMessage("Function Type cannot exceed 100 characters.")
-                .Must(type => FunctionTypeConstants.validFunctionTypes.Contains(type))
-                .WithMessage($"FunctionType must be one of: {string.Join(", ", FunctionTypeConstants.validFunctionTypes)}.")
+                .Must(type => validFunctionTypes.Contains(type))
+                .WithMessage($"FunctionType must be one of: {string.Join(", ", validFunctionTypes)}.")
             .When(x => !string.IsNullOrWhiteSpace(x.UpdateKPI.FunctionType));
 
         // 5. Name (Optional String?) - Check only if provided

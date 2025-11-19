@@ -1,11 +1,11 @@
-﻿using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using ERPEZ.TenantManagement.Domain.Interfaces;
 using MediatR;
 
 namespace ERPEZ.TenantManagement.Application.Features.Modules.Commands.DeleteModule;
 
-public sealed class DeleteModuleCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<DeleteModuleCommand,ApiResponse<Unit>>
+public sealed class DeleteModuleCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<DeleteModuleCommand, ApiResponse<Unit>>
 {
     public async Task<ApiResponse<Unit>> Handle(DeleteModuleCommand request, CancellationToken cancellationToken)
     {

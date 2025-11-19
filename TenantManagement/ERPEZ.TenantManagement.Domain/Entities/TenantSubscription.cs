@@ -1,4 +1,4 @@
-﻿using ERPEZ.TenantManagement.Domain.Common;
+using ERPEZ.TenantManagement.Domain.Common;
 using ERPEZ.TenantManagement.Domain.Enums;
 using Sieve.Attributes;
 using System.Text.Json.Serialization;
@@ -6,7 +6,7 @@ using System.Text.Json.Serialization;
 namespace ERPEZ.TenantManagement.Domain.Entities;
 
 public class TenantSubscription : BaseEntity
-{ 
+{
     public TenantSubscription() { }
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid TenantId { get; set; }

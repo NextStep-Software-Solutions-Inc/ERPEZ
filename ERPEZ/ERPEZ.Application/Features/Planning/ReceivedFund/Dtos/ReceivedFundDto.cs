@@ -1,4 +1,4 @@
-﻿namespace ERPEZ.Application.Features.Planning.ReceivedFund.Dtos;
+namespace ERPEZ.Application.Features.Planning.ReceivedFund.Dtos;
 
 public class ReceivedFundDto
 {

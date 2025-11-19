@@ -1,4 +1,4 @@
-﻿using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using ERPEZ.TenantManagement.Domain.Interfaces;
 using MediatR;
@@ -10,7 +10,7 @@ public sealed class UpdateTenantCommandHandler(IUnitOfWork unitOfWork)
 {
     public async Task<ApiResponse<Guid>> Handle(UpdateTenantCommand request, CancellationToken cancellationToken)
     {
-        
+
         var tenant = await unitOfWork.TenantRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("Tenant not found.");
 
         if (tenant.Name == request.UpdateTenant.Name && tenant.Description == request.UpdateTenant.Description) throw new ConflictException("No changes detected to update.");

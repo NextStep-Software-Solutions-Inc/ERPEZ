@@ -1,4 +1,4 @@
-﻿namespace ERPEZ.Application.Features.Planning.OPCR.Dtos;
+namespace ERPEZ.Application.Features.Planning.OPCR.Dtos;
 
 public class UpdateOPCRDto
 {

@@ -1,4 +1,4 @@
-﻿namespace ERPEZ.Application.Features.Planning.Object.Dtos;
+namespace ERPEZ.Application.Features.Planning.Object.Dtos;
 
 public class ObjectDto
 {

@@ -1,4 +1,4 @@
-﻿using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Common;
 using MediatR;
 
 namespace ERPEZ.TenantManagement.Application.Features.Modules.Commands.DeleteModule;

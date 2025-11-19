@@ -1,4 +1,4 @@
-﻿namespace ERPEZ.TenantManagement.Application.Features.TenantMembers.Dtos;
+namespace ERPEZ.TenantManagement.Application.Features.TenantMembers.Dtos;
 
 public class TenantMemberDto
 {

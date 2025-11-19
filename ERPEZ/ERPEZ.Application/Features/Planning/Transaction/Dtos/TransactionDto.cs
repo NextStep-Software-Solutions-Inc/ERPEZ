@@ -1,4 +1,4 @@
-﻿namespace ERPEZ.Application.Features.Planning.Transaction.Dtos;
+namespace ERPEZ.Application.Features.Planning.Transaction.Dtos;
 
 public class TransactionDto
 {

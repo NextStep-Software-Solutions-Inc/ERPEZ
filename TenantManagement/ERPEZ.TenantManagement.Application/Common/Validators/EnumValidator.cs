@@ -1,4 +1,4 @@
-﻿using ERPEZ.TenantManagement.Application.Common.Exceptions;
+using ERPEZ.TenantManagement.Application.Common.Exceptions;
 
 public static class EnumValidator
 {

@@ -1,4 +1,4 @@
-﻿namespace ERPEZ.Application.Features.Planning.WFPObjective.Dtos;
+namespace ERPEZ.Application.Features.Planning.WFPObjective.Dtos;
 
 public class UpdateWFPObjectiveDto
 {

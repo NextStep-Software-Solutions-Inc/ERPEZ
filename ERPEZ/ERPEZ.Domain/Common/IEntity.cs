@@ -1,4 +1,4 @@
-﻿namespace ERPEZ.Domain.Common
+namespace ERPEZ.Domain.Common
 {
     public interface IEntity
     {

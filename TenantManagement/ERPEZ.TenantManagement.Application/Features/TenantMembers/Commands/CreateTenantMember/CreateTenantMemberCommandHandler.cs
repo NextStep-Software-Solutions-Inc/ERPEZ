@@ -1,4 +1,4 @@
-﻿using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using ERPEZ.TenantManagement.Domain.Entities;
 using ERPEZ.TenantManagement.Domain.Interfaces;
@@ -32,7 +32,7 @@ public class CreateTenantMemberCommandHandler(IUnitOfWork unitOfWork)
         await unitOfWork.TenantMemberRepository.AddAsync(tenantMember, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-      
+
 
         return ApiResponse<Guid>.Success(tenantMember.Id, "Tenant member created successfully.");
     }

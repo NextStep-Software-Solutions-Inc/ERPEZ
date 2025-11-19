@@ -1,4 +1,4 @@
-﻿using ERPEZ.Shared.Interfaces;
+using ERPEZ.Shared.Interfaces;
 using ERPEZ.TenantManagement.Domain.Interfaces;
 using ERPEZ.TenantManagement.Infrastructure.Persistence;
 using ERPEZ.TenantManagement.Infrastructure.Persistence.Interceptors;

@@ -1,4 +1,4 @@
-﻿using ERPEZ.TenantManagement.Domain.Common;
+using ERPEZ.TenantManagement.Domain.Common;
 using Sieve.Attributes;
 using System.Text.Json.Serialization;
 
