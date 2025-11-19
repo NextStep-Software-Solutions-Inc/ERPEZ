@@ -5,11 +5,11 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.ReceivedFund.Commands.UpdateReceivedFund;
 
-public class UpdateReceivedFundCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateReceivedFundCommand, ApiResponse<Domain.Entities.Planning.ReceivedFund>>
+public class UpdateReceivedFundCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateReceivedFundCommand, ApiResponse<Unit>>
 {
-    public async Task<ApiResponse<Domain.Entities.Planning.ReceivedFund>> Handle(UpdateReceivedFundCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<Unit>> Handle(UpdateReceivedFundCommand request, CancellationToken cancellationToken)
     {
-        var dto = request.UpdateReceivedFund;
+        var receivedFundDto = request.UpdateReceivedFund;
 
         if (dto.FundSourceId.HasValue && dto.FundSourceId.Value != Guid.Empty)
         {
@@ -26,6 +26,6 @@ public class UpdateReceivedFundCommandHandler(IUnitOfWork unitOfWork) : IRequest
         unitOfWork.ReceivedFundRepository.Update(receivedFund);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return ApiResponse<Domain.Entities.Planning.ReceivedFund>.Success(receivedFund, "Received Fund updated successfully.");
+        return ApiResponse<Unit>.Success(Unit.Value, "Received Fund updated successfully.");
     }
 }

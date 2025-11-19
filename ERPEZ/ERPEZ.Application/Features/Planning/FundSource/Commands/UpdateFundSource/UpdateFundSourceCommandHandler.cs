@@ -20,7 +20,15 @@ public class UpdateFundSourceCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
 
         var fundSourceType = Enum.Parse<FundSourceTypeEnum>(dto.Type);
         var fundSource = await unitOfWork.FundSourceRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("Fund Source not found.");
-        if (fundSource.Name == dto.Name && fundSource.Type == fundSourceType) throw new ConflictException("Fund Source already exists.");
+
+        // Check for duplicate name and type combination (excluding current fund source)
+        if (dto.Name != null)
+        {
+            var existingFundSource = await unitOfWork.FundSourceRepository.FindAsync(fs => fs.Name == dto.Name && fs.Type == fundSourceType && fs.Id != request.Id,
+                cancellationToken);
+            if (existingFundSource != null)
+                throw new ConflictException("Fund Source with the same name and type already exists.");
+        }
 
         fundSource.ParentId = dto!.ParentId ?? fundSource.ParentId;
         fundSource.Name = dto!.Name ?? fundSource.Name;
@@ -37,6 +45,10 @@ public class UpdateFundSourceCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
             ParentId = fundSource.ParentId,
             Name = fundSource.Name,
             Code = fundSource.Code,
+            TotalDUAllocatedFunds = fundSource.ReceivedFunds
+                .SelectMany(rf => rf.DUFundAllocations)
+                .Sum(dufa => dufa.Amount),
+            TotalReceivedFunds = fundSource.ReceivedFunds.Sum(rf => rf.Amount),
             Type = fundSource.Type.ToString(),
             IsActive = fundSource.IsActive,
             CreatedBy = fundSource.CreatedBy,

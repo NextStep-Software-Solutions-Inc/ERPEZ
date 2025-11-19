@@ -22,10 +22,9 @@ namespace ERPEZ.Api.Controllers
         {
             var receivedFund = await mediator.Send(command);
 
-            if (!receivedFund.Succeeded)
-                return BadRequest(receivedFund);
-
-            return CreatedAtAction(nameof(GetReceivedFundById), new { id = receivedFund.Data!.Id }, receivedFund);
+            return receivedFund.Succeeded
+                ? StatusCode(StatusCodes.Status201Created, receivedFund)
+                : BadRequest(receivedFund);
         }
 
         [HttpGet]
@@ -33,7 +32,7 @@ namespace ERPEZ.Api.Controllers
         public async Task<IActionResult> GetReceivedFunds([FromQuery] GetReceivedFundsQuery query)
         {
             var result = await mediator.Send(query);
-            return Ok(result);
+            return result.Succeeded ? Ok(result) : BadRequest(result);
         }
 
         [HttpGet("{id}")]
