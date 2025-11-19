@@ -11,17 +11,11 @@ public class UpdateReceivedFundCommandHandler(IUnitOfWork unitOfWork) : IRequest
     {
         var receivedFundDto = request.UpdateReceivedFund;
 
-        if (dto.FundSourceId.HasValue && dto.FundSourceId.Value != Guid.Empty)
-        {
-            _ = await unitOfWork.FundSourceRepository.GetByIdAsync(dto.FundSourceId.Value, cancellationToken: cancellationToken)
-                ?? throw new NotFoundException("Fund Source not found.");
-        }
-
-        var receivedFund = await unitOfWork.ReceivedFundRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken)
-            ?? throw new NotFoundException("Received Fund not found.");
-
-        receivedFund.FundSourceId = dto?.FundSourceId ?? receivedFund.FundSourceId;
-        receivedFund.Amount = dto?.Amount ?? receivedFund.Amount;
+        var receivedFund = await unitOfWork.ReceivedFundRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("Received Fund not found.");
+        
+        receivedFund.Amount = receivedFundDto?.Amount ?? receivedFund.Amount;
+        receivedFund.ReceivedDate = receivedFundDto?.ReceivedDate ?? receivedFund.ReceivedDate;
+        receivedFund.Description = receivedFundDto?.Description ?? receivedFund.Description;
 
         unitOfWork.ReceivedFundRepository.Update(receivedFund);
         await unitOfWork.SaveChangesAsync(cancellationToken);
