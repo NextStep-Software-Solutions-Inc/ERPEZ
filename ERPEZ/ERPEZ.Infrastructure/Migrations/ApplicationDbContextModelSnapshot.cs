@@ -331,9 +331,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid>("KPIId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("KPIId1")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid>("KPITargetId")
                         .HasColumnType("uuid");
 
@@ -346,8 +343,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("KPIId");
-
-                    b.HasIndex("KPIId1");
 
                     b.HasIndex("KPITargetId");
 
@@ -736,9 +731,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid>("KPIId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("KPIId1")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid?>("ParentKPITargetId")
                         .HasColumnType("uuid");
 
@@ -759,8 +751,6 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("KPIId1");
 
                     b.HasIndex("ParentKPITargetId");
 
@@ -1106,9 +1096,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid>("KPIId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("KPIId1")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid>("OPCRId")
                         .HasColumnType("uuid");
 
@@ -1121,8 +1108,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("KPIId");
-
-                    b.HasIndex("KPIId1");
 
                     b.HasIndex("OPCRId", "KPIId")
                         .IsUnique();
@@ -2130,9 +2115,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid>("SubDeliveryUnitId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("SubDeliveryUnitId1")
-                        .HasColumnType("uuid");
-
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -2147,8 +2129,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("DeliveryUnitId");
 
                     b.HasIndex("SubDeliveryUnitId");
-
-                    b.HasIndex("SubDeliveryUnitId1");
 
                     b.HasIndex("WFPPAPId", "SubDeliveryUnitId")
                         .IsUnique();
@@ -2276,14 +2256,10 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired();
 
                     b.HasOne("ERPEZ.Domain.Entities.Planning.KPI", "KPI")
-                        .WithMany()
+                        .WithMany("KPIAssignments")
                         .HasForeignKey("KPIId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.KPI", null)
-                        .WithMany("KPIAssignments")
-                        .HasForeignKey("KPIId1");
 
                     b.HasOne("ERPEZ.Domain.Entities.Planning.KPITarget", "KPITarget")
                         .WithMany()
@@ -2371,14 +2347,10 @@ namespace ERPEZ.Infrastructure.Migrations
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.KPITarget", b =>
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Planning.KPI", "KPI")
-                        .WithMany()
+                        .WithMany("KPITargets")
                         .HasForeignKey("KPIId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.KPI", null)
-                        .WithMany("KPITargets")
-                        .HasForeignKey("KPIId1");
 
                     b.HasOne("ERPEZ.Domain.Entities.Planning.KPITarget", null)
                         .WithMany("KPITargets")
@@ -2468,14 +2440,10 @@ namespace ERPEZ.Infrastructure.Migrations
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OPCRKPI", b =>
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Planning.KPI", "KPI")
-                        .WithMany()
+                        .WithMany("OPCRKPIs")
                         .HasForeignKey("KPIId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.KPI", null)
-                        .WithMany("OPCRKPIs")
-                        .HasForeignKey("KPIId1");
 
                     b.HasOne("ERPEZ.Domain.Entities.Planning.OPCR", "OPCR")
                         .WithMany("OPCRKPIs")
@@ -2749,14 +2717,10 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasForeignKey("DeliveryUnitId");
 
                     b.HasOne("ERPEZ.Domain.Entities.Planning.SubDeliveryUnit", "SubDeliveryUnit")
-                        .WithMany()
+                        .WithMany("WFPPAPDepartments")
                         .HasForeignKey("SubDeliveryUnitId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.SubDeliveryUnit", null)
-                        .WithMany("WFPPAPDepartments")
-                        .HasForeignKey("SubDeliveryUnitId1");
 
                     b.HasOne("ERPEZ.Domain.Entities.Planning.WFPPAP", "WFPPAP")
                         .WithMany("WFPPAPDepartments")
