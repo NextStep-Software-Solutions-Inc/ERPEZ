@@ -36,6 +36,7 @@ public interface IUnitOfWork
     IFiscalYearRepository FiscalYearRepository { get; }
     IClusterRepository ClusterRepository { get; }
     IWFPObjectiveTargetRepository WFPObjectiveTargetRepository { get; }
+    ISDGRepository SDGRepository { get; }
     Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default);
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

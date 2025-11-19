@@ -1,5 +1,4 @@
 using ERPEZ.Application.Features.Planning.KPI.Dtos;
-using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -90,7 +89,7 @@ public class CreateKPICommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<C
                 });
             }
 
-            var sdgs = request.SDGs.Select(s => new SDG
+            var sdgs = request.SDGs.Select(s => new Domain.Entities.Planning.SDG
             {
                 Name = s.Name
             }).ToList();
