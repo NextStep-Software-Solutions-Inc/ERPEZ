@@ -6,9 +6,11 @@ using Hangfire;
 using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace ERPEZ.Infrastructure;
 
@@ -19,9 +21,21 @@ public static class DependencyInjection
     {
         var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
         var services = builder.Services;
+        var env = builder.Environment;
+        
 
         services.AddDbContext<ApplicationDbContext>(options =>
-            options.UseNpgsql(connectionString));
+            {
+                options.UseNpgsql(connectionString);
+
+                // Only ignore the PendingModelChangesWarning in development so we don't
+                // hide pending model/migration mismatches in non-dev environments.
+                if (env != null && env.IsDevelopment())
+                {
+                    options.ConfigureWarnings(w =>
+                        w.Ignore(RelationalEventId.PendingModelChangesWarning));
+                }
+            });
         // Register repositories and Unit of Work
         services.AddScoped<IActivityBudgetRequirementRepository, ActivityBudgetRequirementRepository>();
         services.AddScoped<IDUAllocationRepository, DUAllocationRepository>();
@@ -70,13 +84,32 @@ public static class DependencyInjection
             .UsePostgreSqlStorage(c => c.UseNpgsqlConnection(connectionString)));
 
         services.AddHangfireServer();
-        var env = builder.Environment;
 
         if (env != null && env.IsDevelopment())
         {
             using var scope = services.BuildServiceProvider().CreateScope();
             var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            await dbContext.Database.MigrateAsync();
+            var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
+            var logger = loggerFactory.CreateLogger(nameof(DependencyInjection));
+
+            try
+            {
+                await dbContext.Database.MigrateAsync();
+            }
+            catch (System.InvalidOperationException ex)
+            {
+                // EF Core throws when there are pending model changes (no matching migration).
+                // Rather than crashing the app, log the issue and continue. This keeps
+                // development workflows working while alerting the developer to add a
+                // migration (run `dotnet ef migrations add <name>`).
+                logger.LogError(ex, "Database migration failed; pending model changes detected. Add a migration before updating the database.");
+            }
+            catch (System.Exception ex)
+            {
+                // Log any unexpected exceptions and rethrow - migrations may be in an unrecoverable state
+                logger.LogCritical(ex, "Unexpected error while applying migrations.");
+                throw;
+            }
         }
         return builder;
     }

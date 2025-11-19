@@ -119,7 +119,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         // DUKPIAssignment (Delivery Unit KPI Assignment)
         modelBuilder.Entity<DUKPIAssignment>()
             .HasOne(da => da.KPI)
-            .WithMany()
+            .WithMany(k => k.KPIAssignments)
             .HasForeignKey(da => da.KPIId)
             .IsRequired();
 
@@ -165,11 +165,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasForeignKey(r => r.PerformanceMeasureId);
 
         // KPITarget
-        modelBuilder.Entity<KPITarget>()
-            .HasOne(kt => kt.KPI)
-            .WithMany()
-            .HasForeignKey(kt => kt.KPIId)
-            .IsRequired();
+        // Relationship with KPI is already configured in KPI section
 
         modelBuilder.Entity<KPITarget>()
             .HasMany(kt => kt.KPITargets)
@@ -532,7 +528,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<WFPPAPDepartment>()
             .HasOne(d => d.SubDeliveryUnit)
-            .WithMany()
+            .WithMany(s => s.WFPPAPDepartments)
             .HasForeignKey(d => d.SubDeliveryUnitId)
             .OnDelete(DeleteBehavior.Restrict);
 
@@ -620,7 +616,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<OPCRKPI>()
             .HasOne(k => k.KPI)
-            .WithMany()
+            .WithMany(k => k.OPCRKPIs)
             .HasForeignKey(k => k.KPIId);
 
         modelBuilder.Entity<OPCRKPI>()
