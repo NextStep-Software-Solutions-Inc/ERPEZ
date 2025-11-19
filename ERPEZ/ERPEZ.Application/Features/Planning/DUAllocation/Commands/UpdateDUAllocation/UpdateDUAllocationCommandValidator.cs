@@ -50,10 +50,6 @@ public class UpdateDUAllocationCommandValidator : AbstractValidator<UpdateDUAllo
                     .WithMessage("Fund Allocation Amount must be a positive value greater than zero.");
             });
 
-            RuleFor(x => x.UpdateDUAllocation!.DUFundAllocations)
-                .Must(duFundAllocations => duFundAllocations != null && duFundAllocations.Count > 0)
-                .WithMessage("At least one DU Fund Allocation is required.");
-
             // Cross-property validation for total allocation amount
             RuleFor(x => x)
                 .Must(x =>

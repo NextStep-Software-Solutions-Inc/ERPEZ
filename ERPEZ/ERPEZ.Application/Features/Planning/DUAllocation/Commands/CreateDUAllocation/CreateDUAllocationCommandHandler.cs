@@ -9,7 +9,7 @@ public class CreateDUAllocationCommandHandler(IUnitOfWork unitOfWork) : IRequest
 {
     public async Task<ApiResponse<Guid>> Handle(CreateDUAllocationCommand request, CancellationToken cancellationToken)
     {
-        Guid duAllocationId = Guid.Empty;
+        Guid? duAllocationId = null;
         
         await unitOfWork.ExecuteInTransactionAsync(async () =>
         {
@@ -82,6 +82,6 @@ public class CreateDUAllocationCommandHandler(IUnitOfWork unitOfWork) : IRequest
             await unitOfWork.SaveChangesAsync(cancellationToken);
         }, cancellationToken);
         
-        return ApiResponse<Guid>.Success(duAllocationId, "Delivery Unit Allocation created successfully.");
+        return ApiResponse<Guid>.Success(duAllocationId!.Value, "Delivery Unit Allocation created successfully.");
     }
 }
