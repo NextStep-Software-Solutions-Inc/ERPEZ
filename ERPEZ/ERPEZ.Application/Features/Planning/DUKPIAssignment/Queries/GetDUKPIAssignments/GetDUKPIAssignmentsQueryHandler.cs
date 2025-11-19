@@ -22,7 +22,6 @@ public class GetDUKPIAssignmentsQueryHandler(IUnitOfWork unitOfWork) : IRequestH
             .GroupBy(a => new { a.KPIId, a.DeliveryUnitId })
             .Select(group => new DUKPIAssignmentResponse
             {
-                Id = group.First().Id, // Use the first assignment's ID as the group ID
                 KPIId = group.Key.KPIId,
                 DeliveryUnitId = group.Key.DeliveryUnitId,
                 DUKPITargets = group.Select(assignment => new DUKPITarget
