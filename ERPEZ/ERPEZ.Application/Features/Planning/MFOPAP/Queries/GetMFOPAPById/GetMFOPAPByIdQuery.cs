@@ -1,4 +1,4 @@
-﻿using ERPEZ.Application.Features.Planning.Location.Queries.GetLocationById;
+using ERPEZ.Application.Features.Planning.Location.Queries.GetLocationById;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;

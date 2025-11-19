@@ -1,4 +1,4 @@
-﻿using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using ERPEZ.Shared.Interfaces;
 using ERPEZ.TenantManagement.Domain.Entities;

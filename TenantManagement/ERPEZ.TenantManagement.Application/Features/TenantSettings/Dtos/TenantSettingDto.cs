@@ -1,4 +1,4 @@
-﻿namespace ERPEZ.TenantManagement.Application.Features.TenantSettings.Dtos;
+namespace ERPEZ.TenantManagement.Application.Features.TenantSettings.Dtos;
 
 public class TenantSettingDto
 {

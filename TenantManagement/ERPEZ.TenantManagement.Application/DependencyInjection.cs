@@ -1,4 +1,4 @@
-﻿using FluentValidation;
+using FluentValidation;
 using ERPEZ.TenantManagement.Application.Common.Behaviors;
 using Microsoft.Extensions.DependencyInjection;
 using Sieve.Services;

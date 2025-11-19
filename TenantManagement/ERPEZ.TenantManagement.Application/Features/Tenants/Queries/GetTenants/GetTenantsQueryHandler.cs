@@ -1,4 +1,4 @@
-﻿using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Common;
 using ERPEZ.TenantManagement.Application.Features.Tenants.Dtos;
 using ERPEZ.TenantManagement.Application.Features.TenantSubscriptions.Dtos;
 using ERPEZ.TenantManagement.Domain.Entities;
@@ -9,7 +9,7 @@ using System.Linq.Expressions;
 
 namespace ERPEZ.TenantManagement.Application.Features.Tenants.Queries.GetTenants;
 
-public sealed class GetTenantsQueryHandler (IUnitOfWork unitOfWork) : IRequestHandler<GetTenantsQuery, PaginatedApiResponse<TenantDto>>
+public sealed class GetTenantsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetTenantsQuery, PaginatedApiResponse<TenantDto>>
 {
     public async Task<PaginatedApiResponse<TenantDto>> Handle(GetTenantsQuery query, CancellationToken cancellationToken)
     {
@@ -21,7 +21,7 @@ public sealed class GetTenantsQueryHandler (IUnitOfWork unitOfWork) : IRequestHa
             Sorts = query.Sorts
         };
 
-        Expression<Func<Tenant, TenantDto>> projection = t => new ()
+        Expression<Func<Tenant, TenantDto>> projection = t => new()
         {
             Id = t.Id,
             Name = t.Name,

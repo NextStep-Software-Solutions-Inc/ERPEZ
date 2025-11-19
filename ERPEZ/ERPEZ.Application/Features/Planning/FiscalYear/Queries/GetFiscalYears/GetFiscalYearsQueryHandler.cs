@@ -36,6 +36,6 @@ public class GetFiscalYearsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandle
 
         var (items, totalCount) = await unitOfWork.FiscalYearRepository.GetAllAsync(sieveModel, projection, cancellationToken: cancellationToken);
 
-    return new PaginatedApiResponse<FiscalYearResponse>(items.ToList(), query.PageNumber, query.PageSize, totalCount);
+        return new PaginatedApiResponse<FiscalYearResponse>(items.ToList(), query.PageNumber, query.PageSize, totalCount);
     }
 }

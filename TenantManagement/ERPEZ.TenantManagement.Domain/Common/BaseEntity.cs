@@ -1,4 +1,4 @@
-﻿namespace ERPEZ.TenantManagement.Domain.Common;
+namespace ERPEZ.TenantManagement.Domain.Common;
 
 using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;

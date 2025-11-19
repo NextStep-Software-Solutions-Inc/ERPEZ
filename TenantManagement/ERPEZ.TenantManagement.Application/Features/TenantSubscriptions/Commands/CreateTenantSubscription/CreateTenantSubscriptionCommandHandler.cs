@@ -1,4 +1,4 @@
-﻿using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using ERPEZ.TenantManagement.Domain.Entities;
 using ERPEZ.TenantManagement.Domain.Enums;
@@ -17,7 +17,7 @@ public sealed class CreateTenantSubscriptionCommandHandler(IUnitOfWork unitOfWor
             ts.StartDate == command.StartDate &&
             ts.EndDate == command.EndDate && !ts.IsDeleted, cancellationToken);
 
-        if(existTenantSubscription != null)
+        if (existTenantSubscription != null)
         {
             throw new ConflictException("Tenant subscription already exist.");
         }
@@ -44,7 +44,7 @@ public sealed class CreateTenantSubscriptionCommandHandler(IUnitOfWork unitOfWor
         {
             TenantId = command.TenantId,
             Amount = command.Amount,
-            Plan = plan ,
+            Plan = plan,
             StartDate = command.StartDate,
             EndDate = command.EndDate,
             BillingCycle = billingCycle,

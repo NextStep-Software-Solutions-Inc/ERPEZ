@@ -15,5 +15,5 @@ public class ReceivedFund : BaseEntity
     public string? Description { get; set; }
     public virtual List<DUFundAllocation> DUFundAllocations { get; set; } = [];
     public virtual List<DUAllocation> DUAllocations { get; set; } = [];
-    public virtual FundSource FundSource { get; set; } = null!; 
+    public virtual FundSource FundSource { get; set; } = null!;
 }

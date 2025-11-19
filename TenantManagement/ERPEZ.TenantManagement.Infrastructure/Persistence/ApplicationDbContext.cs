@@ -1,4 +1,4 @@
-﻿using ERPEZ.TenantManagement.Domain.Common;
+using ERPEZ.TenantManagement.Domain.Common;
 using ERPEZ.TenantManagement.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata;
@@ -9,10 +9,10 @@ namespace ERPEZ.TenantManagement.Infrastructure.Persistence;
 public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
     : DbContext(options)
 {
-    public DbSet<Tenant> Tenants { get; set; }
-    public DbSet<Module> Modules { get; set; }
-    public DbSet<TenantSetting> TenantSettings { get; set; }
-    public DbSet<TenantSubscription> TenantSubscriptions { get; set; }
+    public DbSet<Tenant>? Tenants { get; set; }
+    public DbSet<Module>? Modules { get; set; }
+    public DbSet<TenantSetting>? TenantSettings { get; set; }
+    public DbSet<TenantSubscription>? TenantSubscriptions { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -54,7 +54,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         // Tenant
         modelBuilder.Entity<Tenant>()
-            .HasIndex(t => t.Name )
+            .HasIndex(t => t.Name)
             .IsUnique();
 
         modelBuilder.Entity<Tenant>()
@@ -79,7 +79,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         // TenantSetting
         modelBuilder.Entity<TenantSetting>()
-            .HasIndex(ts => ts.TenantId )
+            .HasIndex(ts => ts.TenantId)
             .IsUnique();
 
         // TenantSubscription
@@ -89,7 +89,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         //TenantMember
         modelBuilder.Entity<TenantMember>()
-            .HasIndex(tm => new {tm.TenantId, tm.UserId})
+            .HasIndex(tm => new { tm.TenantId, tm.UserId })
             .IsUnique();
 
         modelBuilder.Entity<TenantMember>()

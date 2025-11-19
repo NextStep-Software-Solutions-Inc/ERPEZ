@@ -1,4 +1,4 @@
-﻿using ERPEZ.Application.Features.Planning.ActivityBudgetRequirement.Dtos;
+using ERPEZ.Application.Features.Planning.ActivityBudgetRequirement.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -36,7 +36,7 @@ public class UpdateActivityBudgetRequirementCommandHandler(IUnitOfWork unitOfWor
             Id = abr.Id,
             WFPObjectiveTargetId = abr.WFPObjectiveTargetId,
             ObjectId = abr.ObjectId,
-            ItemDescription =abr.ItemDescription,
+            ItemDescription = abr.ItemDescription,
             Quantity = abr.Quantity,
             CostEstimates = abr.CostEstimates,
             CreatedAt = abr.CreatedAt,

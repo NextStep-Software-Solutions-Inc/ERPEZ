@@ -1,4 +1,4 @@
-﻿using ERPEZ.TenantManagement.Api;
+using ERPEZ.TenantManagement.Api;
 using ERPEZ.TenantManagement.Api.Extensions;
 using ERPEZ.TenantManagement.Application;
 using ERPEZ.TenantManagement.Infrastructure;

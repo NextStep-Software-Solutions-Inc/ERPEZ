@@ -1,4 +1,4 @@
-﻿namespace ERPEZ.Application.Features.Planning.MFOPAP.Dtos;
+namespace ERPEZ.Application.Features.Planning.MFOPAP.Dtos;
 
 public class UpdateMFOPAPDto
 {

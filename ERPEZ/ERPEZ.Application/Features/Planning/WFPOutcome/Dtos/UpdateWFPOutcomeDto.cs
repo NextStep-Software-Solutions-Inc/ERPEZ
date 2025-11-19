@@ -1,4 +1,4 @@
-﻿namespace ERPEZ.Application.Features.Planning.WFPOutcome.Dtos;
+namespace ERPEZ.Application.Features.Planning.WFPOutcome.Dtos;
 
 public class UpdateWFPOutcomeDto
 {

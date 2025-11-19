@@ -9,7 +9,7 @@ public class CreateTransactionCommandHandler(IUnitOfWork unitOfWork) : IRequestH
 {
     public async Task<ApiResponse<Domain.Entities.Planning.Transaction>> Handle(CreateTransactionCommand request, CancellationToken cancellationToken)
     {
-        var transactionExist = await unitOfWork.TransactionRepository.FindAsync(t => 
+        var transactionExist = await unitOfWork.TransactionRepository.FindAsync(t =>
         t.FundSourceId == request.FundSourceId &&
         t.OrganizationId == request.OrganizationId &&
         t.LocationId == request.LocationId &&

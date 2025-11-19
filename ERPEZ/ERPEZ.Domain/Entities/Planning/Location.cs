@@ -1,4 +1,4 @@
-﻿using ERPEZ.Domain.Common;
+using ERPEZ.Domain.Common;
 using Sieve.Attributes;
 
 namespace ERPEZ.Domain.Entities.Planning;
@@ -17,5 +17,5 @@ public class Location : BaseEntity
     public bool IsActive { get; set; }
     public virtual Location? ParentLocation { get; set; }
     public virtual List<Location> Locations { get; set; } = [];
-    public virtual List<Transaction> Transactions  { get; set; } = [];
+    public virtual List<Transaction> Transactions { get; set; } = [];
 }

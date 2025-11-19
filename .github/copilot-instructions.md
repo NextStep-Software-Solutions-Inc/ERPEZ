@@ -271,3 +271,18 @@ Always create validators alongside commands to maintain code quality and prevent
   - ❌ `var UserName` (incorrect casing for local)
   - ❌ `var x = 10;` (non-descriptive)
 - Consistency ensures code is easier to read and maintain across the team.
+
+### 4. Avoid EF Core in Application Layer
+- **STRICTLY NO** importing or using Entity Framework Core directly in the Application layer (handlers, commands, queries, etc.)
+- Use repository interfaces and UnitOfWork for all data access operations
+- Keep EF Core usage confined to the Infrastructure layer
+- For async operations, use repository methods like `ToListAsync(IQueryable<T>)` instead of EF extensions
+- Pre-fetch data to minimize database round trips
+- Examples:
+  - ❌ `using Microsoft.EntityFrameworkCore;`
+  - ❌ `context.Query(...)`
+  - ❌ `query.ToListAsync()` (EF extension)
+  - ✅ `unitOfWork.Repository.ToListAsync(unitOfWork.Repository.Query(...))`
+  - ✅ `unitOfWork.Repository.GetByIdAsync(...)`
+  - ✅ Batch queries upfront and use in-memory operations
+- This maintains clean architecture separation and improves performance

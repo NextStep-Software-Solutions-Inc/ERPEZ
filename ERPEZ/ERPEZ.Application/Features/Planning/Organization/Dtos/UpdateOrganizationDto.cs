@@ -1,4 +1,4 @@
-﻿namespace ERPEZ.Application.Features.Planning.Organization.Dtos;
+namespace ERPEZ.Application.Features.Planning.Organization.Dtos;
 
 public class UpdateOrganizationDto
 {

@@ -1,10 +1,10 @@
-﻿using FluentValidation;
+using FluentValidation;
 
 namespace ERPEZ.Application.Features.Planning.WFP.Commands.CreateWFP;
 
 public class CreateWFPCommandValidator : AbstractValidator<CreateWFPCommand>
 {
-    private static readonly string[] validStatuses = [ "Draft", "Submitted", "Approved", "Rejected", "Completed" ];
+    private static readonly string[] validStatuses = ["Draft", "Submitted", "Approved", "Rejected", "Completed"];
     public CreateWFPCommandValidator()
     {
         // 1. DeliveryUnitId (Guid)

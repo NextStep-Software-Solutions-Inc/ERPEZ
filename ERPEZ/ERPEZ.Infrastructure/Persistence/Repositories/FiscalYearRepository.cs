@@ -4,7 +4,7 @@ using Sieve.Services;
 
 namespace ERPEZ.Infrastructure.Persistence.Repositories;
 
-public class FiscalYearRepository(ApplicationDbContext context, ISieveProcessor sieveProcessor): Repository<Domain.Entities.Planning.FiscalYear>(context, sieveProcessor), IFiscalYearRepository
+public class FiscalYearRepository(ApplicationDbContext context, ISieveProcessor sieveProcessor) : Repository<Domain.Entities.Planning.FiscalYear>(context, sieveProcessor), IFiscalYearRepository
 {
     private readonly ApplicationDbContext context = context;
     public async Task<Domain.Entities.Planning.FiscalYear?> GetWithAllocationsAsync(Guid id, CancellationToken cancellationToken = default)

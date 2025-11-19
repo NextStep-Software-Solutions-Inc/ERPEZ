@@ -1,4 +1,4 @@
-﻿using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using ERPEZ.Shared.Interfaces;
 using ERPEZ.TenantManagement.Application.Features.TenantMembers.Dtos;
@@ -57,7 +57,7 @@ public class GetMyTenantsQueryHandler(
                 })
                 .ToList()
         };
-        
+
         var (tenantDtos, totalCount) = await unitOfWork.TenantRepository.GetAllAsync(sieveModel, projection, customFilter, cancellationToken);
 
         return new PaginatedApiResponse<TenantDto>(

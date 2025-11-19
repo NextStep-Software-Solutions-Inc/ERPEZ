@@ -1,4 +1,4 @@
-﻿using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using ERPEZ.TenantManagement.Domain.Enums;
 using ERPEZ.TenantManagement.Domain.Interfaces;
@@ -28,7 +28,7 @@ public class UpdateTenantSubscriptionCommandHandler(IUnitOfWork unitOfWork)
         );
 
         if (!validation.IsValid) throw new BadRequestException(validation.ErrorMessage);
-        
+
         tenantSubscription.Amount = dto.Amount ?? tenantSubscription.Amount;
         tenantSubscription.StartDate = dto.StartDate ?? tenantSubscription.StartDate;
         tenantSubscription.EndDate = dto.EndDate ?? tenantSubscription.EndDate;

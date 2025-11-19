@@ -1,4 +1,4 @@
-﻿using ERPEZ.Application.Features.Planning.MFOKPI.Dtos;
+using ERPEZ.Application.Features.Planning.MFOKPI.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -11,7 +11,7 @@ public class CreateMFOKPICommandHandler(IUnitOfWork unitOfWork)
 {
     public async Task<ApiResponse<MFOKPIDto>> Handle(CreateMFOKPICommand request, CancellationToken cancellationToken)
     {
-        if(request.MFOPAPId == Guid.Empty || request.KPIId == Guid.Empty)
+        if (request.MFOPAPId == Guid.Empty || request.KPIId == Guid.Empty)
         {
             return new ApiResponse<MFOKPIDto>
             {

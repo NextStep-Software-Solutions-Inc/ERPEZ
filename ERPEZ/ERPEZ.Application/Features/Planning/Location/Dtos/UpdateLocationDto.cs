@@ -1,4 +1,4 @@
-﻿namespace ERPEZ.Application.Features.Planning.Location.Dtos;
+namespace ERPEZ.Application.Features.Planning.Location.Dtos;
 
 public class UpdateLocationDto
 {

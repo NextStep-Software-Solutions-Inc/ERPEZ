@@ -582,6 +582,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<bool>("IsPercentage")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("IsTargetValueAllocable")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");

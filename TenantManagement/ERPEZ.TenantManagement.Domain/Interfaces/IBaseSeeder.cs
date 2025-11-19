@@ -1,4 +1,4 @@
-﻿namespace ERPEZ.TenantManagement.Domain.Interfaces;
+namespace ERPEZ.TenantManagement.Domain.Interfaces;
 
 public interface IBaseSeeder
 {

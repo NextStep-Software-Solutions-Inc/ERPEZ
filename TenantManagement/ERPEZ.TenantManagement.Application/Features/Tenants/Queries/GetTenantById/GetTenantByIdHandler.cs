@@ -1,4 +1,4 @@
-﻿using ERPEZ.Shared.Exceptions;
+using ERPEZ.Shared.Exceptions;
 using ERPEZ.Shared.Common;
 using ERPEZ.TenantManagement.Application.Features.Tenants.Dtos;
 using ERPEZ.TenantManagement.Application.Features.TenantSubscriptions.Dtos;
@@ -7,7 +7,7 @@ using MediatR;
 
 namespace ERPEZ.TenantManagement.Application.Features.Tenants.Queries.GetTenantById;
 
-public sealed class GetTenantByIdQueryHandler(IUnitOfWork unitOfWork): IRequestHandler<GetTenantByIdQuery, ApiResponse<TenantDto>>
+public sealed class GetTenantByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetTenantByIdQuery, ApiResponse<TenantDto>>
 {
     public async Task<ApiResponse<TenantDto>> Handle(GetTenantByIdQuery request, CancellationToken cancellationToken)
     {
@@ -18,7 +18,7 @@ public sealed class GetTenantByIdQueryHandler(IUnitOfWork unitOfWork): IRequestH
                 Id = t.Id,
                 Name = t.Name,
                 Description = t.Description,
-                TenantSetting = new ()
+                TenantSetting = new()
                 {
                     Id = t.TenantSetting.Id,
                     OnPremise = t.TenantSetting.OnPremise,

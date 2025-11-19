@@ -21,7 +21,7 @@ public class UpdateWFPObjectiveCommandHandler(IUnitOfWork unitOfWork) : IRequest
 
         if (duplicate != null && duplicate.Id != request.Id)
             throw new ConflictException("WFP Objective already exists.");
-        
+
         wfpObjective.Description = dto.Description ?? wfpObjective.Description;
 
         unitOfWork.WFPObjectiveRepository.Update(wfpObjective);

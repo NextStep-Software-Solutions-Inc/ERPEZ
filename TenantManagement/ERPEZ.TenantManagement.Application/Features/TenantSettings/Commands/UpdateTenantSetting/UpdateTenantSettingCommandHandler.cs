@@ -1,4 +1,4 @@
-﻿using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using ERPEZ.TenantManagement.Domain.Interfaces;
 using MediatR;
@@ -20,7 +20,7 @@ public class UpdateTenantSettingCommandHandler(IUnitOfWork unitOfWork)
         tenantSetting.BillingContactEmail = tenantSettingDto.BillingContactEmail ?? tenantSetting.BillingContactEmail;
         tenantSetting.DbConnectionString = tenantSettingDto.DBConnectionString ?? tenantSetting.DbConnectionString;
 
-         unitOfWork.TenantSettingRepository.Update(tenantSetting);
+        unitOfWork.TenantSettingRepository.Update(tenantSetting);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return ApiResponse<Guid>.Success(tenantSetting.Id, "Tenant setting updated successfully.");

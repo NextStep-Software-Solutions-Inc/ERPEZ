@@ -1,4 +1,4 @@
-﻿using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Common;
 using ERPEZ.TenantManagement.Application.Common;
 using ERPEZ.TenantManagement.Domain.Entities;
 using ERPEZ.TenantManagement.Domain.Interfaces;
@@ -8,7 +8,7 @@ using Sieve.Models;
 namespace ERPEZ.TenantManagement.Application.Features.Modules.Queries.GetModules;
 
 
-public class GetModulesQueryHandler (IUnitOfWork unitOfWork) : IRequestHandler<GetModulesQuery, PaginatedApiResponse<Module>>
+public class GetModulesQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetModulesQuery, PaginatedApiResponse<Module>>
 {
     public async Task<PaginatedApiResponse<Module>> Handle(GetModulesQuery query, CancellationToken cancellationToken)
     {
