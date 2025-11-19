@@ -1,12 +1,18 @@
-using ERPEZ.Application.Features.Planning.DUAllocation.Dtos;
 using ERPEZ.Shared.Common;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.DUAllocation.Commands.CreateDUAllocation;
 
-public class CreateDUAllocationCommand : IRequest<ApiResponse<DUAllocationDto>>
+public record CreateDUAllocationCommand : IRequest<ApiResponse<Guid>>
 {
-    public Guid DeliveryUnitId { get; set; }
-    public string Purpose { get; set; } = string.Empty;
-    public decimal Amount { get; set; }
+    public required Guid DeliveryUnitId { get; init; }
+    public string Purpose { get; init; } = string.Empty;
+    public required decimal Amount { get; init; }
+    public List<DUFundAllocationRequest> DUFundAllocations { get; init; } = [];
+}
+
+public record DUFundAllocationRequest
+{
+    public required Guid ReceivedFundId { get; init; }
+    public required decimal Amount { get; init; }
 }

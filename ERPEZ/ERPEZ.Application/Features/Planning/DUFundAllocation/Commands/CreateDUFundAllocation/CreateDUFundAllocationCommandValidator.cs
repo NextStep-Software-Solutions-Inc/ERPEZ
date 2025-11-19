@@ -16,9 +16,9 @@ public class CreateDUFundAllocationCommandValidator : AbstractValidator<CreateDU
             .NotEmpty()
             .WithMessage("Received Fund ID is required and must be a valid, non-empty GUID.");
 
-        // Amount (Required Decimal, Positive Value)
+        // Amount (Required Decimal, Zero or Positive Value)
         RuleFor(x => x.Amount)
-            .GreaterThan(0)
-            .WithMessage("Amount must be a positive value greater than zero.");
+            .GreaterThanOrEqualTo(0)
+            .WithMessage("Amount must be zero or greater.");
     }
 }

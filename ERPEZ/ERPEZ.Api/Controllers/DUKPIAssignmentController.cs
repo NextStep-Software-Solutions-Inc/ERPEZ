@@ -28,7 +28,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet]
-        [ProducesResponseType(typeof(PaginatedApiResponse<DUKPIAssignmentResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(PaginatedApiResponse<DUKPIAssignmentsResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetKPIAssignments([FromQuery] GetDUKPIAssignmentsQuery query)
         {
             var result = await mediator.Send(query);

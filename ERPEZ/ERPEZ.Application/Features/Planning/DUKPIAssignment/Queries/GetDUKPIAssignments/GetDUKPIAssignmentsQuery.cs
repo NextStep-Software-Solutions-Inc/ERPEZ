@@ -1,9 +1,10 @@
+using ERPEZ.Application.Features.Planning.DUKPIAssignment.Dtos;
 using ERPEZ.Shared.Common;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.DUKPIAssignment.Queries.GetDUKPIAssignments;
 
-public class GetDUKPIAssignmentsQuery : IRequest<PaginatedApiResponse<Domain.Entities.Planning.DUKPIAssignment>>
+public class GetDUKPIAssignmentsQuery : IRequest<PaginatedApiResponse<DUKPIAssignmentsResponse>>
 {
     public int PageNumber { get; set; } = 1;
     public int PageSize { get; set; } = 10;

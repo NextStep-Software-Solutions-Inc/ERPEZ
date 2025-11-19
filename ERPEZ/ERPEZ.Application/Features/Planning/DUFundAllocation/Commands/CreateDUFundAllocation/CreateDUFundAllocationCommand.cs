@@ -4,9 +4,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.DUFundAllocation.Commands.CreateDUFundAllocation;
 
-public class CreateDUFundAllocationCommand : IRequest<ApiResponse<DUFundAllocationDto>>
+public record CreateDUFundAllocationCommand : IRequest<ApiResponse<DUFundAllocationDto>>
 {
-    public Guid DUAllocationId { get; set; }
-    public Guid ReceivedFundId { get; set; }
-    public decimal Amount { get; set; }
+    public Guid DUAllocationId { get; init; }
+    public Guid ReceivedFundId { get; init; }
+    public decimal Amount { get; init; }
 }
