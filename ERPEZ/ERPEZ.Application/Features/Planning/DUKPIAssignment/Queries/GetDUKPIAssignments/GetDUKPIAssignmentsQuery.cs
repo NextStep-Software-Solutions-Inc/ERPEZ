@@ -4,7 +4,7 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.DUKPIAssignment.Queries.GetDUKPIAssignments;
 
-public class GetDUKPIAssignmentsQuery : IRequest<PaginatedApiResponse<DUKPIAssignmentResponse>>
+public class GetDUKPIAssignmentsQuery : IRequest<PaginatedApiResponse<DUKPIAssignmentsResponse>>
 {
     public int PageNumber { get; set; } = 1;
     public int PageSize { get; set; } = 10;

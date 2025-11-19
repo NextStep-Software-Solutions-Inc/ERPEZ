@@ -5,9 +5,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.DUKPIAssignment.Queries.GetDUKPIAssignments;
 
-public class GetDUKPIAssignmentsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetDUKPIAssignmentsQuery, PaginatedApiResponse<DUKPIAssignmentResponse>>
+public class GetDUKPIAssignmentsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetDUKPIAssignmentsQuery, PaginatedApiResponse<DUKPIAssignmentsResponse>>
 {
-    public async Task<PaginatedApiResponse<DUKPIAssignmentResponse>> Handle(GetDUKPIAssignmentsQuery query, CancellationToken cancellationToken)
+    public async Task<PaginatedApiResponse<DUKPIAssignmentsResponse>> Handle(GetDUKPIAssignmentsQuery query, CancellationToken cancellationToken)
     {
         var sieveModel = new Sieve.Models.SieveModel
         {
@@ -20,7 +20,7 @@ public class GetDUKPIAssignmentsQueryHandler(IUnitOfWork unitOfWork) : IRequestH
         
         var groupedAssignments = kpiAssignments
             .GroupBy(a => new { a.KPIId, a.DeliveryUnitId })
-            .Select(group => new DUKPIAssignmentResponse
+            .Select(group => new DUKPIAssignmentsResponse
             {
                 KPIId = group.Key.KPIId,
                 DeliveryUnitId = group.Key.DeliveryUnitId,
@@ -33,7 +33,7 @@ public class GetDUKPIAssignmentsQueryHandler(IUnitOfWork unitOfWork) : IRequestH
             })
             .ToList();
         
-        return new PaginatedApiResponse<DUKPIAssignmentResponse>(
+        return new PaginatedApiResponse<DUKPIAssignmentsResponse>(
             groupedAssignments,
             query.PageNumber,
             query.PageSize,
