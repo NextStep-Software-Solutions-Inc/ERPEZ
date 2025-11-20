@@ -46,7 +46,6 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IClusterRepository clusterRepository;
     private readonly IWFPObjectiveTargetRepository wfpObjectiveTargetRepository;
     private readonly ISDGRepository sdgRepository;
-    private readonly IAttributeRepository attributeRepository;
 
     // Constructor initializes all repositories once
     public UnitOfWork(ApplicationDbContext context, IServiceProvider serviceProvider)
@@ -129,7 +128,6 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IClusterRepository ClusterRepository => clusterRepository;
     public IWFPObjectiveTargetRepository WFPObjectiveTargetRepository => wfpObjectiveTargetRepository;
     public ISDGRepository SDGRepository => sdgRepository;
-    public IAttributeRepository AttributeRepository => attributeRepository;
 
     public async Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default)
     {
