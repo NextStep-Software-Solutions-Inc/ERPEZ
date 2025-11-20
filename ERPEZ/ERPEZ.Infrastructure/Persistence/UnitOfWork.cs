@@ -89,7 +89,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         clusterRepository = new ClusterRepository(context, sieveProcessor);
         wfpObjectiveTargetRepository = new WFPObjectiveTargetRepository(context, sieveProcessor);
         sdgRepository = new SDGRepository(context, sieveProcessor);
-        attributeRepository = new AttributeRepository(context, sieveProcessor);
+
     }
 
     // Public properties return cached instances

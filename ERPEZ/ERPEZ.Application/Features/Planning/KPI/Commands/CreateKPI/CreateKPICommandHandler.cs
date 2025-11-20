@@ -79,17 +79,17 @@ public class CreateKPICommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<C
                 kpi.MFOPAPs = existingMfopaps;
             }
 
-            if (request.SDGs.Count > 0)
+            if (request.SDGIds.Count > 0)
             {
                 var existingSDGsQuery = unitOfWork.SDGRepository
-                    .Query(s => request.SDGs.Contains(s.Id));
+                    .Query(s => request.SDGIds.Contains(s.Id));
 
                 var existingSDGs = await unitOfWork.SDGRepository.ToListAsync(existingSDGsQuery, cancellationToken);
                 
-                if (existingSDGs.Count != request.SDGs.Count)
+                if (existingSDGs.Count != request.SDGIds.Count)
                 {
                     var foundIds = existingSDGs.Select(s => s.Id).ToList();
-                    var missingIds = request.SDGs.Where(id => !foundIds.Contains(id)).ToList();
+                    var missingIds = request.SDGIds.Where(id => !foundIds.Contains(id)).ToList();
                     throw new NotFoundException($"One or more SDG IDs were not found: {string.Join(", ", missingIds)}");
                 }
 

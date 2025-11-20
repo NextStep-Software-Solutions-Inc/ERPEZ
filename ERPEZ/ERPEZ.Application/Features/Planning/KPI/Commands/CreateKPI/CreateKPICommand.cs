@@ -18,7 +18,7 @@ public record CreateKPICommand : IRequest<ApiResponse<Guid>>
     public bool IsTargetValueAllocable { get; init; } = false;
 
     [JsonPropertyName("SDGs")]
-    public List<Guid> SDGs { get; init; } = [];
+    public List<Guid> SDGIds { get; init; } = [];
     [JsonPropertyName("KPIRatings")]
     public List<CreateKPIRatingRequest> KPIRatings { get; init; } = [];
     [JsonPropertyName("KPITargets")]

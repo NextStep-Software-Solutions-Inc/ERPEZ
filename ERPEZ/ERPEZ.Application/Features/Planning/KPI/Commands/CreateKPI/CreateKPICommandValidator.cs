@@ -49,7 +49,7 @@ public class CreateKPICommandValidator : AbstractValidator<CreateKPICommand>
                 .NotNull()
                 .WithMessage("Is Target Value Allocable must be provided (true or false).");
 
-        RuleForEach(x => x.SDGs)
+        RuleForEach(x => x.SDGIds)
                 .NotEmpty()
                 .WithMessage("SDG ID cannot be empty.");
 
