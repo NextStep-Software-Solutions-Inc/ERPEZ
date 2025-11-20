@@ -62,56 +62,76 @@ public class CreateKPICommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<C
             await unitOfWork.KPIRepository.AddAsync(kpi, cancellationToken);
             await unitOfWork.SaveChangesAsync(cancellationToken);
 
-            var mfoKPIs = new List<Domain.Entities.Planning.MFOKPI>();
-
-            var mfopapNames = request.MFOKPIs.Select(m => m.Name).Distinct().ToList();
-
-            var existingMfopapsQuery = unitOfWork.MFOPAPRepository
-                .Query()
-                .Where(m => mfopapNames.Contains(m.Name));
-
-            var existingMfopapsList = await unitOfWork.MFOPAPRepository.ToListAsync(existingMfopapsQuery, cancellationToken);
-            var existingMfopaps = existingMfopapsList.ToDictionary(m => m.Name);
-
-            foreach (var req in request.MFOKPIs)
+            if (request.MFOPAPIds.Count > 0)
             {
-                if (!existingMfopaps.TryGetValue(req.Name, out var mfopap))
+                var existingMfopapsQuery = unitOfWork.MFOPAPRepository
+                    .Query(m => request.MFOPAPIds.Contains(m.Id));
+
+                var existingMfopaps = await unitOfWork.MFOPAPRepository.ToListAsync(existingMfopapsQuery, cancellationToken);
+                
+                if (existingMfopaps.Count != request.MFOPAPIds.Count)
                 {
-                    mfopap = new Domain.Entities.Planning.MFOPAP { Name = req.Name };
-                    existingMfopaps.Add(req.Name, mfopap);
+                    var foundIds = existingMfopaps.Select(m => m.Id).ToList();
+                    var missingIds = request.MFOPAPIds.Where(id => !foundIds.Contains(id)).ToList();
+                    throw new NotFoundException($"One or more MFOPAP IDs were not found: {string.Join(", ", missingIds)}");
                 }
 
-                mfoKPIs.Add(new Domain.Entities.Planning.MFOKPI
-                {
-                    KPIId = kpi.Id,
-                    MFOPAP = mfopap
-                });
+                kpi.MFOPAPs = existingMfopaps;
             }
 
-            var sdgs = request.SDGs.Select(s => new Domain.Entities.Planning.SDG
+            if (request.SDGs.Count > 0)
             {
-                Name = s.Name
-            }).ToList();
+                var existingSDGsQuery = unitOfWork.SDGRepository
+                    .Query(s => request.SDGs.Contains(s.Id));
+
+                var existingSDGs = await unitOfWork.SDGRepository.ToListAsync(existingSDGsQuery, cancellationToken);
+                
+                if (existingSDGs.Count != request.SDGs.Count)
+                {
+                    var foundIds = existingSDGs.Select(s => s.Id).ToList();
+                    var missingIds = request.SDGs.Where(id => !foundIds.Contains(id)).ToList();
+                    throw new NotFoundException($"One or more SDG IDs were not found: {string.Join(", ", missingIds)}");
+                }
+
+                kpi.SDGs = existingSDGs;
+            }
+
+            if (request.Attributes.Count > 0)
+            {
+                var existingAttributesQuery = unitOfWork.AttributeRepository
+                    .Query(a => request.Attributes.Contains(a.Id));
+
+                var existingAttributes = await unitOfWork.AttributeRepository.ToListAsync(existingAttributesQuery, cancellationToken);
+                
+                if (existingAttributes.Count != request.Attributes.Count)
+                {
+                    var foundIds = existingAttributes.Select(a => a.Id).ToList();
+                    var missingIds = request.Attributes.Where(id => !foundIds.Contains(id)).ToList();
+                    throw new NotFoundException($"One or more Attribute IDs were not found: {string.Join(", ", missingIds)}");
+                }
+
+                kpi.Attributes = existingAttributes;
+            }
 
             var kpiRatings = request.KPIRatings
-                .SelectMany(targetRequest => targetRequest.NumericalRatings.Select(targetValueDto => new Domain.Entities.Planning.KPIRating
+                .SelectMany(ratingRequest => ratingRequest.Ratings.Select(ratingDto => new Domain.Entities.Planning.KPIRating
                 {
                     KPIId = kpi.Id,
-                    PerformanceMeasureId = targetRequest.PerformanceMeasureId,
-                    NumericalRating = targetValueDto.NumericalRating,
-                    Remarks = targetValueDto.Remarks
+                    PerformanceMeasureId = ratingRequest.PerformanceMeasureId,
+                    NumericalRating = ratingDto.Value,
+                    Remarks = ratingDto.Remarks
                 })).ToList();
 
-            var kpiTargets = request.KPITargets.TargetValues
-                .Select(targetValueDto => new Domain.Entities.Planning.KPITarget
+            var kpiTargets = request.KPITargets
+                .Select(targetRequest => new Domain.Entities.Planning.KPITarget
                 {
                     KPIId = kpi.Id,
-                    TargetValue = targetValueDto.TargetValue,
-                    QuarterName = targetValueDto.QuarterName,
-                    Period = request.KPITargets.Period,
+                    TargetValue = targetRequest.TargetValue,
+                    QuarterName = targetRequest.QuarterName,
+                    Period = targetRequest.Period,
                 }).ToList();
 
-            var kpiModeOfVerifications = request.KPIModeOfVerifications.Select(m => new Domain.Entities.Planning.KPIModeOfVerification
+            var kpiModeOfVerifications = request.KPIMOVs.Select(m => new Domain.Entities.Planning.KPIModeOfVerification
             {
                 KPIId = kpi.Id,
                 Name = m.Name,
@@ -119,17 +139,9 @@ public class CreateKPICommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<C
                 Url = m.Url
             }).ToList();
 
-            var attributes = request.KPIAttributes.Select(a => new Domain.Entities.Planning.Attribute
-            {
-                Name = a.Name
-            }).ToList();
-
-            kpi.MFOKPIs = mfoKPIs;
-            kpi.SDGs = sdgs;
             kpi.KPIRatings = kpiRatings;
             kpi.KPITargets = kpiTargets;
             kpi.KPIModeOfVerifications = kpiModeOfVerifications;
-            kpi.Attributes = attributes;
 
             unitOfWork.KPIRepository.Update(kpi);
             await unitOfWork.SaveChangesAsync(cancellationToken);

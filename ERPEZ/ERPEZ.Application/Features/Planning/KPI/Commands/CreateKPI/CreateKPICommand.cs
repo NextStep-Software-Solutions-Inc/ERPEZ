@@ -1,4 +1,7 @@
-using ERPEZ.Application.Features.Planning.KPI.Dtos;
+using System.Text.Json.Serialization;
+using ERPEZ.Application.Features.Planning.KPIModeOfVerification.Dtos;
+using ERPEZ.Application.Features.Planning.KPIRating.Dtos;
+using ERPEZ.Application.Features.Planning.KPITarget.Dtos;
 using ERPEZ.Shared.Common;
 using MediatR;
 
@@ -14,10 +17,16 @@ public record CreateKPICommand : IRequest<ApiResponse<Guid>>
     public bool IsPercentage { get; init; } = false;
     public bool IsTargetValueAllocable { get; init; } = false;
 
-    public List<CreateSDGRequest> SDGs { get; set; } = [];
-    public List<CreateKPIRatingRequest> KPIRatings { get; set; } = [];
-    public CreateKPITargetRequest KPITargets { get; set; } = null!;
-    public List<CreateKPIModeOfVerificationRequest> KPIModeOfVerifications { get; set; } = [];
-    public List<CreateMFOKPIRequest> MFOKPIs { get; set; } = [];
-    public List<CreateKPIAttributeRequest> KPIAttributes { get; set; } = [];
+    [JsonPropertyName("SDGs")]
+    public List<Guid> SDGs { get; init; } = [];
+    [JsonPropertyName("KPIRatings")]
+    public List<CreateKPIRatingRequest> KPIRatings { get; init; } = [];
+    [JsonPropertyName("KPITargets")]
+    public List<CreateKPITargetRequest> KPITargets { get; init; } = [];
+    [JsonPropertyName("KPIMOVs")]
+    public List<CreateKPIMOVRequest> KPIMOVs { get; init; } = [];
+    [JsonPropertyName("MFOPAPIds")]
+    public List<Guid> MFOPAPIds { get; init; } = [];
+    [JsonPropertyName("Attributes")]
+    public List<Guid> Attributes { get; init; } = [];
 }

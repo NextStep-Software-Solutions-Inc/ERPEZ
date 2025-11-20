@@ -58,7 +58,6 @@ public static class DependencyInjection
         services.AddScoped<IDUKPIAssignmentRepository, DUKPIAssignmentRepository>();
         services.AddScoped<IKPIModeOfVerificationRepository, KPIModeOfVerificationRepository>();
         services.AddScoped<IReceivedFundRepository, ReceivedFundRepository>();
-        services.AddScoped<IMFOKPIRepository, MFOKPIRepository>();
         services.AddScoped<IKPIRepository, KPIRepository>();
         services.AddScoped<IOfficeRepository, OfficeRepository>();
         services.AddScoped<IDeliveryUnitRepository, DeliveryUnitRepository>();
@@ -74,6 +73,7 @@ public static class DependencyInjection
         services.AddScoped<IClusterRepository, ClusterRepository>();
         services.AddScoped<IActivityBudgetRequirementRepository, ActivityBudgetRequirementRepository>();
         services.AddScoped<IWFPObjectiveTargetRepository, WFPObjectiveTargetRepository>();
+        services.AddScoped<IAttributeRepository, AttributeRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         // Add Hangfire

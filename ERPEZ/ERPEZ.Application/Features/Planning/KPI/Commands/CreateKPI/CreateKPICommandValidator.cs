@@ -50,20 +50,18 @@ public class CreateKPICommandValidator : AbstractValidator<CreateKPICommand>
                 .WithMessage("Is Target Value Allocable must be provided (true or false).");
 
         RuleForEach(x => x.SDGs)
-                .ChildRules(sdg =>
-                {
-                    sdg.RuleFor(s => s.Name).NotEmpty().MaximumLength(200);
-                });
+                .NotEmpty()
+                .WithMessage("SDG ID cannot be empty.");
 
         RuleFor(x => x.KPITargets)
                 .NotNull()
-                .WithMessage("KPI Target is required.");
+                .WithMessage("KPI Targets is required.");
 
-        RuleFor(x => x.KPIAttributes)
-                .NotNull()
-                .WithMessage("KPI Attribute is required.");
+        RuleForEach(x => x.Attributes)
+                .NotEmpty()
+                .WithMessage("Attribute ID cannot be empty.");
 
-        RuleFor(x => x.KPIModeOfVerifications)
+        RuleFor(x => x.KPIMOVs)
                 .NotNull()
                 .WithMessage("KPI Mode of Verifications is required.");
 
@@ -71,8 +69,8 @@ public class CreateKPICommandValidator : AbstractValidator<CreateKPICommand>
                 .NotNull()
                 .WithMessage("KPI Ratings is required.");
 
-        RuleFor(x => x.MFOKPIs)
+        RuleFor(x => x.MFOPAPIds)
                 .NotNull()
-                .WithMessage("MFOKPI is required.");
+                .WithMessage("MFOPAP IDs is required.");
     }
 }

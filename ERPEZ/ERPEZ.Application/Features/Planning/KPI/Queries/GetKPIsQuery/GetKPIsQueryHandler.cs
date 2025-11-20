@@ -2,7 +2,7 @@ using ERPEZ.Application.Features.Planning.KPI.Dtos;
 using ERPEZ.Application.Features.Planning.KPIModeOfVerification.Dtos;
 using ERPEZ.Application.Features.Planning.KPIRating.Dtos;
 using ERPEZ.Application.Features.Planning.KPITarget.Dtos;
-using ERPEZ.Application.Features.Planning.MFOKPI.Dtos;
+using ERPEZ.Application.Features.Planning.MFOPAP.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
@@ -64,14 +64,14 @@ public class GetKPIsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetKP
                     Url = m.Url
                 }).ToList(),
 
-                MFOKPIs = kpi.MFOKPIs.Select(m => new MFOKPIDto
+                MFOPAPs = kpi.MFOPAPs.Select(m => new MFOPAPDto
                 {
                     Id = m.Id,
-                    KPIId = m.KPIId,
-                    MFOPAP = new()
-                    {
-                        Name = m.MFOPAP!.Name ?? ""
-                    }
+                    Name = m.Name,
+                    Code = m.Code,
+                    Type = m.Type,
+                    IsActive = m.IsActive,
+                    ParentId = m.ParentId
                 }).ToList(),
 
                 Attributes = kpi.Attributes.Select(m => new AttributeResponse
@@ -96,7 +96,7 @@ public class GetKPIsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetKP
             k => k.KPIRatings,
             k => k.KPITargets,
             k => k.KPIModeOfVerifications,
-            k => k.MFOKPIs,
+            k => k.MFOPAPs,
             k => k.Attributes,
             k => k.SDGs
         };

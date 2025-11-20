@@ -109,12 +109,17 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<KPI>()
             .HasMany(t => t.Attributes)
             .WithMany(m => m.KPIs)
-            .UsingEntity(tm => tm.ToTable("KPIAttribute"));
+            .UsingEntity(tm => tm.ToTable("KPIAttributes"));
 
         modelBuilder.Entity<KPI>()
             .HasMany(t => t.SDGs)
             .WithMany(m => m.KPIs)
             .UsingEntity(tm => tm.ToTable("KPISDGs"));
+
+        modelBuilder.Entity<KPI>()
+            .HasMany(k => k.MFOPAPs)
+            .WithMany(m => m.KPIs)
+            .UsingEntity(j => j.ToTable("MFOKPIs"));
 
         // DUKPIAssignment (Delivery Unit KPI Assignment)
         modelBuilder.Entity<DUKPIAssignment>()
@@ -650,22 +655,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasOne(r => r.PerformanceMeasure)
             .WithMany(m => m.OPCRRatings)
             .HasForeignKey(r => r.PerformanceMeasureId);
-
-
-        // MFOKPI
-        modelBuilder.Entity<MFOKPI>()
-            .HasIndex(m => new { m.MFOPAPId, m.KPIId })
-            .IsUnique();
-
-        modelBuilder.Entity<MFOKPI>()
-            .HasOne(m => m.MFOPAP)
-            .WithMany(p => p.MFOKPIs)
-            .HasForeignKey(m => m.MFOPAPId);
-
-        modelBuilder.Entity<MFOKPI>()
-            .HasOne(m => m.KPI)
-            .WithMany(k => k.MFOKPIs)
-            .HasForeignKey(m => m.KPIId);
 
         //Cluster
         modelBuilder.Entity<Cluster>()

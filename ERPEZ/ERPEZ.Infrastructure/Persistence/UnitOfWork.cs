@@ -32,7 +32,6 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IDUKPIAssignmentRepository dukpiAssignmentRepository;
     private readonly IKPIModeOfVerificationRepository kpiModeOfVerificationRepository;
     private readonly IReceivedFundRepository receivedFundRepository;
-    private readonly IMFOKPIRepository mfoKpiRepository;
     private readonly IKPIRepository kpiRepository;
     private readonly IDeliveryUnitRepository deliveryUnitRepository;
     private readonly IOfficeRepository officeRepository;
@@ -46,6 +45,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IClusterRepository clusterRepository;
     private readonly IWFPObjectiveTargetRepository wfpObjectiveTargetRepository;
     private readonly ISDGRepository sdgRepository;
+    private readonly IAttributeRepository attributeRepository;
 
     // Constructor initializes all repositories once
     public UnitOfWork(ApplicationDbContext context, IServiceProvider serviceProvider)
@@ -75,7 +75,6 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         dukpiAssignmentRepository = new DUKPIAssignmentRepository(context, sieveProcessor);
         kpiModeOfVerificationRepository = new KPIModeOfVerificationRepository(context, sieveProcessor);
         receivedFundRepository = new ReceivedFundRepository(context, sieveProcessor);
-        mfoKpiRepository = new MFOKPIRepository(context, sieveProcessor);
         kpiRepository = new KPIRepository(context, sieveProcessor);
         deliveryUnitRepository = new DeliveryUnitRepository(context, sieveProcessor);
         officeRepository = new OfficeRepository(context, sieveProcessor);
@@ -89,6 +88,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         clusterRepository = new ClusterRepository(context, sieveProcessor);
         wfpObjectiveTargetRepository = new WFPObjectiveTargetRepository(context, sieveProcessor);
         sdgRepository = new SDGRepository(context, sieveProcessor);
+        attributeRepository = new AttributeRepository(context, sieveProcessor);
     }
 
     // Public properties return cached instances
@@ -113,7 +113,6 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IDUKPIAssignmentRepository DUKPIAssignmentRepository => dukpiAssignmentRepository;
     public IKPIModeOfVerificationRepository KPIModeOfVerificationRepository => kpiModeOfVerificationRepository;
     public IReceivedFundRepository ReceivedFundRepository => receivedFundRepository;
-    public IMFOKPIRepository MFOKPIRepository => mfoKpiRepository;
     public IKPIRepository KPIRepository => kpiRepository;
     public IDeliveryUnitRepository DeliveryUnitRepository => deliveryUnitRepository;
     public IOfficeRepository OfficeRepository => officeRepository;
@@ -127,6 +126,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IClusterRepository ClusterRepository => clusterRepository;
     public IWFPObjectiveTargetRepository WFPObjectiveTargetRepository => wfpObjectiveTargetRepository;
     public ISDGRepository SDGRepository => sdgRepository;
+    public IAttributeRepository AttributeRepository => attributeRepository;
 
     public async Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default)
     {
