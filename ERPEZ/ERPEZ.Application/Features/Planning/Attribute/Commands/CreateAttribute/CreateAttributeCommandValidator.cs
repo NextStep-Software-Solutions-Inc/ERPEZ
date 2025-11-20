@@ -11,7 +11,6 @@ public class CreateAttributeCommandValidator : AbstractValidator<CreateAttribute
     {
         RuleFor(attribute => attribute.Name)
             .NotEmpty().WithMessage("Attribute name is required.")
-            .NotNull()
             .MaximumLength(200).WithMessage("Attribute name must not exceed 200 characters.");
 
         RuleFor(attribute => attribute.Code)

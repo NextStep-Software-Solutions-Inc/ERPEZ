@@ -2,9 +2,9 @@ namespace ERPEZ.Application.Features.Planning.Attribute.Dtos;
 
 public class AttributeResponse
 {
-    public Guid Id { get; set; }
-    public required string Name { get; set; }
-    public string? Code { get; set; }
-    public string? Description { get; set; }
-    public Guid? ParentAttributeId { get; set; }
+    public Guid Id { get; init; }
+    public required string Name { get; init; }
+    public string? Code { get; init; }
+    public string? Description { get; init; }
+    public Guid? ParentAttributeId { get; init; }
 }
