@@ -12,6 +12,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
 
     // Cached repositories with shared DbContext (created once)
     private readonly IPerformanceMeasureRepository performanceMeasureRepository;
+    private readonly IAttributeRepository attributeRepository;
     private readonly IOPCRRepository opcrRepository;
     private readonly IOPCRKPIRepository opcrKpiRepository;
     private readonly IOPCRActivityRepository opcrActivityRepository;
@@ -55,6 +56,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
 
         // Create and cache all repositories with shared context
         performanceMeasureRepository = new PerformanceMeasureRepository(context, sieveProcessor);
+        attributeRepository = new AttributeRepository(context, sieveProcessor);
         opcrRepository = new OPCRRepository(context, sieveProcessor);
         opcrKpiRepository = new OPCRKPIRepository(context, sieveProcessor);
         opcrActivityRepository = new OPCRActivityRepository(context, sieveProcessor);
@@ -93,6 +95,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
 
     // Public properties return cached instances
     public IPerformanceMeasureRepository PerformanceMeasureRepository => performanceMeasureRepository;
+    public IAttributeRepository AttributeRepository => attributeRepository;
     public IOPCRRepository OPCRRepository => opcrRepository;
     public IOPCRKPIRepository OPCRKPIRepository => opcrKpiRepository;
     public IOPCRActivityRepository OPCRActivityRepository => opcrActivityRepository;
