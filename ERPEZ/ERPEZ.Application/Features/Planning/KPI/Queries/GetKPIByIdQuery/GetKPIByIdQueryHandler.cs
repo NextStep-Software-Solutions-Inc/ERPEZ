@@ -3,7 +3,7 @@ using ERPEZ.Application.Features.Planning.KPI.Dtos;
 using ERPEZ.Application.Features.Planning.KPIModeOfVerification.Dtos;
 using ERPEZ.Application.Features.Planning.KPIRating.Dtos;
 using ERPEZ.Application.Features.Planning.KPITarget.Dtos;
-using ERPEZ.Application.Features.Planning.MFOKPI.Dtos;
+using ERPEZ.Application.Features.Planning.MFOPAP.Dtos;
 using ERPEZ.Application.Features.Planning.SDG.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
@@ -48,15 +48,15 @@ public class GetKPIByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
                 Url = m.Url
             }).ToList();
 
-        var mfoKPIs = kpi.MFOKPIs
-            .Select(m => new MFOKPIDto
+        var mfopaps = kpi.MFOPAPs
+            .Select(m => new MFOPAPDto
             {
                 Id = m.Id,
-                KPIId = m.KPIId,
-                MFOPAP = new()
-                {
-                    Name = m.MFOPAP!.Name
-                }
+                Name = m.Name,
+                Code = m.Code,
+                Type = m.Type,
+                IsActive = m.IsActive,
+                ParentId = m.ParentId
             }).ToList();
 
         var attributes = kpi.Attributes
@@ -93,7 +93,7 @@ public class GetKPIByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
             KPIRatings = kpiRatings,
             KPITargets = kpiTargets,
             KPIModeOfVerifications = modeOfVerification,
-            MFOKPIs = mfoKPIs,
+            MFOPAPs = mfopaps,
             Attributes = attributes,
             SDGs = sdgs
         };

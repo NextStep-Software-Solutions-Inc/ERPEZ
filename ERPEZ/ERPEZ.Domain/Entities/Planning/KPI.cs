@@ -31,7 +31,7 @@ public class KPI : BaseEntity
     public virtual List<KPIRating> KPIRatings { get; set; } = [];
     public virtual List<KPIModeOfVerification> KPIModeOfVerifications { get; set; } = [];
     public virtual List<DUKPIAssignment> KPIAssignments { get; set; } = [];
-    public virtual List<MFOKPI> MFOKPIs { get; set; } = [];
+    public virtual List<MFOPAP> MFOPAPs { get; set; } = [];
     public virtual List<OPCRKPI> OPCRKPIs { get; set; } = [];
     public virtual List<KPITarget> KPITargets { get; set; } = [];
     public virtual List<KPI> ParentKPIs { get; set; } = [];

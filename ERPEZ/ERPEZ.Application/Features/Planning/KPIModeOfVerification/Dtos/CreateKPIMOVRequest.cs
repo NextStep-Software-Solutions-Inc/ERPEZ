@@ -1,6 +1,6 @@
-namespace ERPEZ.Application.Features.Planning.KPI.Dtos;
+namespace ERPEZ.Application.Features.Planning.KPIModeOfVerification.Dtos;
 
-public class CreateKPIModeOfVerificationRequest
+public class CreateKPIMOVRequest
 {
     public Guid KPIId { get; set; }
     public string Name { get; set; } = string.Empty;

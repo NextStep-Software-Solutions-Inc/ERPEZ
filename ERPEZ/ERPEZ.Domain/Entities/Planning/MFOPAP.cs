@@ -18,5 +18,5 @@ public class MFOPAP : BaseEntity
     public virtual MFOPAP? ParentMFOPAP { get; set; }
     public virtual List<MFOPAP> MFOPAPs { get; set; } = [];
     public virtual List<Transaction> Transactions { get; set; } = [];
-    public virtual List<MFOKPI> MFOKPIs { get; set; } = [];
+    public virtual List<KPI> KPIs { get; set; } = [];
 }

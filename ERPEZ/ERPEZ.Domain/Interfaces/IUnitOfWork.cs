@@ -12,7 +12,6 @@ public interface IUnitOfWork
     IDUKPIAssignmentRepository DUKPIAssignmentRepository { get; }
     IKPIModeOfVerificationRepository KPIModeOfVerificationRepository { get; }
     IReceivedFundRepository ReceivedFundRepository { get; }
-    IMFOKPIRepository MFOKPIRepository { get; }
     IKPIRepository KPIRepository { get; }
     ILocationRepository LocationRepository { get; }
     IDeliveryUnitRepository DeliveryUnitRepository { get; }

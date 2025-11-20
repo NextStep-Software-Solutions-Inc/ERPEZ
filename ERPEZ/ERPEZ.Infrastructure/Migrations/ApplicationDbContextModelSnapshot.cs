@@ -35,7 +35,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("KPIsId");
 
-                    b.ToTable("KPIAttribute", "planning");
+                    b.ToTable("KPIAttributes", "planning");
                 });
 
             modelBuilder.Entity("DeliveryUnitOPCRActivity", b =>
@@ -819,50 +819,6 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("Locations", "planning");
-                });
-
-            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.MFOKPI", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("CreatedBy")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("DeletedBy")
-                        .HasColumnType("text");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
-
-                    b.Property<Guid>("KPIId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("MFOPAPId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("KPIId");
-
-                    b.HasIndex("MFOPAPId", "KPIId")
-                        .IsUnique();
-
-                    b.ToTable("MFOKPI", "planning");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.MFOPAP", b =>
@@ -2136,6 +2092,21 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.ToTable("WFPPAPDepartment", "planning");
                 });
 
+            modelBuilder.Entity("KPIMFOPAP", b =>
+                {
+                    b.Property<Guid>("KPIsId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("MFOPAPsId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("KPIsId", "MFOPAPsId");
+
+                    b.HasIndex("MFOPAPsId");
+
+                    b.ToTable("MFOKPIs", "planning");
+                });
+
             modelBuilder.Entity("KPISDG", b =>
                 {
                     b.Property<Guid>("KPIsId")
@@ -2370,25 +2341,6 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasForeignKey("ParentLocationId");
 
                     b.Navigation("ParentLocation");
-                });
-
-            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.MFOKPI", b =>
-                {
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.KPI", "KPI")
-                        .WithMany("MFOKPIs")
-                        .HasForeignKey("KPIId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.MFOPAP", "MFOPAP")
-                        .WithMany("MFOKPIs")
-                        .HasForeignKey("MFOPAPId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("KPI");
-
-                    b.Navigation("MFOPAP");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.MFOPAP", b =>
@@ -2733,6 +2685,21 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("WFPPAP");
                 });
 
+            modelBuilder.Entity("KPIMFOPAP", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.KPI", null)
+                        .WithMany()
+                        .HasForeignKey("KPIsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.MFOPAP", null)
+                        .WithMany()
+                        .HasForeignKey("MFOPAPsId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+                });
+
             modelBuilder.Entity("KPISDG", b =>
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Planning.KPI", null)
@@ -2806,8 +2773,6 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Navigation("KPITargets");
 
-                    b.Navigation("MFOKPIs");
-
                     b.Navigation("OPCRKPIs");
 
                     b.Navigation("ParentKPIs");
@@ -2827,8 +2792,6 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.MFOPAP", b =>
                 {
-                    b.Navigation("MFOKPIs");
-
                     b.Navigation("MFOPAPs");
 
                     b.Navigation("Transactions");
