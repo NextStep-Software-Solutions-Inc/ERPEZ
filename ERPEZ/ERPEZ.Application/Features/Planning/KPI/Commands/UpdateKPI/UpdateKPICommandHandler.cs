@@ -1,3 +1,4 @@
+using ERPEZ.Application.Interfaces;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -5,7 +6,7 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.KPI.Commands.UpdateKPI;
 
-public class UpdateKPICommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateKPICommand, ApiResponse<Unit>>
+public class UpdateKPICommandHandler(IUnitOfWork unitOfWork, IFileUploadService fileUploadService) : IRequestHandler<UpdateKPICommand, ApiResponse<Unit>>
 {
     public async Task<ApiResponse<Unit>> Handle(UpdateKPICommand request, CancellationToken cancellationToken)
     {
@@ -135,12 +136,18 @@ public class UpdateKPICommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<U
                 kpi.KPIModeOfVerifications.Clear();
                 foreach (var movRequest in request.Dto.KPIMOVs)
                 {
+                string? url = null;
+                if (movRequest.File != null)
+                {
+                    url = await fileUploadService.UploadFileAsync(movRequest.File, "uploads", cancellationToken);
+                }
+
                     var newMov = new Domain.Entities.Planning.KPIModeOfVerification
                     {
                         KPIId = kpi.Id,
                         Name = movRequest.Name,
                         Description = movRequest.Description,
-                        Url = movRequest.Url
+                        Url = url
                     };
                     kpi.KPIModeOfVerifications.Add(newMov);
                 }

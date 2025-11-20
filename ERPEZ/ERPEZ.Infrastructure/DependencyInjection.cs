@@ -1,4 +1,6 @@
+using ERPEZ.Application.Interfaces;
 using ERPEZ.Domain.Interfaces;
+using ERPEZ.Infrastructure.Services;
 using ERPEZ.Infrastructure.Persistence;
 using ERPEZ.Infrastructure.Persistence.Repositories;
 using Hangfire;
@@ -75,6 +77,7 @@ public static class DependencyInjection
         services.AddScoped<IWFPObjectiveTargetRepository, WFPObjectiveTargetRepository>();
         services.AddScoped<IAttributeRepository, AttributeRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddScoped<IFileUploadService, FileUploadService>();
 
         // Add Hangfire
         services.AddHangfire(config => config

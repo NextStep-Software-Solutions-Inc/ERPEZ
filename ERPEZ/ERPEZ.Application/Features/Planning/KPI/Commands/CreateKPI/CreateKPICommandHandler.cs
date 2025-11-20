@@ -1,3 +1,4 @@
+using ERPEZ.Application.Interfaces;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -5,7 +6,7 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.KPI.Commands.CreateKPI;
 
-public class CreateKPICommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateKPICommand, ApiResponse<Guid>>
+public class CreateKPICommandHandler(IUnitOfWork unitOfWork, IFileUploadService fileUploadService) : IRequestHandler<CreateKPICommand, ApiResponse<Guid>>
 {
     public async Task<ApiResponse<Guid>> Handle(CreateKPICommand request, CancellationToken cancellationToken)
     {
@@ -131,13 +132,23 @@ public class CreateKPICommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<C
                     Period = targetRequest.Period,
                 }).ToList();
 
-            var kpiModeOfVerifications = request.KPIMOVs.Select(m => new Domain.Entities.Planning.KPIModeOfVerification
+            var kpiModeOfVerifications = new List<Domain.Entities.Planning.KPIModeOfVerification>();
+            foreach (var m in request.KPIMOVs)
             {
-                KPIId = kpi.Id,
-                Name = m.Name,
-                Description = m.Description,
-                Url = m.Url
-            }).ToList();
+                string? url = null;
+                if (m.File != null)
+                {
+                    url = await fileUploadService.UploadFileAsync(m.File, "uploads", cancellationToken);
+                }
+
+                kpiModeOfVerifications.Add(new Domain.Entities.Planning.KPIModeOfVerification
+                {
+                    KPIId = kpi.Id,
+                    Name = m.Name,
+                    Description = m.Description,
+                    Url = url
+                });
+            }
 
             kpi.KPIRatings = kpiRatings;
             kpi.KPITargets = kpiTargets;
