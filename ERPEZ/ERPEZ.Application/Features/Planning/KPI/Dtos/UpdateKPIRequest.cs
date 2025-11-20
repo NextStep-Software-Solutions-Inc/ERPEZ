@@ -1,12 +1,30 @@
+using System.Text.Json.Serialization;
+using ERPEZ.Application.Features.Planning.KPIModeOfVerification.Dtos;
+using ERPEZ.Application.Features.Planning.KPIRating.Dtos;
+using ERPEZ.Application.Features.Planning.KPITarget.Dtos;
+
 namespace ERPEZ.Application.Features.Planning.KPI.Dtos;
 
-public class UpdateKPIRequest
+public record UpdateKPIRequest
 {
-    public Guid? ParentKPIId { get; set; }
-    public string FunctionType { get; set; } = string.Empty;
-    public string? Name { get; set; }
-    public string? Description { get; set; }
-    public bool? IsOfficeMandate { get; set; }
-    public bool? IsPercentage { get; set; }
-    public string? Status { get; set; }
+    public string? FunctionType { get; init; } = string.Empty;
+    public string Name { get; init; } = string.Empty;
+    public string? Description { get; init; } = string.Empty;
+    public bool? IsOfficeMandate { get; init; } = false;
+    public bool? IsPercentage { get; init; } = false;
+    public bool? IsTargetValueAllocable { get; init; } = false;
+    public string? Status { get; init; }
+
+    [JsonPropertyName("SDGs")]
+    public List<Guid> SDGIds { get; init; } = [];
+    [JsonPropertyName("KPIRatings")]
+    public List<CreateKPIRatingRequest> KPIRatings { get; init; } = [];
+    [JsonPropertyName("KPITargets")]
+    public List<CreateKPITargetRequest> KPITargets { get; init; } = [];
+    [JsonPropertyName("KPIMOVs")]
+    public List<CreateKPIMOVRequest> KPIMOVs { get; init; } = [];
+    [JsonPropertyName("MFOPAPIds")]
+    public List<Guid> MFOPAPIds { get; init; } = [];
+    [JsonPropertyName("Attributes")]
+    public List<Guid> Attributes { get; init; } = [];
 }

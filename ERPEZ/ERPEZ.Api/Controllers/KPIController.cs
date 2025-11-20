@@ -50,12 +50,7 @@ namespace ERPEZ.Api.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateKPI(Guid id, [FromBody] UpdateKPIRequest dto)
         {
-            var command = new UpdateKPICommand
-            {
-                Id = id,
-                UpdateKPI = dto
-            };
-
+            var command = new UpdateKPICommand(dto, id);
             var result = await mediator.Send(command);
             return result.Succeeded ? Ok(result) : BadRequest(result);
         }
