@@ -17,7 +17,7 @@ public record CreateKPICommand : IRequest<ApiResponse<Guid>>
     public bool IsPercentage { get; init; } = false;
     public bool IsTargetValueAllocable { get; init; } = false;
 
-    [JsonPropertyName("SDGs")]
+    [JsonPropertyName("SDGIds")]
     public List<Guid> SDGIds { get; init; } = [];
     [JsonPropertyName("KPIRatings")]
     public List<CreateKPIRatingRequest> KPIRatings { get; init; } = [];
@@ -27,6 +27,6 @@ public record CreateKPICommand : IRequest<ApiResponse<Guid>>
     public List<CreateKPIMOVRequest> KPIMOVs { get; init; } = [];
     [JsonPropertyName("MFOPAPIds")]
     public List<Guid> MFOPAPIds { get; init; } = [];
-    [JsonPropertyName("Attributes")]
-    public List<Guid> Attributes { get; init; } = [];
+    [JsonPropertyName("AttributeIds")]
+    public List<Guid> AttributeIds { get; init; } = [];
 }

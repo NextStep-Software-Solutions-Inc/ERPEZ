@@ -57,7 +57,7 @@ public class CreateKPICommandValidator : AbstractValidator<CreateKPICommand>
                 .NotNull()
                 .WithMessage("KPI Targets is required.");
 
-        RuleForEach(x => x.Attributes)
+        RuleForEach(x => x.AttributeIds)
                 .NotEmpty()
                 .WithMessage("Attribute ID cannot be empty.");
 

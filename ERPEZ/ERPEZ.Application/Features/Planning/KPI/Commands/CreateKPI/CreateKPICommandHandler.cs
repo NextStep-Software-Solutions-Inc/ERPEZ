@@ -96,17 +96,17 @@ public class CreateKPICommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<C
                 kpi.SDGs = existingSDGs;
             }
 
-            if (request.Attributes.Count > 0)
+            if (request.AttributeIds.Count > 0)
             {
                 var existingAttributesQuery = unitOfWork.AttributeRepository
-                    .Query(a => request.Attributes.Contains(a.Id));
+                    .Query(a => request.AttributeIds.Contains(a.Id));
 
                 var existingAttributes = await unitOfWork.AttributeRepository.ToListAsync(existingAttributesQuery, cancellationToken);
                 
-                if (existingAttributes.Count != request.Attributes.Count)
+                if (existingAttributes.Count != request.AttributeIds.Count)
                 {
                     var foundIds = existingAttributes.Select(a => a.Id).ToList();
-                    var missingIds = request.Attributes.Where(id => !foundIds.Contains(id)).ToList();
+                    var missingIds = request.AttributeIds.Where(id => !foundIds.Contains(id)).ToList();
                     throw new NotFoundException($"One or more Attribute IDs were not found: {string.Join(", ", missingIds)}");
                 }
 
