@@ -68,7 +68,7 @@ public class CreateKPICommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<C
                     .Query(m => request.MFOPAPIds.Contains(m.Id));
 
                 var existingMfopaps = await unitOfWork.MFOPAPRepository.ToListAsync(existingMfopapsQuery, cancellationToken);
-                
+
                 if (existingMfopaps.Count != request.MFOPAPIds.Count)
                 {
                     var foundIds = existingMfopaps.Select(m => m.Id).ToList();
@@ -85,7 +85,7 @@ public class CreateKPICommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<C
                     .Query(s => request.SDGIds.Contains(s.Id));
 
                 var existingSDGs = await unitOfWork.SDGRepository.ToListAsync(existingSDGsQuery, cancellationToken);
-                
+
                 if (existingSDGs.Count != request.SDGIds.Count)
                 {
                     var foundIds = existingSDGs.Select(s => s.Id).ToList();
@@ -102,7 +102,7 @@ public class CreateKPICommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<C
                     .Query(a => request.AttributeIds.Contains(a.Id));
 
                 var existingAttributes = await unitOfWork.AttributeRepository.ToListAsync(existingAttributesQuery, cancellationToken);
-                
+
                 if (existingAttributes.Count != request.AttributeIds.Count)
                 {
                     var foundIds = existingAttributes.Select(a => a.Id).ToList();

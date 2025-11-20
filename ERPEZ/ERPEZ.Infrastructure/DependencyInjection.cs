@@ -21,7 +21,7 @@ public static class DependencyInjection
         var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
         var services = builder.Services;
         var env = builder.Environment;
-        
+
 
         services.AddDbContext<ApplicationDbContext>(options =>
             {
