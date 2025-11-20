@@ -37,7 +37,6 @@ public interface IUnitOfWork
     IClusterRepository ClusterRepository { get; }
     IWFPObjectiveTargetRepository WFPObjectiveTargetRepository { get; }
     ISDGRepository SDGRepository { get; }
-    IAttributeRepository AttributeRepository { get; }
     Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default);
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
