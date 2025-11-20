@@ -15,7 +15,7 @@ public record UpdateKPIRequest
     public bool? IsTargetValueAllocable { get; init; } = false;
     public string? Status { get; init; }
 
-    [JsonPropertyName("SDGs")]
+    [JsonPropertyName("SDGIds")]
     public List<Guid> SDGIds { get; init; } = [];
     [JsonPropertyName("KPIRatings")]
     public List<CreateKPIRatingRequest> KPIRatings { get; init; } = [];
@@ -25,6 +25,6 @@ public record UpdateKPIRequest
     public List<CreateKPIMOVRequest> KPIMOVs { get; init; } = [];
     [JsonPropertyName("MFOPAPIds")]
     public List<Guid> MFOPAPIds { get; init; } = [];
-    [JsonPropertyName("Attributes")]
-    public List<Guid> Attributes { get; init; } = [];
+    [JsonPropertyName("AttributeIds")]
+    public List<Guid> AttributeIds { get; init; } = [];
 }

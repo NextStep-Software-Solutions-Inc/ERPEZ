@@ -59,7 +59,7 @@ public class UpdateKPICommandValidator : AbstractValidator<UpdateKPICommand>
         // 8. SDGIds (List<Guid>) - Optional for partial update
         RuleFor(x => x.SDGIds)
             .ForEach(sdgId => sdgId.NotEmpty().WithMessage("SDG ID must be a valid, non-empty GUID."))
-            .When(x => x.SDGIds != null && x.SDGIds.Any());
+            .When(x => x.SDGIds != null && x.SDGIds.Count != 0);
 
         // 9. KPIRatings (List<CreateKPIRatingRequest>) - Optional for partial update
         RuleFor(x => x.KPIRatings)
@@ -82,12 +82,12 @@ public class UpdateKPICommandValidator : AbstractValidator<UpdateKPICommand>
         // 12. MFOPAPIds (List<Guid>) - Optional for partial update
         RuleFor(x => x.MFOPAPIds)
             .ForEach(mfopapId => mfopapId.NotEmpty().WithMessage("MFOPAP ID must be a valid, non-empty GUID."))
-            .When(x => x.MFOPAPIds != null && x.MFOPAPIds.Any());
+            .When(x => x.MFOPAPIds != null && x.MFOPAPIds.Count != 0);
 
         // 13. Attributes (List<Guid>) - Optional for partial update
-        RuleFor(x => x.Attributes)
+        RuleFor(x => x.AttributeIds)
             .ForEach(attrId => attrId.NotEmpty().WithMessage("Attribute ID must be a valid, non-empty GUID."))
-            .When(x => x.Attributes != null && x.Attributes.Any());
+            .When(x => x.AttributeIds != null && x.AttributeIds.Count != 0);
 
     }
 }

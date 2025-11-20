@@ -73,10 +73,10 @@ public class UpdateKPICommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<U
         }
 
         // Handle Attributes - Only update if provided
-        if (request.Dto.Attributes.Count != 0)
+        if (request.Dto.AttributeIds.Count != 0)
         {
             kpi.Attributes.Clear();
-            var attrIds = request.Dto.Attributes.Distinct().ToList();
+            var attrIds = request.Dto.AttributeIds.Distinct().ToList();
             var attrs = await unitOfWork.AttributeRepository.ToListAsync(unitOfWork.AttributeRepository.Query(a => attrIds.Contains(a.Id)), cancellationToken);
             var attrsDict = attrs.ToDictionary(a => a.Id, a => a);
             foreach (var attrId in attrIds)
