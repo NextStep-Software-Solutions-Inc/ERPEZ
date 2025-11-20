@@ -1,8 +1,10 @@
+using ERPEZ.Application.Features.Planning.Attribute.Dtos;
 using ERPEZ.Application.Features.Planning.KPI.Dtos;
 using ERPEZ.Application.Features.Planning.KPIModeOfVerification.Dtos;
 using ERPEZ.Application.Features.Planning.KPIRating.Dtos;
 using ERPEZ.Application.Features.Planning.KPITarget.Dtos;
 using ERPEZ.Application.Features.Planning.MFOPAP.Dtos;
+using ERPEZ.Application.Features.Planning.SDG.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
