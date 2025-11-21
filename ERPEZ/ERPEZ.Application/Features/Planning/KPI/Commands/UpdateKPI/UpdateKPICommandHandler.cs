@@ -1,4 +1,5 @@
 using ERPEZ.Application.Interfaces;
+using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -122,7 +123,7 @@ public class UpdateKPICommandHandler(IUnitOfWork unitOfWork, IFileStorageService
                     var newTarget = new Domain.Entities.Planning.KPITarget
                     {
                         KPIId = kpi.Id,
-                        Period = targetRequest.Period,
+                        Period = Enum.Parse<PeriodEnum>(targetRequest.Period),
                         TargetValue = targetRequest.TargetValue,
                         QuarterName = targetRequest.QuarterName
                     };

@@ -682,8 +682,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<Cluster>()
             .HasMany(c => c.Offices)
             .WithOne(o => o.Cluster)
-            .HasForeignKey(o => o.ClusterId)
-            .IsRequired();
+            .HasForeignKey(o => o.ClusterId);
 
         //SDG
         modelBuilder.Entity<SDG>()

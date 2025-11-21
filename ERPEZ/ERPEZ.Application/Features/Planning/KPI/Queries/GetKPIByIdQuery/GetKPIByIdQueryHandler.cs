@@ -33,7 +33,7 @@ public class GetKPIByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
             {
                 Id = m.Id,
                 KPIId = m.KPIId,
-                Period = m.Period,
+                Period = m.Period.ToString(),
                 QuarterName = m.QuarterName,
                 TargetValue = m.TargetValue,
                 RemainingTargetValue = m.TargetValue, // Temporary value, will be calculated below

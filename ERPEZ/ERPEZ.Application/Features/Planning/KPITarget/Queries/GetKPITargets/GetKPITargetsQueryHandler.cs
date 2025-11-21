@@ -25,7 +25,7 @@ public class GetKPITargetsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler
             KPIId = kpiTarget.KPIId,
             TargetValue = kpiTarget.TargetValue,
             RemainingTargetValue = kpiTarget.TargetValue, // Will be calculated below
-            Period = kpiTarget.Period,
+            Period = kpiTarget.Period.ToString(),
             QuarterName = kpiTarget.QuarterName,
             CreatedAt = kpiTarget.CreatedAt,
             CreatedBy = kpiTarget.CreatedBy

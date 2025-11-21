@@ -1,4 +1,5 @@
 using ERPEZ.Application.Features.Planning.KPITarget.Dtos;
+using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -32,7 +33,7 @@ public class CreateKPITargetCommandHandler(IUnitOfWork unitOfWork)
         {
             KPIId = request.KPIId,
             TargetValue = targetValueToSave,
-            Period = request.Period,
+            Period = Enum.Parse<PeriodEnum>(request.Period),
             QuarterName = request.QuarterName
         };
 
@@ -44,7 +45,7 @@ public class CreateKPITargetCommandHandler(IUnitOfWork unitOfWork)
             KPIId = kpiTarget.KPIId,
             TargetValue = kpiTarget.TargetValue,
             RemainingTargetValue = kpiTarget.TargetValue,
-            Period = kpiTarget.Period,
+            Period = kpiTarget.Period.ToString(),
             QuarterName = kpiTarget.QuarterName,
             CreatedAt = kpiTarget.CreatedAt,
             CreatedBy = kpiTarget.CreatedBy

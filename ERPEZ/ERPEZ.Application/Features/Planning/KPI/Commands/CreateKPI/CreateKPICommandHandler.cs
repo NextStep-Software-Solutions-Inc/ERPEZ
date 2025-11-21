@@ -1,4 +1,5 @@
 using ERPEZ.Application.Interfaces;
+using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -129,7 +130,7 @@ public class CreateKPICommandHandler(IUnitOfWork unitOfWork, IFileStorageService
                     KPIId = kpi.Id,
                     TargetValue = targetRequest.TargetValue,
                     QuarterName = targetRequest.QuarterName,
-                    Period = targetRequest.Period,
+                    Period = Enum.Parse<PeriodEnum>(targetRequest.Period),
                 }).ToList();
 
             var kpiModeOfVerifications = new List<Domain.Entities.Planning.KPIModeOfVerification>();

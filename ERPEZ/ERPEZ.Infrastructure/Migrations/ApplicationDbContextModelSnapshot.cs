@@ -1283,7 +1283,7 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<Guid>("ClusterId")
+                    b.Property<Guid?>("ClusterId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("ContactNumber")
@@ -2526,9 +2526,7 @@ namespace ERPEZ.Infrastructure.Migrations
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Planning.Cluster", "Cluster")
                         .WithMany("Offices")
-                        .HasForeignKey("ClusterId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("ClusterId");
 
                     b.Navigation("Cluster");
                 });

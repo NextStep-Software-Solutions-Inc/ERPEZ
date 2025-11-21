@@ -1,3 +1,4 @@
+using ERPEZ.Domain.Enums;
 using FluentValidation;
 
 namespace ERPEZ.Application.Features.Planning.KPITarget.Commands.UpdateKPITarget;
@@ -25,7 +26,7 @@ public class UpdateKPITargetCommandValidator : AbstractValidator<UpdateKPITarget
         RuleFor(x => x.UpdateKPITarget.Period)
             .NotEmpty()
             .WithMessage("Period is required.")
-            .Must(period => validPeriods.Contains(period, StringComparer.OrdinalIgnoreCase))
+            .Must(period => validPeriods.Contains(period.ToString(), StringComparer.OrdinalIgnoreCase))
             .WithMessage($"Period must be one of the following: {string.Join(", ", validPeriods)}.");
 
         // 5. QuarterName (Optional, Valid Value, Required if Period is Quarterly)
@@ -40,7 +41,6 @@ public class UpdateKPITargetCommandValidator : AbstractValidator<UpdateKPITarget
         RuleFor(x => x.UpdateKPITarget.QuarterName)
             .NotEmpty()
             .WithMessage("Quarter Name is required when the Period is Quarterly.")
-            .When(x => !string.IsNullOrWhiteSpace(x.UpdateKPITarget.Period) &&
-                       x.UpdateKPITarget.Period.Equals("Quarterly", StringComparison.OrdinalIgnoreCase));
+            .When(x => !string.IsNullOrWhiteSpace(x.UpdateKPITarget.Period.ToString()) && x.UpdateKPITarget.Period.Equals(PeriodEnum.Quarterly));
     }
 }

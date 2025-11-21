@@ -6,6 +6,7 @@ namespace ERPEZ.Application.Features.Planning.KPI.Commands.CreateKPI;
 public class CreateKPICommandValidator : AbstractValidator<CreateKPICommand>
 {
     private readonly string[] validFunctionTypes = Enum.GetNames<FunctionTypeEnum>();
+    private readonly string[] validPeriods = Enum.GetNames<PeriodEnum>();
 
     public CreateKPICommandValidator()
     {
@@ -55,19 +56,95 @@ public class CreateKPICommandValidator : AbstractValidator<CreateKPICommand>
 
         RuleFor(x => x.KPITargets)
                 .NotNull()
-                .WithMessage("KPI Targets is required.");
+                .WithMessage("KPI Targets is required.")
+                .Must(targets => targets.Count > 0)
+                .WithMessage("At least one KPI Target must be provided.");
+
+        RuleForEach(x => x.KPITargets)
+                .ChildRules(target =>
+                {
+                    target.RuleFor(t => t.Period)
+                        .NotEmpty()
+                        .WithMessage("KPI Target Period is required.")
+                        .MaximumLength(50)
+                        .WithMessage("KPI Target Period cannot exceed 50 characters.")
+                        .Must(period => validPeriods.Contains(period))
+                        .WithMessage($"Period must be one of: {string.Join(", ", validPeriods)}.");
+
+                    target.RuleFor(t => t.TargetValue)
+                        .GreaterThanOrEqualTo(0)
+                        .WithMessage("KPI Target Value must be greater than or equal to 0.");
+
+                    target.RuleFor(t => t.QuarterName)
+                        .MaximumLength(100)
+                        .WithMessage("KPI Target Quarter Name cannot exceed 100 characters.")
+                        .When(t => !string.IsNullOrWhiteSpace(t.QuarterName));
+                });
+
+        RuleFor(x => x.KPIRatings)
+                .NotNull()
+                .WithMessage("KPI Ratings is required.")
+                .Must(ratings => ratings.Count > 0)
+                .WithMessage("At least one KPI Rating must be provided.");
+
+        RuleForEach(x => x.KPIRatings)
+                .ChildRules(rating =>
+                {
+                    rating.RuleFor(r => r.PerformanceMeasureId)
+                        .NotEmpty()
+                        .WithMessage("Performance Measure ID is required for KPI Rating.");
+
+                    rating.RuleFor(r => r.Ratings)
+                        .NotNull()
+                        .WithMessage("Ratings collection is required for KPI Rating.")
+                        .Must(r => r.Count > 0)
+                        .WithMessage("At least one rating value must be provided.");
+
+                    rating.RuleForEach(r => r.Ratings)
+                        .ChildRules(numericalRating =>
+                        {
+                            numericalRating.RuleFor(nr => nr.Value)
+                                .InclusiveBetween(1, 5)
+                                .WithMessage("Numerical rating value must be between 1 and 5.");
+
+                            numericalRating.RuleFor(nr => nr.Remarks)
+                                .MaximumLength(500)
+                                .WithMessage("Rating remarks cannot exceed 500 characters.")
+                                .When(nr => !string.IsNullOrWhiteSpace(nr.Remarks));
+                        });
+                });
+
+        RuleFor(x => x.KPIMOVs)
+                .NotNull()
+                .WithMessage("KPI Mode of Verifications is required.")
+                .Must(movs => movs.Count > 0)
+                .WithMessage("At least one KPI Mode of Verification must be provided.");
+
+        RuleForEach(x => x.KPIMOVs)
+                .ChildRules(mov =>
+                {
+                    mov.RuleFor(m => m.Name)
+                        .NotEmpty()
+                        .WithMessage("KPI MOV Name is required.")
+                        .MinimumLength(3)
+                        .WithMessage("KPI MOV Name must be at least 3 characters long.")
+                        .MaximumLength(200)
+                        .WithMessage("KPI MOV Name cannot exceed 200 characters.");
+
+                    mov.RuleFor(m => m.Description)
+                        .MaximumLength(1000)
+                        .WithMessage("KPI MOV Description cannot exceed 1000 characters.")
+                        .When(m => !string.IsNullOrWhiteSpace(m.Description));
+
+                    mov.RuleFor(m => m.FileId)
+                        .Must(id => !id.HasValue || id.Value != Guid.Empty)
+                        .WithMessage("If provided, the File ID must be a valid, non-empty GUID.")
+                        .When(m => m.FileId.HasValue);
+                });
 
         RuleForEach(x => x.AttributeIds)
                 .NotEmpty()
                 .WithMessage("Attribute ID cannot be empty.");
-
-        RuleFor(x => x.KPIMOVs)
-                .NotNull()
-                .WithMessage("KPI Mode of Verifications is required.");
-
-        RuleFor(x => x.KPIRatings)
-                .NotNull()
-                .WithMessage("KPI Ratings is required.");
 
         RuleFor(x => x.MFOPAPIds)
                 .NotNull()
