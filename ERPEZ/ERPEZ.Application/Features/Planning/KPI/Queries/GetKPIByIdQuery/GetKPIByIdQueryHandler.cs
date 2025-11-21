@@ -43,30 +43,15 @@ public class GetKPIByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
 
         // Calculate remaining target values
         var kpiTargetIds = kpiTargets.Select(t => t.Id).ToList();
-        if (kpiTargetIds.Any())
+        if (kpiTargetIds.Count != 0)
         {
-            var aggregatedAllocations = await unitOfWork.DUKPIAssignmentRepository.ToListAsync(
-                unitOfWork.DUKPIAssignmentRepository.Query(
-                    assignment => kpiTargetIds.Contains(assignment.KPITargetId))
-                    .GroupBy(a => a.KPITargetId)
-                    .Select(g => new { KPITargetId = g.Key, TotalAllocated = g.Sum(a => a.AllocatedTargetValue) }),
-                cancellationToken);
+            var allocationsByTarget = await unitOfWork.DUKPIAssignmentRepository.GetTotalAllocatedByKPITargetIdsAsync(kpiTargetIds, cancellationToken);
 
-            var allocationsByTarget = aggregatedAllocations
-                .ToDictionary(a => a.KPITargetId, a => a.TotalAllocated);
-
-            for (int i = 0; i < kpiTargets.Count; i++)
+            kpiTargets = [.. kpiTargets.Select(target => target with
             {
-                var target = kpiTargets[i];
-                if (allocationsByTarget.TryGetValue(target.Id, out var allocatedAmount))
-                {
-                    kpiTargets[i] = target with { RemainingTargetValue = target.TargetValue - allocatedAmount };
-                }
-                else
-                {
-                    kpiTargets[i] = target with { RemainingTargetValue = target.TargetValue };
-                }
-            }
+                RemainingTargetValue = target.TargetValue - 
+                    (allocationsByTarget.TryGetValue(target.Id, out var allocated) ? allocated : 0)
+            })];
         }
 
         var modeOfVerification = kpi.KPIModeOfVerifications

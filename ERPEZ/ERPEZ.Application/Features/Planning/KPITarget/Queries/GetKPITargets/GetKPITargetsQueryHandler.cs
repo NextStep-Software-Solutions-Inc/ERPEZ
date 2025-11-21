@@ -37,12 +37,7 @@ public class GetKPITargetsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler
         var kpiTargetIds = kpiTargets.Select(t => t.Id).ToList();
         if (kpiTargetIds.Count != 0)
         {
-            var aggregatedAllocationsQuery = unitOfWork.DUKPIAssignmentRepository.Query(
-                assignment => kpiTargetIds.Contains(assignment.KPITargetId))
-                .GroupBy(a => a.KPITargetId)
-                .Select(g => new { KPITargetId = g.Key, TotalAllocated = g.Sum(a => a.AllocatedTargetValue) });
-            var aggregatedAllocations = await unitOfWork.DUKPIAssignmentRepository.ToListAsync(aggregatedAllocationsQuery, cancellationToken);
-            var allocationsByTargetId = aggregatedAllocations.ToDictionary(a => a.KPITargetId, a => a.TotalAllocated);
+            var allocationsByTargetId = await unitOfWork.DUKPIAssignmentRepository.GetTotalAllocatedByKPITargetIdsAsync(kpiTargetIds, cancellationToken);
 
             // Calculate remaining target values using projection benefits
             kpiTargets = [.. kpiTargets.Select(target => target with
