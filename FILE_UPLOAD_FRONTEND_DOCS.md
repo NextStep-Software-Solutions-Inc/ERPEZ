@@ -13,6 +13,7 @@ The ERPEZ system provides a secure, two-step file upload mechanism designed for 
 **Purpose:** Upload a file to temporary storage and get a unique file identifier.
 
 **Request:**
+
 - Method: `POST`
 - Content-Type: `multipart/form-data`
 - Body: Form data with file
@@ -28,6 +29,7 @@ const response = await fetch('/api/files/upload', {
 ```
 
 **Response:**
+
 ```json
 {
   "succeeded": true,
@@ -37,6 +39,7 @@ const response = await fetch('/api/files/upload', {
 ```
 
 **Error Response:**
+
 ```json
 {
   "succeeded": false,
@@ -52,6 +55,7 @@ const response = await fetch('/api/files/upload', {
 **Purpose:** Download a file that has been promoted to permanent storage.
 
 **Request:**
+
 ```javascript
 const response = await fetch(`/api/files/download/${fileId}`);
 if (response.ok) {
@@ -321,16 +325,19 @@ const entityPayload = {
 ## File Storage Behavior
 
 ### Temporary Storage
+
 - Files uploaded to `/api/files/upload` are stored temporarily
 - Automatic cleanup after 1 hour
 - Files are not accessible until promoted
 
 ### Permanent Storage
+
 - Files are moved to permanent storage during business operations
 - Accessible via `/api/files/download/{fileId}`
 - Files persist until explicitly deleted
 
 ### Storage Providers
+
 - **Primary:** Azure Blob Storage (if configured)
 - **Fallback:** Local file system
 - **Migration:** Files can be moved between providers
@@ -340,6 +347,7 @@ const entityPayload = {
 ### Frontend Implementation
 
 1. **File Validation**
+
    ```javascript
    const validateFile = (file) => {
      const maxSize = 10 * 1024 * 1024; // 10MB
@@ -358,6 +366,7 @@ const entityPayload = {
    ```
 
 2. **Progress Indication**
+
    ```javascript
    const uploadWithProgress = async (file) => {
      return new Promise((resolve, reject) => {
@@ -390,6 +399,7 @@ const entityPayload = {
    ```
 
 3. **Error Recovery**
+
    ```javascript
    const uploadWithRetry = async (file, maxRetries = 3) => {
      for (let attempt = 1; attempt <= maxRetries; attempt++) {
@@ -423,6 +433,7 @@ const entityPayload = {
 ## API Response Types
 
 ### ApiResponse<T> Structure
+
 ```typescript
 interface ApiResponse<T> {
   succeeded: boolean;
@@ -432,11 +443,13 @@ interface ApiResponse<T> {
 ```
 
 ### File Upload Response
+
 ```typescript
 type FileUploadResponse = ApiResponse<string>; // Guid as string
 ```
 
 ### Business Operation Response
+
 ```typescript
 type CreateEntityResponse = ApiResponse<string>; // Entity ID as string
 ```
@@ -488,6 +501,7 @@ describe('File Upload', () => {
 ### Environment-Specific Settings
 
 **Development (`appsettings.Development.json`):**
+
 ```json
 {
   "AzureBlobStorage": {
@@ -499,6 +513,7 @@ describe('File Upload', () => {
 ```
 
 **Production (`appsettings.Production.json`):**
+
 ```json
 {
   "AzureBlobStorage": {
@@ -561,7 +576,6 @@ For additional support or questions about file upload implementation:
 ---
 
 **Note:** This documentation assumes a standard ERPEZ API setup. Environment-specific configurations may vary.
-
 
 </content>
 <parameter name="filePath">f:\projects\github\ERPEZ\FILE_UPLOAD_FRONTEND_DOCS.md
