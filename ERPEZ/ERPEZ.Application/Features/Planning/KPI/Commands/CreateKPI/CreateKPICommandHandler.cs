@@ -6,7 +6,7 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.KPI.Commands.CreateKPI;
 
-public class CreateKPICommandHandler(IUnitOfWork unitOfWork, IFileUploadService fileUploadService) : IRequestHandler<CreateKPICommand, ApiResponse<Guid>>
+public class CreateKPICommandHandler(IUnitOfWork unitOfWork, IFileStorageService fileStorageService) : IRequestHandler<CreateKPICommand, ApiResponse<Guid>>
 {
     public async Task<ApiResponse<Guid>> Handle(CreateKPICommand request, CancellationToken cancellationToken)
     {
@@ -136,9 +136,9 @@ public class CreateKPICommandHandler(IUnitOfWork unitOfWork, IFileUploadService 
             foreach (var m in request.KPIMOVs)
             {
                 string? url = null;
-                if (m.File != null)
+                if (m.FileId.HasValue)
                 {
-                    url = await fileUploadService.UploadFileAsync(m.File, "uploads", cancellationToken);
+                    url = await fileStorageService.PromoteFileAsync(m.FileId.Value);
                 }
 
                 kpiModeOfVerifications.Add(new Domain.Entities.Planning.KPIModeOfVerification

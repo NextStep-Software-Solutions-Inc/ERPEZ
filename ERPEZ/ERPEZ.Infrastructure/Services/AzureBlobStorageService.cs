@@ -1,0 +1,81 @@
+using Azure.Storage.Blobs;
+using Azure.Storage.Blobs.Models;
+using ERPEZ.Application.Interfaces;
+using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Options;
+
+namespace ERPEZ.Infrastructure.Services;
+
+public class AzureBlobStorageService : IFileStorageService
+{
+    private readonly BlobServiceClient blobServiceClient;
+    private readonly string tempContainer = "temp";
+    private readonly string permanentContainer = "permanent";
+    private readonly ILogger<AzureBlobStorageService> logger;
+
+    public AzureBlobStorageService(IOptions<AzureBlobStorageOptions> options, ILogger<AzureBlobStorageService> logger)
+    {
+        var connectionString = options.Value.ConnectionString;
+        blobServiceClient = new BlobServiceClient(connectionString);
+        this.logger = logger;
+        // Note: Containers should be created manually or via code if needed
+    }
+
+    public async Task<Guid> UploadTempAsync(Stream stream, string fileName)
+    {
+        var fileId = Guid.NewGuid();
+        var extension = Path.GetExtension(fileName);
+        var baseName = Path.GetFileNameWithoutExtension(fileName);
+        var blobName = $"{baseName}_{fileId}{extension}";
+
+        var containerClient = blobServiceClient.GetBlobContainerClient(tempContainer);
+        var blobClient = containerClient.GetBlobClient(blobName);
+
+        await blobClient.UploadAsync(stream, overwrite: true);
+        logger.LogInformation("Blob uploaded to temp: {BlobName}", blobName);
+        return fileId;
+    }
+
+    public async Task<string> PromoteFileAsync(Guid fileId)
+    {
+        var tempContainerClient = blobServiceClient.GetBlobContainerClient(tempContainer);
+        var permanentContainerClient = blobServiceClient.GetBlobContainerClient(permanentContainer);
+
+        var blobs = tempContainerClient.GetBlobsAsync(prefix: fileId.ToString());
+        await foreach (var blobItem in blobs)
+        {
+            var blobName = blobItem.Name;
+            var tempBlobClient = tempContainerClient.GetBlobClient(blobName);
+            var permanentBlobClient = permanentContainerClient.GetBlobClient(blobName);
+
+            // Copy to permanent
+            var copyOperation = await permanentBlobClient.StartCopyFromUriAsync(tempBlobClient.Uri);
+            await copyOperation.WaitForCompletionAsync();
+
+            // Delete from temp
+            await tempBlobClient.DeleteAsync();
+
+            logger.LogInformation("Blob promoted: {BlobName}", blobName);
+            return $"{permanentContainerClient.Uri}/{blobName}";
+        }
+
+        throw new FileNotFoundException($"Temp blob with ID {fileId} not found.");
+    }
+
+    public async Task DeleteExpiredTempFilesAsync(TimeSpan retentionPeriod)
+    {
+        var containerClient = blobServiceClient.GetBlobContainerClient(tempContainer);
+        var expirationTime = DateTimeOffset.UtcNow.Subtract(retentionPeriod);
+
+        var blobs = containerClient.GetBlobsAsync();
+        await foreach (var blobItem in blobs)
+        {
+            if (blobItem.Properties.LastModified < expirationTime)
+            {
+                var blobClient = containerClient.GetBlobClient(blobItem.Name);
+                await blobClient.DeleteAsync();
+                logger.LogInformation("Deleted expired temp blob: {BlobName}", blobItem.Name);
+            }
+        }
+    }
+}

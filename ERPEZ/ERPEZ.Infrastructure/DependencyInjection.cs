@@ -24,6 +24,7 @@ public static class DependencyInjection
         var services = builder.Services;
         var env = builder.Environment;
 
+        services.Configure<AzureBlobStorageOptions>(builder.Configuration.GetSection("AzureBlobStorage"));
 
         services.AddDbContext<ApplicationDbContext>(options =>
             {
@@ -77,7 +78,10 @@ public static class DependencyInjection
         services.AddScoped<IWFPObjectiveTargetRepository, WFPObjectiveTargetRepository>();
         services.AddScoped<IAttributeRepository, AttributeRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
-        services.AddScoped<IFileUploadService, FileUploadService>();
+        services.AddScoped<LocalFileStorageService>();
+        services.AddScoped<AzureBlobStorageService>();
+        services.AddScoped<IFileStorageService, FallbackFileStorageService>();
+        services.AddHostedService<TempFileCleanupService>();
 
         // Add Hangfire
         services.AddHangfire(config => config
