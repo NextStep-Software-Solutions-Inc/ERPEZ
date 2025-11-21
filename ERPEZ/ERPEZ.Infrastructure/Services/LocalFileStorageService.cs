@@ -101,22 +101,25 @@ public class LocalFileStorageService : IFileStorageService
 
     public async Task<(string fileName, Stream stream)?> GetPermanentFileAsync(Guid fileId)
     {
-        var permanentPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "files", "permanent");
-        if (!Directory.Exists(permanentPath))
+        return await Task.Run<(string fileName, Stream stream)?>(() =>
         {
-            return null;
-        }
+            var permanentPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "files", "permanent");
+            if (!Directory.Exists(permanentPath))
+            {
+                return null;
+            }
 
-        var files = Directory.GetFiles(permanentPath, $"*{fileId}*");
-        if (files.Length == 0)
-        {
-            return null;
-        }
+            var files = Directory.GetFiles(permanentPath, $"*{fileId}*");
+            if (files.Length == 0)
+            {
+                return null;
+            }
 
-        var filePath = files[0];
-        var fileName = Path.GetFileName(filePath);
-        var stream = File.OpenRead(filePath);
-        return (fileName, stream);
+            var filePath = files[0];
+            var fileName = Path.GetFileName(filePath);
+            var stream = File.OpenRead(filePath);
+            return (fileName, stream);
+        });
     }
 
     public async Task UploadPermanentAsync(string fileName, Stream stream)
@@ -132,23 +135,26 @@ public class LocalFileStorageService : IFileStorageService
 
     public async Task DeletePermanentAsync(Guid fileId)
     {
-        var permanentPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "files", "permanent");
-        if (!Directory.Exists(permanentPath))
+        await Task.Run(() =>
         {
-            return;
-        }
+            var permanentPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "files", "permanent");
+            if (!Directory.Exists(permanentPath))
+            {
+                return;
+            }
 
-        var files = Directory.GetFiles(permanentPath, $"*{fileId}*");
-        foreach (var file in files)
-        {
-            try
+            var files = Directory.GetFiles(permanentPath, $"*{fileId}*");
+            foreach (var file in files)
             {
-                File.Delete(file);
+                try
+                {
+                    File.Delete(file);
+                }
+                catch (Exception ex)
+                {
+                    logger.LogError(ex, "Error deleting permanent file: {FileName}", Path.GetFileName(file));
+                }
             }
-            catch (Exception ex)
-            {
-                logger.LogError(ex, "Error deleting permanent file: {FileName}", Path.GetFileName(file));
-            }
-        }
+        });
     }
 }
