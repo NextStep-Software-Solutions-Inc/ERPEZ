@@ -1,6 +1,6 @@
 using Azure.Storage.Blobs;
-using Azure.Storage.Blobs.Models;
 using ERPEZ.Application.Interfaces;
+using ERPEZ.Domain.Enums;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 
@@ -79,7 +79,7 @@ public class AzureBlobStorageService : IFileStorageService
         }
     }
 
-    public Task<bool> MigrateFileAsync(Guid fileId, StorageProvider fromProvider, StorageProvider toProvider)
+    public Task<bool> MigrateFileAsync(Guid fileId, StorageProviderEnum fromProvider, StorageProviderEnum toProvider)
     {
         // Azure storage doesn't support migration to other providers
         // Migration should be handled by FallbackFileStorageService
