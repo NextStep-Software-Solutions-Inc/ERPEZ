@@ -8,7 +8,7 @@ The ERPEZ system provides a secure, two-step file upload mechanism designed for 
 
 ### 1. Upload File to Temporary Storage
 
-**Endpoint:** `POST /api/files/upload`
+**Endpoint:** `POST /files/upload`
 
 **Purpose:** Upload a file to temporary storage and get a unique file identifier.
 
@@ -22,7 +22,7 @@ The ERPEZ system provides a secure, two-step file upload mechanism designed for 
 const formData = new FormData();
 formData.append('file', selectedFile);
 
-const response = await fetch('/api/files/upload', {
+const response = await fetch('/files/upload', {
   method: 'POST',
   body: formData
 });
@@ -50,14 +50,14 @@ const response = await fetch('/api/files/upload', {
 
 ### 2. Download File from Permanent Storage
 
-**Endpoint:** `GET /api/files/download/{fileId}`
+**Endpoint:** `GET /files/download/{fileId}`
 
 **Purpose:** Download a file that has been promoted to permanent storage.
 
 **Request:**
 
 ```javascript
-const response = await fetch(`/api/files/download/${fileId}`);
+const response = await fetch(`/files/download/${fileId}`);
 if (response.ok) {
   const blob = await response.blob();
   // Handle the downloaded file
@@ -77,7 +77,7 @@ async function uploadFile(file) {
     const formData = new FormData();
     formData.append('file', file);
 
-    const response = await fetch('/api/files/upload', {
+    const response = await fetch('/files/upload', {
       method: 'POST',
       body: formData
     });
@@ -116,7 +116,7 @@ async function createKPI(kpiData, file) {
       }]
     };
 
-    const response = await fetch('/api/kpi', {
+    const response = await fetch('/kpi', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -141,7 +141,7 @@ async function createKPI(kpiData, file) {
 // Download/View file
 async function downloadFile(fileId) {
   try {
-    const response = await fetch(`/api/files/download/${fileId}`);
+    const response = await fetch(`/files/download/${fileId}`);
 
     if (!response.ok) {
       throw new Error('File not found');
@@ -186,7 +186,7 @@ function FileUploadComponent() {
       const formData = new FormData();
       formData.append('file', selectedFile);
 
-      const response = await fetch('/api/files/upload', {
+      const response = await fetch('/files/upload', {
         method: 'POST',
         body: formData
       });
@@ -210,7 +210,7 @@ function FileUploadComponent() {
     if (!uploadedFileId) return;
 
     try {
-      const response = await fetch(`/api/files/download/${uploadedFileId}`);
+      const response = await fetch(`/files/download/${uploadedFileId}`);
 
       if (!response.ok) {
         throw new Error('File not found');
@@ -326,14 +326,14 @@ const entityPayload = {
 
 ### Temporary Storage
 
-- Files uploaded to `/api/files/upload` are stored temporarily
+- Files uploaded to `/files/upload` are stored temporarily
 - Automatic cleanup after 1 hour
 - Files are not accessible until promoted
 
 ### Permanent Storage
 
 - Files are moved to permanent storage during business operations
-- Accessible via `/api/files/download/{fileId}`
+- Accessible via `/files/download/{fileId}`
 - Files persist until explicitly deleted
 
 ### Storage Providers
@@ -392,7 +392,7 @@ const entityPayload = {
        const formData = new FormData();
        formData.append('file', file);
 
-       xhr.open('POST', '/api/files/upload');
+       xhr.open('POST', '/files/upload');
        xhr.send(formData);
      });
    };
