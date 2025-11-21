@@ -1,12 +1,13 @@
 namespace ERPEZ.Application.Features.Planning.KPITarget.Dtos;
 
-public class KPITargetResponse
+public record KPITargetResponse
 {
-    public Guid Id { get; set; }
-    public Guid KPIId { get; set; }
-    public decimal TargetValue { get; set; }
-    public string Period { get; set; } = string.Empty;
-    public string? QuarterName { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public string CreatedBy { get; set; } = string.Empty;
+    public required Guid Id { get; init; }
+    public required Guid KPIId { get; init; }
+    public required decimal TargetValue { get; init; }
+    public required decimal RemainingTargetValue { get; init; }
+    public required string Period { get; init; } = string.Empty;
+    public string? QuarterName { get; init; }
+    public required DateTime CreatedAt { get; init; }
+    public required string CreatedBy { get; init; } = string.Empty;
 }

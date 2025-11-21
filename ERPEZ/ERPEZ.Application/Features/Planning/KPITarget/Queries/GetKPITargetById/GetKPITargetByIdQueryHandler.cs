@@ -10,23 +10,21 @@ public class GetKPITargetByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHand
 {
     public async Task<ApiResponse<KPITargetResponse>> Handle(GetKPITargetByIdQuery request, CancellationToken cancellationToken)
     {
-        var kpiTarget = await unitOfWork.KPITargetRepository.FindAsync(
-           t => t.Id == request.Id,
-            cancellationToken: cancellationToken) ?? throw new NotFoundException("No data found.");
+        var kpiTarget = await unitOfWork.KPITargetRepository.FindAsync(t => t.Id == request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("No data found.");
 
-        decimal kpiTargetValue = kpiTarget.TargetValue;
-
-        var kpi = await unitOfWork.KPIRepository.GetByIdAsync(kpiTarget.KPIId, cancellationToken: cancellationToken);
-        if (kpi != null && kpi.IsPercentage)
-        {
-            kpiTargetValue = kpiTarget.TargetValue * 100;
-        }
+        // Get only the DU KPI assignments for this specific KPI target
+        var emptySieveModel = new Sieve.Models.SieveModel();
+        var (duAllocations, _) = await unitOfWork.DUKPIAssignmentRepository.GetAllAsync(emptySieveModel, cancellationToken: cancellationToken);
+        var totalAllocated = duAllocations
+            .Where(a => a.KPITargetId == request.Id)
+            .Sum(a => a.AllocatedTargetValue);
 
         var result = new KPITargetResponse()
         {
             Id = kpiTarget.Id,
             KPIId = kpiTarget.KPIId,
-            TargetValue = kpiTargetValue,
+            TargetValue = kpiTarget.TargetValue,
+            RemainingTargetValue = kpiTarget.TargetValue - totalAllocated,
             Period = kpiTarget.Period,
             QuarterName = kpiTarget.QuarterName,
             CreatedAt = kpiTarget.CreatedAt,
