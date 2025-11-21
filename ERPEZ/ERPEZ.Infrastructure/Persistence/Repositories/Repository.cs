@@ -94,7 +94,7 @@ public class Repository<T>(ApplicationDbContext context, ISieveProcessor sievePr
         return context.Set<T>().IgnoreQueryFilters();
     }
 
-    public async Task<List<T>> ToListAsync(IQueryable<T> query, CancellationToken cancellationToken = default)
+    public async Task<List<TResult>> ToListAsync<TResult>(IQueryable<TResult> query, CancellationToken cancellationToken = default)
     {
         ArgumentNullException.ThrowIfNull(query);
         return await query.ToListAsync(cancellationToken);

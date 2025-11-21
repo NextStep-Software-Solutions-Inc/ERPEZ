@@ -14,7 +14,7 @@ public interface IRepository<T> where T : BaseEntity
 
     IQueryable<T> IgnoreQueryFilters();
 
-    Task<List<T>> ToListAsync(IQueryable<T> query, CancellationToken cancellationToken = default);
+    Task<List<TResult>> ToListAsync<TResult>(IQueryable<TResult> query, CancellationToken cancellationToken = default);
 
     Task<TEntity?> GetSingleAsync<TEntity>(IQueryable<TEntity> query, CancellationToken cancellationToken = default);
 

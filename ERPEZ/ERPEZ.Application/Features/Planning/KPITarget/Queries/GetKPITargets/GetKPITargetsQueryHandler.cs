@@ -2,6 +2,7 @@ using ERPEZ.Application.Features.Planning.KPITarget.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
+using System.Linq.Expressions;
 
 namespace ERPEZ.Application.Features.Planning.KPITarget.Queries.GetKPITargets;
 
@@ -17,48 +18,40 @@ public class GetKPITargetsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler
             Sorts = query.Sorts
         };
 
-        // First get the KPI targets
-        var (kpiTargets, totalCount) = await unitOfWork.KPITargetRepository.GetAllAsync(sieveModel, cancellationToken: cancellationToken);
+        // Get KPI targets with basic projection
+        Expression<Func<Domain.Entities.Planning.KPITarget, KPITargetResponse>> projection = kpiTarget => new KPITargetResponse
+        {
+            Id = kpiTarget.Id,
+            KPIId = kpiTarget.KPIId,
+            TargetValue = kpiTarget.TargetValue,
+            RemainingTargetValue = kpiTarget.TargetValue, // Will be calculated below
+            Period = kpiTarget.Period,
+            QuarterName = kpiTarget.QuarterName,
+            CreatedAt = kpiTarget.CreatedAt,
+            CreatedBy = kpiTarget.CreatedBy
+        };
 
-        // Get only the DU KPI assignments for these specific KPI targets
+        var (kpiTargets, totalCount) = await unitOfWork.KPITargetRepository.GetAllAsync(sieveModel, projection, cancellationToken: cancellationToken);
+
+        // Get only the DU KPI assignments for these specific KPI targets using custom filter
         var kpiTargetIds = kpiTargets.Select(t => t.Id).ToList();
-        if (kpiTargetIds.Any())
+        if (kpiTargetIds.Count != 0)
         {
-            var emptySieveModel = new Sieve.Models.SieveModel();
-            var (duAllocations, _) = await unitOfWork.DUKPIAssignmentRepository.GetAllAsync(emptySieveModel, cancellationToken: cancellationToken);
-            var relevantAllocations = duAllocations.Where(a => kpiTargetIds.Contains(a.KPITargetId)).ToList();
-            var allocationsByTargetId = relevantAllocations
+            var aggregatedAllocationsQuery = unitOfWork.DUKPIAssignmentRepository.Query(
+                assignment => kpiTargetIds.Contains(assignment.KPITargetId))
                 .GroupBy(a => a.KPITargetId)
-                .ToDictionary(g => g.Key, g => g.Sum(a => a.AllocatedTargetValue));
+                .Select(g => new { KPITargetId = g.Key, TotalAllocated = g.Sum(a => a.AllocatedTargetValue) });
+            var aggregatedAllocations = await unitOfWork.DUKPIAssignmentRepository.ToListAsync(aggregatedAllocationsQuery, cancellationToken);
+            var allocationsByTargetId = aggregatedAllocations.ToDictionary(a => a.KPITargetId, a => a.TotalAllocated);
 
-            // Project to response DTOs with calculated remaining values
-            var result = kpiTargets.Select(kpiTarget => new KPITargetResponse
+            // Calculate remaining target values using projection benefits
+            kpiTargets = [.. kpiTargets.Select(target => target with
             {
-                Id = kpiTarget.Id,
-                KPIId = kpiTarget.KPIId,
-                TargetValue = kpiTarget.TargetValue,
-                RemainingTargetValue = kpiTarget.TargetValue -
-                    (allocationsByTargetId.TryGetValue(kpiTarget.Id, out var allocated) ? allocated : 0),
-                Period = kpiTarget.Period,
-                QuarterName = kpiTarget.QuarterName,
-                CreatedAt = kpiTarget.CreatedAt,
-                CreatedBy = kpiTarget.CreatedBy
-            }).ToList();
-
-            return new PaginatedApiResponse<KPITargetResponse>(
-                [.. result],
-                query.PageNumber,
-                query.PageSize,
-                totalCount);
+                RemainingTargetValue = target.TargetValue -
+                    (allocationsByTargetId.TryGetValue(target.Id, out var allocated) ? allocated : 0)
+            })];
         }
-        else
-        {
-            // No KPI targets, return empty result
-            return new PaginatedApiResponse<KPITargetResponse>(
-                [],
-                query.PageNumber,
-                query.PageSize,
-                0);
-        }
+        
+        return new PaginatedApiResponse<KPITargetResponse>([.. kpiTargets],  query.PageNumber, query.PageSize, totalCount);
     }
 }

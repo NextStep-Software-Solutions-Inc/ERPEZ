@@ -35,8 +35,39 @@ public class GetKPIByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
                 KPIId = m.KPIId,
                 Period = m.Period,
                 QuarterName = m.QuarterName,
-                TargetValue = m.TargetValue
+                TargetValue = m.TargetValue,
+                RemainingTargetValue = m.TargetValue, // Temporary value, will be calculated below
+                CreatedAt = m.CreatedAt,
+                CreatedBy = m.CreatedBy
             }).ToList();
+
+        // Calculate remaining target values
+        var kpiTargetIds = kpiTargets.Select(t => t.Id).ToList();
+        if (kpiTargetIds.Any())
+        {
+            var aggregatedAllocations = await unitOfWork.DUKPIAssignmentRepository.ToListAsync(
+                unitOfWork.DUKPIAssignmentRepository.Query(
+                    assignment => kpiTargetIds.Contains(assignment.KPITargetId))
+                    .GroupBy(a => a.KPITargetId)
+                    .Select(g => new { KPITargetId = g.Key, TotalAllocated = g.Sum(a => a.AllocatedTargetValue) }),
+                cancellationToken);
+
+            var allocationsByTarget = aggregatedAllocations
+                .ToDictionary(a => a.KPITargetId, a => a.TotalAllocated);
+
+            for (int i = 0; i < kpiTargets.Count; i++)
+            {
+                var target = kpiTargets[i];
+                if (allocationsByTarget.TryGetValue(target.Id, out var allocatedAmount))
+                {
+                    kpiTargets[i] = target with { RemainingTargetValue = target.TargetValue - allocatedAmount };
+                }
+                else
+                {
+                    kpiTargets[i] = target with { RemainingTargetValue = target.TargetValue };
+                }
+            }
+        }
 
         var modeOfVerification = kpi.KPIModeOfVerifications
             .Select(m => new KPIModeOfVerificationDto
@@ -75,7 +106,6 @@ public class GetKPIByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
             Name = m.Name,
             Description = m.Description
         }).ToList();
-
 
         var dto = new KPIResponse()
         {

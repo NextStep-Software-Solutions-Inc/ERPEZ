@@ -39,7 +39,16 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<WFPOutcome>? WFPOutcomes { get; set; }
     public DbSet<Attribute>? Attributes { get; set; }
     public DbSet<Cluster>? Clusters { get; set; }
+    public DbSet<DeliveryUnit>? DeliveryUnits { get; set; }
+    public DbSet<DUKPIAssignment>? DUKPIAssignments { get; set; }
+    public DbSet<FiscalYear>? FiscalYears { get; set; }
+    public DbSet<OPCRKPI>? OPCRKPIs { get; set; }
+    public DbSet<OPCRPAP>? OPCRPAPs { get; set; }
     public DbSet<SDG>? SDGs { get; set; }
+    public DbSet<SubDeliveryUnit>? SubDeliveryUnits { get; set; }
+    public DbSet<SubDUAllocation>? SubDUAllocations { get; set; }
+    public DbSet<WFPPAP>? WFPPAPs { get; set; }
+    public DbSet<WFPPAPDepartment>? WFPPAPDepartments { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

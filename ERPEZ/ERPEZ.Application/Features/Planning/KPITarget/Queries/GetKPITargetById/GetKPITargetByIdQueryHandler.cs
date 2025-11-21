@@ -10,14 +10,12 @@ public class GetKPITargetByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHand
 {
     public async Task<ApiResponse<KPITargetResponse>> Handle(GetKPITargetByIdQuery request, CancellationToken cancellationToken)
     {
-        var kpiTarget = await unitOfWork.KPITargetRepository.FindAsync(t => t.Id == request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("No data found.");
-
-        // Get only the DU KPI assignments for this specific KPI target
-        var emptySieveModel = new Sieve.Models.SieveModel();
-        var (duAllocations, _) = await unitOfWork.DUKPIAssignmentRepository.GetAllAsync(emptySieveModel, cancellationToken: cancellationToken);
-        var totalAllocated = duAllocations
-            .Where(a => a.KPITargetId == request.Id)
-            .Sum(a => a.AllocatedTargetValue);
+        var (kpiTarget, totalAllocated) = await unitOfWork.KPITargetRepository.GetKPITargetWithTotalAllocatedAsync(request.Id, cancellationToken);
+        
+        if (kpiTarget == null)
+        {
+            throw new NotFoundException("No data found.");
+        }
 
         var result = new KPITargetResponse()
         {
