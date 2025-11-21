@@ -1,4 +1,5 @@
 using ERPEZ.Application.Interfaces;
+using ERPEZ.Domain.Enums;
 using Microsoft.Extensions.Logging;
 
 namespace ERPEZ.Infrastructure.Services;
@@ -89,5 +90,65 @@ public class LocalFileStorageService : IFileStorageService
         }
 
         return Task.CompletedTask;
+    }
+
+    public Task<bool> MigrateFileAsync(Guid fileId, StorageProviderEnum fromProvider, StorageProviderEnum toProvider)
+    {
+        // Local storage doesn't support migration to other providers
+        // Migration should be handled by FallbackFileStorageService
+        return Task.FromResult(false);
+    }
+
+    public async Task<(string fileName, Stream stream)?> GetPermanentFileAsync(Guid fileId)
+    {
+        var permanentPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "files", "permanent");
+        if (!Directory.Exists(permanentPath))
+        {
+            return null;
+        }
+
+        var files = Directory.GetFiles(permanentPath, $"*{fileId}*");
+        if (files.Length == 0)
+        {
+            return null;
+        }
+
+        var filePath = files[0];
+        var fileName = Path.GetFileName(filePath);
+        var stream = File.OpenRead(filePath);
+        return (fileName, stream);
+    }
+
+    public async Task UploadPermanentAsync(string fileName, Stream stream)
+    {
+        var permanentPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "files", "permanent");
+        Directory.CreateDirectory(permanentPath);
+        var filePath = Path.Combine(permanentPath, fileName);
+        using (var fileStream = File.Create(filePath))
+        {
+            await stream.CopyToAsync(fileStream);
+        }
+    }
+
+    public async Task DeletePermanentAsync(Guid fileId)
+    {
+        var permanentPath = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "files", "permanent");
+        if (!Directory.Exists(permanentPath))
+        {
+            return;
+        }
+
+        var files = Directory.GetFiles(permanentPath, $"*{fileId}*");
+        foreach (var file in files)
+        {
+            try
+            {
+                File.Delete(file);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, "Error deleting permanent file: {FileName}", Path.GetFileName(file));
+            }
+        }
     }
 }

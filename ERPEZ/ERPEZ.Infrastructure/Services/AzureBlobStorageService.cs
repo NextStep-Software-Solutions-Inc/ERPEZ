@@ -78,4 +78,42 @@ public class AzureBlobStorageService : IFileStorageService
             }
         }
     }
+
+    public Task<bool> MigrateFileAsync(Guid fileId, StorageProvider fromProvider, StorageProvider toProvider)
+    {
+        // Azure storage doesn't support migration to other providers
+        // Migration should be handled by FallbackFileStorageService
+        return Task.FromResult(false);
+    }
+
+    public async Task<(string fileName, Stream stream)?> GetPermanentFileAsync(Guid fileId)
+    {
+        var containerClient = blobServiceClient.GetBlobContainerClient(permanentContainer);
+        var blobs = containerClient.GetBlobsAsync(prefix: fileId.ToString());
+        await foreach (var blobItem in blobs)
+        {
+            var blobClient = containerClient.GetBlobClient(blobItem.Name);
+            var downloadResponse = await blobClient.DownloadAsync();
+            return (blobItem.Name, downloadResponse.Value.Content);
+        }
+        return null;
+    }
+
+    public async Task UploadPermanentAsync(string fileName, Stream stream)
+    {
+        var containerClient = blobServiceClient.GetBlobContainerClient(permanentContainer);
+        var blobClient = containerClient.GetBlobClient(fileName);
+        await blobClient.UploadAsync(stream, overwrite: true);
+    }
+
+    public async Task DeletePermanentAsync(Guid fileId)
+    {
+        var containerClient = blobServiceClient.GetBlobContainerClient(permanentContainer);
+        var blobs = containerClient.GetBlobsAsync(prefix: fileId.ToString());
+        await foreach (var blobItem in blobs)
+        {
+            var blobClient = containerClient.GetBlobClient(blobItem.Name);
+            await blobClient.DeleteIfExistsAsync();
+        }
+    }
 }
