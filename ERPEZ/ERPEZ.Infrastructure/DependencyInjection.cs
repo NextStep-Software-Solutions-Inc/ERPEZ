@@ -24,7 +24,16 @@ public static class DependencyInjection
         var services = builder.Services;
         var env = builder.Environment;
 
-        services.Configure<AzureBlobStorageOptions>(builder.Configuration.GetSection("AzureBlobStorage"));
+        services.Configure<AzureBlobStorageOptions>(options =>
+        {
+            builder.Configuration.GetSection("AzureBlobStorage").Bind(options);
+            // Override ConnectionString from environment variable if available
+            var envConnectionString = builder.Configuration["AzureBlobStorage:ConnectionString"];
+            if (!string.IsNullOrEmpty(envConnectionString))
+            {
+                options.ConnectionString = envConnectionString;
+            }
+        });
 
         services.AddDbContext<ApplicationDbContext>(options =>
             {

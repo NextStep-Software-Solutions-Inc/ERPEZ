@@ -117,5 +117,6 @@ jobs:
             -p 72:8080 \
             -e ASPNETCORE_ENVIRONMENT=${{ env.ENVIRONMENT }} \
             -e ConnectionStrings__DefaultConnection="${{ secrets.ERPEZ_DB_CONNECTION_STRING }}" \
+            -e AzureBlobStorage__ConnectionString="${{ secrets.AZURE_BLOB_STORAGE_CONNECTION_STRING }}" \
             --restart unless-stopped \
             ${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.CONTAINER_NAME }}:${{ env.IMAGE_TAG }}
