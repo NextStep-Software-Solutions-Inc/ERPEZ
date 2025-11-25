@@ -66,8 +66,7 @@ public class CreateKPICommandHandler(IUnitOfWork unitOfWork, IFileStorageService
 
             if (request.MFOPAPIds.Count > 0)
             {
-                var existingMfopapsQuery = unitOfWork.MFOPAPRepository
-                    .Query(m => request.MFOPAPIds.Contains(m.Id));
+                var existingMfopapsQuery = unitOfWork.MFOPAPRepository.Query(m => request.MFOPAPIds.Contains(m.Id));
 
                 var existingMfopaps = await unitOfWork.MFOPAPRepository.ToListAsync(existingMfopapsQuery, cancellationToken);
 
