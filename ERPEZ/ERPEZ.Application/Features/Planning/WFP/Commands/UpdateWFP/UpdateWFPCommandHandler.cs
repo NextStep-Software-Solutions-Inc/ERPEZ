@@ -16,23 +16,22 @@ public class UpdateWFPCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<U
 
         var coalescedDeliveryUnitId = dto.DeliveryUnitId;
         var coalescedFiscalYear = dto.FiscalYear ?? wfp.FiscalYear;
-        var coalescedProgramTitle = dto.ProgramTitle ?? wfp.ProgramTitle;
+        var coalescedProgramTitle = dto.ProjectTitle ?? wfp.ProjectTitle;
         var coalescedDescription = dto.Description ?? wfp.Description;
         var duplicate = await unitOfWork.WFPRepository.FindAsync(
             w => w.Id != request.Id
                 && w.DeliveryUnitId == coalescedDeliveryUnitId
                 && w.FiscalYear == coalescedFiscalYear
-                && w.ProgramTitle == coalescedProgramTitle
+                && w.ProjectTitle == coalescedProgramTitle
                 && w.Description == coalescedDescription,
             cancellationToken
         );
 
-        if (duplicate != null)
-            throw new ConflictException("WFP with the same Delivery Unit, Fiscal Year, Program Title, and Description already exists.");
+        if (duplicate != null) throw new ConflictException("WFP with the same Delivery Unit, Fiscal Year, Project Title, and Description already exists.");
 
         wfp.DeliveryUnitId = dto.DeliveryUnitId;
         wfp.FiscalYear = dto.FiscalYear ?? wfp.FiscalYear;
-        wfp.ProgramTitle = dto.ProgramTitle ?? wfp.ProgramTitle;
+        wfp.ProjectTitle = dto.ProjectTitle ?? wfp.ProjectTitle;
         wfp.Description = dto.Description ?? wfp.Description;
         wfp.ProposedBudget = dto.ProposedBudget ?? wfp.ProposedBudget;
         wfp.GeneralObjective = dto.GeneralObjective ?? wfp.GeneralObjective;

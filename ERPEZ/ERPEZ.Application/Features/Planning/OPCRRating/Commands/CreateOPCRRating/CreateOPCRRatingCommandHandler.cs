@@ -16,12 +16,16 @@ public class CreateOPCRRatingCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
         _ = await unitOfWork.PerformanceMeasureRepository.FindAsync(o => o.Id == request.PerformanceMeasureId,
             cancellationToken) ?? throw new NotFoundException("Performance Measure not found.");
 
-        _ = await unitOfWork.OPCRKPIRepository.FindAsync(o => o.Id == request.OPCRKPIId,
-            cancellationToken) ?? throw new NotFoundException("OPCR KPI not found.");
+        _ = await unitOfWork.OPCRRepository.FindAsync(o => o.Id == request.OPCRId,
+            cancellationToken) ?? throw new NotFoundException("OPCR not found.");
+
+        _ = await unitOfWork.DUKPIAssignmentRepository.FindAsync(d => d.Id == request.DUKPIAssignmentId,
+            cancellationToken) ?? throw new NotFoundException("DU KPI Assignment not found.");
 
         var opcrRating = new Domain.Entities.Planning.OPCRRating
         {
-            OPCRKPIId = request.OPCRKPIId,
+            OPCRId = request.OPCRId,
+            DUKPIAssignmentId = request.DUKPIAssignmentId,
             OPCREvaluationId = request.OPCREvaluationId,
             PerformanceMeasureId = request.PerformanceMeasureId,
             NumericalRating = request.NumericalRating,
@@ -35,7 +39,8 @@ public class CreateOPCRRatingCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
         {
             Id = opcrRating.Id,
             OPCREvaluationId = opcrRating.OPCREvaluationId,
-            OPCRKPIId = opcrRating.OPCRKPIId,
+            OPCRId = opcrRating.OPCRId,
+            DUKPIAssignmentId = opcrRating.DUKPIAssignmentId,
             PerformanceMeasureId = opcrRating.PerformanceMeasureId,
             NumericalRating = opcrRating.NumericalRating,
             Remarks = opcrRating.Remarks,

@@ -51,7 +51,6 @@ public static class DependencyInjection
         services.AddScoped<IActivityBudgetRequirementRepository, ActivityBudgetRequirementRepository>();
         services.AddScoped<IDUAllocationRepository, DUAllocationRepository>();
         services.AddScoped<IOPCRRepository, OPCRRepository>();
-        services.AddScoped<IOPCRKPIRepository, OPCRKPIRepository>();
         services.AddScoped<IOPCRActivityRepository, OPCRActivityRepository>();
         services.AddScoped<IOPCREvaluationRepository, OPCREvaluationRepository>();
         services.AddScoped<IOPCRPAPDepartmentRepository, OPCRPAPDepartmentRepository>();

@@ -17,4 +17,5 @@ public class DUKPIAssignment : BaseEntity
     public virtual KPI KPI { get; set; } = null!;
     public virtual DeliveryUnit DeliveryUnit { get; set; } = null!;
     public virtual KPITarget KPITarget { get; set; } = null!;
+    public virtual List<OPCR> OPCRs { get; set; } = [];
 }
