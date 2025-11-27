@@ -42,7 +42,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<DeliveryUnit>? DeliveryUnits { get; set; }
     public DbSet<DUKPIAssignment>? DUKPIAssignments { get; set; }
     public DbSet<FiscalYear>? FiscalYears { get; set; }
-    public DbSet<OPCRKPI>? OPCRKPIs { get; set; }
     public DbSet<OPCRPAP>? OPCRPAPs { get; set; }
     public DbSet<SDG>? SDGs { get; set; }
     public DbSet<SubDeliveryUnit>? SubDeliveryUnits { get; set; }
@@ -117,18 +116,15 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<KPI>()
             .HasMany(t => t.Attributes)
-            .WithMany(m => m.KPIs)
-            .UsingEntity(tm => tm.ToTable("KPIAttributes"));
+            .WithMany(m => m.KPIs);
 
         modelBuilder.Entity<KPI>()
             .HasMany(t => t.SDGs)
-            .WithMany(m => m.KPIs)
-            .UsingEntity(tm => tm.ToTable("KPISDGs"));
+            .WithMany(m => m.KPIs);
 
         modelBuilder.Entity<KPI>()
             .HasMany(k => k.MFOPAPs)
-            .WithMany(m => m.KPIs)
-            .UsingEntity(j => j.ToTable("MFOKPIs"));
+            .WithMany(m => m.KPIs);
 
         // DUKPIAssignment (Delivery Unit KPI Assignment)
         modelBuilder.Entity<DUKPIAssignment>()
@@ -575,11 +571,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .WithOne(e => e.OPCR)
             .HasForeignKey(e => e.OPCRId);
 
-        modelBuilder.Entity<OPCR>()
-            .HasMany(o => o.OPCRKPIs)
-            .WithOne(k => k.OPCR)
-            .HasForeignKey(k => k.OPCRId);
-
         // OPCRPAPDepartment
         modelBuilder.Entity<OPCRPAPDepartment>()
             .HasIndex(d => new { d.OPCRActivityId, d.DeliveryUnitId })
@@ -595,14 +586,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .WithMany(d => d.OPCRPAPDepartments)
             .HasForeignKey(d => d.DeliveryUnitId);
 
-        // OPCRActivity
-        modelBuilder.Entity<OPCRActivity>()
-            .HasIndex(a => new { a.OPCRKPIId, a.Name });
 
-        modelBuilder.Entity<OPCRActivity>()
-            .HasOne(a => a.OPCRKPI)
-            .WithMany(k => k.OPCRActivities)
-            .HasForeignKey(a => a.OPCRKPIId);
 
         // OPCREvaluation
         modelBuilder.Entity<OPCREvaluation>()
@@ -618,42 +602,39 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .WithOne(r => r.OPCREvaluation)
             .HasForeignKey(r => r.OPCREvaluationId);
 
-        // OPCRKPI
-        modelBuilder.Entity<OPCRKPI>()
-            .HasIndex(k => new { k.OPCRId, k.KPIId })
-            .IsUnique();
+        // Implicit many-to-many between OPCR and DUKPIAssignment
+        modelBuilder.Entity<OPCR>()
+            .HasMany(o => o.DUKPIAssignments)
+            .WithMany(d => d.OPCRs);
 
-        modelBuilder.Entity<OPCRKPI>()
-            .HasOne(k => k.OPCR)
-            .WithMany(o => o.OPCRKPIs)
-            .HasForeignKey(k => k.OPCRId);
+        // OPCRActivity
+        modelBuilder.Entity<OPCRActivity>()
+            .HasOne(a => a.OPCR)
+            .WithMany(o => o.OPCRActivities)
+            .HasForeignKey(a => a.OPCRId);
 
-        modelBuilder.Entity<OPCRKPI>()
-            .HasOne(k => k.KPI)
-            .WithMany(k => k.OPCRKPIs)
-            .HasForeignKey(k => k.KPIId);
+        modelBuilder.Entity<OPCRActivity>()
+            .HasOne(a => a.DUKPIAssignment)
+            .WithMany()
+            .HasForeignKey(a => a.DUKPIAssignmentId);
 
-        modelBuilder.Entity<OPCRKPI>()
-            .HasMany(k => k.OPCRActivities)
-            .WithOne(a => a.OPCRKPI)
-            .HasForeignKey(a => a.OPCRKPIId);
-
-        modelBuilder.Entity<OPCRKPI>()
-            .HasMany(k => k.OPCRRatings)
-            .WithOne(r => r.OPCRKPI)
-            .HasForeignKey(r => r.OPCRKPIId);
-
-        // **REMOVED THE CONFLICTING USING ENTITY BLOCK HERE**
+        modelBuilder.Entity<OPCRActivity>()
+            .HasIndex(a => new { a.OPCRId, a.DUKPIAssignmentId, a.Name });
 
         // OPCRRating
         modelBuilder.Entity<OPCRRating>()
-            .HasIndex(r => new { r.OPCREvaluationId, r.PerformanceMeasureId, r.OPCRKPIId })
+            .HasIndex(r => new { r.OPCREvaluationId, r.PerformanceMeasureId, r.OPCRId, r.DUKPIAssignmentId })
             .IsUnique();
 
         modelBuilder.Entity<OPCRRating>()
-            .HasOne(r => r.OPCRKPI)
-            .WithMany(k => k.OPCRRatings)
-            .HasForeignKey(r => r.OPCRKPIId);
+            .HasOne(r => r.OPCR)
+            .WithMany()
+            .HasForeignKey(r => r.OPCRId);
+
+        modelBuilder.Entity<OPCRRating>()
+            .HasOne(r => r.DUKPIAssignment)
+            .WithMany()
+            .HasForeignKey(r => r.DUKPIAssignmentId);
 
         modelBuilder.Entity<OPCRRating>()
             .HasOne(r => r.OPCREvaluation)
@@ -662,8 +643,19 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<OPCRRating>()
             .HasOne(r => r.PerformanceMeasure)
-            .WithMany(m => m.OPCRRatings)
+            .WithMany(p => p.OPCRRatings)
             .HasForeignKey(r => r.PerformanceMeasureId);
+
+        // OPCRPAP
+        modelBuilder.Entity<OPCRPAP>()
+            .HasOne(p => p.OPCR)
+            .WithMany()
+            .HasForeignKey(p => p.OPCRId);
+
+        modelBuilder.Entity<OPCRPAP>()
+            .HasOne(p => p.KPI)
+            .WithMany()
+            .HasForeignKey(p => p.KPIId);
 
         //Cluster
         modelBuilder.Entity<Cluster>()

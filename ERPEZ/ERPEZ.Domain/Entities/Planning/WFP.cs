@@ -9,7 +9,7 @@ public class WFP : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid DeliveryUnitId { get; set; }
     [Sieve(CanFilter = true, CanSort = true)]
-    public string ProgramTitle { get; set; } = string.Empty;
+    public string ProjectTitle { get; set; } = string.Empty;
     [Sieve(CanFilter = true, CanSort = true)]
     public string? Description { get; set; }
     [Sieve(CanFilter = true, CanSort = true)]

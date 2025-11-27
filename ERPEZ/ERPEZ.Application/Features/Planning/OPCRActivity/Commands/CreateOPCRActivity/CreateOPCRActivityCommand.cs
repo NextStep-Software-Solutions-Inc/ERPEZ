@@ -6,7 +6,8 @@ namespace ERPEZ.Application.Features.Planning.OPCRActivity.Commands.CreateOPCRAc
 
 public class CreateOPCRActivityCommand : IRequest<ApiResponse<OPCRActivityDto>>
 {
-    public Guid OPCRKPIId { get; set; }
+    public Guid OPCRId { get; set; }
+    public Guid DUKPIAssignmentId { get; set; }
     public string Name { get; set; } = string.Empty;
     public string? Description { get; set; }
     public decimal Budget { get; set; }

@@ -23,7 +23,8 @@ public class UpdateOPCRRatingCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
         var result = new OPCRRatingResponse
         {
             Id = opcrRating.Id,
-            OPCRKPIId = opcrRating.OPCRKPIId,
+            OPCRId = opcrRating.OPCRId,
+            DUKPIAssignmentId = opcrRating.DUKPIAssignmentId,
             OPCREvaluationId = opcrRating.OPCREvaluationId,
             PerformanceMeasureId = opcrRating.PerformanceMeasureId,
             NumericalRating = opcrRating.NumericalRating,

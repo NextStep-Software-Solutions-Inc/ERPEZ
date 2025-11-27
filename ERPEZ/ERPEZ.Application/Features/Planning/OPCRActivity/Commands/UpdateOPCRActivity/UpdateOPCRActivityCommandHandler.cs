@@ -10,19 +10,20 @@ public class UpdateOPCRActivityCommandHandler(IUnitOfWork unitOfWork) : IRequest
     public async Task<ApiResponse<Domain.Entities.Planning.OPCRActivity>> Handle(UpdateOPCRActivityCommand request, CancellationToken cancellationToken)
     {
         var dto = request.UpdateOPCRActivity;
-        if (dto.OPCRKPIId != null)
+        if (dto.OPCRId.HasValue)
         {
-            var opcrKPI = await unitOfWork.OPCRKPIRepository.FindAsync(
-                x => x.Id == dto.OPCRKPIId,
-                cancellationToken: cancellationToken
-            ) ?? throw new NotFoundException("OPCR KPI not found.");
-
+            _ = await unitOfWork.OPCRRepository.FindAsync(o => o.Id == dto.OPCRId.Value, cancellationToken) ?? throw new NotFoundException("OPCR not found.");
+        }
+        if (dto.DUKPIAssignmentId.HasValue)
+        {
+            _ = await unitOfWork.DUKPIAssignmentRepository.FindAsync(d => d.Id == dto.DUKPIAssignmentId.Value, cancellationToken) ?? throw new NotFoundException("DU KPI Assignment not found.");
         }
         var opcrActivity = await unitOfWork.OPCRActivityRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("OPCR Activity not found.");
 
         opcrActivity.Name = dto.Name ?? opcrActivity.Name;
         opcrActivity.Description = dto.Description ?? opcrActivity.Description;
-        opcrActivity.OPCRKPIId = dto.OPCRKPIId ?? opcrActivity.OPCRKPIId;
+        opcrActivity.OPCRId = dto.OPCRId ?? opcrActivity.OPCRId;
+        opcrActivity.DUKPIAssignmentId = dto.DUKPIAssignmentId ?? opcrActivity.DUKPIAssignmentId;
         opcrActivity.Budget = dto.Budget ?? opcrActivity.Budget;
 
         unitOfWork.OPCRActivityRepository.Update(opcrActivity);

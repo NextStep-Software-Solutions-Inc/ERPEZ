@@ -2,7 +2,8 @@ namespace ERPEZ.Application.Features.Planning.OPCRActivity.Dtos;
 
 public class UpdateOPCRActivityDto
 {
-    public Guid? OPCRKPIId { get; set; }
+    public Guid? OPCRId { get; set; }
+    public Guid? DUKPIAssignmentId { get; set; }
     public string? Name { get; set; }
     public string? Description { get; set; }
     public decimal? Budget { get; set; }

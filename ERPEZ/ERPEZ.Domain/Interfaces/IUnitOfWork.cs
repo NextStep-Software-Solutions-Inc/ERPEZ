@@ -21,7 +21,6 @@ public interface IUnitOfWork
     ITransactionRepository TransactionRepository { get; }
     IMFOPAPRepository MFOPAPRepository { get; }
     IOPCRRepository OPCRRepository { get; }
-    IOPCRKPIRepository OPCRKPIRepository { get; }
     IOPCRActivityRepository OPCRActivityRepository { get; }
     IOPCRPAPDepartmentRepository OPCRPAPDepartmentRepository { get; }
     IOPCREvaluationRepository OPCREvaluationRepository { get; }

@@ -6,29 +6,29 @@ public class CreateOPCRRatingCommandValidator : AbstractValidator<CreateOPCRRati
 {
     public CreateOPCRRatingCommandValidator()
     {
-        // OPCREvaluationId (Required GUID)
         RuleFor(x => x.OPCREvaluationId)
             .NotEmpty()
             .WithMessage("OPCR Evaluation ID is required.");
 
-        // PerformanceMeasureId (Required GUID)
         RuleFor(x => x.PerformanceMeasureId)
             .NotEmpty()
             .WithMessage("Performance Measure ID is required.");
 
-        // OPCRKPIId (Required GUID)
-        RuleFor(x => x.OPCRKPIId)
+        RuleFor(x => x.OPCRId)
             .NotEmpty()
-            .WithMessage("OPCR KPI ID is required.");
+            .WithMessage("OPCR ID is required.");
 
-        // NumericalRating (Required Int, Range Check)
+        RuleFor(x => x.DUKPIAssignmentId)
+            .NotEmpty()
+            .WithMessage("DU KPI Assignment ID is required.");
+
         RuleFor(x => x.NumericalRating)
-            .InclusiveBetween(1, 5) // Assuming a standard 1-5 rating scale
+            .InclusiveBetween(1, 5)
             .WithMessage("Numerical Rating must be between 1 and 5.");
 
-        // Remarks (Optional String, Max Length)
         RuleFor(x => x.Remarks)
             .MaximumLength(1000)
-            .WithMessage("Remarks cannot exceed 1000 characters.");
+            .WithMessage("Remarks cannot exceed 1000 characters.")
+            .When(x => !string.IsNullOrWhiteSpace(x.Remarks));
     }
 }

@@ -12,14 +12,14 @@ public class CreateWFPCommandValidator : AbstractValidator<CreateWFPCommand>
             .NotEmpty()
             .WithMessage("Delivery Unit ID is required.");
 
-        // 2. ProgramTitle (Required, Min/Max Length)
-        RuleFor(x => x.ProgramTitle)
+        // 2. ProjectTitle (Required, Min/Max Length)
+        RuleFor(x => x.ProjectTitle)
             .NotEmpty()
-            .WithMessage("Program Title is required.")
+            .WithMessage("Project Title is required.")
             .MinimumLength(5)
-            .WithMessage("Program Title must be at least 5 characters long.")
+            .WithMessage("Project Title must be at least 5 characters long.")
             .MaximumLength(250)
-            .WithMessage("Program Title cannot exceed 250 characters.");
+            .WithMessage("Project Title cannot exceed 250 characters.");
 
         // 3. Description (Optional, Max Length)
         RuleFor(x => x.Description)

@@ -10,10 +10,12 @@ public class CreateOPCRActivityCommandHandler(IUnitOfWork unitOfWork) : IRequest
 {
     public async Task<ApiResponse<OPCRActivityDto>> Handle(CreateOPCRActivityCommand request, CancellationToken cancellationToken)
     {
-        _ = await unitOfWork.OPCRKPIRepository.FindAsync(o => o.Id == request.OPCRKPIId, cancellationToken) ?? throw new NotFoundException("OPCR KPI not found.");
+        _ = await unitOfWork.OPCRRepository.FindAsync(o => o.Id == request.OPCRId, cancellationToken) ?? throw new NotFoundException("OPCR not found.");
+        _ = await unitOfWork.DUKPIAssignmentRepository.FindAsync(d => d.Id == request.DUKPIAssignmentId, cancellationToken) ?? throw new NotFoundException("DU KPI Assignment not found.");
         var opcrActivity = new Domain.Entities.Planning.OPCRActivity
         {
-            OPCRKPIId = request.OPCRKPIId,
+            OPCRId = request.OPCRId,
+            DUKPIAssignmentId = request.DUKPIAssignmentId,
             Name = request.Name,
             Description = request.Description,
             Budget = request.Budget
@@ -25,7 +27,8 @@ public class CreateOPCRActivityCommandHandler(IUnitOfWork unitOfWork) : IRequest
         var dto = new OPCRActivityDto
         {
             Id = opcrActivity.Id,
-            OPCRKPIId = opcrActivity.OPCRKPIId,
+            OPCRId = opcrActivity.OPCRId,
+            DUKPIAssignmentId = opcrActivity.DUKPIAssignmentId,
             Name = opcrActivity.Name,
             Description = opcrActivity.Description,
             Budget = opcrActivity.Budget
