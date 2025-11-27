@@ -643,7 +643,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<OPCRRating>()
             .HasOne(r => r.PerformanceMeasure)
-            .WithMany()
+            .WithMany(p => p.OPCRRatings)
             .HasForeignKey(r => r.PerformanceMeasureId);
 
         // OPCRPAP
@@ -656,8 +656,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasOne(p => p.KPI)
             .WithMany()
             .HasForeignKey(p => p.KPIId);
-
-        // **REMOVED THE CONFLICTING USING ENTITY BLOCK HERE**
 
         //Cluster
         modelBuilder.Entity<Cluster>()

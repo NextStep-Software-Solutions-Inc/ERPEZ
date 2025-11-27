@@ -16,13 +16,13 @@ public class UpdateWFPCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<U
 
         var coalescedDeliveryUnitId = dto.DeliveryUnitId;
         var coalescedFiscalYear = dto.FiscalYear ?? wfp.FiscalYear;
-        var coalescedProgramTitle = dto.ProjectTitle ?? wfp.ProjectTitle;
+        var coalescedProjectTitle = dto.ProjectTitle ?? wfp.ProjectTitle;
         var coalescedDescription = dto.Description ?? wfp.Description;
         var duplicate = await unitOfWork.WFPRepository.FindAsync(
             w => w.Id != request.Id
                 && w.DeliveryUnitId == coalescedDeliveryUnitId
                 && w.FiscalYear == coalescedFiscalYear
-                && w.ProjectTitle == coalescedProgramTitle
+                && w.ProjectTitle == coalescedProjectTitle
                 && w.Description == coalescedDescription,
             cancellationToken
         );
