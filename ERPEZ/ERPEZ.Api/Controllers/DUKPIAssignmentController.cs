@@ -4,6 +4,7 @@ using ERPEZ.Application.Features.Planning.DUKPIAssignment.Commands.UpdateDUKPIAs
 using ERPEZ.Application.Features.Planning.DUKPIAssignment.Dtos;
 using ERPEZ.Application.Features.Planning.DUKPIAssignment.Queries.GetDUKPIAssignmentById;
 using ERPEZ.Application.Features.Planning.DUKPIAssignment.Queries.GetDUKPIAssignments;
+using ERPEZ.Domain.Dtos.Planning;
 using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -20,19 +21,15 @@ namespace ERPEZ.Api.Controllers
         public async Task<IActionResult> CreateKPIAssignment([FromBody] CreateDUKPIAssignmentCommand command)
         {
             var result = await mediator.Send(command);
-
-            if (!result.Succeeded)
-                return BadRequest(result);
-
-            return Ok(result);
+            return result.Succeeded ? Ok(result) : BadRequest(result);
         }
 
         [HttpGet]
-        [ProducesResponseType(typeof(PaginatedApiResponse<DUKPIAssignmentsResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(PaginatedApiResponse<DUKPIAssignmentsGroupedResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetKPIAssignments([FromQuery] GetDUKPIAssignmentsQuery query)
         {
             var result = await mediator.Send(query);
-            return Ok(result);
+            return result.Succeeded ? Ok(result) : BadRequest(result);
         }
 
         [HttpGet("{id}")]
