@@ -65,7 +65,7 @@ public class GetKPIByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
             }).ToList();
 
         var mfopaps = kpi.MFOPAPs
-            .Select(m => new MFOPAPDto
+            .Select(m => new MFOPAPResponse
             {
                 Id = m.Id,
                 Name = m.Name,

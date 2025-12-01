@@ -27,7 +27,7 @@ public record KPIResponse
     [JsonPropertyName("KPIModeOfVerifications")]
     public List<KPIModeOfVerificationDto> KPIModeOfVerifications { get; init; } = [];
     [JsonPropertyName("MFOPAPs")]
-    public List<MFOPAPDto> MFOPAPs { get; init; } = [];
+    public List<MFOPAPResponse> MFOPAPs { get; init; } = [];
     [JsonPropertyName("Attributes")]
     public List<AttributeResponse> Attributes { get; init; } = [];
     [JsonPropertyName("SDGs")]

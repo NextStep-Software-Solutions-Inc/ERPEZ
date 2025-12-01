@@ -1,4 +1,3 @@
-using ERPEZ.Application.Features.Planning.DeliveryUnit.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -6,10 +5,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.DeliveryUnit.Commands.CreateDU;
 
-public class CreateDeliveryUnitCommandHandler(IUnitOfWork unitOfWork)
-    : IRequestHandler<CreateDeliveryUnitCommand, ApiResponse<DeliveryUnitDto>>
+public class CreateDeliveryUnitCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateDeliveryUnitCommand, ApiResponse<Guid>>
 {
-    public async Task<ApiResponse<DeliveryUnitDto>> Handle(CreateDeliveryUnitCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<Guid>> Handle(CreateDeliveryUnitCommand request, CancellationToken cancellationToken)
     {
         var existingDU = await unitOfWork.DeliveryUnitRepository.FindAsync(
             du => du.OfficeId == request.OfficeId && du.ParentDUId == request.ParentDUId,
@@ -27,14 +25,14 @@ public class CreateDeliveryUnitCommandHandler(IUnitOfWork unitOfWork)
                 ?? throw new NotFoundException("Parent Delivery Unit not found.");
 
             if (parentDU.ParentDUId != null)
-                return new ApiResponse<DeliveryUnitDto>
+                return new ApiResponse<Guid>
                 {
                     Message = "Parent Delivery Unit must be a top-level Delivery Unit (cannot have its own parent).",
                     Succeeded = false,
                 };
 
             if (parentDU.OfficeId == request.OfficeId)
-                return new ApiResponse<DeliveryUnitDto>
+                return new ApiResponse<Guid>
                 {
                     Message = "Parent Delivery Unit cannot belong to the same Office as the new Delivery Unit.",
                     Succeeded = false,
@@ -49,14 +47,7 @@ public class CreateDeliveryUnitCommandHandler(IUnitOfWork unitOfWork)
 
         await unitOfWork.DeliveryUnitRepository.AddAsync(deliveryUnit, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
-
-        var dto = new DeliveryUnitDto
-        {
-            Id = deliveryUnit.Id,
-            OfficeId = deliveryUnit.OfficeId,
-            ParentDUId = deliveryUnit.ParentDUId
-        };
-
-        return ApiResponse<DeliveryUnitDto>.Success(dto, "Delivery Unit created successfully.");
+        
+        return ApiResponse<Guid>.Success(deliveryUnit.Id, "Delivery Unit created successfully.");
     }
 }

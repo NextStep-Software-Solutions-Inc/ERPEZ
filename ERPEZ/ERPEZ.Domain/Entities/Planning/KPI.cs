@@ -34,7 +34,7 @@ public class KPI : BaseEntity
     public virtual List<MFOPAP> MFOPAPs { get; set; } = [];
     public virtual List<OPCRActivity> OPCRActivities { get; set; } = [];
     public virtual List<KPITarget> KPITargets { get; set; } = [];
-    public virtual List<KPI> ParentKPIs { get; set; } = [];
+    public virtual List<KPI> ChildKPIs { get; set; } = [];
     public virtual List<SDG> SDGs { get; set; } = [];
     public virtual List<Attribute> Attributes { get; set; } = [];
 }

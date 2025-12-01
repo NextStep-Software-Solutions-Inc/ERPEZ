@@ -23,7 +23,11 @@ public class GetDUKPIAssignmentsQueryHandler(IUnitOfWork unitOfWork) : IRequestH
             .Select(group => new DUKPIAssignmentsResponse
             {
                 KPIId = group.Key.KPIId,
-                DeliveryUnitId = group.Key.DeliveryUnitId,
+                DeliveryUnit = new DeliveryUnitResponse
+                {
+                    Id = group.Key.DeliveryUnitId,
+                    OfficeName = group.First().DeliveryUnit.Office.Name
+                },
                 DUKPITargets = [.. group.Select(assignment => new DUKPITargetResponse
                 {
                     DUKPIAssignmentId = assignment.Id,

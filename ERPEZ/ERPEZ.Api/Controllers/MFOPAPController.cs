@@ -26,7 +26,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet]
-        [ProducesResponseType(typeof(PaginatedApiResponse<MFOPAPDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(PaginatedApiResponse<MFOPAPResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetMFOPAPs([FromQuery] GetMFOPAPsQuery query)
         {
             var result = await mediator.Send(query);
@@ -34,7 +34,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<MFOPAPDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<MFOPAPResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetMFOPAPById(Guid id)
         {

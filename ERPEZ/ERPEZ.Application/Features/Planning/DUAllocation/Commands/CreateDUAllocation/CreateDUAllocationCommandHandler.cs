@@ -16,6 +16,13 @@ public class CreateDUAllocationCommandHandler(IUnitOfWork unitOfWork) : IRequest
             // Validate Delivery Unit exists
             _ = await unitOfWork.DeliveryUnitRepository.FindAsync(du => du.Id == request.DeliveryUnitId, cancellationToken) ?? throw new NotFoundException("Delivery Unit not found");
 
+            // Check for existing allocation with same amount and purpose in the same DU
+            var existingAllocation = await unitOfWork.DUAllocationRepository.FindAsync(alloc => alloc.DeliveryUnitId == request.DeliveryUnitId && alloc.Amount == request.Amount && alloc.Purpose == request.Purpose, cancellationToken);
+            if (existingAllocation != null)
+            {
+                throw new BadRequestException("An allocation with the same amount and purpose already exists for this Delivery Unit.");
+            }
+
             // Get all unique ReceivedFund IDs
             var receivedFundIds = request.DUFundAllocations.Select(f => f.ReceivedFundId).Distinct().ToList();
 
@@ -60,21 +67,15 @@ public class CreateDUAllocationCommandHandler(IUnitOfWork unitOfWork) : IRequest
             {
                 DeliveryUnitId = request.DeliveryUnitId,
                 Purpose = request.Purpose,
-                Amount = request.Amount
-            };
-            await unitOfWork.DUAllocationRepository.AddAsync(duAllocation, cancellationToken);
-
-            // Create all DUFundAllocations
-            foreach (var fundAllocationRequest in request.DUFundAllocations)
-            {
-                var duFundAllocation = new Domain.Entities.Planning.DUFundAllocation
+                Amount = request.Amount,
+                DUFundAllocations = [.. request.DUFundAllocations.Select(fundAllocationRequest => new Domain.Entities.Planning.DUFundAllocation
                 {
-                    DUAllocationId = duAllocation.Id,
                     ReceivedFundId = fundAllocationRequest.ReceivedFundId,
                     Amount = fundAllocationRequest.Amount
-                };
-                await unitOfWork.DUFundAllocationRepository.AddAsync(duFundAllocation, cancellationToken);
-            }
+                })]
+            };
+
+            await unitOfWork.DUAllocationRepository.AddAsync(duAllocation, cancellationToken);
 
             duAllocationId = duAllocation.Id;
 

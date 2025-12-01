@@ -1,3 +1,5 @@
+using ERPEZ.Application.Features.Planning.DeliveryUnit.Dtos;
+using ERPEZ.Application.Features.Planning.MFOPAP.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -5,14 +7,78 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.DeliveryUnit.Queries.GetDUByIdQuery;
 
-public class GetDeliveryUnitByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetDeliveryUnitByIdQuery, ApiResponse<Domain.Entities.Planning.DeliveryUnit>>
+public class GetDeliveryUnitByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetDeliveryUnitByIdQuery, ApiResponse<DeliveryUnitResponse>>
 {
-    public async Task<ApiResponse<Domain.Entities.Planning.DeliveryUnit>> Handle(GetDeliveryUnitByIdQuery request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<DeliveryUnitResponse>> Handle(GetDeliveryUnitByIdQuery request, CancellationToken cancellationToken)
     {
-        var deliveryUnit = await unitOfWork.DeliveryUnitRepository.FindAsync(
-           t => t.Id == request.Id,
-            cancellationToken: cancellationToken) ?? throw new NotFoundException("No data found.");
+        var deliveryUnitQuery = unitOfWork.DeliveryUnitRepository
+        .Query(du => du.Id == request.Id)
+        .Select(du => new DeliveryUnitResponse
+        {
+            Id = du.Id,
+            Office = new ()
+            {
+                Id = du.Office.Id,
+                Name = du.Office.Name,
+                Address = du.Office.Address,
+                ContactNumber = du.Office.ContactNumber,
+                ClusterId = du.Office.ClusterId,
+                Email = du.Office.Email,
+                Description = du.Office.Description,
+                OfficeHead = du.Office.OfficeHead,
+                ResponsibilityCenterCode = du.Office.ResponsibilityCenterCode,
+                CreatedBy = du.Office.CreatedBy,
+                CreatedAt = du.Office.CreatedAt,
+            },
+            KPIAssignments = du.KPIAssignments.Select(ka => new KPIAssignmentResponse
+            {
+                Id = ka.Id,
+                KPI = new()
+                {
+                    Id = ka.KPI.Id,
+                    Name = ka.KPI.Name,
+                    Description = ka.KPI.Description,
+                    FunctionType = ka.KPI.FunctionType,
+                    MFOPAPs = ka.KPI.MFOPAPs.Select(m => new MFOPAPResponse
+                    {
+                        Id = m.Id,
+                        Name = m.Name,
+                        Code = m.Code,
+                        Type = m.Type,
+                        IsActive = m.IsActive,
+                        ParentId = m.ParentId,
+                    }).ToList(),
+                    SDGs = ka.KPI.SDGs.Select(s => s.Name).ToList(),
+                },
+                AllocatedTargetValue = ka.AllocatedTargetValue,
+                Targets = du.KPIAssignments
+                    .Where(a => a.Id == ka.Id)
+                    .Select(kt => new KPITargetResponse
+                    {
+                        Id = kt.Id,
+                        Period = kt.KPITarget.Period.ToString(),
+                        QuarterName = kt.KPITarget.QuarterName,
+                        TargetValue = kt.KPITarget.TargetValue,
+                    }).ToList(),
+                DateAssigned = ka.CreatedAt.ToString("yyyy-MM-dd"),
+                SubKPIs = ka.KPI.ChildKPIs.Select(subKPI => new SubKPI
+                {
+                    Id = subKPI.Id,
+                    Name = subKPI.Name,
+                    Description = subKPI.Description,
+                    FunctionType = subKPI.FunctionType,
+                    SDGs = subKPI.SDGs.Select(sdg => sdg.Name).ToList(),
+                    AllocatedTargetValue = subKPI.KPIAssignments
+                        .Where(a => a.KPIId == subKPI.Id)
+                        .First(a => a.DeliveryUnitId == du.Id).AllocatedTargetValue,
+                }).ToList(),
+            }).ToList(),
+            CreatedAt = du.CreatedAt,
+           
+        });
 
-        return ApiResponse<Domain.Entities.Planning.DeliveryUnit>.Success(deliveryUnit, "Retrieved successfully");
+        var deliveryUnit = await unitOfWork.DeliveryUnitRepository.GetFirstAsync(deliveryUnitQuery, cancellationToken) ?? throw new NotFoundException("Delivery Unit not found");
+
+        return ApiResponse<DeliveryUnitResponse>.Success(deliveryUnit, "Retrieved successfully");
     }
 }
