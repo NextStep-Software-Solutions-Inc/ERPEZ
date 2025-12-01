@@ -3,15 +3,15 @@ using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
 
-namespace ERPEZ.Application.Features.Planning.DUKPIAssignment.Commands.CreateDUKPIAssignment;
+namespace ERPEZ.Application.Features.Planning.DeliveryUnit.Commands.AssignKPIsToDeliveryUnit;
 
-public class CreateDUKPIAssignmentCommandHandler(IUnitOfWork unitOfWork)
-    : IRequestHandler<CreateDUKPIAssignmentCommand, ApiResponse<Unit>>
+public class AssignKPIsToDeliveryUnitCommandHandler(IUnitOfWork unitOfWork)
+    : IRequestHandler<AssignKPIsToDeliveryUnitCommand, ApiResponse<Unit>>
 {
-    public async Task<ApiResponse<Unit>> Handle(CreateDUKPIAssignmentCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<Unit>> Handle(AssignKPIsToDeliveryUnitCommand request, CancellationToken cancellationToken)
     {
         // Group targets by KPIId
-        var targetsByKpi = request.DUKPITargets.GroupBy(t => t.KPIId);
+        var targetsByKpi = request.KPITargets.GroupBy(t => t.KPIId);
 
         await unitOfWork.ExecuteInTransactionAsync(async () =>
         {
@@ -43,29 +43,29 @@ public class CreateDUKPIAssignmentCommandHandler(IUnitOfWork unitOfWork)
                 // Fetch total allocated values for each target
                 var allocationSums = await unitOfWork.DUKPIAssignmentRepository.GetTotalAllocatedByKPITargetIdsAsync(providedTargetIds, cancellationToken);
 
-                foreach (var duKpiTarget in targetsForKpi)
+                foreach (var kpiTarget in targetsForKpi)
                 {
-                    var kpiTarget = kpiTargets.First(t => t.Id == duKpiTarget.TargetId);
+                    var target = kpiTargets.First(t => t.Id == kpiTarget.TargetId);
 
                     // Check if assignment already exists
-                    if (existingAssignments.Any(a => a.KPITargetId == duKpiTarget.TargetId))
-                        throw new ConflictException($"DU KPI Assignment already exists for this Delivery Unit and KPI Target {duKpiTarget.TargetId}.");
+                    if (existingAssignments.Any(a => a.KPITargetId == kpiTarget.TargetId))
+                        throw new ConflictException($"DU KPI Assignment already exists for this Delivery Unit and KPI Target {kpiTarget.TargetId}.");
 
-                    decimal allocatedValue = duKpiTarget.AllocatedTargetValue;
+                    decimal allocatedValue = kpiTarget.AllocatedTargetValue;
 
                     if (!kpi.IsTargetValueAllocable)
                     {
                         // Automatically set to the full KPI target value for better UX
-                        allocatedValue = kpiTarget.TargetValue;
+                        allocatedValue = target.TargetValue;
                     }
                     else
                     {
                         // Check remaining target value
-                        var totalPreviouslyAllocated = allocationSums.GetValueOrDefault(duKpiTarget.TargetId, 0);
+                        var totalPreviouslyAllocated = allocationSums.GetValueOrDefault(kpiTarget.TargetId, 0);
                         var newTotalAllocatedValue = totalPreviouslyAllocated + allocatedValue;
-                        if (newTotalAllocatedValue > kpiTarget.TargetValue)
+                        if (newTotalAllocatedValue > target.TargetValue)
                             throw new BadRequestException(
-                                $"The requested allocation ({allocatedValue}) causes the total allocated value to exceed the KPI target's value of {kpiTarget.TargetValue}. Current total allocated: {totalPreviouslyAllocated} for target {duKpiTarget.TargetId}.");
+                                $"The requested allocation ({allocatedValue}) causes the total allocated value to exceed the KPI target's value of {target.TargetValue}. Current total allocated: {totalPreviouslyAllocated} for target {kpiTarget.TargetId}.");
                     }
 
                     // Create the assignment
@@ -73,7 +73,7 @@ public class CreateDUKPIAssignmentCommandHandler(IUnitOfWork unitOfWork)
                     {
                         KPIId = kpiId,
                         DeliveryUnitId = request.DeliveryUnitId,
-                        KPITargetId = duKpiTarget.TargetId,
+                        KPITargetId = kpiTarget.TargetId,
                         AllocatedTargetValue = allocatedValue,
                     };
 

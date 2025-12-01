@@ -1,7 +1,7 @@
-using ERPEZ.Application.Features.Planning.DUKPIAssignment.Commands.CreateDUKPIAssignment;
 using ERPEZ.Application.Features.Planning.DUKPIAssignment.Commands.DeleteDUKPIAssignment;
-using ERPEZ.Application.Features.Planning.DUKPIAssignment.Commands.UpdateDUKPIAssignment;
 using ERPEZ.Application.Features.Planning.DUKPIAssignment.Dtos;
+using ERPEZ.Application.Features.Planning.DUKPIAssignment.Queries.GetDUKPIAssignmentById;
+using ERPEZ.Application.Features.Planning.DUKPIAssignment.Queries.GetDUKPIAssignments;
 using ERPEZ.Application.Features.Planning.DUKPIAssignment.Queries.GetDUKPIAssignmentById;
 using ERPEZ.Application.Features.Planning.DUKPIAssignment.Queries.GetDUKPIAssignments;
 using ERPEZ.Domain.Dtos.Planning;
@@ -15,17 +15,8 @@ namespace ERPEZ.Api.Controllers
     [ApiController]
     public class DUKPIAssignmentController(ISender mediator) : ControllerBase
     {
-        [HttpPost]
-        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> CreateKPIAssignment([FromBody] CreateDUKPIAssignmentCommand command)
-        {
-            var result = await mediator.Send(command);
-            return result.Succeeded ? Ok(result) : BadRequest(result);
-        }
-
         [HttpGet]
-        [ProducesResponseType(typeof(PaginatedApiResponse<DUKPIAssignmentsGroupedResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(PaginatedApiResponse<DUKPIAssignmentResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetKPIAssignments([FromQuery] GetDUKPIAssignmentsQuery query)
         {
             var result = await mediator.Send(query);
@@ -41,21 +32,6 @@ namespace ERPEZ.Api.Controllers
             return result.Succeeded ? Ok(result) : NotFound(result);
         }
 
-        [HttpPut("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> UpdateDUKPIAssignment(Guid id, [FromBody] List<UpdateDUKPIAssignmentRequest> updates)
-        {
-            var command = new UpdateDUKPIAssignmentCommand
-            {
-                Id = id,
-                UpdateDUKPIAssignments = updates
-            };
-
-            var response = await mediator.Send(command);
-            return response.Succeeded ? Ok(response) : BadRequest(response);
-        }
         [HttpDelete("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]

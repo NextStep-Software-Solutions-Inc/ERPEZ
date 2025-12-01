@@ -1,10 +1,10 @@
 using FluentValidation;
 
-namespace ERPEZ.Application.Features.Planning.DUKPIAssignment.Commands.CreateDUKPIAssignment;
+namespace ERPEZ.Application.Features.Planning.DeliveryUnit.Commands.UpdateKPIsForDeliveryUnit;
 
-public class CreateDUKPIAssignmentCommandValidator : AbstractValidator<CreateDUKPIAssignmentCommand>
+public class UpdateKPIsForDeliveryUnitCommandValidator : AbstractValidator<UpdateKPIsForDeliveryUnitCommand>
 {
-    public CreateDUKPIAssignmentCommandValidator()
+    public UpdateKPIsForDeliveryUnitCommandValidator()
     {
         // DeliveryUnitId (Required GUID)
         RuleFor(x => x.DeliveryUnitId)
@@ -12,7 +12,7 @@ public class CreateDUKPIAssignmentCommandValidator : AbstractValidator<CreateDUK
             .WithMessage("Delivery Unit ID is required and must be a valid, non-empty GUID.");
 
         // KPITargetId (Required GUID)
-        RuleForEach(x => x.DUKPITargets)
+        RuleForEach(x => x.KPITargetUpdates)
             .ChildRules(target =>
             {
                 target.RuleFor(x => x.KPIId)
