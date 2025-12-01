@@ -1,4 +1,5 @@
 using ERPEZ.Application.Features.Planning.DUAllocation.Commands.CreateDUAllocation;
+using ERPEZ.Application.Features.Planning.DUAllocation.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -6,9 +7,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.DUAllocation.Commands.UpdateDUAllocation;
 
-public class UpdateDUAllocationCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateDUAllocationCommand, ApiResponse<Guid>>
+public class UpdateDUAllocationCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateDUAllocationCommand, ApiResponse<DUAllocationResponse>>
 {
-    public async Task<ApiResponse<Guid>> Handle(UpdateDUAllocationCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<DUAllocationResponse>> Handle(UpdateDUAllocationCommand request, CancellationToken cancellationToken)
     {
         Domain.Entities.Planning.DUAllocation? updatedAllocation = null;
 
@@ -18,6 +19,8 @@ public class UpdateDUAllocationCommandHandler(IUnitOfWork unitOfWork) : IRequest
             var duAllocation = await unitOfWork.DUAllocationRepository.GetByIdAsync(request.Id, cancellationToken)
                 ?? throw new NotFoundException("Delivery Unit Allocation not found.");
 
+            if (duAllocation.IsLocked) throw new BadRequestException("This Delivery Unit Allocation is locked and cannot be updated.");
+            
             // Update basic properties
             if (dto?.Purpose != null) duAllocation.Purpose = dto.Purpose;
             if (dto?.Amount.HasValue == true) duAllocation.Amount = dto.Amount.Value;
@@ -34,7 +37,14 @@ public class UpdateDUAllocationCommandHandler(IUnitOfWork unitOfWork) : IRequest
             updatedAllocation = duAllocation;
         }, cancellationToken);
 
-        return ApiResponse<Guid>.Success(updatedAllocation!.Id, "Delivery Unit Allocation updated successfully.");
+        return ApiResponse<DUAllocationResponse>.Success(new DUAllocationResponse
+        {
+            Id = updatedAllocation!.Id,
+            DeliveryUnitId = updatedAllocation.DeliveryUnitId,
+            Purpose = updatedAllocation.Purpose,
+            Amount = updatedAllocation.Amount,
+            IsLocked = updatedAllocation.IsLocked,
+        }, "Delivery Unit Allocation updated successfully.");
     }
 
     private async Task HandleDUFundAllocationsUpdateAsync(
