@@ -24,7 +24,7 @@ namespace ERPEZ.Api.Controllers
             if (!office.Succeeded)
                 return BadRequest(office);
 
-            return CreatedAtAction(nameof(GetOfficeById), new { id = office.Data!.Id }, office);
+            return CreatedAtAction(nameof(GetOfficeById), new { id = office.Data }, office);
         }
 
         [HttpGet]
