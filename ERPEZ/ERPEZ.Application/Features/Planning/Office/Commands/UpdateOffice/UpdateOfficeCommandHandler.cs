@@ -6,9 +6,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Office.Commands.UpdateOffice;
 
-public class UpdateOfficeCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateOfficeCommand, ApiResponse<OfficeResponse>>
+public class UpdateOfficeCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateOfficeCommand, ApiResponse<Unit>>
 {
-    public async Task<ApiResponse<OfficeResponse>> Handle(UpdateOfficeCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<Unit>> Handle(UpdateOfficeCommand request, CancellationToken cancellationToken)
     {
         var office = await unitOfWork.OfficeRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("Office not found.");
         if (office.Name == request.UpdateOffice?.Name) throw new ConflictException("Office already exist.");
@@ -23,24 +23,23 @@ public class UpdateOfficeCommandHandler(IUnitOfWork unitOfWork) : IRequestHandle
         office.ContactNumber = dto?.ContactNumber ?? office.ContactNumber;
         office.ResponsibilityCenterCode = dto?.ResponsibilityCenterCode ?? office.ResponsibilityCenterCode;
 
+        if (dto?.IsDeliveryUnit.HasValue == true)
+        {
+            if (dto.IsDeliveryUnit.Value)
+            {
+                office.DeliveryUnits ??= [
+                    new Domain.Entities.Planning.DeliveryUnit()
+                ];
+            }
+            else
+            {
+                office.DeliveryUnits?.Clear();
+            }
+        }
+
         unitOfWork.OfficeRepository.Update(office);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var result = new OfficeResponse()
-        {
-            Id = office.Id,
-            ClusterId = office.ClusterId,
-            OfficeHead = office.OfficeHead,
-            Name = office.Name,
-            Description = office.Description,
-            Address = office.Address,
-            Email = office.Email,
-            ContactNumber = office.ContactNumber,
-            ResponsibilityCenterCode = office.ResponsibilityCenterCode,
-            CreatedBy = office.CreatedBy,
-            CreatedAt = office.CreatedAt
-        };
-
-        return ApiResponse<OfficeResponse>.Success(result, "Office updated successfully.");
+        return ApiResponse<Unit>.Success(Unit.Value, "Office updated successfully.");
     }
 }
