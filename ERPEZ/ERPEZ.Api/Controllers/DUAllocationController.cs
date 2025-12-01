@@ -1,5 +1,6 @@
 using ERPEZ.Application.Features.Planning.DUAllocation.Commands.CreateDUAllocation;
 using ERPEZ.Application.Features.Planning.DUAllocation.Commands.DeleteDUAllocation;
+using ERPEZ.Application.Features.Planning.DUAllocation.Commands.LockDUAllocation;
 using ERPEZ.Application.Features.Planning.DUAllocation.Commands.UpdateDUAllocation;
 using ERPEZ.Application.Features.Planning.DUAllocation.Dtos;
 using ERPEZ.Application.Features.Planning.DUAllocation.Queries.GetDUAllocationById;
@@ -15,8 +16,8 @@ namespace ERPEZ.Api.Controllers
     public class DUAllocationController(ISender mediator) : ControllerBase
     {
         [HttpPost]
-        [ProducesResponseType(typeof(ApiResponse<DUAllocationDto>), StatusCodes.Status201Created)]
-        [ProducesResponseType(typeof(ApiResponse<DUAllocationDto>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<DUAllocationResponse>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<DUAllocationResponse>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateDUAllocation([FromBody] CreateDUAllocationCommand command)
         {
             var result = await mediator.Send(command);
@@ -24,7 +25,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet]
-        [ProducesResponseType(typeof(PaginatedApiResponse<DUAllocationDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(PaginatedApiResponse<DUAllocationResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetDUAllocations([FromQuery] GetDUAllocationsQuery query)
         {
             var result = await mediator.Send(query);
@@ -32,7 +33,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<DUAllocationDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<DUAllocationResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetDUAllocationById(Guid id)
         {
@@ -41,7 +42,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpPut("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<DUAllocationDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<DUAllocationResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateDUAllocation(Guid id, [FromBody] UpdateDUAllocationRequest request)
@@ -52,6 +53,17 @@ namespace ERPEZ.Api.Controllers
                 UpdateDUAllocation = request
             };
 
+            var result = await mediator.Send(command);
+            return result.Succeeded ? Ok(result) : BadRequest(result);
+        }
+
+        [HttpPut("{id}/lock")]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> LockDUAllocation(Guid id)
+        {
+            var command = new LockDUAllocationCommand { Id = id };
             var result = await mediator.Send(command);
             return result.Succeeded ? Ok(result) : BadRequest(result);
         }

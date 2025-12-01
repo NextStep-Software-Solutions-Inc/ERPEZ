@@ -11,6 +11,7 @@ public class DUAllocation : BaseEntity
     public string Purpose { get; set; } = string.Empty;
     [Sieve(CanFilter = true, CanSort = true)]
     public decimal Amount { get; set; }
+    public bool IsLocked { get; set; } = false;
     public virtual List<SubDUAllocation> SubDUAllocations { get; set; } = [];
     public virtual List<DUFundAllocation> DUFundAllocations { get; set; } = [];
     public virtual DeliveryUnit DeliveryUnit { get; set; } = null!;

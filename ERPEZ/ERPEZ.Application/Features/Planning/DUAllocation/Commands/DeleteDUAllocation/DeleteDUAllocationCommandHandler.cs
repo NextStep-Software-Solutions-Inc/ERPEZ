@@ -10,6 +10,7 @@ public class DeleteDUAllocationCommandHandler(IUnitOfWork unitOfWork) : IRequest
     public async Task<ApiResponse<Unit>> Handle(DeleteDUAllocationCommand request, CancellationToken cancellationToken)
     {
         var duAllocation = await unitOfWork.DUAllocationRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("Delivery Unit Allocation not found.");
+        if (duAllocation.IsLocked) throw new BadRequestException("This Delivery Unit Allocation is locked and cannot be deleted.");
 
         unitOfWork.DUAllocationRepository.Remove(duAllocation);
         await unitOfWork.SaveChangesAsync(cancellationToken);

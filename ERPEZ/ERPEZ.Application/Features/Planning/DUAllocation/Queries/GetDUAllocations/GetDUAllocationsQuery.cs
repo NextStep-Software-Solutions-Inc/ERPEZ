@@ -1,9 +1,10 @@
+using ERPEZ.Application.Features.Planning.DUAllocation.Dtos;
 using ERPEZ.Shared.Common;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.DUAllocation.Queries.GetDUAllocations;
 
-public class GetDUAllocationsQuery : IRequest<PaginatedApiResponse<Domain.Entities.Planning.DUAllocation>>
+public class GetDUAllocationsQuery : IRequest<PaginatedApiResponse<DUAllocationResponse>>
 {
     public int PageNumber { get; set; } = 1;
     public int PageSize { get; set; } = 10;
