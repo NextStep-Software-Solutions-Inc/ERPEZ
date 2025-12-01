@@ -29,13 +29,9 @@ public class AttributeController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> UpdateAttribute(Guid id, [FromBody] UpdateAttributeCommand command)
+    public async Task<IActionResult> UpdateAttribute(Guid id, [FromBody] UpdateAttributeRequest request)
     {
-        if (id != command.Id)
-        {
-            return BadRequest(ApiResponse<Unit>.Fail("The ID in the URL does not match the ID in the request body."));
-        }
-
+        var command = new UpdateAttributeCommand(id, request.Name, request.Code, request.Description, request.ParentAttributeId);
         var response = await mediator.Send(command);
         return response.Succeeded ? Ok(response) : NotFound(response);
     }

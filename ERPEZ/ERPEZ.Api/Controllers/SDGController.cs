@@ -27,12 +27,9 @@ namespace ERPEZ.Api.Controllers
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> UpdateSDG(Guid id, [FromBody] UpdateSDGCommand command)
+        public async Task<IActionResult> UpdateSDG(Guid id, [FromBody] UpdateSDGRequest request)
         {
-            if (id != command.Id)
-            {
-                return BadRequest("The ID in the URL does not match the ID in the request body.");
-            }
+            var command = new UpdateSDGCommand(id, request.Name, request.Description);
             var response = await mediator.Send(command);
             return Ok(response);
         }

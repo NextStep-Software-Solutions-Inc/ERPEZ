@@ -66,15 +66,14 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpDelete("{id}")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteObject(Guid id)
         {
             var command = new DeleteObjectCommand(id);
             var result = await mediator.Send(command);
 
-            // Returns 204 No Content on successful deletion
-            return result.Succeeded ? NoContent() : NotFound(result);
+            return result.Succeeded ? Ok(result) : NotFound(result);
         }
     }
 }

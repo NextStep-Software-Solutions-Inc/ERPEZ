@@ -62,14 +62,14 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpDelete("{id}")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteOPCRRating(Guid id)
         {
             var command = new DeleteOPCRRatingCommand(id);
             var result = await mediator.Send(command);
 
-            return result.Succeeded ? Ok(result) : NoContent();
+            return result.Succeeded ? Ok(result) : BadRequest(result);
         }
     }
 }

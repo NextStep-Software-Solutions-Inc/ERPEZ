@@ -12,14 +12,20 @@ public class UpdateSDGCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<U
         var sdg = await unitOfWork.SDGRepository.GetByIdAsync(request.Id, cancellationToken)
             ?? throw new NotFoundException($"SDG with ID {request.Id} not found.");
 
-        var existingSDG = await unitOfWork.SDGRepository.FindAsync(x => x.Name == request.Name && x.Id != request.Id, cancellationToken);
-        if (existingSDG != null)
+        if (!string.IsNullOrWhiteSpace(request.Name))
         {
-            throw new ConflictException($"SDG with name '{request.Name}' already exists.");
+            var existingSDG = await unitOfWork.SDGRepository.FindAsync(x => x.Name == request.Name && x.Id != request.Id, cancellationToken);
+            if (existingSDG != null)
+            {
+                throw new ConflictException($"SDG with name '{request.Name}' already exists.");
+            }
+            sdg.Name = request.Name;
         }
 
-        sdg.Name = request.Name;
-        sdg.Description = request.Description;
+        if (request.Description != null)
+        {
+            sdg.Description = request.Description;
+        }
 
         unitOfWork.SDGRepository.Update(sdg);
         await unitOfWork.SaveChangesAsync(cancellationToken);

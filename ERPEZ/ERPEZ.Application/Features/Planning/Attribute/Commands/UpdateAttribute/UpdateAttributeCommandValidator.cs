@@ -3,19 +3,15 @@ using FluentValidation;
 namespace ERPEZ.Application.Features.Planning.Attribute.Commands.UpdateAttribute;
 
 /// <summary>
-/// Validator for UpdateAttributeCommand ensuring all user input meets business requirements.
+/// Validator for UpdateAttributeRequest ensuring all user input meets business requirements.
 /// </summary>
-public class UpdateAttributeCommandValidator : AbstractValidator<UpdateAttributeCommand>
+public class UpdateAttributeRequestValidator : AbstractValidator<UpdateAttributeRequest>
 {
-    public UpdateAttributeCommandValidator()
+    public UpdateAttributeRequestValidator()
     {
-        RuleFor(attribute => attribute.Id)
-            .NotEmpty().WithMessage("Attribute ID is required.");
-
         RuleFor(attribute => attribute.Name)
-            .NotEmpty().WithMessage("Attribute name is required.")
-
-            .MaximumLength(200).WithMessage("Attribute name must not exceed 200 characters.");
+            .MaximumLength(200).WithMessage("Attribute name must not exceed 200 characters.")
+            .When(attribute => !string.IsNullOrWhiteSpace(attribute.Name));
 
         RuleFor(attribute => attribute.Code)
             .MaximumLength(50).WithMessage("Attribute code must not exceed 50 characters.")

@@ -60,14 +60,14 @@ namespace ERPEZ.Api.Controllers
             return response.Succeeded ? Ok(response) : BadRequest(response);
         }
         [HttpDelete("{id}")]
-        [ProducesResponseType(StatusCodes.Status204NoContent)]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteKPIAssignment(Guid id)
         {
             var command = new DeleteDUKPIAssignmentCommand(id);
             var result = await mediator.Send(command);
 
-            return result.Succeeded ? NoContent() : BadRequest(result);
+            return result.Succeeded ? Ok(result) : BadRequest(result);
         }
     }
 }

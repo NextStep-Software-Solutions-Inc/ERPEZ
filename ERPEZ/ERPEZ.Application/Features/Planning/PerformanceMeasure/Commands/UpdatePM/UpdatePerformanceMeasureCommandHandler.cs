@@ -14,6 +14,12 @@ public class UpdatePerformanceMeasureCommandHandler(IUnitOfWork unitOfWork) : IR
         var pm = await unitOfWork.PerformanceMeasureRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken)
             ?? throw new NotFoundException("Performance Measure not found.");
 
+        var existingPerformanceMeasure = await unitOfWork.PerformanceMeasureRepository.FindAsync(x => x.Name == dto.Name && x.Id != request.Id, cancellationToken);
+        if (existingPerformanceMeasure != null)
+        {
+            throw new ConflictException($"Performance Measure with name '{dto.Name}' already exists.");
+        }
+
         pm.Name = dto.Name ?? pm.Name;
         pm.Description = dto.Description ?? pm.Description;
 
