@@ -15,8 +15,8 @@ namespace ERPEZ.Api.Controllers
     public class OfficeController(ISender mediator) : ControllerBase
     {
         [HttpPost]
-        [ProducesResponseType(typeof(ApiResponse<OfficeResponse>), StatusCodes.Status201Created)]
-        [ProducesResponseType(typeof(ApiResponse<OfficeResponse>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateOffice([FromBody] CreateOfficeCommand command)
         {
             var office = await mediator.Send(command);
