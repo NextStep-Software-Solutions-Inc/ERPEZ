@@ -1,10 +1,9 @@
-using ERPEZ.Application.Features.Planning.Office.Dtos;
 using ERPEZ.Shared.Common;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Office.Commands.CreateOffice;
 
-public class CreateOfficeCommand : IRequest<ApiResponse<OfficeResponse>>
+public class CreateOfficeCommand : IRequest<ApiResponse<Guid>>
 {
     public Guid? ClusterId { get; set; }
     public string OfficeHead { get; set; } = string.Empty;
@@ -14,4 +13,5 @@ public class CreateOfficeCommand : IRequest<ApiResponse<OfficeResponse>>
     public string Email { get; set; } = string.Empty;
     public string ContactNumber { get; set; } = string.Empty;
     public string? ResponsibilityCenterCode { get; set; }
+    public bool? IsDeliveryUnit { get; set; }
 }

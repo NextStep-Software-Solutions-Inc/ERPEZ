@@ -63,5 +63,9 @@ public class CreateOfficeCommandValidator : AbstractValidator<CreateOfficeComman
             .MaximumLength(20)
             .WithMessage("Responsibility Center Code cannot exceed 20 characters.")
             .When(x => !string.IsNullOrWhiteSpace(x.ResponsibilityCenterCode));
+
+        RuleFor(x => x.IsDeliveryUnit)
+            .NotNull()
+            .WithMessage("IsDeliveryUnit must be specified as true or false.");
     }
 }

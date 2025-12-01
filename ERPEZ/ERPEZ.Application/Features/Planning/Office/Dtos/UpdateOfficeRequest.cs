@@ -9,4 +9,5 @@ public class UpdateOfficeRequest
     public string? Email { get; set; }
     public string? ContactNumber { get; set; }
     public string? ResponsibilityCenterCode { get; set; }
+    public bool? IsDeliveryUnit { get; set; }
 }

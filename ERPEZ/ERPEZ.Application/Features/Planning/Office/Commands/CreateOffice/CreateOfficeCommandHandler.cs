@@ -1,4 +1,3 @@
-using ERPEZ.Application.Features.Planning.Office.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -6,9 +5,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Office.Commands.CreateOffice;
 
-public class CreateOfficeCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateOfficeCommand, ApiResponse<OfficeResponse>>
+public class CreateOfficeCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateOfficeCommand, ApiResponse<Guid>>
 {
-    public async Task<ApiResponse<OfficeResponse>> Handle(CreateOfficeCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<Guid>> Handle(CreateOfficeCommand request, CancellationToken cancellationToken)
     {
         if (request.ClusterId.HasValue)
         {
@@ -28,26 +27,18 @@ public class CreateOfficeCommandHandler(IUnitOfWork unitOfWork) : IRequestHandle
             Email = request.Email,
             ContactNumber = request.ContactNumber,
             OfficeHead = request.OfficeHead,
-            ResponsibilityCenterCode = request.ResponsibilityCenterCode
+            ResponsibilityCenterCode = request.ResponsibilityCenterCode,
         };
+
+        if(request.IsDeliveryUnit.HasValue && request.IsDeliveryUnit.Value)
+        {
+            office.DeliveryUnits.Add(new Domain.Entities.Planning.DeliveryUnit());
+        }
+
 
         await unitOfWork.OfficeRepository.AddAsync(office, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var res = new OfficeResponse()
-        {
-            Id = office.Id,
-            Name = office.Name,
-            Description = office.Description,
-            Address = office.Address,
-            Email = office.Email,
-            ContactNumber = office.ContactNumber,
-            OfficeHead = office.OfficeHead,
-            ResponsibilityCenterCode = office.ResponsibilityCenterCode,
-            ClusterId = office.ClusterId,
-            CreatedAt = office.CreatedAt,
-            CreatedBy = office.CreatedBy
-        };
-        return ApiResponse<OfficeResponse>.Success(res, "Office created successfully.");
+        return ApiResponse<Guid>.Success(office.Id, "Office created successfully.");
     }
 }
