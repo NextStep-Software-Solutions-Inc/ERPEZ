@@ -21,10 +21,7 @@ namespace ERPEZ.Api.Controllers
         {
             var office = await mediator.Send(command);
 
-            if (!office.Succeeded)
-                return BadRequest(office);
-
-            return CreatedAtAction(nameof(GetOfficeById), new { id = office.Data!.Id }, office);
+            return office.Succeeded ? CreatedAtAction(nameof(GetOfficeById), new { id = office.Data }, office) : BadRequest(office);
         }
 
         [HttpGet]
@@ -32,7 +29,7 @@ namespace ERPEZ.Api.Controllers
         public async Task<IActionResult> GetOffices([FromQuery] GetOfficesQuery query)
         {
             var result = await mediator.Send(query);
-            return Ok(result);
+            return result.Succeeded ? Ok(result) : BadRequest(result);
         }
 
         [HttpGet("{id}")]
