@@ -2,12 +2,13 @@ using ERPEZ.Application.Features.Planning.DUKPIAssignment.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
+using ERPEZ.Domain.Dtos.Planning;
 
 namespace ERPEZ.Application.Features.Planning.DUKPIAssignment.Queries.GetDUKPIAssignments;
 
-public class GetDUKPIAssignmentsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetDUKPIAssignmentsQuery, PaginatedApiResponse<DUKPIAssignmentsResponse>>
+public class GetDUKPIAssignmentsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetDUKPIAssignmentsQuery, PaginatedApiResponse<DUKPIAssignmentsGroupedResponse>>
 {
-    public async Task<PaginatedApiResponse<DUKPIAssignmentsResponse>> Handle(GetDUKPIAssignmentsQuery query, CancellationToken cancellationToken)
+    public async Task<PaginatedApiResponse<DUKPIAssignmentsGroupedResponse>> Handle(GetDUKPIAssignmentsQuery query, CancellationToken cancellationToken)
     {
         var sieveModel = new Sieve.Models.SieveModel
         {
@@ -16,28 +17,10 @@ public class GetDUKPIAssignmentsQueryHandler(IUnitOfWork unitOfWork) : IRequestH
             Filters = query.Filters,
             Sorts = query.Sorts
         };
-        var (kpiAssignments, totalCount) = await unitOfWork.DUKPIAssignmentRepository.GetAllAsync(sieveModel, cancellationToken: cancellationToken);
+        
+        var (groupedAssignments, totalCount) = await unitOfWork.DUKPIAssignmentRepository.GetGroupedAssignmentsAsync(sieveModel, cancellationToken);
 
-        var groupedAssignments = kpiAssignments
-            .GroupBy(a => new { a.KPIId, a.DeliveryUnitId })
-            .Select(group => new DUKPIAssignmentsResponse
-            {
-                KPIId = group.Key.KPIId,
-                DeliveryUnit = new DeliveryUnitResponse
-                {
-                    Id = group.Key.DeliveryUnitId,
-                    OfficeName = group.First().DeliveryUnit.Office.Name
-                },
-                DUKPITargets = [.. group.Select(assignment => new DUKPITargetResponse
-                {
-                    DUKPIAssignmentId = assignment.Id,
-                    TargetId = assignment.KPITargetId,
-                    AllocatedTargetValue = assignment.AllocatedTargetValue
-                })]
-            })
-            .ToList();
-
-        return new PaginatedApiResponse<DUKPIAssignmentsResponse>(
+        return new PaginatedApiResponse<DUKPIAssignmentsGroupedResponse>(
             groupedAssignments,
             query.PageNumber,
             query.PageSize,

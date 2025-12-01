@@ -1,4 +1,6 @@
 using Sieve.Services;
+using Microsoft.EntityFrameworkCore;
+using ERPEZ.Domain.Dtos.Planning;
 
 namespace ERPEZ.Infrastructure.Persistence.Repositories;
 
@@ -17,4 +19,44 @@ public class DUKPIAssignmentRepository(ApplicationDbContext context, ISieveProce
 
         return aggregatedAllocations.ToDictionary(a => a.KPITargetId, a => a.TotalAllocated);
     }
+
+    public async Task<(List<DUKPIAssignmentsGroupedResponse> Items, int TotalCount)> GetGroupedAssignmentsAsync(Sieve.Models.SieveModel sieveModel, CancellationToken cancellationToken = default)
+    {
+        IQueryable<Domain.Entities.Planning.DUKPIAssignment> query = context.DUKPIAssignments!
+            .Include(a => a.DeliveryUnit)
+            .ThenInclude(du => du.Office);
+
+        // Apply filters
+        query = sieveProcessor.Apply(sieveModel, query, applySorting: false, applyPagination: false);
+
+        var groupedQuery = query
+            .GroupBy(a => new { a.KPIId, a.DeliveryUnitId })
+            .Select(g => new DUKPIAssignmentsGroupedResponse
+            {
+                KPIId = g.Key.KPIId,
+                DeliveryUnit = new DeliveryUnitGroupedResponse
+                {
+                    Id = g.Key.DeliveryUnitId,
+                    OfficeName = g.First().DeliveryUnit.Office.Name
+                },
+                DUKPITargets = g.Select(a => new DUKPITargetGroupedResponse
+                {
+                    DUKPIAssignmentId = a.Id,
+                    TargetId = a.KPITargetId,
+                    AllocatedTargetValue = a.AllocatedTargetValue
+                }).ToList()
+            });
+
+        var totalCount = await groupedQuery.CountAsync(cancellationToken);
+
+        // For now, order by KPIId, skip sorting from sieveModel as it's complex for grouped data
+        var items = await groupedQuery
+            .OrderBy(x => x.KPIId)
+            .Skip(((sieveModel.Page ?? 1) - 1) * (sieveModel.PageSize ?? 10))
+            .Take(sieveModel.PageSize ?? 10)
+            .ToListAsync(cancellationToken);
+
+        return (items, totalCount);
+    }
 }
+
