@@ -33,8 +33,8 @@ public class GlobalExceptionHandler : IExceptionHandler
             var failResponse = new ApiResponse<object>
             {
                 Succeeded = false,
-                Message = validationProblem.Title,
-                Data = validationProblem
+                Message = validationProblem.Detail,
+                Errors = validationProblem.Errors
             };
 
             await httpContext.Response.WriteAsJsonAsync(failResponse, cancellationToken);
