@@ -58,7 +58,7 @@ namespace ERPEZ.Api.Controllers
             return result.Succeeded ? Ok(result) : BadRequest(result);
         }
 
-        [HttpPatch("{id}/status")]
+        [HttpPut("{id}/status")]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
