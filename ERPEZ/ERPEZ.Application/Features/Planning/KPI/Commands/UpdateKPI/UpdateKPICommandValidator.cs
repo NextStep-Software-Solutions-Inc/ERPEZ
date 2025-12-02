@@ -78,6 +78,13 @@ public class UpdateKPICommandValidator : AbstractValidator<UpdateKPICommand>
                             .WithMessage("Numerical Rating value must be non-negative.");
                     });
             });
+        // PerformanceMeasureId uniqueness check
+        When(x => x.Dto.KPIRatings != null && x.Dto.KPIRatings.Count != 0, () =>
+        {
+            RuleFor(x => x.Dto.KPIRatings)
+                .Must(ratings => ratings!.Select(r => r.PerformanceMeasureId).Distinct().Count() == ratings!.Count)
+                .WithMessage("PerformanceMeasureId must be unique across all KPI Ratings.");
+        });
 
         // 10. KPITargets (List<CreateKPITargetRequest>) - Optional for partial update
         RuleFor(x => x.Dto.KPITargets)
