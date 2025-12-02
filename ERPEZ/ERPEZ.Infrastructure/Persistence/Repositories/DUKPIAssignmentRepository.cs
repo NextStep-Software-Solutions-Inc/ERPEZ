@@ -33,14 +33,14 @@ public class DUKPIAssignmentRepository(ApplicationDbContext context, ISieveProce
             .GroupBy(a => new { a.KPIId, a.DeliveryUnitId })
             .Select(g => new DUKPIAssignmentsGroupedResponse
             {
-                KPIId = g.Key.KPIId,
                 DeliveryUnit = new DeliveryUnitGroupedResponse
                 {
                     Id = g.Key.DeliveryUnitId,
                     OfficeName = g.First().DeliveryUnit.Office.Name
                 },
                 DUKPITargets = g.Select(a => new DUKPITargetGroupedResponse
-                {
+                {   
+                    KPIId = g.Key.KPIId,
                     DUKPIAssignmentId = a.Id,
                     TargetId = a.KPITargetId,
                     AllocatedTargetValue = a.AllocatedTargetValue
@@ -51,7 +51,7 @@ public class DUKPIAssignmentRepository(ApplicationDbContext context, ISieveProce
 
         // For now, order by KPIId, skip sorting from sieveModel as it's complex for grouped data
         var items = await groupedQuery
-            .OrderBy(x => x.KPIId)
+            .OrderBy(x => x.DeliveryUnit.Id)
             .Skip(((sieveModel.Page ?? 1) - 1) * (sieveModel.PageSize ?? 10))
             .Take(sieveModel.PageSize ?? 10)
             .ToListAsync(cancellationToken);

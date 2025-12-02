@@ -15,16 +15,13 @@ namespace ERPEZ.Api.Controllers
     public class OfficeController(ISender mediator) : ControllerBase
     {
         [HttpPost]
-        [ProducesResponseType(typeof(ApiResponse<OfficeResponse>), StatusCodes.Status201Created)]
-        [ProducesResponseType(typeof(ApiResponse<OfficeResponse>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateOffice([FromBody] CreateOfficeCommand command)
         {
             var office = await mediator.Send(command);
 
-            if (!office.Succeeded)
-                return BadRequest(office);
-
-            return CreatedAtAction(nameof(GetOfficeById), new { id = office.Data }, office);
+            return office.Succeeded ? CreatedAtAction(nameof(GetOfficeById), new { id = office.Data }, office) : BadRequest(office);
         }
 
         [HttpGet]
@@ -32,7 +29,7 @@ namespace ERPEZ.Api.Controllers
         public async Task<IActionResult> GetOffices([FromQuery] GetOfficesQuery query)
         {
             var result = await mediator.Send(query);
-            return Ok(result);
+            return result.Succeeded ? Ok(result) : BadRequest(result);
         }
 
         [HttpGet("{id}")]

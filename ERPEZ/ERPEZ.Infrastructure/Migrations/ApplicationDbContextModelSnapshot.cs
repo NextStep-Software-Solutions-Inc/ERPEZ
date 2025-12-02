@@ -247,6 +247,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("IsLocked")
+                        .HasColumnType("boolean");
+
                     b.Property<string>("Purpose")
                         .IsRequired()
                         .HasColumnType("text");
@@ -2337,7 +2340,7 @@ namespace ERPEZ.Infrastructure.Migrations
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.KPI", b =>
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Planning.KPI", "ParentKPI")
-                        .WithMany("ParentKPIs")
+                        .WithMany("ChildKPIs")
                         .HasForeignKey("ParentKPIId");
 
                     b.Navigation("ParentKPI");
@@ -2841,6 +2844,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.KPI", b =>
                 {
+                    b.Navigation("ChildKPIs");
+
                     b.Navigation("KPIAssignments");
 
                     b.Navigation("KPIModeOfVerifications");
@@ -2850,8 +2855,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("KPITargets");
 
                     b.Navigation("OPCRActivities");
-
-                    b.Navigation("ParentKPIs");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.KPITarget", b =>

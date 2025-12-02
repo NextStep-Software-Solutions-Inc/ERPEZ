@@ -1,5 +1,7 @@
+using ERPEZ.Application.Features.Planning.DeliveryUnit.Commands.AssignKPIsToDeliveryUnit;
 using ERPEZ.Application.Features.Planning.DeliveryUnit.Commands.CreateDU;
 using ERPEZ.Application.Features.Planning.DeliveryUnit.Commands.DeleteDU;
+using ERPEZ.Application.Features.Planning.DeliveryUnit.Commands.UpdateKPIsForDeliveryUnit;
 using ERPEZ.Application.Features.Planning.DeliveryUnit.Dtos;
 using ERPEZ.Application.Features.Planning.DeliveryUnit.Queries.GetDUByIdQuery;
 using ERPEZ.Application.Features.Planning.DeliveryUnit.Queries.GetDUsQuery;
@@ -53,6 +55,33 @@ namespace ERPEZ.Api.Controllers
             var deliveryUnit = await mediator.Send(command);
 
             return deliveryUnit.Succeeded ? Ok(deliveryUnit) : BadRequest(deliveryUnit);
+        }
+
+        [HttpPost("{id}/assign-kpis")]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> AssignKPIsToDeliveryUnit(string id, [FromBody] AssignKPIsToDeliveryUnitCommand command)
+        {
+            if(id != command.DeliveryUnitId.ToString())
+            {
+                return BadRequest(ApiResponse<Unit>.Fail("Delivery Unit ID in URL does not match with the one in the request body."));
+            }
+            var result = await mediator.Send(command);
+            return result.Succeeded ? Ok(result) : BadRequest(result);
+        }
+
+        [HttpPut("{id}/assign-kpis")]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> UpdateKPIsForDeliveryUnit(string id, [FromBody] UpdateKPIsForDeliveryUnitCommand command)
+        {
+            if (id != command.DeliveryUnitId.ToString())
+            {
+                return BadRequest(ApiResponse<Unit>.Fail("Delivery Unit ID in URL does not match with the one in the request body."));
+            }
+
+            var result = await mediator.Send(command);
+            return result.Succeeded ? Ok(result) : BadRequest(result);
         }
     }
 }
