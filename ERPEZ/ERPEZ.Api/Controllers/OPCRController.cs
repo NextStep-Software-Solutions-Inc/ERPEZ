@@ -7,6 +7,7 @@ using ERPEZ.Application.Features.Planning.OPCR.Dtos;
 using ERPEZ.Application.Features.Planning.OPCR.Queries.GetOPCRs;
 using ERPEZ.Application.Features.Planning.OPCR.Queries.GetOPCRById;
 using ERPEZ.Application.Features.Planning.OPCR.Commands.UpdateOPCR;
+using ERPEZ.Application.Features.Planning.OPCR.Commands.UpdateOPCRStatus;
 using ERPEZ.Application.Features.Planning.OPCR.Commands.DeleteOPCR;
 
 namespace ERPEZ.Api.Controllers
@@ -43,7 +44,7 @@ namespace ERPEZ.Api.Controllers
 
         [HttpPut("{id}")]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateOPCR(Guid id, [FromBody] UpdateOPCRRequest dto)
         {
@@ -51,6 +52,22 @@ namespace ERPEZ.Api.Controllers
             {
                 Id = id,
                 UpdateOPCR = dto
+            };
+
+            var result = await mediator.Send(command);
+            return result.Succeeded ? Ok(result) : BadRequest(result);
+        }
+
+        [HttpPatch("{id}/status")]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> UpdateOPCRStatus(Guid id, [FromBody] UpdateOPCRStatusRequest dto)
+        {
+            var command = new UpdateOPCRStatusCommand
+            {
+                Id = id,
+                UpdateOPCRStatus = dto
             };
 
             var result = await mediator.Send(command);
