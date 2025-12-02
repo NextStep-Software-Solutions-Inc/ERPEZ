@@ -114,6 +114,11 @@ public class CreateKPICommandValidator : AbstractValidator<CreateKPICommand>
                         });
                 });
 
+        RuleFor(x => x.KPIRatings)
+                .Must(ratings => ratings.Select(r => r.PerformanceMeasureId).Distinct().Count() == ratings.Count)
+                .WithMessage("PerformanceMeasureId must be unique across all KPI Ratings.")
+                .When(x => x.KPIRatings != null && x.KPIRatings.Count != 0);
+
         RuleFor(x => x.KPIMOVs)
                 .NotNull()
                 .WithMessage("KPI Mode of Verifications is required.")
