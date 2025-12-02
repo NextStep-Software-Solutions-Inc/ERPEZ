@@ -1,4 +1,5 @@
 using ERPEZ.Domain.Common;
+using ERPEZ.Domain.Enums;
 using Sieve.Attributes;
 
 namespace ERPEZ.Domain.Entities.Planning;
@@ -14,7 +15,7 @@ public class OPCR : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public int FiscalYear { get; set; }
     [Sieve(CanFilter = true, CanSort = true)]
-    public string Status { get; set; } = string.Empty;
+    public StatusEnum Status { get; set; } = StatusEnum.Draft;
     public virtual DeliveryUnit DeliveryUnit { get; set; } = null!;
     public virtual List<OPCREvaluation> OPCREvaluations { get; set; } = [];
     public virtual List<DUKPIAssignment> DUKPIAssignments { get; set; } = [];

@@ -21,11 +21,7 @@ namespace ERPEZ.Api.Controllers
         public async Task<IActionResult> CreateOPCR([FromBody] CreateOPCRCommand command)
         {
             var result = await mediator.Send(command);
-
-            if (!result.Succeeded)
-                return BadRequest(result);
-
-            return CreatedAtAction(nameof(GetOPCRById), new { id = result.Data!.Id }, result);
+            return result.Succeeded ? CreatedAtAction(nameof(GetOPCRById), new { id = result.Data }, result) : BadRequest(result);
         }
 
         [HttpGet]
@@ -33,7 +29,7 @@ namespace ERPEZ.Api.Controllers
         public async Task<IActionResult> GetOPCRs([FromQuery] GetOPCRsQuery query)
         {
             var result = await mediator.Send(query);
-            return Ok(result);
+            return result.Succeeded ? Ok(result) : BadRequest(result);
         }
 
         [HttpGet("{id}")]
@@ -46,10 +42,10 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpPut("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<OPCRDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> UpdateOPCR(Guid id, [FromBody] UpdateOPCRDto dto)
+        public async Task<IActionResult> UpdateOPCR(Guid id, [FromBody] UpdateOPCRRequest dto)
         {
             var command = new UpdateOPCRCommand
             {

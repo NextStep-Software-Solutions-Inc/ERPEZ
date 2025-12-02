@@ -4,9 +4,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.OPCR.Commands.UpdateOPCR;
 
-public class UpdateOPCRCommand : IRequest<ApiResponse<Domain.Entities.Planning.OPCR>>
+public record UpdateOPCRCommand : IRequest<ApiResponse<Unit>>
 {
     public Guid Id { get; set; }
-    public required UpdateOPCRDto UpdateOPCR { get; set; }
+    public required UpdateOPCRRequest UpdateOPCR { get; set; }
 }
 
