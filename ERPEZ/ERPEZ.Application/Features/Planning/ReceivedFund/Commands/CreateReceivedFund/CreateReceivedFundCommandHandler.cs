@@ -6,9 +6,9 @@ using MediatR;
 namespace ERPEZ.Application.Features.Planning.ReceivedFund.Commands.CreateReceivedFund;
 
 public class CreateReceivedFundCommandHandler(IUnitOfWork unitOfWork)
-    : IRequestHandler<CreateReceivedFundCommand, ApiResponse<Unit>>
+    : IRequestHandler<CreateReceivedFundCommand, ApiResponse<Guid>>
 {
-    public async Task<ApiResponse<Unit>> Handle(CreateReceivedFundCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<Guid>> Handle(CreateReceivedFundCommand request, CancellationToken cancellationToken)
     {
 
         _ = await unitOfWork.FundSourceRepository.GetByIdAsync(request.FundSourceId, cancellationToken) ?? throw new NotFoundException("Fund Source not found.");
@@ -22,6 +22,6 @@ public class CreateReceivedFundCommandHandler(IUnitOfWork unitOfWork)
 
         await unitOfWork.ReceivedFundRepository.AddAsync(receivedFund, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
-        return ApiResponse<Unit>.Success(Unit.Value, "Received Fund created successfully.");
+        return ApiResponse<Guid>.Success(receivedFund.Id, "Received Fund created successfully.");
     }
 }
