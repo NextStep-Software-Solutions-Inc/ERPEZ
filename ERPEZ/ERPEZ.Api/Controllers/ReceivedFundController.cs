@@ -28,7 +28,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet]
-        [ProducesResponseType(typeof(PaginatedApiResponse<ReceivedFundDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(PaginatedApiResponse<ReceivedFundResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetReceivedFunds([FromQuery] GetReceivedFundsQuery query)
         {
             var result = await mediator.Send(query);
@@ -36,7 +36,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<ReceivedFundDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<ReceivedFundResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetReceivedFundById(Guid id)
         {

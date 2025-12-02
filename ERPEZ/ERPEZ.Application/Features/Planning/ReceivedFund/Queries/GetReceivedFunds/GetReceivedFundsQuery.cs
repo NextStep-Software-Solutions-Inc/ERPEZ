@@ -1,12 +1,9 @@
+using ERPEZ.Application.Common.Queries;
+using ERPEZ.Application.Features.Planning.ReceivedFund.Dtos;
 using ERPEZ.Shared.Common;
-using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.ReceivedFund.Queries.GetReceivedFunds;
 
-public class GetReceivedFundsQuery : IRequest<PaginatedApiResponse<Domain.Entities.Planning.ReceivedFund>>
+public record GetReceivedFundsQuery : PaginatedQuery<PaginatedApiResponse<ReceivedFundResponse>>
 {
-    public int PageNumber { get; set; } = 1;
-    public int PageSize { get; set; } = 10;
-    public string? Filters { get; set; }
-    public string? Sorts { get; set; }
 }
