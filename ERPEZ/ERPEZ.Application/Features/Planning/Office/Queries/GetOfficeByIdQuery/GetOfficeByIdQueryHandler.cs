@@ -10,9 +10,7 @@ public class GetOfficeByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler
 {
     public async Task<ApiResponse<OfficeResponse>> Handle(GetOfficeByIdQuery request, CancellationToken cancellationToken)
     {
-        var office = await unitOfWork.OfficeRepository.FindAsync(
-           t => t.Id == request.Id,
-            cancellationToken: cancellationToken) ?? throw new NotFoundException("No data found.");
+        var office = await unitOfWork.OfficeRepository.FindAsync(t => t.Id == request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("No data found.");
 
         var result = new OfficeResponse()
         {
