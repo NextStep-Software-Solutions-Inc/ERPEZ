@@ -184,8 +184,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .IsRequired(false);
 
         modelBuilder.Entity<KPITarget>()
-            .HasIndex(kt => new { kt.KPIId, kt.Period })
-            .IsUnique();
+            .HasIndex(kt => new { kt.KPIId, kt.Period, kt.QuarterName })
+            .IsUnique()
+            .HasFilter("\"QuarterName\" IS NOT NULL");
+            
 
         //PerformanceMeasure
         modelBuilder.Entity<PerformanceMeasure>()

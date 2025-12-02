@@ -772,8 +772,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("ParentKPITargetId");
 
-                    b.HasIndex("KPIId", "Period")
-                        .IsUnique();
+                    b.HasIndex("KPIId", "Period", "QuarterName")
+                        .IsUnique()
+                        .HasFilter("\"QuarterName\" IS NOT NULL");
 
                     b.ToTable("KPITargets", "planning");
                 });
