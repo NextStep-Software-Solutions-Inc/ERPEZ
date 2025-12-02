@@ -6,7 +6,7 @@ namespace ERPEZ.Application.Features.Planning.DeliveryUnit.Commands.AssignKPIsTo
 public record AssignKPIsToDeliveryUnitCommand : IRequest<ApiResponse<Unit>>
 {
     public Guid DeliveryUnitId { get; init; }
-    public List<KPITargetRequest> KPITargets { get; init; } = [];
+    public required List<KPITargetRequest> KPITargets { get; init; } = [];
 }
 
 public record KPITargetRequest

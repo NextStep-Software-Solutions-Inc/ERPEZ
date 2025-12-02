@@ -29,6 +29,7 @@ public class AssignKPIsToDeliveryUnitCommandValidator : AbstractValidator<Assign
                     .GreaterThan(0)
                     .WithMessage("Allocated Target Value must be greater than zero.");
 
-            });
+            })
+            .When(x => x.KPITargets != null && x.KPITargets.Count > 0);
     }
 }
