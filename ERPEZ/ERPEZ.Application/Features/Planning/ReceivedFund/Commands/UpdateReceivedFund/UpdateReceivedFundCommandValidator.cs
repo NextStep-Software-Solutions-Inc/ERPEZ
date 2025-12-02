@@ -13,21 +13,31 @@ public class UpdateReceivedFundCommandValidator : AbstractValidator<UpdateReceiv
             .Must(id => id != Guid.Empty)
             .WithMessage("Received Fund ID must be a valid, non-empty GUID.");
 
-        // 2. Amount (Required Decimal, Must be Positive)
-        RuleFor(x => x.UpdateReceivedFund.Amount)
-            .GreaterThan(0) // Funds received should typically be greater than zero
-            .WithMessage("Amount must be a positive number.");
+        // 2. Amount (Required Decimal, Must be Positive if provided)
+        When(x => x.UpdateReceivedFund.Amount != default(decimal), () =>
+        {
+            RuleFor(x => x.UpdateReceivedFund.Amount)
+                .GreaterThan(0) // Funds received should typically be greater than zero
+                .WithMessage("Amount must be a positive number.");
+        });
 
-        // 3. ReceivedDate (Required DateTime, Must not be in the future)
-        RuleFor(x => x.UpdateReceivedFund.ReceivedDate)
-            .NotEmpty()
-            .WithMessage("Received Date is required.")
-            .Must(receivedDate => receivedDate <= DateTime.UtcNow)
-            .WithMessage("Received Date cannot be in the future.");
+        // 3. ReceivedDate (Required DateTime, Must not be in the future if provided)
+        When(x => x.UpdateReceivedFund.ReceivedDate != default(DateTime), () =>
+        {
+            RuleFor(x => x.UpdateReceivedFund.ReceivedDate)
+                .NotEmpty()
+                .WithMessage("Received Date is required.")
+                .Must(receivedDate => receivedDate <= DateTime.UtcNow)
+                .WithMessage("Received Date cannot be in the future.");
+        });
 
         // 4. Description (Optional, Max Length 500)
-        RuleFor(x => x.UpdateReceivedFund.Description)
+        When(x => !string.IsNullOrEmpty(x.UpdateReceivedFund.Description), () =>
+        {
+            RuleFor(x => x.UpdateReceivedFund.Description)
             .MaximumLength(500)
             .WithMessage("Description cannot exceed 500 characters.");
+        });
+        
     }
 }

@@ -4,10 +4,10 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.ReceivedFund.Commands.UpdateReceivedFund;
 
-public class UpdateReceivedFundCommand : IRequest<ApiResponse<Unit>>
+public record UpdateReceivedFundCommand : IRequest<ApiResponse<Unit>>
 {
-    public Guid Id { get; set; }
-    public required UpdateReceivedFundDto UpdateReceivedFund { get; set; }
+    public Guid Id { get; init; }
+    public required UpdateReceivedFundRequest UpdateReceivedFund { get; init; }
 }
 
 

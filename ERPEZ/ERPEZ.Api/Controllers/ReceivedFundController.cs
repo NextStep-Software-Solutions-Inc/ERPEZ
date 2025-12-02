@@ -48,7 +48,7 @@ namespace ERPEZ.Api.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> UpdateOffice(Guid id, [FromBody] UpdateReceivedFundDto updateReceivedFund)
+        public async Task<IActionResult> UpdateOffice(Guid id, [FromBody] UpdateReceivedFundRequest updateReceivedFund)
         {
             var request = new UpdateReceivedFundCommand
             {
