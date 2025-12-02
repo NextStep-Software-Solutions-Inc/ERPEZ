@@ -19,15 +19,15 @@ public class UpdateKPICommandValidator : AbstractValidator<UpdateKPICommand>
             .WithMessage("KPI ID must be a valid, non-empty GUID.");
 
         // 4. FunctionType (Optional String?) - Check only if provided
-        RuleFor(x => x.FunctionType)
+        RuleFor(x => x.Dto.FunctionType)
             .MaximumLength(100)
             .WithMessage("Function Type cannot exceed 100 characters.")
             .Must(type => validFunctionTypes.Contains(type))
             .WithMessage($"FunctionType must be one of: {string.Join(", ", validFunctionTypes)}.")
-            .When(x => !string.IsNullOrWhiteSpace(x.FunctionType));
+            .When(x => !string.IsNullOrWhiteSpace(x.Dto.FunctionType));
 
         // 5. Name (Optional String?) - Check only if provided
-        RuleFor(x => x.Name)
+        RuleFor(x => x.Dto.Name)
             .MinimumLength(5)
             .WithMessage("KPI Name must be at least 5 characters long.")
             .MaximumLength(250)
@@ -35,27 +35,27 @@ public class UpdateKPICommandValidator : AbstractValidator<UpdateKPICommand>
             .When(x => !string.IsNullOrWhiteSpace(x.Name));
 
         // 6. Description (Optional String?) - Check only if provided
-        RuleFor(x => x.Description)
+        RuleFor(x => x.Dto.Description)
             .MaximumLength(1000)
             .WithMessage("Description cannot exceed 1000 characters.")
-            .When(x => !string.IsNullOrWhiteSpace(x.Description));
+            .When(x => !string.IsNullOrWhiteSpace(x.Dto.Description));
 
-        RuleFor(x => x.Status)
+        RuleFor(x => x.Dto.Status)
             .Must(status => validStatuses.Contains(status, StringComparer.OrdinalIgnoreCase))
             .WithMessage($"Status must be one of the following: {string.Join(", ", validStatuses)}.")
-            .When(x => !string.IsNullOrWhiteSpace(x.Status));
+            .When(x => !string.IsNullOrWhiteSpace(x.Dto.Status));
 
         // 8. SDGIds (List<Guid>) - Optional for partial update
-        RuleFor(x => x.SDGIds)
+        RuleFor(x => x.Dto.SDGIds)
             .ForEach(sdgId => sdgId.NotEmpty().WithMessage("SDG ID must be a valid, non-empty GUID."))
-            .When(x => x.SDGIds != null && x.SDGIds.Count != 0);
+            .When(x => x.Dto.SDGIds != null && x.Dto.SDGIds.Count != 0);
 
         // 9. KPIRatings (List<CreateKPIRatingRequest>) - Optional for partial update and validation inside
-        RuleFor(x => x.KPIRatings)
+        RuleFor(x => x.Dto.KPIRatings)
             .Must(list => list == null || list.Count > 0)
             .WithMessage("KPI Ratings list cannot be empty if provided.");
 
-        RuleForEach(x => x.KPIRatings)
+        RuleForEach(x => x.Dto.KPIRatings)
             .ChildRules(rating =>
             {
                 rating.RuleFor(r => r.PerformanceMeasureId)
@@ -78,19 +78,22 @@ public class UpdateKPICommandValidator : AbstractValidator<UpdateKPICommand>
                             .WithMessage("Numerical Rating value must be non-negative.");
                     });
             });
-       
-            
 
         // 10. KPITargets (List<CreateKPITargetRequest>) - Optional for partial update
-        RuleFor(x => x.KPITargets)
+        RuleFor(x => x.Dto.KPITargets)
             .Must(list => list == null || list.Count > 0)
-            .WithMessage("KPI Targets list cannot be empty if provided.")
-            .Must(list => list == null || list.All(target => !string.IsNullOrWhiteSpace(target.Period) && validPeriods.Contains(target.Period, StringComparer.OrdinalIgnoreCase)))
-            .WithMessage($"All KPI Targets must have valid periods from: {string.Join(", ", validPeriods)}.");
+            .WithMessage("KPI Targets list cannot be empty if provided.");
+            
 
-        RuleForEach(x => x.KPITargets)
+        RuleForEach(x => x.Dto.KPITargets)
             .ChildRules(target =>
             {
+                target.RuleFor(t => t.Period)
+                    .NotEmpty()
+                    .WithMessage("KPI Target Period is required.")
+                    .Must(period => validPeriods.Contains(period))
+                    .WithMessage($"KPI Target Period must be one of: {string.Join(", ", validPeriods)}.");
+
                 target.RuleFor(t => t.TargetValue)
                     .GreaterThanOrEqualTo(0)
                     .WithMessage("Target Value must be greater than or equal to zero.");
@@ -101,11 +104,11 @@ public class UpdateKPICommandValidator : AbstractValidator<UpdateKPICommand>
             });
 
         // 11. KPIMOVs (List<CreateKPIMOVRequest>) - Optional for partial update
-        RuleFor(x => x.KPIMOVs)
+        RuleFor(x => x.Dto.KPIMOVs)
             .Must(list => list == null || list.Count > 0)
             .WithMessage("KPI Mode of Verifications list cannot be empty if provided.");
 
-        RuleForEach(x => x.KPIMOVs)
+        RuleForEach(x => x.Dto.KPIMOVs)
             .ChildRules(mov =>
             {
                 mov.RuleFor(m => m.Name)
@@ -117,22 +120,23 @@ public class UpdateKPICommandValidator : AbstractValidator<UpdateKPICommand>
                 mov.RuleFor(m => m.Description)
                     .MinimumLength(10)
                     .WithMessage("KPI MOV Description must be at least 10 characters long.")
+                    .When(m => !string.IsNullOrWhiteSpace(m.Description))
                     .MaximumLength(500)
                     .WithMessage("KPI MOV Description cannot exceed 500 characters.")
                     .When(m => !string.IsNullOrWhiteSpace(m.Description));
             });
 
         // 12. MFOPAPIds (List<Guid>) - Optional for partial update
-        RuleFor(x => x.MFOPAPIds)
+        RuleFor(x => x.Dto.MFOPAPIds)
             .ForEach(mfopapId => mfopapId.NotEmpty()
             .WithMessage("MFOPAP ID must be a valid, non-empty GUID."))
-            .When(x => x.MFOPAPIds != null && x.MFOPAPIds.Count != 0);
+            .When(x => x.Dto.MFOPAPIds != null && x.Dto.MFOPAPIds.Count != 0);
 
         // 13. Attributes (List<Guid>) - Optional for partial update
-        RuleFor(x => x.AttributeIds)
+        RuleFor(x => x.Dto.AttributeIds)
             .ForEach(attrId => attrId.NotEmpty()
             .WithMessage("Attribute ID must be a valid, non-empty GUID."))
-            .When(x => x.AttributeIds != null && x.AttributeIds.Count != 0);
+            .When(x => x.Dto.AttributeIds != null && x.Dto.AttributeIds.Count != 0);
 
     }
 }
