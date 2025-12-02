@@ -16,8 +16,8 @@ namespace ERPEZ.Api.Controllers
     public class ReceivedFundController(ISender mediator) : ControllerBase
     {
         [HttpPost]
-        [ProducesResponseType(typeof(ApiResponse<ReceivedFund>), StatusCodes.Status201Created)]
-        [ProducesResponseType(typeof(ApiResponse<ReceivedFund>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateReceivedFund([FromBody] CreateReceivedFundCommand command)
         {
             var receivedFund = await mediator.Send(command);
