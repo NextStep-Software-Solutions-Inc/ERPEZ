@@ -2,9 +2,6 @@ using ERPEZ.Application.Features.Planning.DUKPIAssignment.Commands.DeleteDUKPIAs
 using ERPEZ.Application.Features.Planning.DUKPIAssignment.Dtos;
 using ERPEZ.Application.Features.Planning.DUKPIAssignment.Queries.GetDUKPIAssignmentById;
 using ERPEZ.Application.Features.Planning.DUKPIAssignment.Queries.GetDUKPIAssignments;
-using ERPEZ.Application.Features.Planning.DUKPIAssignment.Queries.GetDUKPIAssignmentById;
-using ERPEZ.Application.Features.Planning.DUKPIAssignment.Queries.GetDUKPIAssignments;
-using ERPEZ.Domain.Dtos.Planning;
 using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
