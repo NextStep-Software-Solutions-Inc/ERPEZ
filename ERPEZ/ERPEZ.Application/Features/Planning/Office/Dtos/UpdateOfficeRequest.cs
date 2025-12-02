@@ -1,13 +1,13 @@
 namespace ERPEZ.Application.Features.Planning.Office.Dtos;
 
-public class UpdateOfficeRequest
+public record UpdateOfficeRequest
 {
-    public string? OfficeHead { get; set; }
-    public string? Name { get; set; }
-    public string? Description { get; set; }
-    public string? Address { get; set; }
-    public string? Email { get; set; }
-    public string? ContactNumber { get; set; }
-    public string? ResponsibilityCenterCode { get; set; }
-    public bool? IsDeliveryUnit { get; set; }
+    public string? OfficeHead { get; init; }
+    public string? Name { get; init; }
+    public string? Description { get; init; }
+    public string? Address { get; init; }
+    public string? Email { get; init; }
+    public string? ContactNumber { get; init; }
+    public string? ResponsibilityCenterCode { get; init; }
+    public bool? IsDeliveryUnit { get; init; }
 }
