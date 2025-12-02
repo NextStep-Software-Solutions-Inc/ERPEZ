@@ -26,7 +26,8 @@ public class GetOfficeByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler
             ContactNumber = office.ContactNumber,
             ResponsibilityCenterCode = office.ResponsibilityCenterCode,
             CreatedBy = office.CreatedBy,
-            CreatedAt = office.CreatedAt
+            CreatedAt = office.CreatedAt,
+            IsDeliveryUnit = office.DeliveryUnits.Any(du => du.OfficeId == office.Id)
         };
 
         return ApiResponse<OfficeResponse>.Success(result, "Retrieved successfully");

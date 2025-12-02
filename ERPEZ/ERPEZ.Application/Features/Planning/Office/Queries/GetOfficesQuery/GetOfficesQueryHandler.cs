@@ -29,7 +29,8 @@ public class GetOfficesQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
             ContactNumber = o.ContactNumber,
             ResponsibilityCenterCode = o.ResponsibilityCenterCode,
             CreatedBy = o.CreatedBy,
-            CreatedAt = o.CreatedAt
+            CreatedAt = o.CreatedAt,
+            IsDeliveryUnit = o.DeliveryUnits.Any(du => du.OfficeId == o.Id)
         };
         var (offices, totalCount) = await unitOfWork.OfficeRepository.GetAllAsync(sieveModel, projection, cancellationToken: cancellationToken);
         return new PaginatedApiResponse<OfficeResponse>(
