@@ -5,7 +5,6 @@ using ERPEZ.Application.Features.Planning.DeliveryUnit.Commands.UpdateKPIsForDel
 using ERPEZ.Application.Features.Planning.DeliveryUnit.Dtos;
 using ERPEZ.Application.Features.Planning.DeliveryUnit.Queries.GetDUByIdQuery;
 using ERPEZ.Application.Features.Planning.DeliveryUnit.Queries.GetDUsQuery;
-using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -30,7 +29,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet]
-        [ProducesResponseType(typeof(PaginatedApiResponse<DeliveryUnit>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(PaginatedApiResponse<DeliveryUnitsResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetDeliveryUnits([FromQuery] GetDeliveryUnitsQuery query)
         {
             var result = await mediator.Send(query);
