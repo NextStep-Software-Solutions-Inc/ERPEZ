@@ -35,7 +35,7 @@ public class UpdateKPICommandHandler(IUnitOfWork unitOfWork, IFileStorageService
             kpi.IsTargetValueAllocable = request.IsTargetValueAllocable ?? kpi.IsTargetValueAllocable;
 
             // Handle SDGs - Only update if provided
-            if (request.Dto.SDGIds.Count != 0)
+            if (request.Dto.SDGIds?.Count > 0)
             {
                 kpi.SDGs.Clear();
                 var sdgIds = request.Dto.SDGIds.Distinct().ToList();
@@ -55,7 +55,7 @@ public class UpdateKPICommandHandler(IUnitOfWork unitOfWork, IFileStorageService
             }
 
             // Handle MFOPAPs - Only update if provided
-            if (request.Dto.MFOPAPIds.Count != 0)
+            if (request.Dto.MFOPAPIds?.Count > 0)
             {
                 kpi.MFOPAPs.Clear();
                 var mfopapIds = request.Dto.MFOPAPIds.Distinct().ToList();
@@ -75,7 +75,7 @@ public class UpdateKPICommandHandler(IUnitOfWork unitOfWork, IFileStorageService
             }
 
             // Handle Attributes - Only update if provided
-            if (request.Dto.AttributeIds.Count != 0)
+            if (request.Dto.AttributeIds?.Count > 0)
             {
                 kpi.Attributes.Clear();
                 var attrIds = request.Dto.AttributeIds.Distinct().ToList();
@@ -95,7 +95,7 @@ public class UpdateKPICommandHandler(IUnitOfWork unitOfWork, IFileStorageService
             }
 
             // Handle KPIRatings - Only update if provided
-            if (request.Dto.KPIRatings.Count != 0)
+            if (request.Dto.KPIRatings?.Count > 0)
             {
                 kpi.KPIRatings.Clear();
                 foreach (var ratingRequest in request.Dto.KPIRatings)
@@ -115,7 +115,7 @@ public class UpdateKPICommandHandler(IUnitOfWork unitOfWork, IFileStorageService
             }
 
             // Handle KPITargets - Only update if provided
-            if (request.Dto.KPITargets.Count != 0)
+            if (request.Dto.KPITargets?.Count > 0)
             {
                 kpi.KPITargets.Clear();
                 foreach (var targetRequest in request.Dto.KPITargets)
@@ -132,7 +132,7 @@ public class UpdateKPICommandHandler(IUnitOfWork unitOfWork, IFileStorageService
             }
 
             // Handle KPIMOVs - Only update if provided
-            if (request.Dto.KPIMOVs.Count != 0)
+            if (request.Dto.KPIMOVs?.Count > 0)
             {
                 kpi.KPIModeOfVerifications.Clear();
                 foreach (var movRequest in request.Dto.KPIMOVs)

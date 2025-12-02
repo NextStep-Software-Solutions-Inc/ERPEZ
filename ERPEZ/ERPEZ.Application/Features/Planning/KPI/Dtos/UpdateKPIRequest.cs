@@ -17,15 +17,15 @@ public record UpdateKPIRequest
     public string? Status { get; init; }
 
     [JsonPropertyName("SDGIds")]
-    public List<Guid> SDGIds { get; init; } = [];
+    public List<Guid>? SDGIds { get; init; }
     [JsonPropertyName("KPIRatings")]
-    public List<CreateKPIRatingRequest> KPIRatings { get; init; } = [];
+    public List<CreateKPIRatingRequest>? KPIRatings { get; init; }
     [JsonPropertyName("KPITargets")]
-    public List<CreateKPITargetRequest> KPITargets { get; init; } = [];
+    public List<CreateKPITargetRequest>? KPITargets { get; init; }
     [JsonPropertyName("KPIMOVs")]
-    public List<CreateKPIMOVRequest> KPIMOVs { get; init; } = [];
+    public List<CreateKPIMOVRequest>? KPIMOVs { get; init; }
     [JsonPropertyName("MFOPAPIds")]
-    public List<Guid> MFOPAPIds { get; init; } = [];
+    public List<Guid>? MFOPAPIds { get; init; }
     [JsonPropertyName("AttributeIds")]
-    public List<Guid> AttributeIds { get; init; } = [];
+    public List<Guid>? AttributeIds { get; init; }
 }
