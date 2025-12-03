@@ -1,6 +1,5 @@
 using ERPEZ.Domain.Common;
 using Sieve.Attributes;
-using System.Text.Json.Serialization;
 
 namespace ERPEZ.Domain.Entities.Planning;
 

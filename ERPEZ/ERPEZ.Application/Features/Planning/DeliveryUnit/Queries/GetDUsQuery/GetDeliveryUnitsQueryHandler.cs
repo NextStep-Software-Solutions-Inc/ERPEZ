@@ -24,6 +24,7 @@ public class GetDeliveryUnitsQueryHandler(IUnitOfWork unitOfWork) : IRequestHand
             OfficeName = du.Office.Name,
             KpiCount = du.KPIAssignments.Count(ka => ka.KPI.ParentKPIId == null),
             SubKpiCount = du.KPIAssignments.Count(ka => ka.KPI.ParentKPIId != null),
+            SubDUCount = du.SubDeliveryUnits.Count,
             ParentDUId = du.ParentDUId,
             CreatedAt = du.CreatedAt,
         };

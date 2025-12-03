@@ -7,6 +7,7 @@ namespace ERPEZ.Application.Features.Planning.DeliveryUnit.Dtos
         public Guid? ParentDUId { get; init; }
         public required int KpiCount { get; init; }
         public required int SubKpiCount { get; init; }
+        public required int SubDUCount { get; init; }
         public DateTime CreatedAt { get; init; }
 
     }
