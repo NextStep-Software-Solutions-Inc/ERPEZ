@@ -110,7 +110,7 @@ public static class DependencyInjection
             {
                 await dbContext.Database.MigrateAsync();
             }
-            catch (System.InvalidOperationException ex)
+            catch (InvalidOperationException ex)
             {
                 // EF Core throws when there are pending model changes (no matching migration).
                 // Rather than crashing the app, log the issue and continue. This keeps
@@ -118,7 +118,7 @@ public static class DependencyInjection
                 // migration (run `dotnet ef migrations add <name>`).
                 logger.LogError(ex, "Database migration failed; pending model changes detected. Add a migration before updating the database.");
             }
-            catch (System.Exception ex)
+            catch (Exception ex)
             {
                 // Log any unexpected exceptions and rethrow - migrations may be in an unrecoverable state
                 logger.LogCritical(ex, "Unexpected error while applying migrations.");
