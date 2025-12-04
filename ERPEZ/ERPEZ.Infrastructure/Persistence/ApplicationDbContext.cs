@@ -44,8 +44,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<FiscalYear>? FiscalYears { get; set; }
     public DbSet<OPCRPAP>? OPCRPAPs { get; set; }
     public DbSet<SDG>? SDGs { get; set; }
-    public DbSet<SubDeliveryUnit>? SubDeliveryUnits { get; set; }
-    public DbSet<SubDUAllocation>? SubDUAllocations { get; set; }
     public DbSet<WFPPAP>? WFPPAPs { get; set; }
     public DbSet<WFPPAPDepartment>? WFPPAPDepartments { get; set; }
 
@@ -339,12 +337,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasIndex(dua => new { dua.DeliveryUnitId, dua.Purpose });
 
         modelBuilder.Entity<DUAllocation>()
-            .HasMany(du => du.SubDUAllocations)
-            .WithOne(sub => sub.DUAllocation)
-            .HasForeignKey(sub => sub.DUAllocationId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        modelBuilder.Entity<DUAllocation>()
             .HasMany(du => du.DUFundAllocations)
             .WithOne(fa => fa.DUAllocation)
             .HasForeignKey(fa => fa.DUAllocationId)
@@ -373,25 +365,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasForeignKey(df => df.ReceivedFundId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        //Sub DU Allcation
-        modelBuilder.Entity<SubDUAllocation>()
-            .HasIndex(sda => new { sda.DUAllocationId, sda.SubDeliveryUnitId })
-            .IsUnique();
-
-        modelBuilder.Entity<SubDUAllocation>()
-            .HasOne(sda => sda.DUAllocation)
-            .WithMany(dua => dua.SubDUAllocations)
-            .HasForeignKey(sda => sda.DUAllocationId);
-
-        modelBuilder.Entity<SubDUAllocation>()
-            .HasOne(sda => sda.SubDeliveryUnit)
-            .WithMany(sdu => sdu.SubDUAllocations)
-            .HasForeignKey(sda => sda.SubDeliveryUnitId);
-
-
         //DeliveryUnit
         modelBuilder.Entity<DeliveryUnit>()
-            .HasIndex(du => new { du.OfficeId, du.ParentDUId });
+            .HasIndex(du => new { du.OfficeId, du.ParentId });
 
         modelBuilder.Entity<DeliveryUnit>()
             .HasOne(du => du.Office)
@@ -400,8 +376,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<DeliveryUnit>()
             .HasMany(du => du.SubDeliveryUnits)
-            .WithOne(sdu => sdu.DeliveryUnit)
-            .HasForeignKey(sdu => sdu.DeliveryUnitId);
+            .WithOne()
+            .HasForeignKey(du => du.ParentId);
 
         modelBuilder.Entity<DeliveryUnit>()
             .HasMany(du => du.DUAllocations)
@@ -422,21 +398,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasMany(du => du.KPIAssignments)
             .WithOne(kpia => kpia.DeliveryUnit)
             .HasForeignKey(kpia => kpia.DeliveryUnitId);
-
-        //Sub DeliveryUnit
-        modelBuilder.Entity<SubDeliveryUnit>()
-            .HasIndex(sdu => new { sdu.DeliveryUnitId, sdu.Name })
-            .IsUnique();
-
-        modelBuilder.Entity<SubDeliveryUnit>()
-            .HasOne(sdu => sdu.DeliveryUnit)
-            .WithMany(du => du.SubDeliveryUnits)
-            .HasForeignKey(sdu => sdu.DeliveryUnitId);
-
-        modelBuilder.Entity<SubDeliveryUnit>()
-            .HasMany(sdu => sdu.SubDUAllocations)
-            .WithOne(sdua => sdua.SubDeliveryUnit)
-            .HasForeignKey(sdua => sdua.SubDeliveryUnitId);
 
         //WFP
         modelBuilder.Entity<WFP>()
@@ -529,7 +490,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         //WFPPAPDepartment
         modelBuilder.Entity<WFPPAPDepartment>()
-            .HasIndex(d => new { d.WFPPAPId, d.SubDeliveryUnitId })
+            .HasIndex(d => new { d.WFPPAPId, d.DeliveryUnitId })
             .IsUnique();
 
         modelBuilder.Entity<WFPPAPDepartment>()
@@ -539,9 +500,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<WFPPAPDepartment>()
-            .HasOne(d => d.SubDeliveryUnit)
-            .WithMany(s => s.WFPPAPDepartments)
-            .HasForeignKey(d => d.SubDeliveryUnitId)
+            .HasOne(d => d.DeliveryUnit)
+            .WithMany(du => du.WFPPAPDepartments)
+            .HasForeignKey(d => d.DeliveryUnitId)
             .OnDelete(DeleteBehavior.Restrict);
 
         //ActivityBudgetRequirement

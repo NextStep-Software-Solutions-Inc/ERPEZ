@@ -30,6 +30,14 @@ public class GetDeliveryUnitByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestH
                 CreatedBy = du.Office.CreatedBy,
                 CreatedAt = du.Office.CreatedAt,
             },
+            Cluster = du.Office.Cluster != null ? new()
+            {
+                Id = du.Office.Cluster.Id,
+                Name = du.Office.Cluster.Name,
+                Description = du.Office.Cluster.Description,
+                CreatedBy = du.Office.Cluster.CreatedBy,
+                CreatedAt = du.Office.Cluster.CreatedAt,
+            } : null,
             KPIAssignments = du.KPIAssignments.Select(ka => new KPIAssignmentResponse
             {
                 Id = ka.Id,
@@ -73,8 +81,78 @@ public class GetDeliveryUnitByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestH
                         .First(a => a.DeliveryUnitId == du.Id).AllocatedTargetValue,
                 }).ToList(),
             }).ToList(),
+            SubDeliveryUnits = du.SubDeliveryUnits.Select(subDU => new DeliveryUnitResponse
+            {
+                Id = subDU.Id,
+                Office = new ()
+                {
+                    Id = subDU.Office.Id,
+                    Name = subDU.Office.Name,
+                    Address = subDU.Office.Address,
+                    ContactNumber = subDU.Office.ContactNumber,
+                    ClusterId = subDU.Office.ClusterId,
+                    Email = subDU.Office.Email,
+                    Description = subDU.Office.Description,
+                    OfficeHead = subDU.Office.OfficeHead,
+                    ResponsibilityCenterCode = subDU.Office.ResponsibilityCenterCode,
+                    CreatedBy = subDU.Office.CreatedBy,
+                    CreatedAt = subDU.Office.CreatedAt,
+                },
+                Cluster = subDU.Office.Cluster != null ? new()
+                {
+                    Id = subDU.Office.Cluster.Id,
+                    Name = subDU.Office.Cluster.Name,
+                    Description = subDU.Office.Cluster.Description,
+                    CreatedBy = subDU.Office.Cluster.CreatedBy,
+                    CreatedAt = subDU.Office.Cluster.CreatedAt,
+                } : null,
+                ParentId = subDU.ParentId,
+                KPIAssignments = subDU.KPIAssignments.Select(ka => new KPIAssignmentResponse
+                {
+                    Id = ka.Id,
+                    KPI = new()
+                    {
+                        Id = ka.KPI.Id,
+                        Name = ka.KPI.Name,
+                        Description = ka.KPI.Description,
+                        FunctionType = ka.KPI.FunctionType,
+                        MFOPAPs = ka.KPI.MFOPAPs.Select(m => new MFOPAPResponse
+                        {
+                            Id = m.Id,
+                            Name = m.Name,
+                            Code = m.Code,
+                            Type = m.Type,
+                            IsActive = m.IsActive,
+                            ParentId = m.ParentId,
+                        }).ToList(),
+                        SDGs = ka.KPI.SDGs.Select(s => s.Name).ToList(),
+                    },
+                    AllocatedTargetValue = ka.AllocatedTargetValue,
+                    Targets = subDU.KPIAssignments
+                        .Where(a => a.Id == ka.Id)
+                        .Select(kt => new KPITargetResponse
+                        {
+                            Id = kt.Id,
+                            Period = kt.KPITarget.Period.ToString(),
+                            QuarterName = kt.KPITarget.QuarterName,
+                            TargetValue = kt.KPITarget.TargetValue,
+                        }).ToList(),
+                    DateAssigned = ka.CreatedAt.ToString("yyyy-MM-dd"),
+                    SubKPIs = ka.KPI.ChildKPIs.Select(subKPI => new SubKPI
+                    {
+                        Id = subKPI.Id,
+                        Name = subKPI.Name,
+                        Description = subKPI.Description,
+                        FunctionType = subKPI.FunctionType,
+                        SDGs = subKPI.SDGs.Select(sdg => sdg.Name).ToList(),
+                        AllocatedTargetValue = subKPI.KPIAssignments
+                            .Where(a => a.KPIId == subKPI.Id)
+                            .First(a => a.DeliveryUnitId == subDU.Id).AllocatedTargetValue,
+                    }).ToList(),
+                }).ToList(),
+                CreatedAt = subDU.CreatedAt,
+            }).ToList(),
             CreatedAt = du.CreatedAt,
-           
         });
 
         var deliveryUnit = await unitOfWork.DeliveryUnitRepository.GetFirstAsync(deliveryUnitQuery, cancellationToken) ?? throw new NotFoundException("Delivery Unit not found");
