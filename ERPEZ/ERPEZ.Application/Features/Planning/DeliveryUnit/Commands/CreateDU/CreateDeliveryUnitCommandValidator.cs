@@ -10,9 +10,11 @@ public class CreateDeliveryUnitCommandValidator : AbstractValidator<CreateDelive
         RuleFor(x => x.OfficeId)
             .NotEmpty()
             .WithMessage("Office ID is required and must be a valid, non-empty GUID.");
-        // 2. ParentDUId (Optional GUID)
-        RuleFor(x => x.ParentDUId)
+        // 2. ParentId (Optional GUID)
+        RuleFor(x => x.ParentId)
             .Must(id => !id.HasValue || id.Value != Guid.Empty)
             .WithMessage("If provided, the Parent Delivery Unit ID must be a valid, non-empty GUID.");
+            // Note: When a DeliveryUnit has a parent, the parent DeliveryUnit must have this child listed in its SubDeliveryUnits collection.
+            // This relationship is enforced in the command handler.
     }
 }

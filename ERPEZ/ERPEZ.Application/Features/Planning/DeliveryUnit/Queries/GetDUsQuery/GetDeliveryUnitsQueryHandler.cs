@@ -22,10 +22,11 @@ public class GetDeliveryUnitsQueryHandler(IUnitOfWork unitOfWork) : IRequestHand
         {
             Id = du.Id,
             OfficeName = du.Office.Name,
+            ClusterName = du.Office.Cluster != null ? du.Office.Cluster.Name : null,
             KpiCount = du.KPIAssignments.Count(ka => ka.KPI.ParentKPIId == null),
             SubKpiCount = du.KPIAssignments.Count(ka => ka.KPI.ParentKPIId != null),
             SubDUCount = du.SubDeliveryUnits.Count,
-            ParentDUId = du.ParentDUId,
+            ParentId = du.ParentId,
             CreatedAt = du.CreatedAt,
         };
 

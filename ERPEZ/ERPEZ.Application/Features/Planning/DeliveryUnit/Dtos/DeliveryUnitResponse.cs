@@ -8,7 +8,7 @@ namespace ERPEZ.Application.Features.Planning.DeliveryUnit.Dtos
     {
         public Guid Id { get; init; }
         public required OfficeResponse Office { get; init; }
-        public Guid? ParentDUId { get; init; }
+        public Guid? ParentId { get; init; }
         public List<KPIAssignmentResponse> KPIAssignments { get; init; } = [];
         public DateTime CreatedAt { get; init; }
 
