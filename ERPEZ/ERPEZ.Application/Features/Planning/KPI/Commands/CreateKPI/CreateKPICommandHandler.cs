@@ -56,6 +56,7 @@ public class CreateKPICommandHandler(IUnitOfWork unitOfWork, IFileStorageService
             Description = request.Description,
             IsOfficeMandate = request.IsOfficeMandate,
             IsPercentage = request.IsPercentage,
+            IsTargetValueAllocable = request.IsTargetValueAllocable,
             Status = "Draft",
         };
 
