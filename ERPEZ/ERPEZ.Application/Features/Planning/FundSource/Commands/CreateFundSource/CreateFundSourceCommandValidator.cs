@@ -28,10 +28,10 @@ public class CreateFundSourceCommandValidator : AbstractValidator<CreateFundSour
         RuleFor(x => x.Code)
             .NotEmpty()
             .WithMessage("Fund Source Code is required.")
-            .MinimumLength(2)
-            .WithMessage("Fund Source Code must be at least 2 characters long.")
-            .MaximumLength(20)
-            .WithMessage("Fund Source Code cannot exceed 20 characters.")
+            .MinimumLength(1)
+            .WithMessage("Fund Source Code must be at least 1 characters long.")
+            .MaximumLength(5)
+            .WithMessage("Fund Source Code cannot exceed 5 characters.")
             .Matches(@"^[a-zA-Z0-9\-_]+$")
             .WithMessage("Fund Source Code can only contain letters, numbers, hyphens, and underscores.");
 
