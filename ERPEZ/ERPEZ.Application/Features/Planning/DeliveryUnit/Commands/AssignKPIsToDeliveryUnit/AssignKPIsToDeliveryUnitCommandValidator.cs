@@ -24,12 +24,16 @@ public class AssignKPIsToDeliveryUnitCommandValidator : AbstractValidator<Assign
                     .WithMessage("Target ID is required and must be a valid, non-empty GUID.");
                     
                 target.RuleFor(x => x.AllocatedTargetValue)
-                    .NotEmpty()
-                    .WithMessage("Allocated Target Value is required.")
-                    .GreaterThan(0)
-                    .WithMessage("Allocated Target Value must be greater than zero.");
+                    .GreaterThanOrEqualTo(0)
+                    .WithMessage("Allocated Target Value must be greater than or equal to zero.");
 
             })
+            .When(x => x.KPITargets != null && x.KPITargets.Count > 0);
+
+        // Additional validation: If more than one target, at least one must be greater than 0
+        RuleFor(x => x.KPITargets)
+            .Must(targets => targets.Count <= 1 || targets.Any(t => t.AllocatedTargetValue > 0))
+            .WithMessage("When multiple KPI targets are assigned, at least one allocated target value must be greater than 0.")
             .When(x => x.KPITargets != null && x.KPITargets.Count > 0);
     }
 }

@@ -81,6 +81,12 @@ public class CreateKPICommandValidator : AbstractValidator<CreateKPICommand>
                         .When(t => !string.IsNullOrWhiteSpace(t.QuarterName));
                 });
 
+        // Additional validation: If more than one target, at least one must be greater than 0
+        RuleFor(x => x.KPITargets)
+            .Must(targets => targets.Count <= 1 || targets.Any(t => t.TargetValue > 0))
+            .WithMessage("When multiple KPI targets are provided, at least one target value must be greater than 0.")
+            .When(x => x.KPITargets != null && x.KPITargets.Count > 0);
+
         RuleFor(x => x.KPIRatings)
                 .NotNull()
                 .WithMessage("KPI Ratings is required.")
