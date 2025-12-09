@@ -7,6 +7,7 @@ using ERPEZ.Application.Features.Planning.OPCR.Dtos;
 using ERPEZ.Application.Features.Planning.OPCR.Queries.GetOPCRs;
 using ERPEZ.Application.Features.Planning.OPCR.Queries.GetOPCRById;
 using ERPEZ.Application.Features.Planning.OPCR.Commands.UpdateOPCR;
+using ERPEZ.Application.Features.Planning.OPCR.Commands.UpdateOPCRStatus;
 using ERPEZ.Application.Features.Planning.OPCR.Commands.DeleteOPCR;
 
 namespace ERPEZ.Api.Controllers
@@ -21,11 +22,7 @@ namespace ERPEZ.Api.Controllers
         public async Task<IActionResult> CreateOPCR([FromBody] CreateOPCRCommand command)
         {
             var result = await mediator.Send(command);
-
-            if (!result.Succeeded)
-                return BadRequest(result);
-
-            return CreatedAtAction(nameof(GetOPCRById), new { id = result.Data!.Id }, result);
+            return result.Succeeded ? CreatedAtAction(nameof(GetOPCRById), new { id = result.Data }, result) : BadRequest(result);
         }
 
         [HttpGet]
@@ -33,7 +30,7 @@ namespace ERPEZ.Api.Controllers
         public async Task<IActionResult> GetOPCRs([FromQuery] GetOPCRsQuery query)
         {
             var result = await mediator.Send(query);
-            return Ok(result);
+            return result.Succeeded ? Ok(result) : BadRequest(result);
         }
 
         [HttpGet("{id}")]
@@ -46,15 +43,31 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpPut("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<OPCRDto>), StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> UpdateOPCR(Guid id, [FromBody] UpdateOPCRDto dto)
+        public async Task<IActionResult> UpdateOPCR(Guid id, [FromBody] UpdateOPCRRequest dto)
         {
             var command = new UpdateOPCRCommand
             {
                 Id = id,
                 UpdateOPCR = dto
+            };
+
+            var result = await mediator.Send(command);
+            return result.Succeeded ? Ok(result) : BadRequest(result);
+        }
+
+        [HttpPut("{id}/status")]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> UpdateOPCRStatus(Guid id, [FromBody] UpdateOPCRStatusRequest dto)
+        {
+            var command = new UpdateOPCRStatusCommand
+            {
+                Id = id,
+                UpdateOPCRStatus = dto
             };
 
             var result = await mediator.Send(command);

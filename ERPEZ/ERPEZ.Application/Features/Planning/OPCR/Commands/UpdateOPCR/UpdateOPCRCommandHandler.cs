@@ -5,9 +5,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.OPCR.Commands.UpdateOPCR;
 
-public class UpdateOPCRCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateOPCRCommand, ApiResponse<Domain.Entities.Planning.OPCR>>
+public class UpdateOPCRCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateOPCRCommand, ApiResponse<Unit>>
 {
-    public async Task<ApiResponse<Domain.Entities.Planning.OPCR>> Handle(UpdateOPCRCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<Unit>> Handle(UpdateOPCRCommand request, CancellationToken cancellationToken)
     {
         var dto = request.UpdateOPCR;
         var opcr = await unitOfWork.OPCRRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("OPCR not found.");
@@ -18,12 +18,10 @@ public class UpdateOPCRCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<
 
         opcr.DeliveryUnitId = dto?.DeliveryUnitId ?? opcr.DeliveryUnitId;
         opcr.FiscalYear = dto?.FiscalYear ?? opcr.FiscalYear;
-        opcr.Status = dto?.Status ?? opcr.Status;
-
 
         unitOfWork.OPCRRepository.Update(opcr);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return ApiResponse<Domain.Entities.Planning.OPCR>.Success(opcr, "OPCR updated successfully.");
+        return ApiResponse<Unit>.Success(Unit.Value, "OPCR updated successfully.");
     }
 }
