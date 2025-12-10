@@ -401,12 +401,17 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         //WFP
         modelBuilder.Entity<WFP>()
-            .HasIndex(w => new { w.DeliveryUnitId, w.FiscalYear });
+            .HasIndex(w => new { w.DeliveryUnitId, w.FiscalYearId });
 
         modelBuilder.Entity<WFP>()
             .HasOne(w => w.DeliveryUnit)
             .WithMany(du => du.WFPs)
             .HasForeignKey(w => w.DeliveryUnitId);
+
+        modelBuilder.Entity<WFP>()
+            .HasOne(w => w.FiscalYear)
+            .WithMany()
+            .HasForeignKey(w => w.FiscalYearId);
 
         //WFP Outcome
         modelBuilder.Entity<WFPOutcome>()

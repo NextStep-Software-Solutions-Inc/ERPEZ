@@ -94,7 +94,6 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("boolean");
 
                     b.Property<string>("ItemDescription")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<Guid>("ObjectId")
@@ -1627,8 +1626,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("text");
 
-                    b.Property<int?>("FiscalYear")
-                        .HasColumnType("integer");
+                    b.Property<Guid?>("FiscalYearId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("GeneralObjective")
                         .HasColumnType("text");
@@ -1636,11 +1635,17 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
+                    b.Property<DateOnly>("ProjectEndDate")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly>("ProjectStartDate")
+                        .HasColumnType("date");
+
                     b.Property<string>("ProjectTitle")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<decimal>("ProposedBudget")
+                    b.Property<decimal?>("ProposedBudget")
                         .HasColumnType("numeric");
 
                     b.Property<string>("Status")
@@ -1655,7 +1660,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DeliveryUnitId", "FiscalYear");
+                    b.HasIndex("FiscalYearId");
+
+                    b.HasIndex("DeliveryUnitId", "FiscalYearId");
 
                     b.ToTable("WFPs", "planning");
                 });
@@ -1747,6 +1754,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
+
+                    b.Property<decimal?>("Outcome")
+                        .HasColumnType("numeric");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -2518,7 +2528,13 @@ namespace ERPEZ.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.FiscalYear", "FiscalYear")
+                        .WithMany()
+                        .HasForeignKey("FiscalYearId");
+
                     b.Navigation("DeliveryUnit");
+
+                    b.Navigation("FiscalYear");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WFPActivity", b =>
