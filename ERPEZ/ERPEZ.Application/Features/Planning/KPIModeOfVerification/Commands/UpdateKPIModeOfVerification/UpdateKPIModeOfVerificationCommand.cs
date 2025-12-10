@@ -7,6 +7,6 @@ namespace ERPEZ.Application.Features.Planning.KPIModeOfVerification.Commands.Upd
 public class UpdateKPIModeOfVerificationCommand : IRequest<ApiResponse<Domain.Entities.Planning.KPIModeOfVerification>>
 {
     public Guid Id { get; set; }
-    public required UpdateKPIModeOfVerificationDto UpdateKPIModeOfVerification { get; set; }
+    public required UpdateKPIModeOfVerificationRequest UpdateKPIModeOfVerification { get; set; }
 }
 

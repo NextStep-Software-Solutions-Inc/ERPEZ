@@ -7,5 +7,5 @@ namespace ERPEZ.Application.Features.Planning.Organization.Commands.UpdateOrgani
 public class UpdateOrganizationCommand : IRequest<ApiResponse<Domain.Entities.Planning.Organization>>
 {
     public Guid Id { get; set; }
-    public required UpdateOrganizationDto UpdateOrganization { get; set; }
+    public required UpdateOrganizationRequest UpdateOrganization { get; set; }
 }

@@ -4,8 +4,8 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Object.Commands.UpdateObject;
 
-public class UpdateObjectCommand : IRequest<ApiResponse<ObjectDto>>
+public class UpdateObjectCommand : IRequest<ApiResponse<ObjectResponse>>
 {
     public Guid Id { get; set; }
-    public required UpdateObjectDto UpdateObject { get; set; }
+    public required UpdateObjectRequest UpdateObject { get; set; }
 }

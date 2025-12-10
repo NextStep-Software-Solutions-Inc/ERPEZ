@@ -4,7 +4,7 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.WFPObjectiveTarget.Commands.CreateWFPObjectiveTarget;
 
-public class CreateWFPObjectiveTargetCommand : IRequest<ApiResponse<WFPObjectiveTargetDto>>
+public class CreateWFPObjectiveTargetCommand : IRequest<ApiResponse<WFPObjectiveTargetResponse>>
 {
     public Guid WFPObjectiveId { get; set; }
     public string ActivityName { get; set; } = string.Empty;

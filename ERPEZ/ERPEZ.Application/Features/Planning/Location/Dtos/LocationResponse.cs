@@ -1,6 +1,6 @@
-namespace ERPEZ.Application.Features.Planning.MFOPAP.Dtos;
+namespace ERPEZ.Application.Features.Planning.Location.Dtos;
 
-public class UpdateMFOPAPDto
+public class LocationResponse
 {
     public Guid? ParentId { get; set; }
     public string? Name { get; set; }

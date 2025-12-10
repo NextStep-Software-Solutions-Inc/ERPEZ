@@ -6,9 +6,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.WFPOutcome.Commands.CreateWFPOutcome;
 
-public class CreateWFPOutcomeCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateWFPOutcomeCommand, ApiResponse<WFPOutcomeDto>>
+public class CreateWFPOutcomeCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateWFPOutcomeCommand, ApiResponse<WFPOutcomeResponse>>
 {
-    public async Task<ApiResponse<WFPOutcomeDto>> Handle(CreateWFPOutcomeCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<WFPOutcomeResponse>> Handle(CreateWFPOutcomeCommand request, CancellationToken cancellationToken)
     {
         _ = await unitOfWork.WFPObjectiveRepository.FindAsync(wo => wo.Id == request.WFPObjectiveId,
             cancellationToken) ?? throw new NotFoundException("WFP Objective not found.");
@@ -23,11 +23,11 @@ public class CreateWFPOutcomeCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
         await unitOfWork.WFPOutcomeRepository.AddAsync(wfpOutcome, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var dto = new WFPOutcomeDto
+        var dto = new WFPOutcomeResponse
         {
             WFPObjectiveId = wfpOutcome.WFPObjectiveId,
             Description = request.Description,
         };
-        return ApiResponse<WFPOutcomeDto>.Success(dto, "WFP Outcome created successfully.");
+        return ApiResponse<WFPOutcomeResponse>.Success(dto, "WFP Outcome created successfully.");
     }
 }

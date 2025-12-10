@@ -16,8 +16,8 @@ namespace ERPEZ.Api.Controllers
     public class WFPOutcomeController(ISender mediator) : ControllerBase
     {
         [HttpPost]
-        [ProducesResponseType(typeof(ApiResponse<WFPOutcomeDto>), StatusCodes.Status201Created)]
-        [ProducesResponseType(typeof(ApiResponse<WFPOutcomeDto>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<WFPOutcomeResponse>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<WFPOutcomeResponse>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateWFPOutcome([FromBody] CreateWFPOutcomeCommand command)
         {
             var result = await mediator.Send(command);
@@ -49,7 +49,7 @@ namespace ERPEZ.Api.Controllers
         [ProducesResponseType(typeof(ApiResponse<WFPOutcome>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> UpdateWFPOutcome(Guid id, [FromBody] UpdateWFPOutcomeDto dto)
+        public async Task<IActionResult> UpdateWFPOutcome(Guid id, [FromBody] UpdateWFPOutcomeRequest dto)
         {
             var command = new UpdateWFPOutcomeCommand
             {

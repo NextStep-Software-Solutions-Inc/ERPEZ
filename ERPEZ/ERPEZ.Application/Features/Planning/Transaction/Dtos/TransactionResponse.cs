@@ -1,7 +1,8 @@
 namespace ERPEZ.Application.Features.Planning.Transaction.Dtos;
 
-public class UpdateTransactionDto
+public class TransactionResponse
 {
+    public Guid Id { get; set; }
     public Guid FundSourceId { get; set; }
     public Guid OrganizationId { get; set; }
     public Guid LocationId { get; set; }

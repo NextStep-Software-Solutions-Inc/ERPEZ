@@ -1,6 +1,6 @@
 namespace ERPEZ.Application.Features.Planning.FundSource.Dtos;
 
-public class UpdateFundSourceDto
+public class UpdateFundSourceRequest
 {
     public Guid? ParentId { get; set; }
     public string? Name { get; set; } = string.Empty;

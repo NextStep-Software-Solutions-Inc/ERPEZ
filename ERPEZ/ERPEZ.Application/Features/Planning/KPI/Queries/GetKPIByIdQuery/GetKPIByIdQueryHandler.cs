@@ -55,7 +55,7 @@ public class GetKPIByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
         }
 
         var modeOfVerification = kpi.KPIModeOfVerifications
-            .Select(m => new KPIModeOfVerificationDto
+            .Select(m => new KPIModeOfVerificationResponse
             {
                 Id = m.Id,
                 KPIId = m.KPIId,

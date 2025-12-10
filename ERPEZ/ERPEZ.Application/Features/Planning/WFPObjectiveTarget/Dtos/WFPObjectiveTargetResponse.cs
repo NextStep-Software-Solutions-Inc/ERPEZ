@@ -1,6 +1,6 @@
 namespace ERPEZ.Application.Features.Planning.WFPObjectiveTarget.Dtos;
 
-public class WFPObjectiveTargetDto
+public class WFPObjectiveTargetResponse
 {
     public Guid Id { get; set; }
     public Guid WFPObjectiveId { get; set; }

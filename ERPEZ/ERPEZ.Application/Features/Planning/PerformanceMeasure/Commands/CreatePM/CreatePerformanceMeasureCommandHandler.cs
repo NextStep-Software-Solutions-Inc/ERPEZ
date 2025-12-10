@@ -5,9 +5,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.PerformanceMeasure.Commands.CreatePM;
 
-public class CreatePerformanceMeasureCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreatePerformanceMeasureCommand, ApiResponse<PerformanceMeasureDto>>
+public class CreatePerformanceMeasureCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreatePerformanceMeasureCommand, ApiResponse<PerformanceMeasureResponse>>
 {
-    public async Task<ApiResponse<PerformanceMeasureDto>> Handle(CreatePerformanceMeasureCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<PerformanceMeasureResponse>> Handle(CreatePerformanceMeasureCommand request, CancellationToken cancellationToken)
     {
         var pm = new Domain.Entities.Planning.PerformanceMeasure
         {
@@ -18,12 +18,12 @@ public class CreatePerformanceMeasureCommandHandler(IUnitOfWork unitOfWork) : IR
         await unitOfWork.PerformanceMeasureRepository.AddAsync(pm, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var dto = new PerformanceMeasureDto
+        var dto = new PerformanceMeasureResponse
         {
             Id = pm.Id,
             Name = pm.Name,
             Description = pm.Description
         };
-        return ApiResponse<PerformanceMeasureDto>.Success(dto, "Performance Measure created successfully.");
+        return ApiResponse<PerformanceMeasureResponse>.Success(dto, "Performance Measure created successfully.");
     }
 }

@@ -1,6 +1,6 @@
 namespace ERPEZ.Application.Features.Planning.WFPObjectiveTimeline.Dtos;
 
-public class WFPObjectiveTimelineDto
+public class WFPObjectiveTimelineResponse
 {
     public Guid Id { get; set; }
     public Guid WFPObjectiveTargetId { get; set; }

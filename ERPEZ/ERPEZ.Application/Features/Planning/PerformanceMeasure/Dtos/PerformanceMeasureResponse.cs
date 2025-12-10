@@ -1,6 +1,6 @@
 namespace ERPEZ.Application.Features.Planning.PerformanceMeasure.Dtos;
 
-public class PerformanceMeasureDto
+public class PerformanceMeasureResponse
 {
     public Guid Id { get; set; }
     public string Name { get; set; } = string.Empty;

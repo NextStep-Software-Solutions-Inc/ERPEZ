@@ -1,6 +1,6 @@
 namespace ERPEZ.Application.Features.Planning.Organization.Dtos;
 
-public class UpdateOrganizationDto
+public class UpdateOrganizationRequest
 {
     public Guid? ParentId { get; set; }
     public string? Name { get; set; } = string.Empty;

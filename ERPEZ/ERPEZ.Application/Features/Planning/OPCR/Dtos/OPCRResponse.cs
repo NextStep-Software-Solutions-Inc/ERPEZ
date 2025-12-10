@@ -1,6 +1,6 @@
 namespace ERPEZ.Application.Features.Planning.OPCR.Dtos;
 
-public class OPCRDto
+public class OPCRResponse
 {
     public Guid Id { get; set; }
     public Guid DeliveryUnitId { get; set; }

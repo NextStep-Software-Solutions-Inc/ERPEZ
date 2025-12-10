@@ -7,5 +7,5 @@ namespace ERPEZ.Application.Features.Planning.Transaction.Commands.UpdateTransac
 public class UpdateTransactionCommand : IRequest<ApiResponse<Domain.Entities.Planning.Transaction>>
 {
     public Guid Id { get; set; }
-    public required UpdateTransactionDto UpdateTransaction { get; set; }
+    public required UpdateTransactionRequest UpdateTransaction { get; set; }
 }

@@ -6,9 +6,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.OPCRActivity.Commands.CreateOPCRActivity;
 
-public class CreateOPCRActivityCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateOPCRActivityCommand, ApiResponse<OPCRActivityDto>>
+public class CreateOPCRActivityCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateOPCRActivityCommand, ApiResponse<OPCRActivityResponse>>
 {
-    public async Task<ApiResponse<OPCRActivityDto>> Handle(CreateOPCRActivityCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<OPCRActivityResponse>> Handle(CreateOPCRActivityCommand request, CancellationToken cancellationToken)
     {
         _ = await unitOfWork.OPCRRepository.FindAsync(o => o.Id == request.OPCRId, cancellationToken) ?? throw new NotFoundException("OPCR not found.");
         _ = await unitOfWork.DUKPIAssignmentRepository.FindAsync(d => d.Id == request.DUKPIAssignmentId, cancellationToken) ?? throw new NotFoundException("DU KPI Assignment not found.");
@@ -24,7 +24,7 @@ public class CreateOPCRActivityCommandHandler(IUnitOfWork unitOfWork) : IRequest
         await unitOfWork.OPCRActivityRepository.AddAsync(opcrActivity, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var dto = new OPCRActivityDto
+        var dto = new OPCRActivityResponse
         {
             Id = opcrActivity.Id,
             OPCRId = opcrActivity.OPCRId,
@@ -33,6 +33,6 @@ public class CreateOPCRActivityCommandHandler(IUnitOfWork unitOfWork) : IRequest
             Description = opcrActivity.Description,
             Budget = opcrActivity.Budget
         };
-        return ApiResponse<OPCRActivityDto>.Success(dto, "OPCR Activity created successfully.");
+        return ApiResponse<OPCRActivityResponse>.Success(dto, "OPCR Activity created successfully.");
     }
 }

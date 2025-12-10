@@ -6,9 +6,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.WFPObjective.Commands.UpdateWFPObjective;
 
-public class UpdateWFPObjectiveCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateWFPObjectiveCommand, ApiResponse<WFPObjectiveDto>>
+public class UpdateWFPObjectiveCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateWFPObjectiveCommand, ApiResponse<WFPObjectiveResponse>>
 {
-    public async Task<ApiResponse<WFPObjectiveDto>> Handle(UpdateWFPObjectiveCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<WFPObjectiveResponse>> Handle(UpdateWFPObjectiveCommand request, CancellationToken cancellationToken)
     {
         var dto = request.UpdateWFPObjective;
         var wfpObjective = await unitOfWork.WFPObjectiveRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken)
@@ -50,7 +50,7 @@ public class UpdateWFPObjectiveCommandHandler(IUnitOfWork unitOfWork) : IRequest
         unitOfWork.WFPObjectiveRepository.Update(wfpObjective);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var result = new WFPObjectiveDto
+        var result = new WFPObjectiveResponse
         {
             Id = wfpObjective.Id,
             WFPId = wfpObjective.WFPId,
@@ -61,6 +61,6 @@ public class UpdateWFPObjectiveCommandHandler(IUnitOfWork unitOfWork) : IRequest
             CreatedBy = wfpObjective.CreatedBy ?? string.Empty
         };
         
-        return ApiResponse<WFPObjectiveDto>.Success(result, "Work and Financial Plan Objective updated successfully.");
+        return ApiResponse<WFPObjectiveResponse>.Success(result, "Work and Financial Plan Objective updated successfully.");
     }
 }

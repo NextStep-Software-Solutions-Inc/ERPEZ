@@ -4,7 +4,7 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.WFPOutcome.Commands.CreateWFPOutcome;
 
-public class CreateWFPOutcomeCommand : IRequest<ApiResponse<WFPOutcomeDto>>
+public class CreateWFPOutcomeCommand : IRequest<ApiResponse<WFPOutcomeResponse>>
 {
     public Guid WFPObjectiveId { get; set; }
     public string Description { get; set; } = string.Empty;

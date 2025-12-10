@@ -1,6 +1,6 @@
 namespace ERPEZ.Application.Features.Planning.OPCRActivity.Dtos;
 
-public class OPCRActivityDto
+public class OPCRActivityResponse
 {
     public Guid Id { get; set; }
     public Guid OPCRId { get; set; }

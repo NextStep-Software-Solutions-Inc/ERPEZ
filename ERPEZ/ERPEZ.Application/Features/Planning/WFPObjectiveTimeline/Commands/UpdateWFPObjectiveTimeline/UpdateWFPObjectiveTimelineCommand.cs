@@ -4,8 +4,8 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.WFPObjectiveTimeline.Commands.UpdateWFPObjectiveTimeline;
 
-public class UpdateWFPObjectiveTimelineCommand : IRequest<ApiResponse<WFPObjectiveTimelineDto>>
+public class UpdateWFPObjectiveTimelineCommand : IRequest<ApiResponse<WFPObjectiveTimelineResponse>>
 {
     public Guid Id { get; set; }
-    public required UpdateWFPObjectiveTimelineDto UpdateWFPObjectiveTimeline { get; set; }
+    public required UpdateWFPObjectiveTimelineRequest UpdateWFPObjectiveTimeline { get; set; }
 }

@@ -4,7 +4,7 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.OPCRActivity.Commands.CreateOPCRActivity;
 
-public class CreateOPCRActivityCommand : IRequest<ApiResponse<OPCRActivityDto>>
+public class CreateOPCRActivityCommand : IRequest<ApiResponse<OPCRActivityResponse>>
 {
     public Guid OPCRId { get; set; }
     public Guid DUKPIAssignmentId { get; set; }

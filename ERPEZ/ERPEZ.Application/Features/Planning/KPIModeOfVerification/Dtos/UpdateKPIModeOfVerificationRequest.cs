@@ -1,6 +1,6 @@
 namespace ERPEZ.Application.Features.Planning.KPIModeOfVerification.Dtos;
 
-public class UpdateKPIModeOfVerificationDto
+public class UpdateKPIModeOfVerificationRequest
 {
     public Guid? KPIId { get; set; }
     public string? Name { get; set; }

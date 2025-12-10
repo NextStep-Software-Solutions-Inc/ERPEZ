@@ -1,6 +1,6 @@
 namespace ERPEZ.Application.Features.Planning.WFPObjectiveTarget.Dtos;
 
-public class UpdateWFPObjectiveTargetDto
+public class UpdateWFPObjectiveTargetRequest
 {
     public string? ActivityName { get; set; }
     public string? Indicator { get; set; }

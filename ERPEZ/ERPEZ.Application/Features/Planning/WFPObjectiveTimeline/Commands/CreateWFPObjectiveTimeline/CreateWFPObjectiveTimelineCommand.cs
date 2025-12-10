@@ -4,7 +4,7 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.WFPObjectiveTimeline.Commands.CreateWFPObjectiveTimeline;
 
-public class CreateWFPObjectiveTimelineCommand : IRequest<ApiResponse<WFPObjectiveTimelineDto>>
+public class CreateWFPObjectiveTimelineCommand : IRequest<ApiResponse<WFPObjectiveTimelineResponse>>
 {
     public Guid WFPObjectiveTargetId { get; set; }
     public DateOnly StartDate { get; set; }

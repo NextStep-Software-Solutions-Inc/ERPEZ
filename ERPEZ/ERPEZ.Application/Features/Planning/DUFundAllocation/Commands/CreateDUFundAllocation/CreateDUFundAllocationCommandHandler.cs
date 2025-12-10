@@ -6,9 +6,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.DUFundAllocation.Commands.CreateDUFundAllocation;
 
-public class CreateDUFundAllocationCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateDUFundAllocationCommand, ApiResponse<DUFundAllocationDto>>
+public class CreateDUFundAllocationCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateDUFundAllocationCommand, ApiResponse<DUFundAllocationResponse>>
 {
-    public async Task<ApiResponse<DUFundAllocationDto>> Handle(CreateDUFundAllocationCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<DUFundAllocationResponse>> Handle(CreateDUFundAllocationCommand request, CancellationToken cancellationToken)
     {
         // Validate ReceivedFund exists and check availability
         var receivedFund = await unitOfWork.ReceivedFundRepository.GetByIdAsync(request.ReceivedFundId, cancellationToken)
@@ -37,14 +37,14 @@ public class CreateDUFundAllocationCommandHandler(IUnitOfWork unitOfWork) : IReq
         };
         await unitOfWork.DUFundAllocationRepository.AddAsync(dUFundAllocation, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
-        var dUFundAllocationDto = new DUFundAllocationDto
+        var dUFundAllocationDto = new DUFundAllocationResponse
         {
             Id = dUFundAllocation.Id,
             DUAllocationId = dUFundAllocation.DUAllocationId,
             ReceivedFundId = dUFundAllocation.ReceivedFundId,
             Amount = dUFundAllocation.Amount
         };
-        return ApiResponse<DUFundAllocationDto>.Success(dUFundAllocationDto, "Delivery Unit Fund Allocation created successfully.");
+        return ApiResponse<DUFundAllocationResponse>.Success(dUFundAllocationDto, "Delivery Unit Fund Allocation created successfully.");
     }
 }
 

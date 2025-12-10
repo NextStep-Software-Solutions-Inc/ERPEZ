@@ -4,9 +4,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.WFPObjective.Commands.UpdateWFPObjective;
 
-public class UpdateWFPObjectiveCommand : IRequest<ApiResponse<WFPObjectiveDto>>
+public class UpdateWFPObjectiveCommand : IRequest<ApiResponse<WFPObjectiveResponse>>
 {
     public Guid Id { get; set; }
-    public required UpdateWFPObjectiveDto UpdateWFPObjective { get; set; }
+    public required UpdateWFPObjectiveRequest UpdateWFPObjective { get; set; }
 }
 

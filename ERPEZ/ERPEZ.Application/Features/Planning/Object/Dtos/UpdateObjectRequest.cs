@@ -1,6 +1,6 @@
 namespace ERPEZ.Application.Features.Planning.Object.Dtos;
 
-public class UpdateObjectDto
+public class UpdateObjectRequest
 {
     public string? Name { get; set; }
     public string? Code { get; set; }

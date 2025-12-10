@@ -29,7 +29,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet]
-        [ProducesResponseType(typeof(PaginatedApiResponse<DUFundAllocationDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(PaginatedApiResponse<DUFundAllocationResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetDUFundAllocations([FromQuery] GetDUFundAllocationsQuery query)
         {
             var result = await mediator.Send(query);
@@ -37,7 +37,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<DUFundAllocationDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<DUFundAllocationResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetDUFundAllocationById(Guid id)
         {
@@ -46,10 +46,10 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpPut("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<DUFundAllocationDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<DUFundAllocationResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> UpdateDUFundAllocation(Guid id, [FromBody] UpdateDUFundAllocationDto dto)
+        public async Task<IActionResult> UpdateDUFundAllocation(Guid id, [FromBody] UpdateDUFundAllocationRequest dto)
         {
             var command = new UpdateDUFundAllocationCommand
             {

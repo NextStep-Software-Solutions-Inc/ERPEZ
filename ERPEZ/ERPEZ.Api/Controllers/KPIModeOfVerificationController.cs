@@ -15,8 +15,8 @@ namespace ERPEZ.Api.Controllers
     public class KPIModeOfVerificationController(ISender mediator) : ControllerBase
     {
         [HttpPost]
-        [ProducesResponseType(typeof(ApiResponse<KPIModeOfVerificationDto>), StatusCodes.Status201Created)]
-        [ProducesResponseType(typeof(ApiResponse<KPIModeOfVerificationDto>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<KPIModeOfVerificationResponse>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<KPIModeOfVerificationResponse>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateKPIModeOfVerification([FromBody] CreateKPIModeOfVerificationCommand command)
         {
             var result = await mediator.Send(command);
@@ -28,7 +28,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet]
-        [ProducesResponseType(typeof(PaginatedApiResponse<KPIModeOfVerificationDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(PaginatedApiResponse<KPIModeOfVerificationResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetKPIModeOfVerifications([FromQuery] GetKPIModeOfVerificationsQuery query)
         {
             var result = await mediator.Send(query);
@@ -36,7 +36,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<KPIModeOfVerificationDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<KPIModeOfVerificationResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetKPIModeOfVerificationById(Guid id)
         {
@@ -45,10 +45,10 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpPut("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<KPIModeOfVerificationDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<KPIModeOfVerificationResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> UpdateKPIModeOfVerification(Guid id, [FromBody] UpdateKPIModeOfVerificationDto dto)
+        public async Task<IActionResult> UpdateKPIModeOfVerification(Guid id, [FromBody] UpdateKPIModeOfVerificationRequest dto)
         {
             var command = new UpdateKPIModeOfVerificationCommand
             {

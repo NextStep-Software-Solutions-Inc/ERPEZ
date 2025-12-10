@@ -1,6 +1,6 @@
 namespace ERPEZ.Application.Features.Planning.WFPObjective.Dtos;
 
-public class UpdateWFPObjectiveDto
+public class UpdateWFPObjectiveRequest
 {
     public string? Description { get; set; }
     public decimal? Weight { get; set; }

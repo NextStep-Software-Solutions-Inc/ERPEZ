@@ -1,6 +1,6 @@
 namespace ERPEZ.Application.Features.Planning.Location.Dtos;
 
-public class UpdateLocationDto
+public class UpdateLocationRequest
 {
     public Guid Id { get; set; }
     public Guid? ParentId { get; set; }

@@ -7,6 +7,6 @@ namespace ERPEZ.Application.Features.Planning.DUFundAllocation.Commands.UpdateDU
 public class UpdateDUFundAllocationCommand : IRequest<ApiResponse<Domain.Entities.Planning.DUFundAllocation>>
 {
     public Guid Id { get; set; }
-    public required UpdateDUFundAllocationDto UpdateDUFundAllocation { get; set; }
+    public required UpdateDUFundAllocationRequest UpdateDUFundAllocation { get; set; }
 }
 
