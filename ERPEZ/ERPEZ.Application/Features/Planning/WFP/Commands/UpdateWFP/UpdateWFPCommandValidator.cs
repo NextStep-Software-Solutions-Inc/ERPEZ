@@ -1,61 +1,67 @@
+using ERPEZ.Domain.Enums;
 using FluentValidation;
 
 namespace ERPEZ.Application.Features.Planning.WFP.Commands.UpdateWFP;
 
+/// <summary>
+/// Validator for UpdateWFPCommand ensuring all user input meets business requirements.
+/// </summary>
 public class UpdateWFPCommandValidator : AbstractValidator<UpdateWFPCommand>
 {
-    private readonly string[] validStatuses = ["Draft", "Submitted", "Approved", "Rejected", "Completed", "Canceled"];
-
     public UpdateWFPCommandValidator()
     {
-        // 1. 🔑 ID Validation (Crucial for updates)
+        // ID Validation (Crucial for updates)
         RuleFor(x => x.Id)
             .NotEmpty()
-            .WithMessage("WFP ID is required for update.");
+            .WithMessage("Work and Financial Plan ID is required for update.");
 
-        // 2. DeliveryUnitId (Guid)
+        // DeliveryUnitId (Required GUID)
         RuleFor(x => x.UpdateWFP.DeliveryUnitId)
             .NotEmpty()
             .WithMessage("Delivery Unit ID is required.");
 
-        // 3. ProjectTitle (Required, Min/Max Length)
+        // ProjectTitle (Optional for updates, Min/Max Length)
         RuleFor(x => x.UpdateWFP.ProjectTitle)
-            .NotEmpty()
-            .WithMessage("Project Title is required.")
             .MinimumLength(5)
             .WithMessage("Project Title must be at least 5 characters long.")
             .MaximumLength(250)
-            .WithMessage("Project Title cannot exceed 250 characters.");
+            .WithMessage("Project Title cannot exceed 250 characters.")
+            .When(x => !string.IsNullOrWhiteSpace(x.UpdateWFP.ProjectTitle));
 
-        // 4. Description (Optional, Max Length)
+        // Description (Optional, Max Length)
         RuleFor(x => x.UpdateWFP.Description)
             .MaximumLength(1000)
             .WithMessage("Description cannot exceed 1000 characters.")
             .When(x => !string.IsNullOrWhiteSpace(x.UpdateWFP.Description));
 
-        // 5. FiscalYear (Required, Valid Year Range)
-        RuleFor(x => x.UpdateWFP.FiscalYear)
-            .NotNull()
-            .WithMessage("Fiscal Year is required.")
-            .InclusiveBetween(DateTime.Now.Year - 1, DateTime.Now.Year + 10)
-            .WithMessage($"Fiscal Year must be between {DateTime.Now.Year - 1} and {DateTime.Now.Year + 10}.");
+        // FiscalYearId (Optional GUID)
+        RuleFor(x => x.UpdateWFP.FiscalYearId)
+            .NotEqual(Guid.Empty)
+            .WithMessage("Fiscal Year ID must be a valid GUID.")
+            .When(x => x.UpdateWFP.FiscalYearId.HasValue);
 
-        // 6. ProposedBudget (Required, Positive Value)
+        // ProjectEndDate must be after ProjectStartDate when both are provided
+        RuleFor(x => x.UpdateWFP.ProjectEndDate)
+            .GreaterThan(x => x.UpdateWFP.ProjectStartDate!.Value)
+            .WithMessage("Project End Date must be after Project Start Date.")
+            .When(x => x.UpdateWFP.ProjectStartDate.HasValue && x.UpdateWFP.ProjectEndDate.HasValue);
+
+        // ProposedBudget (Optional, Non-Negative)
         RuleFor(x => x.UpdateWFP.ProposedBudget)
             .GreaterThanOrEqualTo(0)
-            .WithMessage("Proposed Budget must be a non-negative value.");
+            .WithMessage("Proposed Budget must be a non-negative value.")
+            .When(x => x.UpdateWFP.ProposedBudget.HasValue);
 
-        // 7. GeneralObjective (Optional, Max Length)
+        // GeneralObjective (Optional, Max Length)
         RuleFor(x => x.UpdateWFP.GeneralObjective)
             .MaximumLength(1000)
             .WithMessage("General Objective cannot exceed 1000 characters.")
             .When(x => !string.IsNullOrWhiteSpace(x.UpdateWFP.GeneralObjective));
 
-        // 8. Status (Required, Must be one of the defined valid statuses)
+        // Status (Optional, Must be valid enum value)
         RuleFor(x => x.UpdateWFP.Status)
-            .NotEmpty()
-            .WithMessage("Status is required.")
-            .Must(status => validStatuses.Contains(status, StringComparer.OrdinalIgnoreCase))
-            .WithMessage($"Status must be one of the following: {string.Join(", ", validStatuses)}.");
+            .Must(status => Enum.TryParse<StatusEnum>(status, true, out _))
+            .WithMessage($"Status must be one of the following: {string.Join(", ", Enum.GetNames<StatusEnum>())}.")
+            .When(x => !string.IsNullOrWhiteSpace(x.UpdateWFP.Status));
     }
 }

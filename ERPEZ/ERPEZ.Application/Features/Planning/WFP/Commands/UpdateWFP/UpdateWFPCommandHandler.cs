@@ -1,3 +1,4 @@
+using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -12,34 +13,43 @@ public class UpdateWFPCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<U
         var dto = request.UpdateWFP;
 
         var wfp = await unitOfWork.WFPRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken)
-            ?? throw new NotFoundException("WFP not found.");
+            ?? throw new NotFoundException("Work and Financial Plan not found.");
 
         var coalescedDeliveryUnitId = dto.DeliveryUnitId;
-        var coalescedFiscalYear = dto.FiscalYear ?? wfp.FiscalYear;
+        var coalescedFiscalYearId = dto.FiscalYearId ?? wfp.FiscalYearId;
         var coalescedProjectTitle = dto.ProjectTitle ?? wfp.ProjectTitle;
         var coalescedDescription = dto.Description ?? wfp.Description;
+        
         var duplicate = await unitOfWork.WFPRepository.FindAsync(
             w => w.Id != request.Id
                 && w.DeliveryUnitId == coalescedDeliveryUnitId
-                && w.FiscalYear == coalescedFiscalYear
+                && w.FiscalYearId == coalescedFiscalYearId
                 && w.ProjectTitle == coalescedProjectTitle
                 && w.Description == coalescedDescription,
             cancellationToken
         );
 
-        if (duplicate != null) throw new ConflictException("WFP with the same Delivery Unit, Fiscal Year, Project Title, and Description already exists.");
+        if (duplicate != null) 
+            throw new ConflictException("Work and Financial Plan with the same Delivery Unit, Fiscal Year, Project Title, and Description already exists.");
 
         wfp.DeliveryUnitId = dto.DeliveryUnitId;
-        wfp.FiscalYear = dto.FiscalYear ?? wfp.FiscalYear;
+        wfp.FiscalYearId = dto.FiscalYearId ?? wfp.FiscalYearId;
         wfp.ProjectTitle = dto.ProjectTitle ?? wfp.ProjectTitle;
         wfp.Description = dto.Description ?? wfp.Description;
+        wfp.ProjectStartDate = dto.ProjectStartDate ?? wfp.ProjectStartDate;
+        wfp.ProjectEndDate = dto.ProjectEndDate ?? wfp.ProjectEndDate;
         wfp.ProposedBudget = dto.ProposedBudget ?? wfp.ProposedBudget;
         wfp.GeneralObjective = dto.GeneralObjective ?? wfp.GeneralObjective;
-        wfp.Status = dto.Status ?? wfp.Status;
+        
+        // Parse string Status to StatusEnum if provided (validation ensures this will succeed)
+        if (!string.IsNullOrWhiteSpace(dto.Status))
+        {
+            wfp.Status = Enum.Parse<StatusEnum>(dto.Status, ignoreCase: true);
+        }
 
         unitOfWork.WFPRepository.Update(wfp);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return ApiResponse<Domain.Entities.Planning.WFP>.Success(wfp, "WFP updated successfully.");
+        return ApiResponse<Domain.Entities.Planning.WFP>.Success(wfp, "Work and Financial Plan updated successfully.");
     }
 }

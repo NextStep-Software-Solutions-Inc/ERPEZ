@@ -36,11 +36,11 @@ public class UpdateActivityBudgetRequirementCommandHandler(IUnitOfWork unitOfWor
             Id = abr.Id,
             WFPObjectiveTargetId = abr.WFPObjectiveTargetId,
             ObjectId = abr.ObjectId,
-            ItemDescription = abr.ItemDescription,
+            ItemDescription = abr.ItemDescription ?? string.Empty,
             Quantity = abr.Quantity,
             CostEstimates = abr.CostEstimates,
             CreatedAt = abr.CreatedAt,
-            CreatedBy = abr.CreatedBy
+            CreatedBy = abr.CreatedBy ?? string.Empty
         };
         return ApiResponse<ActivityBudgetRequirementResponse>.Success(result, "Activity Budget Requirement updated successfully.");
     }

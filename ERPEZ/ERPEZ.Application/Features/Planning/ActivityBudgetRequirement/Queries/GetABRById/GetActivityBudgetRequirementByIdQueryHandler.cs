@@ -18,10 +18,10 @@ public class GetActivityBudgetRequirementByIdQueryHandler(IUnitOfWork unitOfWork
             Id = abr.Id,
             WFPObjectiveTargetId = abr.WFPObjectiveTargetId,
             ObjectId = abr.ObjectId,
-            ItemDescription = abr.ItemDescription,
+            ItemDescription = abr.ItemDescription ?? string.Empty,
             Quantity = abr.Quantity,
             CostEstimates = abr.CostEstimates,
-            CreatedBy = abr.CreatedBy,
+            CreatedBy = abr.CreatedBy ?? string.Empty,
             CreatedAt = abr.CreatedAt
         };
         return ApiResponse<ActivityBudgetRequirementResponse>.Success(result, "Retrieved successfully");

@@ -1,18 +1,21 @@
+using ERPEZ.Domain.Enums;
 using FluentValidation;
 
 namespace ERPEZ.Application.Features.Planning.WFP.Commands.CreateWFP;
 
+/// <summary>
+/// Validator for CreateWFPCommand ensuring all user input meets business requirements.
+/// </summary>
 public class CreateWFPCommandValidator : AbstractValidator<CreateWFPCommand>
 {
-    private static readonly string[] validStatuses = ["Draft", "Submitted", "Approved", "Rejected", "Completed"];
     public CreateWFPCommandValidator()
     {
-        // 1. DeliveryUnitId (Guid)
+        // DeliveryUnitId (Required GUID)
         RuleFor(x => x.DeliveryUnitId)
             .NotEmpty()
             .WithMessage("Delivery Unit ID is required.");
 
-        // 2. ProjectTitle (Required, Min/Max Length)
+        // ProjectTitle (Required, Min/Max Length)
         RuleFor(x => x.ProjectTitle)
             .NotEmpty()
             .WithMessage("Project Title is required.")
@@ -21,35 +24,47 @@ public class CreateWFPCommandValidator : AbstractValidator<CreateWFPCommand>
             .MaximumLength(250)
             .WithMessage("Project Title cannot exceed 250 characters.");
 
-        // 3. Description (Optional, Max Length)
+        // Description (Optional, Max Length)
         RuleFor(x => x.Description)
             .MaximumLength(1000)
             .WithMessage("Description cannot exceed 1000 characters.")
             .When(x => !string.IsNullOrWhiteSpace(x.Description));
 
-        // 4. FiscalYear (Required, Valid Year Range)
-        RuleFor(x => x.FiscalYear)
-            .NotNull()
-            .WithMessage("Fiscal Year is required.")
-            .InclusiveBetween(DateTime.Now.Year - 1, DateTime.Now.Year + 10) // Example: current year, previous year, and next 10 years
-            .WithMessage($"Fiscal Year must be between {DateTime.Now.Year - 1} and {DateTime.Now.Year + 10}.");
+        // FiscalYearId (Optional GUID)
+        RuleFor(x => x.FiscalYearId)
+            .NotEqual(Guid.Empty)
+            .WithMessage("Fiscal Year ID must be a valid GUID.")
+            .When(x => x.FiscalYearId.HasValue);
 
-        // 5. ProposedBudget (Required, Positive Value)
+        // ProjectStartDate (Required)
+        RuleFor(x => x.ProjectStartDate)
+            .NotEmpty()
+            .WithMessage("Project Start Date is required.");
+
+        // ProjectEndDate (Required and must be after ProjectStartDate)
+        RuleFor(x => x.ProjectEndDate)
+            .NotEmpty()
+            .WithMessage("Project End Date is required.")
+            .GreaterThan(x => x.ProjectStartDate)
+            .WithMessage("Project End Date must be after Project Start Date.");
+
+        // ProposedBudget (Optional, Non-Negative - will be auto-calculated from line items)
         RuleFor(x => x.ProposedBudget)
             .GreaterThanOrEqualTo(0)
-            .WithMessage("Proposed Budget must be a non-negative value.");
+            .WithMessage("Proposed Budget must be a non-negative value.")
+            .When(x => x.ProposedBudget.HasValue);
 
-        // 6. GeneralObjective (Optional, Max Length)
+        // GeneralObjective (Optional, Max Length)
         RuleFor(x => x.GeneralObjective)
             .MaximumLength(1000)
             .WithMessage("General Objective cannot exceed 1000 characters.")
             .When(x => !string.IsNullOrWhiteSpace(x.GeneralObjective));
 
-        // 7. Status (Required, Must be one of the defined valid statuses)
+        // Status (Required, Must be valid enum value)
         RuleFor(x => x.Status)
             .NotEmpty()
             .WithMessage("Status is required.")
-            .Must(status => validStatuses.Contains(status, StringComparer.OrdinalIgnoreCase))
-            .WithMessage($"Status must be one of the following: {string.Join(", ", validStatuses)}.");
+            .Must(status => Enum.TryParse<StatusEnum>(status, true, out _))
+            .WithMessage($"Status must be one of the following: {string.Join(", ", Enum.GetNames<StatusEnum>())}.");
     }
 }

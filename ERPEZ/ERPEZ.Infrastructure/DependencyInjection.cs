@@ -84,6 +84,7 @@ public static class DependencyInjection
         services.AddScoped<IClusterRepository, ClusterRepository>();
         services.AddScoped<IActivityBudgetRequirementRepository, ActivityBudgetRequirementRepository>();
         services.AddScoped<IWFPObjectiveTargetRepository, WFPObjectiveTargetRepository>();
+        services.AddScoped<IWFPObjectiveTimelineRepository, WFPObjectiveTimelineRepository>();
         services.AddScoped<IAttributeRepository, AttributeRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<LocalFileStorageService>();

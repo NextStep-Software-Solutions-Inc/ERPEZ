@@ -4,6 +4,7 @@ public enum StatusEnum
 {
     Draft,
     Submitted,
+    Returned,
     Approved,
     Active,
     Archived

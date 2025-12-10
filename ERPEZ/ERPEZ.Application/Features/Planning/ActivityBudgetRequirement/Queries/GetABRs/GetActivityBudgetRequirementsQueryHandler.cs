@@ -23,11 +23,11 @@ public class GetActivityBudgetRequirementsQueryHandler(IUnitOfWork unitOfWork) :
             Id = abr.Id,
             WFPObjectiveTargetId = abr.WFPObjectiveTargetId,
             ObjectId = abr.ObjectId,
-            ItemDescription = abr.ItemDescription,
+            ItemDescription = abr.ItemDescription ?? string.Empty,
             Quantity = abr.Quantity,
             CostEstimates = abr.CostEstimates,
             CreatedAt = abr.CreatedAt,
-            CreatedBy = abr.CreatedBy
+            CreatedBy = abr.CreatedBy ?? string.Empty
         };
         var (abrs, totalCount) = await unitOfWork.ActivityBudgetRequirementRepository.GetAllAsync(sieveModel, projection, cancellationToken: cancellationToken);
         return new PaginatedApiResponse<ActivityBudgetRequirementResponse>(

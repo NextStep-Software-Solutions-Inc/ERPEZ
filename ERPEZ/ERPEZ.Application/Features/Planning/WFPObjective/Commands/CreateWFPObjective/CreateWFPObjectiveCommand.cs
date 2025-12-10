@@ -8,4 +8,6 @@ public class CreateWFPObjectiveCommand : IRequest<ApiResponse<WFPObjectiveDto>>
 {
     public Guid WFPId { get; set; }
     public string Description { get; set; } = string.Empty;
+    public decimal Weight { get; set; }
+    public decimal? Outcome { get; set; }
 }

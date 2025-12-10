@@ -7,6 +7,6 @@ namespace ERPEZ.Application.Features.Planning.WFP.Commands.UpdateWFP;
 public class UpdateWFPCommand : IRequest<ApiResponse<Domain.Entities.Planning.WFP>>
 {
     public Guid Id { get; set; }
-    public UpdateWFPDto UpdateWFP { get; set; } = null!;
+    public UpdateWFPRequest UpdateWFP { get; set; } = null!;
 }
 

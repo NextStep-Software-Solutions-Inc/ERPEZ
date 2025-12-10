@@ -12,17 +12,40 @@ public class UpdateWFPObjectiveCommandHandler(IUnitOfWork unitOfWork) : IRequest
     {
         var dto = request.UpdateWFPObjective;
         var wfpObjective = await unitOfWork.WFPObjectiveRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken)
-            ?? throw new NotFoundException("WFP Objective not found.");
+            ?? throw new NotFoundException("Work and Financial Plan Objective not found.");
 
-        var duplicate = await unitOfWork.WFPObjectiveRepository.FindAsync(
-            x => x.Description == dto.Description,
-            cancellationToken
-        );
+        // Check for duplicate description if it's being changed
+        if (!string.IsNullOrWhiteSpace(dto.Description) && dto.Description != wfpObjective.Description)
+        {
+            var duplicate = await unitOfWork.WFPObjectiveRepository.FindAsync(
+                x => x.WFPId == wfpObjective.WFPId && x.Description == dto.Description && x.Id != request.Id,
+                cancellationToken
+            );
 
-        if (duplicate != null && duplicate.Id != request.Id)
-            throw new ConflictException("WFP Objective already exists.");
+            if (duplicate != null)
+                throw new ConflictException("Work and Financial Plan Objective with the same description already exists.");
+        }
+
+        // Validate weight if it's being changed
+        if (dto.Weight.HasValue && dto.Weight.Value != wfpObjective.Weight)
+        {
+            // Get all existing objectives for this WFP (excluding current one)
+            var existingObjectivesQuery = unitOfWork.WFPObjectiveRepository.Query(
+                o => o.WFPId == wfpObjective.WFPId && o.Id != request.Id);
+            var existingObjectives = await unitOfWork.WFPObjectiveRepository.ToListAsync(existingObjectivesQuery, cancellationToken);
+            var otherObjectivesWeight = existingObjectives.Sum(o => o.Weight);
+
+            // Validate that updating this objective won't exceed 100%
+            if (otherObjectivesWeight + dto.Weight.Value > 100)
+            {
+                var remainingWeight = 100 - otherObjectivesWeight;
+                throw new BadRequestException($"Cannot update objective weight. Total weight would exceed 100%. Maximum allowed weight for this objective: {remainingWeight}%.");
+            }
+        }
 
         wfpObjective.Description = dto.Description ?? wfpObjective.Description;
+        wfpObjective.Weight = dto.Weight ?? wfpObjective.Weight;
+        wfpObjective.Outcome = dto.Outcome ?? wfpObjective.Outcome;
 
         unitOfWork.WFPObjectiveRepository.Update(wfpObjective);
         await unitOfWork.SaveChangesAsync(cancellationToken);
@@ -31,8 +54,13 @@ public class UpdateWFPObjectiveCommandHandler(IUnitOfWork unitOfWork) : IRequest
         {
             Id = wfpObjective.Id,
             WFPId = wfpObjective.WFPId,
-            Description = wfpObjective.Description
+            Description = wfpObjective.Description,
+            Weight = wfpObjective.Weight,
+            Outcome = wfpObjective.Outcome,
+            CreatedAt = wfpObjective.CreatedAt,
+            CreatedBy = wfpObjective.CreatedBy ?? string.Empty
         };
-        return ApiResponse<WFPObjectiveDto>.Success(result, "WFP Objective updated successfully.");
+        
+        return ApiResponse<WFPObjectiveDto>.Success(result, "Work and Financial Plan Objective updated successfully.");
     }
 }

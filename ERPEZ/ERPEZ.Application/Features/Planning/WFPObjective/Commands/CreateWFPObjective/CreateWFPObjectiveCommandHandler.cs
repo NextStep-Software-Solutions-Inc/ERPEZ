@@ -11,16 +11,33 @@ public class CreateWFPObjectiveCommandHandler(IUnitOfWork unitOfWork) : IRequest
     public async Task<ApiResponse<WFPObjectiveDto>> Handle(CreateWFPObjectiveCommand request, CancellationToken cancellationToken)
     {
         _ = await unitOfWork.WFPRepository.FindAsync(wo => wo.Id == request.WFPId,
-            cancellationToken) ?? throw new NotFoundException("WFP not found.");
+            cancellationToken) ?? throw new NotFoundException("Work and Financial Plan not found.");
 
-        var duplicate = await unitOfWork.WFPObjectiveRepository.FindAsync(w => w.WFPId == request.WFPId && w.Description == request.Description, cancellationToken);
-        if (duplicate != null) throw new ConflictException("WFP Objective already exist.");
+        var duplicate = await unitOfWork.WFPObjectiveRepository.FindAsync(
+            w => w.WFPId == request.WFPId && w.Description == request.Description, 
+            cancellationToken);
+        
+        if (duplicate != null) 
+            throw new ConflictException("Work and Financial Plan Objective with the same description already exists.");
+
+        // Get all existing objectives for this WFP to calculate total weight
+        var existingObjectivesQuery = unitOfWork.WFPObjectiveRepository.Query(o => o.WFPId == request.WFPId);
+        var existingObjectives = await unitOfWork.WFPObjectiveRepository.ToListAsync(existingObjectivesQuery, cancellationToken);
+        var currentTotalWeight = existingObjectives.Sum(o => o.Weight);
+
+        // Validate that adding this objective won't exceed 100%
+        if (currentTotalWeight + request.Weight > 100)
+        {
+            var remainingWeight = 100 - currentTotalWeight;
+            throw new BadRequestException($"Cannot add objective. Total weight would exceed 100%. Remaining available weight: {remainingWeight}%.");
+        }
 
         var wfpObjective = new Domain.Entities.Planning.WFPObjective
         {
             WFPId = request.WFPId,
-            Description = request.Description
-
+            Description = request.Description,
+            Weight = request.Weight,
+            Outcome = request.Outcome
         };
 
         await unitOfWork.WFPObjectiveRepository.AddAsync(wfpObjective, cancellationToken);
@@ -31,7 +48,12 @@ public class CreateWFPObjectiveCommandHandler(IUnitOfWork unitOfWork) : IRequest
             Id = wfpObjective.Id,
             WFPId = request.WFPId,
             Description = request.Description,
+            Weight = wfpObjective.Weight,
+            Outcome = wfpObjective.Outcome,
+            CreatedAt = wfpObjective.CreatedAt,
+            CreatedBy = wfpObjective.CreatedBy ?? string.Empty
         };
-        return ApiResponse<WFPObjectiveDto>.Success(dto, "WFP Objective created successfully.");
+        
+        return ApiResponse<WFPObjectiveDto>.Success(dto, "Work and Financial Plan Objective created successfully.");
     }
 }

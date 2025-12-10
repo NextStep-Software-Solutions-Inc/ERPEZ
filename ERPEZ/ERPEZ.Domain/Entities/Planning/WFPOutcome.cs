@@ -1,5 +1,4 @@
 using ERPEZ.Domain.Common;
-using System.Text.Json.Serialization;
 
 namespace ERPEZ.Domain.Entities.Planning;
 
