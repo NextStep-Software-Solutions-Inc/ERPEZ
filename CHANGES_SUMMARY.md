@@ -1,6 +1,7 @@
 # WFP System Refactoring Summary
 
 ## Overview
+
 This document summarizes all the changes made to the Work and Financial Plan (WFP) system based on the requirements to improve code quality and consistency.
 
 ## Changes Made
@@ -8,14 +9,17 @@ This document summarizes all the changes made to the Work and Financial Plan (WF
 ### 1. Update WFP Entity: FiscalYear → FiscalYearId with Optional FK
 
 **Files Modified:**
+
 - `ERPEZ.Domain/Entities/Planning/WFP.cs`
 
 **Changes:**
+
 - Changed `FiscalYear` property from `int?` to `Guid? FiscalYearId`
 - Added navigation property: `public virtual FiscalYear? FiscalYear { get; set; }`
 - This establishes a proper foreign key relationship with the `FiscalYear` entity
 
 **Impact:**
+
 - All DTOs, Commands, and Validators updated to use `FiscalYearId` instead of `FiscalYear`
 - Validation changed from year range validation to GUID validation
 
@@ -28,21 +32,25 @@ Commands and Request DTOs now accept `string` for Status instead of `StatusEnum`
 
 **Files Modified:**
 
-#### Commands:
+#### Commands
+
 - `CreateWFPCommand.cs` - Status property changed to `string` (default: "Draft")
 - `UpdateWFPCommand.cs` - Via `UpdateWFPRequest` DTO
 - `UpdateWFPStatusCommand.cs` - Status property changed to `string`
 
-#### DTOs:
+#### DTOs
+
 - `UpdateWFPRequest.cs` - Status property changed to `string?`
 - `UpdateWFPStatusRequest.cs` - Status property changed to `string`
 
-#### Validators:
+#### Validators
+
 - `CreateWFPCommandValidator.cs` - Updated to use `Enum.TryParse<StatusEnum>()` for validation
 - `UpdateWFPCommandValidator.cs` - Updated to use `Enum.TryParse<StatusEnum>()` for validation
 - `UpdateWFPStatusCommandValidator.cs` - Updated to use `Enum.TryParse<StatusEnum>()` for validation
 
 **Validation Pattern:**
+
 ```csharp
 RuleFor(x => x.Status)
     .NotEmpty()
@@ -51,12 +59,14 @@ RuleFor(x => x.Status)
     .WithMessage($"Status must be one of the following: {string.Join(", ", Enum.GetNames<StatusEnum>())}.");
 ```
 
-#### Handlers:
+#### Handlers
+
 - `CreateWFPCommandHandler.cs` - Added runtime parsing: `var statusEnum = Enum.Parse<StatusEnum>(request.Status, ignoreCase: true);`
 - `UpdateWFPCommandHandler.cs` - Added conditional parsing for Status when provided
 - `UpdateWFPStatusCommandHandler.cs` - Added runtime parsing for new status
 
 **Benefits:**
+
 - Clear validation error messages listing all acceptable enum values
 - Case-insensitive parsing for better user experience
 - Validation happens before the handler is invoked (via FluentValidation pipeline)
@@ -66,31 +76,37 @@ RuleFor(x => x.Status)
 ### 3. Rename Dto Suffix to Response/Request
 
 **Naming Convention:**
+
 - `*Dto` → `*Response` (for query responses and read operations)
 - `Update*Dto` → `Update*Request` (for update operations)
 
 **Files Renamed:**
 
-#### WFP Feature:
+#### WFP Feature
+
 - `WFPDto.cs` → `WFPResponse.cs`
 - `UpdateWFPDto.cs` → `UpdateWFPRequest.cs`
 
 **Class Names Updated:**
+
 - `WFPDto` → `WFPResponse`
 - `UpdateWFPDto` → `UpdateWFPRequest`
 
 **Files Updated with New References:**
 
-#### Commands:
+#### Commands
+
 - `CreateWFPCommand.cs` - Return type: `ApiResponse<WFPResponse>`
 - `UpdateWFPCommand.cs` - Property type: `UpdateWFPRequest UpdateWFP`
 - `UpdateWFPStatusCommand.cs` - Return type: `ApiResponse<WFPResponse>`
 
-#### Handlers:
+#### Handlers
+
 - `CreateWFPCommandHandler.cs` - Updated to use `WFPResponse`
 - `UpdateWFPStatusCommandHandler.cs` - Updated to use `WFPResponse`
 
-#### Controllers:
+#### Controllers
+
 - `WFPController.cs` - All endpoint response types updated:
   - `POST /wfps` → Returns `ApiResponse<WFPResponse>`
   - `GET /wfps` → Returns `PaginatedApiResponse<WFPResponse>`
@@ -99,6 +115,7 @@ RuleFor(x => x.Status)
   - `PATCH /wfps/{id}/status` → Returns `ApiResponse<WFPResponse>`
 
 **Benefits:**
+
 - Clearer distinction between request and response objects
 - Follows RESTful API naming conventions
 - Easier to understand the flow of data
@@ -108,6 +125,7 @@ RuleFor(x => x.Status)
 ### 4. Use PaginatedQuery Base Class for Paginated GET Requests
 
 **Base Class:**
+
 ```csharp
 public abstract record PaginatedQuery<TResponse> : IRequest<TResponse>
 {
@@ -120,22 +138,28 @@ public abstract record PaginatedQuery<TResponse> : IRequest<TResponse>
 
 **Files Modified:**
 
-#### WFP Feature:
+#### WFP Feature
+
 - `GetWFPsQuery.cs` - Now inherits from `PaginatedQuery<PaginatedApiResponse<Domain.Entities.Planning.WFP>>`
 
-#### WFPObjective Feature:
+#### WFPObjective Feature
+
 - `GetWFPObjectivesQuery.cs` - Now inherits from `PaginatedQuery<PaginatedApiResponse<Domain.Entities.Planning.WFPObjective>>`
 
-#### WFPObjectiveTarget Feature:
+#### WFPObjectiveTarget Feature
+
 - `GetWFPObjectiveTargetsQuery.cs` - Now inherits from `PaginatedQuery<PaginatedApiResponse<Domain.Entities.Planning.WFPObjectiveTarget>>`
 
-#### WFPObjectiveTimeline Feature:
+#### WFPObjectiveTimeline Feature
+
 - `GetWFPObjectiveTimelinesQuery.cs` - Now inherits from `PaginatedQuery<PaginatedApiResponse<Domain.Entities.Planning.WFPObjectiveTimeline>>`
 
-#### ActivityBudgetRequirement Feature:
+#### ActivityBudgetRequirement Feature
+
 - `GetActivityBudgetRequirementsQuery.cs` - Now inherits from `PaginatedQuery<PaginatedApiResponse<ActivityBudgetRequirementResponse>>`
 
 **Pattern:**
+
 ```csharp
 // Before
 public class GetWFPsQuery : IRequest<PaginatedApiResponse<Domain.Entities.Planning.WFP>>
@@ -153,6 +177,7 @@ public record GetWFPsQuery : PaginatedQuery<PaginatedApiResponse<Domain.Entities
 ```
 
 **Benefits:**
+
 - Eliminates code duplication across query classes
 - Enforces consistent pagination behavior
 - Uses `record` types for immutability (best practice for queries)
@@ -207,6 +232,7 @@ dotnet ef migrations add UpdateWFPFiscalYearToForeignKey --startup-project ../ER
 ### Request Bodies (Breaking Changes)
 
 **Before:**
+
 ```json
 {
   "status": 0,  // StatusEnum as integer
@@ -215,6 +241,7 @@ dotnet ef migrations add UpdateWFPFiscalYearToForeignKey --startup-project ../ER
 ```
 
 **After:**
+
 ```json
 {
   "status": "Draft",  // String (validated against StatusEnum)
@@ -225,6 +252,7 @@ dotnet ef migrations add UpdateWFPFiscalYearToForeignKey --startup-project ../ER
 ### Response Bodies
 
 **Before:**
+
 ```json
 {
   "data": { ... },  // WFPDto
@@ -233,6 +261,7 @@ dotnet ef migrations add UpdateWFPFiscalYearToForeignKey --startup-project ../ER
 ```
 
 **After:**
+
 ```json
 {
   "data": { ... },  // WFPResponse

@@ -3,6 +3,7 @@
 This document describes the Work and Financial Plan (WFP) API endpoints, including CRUD operations for WFP, WFPObjective, WFPObjectiveTarget, WFPObjectiveTimeline, and ActivityBudgetRequirement entities.
 
 ## Table of Contents
+
 - [WFP (Work and Financial Plan)](#wfp-work-and-financial-plan)
 - [WFP Objectives](#wfp-objectives)
 - [WFP Objective Targets (Activities)](#wfp-objective-targets-activities)
@@ -28,6 +29,7 @@ This document describes the Work and Financial Plan (WFP) API endpoints, includi
 ### Create WFP
 
 **Request Body:**
+
 ```json
 {
   "deliveryUnitId": "guid",
@@ -45,6 +47,7 @@ This document describes the Work and Financial Plan (WFP) API endpoints, includi
 ### Update WFP Status
 
 **Request Body:**
+
 ```json
 {
   "status": "Draft|Submitted|Returned|Approved|Active|Archived"
@@ -52,6 +55,7 @@ This document describes the Work and Financial Plan (WFP) API endpoints, includi
 ```
 
 **Valid Status Transitions:**
+
 | Current Status | Valid Transitions |
 |---------------|-------------------|
 | Draft | Submitted, Archived |
@@ -78,6 +82,7 @@ This document describes the Work and Financial Plan (WFP) API endpoints, includi
 ### Create WFP Objective
 
 **Request Body:**
+
 ```json
 {
   "wfpId": "guid (required)",
@@ -88,6 +93,7 @@ This document describes the Work and Financial Plan (WFP) API endpoints, includi
 ```
 
 ### Weight Validation Rules
+
 - Total weight of all objectives for a WFP must not exceed 100%
 - Creation is allowed even if total is below 100%
 - Once total reaches 100%, no new objectives can be added
@@ -110,6 +116,7 @@ This document describes the Work and Financial Plan (WFP) API endpoints, includi
 ### Create WFP Objective Target (Activity)
 
 **Request Body:**
+
 ```json
 {
   "wfpObjectiveId": "guid (required)",
@@ -120,6 +127,7 @@ This document describes the Work and Financial Plan (WFP) API endpoints, includi
 ```
 
 ### Weight Validation Rules
+
 - Total weight of all targets for an objective must not exceed the parent objective's weight
 - Example: If an objective has weight 20%, all its targets must total ≤ 20%
 - Editing weights is allowed as long as total doesn't exceed parent weight
@@ -141,6 +149,7 @@ This document describes the Work and Financial Plan (WFP) API endpoints, includi
 ### Create WFP Objective Timeline
 
 **Request Body:**
+
 ```json
 {
   "wfpObjectiveTargetId": "guid (required)",
@@ -151,7 +160,9 @@ This document describes the Work and Financial Plan (WFP) API endpoints, includi
 ```
 
 ### Timeline Types (Based on UI)
+
 Timelines can be created with different granularities:
+
 - **Daily** - Select specific days with target values
 - **Weekly** - Select specific weeks with target values
 - **Monthly** - Select specific months with target values
@@ -177,6 +188,7 @@ Note: Only one timeline type per activity is supported.
 ### Create Activity Budget Requirement
 
 **Request Body:**
+
 ```json
 {
   "wfpObjectiveTargetId": "guid (required)",
@@ -188,7 +200,9 @@ Note: Only one timeline type per activity is supported.
 ```
 
 ### Expenditure Types (Objects)
+
 Objects represent types of expenditure and their line items:
+
 - **PS** - Personal Services
   - Honorarium
   - Salary
@@ -209,7 +223,7 @@ Objects represent types of expenditure and their line items:
 
 1. **ProposedBudget Calculation**: The WFP's ProposedBudget is optional and can be auto-calculated from the total of all ActivityBudgetRequirement line items.
 
-2. **WFP Objective Weights**: 
+2. **WFP Objective Weights**:
    - Sum of all objective weights must not exceed 100%
    - Objectives can be created if total is below 100%
    - No new objectives can be added when total reaches 100%
@@ -259,6 +273,7 @@ All list endpoints support the following query parameters for pagination and fil
 | sorts | string | Sieve sort string |
 
 ### Filter Examples
+
 ```
 # Filter by WFP ID
 ?filters=wfpId==guid-here
@@ -271,6 +286,7 @@ All list endpoints support the following query parameters for pagination and fil
 ```
 
 ### Sort Examples
+
 ```
 # Sort by created date descending
 ?sorts=-createdAt
@@ -294,6 +310,7 @@ All endpoints return standardized error responses:
 ```
 
 ### Common Error Codes
+
 - **400 Bad Request** - Validation errors or invalid input
 - **404 Not Found** - Resource not found
 - **409 Conflict** - Duplicate resource exists
