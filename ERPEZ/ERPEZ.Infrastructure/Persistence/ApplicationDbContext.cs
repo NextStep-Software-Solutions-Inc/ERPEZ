@@ -32,11 +32,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ReceivedFund>? ReceivedFunds { get; set; }
     public DbSet<Transaction>? Transactions { get; set; }
     public DbSet<WFP>? WFPs { get; set; }
-    public DbSet<WFPActivity>? WFPActivities { get; set; }
     public DbSet<WFPObjective>? WFPObjectives { get; set; }
     public DbSet<WFPObjectiveTarget>? WFPObjectiveTargets { get; set; }
     public DbSet<WFPObjectiveTimeline>? WFPObjectiveTimelines { get; set; }
-    public DbSet<WFPOutcome>? WFPOutcomes { get; set; }
     public DbSet<Attribute>? Attributes { get; set; }
     public DbSet<Cluster>? Clusters { get; set; }
     public DbSet<DeliveryUnit>? DeliveryUnits { get; set; }
@@ -413,25 +411,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .WithMany()
             .HasForeignKey(w => w.FiscalYearId);
 
-        //WFP Outcome
-        modelBuilder.Entity<WFPOutcome>()
-            .HasIndex(wo => new { wo.WFPObjectiveId, wo.Description });
-
-        modelBuilder.Entity<WFPOutcome>()
-            .HasOne(wo => wo.WFPObjective)
-            .WithMany(o => o.WFPOutcomes)
-            .HasForeignKey(wo => wo.WFPObjectiveId);
-
-        modelBuilder.Entity<WFPOutcome>()
-            .HasMany(wo => wo.WFPActivities)
-            .WithOne(a => a.WFPOutcome)
-            .HasForeignKey(a => a.WFPOutcomeId);
-
-        modelBuilder.Entity<WFPOutcome>()
-            .HasMany(wo => wo.WFPPAPs)
-            .WithOne(p => p.WFPOutcome)
-            .HasForeignKey(p => p.WFPOutcomeId);
-
         // WFPObjective
         modelBuilder.Entity<WFPObjective>()
             .HasIndex(o => new { o.WFPId, o.Description })
@@ -442,10 +421,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .WithMany(w => w.WFPObjectives)
             .HasForeignKey(o => o.WFPId)
             .IsRequired();
-
-        modelBuilder.Entity<WFPObjective>()
-            .HasMany(o => o.WFPOutcomes)
-            .WithOne(wo => wo.WFPObjective);
 
         modelBuilder.Entity<WFPObjective>()
             .HasMany(o => o.WFPObjectiveTargets)

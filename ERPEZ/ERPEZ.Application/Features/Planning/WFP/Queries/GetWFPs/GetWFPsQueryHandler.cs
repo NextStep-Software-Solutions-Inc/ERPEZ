@@ -1,12 +1,14 @@
+using System.Linq.Expressions;
+using ERPEZ.Application.Features.Planning.WFP.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.WFP.Queries.GetWFPs;
 
-public class GetWFPsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetWFPsQuery, PaginatedApiResponse<Domain.Entities.Planning.WFP>>
+public class GetWFPsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetWFPsQuery, PaginatedApiResponse<WFPsResponse>>
 {
-    public async Task<PaginatedApiResponse<Domain.Entities.Planning.WFP>> Handle(GetWFPsQuery query, CancellationToken cancellationToken)
+    public async Task<PaginatedApiResponse<WFPsResponse>> Handle(GetWFPsQuery query, CancellationToken cancellationToken)
     {
         var sieveModel = new Sieve.Models.SieveModel
         {
@@ -15,8 +17,27 @@ public class GetWFPsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetWF
             Filters = query.Filters,
             Sorts = query.Sorts
         };
-        var (wfps, totalCount) = await unitOfWork.WFPRepository.GetAllAsync(sieveModel, cancellationToken: cancellationToken);
-        return new PaginatedApiResponse<Domain.Entities.Planning.WFP>(
+
+        Expression<Func<Domain.Entities.Planning.WFP, WFPsResponse>> projection = wfp => new WFPsResponse
+        {
+            Id = wfp.Id,
+            DeliveryUnitId = wfp.DeliveryUnitId,
+            FiscalYear = wfp.FiscalYear != null ? wfp.FiscalYear.Year :0,
+            OfficeName = wfp.DeliveryUnit.Office.Name,
+            ProjectTitle = wfp.ProjectTitle,
+            Description = wfp.Description,
+            ProjectStartDate = wfp.ProjectStartDate,
+            ProjectEndDate = wfp.ProjectEndDate,
+            ProposedBudget = wfp.ProposedBudget,
+            GeneralObjective = wfp.GeneralObjective,
+            Status = wfp.Status.ToString(),
+            CreatedBy = wfp.CreatedBy,
+            CreatedAt = wfp.CreatedAt,
+            ObjectiveCount = wfp.WFPObjectives.Count
+        };
+
+        var (wfps, totalCount) = await unitOfWork.WFPRepository.GetAllAsync(sieveModel, projection, cancellationToken: cancellationToken);
+        return new PaginatedApiResponse<WFPsResponse>(
             [.. wfps],
             query.PageNumber,
             query.PageSize,

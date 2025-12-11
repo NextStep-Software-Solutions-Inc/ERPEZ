@@ -10,5 +10,4 @@ public class UpdateWFPRequest
     public DateOnly? ProjectEndDate { get; set; }
     public decimal? ProposedBudget { get; set; }
     public string? GeneralObjective { get; set; }
-    public string? Status { get; set; }
 }

@@ -1,19 +1,25 @@
-using ERPEZ.Domain.Enums;
+
+using ERPEZ.Application.Features.Planning.DeliveryUnit.Dtos;
+using ERPEZ.Application.Features.Planning.FiscalYear.Dtos;
+using ERPEZ.Application.Features.Planning.WFPObjective.Dtos;
 
 namespace ERPEZ.Application.Features.Planning.WFP.Dtos;
 
-public class WFPResponse
+public record WFPResponse
 {
-    public Guid Id { get; set; }
-    public Guid DeliveryUnitId { get; set; }
-    public string ProjectTitle { get; set; } = string.Empty;
-    public string? Description { get; set; }
-    public Guid? FiscalYearId { get; set; }
-    public DateOnly ProjectStartDate { get; set; }
-    public DateOnly ProjectEndDate { get; set; }
-    public decimal? ProposedBudget { get; set; }
-    public string? GeneralObjective { get; set; }
-    public StatusEnum Status { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public string CreatedBy { get; set; } = string.Empty;
+    public Guid Id { get; init; }
+    public required DeliveryUnitResponse DeliveryUnit { get; init; }
+    public string ProjectTitle { get; init; } = string.Empty;
+    public string? Description { get; init; }
+    public FiscalYearResponse? FiscalYear { get; init; }
+    public DateOnly ProjectStartDate { get; init; }
+    public DateOnly ProjectEndDate { get; init; }
+    public decimal? ProposedBudget { get; init; }
+    public string? GeneralObjective { get; init; }
+    public string Status { get; init; } = string.Empty;
+    public DateTime CreatedAt { get; init; }
+    public string CreatedBy { get; init; } = string.Empty;
+    public int ObjectiveCount { get; init; } = 0;
+
+    public List<WFPObjectiveResponse> WFPObjectives { get; init; } = [];
 }

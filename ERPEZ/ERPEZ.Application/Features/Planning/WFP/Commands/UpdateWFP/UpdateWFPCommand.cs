@@ -4,9 +4,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.WFP.Commands.UpdateWFP;
 
-public class UpdateWFPCommand : IRequest<ApiResponse<Domain.Entities.Planning.WFP>>
+public record UpdateWFPCommand : IRequest<ApiResponse<Unit>>
 {
-    public Guid Id { get; set; }
-    public UpdateWFPRequest UpdateWFP { get; set; } = null!;
+    public Guid Id { get; init; }
+    public UpdateWFPRequest UpdateWFP { get; init; } = null!;
 }
 

@@ -27,9 +27,7 @@ public interface IUnitOfWork
     IObjectRepository ObjectRepository { get; }
     IOPCRRatingRepository OPCRRatingRepository { get; }
     IWFPRepository WFPRepository { get; }
-    IWFPActivityRepository WFPActivityRepository { get; }
     IWFPObjectiveRepository WFPObjectiveRepository { get; }
-    IWFPOutcomeRepository WFPOutcomeRepository { get; }
     IWFPPAPDepartmentRepository WFPPAPDepartmentRepository { get; }
     IFunctionAllocationRepository FunctionAllocationRepository { get; }
     IFiscalYearRepository FiscalYearRepository { get; }

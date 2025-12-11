@@ -1,4 +1,3 @@
-using ERPEZ.Application.Features.Planning.WFP.Dtos;
 using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
@@ -8,9 +7,9 @@ using MediatR;
 namespace ERPEZ.Application.Features.Planning.WFP.Commands.UpdateWFPStatus;
 
 public class UpdateWFPStatusCommandHandler(IUnitOfWork unitOfWork) 
-    : IRequestHandler<UpdateWFPStatusCommand, ApiResponse<WFPResponse>>
+    : IRequestHandler<UpdateWFPStatusCommand, ApiResponse<Unit>>
 {
-    public async Task<ApiResponse<WFPResponse>> Handle(UpdateWFPStatusCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<Unit>> Handle(UpdateWFPStatusCommand request, CancellationToken cancellationToken)
     {
         var wfp = await unitOfWork.WFPRepository.GetByIdAsync(request.Id, cancellationToken)
             ?? throw new NotFoundException("Work and Financial Plan not found.");
@@ -26,23 +25,7 @@ public class UpdateWFPStatusCommandHandler(IUnitOfWork unitOfWork)
         unitOfWork.WFPRepository.Update(wfp);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var dto = new WFPResponse
-        {
-            Id = wfp.Id,
-            DeliveryUnitId = wfp.DeliveryUnitId,
-            ProjectTitle = wfp.ProjectTitle,
-            Description = wfp.Description,
-            FiscalYearId = wfp.FiscalYearId,
-            ProjectStartDate = wfp.ProjectStartDate,
-            ProjectEndDate = wfp.ProjectEndDate,
-            ProposedBudget = wfp.ProposedBudget,
-            GeneralObjective = wfp.GeneralObjective,
-            Status = wfp.Status,
-            CreatedAt = wfp.CreatedAt,
-            CreatedBy = wfp.CreatedBy ?? string.Empty
-        };
-
-        return ApiResponse<WFPResponse>.Success(dto, $"Work and Financial Plan status updated to {request.Status} successfully.");
+        return ApiResponse<Unit>.Success(Unit.Value, $"Work and Financial Plan status updated to {request.Status} successfully.");
     }
 
     private static void ValidateStatusTransition(StatusEnum currentStatus, StatusEnum newStatus)

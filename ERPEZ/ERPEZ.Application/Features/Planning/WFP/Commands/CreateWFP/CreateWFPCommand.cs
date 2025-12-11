@@ -1,10 +1,9 @@
-using ERPEZ.Application.Features.Planning.WFP.Dtos;
 using ERPEZ.Shared.Common;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.WFP.Commands.CreateWFP;
 
-public class CreateWFPCommand : IRequest<ApiResponse<WFPResponse>>
+public class CreateWFPCommand : IRequest<ApiResponse<Guid>>
 {
     public Guid DeliveryUnitId { get; set; }
     public string ProjectTitle { get; set; } = string.Empty;
@@ -14,5 +13,4 @@ public class CreateWFPCommand : IRequest<ApiResponse<WFPResponse>>
     public DateOnly ProjectEndDate { get; set; }
     public decimal? ProposedBudget { get; set; }
     public string? GeneralObjective { get; set; }
-    public string Status { get; set; } = "Draft";
 }
