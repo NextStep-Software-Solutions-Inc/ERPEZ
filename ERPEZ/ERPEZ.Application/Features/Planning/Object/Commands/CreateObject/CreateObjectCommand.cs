@@ -4,7 +4,7 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Object.Commands.CreateObject;
 
-public class CreateObjectCommand : IRequest<ApiResponse<ObjectDto>>
+public class CreateObjectCommand : IRequest<ApiResponse<ObjectResponse>>
 {
     public Guid? ParentId { get; set; }
     public string Name { get; set; } = string.Empty;

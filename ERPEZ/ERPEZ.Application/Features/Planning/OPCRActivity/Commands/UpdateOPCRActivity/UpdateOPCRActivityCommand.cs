@@ -7,5 +7,5 @@ namespace ERPEZ.Application.Features.Planning.OPCRActivity.Commands.UpdateOPCRAc
 public class UpdateOPCRActivityCommand : IRequest<ApiResponse<Domain.Entities.Planning.OPCRActivity>>
 {
     public Guid Id { get; set; }
-    public required UpdateOPCRActivityDto UpdateOPCRActivity { get; set; }
+    public required UpdateOPCRActivityRequest UpdateOPCRActivity { get; set; }
 }

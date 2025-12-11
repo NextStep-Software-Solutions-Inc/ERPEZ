@@ -29,7 +29,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet]
-        [ProducesResponseType(typeof(PaginatedApiResponse<OPCRActivityDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(PaginatedApiResponse<OPCRActivityResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetOPCRActivities([FromQuery] GetOPCRActivitiesQuery query)
         {
             var result = await mediator.Send(query);
@@ -37,7 +37,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<OPCRActivityDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<OPCRActivityResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetOPCRActivityById(Guid id)
         {
@@ -46,10 +46,10 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpPut("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<OPCRActivityDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<OPCRActivityResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> UpdateOPCRActivity(Guid id, [FromBody] UpdateOPCRActivityDto dto)
+        public async Task<IActionResult> UpdateOPCRActivity(Guid id, [FromBody] UpdateOPCRActivityRequest dto)
         {
             var command = new UpdateOPCRActivityCommand
             {

@@ -6,15 +6,15 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Transaction.Queries.GetTransactionById;
 
-public class GetTransactionByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetTransactionByIdQuery, ApiResponse<TransactionDto>>
+public class GetTransactionByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetTransactionByIdQuery, ApiResponse<TransactionResponse>>
 {
-    public async Task<ApiResponse<TransactionDto>> Handle(
+    public async Task<ApiResponse<TransactionResponse>> Handle(
         GetTransactionByIdQuery request,
         CancellationToken cancellationToken)
     {
         var transactionQuery = unitOfWork.TransactionRepository
             .Query(t => t.Id == request.Id)
-            .Select(t => new TransactionDto
+            .Select(t => new TransactionResponse
             {
                 Id = t.Id,
                 LocationId = t.LocationId,
@@ -28,6 +28,6 @@ public class GetTransactionByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHa
                 TransactionDate = t.TransactionDate,
             });
         var transaction = await unitOfWork.TransactionRepository.GetSingleAsync(transactionQuery, cancellationToken: cancellationToken) ?? throw new NotFoundException("No data found.");
-        return ApiResponse<TransactionDto>.Success(transaction, "Retrieved successfully");
+        return ApiResponse<TransactionResponse>.Success(transaction, "Retrieved successfully");
     }
 }

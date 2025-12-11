@@ -15,8 +15,8 @@ namespace ERPEZ.Api.Controllers
     public class OPCRPAPDepartmentController(ISender mediator) : ControllerBase
     {
         [HttpPost]
-        [ProducesResponseType(typeof(ApiResponse<OPCRPAPDepartmentDto>), StatusCodes.Status201Created)]
-        [ProducesResponseType(typeof(ApiResponse<OPCRPAPDepartmentDto>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<OPCRPAPDepartmentResponse>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<OPCRPAPDepartmentResponse>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateOPCRPAPDepartment([FromBody] CreateOPCRPAPDepartmentCommand command)
         {
             var result = await mediator.Send(command);

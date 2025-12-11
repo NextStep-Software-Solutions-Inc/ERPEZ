@@ -6,9 +6,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.WFPOutcome.Commands.UpdateWFPOutcome;
 
-public class UpdateWFPOutcomeCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateWFPOutcomeCommand, ApiResponse<WFPOutcomeDto>>
+public class UpdateWFPOutcomeCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateWFPOutcomeCommand, ApiResponse<WFPOutcomeResponse>>
 {
-    public async Task<ApiResponse<WFPOutcomeDto>> Handle(UpdateWFPOutcomeCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<WFPOutcomeResponse>> Handle(UpdateWFPOutcomeCommand request, CancellationToken cancellationToken)
     {
         var dto = request.UpdateWFPOutcome;
 
@@ -21,12 +21,12 @@ public class UpdateWFPOutcomeCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
 
         unitOfWork.WFPOutcomeRepository.Update(wFPOutcome);
         await unitOfWork.SaveChangesAsync(cancellationToken);
-        var res = new WFPOutcomeDto
+        var res = new WFPOutcomeResponse
         {
             Id = wFPOutcome.Id,
             WFPObjectiveId = wFPOutcome.WFPObjectiveId,
             Description = wFPOutcome.Description
         };
-        return ApiResponse<WFPOutcomeDto>.Success(res, "WFP Outcome updated successfully.");
+        return ApiResponse<WFPOutcomeResponse>.Success(res, "WFP Outcome updated successfully.");
     }
 }

@@ -30,7 +30,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet]
-        [ProducesResponseType(typeof(PaginatedApiResponse<PerformanceMeasureDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(PaginatedApiResponse<PerformanceMeasureResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetPerformanceMeasures([FromQuery] GetPerformanceMeasuresQuery query)
         {
             var result = await mediator.Send(query);
@@ -38,7 +38,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<PerformanceMeasureDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<PerformanceMeasureResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetPerformanceMeasureById(Guid id)
         {
@@ -47,10 +47,10 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpPut("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<PerformanceMeasureDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<PerformanceMeasureResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> UpdatePerformanceMeasure(Guid id, [FromBody] UpdatePerformanceMeasureDto dto)
+        public async Task<IActionResult> UpdatePerformanceMeasure(Guid id, [FromBody] UpdatePerformanceMeasureRequest dto)
         {
             var command = new UpdatePerformanceMeasureCommand
             {

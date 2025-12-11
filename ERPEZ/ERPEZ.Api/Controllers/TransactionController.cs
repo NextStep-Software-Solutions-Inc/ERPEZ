@@ -29,7 +29,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet]
-        [ProducesResponseType(typeof(PaginatedApiResponse<TransactionDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(PaginatedApiResponse<TransactionResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetTransactions([FromQuery] GetTransactionsQuery query)
         {
             var result = await mediator.Send(query);
@@ -37,7 +37,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<TransactionDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<TransactionResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetTransactionById(Guid id)
         {
@@ -50,7 +50,7 @@ namespace ERPEZ.Api.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> UpdateTransaction(Guid id, [FromBody] UpdateTransactionDto updateTransaction)
+        public async Task<IActionResult> UpdateTransaction(Guid id, [FromBody] UpdateTransactionRequest updateTransaction)
         {
             var request = new UpdateTransactionCommand
             {

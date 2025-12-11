@@ -16,8 +16,8 @@ namespace ERPEZ.Api.Controllers
     public class WFPObjectiveController(ISender mediator) : ControllerBase
     {
         [HttpPost]
-        [ProducesResponseType(typeof(ApiResponse<WFPObjectiveDto>), StatusCodes.Status201Created)]
-        [ProducesResponseType(typeof(ApiResponse<WFPObjectiveDto>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<WFPObjectiveResponse>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<WFPObjectiveResponse>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateWFPObjective([FromBody] CreateWFPObjectiveCommand command)
         {
             var result = await mediator.Send(command);
@@ -49,7 +49,7 @@ namespace ERPEZ.Api.Controllers
         [ProducesResponseType(typeof(ApiResponse<WFPObjective>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> UpdateWFPObjective(Guid id, [FromBody] UpdateWFPObjectiveDto dto)
+        public async Task<IActionResult> UpdateWFPObjective(Guid id, [FromBody] UpdateWFPObjectiveRequest dto)
         {
             var command = new UpdateWFPObjectiveCommand
             {

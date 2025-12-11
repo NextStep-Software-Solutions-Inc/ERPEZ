@@ -47,7 +47,7 @@ namespace ERPEZ.Api.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> UpdateMFOPAP(Guid id, [FromBody] UpdateMFOPAPDto updateMFOPAP)
+        public async Task<IActionResult> UpdateMFOPAP(Guid id, [FromBody] UpdateMFOPAPRequest updateMFOPAP)
         {
             var request = new UpdateMFOPAPCommand
             {

@@ -17,7 +17,7 @@ public class UpdateOPCRCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<
         }
 
         opcr.DeliveryUnitId = dto?.DeliveryUnitId ?? opcr.DeliveryUnitId;
-        opcr.FiscalYear = dto?.FiscalYear ?? opcr.FiscalYear;
+        opcr.FiscalYearId = dto?.FiscalYearId ?? opcr.FiscalYearId;
 
         unitOfWork.OPCRRepository.Update(opcr);
         await unitOfWork.SaveChangesAsync(cancellationToken);

@@ -7,9 +7,9 @@ using MediatR;
 namespace ERPEZ.Application.Features.Planning.WFPObjectiveTarget.Commands.CreateWFPObjectiveTarget;
 
 public class CreateWFPObjectiveTargetCommandHandler(IUnitOfWork unitOfWork) 
-    : IRequestHandler<CreateWFPObjectiveTargetCommand, ApiResponse<WFPObjectiveTargetDto>>
+    : IRequestHandler<CreateWFPObjectiveTargetCommand, ApiResponse<WFPObjectiveTargetResponse>>
 {
-    public async Task<ApiResponse<WFPObjectiveTargetDto>> Handle(
+    public async Task<ApiResponse<WFPObjectiveTargetResponse>> Handle(
         CreateWFPObjectiveTargetCommand request, 
         CancellationToken cancellationToken)
     {
@@ -51,7 +51,7 @@ public class CreateWFPObjectiveTargetCommandHandler(IUnitOfWork unitOfWork)
         await unitOfWork.WFPObjectiveTargetRepository.AddAsync(target, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var dto = new WFPObjectiveTargetDto
+        var dto = new WFPObjectiveTargetResponse
         {
             Id = target.Id,
             WFPObjectiveId = target.WFPObjectiveId,
@@ -62,6 +62,6 @@ public class CreateWFPObjectiveTargetCommandHandler(IUnitOfWork unitOfWork)
             CreatedBy = target.CreatedBy ?? string.Empty
         };
 
-        return ApiResponse<WFPObjectiveTargetDto>.Success(dto, "Activity created successfully.");
+        return ApiResponse<WFPObjectiveTargetResponse>.Success(dto, "Activity created successfully.");
     }
 }

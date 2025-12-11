@@ -26,7 +26,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet]
-        [ProducesResponseType(typeof(PaginatedApiResponse<OPCRDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(PaginatedApiResponse<OPCRResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetOPCRs([FromQuery] GetOPCRsQuery query)
         {
             var result = await mediator.Send(query);
@@ -34,7 +34,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<OPCRDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<OPCRResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetOPCRById(Guid id)
         {

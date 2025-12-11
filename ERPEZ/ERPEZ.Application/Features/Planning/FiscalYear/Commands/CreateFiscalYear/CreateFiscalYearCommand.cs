@@ -4,9 +4,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.FiscalYear.Commands.CreateFiscalYear;
 
-public class CreateFiscalYearCommand : IRequest<ApiResponse<FiscalYearResponse>>
+public record CreateFiscalYearCommand : IRequest<ApiResponse<Guid>>
 {
-    public int Year { get; set; }
-    public string? Description { get; set; }
-    public List<FunctionAllocationRequest> FunctionAllocations { get; set; } = [];
+    public int Year { get; init; }
+    public string? Description { get; init; }
+    public List<FunctionAllocationRequest> FunctionAllocations { get; init; } = [];
 }

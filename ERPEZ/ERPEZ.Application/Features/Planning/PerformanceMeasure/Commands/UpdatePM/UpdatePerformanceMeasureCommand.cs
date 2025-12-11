@@ -8,5 +8,5 @@ namespace ERPEZ.Application.Features.Planning.PerformanceMeasure.Commands.Update
 public class UpdatePerformanceMeasureCommand : IRequest<ApiResponse<Domain.Entities.Planning.PerformanceMeasure>>
 {
     public Guid Id { get; set; }
-    public required UpdatePerformanceMeasureDto UpdatePerformanceMeasure { get; set; }
+    public required UpdatePerformanceMeasureRequest UpdatePerformanceMeasure { get; set; }
 }

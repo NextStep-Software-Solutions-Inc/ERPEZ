@@ -7,9 +7,9 @@ using MediatR;
 namespace ERPEZ.Application.Features.Planning.WFPObjectiveTimeline.Commands.UpdateWFPObjectiveTimeline;
 
 public class UpdateWFPObjectiveTimelineCommandHandler(IUnitOfWork unitOfWork) 
-    : IRequestHandler<UpdateWFPObjectiveTimelineCommand, ApiResponse<WFPObjectiveTimelineDto>>
+    : IRequestHandler<UpdateWFPObjectiveTimelineCommand, ApiResponse<WFPObjectiveTimelineResponse>>
 {
-    public async Task<ApiResponse<WFPObjectiveTimelineDto>> Handle(
+    public async Task<ApiResponse<WFPObjectiveTimelineResponse>> Handle(
         UpdateWFPObjectiveTimelineCommand request, 
         CancellationToken cancellationToken)
     {
@@ -45,7 +45,7 @@ public class UpdateWFPObjectiveTimelineCommandHandler(IUnitOfWork unitOfWork)
         unitOfWork.WFPObjectiveTimelineRepository.Update(timeline);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var result = new WFPObjectiveTimelineDto
+        var result = new WFPObjectiveTimelineResponse
         {
             Id = timeline.Id,
             WFPObjectiveTargetId = timeline.WFPObjectiveTargetId,
@@ -56,6 +56,6 @@ public class UpdateWFPObjectiveTimelineCommandHandler(IUnitOfWork unitOfWork)
             CreatedBy = timeline.CreatedBy ?? string.Empty
         };
 
-        return ApiResponse<WFPObjectiveTimelineDto>.Success(result, "Timeline updated successfully.");
+        return ApiResponse<WFPObjectiveTimelineResponse>.Success(result, "Timeline updated successfully.");
     }
 }

@@ -13,10 +13,11 @@ public class OPCR : BaseEntity
     public string Name { get; set; } = string.Empty;
 
     [Sieve(CanFilter = true, CanSort = true)]
-    public int FiscalYear { get; set; }
+    public Guid FiscalYearId { get; set; }
     [Sieve(CanFilter = true, CanSort = true)]
     public StatusEnum Status { get; set; } = StatusEnum.Draft;
     public virtual DeliveryUnit DeliveryUnit { get; set; } = null!;
+    public virtual FiscalYear FiscalYear { get; set; } = null!;
     public virtual List<OPCREvaluation> OPCREvaluations { get; set; } = [];
     public virtual List<DUKPIAssignment> DUKPIAssignments { get; set; } = [];
     public virtual List<OPCRActivity> OPCRActivities { get; set; } = [];

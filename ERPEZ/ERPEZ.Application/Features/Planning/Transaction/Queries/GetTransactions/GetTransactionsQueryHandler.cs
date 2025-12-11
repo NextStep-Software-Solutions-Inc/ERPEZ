@@ -7,9 +7,9 @@ using System.Linq.Expressions;
 
 namespace ERPEZ.Application.Features.Planning.Transaction.Queries.GetTransactions;
 
-public class GetTransactionsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetTransactionsQuery, PaginatedApiResponse<TransactionDto>>
+public class GetTransactionsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetTransactionsQuery, PaginatedApiResponse<TransactionResponse>>
 {
-    public async Task<PaginatedApiResponse<TransactionDto>> Handle(GetTransactionsQuery query, CancellationToken cancellationToken)
+    public async Task<PaginatedApiResponse<TransactionResponse>> Handle(GetTransactionsQuery query, CancellationToken cancellationToken)
     {
         var sieveModel = new SieveModel
         {
@@ -18,7 +18,7 @@ public class GetTransactionsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandl
             Filters = query.Filters,
             Sorts = query.Sorts
         };
-        Expression<Func<Domain.Entities.Planning.Transaction, TransactionDto>> projection = t => new()
+        Expression<Func<Domain.Entities.Planning.Transaction, TransactionResponse>> projection = t => new()
         {
             Id = t.Id,
             FundSourceId = t.FundSourceId,
@@ -34,7 +34,7 @@ public class GetTransactionsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandl
 
         var (transactions, totalCount) = await unitOfWork.TransactionRepository.GetAllAsync(sieveModel, projection, cancellationToken);
 
-        return new PaginatedApiResponse<TransactionDto>(
+        return new PaginatedApiResponse<TransactionResponse>(
             [.. transactions],
             query.PageNumber,
             query.PageSize,

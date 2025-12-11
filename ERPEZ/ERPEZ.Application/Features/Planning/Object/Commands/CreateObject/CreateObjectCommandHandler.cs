@@ -6,9 +6,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Object.Commands.CreateObject;
 
-public class CreateObjectCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateObjectCommand, ApiResponse<ObjectDto>>
+public class CreateObjectCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateObjectCommand, ApiResponse<ObjectResponse>>
 {
-    public async Task<ApiResponse<ObjectDto>> Handle(CreateObjectCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<ObjectResponse>> Handle(CreateObjectCommand request, CancellationToken cancellationToken)
     {
         if (request.ParentId != null)
         {
@@ -32,7 +32,7 @@ public class CreateObjectCommandHandler(IUnitOfWork unitOfWork) : IRequestHandle
         await unitOfWork.ObjectRepository.AddAsync(requestObject, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var dto = new ObjectDto
+        var dto = new ObjectResponse
         {
             Id = requestObject.Id,
             ParentId = requestObject.ParentId,
@@ -40,6 +40,6 @@ public class CreateObjectCommandHandler(IUnitOfWork unitOfWork) : IRequestHandle
             Code = requestObject.Code,
             IsActive = requestObject.IsActive
         };
-        return ApiResponse<ObjectDto>.Success(dto, "Object created successfully.");
+        return ApiResponse<ObjectResponse>.Success(dto, "Object created successfully.");
     }
 }

@@ -13,7 +13,7 @@ public class CreateOPCRCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<
         var opcr = new Domain.Entities.Planning.OPCR
         {
             DeliveryUnitId = request.DeliveryUnitId,
-            FiscalYear = request.FiscalYear,
+            FiscalYearId = request.FiscalYearId,
         };
         await unitOfWork.OPCRRepository.AddAsync(opcr, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);

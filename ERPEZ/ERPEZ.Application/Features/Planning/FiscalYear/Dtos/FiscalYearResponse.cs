@@ -1,10 +1,10 @@
 namespace ERPEZ.Application.Features.Planning.FiscalYear.Dtos;
 
-public class FiscalYearResponse
+public record FiscalYearResponse
 {
-    public Guid Id { get; set; }
-    public int Year { get; set; }
-    public string? Description { get; set; }
-    public bool IsLocked { get; set; }
-    public List<FunctionAllocationResponse> FunctionAllocations { get; set; } = [];
+    public Guid Id { get; init; }
+    public int Year { get; init; }
+    public string? Description { get; init; }
+    public bool IsLocked { get; init; }
+    public List<FunctionAllocationResponse> FunctionAllocations { get; init; } = [];
 }

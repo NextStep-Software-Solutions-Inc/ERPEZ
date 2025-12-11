@@ -18,8 +18,8 @@ namespace ERPEZ.Api.Controllers
     public class ObjectController(ISender mediator) : ControllerBase
     {
         [HttpPost]
-        [ProducesResponseType(typeof(ApiResponse<ObjectDto>), StatusCodes.Status201Created)]
-        [ProducesResponseType(typeof(ApiResponse<ObjectDto>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<ObjectResponse>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<ObjectResponse>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateObject([FromBody] CreateObjectCommand command)
         {
             var result = await mediator.Send(command);
@@ -50,10 +50,10 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpPut("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<ObjectDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<ObjectResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> UpdateObject(Guid id, [FromBody] UpdateObjectDto dto)
+        public async Task<IActionResult> UpdateObject(Guid id, [FromBody] UpdateObjectRequest dto)
         {
             var command = new UpdateObjectCommand
             {

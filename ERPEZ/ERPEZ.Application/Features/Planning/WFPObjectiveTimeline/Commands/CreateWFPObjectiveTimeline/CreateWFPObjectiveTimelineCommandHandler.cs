@@ -7,9 +7,9 @@ using MediatR;
 namespace ERPEZ.Application.Features.Planning.WFPObjectiveTimeline.Commands.CreateWFPObjectiveTimeline;
 
 public class CreateWFPObjectiveTimelineCommandHandler(IUnitOfWork unitOfWork) 
-    : IRequestHandler<CreateWFPObjectiveTimelineCommand, ApiResponse<WFPObjectiveTimelineDto>>
+    : IRequestHandler<CreateWFPObjectiveTimelineCommand, ApiResponse<WFPObjectiveTimelineResponse>>
 {
-    public async Task<ApiResponse<WFPObjectiveTimelineDto>> Handle(
+    public async Task<ApiResponse<WFPObjectiveTimelineResponse>> Handle(
         CreateWFPObjectiveTimelineCommand request, 
         CancellationToken cancellationToken)
     {
@@ -41,7 +41,7 @@ public class CreateWFPObjectiveTimelineCommandHandler(IUnitOfWork unitOfWork)
         await unitOfWork.WFPObjectiveTimelineRepository.AddAsync(timeline, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var dto = new WFPObjectiveTimelineDto
+        var dto = new WFPObjectiveTimelineResponse
         {
             Id = timeline.Id,
             WFPObjectiveTargetId = timeline.WFPObjectiveTargetId,
@@ -52,6 +52,6 @@ public class CreateWFPObjectiveTimelineCommandHandler(IUnitOfWork unitOfWork)
             CreatedBy = timeline.CreatedBy ?? string.Empty
         };
 
-        return ApiResponse<WFPObjectiveTimelineDto>.Success(dto, "Timeline created successfully.");
+        return ApiResponse<WFPObjectiveTimelineResponse>.Success(dto, "Timeline created successfully.");
     }
 }

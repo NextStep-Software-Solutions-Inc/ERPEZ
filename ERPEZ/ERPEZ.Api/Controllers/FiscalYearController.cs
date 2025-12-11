@@ -17,12 +17,12 @@ namespace ERPEZ.Api.Controllers;
 public class FiscalYearController(ISender mediator) : ControllerBase
 {
     [HttpPost]
-    [ProducesResponseType(typeof(ApiResponse<FiscalYearResponse>), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ApiResponse<FiscalYearResponse>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateFiscalYear([FromBody] CreateFiscalYearCommand command)
     {
         var result = await mediator.Send(command);
-        return !result.Succeeded ? BadRequest(result) : CreatedAtAction(nameof(GetFiscalYearById), new { id = result.Data!.Id }, result);
+        return !result.Succeeded ? BadRequest(result) : CreatedAtAction(nameof(GetFiscalYearById), new { id = result.Data }, result);
     }
 
     [HttpGet]
@@ -43,7 +43,7 @@ public class FiscalYearController(ISender mediator) : ControllerBase
     }
 
     [HttpPut("{id}")]
-    [ProducesResponseType(typeof(ApiResponse<FiscalYearResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateFiscalYear(Guid id, [FromBody] UpdateFiscalYearRequest dto)

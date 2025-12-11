@@ -29,7 +29,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet]
-        [ProducesResponseType(typeof(PaginatedApiResponse<LocationDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(PaginatedApiResponse<LocationResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetLocations([FromQuery] GetLocationsQuery query)
         {
             var result = await mediator.Send(query);
@@ -37,7 +37,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<LocationDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<LocationResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetLocationById(Guid id)
         {
@@ -50,7 +50,7 @@ namespace ERPEZ.Api.Controllers
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> UpdateLocation(Guid id, [FromBody] UpdateLocationDto updateLocation)
+        public async Task<IActionResult> UpdateLocation(Guid id, [FromBody] UpdateLocationRequest updateLocation)
         {
             var request = new UpdateLocationCommand
             {

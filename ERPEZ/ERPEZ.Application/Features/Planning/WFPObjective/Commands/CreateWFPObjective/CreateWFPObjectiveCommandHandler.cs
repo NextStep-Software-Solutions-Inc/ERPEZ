@@ -6,9 +6,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.WFPObjective.Commands.CreateWFPObjective;
 
-public class CreateWFPObjectiveCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateWFPObjectiveCommand, ApiResponse<WFPObjectiveDto>>
+public class CreateWFPObjectiveCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateWFPObjectiveCommand, ApiResponse<WFPObjectiveResponse>>
 {
-    public async Task<ApiResponse<WFPObjectiveDto>> Handle(CreateWFPObjectiveCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<WFPObjectiveResponse>> Handle(CreateWFPObjectiveCommand request, CancellationToken cancellationToken)
     {
         _ = await unitOfWork.WFPRepository.FindAsync(wo => wo.Id == request.WFPId,
             cancellationToken) ?? throw new NotFoundException("Work and Financial Plan not found.");
@@ -43,7 +43,7 @@ public class CreateWFPObjectiveCommandHandler(IUnitOfWork unitOfWork) : IRequest
         await unitOfWork.WFPObjectiveRepository.AddAsync(wfpObjective, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var dto = new WFPObjectiveDto
+        var dto = new WFPObjectiveResponse
         {
             Id = wfpObjective.Id,
             WFPId = request.WFPId,
@@ -54,6 +54,6 @@ public class CreateWFPObjectiveCommandHandler(IUnitOfWork unitOfWork) : IRequest
             CreatedBy = wfpObjective.CreatedBy ?? string.Empty
         };
         
-        return ApiResponse<WFPObjectiveDto>.Success(dto, "Work and Financial Plan Objective created successfully.");
+        return ApiResponse<WFPObjectiveResponse>.Success(dto, "Work and Financial Plan Objective created successfully.");
     }
 }

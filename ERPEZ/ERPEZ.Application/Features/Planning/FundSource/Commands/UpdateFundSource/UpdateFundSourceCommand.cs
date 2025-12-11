@@ -7,5 +7,5 @@ namespace ERPEZ.Application.Features.Planning.FundSource.Commands.UpdateFundSour
 public class UpdateFundSourceCommand : IRequest<ApiResponse<FundSourceResponse>>
 {
     public Guid Id { get; set; }
-    public required UpdateFundSourceDto UpdateFundSource { get; set; }
+    public required UpdateFundSourceRequest UpdateFundSource { get; set; }
 }

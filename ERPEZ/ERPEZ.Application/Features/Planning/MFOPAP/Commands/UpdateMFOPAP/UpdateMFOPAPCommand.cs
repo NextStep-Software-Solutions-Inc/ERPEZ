@@ -7,5 +7,5 @@ namespace ERPEZ.Application.Features.Planning.MFOPAP.Commands.UpdateMFOPAP;
 public class UpdateMFOPAPCommand : IRequest<ApiResponse<Domain.Entities.Planning.MFOPAP>>
 {
     public Guid Id { get; set; }
-    public required UpdateMFOPAPDto UpdateMFOPAP { get; set; }
+    public required UpdateMFOPAPRequest UpdateMFOPAP { get; set; }
 }
