@@ -1,4 +1,3 @@
-using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -6,9 +5,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.WFP.Commands.UpdateWFP;
 
-public class UpdateWFPCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateWFPCommand, ApiResponse<Domain.Entities.Planning.WFP>>
+public class UpdateWFPCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateWFPCommand, ApiResponse<Unit>>
 {
-    public async Task<ApiResponse<Domain.Entities.Planning.WFP>> Handle(UpdateWFPCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<Unit>> Handle(UpdateWFPCommand request, CancellationToken cancellationToken)
     {
         var dto = request.UpdateWFP;
 
@@ -40,16 +39,11 @@ public class UpdateWFPCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<U
         wfp.ProjectEndDate = dto.ProjectEndDate ?? wfp.ProjectEndDate;
         wfp.ProposedBudget = dto.ProposedBudget ?? wfp.ProposedBudget;
         wfp.GeneralObjective = dto.GeneralObjective ?? wfp.GeneralObjective;
-        
-        // Parse string Status to StatusEnum if provided (validation ensures this will succeed)
-        if (!string.IsNullOrWhiteSpace(dto.Status))
-        {
-            wfp.Status = Enum.Parse<StatusEnum>(dto.Status, ignoreCase: true);
-        }
+
 
         unitOfWork.WFPRepository.Update(wfp);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return ApiResponse<Domain.Entities.Planning.WFP>.Success(wfp, "Work and Financial Plan updated successfully.");
+        return ApiResponse<Unit>.Success(Unit.Value, "Work and Financial Plan updated successfully.");
     }
 }

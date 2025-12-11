@@ -108,17 +108,12 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("UpdatedBy")
                         .HasColumnType("text");
 
-                    b.Property<Guid?>("WFPActivityId")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid>("WFPObjectiveTargetId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
                     b.HasIndex("ObjectId");
-
-                    b.HasIndex("WFPActivityId");
 
                     b.HasIndex("WFPObjectiveTargetId", "ObjectId", "ItemDescription");
 
@@ -1669,68 +1664,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.ToTable("WFPs", "planning");
                 });
 
-            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WFPActivity", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("CreatedBy")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("DeletedBy")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Deliverable")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<string>("OutputIndicator")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.PrimitiveCollection<List<string>>("PersonsInvolved")
-                        .HasColumnType("text[]");
-
-                    b.Property<string>("Timeframe")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("text");
-
-                    b.Property<Guid>("WFPId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("WFPOutcomeId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("WFPId");
-
-                    b.HasIndex("WFPOutcomeId");
-
-                    b.ToTable("WFPActivities", "planning");
-                });
-
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WFPObjective", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1887,48 +1820,6 @@ namespace ERPEZ.Infrastructure.Migrations
                         });
                 });
 
-            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WFPOutcome", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("CreatedBy")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("DeletedBy")
-                        .HasColumnType("text");
-
-                    b.Property<string>("Description")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("text");
-
-                    b.Property<Guid>("WFPObjectiveId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("WFPObjectiveId", "Description");
-
-                    b.ToTable("WFPOutcomes", "planning");
-                });
-
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WFPPAP", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1980,14 +1871,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid>("WFPId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("WFPOutcomeId")
-                        .HasColumnType("uuid");
-
                     b.HasKey("Id");
 
                     b.HasIndex("WFPId");
-
-                    b.HasIndex("WFPOutcomeId");
 
                     b.ToTable("WFPPAPs", "planning");
                 });
@@ -2118,10 +2004,6 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasForeignKey("ObjectId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
-
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.WFPActivity", null)
-                        .WithMany("ActivityBudgetRequirements")
-                        .HasForeignKey("WFPActivityId");
 
                     b.HasOne("ERPEZ.Domain.Entities.Planning.WFPObjectiveTarget", "WFPObjectiveTarget")
                         .WithMany("ActivityBudgetRequirements")
@@ -2547,25 +2429,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("FiscalYear");
                 });
 
-            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WFPActivity", b =>
-                {
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.WFP", "WFP")
-                        .WithMany("WFPActivities")
-                        .HasForeignKey("WFPId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.WFPOutcome", "WFPOutcome")
-                        .WithMany("WFPActivities")
-                        .HasForeignKey("WFPOutcomeId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("WFP");
-
-                    b.Navigation("WFPOutcome");
-                });
-
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WFPObjective", b =>
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Planning.WFP", "WFP")
@@ -2599,17 +2462,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("WFPObjectiveTarget");
                 });
 
-            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WFPOutcome", b =>
-                {
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.WFPObjective", "WFPObjective")
-                        .WithMany("WFPOutcomes")
-                        .HasForeignKey("WFPObjectiveId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("WFPObjective");
-                });
-
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WFPPAP", b =>
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Planning.WFP", "WFP")
@@ -2618,13 +2470,7 @@ namespace ERPEZ.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.WFPOutcome", "WFPOutcome")
-                        .WithMany("WFPPAPs")
-                        .HasForeignKey("WFPOutcomeId");
-
                     b.Navigation("WFP");
-
-                    b.Navigation("WFPOutcome");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WFPPAPDepartment", b =>
@@ -2810,21 +2656,12 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WFP", b =>
                 {
-                    b.Navigation("WFPActivities");
-
                     b.Navigation("WFPObjectives");
-                });
-
-            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WFPActivity", b =>
-                {
-                    b.Navigation("ActivityBudgetRequirements");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WFPObjective", b =>
                 {
                     b.Navigation("WFPObjectiveTargets");
-
-                    b.Navigation("WFPOutcomes");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WFPObjectiveTarget", b =>
@@ -2832,13 +2669,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("ActivityBudgetRequirements");
 
                     b.Navigation("WFPObjectiveTimelines");
-                });
-
-            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WFPOutcome", b =>
-                {
-                    b.Navigation("WFPActivities");
-
-                    b.Navigation("WFPPAPs");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WFPPAP", b =>

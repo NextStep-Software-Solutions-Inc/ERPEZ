@@ -60,11 +60,5 @@ public class CreateWFPCommandValidator : AbstractValidator<CreateWFPCommand>
             .WithMessage("General Objective cannot exceed 1000 characters.")
             .When(x => !string.IsNullOrWhiteSpace(x.GeneralObjective));
 
-        // Status (Required, Must be valid enum value)
-        RuleFor(x => x.Status)
-            .NotEmpty()
-            .WithMessage("Status is required.")
-            .Must(status => Enum.TryParse<StatusEnum>(status, true, out _))
-            .WithMessage($"Status must be one of the following: {string.Join(", ", Enum.GetNames<StatusEnum>())}.");
     }
 }
