@@ -526,13 +526,19 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         // OPCR
         modelBuilder.Entity<OPCR>()
-            .HasIndex(o => new { o.DeliveryUnitId, o.FiscalYear })
+            .HasIndex(o => new { o.DeliveryUnitId, o.FiscalYearId })
             .IsUnique();
 
         modelBuilder.Entity<OPCR>()
             .HasOne(o => o.DeliveryUnit)
             .WithMany(d => d.OPCRs)
             .HasForeignKey(o => o.DeliveryUnitId);
+
+        modelBuilder.Entity<OPCR>()
+            .HasOne(o => o.FiscalYear)
+            .WithMany()
+            .HasForeignKey(o => o.FiscalYearId)
+            .IsRequired();
 
         modelBuilder.Entity<OPCR>()
             .HasMany(o => o.OPCREvaluations)

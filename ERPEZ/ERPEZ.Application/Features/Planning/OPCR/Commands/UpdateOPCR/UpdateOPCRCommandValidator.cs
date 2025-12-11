@@ -22,12 +22,13 @@ public class UpdateOPCRCommandValidator : AbstractValidator<UpdateOPCRCommand>
         });
 
         // 3. FiscalYear (Optional Integer, Valid Range)
-        When(x => x.UpdateOPCR.FiscalYear.HasValue, () =>
+        When(x => x.UpdateOPCR.FiscalYearId.HasValue, () =>
         {
             int currentYear = DateTime.UtcNow.Year;
-            RuleFor(x => x.UpdateOPCR.FiscalYear)
-                .InclusiveBetween(currentYear - 2, currentYear + 5)
-                .WithMessage($"Fiscal Year must be a valid year, typically between {currentYear - 2} and {currentYear + 5}.");
+            RuleFor(x => x.UpdateOPCR.FiscalYearId)
+                .Must(id => id != Guid.Empty)
+                .WithMessage("Fiscal Year ID must be a valid, non-empty GUID.");
+                
         });
     }
 }

@@ -6,9 +6,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.FiscalYear.Commands.UpdateFiscalYear;
 
-public class UpdateFiscalYearCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateFiscalYearCommand, ApiResponse<FiscalYearResponse>>
+public class UpdateFiscalYearCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateFiscalYearCommand, ApiResponse<Unit>>
 {
-    public async Task<ApiResponse<FiscalYearResponse>> Handle(UpdateFiscalYearCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<Unit>> Handle(UpdateFiscalYearCommand request, CancellationToken cancellationToken)
     {
         var fiscalYear = await unitOfWork.FiscalYearRepository.GetWithAllocationsAsync(request.Id, cancellationToken)
             ?? throw new NotFoundException("Fiscal year not found.");
@@ -39,12 +39,11 @@ public class UpdateFiscalYearCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
             IsLocked = fiscalYear.IsLocked,
             FunctionAllocations = request.FunctionAllocations.Select(a => new FunctionAllocationResponse
             {
-                Id = null, // Updated allocations don't have IDs in response
                 FunctionType = a.FunctionType,
                 Percentage = a.Percentage
             }).ToList()
         };
 
-        return ApiResponse<FiscalYearResponse>.Success(dto, "Fiscal year updated successfully.");
+        return ApiResponse<Unit>.Success(Unit.Value, "Fiscal year updated successfully.");
     }
 }

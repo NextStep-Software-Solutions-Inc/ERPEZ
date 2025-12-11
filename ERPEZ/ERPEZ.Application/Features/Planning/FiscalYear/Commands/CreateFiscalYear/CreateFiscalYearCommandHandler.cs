@@ -1,4 +1,3 @@
-using ERPEZ.Application.Features.Planning.FiscalYear.Dtos;
 using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
@@ -7,9 +6,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.FiscalYear.Commands.CreateFiscalYear;
 
-public class CreateFiscalYearCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateFiscalYearCommand, ApiResponse<FiscalYearResponse>>
+public class CreateFiscalYearCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateFiscalYearCommand, ApiResponse<Guid>>
 {
-    public async Task<ApiResponse<FiscalYearResponse>> Handle(CreateFiscalYearCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<Guid>> Handle(CreateFiscalYearCommand request, CancellationToken cancellationToken)
     {
         var existing = await unitOfWork.FiscalYearRepository.GetByYearAsync(request.Year, cancellationToken);
         if (existing != null) throw new ConflictException("Fiscal year already exists.");
@@ -39,20 +38,6 @@ public class CreateFiscalYearCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
 
         }, cancellationToken);
 
-        var dto = new FiscalYearResponse
-        {
-            Id = fiscalYear.Id,
-            Year = fiscalYear.Year,
-            Description = fiscalYear.Description,
-            IsLocked = fiscalYear.IsLocked,
-            FunctionAllocations = request.FunctionAllocations.Select(a => new FunctionAllocationResponse
-            {
-                Id = null, // New allocations don't have IDs yet
-                FunctionType = a.FunctionType,
-                Percentage = a.Percentage
-            }).ToList()
-        };
-
-        return ApiResponse<FiscalYearResponse>.Success(dto, "Fiscal year created successfully.");
+        return ApiResponse<Guid>.Success(fiscalYear.Id, "Fiscal year created successfully.");
     }
 }

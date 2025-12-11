@@ -924,8 +924,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid>("DeliveryUnitId")
                         .HasColumnType("uuid");
 
-                    b.Property<int>("FiscalYear")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("FiscalYearId")
+                        .HasColumnType("uuid");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
@@ -946,7 +946,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DeliveryUnitId", "FiscalYear")
+                    b.HasIndex("FiscalYearId");
+
+                    b.HasIndex("DeliveryUnitId", "FiscalYearId")
                         .IsUnique();
 
                     b.ToTable("OPCRs", "planning");
@@ -2325,7 +2327,15 @@ namespace ERPEZ.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.FiscalYear", "FiscalYear")
+                        .WithMany()
+                        .HasForeignKey("FiscalYearId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.Navigation("DeliveryUnit");
+
+                    b.Navigation("FiscalYear");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OPCRActivity", b =>

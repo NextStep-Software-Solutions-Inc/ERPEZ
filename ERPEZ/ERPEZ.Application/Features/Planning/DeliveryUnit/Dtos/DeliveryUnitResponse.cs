@@ -57,6 +57,7 @@ namespace ERPEZ.Application.Features.Planning.DeliveryUnit.Dtos
         public required string Name { get; init; }
         public string? Description { get; init; }
         public required string FunctionType { get; init; }
+        [JsonPropertyName("SDGs")]
         public List<string> SDGs { get; init; } = [];
         public decimal AllocatedTargetValue { get; init; }
     }

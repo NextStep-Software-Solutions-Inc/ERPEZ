@@ -11,11 +11,10 @@ public class CreateOPCRCommandValidator : AbstractValidator<CreateOPCRCommand>
             .NotEmpty()
             .WithMessage("Delivery Unit ID is required and must be a valid, non-empty GUID.");
 
-        // FiscalYear (Required Integer, Valid Range)
-        int currentYear = DateTime.UtcNow.Year;
-        RuleFor(x => x.FiscalYear)
-            .InclusiveBetween(currentYear - 2, currentYear + 5) // Allows current year, two years back, five years forward
-            .WithMessage($"Fiscal Year must be a valid year, typically between {currentYear - 2} and {currentYear + 5}.");
+        // FiscalYearId (Required GUID)
+        RuleFor(x => x.FiscalYearId)
+            .NotEmpty()
+            .WithMessage("Fiscal Year ID is required and must be a valid, non-empty GUID.");
 
     }
 }
