@@ -77,8 +77,9 @@ public class GetDeliveryUnitByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestH
                     FunctionType = subKPI.FunctionType,
                     SDGs = subKPI.SDGs.Select(sdg => sdg.Name).ToList(),
                     AllocatedTargetValue = subKPI.KPIAssignments
-                        .Where(a => a.KPIId == subKPI.Id)
-                        .First(a => a.DeliveryUnitId == du.Id).AllocatedTargetValue,
+                        .Where(a => a.KPIId == subKPI.Id && a.DeliveryUnitId == du.Id)
+                        .Select(a => a.AllocatedTargetValue)
+                        .FirstOrDefault(),
                 }).ToList(),
             }).ToList(),
             SubDeliveryUnits = du.SubDeliveryUnits.Select(subDU => new DeliveryUnitResponse
@@ -146,8 +147,9 @@ public class GetDeliveryUnitByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestH
                         FunctionType = subKPI.FunctionType,
                         SDGs = subKPI.SDGs.Select(sdg => sdg.Name).ToList(),
                         AllocatedTargetValue = subKPI.KPIAssignments
-                            .Where(a => a.KPIId == subKPI.Id)
-                            .First(a => a.DeliveryUnitId == subDU.Id).AllocatedTargetValue,
+                            .Where(a => a.KPIId == subKPI.Id && a.DeliveryUnitId == subDU.Id)
+                            .Select(a => a.AllocatedTargetValue)
+                            .FirstOrDefault(),
                     }).ToList(),
                 }).ToList(),
                 CreatedAt = subDU.CreatedAt,
