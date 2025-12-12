@@ -22,7 +22,13 @@ public class GetActivityBudgetRequirementsQueryHandler(IUnitOfWork unitOfWork) :
         {
             Id = abr.Id,
             WFPObjectiveTargetId = abr.WFPObjectiveTargetId,
-            ObjectId = abr.ObjectId,
+            Object = new()
+            {
+                Id = abr.Object.Id,
+                ParentId = abr.Object.ParentId,
+                Name = abr.Object.Name,
+                Code = abr.Object.Code,
+            },
             ItemDescription = abr.ItemDescription ?? string.Empty,
             Quantity = abr.Quantity,
             CostEstimates = abr.CostEstimates,

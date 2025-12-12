@@ -38,7 +38,13 @@ public class CreateActivityBudgetRequirementCommandHandler(IUnitOfWork unitOfWor
         {
             Id = abr.Id,
             WFPObjectiveTargetId = abr.WFPObjectiveTargetId,
-            ObjectId = abr.ObjectId,
+            Object = new()
+            {
+                Id = abr.Object.Id,
+                ParentId = abr.Object.ParentId,
+                Name = abr.Object.Name,
+                Code = abr.Object.Code,
+            },
             ItemDescription = abr.ItemDescription,
             Quantity = abr.Quantity,
             CostEstimates = abr.CostEstimates
