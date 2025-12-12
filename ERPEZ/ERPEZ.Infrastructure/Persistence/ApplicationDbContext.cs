@@ -568,7 +568,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasForeignKey(a => a.DUKPIAssignmentId);
 
         modelBuilder.Entity<OPCRActivity>()
-            .HasIndex(a => new { a.OPCRId, a.DUKPIAssignmentId, a.Name });
+            .HasIndex(a => new { a.OPCRId, a.DUKPIAssignmentId, a.Name })
+            .IsUnique();
 
         // OPCRRating
         modelBuilder.Entity<OPCRRating>()

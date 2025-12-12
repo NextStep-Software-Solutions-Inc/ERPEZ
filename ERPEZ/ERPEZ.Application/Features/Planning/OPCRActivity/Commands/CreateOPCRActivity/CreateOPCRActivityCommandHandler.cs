@@ -12,6 +12,13 @@ public class CreateOPCRActivityCommandHandler(IUnitOfWork unitOfWork) : IRequest
     {
         _ = await unitOfWork.OPCRRepository.FindAsync(o => o.Id == request.OPCRId, cancellationToken) ?? throw new NotFoundException("OPCR not found.");
         _ = await unitOfWork.DUKPIAssignmentRepository.FindAsync(d => d.Id == request.DUKPIAssignmentId, cancellationToken) ?? throw new NotFoundException("DU KPI Assignment not found.");
+        // do not allow duplicate OPCRActivity names under the same OPCR and DUKPIAssignment
+        var existingActivity = await unitOfWork.OPCRActivityRepository.FindAsync(a => a.OPCRId == request.OPCRId && a.DUKPIAssignmentId == request.DUKPIAssignmentId && a.Name.ToLower() == request.Name.ToLower(), cancellationToken);
+        if (existingActivity != null)
+        {
+            throw new ConflictException("An OPCR Activity with the same name already exists under this OPCR and DUKPI Assignment.");
+        }
+        
         var opcrActivity = new Domain.Entities.Planning.OPCRActivity
         {
             OPCRId = request.OPCRId,

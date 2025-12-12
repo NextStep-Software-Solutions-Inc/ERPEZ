@@ -8,7 +8,7 @@ public class CreateOPCRActivityCommand : IRequest<ApiResponse<OPCRActivityRespon
 {
     public Guid OPCRId { get; set; }
     public Guid DUKPIAssignmentId { get; set; }
-    public string Name { get; set; } = string.Empty;
+    public required string Name { get; set; }
     public string? Description { get; set; }
     public decimal Budget { get; set; }
 }
