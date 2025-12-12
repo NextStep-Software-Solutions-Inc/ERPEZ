@@ -20,7 +20,7 @@ public class GetOPCRByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<G
                 Id = o.Id,
                 Status = o.Status.ToString(),
                 Name = o.Name,
-                TotalBudget = o.OPCRActivities.Select(a => a.Budget).Sum(),
+                TotalBudget = o.OPCRActivities.Sum(a => a.Budget),
                 CreatedDate = DateOnly.FromDateTime(o.CreatedAt),
                 FiscalYear = new()
                 {
@@ -31,7 +31,7 @@ public class GetOPCRByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<G
                     FunctionAllocations = o.FiscalYear.FunctionAllocations.Select(fa => new FunctionAllocationResponse
                     {
                         Id = fa.Id,
-                        FunctionType = fa.FunctionType,
+                        FunctionType = fa.FunctionType.ToString(),
                         Percentage = fa.Percentage,
                     }).ToList(),
                 },

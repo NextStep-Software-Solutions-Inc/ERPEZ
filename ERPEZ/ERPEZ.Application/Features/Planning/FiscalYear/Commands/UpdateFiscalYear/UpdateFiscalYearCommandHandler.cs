@@ -1,4 +1,5 @@
 using ERPEZ.Application.Features.Planning.FiscalYear.Dtos;
+using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -21,7 +22,7 @@ public class UpdateFiscalYearCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
             var allocations = request.FunctionAllocations.Select(a => new Domain.Entities.Planning.FunctionAllocation
             {
                 FiscalYearId = fiscalYear.Id,
-                FunctionType = a.FunctionType,
+                FunctionType = Enum.Parse<FunctionTypeEnum>(a.FunctionType),
                 Percentage = a.Percentage
             }).ToList();
 

@@ -1,7 +1,12 @@
+using ERPEZ.Application.Features.Planning.ActivityBudgetRequirement.Dtos;
 using ERPEZ.Application.Features.Planning.DeliveryUnit.Dtos;
+using ERPEZ.Application.Features.Planning.FiscalYear.Dtos;
 using ERPEZ.Application.Features.Planning.MFOPAP.Dtos;
+using ERPEZ.Application.Features.Planning.Object.Dtos;
 using ERPEZ.Application.Features.Planning.WFP.Dtos;
 using ERPEZ.Application.Features.Planning.WFPObjective.Dtos;
+using ERPEZ.Application.Features.Planning.WFPObjectiveTarget.Dtos;
+using ERPEZ.Application.Features.Planning.WFPObjectiveTimeline.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -110,7 +115,56 @@ public class GetWFPByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
                     Description = o.Description,
                     CreatedAt = o.CreatedAt,
                     CreatedBy = o.CreatedBy,
+                    WFPObjectiveTargets = o.WFPObjectiveTargets.Select(t => new WFPObjectiveTargetResponse
+                    {
+                        Id = t.Id,
+                        ActivityName = t.ActivityName,
+                        Indicator = t.Indicator,
+                        Weight = t.Weight,
+                        CreatedAt = t.CreatedAt,
+                        CreatedBy = t.CreatedBy,
+                        WFPObjectiveTimelines = t.WFPObjectiveTimelines.Select(ot => new WFPObjectiveTimelineResponse
+                        {
+                            Id = ot.Id,
+                            EndDate = ot.EndDate,
+                            StartDate = ot.StartDate,
+                            TargetValue = ot.TargetValue,
+                            CreatedAt = ot.CreatedAt,
+                            CreatedBy = ot.CreatedBy,
+                        }).ToList(),
+                        ActivityBudgetRequirements = t.ActivityBudgetRequirements.Select(ab => new ActivityBudgetRequirementResponse
+                        {
+                            Id = ab.Id,
+                            ItemDescription = ab.ItemDescription,
+                            Quantity = ab.Quantity,
+                            CostEstimates = ab.CostEstimates,
+                            CreatedAt = ab.CreatedAt,
+                            CreatedBy = ab.CreatedBy,
+                            Object = new ObjectResponse
+                            {
+                                Id = ab.Object.Id,
+                                Name = ab.Object.Name,
+                                Code = ab.Object.Code,
+                            },
+                        }).ToList(),
+                    }).ToList(),
                 }).ToList(),
+                Description = w.Description,
+                ProjectStartDate = w.ProjectStartDate,
+                ProjectEndDate = w.ProjectEndDate,
+                ProposedBudget = w.ProposedBudget,
+                FiscalYear = w.FiscalYear != null ? new FiscalYearResponse
+                {
+                    Id = w.FiscalYear.Id,
+                    Year = w.FiscalYear.Year,
+                    Description = w.FiscalYear.Description,
+                    FunctionAllocations = w.FiscalYear.FunctionAllocations.Select(fa => new FunctionAllocationResponse
+                    {
+                        Id = fa.Id,
+                        FunctionType = fa.FunctionType.ToString(),
+                        Percentage = fa.Percentage,
+                    }).ToList(),
+                } : null,
             });
         
     

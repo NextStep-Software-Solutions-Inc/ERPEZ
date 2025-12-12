@@ -1,10 +1,10 @@
 namespace ERPEZ.Application.Features.Planning.Object.Dtos;
 
-public class ObjectResponse
+public record ObjectResponse
 {
-    public Guid Id { get; set; }
-    public Guid? ParentId { get; set; }
-    public string Name { get; set; } = string.Empty;
-    public string Code { get; set; } = string.Empty;
-    public bool IsActive { get; set; }
+    public Guid Id { get; init; }
+    public Guid? ParentId { get; init; }
+    public string Name { get; init; } = string.Empty;
+    public string Code { get; init; } = string.Empty;
+    public bool IsActive { get; init; }
 }

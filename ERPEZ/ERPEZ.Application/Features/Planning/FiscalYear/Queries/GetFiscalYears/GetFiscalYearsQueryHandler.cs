@@ -29,7 +29,7 @@ public class GetFiscalYearsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandle
             FunctionAllocations = fy.FunctionAllocations.Select(fa => new FunctionAllocationResponse
             {
                 Id = fa.Id,
-                FunctionType = fa.FunctionType,
+                FunctionType = fa.FunctionType.ToString(),
                 Percentage = fa.Percentage
             }).ToList()
         };
