@@ -3,4 +3,4 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.DUKPIAssignment.Commands.DeleteDUKPIAssignment;
 
-public record class DeleteDUKPIAssignmentCommand(Guid Id) : IRequest<ApiResponse<Unit>>;
+public record DeleteDUKPIAssignmentCommand(Guid Id) : IRequest<ApiResponse<Unit>>;

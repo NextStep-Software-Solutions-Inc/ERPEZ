@@ -1002,7 +1002,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("KPIId");
 
-                    b.HasIndex("OPCRId", "DUKPIAssignmentId", "Name");
+                    b.HasIndex("OPCRId", "DUKPIAssignmentId", "Name")
+                        .IsUnique();
 
                     b.ToTable("OPCRActivities", "planning");
                 });
