@@ -9,7 +9,10 @@ public class CreateOPCRCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<
 {
     public async Task<ApiResponse<Guid>> Handle(CreateOPCRCommand request, CancellationToken cancellationToken)
     {
-        _ = await unitOfWork.DeliveryUnitRepository.FindAsync(du => du.Id == request.DeliveryUnitId, cancellationToken) ?? throw new NotFoundException("Delivery Unit not found");
+        var du = await unitOfWork.DeliveryUnitRepository.FindAsync(du => du.Id == request.DeliveryUnitId, cancellationToken) ?? throw new NotFoundException("Delivery Unit not found");
+
+        if(du.ParentId != null) throw new ConflictException("Only top-level Delivery Units can have OPCRs.");
+        
         var opcr = new Domain.Entities.Planning.OPCR
         {
             DeliveryUnitId = request.DeliveryUnitId,
