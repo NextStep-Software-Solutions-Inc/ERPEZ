@@ -62,14 +62,8 @@ public class GlobalExceptionHandler : IExceptionHandler
         // Handle database-specific exceptions with user-friendly messages
         if (exception is DbUpdateException dbEx && dbEx.InnerException is PostgresException pgEx)
         {
-            var errorMessage = pgEx.SqlState switch
-            {
-                "23505" => "A duplicate record already exists. Please check your data and try again.",
-                "23503" => "Invalid reference: One or more related entities do not exist.",
-                "23502" => "Required field is missing.",
-                "23514" => "Check constraint violation occurred.",
-                _ => $"Database error occurred: {pgEx.Message}"
-            };
+            // Use the comprehensive PostgreSQL error dictionary
+            var (errorMessage, _) = Common.PostgresErrorCodes.GetErrorMessage(pgEx.SqlState);
 
             await httpContext.Response.WriteAsJsonAsync(ApiResponse<object>.Fail(errorMessage), cancellationToken);
             return true;
