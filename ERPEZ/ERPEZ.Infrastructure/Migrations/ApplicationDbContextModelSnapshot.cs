@@ -358,7 +358,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("KPITargetId");
 
-                    b.HasIndex("DeliveryUnitId", "KPIId")
+                    b.HasIndex("DeliveryUnitId", "KPIId", "KPITargetId")
                         .IsUnique();
 
                     b.ToTable("DUKPIAssignments", "planning");

@@ -142,7 +142,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .IsRequired();
 
         modelBuilder.Entity<DUKPIAssignment>()
-            .HasIndex(da => new { da.DeliveryUnitId, da.KPIId })
+            .HasIndex(da => new { da.DeliveryUnitId, da.KPIId, da.KPITargetId })
             .IsUnique();
 
         // KPIModeOfVerification
