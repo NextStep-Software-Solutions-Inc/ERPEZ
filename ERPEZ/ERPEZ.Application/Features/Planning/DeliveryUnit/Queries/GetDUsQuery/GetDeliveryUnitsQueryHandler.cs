@@ -30,7 +30,11 @@ public class GetDeliveryUnitsQueryHandler(IUnitOfWork unitOfWork) : IRequestHand
             CreatedAt = du.CreatedAt,
             TotalAmountAllocated = du.DUAllocations.Sum(da => da.Amount),
             TotalAmountUtilized = 0,
-            FundSourceCount = du.DUAllocations.Count > 0 ? du.DUAllocations.SelectMany(da => da.DUFundAllocations).Select(fa => fa.ReceivedFund.FundSourceId).Distinct().Count() : 0,
+            FundSourceCount = du.DUAllocations
+                .SelectMany(da => da.DUFundAllocations)
+                .Select(fa => fa.ReceivedFundId)
+                .Distinct()
+                .Count(),
         };
 
         var (dus, totalCount) = await unitOfWork.DeliveryUnitRepository.GetAllAsync(sieveModel, projection, cancellationToken: cancellationToken);
