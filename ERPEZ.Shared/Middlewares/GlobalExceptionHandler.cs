@@ -3,6 +3,8 @@ using ERPEZ.Shared.Exceptions;
 using Microsoft.AspNetCore.Diagnostics;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using Npgsql;
 using System.Net;
 
 namespace ERPEZ.Shared.Middlewares;
@@ -51,10 +53,27 @@ public class GlobalExceptionHandler : IExceptionHandler
             ServiceUnavailableException => ((int)HttpStatusCode.ServiceUnavailable, "Service unavailable"),
             ConflictException => ((int)HttpStatusCode.Conflict, "Conflict occurred"),
             NotFoundException => ((int)HttpStatusCode.NotFound, "Resource not found"),
+            DbUpdateException => ((int)HttpStatusCode.BadRequest, "Database operation failed"),
             _ => ((int)HttpStatusCode.InternalServerError, "An unexpected error occurred")
         };
 
         httpContext.Response.StatusCode = statusCode;
+
+        // Handle database-specific exceptions with user-friendly messages
+        if (exception is DbUpdateException dbEx && dbEx.InnerException is PostgresException pgEx)
+        {
+            var errorMessage = pgEx.SqlState switch
+            {
+                "23505" => "A duplicate record already exists. Please check your data and try again.",
+                "23503" => "Invalid reference: One or more related entities do not exist.",
+                "23502" => "Required field is missing.",
+                "23514" => "Check constraint violation occurred.",
+                _ => $"Database error occurred: {pgEx.Message}"
+            };
+
+            await httpContext.Response.WriteAsJsonAsync(ApiResponse<object>.Fail(errorMessage), cancellationToken);
+            return true;
+        }
 
         if (exception is ValidationException vex && vex.Errors is not null)
         {
