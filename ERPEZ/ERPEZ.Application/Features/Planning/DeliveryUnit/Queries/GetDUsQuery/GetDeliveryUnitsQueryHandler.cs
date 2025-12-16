@@ -28,6 +28,13 @@ public class GetDeliveryUnitsQueryHandler(IUnitOfWork unitOfWork) : IRequestHand
             SubDUCount = du.SubDeliveryUnits.Count,
             ParentId = du.ParentId,
             CreatedAt = du.CreatedAt,
+            TotalAmountAllocated = du.DUAllocations.Sum(da => da.Amount),
+            TotalAmountUtilized = 0,
+            FundSourceCount = du.DUAllocations
+                .SelectMany(da => da.DUFundAllocations)
+                .Select(fa => fa.ReceivedFundId)
+                .Distinct()
+                .Count(),
         };
 
         var (dus, totalCount) = await unitOfWork.DeliveryUnitRepository.GetAllAsync(sieveModel, projection, cancellationToken: cancellationToken);

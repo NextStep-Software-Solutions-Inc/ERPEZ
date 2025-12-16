@@ -5,6 +5,7 @@ using ERPEZ.Application.Features.Planning.DUAllocation.Commands.UpdateDUAllocati
 using ERPEZ.Application.Features.Planning.DUAllocation.Dtos;
 using ERPEZ.Application.Features.Planning.DUAllocation.Queries.GetDUAllocationById;
 using ERPEZ.Application.Features.Planning.DUAllocation.Queries.GetDUAllocations;
+using ERPEZ.Application.Features.Planning.DUAllocation.Queries.GetDUAllocationStats;
 using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -29,6 +30,14 @@ namespace ERPEZ.Api.Controllers
         public async Task<IActionResult> GetDUAllocations([FromQuery] GetDUAllocationsQuery query)
         {
             var result = await mediator.Send(query);
+            return result.Succeeded ? Ok(result) : BadRequest(result);
+        }
+
+        [HttpGet("stats")]
+        [ProducesResponseType(typeof(ApiResponse<DUAllocationStatsResponse>), StatusCodes.Status200OK)]
+        public async Task<IActionResult> GetDUAllocationStats()
+        {
+            var result = await mediator.Send(new GetDUAllocationStatsQuery());
             return result.Succeeded ? Ok(result) : BadRequest(result);
         }
 
@@ -79,4 +88,5 @@ namespace ERPEZ.Api.Controllers
             return result.Succeeded ? Ok(result) : BadRequest(result);
         }
     }
+
 }

@@ -111,4 +111,9 @@ public class Repository<T>(ApplicationDbContext context, ISieveProcessor sievePr
         ArgumentNullException.ThrowIfNull(query);
         return query.FirstOrDefaultAsync(cancellationToken);
     }
+
+    public async Task<decimal> SumAsync(Expression<Func<T, decimal>> selector, CancellationToken cancellationToken = default)
+    {
+        return await context.Set<T>().SumAsync(selector, cancellationToken);
+    }
 }
