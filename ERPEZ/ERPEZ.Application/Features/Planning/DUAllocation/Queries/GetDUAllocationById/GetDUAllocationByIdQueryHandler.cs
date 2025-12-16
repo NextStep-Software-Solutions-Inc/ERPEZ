@@ -17,7 +17,31 @@ public class GetDUAllocationByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestH
         var dto = new DUAllocationResponse
         {
             Id = duAllocation.Id,
-            DeliveryUnitId = duAllocation.DeliveryUnitId,
+            DeliveryUnit = new()
+            {
+                Id = duAllocation.DeliveryUnit.Id,
+                Office = new()
+                {
+                    Name = duAllocation.DeliveryUnit.Office.Name,
+                    Address = duAllocation.DeliveryUnit.Office.Address,
+                    ContactNumber = duAllocation.DeliveryUnit.Office.ContactNumber,
+                    CreatedBy = duAllocation.DeliveryUnit.Office.CreatedBy,
+                    CreatedAt = duAllocation.DeliveryUnit.Office.CreatedAt,
+                    Email = duAllocation.DeliveryUnit.Office.Email,
+                    Description = duAllocation.DeliveryUnit.Office.Description,
+                    OfficeHead = duAllocation.DeliveryUnit.Office.OfficeHead,
+                    ResponsibilityCenterCode = duAllocation.DeliveryUnit.Office.ResponsibilityCenterCode,
+                    Cluster = duAllocation.DeliveryUnit.Office.Cluster == null ? null : new()
+                    {
+                        Id = duAllocation.DeliveryUnit.Office.Cluster.Id,
+                        Name = duAllocation.DeliveryUnit.Office.Cluster.Name,
+                        Description = duAllocation.DeliveryUnit.Office.Cluster.Description,
+                        CreatedAt = duAllocation.DeliveryUnit.Office.Cluster.CreatedAt,
+                        CreatedBy = duAllocation.DeliveryUnit.Office.Cluster.CreatedBy,
+                    }
+                },
+                CreatedAt = duAllocation.DeliveryUnit.CreatedAt,
+            },
             Purpose = duAllocation.Purpose,
             Amount = duAllocation.Amount,
             IsLocked = duAllocation.IsLocked,

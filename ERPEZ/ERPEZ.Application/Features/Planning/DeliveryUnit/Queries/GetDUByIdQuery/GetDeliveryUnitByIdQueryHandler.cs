@@ -29,15 +29,16 @@ public class GetDeliveryUnitByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestH
                 ResponsibilityCenterCode = du.Office.ResponsibilityCenterCode,
                 CreatedBy = du.Office.CreatedBy,
                 CreatedAt = du.Office.CreatedAt,
+                 Cluster = du.Office.Cluster == null ? null : new()
+                    {
+                        Id = du.Office.Cluster.Id,
+                        Name = du.Office.Cluster.Name,
+                        Description = du.Office.Cluster.Description,
+                        CreatedAt = du.Office.Cluster.CreatedAt,
+                        CreatedBy = du.Office.Cluster.CreatedBy,
+                    }
             },
-            Cluster = du.Office.Cluster != null ? new()
-            {
-                Id = du.Office.Cluster.Id,
-                Name = du.Office.Cluster.Name,
-                Description = du.Office.Cluster.Description,
-                CreatedBy = du.Office.Cluster.CreatedBy,
-                CreatedAt = du.Office.Cluster.CreatedAt,
-            } : null,
+           
             KPIAssignments = du.KPIAssignments.Select(ka => new KPIAssignmentResponse
             {
                 Id = ka.Id,
@@ -98,15 +99,15 @@ public class GetDeliveryUnitByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestH
                     ResponsibilityCenterCode = subDU.Office.ResponsibilityCenterCode,
                     CreatedBy = subDU.Office.CreatedBy,
                     CreatedAt = subDU.Office.CreatedAt,
+                    Cluster = du.Office.Cluster == null ? null : new()
+                        {
+                            Id = du.Office.Cluster.Id,
+                            Name = du.Office.Cluster.Name,
+                            Description = du.Office.Cluster.Description,
+                            CreatedAt = du.Office.Cluster.CreatedAt,
+                            CreatedBy = du.Office.Cluster.CreatedBy,
+                        }
                 },
-                Cluster = subDU.Office.Cluster != null ? new()
-                {
-                    Id = subDU.Office.Cluster.Id,
-                    Name = subDU.Office.Cluster.Name,
-                    Description = subDU.Office.Cluster.Description,
-                    CreatedBy = subDU.Office.Cluster.CreatedBy,
-                    CreatedAt = subDU.Office.Cluster.CreatedAt,
-                } : null,
                 ParentId = subDU.ParentId,
                 KPIAssignments = subDU.KPIAssignments.Select(ka => new KPIAssignmentResponse
                 {

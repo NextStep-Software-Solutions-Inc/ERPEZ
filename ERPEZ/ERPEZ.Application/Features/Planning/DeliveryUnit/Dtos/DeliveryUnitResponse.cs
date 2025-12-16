@@ -9,7 +9,6 @@ namespace ERPEZ.Application.Features.Planning.DeliveryUnit.Dtos
     {
         public Guid Id { get; init; }
         public required OfficeResponse Office { get; init; }
-        public ClusterResponse? Cluster { get; init; }
         public Guid? ParentId { get; init; }
         public List<KPIAssignmentResponse> KPIAssignments { get; init; } = [];
         public List<DeliveryUnitResponse> SubDeliveryUnits { get; init; } = [];

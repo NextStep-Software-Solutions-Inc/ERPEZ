@@ -1,3 +1,5 @@
+using ERPEZ.Application.Features.Planning.Cluster.Dtos;
+
 namespace ERPEZ.Application.Features.Planning.Office.Dtos;
 
 public record OfficeResponse
@@ -14,4 +16,6 @@ public record OfficeResponse
     public DateTime CreatedAt { get; init; }
     public required string CreatedBy { get; init; }
     public bool IsDeliveryUnit { get; init; }
+    public ClusterResponse? Cluster { get; init; }
+
 }

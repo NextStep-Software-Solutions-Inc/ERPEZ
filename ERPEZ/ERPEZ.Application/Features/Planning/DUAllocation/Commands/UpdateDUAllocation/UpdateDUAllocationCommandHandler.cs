@@ -7,9 +7,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.DUAllocation.Commands.UpdateDUAllocation;
 
-public class UpdateDUAllocationCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateDUAllocationCommand, ApiResponse<DUAllocationResponse>>
+public class UpdateDUAllocationCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateDUAllocationCommand, ApiResponse<Unit>>
 {
-    public async Task<ApiResponse<DUAllocationResponse>> Handle(UpdateDUAllocationCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<Unit>> Handle(UpdateDUAllocationCommand request, CancellationToken cancellationToken)
     {
         Domain.Entities.Planning.DUAllocation? updatedAllocation = null;
 
@@ -37,14 +37,7 @@ public class UpdateDUAllocationCommandHandler(IUnitOfWork unitOfWork) : IRequest
             updatedAllocation = duAllocation;
         }, cancellationToken);
 
-        return ApiResponse<DUAllocationResponse>.Success(new DUAllocationResponse
-        {
-            Id = updatedAllocation!.Id,
-            DeliveryUnitId = updatedAllocation.DeliveryUnitId,
-            Purpose = updatedAllocation.Purpose,
-            Amount = updatedAllocation.Amount,
-            IsLocked = updatedAllocation.IsLocked,
-        }, "Delivery Unit Allocation updated successfully.");
+        return ApiResponse<Unit>.Success(Unit.Value, "Delivery Unit Allocation updated successfully.");
     }
 
     private async Task HandleDUFundAllocationsUpdateAsync(

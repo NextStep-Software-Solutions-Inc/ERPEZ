@@ -20,7 +20,31 @@ public class GetDUAllocationsQueryHandler(IUnitOfWork unitOfWork) : IRequestHand
         var dtos = duallocations.Select(du => new DUAllocationResponse
         {
             Id = du.Id,
-            DeliveryUnitId = du.DeliveryUnitId,
+            DeliveryUnit = new ()
+            {
+                Id = du.Id,
+                Office = new ()
+                {
+                    Name = du.DeliveryUnit.Office.Name,
+                    Address = du.DeliveryUnit.Office.Address,
+                    ContactNumber = du.DeliveryUnit.Office.ContactNumber,
+                    CreatedBy = du.DeliveryUnit.Office.CreatedBy,
+                    CreatedAt = du.DeliveryUnit.Office.CreatedAt,
+                    Email = du.DeliveryUnit.Office.Email,
+                    Description = du.DeliveryUnit.Office.Description,
+                    OfficeHead = du.DeliveryUnit.Office.OfficeHead,
+                    ResponsibilityCenterCode = du.DeliveryUnit.Office.ResponsibilityCenterCode,
+                    Cluster = du.DeliveryUnit.Office.Cluster == null ? null : new()
+                    {
+                        Id = du.DeliveryUnit.Office.Cluster.Id,
+                        Name = du.DeliveryUnit.Office.Cluster.Name,
+                        Description = du.DeliveryUnit.Office.Cluster.Description,
+                        CreatedAt = du.DeliveryUnit.Office.Cluster.CreatedAt,
+                        CreatedBy = du.DeliveryUnit.Office.Cluster.CreatedBy,
+                    }
+                },
+                CreatedAt = du.DeliveryUnit.CreatedAt,
+            },
             Purpose = du.Purpose,
             Amount = du.Amount,
             IsLocked = du.IsLocked,

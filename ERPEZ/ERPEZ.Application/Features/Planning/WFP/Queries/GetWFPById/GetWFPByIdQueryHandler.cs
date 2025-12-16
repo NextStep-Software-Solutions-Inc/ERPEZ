@@ -40,15 +40,16 @@ public class GetWFPByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
                         ResponsibilityCenterCode = w.DeliveryUnit.Office.ResponsibilityCenterCode,
                         CreatedBy = w.DeliveryUnit.Office.CreatedBy,
                         CreatedAt = w.DeliveryUnit.Office.CreatedAt,
+                        Cluster = w.DeliveryUnit.Office.Cluster != null ? new()
+                            {
+                                Id = w.DeliveryUnit.Office.Cluster.Id,
+                                Name = w.DeliveryUnit.Office.Cluster.Name,
+                                Description = w.DeliveryUnit.Office.Cluster.Description,
+                                CreatedBy = w.DeliveryUnit.Office.Cluster.CreatedBy,
+                                CreatedAt = w.DeliveryUnit.Office.Cluster.CreatedAt,
+                            } : null,
                     },
-                    Cluster = w.DeliveryUnit.Office.Cluster != null ? new()
-                    {
-                        Id = w.DeliveryUnit.Office.Cluster.Id,
-                        Name = w.DeliveryUnit.Office.Cluster.Name,
-                        Description = w.DeliveryUnit.Office.Cluster.Description,
-                        CreatedBy = w.DeliveryUnit.Office.Cluster.CreatedBy,
-                        CreatedAt = w.DeliveryUnit.Office.Cluster.CreatedAt,
-                    } : null,
+                   
                     CreatedAt = w.DeliveryUnit.CreatedAt,
                     ParentId = w.DeliveryUnit.ParentId,
                     KPIAssignments = w.DeliveryUnit.KPIAssignments.Select(ka => new KPIAssignmentResponse
@@ -88,15 +89,16 @@ public class GetWFPByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
                             ResponsibilityCenterCode = sdu.Office.ResponsibilityCenterCode,
                             CreatedBy = sdu.Office.CreatedBy,
                             CreatedAt = sdu.Office.CreatedAt,
+                            Cluster = sdu.Office.Cluster != null ? new()
+                                {
+                                    Id = sdu.Office.Cluster.Id,
+                                    Name = sdu.Office.Cluster.Name,
+                                    Description = sdu.Office.Cluster.Description,
+                                    CreatedBy = sdu.Office.Cluster.CreatedBy,
+                                    CreatedAt = sdu.Office.Cluster.CreatedAt,
+                                } : null,
                         },
-                        Cluster = sdu.Office.Cluster != null ? new()
-                        {
-                            Id = sdu.Office.Cluster.Id,
-                            Name = sdu.Office.Cluster.Name,
-                            Description = sdu.Office.Cluster.Description,
-                            CreatedBy = sdu.Office.Cluster.CreatedBy,
-                            CreatedAt = sdu.Office.Cluster.CreatedAt,
-                        } : null,
+                       
                         CreatedAt = sdu.CreatedAt,
                         ParentId = sdu.ParentId,
                     }).ToList(),

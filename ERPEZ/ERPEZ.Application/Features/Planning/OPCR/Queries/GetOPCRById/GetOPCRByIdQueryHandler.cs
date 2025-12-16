@@ -51,15 +51,16 @@ public class GetOPCRByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<G
                         ResponsibilityCenterCode = o.DeliveryUnit.Office.ResponsibilityCenterCode,
                         CreatedBy = o.DeliveryUnit.Office.CreatedBy,
                         CreatedAt = o.DeliveryUnit.Office.CreatedAt,
+                        Cluster = o.DeliveryUnit.Office.Cluster != null ? new()
+                            {
+                                Id = o.DeliveryUnit.Office.Cluster.Id,
+                                Name = o.DeliveryUnit.Office.Cluster.Name,
+                                Description = o.DeliveryUnit.Office.Cluster.Description,
+                                CreatedBy = o.DeliveryUnit.Office.Cluster.CreatedBy,
+                                CreatedAt = o.DeliveryUnit.Office.Cluster.CreatedAt,
+                            } : null,
                     },
-                    Cluster = o.DeliveryUnit.Office.Cluster != null ? new()
-                    {
-                        Id = o.DeliveryUnit.Office.Cluster.Id,
-                        Name = o.DeliveryUnit.Office.Cluster.Name,
-                        Description = o.DeliveryUnit.Office.Cluster.Description,
-                        CreatedBy = o.DeliveryUnit.Office.Cluster.CreatedBy,
-                        CreatedAt = o.DeliveryUnit.Office.Cluster.CreatedAt,
-                    } : null,
+                   
                     KPIAssignments = o.DeliveryUnit.KPIAssignments.Select(ka => new KPIAssignmentResponse
                     {
                         Id = ka.Id,
