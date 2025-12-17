@@ -4,5 +4,5 @@
         public decimal TotalReceivedAmount { get; init; }
         public decimal TotalAllocatedAmount { get; init; }
         public decimal TotalUtilizedAmount { get; init; }
-        public decimal TotalRemainingAmount => TotalReceivedAmount - TotalUtilizedAmount;
+        public decimal TotalRemainingAmount => TotalReceivedAmount - TotalAllocatedAmount;
     }
