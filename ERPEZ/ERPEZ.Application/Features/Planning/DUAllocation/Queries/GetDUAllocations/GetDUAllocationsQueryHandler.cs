@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using ERPEZ.Application.Features.Planning.DUAllocation.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
@@ -16,8 +17,8 @@ public class GetDUAllocationsQueryHandler(IUnitOfWork unitOfWork) : IRequestHand
             Filters = query.Filters,
             Sorts = query.Sorts
         };
-        var (duallocations, totalCount) = await unitOfWork.DUAllocationRepository.GetAllAsync(sieveModel, cancellationToken: cancellationToken);
-        var dtos = duallocations.Select(du => new DUAllocationResponse
+
+        Expression<Func<Domain.Entities.Planning.DUAllocation, DUAllocationResponse>> projection = du => new DUAllocationResponse
         {
             Id = du.Id,
             DeliveryUnit = new ()
@@ -25,6 +26,7 @@ public class GetDUAllocationsQueryHandler(IUnitOfWork unitOfWork) : IRequestHand
                 Id = du.Id,
                 Office = new ()
                 {
+                    Id = du.DeliveryUnit.Office.Id,
                     Name = du.DeliveryUnit.Office.Name,
                     Address = du.DeliveryUnit.Office.Address,
                     ContactNumber = du.DeliveryUnit.Office.ContactNumber,
@@ -48,9 +50,11 @@ public class GetDUAllocationsQueryHandler(IUnitOfWork unitOfWork) : IRequestHand
             Purpose = du.Purpose,
             Amount = du.Amount,
             IsLocked = du.IsLocked,
-        }).ToList();
+        };
+        var (duallocations, totalCount) = await unitOfWork.DUAllocationRepository.GetAllAsync(sieveModel, projection, cancellationToken: cancellationToken);
+       
         return new PaginatedApiResponse<DUAllocationResponse>(
-            dtos,
+            [..duallocations],
             query.PageNumber,
             query.PageSize,
             totalCount);
