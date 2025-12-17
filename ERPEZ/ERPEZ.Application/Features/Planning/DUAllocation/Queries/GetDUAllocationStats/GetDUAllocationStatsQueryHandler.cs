@@ -9,19 +9,13 @@ public class GetDUAllocationStatsQueryHandler(IUnitOfWork unitOfWork) : IRequest
 {
     public async Task<ApiResponse<DUAllocationStatsResponse>> Handle(GetDUAllocationStatsQuery request, CancellationToken cancellationToken)
     {
-        
-        
+        var totalAllocatedAmount = await unitOfWork.DUFundAllocationRepository.SumAsync(duf => duf.Amount, cancellationToken);
+        var totalReceivedAmount = await unitOfWork.ReceivedFundRepository.SumAsync(du => du.Amount, cancellationToken);
 
-        var queryableDUFundAllocationsQuery = unitOfWork.DUFundAllocationRepository.SumAsync(duf => duf.Amount, cancellationToken);
-        var queryableTotalReceivedAmountQuery = unitOfWork.ReceivedFundRepository.SumAsync(du => du.Amount, cancellationToken);
-        // Preparation for other queries as needed
-        var results = await Task.WhenAll(queryableDUFundAllocationsQuery, queryableTotalReceivedAmountQuery);
-
-      
         var duAllocationStats = new DUAllocationStatsResponse
         {
-            TotalAllocatedAmount = results[0],
-            TotalReceivedAmount = results[1],
+            TotalAllocatedAmount = totalAllocatedAmount,
+            TotalReceivedAmount = totalReceivedAmount,
             TotalUtilizedAmount = 0
         };
         
