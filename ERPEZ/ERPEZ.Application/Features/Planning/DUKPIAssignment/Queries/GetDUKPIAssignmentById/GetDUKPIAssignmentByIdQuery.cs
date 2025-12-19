@@ -4,4 +4,4 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.DUKPIAssignment.Queries.GetDUKPIAssignmentById;
 
-public record class GetDUKPIAssignmentByIdQuery(Guid Id) : IRequest<ApiResponse<DUKPIAssignmentResponse>>;
+public record GetDUKPIAssignmentByIdQuery(Guid Id) : IRequest<ApiResponse<DUKPIAssignmentResponse>>;

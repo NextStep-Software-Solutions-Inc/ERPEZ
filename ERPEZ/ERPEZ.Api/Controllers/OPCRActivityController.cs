@@ -16,8 +16,8 @@ namespace ERPEZ.Api.Controllers
     public class OPCRActivityController(ISender mediator) : ControllerBase
     {
         [HttpPost]
-        [ProducesResponseType(typeof(ApiResponse<OPCRActivity>), StatusCodes.Status201Created)]
-        [ProducesResponseType(typeof(ApiResponse<OPCRActivity>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateOPCRActivity([FromBody] CreateOPCRActivityCommand command)
         {
             var result = await mediator.Send(command);
@@ -25,7 +25,7 @@ namespace ERPEZ.Api.Controllers
             if (!result.Succeeded)
                 return BadRequest(result);
 
-            return CreatedAtAction(nameof(GetOPCRActivityById), new { id = result.Data!.Id }, result);
+            return CreatedAtAction(nameof(GetOPCRActivityById), new { id = result.Data }, result);
         }
 
         [HttpGet]
@@ -46,7 +46,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpPut("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<OPCRActivityResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateOPCRActivity(Guid id, [FromBody] UpdateOPCRActivityRequest dto)
@@ -54,7 +54,7 @@ namespace ERPEZ.Api.Controllers
             var command = new UpdateOPCRActivityCommand
             {
                 Id = id,
-                UpdateOPCRActivity = dto
+                UpdateOPCRActivity = dto,
             };
 
             var result = await mediator.Send(command);

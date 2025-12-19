@@ -4,4 +4,4 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.KPITarget.Queries.GetKPITargetById;
 
-public record class GetKPITargetByIdQuery(Guid Id) : IRequest<ApiResponse<KPITargetResponse>>;
+public record GetKPITargetByIdQuery(Guid Id) : IRequest<ApiResponse<KPITargetResponse>>;

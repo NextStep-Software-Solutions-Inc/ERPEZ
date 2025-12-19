@@ -3,4 +3,4 @@ using MediatR;
 
 namespace ERPEZ.TenantManagement.Application.Features.TenantMembers.Commands.DeleteTenantMember;
 
-public record class DeleteTenantMemberCommand(Guid Id) : IRequest<ApiResponse<Unit>>;
+public record DeleteTenantMemberCommand(Guid Id) : IRequest<ApiResponse<Unit>>;

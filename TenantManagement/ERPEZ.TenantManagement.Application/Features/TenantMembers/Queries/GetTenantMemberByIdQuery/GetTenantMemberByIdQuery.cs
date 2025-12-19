@@ -4,4 +4,4 @@ using MediatR;
 
 namespace ERPEZ.TenantManagement.Application.Features.TenantMembers.Queries.GetTenantMemberByIdQuery;
 
-public record class GetTenantMemberByIdQuery(Guid Id) : IRequest<ApiResponse<TenantMember>>;
+public record GetTenantMemberByIdQuery(Guid Id) : IRequest<ApiResponse<TenantMember>>;

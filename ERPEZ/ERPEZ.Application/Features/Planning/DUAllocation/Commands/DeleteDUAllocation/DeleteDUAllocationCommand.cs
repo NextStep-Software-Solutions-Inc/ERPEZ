@@ -3,4 +3,4 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.DUAllocation.Commands.DeleteDUAllocation;
 
-public record class DeleteDUAllocationCommand(Guid Id) : IRequest<ApiResponse<Unit>>;
+public record DeleteDUAllocationCommand(Guid Id) : IRequest<ApiResponse<Unit>>;

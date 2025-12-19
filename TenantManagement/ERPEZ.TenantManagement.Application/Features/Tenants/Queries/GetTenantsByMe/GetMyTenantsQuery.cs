@@ -4,7 +4,7 @@ using MediatR;
 
 namespace ERPEZ.TenantManagement.Application.Features.Tenants.Queries.GetTenantsByMe;
 
-public record class GetMyTenantsQuery : IRequest<PaginatedApiResponse<TenantDto>>
+public record GetMyTenantsQuery : IRequest<PaginatedApiResponse<TenantDto>>
 {
     public int PageNumber { get; set; } = 1;
     public int PageSize { get; set; } = 10;

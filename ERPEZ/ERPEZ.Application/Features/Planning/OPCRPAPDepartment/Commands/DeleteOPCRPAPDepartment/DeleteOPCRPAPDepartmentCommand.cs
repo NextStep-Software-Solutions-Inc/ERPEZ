@@ -3,4 +3,4 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.OPCRPAPDepartment.Commands.DeleteOPCRPAPDepartment;
 
-public record class DeleteOPCRPAPDepartmentCommand(Guid Id) : IRequest<ApiResponse<Unit>>;
+public record DeleteOPCRPAPDepartmentCommand(Guid Id) : IRequest<ApiResponse<Unit>>;
