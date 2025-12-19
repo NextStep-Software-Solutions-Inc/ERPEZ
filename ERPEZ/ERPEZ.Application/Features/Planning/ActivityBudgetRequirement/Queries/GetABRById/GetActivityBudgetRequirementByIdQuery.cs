@@ -4,4 +4,4 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.ActivityBudgetRequirement.Queries.GetABRById;
 
-public record class GetActivityBudgetRequirementByIdQuery(Guid Id) : IRequest<ApiResponse<ActivityBudgetRequirementResponse>>;
+public record GetActivityBudgetRequirementByIdQuery(Guid Id) : IRequest<ApiResponse<ActivityBudgetRequirementResponse>>;

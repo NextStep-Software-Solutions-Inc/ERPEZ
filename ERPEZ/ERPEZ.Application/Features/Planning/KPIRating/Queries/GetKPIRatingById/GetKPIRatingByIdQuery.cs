@@ -4,4 +4,4 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.KPIRating.Queries.GetKPIRatingById;
 
-public record class GetKPIRatingByIdQuery(Guid Id) : IRequest<ApiResponse<KPIRatingResponse>>;
+public record GetKPIRatingByIdQuery(Guid Id) : IRequest<ApiResponse<KPIRatingResponse>>;

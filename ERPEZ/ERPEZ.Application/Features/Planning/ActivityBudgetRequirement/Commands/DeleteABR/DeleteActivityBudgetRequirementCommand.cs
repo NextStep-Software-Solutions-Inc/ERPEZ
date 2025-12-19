@@ -3,4 +3,4 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.ActivityBudgetRequirement.Commands.DeleteABR;
 
-public record class DeleteActivityBudgetRequirementCommand(Guid Id) : IRequest<ApiResponse<Unit>>;
+public record DeleteActivityBudgetRequirementCommand(Guid Id) : IRequest<ApiResponse<Unit>>;

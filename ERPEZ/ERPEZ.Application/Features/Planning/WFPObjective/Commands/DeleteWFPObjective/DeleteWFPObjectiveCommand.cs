@@ -3,4 +3,4 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.WFPObjective.Commands.DeleteWFPObjective;
 
-public record class DeleteWFPObjectiveCommand(Guid Id) : IRequest<ApiResponse<Unit>>;
+public record DeleteWFPObjectiveCommand(Guid Id) : IRequest<ApiResponse<Unit>>;

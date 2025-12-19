@@ -3,4 +3,4 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.KPIModeOfVerification.Commands.DeleteKPIModeOfVerification;
 
-public record class DeleteKPIModeOfVerificationCommand(Guid Id) : IRequest<ApiResponse<Unit>>;
+public record DeleteKPIModeOfVerificationCommand(Guid Id) : IRequest<ApiResponse<Unit>>;

@@ -14,6 +14,12 @@ public class Repository<T>(ApplicationDbContext context, ISieveProcessor sievePr
     {
         await context.Set<T>().AddAsync(entity, cancellationToken);
     }
+
+    public async Task AddRangeAsync(IEnumerable<T> entities, CancellationToken cancellationToken = default)
+    {
+        await context.Set<T>().AddRangeAsync(entities, cancellationToken);
+    }
+    
     public virtual async Task<(IReadOnlyList<T> Entities, int TotalCount)> GetAllAsync(SieveModel sieveModel, CancellationToken cancellationToken = default)
     {
         IQueryable<T> query = context.Set<T>().AsNoTracking();
