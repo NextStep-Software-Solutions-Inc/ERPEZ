@@ -25,6 +25,6 @@ public class GetOPCRActivityByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestH
 
         var response = await unitOfWork.OPCRActivityRepository.GetSingleAsync(getOPCRActivitieQuery, cancellationToken) ?? throw new NotFoundException("No data found.");
 
-        return ApiResponse<OPCRActivityResponse>.Success(response, "Retrieved successfully");
+        return ApiResponse<OPCRActivityResponse>.Success(response, "OPCR Activity retrieved successfully.");
     }
 }
