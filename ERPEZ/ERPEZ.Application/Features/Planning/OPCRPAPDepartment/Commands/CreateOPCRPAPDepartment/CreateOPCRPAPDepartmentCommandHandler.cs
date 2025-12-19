@@ -46,7 +46,32 @@ public class CreateOPCRPAPDepartmentCommandHandler(IUnitOfWork unitOfWork) : IRe
         {
             Id = oPCRPAPDepartment.Id,
             OPCRActivityId = oPCRPAPDepartment.OPCRActivityId,
-            DeliveryUnitId = oPCRPAPDepartment.DeliveryUnitId
+            DeliveryUnit = new ()
+            {
+                Id = deliveryUnit.Id,
+                CreatedAt = deliveryUnit.CreatedAt,
+                Office = new ()
+                {
+                    Id = deliveryUnit.Office.Id,
+                    Name = deliveryUnit.Office.Name,
+                    Address = deliveryUnit.Office.Address,
+                    ContactNumber = deliveryUnit.Office.ContactNumber,
+                    CreatedBy = deliveryUnit.Office.CreatedBy,
+                    CreatedAt = deliveryUnit.Office.CreatedAt,
+                    Email = deliveryUnit.Office.Email,
+                    Description = deliveryUnit.Office.Description,
+                    OfficeHead = deliveryUnit.Office.OfficeHead,
+                    ResponsibilityCenterCode = deliveryUnit.Office.ResponsibilityCenterCode,
+                    Cluster = deliveryUnit.Office.Cluster == null ? null : new()
+                    {
+                        Id = deliveryUnit.Office.Cluster.Id,
+                        Name = deliveryUnit.Office.Cluster.Name,
+                        Description = deliveryUnit.Office.Cluster.Description,
+                        CreatedAt = deliveryUnit.Office.Cluster.CreatedAt,
+                        CreatedBy = deliveryUnit.Office.Cluster.CreatedBy,
+                    }
+                },
+            }
         };
         return ApiResponse<OPCRPAPDepartmentResponse>.Success(dto, "OPCR PAP Department created successfully.");
     }

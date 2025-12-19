@@ -1,7 +1,6 @@
 using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Application.Features.Planning.OPCRActivity.Commands.CreateOPCRActivity;
 using ERPEZ.Application.Features.Planning.OPCRActivity.Dtos;
 using ERPEZ.Application.Features.Planning.OPCRActivity.Queries.GetOPCRActivities;

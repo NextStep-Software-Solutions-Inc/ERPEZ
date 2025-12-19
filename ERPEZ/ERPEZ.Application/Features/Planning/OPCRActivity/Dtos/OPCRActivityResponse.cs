@@ -1,12 +1,17 @@
+using System.Text.Json.Serialization;
+using ERPEZ.Application.Features.Planning.OPCRPAPDepartment.Dtos;
+
 namespace ERPEZ.Application.Features.Planning.OPCRActivity.Dtos;
 
-public class OPCRActivityResponse
+public record OPCRActivityResponse
 {
-    public Guid Id { get; set; }
-    public Guid OPCRId { get; set; }
-    public Guid DUKPIAssignmentId { get; set; }
-    public string Name { get; set; } = string.Empty;
-    public string? Description { get; set; }
-    public decimal Budget { get; set; }
-    public List<Guid> PAPDepartments { get; set; } = [];
+    public Guid Id { get; init; }
+    public Guid OPCRId { get; init; }
+    public Guid DUKPIAssignmentId { get; init; }
+    public string Name { get; init; } = string.Empty;
+    public string? Description { get; init; }
+    public decimal Budget { get; init; }
+
+    [JsonPropertyName("PAPDepartments")]
+    public List<OPCRPAPDepartmentResponse> PAPDepartments { get; init; } = [];
 }

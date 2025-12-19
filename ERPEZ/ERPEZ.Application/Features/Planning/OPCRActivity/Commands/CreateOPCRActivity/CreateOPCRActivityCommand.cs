@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using ERPEZ.Application.Features.Planning.OPCRPAPDepartment.Dtos;
 using ERPEZ.Shared.Common;
 using MediatR;
 
@@ -13,5 +14,5 @@ public record CreateOPCRActivityCommand : IRequest<ApiResponse<Guid>>
     public decimal Budget { get; init; }
 
     [JsonPropertyName("PAPDepartments")]
-    public List<Guid> PAPDepartments { get; init; } = []; // id of DeliveryUnit
+    public List<Guid> PAPDepartments { get; init; } = [];
 }
