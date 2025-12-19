@@ -18,6 +18,17 @@ public class GetReceivedFundsQueryHandler(IUnitOfWork unitOfWork) : IRequestHand
             Sorts = query.Sorts
         };
 
+         // calculate UtilizedAmount for each ReceivedFund
+        var utilizationQuery = unitOfWork.DUFundAllocationRepository
+            .Query()
+            .GroupBy(d => d.ReceivedFundId)
+            .Select(g => new
+            {
+                ReceivedFundId = g.Key,
+                UtilizedAmount = g.Sum(d => d.Amount)
+            });
+
+
         Expression<Func<Domain.Entities.Planning.ReceivedFund, ReceivedFundResponse>> projection = rf => new ReceivedFundResponse
         {
             Id = rf.Id,
@@ -30,6 +41,10 @@ public class GetReceivedFundsQueryHandler(IUnitOfWork unitOfWork) : IRequestHand
                 IsActive = rf.FundSource.IsActive,
             },
             Amount = rf.Amount,
+            UtilizedAmount = utilizationQuery
+                .Where(u => u.ReceivedFundId == rf.Id)
+                .Select(u => u.UtilizedAmount)
+                .FirstOrDefault(),
             ReceivedDate = rf.ReceivedDate,
             Description = rf.Description,
         };

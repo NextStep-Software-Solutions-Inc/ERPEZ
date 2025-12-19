@@ -2,11 +2,13 @@ namespace ERPEZ.Application.Features.Planning.ReceivedFund.Dtos
 {
     public record ReceivedFundResponse
     {
-        public Guid Id { get; set; }
-        public required FundSourceResponse FundSource { get; set; }
-        public decimal Amount { get; set; }
-        public DateTime ReceivedDate { get; set; }
-        public string? Description { get; set; }
+        public Guid Id { get; init; }
+        public required FundSourceResponse FundSource { get; init; }
+        public required decimal Amount { get; init; }
+        public required decimal UtilizedAmount { get; init; }
+        public decimal RemainingBalance => Amount - UtilizedAmount;
+        public DateTime ReceivedDate { get; init; }
+        public string? Description { get; init; }
     }
 
     public record FundSourceResponse

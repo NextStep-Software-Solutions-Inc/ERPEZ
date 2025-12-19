@@ -11,6 +11,17 @@ public class GetDUFundAllocationByIdQueryHandler(IUnitOfWork unitOfWork) : IRequ
     public async Task<ApiResponse<DUFundAllocationResponse>> Handle(GetDUFundAllocationByIdQuery request, CancellationToken cancellationToken)
     {
 
+         // calculate UtilizedAmount for each ReceivedFund
+        var utilizationQuery = unitOfWork.DUFundAllocationRepository
+            .Query()
+            .GroupBy(d => d.ReceivedFundId)
+            .Select(g => new
+            {
+                ReceivedFundId = g.Key,
+                UtilizedAmount = g.Sum(d => d.Amount)
+            });
+
+
         var duFundAllocationQuery = unitOfWork.DUFundAllocationRepository
             .Query(t => t.Id == request.Id)
             .Select(t => new DUFundAllocationResponse
@@ -22,6 +33,10 @@ public class GetDUFundAllocationByIdQueryHandler(IUnitOfWork unitOfWork) : IRequ
                 {
                     Id = t.ReceivedFund.Id,
                     Amount = t.ReceivedFund.Amount,
+                    UtilizedAmount = utilizationQuery
+                        .Where(u => u.ReceivedFundId == t.ReceivedFund.Id)
+                        .Select(u => u.UtilizedAmount)
+                        .FirstOrDefault(),
                     Description = t.ReceivedFund.Description,
                     ReceivedDate = t.ReceivedFund.ReceivedDate,
                     FundSource = new()

@@ -17,8 +17,17 @@ public class GetDUFundAllocationsQueryHandler(IUnitOfWork unitOfWork) : IRequest
             Filters = query.Filters,
             Sorts = query.Sorts
         };
+        // calculate UtilizedAmount for each ReceivedFund
+        var utilizationQuery = unitOfWork.DUFundAllocationRepository
+            .Query()
+            .GroupBy(d => d.ReceivedFundId)
+            .Select(g => new
+            {
+                ReceivedFundId = g.Key,
+                UtilizedAmount = g.Sum(d => d.Amount)
+            });
 
-        // create expression to project to DUFundAllocationsResponse
+
         Expression<Func<Domain.Entities.Planning.DUFundAllocation, DUFundAllocationsResponse>> projection = duFundAllocation => new DUFundAllocationsResponse
         {
             Id = duFundAllocation.Id,
@@ -28,6 +37,10 @@ public class GetDUFundAllocationsQueryHandler(IUnitOfWork unitOfWork) : IRequest
             {
                 Id = duFundAllocation.ReceivedFund.Id,
                 Amount = duFundAllocation.ReceivedFund.Amount,
+                UtilizedAmount = utilizationQuery
+                    .Where(u => u.ReceivedFundId == duFundAllocation.ReceivedFund.Id)
+                    .Select(u => u.UtilizedAmount)
+                    .FirstOrDefault(),
                 Description = duFundAllocation.ReceivedFund.Description,
                 ReceivedDate = duFundAllocation.ReceivedFund.ReceivedDate,
                 FundSource = new ()
@@ -42,6 +55,7 @@ public class GetDUFundAllocationsQueryHandler(IUnitOfWork unitOfWork) : IRequest
         };
 
         var (duFundAllocations, totalCount) = await unitOfWork.DUFundAllocationRepository.GetAllAsync(sieveModel, projection, cancellationToken: cancellationToken);
+       
         return new PaginatedApiResponse<DUFundAllocationsResponse>(
             [.. duFundAllocations],
             query.PageNumber,
