@@ -4,7 +4,7 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.DUFundAllocation.Commands.UpdateDUFundAllocation;
 
-public class UpdateDUFundAllocationCommand : IRequest<ApiResponse<Domain.Entities.Planning.DUFundAllocation>>
+public class UpdateDUFundAllocationCommand : IRequest<ApiResponse<Unit>>
 {
     public Guid Id { get; set; }
     public required UpdateDUFundAllocationRequest UpdateDUFundAllocation { get; set; }

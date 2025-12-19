@@ -1,9 +1,12 @@
+using ERPEZ.Application.Features.Planning.ReceivedFund.Dtos;
+
 namespace ERPEZ.Application.Features.Planning.DUFundAllocation.Dtos;
 
-public class DUFundAllocationResponse
+public record DUFundAllocationResponse
 {
     public Guid Id { get; set; }
     public Guid DUAllocationId { get; set; }
-    public Guid ReceivedFundId { get; set; }
     public decimal Amount { get; set; }
+
+    public required ReceivedFundResponse ReceivedFund { get; init; }
 }
