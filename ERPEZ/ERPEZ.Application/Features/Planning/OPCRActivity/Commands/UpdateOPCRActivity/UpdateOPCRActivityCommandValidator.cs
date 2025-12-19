@@ -38,8 +38,8 @@ public class UpdateOPCRActivityCommandValidator : AbstractValidator<UpdateOPCRAc
             .When(x => x.UpdateOPCRActivity.Budget.HasValue);
 
         RuleFor(x => x.UpdateOPCRActivity.PAPDepartments)
-            .Must(departments => departments.Distinct().Count() == departments.Count)
+            .Must(departments => departments != null && departments.Distinct().Count() == departments.Count)
             .WithMessage("Duplicate PAP Departments are not allowed.")
-            .When(x => x.UpdateOPCRActivity.PAPDepartments.Count != 0);
+            .When(x => x.UpdateOPCRActivity.PAPDepartments != null);
     }
 }

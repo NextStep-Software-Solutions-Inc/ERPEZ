@@ -53,14 +53,13 @@ public class UpdateOPCRActivityCommandHandler(IUnitOfWork unitOfWork) : IRequest
                 unitOfWork.OPCRPAPDepartmentRepository.Remove(dept);
             }
 
-            foreach (var duId in request.UpdateOPCRActivity.PAPDepartments)
+            var newDepartments = request.UpdateOPCRActivity.PAPDepartments.Select(duId => new Domain.Entities.Planning.OPCRPAPDepartment
             {
-                await unitOfWork.OPCRPAPDepartmentRepository.AddAsync(new Domain.Entities.Planning.OPCRPAPDepartment
-                {
-                    OPCRActivityId = opcrActivity.Id,
-                    DeliveryUnitId = duId
-                }, cancellationToken);
-            }
+                OPCRActivityId = opcrActivity.Id,
+                DeliveryUnitId = duId
+            }).ToList();
+
+            await unitOfWork.OPCRPAPDepartmentRepository.AddRangeAsync(newDepartments, cancellationToken);
         }
 
         opcrActivity.Name = dto.Name ?? opcrActivity.Name;

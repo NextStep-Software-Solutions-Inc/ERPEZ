@@ -11,5 +11,5 @@ public class UpdateOPCRActivityRequest
     public decimal? Budget { get; set; }
 
     [JsonPropertyName("PAPDepartments")]
-    public List<Guid> PAPDepartments { get; init; } = []; // id of DeliveryUnit
+    public List<Guid>? PAPDepartments { get; init; }
 }
