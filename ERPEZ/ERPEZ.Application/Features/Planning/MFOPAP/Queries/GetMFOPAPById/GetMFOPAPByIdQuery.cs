@@ -6,4 +6,4 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.MFOPAP.Queries.GetMFOPAPById;
 
-public record class GetMFOPAPByIdQuery(Guid Id) : IRequest<ApiResponse<Domain.Entities.Planning.MFOPAP>>;
+public record GetMFOPAPByIdQuery(Guid Id) : IRequest<ApiResponse<Domain.Entities.Planning.MFOPAP>>;

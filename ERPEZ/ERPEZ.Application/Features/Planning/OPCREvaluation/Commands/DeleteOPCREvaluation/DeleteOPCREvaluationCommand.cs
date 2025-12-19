@@ -3,4 +3,4 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.OPCREvaluation.Commands.DeleteOPCREvaluation;
 
-public record class DeleteOPCREvaluationCommand(Guid Id) : IRequest<ApiResponse<Unit>>;
+public record DeleteOPCREvaluationCommand(Guid Id) : IRequest<ApiResponse<Unit>>;

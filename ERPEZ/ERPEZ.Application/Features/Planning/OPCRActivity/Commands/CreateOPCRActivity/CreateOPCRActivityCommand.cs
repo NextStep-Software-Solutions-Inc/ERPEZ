@@ -1,14 +1,17 @@
-using ERPEZ.Application.Features.Planning.OPCRActivity.Dtos;
+using System.Text.Json.Serialization;
 using ERPEZ.Shared.Common;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.OPCRActivity.Commands.CreateOPCRActivity;
 
-public class CreateOPCRActivityCommand : IRequest<ApiResponse<OPCRActivityResponse>>
+public record CreateOPCRActivityCommand : IRequest<ApiResponse<Guid>>
 {
-    public Guid OPCRId { get; set; }
-    public Guid DUKPIAssignmentId { get; set; }
-    public required string Name { get; set; }
-    public string? Description { get; set; }
-    public decimal Budget { get; set; }
+    public Guid OPCRId { get; init; }
+    public Guid DUKPIAssignmentId { get; init; }
+    public required string Name { get; init; }
+    public string? Description { get; init; }
+    public decimal Budget { get; init; }
+
+    [JsonPropertyName("PAPDepartments")]
+    public List<Guid> PAPDepartments { get; init; } = []; // id of DeliveryUnit
 }

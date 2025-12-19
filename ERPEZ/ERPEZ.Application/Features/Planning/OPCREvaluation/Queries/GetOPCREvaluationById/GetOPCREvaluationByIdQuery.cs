@@ -4,4 +4,4 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.OPCREvaluation.Queries.GetOPCREvaluationById;
 
-public record class GetOPCREvaluationByIdQuery(Guid Id) : IRequest<ApiResponse<OPCREvaluationResponse>>;
+public record GetOPCREvaluationByIdQuery(Guid Id) : IRequest<ApiResponse<OPCREvaluationResponse>>;

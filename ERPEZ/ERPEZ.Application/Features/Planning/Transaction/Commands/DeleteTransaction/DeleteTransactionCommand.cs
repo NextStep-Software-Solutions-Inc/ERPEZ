@@ -3,4 +3,4 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Transaction.Commands.DeleteTransaction;
 
-public record class DeleteTransactionCommand(Guid Id) : IRequest<ApiResponse<Unit>>;
+public record DeleteTransactionCommand(Guid Id) : IRequest<ApiResponse<Unit>>;

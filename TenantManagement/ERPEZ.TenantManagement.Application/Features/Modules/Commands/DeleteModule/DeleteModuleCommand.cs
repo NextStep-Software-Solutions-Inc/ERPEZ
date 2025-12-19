@@ -3,4 +3,4 @@ using MediatR;
 
 namespace ERPEZ.TenantManagement.Application.Features.Modules.Commands.DeleteModule;
 
-public record class DeleteModuleCommand(Guid Id) : IRequest<ApiResponse<Unit>>;
+public record DeleteModuleCommand(Guid Id) : IRequest<ApiResponse<Unit>>;

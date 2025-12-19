@@ -4,4 +4,4 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Cluster.Queries.GetClusterById;
 
-public record class GetClusterByIdQuery(Guid Id) : IRequest<ApiResponse<ClusterResponse>>;
+public record GetClusterByIdQuery(Guid Id) : IRequest<ApiResponse<ClusterResponse>>;
