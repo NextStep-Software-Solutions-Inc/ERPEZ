@@ -23,6 +23,7 @@ public class GetDUFundAllocationsQueryHandler(IUnitOfWork unitOfWork) : IRequest
         {
             Id = duFundAllocation.Id,
             DUAllocationId = duFundAllocation.DUAllocationId,
+            Amount = duFundAllocation.Amount,
             ReceivedFund = new ()
             {
                 Id = duFundAllocation.ReceivedFund.Id,
