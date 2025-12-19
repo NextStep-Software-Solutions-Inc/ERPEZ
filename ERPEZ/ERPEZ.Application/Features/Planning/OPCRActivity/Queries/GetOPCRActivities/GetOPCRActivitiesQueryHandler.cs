@@ -1,8 +1,8 @@
+using System.Linq.Expressions;
 using ERPEZ.Application.Features.Planning.OPCRActivity.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.Application.Features.Planning.OPCRActivity.Queries.GetOPCRActivities;
 
@@ -18,18 +18,20 @@ public class GetOPCRActivitiesQueryHandler(IUnitOfWork unitOfWork) : IRequestHan
             Sorts = query.Sorts
         };
 
+        Expression<Func<Domain.Entities.Planning.OPCRActivity, OPCRActivityResponse>> projection = a => new OPCRActivityResponse
+        {
+            Id = a.Id,
+            OPCRId = a.OPCRId,
+            DUKPIAssignmentId = a.DUKPIAssignmentId,
+            Name = a.Name,
+            Description = a.Description,
+            Budget = a.Budget,
+            PAPDepartments = a.OPCRPAPDepartments.Select(p => p.DeliveryUnitId).ToList()
+        };
+
         var (opcrActivities, totalCount) = await unitOfWork.OPCRActivityRepository.GetAllAsync(
             sieveModel,
-            a => new OPCRActivityResponse
-            {
-                Id = a.Id,
-                OPCRId = a.OPCRId,
-                DUKPIAssignmentId = a.DUKPIAssignmentId,
-                Name = a.Name,
-                Description = a.Description,
-                Budget = a.Budget,
-                PAPDepartments = a.OPCRPAPDepartments.Select(p => p.DeliveryUnitId).ToList()
-            },
+            projection,
             cancellationToken);
 
         return new PaginatedApiResponse<OPCRActivityResponse>(
