@@ -37,9 +37,9 @@ public class UpdateOPCRActivityCommandValidator : AbstractValidator<UpdateOPCRAc
             .WithMessage("Budget must be zero or greater.")
             .When(x => x.UpdateOPCRActivity.Budget.HasValue);
 
-        RuleFor(x => x.UpdateOPCRActivity.PAPDepartments)
+        RuleFor(x => x.UpdateOPCRActivity.PAPDepartmentIds)
             .Must(departments => departments != null && departments.Distinct().Count() == departments.Count)
             .WithMessage("Duplicate PAP Departments are not allowed.")
-            .When(x => x.UpdateOPCRActivity.PAPDepartments != null);
+            .When(x => x.UpdateOPCRActivity.PAPDepartmentIds != null);
     }
 }

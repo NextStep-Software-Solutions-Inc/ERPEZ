@@ -29,9 +29,9 @@ public class CreateOPCRActivityCommandValidator : AbstractValidator<CreateOPCRAc
             .GreaterThanOrEqualTo(0)
             .WithMessage("Budget must be zero or greater.");
 
-        RuleFor(x => x.PAPDepartments)
+        RuleFor(x => x.PAPDepartmentIds)
             .Must(x => x.Distinct().Count() == x.Count)
             .WithMessage("Duplicate PAP Departments are not allowed.")
-            .When(x => x.PAPDepartments.Count != 0);
+            .When(x => x.PAPDepartmentIds.Count != 0);
     }
 }

@@ -10,6 +10,6 @@ public class UpdateOPCRActivityRequest
     public string? Description { get; set; }
     public decimal? Budget { get; set; }
 
-    [JsonPropertyName("PAPDepartments")]
-    public List<Guid>? PAPDepartments { get; init; }
+    [JsonPropertyName("PAPDepartmentIds")]
+    public List<Guid>? PAPDepartmentIds { get; init; }
 }

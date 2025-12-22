@@ -24,15 +24,15 @@ public class UpdateOPCRActivityCommandHandler(IUnitOfWork unitOfWork) : IRequest
             throw new BadRequestException("The DU KPI Assignment must belong to the same Delivery Unit as the OPCR.");
         }
 
-        if (request.UpdateOPCRActivity.PAPDepartments != null)
+        if (request.UpdateOPCRActivity.PAPDepartmentIds != null)
         {
-            if (request.UpdateOPCRActivity.PAPDepartments.Any())
+            if (request.UpdateOPCRActivity.PAPDepartmentIds.Any())
             {
                 var deliveryUnits = await unitOfWork.DeliveryUnitRepository.ToListAsync(
-                    unitOfWork.DeliveryUnitRepository.Query(du => request.UpdateOPCRActivity.PAPDepartments.Contains(du.Id)),
+                    unitOfWork.DeliveryUnitRepository.Query(du => request.UpdateOPCRActivity.PAPDepartmentIds.Contains(du.Id)),
                     cancellationToken);
 
-                if (deliveryUnits.Count != request.UpdateOPCRActivity.PAPDepartments.Count)
+                if (deliveryUnits.Count != request.UpdateOPCRActivity.PAPDepartmentIds.Count)
                 {
                     throw new BadRequestException("One or more Delivery Units not found.");
                 }
@@ -53,7 +53,7 @@ public class UpdateOPCRActivityCommandHandler(IUnitOfWork unitOfWork) : IRequest
                 unitOfWork.OPCRPAPDepartmentRepository.Remove(dept);
             }
 
-            var newDepartments = request.UpdateOPCRActivity.PAPDepartments.Select(duId => new Domain.Entities.Planning.OPCRPAPDepartment
+            var newDepartments = request.UpdateOPCRActivity.PAPDepartmentIds.Select(duId => new Domain.Entities.Planning.OPCRPAPDepartment
             {
                 OPCRActivityId = opcrActivity.Id,
                 DeliveryUnitId = duId
