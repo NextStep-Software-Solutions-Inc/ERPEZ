@@ -32,8 +32,8 @@ public class UpdateWFPObjectiveCommandValidator : AbstractValidator<UpdateWFPObj
 
         // Outcome (Optional, Non-negative)
         RuleFor(x => x.UpdateWFPObjective.Outcome)
-            .GreaterThanOrEqualTo(0)
+            .MaximumLength(500)
             .WithMessage("Outcome must be a non-negative value.")
-            .When(x => x.UpdateWFPObjective.Outcome.HasValue);
+            .When(x => !string.IsNullOrWhiteSpace(x.UpdateWFPObjective.Outcome));
     }
 }

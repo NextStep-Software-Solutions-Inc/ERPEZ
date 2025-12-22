@@ -9,5 +9,5 @@ public class CreateWFPObjectiveCommand : IRequest<ApiResponse<WFPObjectiveRespon
     public Guid WFPId { get; set; }
     public string Description { get; set; } = string.Empty;
     public decimal Weight { get; set; }
-    public decimal? Outcome { get; set; }
+    public string? Outcome { get; set; }
 }

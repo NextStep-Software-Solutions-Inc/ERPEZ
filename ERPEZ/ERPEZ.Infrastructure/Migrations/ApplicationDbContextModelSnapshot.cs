@@ -1691,8 +1691,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
-                    b.Property<decimal?>("Outcome")
-                        .HasColumnType("numeric");
+                    b.Property<string>("Outcome")
+                        .HasColumnType("text");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");

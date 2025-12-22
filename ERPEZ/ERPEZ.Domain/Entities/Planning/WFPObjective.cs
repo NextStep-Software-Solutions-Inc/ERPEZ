@@ -12,7 +12,7 @@ public class WFPObjective : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public decimal Weight { get; set; }
     [Sieve(CanFilter = true, CanSort = true)]
-    public decimal? Outcome { get; set; }
+    public string? Outcome { get; set; }
     public virtual List<WFPObjectiveTarget> WFPObjectiveTargets { get; set; } = [];
     public virtual WFP WFP { get; set; } = null!;
 }

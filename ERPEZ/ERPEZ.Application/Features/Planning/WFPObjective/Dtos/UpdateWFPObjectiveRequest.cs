@@ -4,5 +4,5 @@ public class UpdateWFPObjectiveRequest
 {
     public string? Description { get; set; }
     public decimal? Weight { get; set; }
-    public decimal? Outcome { get; set; }
+    public string? Outcome { get; set; }
 }

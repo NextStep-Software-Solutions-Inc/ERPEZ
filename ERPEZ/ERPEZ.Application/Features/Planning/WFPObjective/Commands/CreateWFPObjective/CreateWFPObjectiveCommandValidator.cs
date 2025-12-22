@@ -30,8 +30,8 @@ public class CreateWFPObjectiveCommandValidator : AbstractValidator<CreateWFPObj
 
         // Outcome (Optional, Max Length when provided)
         RuleFor(x => x.Outcome)
-            .GreaterThanOrEqualTo(0)
+            .MaximumLength(500)
             .WithMessage("Outcome must be a non-negative value.")
-            .When(x => x.Outcome.HasValue);
+            .When(x => !string.IsNullOrWhiteSpace(x.Outcome));
     }
 }

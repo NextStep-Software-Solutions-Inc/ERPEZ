@@ -8,7 +8,7 @@ public class WFPObjectiveResponse
     public Guid WFPId { get; set; }
     public string Description { get; set; } = string.Empty;
     public decimal Weight { get; set; }
-    public decimal? Outcome { get; set; }
+    public string? Outcome { get; set; }
     public DateTime CreatedAt { get; set; }
     public string CreatedBy { get; set; } = string.Empty;
     public List<WFPObjectiveTargetResponse> WFPObjectiveTargets { get; set; } = [];
