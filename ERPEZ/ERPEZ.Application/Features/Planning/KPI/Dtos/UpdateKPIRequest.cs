@@ -1,7 +1,4 @@
 using System.Text.Json.Serialization;
-using ERPEZ.Application.Features.Planning.KPIModeOfVerification.Dtos;
-using ERPEZ.Application.Features.Planning.KPIRating.Dtos;
-using ERPEZ.Application.Features.Planning.KPITarget.Dtos;
 
 namespace ERPEZ.Application.Features.Planning.KPI.Dtos;
 
@@ -18,12 +15,28 @@ public record UpdateKPIRequest
 
     [JsonPropertyName("SDGIds")]
     public List<Guid>? SDGIds { get; init; }
+    
+    /// <summary>
+    /// List of KPI ratings to upsert. Include Id to update existing, omit Id to create new.
+    /// Existing ratings not in this list will be deleted.
+    /// </summary>
     [JsonPropertyName("KPIRatings")]
-    public List<CreateKPIRatingRequest>? KPIRatings { get; init; }
+    public List<UpsertKPIRatingRequest>? KPIRatings { get; init; }
+    
+    /// <summary>
+    /// List of KPI targets to upsert. Include Id to update existing, omit Id to create new.
+    /// Existing targets not in this list will be deleted only if they're not referenced by other entities.
+    /// </summary>
     [JsonPropertyName("KPITargets")]
-    public List<CreateKPITargetRequest>? KPITargets { get; init; }
+    public List<UpsertKPITargetRequest>? KPITargets { get; init; }
+    
+    /// <summary>
+    /// List of KPI mode of verifications to upsert. Include Id to update existing, omit Id to create new.
+    /// Existing MOVs not in this list will be deleted.
+    /// </summary>
     [JsonPropertyName("KPIMOVs")]
-    public List<CreateKPIMOVRequest>? KPIMOVs { get; init; }
+    public List<UpsertKPIMOVRequest>? KPIMOVs { get; init; }
+    
     [JsonPropertyName("MFOPAPIds")]
     public List<Guid>? MFOPAPIds { get; init; }
     [JsonPropertyName("AttributeIds")]
