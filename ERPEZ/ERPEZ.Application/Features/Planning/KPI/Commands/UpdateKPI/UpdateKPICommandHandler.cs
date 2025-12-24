@@ -94,104 +94,179 @@ public class UpdateKPICommandHandler(IUnitOfWork unitOfWork, IFileStorageService
                 }
             }
 
-            // Explicitly delete existing child entities to avoid unique constraint violations
-            // Batch all deletions together for better performance
+            // Handle KPIRatings - Upsert logic (update existing, add new, delete orphaned)
             if (request.Dto.KPIRatings?.Count > 0)
             {
                 var existingRatings = await unitOfWork.KPIRatingRepository.ToListAsync(
                     unitOfWork.KPIRatingRepository.Query(r => r.KPIId == kpi.Id),
                     cancellationToken);
-                
-                foreach (var existingRating in existingRatings)
+
+                var requestedRatingIds = request.Dto.KPIRatings
+                    .Where(r => r.Id.HasValue)
+                    .Select(r => r.Id!.Value)
+                    .ToHashSet();
+
+                // Delete ratings not in the request
+                foreach (var existingRating in existingRatings.Where(r => !requestedRatingIds.Contains(r.Id)))
                 {
                     unitOfWork.KPIRatingRepository.Remove(existingRating, hardDelete: true);
                 }
-            }
 
-            if (request.Dto.KPITargets?.Count > 0)
-            {
-                var existingTargets = await unitOfWork.KPITargetRepository.ToListAsync(
-                    unitOfWork.KPITargetRepository.Query(t => t.KPIId == kpi.Id),
-                    cancellationToken);
-                
-                foreach (var existingTarget in existingTargets)
-                {
-                    unitOfWork.KPITargetRepository.Remove(existingTarget, hardDelete: true);
-                }
-            }
-
-            if (request.Dto.KPIMOVs?.Count > 0)
-            {
-                var existingMOVs = await unitOfWork.KPIModeOfVerificationRepository.ToListAsync(
-                    unitOfWork.KPIModeOfVerificationRepository.Query(m => m.KPIId == kpi.Id),
-                    cancellationToken);
-                
-                foreach (var existingMOV in existingMOVs)
-                {
-                    unitOfWork.KPIModeOfVerificationRepository.Remove(existingMOV, hardDelete: true);
-                }
-            }
-
-            // Save all deletions at once before adding new entities
-            if (request.Dto.KPIRatings?.Count > 0 || request.Dto.KPITargets?.Count > 0 || request.Dto.KPIMOVs?.Count > 0)
-            {
-                await unitOfWork.SaveChangesAsync(cancellationToken);
-            }
-
-            // Handle KPIRatings - Only update if provided
-            if (request.Dto.KPIRatings?.Count > 0)
-            {
+                // Update or add ratings
                 foreach (var ratingRequest in request.Dto.KPIRatings)
                 {
-                    foreach (var numericalRating in ratingRequest.Ratings)
+                    if (ratingRequest.Id.HasValue)
                     {
+                        // Update existing rating
+                        var existingRating = existingRatings.FirstOrDefault(r => r.Id == ratingRequest.Id.Value);
+                        if (existingRating != null)
+                        {
+                            existingRating.PerformanceMeasureId = ratingRequest.PerformanceMeasureId;
+                            existingRating.NumericalRating = ratingRequest.NumericalRating;
+                            existingRating.Remarks = ratingRequest.Remarks;
+                            unitOfWork.KPIRatingRepository.Update(existingRating);
+                        }
+                        else
+                        {
+                            throw new NotFoundException($"KPIRating with ID {ratingRequest.Id.Value} not found.");
+                        }
+                    }
+                    else
+                    {
+                        // Add new rating
                         var newRating = new Domain.Entities.Planning.KPIRating
                         {
                             KPIId = kpi.Id,
                             PerformanceMeasureId = ratingRequest.PerformanceMeasureId,
-                            NumericalRating = numericalRating.Value,
-                            Remarks = numericalRating.Remarks
+                            NumericalRating = ratingRequest.NumericalRating,
+                            Remarks = ratingRequest.Remarks
                         };
                         kpi.KPIRatings.Add(newRating);
                     }
                 }
             }
 
-            // Handle KPITargets - Only update if provided
+            // Handle KPITargets - Upsert logic (update existing, add new, delete orphaned if safe)
             if (request.Dto.KPITargets?.Count > 0)
             {
+                var existingTargets = await unitOfWork.KPITargetRepository.ToListAsync(
+                    unitOfWork.KPITargetRepository.Query(t => t.KPIId == kpi.Id),
+                    cancellationToken);
+
+                var requestedTargetIds = request.Dto.KPITargets
+                    .Where(t => t.Id.HasValue)
+                    .Select(t => t.Id!.Value)
+                    .ToHashSet();
+
+                // Delete targets not in the request (only if not referenced by DUKPIAssignment)
+                foreach (var existingTarget in existingTargets.Where(t => !requestedTargetIds.Contains(t.Id)))
+                {
+                    // Check if target is referenced by any DUKPIAssignment
+                    var isReferenced = await unitOfWork.DUKPIAssignmentRepository.FindAsync(
+                        a => a.KPITargetId == existingTarget.Id,
+                        cancellationToken);
+
+                    if (isReferenced != null)
+                    {
+                        throw new ConflictException(
+                            $"Cannot delete KPITarget with ID {existingTarget.Id} because it is referenced by delivery unit assignments.");
+                    }
+
+                    unitOfWork.KPITargetRepository.Remove(existingTarget, hardDelete: true);
+                }
+
+                // Update or add targets
                 foreach (var targetRequest in request.Dto.KPITargets)
                 {
-                    var newTarget = new Domain.Entities.Planning.KPITarget
+                    if (targetRequest.Id.HasValue)
                     {
-                        KPIId = kpi.Id,
-                        Period = Enum.Parse<PeriodEnum>(targetRequest.Period),
-                        TargetValue = targetRequest.TargetValue,
-                        QuarterName = targetRequest.QuarterName
-                    };
-                    kpi.KPITargets.Add(newTarget);
+                        // Update existing target
+                        var existingTarget = existingTargets.FirstOrDefault(t => t.Id == targetRequest.Id.Value);
+                        if (existingTarget != null)
+                        {
+                            existingTarget.Period = Enum.Parse<PeriodEnum>(targetRequest.Period);
+                            existingTarget.TargetValue = targetRequest.TargetValue;
+                            existingTarget.QuarterName = targetRequest.QuarterName;
+                            unitOfWork.KPITargetRepository.Update(existingTarget);
+                        }
+                        else
+                        {
+                            throw new NotFoundException($"KPITarget with ID {targetRequest.Id.Value} not found.");
+                        }
+                    }
+                    else
+                    {
+                        // Add new target
+                        var newTarget = new Domain.Entities.Planning.KPITarget
+                        {
+                            KPIId = kpi.Id,
+                            Period = Enum.Parse<PeriodEnum>(targetRequest.Period),
+                            TargetValue = targetRequest.TargetValue,
+                            QuarterName = targetRequest.QuarterName
+                        };
+                        kpi.KPITargets.Add(newTarget);
+                    }
                 }
             }
 
-            // Handle KPIMOVs - Only update if provided
+            // Handle KPIMOVs - Upsert logic (update existing, add new, delete orphaned)
             if (request.Dto.KPIMOVs?.Count > 0)
             {
-                foreach (var movRequest in request.Dto.KPIMOVs)
+                var existingMOVs = await unitOfWork.KPIModeOfVerificationRepository.ToListAsync(
+                    unitOfWork.KPIModeOfVerificationRepository.Query(m => m.KPIId == kpi.Id),
+                    cancellationToken);
+
+                var requestedMOVIds = request.Dto.KPIMOVs
+                    .Where(m => m.Id.HasValue)
+                    .Select(m => m.Id!.Value)
+                    .ToHashSet();
+
+                // Delete MOVs not in the request
+                foreach (var existingMOV in existingMOVs.Where(m => !requestedMOVIds.Contains(m.Id)))
                 {
-                string? url = null;
-                if (movRequest.FileId.HasValue)
-                {
-                    url = await fileStorageService.PromoteFileAsync(movRequest.FileId.Value);
+                    unitOfWork.KPIModeOfVerificationRepository.Remove(existingMOV, hardDelete: true);
                 }
 
-                    var newMov = new Domain.Entities.Planning.KPIModeOfVerification
+                // Update or add MOVs
+                foreach (var movRequest in request.Dto.KPIMOVs)
+                {
+                    string? url = null;
+                    if (movRequest.FileId.HasValue)
                     {
-                        KPIId = kpi.Id,
-                        Name = movRequest.Name,
-                        Description = movRequest.Description,
-                        Url = url
-                    };
-                    kpi.KPIModeOfVerifications.Add(newMov);
+                        url = await fileStorageService.PromoteFileAsync(movRequest.FileId.Value);
+                    }
+
+                    if (movRequest.Id.HasValue)
+                    {
+                        // Update existing MOV
+                        var existingMOV = existingMOVs.FirstOrDefault(m => m.Id == movRequest.Id.Value);
+                        if (existingMOV != null)
+                        {
+                            existingMOV.Name = movRequest.Name;
+                            existingMOV.Description = movRequest.Description;
+                            if (url != null)
+                            {
+                                existingMOV.Url = url;
+                            }
+                            unitOfWork.KPIModeOfVerificationRepository.Update(existingMOV);
+                        }
+                        else
+                        {
+                            throw new NotFoundException($"KPIModeOfVerification with ID {movRequest.Id.Value} not found.");
+                        }
+                    }
+                    else
+                    {
+                        // Add new MOV
+                        var newMov = new Domain.Entities.Planning.KPIModeOfVerification
+                        {
+                            KPIId = kpi.Id,
+                            Name = movRequest.Name,
+                            Description = movRequest.Description,
+                            Url = url
+                        };
+                        kpi.KPIModeOfVerifications.Add(newMov);
+                    }
                 }
             }
 

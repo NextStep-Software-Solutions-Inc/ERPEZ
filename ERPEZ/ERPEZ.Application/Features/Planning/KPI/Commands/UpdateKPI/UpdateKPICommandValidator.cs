@@ -50,7 +50,7 @@ public class UpdateKPICommandValidator : AbstractValidator<UpdateKPICommand>
             .ForEach(sdgId => sdgId.NotEmpty().WithMessage("SDG ID must be a valid, non-empty GUID."))
             .When(x => x.Dto.SDGIds != null && x.Dto.SDGIds.Count != 0);
 
-        // 9. KPIRatings (List<CreateKPIRatingRequest>) - Optional for partial update and validation inside
+        // 9. KPIRatings (List<UpsertKPIRatingRequest>) - Optional for partial update
         RuleFor(x => x.Dto.KPIRatings)
             .Must(list => list == null || list.Count > 0)
             .WithMessage("KPI Ratings list cannot be empty if provided.");
@@ -64,29 +64,20 @@ public class UpdateKPICommandValidator : AbstractValidator<UpdateKPICommand>
                     .Must(id => id != Guid.Empty)
                     .WithMessage("Performance Measure ID must be a valid, non-empty GUID.");
 
-                rating.RuleFor(r => r.Ratings)
-                    .NotNull()
-                    .WithMessage("Ratings list cannot be null.")
-                    .Must(ratingsList => ratingsList.Count > 0)
-                    .WithMessage("At least one rating must be provided.");
-
-                rating.RuleForEach(r => r.Ratings)
-                    .ChildRules(numericalRating =>
-                    {
-                        numericalRating.RuleFor(nr => nr.Value)
-                            .GreaterThanOrEqualTo(0)
-                            .WithMessage("Numerical Rating value must be non-negative.");
-                    });
+                rating.RuleFor(r => r.NumericalRating)
+                    .GreaterThanOrEqualTo(0)
+                    .WithMessage("Numerical Rating value must be non-negative.");
             });
-        // PerformanceMeasureId uniqueness check
+        
+        // PerformanceMeasureId + NumericalRating uniqueness check
         When(x => x.Dto.KPIRatings != null && x.Dto.KPIRatings.Count != 0, () =>
         {
             RuleFor(x => x.Dto.KPIRatings)
-                .Must(ratings => ratings!.Select(r => r.PerformanceMeasureId).Distinct().Count() == ratings!.Count)
-                .WithMessage("PerformanceMeasureId must be unique across all KPI Ratings.");
+                .Must(ratings => ratings!.Select(r => new { r.PerformanceMeasureId, r.NumericalRating }).Distinct().Count() == ratings!.Count)
+                .WithMessage("Combination of PerformanceMeasureId and NumericalRating must be unique across all KPI Ratings.");
         });
 
-        // 10. KPITargets (List<CreateKPITargetRequest>) - Optional for partial update
+        // 10. KPITargets (List<UpsertKPITargetRequest>) - Optional for partial update
         RuleFor(x => x.Dto.KPITargets)
             .Must(list => list == null || list.Count > 0)
             .WithMessage("KPI Targets list cannot be empty if provided.");
@@ -110,7 +101,7 @@ public class UpdateKPICommandValidator : AbstractValidator<UpdateKPICommand>
                     .WithMessage("Quarter Name cannot exceed 50 characters.");
             });
 
-        // 11. KPIMOVs (List<CreateKPIMOVRequest>) - Optional for partial update
+        // 11. KPIMOVs (List<UpsertKPIMOVRequest>) - Optional for partial update
         RuleFor(x => x.Dto.KPIMOVs)
             .Must(list => list == null || list.Count > 0)
             .WithMessage("KPI Mode of Verifications list cannot be empty if provided.");
