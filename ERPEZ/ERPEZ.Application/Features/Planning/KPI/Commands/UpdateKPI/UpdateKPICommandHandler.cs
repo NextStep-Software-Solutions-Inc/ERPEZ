@@ -94,10 +94,10 @@ public class UpdateKPICommandHandler(IUnitOfWork unitOfWork, IFileStorageService
                 }
             }
 
-            // Handle KPIRatings - Only update if provided
+            // Explicitly delete existing child entities to avoid unique constraint violations
+            // Batch all deletions together for better performance
             if (request.Dto.KPIRatings?.Count > 0)
             {
-                // Explicitly delete existing ratings to avoid unique constraint violations
                 var existingRatings = await unitOfWork.KPIRatingRepository.ToListAsync(
                     unitOfWork.KPIRatingRepository.Query(r => r.KPIId == kpi.Id),
                     cancellationToken);
@@ -106,12 +106,41 @@ public class UpdateKPICommandHandler(IUnitOfWork unitOfWork, IFileStorageService
                 {
                     unitOfWork.KPIRatingRepository.Remove(existingRating, hardDelete: true);
                 }
+            }
+
+            if (request.Dto.KPITargets?.Count > 0)
+            {
+                var existingTargets = await unitOfWork.KPITargetRepository.ToListAsync(
+                    unitOfWork.KPITargetRepository.Query(t => t.KPIId == kpi.Id),
+                    cancellationToken);
                 
-                // Save to ensure deletions are committed before insertions
+                foreach (var existingTarget in existingTargets)
+                {
+                    unitOfWork.KPITargetRepository.Remove(existingTarget, hardDelete: true);
+                }
+            }
+
+            if (request.Dto.KPIMOVs?.Count > 0)
+            {
+                var existingMOVs = await unitOfWork.KPIModeOfVerificationRepository.ToListAsync(
+                    unitOfWork.KPIModeOfVerificationRepository.Query(m => m.KPIId == kpi.Id),
+                    cancellationToken);
+                
+                foreach (var existingMOV in existingMOVs)
+                {
+                    unitOfWork.KPIModeOfVerificationRepository.Remove(existingMOV, hardDelete: true);
+                }
+            }
+
+            // Save all deletions at once before adding new entities
+            if (request.Dto.KPIRatings?.Count > 0 || request.Dto.KPITargets?.Count > 0 || request.Dto.KPIMOVs?.Count > 0)
+            {
                 await unitOfWork.SaveChangesAsync(cancellationToken);
-                
-                // Now add new ratings
-                kpi.KPIRatings.Clear();
+            }
+
+            // Handle KPIRatings - Only update if provided
+            if (request.Dto.KPIRatings?.Count > 0)
+            {
                 foreach (var ratingRequest in request.Dto.KPIRatings)
                 {
                     foreach (var numericalRating in ratingRequest.Ratings)
@@ -131,21 +160,6 @@ public class UpdateKPICommandHandler(IUnitOfWork unitOfWork, IFileStorageService
             // Handle KPITargets - Only update if provided
             if (request.Dto.KPITargets?.Count > 0)
             {
-                // Explicitly delete existing targets to avoid unique constraint violations
-                var existingTargets = await unitOfWork.KPITargetRepository.ToListAsync(
-                    unitOfWork.KPITargetRepository.Query(t => t.KPIId == kpi.Id),
-                    cancellationToken);
-                
-                foreach (var existingTarget in existingTargets)
-                {
-                    unitOfWork.KPITargetRepository.Remove(existingTarget, hardDelete: true);
-                }
-                
-                // Save to ensure deletions are committed before insertions
-                await unitOfWork.SaveChangesAsync(cancellationToken);
-                
-                // Now add new targets
-                kpi.KPITargets.Clear();
                 foreach (var targetRequest in request.Dto.KPITargets)
                 {
                     var newTarget = new Domain.Entities.Planning.KPITarget
@@ -162,21 +176,6 @@ public class UpdateKPICommandHandler(IUnitOfWork unitOfWork, IFileStorageService
             // Handle KPIMOVs - Only update if provided
             if (request.Dto.KPIMOVs?.Count > 0)
             {
-                // Explicitly delete existing MOVs to avoid unique constraint violations
-                var existingMOVs = await unitOfWork.KPIModeOfVerificationRepository.ToListAsync(
-                    unitOfWork.KPIModeOfVerificationRepository.Query(m => m.KPIId == kpi.Id),
-                    cancellationToken);
-                
-                foreach (var existingMOV in existingMOVs)
-                {
-                    unitOfWork.KPIModeOfVerificationRepository.Remove(existingMOV, hardDelete: true);
-                }
-                
-                // Save to ensure deletions are committed before insertions
-                await unitOfWork.SaveChangesAsync(cancellationToken);
-                
-                // Now add new MOVs
-                kpi.KPIModeOfVerifications.Clear();
                 foreach (var movRequest in request.Dto.KPIMOVs)
                 {
                 string? url = null;
