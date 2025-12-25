@@ -7,4 +7,5 @@ public class TimelineDateRangeRequest
 {
     public DateOnly StartDate { get; set; }
     public DateOnly EndDate { get; set; }
+    public decimal Value { get; set; }
 }

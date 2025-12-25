@@ -30,8 +30,8 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpPost("batch")]
-        [ProducesResponseType(typeof(ApiResponse<List<WFPObjectiveResponse>>), StatusCodes.Status201Created)]
-        [ProducesResponseType(typeof(ApiResponse<List<WFPObjectiveResponse>>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateWFPObjectivesBatch([FromBody] CreateWFPObjectivesBatchCommand command)
         {
             var result = await mediator.Send(command);
@@ -60,7 +60,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpPut("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<WFPObjective>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateWFPObjective(Guid id, [FromBody] UpdateWFPObjectiveRequest dto)

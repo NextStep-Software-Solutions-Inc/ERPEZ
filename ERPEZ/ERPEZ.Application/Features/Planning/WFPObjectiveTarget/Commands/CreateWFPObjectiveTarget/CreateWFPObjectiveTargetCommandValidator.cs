@@ -52,6 +52,10 @@ public class CreateWFPObjectiveTargetCommandValidator : AbstractValidator<Create
                     .WithMessage("End Date is required for each date range.")
                     .GreaterThanOrEqualTo(d => d.StartDate)
                     .WithMessage("End Date must be on or after Start Date.");
+
+                dateRange.RuleFor(d => d.Value)
+                    .GreaterThan(0)
+                    .WithMessage("Value must be greater than 0 for each date range.");
             });
     }
 }

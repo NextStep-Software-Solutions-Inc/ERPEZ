@@ -10,9 +10,9 @@ namespace ERPEZ.Application.Features.Planning.WFPObjective.Commands.CreateWFPObj
 /// Handler for creating multiple WFP Objectives in a single transaction.
 /// </summary>
 public class CreateWFPObjectivesBatchCommandHandler(IUnitOfWork unitOfWork) 
-    : IRequestHandler<CreateWFPObjectivesBatchCommand, ApiResponse<List<WFPObjectiveResponse>>>
+    : IRequestHandler<CreateWFPObjectivesBatchCommand, ApiResponse<Unit>>
 {
-    public async Task<ApiResponse<List<WFPObjectiveResponse>>> Handle(
+    public async Task<ApiResponse<Unit>> Handle(
         CreateWFPObjectivesBatchCommand request, 
         CancellationToken cancellationToken)
     {
@@ -77,20 +77,8 @@ public class CreateWFPObjectivesBatchCommandHandler(IUnitOfWork unitOfWork)
         await unitOfWork.WFPObjectiveRepository.AddRangeAsync(wfpObjectives, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        // Map to response DTOs
-        var responseDtos = wfpObjectives.Select(obj => new WFPObjectiveResponse
-        {
-            Id = obj.Id,
-            WFPId = obj.WFPId,
-            Description = obj.Description,
-            Weight = obj.Weight,
-            Outcome = obj.Outcome,
-            CreatedAt = obj.CreatedAt,
-            CreatedBy = obj.CreatedBy ?? string.Empty
-        }).ToList();
-
-        return ApiResponse<List<WFPObjectiveResponse>>.Success(
-            responseDtos, 
+        return ApiResponse<Unit>.Success(
+            Unit.Value, 
             $"{wfpObjectives.Count} Work and Financial Plan Objectives created successfully.");
     }
 }

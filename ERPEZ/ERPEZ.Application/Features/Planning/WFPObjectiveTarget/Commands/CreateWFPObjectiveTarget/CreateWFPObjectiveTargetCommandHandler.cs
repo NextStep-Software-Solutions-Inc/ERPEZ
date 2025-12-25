@@ -55,7 +55,7 @@ public class CreateWFPObjectiveTargetCommandHandler(IUnitOfWork unitOfWork)
             {
                 StartDate = dateRange.StartDate,
                 EndDate = dateRange.EndDate,
-                TargetValue = 0 // Default value, can be updated later
+                TargetValue = dateRange.Value
             }).ToList();
         }
 
