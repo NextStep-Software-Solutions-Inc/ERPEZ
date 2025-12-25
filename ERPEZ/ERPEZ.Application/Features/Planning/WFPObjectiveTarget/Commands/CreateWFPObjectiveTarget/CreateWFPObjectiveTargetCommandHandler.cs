@@ -48,22 +48,19 @@ public class CreateWFPObjectiveTargetCommandHandler(IUnitOfWork unitOfWork)
             Weight = request.Weight
         };
 
-        await unitOfWork.WFPObjectiveTargetRepository.AddAsync(target, cancellationToken);
-
         // Create timelines if dates are provided
         if (request.Dates != null && request.Dates.Any())
         {
-            var timelines = request.Dates.Select(dateRange => new Domain.Entities.Planning.WFPObjectiveTimeline
+            target.WFPObjectiveTimelines = request.Dates.Select(dateRange => new Domain.Entities.Planning.WFPObjectiveTimeline
             {
-                WFPObjectiveTargetId = target.Id,
                 StartDate = dateRange.StartDate,
                 EndDate = dateRange.EndDate,
                 TargetValue = 0 // Default value, can be updated later
             }).ToList();
-
-            await unitOfWork.WFPObjectiveTimelineRepository.AddRangeAsync(timelines, cancellationToken);
         }
 
+        await unitOfWork.WFPObjectiveTargetRepository.AddAsync(target, cancellationToken);
+        
         // Save all changes in a single transaction
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
