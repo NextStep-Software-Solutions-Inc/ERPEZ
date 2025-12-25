@@ -51,7 +51,7 @@ public class CreateWFPObjectiveTargetCommandHandler(IUnitOfWork unitOfWork)
         await unitOfWork.WFPObjectiveTargetRepository.AddAsync(target, cancellationToken);
 
         // Create timelines if dates are provided
-        if (request.Dates != null && request.Dates.Count != 0)
+        if (request.Dates != null && request.Dates.Any())
         {
             var timelines = request.Dates.Select(dateRange => new Domain.Entities.Planning.WFPObjectiveTimeline
             {

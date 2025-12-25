@@ -45,7 +45,7 @@ public class CreateWFPObjectivesBatchCommandHandler(IUnitOfWork unitOfWork)
             .Select(o => o.Description)
             .ToList();
 
-        if (duplicateDescriptions.Count != 0)
+        if (duplicateDescriptions.Any())
         {
             throw new ConflictException(
                 $"Work and Financial Plan Objectives with the following descriptions already exist: {string.Join(", ", duplicateDescriptions)}");
@@ -59,7 +59,7 @@ public class CreateWFPObjectivesBatchCommandHandler(IUnitOfWork unitOfWork)
             .Select(g => g.Key)
             .ToList();
 
-        if (batchDuplicates.Count != 0)
+        if (batchDuplicates.Any())
         {
             throw new BadRequestException(
                 $"Duplicate descriptions found in the batch: {string.Join(", ", batchDuplicates)}");
