@@ -49,7 +49,6 @@ public class CreateWFPObjectiveTargetCommandHandler(IUnitOfWork unitOfWork)
         };
 
         await unitOfWork.WFPObjectiveTargetRepository.AddAsync(target, cancellationToken);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         // Create timelines if dates are provided
         if (request.Dates != null && request.Dates.Count != 0)
@@ -63,8 +62,10 @@ public class CreateWFPObjectiveTargetCommandHandler(IUnitOfWork unitOfWork)
             }).ToList();
 
             await unitOfWork.WFPObjectiveTimelineRepository.AddRangeAsync(timelines, cancellationToken);
-            await unitOfWork.SaveChangesAsync(cancellationToken);
         }
+
+        // Save all changes in a single transaction
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         var dto = new WFPObjectiveTargetResponse
         {
