@@ -38,5 +38,32 @@ public class CreateWFPObjectiveTargetCommandValidator : AbstractValidator<Create
         RuleFor(x => x.Weight)
             .InclusiveBetween(0.01m, 100m)
             .WithMessage("Weight must be between 0.01% and 100%.");
+
+        // TargetAccomplishment (Optional, Max Length when provided)
+        RuleFor(x => x.TargetAccomplishment)
+            .MaximumLength(1000)
+            .WithMessage("Target Accomplishment cannot exceed 1000 characters.")
+            .When(x => !string.IsNullOrWhiteSpace(x.TargetAccomplishment));
+
+        // TimelineType (Optional, Max Length when provided)
+        RuleFor(x => x.TimelineType)
+            .MaximumLength(50)
+            .WithMessage("Timeline Type cannot exceed 50 characters.")
+            .When(x => !string.IsNullOrWhiteSpace(x.TimelineType));
+
+        // Dates (Optional array, but when provided, each date range must be valid)
+        RuleForEach(x => x.Dates)
+            .ChildRules(dateRange =>
+            {
+                dateRange.RuleFor(d => d.StartDate)
+                    .NotEmpty()
+                    .WithMessage("Start Date is required for each date range.");
+
+                dateRange.RuleFor(d => d.EndDate)
+                    .NotEmpty()
+                    .WithMessage("End Date is required for each date range.")
+                    .GreaterThan(d => d.StartDate)
+                    .WithMessage("End Date must be after Start Date.");
+            });
     }
 }

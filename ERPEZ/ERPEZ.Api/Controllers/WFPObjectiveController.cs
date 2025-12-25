@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Application.Features.Planning.WFPObjective.Dtos;
 using ERPEZ.Application.Features.Planning.WFPObjective.Commands.CreateWFPObjective;
+using ERPEZ.Application.Features.Planning.WFPObjective.Commands.CreateWFPObjectivesBatch;
 using ERPEZ.Application.Features.Planning.WFPObjective.Queries.GetWFPObjectives;
 using ERPEZ.Application.Features.Planning.WFPObjective.Queries.GetWFPObjectiveById;
 using ERPEZ.Application.Features.Planning.WFPObjective.Commands.UpdateWFPObjective;
@@ -28,6 +29,19 @@ namespace ERPEZ.Api.Controllers
             return CreatedAtAction(nameof(GetWFPObjectiveById), new { id = result.Data!.Id }, result);
         }
 
+        [HttpPost("batch")]
+        [ProducesResponseType(typeof(ApiResponse<List<WFPObjectiveResponse>>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<List<WFPObjectiveResponse>>), StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> CreateWFPObjectivesBatch([FromBody] CreateWFPObjectivesBatchCommand command)
+        {
+            var result = await mediator.Send(command);
+
+            if (!result.Succeeded)
+                return BadRequest(result);
+
+            return CreatedAtAction(nameof(GetWFPObjectives), null, result);
+        }
+
         [HttpGet]
         [ProducesResponseType(typeof(PaginatedApiResponse<WFPObjective>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetWFPObjectives([FromQuery] GetWFPObjectivesQuery query)
@@ -37,7 +51,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<WFPObjective>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<WFPObjectiveDetailedResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetWFPObjectiveById(Guid id)
         {

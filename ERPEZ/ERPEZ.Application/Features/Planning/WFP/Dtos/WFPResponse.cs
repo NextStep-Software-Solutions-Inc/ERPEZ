@@ -20,6 +20,7 @@ public record WFPResponse
     public DateTime CreatedAt { get; init; }
     public string CreatedBy { get; init; } = string.Empty;
     public int ObjectiveCount { get; init; } = 0;
+    public int ActivityCount { get; init; } = 0;
 
     public List<WFPObjectiveResponse> WFPObjectives { get; init; } = [];
 }
