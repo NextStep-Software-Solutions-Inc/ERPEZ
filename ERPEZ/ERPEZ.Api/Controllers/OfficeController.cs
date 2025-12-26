@@ -33,7 +33,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<OfficeResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<OfficeDetailedResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetOfficeById(Guid id)
         {
@@ -42,9 +42,9 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpPut("{id}")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateOffice(Guid id, [FromBody] UpdateOfficeRequest updateOffice)
         {
             var request = new UpdateOfficeCommand
@@ -54,7 +54,7 @@ namespace ERPEZ.Api.Controllers
             };
 
             var office = await mediator.Send(request);
-            return office.Succeeded ? Ok(office) : BadRequest(office);
+            return office.Succeeded ? Ok(ApiResponse<Unit>.Success(Unit.Value)) : BadRequest(office);
         }
 
         [HttpDelete("{id}")]
@@ -65,7 +65,7 @@ namespace ERPEZ.Api.Controllers
             var command = new DeleteOfficeCommand(id);
             var office = await mediator.Send(command);
 
-            return office.Succeeded ? Ok(office) : BadRequest(office);
+            return office.Succeeded ? NoContent() : NotFound();
         }
     }
 }

@@ -36,7 +36,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<OPCRActivityResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<OPCRActivityDetailedResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetOPCRActivityById(Guid id)
         {
@@ -57,7 +57,7 @@ namespace ERPEZ.Api.Controllers
             };
 
             var result = await mediator.Send(command);
-            return result.Succeeded ? Ok(result) : BadRequest(result);
+            return result.Succeeded ? Ok(ApiResponse<Unit>.Success(Unit.Value)) : BadRequest(result);
         }
 
         [HttpDelete("{id}")]
@@ -68,7 +68,7 @@ namespace ERPEZ.Api.Controllers
             var command = new DeleteOPCRActivityCommand(id);
             var result = await mediator.Send(command);
 
-            return result.Succeeded ? Ok(result) : BadRequest(result);
+            return result.Succeeded ? NoContent() : NotFound();
         }
     }
 }

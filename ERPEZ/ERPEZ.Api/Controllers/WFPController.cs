@@ -37,7 +37,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<WFPsResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<WFPsDetailedResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetWFPById(Guid id)
         {
@@ -58,7 +58,7 @@ namespace ERPEZ.Api.Controllers
             };
 
             var result = await mediator.Send(command);
-            return result.Succeeded ? Ok(result) : BadRequest(result);
+            return result.Succeeded ? Ok(ApiResponse<Unit>.Success(Unit.Value)) : BadRequest(result);
         }
 
         [HttpPatch("{id}/status")]
@@ -85,7 +85,7 @@ namespace ERPEZ.Api.Controllers
             var command = new DeleteWFPCommand(id);
             var result = await mediator.Send(command);
 
-            return result.Succeeded ? Ok(result) : BadRequest(result);
+            return result.Succeeded ? NoContent() : NotFound();
         }
     }
 }

@@ -17,8 +17,8 @@ namespace ERPEZ.Api.Controllers
     public class OPCRController(ISender mediator) : ControllerBase
     {
         [HttpPost]
-        [ProducesResponseType(typeof(ApiResponse<OPCR>), StatusCodes.Status201Created)]
-        [ProducesResponseType(typeof(ApiResponse<OPCR>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateOPCR([FromBody] CreateOPCRCommand command)
         {
             var result = await mediator.Send(command);
@@ -34,7 +34,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<OPCRResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<OPCRDetailedResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetOPCRById(Guid id)
         {
@@ -45,7 +45,7 @@ namespace ERPEZ.Api.Controllers
         [HttpPut("{id}")]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateOPCR(Guid id, [FromBody] UpdateOPCRRequest dto)
         {
             var command = new UpdateOPCRCommand
@@ -55,7 +55,7 @@ namespace ERPEZ.Api.Controllers
             };
 
             var result = await mediator.Send(command);
-            return result.Succeeded ? Ok(result) : BadRequest(result);
+            return result.Succeeded ? Ok(ApiResponse<Unit>.Success(Unit.Value)) : BadRequest(result);
         }
 
         [HttpPut("{id}/status")]
@@ -82,7 +82,7 @@ namespace ERPEZ.Api.Controllers
             var command = new DeleteOPCRCommand(id);
             var result = await mediator.Send(command);
 
-            return result.Succeeded ? Ok(result) : BadRequest(result);
+            return result.Succeeded ? NoContent() : NotFound();
         }
     }
 }

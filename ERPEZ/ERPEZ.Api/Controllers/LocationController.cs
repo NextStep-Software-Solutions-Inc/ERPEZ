@@ -16,8 +16,8 @@ namespace ERPEZ.Api.Controllers
     public class LocationsController(ISender mediator) : ControllerBase
     {
         [HttpPost]
-        [ProducesResponseType(typeof(ApiResponse<Location>), StatusCodes.Status201Created)]
-        [ProducesResponseType(typeof(ApiResponse<Location>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateLocation([FromBody] CreateLocationCommand command)
         {
             var location = await mediator.Send(command);
@@ -37,7 +37,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<LocationResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<LocationDetailedResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetLocationById(Guid id)
         {
@@ -47,9 +47,9 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpPut("{id}")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateLocation(Guid id, [FromBody] UpdateLocationRequest updateLocation)
         {
             var request = new UpdateLocationCommand
@@ -59,7 +59,7 @@ namespace ERPEZ.Api.Controllers
             };
 
             var location = await mediator.Send(request);
-            return location.Succeeded ? Ok(location) : BadRequest(location);
+            return location.Succeeded ? Ok(ApiResponse<Unit>.Success(Unit.Value)) : BadRequest(location);
         }
 
         [HttpDelete("{id}")]
@@ -70,7 +70,7 @@ namespace ERPEZ.Api.Controllers
             var command = new DeleteLocationCommand(id);
             var location = await mediator.Send(command);
 
-            return location.Succeeded ? Ok(location) : BadRequest(location);
+            return location.Succeeded ? NoContent() : NotFound();
         }
     }
 }

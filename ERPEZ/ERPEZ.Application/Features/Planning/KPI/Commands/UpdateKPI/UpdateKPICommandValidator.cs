@@ -32,7 +32,7 @@ public class UpdateKPICommandValidator : AbstractValidator<UpdateKPICommand>
             .WithMessage("KPI Name must be at least 5 characters long.")
             .MaximumLength(250)
             .WithMessage("KPI Name cannot exceed 250 characters.")
-            .When(x => !string.IsNullOrWhiteSpace(x.Name));
+            .When(x => !string.IsNullOrWhiteSpace(x.Dto.Name));
 
         // 6. Description (Optional String?) - Check only if provided
         RuleFor(x => x.Dto.Description)

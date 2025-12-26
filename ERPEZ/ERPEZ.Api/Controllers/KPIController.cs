@@ -36,7 +36,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<KPIResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<KPIDetailedResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetKPIById(Guid id)
         {
@@ -50,7 +50,7 @@ namespace ERPEZ.Api.Controllers
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateKPI(Guid id, [FromBody] UpdateKPIRequest dto)
         {
-            var command = new UpdateKPICommand(dto, id);
+            var command = new UpdateKPICommand(id, dto);
             var result = await mediator.Send(command);
             return result.Succeeded ? Ok(result) : BadRequest(result);
         }
@@ -63,7 +63,7 @@ namespace ERPEZ.Api.Controllers
             var command = new DeleteKPICommand(id);
             var result = await mediator.Send(command);
 
-            return result.Succeeded ? Ok(result) : BadRequest(result);
+            return result.Succeeded ? NoContent() : NotFound();
         }
     }
 }

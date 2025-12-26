@@ -4,7 +4,7 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Rating.Commands.CreateRating;
 
-public class CreateRatingCommand : IRequest<ApiResponse<RatingResponse>>
+public class CreateRatingCommand : IRequest<ApiResponse<Guid>>
 {
     public Guid KPIId { get; set; }
     public Guid PerformanceMeasureId { get; set; }

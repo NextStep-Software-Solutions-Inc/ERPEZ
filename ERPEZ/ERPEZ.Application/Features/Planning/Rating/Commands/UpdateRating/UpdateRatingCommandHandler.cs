@@ -3,13 +3,12 @@ using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.Application.Features.Planning.Rating.Commands.UpdateRating;
 
-public class UpdateRatingCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateRatingCommand, ApiResponse<RatingResponse>>
+public class UpdateRatingCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateRatingCommand, ApiResponse<Unit>>
 {
-    public async Task<ApiResponse<RatingResponse>> Handle(UpdateRatingCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<Unit>> Handle(UpdateRatingCommand request, CancellationToken cancellationToken)
     {
         var dto = request.UpdateRating;
 
@@ -21,18 +20,6 @@ public class UpdateRatingCommandHandler(IUnitOfWork unitOfWork) : IRequestHandle
 
         unitOfWork.RatingRepository.Update(rating);
         await unitOfWork.SaveChangesAsync(cancellationToken);
-
-        var result = new RatingResponse()
-        {
-            Id = rating.Id,
-            KPIId = rating.KPIPerformanceMeasure?.KPIId ?? Guid.Empty,
-            NumericalRating = rating.NumericalRating,
-            PerformanceMeasureId = rating.KPIPerformanceMeasure?.PerformanceMeasureId ?? Guid.Empty,
-            Remarks = rating.Remarks,
-            CreatedAt = rating.CreatedAt,
-            CreatedBy = rating.CreatedBy
-        };
-
-        return ApiResponse<RatingResponse>.Success(result, "Rating updated successfully.");
+        return ApiResponse<Unit>.Success(Unit.Value, "Rating updated successfully.");
     }
 }

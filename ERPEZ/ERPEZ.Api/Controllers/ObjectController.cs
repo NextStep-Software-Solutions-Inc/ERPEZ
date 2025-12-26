@@ -18,8 +18,8 @@ namespace ERPEZ.Api.Controllers
     public class ObjectController(ISender mediator) : ControllerBase
     {
         [HttpPost]
-        [ProducesResponseType(typeof(ApiResponse<ObjectResponse>), StatusCodes.Status201Created)]
-        [ProducesResponseType(typeof(ApiResponse<ObjectResponse>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateObject([FromBody] CreateObjectCommand command)
         {
             var result = await mediator.Send(command);
@@ -40,7 +40,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<Domain.Entities.Planning.Object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<ObjectDetailedResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetObjectById(Guid id)
         {
@@ -50,7 +50,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpPut("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<ObjectResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateObject(Guid id, [FromBody] UpdateObjectRequest dto)
@@ -62,7 +62,7 @@ namespace ERPEZ.Api.Controllers
             };
 
             var result = await mediator.Send(command);
-            return result.Succeeded ? Ok(result) : BadRequest(result);
+            return result.Succeeded ? Ok(ApiResponse<Unit>.Success(Unit.Value)) : BadRequest(result);
         }
 
         [HttpDelete("{id}")]
@@ -73,8 +73,7 @@ namespace ERPEZ.Api.Controllers
             var command = new DeleteObjectCommand(id);
             var result = await mediator.Send(command);
 
-            // Returns 204 No Content on successful deletion
-            return result.Succeeded ? NoContent() : NotFound(result);
+            return result.Succeeded ? NoContent() : NotFound();
         }
     }
 }

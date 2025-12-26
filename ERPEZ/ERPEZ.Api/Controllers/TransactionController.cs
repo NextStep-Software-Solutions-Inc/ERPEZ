@@ -16,8 +16,8 @@ namespace ERPEZ.Api.Controllers
     public class TransactionController(ISender mediator) : ControllerBase
     {
         [HttpPost]
-        [ProducesResponseType(typeof(ApiResponse<Transaction>), StatusCodes.Status201Created)]
-        [ProducesResponseType(typeof(ApiResponse<Transaction>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateTransaction([FromBody] CreateTransactionCommand command)
         {
             var transaction = await mediator.Send(command);
@@ -37,7 +37,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<TransactionResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<TransactionDetailedResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetTransactionById(Guid id)
         {
@@ -47,9 +47,9 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpPut("{id}")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateTransaction(Guid id, [FromBody] UpdateTransactionRequest updateTransaction)
         {
             var request = new UpdateTransactionCommand
@@ -59,7 +59,7 @@ namespace ERPEZ.Api.Controllers
             };
 
             var transaction = await mediator.Send(request);
-            return transaction.Succeeded ? Ok(transaction) : BadRequest(transaction);
+            return transaction.Succeeded ? Ok(ApiResponse<Unit>.Success(Unit.Value)) : BadRequest(transaction);
         }
 
         [HttpDelete("{id}")]
@@ -70,7 +70,7 @@ namespace ERPEZ.Api.Controllers
             var command = new DeleteTransactionCommand(id);
             var transaction = await mediator.Send(command);
 
-            return transaction.Succeeded ? Ok(transaction) : BadRequest(transaction);
+            return transaction.Succeeded ? NoContent() : NotFound();
         }
     }
 }

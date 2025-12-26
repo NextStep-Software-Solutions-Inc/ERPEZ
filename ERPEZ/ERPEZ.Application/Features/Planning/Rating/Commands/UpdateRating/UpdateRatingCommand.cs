@@ -4,7 +4,7 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Rating.Commands.UpdateRating;
 
-public class UpdateRatingCommand : IRequest<ApiResponse<RatingResponse>>
+public class UpdateRatingCommand : IRequest<ApiResponse<Unit>>
 {
     public Guid Id { get; set; }
     public required UpdateRatingRequest UpdateRating { get; set; }

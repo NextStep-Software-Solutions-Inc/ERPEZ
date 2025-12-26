@@ -17,26 +17,26 @@ public class UpdateKPICommandHandler(IUnitOfWork unitOfWork, IFileStorageService
                 ?? throw new NotFoundException("KPI not found.");
 
             // Build duplicate check query conditionally for partial updates - only if name or functionType is being updated
-            if (request.Name != null || request.FunctionType != null)
+            if (request.Dto.Name != null || request.Dto.FunctionType != null)
             {
                 var duplicateQuery = unitOfWork.KPIRepository.Query(x => x.Id != request.Id);
-                if (request.Name != null)
-                    duplicateQuery = duplicateQuery.Where(x => x.Name == request.Name);
-                if (request.FunctionType != null)
-                    duplicateQuery = duplicateQuery.Where(x => x.FunctionType == request.FunctionType);
+                if (request.Dto.Name != null)
+                    duplicateQuery = duplicateQuery.Where(x => x.Name == request.Dto.Name);
+                if (request.Dto.FunctionType != null)
+                    duplicateQuery = duplicateQuery.Where(x => x.FunctionType == request.Dto.FunctionType);
 
                 var duplicate = await unitOfWork.KPIRepository.GetFirstAsync(duplicateQuery, cancellationToken);
                 if (duplicate != null)
                     throw new ConflictException("KPI with the same name and Function type already exists.");
             }
 
-            kpi.Name = request.Name ?? kpi.Name;
-            kpi.Description = request.Description ?? kpi.Description;
-            kpi.FunctionType = request.FunctionType ?? kpi.FunctionType;
-            kpi.IsOfficeMandate = request.IsOfficeMandate ?? kpi.IsOfficeMandate;
-            kpi.IsPercentage = request.IsPercentage ?? kpi.IsPercentage;
-            kpi.Status = request.Status ?? kpi.Status;
-            kpi.IsTargetValueAllocable = request.IsTargetValueAllocable ?? kpi.IsTargetValueAllocable;
+            kpi.Name = request.Dto.Name ?? kpi.Name;
+            kpi.Description = request.Dto.Description ?? kpi.Description;
+            kpi.FunctionType = request.Dto.FunctionType ?? kpi.FunctionType;
+            kpi.IsOfficeMandate = request.Dto.IsOfficeMandate ?? kpi.IsOfficeMandate;
+            kpi.IsPercentage = request.Dto.IsPercentage ?? kpi.IsPercentage;
+            kpi.Status = request.Dto.Status ?? kpi.Status;
+            kpi.IsTargetValueAllocable = request.Dto.IsTargetValueAllocable ?? kpi.IsTargetValueAllocable;
 
             // Handle SDGs - Only update if provided
             if (request.Dto.SDGIds?.Count > 0)

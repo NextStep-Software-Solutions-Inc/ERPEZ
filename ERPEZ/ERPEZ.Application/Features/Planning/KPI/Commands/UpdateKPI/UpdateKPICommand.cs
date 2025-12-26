@@ -4,4 +4,4 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.KPI.Commands.UpdateKPI;
 
-public record UpdateKPICommand(UpdateKPIRequest Dto, Guid Id) : UpdateKPIRequest, IRequest<ApiResponse<Unit>>;
+public record UpdateKPICommand(Guid Id, UpdateKPIRequest Dto) : IRequest<ApiResponse<Unit>>;

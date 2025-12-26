@@ -16,8 +16,8 @@ namespace ERPEZ.Api.Controllers
     public class MFOPAPController(ISender mediator) : ControllerBase
     {
         [HttpPost]
-        [ProducesResponseType(typeof(ApiResponse<MFOPAP>), StatusCodes.Status201Created)]
-        [ProducesResponseType(typeof(ApiResponse<MFOPAP>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateMFOPAP([FromBody] CreateMFOPAPCommand command)
         {
             var mfopap = await mediator.Send(command);
@@ -34,7 +34,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<MFOPAPResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<MFOPAPDetailedResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetMFOPAPById(Guid id)
         {
@@ -44,9 +44,9 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpPut("{id}")]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateMFOPAP(Guid id, [FromBody] UpdateMFOPAPRequest updateMFOPAP)
         {
             var request = new UpdateMFOPAPCommand
@@ -56,7 +56,7 @@ namespace ERPEZ.Api.Controllers
             };
 
             var mfopap = await mediator.Send(request);
-            return mfopap.Succeeded ? Ok(mfopap) : BadRequest(mfopap);
+            return mfopap.Succeeded ? Ok(ApiResponse<Unit>.Success(Unit.Value)) : BadRequest(mfopap);
         }
 
         [HttpDelete("{id}")]
@@ -67,7 +67,7 @@ namespace ERPEZ.Api.Controllers
             var command = new DeleteMFOPAPCommand(id);
             var mfopap = await mediator.Send(command);
 
-            return mfopap.Succeeded ? Ok(mfopap) : BadRequest(mfopap);
+            return mfopap.Succeeded ? NoContent() : NotFound();
         }
     }
 }

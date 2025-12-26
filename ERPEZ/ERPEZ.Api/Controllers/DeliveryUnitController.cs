@@ -37,7 +37,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<DeliveryUnitResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<DeliveryUnitDetailedResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetDeliveryUnitById(Guid id)
         {
@@ -53,7 +53,7 @@ namespace ERPEZ.Api.Controllers
             var command = new DeleteDeliveryUnitCommand(id);
             var deliveryUnit = await mediator.Send(command);
 
-            return deliveryUnit.Succeeded ? Ok(deliveryUnit) : BadRequest(deliveryUnit);
+            return deliveryUnit.Succeeded ? NoContent() : NotFound();
         }
 
         [HttpPost("{id}/assign-kpis")]

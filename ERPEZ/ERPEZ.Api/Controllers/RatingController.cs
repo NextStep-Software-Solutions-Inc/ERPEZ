@@ -16,8 +16,8 @@ namespace ERPEZ.Api.Controllers
     public class RatingController(ISender mediator) : ControllerBase
     {
         [HttpPost]
-        [ProducesResponseType(typeof(ApiResponse<RatingResponse>), StatusCodes.Status201Created)]
-        [ProducesResponseType(typeof(ApiResponse<RatingResponse>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateRating([FromBody] CreateRatingCommand command)
         {
             var result = await mediator.Send(command);
@@ -25,7 +25,7 @@ namespace ERPEZ.Api.Controllers
             if (!result.Succeeded)
                 return BadRequest(result);
 
-            return CreatedAtAction(nameof(GetRatingById), new { id = result.Data!.Id }, result);
+            return CreatedAtAction(nameof(GetRatingById), new { id = result.Data }, result);
         }
 
         [HttpGet]
@@ -37,7 +37,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<RatingResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<RatingDetailedResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetRatingById(Guid id)
         {
@@ -46,7 +46,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpPut("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<RatingResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateRating(Guid id, [FromBody] UpdateRatingRequest dto)
@@ -69,7 +69,7 @@ namespace ERPEZ.Api.Controllers
             var command = new DeleteRatingCommand(id);
             var result = await mediator.Send(command);
 
-            return result.Succeeded ? Ok(result) : BadRequest(result);
+            return result.Succeeded ? NoContent() : NotFound();
         }
     }
 }

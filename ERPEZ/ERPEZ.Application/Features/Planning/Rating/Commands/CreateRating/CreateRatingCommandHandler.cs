@@ -1,16 +1,14 @@
-using ERPEZ.Application.Features.Planning.Rating.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.Application.Features.Planning.Rating.Commands.CreateRating;
 
 public class CreateRatingCommandHandler(IUnitOfWork unitOfWork)
-    : IRequestHandler<CreateRatingCommand, ApiResponse<RatingResponse>>
+    : IRequestHandler<CreateRatingCommand, ApiResponse<Guid>>
 {
-    public async Task<ApiResponse<RatingResponse>> Handle(CreateRatingCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<Guid>> Handle(CreateRatingCommand request, CancellationToken cancellationToken)
     {
         _ = await unitOfWork.PerformanceMeasureRepository.FindAsync(
             t => t.Id == request.PerformanceMeasureId,
@@ -52,16 +50,6 @@ public class CreateRatingCommandHandler(IUnitOfWork unitOfWork)
         kpm.Ratings.Add(rating);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
-        var result = new RatingResponse()
-        {
-            Id = rating.Id,
-            KPIId = kpm.KPIId,
-            NumericalRating = rating.NumericalRating,
-            PerformanceMeasureId = kpm.PerformanceMeasureId,
-            Remarks = rating.Remarks,
-            CreatedAt = rating.CreatedAt,
-            CreatedBy = rating.CreatedBy
-        };
-        return ApiResponse<RatingResponse>.Success(result, "Rating created successfully.");
+        return ApiResponse<Guid>.Success(rating.Id, "Rating created successfully.");
     }
 }

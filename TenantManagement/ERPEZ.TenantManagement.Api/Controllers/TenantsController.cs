@@ -19,8 +19,8 @@ namespace ERPEZ.TenantManagement.Api.Controllers
     {
         [HttpPost]
         [Authorize]
-        [ProducesResponseType(typeof(ApiResponse<Tenant>), StatusCodes.Status201Created)]
-        [ProducesResponseType(typeof(ApiResponse<Tenant>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateTenant([FromBody] CreateTenantCommand command)
         {
             var tenant = await mediator.Send(command);
@@ -42,7 +42,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
 
         [HttpGet("{id}")]
         [Authorize]
-        [ProducesResponseType(typeof(ApiResponse<TenantDto>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<TenantDetailedResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetTenantById(Guid id)
         {
@@ -62,9 +62,9 @@ namespace ERPEZ.TenantManagement.Api.Controllers
 
         [HttpPut("{id}")]
         [Authorize]
-        [ProducesResponseType(StatusCodes.Status200OK)]
-        [ProducesResponseType(StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateTenant(Guid id, [FromBody] UpdateTenantDto updateTenant)
         {
             var request = new UpdateTenantCommand
@@ -74,7 +74,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
             };
 
             var tenant = await mediator.Send(request);
-            return tenant.Succeeded ? Ok(tenant) : BadRequest(tenant);
+            return tenant.Succeeded ? Ok(ApiResponse<Unit>.Success(Unit.Value)) : BadRequest(tenant);
         }
 
         [HttpDelete("{id}")]
@@ -86,7 +86,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
             var command = new DeleteTenantCommand(id);
             var tenant = await mediator.Send(command);
 
-            return tenant.Succeeded ? Ok(tenant) : BadRequest(tenant);
+            return tenant.Succeeded ? NoContent() : NotFound();
         }
     }
 }
