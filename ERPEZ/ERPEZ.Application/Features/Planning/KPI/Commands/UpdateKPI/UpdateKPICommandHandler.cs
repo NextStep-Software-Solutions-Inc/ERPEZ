@@ -19,7 +19,7 @@ public class UpdateKPICommandHandler(IUnitOfWork unitOfWork, IFileStorageService
             var duplicate = await unitOfWork.KPIRepository.FindAsync(
                 x => x.Name == request.Name &&
                 x.FunctionType == request.FunctionType &&
-                request.Id != kpi.Id,
+                x.Id != request.Id,
                 cancellationToken
             );
 
