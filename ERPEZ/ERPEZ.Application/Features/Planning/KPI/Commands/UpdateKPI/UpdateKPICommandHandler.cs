@@ -16,15 +16,19 @@ public class UpdateKPICommandHandler(IUnitOfWork unitOfWork, IFileStorageService
             var kpi = await unitOfWork.KPIRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken)
                 ?? throw new NotFoundException("KPI not found.");
 
-            var duplicate = await unitOfWork.KPIRepository.FindAsync(
-                x => x.Name == request.Name &&
-                x.FunctionType == request.FunctionType &&
-                x.Id != request.Id,
-                cancellationToken
-            );
+            // Build duplicate check query conditionally for partial updates - only if name or functionType is being updated
+            if (request.Name != null || request.FunctionType != null)
+            {
+                var duplicateQuery = unitOfWork.KPIRepository.Query(x => x.Id != request.Id);
+                if (request.Name != null)
+                    duplicateQuery = duplicateQuery.Where(x => x.Name == request.Name);
+                if (request.FunctionType != null)
+                    duplicateQuery = duplicateQuery.Where(x => x.FunctionType == request.FunctionType);
 
-            if (duplicate != null)
-                throw new ConflictException("KPI with the same name and Function type already exists.");
+                var duplicate = await unitOfWork.KPIRepository.GetFirstAsync(duplicateQuery, cancellationToken);
+                if (duplicate != null)
+                    throw new ConflictException("KPI with the same name and Function type already exists.");
+            }
 
             kpi.Name = request.Name ?? kpi.Name;
             kpi.Description = request.Description ?? kpi.Description;

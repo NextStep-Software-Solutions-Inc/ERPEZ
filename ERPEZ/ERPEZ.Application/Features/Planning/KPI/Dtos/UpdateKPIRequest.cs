@@ -5,12 +5,12 @@ namespace ERPEZ.Application.Features.Planning.KPI.Dtos;
 public record UpdateKPIRequest
 {
     public Guid? ParentKPIId { get; init; }
-    public string? FunctionType { get; init; } = string.Empty;
-    public string Name { get; init; } = string.Empty;
-    public string? Description { get; init; } = string.Empty;
-    public bool? IsOfficeMandate { get; init; } = false;
-    public bool? IsPercentage { get; init; } = false;
-    public bool? IsTargetValueAllocable { get; init; } = false;
+    public string? FunctionType { get; init; }
+    public string? Name { get; init; }
+    public string? Description { get; init; }
+    public bool? IsOfficeMandate { get; init; }
+    public bool? IsPercentage { get; init; }
+    public bool? IsTargetValueAllocable { get; init; }
     public string? Status { get; init; }
 
     [JsonPropertyName("SDGIds")]
