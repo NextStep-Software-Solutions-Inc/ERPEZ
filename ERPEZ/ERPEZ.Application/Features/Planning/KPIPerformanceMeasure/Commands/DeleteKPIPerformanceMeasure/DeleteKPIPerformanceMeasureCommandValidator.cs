@@ -6,9 +6,9 @@ namespace ERPEZ.Application.Features.Planning.KPIPerformanceMeasure.Commands.Del
 /// Validator for DeleteKPIPerformanceMeasureCommand.
 /// Note: This is a soft-delete operation that validates the entity ID exists.
 /// </summary>
-public class DeleteKPIPerformanceMeasureValidator : AbstractValidator<DeleteKPIPerformanceMeasureCommand>
+public class DeleteKPIPerformanceMeasureCommandValidator : AbstractValidator<DeleteKPIPerformanceMeasureCommand>
 {
-    public DeleteKPIPerformanceMeasureValidator()
+    public DeleteKPIPerformanceMeasureCommandValidator()
     {
         RuleFor(x => x.Id)
             .NotEmpty()

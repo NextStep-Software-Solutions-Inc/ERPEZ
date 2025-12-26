@@ -5,9 +5,9 @@ namespace ERPEZ.Application.Features.Planning.KPIPerformanceMeasure.Commands.Upd
 /// <summary>
 /// Validator for UpdateKPIPerformanceMeasureCommand ensuring all user input meets business requirements.
 /// </summary>
-public class UpdateKPIPerformanceMeasureValidator : AbstractValidator<UpdateKPIPerformanceMeasureCommand>
+public class UpdateKPIPerformanceMeasureCommandValidator : AbstractValidator<UpdateKPIPerformanceMeasureCommand>
 {
-    public UpdateKPIPerformanceMeasureValidator()
+    public UpdateKPIPerformanceMeasureCommandValidator()
     {
         RuleFor(x => x.Id)
             .NotEmpty()

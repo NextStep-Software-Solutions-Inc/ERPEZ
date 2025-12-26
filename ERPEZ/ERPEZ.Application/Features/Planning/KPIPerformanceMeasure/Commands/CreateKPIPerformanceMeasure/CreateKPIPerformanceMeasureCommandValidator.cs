@@ -5,9 +5,9 @@ namespace ERPEZ.Application.Features.Planning.KPIPerformanceMeasure.Commands.Cre
 /// <summary>
 /// Validator for CreateKPIPerformanceMeasureCommand ensuring all user input meets business requirements.
 /// </summary>
-public class CreateKPIPerformanceMeasureValidator : AbstractValidator<CreateKPIPerformanceMeasureCommand>
+public class CreateKPIPerformanceMeasureCommandValidator : AbstractValidator<CreateKPIPerformanceMeasureCommand>
 {
-    public CreateKPIPerformanceMeasureValidator()
+    public CreateKPIPerformanceMeasureCommandValidator()
     {
         RuleFor(x => x.KPIId)
             .NotEmpty()
