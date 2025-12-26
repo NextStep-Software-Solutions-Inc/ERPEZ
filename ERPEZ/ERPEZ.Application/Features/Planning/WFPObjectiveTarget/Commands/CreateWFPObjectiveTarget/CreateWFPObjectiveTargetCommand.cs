@@ -10,4 +10,5 @@ public class CreateWFPObjectiveTargetCommand : IRequest<ApiResponse<WFPObjective
     public string ActivityName { get; set; } = string.Empty;
     public string Indicator { get; set; } = string.Empty;
     public decimal Weight { get; set; }
+    public List<TimelineDateRangeRequest> Dates { get; set; } = [];
 }

@@ -109,6 +109,7 @@ public class GetWFPByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
                 CreatedBy = w.CreatedBy,
                 CreatedAt = w.CreatedAt,
                 ObjectiveCount = w.WFPObjectives.Count,
+                ActivityCount = w.WFPObjectives.SelectMany(o => o.WFPObjectiveTargets).Count(),
                 WFPObjectives = w.WFPObjectives.Select(o => new WFPObjectiveResponse
                 {
                     Id = o.Id,

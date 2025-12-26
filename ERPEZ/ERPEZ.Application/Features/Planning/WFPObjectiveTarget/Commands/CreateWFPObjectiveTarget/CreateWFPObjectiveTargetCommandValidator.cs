@@ -38,5 +38,24 @@ public class CreateWFPObjectiveTargetCommandValidator : AbstractValidator<Create
         RuleFor(x => x.Weight)
             .InclusiveBetween(0.01m, 100m)
             .WithMessage("Weight must be between 0.01% and 100%.");
+
+        // Dates (Optional array, but when provided, each date range must be valid)
+        RuleForEach(x => x.Dates)
+            .ChildRules(dateRange =>
+            {
+                dateRange.RuleFor(d => d.StartDate)
+                    .NotEmpty()
+                    .WithMessage("Start Date is required for each date range.");
+
+                dateRange.RuleFor(d => d.EndDate)
+                    .NotEmpty()
+                    .WithMessage("End Date is required for each date range.")
+                    .GreaterThanOrEqualTo(d => d.StartDate)
+                    .WithMessage("End Date must be on or after Start Date.");
+
+                dateRange.RuleFor(d => d.Value)
+                    .GreaterThan(0)
+                    .WithMessage("Value must be greater than 0 for each date range.");
+            });
     }
 }
