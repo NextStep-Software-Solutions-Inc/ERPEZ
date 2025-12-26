@@ -44,6 +44,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IWFPObjectiveTargetRepository wfpObjectiveTargetRepository;
     private readonly IWFPObjectiveTimelineRepository wfpObjectiveTimelineRepository;
     private readonly ISDGRepository sdgRepository;
+    private readonly IKPIPerformanceMeasureRepository kpiPerformanceMeasureRepository;
 
     // Constructor initializes all repositories once
     public UnitOfWork(ApplicationDbContext context, IServiceProvider serviceProvider)
@@ -85,6 +86,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         wfpObjectiveTargetRepository = new WFPObjectiveTargetRepository(context, sieveProcessor);
         wfpObjectiveTimelineRepository = new WFPObjectiveTimelineRepository(context, sieveProcessor);
         sdgRepository = new SDGRepository(context, sieveProcessor);
+        kpiPerformanceMeasureRepository = new KPIPerformanceMeasureRepository(context, sieveProcessor);
 
     }
 
@@ -122,6 +124,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IWFPObjectiveTargetRepository WFPObjectiveTargetRepository => wfpObjectiveTargetRepository;
     public IWFPObjectiveTimelineRepository WFPObjectiveTimelineRepository => wfpObjectiveTimelineRepository;
     public ISDGRepository SDGRepository => sdgRepository;
+    public IKPIPerformanceMeasureRepository KPIPerformanceMeasureRepository => kpiPerformanceMeasureRepository;
 
     public async Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default)
     {

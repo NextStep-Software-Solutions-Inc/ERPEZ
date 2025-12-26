@@ -35,6 +35,7 @@ public interface IUnitOfWork
     IWFPObjectiveTargetRepository WFPObjectiveTargetRepository { get; }
     IWFPObjectiveTimelineRepository WFPObjectiveTimelineRepository { get; }
     ISDGRepository SDGRepository { get; }
+    IKPIPerformanceMeasureRepository KPIPerformanceMeasureRepository { get; }
     Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default);
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
