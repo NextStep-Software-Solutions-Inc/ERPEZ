@@ -61,7 +61,7 @@ public static class DependencyInjection
         services.AddScoped<IWFPObjectiveRepository, WFPObjectiveRepository>();
         services.AddScoped<IOPCRPAPDepartmentRepository, OPCRPAPDepartmentRepository>();
         services.AddScoped<IOPCREvaluationRepository, OPCREvaluationRepository>();
-        services.AddScoped<IKPIRatingRepository, KPIRatingRepository>();
+        services.AddScoped<IRatingRepository, RatingRepository>();
         services.AddScoped<IPerformanceMeasureRepository, PerformanceMeasureRepository>();
         services.AddScoped<IKPITargetRepository, KPITargetRepository>();
         services.AddScoped<IDUKPIAssignmentRepository, DUKPIAssignmentRepository>();

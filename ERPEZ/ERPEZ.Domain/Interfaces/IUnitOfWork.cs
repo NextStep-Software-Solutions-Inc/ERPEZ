@@ -6,7 +6,7 @@ public interface IUnitOfWork
     IAttributeRepository AttributeRepository { get; }
     IPerformanceMeasureRepository PerformanceMeasureRepository { get; }
     IDUFundAllocationRepository DUFundAllocationRepository { get; }
-    IKPIRatingRepository KPIRatingRepository { get; }
+    IRatingRepository RatingRepository { get; }
     IDUAllocationRepository DUAllocationRepository { get; }
     IKPITargetRepository KPITargetRepository { get; }
     IDUKPIAssignmentRepository DUKPIAssignmentRepository { get; }

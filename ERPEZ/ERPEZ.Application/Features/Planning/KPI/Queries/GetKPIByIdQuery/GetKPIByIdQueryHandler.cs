@@ -1,7 +1,7 @@
 using ERPEZ.Application.Features.Planning.Attribute.Dtos;
 using ERPEZ.Application.Features.Planning.KPI.Dtos;
 using ERPEZ.Application.Features.Planning.KPIModeOfVerification.Dtos;
-using ERPEZ.Application.Features.Planning.KPIRating.Dtos;
+using ERPEZ.Application.Features.Planning.Rating.Dtos;
 using ERPEZ.Application.Features.Planning.KPITarget.Dtos;
 using ERPEZ.Application.Features.Planning.MFOPAP.Dtos;
 using ERPEZ.Application.Features.Planning.SDG.Dtos;
@@ -9,6 +9,7 @@ using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.Application.Features.Planning.KPI.Queries.GetKPIByIdQuery;
 
@@ -18,15 +19,16 @@ public class GetKPIByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
     {
         var kpi = await unitOfWork.KPIRepository.GetKPIWithDetailsAsync(request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("No data found.");
 
-        var kpiRatings = kpi.KPIRatings
-            .Select(m => new KPIRatingResponse
+        var kpiRatings = kpi.KPIPerformanceMeasures
+            .SelectMany(kpm => kpm.Ratings.Select(r => new RatingResponse
             {
-                Id = m.Id,
-                KPIId = m.KPIId,
-                PerformanceMeasureId = m.PerformanceMeasureId,
-                NumericalRating = m.NumericalRating,
-                Remarks = m.Remarks,
-            }).ToList();
+                Id = r.Id,
+                KPIId = kpm.KPIId,
+                PerformanceMeasureId = kpm.PerformanceMeasureId,
+                NumericalRating = r.NumericalRating,
+                Remarks = r.Remarks,
+            }))
+            .ToList();
 
         var kpiTargets = kpi.KPITargets
             .Select(m => new KPITargetResponse

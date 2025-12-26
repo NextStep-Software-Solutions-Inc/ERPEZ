@@ -115,14 +115,26 @@ public class CreateKPICommandHandler(IUnitOfWork unitOfWork, IFileStorageService
                 kpi.Attributes = existingAttributes;
             }
 
-            var kpiRatings = request.KPIRatings
-                .SelectMany(ratingRequest => ratingRequest.Ratings.Select(ratingDto => new Domain.Entities.Planning.KPIRating
+            var kpiPerformanceMeasures = new List<Domain.Entities.Planning.KPIPerformanceMeasure>();
+            foreach (var ratingRequest in request.KPIRatings)
+            {
+                var kpm = new Domain.Entities.Planning.KPIPerformanceMeasure
                 {
                     KPIId = kpi.Id,
-                    PerformanceMeasureId = ratingRequest.PerformanceMeasureId,
-                    NumericalRating = ratingDto.Value,
-                    Remarks = ratingDto.Remarks
-                })).ToList();
+                    PerformanceMeasureId = ratingRequest.PerformanceMeasureId
+                };
+
+                foreach (var ratingDto in ratingRequest.Ratings)
+                {
+                    kpm.Ratings.Add(new Domain.Entities.Planning.Rating
+                    {
+                        NumericalRating = ratingDto.Value,
+                        Remarks = ratingDto.Remarks
+                    });
+                }
+
+                kpiPerformanceMeasures.Add(kpm);
+            }
 
             var kpiTargets = request.KPITargets
                 .Select(targetRequest => new Domain.Entities.Planning.KPITarget
@@ -151,7 +163,7 @@ public class CreateKPICommandHandler(IUnitOfWork unitOfWork, IFileStorageService
                 });
             }
 
-            kpi.KPIRatings = kpiRatings;
+            kpi.KPIPerformanceMeasures = kpiPerformanceMeasures;
             kpi.KPITargets = kpiTargets;
             kpi.KPIModeOfVerifications = kpiModeOfVerifications;
 

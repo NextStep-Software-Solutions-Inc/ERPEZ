@@ -101,8 +101,14 @@ public class UpdateKPICommandHandler(IUnitOfWork unitOfWork, IFileStorageService
             // Handle KPIRatings - Upsert logic (update existing, add new, delete orphaned)
             if (request.Dto.KPIRatings?.Count > 0)
             {
-                var existingRatings = await unitOfWork.KPIRatingRepository.ToListAsync(
-                    unitOfWork.KPIRatingRepository.Query(r => r.KPIId == kpi.Id),
+                var kpiWithDetails = await unitOfWork.KPIRepository.GetKPIWithDetailsAsync(kpi.Id, cancellationToken)
+                    ?? throw new NotFoundException("KPI not found.");
+
+                var kpmByPmId = kpiWithDetails.KPIPerformanceMeasures
+                    .ToDictionary(x => x.PerformanceMeasureId, x => x);
+
+                var existingRatings = await unitOfWork.RatingRepository.ToListAsync(
+                    unitOfWork.RatingRepository.Query(r => r.KPIPerformanceMeasure!.KPIId == kpi.Id),
                     cancellationToken);
 
                 var requestedRatingIds = request.Dto.KPIRatings
@@ -113,7 +119,7 @@ public class UpdateKPICommandHandler(IUnitOfWork unitOfWork, IFileStorageService
                 // Delete ratings not in the request
                 foreach (var existingRating in existingRatings.Where(r => !requestedRatingIds.Contains(r.Id)))
                 {
-                    unitOfWork.KPIRatingRepository.Remove(existingRating, hardDelete: true);
+                    unitOfWork.RatingRepository.Remove(existingRating, hardDelete: true);
                 }
 
                 // Update or add ratings
@@ -125,27 +131,44 @@ public class UpdateKPICommandHandler(IUnitOfWork unitOfWork, IFileStorageService
                         var existingRating = existingRatings.FirstOrDefault(r => r.Id == ratingRequest.Id.Value);
                         if (existingRating != null)
                         {
-                            existingRating.PerformanceMeasureId = ratingRequest.PerformanceMeasureId;
+                            if (!kpmByPmId.TryGetValue(ratingRequest.PerformanceMeasureId, out var kpm))
+                            {
+                                kpm = new Domain.Entities.Planning.KPIPerformanceMeasure
+                                {
+                                    KPIId = kpi.Id,
+                                    PerformanceMeasureId = ratingRequest.PerformanceMeasureId
+                                };
+                                kpiWithDetails.KPIPerformanceMeasures.Add(kpm);
+                                kpmByPmId[ratingRequest.PerformanceMeasureId] = kpm;
+                            }
+                            existingRating.KPIPerformanceMeasureId = kpm.Id;
                             existingRating.NumericalRating = ratingRequest.NumericalRating;
                             existingRating.Remarks = ratingRequest.Remarks;
-                            unitOfWork.KPIRatingRepository.Update(existingRating);
+                            unitOfWork.RatingRepository.Update(existingRating);
                         }
                         else
                         {
-                            throw new NotFoundException($"KPIRating with ID {ratingRequest.Id.Value} not found.");
+                            throw new NotFoundException($"Rating with ID {ratingRequest.Id.Value} not found.");
                         }
                     }
                     else
                     {
                         // Add new rating
-                        var newRating = new Domain.Entities.Planning.KPIRating
+                        if (!kpmByPmId.TryGetValue(ratingRequest.PerformanceMeasureId, out var kpm))
                         {
-                            KPIId = kpi.Id,
-                            PerformanceMeasureId = ratingRequest.PerformanceMeasureId,
+                            kpm = new Domain.Entities.Planning.KPIPerformanceMeasure
+                            {
+                                KPIId = kpi.Id,
+                                PerformanceMeasureId = ratingRequest.PerformanceMeasureId
+                            };
+                            kpiWithDetails.KPIPerformanceMeasures.Add(kpm);
+                            kpmByPmId[ratingRequest.PerformanceMeasureId] = kpm;
+                        }
+                        kpm.Ratings.Add(new Domain.Entities.Planning.Rating
+                        {
                             NumericalRating = ratingRequest.NumericalRating,
                             Remarks = ratingRequest.Remarks
-                        };
-                        kpi.KPIRatings.Add(newRating);
+                        });
                     }
                 }
             }

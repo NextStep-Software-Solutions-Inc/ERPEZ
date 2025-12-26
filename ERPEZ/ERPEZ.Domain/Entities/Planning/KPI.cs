@@ -28,7 +28,6 @@ public class KPI : BaseEntity
 
     public string Status { get; set; } = string.Empty;
     public virtual KPI? ParentKPI { get; set; }
-    public virtual List<KPIRating> KPIRatings { get; set; } = [];
     public virtual List<KPIModeOfVerification> KPIModeOfVerifications { get; set; } = [];
     public virtual List<DUKPIAssignment> KPIAssignments { get; set; } = [];
     public virtual List<MFOPAP> MFOPAPs { get; set; } = [];
@@ -37,4 +36,5 @@ public class KPI : BaseEntity
     public virtual List<KPI> ChildKPIs { get; set; } = [];
     public virtual List<SDG> SDGs { get; set; } = [];
     public virtual List<Attribute> Attributes { get; set; } = [];
+    public virtual List<KPIPerformanceMeasure> KPIPerformanceMeasures { get; set; } = [];
 }

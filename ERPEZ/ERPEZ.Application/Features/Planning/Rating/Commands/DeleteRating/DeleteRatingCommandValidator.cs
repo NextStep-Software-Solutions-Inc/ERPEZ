@@ -1,10 +1,10 @@
 using FluentValidation;
 
-namespace ERPEZ.Application.Features.Planning.KPIRating.Commands.DeleteKPIRating;
+namespace ERPEZ.Application.Features.Planning.Rating.Commands.DeleteRating;
 
-public class DeleteKPIRatingCommandValidator : AbstractValidator<DeleteKPIRatingCommand>
+public class DeleteRatingCommandValidator : AbstractValidator<DeleteRatingCommand>
 {
-    public DeleteKPIRatingCommandValidator()
+    public DeleteRatingCommandValidator()
     {
         // Primary ID Validation (Required for deletion)
         RuleFor(x => x.Id)

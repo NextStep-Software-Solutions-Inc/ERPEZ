@@ -1,6 +1,6 @@
 using ERPEZ.Application.Features.Planning.Attribute.Dtos;
 using ERPEZ.Application.Features.Planning.KPIModeOfVerification.Dtos;
-using ERPEZ.Application.Features.Planning.KPIRating.Dtos;
+using ERPEZ.Application.Features.Planning.Rating.Dtos;
 using ERPEZ.Application.Features.Planning.KPITarget.Dtos;
 using ERPEZ.Application.Features.Planning.SDG.Dtos;
 using ERPEZ.Application.Features.Planning.MFOPAP.Dtos;
@@ -23,7 +23,7 @@ public record KPIResponse
     [JsonPropertyName("KPITargets")]
     public List<KPITargetResponse> KPITargets { get; init; } = [];
     [JsonPropertyName("KPIRatings")]
-    public List<KPIRatingResponse> KPIRatings { get; init; } = [];
+    public List<RatingResponse> KPIRatings { get; init; } = [];
     [JsonPropertyName("KPIModeOfVerifications")]
     public List<KPIModeOfVerificationResponse> KPIModeOfVerifications { get; init; } = [];
     [JsonPropertyName("MFOPAPs")]

@@ -1,6 +1,6 @@
-namespace ERPEZ.Application.Features.Planning.KPIRating.Dtos;
+namespace ERPEZ.Application.Features.Planning.Rating.Dtos;
 
-public record CreateKPIRatingRequest
+public record CreateRatingRequest
 {
     public required Guid PerformanceMeasureId { get; init; }
     public required List<NumericalRatingRequest> Ratings { get; init; } = [];

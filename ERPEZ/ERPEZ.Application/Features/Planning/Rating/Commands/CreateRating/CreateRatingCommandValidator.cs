@@ -1,10 +1,10 @@
 using FluentValidation;
 
-namespace ERPEZ.Application.Features.Planning.KPIRating.Commands.CreateKPIRating;
+namespace ERPEZ.Application.Features.Planning.Rating.Commands.CreateRating;
 
-public class CreateKPIRatingCommandValidator : AbstractValidator<CreateKPIRatingCommand>
+public class CreateRatingCommandValidator : AbstractValidator<CreateRatingCommand>
 {
-    public CreateKPIRatingCommandValidator()
+    public CreateRatingCommandValidator()
     {
         // KPIId (Required GUID)
         RuleFor(x => x.KPIId)

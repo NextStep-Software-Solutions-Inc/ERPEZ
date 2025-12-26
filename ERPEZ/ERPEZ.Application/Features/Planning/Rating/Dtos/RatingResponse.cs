@@ -1,8 +1,9 @@
-namespace ERPEZ.Application.Features.Planning.KPIRating.Dtos;
+namespace ERPEZ.Application.Features.Planning.Rating.Dtos;
 
-public class KPIRatingResponse
+public class RatingResponse
 {
     public Guid Id { get; set; }
+    
     public Guid KPIId { get; set; }
     public Guid PerformanceMeasureId { get; set; }
     public int NumericalRating { get; set; }

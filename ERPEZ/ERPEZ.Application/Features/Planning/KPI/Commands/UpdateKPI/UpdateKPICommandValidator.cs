@@ -50,7 +50,7 @@ public class UpdateKPICommandValidator : AbstractValidator<UpdateKPICommand>
             .ForEach(sdgId => sdgId.NotEmpty().WithMessage("SDG ID must be a valid, non-empty GUID."))
             .When(x => x.Dto.SDGIds != null && x.Dto.SDGIds.Count != 0);
 
-        // 9. KPIRatings (List<UpsertKPIRatingRequest>) - Optional for partial update
+        // 9. KPIRatings (List<UpsertRatingRequest>) - Optional for partial update
         RuleFor(x => x.Dto.KPIRatings)
             .Must(list => list == null || list.Count > 0)
             .WithMessage("KPI Ratings list cannot be empty if provided.");

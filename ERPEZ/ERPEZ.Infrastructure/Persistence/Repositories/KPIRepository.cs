@@ -21,7 +21,8 @@ public class KPIRepository : Repository<Domain.Entities.Planning.KPI>, IKPIRepos
     public async Task<Domain.Entities.Planning.KPI?> GetKPIWithDetailsAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await context.Set<Domain.Entities.Planning.KPI>()
-            .Include(k => k.KPIRatings)
+            .Include(k => k.KPIPerformanceMeasures)
+                .ThenInclude(kpm => kpm.Ratings)
             .Include(k => k.KPITargets)
             .Include(k => k.KPIModeOfVerifications)
             .Include(k => k.MFOPAPs)

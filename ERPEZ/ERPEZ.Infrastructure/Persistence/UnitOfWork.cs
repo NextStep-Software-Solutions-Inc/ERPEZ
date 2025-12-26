@@ -24,7 +24,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IOPCRRatingRepository opcrRatingRepository;
     private readonly IObjectRepository objectRepository;
     private readonly IDUFundAllocationRepository duFundAllocationRepository;
-    private readonly IKPIRatingRepository kpiRatingRepository;
+    private readonly IRatingRepository ratingRepository;
     private readonly IDUAllocationRepository duAllocationRepository;
     private readonly IKPITargetRepository kpiTargetRepository;
     private readonly IDUKPIAssignmentRepository dukpiAssignmentRepository;
@@ -65,7 +65,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         opcrRatingRepository = new OPCRRatingRepository(context, sieveProcessor);
         objectRepository = new ObjectRepository(context, sieveProcessor);
         duFundAllocationRepository = new DUFundAllocationRepository(context, sieveProcessor);
-        kpiRatingRepository = new KPIRatingRepository(context, sieveProcessor);
+        ratingRepository = new RatingRepository(context, sieveProcessor);
         duAllocationRepository = new DUAllocationRepository(context, sieveProcessor);
         kpiTargetRepository = new KPITargetRepository(context, sieveProcessor);
         dukpiAssignmentRepository = new DUKPIAssignmentRepository(context, sieveProcessor);
@@ -102,7 +102,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IOPCRRatingRepository OPCRRatingRepository => opcrRatingRepository;
     public IObjectRepository ObjectRepository => objectRepository;
     public IDUFundAllocationRepository DUFundAllocationRepository => duFundAllocationRepository;
-    public IKPIRatingRepository KPIRatingRepository => kpiRatingRepository;
+    public IRatingRepository RatingRepository => ratingRepository;
     public IDUAllocationRepository DUAllocationRepository => duAllocationRepository;
     public IKPITargetRepository KPITargetRepository => kpiTargetRepository;
     public IDUKPIAssignmentRepository DUKPIAssignmentRepository => dukpiAssignmentRepository;

@@ -21,7 +21,7 @@ public record UpdateKPIRequest
     /// Existing ratings not in this list will be deleted.
     /// </summary>
     [JsonPropertyName("KPIRatings")]
-    public List<UpsertKPIRatingRequest>? KPIRatings { get; init; }
+    public List<UpsertRatingRequest>? KPIRatings { get; init; }
     
     /// <summary>
     /// List of KPI targets to upsert. Include Id to update existing, omit Id to create new.

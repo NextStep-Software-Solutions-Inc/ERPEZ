@@ -35,7 +35,7 @@ public class GetKPIsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetKP
 
         var includes = new List<Expression<Func<Domain.Entities.Planning.KPI, object>>>
         {
-            k => k.KPIRatings,
+            k => k.KPIPerformanceMeasures,
             k => k.KPITargets,
             k => k.KPIModeOfVerifications,
             k => k.MFOPAPs,

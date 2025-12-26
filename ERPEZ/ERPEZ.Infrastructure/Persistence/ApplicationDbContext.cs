@@ -16,7 +16,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<FundSource>? FundSources { get; set; }
     public DbSet<KPI>? KPIs { get; set; }
     public DbSet<KPIModeOfVerification>? KPIModeOfVerifications { get; set; }
-    public DbSet<KPIRating>? KPIRatings { get; set; }
+    public DbSet<Rating>? Ratings { get; set; }
+    public DbSet<KPIPerformanceMeasure>? KPIPerformanceMeasures { get; set; }
     public DbSet<KPITarget>? KPITargets { get; set; }
     public DbSet<Location>? Locations { get; set; }
     public DbSet<MFOPAP>? MFOPAPs { get; set; }
@@ -95,10 +96,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasIndex(k => k.Name)
             .IsUnique();
 
+        // KPI → KPIPerformanceMeasures
         modelBuilder.Entity<KPI>()
-            .HasMany(k => k.KPIRatings)
-            .WithOne(kr => kr.KPI)
-            .HasForeignKey(kr => kr.KPIId);
+            .HasMany(k => k.KPIPerformanceMeasures)
+            .WithOne(kpm => kpm.KPI)
+            .HasForeignKey(kpm => kpm.KPIId);
 
         modelBuilder.Entity<KPI>()
             .HasMany(k => k.KPITargets)
@@ -155,20 +157,24 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .WithMany(k => k.KPIModeOfVerifications)
             .HasForeignKey(mv => mv.KPIId);
 
-        // KPIRating
-        modelBuilder.Entity<KPIRating>()
-            .HasIndex(kr => new { kr.KPIId, kr.PerformanceMeasureId, kr.NumericalRating })
+        // KPIPerformanceMeasure join entity and Rating relationship
+        modelBuilder.Entity<KPIPerformanceMeasure>()
+            .HasIndex(kpm => new { kpm.KPIId, kpm.PerformanceMeasureId })
             .IsUnique();
 
-        modelBuilder.Entity<KPIRating>()
-            .HasOne(r => r.KPI)
-            .WithMany(k => k.KPIRatings)
-            .HasForeignKey(r => r.KPIId);
+        modelBuilder.Entity<KPIPerformanceMeasure>()
+            .HasOne(kpm => kpm.PerformanceMeasure)
+            .WithMany(pm => pm.KPIPerformanceMeasures)
+            .HasForeignKey(kpm => kpm.PerformanceMeasureId);
 
-        modelBuilder.Entity<KPIRating>()
-            .HasOne(r => r.PerformanceMeasure)
-            .WithMany(pm => pm.KPIRatings)
-            .HasForeignKey(r => r.PerformanceMeasureId);
+        modelBuilder.Entity<Rating>()
+            .HasIndex(r => new { r.KPIPerformanceMeasureId, r.NumericalRating })
+            .IsUnique();
+
+        modelBuilder.Entity<Rating>()
+            .HasOne(r => r.KPIPerformanceMeasure)
+            .WithMany(kpm => kpm.Ratings)
+            .HasForeignKey(r => r.KPIPerformanceMeasureId);
 
         // KPITarget
         // Relationship with KPI is already configured in KPI section
@@ -190,10 +196,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasIndex(pm => pm.Name)
             .IsUnique();
 
-        modelBuilder.Entity<PerformanceMeasure>()
-            .HasMany(pm => pm.KPIRatings)
-            .WithOne(kr => kr.PerformanceMeasure)
-            .HasForeignKey(kr => kr.PerformanceMeasureId);
+        // PerformanceMeasure relations are configured via KPIPerformanceMeasure above
 
         modelBuilder.Entity<PerformanceMeasure>()
             .HasMany(pm => pm.OPCRRatings)

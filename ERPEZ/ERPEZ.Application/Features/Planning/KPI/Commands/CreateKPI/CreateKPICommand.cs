@@ -1,6 +1,6 @@
 using System.Text.Json.Serialization;
 using ERPEZ.Application.Features.Planning.KPIModeOfVerification.Dtos;
-using ERPEZ.Application.Features.Planning.KPIRating.Dtos;
+using ERPEZ.Application.Features.Planning.Rating.Dtos;
 using ERPEZ.Application.Features.Planning.KPITarget.Dtos;
 using ERPEZ.Shared.Common;
 using MediatR;
@@ -20,7 +20,7 @@ public record CreateKPICommand : IRequest<ApiResponse<Guid>>
     [JsonPropertyName("SDGIds")]
     public List<Guid> SDGIds { get; init; } = [];
     [JsonPropertyName("KPIRatings")]
-    public List<CreateKPIRatingRequest> KPIRatings { get; init; } = [];
+    public List<CreateRatingRequest> KPIRatings { get; init; } = [];
     [JsonPropertyName("KPITargets")]
     public List<CreateKPITargetRequest> KPITargets { get; init; } = [];
     [JsonPropertyName("KPIMOVs")]
