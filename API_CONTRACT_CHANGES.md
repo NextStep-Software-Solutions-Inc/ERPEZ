@@ -222,3 +222,52 @@ All response payloads remain identical in shape and content:
 ## Summary
 
 This refactoring **does not break the API contract** for consumers. All endpoints, request/response DTOs, and field names remain consistent. The internal data model has been reorganized to use an explicit join entity for cleaner separation of concerns and improved database normalization.
+
+---
+
+## Response Format Standardization (Dec 2025)
+
+To enforce consistent API responses across the platform, endpoints now follow these rules:
+
+- POST: returns `ApiResponse<Guid>` and 201 Created (Location header via `CreatedAtAction`).
+- GET by id: returns `ApiResponse<...DetailedResponse>` and 200 OK; 404 NotFound on missing.
+- PUT: returns `ApiResponse<Unit>` and 200 OK; 400/404 on error.
+- DELETE: returns 204 No Content with no response body; 404 on missing.
+
+### Affected Endpoints (implemented)
+
+- Ratings
+  - POST `/ratings`: `ApiResponse<Guid>`
+  - GET `/ratings/{id}`: `ApiResponse<RatingDetailedResponse>`
+  - PUT `/ratings/{id}`: `ApiResponse<Unit>`
+  - DELETE `/ratings/{id}`: 204 No Content
+
+- KPI
+  - PUT `/kpis/{id}`: `ApiResponse<Unit>`
+
+- Clusters
+  - POST `/clusters`: `ApiResponse<Guid>`
+  - GET `/clusters/{id}`: `ApiResponse<ClusterDetailedResponse>` (new DTO)
+  - PUT `/clusters/{id}`: `ApiResponse<Unit>`
+  - DELETE `/clusters/{id}`: 204 No Content
+
+- Tenant Management (Tenants, Modules)
+  - POST now returns `ApiResponse<Guid>`
+  - PUT now returns `ApiResponse<Unit>`
+  - DELETE returns 204 No Content
+
+### Controller Behavior Changes
+
+- Controllers now pass handler results directly (no double-wrapping). Examples:
+  - `return BadRequest(result);` instead of `ApiResponse<T>.Fail(...)` wrappers.
+  - `return CreatedAtAction(..., result);` with `result.Data` being the Guid for POSTs.
+
+### DTO Additions
+
+- Added `ClusterDetailedResponse` under `ERPEZ.Application.Features.Planning.Cluster.Dtos`.
+- Existing `RatingDetailedResponse` is used for GET-by-id in Ratings.
+
+### Command Signatures
+
+- Update commands return `IRequest<ApiResponse<Unit>>` (e.g., `UpdateKPICommand`).
+- Create commands return `IRequest<ApiResponse<Guid>>` (e.g., `CreateRatingCommand`).

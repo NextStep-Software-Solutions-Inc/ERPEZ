@@ -670,7 +670,7 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.ToTable("KPIModeOfVerifications", "planning");
                 });
 
-            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.KPIRating", b =>
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.KPIPerformanceMeasure", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -695,14 +695,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid>("KPIId")
                         .HasColumnType("uuid");
 
-                    b.Property<int>("NumericalRating")
-                        .HasColumnType("integer");
-
                     b.Property<Guid>("PerformanceMeasureId")
                         .HasColumnType("uuid");
-
-                    b.Property<string>("Remarks")
-                        .HasColumnType("text");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -714,10 +708,10 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("PerformanceMeasureId");
 
-                    b.HasIndex("KPIId", "PerformanceMeasureId", "NumericalRating")
+                    b.HasIndex("KPIId", "PerformanceMeasureId")
                         .IsUnique();
 
-                    b.ToTable("KPIRatings", "planning");
+                    b.ToTable("KPIPerformanceMeasures", "planning");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.KPITarget", b =>
@@ -1439,6 +1433,51 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.ToTable("PerformanceMeasures", "planning");
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.Rating", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("KPIPerformanceMeasureId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("NumericalRating")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Remarks")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("KPIPerformanceMeasureId", "NumericalRating")
+                        .IsUnique();
+
+                    b.ToTable("Ratings", "planning");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.ReceivedFund", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2142,16 +2181,16 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("KPI");
                 });
 
-            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.KPIRating", b =>
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.KPIPerformanceMeasure", b =>
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Planning.KPI", "KPI")
-                        .WithMany("KPIRatings")
+                        .WithMany("KPIPerformanceMeasures")
                         .HasForeignKey("KPIId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("ERPEZ.Domain.Entities.Planning.PerformanceMeasure", "PerformanceMeasure")
-                        .WithMany("KPIRatings")
+                        .WithMany("KPIPerformanceMeasures")
                         .HasForeignKey("PerformanceMeasureId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -2357,6 +2396,17 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasForeignKey("ParentOrganizationId");
 
                     b.Navigation("ParentOrganization");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.Rating", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.KPIPerformanceMeasure", "KPIPerformanceMeasure")
+                        .WithMany("Ratings")
+                        .HasForeignKey("KPIPerformanceMeasureId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("KPIPerformanceMeasure");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.ReceivedFund", b =>
@@ -2577,11 +2627,16 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Navigation("KPIModeOfVerifications");
 
-                    b.Navigation("KPIRatings");
+                    b.Navigation("KPIPerformanceMeasures");
 
                     b.Navigation("KPITargets");
 
                     b.Navigation("OPCRActivities");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.KPIPerformanceMeasure", b =>
+                {
+                    b.Navigation("Ratings");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.KPITarget", b =>
@@ -2643,7 +2698,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.PerformanceMeasure", b =>
                 {
-                    b.Navigation("KPIRatings");
+                    b.Navigation("KPIPerformanceMeasures");
 
                     b.Navigation("OPCRRatings");
                 });
