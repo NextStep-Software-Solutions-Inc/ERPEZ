@@ -1,4 +1,3 @@
-using ERPEZ.Application.Features.Planning.WFPObjectiveTargetExpenditure.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -6,9 +5,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.WFPObjectiveTargetExpenditure.Commands.CreateWFPObjectiveTargetExpenditure;
 
-public class CreateWFPObjectiveTargetExpenditureCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateWFPObjectiveTargetExpenditureCommand, ApiResponse<WFPObjectiveTargetExpenditureResponse>>
+public class CreateWFPObjectiveTargetExpenditureCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateWFPObjectiveTargetExpenditureCommand, ApiResponse<Guid>>
 {
-    public async Task<ApiResponse<WFPObjectiveTargetExpenditureResponse>> Handle(CreateWFPObjectiveTargetExpenditureCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<Guid>> Handle(CreateWFPObjectiveTargetExpenditureCommand request, CancellationToken cancellationToken)
     {
         _ = await unitOfWork.WFPObjectiveTargetRepository.GetByIdAsync(request.WFPObjectiveTargetId, cancellationToken) ?? throw new NotFoundException("WFP Objective Target not found.");
         _ = await unitOfWork.ObjectRepository.GetByIdAsync(request.ObjectId, cancellationToken) ?? throw new NotFoundException("Object not found.");
@@ -34,21 +33,6 @@ public class CreateWFPObjectiveTargetExpenditureCommandHandler(IUnitOfWork unitO
         await unitOfWork.WFPObjectiveTargetExpenditureRepository.AddAsync(abr, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var dto = new WFPObjectiveTargetExpenditureResponse
-        {
-            Id = abr.Id,
-            WFPObjectiveTargetId = abr.WFPObjectiveTargetId,
-            Object = new()
-            {
-                Id = abr.Object.Id,
-                ParentId = abr.Object.ParentId,
-                Name = abr.Object.Name,
-                Code = abr.Object.Code,
-            },
-            ItemDescription = abr.ItemDescription,
-            Quantity = abr.Quantity,
-            CostEstimates = abr.CostEstimates
-        };
-        return ApiResponse<WFPObjectiveTargetExpenditureResponse>.Success(dto, "WFP Objective Target Expenditure created successfully.");
+        return ApiResponse<Guid>.Success(abr.Id, "WFP Objective Target Expenditure created successfully.");
     }
 }

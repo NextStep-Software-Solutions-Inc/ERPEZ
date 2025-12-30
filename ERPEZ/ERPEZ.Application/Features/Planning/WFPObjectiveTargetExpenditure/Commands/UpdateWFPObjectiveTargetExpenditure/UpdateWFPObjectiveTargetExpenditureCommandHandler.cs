@@ -6,9 +6,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.WFPObjectiveTargetExpenditure.Commands.UpdateWFPObjectiveTargetExpenditure;
 
-public class UpdateWFPObjectiveTargetExpenditureCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateWFPObjectiveTargetExpenditureCommand, ApiResponse<WFPObjectiveTargetExpenditureResponse>>
+public class UpdateWFPObjectiveTargetExpenditureCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateWFPObjectiveTargetExpenditureCommand, ApiResponse<Unit>>
 {
-    public async Task<ApiResponse<WFPObjectiveTargetExpenditureResponse>> Handle(UpdateWFPObjectiveTargetExpenditureCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<Unit>> Handle(UpdateWFPObjectiveTargetExpenditureCommand request, CancellationToken cancellationToken)
     {
         var dto = request.UpdateWFPObjectiveTargetExpenditure;
         var abr = await unitOfWork.WFPObjectiveTargetExpenditureRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken)
@@ -31,23 +31,6 @@ public class UpdateWFPObjectiveTargetExpenditureCommandHandler(IUnitOfWork unitO
         unitOfWork.WFPObjectiveTargetExpenditureRepository.Update(abr);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var result = new WFPObjectiveTargetExpenditureResponse
-        {
-            Id = abr.Id,
-            WFPObjectiveTargetId = abr.WFPObjectiveTargetId,
-            Object = new()
-            {
-                Id = abr.Object.Id,
-                ParentId = abr.Object.ParentId,
-                Name = abr.Object.Name,
-                Code = abr.Object.Code,
-            },
-            ItemDescription = abr.ItemDescription ?? string.Empty,
-            Quantity = abr.Quantity,
-            CostEstimates = abr.CostEstimates,
-            CreatedAt = abr.CreatedAt,
-            CreatedBy = abr.CreatedBy ?? string.Empty
-        };
-        return ApiResponse<WFPObjectiveTargetExpenditureResponse>.Success(result, "WFP Objective Target Expenditure updated successfully.");
+        return ApiResponse<Unit>.Success(Unit.Value, "WFP Objective Target Expenditure updated successfully.");
     }
 }

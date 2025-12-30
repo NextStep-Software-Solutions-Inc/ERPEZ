@@ -4,6 +4,8 @@ using ERPEZ.Application.Features.Planning.WFPObjectiveTarget.Commands.UpdateWFPO
 using ERPEZ.Application.Features.Planning.WFPObjectiveTarget.Dtos;
 using ERPEZ.Application.Features.Planning.WFPObjectiveTarget.Queries.GetWFPObjectiveTargetById;
 using ERPEZ.Application.Features.Planning.WFPObjectiveTarget.Queries.GetWFPObjectiveTargets;
+using ERPEZ.Application.Features.Planning.WFPObjectiveTargetExpenditure.Commands.BulkCreateWFPObjectiveTargetExpenditure;
+using ERPEZ.Application.Features.Planning.WFPObjectiveTargetExpenditure.Dtos;
 using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Shared.Common;
 using MediatR;
@@ -70,5 +72,25 @@ public class WFPObjectiveTargetController(ISender mediator) : ControllerBase
         var result = await mediator.Send(command);
 
         return result.Succeeded ? NoContent() : BadRequest(result);
+    }
+
+    [HttpPost("{id}/expenditures")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> BulkCreateWFPObjectiveTargetExpenditures(Guid id, [FromBody] List<CreateWFPObjectiveTargetExpenditureRequest> expenditureRequests)
+    {
+        var command = new BulkCreateWFPObjectiveTargetExpenditureCommand
+        {
+            WFPObjectiveTargetId = id,
+            Expenditures = expenditureRequests
+        };
+
+        var result = await mediator.Send(command);
+
+        if (!result.Succeeded)
+            return BadRequest(result);
+
+        return NoContent();
     }
 }

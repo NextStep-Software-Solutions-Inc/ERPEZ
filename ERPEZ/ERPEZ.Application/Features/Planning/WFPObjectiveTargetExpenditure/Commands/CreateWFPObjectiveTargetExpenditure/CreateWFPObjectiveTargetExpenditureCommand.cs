@@ -1,10 +1,9 @@
-using ERPEZ.Application.Features.Planning.WFPObjectiveTargetExpenditure.Dtos;
 using ERPEZ.Shared.Common;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.WFPObjectiveTargetExpenditure.Commands.CreateWFPObjectiveTargetExpenditure;
 
-public class CreateWFPObjectiveTargetExpenditureCommand : IRequest<ApiResponse<WFPObjectiveTargetExpenditureResponse>>
+public class CreateWFPObjectiveTargetExpenditureCommand : IRequest<ApiResponse<Guid>>
 {
     public Guid WFPObjectiveTargetId { get; set; }
     public Guid ObjectId { get; set; }

@@ -15,8 +15,8 @@ namespace ERPEZ.Api.Controllers
     public class WFPObjectiveTargetExpenditureController(ISender mediator) : ControllerBase
     {
         [HttpPost]
-        [ProducesResponseType(typeof(ApiResponse<WFPObjectiveTargetExpenditureResponse>), StatusCodes.Status201Created)]
-        [ProducesResponseType(typeof(ApiResponse<WFPObjectiveTargetExpenditureResponse>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateWFPObjectiveTargetExpenditure([FromBody] CreateWFPObjectiveTargetExpenditureCommand command)
         {
             var result = await mediator.Send(command);
@@ -24,7 +24,7 @@ namespace ERPEZ.Api.Controllers
             if (!result.Succeeded)
                 return BadRequest(result);
 
-            return CreatedAtAction(nameof(GetWFPObjectiveTargetExpenditureById), new { id = result.Data!.Id }, result);
+            return CreatedAtAction(nameof(GetWFPObjectiveTargetExpenditureById), new { id = result.Data }, result);
         }
 
         [HttpGet]
@@ -46,7 +46,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpPut("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<WFPObjectiveTargetExpenditureResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateWFPObjectiveTargetExpenditure(Guid id, [FromBody] UpdateWFPObjectiveTargetExpenditureRequest dto)
