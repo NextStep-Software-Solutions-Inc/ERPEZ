@@ -129,6 +129,7 @@ public class GetWFPByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
                         WFPObjectiveTimelines = t.WFPObjectiveTimelines.Select(ot => new WFPObjectiveTimelineResponse
                         {
                             Id = ot.Id,
+                            TimelineType = ot.TimelineType.ToString(),
                             EndDate = ot.EndDate,
                             StartDate = ot.StartDate,
                             TargetValue = ot.TargetValue,

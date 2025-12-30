@@ -17,7 +17,6 @@ public class GetWFPObjectiveTargetByIdQueryHandler(IUnitOfWork unitOfWork)
         GetWFPObjectiveTargetByIdQuery request, 
         CancellationToken cancellationToken)
     {
-#pragma warning disable CS8601 // Possible null reference assignment.
         var targetQuery = unitOfWork.WFPObjectiveTargetRepository
             .Query(t => t.Id == request.Id)
             .Select(target => new WFPObjectiveTargetFullResponse
@@ -42,25 +41,25 @@ public class GetWFPObjectiveTargetByIdQueryHandler(IUnitOfWork unitOfWork)
                 WFPObjectiveTargetExpenditures = target.WFPObjectiveTargetExpenditures.Select(exp => new WFPObjectiveTargetExpenditureResponse
                 {
                     Id = exp.Id,
-                    WFPObjectiveTargetId = exp.WFPObjectiveTargetId,
                     ItemDescription = exp.ItemDescription,
                     Quantity = exp.Quantity,
                     CostEstimates = exp.CostEstimates,
                     CreatedAt = exp.CreatedAt,
                     CreatedBy = exp.CreatedBy,
-                    Object = exp.Object != null ? new ObjectResponse
+                    Object = new ObjectResponse
                     {
                         Id = exp.Object.Id,
                         Name = exp.Object.Name,
                         Code = exp.Object.Code,
                         ParentId = exp.Object.ParentId,
                         IsActive = exp.Object.IsActive
-                    } : null
+                    }
                 }).ToList(),
                 WFPObjectiveTimelines = target.WFPObjectiveTimelines.Select(tl => new WFPObjectiveTimelineResponse
                 {
                     Id = tl.Id,
-                    WFPObjectiveTargetId = tl.WFPObjectiveTargetId,
+                    TargetValue = tl.TargetValue,
+                    TimelineType = tl.TimelineType.ToString(),
                     StartDate = tl.StartDate,
                     EndDate = tl.EndDate,
                     CreatedAt = tl.CreatedAt,

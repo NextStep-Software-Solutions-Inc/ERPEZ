@@ -49,6 +49,7 @@ public class GetWFPObjectiveByIdQueryHandler(IUnitOfWork unitOfWork)
                     WFPObjectiveTimelines = t.WFPObjectiveTimelines.Select(ot => new WFPObjectiveTimelineResponse
                     {
                         Id = ot.Id,
+                        TimelineType = ot.TimelineType.ToString(),
                         StartDate = ot.StartDate,
                         EndDate = ot.EndDate,
                         TargetValue = ot.TargetValue,
