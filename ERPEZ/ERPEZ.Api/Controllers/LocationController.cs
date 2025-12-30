@@ -25,7 +25,7 @@ namespace ERPEZ.Api.Controllers
             if (!location.Succeeded)
                 return BadRequest(location);
 
-            return CreatedAtAction(nameof(GetLocationById), new { id = location.Data!.Id }, location);
+            return CreatedAtAction(nameof(GetLocationById), new { id = location.Data }, location);
         }
 
         [HttpGet]

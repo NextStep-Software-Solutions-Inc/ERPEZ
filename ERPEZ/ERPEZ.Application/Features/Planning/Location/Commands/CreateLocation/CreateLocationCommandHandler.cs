@@ -1,3 +1,4 @@
+using ERPEZ.Application.Features.Planning.Location.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -5,9 +6,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Location.Commands.CreateLocation;
 
-public class CreateLocationCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateLocationCommand, ApiResponse<Domain.Entities.Planning.Location>>
+public class CreateLocationCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateLocationCommand, ApiResponse<Guid>>
 {
-    public async Task<ApiResponse<Domain.Entities.Planning.Location>> Handle(CreateLocationCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<Guid>> Handle(CreateLocationCommand request, CancellationToken cancellationToken)
     {
         var locationExist = await unitOfWork.LocationRepository.FindAsync(t => t.Name == request.Name, cancellationToken: cancellationToken);
         if (locationExist != null) throw new ConflictException("Location already exists.");

@@ -6,9 +6,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.OPCREvaluation.Commands.CreateOPCREvaluation;
 
-public class CreateOPCREvaluationCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateOPCREvaluationCommand, ApiResponse<OPCREvaluationResponse>>
+public class CreateOPCREvaluationCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateOPCREvaluationCommand, ApiResponse<Guid>>
 {
-    public async Task<ApiResponse<OPCREvaluationResponse>> Handle(CreateOPCREvaluationCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<Guid>> Handle(CreateOPCREvaluationCommand request, CancellationToken cancellationToken)
     {
         _ = await unitOfWork.OPCRRepository.GetByIdAsync(request.OPCRId, cancellationToken)
             ?? throw new NotFoundException("OPCR not found.");

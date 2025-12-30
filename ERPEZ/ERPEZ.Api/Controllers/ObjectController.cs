@@ -28,7 +28,7 @@ namespace ERPEZ.Api.Controllers
                 return BadRequest(result);
 
             // Returns 201 Created and links to the GetById endpoint
-            return CreatedAtAction(nameof(GetObjectById), new { id = result.Data!.Id }, result);
+            return CreatedAtAction(nameof(GetObjectById), new { id = result.Data }, result);
         }
 
         [HttpGet]

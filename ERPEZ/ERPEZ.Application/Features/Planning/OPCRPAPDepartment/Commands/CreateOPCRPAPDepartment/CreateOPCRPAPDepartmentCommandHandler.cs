@@ -6,9 +6,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.OPCRPAPDepartment.Commands.CreateOPCRPAPDepartment;
 
-public class CreateOPCRPAPDepartmentCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateOPCRPAPDepartmentCommand, ApiResponse<OPCRPAPDepartmentResponse>>
+public class CreateOPCRPAPDepartmentCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateOPCRPAPDepartmentCommand, ApiResponse<Guid>>
 {
-    public async Task<ApiResponse<OPCRPAPDepartmentResponse>> Handle(CreateOPCRPAPDepartmentCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<Guid>> Handle(CreateOPCRPAPDepartmentCommand request, CancellationToken cancellationToken)
     {
         var opcrActivity = await unitOfWork.OPCRActivityRepository.FindAsync(k => k.Id == request.OPCRActivityId, cancellationToken) ?? throw new NotFoundException("OPCR Activity not found.");
         var deliveryUnit = await unitOfWork.DeliveryUnitRepository.FindAsync(o => o.Id == request.DeliveryUnitId, cancellationToken) ?? throw new NotFoundException("Delivery Unit not found.");

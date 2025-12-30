@@ -25,7 +25,7 @@ namespace ERPEZ.Api.Controllers
             if (!transaction.Succeeded)
                 return BadRequest(transaction);
 
-            return CreatedAtAction(nameof(GetTransactionById), new { id = transaction.Data!.Id }, transaction);
+            return CreatedAtAction(nameof(GetTransactionById), new { id = transaction.Data }, transaction);
         }
 
         [HttpGet]

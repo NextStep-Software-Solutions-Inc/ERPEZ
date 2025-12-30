@@ -27,7 +27,7 @@ public class WFPObjectiveTargetController(ISender mediator) : ControllerBase
         if (!result.Succeeded)
             return BadRequest(result);
 
-        return CreatedAtAction(nameof(GetWFPObjectiveTargetById), new { id = result.Data!.Id }, result);
+        return CreatedAtAction(nameof(GetWFPObjectiveTargetById), new { id = result.Data }, result);
     }
 
     [HttpGet]

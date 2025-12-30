@@ -26,7 +26,7 @@ namespace ERPEZ.Api.Controllers
             if (!result.Succeeded)
                 return BadRequest(result);
 
-            return CreatedAtAction(nameof(GetWFPObjectiveById), new { id = result.Data!.Id }, result);
+            return CreatedAtAction(nameof(GetWFPObjectiveById), new { id = result.Data }, result);
         }
 
         [HttpPost("batch")]

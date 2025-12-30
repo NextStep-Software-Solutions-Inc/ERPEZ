@@ -6,9 +6,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Object.Commands.CreateObject;
 
-public class CreateObjectCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateObjectCommand, ApiResponse<ObjectResponse>>
+public class CreateObjectCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateObjectCommand, ApiResponse<Guid>>
 {
-    public async Task<ApiResponse<ObjectResponse>> Handle(CreateObjectCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<Guid>> Handle(CreateObjectCommand request, CancellationToken cancellationToken)
     {
         if (request.ParentId != null)
         {

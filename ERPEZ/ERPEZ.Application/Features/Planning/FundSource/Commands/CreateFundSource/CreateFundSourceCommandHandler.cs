@@ -7,9 +7,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.FundSource.Commands.CreateFundSource;
 
-public class CreateFundSourceCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateFundSourceCommand, ApiResponse<FundSourceResponse>>
+public class CreateFundSourceCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateFundSourceCommand, ApiResponse<Guid>>
 {
-    public async Task<ApiResponse<FundSourceResponse>> Handle(CreateFundSourceCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<Guid>> Handle(CreateFundSourceCommand request, CancellationToken cancellationToken)
     {
         if (request.ParentId.HasValue)
         {

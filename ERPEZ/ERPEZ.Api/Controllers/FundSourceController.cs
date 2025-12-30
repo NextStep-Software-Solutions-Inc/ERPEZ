@@ -24,7 +24,7 @@ namespace ERPEZ.Api.Controllers
             if (!response.Succeeded)
                 return BadRequest(response);
 
-            return CreatedAtAction(nameof(GetFundSourceById), new { id = response.Data!.Id }, response);
+            return CreatedAtAction(nameof(GetFundSourceById), new { id = response.Data }, response);
         }
 
         [HttpGet]

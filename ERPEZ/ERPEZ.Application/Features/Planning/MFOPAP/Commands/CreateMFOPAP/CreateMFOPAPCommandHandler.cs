@@ -1,3 +1,4 @@
+using ERPEZ.Application.Features.Planning.MFOPAP.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -5,9 +6,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.MFOPAP.Commands.CreateMFOPAP;
 
-public class CreateMFOPAPCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateMFOPAPCommand, ApiResponse<Domain.Entities.Planning.MFOPAP>>
+public class CreateMFOPAPCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateMFOPAPCommand, ApiResponse<Guid>>
 {
-    public async Task<ApiResponse<Domain.Entities.Planning.MFOPAP>> Handle(CreateMFOPAPCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<Guid>> Handle(CreateMFOPAPCommand request, CancellationToken cancellationToken)
     {
         var mfoPAPExist = await unitOfWork.MFOPAPRepository.FindAsync(t => t.Name == request.Name && t.Code == request.Code, cancellationToken: cancellationToken);
         if (mfoPAPExist != null) throw new ConflictException("MFOPAP already exists.");

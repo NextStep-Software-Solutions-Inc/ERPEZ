@@ -6,9 +6,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.WFPObjective.Commands.CreateWFPObjective;
 
-public class CreateWFPObjectiveCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateWFPObjectiveCommand, ApiResponse<WFPObjectiveResponse>>
+public class CreateWFPObjectiveCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateWFPObjectiveCommand, ApiResponse<Guid>>
 {
-    public async Task<ApiResponse<WFPObjectiveResponse>> Handle(CreateWFPObjectiveCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<Guid>> Handle(CreateWFPObjectiveCommand request, CancellationToken cancellationToken)
     {
         _ = await unitOfWork.WFPRepository.FindAsync(wo => wo.Id == request.WFPId,
             cancellationToken) ?? throw new NotFoundException("Work and Financial Plan not found.");

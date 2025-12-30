@@ -6,9 +6,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.OPCRRating.Commands.CreateOPCRRating;
 
-public class CreateOPCRRatingCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateOPCRRatingCommand, ApiResponse<OPCRRatingResponse>>
+public class CreateOPCRRatingCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateOPCRRatingCommand, ApiResponse<Guid>>
 {
-    public async Task<ApiResponse<OPCRRatingResponse>> Handle(CreateOPCRRatingCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<Guid>> Handle(CreateOPCRRatingCommand request, CancellationToken cancellationToken)
     {
         _ = await unitOfWork.OPCREvaluationRepository.FindAsync(o => o.Id == request.OPCREvaluationId,
             cancellationToken) ?? throw new NotFoundException("OPCR Evaluation not found.");

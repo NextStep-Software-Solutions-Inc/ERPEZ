@@ -24,7 +24,7 @@ namespace ERPEZ.Api.Controllers
             if (!result.Succeeded)
                 return BadRequest(result);
 
-            return CreatedAtAction(nameof(GetKPIModeOfVerificationById), new { id = result.Data!.Id }, result);
+            return CreatedAtAction(nameof(GetKPIModeOfVerificationById), new { id = result.Data }, result);
         }
 
         [HttpGet]

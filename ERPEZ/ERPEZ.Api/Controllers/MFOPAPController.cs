@@ -22,7 +22,7 @@ namespace ERPEZ.Api.Controllers
         {
             var mfopap = await mediator.Send(command);
 
-            return CreatedAtAction(nameof(GetMFOPAPById), new { id = mfopap.Data!.Id }, mfopap);
+            return CreatedAtAction(nameof(GetMFOPAPById), new { id = mfopap.Data }, mfopap);
         }
 
         [HttpGet]
