@@ -244,6 +244,16 @@ Always create validators alongside commands to maintain code quality and prevent
 
 ## Additional Code Quality Rules
 
+### Create Operations Return Shape
+- Single-entity creates must return `ApiResponse<Guid>` containing only the new entity identifier.
+- Multi-entity or bulk creates must return `ApiResponse<Unit>` with a success message only (no payload).
+
+### Update WFP Objective Timeline Return Type
+- `UpdateWFPObjectiveTimelineCommand` and its handler must return `ApiResponse<Unit>` (no payload). Only return the success message with `Unit.Value`.
+
+### DTO Immutability
+- All DTOs must be declared as `record` types with get/init-only properties to keep them immutable.
+
 ### 1. Avoid Abbreviations and Initials
 - Do not use initials or abbreviated messages or strings. As much as possible, use the full word.
 - Examples:

@@ -1,12 +1,13 @@
 namespace ERPEZ.Application.Features.Planning.WFPObjectiveTimeline.Dtos;
 
-public class WFPObjectiveTimelineResponse
+public record WFPObjectiveTimelineResponse
 {
-    public Guid Id { get; set; }
-    public Guid WFPObjectiveTargetId { get; set; }
-    public DateOnly StartDate { get; set; }
-    public DateOnly EndDate { get; set; }
-    public decimal TargetValue { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public string CreatedBy { get; set; } = string.Empty;
+    public Guid Id { get; init; }
+    public Guid WFPObjectiveTargetId { get; init; }
+    public string TimelineType { get; init; } = string.Empty;
+    public DateOnly StartDate { get; init; }
+    public DateOnly EndDate { get; init; }
+    public decimal TargetValue { get; init; }
+    public DateTime CreatedAt { get; init; }
+    public string CreatedBy { get; init; } = string.Empty;
 }

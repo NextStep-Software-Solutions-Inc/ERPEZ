@@ -1,4 +1,4 @@
-using ERPEZ.Application.Features.Planning.WFPObjectiveTimeline.Dtos;
+using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -7,9 +7,9 @@ using MediatR;
 namespace ERPEZ.Application.Features.Planning.WFPObjectiveTimeline.Commands.UpdateWFPObjectiveTimeline;
 
 public class UpdateWFPObjectiveTimelineCommandHandler(IUnitOfWork unitOfWork) 
-    : IRequestHandler<UpdateWFPObjectiveTimelineCommand, ApiResponse<WFPObjectiveTimelineResponse>>
+    : IRequestHandler<UpdateWFPObjectiveTimelineCommand, ApiResponse<Unit>>
 {
-    public async Task<ApiResponse<WFPObjectiveTimelineResponse>> Handle(
+    public async Task<ApiResponse<Unit>> Handle(
         UpdateWFPObjectiveTimelineCommand request, 
         CancellationToken cancellationToken)
     {
@@ -38,6 +38,10 @@ public class UpdateWFPObjectiveTimelineCommandHandler(IUnitOfWork unitOfWork)
         if (hasOverlap)
             throw new ConflictException("Timeline period overlaps with an existing timeline for this activity.");
 
+        if (!string.IsNullOrWhiteSpace(dto.TimelineType))
+        {
+            timeline.TimelineType = Enum.Parse<TimelineTypeEnum>(dto.TimelineType);
+        }
         timeline.StartDate = newStartDate;
         timeline.EndDate = newEndDate;
         timeline.TargetValue = dto.TargetValue ?? timeline.TargetValue;
@@ -45,17 +49,6 @@ public class UpdateWFPObjectiveTimelineCommandHandler(IUnitOfWork unitOfWork)
         unitOfWork.WFPObjectiveTimelineRepository.Update(timeline);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var result = new WFPObjectiveTimelineResponse
-        {
-            Id = timeline.Id,
-            WFPObjectiveTargetId = timeline.WFPObjectiveTargetId,
-            StartDate = timeline.StartDate,
-            EndDate = timeline.EndDate,
-            TargetValue = timeline.TargetValue,
-            CreatedAt = timeline.CreatedAt,
-            CreatedBy = timeline.CreatedBy ?? string.Empty
-        };
-
-        return ApiResponse<WFPObjectiveTimelineResponse>.Success(result, "Timeline updated successfully.");
+        return ApiResponse<Unit>.Success(Unit.Value, "Timeline updated successfully.");
     }
 }

@@ -1,8 +1,9 @@
 namespace ERPEZ.Application.Features.Planning.WFPObjectiveTimeline.Dtos;
 
-public class UpdateWFPObjectiveTimelineRequest
+public record UpdateWFPObjectiveTimelineRequest
 {
-    public DateOnly? StartDate { get; set; }
-    public DateOnly? EndDate { get; set; }
-    public decimal? TargetValue { get; set; }
+    public string? TimelineType { get; init; }
+    public DateOnly? StartDate { get; init; }
+    public DateOnly? EndDate { get; init; }
+    public decimal? TargetValue { get; init; }
 }

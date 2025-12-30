@@ -1,4 +1,4 @@
-using ERPEZ.Application.Features.Planning.WFPObjectiveTimeline.Dtos;
+using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -7,9 +7,9 @@ using MediatR;
 namespace ERPEZ.Application.Features.Planning.WFPObjectiveTimeline.Commands.CreateWFPObjectiveTimeline;
 
 public class CreateWFPObjectiveTimelineCommandHandler(IUnitOfWork unitOfWork) 
-    : IRequestHandler<CreateWFPObjectiveTimelineCommand, ApiResponse<WFPObjectiveTimelineResponse>>
+    : IRequestHandler<CreateWFPObjectiveTimelineCommand, ApiResponse<Guid>>
 {
-    public async Task<ApiResponse<WFPObjectiveTimelineResponse>> Handle(
+    public async Task<ApiResponse<Guid>> Handle(
         CreateWFPObjectiveTimelineCommand request, 
         CancellationToken cancellationToken)
     {
@@ -33,6 +33,7 @@ public class CreateWFPObjectiveTimelineCommandHandler(IUnitOfWork unitOfWork)
         var timeline = new Domain.Entities.Planning.WFPObjectiveTimeline
         {
             WFPObjectiveTargetId = request.WFPObjectiveTargetId,
+            TimelineType = Enum.Parse<TimelineTypeEnum>(request.TimelineType),
             StartDate = request.StartDate,
             EndDate = request.EndDate,
             TargetValue = request.TargetValue
@@ -41,17 +42,6 @@ public class CreateWFPObjectiveTimelineCommandHandler(IUnitOfWork unitOfWork)
         await unitOfWork.WFPObjectiveTimelineRepository.AddAsync(timeline, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var dto = new WFPObjectiveTimelineResponse
-        {
-            Id = timeline.Id,
-            WFPObjectiveTargetId = timeline.WFPObjectiveTargetId,
-            StartDate = timeline.StartDate,
-            EndDate = timeline.EndDate,
-            TargetValue = timeline.TargetValue,
-            CreatedAt = timeline.CreatedAt,
-            CreatedBy = timeline.CreatedBy ?? string.Empty
-        };
-
-        return ApiResponse<WFPObjectiveTimelineResponse>.Success(dto, "Timeline created successfully.");
+        return ApiResponse<Guid>.Success(timeline.Id, "Timeline created successfully.");
     }
 }

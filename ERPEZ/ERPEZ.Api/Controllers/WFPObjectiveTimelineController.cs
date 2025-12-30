@@ -16,8 +16,8 @@ namespace ERPEZ.Api.Controllers;
 public class WFPObjectiveTimelineController(ISender mediator) : ControllerBase
 {
     [HttpPost]
-    [ProducesResponseType(typeof(ApiResponse<WFPObjectiveTimelineResponse>), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ApiResponse<WFPObjectiveTimelineResponse>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateWFPObjectiveTimeline([FromBody] CreateWFPObjectiveTimelineCommand command)
     {
         var result = await mediator.Send(command);
@@ -25,7 +25,7 @@ public class WFPObjectiveTimelineController(ISender mediator) : ControllerBase
         if (!result.Succeeded)
             return BadRequest(result);
 
-        return CreatedAtAction(nameof(GetWFPObjectiveTimelineById), new { id = result.Data!.Id }, result);
+        return CreatedAtAction(nameof(GetWFPObjectiveTimelineById), new { id = result.Data }, result);
     }
 
     [HttpGet]
@@ -46,7 +46,7 @@ public class WFPObjectiveTimelineController(ISender mediator) : ControllerBase
     }
 
     [HttpPut("{id}")]
-    [ProducesResponseType(typeof(ApiResponse<WFPObjectiveTimelineResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateWFPObjectiveTimeline(Guid id, [FromBody] UpdateWFPObjectiveTimelineRequest dto)
