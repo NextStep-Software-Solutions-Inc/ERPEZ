@@ -1,4 +1,5 @@
 using ERPEZ.Application.Features.Planning.WFPObjectiveTarget.Dtos;
+using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -51,12 +52,13 @@ public class CreateWFPObjectiveTargetCommandHandler(IUnitOfWork unitOfWork)
         // Create timelines if dates are provided
         if (request.Dates != null && request.Dates.Any())
         {
-            target.WFPObjectiveTimelines = request.Dates.Select(dateRange => new Domain.Entities.Planning.WFPObjectiveTimeline
+            target.WFPObjectiveTimelines = [.. request.Dates.Select(dateRange => new Domain.Entities.Planning.WFPObjectiveTimeline
             {
                 StartDate = dateRange.StartDate,
                 EndDate = dateRange.EndDate,
-                TargetValue = dateRange.Value
-            }).ToList();
+                TargetValue = dateRange.Value,
+                TimelineType = Enum.Parse<TimelineTypeEnum>(dateRange.TimelineType, ignoreCase: true)
+            })];
         }
 
         await unitOfWork.WFPObjectiveTargetRepository.AddAsync(target, cancellationToken);

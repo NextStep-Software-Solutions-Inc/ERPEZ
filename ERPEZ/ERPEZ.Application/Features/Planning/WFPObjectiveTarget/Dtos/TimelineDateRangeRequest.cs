@@ -3,9 +3,10 @@ namespace ERPEZ.Application.Features.Planning.WFPObjectiveTarget.Dtos;
 /// <summary>
 /// Represents a date range for timeline creation.
 /// </summary>
-public class TimelineDateRangeRequest
+public record TimelineDateRangeRequest
 {
-    public DateOnly StartDate { get; set; }
-    public DateOnly EndDate { get; set; }
-    public decimal Value { get; set; }
+    public DateOnly StartDate { get; init; }
+    public DateOnly EndDate { get; init; }
+    public decimal Value { get; init; }
+    public string TimelineType { get; init; } = string.Empty;
 }

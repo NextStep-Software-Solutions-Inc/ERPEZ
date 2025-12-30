@@ -1,4 +1,5 @@
 using FluentValidation;
+using ERPEZ.Domain.Enums;
 
 namespace ERPEZ.Application.Features.Planning.WFPObjectiveTarget.Commands.CreateWFPObjectiveTarget;
 
@@ -56,6 +57,23 @@ public class CreateWFPObjectiveTargetCommandValidator : AbstractValidator<Create
                 dateRange.RuleFor(d => d.Value)
                     .GreaterThan(0)
                     .WithMessage("Value must be greater than 0 for each date range.");
+
+                dateRange.RuleFor(d => d.TimelineType)
+                    .NotEmpty()
+                    .WithMessage("Timeline Type is required for each date range.")
+                    .Must(BeValidTimelineType)
+                    .WithMessage(GetValidTimelineTypesMessage());
             });
+    }
+
+    private static bool BeValidTimelineType(string timelineType)
+    {
+        return Enum.TryParse<TimelineTypeEnum>(timelineType, ignoreCase: true, out _);
+    }
+
+    private static string GetValidTimelineTypesMessage()
+    {
+        var validValues = string.Join(", ", Enum.GetNames(typeof(TimelineTypeEnum)));
+        return $"Timeline Type must be a valid value: {validValues}.";
     }
 }
