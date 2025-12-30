@@ -1,4 +1,4 @@
-using ERPEZ.Application.Features.Planning.ActivityBudgetRequirement.Dtos;
+using ERPEZ.Application.Features.Planning.WFPObjectiveTargetExpenditure.Dtos;
 using ERPEZ.Application.Features.Planning.Object.Dtos;
 using ERPEZ.Application.Features.Planning.WFPObjective.Dtos;
 using ERPEZ.Application.Features.Planning.WFPObjectiveTimeline.Dtos;
@@ -31,7 +31,7 @@ public class GetWFPObjectiveByIdQueryHandler(IUnitOfWork unitOfWork)
                     ActivityName = t.ActivityName,
                     Indicator = t.Indicator,
                     Weight = t.Weight,
-                    ActivityBudgetRequirements = t.ActivityBudgetRequirements.Select(ab => new ActivityBudgetRequirementResponse
+                    WFPObjectiveTargetExpenditures = t.WFPObjectiveTargetExpenditures.Select(ab => new WFPObjectiveTargetExpenditureResponse
                     {
                         Id = ab.Id,
                         ItemDescription = ab.ItemDescription,

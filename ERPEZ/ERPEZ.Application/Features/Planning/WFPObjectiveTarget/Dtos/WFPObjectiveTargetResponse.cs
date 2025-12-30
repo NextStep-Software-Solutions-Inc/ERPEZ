@@ -1,4 +1,4 @@
-using ERPEZ.Application.Features.Planning.ActivityBudgetRequirement.Dtos;
+using ERPEZ.Application.Features.Planning.WFPObjectiveTargetExpenditure.Dtos;
 using ERPEZ.Application.Features.Planning.WFPObjectiveTimeline.Dtos;
 
 namespace ERPEZ.Application.Features.Planning.WFPObjectiveTarget.Dtos;
@@ -14,5 +14,5 @@ public class WFPObjectiveTargetResponse
     public string CreatedBy { get; set; } = string.Empty;
 
     public List<WFPObjectiveTimelineResponse> WFPObjectiveTimelines { get; set; } = [];
-    public List<ActivityBudgetRequirementResponse> ActivityBudgetRequirements { get; set; } = [];
+    public List<WFPObjectiveTargetExpenditureResponse> WFPObjectiveTargetExpenditures { get; set; } = [];
 }

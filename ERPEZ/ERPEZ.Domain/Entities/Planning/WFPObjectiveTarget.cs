@@ -15,6 +15,6 @@ public class WFPObjectiveTarget : BaseEntity
     public decimal Weight { get; set; }
     public virtual WFPObjective WFPObjective { get; set; } = null!;
     public virtual List<WFPObjectiveTimeline> WFPObjectiveTimelines { get; set; } = [];
-    public virtual List<ActivityBudgetRequirement> ActivityBudgetRequirements { get; set; } = [];
+    public virtual List<WFPObjectiveTargetExpenditure> WFPObjectiveTargetExpenditures { get; set; } = [];
 
 }

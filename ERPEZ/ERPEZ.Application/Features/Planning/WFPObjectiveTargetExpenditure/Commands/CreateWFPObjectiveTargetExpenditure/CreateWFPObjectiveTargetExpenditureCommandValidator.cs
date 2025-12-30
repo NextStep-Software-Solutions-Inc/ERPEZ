@@ -1,10 +1,10 @@
 using FluentValidation;
 
-namespace ERPEZ.Application.Features.Planning.ActivityBudgetRequirement.Commands.CreateABR;
+namespace ERPEZ.Application.Features.Planning.WFPObjectiveTargetExpenditure.Commands.CreateWFPObjectiveTargetExpenditure;
 
-public class CreateActivityBudgetRequirementCommandValidator : AbstractValidator<CreateActivityBudgetRequirementCommand>
+public class CreateWFPObjectiveTargetExpenditureCommandValidator : AbstractValidator<CreateWFPObjectiveTargetExpenditureCommand>
 {
-    public CreateActivityBudgetRequirementCommandValidator()
+    public CreateWFPObjectiveTargetExpenditureCommandValidator()
     {
         // WFPObjectiveTargetId (Required GUID)
         RuleFor(x => x.WFPObjectiveTargetId)

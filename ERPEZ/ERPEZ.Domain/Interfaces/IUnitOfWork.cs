@@ -2,7 +2,7 @@ namespace ERPEZ.Domain.Interfaces;
 
 public interface IUnitOfWork
 {
-    IActivityBudgetRequirementRepository ActivityBudgetRequirementRepository { get; }
+    IWFPObjectiveTargetExpenditureRepository WFPObjectiveTargetExpenditureRepository { get; }
     IAttributeRepository AttributeRepository { get; }
     IPerformanceMeasureRepository PerformanceMeasureRepository { get; }
     IDUFundAllocationRepository DUFundAllocationRepository { get; }

@@ -1,8 +1,8 @@
 using ERPEZ.Application.Features.Planning.Object.Dtos;
 
-namespace ERPEZ.Application.Features.Planning.ActivityBudgetRequirement.Dtos;
+namespace ERPEZ.Application.Features.Planning.WFPObjectiveTargetExpenditure.Dtos;
 
-public record ActivityBudgetRequirementResponse
+public record WFPObjectiveTargetExpenditureResponse
 {
     public Guid Id { get; init; }
     public Guid WFPObjectiveTargetId { get; init; }

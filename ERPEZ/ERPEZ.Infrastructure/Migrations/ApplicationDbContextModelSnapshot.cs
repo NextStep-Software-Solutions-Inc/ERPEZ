@@ -68,58 +68,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.ToTable("DeliveryUnitOPCRActivity", "planning");
                 });
 
-            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.ActivityBudgetRequirement", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<decimal>("CostEstimates")
-                        .HasColumnType("numeric");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("CreatedBy")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("DeletedBy")
-                        .HasColumnType("text");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("ItemDescription")
-                        .HasColumnType("text");
-
-                    b.Property<Guid>("ObjectId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Quantity")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("text");
-
-                    b.Property<Guid>("WFPObjectiveTargetId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("ObjectId");
-
-                    b.HasIndex("WFPObjectiveTargetId", "ObjectId", "ItemDescription");
-
-                    b.ToTable("ActivityBudgetRequirements", "planning");
-                });
-
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.Attribute", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1806,6 +1754,58 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.ToTable("WFPObjectiveTargets", "planning");
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WFPObjectiveTargetExpenditure", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("CostEstimates")
+                        .HasColumnType("numeric");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("ItemDescription")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("ObjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("WFPObjectiveTargetId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ObjectId");
+
+                    b.HasIndex("WFPObjectiveTargetId", "ObjectId", "ItemDescription");
+
+                    b.ToTable("WFPObjectiveTargetExpenditures", "planning");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WFPObjectiveTimeline", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2035,25 +2035,6 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasForeignKey("OPCRActivitiesId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-                });
-
-            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.ActivityBudgetRequirement", b =>
-                {
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.Object", "Object")
-                        .WithMany("ActivityBudgetRequirements")
-                        .HasForeignKey("ObjectId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.WFPObjectiveTarget", "WFPObjectiveTarget")
-                        .WithMany("ActivityBudgetRequirements")
-                        .HasForeignKey("WFPObjectiveTargetId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Object");
-
-                    b.Navigation("WFPObjectiveTarget");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.Attribute", b =>
@@ -2502,6 +2483,25 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("WFPObjective");
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WFPObjectiveTargetExpenditure", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.Object", "Object")
+                        .WithMany("WFPObjectiveTargetExpenditures")
+                        .HasForeignKey("ObjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.WFPObjectiveTarget", "WFPObjectiveTarget")
+                        .WithMany("WFPObjectiveTargetExpenditures")
+                        .HasForeignKey("WFPObjectiveTargetId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Object");
+
+                    b.Navigation("WFPObjectiveTarget");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WFPObjectiveTimeline", b =>
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Planning.WFPObjectiveTarget", "WFPObjectiveTarget")
@@ -2677,11 +2677,11 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.Object", b =>
                 {
-                    b.Navigation("ActivityBudgetRequirements");
-
                     b.Navigation("Objects");
 
                     b.Navigation("Transactions");
+
+                    b.Navigation("WFPObjectiveTargetExpenditures");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.Office", b =>
@@ -2722,7 +2722,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WFPObjectiveTarget", b =>
                 {
-                    b.Navigation("ActivityBudgetRequirements");
+                    b.Navigation("WFPObjectiveTargetExpenditures");
 
                     b.Navigation("WFPObjectiveTimelines");
                 });

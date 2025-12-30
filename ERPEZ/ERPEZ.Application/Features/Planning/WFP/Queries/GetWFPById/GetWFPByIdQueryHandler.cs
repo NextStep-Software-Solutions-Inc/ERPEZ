@@ -1,4 +1,4 @@
-using ERPEZ.Application.Features.Planning.ActivityBudgetRequirement.Dtos;
+using ERPEZ.Application.Features.Planning.WFPObjectiveTargetExpenditure.Dtos;
 using ERPEZ.Application.Features.Planning.DeliveryUnit.Dtos;
 using ERPEZ.Application.Features.Planning.FiscalYear.Dtos;
 using ERPEZ.Application.Features.Planning.MFOPAP.Dtos;
@@ -135,7 +135,7 @@ public class GetWFPByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
                             CreatedAt = ot.CreatedAt,
                             CreatedBy = ot.CreatedBy,
                         }).ToList(),
-                        ActivityBudgetRequirements = t.ActivityBudgetRequirements.Select(ab => new ActivityBudgetRequirementResponse
+                        WFPObjectiveTargetExpenditures = t.WFPObjectiveTargetExpenditures.Select(ab => new WFPObjectiveTargetExpenditureResponse
                         {
                             Id = ab.Id,
                             ItemDescription = ab.ItemDescription,

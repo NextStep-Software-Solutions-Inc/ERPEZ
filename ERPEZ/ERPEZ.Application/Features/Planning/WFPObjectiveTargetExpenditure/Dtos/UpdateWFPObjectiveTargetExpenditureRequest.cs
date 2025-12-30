@@ -1,6 +1,6 @@
-namespace ERPEZ.Application.Features.Planning.ActivityBudgetRequirement.Dtos;
+namespace ERPEZ.Application.Features.Planning.WFPObjectiveTargetExpenditure.Dtos;
 
-public class UpdateActivityBudgetRequirementRequest
+public class UpdateWFPObjectiveTargetExpenditureRequest
 {
     public string? ItemDescription { get; set; }
     public int Quantity { get; set; }

@@ -9,7 +9,7 @@ namespace ERPEZ.Infrastructure.Persistence;
 public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : DbContext(options)
 {
     //Planning
-    public DbSet<ActivityBudgetRequirement>? ActivityBudgetRequirements { get; set; }
+    public DbSet<WFPObjectiveTargetExpenditure>? WFPObjectiveTargetExpenditures { get; set; }
     public DbSet<DUAllocation>? DUAllocations { get; set; }
     public DbSet<DUFundAllocation>? DUFundAllocations { get; set; }
     public DbSet<FunctionAllocation>? FunctionAllocations { get; set; }
@@ -285,7 +285,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         //Object
         modelBuilder.Entity<Object>()
-            .HasMany(o => o.ActivityBudgetRequirements)
+            .HasMany(o => o.WFPObjectiveTargetExpenditures)
             .WithOne(a => a.Object)
             .HasForeignKey(a => a.ObjectId)
             .OnDelete(DeleteBehavior.Restrict);
@@ -445,7 +445,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .IsRequired();
 
         modelBuilder.Entity<WFPObjectiveTarget>()
-            .HasMany(t => t.ActivityBudgetRequirements)
+            .HasMany(t => t.WFPObjectiveTargetExpenditures)
             .WithOne(abr => abr.WFPObjectiveTarget);
 
         modelBuilder.Entity<WFPObjectiveTarget>()
@@ -488,18 +488,18 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasForeignKey(d => d.DeliveryUnitId)
             .OnDelete(DeleteBehavior.Restrict);
 
-        //ActivityBudgetRequirement
-        modelBuilder.Entity<ActivityBudgetRequirement>()
+        //WFPObjectiveTargetExpenditure
+        modelBuilder.Entity<WFPObjectiveTargetExpenditure>()
             .HasIndex(ab => new { ab.WFPObjectiveTargetId, ab.ObjectId, ab.ItemDescription });
 
-        modelBuilder.Entity<ActivityBudgetRequirement>()
+        modelBuilder.Entity<WFPObjectiveTargetExpenditure>()
             .HasOne(ab => ab.WFPObjectiveTarget)
-            .WithMany(ot => ot.ActivityBudgetRequirements)
+            .WithMany(ot => ot.WFPObjectiveTargetExpenditures)
             .HasForeignKey(ab => ab.WFPObjectiveTargetId);
 
-        modelBuilder.Entity<ActivityBudgetRequirement>()
+        modelBuilder.Entity<WFPObjectiveTargetExpenditure>()
             .HasOne(ab => ab.Object)
-            .WithMany(o => o.ActivityBudgetRequirements)
+            .WithMany(o => o.WFPObjectiveTargetExpenditures)
             .HasForeignKey(ab => ab.ObjectId);
 
         // OPCR
@@ -649,7 +649,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .IsRequired();
 
         modelBuilder.Entity<WFPObjectiveTarget>()
-            .HasMany(wot => wot.ActivityBudgetRequirements)
+            .HasMany(wot => wot.WFPObjectiveTargetExpenditures)
             .WithOne(abr => abr.WFPObjectiveTarget)
             .HasForeignKey(abr => abr.WFPObjectiveTargetId)
             .IsRequired();

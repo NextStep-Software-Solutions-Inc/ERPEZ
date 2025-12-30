@@ -15,6 +15,6 @@ public class Object : BaseEntity
     public bool IsActive { get; set; }
     public virtual Object? ParentObject { get; set; }
     public virtual List<Object> Objects { get; set; } = [];
-    public virtual List<ActivityBudgetRequirement> ActivityBudgetRequirements { get; set; } = [];
+    public virtual List<WFPObjectiveTargetExpenditure> WFPObjectiveTargetExpenditures { get; set; } = [];
     public virtual List<Transaction> Transactions { get; set; } = [];
 }

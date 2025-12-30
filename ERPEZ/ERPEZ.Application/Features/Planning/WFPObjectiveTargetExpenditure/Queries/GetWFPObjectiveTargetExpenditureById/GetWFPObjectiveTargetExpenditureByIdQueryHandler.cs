@@ -1,19 +1,19 @@
-using ERPEZ.Application.Features.Planning.ActivityBudgetRequirement.Dtos;
+using ERPEZ.Application.Features.Planning.WFPObjectiveTargetExpenditure.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
 
-namespace ERPEZ.Application.Features.Planning.ActivityBudgetRequirement.Queries.GetABRById;
+namespace ERPEZ.Application.Features.Planning.WFPObjectiveTargetExpenditure.Queries.GetWFPObjectiveTargetExpenditureById;
 
-public class GetActivityBudgetRequirementByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetActivityBudgetRequirementByIdQuery, ApiResponse<ActivityBudgetRequirementResponse>>
+public class GetWFPObjectiveTargetExpenditureByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetWFPObjectiveTargetExpenditureByIdQuery, ApiResponse<WFPObjectiveTargetExpenditureResponse>>
 {
-    public async Task<ApiResponse<ActivityBudgetRequirementResponse>> Handle(GetActivityBudgetRequirementByIdQuery request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<WFPObjectiveTargetExpenditureResponse>> Handle(GetWFPObjectiveTargetExpenditureByIdQuery request, CancellationToken cancellationToken)
     {
-        var abr = await unitOfWork.ActivityBudgetRequirementRepository.FindAsync(
+        var abr = await unitOfWork.WFPObjectiveTargetExpenditureRepository.FindAsync(
            t => t.Id == request.Id,
             cancellationToken: cancellationToken) ?? throw new NotFoundException("No data found.");
-        var result = new ActivityBudgetRequirementResponse()
+        var result = new WFPObjectiveTargetExpenditureResponse()
         {
             Id = abr.Id,
             WFPObjectiveTargetId = abr.WFPObjectiveTargetId,
@@ -30,6 +30,6 @@ public class GetActivityBudgetRequirementByIdQueryHandler(IUnitOfWork unitOfWork
             CreatedBy = abr.CreatedBy ?? string.Empty,
             CreatedAt = abr.CreatedAt
         };
-        return ApiResponse<ActivityBudgetRequirementResponse>.Success(result, "Retrieved successfully");
+        return ApiResponse<WFPObjectiveTargetExpenditureResponse>.Success(result, "Retrieved successfully");
     }
 }

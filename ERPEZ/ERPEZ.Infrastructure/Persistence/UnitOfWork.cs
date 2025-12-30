@@ -18,7 +18,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IOPCRPAPDepartmentRepository opcrPapDepartmentRepository;
     private readonly IWFPRepository wfpRepository;
     private readonly IWFPObjectiveRepository wfpObjectiveRepository;
-    private readonly IActivityBudgetRequirementRepository activityBudgetRequirementRepository;
+    private readonly IWFPObjectiveTargetExpenditureRepository wfpObjectiveTargetExpenditureRepository;
     private readonly IWFPPAPDepartmentRepository wfpPapDepartmentRepository;
     private readonly IOPCREvaluationRepository opcrEvaluationRepository;
     private readonly IOPCRRatingRepository opcrRatingRepository;
@@ -60,7 +60,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         opcrPapDepartmentRepository = new OPCRPAPDepartmentRepository(context, sieveProcessor);
         wfpRepository = new WFPRepository(context, sieveProcessor);
         wfpObjectiveRepository = new WFPObjectiveRepository(context, sieveProcessor);
-        activityBudgetRequirementRepository = new ActivityBudgetRequirementRepository(context, sieveProcessor);
+        wfpObjectiveTargetExpenditureRepository = new WFPObjectiveTargetExpenditureRepository(context, sieveProcessor);
         wfpPapDepartmentRepository = new WFPPAPDepartmentRepository(context, sieveProcessor);
         opcrEvaluationRepository = new OPCREvaluationRepository(context, sieveProcessor);
         opcrRatingRepository = new OPCRRatingRepository(context, sieveProcessor);
@@ -98,7 +98,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IOPCRPAPDepartmentRepository OPCRPAPDepartmentRepository => opcrPapDepartmentRepository;
     public IWFPRepository WFPRepository => wfpRepository;
     public IWFPObjectiveRepository WFPObjectiveRepository => wfpObjectiveRepository;
-    public IActivityBudgetRequirementRepository ActivityBudgetRequirementRepository => activityBudgetRequirementRepository;
+    public IWFPObjectiveTargetExpenditureRepository WFPObjectiveTargetExpenditureRepository => wfpObjectiveTargetExpenditureRepository;
     public IWFPPAPDepartmentRepository WFPPAPDepartmentRepository => wfpPapDepartmentRepository;
     public IOPCREvaluationRepository OPCREvaluationRepository => opcrEvaluationRepository;
     public IOPCRRatingRepository OPCRRatingRepository => opcrRatingRepository;

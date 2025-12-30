@@ -48,7 +48,7 @@ public static class DependencyInjection
                 }
             });
         // Register repositories and Unit of Work
-        services.AddScoped<IActivityBudgetRequirementRepository, ActivityBudgetRequirementRepository>();
+        services.AddScoped<IWFPObjectiveTargetExpenditureRepository, WFPObjectiveTargetExpenditureRepository>();
         services.AddScoped<IDUAllocationRepository, DUAllocationRepository>();
         services.AddScoped<IOPCRRepository, OPCRRepository>();
         services.AddScoped<IOPCRActivityRepository, OPCRActivityRepository>();
@@ -80,7 +80,7 @@ public static class DependencyInjection
         services.AddScoped<IFiscalYearRepository, FiscalYearRepository>();
         services.AddScoped<IDUFundAllocationRepository, DUFundAllocationRepository>();
         services.AddScoped<IClusterRepository, ClusterRepository>();
-        services.AddScoped<IActivityBudgetRequirementRepository, ActivityBudgetRequirementRepository>();
+        services.AddScoped<IWFPObjectiveTargetExpenditureRepository, WFPObjectiveTargetExpenditureRepository>();
         services.AddScoped<IWFPObjectiveTargetRepository, WFPObjectiveTargetRepository>();
         services.AddScoped<IWFPObjectiveTimelineRepository, WFPObjectiveTimelineRepository>();
         services.AddScoped<IAttributeRepository, AttributeRepository>();

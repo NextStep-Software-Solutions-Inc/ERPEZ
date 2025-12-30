@@ -1,18 +1,18 @@
-using ERPEZ.Application.Features.Planning.ActivityBudgetRequirement.Dtos;
+using ERPEZ.Application.Features.Planning.WFPObjectiveTargetExpenditure.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
 
-namespace ERPEZ.Application.Features.Planning.ActivityBudgetRequirement.Commands.CreateABR;
+namespace ERPEZ.Application.Features.Planning.WFPObjectiveTargetExpenditure.Commands.CreateWFPObjectiveTargetExpenditure;
 
-public class CreateActivityBudgetRequirementCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateActivityBudgetRequirementCommand, ApiResponse<ActivityBudgetRequirementResponse>>
+public class CreateWFPObjectiveTargetExpenditureCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateWFPObjectiveTargetExpenditureCommand, ApiResponse<WFPObjectiveTargetExpenditureResponse>>
 {
-    public async Task<ApiResponse<ActivityBudgetRequirementResponse>> Handle(CreateActivityBudgetRequirementCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<WFPObjectiveTargetExpenditureResponse>> Handle(CreateWFPObjectiveTargetExpenditureCommand request, CancellationToken cancellationToken)
     {
         _ = await unitOfWork.WFPObjectiveTargetRepository.GetByIdAsync(request.WFPObjectiveTargetId, cancellationToken) ?? throw new NotFoundException("WFP Objective Target not found.");
         _ = await unitOfWork.ObjectRepository.GetByIdAsync(request.ObjectId, cancellationToken) ?? throw new NotFoundException("Object not found.");
-        var existingABR = await unitOfWork.ActivityBudgetRequirementRepository.FindAsync(abr =>
+        var existingABR = await unitOfWork.WFPObjectiveTargetExpenditureRepository.FindAsync(abr =>
         abr.WFPObjectiveTargetId == request.WFPObjectiveTargetId &&
         abr.ObjectId == request.ObjectId &&
         abr.ItemDescription == request.ItemDescription,
@@ -20,9 +20,9 @@ public class CreateActivityBudgetRequirementCommandHandler(IUnitOfWork unitOfWor
         );
 
         if (existingABR != null)
-            throw new ConflictException("Activity Budget Requirement already exist.");
+            throw new ConflictException("WFP Objective Target Expenditure already exist.");
 
-        var abr = new Domain.Entities.Planning.ActivityBudgetRequirement
+        var abr = new Domain.Entities.Planning.WFPObjectiveTargetExpenditure
         {
             WFPObjectiveTargetId = request.WFPObjectiveTargetId,
             ObjectId = request.ObjectId,
@@ -31,10 +31,10 @@ public class CreateActivityBudgetRequirementCommandHandler(IUnitOfWork unitOfWor
             CostEstimates = request.CostEstimates
         };
 
-        await unitOfWork.ActivityBudgetRequirementRepository.AddAsync(abr, cancellationToken);
+        await unitOfWork.WFPObjectiveTargetExpenditureRepository.AddAsync(abr, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var dto = new ActivityBudgetRequirementResponse
+        var dto = new WFPObjectiveTargetExpenditureResponse
         {
             Id = abr.Id,
             WFPObjectiveTargetId = abr.WFPObjectiveTargetId,
@@ -49,6 +49,6 @@ public class CreateActivityBudgetRequirementCommandHandler(IUnitOfWork unitOfWor
             Quantity = abr.Quantity,
             CostEstimates = abr.CostEstimates
         };
-        return ApiResponse<ActivityBudgetRequirementResponse>.Success(dto, "Activity Budget Requirement created successfully.");
+        return ApiResponse<WFPObjectiveTargetExpenditureResponse>.Success(dto, "WFP Objective Target Expenditure created successfully.");
     }
 }

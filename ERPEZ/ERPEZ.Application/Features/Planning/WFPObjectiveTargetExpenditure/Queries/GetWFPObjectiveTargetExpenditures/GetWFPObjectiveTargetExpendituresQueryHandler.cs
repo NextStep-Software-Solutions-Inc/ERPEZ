@@ -1,14 +1,14 @@
-using ERPEZ.Application.Features.Planning.ActivityBudgetRequirement.Dtos;
+using ERPEZ.Application.Features.Planning.WFPObjectiveTargetExpenditure.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
 using System.Linq.Expressions;
 
-namespace ERPEZ.Application.Features.Planning.ActivityBudgetRequirement.Queries.GetABRs;
+namespace ERPEZ.Application.Features.Planning.WFPObjectiveTargetExpenditure.Queries.GetWFPObjectiveTargetExpenditures;
 
-public class GetActivityBudgetRequirementsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetActivityBudgetRequirementsQuery, PaginatedApiResponse<ActivityBudgetRequirementResponse>>
+public class GetWFPObjectiveTargetExpendituresQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetWFPObjectiveTargetExpendituresQuery, PaginatedApiResponse<WFPObjectiveTargetExpenditureResponse>>
 {
-    public async Task<PaginatedApiResponse<ActivityBudgetRequirementResponse>> Handle(GetActivityBudgetRequirementsQuery query, CancellationToken cancellationToken)
+    public async Task<PaginatedApiResponse<WFPObjectiveTargetExpenditureResponse>> Handle(GetWFPObjectiveTargetExpendituresQuery query, CancellationToken cancellationToken)
     {
         var sieveModel = new Sieve.Models.SieveModel
         {
@@ -18,7 +18,7 @@ public class GetActivityBudgetRequirementsQueryHandler(IUnitOfWork unitOfWork) :
             Sorts = query.Sorts
         };
 
-        Expression<Func<Domain.Entities.Planning.ActivityBudgetRequirement, ActivityBudgetRequirementResponse>> projection = abr => new ActivityBudgetRequirementResponse
+        Expression<Func<Domain.Entities.Planning.WFPObjectiveTargetExpenditure, WFPObjectiveTargetExpenditureResponse>> projection = abr => new WFPObjectiveTargetExpenditureResponse
         {
             Id = abr.Id,
             WFPObjectiveTargetId = abr.WFPObjectiveTargetId,
@@ -35,8 +35,8 @@ public class GetActivityBudgetRequirementsQueryHandler(IUnitOfWork unitOfWork) :
             CreatedAt = abr.CreatedAt,
             CreatedBy = abr.CreatedBy ?? string.Empty
         };
-        var (abrs, totalCount) = await unitOfWork.ActivityBudgetRequirementRepository.GetAllAsync(sieveModel, projection, cancellationToken: cancellationToken);
-        return new PaginatedApiResponse<ActivityBudgetRequirementResponse>(
+        var (abrs, totalCount) = await unitOfWork.WFPObjectiveTargetExpenditureRepository.GetAllAsync(sieveModel, projection, cancellationToken: cancellationToken);
+        return new PaginatedApiResponse<WFPObjectiveTargetExpenditureResponse>(
             [.. abrs],
             query.PageNumber,
             query.PageSize,
