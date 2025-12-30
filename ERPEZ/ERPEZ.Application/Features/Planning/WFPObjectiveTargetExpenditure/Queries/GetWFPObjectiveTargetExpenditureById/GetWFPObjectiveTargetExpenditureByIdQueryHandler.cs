@@ -1,3 +1,4 @@
+using ERPEZ.Application.Features.Planning.Object.Dtos;
 using ERPEZ.Application.Features.Planning.WFPObjectiveTargetExpenditure.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
@@ -20,7 +21,27 @@ public class GetWFPObjectiveTargetExpenditureByIdQueryHandler(IUnitOfWork unitOf
             Object = new()
             {
                 Id = abr.Object.Id,
-                ParentId = abr.Object.ParentId,
+                Parent = abr.Object.ParentObject != null ? new ObjectResponse()
+                {
+                    Id = abr.Object.ParentObject.Id,
+                    Name = abr.Object.ParentObject.Name,
+                    Code = abr.Object.ParentObject.Code,
+                    IsActive = abr.Object.ParentObject.IsActive,
+                    Parent = abr.Object.ParentObject.ParentObject != null ? new ObjectResponse()
+                    {
+                        Id = abr.Object.ParentObject.ParentObject.Id,
+                        Name = abr.Object.ParentObject.ParentObject.Name,
+                        Code = abr.Object.ParentObject.ParentObject.Code,
+                        IsActive = abr.Object.ParentObject.ParentObject.IsActive,
+                        Parent = abr.Object.ParentObject.ParentObject.ParentObject != null ? new ObjectResponse()
+                        {
+                            Id = abr.Object.ParentObject.ParentObject.ParentObject.Id,
+                            Name = abr.Object.ParentObject.ParentObject.ParentObject.Name,
+                            Code = abr.Object.ParentObject.ParentObject.ParentObject.Code,
+                            IsActive = abr.Object.ParentObject.ParentObject.ParentObject.IsActive
+                        } : null
+                    } : null
+                } : null,
                 Name = abr.Object.Name,
                 Code = abr.Object.Code,
             },

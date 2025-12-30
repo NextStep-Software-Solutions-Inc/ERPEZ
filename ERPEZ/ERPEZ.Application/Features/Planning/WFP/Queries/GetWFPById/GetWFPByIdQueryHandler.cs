@@ -149,7 +149,28 @@ public class GetWFPByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
                                 Id = ab.Object.Id,
                                 Name = ab.Object.Name,
                                 Code = ab.Object.Code,
-                            },
+                                Parent = ab.Object.ParentObject != null ? new ObjectResponse
+                                {
+                                    Id = ab.Object.ParentObject.Id,
+                                    Name = ab.Object.ParentObject.Name,
+                                    Code = ab.Object.ParentObject.Code,
+                                    IsActive = ab.Object.ParentObject.IsActive,
+                                    Parent = ab.Object.ParentObject.ParentObject != null ? new ObjectResponse
+                                    {
+                                        Id = ab.Object.ParentObject.ParentObject.Id,
+                                        Name = ab.Object.ParentObject.ParentObject.Name,
+                                        Code = ab.Object.ParentObject.ParentObject.Code,
+                                        IsActive = ab.Object.ParentObject.ParentObject.IsActive,
+                                        Parent = ab.Object.ParentObject.ParentObject.ParentObject != null ? new ObjectResponse
+                                        {
+                                            Id = ab.Object.ParentObject.ParentObject.ParentObject.Id,
+                                            Name = ab.Object.ParentObject.ParentObject.ParentObject.Name,
+                                            Code = ab.Object.ParentObject.ParentObject.ParentObject.Code,
+                                            IsActive = ab.Object.ParentObject.ParentObject.ParentObject.IsActive,
+                                        } : null!
+                                    } : null!
+                                } : null!,
+                            }
                         }).ToList(),
                     }).ToList(),
                 }).ToList(),

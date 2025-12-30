@@ -10,7 +10,10 @@ public class CreateWFPObjectiveTargetExpenditureCommandHandler(IUnitOfWork unitO
     public async Task<ApiResponse<Guid>> Handle(CreateWFPObjectiveTargetExpenditureCommand request, CancellationToken cancellationToken)
     {
         _ = await unitOfWork.WFPObjectiveTargetRepository.GetByIdAsync(request.WFPObjectiveTargetId, cancellationToken) ?? throw new NotFoundException("WFP Objective Target not found.");
-        _ = await unitOfWork.ObjectRepository.GetByIdAsync(request.ObjectId, cancellationToken) ?? throw new NotFoundException("Object not found.");
+        var obj = await unitOfWork.ObjectRepository.GetByIdAsync(request.ObjectId, cancellationToken) ?? throw new NotFoundException("Object not found.");
+        
+        if (obj.ParentId == null) throw new BadRequestException("The selected Object must be a child object. Root objects are not allowed.");
+        
         var existingABR = await unitOfWork.WFPObjectiveTargetExpenditureRepository.FindAsync(abr =>
         abr.WFPObjectiveTargetId == request.WFPObjectiveTargetId &&
         abr.ObjectId == request.ObjectId &&

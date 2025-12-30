@@ -23,7 +23,9 @@ public class BulkCreateWFPObjectiveTargetExpenditureCommandHandler(IUnitOfWork u
 
             foreach (var expenditureRequest in request.Expenditures)
             {
-                _ = await unitOfWork.ObjectRepository.GetByIdAsync(expenditureRequest.ObjectId, cancellationToken) ?? throw new NotFoundException($"Object with ID {expenditureRequest.ObjectId} not found.");
+                var obj = await unitOfWork.ObjectRepository.GetByIdAsync(expenditureRequest.ObjectId, cancellationToken) ?? throw new NotFoundException($"Object with ID {expenditureRequest.ObjectId} not found.");
+                
+                if (obj.ParentId == null) throw new BadRequestException($"The Object with ID {expenditureRequest.ObjectId} must be a child object. Root objects are not allowed.");
 
                 var existingExpenditure = await unitOfWork.WFPObjectiveTargetExpenditureRepository.FindAsync(exp =>
                     exp.WFPObjectiveTargetId == request.WFPObjectiveTargetId &&

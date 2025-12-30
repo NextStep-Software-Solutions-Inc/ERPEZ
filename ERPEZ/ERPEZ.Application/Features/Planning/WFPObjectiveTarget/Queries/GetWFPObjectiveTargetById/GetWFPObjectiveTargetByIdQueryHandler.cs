@@ -51,8 +51,28 @@ public class GetWFPObjectiveTargetByIdQueryHandler(IUnitOfWork unitOfWork)
                         Id = exp.Object.Id,
                         Name = exp.Object.Name,
                         Code = exp.Object.Code,
-                        ParentId = exp.Object.ParentId,
-                        IsActive = exp.Object.IsActive
+                        IsActive = exp.Object.IsActive,
+                        Parent = exp.Object.ParentObject != null ? new ObjectResponse
+                        {
+                            Id = exp.Object.ParentObject.Id,
+                            Name = exp.Object.ParentObject.Name,
+                            Code = exp.Object.ParentObject.Code,
+                            IsActive = exp.Object.ParentObject.IsActive,
+                            Parent = exp.Object.ParentObject.ParentObject != null ? new ObjectResponse
+                            {
+                                Id = exp.Object.ParentObject.ParentObject.Id,
+                                Name = exp.Object.ParentObject.ParentObject.Name,
+                                Code = exp.Object.ParentObject.ParentObject.Code,
+                                IsActive = exp.Object.ParentObject.ParentObject.IsActive,
+                                Parent = exp.Object.ParentObject.ParentObject.ParentObject != null ? new ObjectResponse
+                                {
+                                    Id = exp.Object.ParentObject.ParentObject.ParentObject.Id,
+                                    Name = exp.Object.ParentObject.ParentObject.ParentObject.Name,
+                                    Code = exp.Object.ParentObject.ParentObject.ParentObject.Code,
+                                    IsActive = exp.Object.ParentObject.ParentObject.ParentObject.IsActive
+                                } : null
+                            } : null
+                        } : null,
                     }
                 }).ToList(),
                 WFPObjectiveTimelines = target.WFPObjectiveTimelines.Select(tl => new WFPObjectiveTimelineResponse
