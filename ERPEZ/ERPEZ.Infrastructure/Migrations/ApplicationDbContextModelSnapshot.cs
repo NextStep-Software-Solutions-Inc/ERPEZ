@@ -1837,6 +1837,10 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<decimal>("TargetValue")
                         .HasColumnType("decimal(18, 2)");
 
+                    b.Property<string>("TimelineType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
