@@ -1,10 +1,9 @@
-using ERPEZ.Application.Features.Planning.KPIRating.Dtos;
 using ERPEZ.Shared.Common;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.KPIRating.Commands.CreateKPIRating;
 
-public class CreateKPIRatingCommand : IRequest<ApiResponse<KPIRatingResponse>>
+public class CreateKPIRatingCommand : IRequest<ApiResponse<Guid>>
 {
     public Guid KPIId { get; set; }
     public Guid PerformanceMeasureId { get; set; }

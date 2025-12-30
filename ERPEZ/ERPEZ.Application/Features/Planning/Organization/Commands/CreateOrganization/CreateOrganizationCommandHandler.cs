@@ -21,6 +21,6 @@ public class CreateFundSourceCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
         };
         await unitOfWork.OrganizationRepository.AddAsync(organization, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
-        return ApiResponse<Domain.Entities.Planning.Organization>.Success(organization, "Organization created successfully.");
+        return ApiResponse<Guid>.Success(organization.Id, "Organization created successfully.");
     }
 }

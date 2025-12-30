@@ -32,14 +32,6 @@ public class CreateObjectCommandHandler(IUnitOfWork unitOfWork) : IRequestHandle
         await unitOfWork.ObjectRepository.AddAsync(requestObject, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var dto = new ObjectResponse
-        {
-            Id = requestObject.Id,
-            ParentId = requestObject.ParentId,
-            Name = requestObject.Name,
-            Code = requestObject.Code,
-            IsActive = requestObject.IsActive
-        };
-        return ApiResponse<ObjectResponse>.Success(dto, "Object created successfully.");
+        return ApiResponse<Guid>.Success(requestObject.Id, "Object created successfully.");
     }
 }

@@ -1,10 +1,10 @@
 namespace ERPEZ.Application.Features.Planning.Organization.Dtos;
 
-public class UpdateOrganizationRequest
+public record UpdateOrganizationRequest
 {
-    public Guid? ParentId { get; set; }
-    public string? Name { get; set; } = string.Empty;
-    public string? Code { get; set; } = string.Empty;
-    public string? Type { get; set; } = string.Empty;
-    public bool? IsActive { get; set; }
+    public Guid? ParentId { get; init; }
+    public string? Name { get; init; } = string.Empty;
+    public string? Code { get; init; } = string.Empty;
+    public string? Type { get; init; } = string.Empty;
+    public bool? IsActive { get; init; }
 }

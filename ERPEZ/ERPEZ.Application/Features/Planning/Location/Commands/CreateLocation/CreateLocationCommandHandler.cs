@@ -21,6 +21,6 @@ public class CreateLocationCommandHandler(IUnitOfWork unitOfWork) : IRequestHand
         };
         await unitOfWork.LocationRepository.AddAsync(location, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
-        return ApiResponse<Domain.Entities.Planning.Location>.Success(location, "Location created successfully.");
+        return ApiResponse<Guid>.Success(location.Id, "Location created successfully.");
     }
 }

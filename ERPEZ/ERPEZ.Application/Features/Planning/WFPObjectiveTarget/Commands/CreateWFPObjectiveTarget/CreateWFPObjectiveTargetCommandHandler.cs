@@ -1,4 +1,3 @@
-using ERPEZ.Application.Features.Planning.WFPObjectiveTarget.Dtos;
 using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
@@ -8,9 +7,9 @@ using MediatR;
 namespace ERPEZ.Application.Features.Planning.WFPObjectiveTarget.Commands.CreateWFPObjectiveTarget;
 
 public class CreateWFPObjectiveTargetCommandHandler(IUnitOfWork unitOfWork) 
-    : IRequestHandler<CreateWFPObjectiveTargetCommand, ApiResponse<WFPObjectiveTargetResponse>>
+    : IRequestHandler<CreateWFPObjectiveTargetCommand, ApiResponse<Guid>>
 {
-    public async Task<ApiResponse<WFPObjectiveTargetResponse>> Handle(
+    public async Task<ApiResponse<Guid>> Handle(
         CreateWFPObjectiveTargetCommand request, 
         CancellationToken cancellationToken)
     {
@@ -66,17 +65,6 @@ public class CreateWFPObjectiveTargetCommandHandler(IUnitOfWork unitOfWork)
         // Save all changes in a single transaction
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var dto = new WFPObjectiveTargetResponse
-        {
-            Id = target.Id,
-            WFPObjectiveId = target.WFPObjectiveId,
-            ActivityName = target.ActivityName,
-            Indicator = target.Indicator,
-            Weight = target.Weight,
-            CreatedAt = target.CreatedAt,
-            CreatedBy = target.CreatedBy ?? string.Empty
-        };
-
-        return ApiResponse<WFPObjectiveTargetResponse>.Success(dto, "Activity created successfully.");
+        return ApiResponse<Guid>.Success(target.Id, "Activity created successfully.");
     }
 }

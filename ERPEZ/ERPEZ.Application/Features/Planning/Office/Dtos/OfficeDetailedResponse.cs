@@ -1,15 +1,15 @@
 namespace ERPEZ.Application.Features.Planning.Office.Dtos;
 
-public class OfficeDetailedResponse
+public record OfficeDetailedResponse
 {
-    public Guid Id { get; set; }
-    public required string Name { get; set; }
-    public string? Code { get; set; }
-    public string? Address { get; set; }
-    public string? ContactNumber { get; set; }
-    public Guid? LocationId { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public string CreatedBy { get; set; } = string.Empty;
-    public DateTime? UpdatedAt { get; set; }
-    public string? UpdatedBy { get; set; }
+    public Guid Id { get; init; }
+    public required string Name { get; init; }
+    public string? Code { get; init; }
+    public string? Address { get; init; }
+    public string? ContactNumber { get; init; }
+    public Guid? LocationId { get; init; }
+    public DateTime CreatedAt { get; init; }
+    public string CreatedBy { get; init; } = string.Empty;
+    public DateTime? UpdatedAt { get; init; }
+    public string? UpdatedBy { get; init; }
 }

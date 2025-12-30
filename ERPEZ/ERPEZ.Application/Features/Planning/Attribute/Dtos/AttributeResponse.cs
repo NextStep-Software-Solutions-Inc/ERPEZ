@@ -1,6 +1,6 @@
 namespace ERPEZ.Application.Features.Planning.Attribute.Dtos;
 
-public class AttributeResponse
+public record AttributeResponse
 {
     public Guid Id { get; init; }
     public required string Name { get; init; }

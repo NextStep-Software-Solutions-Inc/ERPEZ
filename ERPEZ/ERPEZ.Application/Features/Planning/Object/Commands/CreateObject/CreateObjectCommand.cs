@@ -1,10 +1,9 @@
-using ERPEZ.Application.Features.Planning.Object.Dtos;
 using ERPEZ.Shared.Common;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Object.Commands.CreateObject;
 
-public class CreateObjectCommand : IRequest<ApiResponse<ObjectResponse>>
+public class CreateObjectCommand : IRequest<ApiResponse<Guid>>
 {
     public Guid? ParentId { get; set; }
     public string Name { get; set; } = string.Empty;

@@ -5,9 +5,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Organization.Commands.UpdateOrganization;
 
-public class UpdateOrganizationCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateOrganizationCommand, ApiResponse<Domain.Entities.Planning.Organization>>
+public class UpdateOrganizationCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateOrganizationCommand, ApiResponse<Unit>>
 {
-    public async Task<ApiResponse<Domain.Entities.Planning.Organization>> Handle(UpdateOrganizationCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<Unit>> Handle(UpdateOrganizationCommand request, CancellationToken cancellationToken)
     {
         var organization = await unitOfWork.OrganizationRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("Organization not found.");
         if (organization.Name == request.UpdateOrganization?.Name) throw new ConflictException("Organization already exist.");
@@ -23,6 +23,6 @@ public class UpdateOrganizationCommandHandler(IUnitOfWork unitOfWork) : IRequest
         unitOfWork.OrganizationRepository.Update(organization);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return ApiResponse<Domain.Entities.Planning.Organization>.Success(organization, "Organization updated successfully.");
+        return ApiResponse<Unit>.Success(Unit.Value, "Organization updated successfully.");
     }
 }

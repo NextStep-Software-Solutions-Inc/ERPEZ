@@ -1,12 +1,12 @@
 namespace ERPEZ.Application.Features.Planning.KPIPerformanceMeasure.Dtos;
 
-public class KPIPerformanceMeasureDetailedResponse
+public record KPIPerformanceMeasureDetailedResponse
 {
-    public Guid Id { get; set; }
-    public Guid KPIId { get; set; }
-    public Guid PerformanceMeasureId { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public DateTime? UpdatedAt { get; set; }
-    public string? CreatedByUser { get; set; }
-    public string? UpdatedByUser { get; set; }
+    public Guid Id { get; init; }
+    public Guid KPIId { get; init; }
+    public Guid PerformanceMeasureId { get; init; }
+    public DateTime CreatedAt { get; init; }
+    public DateTime? UpdatedAt { get; init; }
+    public string? CreatedByUser { get; init; }
+    public string? UpdatedByUser { get; init; }
 }

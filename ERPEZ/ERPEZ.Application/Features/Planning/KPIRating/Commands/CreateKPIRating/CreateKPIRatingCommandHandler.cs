@@ -1,4 +1,3 @@
-using ERPEZ.Application.Features.Planning.KPIRating.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -7,9 +6,9 @@ using MediatR;
 namespace ERPEZ.Application.Features.Planning.KPIRating.Commands.CreateKPIRating;
 
 public class CreateKPIRatingCommandHandler(IUnitOfWork unitOfWork)
-    : IRequestHandler<CreateKPIRatingCommand, ApiResponse<KPIRatingResponse>>
+    : IRequestHandler<CreateKPIRatingCommand, ApiResponse<Guid>>
 {
-    public async Task<ApiResponse<KPIRatingResponse>> Handle(CreateKPIRatingCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<Guid>> Handle(CreateKPIRatingCommand request, CancellationToken cancellationToken)
     {
         _ = await unitOfWork.PerformanceMeasureRepository.FindAsync(
             t => t.Id == request.PerformanceMeasureId,
@@ -51,16 +50,6 @@ public class CreateKPIRatingCommandHandler(IUnitOfWork unitOfWork)
         kpm.Ratings.Add(rating);
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
-        var result = new KPIRatingResponse()
-        {
-            Id = rating.Id,
-            KPIId = kpm.KPIId,
-            NumericalRating = rating.NumericalRating,
-            PerformanceMeasureId = kpm.PerformanceMeasureId,
-            Remarks = rating.Remarks,
-            CreatedAt = rating.CreatedAt,
-            CreatedBy = rating.CreatedBy
-        };
-        return ApiResponse<KPIRatingResponse>.Success(result, "KPI Rating created successfully.");
+        return ApiResponse<Guid>.Success(rating.Id, "KPI Rating created successfully.");
     }
 }

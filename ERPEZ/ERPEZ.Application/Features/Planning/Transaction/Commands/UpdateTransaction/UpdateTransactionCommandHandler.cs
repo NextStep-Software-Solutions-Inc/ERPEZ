@@ -5,9 +5,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Transaction.Commands.UpdateTransaction;
 
-public class UpdateTransactionCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateTransactionCommand, ApiResponse<Domain.Entities.Planning.Transaction>>
+public class UpdateTransactionCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateTransactionCommand, ApiResponse<Unit>>
 {
-    public async Task<ApiResponse<Domain.Entities.Planning.Transaction>> Handle(UpdateTransactionCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<Unit>> Handle(UpdateTransactionCommand request, CancellationToken cancellationToken)
     {
         var transaction = await unitOfWork.TransactionRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("Transaction not found.");
         var dto = request.UpdateTransaction;
@@ -30,6 +30,6 @@ public class UpdateTransactionCommandHandler(IUnitOfWork unitOfWork) : IRequestH
         unitOfWork.TransactionRepository.Update(transaction);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return ApiResponse<Domain.Entities.Planning.Transaction>.Success(transaction, "Transaction updated successfully.");
+        return ApiResponse<Unit>.Success(Unit.Value, "Transaction updated successfully.");
     }
 }

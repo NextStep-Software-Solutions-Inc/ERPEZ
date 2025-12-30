@@ -1,8 +1,8 @@
 namespace ERPEZ.Application.Features.Planning.OPCREvaluation.Dtos;
 
-public class UpdateOPCREvaluationRequest
+public record UpdateOPCREvaluationRequest
 {
-    public DateTime? EvaluationDate { get; set; }
-    public string? Comments { get; set; }
-    public string? Status { get; set; }
+    public DateTime? EvaluationDate { get; init; }
+    public string? Comments { get; init; }
+    public string? Status { get; init; }
 }

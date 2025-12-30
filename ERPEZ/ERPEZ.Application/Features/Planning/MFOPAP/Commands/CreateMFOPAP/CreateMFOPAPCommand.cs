@@ -3,7 +3,7 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.MFOPAP.Commands.CreateMFOPAP;
 
-public class CreateMFOPAPCommand : IRequest<ApiResponse<Domain.Entities.Planning.MFOPAP>>
+public class CreateMFOPAPCommand : IRequest<ApiResponse<Guid>>
 {
     public Guid? ParentId { get; set; }
     public string Name { get; set; } = string.Empty;

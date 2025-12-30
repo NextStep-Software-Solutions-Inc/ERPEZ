@@ -1,14 +1,14 @@
 namespace ERPEZ.Application.Features.Planning.OPCRRating.Dtos;
 
-public class OPCRRatingResponse
+public record OPCRRatingResponse
 {
-    public Guid Id { get; set; }
-    public Guid OPCREvaluationId { get; set; }
-    public Guid PerformanceMeasureId { get; set; }
-    public Guid OPCRId { get; set; }
-    public Guid DUKPIAssignmentId { get; set; }
-    public int NumericalRating { get; set; }
-    public string? Remarks { get; set; }
-    public DateTime CreatedAt { get; set; }
-    public string CreatedBy { get; set; } = string.Empty;
+    public Guid Id { get; init; }
+    public Guid OPCREvaluationId { get; init; }
+    public Guid PerformanceMeasureId { get; init; }
+    public Guid OPCRId { get; init; }
+    public Guid DUKPIAssignmentId { get; init; }
+    public int NumericalRating { get; init; }
+    public string? Remarks { get; init; }
+    public DateTime CreatedAt { get; init; }
+    public string CreatedBy { get; init; } = string.Empty;
 }

@@ -31,21 +31,6 @@ public class CreateFundSourceCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
         await unitOfWork.FundSourceRepository.AddAsync(fundSource, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var result = new FundSourceResponse()
-        {
-            Id = fundSource.Id,
-            ParentId = fundSource.ParentId,
-            Name = fundSource.Name,
-            Code = fundSource.Code,
-            TotalDUAllocatedFunds = fundSource.ReceivedFunds
-                .SelectMany(rf => rf.DUFundAllocations)
-                .Sum(dufa => dufa.Amount),
-            TotalReceivedFunds = fundSource.ReceivedFunds.Sum(rf => rf.Amount),
-            Type = fundSource.Type.ToString(),
-            IsActive = fundSource.IsActive,
-            CreatedBy = fundSource.CreatedBy,
-            CreatedAt = fundSource.CreatedAt
-        };
-        return ApiResponse<FundSourceResponse>.Success(result, "Fund Source created successfully.");
+        return ApiResponse<Guid>.Success(fundSource.Id, "Fund Source created successfully.");
     }
 }

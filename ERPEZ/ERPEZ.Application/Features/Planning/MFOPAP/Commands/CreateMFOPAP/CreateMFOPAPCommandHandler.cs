@@ -21,6 +21,6 @@ public class CreateMFOPAPCommandHandler(IUnitOfWork unitOfWork) : IRequestHandle
         };
         await unitOfWork.MFOPAPRepository.AddAsync(mfoPAP, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
-        return ApiResponse<Domain.Entities.Planning.MFOPAP>.Success(mfoPAP, "MFOPAP created successfully.");
+        return ApiResponse<Guid>.Success(mfoPAP.Id, "MFOPAP created successfully.");
     }
 }

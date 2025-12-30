@@ -1,13 +1,13 @@
 namespace ERPEZ.Application.Features.Planning.MFOPAP.Dtos
 {
-    public class MFOPAPResponse
+    public record MFOPAPResponse
     {
-        public Guid Id { get; set; }
-        public Guid? ParentId { get; set; }
-        public required string Name { get; set; }
-        public required string Code { get; set; }
-        public required string Type { get; set; }
-        public bool IsActive { get; set; }
+        public Guid Id { get; init; }
+        public Guid? ParentId { get; init; }
+        public required string Name { get; init; }
+        public required string Code { get; init; }
+        public required string Type { get; init; }
+        public bool IsActive { get; init; }
     }
 }
 

@@ -3,7 +3,7 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.KPIModeOfVerification.Commands.CreateKPIModeOfVerification;
 
-public class CreateKPIModeOfVerificationCommand : IRequest<ApiResponse<Domain.Entities.Planning.KPIModeOfVerification>>
+public class CreateKPIModeOfVerificationCommand : IRequest<ApiResponse<Guid>>
 {
     public Guid KPIId { get; set; }
     public string Name { get; set; } = string.Empty;

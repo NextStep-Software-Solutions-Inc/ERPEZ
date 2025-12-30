@@ -1,7 +1,7 @@
 namespace ERPEZ.Application.Features.Planning.Cluster.Dtos;
 
-public class UpdateClusterRequest
+public record UpdateClusterRequest
 {
-    public string? Name { get; set; }
-    public string? Description { get; set; }
+    public string? Name { get; init; }
+    public string? Description { get; init; }
 }

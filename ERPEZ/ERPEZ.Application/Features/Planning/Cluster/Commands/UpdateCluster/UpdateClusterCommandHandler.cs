@@ -1,4 +1,3 @@
-using ERPEZ.Application.Features.Planning.Cluster.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -6,9 +5,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Cluster.Commands.UpdateCluster;
 
-public class UpdateClusterCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateClusterCommand, ApiResponse<ClusterResponse>>
+public class UpdateClusterCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateClusterCommand, ApiResponse<Unit>>
 {
-    public async Task<ApiResponse<ClusterResponse>> Handle(UpdateClusterCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<Unit>> Handle(UpdateClusterCommand request, CancellationToken cancellationToken)
     {
         var dto = request.UpdateCluster;
         var cluster = await unitOfWork.ClusterRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken)
@@ -28,15 +27,6 @@ public class UpdateClusterCommandHandler(IUnitOfWork unitOfWork) : IRequestHandl
 
         unitOfWork.ClusterRepository.Update(cluster);
         await unitOfWork.SaveChangesAsync(cancellationToken);
-        var result = new ClusterResponse()
-        {
-            Id = cluster.Id,
-            Name = cluster.Name,
-            Description = cluster.Description,
-            CreatedAt = cluster.CreatedAt,
-            CreatedBy = cluster.CreatedBy
-        };
-
-        return ApiResponse<ClusterResponse>.Success(result, "Cluster updated successfully.");
+        return ApiResponse<Unit>.Success(Unit.Value, "Cluster updated successfully.");
     }
 }

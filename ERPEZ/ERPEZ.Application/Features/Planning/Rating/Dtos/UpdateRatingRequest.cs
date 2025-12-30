@@ -1,7 +1,7 @@
 namespace ERPEZ.Application.Features.Planning.Rating.Dtos;
 
-public class UpdateRatingRequest
+public record UpdateRatingRequest
 {
-    public int? NumericalRating { get; set; }
-    public string? Remarks { get; set; }
+    public int? NumericalRating { get; init; }
+    public string? Remarks { get; init; }
 }

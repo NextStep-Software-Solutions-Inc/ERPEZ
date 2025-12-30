@@ -43,17 +43,6 @@ public class CreateWFPObjectiveCommandHandler(IUnitOfWork unitOfWork) : IRequest
         await unitOfWork.WFPObjectiveRepository.AddAsync(wfpObjective, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var dto = new WFPObjectiveResponse
-        {
-            Id = wfpObjective.Id,
-            WFPId = request.WFPId,
-            Description = request.Description,
-            Weight = wfpObjective.Weight,
-            Outcome = wfpObjective.Outcome,
-            CreatedAt = wfpObjective.CreatedAt,
-            CreatedBy = wfpObjective.CreatedBy ?? string.Empty
-        };
-        
-        return ApiResponse<WFPObjectiveResponse>.Success(dto, "Work and Financial Plan Objective created successfully.");
+        return ApiResponse<Guid>.Success(wfpObjective.Id, "Work and Financial Plan Objective created successfully.");
     }
 }

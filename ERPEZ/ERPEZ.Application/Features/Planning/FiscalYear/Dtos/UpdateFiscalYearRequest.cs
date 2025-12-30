@@ -1,7 +1,7 @@
 namespace ERPEZ.Application.Features.Planning.FiscalYear.Dtos;
 
-public class UpdateFiscalYearRequest
+public record UpdateFiscalYearRequest
 {
-    public string? Description { get; set; }
-    public List<FunctionAllocationRequest> FunctionAllocations { get; set; } = new();
+    public string? Description { get; init; }
+    public List<FunctionAllocationRequest> FunctionAllocations { get; init; } = new();
 }

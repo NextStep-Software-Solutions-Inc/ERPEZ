@@ -18,12 +18,6 @@ public class CreatePerformanceMeasureCommandHandler(IUnitOfWork unitOfWork) : IR
         await unitOfWork.PerformanceMeasureRepository.AddAsync(pm, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var dto = new PerformanceMeasureResponse
-        {
-            Id = pm.Id,
-            Name = pm.Name,
-            Description = pm.Description
-        };
-        return ApiResponse<PerformanceMeasureResponse>.Success(dto, "Performance Measure created successfully.");
+        return ApiResponse<Guid>.Success(pm.Id, "Performance Measure created successfully.");
     }
 }

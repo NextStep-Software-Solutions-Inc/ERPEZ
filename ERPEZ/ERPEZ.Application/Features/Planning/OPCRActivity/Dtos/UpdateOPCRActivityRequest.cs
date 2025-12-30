@@ -2,13 +2,13 @@ using System.Text.Json.Serialization;
 
 namespace ERPEZ.Application.Features.Planning.OPCRActivity.Dtos;
 
-public class UpdateOPCRActivityRequest
+public record UpdateOPCRActivityRequest
 {
-    public Guid? OPCRId { get; set; }
-    public Guid? DUKPIAssignmentId { get; set; }
-    public string? Name { get; set; }
-    public string? Description { get; set; }
-    public decimal? Budget { get; set; }
+    public Guid? OPCRId { get; init; }
+    public Guid? DUKPIAssignmentId { get; init; }
+    public string? Name { get; init; }
+    public string? Description { get; init; }
+    public decimal? Budget { get; init; }
 
     [JsonPropertyName("PAPDepartmentIds")]
     public List<Guid>? PAPDepartmentIds { get; init; }

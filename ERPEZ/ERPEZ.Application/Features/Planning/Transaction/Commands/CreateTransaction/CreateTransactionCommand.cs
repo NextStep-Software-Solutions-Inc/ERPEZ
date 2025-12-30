@@ -3,7 +3,7 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Transaction.Commands.CreateTransaction;
 
-public class CreateTransactionCommand : IRequest<ApiResponse<Domain.Entities.Planning.Transaction>>
+public class CreateTransactionCommand : IRequest<ApiResponse<Guid>>
 {
     public Guid FundSourceId { get; set; }
     public Guid OrganizationId { get; set; }

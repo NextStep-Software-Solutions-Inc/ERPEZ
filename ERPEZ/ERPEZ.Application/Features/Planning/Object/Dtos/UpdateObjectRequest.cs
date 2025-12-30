@@ -1,8 +1,8 @@
 namespace ERPEZ.Application.Features.Planning.Object.Dtos;
 
-public class UpdateObjectRequest
+public record UpdateObjectRequest
 {
-    public string? Name { get; set; }
-    public string? Code { get; set; }
-    public bool? IsActive { get; set; }
+    public string? Name { get; init; }
+    public string? Code { get; init; }
+    public bool? IsActive { get; init; }
 }

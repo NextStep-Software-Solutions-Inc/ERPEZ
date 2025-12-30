@@ -5,9 +5,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.KPIModeOfVerification.Commands.UpdateKPIModeOfVerification;
 
-public class UpdateKPIModeOfVerificationCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateKPIModeOfVerificationCommand, ApiResponse<Domain.Entities.Planning.KPIModeOfVerification>>
+public class UpdateKPIModeOfVerificationCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateKPIModeOfVerificationCommand, ApiResponse<Unit>>
 {
-    public async Task<ApiResponse<Domain.Entities.Planning.KPIModeOfVerification>> Handle(UpdateKPIModeOfVerificationCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<Unit>> Handle(UpdateKPIModeOfVerificationCommand request, CancellationToken cancellationToken)
     {
         var dto = request.UpdateKPIModeOfVerification;
         var kPIModeOfVerification = await unitOfWork.KPIModeOfVerificationRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken)
@@ -26,6 +26,6 @@ public class UpdateKPIModeOfVerificationCommandHandler(IUnitOfWork unitOfWork) :
         unitOfWork.KPIModeOfVerificationRepository.Update(kPIModeOfVerification);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return ApiResponse<Domain.Entities.Planning.KPIModeOfVerification>.Success(kPIModeOfVerification, "KPI mode of verification updated successfully.");
+        return ApiResponse<Unit>.Success(Unit.Value, "KPI mode of verification updated successfully.");
     }
 }

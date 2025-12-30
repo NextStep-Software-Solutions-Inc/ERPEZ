@@ -3,7 +3,7 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Organization.Commands.CreateOrganization;
 
-public class CreateOrganizationCommand : IRequest<ApiResponse<Domain.Entities.Planning.Organization>>
+public class CreateOrganizationCommand : IRequest<ApiResponse<Guid>>
 {
     public Guid? ParentId { get; set; }
     public string Name { get; set; } = string.Empty;

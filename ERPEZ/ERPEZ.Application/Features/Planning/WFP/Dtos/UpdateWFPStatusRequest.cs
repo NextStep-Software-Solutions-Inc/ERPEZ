@@ -1,6 +1,6 @@
 namespace ERPEZ.Application.Features.Planning.WFP.Dtos;
 
-public class UpdateWFPStatusRequest
+public record UpdateWFPStatusRequest
 {
-    public string Status { get; set; } = string.Empty;
+    public string Status { get; init; } = string.Empty;
 }

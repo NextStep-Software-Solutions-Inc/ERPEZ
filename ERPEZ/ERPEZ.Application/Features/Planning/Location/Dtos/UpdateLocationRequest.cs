@@ -1,11 +1,11 @@
 namespace ERPEZ.Application.Features.Planning.Location.Dtos;
 
-public class UpdateLocationRequest
+public record UpdateLocationRequest
 {
-    public Guid Id { get; set; }
-    public Guid? ParentId { get; set; }
-    public string? Name { get; set; }
-    public string? Code { get; set; }
-    public string? Type { get; set; }
-    public bool? IsActive { get; set; }
+    public Guid Id { get; init; }
+    public Guid? ParentId { get; init; }
+    public string? Name { get; init; }
+    public string? Code { get; init; }
+    public string? Type { get; init; }
+    public bool? IsActive { get; init; }
 }

@@ -5,9 +5,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.MFOPAP.Commands.UpdateMFOPAP;
 
-public sealed class UpdateMFOPAPCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateMFOPAPCommand, ApiResponse<Domain.Entities.Planning.MFOPAP>>
+public sealed class UpdateMFOPAPCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateMFOPAPCommand, ApiResponse<Unit>>
 {
-    public async Task<ApiResponse<Domain.Entities.Planning.MFOPAP>> Handle(UpdateMFOPAPCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<Unit>> Handle(UpdateMFOPAPCommand request, CancellationToken cancellationToken)
     {
         var mfoPAP = await unitOfWork.MFOPAPRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("MFOPAP not found.");
 
@@ -24,6 +24,6 @@ public sealed class UpdateMFOPAPCommandHandler(IUnitOfWork unitOfWork) : IReques
         unitOfWork.MFOPAPRepository.Update(mfoPAP);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return ApiResponse<Domain.Entities.Planning.MFOPAP>.Success(mfoPAP, "MFOPAP updated successfully.");
+        return ApiResponse<Unit>.Success(Unit.Value, "MFOPAP updated successfully.");
     }
 }

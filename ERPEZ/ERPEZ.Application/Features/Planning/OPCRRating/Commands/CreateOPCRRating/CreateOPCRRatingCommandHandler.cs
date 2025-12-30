@@ -35,18 +35,6 @@ public class CreateOPCRRatingCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
         await unitOfWork.OPCRRatingRepository.AddAsync(opcrRating, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var dto = new OPCRRatingResponse
-        {
-            Id = opcrRating.Id,
-            OPCREvaluationId = opcrRating.OPCREvaluationId,
-            OPCRId = opcrRating.OPCRId,
-            DUKPIAssignmentId = opcrRating.DUKPIAssignmentId,
-            PerformanceMeasureId = opcrRating.PerformanceMeasureId,
-            NumericalRating = opcrRating.NumericalRating,
-            Remarks = opcrRating.Remarks,
-            CreatedAt = opcrRating.CreatedAt,
-            CreatedBy = opcrRating.CreatedBy
-        };
-        return ApiResponse<OPCRRatingResponse>.Success(dto, "OPCR Rating created successfully.");
+        return ApiResponse<Guid>.Success(opcrRating.Id, "OPCR Rating created successfully.");
     }
 }

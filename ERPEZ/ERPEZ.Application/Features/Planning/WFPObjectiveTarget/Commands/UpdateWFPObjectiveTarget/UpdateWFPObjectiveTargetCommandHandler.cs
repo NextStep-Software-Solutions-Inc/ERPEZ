@@ -1,4 +1,3 @@
-using ERPEZ.Application.Features.Planning.WFPObjectiveTarget.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -7,9 +6,9 @@ using MediatR;
 namespace ERPEZ.Application.Features.Planning.WFPObjectiveTarget.Commands.UpdateWFPObjectiveTarget;
 
 public class UpdateWFPObjectiveTargetCommandHandler(IUnitOfWork unitOfWork) 
-    : IRequestHandler<UpdateWFPObjectiveTargetCommand, ApiResponse<WFPObjectiveTargetResponse>>
+    : IRequestHandler<UpdateWFPObjectiveTargetCommand, ApiResponse<Unit>>
 {
-    public async Task<ApiResponse<WFPObjectiveTargetResponse>> Handle(
+    public async Task<ApiResponse<Unit>> Handle(
         UpdateWFPObjectiveTargetCommand request, 
         CancellationToken cancellationToken)
     {
@@ -61,17 +60,6 @@ public class UpdateWFPObjectiveTargetCommandHandler(IUnitOfWork unitOfWork)
         unitOfWork.WFPObjectiveTargetRepository.Update(target);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var result = new WFPObjectiveTargetResponse
-        {
-            Id = target.Id,
-            WFPObjectiveId = target.WFPObjectiveId,
-            ActivityName = target.ActivityName,
-            Indicator = target.Indicator,
-            Weight = target.Weight,
-            CreatedAt = target.CreatedAt,
-            CreatedBy = target.CreatedBy ?? string.Empty
-        };
-
-        return ApiResponse<WFPObjectiveTargetResponse>.Success(result, "Activity updated successfully.");
+        return ApiResponse<Unit>.Success(Unit.Value, "Activity updated successfully.");
     }
 }

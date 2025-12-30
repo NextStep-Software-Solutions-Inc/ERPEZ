@@ -1,7 +1,7 @@
 namespace ERPEZ.Application.Features.Planning.KPIRating.Dtos;
 
-public class UpdateKPIRatingRequest
+public record UpdateKPIRatingRequest
 {
-    public int? NumericalRating { get; set; }
-    public string? Remarks { get; set; }
+    public int? NumericalRating { get; init; }
+    public string? Remarks { get; init; }
 }

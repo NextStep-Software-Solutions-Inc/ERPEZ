@@ -5,9 +5,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Transaction.Commands.CreateTransaction;
 
-public class CreateTransactionCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateTransactionCommand, ApiResponse<Domain.Entities.Planning.Transaction>>
+public class CreateTransactionCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateTransactionCommand, ApiResponse<Guid>>
 {
-    public async Task<ApiResponse<Domain.Entities.Planning.Transaction>> Handle(CreateTransactionCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<Guid>> Handle(CreateTransactionCommand request, CancellationToken cancellationToken)
     {
         var transactionExist = await unitOfWork.TransactionRepository.FindAsync(t =>
         t.FundSourceId == request.FundSourceId &&
@@ -29,6 +29,6 @@ public class CreateTransactionCommandHandler(IUnitOfWork unitOfWork) : IRequestH
         };
         await unitOfWork.TransactionRepository.AddAsync(transaction, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
-        return ApiResponse<Domain.Entities.Planning.Transaction>.Success(transaction, "Transaction created successfully.");
+        return ApiResponse<Guid>.Success(transaction.Id, "Transaction created successfully.");
     }
 }

@@ -2,9 +2,9 @@ using ERPEZ.Application.Features.Planning.DUAllocation.Commands.CreateDUAllocati
 
 namespace ERPEZ.Application.Features.Planning.DUAllocation.Dtos;
 
-public class UpdateDUAllocationRequest
+public record UpdateDUAllocationRequest
 {
-    public string? Purpose { get; set; }
-    public decimal? Amount { get; set; }
-    public List<DUFundAllocationRequest>? DUFundAllocations { get; set; } = [];
+    public string? Purpose { get; init; }
+    public decimal? Amount { get; init; }
+    public List<DUFundAllocationRequest>? DUFundAllocations { get; init; } = [];
 }

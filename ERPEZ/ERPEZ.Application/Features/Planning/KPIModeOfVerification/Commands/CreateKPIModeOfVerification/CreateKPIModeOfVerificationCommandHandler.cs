@@ -6,13 +6,13 @@ using MediatR;
 namespace ERPEZ.Application.Features.Planning.KPIModeOfVerification.Commands.CreateKPIModeOfVerification;
 
 public class CreateKPIModeOfVerificationCommandHandler(IUnitOfWork unitOfWork)
-    : IRequestHandler<CreateKPIModeOfVerificationCommand, ApiResponse<Domain.Entities.Planning.KPIModeOfVerification>>
+    : IRequestHandler<CreateKPIModeOfVerificationCommand, ApiResponse<Guid>>
 {
-    public async Task<ApiResponse<Domain.Entities.Planning.KPIModeOfVerification>> Handle(CreateKPIModeOfVerificationCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<Guid>> Handle(CreateKPIModeOfVerificationCommand request, CancellationToken cancellationToken)
     {
         if (request.KPIId == Guid.Empty)
         {
-            return new ApiResponse<Domain.Entities.Planning.KPIModeOfVerification>
+            return new ApiResponse<Guid>
             {
                 Message = "KPI is required.",
                 Succeeded = false
@@ -40,6 +40,6 @@ public class CreateKPIModeOfVerificationCommandHandler(IUnitOfWork unitOfWork)
 
         await unitOfWork.KPIModeOfVerificationRepository.AddAsync(kpiModeOfVerification, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
-        return ApiResponse<Domain.Entities.Planning.KPIModeOfVerification>.Success(kpiModeOfVerification, "KPI Mode of verification created successfully.");
+        return ApiResponse<Guid>.Success(kpiModeOfVerification.Id, "KPI Mode of verification created successfully.");
     }
 }

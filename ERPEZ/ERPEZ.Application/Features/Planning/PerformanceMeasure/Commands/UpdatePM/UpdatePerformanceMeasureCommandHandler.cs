@@ -5,9 +5,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.PerformanceMeasure.Commands.UpdatePM;
 
-public class UpdatePerformanceMeasureCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdatePerformanceMeasureCommand, ApiResponse<Domain.Entities.Planning.PerformanceMeasure>>
+public class UpdatePerformanceMeasureCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdatePerformanceMeasureCommand, ApiResponse<Unit>>
 {
-    public async Task<ApiResponse<Domain.Entities.Planning.PerformanceMeasure>> Handle(UpdatePerformanceMeasureCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<Unit>> Handle(UpdatePerformanceMeasureCommand request, CancellationToken cancellationToken)
     {
         var dto = request.UpdatePerformanceMeasure;
 
@@ -20,6 +20,6 @@ public class UpdatePerformanceMeasureCommandHandler(IUnitOfWork unitOfWork) : IR
         unitOfWork.PerformanceMeasureRepository.Update(pm);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return ApiResponse<Domain.Entities.Planning.PerformanceMeasure>.Success(pm, "Performance Measure updated successfully.");
+        return ApiResponse<Unit>.Success(Unit.Value, "Performance Measure updated successfully.");
     }
 }

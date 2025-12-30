@@ -1,4 +1,3 @@
-using ERPEZ.Application.Features.Planning.Object.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -6,9 +5,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Object.Commands.UpdateObject;
 
-public class UpdateObjectCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateObjectCommand, ApiResponse<ObjectResponse>>
+public class UpdateObjectCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateObjectCommand, ApiResponse<Unit>>
 {
-    public async Task<ApiResponse<ObjectResponse>> Handle(UpdateObjectCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<Unit>> Handle(UpdateObjectCommand request, CancellationToken cancellationToken)
     {
         var dto = request.UpdateObject;
         var reqObject = await unitOfWork.ObjectRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken)
@@ -34,14 +33,6 @@ public class UpdateObjectCommandHandler(IUnitOfWork unitOfWork) : IRequestHandle
         unitOfWork.ObjectRepository.Update(reqObject);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var result = new ObjectResponse
-        {
-            Id = reqObject.Id,
-            ParentId = reqObject.ParentId,
-            Name = reqObject.Name,
-            Code = reqObject.Code,
-            IsActive = reqObject.IsActive
-        };
-        return ApiResponse<ObjectResponse>.Success(result, "Object updated successfully.");
+        return ApiResponse<Unit>.Success(Unit.Value, "Object updated successfully.");
     }
 }

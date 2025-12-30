@@ -1,7 +1,7 @@
 namespace ERPEZ.Application.Features.Planning.FiscalYear.Dtos;
 
-public class FunctionAllocationRequest
+public record FunctionAllocationRequest
 {
-    public string FunctionType { get; set; } = string.Empty;
-    public decimal Percentage { get; set; }
+    public string FunctionType { get; init; } = string.Empty;
+    public decimal Percentage { get; init; }
 }

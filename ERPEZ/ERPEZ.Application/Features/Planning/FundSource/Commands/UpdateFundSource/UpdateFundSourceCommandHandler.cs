@@ -1,4 +1,3 @@
-using ERPEZ.Application.Features.Planning.FundSource.Dtos;
 using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
@@ -7,9 +6,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.FundSource.Commands.UpdateFundSource;
 
-public class UpdateFundSourceCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateFundSourceCommand, ApiResponse<FundSourceResponse>>
+public class UpdateFundSourceCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateFundSourceCommand, ApiResponse<Unit>>
 {
-    public async Task<ApiResponse<FundSourceResponse>> Handle(UpdateFundSourceCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<Unit>> Handle(UpdateFundSourceCommand request, CancellationToken cancellationToken)
     {
         var dto = request.UpdateFundSource;
 
@@ -39,22 +38,6 @@ public class UpdateFundSourceCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
         unitOfWork.FundSourceRepository.Update(fundSource);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var result = new FundSourceResponse()
-        {
-            Id = fundSource.Id,
-            ParentId = fundSource.ParentId,
-            Name = fundSource.Name,
-            Code = fundSource.Code,
-            TotalDUAllocatedFunds = fundSource.ReceivedFunds
-                .SelectMany(rf => rf.DUFundAllocations)
-                .Sum(dufa => dufa.Amount),
-            TotalReceivedFunds = fundSource.ReceivedFunds.Sum(rf => rf.Amount),
-            Type = fundSource.Type.ToString(),
-            IsActive = fundSource.IsActive,
-            CreatedBy = fundSource.CreatedBy,
-            CreatedAt = fundSource.CreatedAt
-        };
-
-        return ApiResponse<FundSourceResponse>.Success(result, "Fund Source updated successfully.");
+        return ApiResponse<Unit>.Success(Unit.Value, "Fund Source updated successfully.");
     }
 }

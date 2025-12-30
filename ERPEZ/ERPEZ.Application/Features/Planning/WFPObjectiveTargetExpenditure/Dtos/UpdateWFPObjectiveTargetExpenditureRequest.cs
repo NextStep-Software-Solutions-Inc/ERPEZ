@@ -1,8 +1,8 @@
 namespace ERPEZ.Application.Features.Planning.WFPObjectiveTargetExpenditure.Dtos;
 
-public class UpdateWFPObjectiveTargetExpenditureRequest
+public record UpdateWFPObjectiveTargetExpenditureRequest
 {
-    public string? ItemDescription { get; set; }
-    public int Quantity { get; set; }
-    public decimal CostEstimates { get; set; }
+    public string? ItemDescription { get; init; }
+    public int Quantity { get; init; }
+    public decimal CostEstimates { get; init; }
 }

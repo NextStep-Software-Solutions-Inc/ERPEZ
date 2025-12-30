@@ -31,17 +31,6 @@ public class CreateOPCREvaluationCommandHandler(IUnitOfWork unitOfWork) : IReque
         await unitOfWork.OPCREvaluationRepository.AddAsync(opcrEvaluation, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        var dto = new OPCREvaluationResponse
-        {
-            Id = opcrEvaluation.Id,
-            OPCRId = opcrEvaluation.OPCRId,
-            EvaluatorId = opcrEvaluation.EvaluatorId,
-            EvaluationDate = opcrEvaluation.EvaluationDate,
-            Comments = opcrEvaluation.Comments,
-            Status = opcrEvaluation.Status,
-            CreatedAt = opcrEvaluation.CreatedAt,
-            CreatedBy = opcrEvaluation.CreatedBy
-        };
-        return ApiResponse<OPCREvaluationResponse>.Success(dto, "OPCR Evaluation created successfully.");
+        return ApiResponse<Guid>.Success(opcrEvaluation.Id, "OPCR Evaluation created successfully.");
     }
 }

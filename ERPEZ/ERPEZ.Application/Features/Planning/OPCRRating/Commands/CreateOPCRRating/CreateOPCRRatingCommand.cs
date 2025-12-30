@@ -1,10 +1,9 @@
-using ERPEZ.Application.Features.Planning.OPCRRating.Dtos;
 using ERPEZ.Shared.Common;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.OPCRRating.Commands.CreateOPCRRating;
 
-public class CreateOPCRRatingCommand : IRequest<ApiResponse<OPCRRatingResponse>>
+public class CreateOPCRRatingCommand : IRequest<ApiResponse<Guid>>
 {
     public Guid OPCREvaluationId { get; set; }
     public Guid PerformanceMeasureId { get; set; }
