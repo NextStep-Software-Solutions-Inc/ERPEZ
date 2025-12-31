@@ -30,6 +30,16 @@ public class FallbackFileStorageService(
                 }
                 logger.LogWarning(ex, "Azure Blob upload failed, falling back to local storage.");
                 useAzure = false;
+                
+                // Reset stream position for fallback attempt
+                if (stream.CanSeek)
+                {
+                    stream.Position = 0;
+                }
+                else
+                {
+                    throw new InvalidOperationException("Cannot fallback to local storage: stream is not seekable and has been consumed.", ex);
+                }
             }
         }
         if (!forceAzureOnly)
