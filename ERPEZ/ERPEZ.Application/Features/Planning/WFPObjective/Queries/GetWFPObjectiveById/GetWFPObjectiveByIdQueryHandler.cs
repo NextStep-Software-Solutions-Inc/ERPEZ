@@ -6,6 +6,7 @@ using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
+using ERPEZ.Application.Features.Planning.WFPObjectiveTarget.Dtos;
 
 namespace ERPEZ.Application.Features.Planning.WFPObjective.Queries.GetWFPObjectiveById;
 
@@ -21,10 +22,45 @@ public class GetWFPObjectiveByIdQueryHandler(IUnitOfWork unitOfWork)
             .Select(o => new WFPObjectiveDetailedResponse
             {
                 Id = o.Id,
-                WFPId = o.WFPId,
                 Description = o.Description,
                 Weight = o.Weight,
                 Outcome = o.Outcome,
+                CreatedAt = o.CreatedAt,
+                CreatedBy = o.CreatedBy,
+                WFP = new ()
+                {
+                    Id = o.WFP.Id,
+                    Description = o.WFP.Description,
+                    GeneralObjective = o.WFP.GeneralObjective,
+                    ProjectEndDate = o.WFP.ProjectEndDate,
+                    ProjectStartDate = o.WFP.ProjectStartDate,
+                    ProjectTitle = o.WFP.ProjectTitle,
+                    ProposedBudget = o.WFP.ProposedBudget,
+                    Status = o.WFP.Status.ToString(),
+                    ObjectiveCount = o.WFP.WFPObjectives.Count,
+                    DeliveryUnit = new ()
+                    {
+                        Id = o.WFP.DeliveryUnit.Id,
+                        Office = new ()
+                        {
+                            Id = o.WFP.DeliveryUnit.Office.Id,
+                            Name = o.WFP.DeliveryUnit.Office.Name,
+                            Address = o.WFP.DeliveryUnit.Office.Address,
+                            ContactNumber = o.WFP.DeliveryUnit.Office.ContactNumber,
+                            CreatedBy = o.WFP.DeliveryUnit.Office.CreatedBy,
+                            Email = o.WFP.DeliveryUnit.Office.Email,
+                            OfficeHead = o.WFP.DeliveryUnit.Office.OfficeHead,
+                        }
+                    },
+                    CreatedAt = o.WFP.CreatedAt,
+                    CreatedBy = o.WFP.CreatedBy,
+                    FiscalYear = o.WFP.FiscalYear != null ? new ()
+                    {   
+                        Id = o.WFP.FiscalYear.Id,
+                        Year = o.WFP.FiscalYear.Year,
+                        Description = o.WFP.FiscalYear.Description,
+                    } : null,
+                },
                 WFPObjectiveTargets = o.WFPObjectiveTargets.Select(t => new WFPObjectiveTargetDetailedResponse
                 {
                     Id = t.Id,

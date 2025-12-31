@@ -7,7 +7,7 @@ namespace ERPEZ.Application.Features.Planning.WFPObjectiveTarget.Dtos;
 /// <summary>
 /// Detailed response for WFP Objective Target including nested expenditures, timelines, and parent objective.
 /// </summary>
-public record WFPObjectiveTargetFullResponse
+public record WFPObjectiveTargetDetailedResponse
 {
     public Guid Id { get; init; }
     public string ActivityName { get; init; } = string.Empty;

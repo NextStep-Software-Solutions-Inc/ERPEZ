@@ -11,15 +11,15 @@ using MediatR;
 namespace ERPEZ.Application.Features.Planning.WFPObjectiveTarget.Queries.GetWFPObjectiveTargetById;
 
 public class GetWFPObjectiveTargetByIdQueryHandler(IUnitOfWork unitOfWork) 
-    : IRequestHandler<GetWFPObjectiveTargetByIdQuery, ApiResponse<WFPObjectiveTargetFullResponse>>
+    : IRequestHandler<GetWFPObjectiveTargetByIdQuery, ApiResponse<WFPObjectiveTargetDetailedResponse>>
 {
-    public async Task<ApiResponse<WFPObjectiveTargetFullResponse>> Handle(
+    public async Task<ApiResponse<WFPObjectiveTargetDetailedResponse>> Handle(
         GetWFPObjectiveTargetByIdQuery request, 
         CancellationToken cancellationToken)
     {
         var targetQuery = unitOfWork.WFPObjectiveTargetRepository
             .Query(t => t.Id == request.Id)
-            .Select(target => new WFPObjectiveTargetFullResponse
+            .Select(target => new WFPObjectiveTargetDetailedResponse
             {
                 Id = target.Id,
                 ActivityName = target.ActivityName,
@@ -52,24 +52,36 @@ public class GetWFPObjectiveTargetByIdQueryHandler(IUnitOfWork unitOfWork)
                         Name = exp.Object.Name,
                         Code = exp.Object.Code,
                         IsActive = exp.Object.IsActive,
+                        ChildObjectCount = exp.Object.ChildObjects.Count,
+                        TransactionCount = exp.Object.Transactions.Count,
+                        WFPObjectiveTargetExpenditureCount = exp.Object.WFPObjectiveTargetExpenditures.Count,
                         Parent = exp.Object.ParentObject != null ? new ObjectResponse
                         {
                             Id = exp.Object.ParentObject.Id,
                             Name = exp.Object.ParentObject.Name,
                             Code = exp.Object.ParentObject.Code,
                             IsActive = exp.Object.ParentObject.IsActive,
+                            ChildObjectCount = exp.Object.ParentObject.ChildObjects.Count,
+                            TransactionCount = exp.Object.ParentObject.Transactions.Count,
+                            WFPObjectiveTargetExpenditureCount = exp.Object.ParentObject.WFPObjectiveTargetExpenditures.Count,
                             Parent = exp.Object.ParentObject.ParentObject != null ? new ObjectResponse
                             {
                                 Id = exp.Object.ParentObject.ParentObject.Id,
                                 Name = exp.Object.ParentObject.ParentObject.Name,
                                 Code = exp.Object.ParentObject.ParentObject.Code,
                                 IsActive = exp.Object.ParentObject.ParentObject.IsActive,
+                                ChildObjectCount = exp.Object.ParentObject.ParentObject.ChildObjects.Count,
+                                TransactionCount = exp.Object.ParentObject.ParentObject.Transactions.Count,
+                                WFPObjectiveTargetExpenditureCount = exp.Object.ParentObject.ParentObject.WFPObjectiveTargetExpenditures.Count,
                                 Parent = exp.Object.ParentObject.ParentObject.ParentObject != null ? new ObjectResponse
                                 {
                                     Id = exp.Object.ParentObject.ParentObject.ParentObject.Id,
                                     Name = exp.Object.ParentObject.ParentObject.ParentObject.Name,
                                     Code = exp.Object.ParentObject.ParentObject.ParentObject.Code,
-                                    IsActive = exp.Object.ParentObject.ParentObject.ParentObject.IsActive
+                                    IsActive = exp.Object.ParentObject.ParentObject.ParentObject.IsActive,
+                                    ChildObjectCount = exp.Object.ParentObject.ParentObject.ParentObject.ChildObjects.Count,
+                                    TransactionCount = exp.Object.ParentObject.ParentObject.ParentObject.Transactions.Count,
+                                    WFPObjectiveTargetExpenditureCount = exp.Object.ParentObject.ParentObject.ParentObject.WFPObjectiveTargetExpenditures.Count,
                                 } : null
                             } : null
                         } : null,
@@ -98,6 +110,6 @@ public class GetWFPObjectiveTargetByIdQueryHandler(IUnitOfWork unitOfWork)
             }
         }
 
-        return ApiResponse<WFPObjectiveTargetFullResponse>.Success(response, "Retrieved successfully.");
+        return ApiResponse<WFPObjectiveTargetDetailedResponse>.Success(response, "Retrieved successfully.");
     }
 }
