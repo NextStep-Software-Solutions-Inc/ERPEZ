@@ -26,7 +26,7 @@ public class LocalFileStorageService : IFileStorageService
         var fileId = Guid.NewGuid();
         var extension = Path.GetExtension(fileName);
         var baseName = Path.GetFileNameWithoutExtension(fileName);
-        var tempFileName = $"{baseName}_{fileId}{extension}";
+        var tempFileName = $"{fileId}_{baseName}{extension}";
         var filePath = Path.Combine(tempPath, tempFileName);
 
         using (var fileStream = new FileStream(filePath, FileMode.Create))
