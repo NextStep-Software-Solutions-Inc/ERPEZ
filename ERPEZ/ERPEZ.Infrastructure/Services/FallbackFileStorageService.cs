@@ -51,6 +51,9 @@ public class FallbackFileStorageService(
 
     public async Task<string> PromoteFileAsync(Guid fileId)
     {
+        Exception? azureException = null;
+        Exception? localException = null;
+        
         if (useAzure)
         {
             try
@@ -61,6 +64,7 @@ public class FallbackFileStorageService(
             {
                 // File might be in local storage if upload fell back
                 logger.LogWarning(ex, "File not found in Azure temp storage, trying local storage.");
+                azureException = ex;
                 if (forceAzureOnly)
                 {
                     throw new InvalidOperationException("Azure Blob Storage is required but file not found.", ex);
@@ -69,6 +73,7 @@ public class FallbackFileStorageService(
             }
             catch (Exception ex)
             {
+                azureException = ex;
                 if (forceAzureOnly)
                 {
                     throw new InvalidOperationException("Azure Blob Storage is required but unavailable.", ex);
@@ -77,6 +82,7 @@ public class FallbackFileStorageService(
                 useAzure = false;
             }
         }
+        
         if (!forceAzureOnly)
         {
             try
@@ -85,8 +91,9 @@ public class FallbackFileStorageService(
             }
             catch (FileNotFoundException ex)
             {
+                localException = ex;
                 // If file not found in local and we haven't tried Azure yet, try Azure
-                if (!useAzure)
+                if (azureException == null)
                 {
                     logger.LogWarning(ex, "File not found in local temp storage, trying Azure storage.");
                     try
@@ -95,13 +102,17 @@ public class FallbackFileStorageService(
                     }
                     catch (Exception azureEx)
                     {
-                        logger.LogError(azureEx, "File not found in either Azure or local temp storage for ID: {FileId}", fileId);
-                        throw new FileNotFoundException($"Temp file with ID {fileId} not found in any storage provider.", ex);
+                        azureException = azureEx;
                     }
                 }
-                throw;
+                
+                // File not found in either provider
+                logger.LogError("File with ID {FileId} not found in any storage provider. Azure: {AzureError}, Local: {LocalError}", 
+                    fileId, azureException?.Message ?? "Not tried", localException.Message);
+                throw new FileNotFoundException($"Temp file with ID {fileId} not found in any storage provider.");
             }
         }
+        
         throw new InvalidOperationException("Azure Blob Storage is required but unavailable.");
     }
 
