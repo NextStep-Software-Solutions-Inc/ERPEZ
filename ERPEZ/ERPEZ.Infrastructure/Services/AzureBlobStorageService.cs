@@ -26,7 +26,7 @@ public class AzureBlobStorageService : IFileStorageService
         var fileId = Guid.NewGuid();
         var extension = Path.GetExtension(fileName);
         var baseName = Path.GetFileNameWithoutExtension(fileName);
-        var blobName = $"{baseName}_{fileId}{extension}";
+        var blobName = $"{fileId}_{baseName}{extension}";
 
         var containerClient = blobServiceClient.GetBlobContainerClient(tempContainer);
         var blobClient = containerClient.GetBlobClient(blobName);
