@@ -285,6 +285,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         //Object
         modelBuilder.Entity<Object>()
+            .HasOne(o => o.ParentObject)
+            .WithMany(o => o.Objects)
+            .HasForeignKey(o => o.ParentId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Object>()
             .HasMany(o => o.WFPObjectiveTargetExpenditures)
             .WithOne(a => a.Object)
             .HasForeignKey(a => a.ObjectId)

@@ -1194,9 +1194,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid?>("ParentId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("ParentObjectId")
-                        .HasColumnType("uuid");
-
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -1204,8 +1201,6 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("ParentObjectId");
 
                     b.HasIndex("ParentId", "Code")
                         .IsUnique();
@@ -2356,7 +2351,8 @@ namespace ERPEZ.Infrastructure.Migrations
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Planning.Object", "ParentObject")
                         .WithMany("Objects")
-                        .HasForeignKey("ParentObjectId");
+                        .HasForeignKey("ParentId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("ParentObject");
                 });
