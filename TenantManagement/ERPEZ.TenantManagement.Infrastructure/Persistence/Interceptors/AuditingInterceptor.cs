@@ -6,7 +6,7 @@ namespace ERPEZ.TenantManagement.Infrastructure.Persistence.Interceptors;
 
 using ERPEZ.Shared.Interfaces;
 
-public class SoftDeleteInterceptor(ICurrentUserService currentUser) : SaveChangesInterceptor
+public class AuditingInterceptor(ICurrentUserService currentUser) : SaveChangesInterceptor
 {
     public override InterceptionResult<int> SavingChanges(DbContextEventData eventData, InterceptionResult<int> result)
     {

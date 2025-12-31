@@ -23,15 +23,15 @@ public static class DependencyInjection
 
         services.AddHttpContextAccessor();
 
+        // Register current user service and interceptor BEFORE DbContext
+        services.AddScoped<ICurrentUserService, CurrentUserService>();
+        services.AddScoped<AuditingInterceptor>();
+
         services.AddDbContext<ApplicationDbContext>((sp, options) =>
         {
             options.UseNpgsql(connectionString);
-            options.AddInterceptors(sp.GetRequiredService<SoftDeleteInterceptor>());
+            options.AddInterceptors(sp.GetRequiredService<AuditingInterceptor>());
         });
-
-        // Current user service backed by IHttpContextAccessor
-        services.AddScoped<ICurrentUserService, CurrentUserService>();
-        services.AddScoped<SoftDeleteInterceptor>();
 
         // Register repositories and Unit of Work
         services.AddScoped<IBaseSeeder, ModuleSeeder>();

@@ -35,20 +35,16 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             }
 
             entity.SetPrimaryKey(idProperty);
-
             idProperty.ValueGenerated = ValueGenerated.OnAdd;
-        }
 
-        // Apply soft delete query filter
-        foreach (var entityType in modelBuilder.Model.GetEntityTypes())
-        {
-            if (typeof(IEntity).IsAssignableFrom(entityType.ClrType))
+            // Apply soft delete query filter for entities implementing IEntity
+            if (typeof(IEntity).IsAssignableFrom(entity.ClrType))
             {
-                var parameter = Expression.Parameter(entityType.ClrType, "e");
+                var parameter = Expression.Parameter(entity.ClrType, "e");
                 var property = Expression.Property(parameter, nameof(IEntity.IsDeleted));
                 var notDeleted = Expression.Not(property);
                 var lambda = Expression.Lambda(notDeleted, parameter);
-                entityType.SetQueryFilter(lambda);
+                entity.SetQueryFilter(lambda);
             }
         }
 

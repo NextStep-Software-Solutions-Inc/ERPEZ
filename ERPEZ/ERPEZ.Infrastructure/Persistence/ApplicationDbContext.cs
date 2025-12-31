@@ -49,28 +49,26 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
 
-        // Configure primary keys for entities without explicit keys
-        modelBuilder.Model.GetEntityTypes()
-            .Where(e => e.FindProperty("Id") != null && e.FindPrimaryKey() == null)
-            .ToList()
-            .ForEach(entity =>
+        // Configure entities: primary keys, schemas, and enum conversions
+        foreach (var entity in modelBuilder.Model.GetEntityTypes())
+        {
+            var idProperty = entity.FindProperty("Id");
+
+            // Configure primary keys for entities without explicit keys
+            if (idProperty != null && entity.FindPrimaryKey() == null)
             {
-                var idProperty = entity.FindProperty("Id")!;
                 if (idProperty.ClrType == typeof(Guid))
                 {
                     idProperty.SetDefaultValueSql("gen_random_uuid()");
                 }
                 entity.SetPrimaryKey(idProperty);
                 idProperty.ValueGenerated = ValueGenerated.OnAdd;
-            });
+            }
 
-        // Configure schema for entities based on their subdirectory (automatic detection)
-        modelBuilder.Model.GetEntityTypes()
-            .Where(e => e.ClrType.Namespace != null)
-            .ToList()
-            .ForEach(entity =>
+            // Configure schema for entities based on their subdirectory (automatic detection)
+            if (entity.ClrType.Namespace != null)
             {
-                var namespaceParts = entity.ClrType.Namespace!.Split('.');
+                var namespaceParts = entity.ClrType.Namespace.Split('.');
                 var entitiesIndex = Array.IndexOf(namespaceParts, "Entities");
 
                 if (entitiesIndex >= 0 && entitiesIndex < namespaceParts.Length - 1)
@@ -78,15 +76,16 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                     var schemaName = namespaceParts[entitiesIndex + 1].ToLowerInvariant();
                     entity.SetSchema(schemaName);
                 }
-            });
+            }
 
-        // Automatically configure enum properties to use string conversion
-        modelBuilder.Model.GetEntityTypes()
-            .SelectMany(e => e.GetProperties().Where(p => p.ClrType.IsEnum))
-            .ToList()
-            .ForEach(p => modelBuilder.Entity((p.DeclaringType as IMutableEntityType)!.ClrType)
-                .Property(p.Name)
-                .HasConversion<string>());
+            // Configure enum properties to use string conversion
+            foreach (var property in entity.GetProperties().Where(p => p.ClrType.IsEnum))
+            {
+                modelBuilder.Entity(entity.ClrType)
+                    .Property(property.Name)
+                    .HasConversion<string>();
+            }
+        }
 
         //KPI
         modelBuilder.Entity<KPI>()
