@@ -14,7 +14,7 @@ public class Object : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public bool IsActive { get; set; }
     public virtual Object? ParentObject { get; set; }
-    public virtual List<Object> Objects { get; set; } = [];
+    public virtual List<Object> ChildObjects { get; set; } = [];
     public virtual List<WFPObjectiveTargetExpenditure> WFPObjectiveTargetExpenditures { get; set; } = [];
     public virtual List<Transaction> Transactions { get; set; } = [];
 }

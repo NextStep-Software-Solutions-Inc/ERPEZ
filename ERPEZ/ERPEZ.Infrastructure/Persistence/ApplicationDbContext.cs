@@ -286,7 +286,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         //Object
         modelBuilder.Entity<Object>()
             .HasOne(o => o.ParentObject)
-            .WithMany(o => o.Objects)
+            .WithMany(o => o.ChildObjects)
             .HasForeignKey(o => o.ParentId)
             .OnDelete(DeleteBehavior.Restrict);
 

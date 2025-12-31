@@ -149,24 +149,37 @@ public class GetWFPByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
                                 Id = ab.Object.Id,
                                 Name = ab.Object.Name,
                                 Code = ab.Object.Code,
+                                IsActive = ab.Object.IsActive,
+                                ChildObjectCount = ab.Object.ChildObjects.Count,
+                                WFPObjectiveTargetExpenditureCount = ab.Object.WFPObjectiveTargetExpenditures.Count,
+                                TransactionCount = ab.Object.Transactions.Count,
                                 Parent = ab.Object.ParentObject != null ? new ObjectResponse
                                 {
                                     Id = ab.Object.ParentObject.Id,
                                     Name = ab.Object.ParentObject.Name,
                                     Code = ab.Object.ParentObject.Code,
                                     IsActive = ab.Object.ParentObject.IsActive,
+                                    ChildObjectCount = ab.Object.ParentObject.ChildObjects.Count,
+                                    WFPObjectiveTargetExpenditureCount = ab.Object.ParentObject.WFPObjectiveTargetExpenditures.Count,
+                                    TransactionCount = ab.Object.ParentObject.Transactions.Count,
                                     Parent = ab.Object.ParentObject.ParentObject != null ? new ObjectResponse
                                     {
                                         Id = ab.Object.ParentObject.ParentObject.Id,
                                         Name = ab.Object.ParentObject.ParentObject.Name,
                                         Code = ab.Object.ParentObject.ParentObject.Code,
                                         IsActive = ab.Object.ParentObject.ParentObject.IsActive,
+                                        ChildObjectCount = ab.Object.ParentObject.ParentObject.ChildObjects.Count,
+                                        WFPObjectiveTargetExpenditureCount = ab.Object.ParentObject.ParentObject.WFPObjectiveTargetExpenditures.Count,
+                                        TransactionCount = ab.Object.ParentObject.ParentObject.Transactions.Count,
                                         Parent = ab.Object.ParentObject.ParentObject.ParentObject != null ? new ObjectResponse
                                         {
                                             Id = ab.Object.ParentObject.ParentObject.ParentObject.Id,
                                             Name = ab.Object.ParentObject.ParentObject.ParentObject.Name,
                                             Code = ab.Object.ParentObject.ParentObject.ParentObject.Code,
                                             IsActive = ab.Object.ParentObject.ParentObject.ParentObject.IsActive,
+                                            ChildObjectCount = ab.Object.ParentObject.ParentObject.ParentObject.ChildObjects.Count,
+                                            WFPObjectiveTargetExpenditureCount = ab.Object.ParentObject.ParentObject.ParentObject.WFPObjectiveTargetExpenditures.Count,
+                                            TransactionCount = ab.Object.ParentObject.ParentObject.ParentObject.Transactions.Count
                                         } : null!
                                     } : null!
                                 } : null!,

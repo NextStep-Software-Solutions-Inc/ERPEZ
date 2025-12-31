@@ -32,7 +32,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet]
-        [ProducesResponseType(typeof(PaginatedApiResponse<Domain.Entities.Planning.Object>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(PaginatedApiResponse<ObjectResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetObjects([FromQuery] GetObjectsQuery query)
         {
             var result = await mediator.Send(query);

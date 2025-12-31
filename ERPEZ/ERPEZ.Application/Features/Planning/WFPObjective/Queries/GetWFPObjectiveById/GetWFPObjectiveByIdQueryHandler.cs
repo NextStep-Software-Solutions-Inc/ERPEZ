@@ -44,6 +44,10 @@ public class GetWFPObjectiveByIdQueryHandler(IUnitOfWork unitOfWork)
                             Id = ab.Object.Id,
                             Name = ab.Object.Name,
                             Code = ab.Object.Code,
+                            IsActive = ab.Object.IsActive,
+                            ChildObjectCount = ab.Object.ChildObjects.Count,
+                            WFPObjectiveTargetExpenditureCount = ab.Object.WFPObjectiveTargetExpenditures.Count,
+                            TransactionCount = ab.Object.Transactions.Count,
                         }
                     }).ToList(),
                     WFPObjectiveTimelines = t.WFPObjectiveTimelines.Select(ot => new WFPObjectiveTimelineResponse

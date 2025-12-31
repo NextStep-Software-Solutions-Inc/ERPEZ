@@ -1,12 +1,14 @@
+using System.Linq.Expressions;
+using ERPEZ.Application.Features.Planning.Object.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Object.Queries.GetObjects;
 
-public class GetObjectsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetObjectsQuery, PaginatedApiResponse<Domain.Entities.Planning.Object>>
+public class GetObjectsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetObjectsQuery, PaginatedApiResponse<ObjectResponse>>
 {
-    public async Task<PaginatedApiResponse<Domain.Entities.Planning.Object>> Handle(GetObjectsQuery query, CancellationToken cancellationToken)
+    public async Task<PaginatedApiResponse<ObjectResponse>> Handle(GetObjectsQuery query, CancellationToken cancellationToken)
     {
         var sieveModel = new Sieve.Models.SieveModel
         {
@@ -15,8 +17,50 @@ public class GetObjectsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
             Filters = query.Filters,
             Sorts = query.Sorts
         };
-        var (objectives, totalCount) = await unitOfWork.ObjectRepository.GetAllAsync(sieveModel, cancellationToken: cancellationToken);
-        return new PaginatedApiResponse<Domain.Entities.Planning.Object>(
+
+        Expression<Func<Domain.Entities.Planning.Object, ObjectResponse>> projection = obj => new ObjectResponse
+        {
+            Id = obj.Id,
+            Name = obj.Name,
+            Code = obj.Code,
+            IsActive = obj.IsActive,
+            ChildObjectCount = obj.ChildObjects.Count,
+            WFPObjectiveTargetExpenditureCount = obj.WFPObjectiveTargetExpenditures.Count,
+            TransactionCount = obj.Transactions.Count,
+            Parent = obj.ParentObject != null ? new ObjectResponse
+            {
+                Id = obj.ParentObject.Id,
+                Name = obj.ParentObject.Name,
+                Code = obj.ParentObject.Code,
+                IsActive = obj.ParentObject.IsActive,
+                ChildObjectCount = obj.ParentObject.ChildObjects.Count,
+                WFPObjectiveTargetExpenditureCount = obj.ParentObject.WFPObjectiveTargetExpenditures.Count,
+                TransactionCount = obj.ParentObject.Transactions.Count,
+                Parent = obj.ParentObject.ParentObject != null ? new ObjectResponse
+                {
+                    Id = obj.ParentObject.ParentObject.Id,
+                    Name = obj.ParentObject.ParentObject.Name,
+                    Code = obj.ParentObject.ParentObject.Code,
+                    IsActive = obj.ParentObject.ParentObject.IsActive,
+                    ChildObjectCount = obj.ParentObject.ParentObject.ChildObjects.Count,
+                    WFPObjectiveTargetExpenditureCount = obj.ParentObject.ParentObject.WFPObjectiveTargetExpenditures.Count,
+                    TransactionCount = obj.ParentObject.ParentObject.Transactions.Count,
+                    Parent = obj.ParentObject.ParentObject.ParentObject != null ? new ObjectResponse
+                    {
+                        Id = obj.ParentObject.ParentObject.ParentObject.Id,
+                        Name = obj.ParentObject.ParentObject.ParentObject.Name,
+                        Code = obj.ParentObject.ParentObject.ParentObject.Code,
+                        IsActive = obj.ParentObject.ParentObject.ParentObject.IsActive,
+                        ChildObjectCount = obj.ParentObject.ParentObject.ParentObject.ChildObjects.Count,
+                        WFPObjectiveTargetExpenditureCount = obj.ParentObject.ParentObject.ParentObject.WFPObjectiveTargetExpenditures.Count,
+                        TransactionCount = obj.ParentObject.ParentObject.ParentObject.Transactions.Count
+                    }: null
+                }: null
+            } : null
+        };
+
+        var (objectives, totalCount) = await unitOfWork.ObjectRepository.GetAllAsync(sieveModel, projection, cancellationToken: cancellationToken);
+        return new PaginatedApiResponse<ObjectResponse>(
             [.. objectives],
             query.PageNumber,
             query.PageSize,

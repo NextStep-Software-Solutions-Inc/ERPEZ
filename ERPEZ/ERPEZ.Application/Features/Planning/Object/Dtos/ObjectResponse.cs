@@ -7,4 +7,8 @@ public record ObjectResponse
     public string Name { get; init; } = string.Empty;
     public string Code { get; init; } = string.Empty;
     public bool IsActive { get; init; }
+
+    public int ChildObjectCount { get; init; } = 0;
+    public int WFPObjectiveTargetExpenditureCount { get; init; } = 0;
+    public int TransactionCount { get; init; } = 0;
 }
