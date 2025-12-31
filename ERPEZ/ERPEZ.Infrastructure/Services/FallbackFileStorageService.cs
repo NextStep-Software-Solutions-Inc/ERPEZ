@@ -108,7 +108,7 @@ public class FallbackFileStorageService(
                 
                 // File not found in either provider
                 logger.LogError("File with ID {FileId} not found in any storage provider. Azure: {AzureError}, Local: {LocalError}", 
-                    fileId, azureException?.Message ?? "Not tried", localException.Message);
+                    fileId, azureException?.Message ?? "Not tried", localException?.Message ?? "Unknown error");
                 throw new FileNotFoundException($"Temp file with ID {fileId} not found in any storage provider.");
             }
         }
