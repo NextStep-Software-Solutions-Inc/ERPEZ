@@ -12,6 +12,9 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
+using ERPEZ.Shared.Interfaces;
+using ERPEZ.Shared.Interceptors;
+using ERPEZ.Shared.Services;
 
 namespace ERPEZ.Infrastructure;
 
@@ -34,19 +37,24 @@ public static class DependencyInjection
                 options.ConnectionString = envConnectionString;
             }
         });
+        services.AddScoped<ICurrentUserService, CurrentUserService>();
+        services.AddScoped<AuditingInterceptor>();
 
-        services.AddDbContext<ApplicationDbContext>(options =>
+        services.AddDbContext<ApplicationDbContext>((sp, options) =>
+        {
+            options.UseNpgsql(connectionString);
+            options.AddInterceptors(sp.GetRequiredService<AuditingInterceptor>());
+
+            // Only ignore the PendingModelChangesWarning in development so we don't
+            // hide pending model/migration mismatches in non-dev environments.
+            if (env != null && env.IsDevelopment())
             {
-                options.UseNpgsql(connectionString);
+                options.ConfigureWarnings(w =>
+                    w.Ignore(RelationalEventId.PendingModelChangesWarning));
+            }
+        });
+        services.AddHttpContextAccessor();
 
-                // Only ignore the PendingModelChangesWarning in development so we don't
-                // hide pending model/migration mismatches in non-dev environments.
-                if (env != null && env.IsDevelopment())
-                {
-                    options.ConfigureWarnings(w =>
-                        w.Ignore(RelationalEventId.PendingModelChangesWarning));
-                }
-            });
         // Register repositories and Unit of Work
         services.AddScoped<IWFPObjectiveTargetExpenditureRepository, WFPObjectiveTargetExpenditureRepository>();
         services.AddScoped<IDUAllocationRepository, DUAllocationRepository>();

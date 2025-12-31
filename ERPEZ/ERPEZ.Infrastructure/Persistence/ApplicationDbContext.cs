@@ -1,6 +1,6 @@
 using ERPEZ.Domain.Entities.Planning;
+using ERPEZ.Shared.Persistence;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata;
 using Object = ERPEZ.Domain.Entities.Planning.Object;
 using Attribute = ERPEZ.Domain.Entities.Planning.Attribute;
 
@@ -48,44 +48,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-
-        // Configure entities: primary keys, schemas, and enum conversions
-        foreach (var entity in modelBuilder.Model.GetEntityTypes())
-        {
-            var idProperty = entity.FindProperty("Id");
-
-            // Configure primary keys for entities without explicit keys
-            if (idProperty != null && entity.FindPrimaryKey() == null)
-            {
-                if (idProperty.ClrType == typeof(Guid))
-                {
-                    idProperty.SetDefaultValueSql("gen_random_uuid()");
-                }
-                entity.SetPrimaryKey(idProperty);
-                idProperty.ValueGenerated = ValueGenerated.OnAdd;
-            }
-
-            // Configure schema for entities based on their subdirectory (automatic detection)
-            if (entity.ClrType.Namespace != null)
-            {
-                var namespaceParts = entity.ClrType.Namespace.Split('.');
-                var entitiesIndex = Array.IndexOf(namespaceParts, "Entities");
-
-                if (entitiesIndex >= 0 && entitiesIndex < namespaceParts.Length - 1)
-                {
-                    var schemaName = namespaceParts[entitiesIndex + 1].ToLowerInvariant();
-                    entity.SetSchema(schemaName);
-                }
-            }
-
-            // Configure enum properties to use string conversion
-            foreach (var property in entity.GetProperties().Where(p => p.ClrType.IsEnum))
-            {
-                modelBuilder.Entity(entity.ClrType)
-                    .Property(property.Name)
-                    .HasConversion<string>();
-            }
-        }
+        // Apply default conventions for all entities
+        modelBuilder.ConfigureDefaultEntityConventions();
 
         //KPI
         modelBuilder.Entity<KPI>()

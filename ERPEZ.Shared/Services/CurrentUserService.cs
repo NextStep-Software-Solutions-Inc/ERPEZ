@@ -2,7 +2,7 @@ using ERPEZ.Shared.Interfaces;
 using Microsoft.AspNetCore.Http;
 using System.Security.Claims;
 
-namespace ERPEZ.TenantManagement.Infrastructure.Services;
+namespace ERPEZ.Shared.Services;
 
 public sealed class CurrentUserService(IHttpContextAccessor httpContextAccessor) : ICurrentUserService
 {

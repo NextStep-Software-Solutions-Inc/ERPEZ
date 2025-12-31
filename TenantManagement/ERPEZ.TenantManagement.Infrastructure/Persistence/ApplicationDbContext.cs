@@ -1,8 +1,6 @@
-using ERPEZ.TenantManagement.Domain.Common;
+using ERPEZ.Shared.Persistence;
 using ERPEZ.TenantManagement.Domain.Entities;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore.Metadata;
-using System.Linq.Expressions;
 
 namespace ERPEZ.TenantManagement.Infrastructure.Persistence;
 
@@ -16,37 +14,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
-
-        const string schemaName = "catalog";
-        modelBuilder.HasDefaultSchema(schemaName);
-
-        foreach (var entity in modelBuilder.Model.GetEntityTypes())
-        {
-            var idProperty = entity.FindProperty("Id");
-
-            if (idProperty == null)
-            {
-                continue;
-            }
-
-            if (idProperty.ClrType == typeof(Guid))
-            {
-                idProperty.SetDefaultValueSql("gen_random_uuid()");
-            }
-
-            entity.SetPrimaryKey(idProperty);
-            idProperty.ValueGenerated = ValueGenerated.OnAdd;
-
-            // Apply soft delete query filter for entities implementing IEntity
-            if (typeof(IEntity).IsAssignableFrom(entity.ClrType))
-            {
-                var parameter = Expression.Parameter(entity.ClrType, "e");
-                var property = Expression.Property(parameter, nameof(IEntity.IsDeleted));
-                var notDeleted = Expression.Not(property);
-                var lambda = Expression.Lambda(notDeleted, parameter);
-                entity.SetQueryFilter(lambda);
-            }
-        }
+        // Apply default conventions for all entities
+        modelBuilder.ConfigureDefaultEntityConventions();
 
         // Tenant
         modelBuilder.Entity<Tenant>()

@@ -1,9 +1,9 @@
 using ERPEZ.Shared.Interfaces;
+using ERPEZ.Shared.Interceptors;
+using ERPEZ.Shared.Services;
 using ERPEZ.TenantManagement.Domain.Interfaces;
 using ERPEZ.TenantManagement.Infrastructure.Persistence;
-using ERPEZ.TenantManagement.Infrastructure.Persistence.Interceptors;
 using ERPEZ.TenantManagement.Infrastructure.Persistence.Repositories;
-using ERPEZ.TenantManagement.Infrastructure.Services;
 using Hangfire;
 using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.Builder;
