@@ -54,34 +54,37 @@ public class FallbackFileStorageService(
         Exception? azureException = null;
         Exception? localException = null;
         
-        // Always try Azure first (priority)
-        try
+        // Try Azure first if enabled
+        if (useAzure)
         {
-            return await azureStorageService.PromoteFileAsync(fileId);
-        }
-        catch (FileNotFoundException ex)
-        {
-            // File might be in local storage if upload fell back
-            logger.LogWarning(ex, "File not found in Azure temp storage, trying local storage.");
-            azureException = ex;
-            if (forceAzureOnly)
+            try
             {
-                throw new InvalidOperationException("Azure Blob Storage is required but file not found.", ex);
+                return await azureStorageService.PromoteFileAsync(fileId);
             }
-            useAzure = false;
-        }
-        catch (Exception ex)
-        {
-            azureException = ex;
-            if (forceAzureOnly)
+            catch (FileNotFoundException ex)
             {
-                throw new InvalidOperationException("Azure Blob Storage is required but unavailable.", ex);
+                // File might be in local storage if upload fell back
+                logger.LogWarning(ex, "File not found in Azure temp storage, trying local storage.");
+                azureException = ex;
+                if (forceAzureOnly)
+                {
+                    throw new InvalidOperationException("Azure Blob Storage is required but file not found.", ex);
+                }
+                useAzure = false;
             }
-            logger.LogWarning(ex, "Azure Blob promote failed, falling back to local storage.");
-            useAzure = false;
+            catch (Exception ex)
+            {
+                azureException = ex;
+                if (forceAzureOnly)
+                {
+                    throw new InvalidOperationException("Azure Blob Storage is required but unavailable.", ex);
+                }
+                logger.LogWarning(ex, "Azure Blob promote failed, falling back to local storage.");
+                useAzure = false;
+            }
         }
         
-        // Try local storage as fallback
+        // Try local storage as fallback or primary (if useAzure is false)
         if (!forceAzureOnly)
         {
             try
@@ -91,16 +94,30 @@ public class FallbackFileStorageService(
             catch (FileNotFoundException ex)
             {
                 localException = ex;
+                // If we haven't tried Azure yet, try it now
+                if (azureException == null)
+                {
+                    logger.LogWarning(ex, "File not found in local temp storage, trying Azure storage.");
+                    try
+                    {
+                        return await azureStorageService.PromoteFileAsync(fileId);
+                    }
+                    catch (Exception azureEx)
+                    {
+                        azureException = azureEx;
+                    }
+                }
+                
                 // File not found in either provider
                 logger.LogError("File with ID {FileId} not found in any storage provider. Azure: {AzureError}, Local: {LocalError}", 
-                    fileId, azureException?.Message ?? "Unknown error", localException.Message);
+                    fileId, azureException?.Message ?? "Not tried", localException.Message);
                 throw new FileNotFoundException($"Temp file with ID {fileId} not found in any storage provider.");
             }
             catch (Exception ex)
             {
                 localException = ex;
                 logger.LogError(ex, "Both Azure and local storage failed to promote file {FileId}. Azure: {AzureError}, Local: {LocalError}",
-                    fileId, azureException?.Message ?? "Unknown error", localException.Message);
+                    fileId, azureException?.Message ?? "Not tried", localException.Message);
                 throw new InvalidOperationException($"Failed to promote file with ID {fileId} from any storage provider.", ex);
             }
         }
