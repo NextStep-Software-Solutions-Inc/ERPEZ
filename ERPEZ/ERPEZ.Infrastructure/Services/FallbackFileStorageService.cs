@@ -30,6 +30,16 @@ public class FallbackFileStorageService(
                 }
                 logger.LogWarning(ex, "Azure Blob upload failed, falling back to local storage.");
                 useAzure = false;
+                
+                // Reset stream position for fallback attempt
+                if (stream.CanSeek)
+                {
+                    stream.Position = 0;
+                }
+                else
+                {
+                    throw new InvalidOperationException("Cannot fallback to local storage: stream is not seekable and has been consumed.", ex);
+                }
             }
         }
         if (!forceAzureOnly)
@@ -41,14 +51,30 @@ public class FallbackFileStorageService(
 
     public async Task<string> PromoteFileAsync(Guid fileId)
     {
+        Exception? azureException = null;
+        Exception? localException = null;
+        
+        // Try Azure first if enabled
         if (useAzure)
         {
             try
             {
                 return await azureStorageService.PromoteFileAsync(fileId);
             }
+            catch (FileNotFoundException ex)
+            {
+                // File might be in local storage if upload fell back
+                logger.LogWarning(ex, "File not found in Azure temp storage, trying local storage.");
+                azureException = ex;
+                if (forceAzureOnly)
+                {
+                    throw new InvalidOperationException("Azure Blob Storage is required but file not found.", ex);
+                }
+                useAzure = false;
+            }
             catch (Exception ex)
             {
+                azureException = ex;
                 if (forceAzureOnly)
                 {
                     throw new InvalidOperationException("Azure Blob Storage is required but unavailable.", ex);
@@ -57,10 +83,46 @@ public class FallbackFileStorageService(
                 useAzure = false;
             }
         }
+        
+        // Try local storage as fallback or primary (if useAzure is false)
         if (!forceAzureOnly)
         {
-            return await localStorageService.PromoteFileAsync(fileId);
+            try
+            {
+                return await localStorageService.PromoteFileAsync(fileId);
+            }
+            catch (FileNotFoundException ex)
+            {
+                localException = ex;
+                // If we haven't tried Azure yet, try it now
+                if (azureException == null)
+                {
+                    logger.LogWarning(ex, "File not found in local temp storage, trying Azure storage.");
+                    try
+                    {
+                        return await azureStorageService.PromoteFileAsync(fileId);
+                    }
+                    catch (Exception azureEx)
+                    {
+                        azureException = azureEx;
+                    }
+                }
+                
+                // File not found in either provider
+                logger.LogError("File with ID {FileId} not found in any storage provider. Azure: {AzureError}, Local: {LocalError}", 
+                    fileId, azureException?.Message ?? "Azure not attempted", localException.Message);
+                throw new FileNotFoundException($"Temp file with ID {fileId} not found in any storage provider.");
+            }
+            catch (Exception ex)
+            {
+                localException = ex;
+                logger.LogError(ex, "Both Azure and local storage failed to promote file {FileId}. Azure: {AzureError}, Local: {LocalError}",
+                    fileId, azureException?.Message ?? "Azure not attempted", localException.Message);
+                throw new InvalidOperationException($"Failed to promote file with ID {fileId} from any storage provider.", ex);
+            }
         }
+        
+        // This should only be reached if forceAzureOnly is true and Azure failed
         throw new InvalidOperationException("Azure Blob Storage is required but unavailable.");
     }
 
