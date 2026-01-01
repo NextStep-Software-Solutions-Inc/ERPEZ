@@ -110,14 +110,14 @@ public class FallbackFileStorageService(
                 
                 // File not found in either provider
                 logger.LogError("File with ID {FileId} not found in any storage provider. Azure: {AzureError}, Local: {LocalError}", 
-                    fileId, azureException?.Message ?? "Not tried", localException.Message);
+                    fileId, azureException?.Message ?? "Azure not attempted", localException.Message);
                 throw new FileNotFoundException($"Temp file with ID {fileId} not found in any storage provider.");
             }
             catch (Exception ex)
             {
                 localException = ex;
                 logger.LogError(ex, "Both Azure and local storage failed to promote file {FileId}. Azure: {AzureError}, Local: {LocalError}",
-                    fileId, azureException?.Message ?? "Not tried", localException.Message);
+                    fileId, azureException?.Message ?? "Azure not attempted", localException.Message);
                 throw new InvalidOperationException($"Failed to promote file with ID {fileId} from any storage provider.", ex);
             }
         }
