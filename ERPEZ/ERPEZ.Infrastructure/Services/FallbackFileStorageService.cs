@@ -96,8 +96,16 @@ public class FallbackFileStorageService(
                     fileId, azureException?.Message ?? "Unknown error", localException.Message);
                 throw new FileNotFoundException($"Temp file with ID {fileId} not found in any storage provider.");
             }
+            catch (Exception ex)
+            {
+                localException = ex;
+                logger.LogError(ex, "Both Azure and local storage failed to promote file {FileId}. Azure: {AzureError}, Local: {LocalError}",
+                    fileId, azureException?.Message ?? "Unknown error", localException.Message);
+                throw new InvalidOperationException($"Failed to promote file with ID {fileId} from any storage provider.", ex);
+            }
         }
         
+        // This should only be reached if forceAzureOnly is true and Azure failed
         throw new InvalidOperationException("Azure Blob Storage is required but unavailable.");
     }
 
