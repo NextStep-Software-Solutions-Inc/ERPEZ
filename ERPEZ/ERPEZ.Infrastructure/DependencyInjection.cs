@@ -93,9 +93,7 @@ public static class DependencyInjection
         services.AddScoped<IWFPObjectiveTimelineRepository, WFPObjectiveTimelineRepository>();
         services.AddScoped<IAttributeRepository, AttributeRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
-        services.AddScoped<LocalFileStorageService>();
-        services.AddScoped<AzureBlobStorageService>();
-        services.AddScoped<IFileStorageService, FallbackFileStorageService>();
+        services.AddScoped<IFileStorageService, AzureBlobStorageService>();
         services.AddHostedService<TempFileCleanupService>();
 
         // Add Hangfire
