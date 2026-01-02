@@ -506,8 +506,7 @@ describe('File Upload', () => {
 {
   "AzureBlobStorage": {
     "ConnectionString": "",
-    "ContainerName": "files",
-    "ForceAzureOnly": false
+    "ContainerName": "files"
   }
 }
 ```
@@ -518,16 +517,14 @@ describe('File Upload', () => {
 {
   "AzureBlobStorage": {
     "ConnectionString": "DefaultEndpointsProtocol=https;...",
-    "ContainerName": "files",
-    "ForceAzureOnly": true
+    "ContainerName": "files"
   }
 }
 ```
 
-### ForceAzureOnly Behavior
+### Storage Provider
 
-- `false`: Try Azure first, fallback to local storage
-- `true`: Require Azure storage, fail if unavailable
+The system uses Azure Blob Storage as the only supported storage provider. Ensure that a valid Azure Blob Storage connection string is configured in all environments.
 
 ## Troubleshooting
 

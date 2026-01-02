@@ -17,14 +17,14 @@ This document outlines all required environment variables for running the ERPEZ 
 
 #### `AzureBlobStorage__ConnectionString`
 
-**Required:** Yes (for production), Optional (for development with local fallback)  
+**Required:** Yes  
 **Description:** Azure Blob Storage connection string for file storage  
 **Format:** `DefaultEndpointsProtocol=https;AccountName=your_account;AccountKey=your_key;EndpointSuffix=core.windows.net`  
 **Used in:** All environments  
 **Notes:**
 
-- In **development**: Falls back to local file storage if not provided or connection fails
-- In **production**: Required when `ForceAzureOnly` is set to `true` in `appsettings.Production.json`
+- Azure Blob Storage is the only supported file storage provider
+- Connection string must be provided for file upload/download operations to work
 
 ## Setting Environment Variables
 
@@ -96,8 +96,7 @@ The CI/CD pipeline (`.github/workflows/deploy-erpez-api-dev.yml`) automatically 
 ```json
 {
   "AzureBlobStorage": {
-    "ContainerName": "files",
-    "ForceAzureOnly": false
+    "ContainerName": "files"
   }
 }
 ```
@@ -107,8 +106,7 @@ The CI/CD pipeline (`.github/workflows/deploy-erpez-api-dev.yml`) automatically 
 ```json
 {
   "AzureBlobStorage": {
-    "ContainerName": "files",
-    "ForceAzureOnly": false
+    "ContainerName": "files"
   }
 }
 ```
@@ -118,25 +116,14 @@ The CI/CD pipeline (`.github/workflows/deploy-erpez-api-dev.yml`) automatically 
 ```json
 {
   "AzureBlobStorage": {
-    "ContainerName": "files",
-    "ForceAzureOnly": true
+    "ContainerName": "files"
   }
 }
 ```
 
-## Storage Fallback Behavior
+## Storage Provider
 
-### Development Environment
-
-- **ForceAzureOnly:** `false`
-- **Behavior:** If Azure Blob Storage connection fails or is not configured, the system automatically falls back to local file storage in `wwwroot/files/`
-- **Use case:** Local development without requiring Azure resources
-
-### Production Environment
-
-- **ForceAzureOnly:** `true`
-- **Behavior:** Requires Azure Blob Storage connection. If connection fails, operations will throw exceptions
-- **Use case:** Production deployments where Azure Blob Storage is mandatory
+The system uses Azure Blob Storage as the only supported storage provider for file uploads and downloads. Ensure that the Azure Blob Storage connection string is properly configured in all environments.
 
 ## Security Best Practices
 
