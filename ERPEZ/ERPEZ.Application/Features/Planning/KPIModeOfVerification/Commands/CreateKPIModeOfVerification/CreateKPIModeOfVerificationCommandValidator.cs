@@ -28,7 +28,7 @@ public class CreateKPIModeOfVerificationCommandValidator : AbstractValidator<Cre
 
         // FileId (Optional GUID, must be valid if provided)
         RuleFor(x => x.FileId)
-            .NotEmpty()
+            .Must(id => id.HasValue && id.Value != Guid.Empty)
             .WithMessage("FileId must be a valid, non-empty GUID.")
             .When(x => x.FileId.HasValue);
     }
