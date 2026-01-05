@@ -1,3 +1,4 @@
+using ERPEZ.Application.Interfaces;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -5,7 +6,7 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.KPIModeOfVerification.Commands.UpdateKPIModeOfVerification;
 
-public class UpdateKPIModeOfVerificationCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateKPIModeOfVerificationCommand, ApiResponse<Unit>>
+public class UpdateKPIModeOfVerificationCommandHandler(IUnitOfWork unitOfWork, IFileStorageService fileStorageService) : IRequestHandler<UpdateKPIModeOfVerificationCommand, ApiResponse<Unit>>
 {
     public async Task<ApiResponse<Unit>> Handle(UpdateKPIModeOfVerificationCommand request, CancellationToken cancellationToken)
     {
@@ -19,9 +20,19 @@ public class UpdateKPIModeOfVerificationCommandHandler(IUnitOfWork unitOfWork) :
         if (duplicate != null)
             throw new ConflictException("KPI mode of verification with the same KPI and Delivery Unit already exists.");
 
+        string? url = null;
+        if (dto?.FileId.HasValue == true)
+        {
+            url = await fileStorageService.PromoteFileAsync(dto.FileId.Value);
+        }
+
         kPIModeOfVerification.KPIId = dto?.KPIId ?? kPIModeOfVerification.KPIId;
         kPIModeOfVerification.Name = dto?.Name ?? kPIModeOfVerification.Name;
         kPIModeOfVerification.Description = dto?.Description ?? kPIModeOfVerification.Description;
+        if (url != null)
+        {
+            kPIModeOfVerification.Url = url;
+        }
 
         unitOfWork.KPIModeOfVerificationRepository.Update(kPIModeOfVerification);
         await unitOfWork.SaveChangesAsync(cancellationToken);

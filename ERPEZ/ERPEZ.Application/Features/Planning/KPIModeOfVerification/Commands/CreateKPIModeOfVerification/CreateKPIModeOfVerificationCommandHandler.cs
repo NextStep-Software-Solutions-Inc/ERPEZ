@@ -1,3 +1,4 @@
+using ERPEZ.Application.Interfaces;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -5,7 +6,7 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.KPIModeOfVerification.Commands.CreateKPIModeOfVerification;
 
-public class CreateKPIModeOfVerificationCommandHandler(IUnitOfWork unitOfWork)
+public class CreateKPIModeOfVerificationCommandHandler(IUnitOfWork unitOfWork, IFileStorageService fileStorageService)
     : IRequestHandler<CreateKPIModeOfVerificationCommand, ApiResponse<Guid>>
 {
     public async Task<ApiResponse<Guid>> Handle(CreateKPIModeOfVerificationCommand request, CancellationToken cancellationToken)
@@ -31,11 +32,19 @@ public class CreateKPIModeOfVerificationCommandHandler(IUnitOfWork unitOfWork)
             var kpi = await unitOfWork.KPIRepository.GetByIdAsync(request.KPIId, cancellationToken: cancellationToken)
                 ?? throw new NotFoundException("KPI not found.");
         }
+
+        string? url = null;
+        if (request.FileId.HasValue)
+        {
+            url = await fileStorageService.PromoteFileAsync(request.FileId.Value);
+        }
+
         var kpiModeOfVerification = new Domain.Entities.Planning.KPIModeOfVerification
         {
             KPIId = request.KPIId,
             Name = request.Name,
-            Description = request.Description
+            Description = request.Description,
+            Url = url
         };
 
         await unitOfWork.KPIModeOfVerificationRepository.AddAsync(kpiModeOfVerification, cancellationToken);

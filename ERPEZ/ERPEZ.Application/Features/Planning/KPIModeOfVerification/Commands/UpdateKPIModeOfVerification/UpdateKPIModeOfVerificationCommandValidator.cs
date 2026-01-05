@@ -32,5 +32,11 @@ public class UpdateKPIModeOfVerificationCommandValidator : AbstractValidator<Upd
             .MaximumLength(1000)
             .WithMessage("Description cannot exceed 1000 characters.")
             .When(x => !string.IsNullOrWhiteSpace(x.UpdateKPIModeOfVerification.Description));
+
+        // 5. FileId (Optional GUID, must be valid if provided)
+        RuleFor(x => x.UpdateKPIModeOfVerification.FileId)
+            .Must(id => id.HasValue && id.Value != Guid.Empty)
+            .WithMessage("FileId must be a valid, non-empty GUID.")
+            .When(x => x.UpdateKPIModeOfVerification.FileId.HasValue);
     }
 }
