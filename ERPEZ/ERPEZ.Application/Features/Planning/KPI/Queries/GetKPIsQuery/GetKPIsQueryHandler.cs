@@ -39,7 +39,7 @@ public class GetKPIsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetKP
             k => k.KPIPerformanceMeasures,
             k => k.KPITargets,
             k => k.KPIModeOfVerifications,
-            k => k.MFOPAP!,
+            k => k.MFOPAP!,  // Null-forgiving operator required for expression tree with nullable navigation property
             k => k.Attributes,
             k => k.SDGs
         };
