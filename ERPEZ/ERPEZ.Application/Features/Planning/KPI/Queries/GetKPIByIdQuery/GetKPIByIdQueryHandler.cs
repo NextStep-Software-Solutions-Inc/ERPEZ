@@ -66,16 +66,19 @@ public class GetKPIByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
                 Url = m.Url
             }).ToList();
 
-        var mfopaps = kpi.MFOPAPs
-            .Select(m => new MFOPAPResponse
+        MFOPAPResponse? mfopap = null;
+        if (kpi.MFOPAP != null)
+        {
+            mfopap = new MFOPAPResponse
             {
-                Id = m.Id,
-                Name = m.Name,
-                Code = m.Code,
-                Type = m.Type,
-                IsActive = m.IsActive,
-                ParentId = m.ParentId
-            }).ToList();
+                Id = kpi.MFOPAP.Id,
+                Name = kpi.MFOPAP.Name,
+                Code = kpi.MFOPAP.Code,
+                Type = kpi.MFOPAP.Type,
+                IsActive = kpi.MFOPAP.IsActive,
+                ParentId = kpi.MFOPAP.ParentId
+            };
+        }
 
         var attributes = kpi.Attributes
             .Select(m => new AttributeResponse
@@ -105,12 +108,13 @@ public class GetKPIByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
             IsPercentage = kpi.IsPercentage,
             IsTargetValueAllocable = kpi.IsTargetValueAllocable,
             Status = kpi.Status,
+            OPCRName = kpi.OPCRName,
             CreatedBy = kpi.CreatedBy,
             CreatedAt = kpi.CreatedAt,
             KPIRatings = kpiRatings,
             KPITargets = kpiTargets,
             KPIModeOfVerifications = modeOfVerification,
-            MFOPAPs = mfopaps,
+            MFOPAP = mfopap,
             Attributes = attributes,
             SDGs = sdgs
         };

@@ -26,11 +26,12 @@ public record KPIResponse
     public List<RatingResponse> KPIRatings { get; init; } = [];
     [JsonPropertyName("KPIModeOfVerifications")]
     public List<KPIModeOfVerificationResponse> KPIModeOfVerifications { get; init; } = [];
-    [JsonPropertyName("MFOPAPs")]
-    public List<MFOPAPResponse> MFOPAPs { get; init; } = [];
+    [JsonPropertyName("MFOPAP")]
+    public MFOPAPResponse? MFOPAP { get; init; }
     [JsonPropertyName("Attributes")]
     public List<AttributeResponse> Attributes { get; init; } = [];
     [JsonPropertyName("SDGs")]
     public List<SDGResponse> SDGs { get; init; } = [];
     public bool IsTargetValueAllocable { get; init; }
+    public string? OPCRName { get; init; }
 }

@@ -16,6 +16,8 @@ public record CreateKPICommand : IRequest<ApiResponse<Guid>>
     public bool IsOfficeMandate { get; init; } = false;
     public bool IsPercentage { get; init; } = false;
     public bool IsTargetValueAllocable { get; init; } = false;
+    
+    public string? OPCRName { get; init; }
 
     [JsonPropertyName("SDGIds")]
     public List<Guid> SDGIds { get; init; } = [];
@@ -25,8 +27,8 @@ public record CreateKPICommand : IRequest<ApiResponse<Guid>>
     public List<CreateKPITargetRequest> KPITargets { get; init; } = [];
     [JsonPropertyName("KPIMOVs")]
     public List<CreateKPIMOVRequest> KPIMOVs { get; init; } = [];
-    [JsonPropertyName("MFOPAPIds")]
-    public List<Guid> MFOPAPIds { get; init; } = [];
+    [JsonPropertyName("MFOPAPId")]
+    public Guid? MFOPAPId { get; init; }
     [JsonPropertyName("attributeIds")]
     public List<Guid> AttributeIds { get; init; } = [];
 }

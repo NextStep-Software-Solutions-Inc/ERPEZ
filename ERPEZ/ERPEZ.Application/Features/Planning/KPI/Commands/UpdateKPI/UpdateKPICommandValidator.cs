@@ -44,6 +44,11 @@ public class UpdateKPICommandValidator : AbstractValidator<UpdateKPICommand>
             .Must(status => validStatuses.Contains(status, StringComparer.OrdinalIgnoreCase))
             .WithMessage($"Status must be one of the following: {string.Join(", ", validStatuses)}.")
             .When(x => !string.IsNullOrWhiteSpace(x.Dto.Status));
+        
+        RuleFor(x => x.Dto.OPCRName)
+            .MaximumLength(250)
+            .WithMessage("OPCR Name cannot exceed 250 characters.")
+            .When(x => !string.IsNullOrWhiteSpace(x.Dto.OPCRName));
 
         // 8. SDGIds (List<Guid>) - Optional for partial update
         RuleFor(x => x.Dto.SDGIds)
@@ -124,11 +129,11 @@ public class UpdateKPICommandValidator : AbstractValidator<UpdateKPICommand>
                     .When(m => !string.IsNullOrWhiteSpace(m.Description));
             });
 
-        // 12. MFOPAPIds (List<Guid>) - Optional for partial update
-        RuleFor(x => x.Dto.MFOPAPIds)
-            .ForEach(mfopapId => mfopapId.NotEmpty()
-            .WithMessage("MFOPAP ID must be a valid, non-empty GUID."))
-            .When(x => x.Dto.MFOPAPIds != null && x.Dto.MFOPAPIds.Count != 0);
+        // 12. MFOPAPId (Guid?) - Optional for partial update
+        RuleFor(x => x.Dto.MFOPAPId)
+            .Must(id => !id.HasValue || id.Value != Guid.Empty)
+            .WithMessage("If provided, the MFOPAP ID must be a valid, non-empty GUID.")
+            .When(x => x.Dto.MFOPAPId.HasValue);
 
         // 13. Attributes (List<Guid>) - Optional for partial update
         RuleFor(x => x.Dto.AttributeIds)
