@@ -61,15 +61,15 @@ public class GetWFPByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
                             Name = ka.KPI.Name,
                             Description = ka.KPI.Description,
                             FunctionType = ka.KPI.FunctionType,
-                            MFOPAPs = ka.KPI.MFOPAPs.Select(m => new MFOPAPResponse
+                            MFOPAP = ka.KPI.MFOPAP != null ? new MFOPAPResponse
                             {
-                                Id = m.Id,
-                                Name = m.Name,
-                                Code = m.Code,
-                                Type = m.Type,
-                                IsActive = m.IsActive,
-                                ParentId = m.ParentId,
-                            }).ToList(),
+                                Id = ka.KPI.MFOPAP.Id,
+                                Name = ka.KPI.MFOPAP.Name,
+                                Code = ka.KPI.MFOPAP.Code,
+                                Type = ka.KPI.MFOPAP.Type,
+                                IsActive = ka.KPI.MFOPAP.IsActive,
+                                ParentId = ka.KPI.MFOPAP.ParentId,
+                            } : null,
                             SDGs = ka.KPI.SDGs.Select(s => s.Name).ToList(),
                         },
                     }).ToList(),
