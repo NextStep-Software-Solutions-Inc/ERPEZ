@@ -7,6 +7,7 @@ namespace ERPEZ.Application.Features.Planning.DeliveryUnit.Dtos
         public string? ClusterName { get; init; }
         public Guid? ParentId { get; init; }
         public required int KpiCount { get; init; }
+        public required int KPITargetCount { get; init; }
         public required int SubKpiCount { get; init; }
         public required int SubDUCount { get; init; }
         public DateTime CreatedAt { get; init; }

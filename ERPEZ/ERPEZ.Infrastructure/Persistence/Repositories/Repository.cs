@@ -122,4 +122,11 @@ public class Repository<T>(ApplicationDbContext context, ISieveProcessor sievePr
     {
         return await context.Set<T>().SumAsync(selector, cancellationToken);
     }
+
+    public async Task<decimal> SumAsync(SieveModel sieveModel, Expression<Func<T, decimal>> selector, CancellationToken cancellationToken = default)
+    {
+        IQueryable<T> query = context.Set<T>().AsNoTracking();
+        var filteredQuery = sieveProcessor.Apply(sieveModel, query, applyPagination: false);
+        return await filteredQuery.SumAsync(selector, cancellationToken);
+    }
 }

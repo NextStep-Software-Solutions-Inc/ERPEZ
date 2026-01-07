@@ -935,7 +935,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Property<Guid>("DUKPITargetAssignmentId")
                         .HasColumnType("uuid")
-                        .HasColumnName("DUKPIAssignmentId");
+                        .HasColumnName("DUKPITargetAssignmentId");
 
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
@@ -1140,7 +1140,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Property<Guid>("DUKPITargetAssignmentId")
                         .HasColumnType("uuid")
-                        .HasColumnName("DUKPIAssignmentId");
+                        .HasColumnName("DUKPITargetAssignmentId");
 
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
@@ -2095,13 +2095,13 @@ namespace ERPEZ.Infrastructure.Migrations
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.DUKPITargetAssignment", b =>
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Planning.DeliveryUnit", "DeliveryUnit")
-                        .WithMany("KPIAssignments")
+                        .WithMany("KPITargetAssignments")
                         .HasForeignKey("DeliveryUnitId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("ERPEZ.Domain.Entities.Planning.KPI", "KPI")
-                        .WithMany("KPIAssignments")
+                        .WithMany("KPITargetAssignments")
                         .HasForeignKey("KPIId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -2600,7 +2600,7 @@ namespace ERPEZ.Infrastructure.Migrations
                 {
                     b.Navigation("DUAllocations");
 
-                    b.Navigation("KPIAssignments");
+                    b.Navigation("KPITargetAssignments");
 
                     b.Navigation("OPCRPAPDepartments");
 
@@ -2631,11 +2631,11 @@ namespace ERPEZ.Infrastructure.Migrations
                 {
                     b.Navigation("ChildKPIs");
 
-                    b.Navigation("KPIAssignments");
-
                     b.Navigation("KPIModeOfVerifications");
 
                     b.Navigation("KPIPerformanceMeasures");
+
+                    b.Navigation("KPITargetAssignments");
 
                     b.Navigation("KPITargets");
 

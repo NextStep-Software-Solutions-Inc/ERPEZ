@@ -27,11 +27,11 @@ public class GetDUKPITargetAssignmentsQueryHandler(IUnitOfWork unitOfWork) : IRe
             TargetId = a.KPITargetId
         };
 
-        var (kpiAssignments, totalCount) = await unitOfWork.DUKPITargetAssignmentRepository.GetAllAsync(sieveModel, selector, cancellationToken: cancellationToken);
+        var (kpiTargetAssignments, totalCount) = await unitOfWork.DUKPITargetAssignmentRepository.GetAllAsync(sieveModel, selector, cancellationToken: cancellationToken);
 
     
         return new PaginatedApiResponse<DUKPITargetAssignmentResponse>(
-            [..kpiAssignments],
+            [..kpiTargetAssignments],
             query.PageNumber,
             query.PageSize,
             totalCount);

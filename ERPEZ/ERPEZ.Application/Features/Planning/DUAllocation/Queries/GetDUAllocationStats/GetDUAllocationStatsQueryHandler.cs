@@ -9,8 +9,13 @@ public class GetDUAllocationStatsQueryHandler(IUnitOfWork unitOfWork) : IRequest
 {
     public async Task<ApiResponse<DUAllocationStatsResponse>> Handle(GetDUAllocationStatsQuery request, CancellationToken cancellationToken)
     {
-        var totalAllocatedAmount = await unitOfWork.DUFundAllocationRepository.SumAsync(duf => duf.Amount, cancellationToken);
-        var totalReceivedAmount = await unitOfWork.ReceivedFundRepository.SumAsync(du => du.Amount, cancellationToken);
+        var sieveModel = new Sieve.Models.SieveModel
+        {
+            Filters = request.Filters
+        };
+
+        var totalAllocatedAmount = await unitOfWork.DUFundAllocationRepository.SumAsync(sieveModel, duf => duf.Amount, cancellationToken);
+        var totalReceivedAmount = await unitOfWork.ReceivedFundRepository.SumAsync(sieveModel, du => du.Amount, cancellationToken);
 
         var duAllocationStats = new DUAllocationStatsResponse
         {

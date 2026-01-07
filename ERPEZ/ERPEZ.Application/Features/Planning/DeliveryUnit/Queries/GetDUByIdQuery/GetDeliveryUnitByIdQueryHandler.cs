@@ -39,7 +39,7 @@ public class GetDeliveryUnitByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestH
                     }
             },
            
-            KPITargetAssignments = du.KPIAssignments.Select(ka => new KPITargetAssignmentResponse
+            KPITargetAssignments = du.KPITargetAssignments.Select(ka => new KPITargetAssignmentResponse
             {
                 Id = ka.Id,
                 KPI = new()
@@ -60,7 +60,7 @@ public class GetDeliveryUnitByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestH
                     SDGs = ka.KPI.SDGs.Select(s => s.Name).ToList(),
                 },
                 AllocatedTargetValue = ka.AllocatedTargetValue,
-                Targets = du.KPIAssignments
+                Targets = du.KPITargetAssignments
                     .Where(a => a.Id == ka.Id)
                     .Select(kt => new KPITargetResponse
                     {
@@ -77,7 +77,7 @@ public class GetDeliveryUnitByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestH
                     Description = subKPI.Description,
                     FunctionType = subKPI.FunctionType,
                     SDGs = subKPI.SDGs.Select(sdg => sdg.Name).ToList(),
-                    AllocatedTargetValue = subKPI.KPIAssignments
+                    AllocatedTargetValue = subKPI.KPITargetAssignments
                         .Where(a => a.KPIId == subKPI.Id && a.DeliveryUnitId == du.Id)
                         .Select(a => a.AllocatedTargetValue)
                         .FirstOrDefault(),
@@ -109,7 +109,7 @@ public class GetDeliveryUnitByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestH
                         }
                 },
                 ParentId = subDU.ParentId,
-                KPITargetAssignments = subDU.KPIAssignments.Select(ka => new KPITargetAssignmentResponse
+                KPITargetAssignments = subDU.KPITargetAssignments.Select(ka => new KPITargetAssignmentResponse
                 {
                     Id = ka.Id,
                     KPI = new()
@@ -130,7 +130,7 @@ public class GetDeliveryUnitByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestH
                         SDGs = ka.KPI.SDGs.Select(s => s.Name).ToList(),
                     },
                     AllocatedTargetValue = ka.AllocatedTargetValue,
-                    Targets = subDU.KPIAssignments
+                    Targets = subDU.KPITargetAssignments
                         .Where(a => a.Id == ka.Id)
                         .Select(kt => new KPITargetResponse
                         {
@@ -147,7 +147,7 @@ public class GetDeliveryUnitByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestH
                         Description = subKPI.Description,
                         FunctionType = subKPI.FunctionType,
                         SDGs = subKPI.SDGs.Select(sdg => sdg.Name).ToList(),
-                        AllocatedTargetValue = subKPI.KPIAssignments
+                        AllocatedTargetValue = subKPI.KPITargetAssignments
                             .Where(a => a.KPIId == subKPI.Id && a.DeliveryUnitId == subDU.Id)
                             .Select(a => a.AllocatedTargetValue)
                             .FirstOrDefault(),

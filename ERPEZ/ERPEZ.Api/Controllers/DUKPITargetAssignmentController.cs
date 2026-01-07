@@ -14,7 +14,7 @@ namespace ERPEZ.Api.Controllers
     {
         [HttpGet]
         [ProducesResponseType(typeof(PaginatedApiResponse<DUKPITargetAssignmentResponse>), StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetKPIAssignments([FromQuery] GetDUKPITargetAssignmentsQuery query)
+        public async Task<IActionResult> GetKPITargetAssignments([FromQuery] GetDUKPITargetAssignmentsQuery query)
         {
             var result = await mediator.Send(query);
             return result.Succeeded ? Ok(result) : BadRequest(result);
@@ -23,7 +23,7 @@ namespace ERPEZ.Api.Controllers
         [HttpGet("{id}")]
         [ProducesResponseType(typeof(ApiResponse<DUKPITargetAssignmentResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> GetKPIAssignmentById(Guid id)
+        public async Task<IActionResult> GetKPITargetAssignmentById(Guid id)
         {
             var result = await mediator.Send(new GetDUKPITargetAssignmentByIdQuery(id));
             return result.Succeeded ? Ok(result) : NotFound(result);
@@ -32,7 +32,7 @@ namespace ERPEZ.Api.Controllers
         [HttpDelete("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> DeleteKPIAssignment(Guid id)
+        public async Task<IActionResult> DeleteKPITargetAssignment(Guid id)
         {
             var command = new DeleteDUKPITargetAssignmentCommand(id);
             var result = await mediator.Send(command);

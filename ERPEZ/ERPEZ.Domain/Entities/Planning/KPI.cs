@@ -48,7 +48,7 @@ public class KPI : BaseEntity
     public virtual KPI? ParentKPI { get; set; }
     public virtual MFOPAP? MFOPAP { get; set; }
     public virtual List<KPIModeOfVerification> KPIModeOfVerifications { get; set; } = [];
-    public virtual List<DUKPITargetAssignment> KPIAssignments { get; set; } = [];
+    public virtual List<DUKPITargetAssignment> KPITargetAssignments { get; set; } = [];
     public virtual List<MFOPAP> MFOPAPs { get; set; } = [];
     public virtual List<OPCRActivity> OPCRActivities { get; set; } = [];
     public virtual List<KPITarget> KPITargets { get; set; } = [];

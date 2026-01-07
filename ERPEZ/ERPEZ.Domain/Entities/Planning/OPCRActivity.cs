@@ -9,7 +9,7 @@ public class OPCRActivity : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid OPCRId { get; set; }
     [Sieve(CanFilter = true, CanSort = true)]
-    [Column("DUKPIAssignmentId")]
+    [Column("DUKPITargetAssignmentId")]
     public Guid DUKPITargetAssignmentId { get; set; }
     [Sieve(CanFilter = true, CanSort = true)]
     public string Name { get; set; } = string.Empty;

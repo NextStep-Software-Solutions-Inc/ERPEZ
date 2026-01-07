@@ -4,4 +4,7 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.DUAllocation.Queries.GetDUAllocationStats;
 
-public record GetDUAllocationStatsQuery() : IRequest<ApiResponse<DUAllocationStatsResponse>>;
+public record GetDUAllocationStatsQuery : IRequest<ApiResponse<DUAllocationStatsResponse>>
+{
+	public string? Filters { get; init; }
+}

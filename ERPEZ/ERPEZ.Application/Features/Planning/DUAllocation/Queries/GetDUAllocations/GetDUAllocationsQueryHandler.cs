@@ -23,7 +23,7 @@ public class GetDUAllocationsQueryHandler(IUnitOfWork unitOfWork) : IRequestHand
             Id = du.Id,
             DeliveryUnit = new ()
             {
-                Id = du.Id,
+                Id = du.DeliveryUnit.Id,
                 Office = new ()
                 {
                     Id = du.DeliveryUnit.Office.Id,
@@ -35,6 +35,7 @@ public class GetDUAllocationsQueryHandler(IUnitOfWork unitOfWork) : IRequestHand
                     Email = du.DeliveryUnit.Office.Email,
                     Description = du.DeliveryUnit.Office.Description,
                     OfficeHead = du.DeliveryUnit.Office.OfficeHead,
+                    
                     ResponsibilityCenterCode = du.DeliveryUnit.Office.ResponsibilityCenterCode,
                     Cluster = du.DeliveryUnit.Office.Cluster == null ? null : new()
                     {
@@ -45,6 +46,7 @@ public class GetDUAllocationsQueryHandler(IUnitOfWork unitOfWork) : IRequestHand
                         CreatedBy = du.DeliveryUnit.Office.Cluster.CreatedBy,
                     }
                 },
+                ParentId = du.DeliveryUnit.ParentId,
                 CreatedAt = du.DeliveryUnit.CreatedAt,
             },
             Purpose = du.Purpose,

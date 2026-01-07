@@ -92,7 +92,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         // DUKPITargetAssignment (Delivery Unit KPI Target Assignment)
         modelBuilder.Entity<DUKPITargetAssignment>()
             .HasOne(da => da.KPI)
-            .WithMany(k => k.KPIAssignments)
+            .WithMany(k => k.KPITargetAssignments)
             .HasForeignKey(da => da.KPIId)
             .IsRequired();
 
@@ -367,7 +367,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasForeignKey(opcr => opcr.DeliveryUnitId);
 
         modelBuilder.Entity<DeliveryUnit>()
-            .HasMany(du => du.KPIAssignments)
+            .HasMany(du => du.KPITargetAssignments)
             .WithOne(kpia => kpia.DeliveryUnit)
             .HasForeignKey(kpia => kpia.DeliveryUnitId);
 

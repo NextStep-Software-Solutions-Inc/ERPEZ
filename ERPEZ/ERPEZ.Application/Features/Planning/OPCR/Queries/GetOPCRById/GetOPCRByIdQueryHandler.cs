@@ -61,7 +61,7 @@ public class GetOPCRByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<G
                             } : null,
                     },
                    
-                    KPITargetAssignments = o.DeliveryUnit.KPIAssignments.Select(ka => new KPITargetAssignmentResponse
+                    KPITargetAssignments = o.DeliveryUnit.KPITargetAssignments.Select(ka => new KPITargetAssignmentResponse
                     {
                         Id = ka.Id,
                         KPI = new()
