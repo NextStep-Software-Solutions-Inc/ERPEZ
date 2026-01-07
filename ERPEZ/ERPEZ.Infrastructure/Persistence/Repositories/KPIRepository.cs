@@ -25,7 +25,7 @@ public class KPIRepository : Repository<Domain.Entities.Planning.KPI>, IKPIRepos
                 .ThenInclude(kpm => kpm.Ratings)
             .Include(k => k.KPITargets)
             .Include(k => k.KPIModeOfVerifications)
-            .Include(k => k.MFOPAPs)
+            .Include(k => k.MFOPAP)
             .Include(k => k.SDGs)
             .Include(k => k.Attributes)
             .FirstOrDefaultAsync(k => EF.Property<Guid>(k, "Id") == id, cancellationToken);

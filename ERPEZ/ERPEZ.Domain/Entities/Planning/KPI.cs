@@ -27,10 +27,17 @@ public class KPI : BaseEntity
     public bool IsTargetValueAllocable { get; set; }
 
     public string Status { get; set; } = string.Empty;
+    
+    [Sieve(CanFilter = true, CanSort = true)]
+    public string? OPCRName { get; set; }
+    
+    [Sieve(CanFilter = true, CanSort = true)]
+    public Guid? MFOPAPId { get; set; }
+    
     public virtual KPI? ParentKPI { get; set; }
+    public virtual MFOPAP? MFOPAP { get; set; }
     public virtual List<KPIModeOfVerification> KPIModeOfVerifications { get; set; } = [];
     public virtual List<DUKPIAssignment> KPIAssignments { get; set; } = [];
-    public virtual List<MFOPAP> MFOPAPs { get; set; } = [];
     public virtual List<OPCRActivity> OPCRActivities { get; set; } = [];
     public virtual List<KPITarget> KPITargets { get; set; } = [];
     public virtual List<KPI> ChildKPIs { get; set; } = [];

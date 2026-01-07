@@ -49,6 +49,11 @@ public class CreateKPICommandValidator : AbstractValidator<CreateKPICommand>
         RuleFor(x => x.IsTargetValueAllocable)
                 .NotNull()
                 .WithMessage("Is Target Value Allocable must be provided (true or false).");
+        
+        RuleFor(x => x.OPCRName)
+                .MaximumLength(250)
+                .WithMessage("OPCR Name cannot exceed 250 characters.")
+                .When(x => !string.IsNullOrWhiteSpace(x.OPCRName));
 
         RuleForEach(x => x.SDGIds)
                 .NotEmpty()
@@ -157,8 +162,9 @@ public class CreateKPICommandValidator : AbstractValidator<CreateKPICommand>
                 .NotEmpty()
                 .WithMessage("Attribute ID cannot be empty.");
 
-        RuleFor(x => x.MFOPAPIds)
-                .NotNull()
-                .WithMessage("MFOPAP IDs is required.");
+        RuleFor(x => x.MFOPAPId)
+                .Must(id => !id.HasValue || id.Value != Guid.Empty)
+                .WithMessage("If provided, the MFOPAP ID must be a valid, non-empty GUID.")
+                .When(x => x.MFOPAPId.HasValue);
     }
 }
