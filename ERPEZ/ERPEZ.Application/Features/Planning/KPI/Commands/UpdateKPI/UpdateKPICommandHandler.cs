@@ -13,7 +13,7 @@ public class UpdateKPICommandHandler(IUnitOfWork unitOfWork, IFileStorageService
     {
         await unitOfWork.ExecuteInTransactionAsync(async () =>
         {
-            var kpi = await unitOfWork.KPIRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken)
+            var kpi = await unitOfWork.KPIRepository.GetKPIWithDetailsAsync(request.Id, cancellationToken)
                 ?? throw new NotFoundException("KPI not found.");
 
             // Build duplicate check query conditionally for partial updates - only if name or functionType is being updated
@@ -63,24 +63,17 @@ public class UpdateKPICommandHandler(IUnitOfWork unitOfWork, IFileStorageService
                 }
             }
 
-            // Handle MFOPAPs - Only update if provided
-            if (request.Dto.MFOPAPIds?.Count > 0)
+            // Handle MFOPAP - Only update if provided
+            if (request.Dto.MFOPAPId.HasValue)
             {
-                kpi.MFOPAPs.Clear();
-                var mfopapIds = request.Dto.MFOPAPIds.Distinct().ToList();
-                var mfopaps = await unitOfWork.MFOPAPRepository.ToListAsync(unitOfWork.MFOPAPRepository.Query(m => mfopapIds.Contains(m.Id)), cancellationToken);
-                var mfopapsDict = mfopaps.ToDictionary(m => m.Id, m => m);
-                foreach (var mfopapId in mfopapIds)
+                var existingMfopap = await unitOfWork.MFOPAPRepository.GetByIdAsync(request.Dto.MFOPAPId.Value, cancellationToken: cancellationToken);
+                
+                if (existingMfopap == null)
                 {
-                    if (mfopapsDict.TryGetValue(mfopapId, out var mfopap))
-                    {
-                        kpi.MFOPAPs.Add(mfopap);
-                    }
-                    else
-                    {
-                        throw new NotFoundException($"MFOPAP with ID {mfopapId} not found.");
-                    }
+                    throw new NotFoundException($"MFOPAP with ID {request.Dto.MFOPAPId.Value} not found.");
                 }
+                
+                kpi.MFOPAPId = request.Dto.MFOPAPId.Value;
             }
 
             // Handle Attributes - Only update if provided
@@ -106,10 +99,7 @@ public class UpdateKPICommandHandler(IUnitOfWork unitOfWork, IFileStorageService
             // Handle KPIRatings - Upsert logic (update existing, add new, delete orphaned)
             if (request.Dto.KPIRatings?.Count > 0)
             {
-                var kpiWithDetails = await unitOfWork.KPIRepository.GetKPIWithDetailsAsync(kpi.Id, cancellationToken)
-                    ?? throw new NotFoundException("KPI not found.");
-
-                var kpmByPmId = kpiWithDetails.KPIPerformanceMeasures
+                var kpmByPmId = kpi.KPIPerformanceMeasures
                     .ToDictionary(x => x.PerformanceMeasureId, x => x);
 
                 var existingRatings = await unitOfWork.RatingRepository.ToListAsync(
@@ -143,7 +133,7 @@ public class UpdateKPICommandHandler(IUnitOfWork unitOfWork, IFileStorageService
                                     KPIId = kpi.Id,
                                     PerformanceMeasureId = ratingRequest.PerformanceMeasureId
                                 };
-                                kpiWithDetails.KPIPerformanceMeasures.Add(kpm);
+                                kpi.KPIPerformanceMeasures.Add(kpm);
                                 kpmByPmId[ratingRequest.PerformanceMeasureId] = kpm;
                             }
                             existingRating.KPIPerformanceMeasureId = kpm.Id;
@@ -166,7 +156,7 @@ public class UpdateKPICommandHandler(IUnitOfWork unitOfWork, IFileStorageService
                                 KPIId = kpi.Id,
                                 PerformanceMeasureId = ratingRequest.PerformanceMeasureId
                             };
-                            kpiWithDetails.KPIPerformanceMeasures.Add(kpm);
+                            kpi.KPIPerformanceMeasures.Add(kpm);
                             kpmByPmId[ratingRequest.PerformanceMeasureId] = kpm;
                         }
                         kpm.Ratings.Add(new Domain.Entities.Planning.Rating

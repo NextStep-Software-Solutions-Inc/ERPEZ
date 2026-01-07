@@ -41,7 +41,15 @@ public class KPI : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public bool IsActive { get; set; } = true;
     public string Status { get; set; } = string.Empty;
+    
+    [Sieve(CanFilter = true, CanSort = true)]
+    public string? OPCRName { get; set; }
+    
+    [Sieve(CanFilter = true, CanSort = true)]
+    public Guid? MFOPAPId { get; set; }
+    
     public virtual KPI? ParentKPI { get; set; }
+    public virtual MFOPAP? MFOPAP { get; set; }
     public virtual List<KPIModeOfVerification> KPIModeOfVerifications { get; set; } = [];
     public virtual List<DUKPITargetAssignment> KPIAssignments { get; set; } = [];
     public virtual List<MFOPAP> MFOPAPs { get; set; } = [];

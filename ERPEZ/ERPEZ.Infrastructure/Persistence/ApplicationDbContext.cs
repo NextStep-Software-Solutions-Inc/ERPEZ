@@ -84,8 +84,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .WithMany(m => m.KPIs);
 
         modelBuilder.Entity<KPI>()
-            .HasMany(k => k.MFOPAPs)
-            .WithMany(m => m.KPIs);
+            .HasOne(k => k.MFOPAP)
+            .WithMany(m => m.KPIs)
+            .HasForeignKey(k => k.MFOPAPId)
+            .IsRequired(false);
 
         // DUKPITargetAssignment (Delivery Unit KPI Target Assignment)
         modelBuilder.Entity<DUKPITargetAssignment>()

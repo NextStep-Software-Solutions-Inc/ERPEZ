@@ -17,6 +17,7 @@ public record UpdateKPIRequest
         public bool? IsAverage { get; init; }
     public bool? IsActive { get; init; }
     public string? Status { get; init; }
+    public string? OPCRName { get; init; }
 
     [JsonPropertyName("SDGIds")]
     public List<Guid>? SDGIds { get; init; }
@@ -42,8 +43,8 @@ public record UpdateKPIRequest
     [JsonPropertyName("KPIMOVs")]
     public List<UpsertKPIMOVRequest>? KPIMOVs { get; init; }
     
-    [JsonPropertyName("MFOPAPIds")]
-    public List<Guid>? MFOPAPIds { get; init; }
+    [JsonPropertyName("MFOPAPId")]
+    public Guid? MFOPAPId { get; init; }
     [JsonPropertyName("AttributeIds")]
     public List<Guid>? AttributeIds { get; init; }
 }

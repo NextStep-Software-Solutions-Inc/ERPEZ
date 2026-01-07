@@ -29,8 +29,8 @@ public record CreateKPICommand : IRequest<ApiResponse<Guid>>
     public List<CreateKPITargetRequest> KPITargets { get; init; } = [];
     [JsonPropertyName("KPIMOVs")]
     public List<CreateKPIMOVRequest> KPIMOVs { get; init; } = [];
-    [JsonPropertyName("MFOPAPIds")]
-    public List<Guid> MFOPAPIds { get; init; } = [];
+    [JsonPropertyName("MFOPAPId")]
+    public Guid? MFOPAPId { get; init; }
     [JsonPropertyName("attributeIds")]
     public List<Guid> AttributeIds { get; init; } = [];
 }

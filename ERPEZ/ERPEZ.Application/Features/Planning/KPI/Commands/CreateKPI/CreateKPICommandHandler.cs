@@ -62,6 +62,8 @@ public class CreateKPICommandHandler(IUnitOfWork unitOfWork, IFileStorageService
             IsMultiple = request.IsMultiple,
             IsAverage = request.IsAverage,
             Status = "Draft",
+            OPCRName = request.OPCRName,
+            MFOPAPId = request.MFOPAPId
         };
 
         await unitOfWork.ExecuteInTransactionAsync(async () =>
@@ -69,20 +71,16 @@ public class CreateKPICommandHandler(IUnitOfWork unitOfWork, IFileStorageService
             await unitOfWork.KPIRepository.AddAsync(kpi, cancellationToken);
             await unitOfWork.SaveChangesAsync(cancellationToken);
 
-            if (request.MFOPAPIds.Count > 0)
+            if (request.MFOPAPId.HasValue)
             {
-                var existingMfopapsQuery = unitOfWork.MFOPAPRepository.Query(m => request.MFOPAPIds.Contains(m.Id));
-
-                var existingMfopaps = await unitOfWork.MFOPAPRepository.ToListAsync(existingMfopapsQuery, cancellationToken);
-
-                if (existingMfopaps.Count != request.MFOPAPIds.Count)
+                var existingMfopap = await unitOfWork.MFOPAPRepository.GetByIdAsync(request.MFOPAPId.Value, cancellationToken: cancellationToken);
+                
+                if (existingMfopap == null)
                 {
-                    var foundIds = existingMfopaps.Select(m => m.Id).ToList();
-                    var missingIds = request.MFOPAPIds.Where(id => !foundIds.Contains(id)).ToList();
-                    throw new NotFoundException($"One or more MFOPAP IDs were not found: {string.Join(", ", missingIds)}");
+                    throw new NotFoundException($"MFOPAP with ID {request.MFOPAPId.Value} was not found.");
                 }
-
-                kpi.MFOPAPs = existingMfopaps;
+                
+                kpi.MFOPAPId = request.MFOPAPId.Value;
             }
 
             if (request.SDGIds.Count > 0)

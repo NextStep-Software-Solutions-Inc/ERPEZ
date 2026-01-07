@@ -42,8 +42,8 @@ namespace ERPEZ.Application.Features.Planning.DeliveryUnit.Dtos
         public required string Name { get; init; }
         public string? Description { get; init; }
         public required string FunctionType { get; init;  }
-        [JsonPropertyName("MFOPAPs")]
-        public required List<MFOPAPResponse> MFOPAPs { get; init;  }
+        [JsonPropertyName("MFOPAP")]
+        public MFOPAPResponse? MFOPAP { get; init;  }
         [JsonPropertyName("SDGs")]
         public List<string> SDGs { get; init; } = [];
 
