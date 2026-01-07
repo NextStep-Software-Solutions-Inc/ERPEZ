@@ -7,7 +7,7 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace ERPEZ.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialFlattenedSchema : Migration
+    public partial class InitialSquash : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
@@ -131,6 +131,11 @@ namespace ERPEZ.Infrastructure.Migrations
                     IsOfficeMandate = table.Column<bool>(type: "boolean", nullable: false),
                     IsPercentage = table.Column<bool>(type: "boolean", nullable: false),
                     IsTargetValueAllocable = table.Column<bool>(type: "boolean", nullable: false),
+                    IsFixed = table.Column<bool>(type: "boolean", nullable: false),
+                    IsGlobal = table.Column<bool>(type: "boolean", nullable: false),
+                    IsMultiple = table.Column<bool>(type: "boolean", nullable: false),
+                    IsAverage = table.Column<bool>(type: "boolean", nullable: false),
+                    IsActive = table.Column<bool>(type: "boolean", nullable: false),
                     Status = table.Column<string>(type: "text", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     CreatedBy = table.Column<string>(type: "text", nullable: false),
@@ -235,7 +240,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     Name = table.Column<string>(type: "text", nullable: false),
                     Code = table.Column<string>(type: "text", nullable: false),
                     IsActive = table.Column<bool>(type: "boolean", nullable: false),
-                    ParentObjectId = table.Column<Guid>(type: "uuid", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     CreatedBy = table.Column<string>(type: "text", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
@@ -248,11 +252,12 @@ namespace ERPEZ.Infrastructure.Migrations
                 {
                     table.PrimaryKey("PK_Objects", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_Objects_Objects_ParentObjectId",
-                        column: x => x.ParentObjectId,
+                        name: "FK_Objects_Objects_ParentId",
+                        column: x => x.ParentId,
                         principalSchema: "planning",
                         principalTable: "Objects",
-                        principalColumn: "Id");
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
                 });
 
             migrationBuilder.CreateTable(
@@ -340,7 +345,7 @@ namespace ERPEZ.Infrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    ClusterId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ClusterId = table.Column<Guid>(type: "uuid", nullable: true),
                     OfficeHead = table.Column<string>(type: "text", nullable: false),
                     Name = table.Column<string>(type: "text", nullable: false),
                     Description = table.Column<string>(type: "text", nullable: true),
@@ -364,8 +369,7 @@ namespace ERPEZ.Infrastructure.Migrations
                         column: x => x.ClusterId,
                         principalSchema: "planning",
                         principalTable: "Clusters",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -428,7 +432,7 @@ namespace ERPEZ.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "KPIAttributes",
+                name: "AttributeKPI",
                 schema: "planning",
                 columns: table => new
                 {
@@ -437,16 +441,16 @@ namespace ERPEZ.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_KPIAttributes", x => new { x.AttributesId, x.KPIsId });
+                    table.PrimaryKey("PK_AttributeKPI", x => new { x.AttributesId, x.KPIsId });
                     table.ForeignKey(
-                        name: "FK_KPIAttributes_Attributes_AttributesId",
+                        name: "FK_AttributeKPI_Attributes_AttributesId",
                         column: x => x.AttributesId,
                         principalSchema: "planning",
                         principalTable: "Attributes",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_KPIAttributes_KPIs_KPIsId",
+                        name: "FK_AttributeKPI_KPIs_KPIsId",
                         column: x => x.KPIsId,
                         principalSchema: "planning",
                         principalTable: "KPIs",
@@ -522,7 +526,7 @@ namespace ERPEZ.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "MFOKPIs",
+                name: "KPIMFOPAP",
                 schema: "planning",
                 columns: table => new
                 {
@@ -531,16 +535,16 @@ namespace ERPEZ.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_MFOKPIs", x => new { x.KPIsId, x.MFOPAPsId });
+                    table.PrimaryKey("PK_KPIMFOPAP", x => new { x.KPIsId, x.MFOPAPsId });
                     table.ForeignKey(
-                        name: "FK_MFOKPIs_KPIs_KPIsId",
+                        name: "FK_KPIMFOPAP_KPIs_KPIsId",
                         column: x => x.KPIsId,
                         principalSchema: "planning",
                         principalTable: "KPIs",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_MFOKPIs_MFOPAPs_MFOPAPsId",
+                        name: "FK_KPIMFOPAP_MFOPAPs_MFOPAPsId",
                         column: x => x.MFOPAPsId,
                         principalSchema: "planning",
                         principalTable: "MFOPAPs",
@@ -612,15 +616,13 @@ namespace ERPEZ.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "KPIRatings",
+                name: "KPIPerformanceMeasures",
                 schema: "planning",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     KPIId = table.Column<Guid>(type: "uuid", nullable: false),
                     PerformanceMeasureId = table.Column<Guid>(type: "uuid", nullable: false),
-                    NumericalRating = table.Column<int>(type: "integer", nullable: false),
-                    Remarks = table.Column<string>(type: "text", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     CreatedBy = table.Column<string>(type: "text", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
@@ -631,16 +633,16 @@ namespace ERPEZ.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_KPIRatings", x => x.Id);
+                    table.PrimaryKey("PK_KPIPerformanceMeasures", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_KPIRatings_KPIs_KPIId",
+                        name: "FK_KPIPerformanceMeasures_KPIs_KPIId",
                         column: x => x.KPIId,
                         principalSchema: "planning",
                         principalTable: "KPIs",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_KPIRatings_PerformanceMeasures_PerformanceMeasureId",
+                        name: "FK_KPIPerformanceMeasures_PerformanceMeasures_PerformanceMeasu~",
                         column: x => x.PerformanceMeasureId,
                         principalSchema: "planning",
                         principalTable: "PerformanceMeasures",
@@ -649,7 +651,7 @@ namespace ERPEZ.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "KPISDGs",
+                name: "KPISDG",
                 schema: "planning",
                 columns: table => new
                 {
@@ -658,16 +660,16 @@ namespace ERPEZ.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_KPISDGs", x => new { x.KPIsId, x.SDGsId });
+                    table.PrimaryKey("PK_KPISDG", x => new { x.KPIsId, x.SDGsId });
                     table.ForeignKey(
-                        name: "FK_KPISDGs_KPIs_KPIsId",
+                        name: "FK_KPISDG_KPIs_KPIsId",
                         column: x => x.KPIsId,
                         principalSchema: "planning",
                         principalTable: "KPIs",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_KPISDGs_SDGs_SDGsId",
+                        name: "FK_KPISDG_SDGs_SDGsId",
                         column: x => x.SDGsId,
                         principalSchema: "planning",
                         principalTable: "SDGs",
@@ -682,7 +684,7 @@ namespace ERPEZ.Infrastructure.Migrations
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     OfficeId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ParentDUId = table.Column<Guid>(type: "uuid", nullable: true),
+                    ParentId = table.Column<Guid>(type: "uuid", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     CreatedBy = table.Column<string>(type: "text", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
@@ -695,10 +697,45 @@ namespace ERPEZ.Infrastructure.Migrations
                 {
                     table.PrimaryKey("PK_DeliveryUnits", x => x.Id);
                     table.ForeignKey(
+                        name: "FK_DeliveryUnits_DeliveryUnits_ParentId",
+                        column: x => x.ParentId,
+                        principalSchema: "planning",
+                        principalTable: "DeliveryUnits",
+                        principalColumn: "Id");
+                    table.ForeignKey(
                         name: "FK_DeliveryUnits_Offices_OfficeId",
                         column: x => x.OfficeId,
                         principalSchema: "planning",
                         principalTable: "Offices",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "Ratings",
+                schema: "planning",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    NumericalRating = table.Column<int>(type: "integer", nullable: false),
+                    Remarks = table.Column<string>(type: "text", nullable: true),
+                    KPIPerformanceMeasureId = table.Column<Guid>(type: "uuid", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    CreatedBy = table.Column<string>(type: "text", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    DeletedBy = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_Ratings", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_Ratings_KPIPerformanceMeasures_KPIPerformanceMeasureId",
+                        column: x => x.KPIPerformanceMeasureId,
+                        principalSchema: "planning",
+                        principalTable: "KPIPerformanceMeasures",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -712,6 +749,7 @@ namespace ERPEZ.Infrastructure.Migrations
                     DeliveryUnitId = table.Column<Guid>(type: "uuid", nullable: false),
                     Purpose = table.Column<string>(type: "text", nullable: false),
                     Amount = table.Column<decimal>(type: "numeric", nullable: false),
+                    IsLocked = table.Column<bool>(type: "boolean", nullable: false),
                     ReceivedFundId = table.Column<Guid>(type: "uuid", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     CreatedBy = table.Column<string>(type: "text", nullable: false),
@@ -740,7 +778,7 @@ namespace ERPEZ.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "DUKPIAssignments",
+                name: "DUKPITargetAssignments",
                 schema: "planning",
                 columns: table => new
                 {
@@ -759,23 +797,23 @@ namespace ERPEZ.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_DUKPIAssignments", x => x.Id);
+                    table.PrimaryKey("PK_DUKPITargetAssignments", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_DUKPIAssignments_DeliveryUnits_DeliveryUnitId",
+                        name: "FK_DUKPITargetAssignments_DeliveryUnits_DeliveryUnitId",
                         column: x => x.DeliveryUnitId,
                         principalSchema: "planning",
                         principalTable: "DeliveryUnits",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_DUKPIAssignments_KPITargets_KPITargetId",
+                        name: "FK_DUKPITargetAssignments_KPITargets_KPITargetId",
                         column: x => x.KPITargetId,
                         principalSchema: "planning",
                         principalTable: "KPITargets",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_DUKPIAssignments_KPIs_KPIId",
+                        name: "FK_DUKPITargetAssignments_KPIs_KPIId",
                         column: x => x.KPIId,
                         principalSchema: "planning",
                         principalTable: "KPIs",
@@ -790,7 +828,8 @@ namespace ERPEZ.Infrastructure.Migrations
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     DeliveryUnitId = table.Column<Guid>(type: "uuid", nullable: false),
-                    FiscalYear = table.Column<int>(type: "integer", nullable: false),
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    FiscalYearId = table.Column<Guid>(type: "uuid", nullable: false),
                     Status = table.Column<string>(type: "text", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     CreatedBy = table.Column<string>(type: "text", nullable: false),
@@ -810,38 +849,11 @@ namespace ERPEZ.Infrastructure.Migrations
                         principalTable: "DeliveryUnits",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "SubDeliveryUnits",
-                schema: "planning",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    DeliveryUnitId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Name = table.Column<string>(type: "text", nullable: false),
-                    Description = table.Column<string>(type: "text", nullable: true),
-                    SubDeliveryUnitHead = table.Column<string>(type: "text", nullable: false),
-                    Address = table.Column<string>(type: "text", nullable: false),
-                    Email = table.Column<string>(type: "text", nullable: false),
-                    ContactNumber = table.Column<string>(type: "text", nullable: false),
-                    ResponsibilityCenterCode = table.Column<string>(type: "text", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
-                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
-                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    DeletedBy = table.Column<string>(type: "text", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_SubDeliveryUnits", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_SubDeliveryUnits_DeliveryUnits_DeliveryUnitId",
-                        column: x => x.DeliveryUnitId,
+                        name: "FK_OPCRs_FiscalYears_FiscalYearId",
+                        column: x => x.FiscalYearId,
                         principalSchema: "planning",
-                        principalTable: "DeliveryUnits",
+                        principalTable: "FiscalYears",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -853,10 +865,12 @@ namespace ERPEZ.Infrastructure.Migrations
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     DeliveryUnitId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ProgramTitle = table.Column<string>(type: "text", nullable: false),
+                    ProjectTitle = table.Column<string>(type: "text", nullable: false),
                     Description = table.Column<string>(type: "text", nullable: true),
-                    FiscalYear = table.Column<int>(type: "integer", nullable: true),
-                    ProposedBudget = table.Column<decimal>(type: "numeric", nullable: false),
+                    FiscalYearId = table.Column<Guid>(type: "uuid", nullable: true),
+                    ProjectStartDate = table.Column<DateOnly>(type: "date", nullable: false),
+                    ProjectEndDate = table.Column<DateOnly>(type: "date", nullable: false),
+                    ProposedBudget = table.Column<decimal>(type: "numeric", nullable: true),
                     GeneralObjective = table.Column<string>(type: "text", nullable: true),
                     Status = table.Column<string>(type: "text", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
@@ -877,6 +891,12 @@ namespace ERPEZ.Infrastructure.Migrations
                         principalTable: "DeliveryUnits",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_WFPs_FiscalYears_FiscalYearId",
+                        column: x => x.FiscalYearId,
+                        principalSchema: "planning",
+                        principalTable: "FiscalYears",
+                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -916,6 +936,78 @@ namespace ERPEZ.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "DUKPITargetAssignmentOPCR",
+                schema: "planning",
+                columns: table => new
+                {
+                    DUKPITargetAssignmentsId = table.Column<Guid>(type: "uuid", nullable: false),
+                    OPCRsId = table.Column<Guid>(type: "uuid", nullable: false)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_DUKPITargetAssignmentOPCR", x => new { x.DUKPITargetAssignmentsId, x.OPCRsId });
+                    table.ForeignKey(
+                        name: "FK_DUKPITargetAssignmentOPCR_DUKPITargetAssignments_DUKPITarge~",
+                        column: x => x.DUKPITargetAssignmentsId,
+                        principalSchema: "planning",
+                        principalTable: "DUKPITargetAssignments",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_DUKPITargetAssignmentOPCR_OPCRs_OPCRsId",
+                        column: x => x.OPCRsId,
+                        principalSchema: "planning",
+                        principalTable: "OPCRs",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "OPCRActivities",
+                schema: "planning",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    OPCRId = table.Column<Guid>(type: "uuid", nullable: false),
+                    DUKPIAssignmentId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    Description = table.Column<string>(type: "text", nullable: true),
+                    Budget = table.Column<decimal>(type: "numeric", nullable: false),
+                    KPIId = table.Column<Guid>(type: "uuid", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    CreatedBy = table.Column<string>(type: "text", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    DeletedBy = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_OPCRActivities", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_OPCRActivities_DUKPITargetAssignments_DUKPIAssignmentId",
+                        column: x => x.DUKPIAssignmentId,
+                        principalSchema: "planning",
+                        principalTable: "DUKPITargetAssignments",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_OPCRActivities_KPIs_KPIId",
+                        column: x => x.KPIId,
+                        principalSchema: "planning",
+                        principalTable: "KPIs",
+                        principalColumn: "Id");
+                    table.ForeignKey(
+                        name: "FK_OPCRActivities_OPCRs_OPCRId",
+                        column: x => x.OPCRId,
+                        principalSchema: "planning",
+                        principalTable: "OPCRs",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "OPCREvaluations",
                 schema: "planning",
                 columns: table => new
@@ -947,13 +1039,16 @@ namespace ERPEZ.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "OPCRKPIs",
+                name: "OPCRPAPs",
                 schema: "planning",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    KPIId = table.Column<Guid>(type: "uuid", nullable: false),
                     OPCRId = table.Column<Guid>(type: "uuid", nullable: false),
+                    KPIId = table.Column<Guid>(type: "uuid", nullable: false),
+                    Name = table.Column<string>(type: "text", nullable: false),
+                    Description = table.Column<string>(type: "text", nullable: true),
+                    Budget = table.Column<decimal>(type: "numeric", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     CreatedBy = table.Column<string>(type: "text", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
@@ -964,55 +1059,19 @@ namespace ERPEZ.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_OPCRKPIs", x => x.Id);
+                    table.PrimaryKey("PK_OPCRPAPs", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_OPCRKPIs_KPIs_KPIId",
+                        name: "FK_OPCRPAPs_KPIs_KPIId",
                         column: x => x.KPIId,
                         principalSchema: "planning",
                         principalTable: "KPIs",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_OPCRKPIs_OPCRs_OPCRId",
+                        name: "FK_OPCRPAPs_OPCRs_OPCRId",
                         column: x => x.OPCRId,
                         principalSchema: "planning",
                         principalTable: "OPCRs",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "SubDUAllocations",
-                schema: "planning",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    DUAllocationId = table.Column<Guid>(type: "uuid", nullable: false),
-                    SubDeliveryUnitId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Amount = table.Column<decimal>(type: "numeric", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
-                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
-                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    DeletedBy = table.Column<string>(type: "text", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_SubDUAllocations", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_SubDUAllocations_DUAllocations_DUAllocationId",
-                        column: x => x.DUAllocationId,
-                        principalSchema: "planning",
-                        principalTable: "DUAllocations",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_SubDUAllocations_SubDeliveryUnits_SubDeliveryUnitId",
-                        column: x => x.SubDeliveryUnitId,
-                        principalSchema: "planning",
-                        principalTable: "SubDeliveryUnits",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -1026,6 +1085,7 @@ namespace ERPEZ.Infrastructure.Migrations
                     WFPId = table.Column<Guid>(type: "uuid", nullable: false),
                     Description = table.Column<string>(type: "text", nullable: false),
                     Weight = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
+                    Outcome = table.Column<string>(type: "text", nullable: true),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     CreatedBy = table.Column<string>(type: "text", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
@@ -1047,15 +1107,17 @@ namespace ERPEZ.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "OPCRActivities",
+                name: "WFPPAPs",
                 schema: "planning",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    OPCRKPIId = table.Column<Guid>(type: "uuid", nullable: false),
+                    WFPId = table.Column<Guid>(type: "uuid", nullable: false),
                     Name = table.Column<string>(type: "text", nullable: false),
-                    Description = table.Column<string>(type: "text", nullable: true),
-                    Budget = table.Column<decimal>(type: "numeric", nullable: false),
+                    OutputIndicator = table.Column<string>(type: "text", nullable: false),
+                    Deliverable = table.Column<string>(type: "text", nullable: false),
+                    Timeframe = table.Column<string>(type: "text", nullable: false),
+                    PersonsInvolved = table.Column<List<string>>(type: "text[]", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     CreatedBy = table.Column<string>(type: "text", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
@@ -1066,145 +1128,12 @@ namespace ERPEZ.Infrastructure.Migrations
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_OPCRActivities", x => x.Id);
+                    table.PrimaryKey("PK_WFPPAPs", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_OPCRActivities_OPCRKPIs_OPCRKPIId",
-                        column: x => x.OPCRKPIId,
+                        name: "FK_WFPPAPs_WFPs_WFPId",
+                        column: x => x.WFPId,
                         principalSchema: "planning",
-                        principalTable: "OPCRKPIs",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "OPCRPAPs",
-                schema: "planning",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    OPCRKPIId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Name = table.Column<string>(type: "text", nullable: false),
-                    Description = table.Column<string>(type: "text", nullable: true),
-                    Budget = table.Column<decimal>(type: "numeric", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
-                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
-                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    DeletedBy = table.Column<string>(type: "text", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_OPCRPAPs", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_OPCRPAPs_OPCRKPIs_OPCRKPIId",
-                        column: x => x.OPCRKPIId,
-                        principalSchema: "planning",
-                        principalTable: "OPCRKPIs",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "OPCRRatings",
-                schema: "planning",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    OPCREvaluationId = table.Column<Guid>(type: "uuid", nullable: false),
-                    PerformanceMeasureId = table.Column<Guid>(type: "uuid", nullable: false),
-                    OPCRKPIId = table.Column<Guid>(type: "uuid", nullable: false),
-                    NumericalRating = table.Column<int>(type: "integer", nullable: false),
-                    Remarks = table.Column<string>(type: "text", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
-                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
-                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    DeletedBy = table.Column<string>(type: "text", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_OPCRRatings", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_OPCRRatings_OPCREvaluations_OPCREvaluationId",
-                        column: x => x.OPCREvaluationId,
-                        principalSchema: "planning",
-                        principalTable: "OPCREvaluations",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_OPCRRatings_OPCRKPIs_OPCRKPIId",
-                        column: x => x.OPCRKPIId,
-                        principalSchema: "planning",
-                        principalTable: "OPCRKPIs",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_OPCRRatings_PerformanceMeasures_PerformanceMeasureId",
-                        column: x => x.PerformanceMeasureId,
-                        principalSchema: "planning",
-                        principalTable: "PerformanceMeasures",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "WFPObjectiveTargets",
-                schema: "planning",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    WFPObjectiveId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ActivityName = table.Column<string>(type: "text", nullable: false),
-                    Indicator = table.Column<string>(type: "text", nullable: false),
-                    Weight = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
-                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
-                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    DeletedBy = table.Column<string>(type: "text", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_WFPObjectiveTargets", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_WFPObjectiveTargets_WFPObjectives_WFPObjectiveId",
-                        column: x => x.WFPObjectiveId,
-                        principalSchema: "planning",
-                        principalTable: "WFPObjectives",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "WFPOutcomes",
-                schema: "planning",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    WFPObjectiveId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Description = table.Column<string>(type: "text", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
-                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
-                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    DeletedBy = table.Column<string>(type: "text", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_WFPOutcomes", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_WFPOutcomes_WFPObjectives_WFPObjectiveId",
-                        column: x => x.WFPObjectiveId,
-                        principalSchema: "planning",
-                        principalTable: "WFPObjectives",
+                        principalTable: "WFPs",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                 });
@@ -1272,12 +1201,169 @@ namespace ERPEZ.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "OPCRRatings",
+                schema: "planning",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    OPCREvaluationId = table.Column<Guid>(type: "uuid", nullable: false),
+                    PerformanceMeasureId = table.Column<Guid>(type: "uuid", nullable: false),
+                    OPCRId = table.Column<Guid>(type: "uuid", nullable: false),
+                    DUKPIAssignmentId = table.Column<Guid>(type: "uuid", nullable: false),
+                    NumericalRating = table.Column<int>(type: "integer", nullable: false),
+                    Remarks = table.Column<string>(type: "text", nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    CreatedBy = table.Column<string>(type: "text", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    DeletedBy = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_OPCRRatings", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_OPCRRatings_DUKPITargetAssignments_DUKPIAssignmentId",
+                        column: x => x.DUKPIAssignmentId,
+                        principalSchema: "planning",
+                        principalTable: "DUKPITargetAssignments",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_OPCRRatings_OPCREvaluations_OPCREvaluationId",
+                        column: x => x.OPCREvaluationId,
+                        principalSchema: "planning",
+                        principalTable: "OPCREvaluations",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_OPCRRatings_OPCRs_OPCRId",
+                        column: x => x.OPCRId,
+                        principalSchema: "planning",
+                        principalTable: "OPCRs",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_OPCRRatings_PerformanceMeasures_PerformanceMeasureId",
+                        column: x => x.PerformanceMeasureId,
+                        principalSchema: "planning",
+                        principalTable: "PerformanceMeasures",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "WFPObjectiveTargets",
+                schema: "planning",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    WFPObjectiveId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ActivityName = table.Column<string>(type: "text", nullable: false),
+                    Indicator = table.Column<string>(type: "text", nullable: false),
+                    Weight = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    CreatedBy = table.Column<string>(type: "text", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    DeletedBy = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_WFPObjectiveTargets", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_WFPObjectiveTargets_WFPObjectives_WFPObjectiveId",
+                        column: x => x.WFPObjectiveId,
+                        principalSchema: "planning",
+                        principalTable: "WFPObjectives",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "WFPPAPDepartments",
+                schema: "planning",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    WFPPAPId = table.Column<Guid>(type: "uuid", nullable: false),
+                    DeliveryUnitId = table.Column<Guid>(type: "uuid", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    CreatedBy = table.Column<string>(type: "text", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    DeletedBy = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_WFPPAPDepartments", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_WFPPAPDepartments_DeliveryUnits_DeliveryUnitId",
+                        column: x => x.DeliveryUnitId,
+                        principalSchema: "planning",
+                        principalTable: "DeliveryUnits",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_WFPPAPDepartments_WFPPAPs_WFPPAPId",
+                        column: x => x.WFPPAPId,
+                        principalSchema: "planning",
+                        principalTable: "WFPPAPs",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
+                name: "WFPObjectiveTargetExpenditures",
+                schema: "planning",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    WFPObjectiveTargetId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ObjectId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ItemDescription = table.Column<string>(type: "text", nullable: true),
+                    Quantity = table.Column<int>(type: "integer", nullable: false),
+                    CostEstimates = table.Column<decimal>(type: "numeric", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    CreatedBy = table.Column<string>(type: "text", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    DeletedBy = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_WFPObjectiveTargetExpenditures", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_WFPObjectiveTargetExpenditures_Objects_ObjectId",
+                        column: x => x.ObjectId,
+                        principalSchema: "planning",
+                        principalTable: "Objects",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_WFPObjectiveTargetExpenditures_WFPObjectiveTargets_WFPObjec~",
+                        column: x => x.WFPObjectiveTargetId,
+                        principalSchema: "planning",
+                        principalTable: "WFPObjectiveTargets",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "WFPObjectiveTimelines",
                 schema: "planning",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     WFPObjectiveTargetId = table.Column<Guid>(type: "uuid", nullable: false),
+                    TimelineType = table.Column<string>(type: "text", nullable: false),
                     StartDate = table.Column<DateOnly>(type: "date", nullable: false),
                     EndDate = table.Column<DateOnly>(type: "date", nullable: false),
                     TargetValue = table.Column<decimal>(type: "numeric(18,2)", nullable: false),
@@ -1302,189 +1388,11 @@ namespace ERPEZ.Infrastructure.Migrations
                         onDelete: ReferentialAction.Cascade);
                 });
 
-            migrationBuilder.CreateTable(
-                name: "WFPActivities",
-                schema: "planning",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    WFPId = table.Column<Guid>(type: "uuid", nullable: false),
-                    WFPOutcomeId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Name = table.Column<string>(type: "text", nullable: false),
-                    OutputIndicator = table.Column<string>(type: "text", nullable: false),
-                    Deliverable = table.Column<string>(type: "text", nullable: false),
-                    Timeframe = table.Column<string>(type: "text", nullable: false),
-                    PersonsInvolved = table.Column<List<string>>(type: "text[]", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
-                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
-                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    DeletedBy = table.Column<string>(type: "text", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_WFPActivities", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_WFPActivities_WFPOutcomes_WFPOutcomeId",
-                        column: x => x.WFPOutcomeId,
-                        principalSchema: "planning",
-                        principalTable: "WFPOutcomes",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_WFPActivities_WFPs_WFPId",
-                        column: x => x.WFPId,
-                        principalSchema: "planning",
-                        principalTable: "WFPs",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "WFPPAPs",
-                schema: "planning",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    WFPId = table.Column<Guid>(type: "uuid", nullable: false),
-                    WFPOutcomeId = table.Column<Guid>(type: "uuid", nullable: true),
-                    Name = table.Column<string>(type: "text", nullable: false),
-                    OutputIndicator = table.Column<string>(type: "text", nullable: false),
-                    Deliverable = table.Column<string>(type: "text", nullable: false),
-                    Timeframe = table.Column<string>(type: "text", nullable: false),
-                    PersonsInvolved = table.Column<List<string>>(type: "text[]", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
-                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
-                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    DeletedBy = table.Column<string>(type: "text", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_WFPPAPs", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_WFPPAPs_WFPOutcomes_WFPOutcomeId",
-                        column: x => x.WFPOutcomeId,
-                        principalSchema: "planning",
-                        principalTable: "WFPOutcomes",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_WFPPAPs_WFPs_WFPId",
-                        column: x => x.WFPId,
-                        principalSchema: "planning",
-                        principalTable: "WFPs",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "ActivityBudgetRequirements",
-                schema: "planning",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    WFPObjectiveTargetId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ObjectId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ItemDescription = table.Column<string>(type: "text", nullable: false),
-                    Quantity = table.Column<int>(type: "integer", nullable: false),
-                    CostEstimates = table.Column<decimal>(type: "numeric", nullable: false),
-                    WFPActivityId = table.Column<Guid>(type: "uuid", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
-                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
-                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    DeletedBy = table.Column<string>(type: "text", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ActivityBudgetRequirements", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_ActivityBudgetRequirements_Objects_ObjectId",
-                        column: x => x.ObjectId,
-                        principalSchema: "planning",
-                        principalTable: "Objects",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_ActivityBudgetRequirements_WFPActivities_WFPActivityId",
-                        column: x => x.WFPActivityId,
-                        principalSchema: "planning",
-                        principalTable: "WFPActivities",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_ActivityBudgetRequirements_WFPObjectiveTargets_WFPObjective~",
-                        column: x => x.WFPObjectiveTargetId,
-                        principalSchema: "planning",
-                        principalTable: "WFPObjectiveTargets",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "WFPPAPDepartments",
-                schema: "planning",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    WFPPAPId = table.Column<Guid>(type: "uuid", nullable: false),
-                    SubDeliveryUnitId = table.Column<Guid>(type: "uuid", nullable: false),
-                    DeliveryUnitId = table.Column<Guid>(type: "uuid", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
-                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
-                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    DeletedBy = table.Column<string>(type: "text", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_WFPPAPDepartments", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_WFPPAPDepartments_DeliveryUnits_DeliveryUnitId",
-                        column: x => x.DeliveryUnitId,
-                        principalSchema: "planning",
-                        principalTable: "DeliveryUnits",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_WFPPAPDepartments_SubDeliveryUnits_SubDeliveryUnitId",
-                        column: x => x.SubDeliveryUnitId,
-                        principalSchema: "planning",
-                        principalTable: "SubDeliveryUnits",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_WFPPAPDepartments_WFPPAPs_WFPPAPId",
-                        column: x => x.WFPPAPId,
-                        principalSchema: "planning",
-                        principalTable: "WFPPAPs",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
             migrationBuilder.CreateIndex(
-                name: "IX_ActivityBudgetRequirements_ObjectId",
+                name: "IX_AttributeKPI_KPIsId",
                 schema: "planning",
-                table: "ActivityBudgetRequirements",
-                column: "ObjectId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_ActivityBudgetRequirements_WFPActivityId",
-                schema: "planning",
-                table: "ActivityBudgetRequirements",
-                column: "WFPActivityId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_ActivityBudgetRequirements_WFPObjectiveTargetId_ObjectId_It~",
-                schema: "planning",
-                table: "ActivityBudgetRequirements",
-                columns: new[] { "WFPObjectiveTargetId", "ObjectId", "ItemDescription" });
+                table: "AttributeKPI",
+                column: "KPIsId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Attributes_ParentAttributeId",
@@ -1506,10 +1414,16 @@ namespace ERPEZ.Infrastructure.Migrations
                 column: "OPCRActivitiesId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_DeliveryUnits_OfficeId_ParentDUId",
+                name: "IX_DeliveryUnits_OfficeId_ParentId",
                 schema: "planning",
                 table: "DeliveryUnits",
-                columns: new[] { "OfficeId", "ParentDUId" });
+                columns: new[] { "OfficeId", "ParentId" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_DeliveryUnits_ParentId",
+                schema: "planning",
+                table: "DeliveryUnits",
+                column: "ParentId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_DUAllocations_DeliveryUnitId_Purpose",
@@ -1536,22 +1450,28 @@ namespace ERPEZ.Infrastructure.Migrations
                 column: "ReceivedFundId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_DUKPIAssignments_DeliveryUnitId_KPIId",
+                name: "IX_DUKPITargetAssignmentOPCR_OPCRsId",
                 schema: "planning",
-                table: "DUKPIAssignments",
-                columns: new[] { "DeliveryUnitId", "KPIId" },
+                table: "DUKPITargetAssignmentOPCR",
+                column: "OPCRsId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_DUKPITargetAssignments_DeliveryUnitId_KPIId_KPITargetId",
+                schema: "planning",
+                table: "DUKPITargetAssignments",
+                columns: new[] { "DeliveryUnitId", "KPIId", "KPITargetId" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_DUKPIAssignments_KPIId",
+                name: "IX_DUKPITargetAssignments_KPIId",
                 schema: "planning",
-                table: "DUKPIAssignments",
+                table: "DUKPITargetAssignments",
                 column: "KPIId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_DUKPIAssignments_KPITargetId",
+                name: "IX_DUKPITargetAssignments_KPITargetId",
                 schema: "planning",
-                table: "DUKPIAssignments",
+                table: "DUKPITargetAssignments",
                 column: "KPITargetId");
 
             migrationBuilder.CreateIndex(
@@ -1581,10 +1501,10 @@ namespace ERPEZ.Infrastructure.Migrations
                 column: "ParentSourceId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_KPIAttributes_KPIsId",
+                name: "IX_KPIMFOPAP_MFOPAPsId",
                 schema: "planning",
-                table: "KPIAttributes",
-                column: "KPIsId");
+                table: "KPIMFOPAP",
+                column: "MFOPAPsId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_KPIModeOfVerifications_KPIId_Name",
@@ -1594,16 +1514,16 @@ namespace ERPEZ.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_KPIRatings_KPIId_PerformanceMeasureId_NumericalRating",
+                name: "IX_KPIPerformanceMeasures_KPIId_PerformanceMeasureId",
                 schema: "planning",
-                table: "KPIRatings",
-                columns: new[] { "KPIId", "PerformanceMeasureId", "NumericalRating" },
+                table: "KPIPerformanceMeasures",
+                columns: new[] { "KPIId", "PerformanceMeasureId" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_KPIRatings_PerformanceMeasureId",
+                name: "IX_KPIPerformanceMeasures_PerformanceMeasureId",
                 schema: "planning",
-                table: "KPIRatings",
+                table: "KPIPerformanceMeasures",
                 column: "PerformanceMeasureId");
 
             migrationBuilder.CreateIndex(
@@ -1620,17 +1540,18 @@ namespace ERPEZ.Infrastructure.Migrations
                 column: "ParentKPIId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_KPISDGs_SDGsId",
+                name: "IX_KPISDG_SDGsId",
                 schema: "planning",
-                table: "KPISDGs",
+                table: "KPISDG",
                 column: "SDGsId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_KPITargets_KPIId_Period",
+                name: "IX_KPITargets_KPIId_Period_QuarterName",
                 schema: "planning",
                 table: "KPITargets",
-                columns: new[] { "KPIId", "Period" },
-                unique: true);
+                columns: new[] { "KPIId", "Period", "QuarterName" },
+                unique: true,
+                filter: "\"QuarterName\" IS NOT NULL");
 
             migrationBuilder.CreateIndex(
                 name: "IX_KPITargets_ParentKPITargetId",
@@ -1656,12 +1577,6 @@ namespace ERPEZ.Infrastructure.Migrations
                 schema: "planning",
                 table: "Locations",
                 column: "ParentLocationId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_MFOKPIs_MFOPAPsId",
-                schema: "planning",
-                table: "MFOKPIs",
-                column: "MFOPAPsId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_MFOPAPs_Name_Code",
@@ -1690,41 +1605,35 @@ namespace ERPEZ.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_Objects_ParentObjectId",
-                schema: "planning",
-                table: "Objects",
-                column: "ParentObjectId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_Offices_ClusterId",
                 schema: "planning",
                 table: "Offices",
                 column: "ClusterId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_OPCRActivities_OPCRKPIId_Name",
+                name: "IX_OPCRActivities_DUKPIAssignmentId",
                 schema: "planning",
                 table: "OPCRActivities",
-                columns: new[] { "OPCRKPIId", "Name" });
+                column: "DUKPIAssignmentId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_OPCRActivities_KPIId",
+                schema: "planning",
+                table: "OPCRActivities",
+                column: "KPIId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_OPCRActivities_OPCRId_DUKPIAssignmentId_Name",
+                schema: "planning",
+                table: "OPCRActivities",
+                columns: new[] { "OPCRId", "DUKPIAssignmentId", "Name" },
+                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_OPCREvaluations_OPCRId_EvaluatorId_EvaluationDate",
                 schema: "planning",
                 table: "OPCREvaluations",
                 columns: new[] { "OPCRId", "EvaluatorId", "EvaluationDate" });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_OPCRKPIs_KPIId",
-                schema: "planning",
-                table: "OPCRKPIs",
-                column: "KPIId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_OPCRKPIs_OPCRId_KPIId",
-                schema: "planning",
-                table: "OPCRKPIs",
-                columns: new[] { "OPCRId", "KPIId" },
-                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_OPCRPAPDepartments_DeliveryUnitId",
@@ -1740,23 +1649,35 @@ namespace ERPEZ.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_OPCRPAPs_OPCRKPIId",
+                name: "IX_OPCRPAPs_KPIId",
                 schema: "planning",
                 table: "OPCRPAPs",
-                column: "OPCRKPIId");
+                column: "KPIId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_OPCRRatings_OPCREvaluationId_PerformanceMeasureId_OPCRKPIId",
+                name: "IX_OPCRPAPs_OPCRId",
+                schema: "planning",
+                table: "OPCRPAPs",
+                column: "OPCRId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_OPCRRatings_DUKPIAssignmentId",
                 schema: "planning",
                 table: "OPCRRatings",
-                columns: new[] { "OPCREvaluationId", "PerformanceMeasureId", "OPCRKPIId" },
+                column: "DUKPIAssignmentId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_OPCRRatings_OPCREvaluationId_PerformanceMeasureId_OPCRId_DU~",
+                schema: "planning",
+                table: "OPCRRatings",
+                columns: new[] { "OPCREvaluationId", "PerformanceMeasureId", "OPCRId", "DUKPIAssignmentId" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_OPCRRatings_OPCRKPIId",
+                name: "IX_OPCRRatings_OPCRId",
                 schema: "planning",
                 table: "OPCRRatings",
-                column: "OPCRKPIId");
+                column: "OPCRId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_OPCRRatings_PerformanceMeasureId",
@@ -1765,11 +1686,17 @@ namespace ERPEZ.Infrastructure.Migrations
                 column: "PerformanceMeasureId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_OPCRs_DeliveryUnitId_FiscalYear",
+                name: "IX_OPCRs_DeliveryUnitId_FiscalYearId",
                 schema: "planning",
                 table: "OPCRs",
-                columns: new[] { "DeliveryUnitId", "FiscalYear" },
+                columns: new[] { "DeliveryUnitId", "FiscalYearId" },
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_OPCRs_FiscalYearId",
+                schema: "planning",
+                table: "OPCRs",
+                column: "FiscalYearId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Organizations_Name_Code",
@@ -1798,30 +1725,17 @@ namespace ERPEZ.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
+                name: "IX_Ratings_KPIPerformanceMeasureId_NumericalRating",
+                schema: "planning",
+                table: "Ratings",
+                columns: new[] { "KPIPerformanceMeasureId", "NumericalRating" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_ReceivedFunds_FundSourceId_Amount",
                 schema: "planning",
                 table: "ReceivedFunds",
                 columns: new[] { "FundSourceId", "Amount" });
-
-            migrationBuilder.CreateIndex(
-                name: "IX_SubDeliveryUnits_DeliveryUnitId_Name",
-                schema: "planning",
-                table: "SubDeliveryUnits",
-                columns: new[] { "DeliveryUnitId", "Name" },
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_SubDUAllocations_DUAllocationId_SubDeliveryUnitId",
-                schema: "planning",
-                table: "SubDUAllocations",
-                columns: new[] { "DUAllocationId", "SubDeliveryUnitId" },
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_SubDUAllocations_SubDeliveryUnitId",
-                schema: "planning",
-                table: "SubDUAllocations",
-                column: "SubDeliveryUnitId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_Transactions_FundSourceId_OrganizationId_LocationId_MFOPAPI~",
@@ -1855,23 +1769,23 @@ namespace ERPEZ.Infrastructure.Migrations
                 column: "OrganizationId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_WFPActivities_WFPId",
-                schema: "planning",
-                table: "WFPActivities",
-                column: "WFPId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_WFPActivities_WFPOutcomeId",
-                schema: "planning",
-                table: "WFPActivities",
-                column: "WFPOutcomeId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_WFPObjectives_WFPId_Description",
                 schema: "planning",
                 table: "WFPObjectives",
                 columns: new[] { "WFPId", "Description" },
                 unique: true);
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WFPObjectiveTargetExpenditures_ObjectId",
+                schema: "planning",
+                table: "WFPObjectiveTargetExpenditures",
+                column: "ObjectId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WFPObjectiveTargetExpenditures_WFPObjectiveTargetId_ObjectI~",
+                schema: "planning",
+                table: "WFPObjectiveTargetExpenditures",
+                columns: new[] { "WFPObjectiveTargetId", "ObjectId", "ItemDescription" });
 
             migrationBuilder.CreateIndex(
                 name: "IX_WFPObjectiveTargets_WFPObjectiveId_ActivityName",
@@ -1902,28 +1816,16 @@ namespace ERPEZ.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_WFPOutcomes_WFPObjectiveId_Description",
-                schema: "planning",
-                table: "WFPOutcomes",
-                columns: new[] { "WFPObjectiveId", "Description" });
-
-            migrationBuilder.CreateIndex(
                 name: "IX_WFPPAPDepartments_DeliveryUnitId",
                 schema: "planning",
                 table: "WFPPAPDepartments",
                 column: "DeliveryUnitId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_WFPPAPDepartments_SubDeliveryUnitId",
+                name: "IX_WFPPAPDepartments_WFPPAPId_DeliveryUnitId",
                 schema: "planning",
                 table: "WFPPAPDepartments",
-                column: "SubDeliveryUnitId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_WFPPAPDepartments_WFPPAPId_SubDeliveryUnitId",
-                schema: "planning",
-                table: "WFPPAPDepartments",
-                columns: new[] { "WFPPAPId", "SubDeliveryUnitId" },
+                columns: new[] { "WFPPAPId", "DeliveryUnitId" },
                 unique: true);
 
             migrationBuilder.CreateIndex(
@@ -1933,23 +1835,23 @@ namespace ERPEZ.Infrastructure.Migrations
                 column: "WFPId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_WFPPAPs_WFPOutcomeId",
-                schema: "planning",
-                table: "WFPPAPs",
-                column: "WFPOutcomeId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_WFPs_DeliveryUnitId_FiscalYear",
+                name: "IX_WFPs_DeliveryUnitId_FiscalYearId",
                 schema: "planning",
                 table: "WFPs",
-                columns: new[] { "DeliveryUnitId", "FiscalYear" });
+                columns: new[] { "DeliveryUnitId", "FiscalYearId" });
+
+            migrationBuilder.CreateIndex(
+                name: "IX_WFPs_FiscalYearId",
+                schema: "planning",
+                table: "WFPs",
+                column: "FiscalYearId");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.DropTable(
-                name: "ActivityBudgetRequirements",
+                name: "AttributeKPI",
                 schema: "planning");
 
             migrationBuilder.DropTable(
@@ -1961,7 +1863,7 @@ namespace ERPEZ.Infrastructure.Migrations
                 schema: "planning");
 
             migrationBuilder.DropTable(
-                name: "DUKPIAssignments",
+                name: "DUKPITargetAssignmentOPCR",
                 schema: "planning");
 
             migrationBuilder.DropTable(
@@ -1969,7 +1871,7 @@ namespace ERPEZ.Infrastructure.Migrations
                 schema: "planning");
 
             migrationBuilder.DropTable(
-                name: "KPIAttributes",
+                name: "KPIMFOPAP",
                 schema: "planning");
 
             migrationBuilder.DropTable(
@@ -1977,15 +1879,7 @@ namespace ERPEZ.Infrastructure.Migrations
                 schema: "planning");
 
             migrationBuilder.DropTable(
-                name: "KPIRatings",
-                schema: "planning");
-
-            migrationBuilder.DropTable(
-                name: "KPISDGs",
-                schema: "planning");
-
-            migrationBuilder.DropTable(
-                name: "MFOKPIs",
+                name: "KPISDG",
                 schema: "planning");
 
             migrationBuilder.DropTable(
@@ -2001,11 +1895,15 @@ namespace ERPEZ.Infrastructure.Migrations
                 schema: "planning");
 
             migrationBuilder.DropTable(
-                name: "SubDUAllocations",
+                name: "Ratings",
                 schema: "planning");
 
             migrationBuilder.DropTable(
                 name: "Transactions",
+                schema: "planning");
+
+            migrationBuilder.DropTable(
+                name: "WFPObjectiveTargetExpenditures",
                 schema: "planning");
 
             migrationBuilder.DropTable(
@@ -2017,19 +1915,11 @@ namespace ERPEZ.Infrastructure.Migrations
                 schema: "planning");
 
             migrationBuilder.DropTable(
-                name: "WFPActivities",
-                schema: "planning");
-
-            migrationBuilder.DropTable(
-                name: "KPITargets",
-                schema: "planning");
-
-            migrationBuilder.DropTable(
-                name: "FiscalYears",
-                schema: "planning");
-
-            migrationBuilder.DropTable(
                 name: "Attributes",
+                schema: "planning");
+
+            migrationBuilder.DropTable(
+                name: "DUAllocations",
                 schema: "planning");
 
             migrationBuilder.DropTable(
@@ -2045,11 +1935,7 @@ namespace ERPEZ.Infrastructure.Migrations
                 schema: "planning");
 
             migrationBuilder.DropTable(
-                name: "PerformanceMeasures",
-                schema: "planning");
-
-            migrationBuilder.DropTable(
-                name: "DUAllocations",
+                name: "KPIPerformanceMeasures",
                 schema: "planning");
 
             migrationBuilder.DropTable(
@@ -2061,11 +1947,11 @@ namespace ERPEZ.Infrastructure.Migrations
                 schema: "planning");
 
             migrationBuilder.DropTable(
-                name: "Objects",
+                name: "Organizations",
                 schema: "planning");
 
             migrationBuilder.DropTable(
-                name: "Organizations",
+                name: "Objects",
                 schema: "planning");
 
             migrationBuilder.DropTable(
@@ -2073,15 +1959,7 @@ namespace ERPEZ.Infrastructure.Migrations
                 schema: "planning");
 
             migrationBuilder.DropTable(
-                name: "SubDeliveryUnits",
-                schema: "planning");
-
-            migrationBuilder.DropTable(
                 name: "WFPPAPs",
-                schema: "planning");
-
-            migrationBuilder.DropTable(
-                name: "OPCRKPIs",
                 schema: "planning");
 
             migrationBuilder.DropTable(
@@ -2089,11 +1967,7 @@ namespace ERPEZ.Infrastructure.Migrations
                 schema: "planning");
 
             migrationBuilder.DropTable(
-                name: "WFPOutcomes",
-                schema: "planning");
-
-            migrationBuilder.DropTable(
-                name: "KPIs",
+                name: "DUKPITargetAssignments",
                 schema: "planning");
 
             migrationBuilder.DropTable(
@@ -2101,7 +1975,7 @@ namespace ERPEZ.Infrastructure.Migrations
                 schema: "planning");
 
             migrationBuilder.DropTable(
-                name: "FundSources",
+                name: "PerformanceMeasures",
                 schema: "planning");
 
             migrationBuilder.DropTable(
@@ -2109,11 +1983,27 @@ namespace ERPEZ.Infrastructure.Migrations
                 schema: "planning");
 
             migrationBuilder.DropTable(
+                name: "FundSources",
+                schema: "planning");
+
+            migrationBuilder.DropTable(
+                name: "KPITargets",
+                schema: "planning");
+
+            migrationBuilder.DropTable(
                 name: "WFPs",
                 schema: "planning");
 
             migrationBuilder.DropTable(
+                name: "KPIs",
+                schema: "planning");
+
+            migrationBuilder.DropTable(
                 name: "DeliveryUnits",
+                schema: "planning");
+
+            migrationBuilder.DropTable(
+                name: "FiscalYears",
                 schema: "planning");
 
             migrationBuilder.DropTable(

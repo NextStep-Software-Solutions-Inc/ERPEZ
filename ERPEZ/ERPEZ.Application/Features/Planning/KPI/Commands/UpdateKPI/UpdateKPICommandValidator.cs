@@ -62,6 +62,10 @@ public class UpdateKPICommandValidator : AbstractValidator<UpdateKPICommand>
             .Must(val => !val.HasValue || val is bool)
             .WithMessage("IsActive must be a boolean value if provided.");
 
+        RuleFor(x => x.Dto.IsAverage)
+            .Must(val => !val.HasValue || val is bool)
+            .WithMessage("IsAverage must be a boolean value if provided.");
+
         // 8. SDGIds (List<Guid>) - Optional for partial update
         RuleFor(x => x.Dto.SDGIds)
             .ForEach(sdgId => sdgId.NotEmpty().WithMessage("SDG ID must be a valid, non-empty GUID."))

@@ -40,6 +40,7 @@ public class UpdateKPICommandHandler(IUnitOfWork unitOfWork, IFileStorageService
             kpi.IsFixed = request.Dto.IsFixed ?? kpi.IsFixed;
             kpi.IsGlobal = request.Dto.IsGlobal ?? kpi.IsGlobal;
             kpi.IsMultiple = request.Dto.IsMultiple ?? kpi.IsMultiple;
+            kpi.IsAverage = request.Dto.IsAverage ?? kpi.IsAverage;
             kpi.IsActive = request.Dto.IsActive ?? kpi.IsActive;
 
             // Handle SDGs - Only update if provided

@@ -60,6 +60,7 @@ public class CreateKPICommandHandler(IUnitOfWork unitOfWork, IFileStorageService
             IsFixed = request.IsFixed,
             IsGlobal = request.IsGlobal,
             IsMultiple = request.IsMultiple,
+            IsAverage = request.IsAverage,
             Status = "Draft",
         };
 

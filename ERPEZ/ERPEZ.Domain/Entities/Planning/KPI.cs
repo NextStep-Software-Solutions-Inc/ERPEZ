@@ -34,6 +34,9 @@ public class KPI : BaseEntity
 
     [Sieve(CanFilter = true, CanSort = true)]
     public bool IsMultiple { get; set; } = false;
+    
+    [Sieve(CanFilter = true, CanSort = true)]
+    public bool IsAverage { get; set; } = false;
 
     [Sieve(CanFilter = true, CanSort = true)]
     public bool IsActive { get; set; } = true;
