@@ -17,6 +17,7 @@ public class CreateOPCRCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<
         {
             DeliveryUnitId = request.DeliveryUnitId,
             FiscalYearId = request.FiscalYearId,
+            Name = request.Name ?? string.Empty,
         };
         await unitOfWork.OPCRRepository.AddAsync(opcr, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);

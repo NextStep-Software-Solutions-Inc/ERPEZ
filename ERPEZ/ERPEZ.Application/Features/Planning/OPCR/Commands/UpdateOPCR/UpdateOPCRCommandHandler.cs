@@ -18,6 +18,7 @@ public class UpdateOPCRCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<
 
         opcr.DeliveryUnitId = dto?.DeliveryUnitId ?? opcr.DeliveryUnitId;
         opcr.FiscalYearId = dto?.FiscalYearId ?? opcr.FiscalYearId;
+        opcr.Name = !string.IsNullOrWhiteSpace(dto?.Name) ? dto!.Name : opcr.Name;
 
         unitOfWork.OPCRRepository.Update(opcr);
         await unitOfWork.SaveChangesAsync(cancellationToken);

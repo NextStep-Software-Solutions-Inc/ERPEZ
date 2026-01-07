@@ -43,9 +43,6 @@ public class KPI : BaseEntity
     public string Status { get; set; } = string.Empty;
     
     [Sieve(CanFilter = true, CanSort = true)]
-    public string? OPCRName { get; set; }
-    
-    [Sieve(CanFilter = true, CanSort = true)]
     public Guid? MFOPAPId { get; set; }
     
     public virtual KPI? ParentKPI { get; set; }

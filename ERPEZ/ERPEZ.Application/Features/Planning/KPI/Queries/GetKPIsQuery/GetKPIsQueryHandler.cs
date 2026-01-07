@@ -29,7 +29,6 @@ public class GetKPIsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetKP
             IsPercentage = kpi.IsPercentage,
             IsTargetValueAllocable = kpi.IsTargetValueAllocable,
             Status = kpi.Status,
-            OPCRName = kpi.OPCRName,
             CreatedBy = kpi.CreatedBy,
             CreatedAt = kpi.CreatedAt,
         };

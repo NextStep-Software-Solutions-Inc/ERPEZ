@@ -62,7 +62,6 @@ public class CreateKPICommandHandler(IUnitOfWork unitOfWork, IFileStorageService
             IsMultiple = request.IsMultiple,
             IsAverage = request.IsAverage,
             Status = "Draft",
-            OPCRName = request.OPCRName,
             MFOPAPId = request.MFOPAPId
         };
 

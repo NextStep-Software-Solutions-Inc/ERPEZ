@@ -108,7 +108,6 @@ public class GetKPIByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
             IsPercentage = kpi.IsPercentage,
             IsTargetValueAllocable = kpi.IsTargetValueAllocable,
             Status = kpi.Status,
-            OPCRName = kpi.OPCRName,
             CreatedBy = kpi.CreatedBy,
             CreatedAt = kpi.CreatedAt,
             KPIRatings = kpiRatings,

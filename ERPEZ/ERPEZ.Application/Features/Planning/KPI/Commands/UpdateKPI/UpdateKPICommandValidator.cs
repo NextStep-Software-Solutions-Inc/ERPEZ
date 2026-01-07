@@ -44,11 +44,6 @@ public class UpdateKPICommandValidator : AbstractValidator<UpdateKPICommand>
             .Must(status => validStatuses.Contains(status, StringComparer.OrdinalIgnoreCase))
             .WithMessage($"Status must be one of the following: {string.Join(", ", validStatuses)}.")
             .When(x => !string.IsNullOrWhiteSpace(x.Dto.Status));
-        
-        RuleFor(x => x.Dto.OPCRName)
-            .MaximumLength(250)
-            .WithMessage("OPCR Name cannot exceed 250 characters.")
-            .When(x => !string.IsNullOrWhiteSpace(x.Dto.OPCRName));
 
         // Optional boolean flags: IsFixed, IsGlobal, IsMultiple, IsActive accept true/false/null (not provided)
         RuleFor(x => x.Dto.IsFixed)

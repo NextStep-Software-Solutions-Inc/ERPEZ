@@ -14,10 +14,9 @@ public record UpdateKPIRequest
     public bool? IsFixed { get; init; }
     public bool? IsGlobal { get; init; }
     public bool? IsMultiple { get; init; }
-        public bool? IsAverage { get; init; }
+    public bool? IsAverage { get; init; }
     public bool? IsActive { get; init; }
     public string? Status { get; init; }
-    public string? OPCRName { get; init; }
 
     [JsonPropertyName("SDGIds")]
     public List<Guid>? SDGIds { get; init; }

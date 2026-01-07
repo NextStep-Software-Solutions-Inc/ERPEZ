@@ -33,5 +33,4 @@ public record KPIResponse
     [JsonPropertyName("SDGs")]
     public List<SDGResponse> SDGs { get; init; } = [];
     public bool IsTargetValueAllocable { get; init; }
-    public string? OPCRName { get; init; }
 }
