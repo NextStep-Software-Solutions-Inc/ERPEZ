@@ -18,9 +18,9 @@ public class CreateOPCRRatingCommandValidator : AbstractValidator<CreateOPCRRati
             .NotEmpty()
             .WithMessage("OPCR ID is required.");
 
-        RuleFor(x => x.DUKPIAssignmentId)
+        RuleFor(x => x.DUKPITargetAssignmentId)
             .NotEmpty()
-            .WithMessage("DU KPI Assignment ID is required.");
+            .WithMessage("DU KPI Target Assignment ID is required.");
 
         RuleFor(x => x.NumericalRating)
             .InclusiveBetween(1, 5)

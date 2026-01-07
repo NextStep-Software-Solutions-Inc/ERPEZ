@@ -9,7 +9,7 @@ public class DeliveryUnit : BaseEntity
     public Guid OfficeId { get; set; }
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid? ParentId { get; set; }
-    public virtual List<DUKPIAssignment> KPIAssignments { get; set; } = [];
+    public virtual List<DUKPITargetAssignment> KPIAssignments { get; set; } = [];
     public virtual List<DUAllocation> DUAllocations { get; set; } = [];
     public virtual List<DeliveryUnit> SubDeliveryUnits { get; set; } = [];
     public virtual List<WFP> WFPs { get; set; } = [];

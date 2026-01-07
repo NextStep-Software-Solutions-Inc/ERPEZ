@@ -23,7 +23,7 @@ public class GetOPCRActivitiesQueryHandler(IUnitOfWork unitOfWork) : IRequestHan
         {
             Id = a.Id,
             OPCRId = a.OPCRId,
-            DUKPIAssignmentId = a.DUKPIAssignmentId,
+            DUKPITargetAssignmentId = a.DUKPITargetAssignmentId,
             Name = a.Name,
             Description = a.Description,
             Budget = a.Budget,

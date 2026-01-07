@@ -44,11 +44,27 @@ public class UpdateKPICommandValidator : AbstractValidator<UpdateKPICommand>
             .Must(status => validStatuses.Contains(status, StringComparer.OrdinalIgnoreCase))
             .WithMessage($"Status must be one of the following: {string.Join(", ", validStatuses)}.")
             .When(x => !string.IsNullOrWhiteSpace(x.Dto.Status));
-        
-        RuleFor(x => x.Dto.OPCRName)
-            .MaximumLength(250)
-            .WithMessage("OPCR Name cannot exceed 250 characters.")
-            .When(x => !string.IsNullOrWhiteSpace(x.Dto.OPCRName));
+
+        // Optional boolean flags: IsFixed, IsGlobal, IsMultiple, IsActive accept true/false/null (not provided)
+        RuleFor(x => x.Dto.IsFixed)
+            .Must(val => !val.HasValue || val is bool)
+            .WithMessage("IsFixed must be a boolean value if provided.");
+
+        RuleFor(x => x.Dto.IsGlobal)
+            .Must(val => !val.HasValue || val is bool)
+            .WithMessage("IsGlobal must be a boolean value if provided.");
+
+        RuleFor(x => x.Dto.IsMultiple)
+            .Must(val => !val.HasValue || val is bool)
+            .WithMessage("IsMultiple must be a boolean value if provided.");
+
+        RuleFor(x => x.Dto.IsActive)
+            .Must(val => !val.HasValue || val is bool)
+            .WithMessage("IsActive must be a boolean value if provided.");
+
+        RuleFor(x => x.Dto.IsAverage)
+            .Must(val => !val.HasValue || val is bool)
+            .WithMessage("IsAverage must be a boolean value if provided.");
 
         // 8. SDGIds (List<Guid>) - Optional for partial update
         RuleFor(x => x.Dto.SDGIds)

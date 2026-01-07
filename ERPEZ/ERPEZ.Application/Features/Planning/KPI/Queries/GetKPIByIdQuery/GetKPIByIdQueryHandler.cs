@@ -47,7 +47,7 @@ public class GetKPIByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
         var kpiTargetIds = kpiTargets.Select(t => t.Id).ToList();
         if (kpiTargetIds.Count != 0)
         {
-            var allocationsByTarget = await unitOfWork.DUKPIAssignmentRepository.GetTotalAllocatedByKPITargetIdsAsync(kpiTargetIds, cancellationToken);
+            var allocationsByTarget = await unitOfWork.DUKPITargetAssignmentRepository.GetTotalAllocatedByKPITargetIdsAsync(kpiTargetIds, cancellationToken);
 
             kpiTargets = [.. kpiTargets.Select(target => target with
             {
@@ -108,7 +108,6 @@ public class GetKPIByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
             IsPercentage = kpi.IsPercentage,
             IsTargetValueAllocable = kpi.IsTargetValueAllocable,
             Status = kpi.Status,
-            OPCRName = kpi.OPCRName,
             CreatedBy = kpi.CreatedBy,
             CreatedAt = kpi.CreatedAt,
             KPIRatings = kpiRatings,

@@ -16,10 +16,10 @@ public class UpdateOPCRActivityCommandHandler(IUnitOfWork unitOfWork) : IRequest
         var opcrId = dto.OPCRId ?? opcrActivity.OPCRId;
         var opcr = await unitOfWork.OPCRRepository.FindAsync(o => o.Id == opcrId, cancellationToken) ?? throw new NotFoundException("OPCR not found.");
 
-        var duKPIAssignmentId = dto.DUKPIAssignmentId ?? opcrActivity.DUKPIAssignmentId;
-        var duKPIAssignment = await unitOfWork.DUKPIAssignmentRepository.FindAsync(d => d.Id == duKPIAssignmentId, cancellationToken) ?? throw new NotFoundException("DU KPI Assignment not found.");
+        var duKPITargetAssignmentId = dto.DUKPITargetAssignmentId ?? opcrActivity.DUKPITargetAssignmentId;
+        var duKPITargetAssignment = await unitOfWork.DUKPITargetAssignmentRepository.FindAsync(d => d.Id == duKPITargetAssignmentId, cancellationToken) ?? throw new NotFoundException("DU KPI Assignment not found.");
 
-        if (duKPIAssignment.DeliveryUnitId != opcr.DeliveryUnitId)
+        if (duKPITargetAssignment.DeliveryUnitId != opcr.DeliveryUnitId)
         {
             throw new BadRequestException("The DU KPI Assignment must belong to the same Delivery Unit as the OPCR.");
         }
@@ -65,7 +65,7 @@ public class UpdateOPCRActivityCommandHandler(IUnitOfWork unitOfWork) : IRequest
         opcrActivity.Name = dto.Name ?? opcrActivity.Name;
         opcrActivity.Description = dto.Description ?? opcrActivity.Description;
         opcrActivity.OPCRId = opcrId;
-        opcrActivity.DUKPIAssignmentId = dto.DUKPIAssignmentId ?? opcrActivity.DUKPIAssignmentId;
+        opcrActivity.DUKPITargetAssignmentId = dto.DUKPITargetAssignmentId ?? opcrActivity.DUKPITargetAssignmentId;
         opcrActivity.Budget = dto.Budget ?? opcrActivity.Budget;
 
         unitOfWork.OPCRActivityRepository.Update(opcrActivity);

@@ -49,11 +49,22 @@ public class CreateKPICommandValidator : AbstractValidator<CreateKPICommand>
         RuleFor(x => x.IsTargetValueAllocable)
                 .NotNull()
                 .WithMessage("Is Target Value Allocable must be provided (true or false).");
-        
-        RuleFor(x => x.OPCRName)
-                .MaximumLength(250)
-                .WithMessage("OPCR Name cannot exceed 250 characters.")
-                .When(x => !string.IsNullOrWhiteSpace(x.OPCRName));
+
+        RuleFor(x => x.IsFixed)
+                .NotNull()
+                .WithMessage("Is Fixed must be provided (true or false).");
+
+        RuleFor(x => x.IsGlobal)
+                .NotNull()
+                .WithMessage("Is Global must be provided (true or false).");
+
+        RuleFor(x => x.IsMultiple)
+                .NotNull()
+                .WithMessage("Is Multiple must be provided (true or false).");
+
+        RuleFor(x => x.IsAverage)
+                .NotNull()
+                .WithMessage("Is Average must be provided (true or false).");
 
         RuleForEach(x => x.SDGIds)
                 .NotEmpty()

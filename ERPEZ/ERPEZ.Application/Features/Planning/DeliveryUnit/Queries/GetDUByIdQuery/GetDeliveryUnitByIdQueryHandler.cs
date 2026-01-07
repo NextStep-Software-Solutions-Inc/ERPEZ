@@ -39,7 +39,7 @@ public class GetDeliveryUnitByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestH
                     }
             },
            
-            KPIAssignments = du.KPIAssignments.Select(ka => new KPIAssignmentResponse
+            KPITargetAssignments = du.KPIAssignments.Select(ka => new KPITargetAssignmentResponse
             {
                 Id = ka.Id,
                 KPI = new()
@@ -109,7 +109,7 @@ public class GetDeliveryUnitByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestH
                         }
                 },
                 ParentId = subDU.ParentId,
-                KPIAssignments = subDU.KPIAssignments.Select(ka => new KPIAssignmentResponse
+                KPITargetAssignments = subDU.KPIAssignments.Select(ka => new KPITargetAssignmentResponse
                 {
                     Id = ka.Id,
                     KPI = new()

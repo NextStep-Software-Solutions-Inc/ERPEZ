@@ -52,7 +52,7 @@ public class GetWFPByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
                    
                     CreatedAt = w.DeliveryUnit.CreatedAt,
                     ParentId = w.DeliveryUnit.ParentId,
-                    KPIAssignments = w.DeliveryUnit.KPIAssignments.Select(ka => new KPIAssignmentResponse
+                    KPITargetAssignments = w.DeliveryUnit.KPIAssignments.Select(ka => new KPITargetAssignmentResponse
                     {
                         Id = ka.Id,
                         KPI = new()

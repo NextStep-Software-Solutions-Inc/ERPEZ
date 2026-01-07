@@ -1,5 +1,5 @@
 using ERPEZ.Application.Features.Planning.DeliveryUnit.Dtos;
-using ERPEZ.Application.Features.Planning.DUKPIAssignment.Dtos;
+using ERPEZ.Application.Features.Planning.DUKPITargetAssignment.Dtos;
 using ERPEZ.Application.Features.Planning.FiscalYear.Dtos;
 using ERPEZ.Application.Features.Planning.OPCRActivity.Dtos;
 using ERPEZ.Application.Features.Planning.OPCREvaluation.Dtos;
@@ -17,7 +17,7 @@ public record OPCRResponse
     public DateOnly CreatedDate { get; init; }
 
     public List<OPCREvaluationResponse> OPCREvaluations { get; init; } = [];
-    public List<DUKPIAssignmentResponse> DUKPIAssignments { get; init; } = [];
+    public List<DUKPITargetAssignmentResponse> DUKPITargetAssignments { get; init; } = [];
     public List<OPCRActivityResponse> OPCRActivities { get; init; } = [];
 
 }

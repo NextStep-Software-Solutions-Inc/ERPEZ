@@ -12,7 +12,7 @@ public record OPCRsResponse
     public string Status { get; init; } = string.Empty;
 
     public int EvaluationCount { get; init; } = 0;
-    public int KPIAssignmentCount { get; init; } = 0;
+    public int KPITargetAssignmentCount { get; init; } = 0;
     public int ActivityCount { get; init; } = 0;
 
 }

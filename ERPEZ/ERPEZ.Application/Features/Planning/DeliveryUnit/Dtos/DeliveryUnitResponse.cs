@@ -10,12 +10,12 @@ namespace ERPEZ.Application.Features.Planning.DeliveryUnit.Dtos
         public Guid Id { get; init; }
         public required OfficeResponse Office { get; init; }
         public Guid? ParentId { get; init; }
-        public List<KPIAssignmentResponse> KPIAssignments { get; init; } = [];
+        public List<KPITargetAssignmentResponse> KPITargetAssignments { get; init; } = [];
         public List<DeliveryUnitResponse> SubDeliveryUnits { get; init; } = [];
         public DateTime CreatedAt { get; init; }
 
     }
-    public  record KPIAssignmentResponse
+    public  record KPITargetAssignmentResponse
     {
         public Guid Id { get; init; }
         [JsonPropertyName("KPI")]

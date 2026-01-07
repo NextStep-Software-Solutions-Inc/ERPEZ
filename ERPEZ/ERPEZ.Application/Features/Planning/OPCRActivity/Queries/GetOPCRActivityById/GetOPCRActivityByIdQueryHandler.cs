@@ -16,7 +16,7 @@ public class GetOPCRActivityByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestH
             {
                 Id = t.Id,
                 OPCRId = t.OPCRId,
-                DUKPIAssignmentId = t.DUKPIAssignmentId,
+                DUKPITargetAssignmentId = t.DUKPITargetAssignmentId,
                 Name = t.Name,
                 Description = t.Description,
                 Budget = t.Budget,

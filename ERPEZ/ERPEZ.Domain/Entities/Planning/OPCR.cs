@@ -19,7 +19,7 @@ public class OPCR : BaseEntity
     public virtual DeliveryUnit DeliveryUnit { get; set; } = null!;
     public virtual FiscalYear FiscalYear { get; set; } = null!;
     public virtual List<OPCREvaluation> OPCREvaluations { get; set; } = [];
-    public virtual List<DUKPIAssignment> DUKPIAssignments { get; set; } = [];
+    public virtual List<DUKPITargetAssignment> DUKPITargetAssignments { get; set; } = [];
     public virtual List<OPCRActivity> OPCRActivities { get; set; } = [];
 
 }

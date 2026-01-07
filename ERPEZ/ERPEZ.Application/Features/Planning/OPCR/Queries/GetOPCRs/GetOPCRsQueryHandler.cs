@@ -29,7 +29,7 @@ public class GetOPCRsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetO
             TotalBudget = opcr.OPCRActivities.Select(a => a.Budget).Sum(),
             CreatedDate = DateOnly.FromDateTime(opcr.CreatedAt),
             EvaluationCount = opcr.OPCREvaluations.Count,
-            KPIAssignmentCount = opcr.DeliveryUnit.KPIAssignments.Count,
+            KPITargetAssignmentCount = opcr.DeliveryUnit.KPIAssignments.Count,
             ActivityCount = opcr.OPCRActivities.Count,
         };
 

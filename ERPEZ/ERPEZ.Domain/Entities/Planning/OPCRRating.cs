@@ -1,3 +1,4 @@
+using System.ComponentModel.DataAnnotations.Schema;
 using ERPEZ.Domain.Common;
 using Sieve.Attributes;
 
@@ -12,12 +13,13 @@ public class OPCRRating : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid OPCRId { get; set; }
     [Sieve(CanFilter = true, CanSort = true)]
-    public Guid DUKPIAssignmentId { get; set; }
+    [Column("DUKPIAssignmentId")]
+    public Guid DUKPITargetAssignmentId { get; set; }
     [Sieve(CanFilter = true, CanSort = true)]
     public int NumericalRating { get; set; }
     public string? Remarks { get; set; }
     public virtual OPCR OPCR { get; set; } = null!;
-    public virtual DUKPIAssignment DUKPIAssignment { get; set; } = null!;
+    public virtual DUKPITargetAssignment DUKPITargetAssignment { get; set; } = null!;
     public virtual OPCREvaluation OPCREvaluation { get; set; } = null!;
     public virtual PerformanceMeasure PerformanceMeasure { get; set; } = null!;
 }

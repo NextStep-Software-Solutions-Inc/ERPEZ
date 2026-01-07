@@ -16,8 +16,10 @@ public record CreateKPICommand : IRequest<ApiResponse<Guid>>
     public bool IsOfficeMandate { get; init; } = false;
     public bool IsPercentage { get; init; } = false;
     public bool IsTargetValueAllocable { get; init; } = false;
-    
-    public string? OPCRName { get; init; }
+    public bool IsFixed { get; init; } = false;
+    public bool IsGlobal { get; init; } = false;
+    public bool IsMultiple { get; init; } = false;
+    public bool IsAverage { get; init; } = false;
 
     [JsonPropertyName("SDGIds")]
     public List<Guid> SDGIds { get; init; } = [];

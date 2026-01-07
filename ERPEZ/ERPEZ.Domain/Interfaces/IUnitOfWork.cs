@@ -9,7 +9,7 @@ public interface IUnitOfWork
     IRatingRepository RatingRepository { get; }
     IDUAllocationRepository DUAllocationRepository { get; }
     IKPITargetRepository KPITargetRepository { get; }
-    IDUKPIAssignmentRepository DUKPIAssignmentRepository { get; }
+    IDUKPITargetAssignmentRepository DUKPITargetAssignmentRepository { get; }
     IKPIModeOfVerificationRepository KPIModeOfVerificationRepository { get; }
     IReceivedFundRepository ReceivedFundRepository { get; }
     IKPIRepository KPIRepository { get; }

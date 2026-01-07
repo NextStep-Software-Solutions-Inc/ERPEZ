@@ -18,6 +18,7 @@ namespace ERPEZ.Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
+                .HasDefaultSchema("public")
                 .HasAnnotation("ProductVersion", "9.0.9")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
@@ -38,19 +39,19 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.ToTable("AttributeKPI", "planning");
                 });
 
-            modelBuilder.Entity("DUKPIAssignmentOPCR", b =>
+            modelBuilder.Entity("DUKPITargetAssignmentOPCR", b =>
                 {
-                    b.Property<Guid>("DUKPIAssignmentsId")
+                    b.Property<Guid>("DUKPITargetAssignmentsId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("OPCRsId")
                         .HasColumnType("uuid");
 
-                    b.HasKey("DUKPIAssignmentsId", "OPCRsId");
+                    b.HasKey("DUKPITargetAssignmentsId", "OPCRsId");
 
                     b.HasIndex("OPCRsId");
 
-                    b.ToTable("DUKPIAssignmentOPCR", "planning");
+                    b.ToTable("DUKPITargetAssignmentOPCR", "planning");
                 });
 
             modelBuilder.Entity("DeliveryUnitOPCRActivity", b =>
@@ -260,7 +261,7 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.ToTable("DUFundAllocations", "planning");
                 });
 
-            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.DUKPIAssignment", b =>
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.DUKPITargetAssignment", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -309,7 +310,7 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("DeliveryUnitId", "KPIId", "KPITargetId")
                         .IsUnique();
 
-                    b.ToTable("DUKPIAssignments", "planning");
+                    b.ToTable("DUKPITargetAssignments", "planning");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.DeliveryUnit", b =>
@@ -530,7 +531,22 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsAverage")
+                        .HasColumnType("boolean");
+
                     b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsFixed")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsGlobal")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsMultiple")
                         .HasColumnType("boolean");
 
                     b.Property<bool>("IsOfficeMandate")
@@ -541,6 +557,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Property<bool>("IsTargetValueAllocable")
                         .HasColumnType("boolean");
+
+                    b.Property<Guid?>("MFOPAPId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -560,6 +579,8 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("MFOPAPId");
 
                     b.HasIndex("Name")
                         .IsUnique();
@@ -807,6 +828,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
+                    b.Property<Guid?>("KPIId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Name")
                         .IsRequired()
                         .HasColumnType("text");
@@ -828,6 +852,8 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("KPIId");
 
                     b.HasIndex("ParentId");
 
@@ -907,8 +933,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<Guid>("DUKPIAssignmentId")
-                        .HasColumnType("uuid");
+                    b.Property<Guid>("DUKPITargetAssignmentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("DUKPIAssignmentId");
 
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
@@ -940,11 +967,11 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DUKPIAssignmentId");
+                    b.HasIndex("DUKPITargetAssignmentId");
 
                     b.HasIndex("KPIId");
 
-                    b.HasIndex("OPCRId", "DUKPIAssignmentId", "Name")
+                    b.HasIndex("OPCRId", "DUKPITargetAssignmentId", "Name")
                         .IsUnique();
 
                     b.ToTable("OPCRActivities", "planning");
@@ -1111,8 +1138,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<Guid>("DUKPIAssignmentId")
-                        .HasColumnType("uuid");
+                    b.Property<Guid>("DUKPITargetAssignmentId")
+                        .HasColumnType("uuid")
+                        .HasColumnName("DUKPIAssignmentId");
 
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
@@ -1146,13 +1174,13 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DUKPIAssignmentId");
+                    b.HasIndex("DUKPITargetAssignmentId");
 
                     b.HasIndex("OPCRId");
 
                     b.HasIndex("PerformanceMeasureId");
 
-                    b.HasIndex("OPCREvaluationId", "PerformanceMeasureId", "OPCRId", "DUKPIAssignmentId")
+                    b.HasIndex("OPCREvaluationId", "PerformanceMeasureId", "OPCRId", "DUKPITargetAssignmentId")
                         .IsUnique();
 
                     b.ToTable("OPCRRatings", "planning");
@@ -1961,21 +1989,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.ToTable("WFPPAPDepartments", "planning");
                 });
 
-            modelBuilder.Entity("KPIMFOPAP", b =>
-                {
-                    b.Property<Guid>("KPIsId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("MFOPAPsId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("KPIsId", "MFOPAPsId");
-
-                    b.HasIndex("MFOPAPsId");
-
-                    b.ToTable("KPIMFOPAP", "planning");
-                });
-
             modelBuilder.Entity("KPISDG", b =>
                 {
                     b.Property<Guid>("KPIsId")
@@ -2006,11 +2019,11 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("DUKPIAssignmentOPCR", b =>
+            modelBuilder.Entity("DUKPITargetAssignmentOPCR", b =>
                 {
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.DUKPIAssignment", null)
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.DUKPITargetAssignment", null)
                         .WithMany()
-                        .HasForeignKey("DUKPIAssignmentsId")
+                        .HasForeignKey("DUKPITargetAssignmentsId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -2079,7 +2092,7 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("ReceivedFund");
                 });
 
-            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.DUKPIAssignment", b =>
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.DUKPITargetAssignment", b =>
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Planning.DeliveryUnit", "DeliveryUnit")
                         .WithMany("KPIAssignments")
@@ -2143,9 +2156,15 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.KPI", b =>
                 {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.MFOPAP", "MFOPAP")
+                        .WithMany("KPIs")
+                        .HasForeignKey("MFOPAPId");
+
                     b.HasOne("ERPEZ.Domain.Entities.Planning.KPI", "ParentKPI")
                         .WithMany("ChildKPIs")
                         .HasForeignKey("ParentKPIId");
+
+                    b.Navigation("MFOPAP");
 
                     b.Navigation("ParentKPI");
                 });
@@ -2210,6 +2229,10 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.MFOPAP", b =>
                 {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.KPI", null)
+                        .WithMany("MFOPAPs")
+                        .HasForeignKey("KPIId");
+
                     b.HasOne("ERPEZ.Domain.Entities.Planning.MFOPAP", null)
                         .WithMany()
                         .HasForeignKey("ParentId");
@@ -2242,9 +2265,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OPCRActivity", b =>
                 {
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.DUKPIAssignment", "DUKPIAssignment")
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.DUKPITargetAssignment", "DUKPITargetAssignment")
                         .WithMany()
-                        .HasForeignKey("DUKPIAssignmentId")
+                        .HasForeignKey("DUKPITargetAssignmentId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -2258,7 +2281,7 @@ namespace ERPEZ.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("DUKPIAssignment");
+                    b.Navigation("DUKPITargetAssignment");
 
                     b.Navigation("OPCR");
                 });
@@ -2314,9 +2337,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OPCRRating", b =>
                 {
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.DUKPIAssignment", "DUKPIAssignment")
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.DUKPITargetAssignment", "DUKPITargetAssignment")
                         .WithMany()
-                        .HasForeignKey("DUKPIAssignmentId")
+                        .HasForeignKey("DUKPITargetAssignmentId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
@@ -2338,7 +2361,7 @@ namespace ERPEZ.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("DUKPIAssignment");
+                    b.Navigation("DUKPITargetAssignment");
 
                     b.Navigation("OPCR");
 
@@ -2350,7 +2373,7 @@ namespace ERPEZ.Infrastructure.Migrations
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.Object", b =>
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Planning.Object", "ParentObject")
-                        .WithMany("Objects")
+                        .WithMany("ChildObjects")
                         .HasForeignKey("ParentId")
                         .OnDelete(DeleteBehavior.Restrict);
 
@@ -2543,21 +2566,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("WFPPAP");
                 });
 
-            modelBuilder.Entity("KPIMFOPAP", b =>
-                {
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.KPI", null)
-                        .WithMany()
-                        .HasForeignKey("KPIsId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.MFOPAP", null)
-                        .WithMany()
-                        .HasForeignKey("MFOPAPsId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("KPISDG", b =>
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Planning.KPI", null)
@@ -2631,6 +2639,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Navigation("KPITargets");
 
+                    b.Navigation("MFOPAPs");
+
                     b.Navigation("OPCRActivities");
                 });
 
@@ -2653,6 +2663,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.MFOPAP", b =>
                 {
+                    b.Navigation("KPIs");
+
                     b.Navigation("MFOPAPs");
 
                     b.Navigation("Transactions");
@@ -2677,7 +2689,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.Object", b =>
                 {
-                    b.Navigation("Objects");
+                    b.Navigation("ChildObjects");
 
                     b.Navigation("Transactions");
 
