@@ -39,7 +39,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Attribute>? Attributes { get; set; }
     public DbSet<Cluster>? Clusters { get; set; }
     public DbSet<DeliveryUnit>? DeliveryUnits { get; set; }
-    public DbSet<DUKPIAssignment>? DUKPIAssignments { get; set; }
+    public DbSet<DUKPITargetAssignment>? DUKPITargetAssignments { get; set; }
     public DbSet<FiscalYear>? FiscalYears { get; set; }
     public DbSet<OPCRPAP>? OPCRPAPs { get; set; }
     public DbSet<SDG>? SDGs { get; set; }
@@ -87,26 +87,26 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasMany(k => k.MFOPAPs)
             .WithMany(m => m.KPIs);
 
-        // DUKPIAssignment (Delivery Unit KPI Assignment)
-        modelBuilder.Entity<DUKPIAssignment>()
+        // DUKPITargetAssignment (Delivery Unit KPI Target Assignment)
+        modelBuilder.Entity<DUKPITargetAssignment>()
             .HasOne(da => da.KPI)
             .WithMany(k => k.KPIAssignments)
             .HasForeignKey(da => da.KPIId)
             .IsRequired();
 
-        modelBuilder.Entity<DUKPIAssignment>()
+        modelBuilder.Entity<DUKPITargetAssignment>()
             .HasOne(da => da.DeliveryUnit)
             .WithMany()
             .HasForeignKey(da => da.DeliveryUnitId)
             .IsRequired();
 
-        modelBuilder.Entity<DUKPIAssignment>()
+        modelBuilder.Entity<DUKPITargetAssignment>()
             .HasOne(da => da.KPITarget)
             .WithMany()
             .HasForeignKey(da => da.KPITargetId)
             .IsRequired();
 
-        modelBuilder.Entity<DUKPIAssignment>()
+        modelBuilder.Entity<DUKPITargetAssignment>()
             .HasIndex(da => new { da.DeliveryUnitId, da.KPIId, da.KPITargetId })
             .IsUnique();
 
@@ -523,9 +523,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .WithOne(r => r.OPCREvaluation)
             .HasForeignKey(r => r.OPCREvaluationId);
 
-        // Implicit many-to-many between OPCR and DUKPIAssignment
+        // Implicit many-to-many between OPCR and DUKPITargetAssignment
         modelBuilder.Entity<OPCR>()
-            .HasMany(o => o.DUKPIAssignments)
+            .HasMany(o => o.DUKPITargetAssignments)
             .WithMany(d => d.OPCRs);
 
         // OPCRActivity
@@ -535,17 +535,17 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasForeignKey(a => a.OPCRId);
 
         modelBuilder.Entity<OPCRActivity>()
-            .HasOne(a => a.DUKPIAssignment)
+            .HasOne(a => a.DUKPITargetAssignment)
             .WithMany()
-            .HasForeignKey(a => a.DUKPIAssignmentId);
+            .HasForeignKey(a => a.DUKPITargetAssignmentId);
 
         modelBuilder.Entity<OPCRActivity>()
-            .HasIndex(a => new { a.OPCRId, a.DUKPIAssignmentId, a.Name })
+            .HasIndex(a => new { a.OPCRId, a.DUKPITargetAssignmentId, a.Name })
             .IsUnique();
 
         // OPCRRating
         modelBuilder.Entity<OPCRRating>()
-            .HasIndex(r => new { r.OPCREvaluationId, r.PerformanceMeasureId, r.OPCRId, r.DUKPIAssignmentId })
+            .HasIndex(r => new { r.OPCREvaluationId, r.PerformanceMeasureId, r.OPCRId, r.DUKPITargetAssignmentId })
             .IsUnique();
 
         modelBuilder.Entity<OPCRRating>()
@@ -554,9 +554,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasForeignKey(r => r.OPCRId);
 
         modelBuilder.Entity<OPCRRating>()
-            .HasOne(r => r.DUKPIAssignment)
+            .HasOne(r => r.DUKPITargetAssignment)
             .WithMany()
-            .HasForeignKey(r => r.DUKPIAssignmentId);
+            .HasForeignKey(r => r.DUKPITargetAssignmentId);
 
         modelBuilder.Entity<OPCRRating>()
             .HasOne(r => r.OPCREvaluation)

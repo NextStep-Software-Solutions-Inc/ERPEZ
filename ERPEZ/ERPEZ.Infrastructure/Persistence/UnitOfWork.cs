@@ -27,7 +27,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IRatingRepository ratingRepository;
     private readonly IDUAllocationRepository duAllocationRepository;
     private readonly IKPITargetRepository kpiTargetRepository;
-    private readonly IDUKPIAssignmentRepository dukpiAssignmentRepository;
+    private readonly IDUKPITargetAssignmentRepository dukpiTargetAssignmentRepository;
     private readonly IKPIModeOfVerificationRepository kpiModeOfVerificationRepository;
     private readonly IReceivedFundRepository receivedFundRepository;
     private readonly IKPIRepository kpiRepository;
@@ -69,7 +69,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         ratingRepository = new RatingRepository(context, sieveProcessor);
         duAllocationRepository = new DUAllocationRepository(context, sieveProcessor);
         kpiTargetRepository = new KPITargetRepository(context, sieveProcessor);
-        dukpiAssignmentRepository = new DUKPIAssignmentRepository(context, sieveProcessor);
+        dukpiTargetAssignmentRepository = new DUKPITargetAssignmentRepository(context, sieveProcessor);
         kpiModeOfVerificationRepository = new KPIModeOfVerificationRepository(context, sieveProcessor);
         receivedFundRepository = new ReceivedFundRepository(context, sieveProcessor);
         kpiRepository = new KPIRepository(context, sieveProcessor);
@@ -107,7 +107,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IRatingRepository RatingRepository => ratingRepository;
     public IDUAllocationRepository DUAllocationRepository => duAllocationRepository;
     public IKPITargetRepository KPITargetRepository => kpiTargetRepository;
-    public IDUKPIAssignmentRepository DUKPIAssignmentRepository => dukpiAssignmentRepository;
+    public IDUKPITargetAssignmentRepository DUKPITargetAssignmentRepository => dukpiTargetAssignmentRepository;
     public IKPIModeOfVerificationRepository KPIModeOfVerificationRepository => kpiModeOfVerificationRepository;
     public IReceivedFundRepository ReceivedFundRepository => receivedFundRepository;
     public IKPIRepository KPIRepository => kpiRepository;

@@ -36,8 +36,8 @@ public class UpdateKPIsForDeliveryUnitCommandHandler(IUnitOfWork unitOfWork)
                     throw new BadRequestException($"The provided targets for KPI {kpiId} must exactly match all targets for the KPI.");
 
                 // Fetch all existing assignments for this Delivery Unit and the provided targets
-                var existingAssignments = await unitOfWork.DUKPIAssignmentRepository.ToListAsync(
-                    unitOfWork.DUKPIAssignmentRepository.Query(a => a.DeliveryUnitId == request.DeliveryUnitId && providedTargetIds.Contains(a.KPITargetId)),
+                var existingAssignments = await unitOfWork.DUKPITargetAssignmentRepository.ToListAsync(
+                    unitOfWork.DUKPITargetAssignmentRepository.Query(a => a.DeliveryUnitId == request.DeliveryUnitId && providedTargetIds.Contains(a.KPITargetId)),
                     cancellationToken);
 
                 // Verify all assignments exist
@@ -46,7 +46,7 @@ public class UpdateKPIsForDeliveryUnitCommandHandler(IUnitOfWork unitOfWork)
                     throw new NotFoundException($"DU KPI Assignments not found for Delivery Unit {request.DeliveryUnitId} and targets: {string.Join(", ", missingTargets)}.");
 
                 // Fetch total allocated values for each target
-                var allocationSums = await unitOfWork.DUKPIAssignmentRepository.GetTotalAllocatedByKPITargetIdsAsync(providedTargetIds, cancellationToken);
+                var allocationSums = await unitOfWork.DUKPITargetAssignmentRepository.GetTotalAllocatedByKPITargetIdsAsync(providedTargetIds, cancellationToken);
 
                 foreach (var update in updatesForKpi)
                 {

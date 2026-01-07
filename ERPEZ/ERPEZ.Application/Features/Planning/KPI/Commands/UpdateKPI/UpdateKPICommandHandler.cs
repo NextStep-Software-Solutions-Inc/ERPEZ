@@ -37,6 +37,9 @@ public class UpdateKPICommandHandler(IUnitOfWork unitOfWork, IFileStorageService
             kpi.IsPercentage = request.Dto.IsPercentage ?? kpi.IsPercentage;
             kpi.Status = request.Dto.Status ?? kpi.Status;
             kpi.IsTargetValueAllocable = request.Dto.IsTargetValueAllocable ?? kpi.IsTargetValueAllocable;
+            kpi.IsFixed = request.Dto.IsFixed ?? kpi.IsFixed;
+            kpi.IsGlobal = request.Dto.IsGlobal ?? kpi.IsGlobal;
+            kpi.IsMultiple = request.Dto.IsMultiple ?? kpi.IsMultiple;
 
             // Handle SDGs - Only update if provided
             if (request.Dto.SDGIds?.Count > 0)
@@ -185,11 +188,11 @@ public class UpdateKPICommandHandler(IUnitOfWork unitOfWork, IFileStorageService
                     .Select(t => t.Id!.Value)
                     .ToHashSet();
 
-                // Delete targets not in the request (only if not referenced by DUKPIAssignment)
+                // Delete targets not in the request (only if not referenced by DUKPITargetAssignment)
                 foreach (var existingTarget in existingTargets.Where(t => !requestedTargetIds.Contains(t.Id)))
                 {
-                    // Check if target is referenced by any DUKPIAssignment
-                    var isReferenced = await unitOfWork.DUKPIAssignmentRepository.FindAsync(
+                    // Check if target is referenced by any DUKPITargetAssignment
+                    var isReferenced = await unitOfWork.DUKPITargetAssignmentRepository.FindAsync(
                         a => a.KPITargetId == existingTarget.Id,
                         cancellationToken);
 

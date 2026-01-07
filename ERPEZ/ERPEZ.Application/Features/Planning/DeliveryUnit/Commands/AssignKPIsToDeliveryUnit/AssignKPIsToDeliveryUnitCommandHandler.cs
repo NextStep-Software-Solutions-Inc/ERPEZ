@@ -36,12 +36,12 @@ public class AssignKPIsToDeliveryUnitCommandHandler(IUnitOfWork unitOfWork)
                     throw new BadRequestException($"The provided targets for KPI {kpiId} must exactly match all targets for the KPI.");
 
                 // Fetch all existing assignments for this Delivery Unit and the provided targets
-                var existingAssignments = await unitOfWork.DUKPIAssignmentRepository.ToListAsync(
-                    unitOfWork.DUKPIAssignmentRepository.Query(a => a.DeliveryUnitId == request.DeliveryUnitId && providedTargetIds.Contains(a.KPITargetId)),
+                var existingAssignments = await unitOfWork.DUKPITargetAssignmentRepository.ToListAsync(
+                    unitOfWork.DUKPITargetAssignmentRepository.Query(a => a.DeliveryUnitId == request.DeliveryUnitId && providedTargetIds.Contains(a.KPITargetId)),
                     cancellationToken);
 
                 // Fetch total allocated values for each target
-                var allocationSums = await unitOfWork.DUKPIAssignmentRepository.GetTotalAllocatedByKPITargetIdsAsync(providedTargetIds, cancellationToken);
+                var allocationSums = await unitOfWork.DUKPITargetAssignmentRepository.GetTotalAllocatedByKPITargetIdsAsync(providedTargetIds, cancellationToken);
 
                 foreach (var kpiTarget in targetsForKpi)
                 {
@@ -69,7 +69,7 @@ public class AssignKPIsToDeliveryUnitCommandHandler(IUnitOfWork unitOfWork)
                     }
 
                     // Create the assignment
-                    var duKpiAssignment = new Domain.Entities.Planning.DUKPIAssignment
+                    var duKpiTargetAssignment = new Domain.Entities.Planning.DUKPITargetAssignment
                     {
                         KPIId = kpiId,
                         DeliveryUnitId = request.DeliveryUnitId,
@@ -77,7 +77,7 @@ public class AssignKPIsToDeliveryUnitCommandHandler(IUnitOfWork unitOfWork)
                         AllocatedTargetValue = allocatedValue,
                     };
 
-                    await unitOfWork.DUKPIAssignmentRepository.AddAsync(duKpiAssignment, cancellationToken);
+                    await unitOfWork.DUKPITargetAssignmentRepository.AddAsync(duKpiTargetAssignment, cancellationToken);
                 }
             }
 

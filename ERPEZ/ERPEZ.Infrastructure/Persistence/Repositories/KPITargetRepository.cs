@@ -12,7 +12,7 @@ public class KPITargetRepository(ApplicationDbContext context, ISieveProcessor s
         var result = await context.KPITargets!
             .Where(t => t.Id == id)
             .GroupJoin(
-                context.DUKPIAssignments!.Where(a => a.KPITargetId == id),
+                context.DUKPITargetAssignments!.Where(a => a.KPITargetId == id),
                 target => target.Id,
                 allocation => allocation.KPITargetId,
                 (target, allocations) => new

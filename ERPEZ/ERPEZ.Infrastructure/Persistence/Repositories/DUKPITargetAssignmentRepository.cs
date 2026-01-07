@@ -3,15 +3,14 @@ using Microsoft.EntityFrameworkCore;
 using ERPEZ.Domain.Dtos.Planning;
 
 namespace ERPEZ.Infrastructure.Persistence.Repositories;
-
-#pragma warning disable CS9107 // Parameter is captured into the state of the enclosing type
-public class DUKPIAssignmentRepository(ApplicationDbContext context, ISieveProcessor sieveProcessor) : Repository<Domain.Entities.Planning.DUKPIAssignment>(context, sieveProcessor), Domain.Interfaces.IDUKPIAssignmentRepository
-#pragma warning restore CS9107
+public class DUKPITargetAssignmentRepository(ApplicationDbContext context, ISieveProcessor sieveProcessor) : Repository<Domain.Entities.Planning.DUKPITargetAssignment>(context, sieveProcessor), Domain.Interfaces.IDUKPITargetAssignmentRepository
 {
+    private readonly ApplicationDbContext context = context;
+    private readonly ISieveProcessor sieveProcessor = sieveProcessor;
     public async Task<Dictionary<Guid, decimal>> GetTotalAllocatedByKPITargetIdsAsync(IEnumerable<Guid> kpiTargetIds, CancellationToken cancellationToken = default)
     {
         var aggregatedAllocations = await ToListAsync(
-            context.DUKPIAssignments!
+            context.DUKPITargetAssignments!
                 .Where(a => kpiTargetIds.Contains(a.KPITargetId))
                 .GroupBy(a => a.KPITargetId)
                 .Select(g => new { KPITargetId = g.Key, TotalAllocated = g.Sum(a => a.AllocatedTargetValue) }),
@@ -20,9 +19,9 @@ public class DUKPIAssignmentRepository(ApplicationDbContext context, ISieveProce
         return aggregatedAllocations.ToDictionary(a => a.KPITargetId, a => a.TotalAllocated);
     }
 
-    public async Task<(List<DUKPIAssignmentsGroupedResponse> Items, int TotalCount)> GetGroupedAssignmentsAsync(Sieve.Models.SieveModel sieveModel, CancellationToken cancellationToken = default)
+    public async Task<(List<DUKPITargetAssignmentsGroupedResponse> Items, int TotalCount)> GetGroupedAssignmentsAsync(Sieve.Models.SieveModel sieveModel, CancellationToken cancellationToken = default)
     {
-        IQueryable<Domain.Entities.Planning.DUKPIAssignment> query = context.DUKPIAssignments!
+        IQueryable<Domain.Entities.Planning.DUKPITargetAssignment> query = context.DUKPITargetAssignments!
             .Include(a => a.DeliveryUnit)
             .ThenInclude(du => du.Office);
 
@@ -31,7 +30,7 @@ public class DUKPIAssignmentRepository(ApplicationDbContext context, ISieveProce
 
         var groupedQuery = query
             .GroupBy(a => new { a.KPIId, a.DeliveryUnitId })
-            .Select(g => new DUKPIAssignmentsGroupedResponse
+            .Select(g => new DUKPITargetAssignmentsGroupedResponse
             {
                 DeliveryUnit = new DeliveryUnitGroupedResponse
                 {
@@ -41,7 +40,7 @@ public class DUKPIAssignmentRepository(ApplicationDbContext context, ISieveProce
                 DUKPITargets = g.Select(a => new DUKPITargetGroupedResponse
                 {   
                     KPIId = g.Key.KPIId,
-                    DUKPIAssignmentId = a.Id,
+                    DUKPITargetAssignmentId = a.Id,
                     TargetId = a.KPITargetId,
                     AllocatedTargetValue = a.AllocatedTargetValue
                 }).ToList()

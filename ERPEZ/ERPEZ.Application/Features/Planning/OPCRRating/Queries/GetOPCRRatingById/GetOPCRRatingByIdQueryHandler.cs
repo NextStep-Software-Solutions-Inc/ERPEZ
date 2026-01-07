@@ -18,7 +18,7 @@ public class GetOPCRRatingByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHan
         {
             Id = opcrRating.Id,
             OPCRId = opcrRating.OPCRId,
-            DUKPIAssignmentId = opcrRating.DUKPIAssignmentId,
+            DUKPITargetAssignmentId = opcrRating.DUKPITargetAssignmentId,
             OPCREvaluationId = opcrRating.OPCREvaluationId,
             PerformanceMeasureId = opcrRating.PerformanceMeasureId,
             NumericalRating = opcrRating.NumericalRating,

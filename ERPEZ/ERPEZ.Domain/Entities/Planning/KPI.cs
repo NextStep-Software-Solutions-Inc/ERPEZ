@@ -18,18 +18,26 @@ public class KPI : BaseEntity
     public string? Description { get; set; } = string.Empty;
 
     [Sieve(CanFilter = true, CanSort = true)]
-    public bool IsOfficeMandate { get; set; }
+    public bool IsOfficeMandate { get; set; } = false;
 
     [Sieve(CanFilter = true, CanSort = true)]
-    public bool IsPercentage { get; set; }
+    public bool IsPercentage { get; set; } = false;
 
     [Sieve(CanFilter = true, CanSort = true)]
-    public bool IsTargetValueAllocable { get; set; }
+    public bool IsTargetValueAllocable { get; set; } = false;
+    
+    [Sieve(CanFilter = true, CanSort = true)]
+    public bool IsFixed { get; set; } = false;
 
+    [Sieve(CanFilter = true, CanSort = true)]
+    public bool IsGlobal { get; set; } = false;
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public bool IsMultiple { get; set; } = false;
     public string Status { get; set; } = string.Empty;
     public virtual KPI? ParentKPI { get; set; }
     public virtual List<KPIModeOfVerification> KPIModeOfVerifications { get; set; } = [];
-    public virtual List<DUKPIAssignment> KPIAssignments { get; set; } = [];
+    public virtual List<DUKPITargetAssignment> KPIAssignments { get; set; } = [];
     public virtual List<MFOPAP> MFOPAPs { get; set; } = [];
     public virtual List<OPCRActivity> OPCRActivities { get; set; } = [];
     public virtual List<KPITarget> KPITargets { get; set; } = [];

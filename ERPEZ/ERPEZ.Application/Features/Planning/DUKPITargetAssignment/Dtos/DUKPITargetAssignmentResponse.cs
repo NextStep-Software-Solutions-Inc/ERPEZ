@@ -1,6 +1,6 @@
-namespace ERPEZ.Application.Features.Planning.DUKPIAssignment.Dtos;
+namespace ERPEZ.Application.Features.Planning.DUKPITargetAssignment.Dtos;
 
-public record DUKPIAssignmentResponse
+public record DUKPITargetAssignmentResponse
 {
     public Guid Id { get; init; }
     public Guid KPIId { get; init; }

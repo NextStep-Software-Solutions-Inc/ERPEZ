@@ -10,13 +10,13 @@ public class CreateOPCRActivityCommandHandler(IUnitOfWork unitOfWork) : IRequest
     public async Task<ApiResponse<Guid>> Handle(CreateOPCRActivityCommand request, CancellationToken cancellationToken)
     {
         var opcr = await unitOfWork.OPCRRepository.FindAsync(o => o.Id == request.OPCRId, cancellationToken) ?? throw new NotFoundException("OPCR not found.");
-        var duKPIAssignment = await unitOfWork.DUKPIAssignmentRepository.FindAsync(d => d.Id == request.DUKPIAssignmentId, cancellationToken) ?? throw new NotFoundException("DU KPI Assignment not found.");
+        var duKPITargetAssignment = await unitOfWork.DUKPITargetAssignmentRepository.FindAsync(d => d.Id == request.DUKPITargetAssignmentId, cancellationToken) ?? throw new NotFoundException("DU KPI Assignment not found.");
 
-        if (duKPIAssignment.DeliveryUnitId != opcr.DeliveryUnitId)
+        if (duKPITargetAssignment.DeliveryUnitId != opcr.DeliveryUnitId)
         {
             throw new BadRequestException("The DU KPI Assignment must belong to the same Delivery Unit as the OPCR.");
         }
-        
+
         if (request.PAPDepartmentIds.Count != 0)
         {
             var deliveryUnits = await unitOfWork.DeliveryUnitRepository.ToListAsync(
@@ -34,17 +34,17 @@ public class CreateOPCRActivityCommandHandler(IUnitOfWork unitOfWork) : IRequest
             }
         }
 
-        // do not allow duplicate OPCRActivity names under the same OPCR and DUKPIAssignment
-        var existingActivity = await unitOfWork.OPCRActivityRepository.FindAsync(a => a.OPCRId == request.OPCRId && a.DUKPIAssignmentId == request.DUKPIAssignmentId && a.Name.ToLower() == request.Name.ToLower(), cancellationToken);
+        // do not allow duplicate OPCRActivity names under the same OPCR and DUKPITargetAssignment
+        var existingActivity = await unitOfWork.OPCRActivityRepository.FindAsync(a => a.OPCRId == request.OPCRId && a.DUKPITargetAssignmentId == request.DUKPITargetAssignmentId && a.Name.ToLower() == request.Name.ToLower(), cancellationToken);
         if (existingActivity != null)
         {
-            throw new ConflictException("An OPCR Activity with the same name already exists under this OPCR and DUKPI Assignment.");
+            throw new ConflictException("An OPCR Activity with the same name already exists under this OPCR and DUKPI Target Assignment.");
         }
-        
+
         var opcrActivity = new Domain.Entities.Planning.OPCRActivity
         {
             OPCRId = request.OPCRId,
-            DUKPIAssignmentId = request.DUKPIAssignmentId,
+            DUKPITargetAssignmentId = request.DUKPITargetAssignmentId,
             Name = request.Name,
             Description = request.Description,
             Budget = request.Budget,

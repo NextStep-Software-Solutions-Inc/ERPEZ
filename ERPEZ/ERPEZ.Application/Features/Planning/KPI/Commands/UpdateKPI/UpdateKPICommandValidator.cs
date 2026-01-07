@@ -45,6 +45,19 @@ public class UpdateKPICommandValidator : AbstractValidator<UpdateKPICommand>
             .WithMessage($"Status must be one of the following: {string.Join(", ", validStatuses)}.")
             .When(x => !string.IsNullOrWhiteSpace(x.Dto.Status));
 
+        // Validate IsFixed, IsGlobal, IsMultiple (optional boolean flags)
+        RuleFor(x => x.Dto.IsFixed)
+            .Null() // Will always be null or have a value; no additional validation needed beyond the bool type
+            .When(x => x.Dto.IsFixed.HasValue == false);
+
+        RuleFor(x => x.Dto.IsGlobal)
+            .Null()
+            .When(x => x.Dto.IsGlobal.HasValue == false);
+
+        RuleFor(x => x.Dto.IsMultiple)
+            .Null()
+            .When(x => x.Dto.IsMultiple.HasValue == false);
+
         // 8. SDGIds (List<Guid>) - Optional for partial update
         RuleFor(x => x.Dto.SDGIds)
             .ForEach(sdgId => sdgId.NotEmpty().WithMessage("SDG ID must be a valid, non-empty GUID."))

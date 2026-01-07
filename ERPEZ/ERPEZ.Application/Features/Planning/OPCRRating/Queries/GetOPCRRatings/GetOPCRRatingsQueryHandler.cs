@@ -23,7 +23,7 @@ public class GetOPCRRatingsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandle
             OPCREvaluationId = or.OPCREvaluationId,
             PerformanceMeasureId = or.PerformanceMeasureId,
             OPCRId = or.OPCRId,
-            DUKPIAssignmentId = or.DUKPIAssignmentId,
+            DUKPITargetAssignmentId = or.DUKPITargetAssignmentId,
             NumericalRating = or.NumericalRating,
             Remarks = or.Remarks,
             CreatedBy = or.CreatedBy,

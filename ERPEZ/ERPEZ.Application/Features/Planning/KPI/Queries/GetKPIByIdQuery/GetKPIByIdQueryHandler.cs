@@ -47,7 +47,7 @@ public class GetKPIByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
         var kpiTargetIds = kpiTargets.Select(t => t.Id).ToList();
         if (kpiTargetIds.Count != 0)
         {
-            var allocationsByTarget = await unitOfWork.DUKPIAssignmentRepository.GetTotalAllocatedByKPITargetIdsAsync(kpiTargetIds, cancellationToken);
+            var allocationsByTarget = await unitOfWork.DUKPITargetAssignmentRepository.GetTotalAllocatedByKPITargetIdsAsync(kpiTargetIds, cancellationToken);
 
             kpiTargets = [.. kpiTargets.Select(target => target with
             {

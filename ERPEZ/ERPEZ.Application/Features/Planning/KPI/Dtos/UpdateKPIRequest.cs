@@ -11,6 +11,9 @@ public record UpdateKPIRequest
     public bool? IsOfficeMandate { get; init; }
     public bool? IsPercentage { get; init; }
     public bool? IsTargetValueAllocable { get; init; }
+    public bool? IsFixed { get; init; }
+    public bool? IsGlobal { get; init; }
+    public bool? IsMultiple { get; init; }
     public string? Status { get; init; }
 
     [JsonPropertyName("SDGIds")]

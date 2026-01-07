@@ -19,13 +19,13 @@ public class CreateOPCRRatingCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
         _ = await unitOfWork.OPCRRepository.FindAsync(o => o.Id == request.OPCRId,
             cancellationToken) ?? throw new NotFoundException("OPCR not found.");
 
-        _ = await unitOfWork.DUKPIAssignmentRepository.FindAsync(d => d.Id == request.DUKPIAssignmentId,
+        _ = await unitOfWork.DUKPITargetAssignmentRepository.FindAsync(d => d.Id == request.DUKPITargetAssignmentId,
             cancellationToken) ?? throw new NotFoundException("DU KPI Assignment not found.");
 
         var opcrRating = new Domain.Entities.Planning.OPCRRating
         {
             OPCRId = request.OPCRId,
-            DUKPIAssignmentId = request.DUKPIAssignmentId,
+            DUKPITargetAssignmentId = request.DUKPITargetAssignmentId,
             OPCREvaluationId = request.OPCREvaluationId,
             PerformanceMeasureId = request.PerformanceMeasureId,
             NumericalRating = request.NumericalRating,

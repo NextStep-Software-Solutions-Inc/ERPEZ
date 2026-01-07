@@ -50,6 +50,18 @@ public class CreateKPICommandValidator : AbstractValidator<CreateKPICommand>
                 .NotNull()
                 .WithMessage("Is Target Value Allocable must be provided (true or false).");
 
+        RuleFor(x => x.IsFixed)
+                .NotNull()
+                .WithMessage("Is Fixed must be provided (true or false).");
+
+        RuleFor(x => x.IsGlobal)
+                .NotNull()
+                .WithMessage("Is Global must be provided (true or false).");
+
+        RuleFor(x => x.IsMultiple)
+                .NotNull()
+                .WithMessage("Is Multiple must be provided (true or false).");
+
         RuleForEach(x => x.SDGIds)
                 .NotEmpty()
                 .WithMessage("SDG ID cannot be empty.");

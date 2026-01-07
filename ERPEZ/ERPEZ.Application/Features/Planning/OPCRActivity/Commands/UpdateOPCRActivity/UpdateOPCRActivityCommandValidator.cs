@@ -15,10 +15,10 @@ public class UpdateOPCRActivityCommandValidator : AbstractValidator<UpdateOPCRAc
             .WithMessage("OPCR ID is required.")
             .When(x => x.UpdateOPCRActivity.OPCRId.HasValue);
 
-        RuleFor(x => x.UpdateOPCRActivity.DUKPIAssignmentId)
+        RuleFor(x => x.UpdateOPCRActivity.DUKPITargetAssignmentId)
             .NotEmpty()
-            .WithMessage("DU KPI Assignment ID is required.")
-            .When(x => x.UpdateOPCRActivity.DUKPIAssignmentId.HasValue);
+            .WithMessage("DU KPI Target Assignment is required.")
+            .When(x => x.UpdateOPCRActivity.DUKPITargetAssignmentId.HasValue);
 
         RuleFor(x => x.UpdateOPCRActivity.Name)
             .NotEmpty()
