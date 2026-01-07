@@ -45,18 +45,22 @@ public class UpdateKPICommandValidator : AbstractValidator<UpdateKPICommand>
             .WithMessage($"Status must be one of the following: {string.Join(", ", validStatuses)}.")
             .When(x => !string.IsNullOrWhiteSpace(x.Dto.Status));
 
-        // Validate IsFixed, IsGlobal, IsMultiple (optional boolean flags)
+        // Optional boolean flags: IsFixed, IsGlobal, IsMultiple, IsActive accept true/false/null (not provided)
         RuleFor(x => x.Dto.IsFixed)
-            .Null() // Will always be null or have a value; no additional validation needed beyond the bool type
-            .When(x => x.Dto.IsFixed.HasValue == false);
+            .Must(val => !val.HasValue || val is bool)
+            .WithMessage("IsFixed must be a boolean value if provided.");
 
         RuleFor(x => x.Dto.IsGlobal)
-            .Null()
-            .When(x => x.Dto.IsGlobal.HasValue == false);
+            .Must(val => !val.HasValue || val is bool)
+            .WithMessage("IsGlobal must be a boolean value if provided.");
 
         RuleFor(x => x.Dto.IsMultiple)
-            .Null()
-            .When(x => x.Dto.IsMultiple.HasValue == false);
+            .Must(val => !val.HasValue || val is bool)
+            .WithMessage("IsMultiple must be a boolean value if provided.");
+
+        RuleFor(x => x.Dto.IsActive)
+            .Must(val => !val.HasValue || val is bool)
+            .WithMessage("IsActive must be a boolean value if provided.");
 
         // 8. SDGIds (List<Guid>) - Optional for partial update
         RuleFor(x => x.Dto.SDGIds)

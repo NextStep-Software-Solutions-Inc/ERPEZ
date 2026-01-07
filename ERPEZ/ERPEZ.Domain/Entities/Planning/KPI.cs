@@ -25,7 +25,7 @@ public class KPI : BaseEntity
 
     [Sieve(CanFilter = true, CanSort = true)]
     public bool IsTargetValueAllocable { get; set; } = false;
-    
+
     [Sieve(CanFilter = true, CanSort = true)]
     public bool IsFixed { get; set; } = false;
 
@@ -34,6 +34,9 @@ public class KPI : BaseEntity
 
     [Sieve(CanFilter = true, CanSort = true)]
     public bool IsMultiple { get; set; } = false;
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public bool IsActive { get; set; } = true;
     public string Status { get; set; } = string.Empty;
     public virtual KPI? ParentKPI { get; set; }
     public virtual List<KPIModeOfVerification> KPIModeOfVerifications { get; set; } = [];
