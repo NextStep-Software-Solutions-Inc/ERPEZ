@@ -23,9 +23,17 @@ public class GetDeliveryUnitsQueryHandler(IUnitOfWork unitOfWork) : IRequestHand
             Id = du.Id,
             OfficeName = du.Office.Name,
             ClusterName = du.Office.Cluster != null ? du.Office.Cluster.Name : null,
-            KpiCount = du.KPITargetAssignments.DistinctBy(ka => ka.KPIId).Count(ka => ka.KPI.ParentKPIId == null),
+            KpiCount = du.KPITargetAssignments
+                .Where(ka => ka.KPI.ParentKPIId == null)
+                .Select(ka => ka.KPIId)
+                .Distinct()
+                .Count(),
             KPITargetCount = du.KPITargetAssignments.Count,
-            SubKpiCount = du.KPITargetAssignments.DistinctBy(ka => ka.KPIId).Count(ka => ka.KPI.ParentKPIId != null),
+            SubKpiCount = du.KPITargetAssignments
+                .Where(ka => ka.KPI.ParentKPIId != null)
+                .Select(ka => ka.KPIId)
+                .Distinct()
+                .Count(),
             SubDUCount = du.SubDeliveryUnits.Count,
             ParentId = du.ParentId,
             CreatedAt = du.CreatedAt,
