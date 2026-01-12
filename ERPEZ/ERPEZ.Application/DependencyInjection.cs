@@ -3,6 +3,7 @@ using Sieve.Services;
 using System.Reflection;
 using FluentValidation;
 using ERPEZ.Application.Common.Behaviors;
+using ERPEZ.Application.Common.Sieve;
 using Microsoft.AspNetCore.Builder;
 
 namespace ERPEZ.Application;
@@ -14,6 +15,7 @@ public static class DependencyInjection
         var assembly = Assembly.GetExecutingAssembly();
 
         builder.Services.AddScoped<ISieveProcessor, SieveProcessor>();
+        builder.Services.AddScoped<ISieveConfiguration, PlanningSieveConfiguration>();
 
         builder.Services.AddMediatR(config =>
         {

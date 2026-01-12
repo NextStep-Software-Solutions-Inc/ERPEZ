@@ -4,4 +4,4 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.DUAllocation.Queries.GetDUAllocationById;
 
-public record GetDUAllocationByIdQuery(Guid Id) : IRequest<ApiResponse<DUAllocationResponse>>;
+public record GetDUAllocationByIdQuery(Guid Id) : IRequest<ApiResponse<DUAllocationDetailedResponse>>;

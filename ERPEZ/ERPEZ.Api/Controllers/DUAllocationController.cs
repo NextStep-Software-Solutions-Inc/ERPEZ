@@ -35,14 +35,14 @@ namespace ERPEZ.Api.Controllers
 
         [HttpGet("stats")]
         [ProducesResponseType(typeof(ApiResponse<DUAllocationStatsResponse>), StatusCodes.Status200OK)]
-        public async Task<IActionResult> GetDUAllocationStats()
+        public async Task<IActionResult> GetDUAllocationStats([FromQuery] GetDUAllocationStatsQuery query)
         {
-            var result = await mediator.Send(new GetDUAllocationStatsQuery());
+            var result = await mediator.Send(query);
             return result.Succeeded ? Ok(result) : BadRequest(result);
         }
 
         [HttpGet("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<DUAllocationResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<DUAllocationDetailedResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetDUAllocationById(Guid id)
         {
