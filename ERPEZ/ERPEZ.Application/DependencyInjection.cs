@@ -16,7 +16,6 @@ public static class DependencyInjection
         var assembly = Assembly.GetExecutingAssembly();
 
         builder.Services.Configure<SieveOptions>(options => { });
-        builder.Services.AddScoped<ISieveConfiguration, PlanningSieveConfiguration>();
         builder.Services.AddScoped<ISieveProcessor, ApplicationSieveProcessor>();
 
         builder.Services.AddMediatR(config =>

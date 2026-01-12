@@ -13,11 +13,11 @@ public class PlanningSieveConfiguration : ISieveConfiguration
         mapper.Property<DUAllocation>(allocation => allocation.DeliveryUnit.ParentId)
             .CanFilter()
             .CanSort()
-            .HasName("parentDeliveryUnitId");
+            .HasName("deliveryUnit.parentId");
         
         mapper.Property<DUFundAllocation>(allocation => allocation.ReceivedFund.FundSourceId)
             .CanFilter()
             .CanSort()
-            .HasName("receivedFundSourceId");
+            .HasName("receivedFund.fundSourceId");
     }
 }
