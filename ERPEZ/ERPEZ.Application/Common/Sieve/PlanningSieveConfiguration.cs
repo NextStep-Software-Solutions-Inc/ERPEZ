@@ -18,6 +18,6 @@ public class PlanningSieveConfiguration : ISieveConfiguration
         mapper.Property<DUFundAllocation>(allocation => allocation.ReceivedFund.FundSourceId)
             .CanFilter()
             .CanSort()
-            .HasName("fundSourceId");
+            .HasName("receivedFundSourceId");
     }
 }
