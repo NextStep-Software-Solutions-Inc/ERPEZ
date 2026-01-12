@@ -236,13 +236,13 @@ RuleFor(x => x.Quantity)
 - Nested paths or friendly aliases (crossing navigations) **must** be mapped via `ISieveConfiguration` in the corresponding feature config (e.g., `PlanningSieveConfiguration`).
 - Keep configs feature-scoped (Planning, Finance, etc.) and register them via DI; do not pile mappings into a single global config.
 - Add aliases with `.HasName("YourAlias")`; you can expose multiple aliases by chaining `.HasName(...)`.
-- Alias naming: use dot-delimited camelCase (e.g., `deliveryUnit.parentId`, `receivedFund.fundSourceId`) to mirror navigation paths consistently.
+- Alias naming: use simple camelCase without dots (e.g., `parentDeliveryUnitId`, `fundSourceId`) for Sieve to recognize them properly.
 - Example (Planning):
     ```csharp
     mapper.Property<DUFundAllocation>(x => x.ReceivedFund.FundSourceId)
             .CanFilter()
             .CanSort()
-            .HasName("FundSourceId");
+            .HasName("fundSourceId");
     ```
 - When adding a nested filter, update the feature `ISieveConfiguration`, keep names consistent and descriptive, and avoid abbreviations.
 
