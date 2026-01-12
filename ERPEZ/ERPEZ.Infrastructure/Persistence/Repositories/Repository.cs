@@ -35,7 +35,7 @@ public class Repository<T>(ApplicationDbContext context, ISieveProcessor sievePr
         return (entities, totalCount);
     }
 
-    public async Task<(IReadOnlyList<TDto> Entities, int TotalCount)> GetAllAsync<TDto>(SieveModel sieveModel, Expression<Func<T, TDto>> projection, CancellationToken cancellationToken = default)
+    public virtual async Task<(IReadOnlyList<TDto> Entities, int TotalCount)> GetAllAsync<TDto>(SieveModel sieveModel, Expression<Func<T, TDto>> projection, CancellationToken cancellationToken = default)
     {
         IQueryable<T> query = context.Set<T>().AsNoTracking();
 

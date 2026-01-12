@@ -31,6 +31,25 @@ public class DUAllocationRepository(ApplicationDbContext context, ISieveProcesso
         return (entities, totalCount);
     }
 
+    public override async Task<(IReadOnlyList<TDto> Entities, int TotalCount)> GetAllAsync<TDto>(SieveModel sieveModel, Expression<Func<Domain.Entities.Planning.DUAllocation, TDto>> projection, CancellationToken cancellationToken = default)
+    {
+        IQueryable<Domain.Entities.Planning.DUAllocation> query = context.Set<Domain.Entities.Planning.DUAllocation>()
+            .AsNoTracking()
+            .Include(du => du.DeliveryUnit)
+                .ThenInclude(deliveryUnit => deliveryUnit.Office)
+                    .ThenInclude(office => office.Cluster);
+
+        var filteredQuery = sieveProcessor.Apply(sieveModel, query, applyPagination: false);
+
+        var totalCount = await filteredQuery.CountAsync(cancellationToken);
+
+        var paginatedResult = sieveProcessor.Apply(sieveModel, filteredQuery, applyFiltering: false, applySorting: false);
+
+        var entities = await paginatedResult.Select(projection).ToListAsync(cancellationToken);
+
+        return (entities, totalCount);
+    }
+
     public async Task<(decimal TotalAllocated, decimal TotalUtilized)> GetAllocationStatsAsync(CancellationToken cancellationToken = default)
     {
         // DUFundAllocations table not yet available, so TotalUtilized is 0 for now
