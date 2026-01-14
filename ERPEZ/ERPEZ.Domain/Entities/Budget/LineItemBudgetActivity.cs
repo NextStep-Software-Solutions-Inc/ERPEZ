@@ -1,0 +1,28 @@
+using ERPEZ.Domain.Common;
+using Sieve.Attributes;
+
+namespace ERPEZ.Domain.Entities.Budget;
+
+/// <summary>
+/// Linking table that connects a specific LineItemBudget to a specific activity.  
+/// The foreign keys OPCRActivityId and WFPActivityId are nullable because an activity 
+/// can only come from one of those sources, not both.
+/// Note: If an activity is from an OPCR or WFP, the name should be copied from the source.  
+///       If it's a new, ad-hoc activity, the user must provide a name.
+/// </summary>
+public class LineItemBudgetActivity : BaseEntity
+{
+    public LineItemBudgetActivity() { }
+    
+    [Sieve(CanFilter = true, CanSort = true)]
+    public Guid LineItemBudgetId { get; set; }
+    
+    [Sieve(CanFilter = true, CanSort = true)]
+    public Guid? WFPObjectiveTargetId { get; set; }
+    
+    [Sieve(CanFilter = true, CanSort = true)]
+    public Guid? OPCRActivityId { get; set; }
+    
+    [Sieve(CanFilter = true, CanSort = true)]
+    public string Name { get; set; } = string.Empty;
+}
