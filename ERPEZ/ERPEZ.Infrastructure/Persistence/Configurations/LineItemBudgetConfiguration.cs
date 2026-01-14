@@ -40,5 +40,12 @@ public class LineItemBudgetConfiguration : IEntityTypeConfiguration<LineItemBudg
         builder.HasIndex(e => e.FiscalYear);
         builder.HasIndex(e => new { e.DeliveryUnitId, e.FiscalYear });
         builder.HasIndex(e => e.Status);
+        builder.HasIndex(e => e.ParentLIBId);
+        
+        // Relationships
+        builder.HasOne(e => e.ParentLIB)
+            .WithMany(e => e.ChildLIBs)
+            .HasForeignKey(e => e.ParentLIBId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 }

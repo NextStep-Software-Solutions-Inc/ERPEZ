@@ -16,13 +16,13 @@ public class LineItemBudgetDetail : BaseEntity
     public LineItemBudgetDetail() { }
     
     [Sieve(CanFilter = true, CanSort = true)]
+    public Guid LineItemBudgetId { get; set; }
+    
+    [Sieve(CanFilter = true, CanSort = true)]
     public Guid? LineItemBudgetActivityId { get; set; }
     
     [Sieve(CanFilter = true, CanSort = true)]
-    public Guid LIBId { get; set; }
-    
-    [Sieve(CanFilter = true, CanSort = true)]
-    public Guid? WFPExpenditureId { get; set; }
+    public Guid? WFPObjectiveTargetExpenditureId { get; set; }
     
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid ObjectId { get; set; }
@@ -49,7 +49,7 @@ public class LineItemBudgetDetail : BaseEntity
     // Navigation properties
     public virtual LineItemBudget LineItemBudget { get; set; } = null!;
     public virtual LineItemBudgetActivity? LineItemBudgetActivity { get; set; }
-    public virtual WFPObjectiveTargetExpenditure? WFPExpenditure { get; set; }
+    public virtual WFPObjectiveTargetExpenditure? WFPObjectiveTargetExpenditure { get; set; }
     public virtual PlanningObject Object { get; set; } = null!;
     public virtual List<PPMPItem> PPMPItems { get; set; } = [];
 }

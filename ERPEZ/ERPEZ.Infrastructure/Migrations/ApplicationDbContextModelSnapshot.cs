@@ -1059,12 +1059,15 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
+                    b.Property<Guid?>("ParentLIBId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Scope")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
-                    b.Property<Guid>("SourceId")
+                    b.Property<Guid?>("SourceId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("SourceType")
@@ -1094,6 +1097,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("LIBNumber")
                         .IsUnique();
+
+                    b.HasIndex("ParentLIBId");
 
                     b.HasIndex("Status");
 
@@ -1188,9 +1193,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
-                    b.Property<Guid>("LIBId")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid?>("LineItemBudgetActivityId")
                         .HasColumnType("uuid");
 
@@ -1214,12 +1216,10 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("UpdatedBy")
                         .HasColumnType("text");
 
-                    b.Property<Guid?>("WFPExpenditureId")
+                    b.Property<Guid?>("WFPObjectiveTargetExpenditureId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("LIBId");
 
                     b.HasIndex("LineItemBudgetActivityId");
 
@@ -1227,7 +1227,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("ObjectId");
 
-                    b.HasIndex("WFPExpenditureId");
+                    b.HasIndex("WFPObjectiveTargetExpenditureId");
 
                     b.HasIndex("StartDate", "EndDate");
 
@@ -3346,9 +3346,16 @@ namespace ERPEZ.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.LineItemBudget", "ParentLIB")
+                        .WithMany("ChildLIBs")
+                        .HasForeignKey("ParentLIBId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.Navigation("DUAllocation");
 
                     b.Navigation("DeliveryUnit");
+
+                    b.Navigation("ParentLIB");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.LineItemBudgetActivity", b =>
@@ -3392,9 +3399,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.WFPObjectiveTargetExpenditure", "WFPExpenditure")
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.WFPObjectiveTargetExpenditure", "WFPObjectiveTargetExpenditure")
                         .WithMany()
-                        .HasForeignKey("WFPExpenditureId");
+                        .HasForeignKey("WFPObjectiveTargetExpenditureId");
 
                     b.Navigation("LineItemBudget");
 
@@ -3402,7 +3409,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Navigation("Object");
 
-                    b.Navigation("WFPExpenditure");
+                    b.Navigation("WFPObjectiveTargetExpenditure");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.Location", b =>
@@ -3965,6 +3972,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.LineItemBudget", b =>
                 {
+                    b.Navigation("ChildLIBs");
+
                     b.Navigation("LineItemBudgetActivities");
 
                     b.Navigation("LineItemBudgetDetails");

@@ -21,9 +21,10 @@ public class LineItemBudgetDetailConfiguration : IEntityTypeConfiguration<LineIt
         builder.Property(e => e.Description)
             .HasMaxLength(1000);
         
-        builder.HasIndex(e => e.LIBId);
+        builder.HasIndex(e => e.LineItemBudgetId);
         builder.HasIndex(e => e.LineItemBudgetActivityId);
         builder.HasIndex(e => e.ObjectId);
+        builder.HasIndex(e => e.WFPObjectiveTargetExpenditureId);
         builder.HasIndex(e => new { e.StartDate, e.EndDate });
     }
 }

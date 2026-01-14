@@ -28,9 +28,10 @@ public class LineItemBudget : ApprovableEntity
     
     /// <summary>
     /// SourceId is either OPCRId or WFPId
+    /// Nullable because Independent source type doesn't need a source ID
     /// </summary>
     [Sieve(CanFilter = true, CanSort = true)]
-    public Guid SourceId { get; set; }
+    public Guid? SourceId { get; set; }
     
     /// <summary>
     /// EF Config: .HasConversion<string>()
@@ -38,6 +39,13 @@ public class LineItemBudget : ApprovableEntity
     /// </summary>
     [Sieve(CanFilter = true, CanSort = true)]
     public BudgetScope Scope { get; set; }
+    
+    /// <summary>
+    /// For Sub-DU consolidation: References the Parent DU's LIB
+    /// Null if this is a Parent DU's LIB or not part of consolidation
+    /// </summary>
+    [Sieve(CanFilter = true, CanSort = true)]
+    public Guid? ParentLIBId { get; set; }
     
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid? DUAllocationId { get; set; }
@@ -62,6 +70,8 @@ public class LineItemBudget : ApprovableEntity
     // Navigation properties
     public virtual DeliveryUnit DeliveryUnit { get; set; } = null!;
     public virtual DUAllocation? DUAllocation { get; set; }
+    public virtual LineItemBudget? ParentLIB { get; set; }
+    public virtual List<LineItemBudget> ChildLIBs { get; set; } = [];
     public virtual List<LineItemBudgetActivity> LineItemBudgetActivities { get; set; } = [];
     public virtual List<LineItemBudgetDetail> LineItemBudgetDetails { get; set; } = [];
     
