@@ -13,7 +13,7 @@ public class DeleteOPCRActivityRatingCommandHandler(IUnitOfWork unitOfWork)
         var rating = await unitOfWork.OPCRActivityRatingRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken)
             ?? throw new NotFoundException("OPCR Activity Rating not found.");
 
-        unitOfWork.OPCRActivityRatingRepository.Delete(rating);
+        unitOfWork.OPCRActivityRatingRepository.Remove(rating);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return ApiResponse<Unit>.Success(Unit.Value, "OPCR Activity Rating deleted successfully.");

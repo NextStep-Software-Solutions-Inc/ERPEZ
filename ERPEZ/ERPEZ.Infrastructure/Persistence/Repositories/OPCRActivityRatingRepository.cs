@@ -8,11 +8,11 @@ namespace ERPEZ.Infrastructure.Persistence.Repositories;
 public class OPCRActivityRatingRepository(ApplicationDbContext context, ISieveProcessor sieveProcessor)
     : Repository<OPCRActivityRating>(context, sieveProcessor), IOPCRActivityRatingRepository
 {
-    private readonly ApplicationDbContext _context = context;
+    private readonly ApplicationDbContext context = context;
 
     public Task<OPCRActivityRating?> GetByIdWithDetailsAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return _context.Set<OPCRActivityRating>()
+        return context.Set<OPCRActivityRating>()
             .Include(r => r.OPCRActivity)
                 .ThenInclude(a => a.DUKPITargetAssignment)
                     .ThenInclude(t => t.KPI)

@@ -14,7 +14,7 @@ public class DeleteOPCRActivityMOVCommandHandler(IUnitOfWork unitOfWork)
             request.Id, cancellationToken: cancellationToken)
             ?? throw new NotFoundException("OPCR Activity MOV not found.");
 
-        unitOfWork.OPCRActivityMOVRepository.Delete(mov);
+        unitOfWork.OPCRActivityMOVRepository.Remove(mov);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return ApiResponse<Unit>.Success(Unit.Value, "OPCR Activity MOV deleted successfully.");

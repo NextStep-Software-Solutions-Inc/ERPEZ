@@ -14,7 +14,7 @@ public class DeleteOPCRActivityEvaluationCommandHandler(IUnitOfWork unitOfWork)
             request.Id, cancellationToken: cancellationToken)
             ?? throw new NotFoundException("OPCR Activity Evaluation not found.");
 
-        unitOfWork.OPCRActivityEvaluationRepository.Delete(evaluation);
+        unitOfWork.OPCRActivityEvaluationRepository.Remove(evaluation);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return ApiResponse<Unit>.Success(Unit.Value, "OPCR Activity Evaluation deleted successfully.");
