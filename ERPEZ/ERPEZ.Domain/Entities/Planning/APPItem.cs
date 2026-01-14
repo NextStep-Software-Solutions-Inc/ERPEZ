@@ -1,10 +1,8 @@
 using ERPEZ.Domain.Common;
-using ERPEZ.Domain.Entities.Budget;
 using ERPEZ.Domain.Entities.Planning;
-using ERPEZ.Domain.Entities.Procurement;
 using Sieve.Attributes;
 
-namespace ERPEZ.Domain.Entities.Other;
+namespace ERPEZ.Domain.Entities.Planning;
 
 /// <summary>
 /// Individual items in the Annual Procurement Plan

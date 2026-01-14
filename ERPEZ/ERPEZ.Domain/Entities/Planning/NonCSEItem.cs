@@ -1,8 +1,7 @@
 using ERPEZ.Domain.Common;
-using ERPEZ.Domain.Entities.Other;
 using Sieve.Attributes;
 
-namespace ERPEZ.Domain.Entities.Procurement;
+namespace ERPEZ.Domain.Entities.Planning;
 
 /// <summary>
 /// Non-Common Supply and Equipment Items (Manual entry items)

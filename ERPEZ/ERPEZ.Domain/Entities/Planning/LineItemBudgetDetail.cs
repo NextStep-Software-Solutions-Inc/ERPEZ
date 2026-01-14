@@ -1,11 +1,10 @@
 using ERPEZ.Domain.Common;
 using ERPEZ.Domain.Entities.Planning;
-using ERPEZ.Domain.Entities.Other;
 using ERPEZ.Domain.Enums;
 using Sieve.Attributes;
 using PlanningObject = ERPEZ.Domain.Entities.Planning.Object;
 
-namespace ERPEZ.Domain.Entities.Budget;
+namespace ERPEZ.Domain.Entities.Planning;
 
 /// <summary>
 /// Budget details/line items for each activity or project

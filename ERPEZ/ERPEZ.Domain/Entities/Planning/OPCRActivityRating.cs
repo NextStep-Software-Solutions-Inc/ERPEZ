@@ -3,7 +3,7 @@ using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Domain.Enums;
 using Sieve.Attributes;
 
-namespace ERPEZ.Domain.Entities.Performance;
+namespace ERPEZ.Domain.Entities.Planning;
 
 /// <summary>
 /// Self-rating or final rating for OPCR Activities

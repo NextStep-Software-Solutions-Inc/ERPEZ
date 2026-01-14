@@ -1,7 +1,7 @@
 using ERPEZ.Domain.Common;
 using Sieve.Attributes;
 
-namespace ERPEZ.Domain.Entities.Other;
+namespace ERPEZ.Domain.Entities.Planning;
 
 /// <summary>
 /// Monthly/quarterly allocation for PPMP items

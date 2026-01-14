@@ -3,7 +3,7 @@ using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Domain.Enums;
 using Sieve.Attributes;
 
-namespace ERPEZ.Domain.Entities.Budget;
+namespace ERPEZ.Domain.Entities.Planning;
 
 /// <summary>
 /// Line Item Budget (LIB) - Header entity

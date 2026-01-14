@@ -1,8 +1,7 @@
 using ERPEZ.Domain.Common;
-using ERPEZ.Domain.Entities.Other;
 using Sieve.Attributes;
 
-namespace ERPEZ.Domain.Entities.Budget;
+namespace ERPEZ.Domain.Entities.Planning;
 
 /// <summary>
 /// Annual Procurement Plan (APP)

@@ -1,8 +1,7 @@
 using ERPEZ.Domain.Common;
-using ERPEZ.Domain.Entities.Procurement;
 using Sieve.Attributes;
 
-namespace ERPEZ.Domain.Entities.Other;
+namespace ERPEZ.Domain.Entities.Planning;
 
 /// <summary>
 /// Procurement schedule/timeline for APP items

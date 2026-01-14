@@ -1,4 +1,4 @@
-using ERPEZ.Domain.Entities.Performance;
+using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;

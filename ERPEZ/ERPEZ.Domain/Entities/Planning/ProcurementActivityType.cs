@@ -1,8 +1,7 @@
 using ERPEZ.Domain.Common;
-using ERPEZ.Domain.Entities.Other;
 using Sieve.Attributes;
 
-namespace ERPEZ.Domain.Entities.Procurement;
+namespace ERPEZ.Domain.Entities.Planning;
 
 /// <summary>
 /// Types of procurement activities for scheduling

@@ -2,7 +2,7 @@ using ERPEZ.Domain.Common;
 using ERPEZ.Domain.Entities.Planning;
 using Sieve.Attributes;
 
-namespace ERPEZ.Domain.Entities.Budget;
+namespace ERPEZ.Domain.Entities.Planning;
 
 /// <summary>
 /// Linking table that connects a specific LineItemBudget to a specific activity.  

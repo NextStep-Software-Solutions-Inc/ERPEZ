@@ -2,7 +2,7 @@ using ERPEZ.Domain.Common;
 using ERPEZ.Domain.Entities.Planning;
 using Sieve.Attributes;
 
-namespace ERPEZ.Domain.Entities.Performance;
+namespace ERPEZ.Domain.Entities.Planning;
 
 /// <summary>
 /// Means of Verification for OPCR Activities

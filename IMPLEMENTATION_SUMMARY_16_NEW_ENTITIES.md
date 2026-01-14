@@ -9,7 +9,7 @@ January 14, 2026
 ## Entities Implemented
 
 ### Performance Entities (3)
-Located in: `ERPEZ.Domain/Entities/Performance/`
+Located in: `ERPEZ.Domain/Entities/Planning/`
 
 1. **OPCRActivityMOV** - Means of Verification for OPCR Activities
    - Properties: OPCRActivityId, FileName, Url, UploadedDate
@@ -26,7 +26,7 @@ Located in: `ERPEZ.Domain/Entities/Performance/`
    - Enum: OPCREvaluationStatus (Pending, Evaluated, Returned) - stored as string
 
 ### Budget Entities (5)
-Located in: `ERPEZ.Domain/Entities/Budget/`
+Located in: `ERPEZ.Domain/Entities/Planning/`
 
 4. **LineItemBudget** - Line Item Budget header entity (extends ApprovableEntity)
    - Properties: DeliveryUnitId, SourceType (enum), SourceId, Scope (enum), DUAllocationId, LIBNumber, FiscalYear, Name, Status (enum)
@@ -54,7 +54,7 @@ Located in: `ERPEZ.Domain/Entities/Budget/`
    - Enum: TimelineTypeEnum (uses existing - Monthly, Quarterly) - stored as string
 
 ### Procurement Entities (4)
-Located in: `ERPEZ.Domain/Entities/Procurement/`
+Located in: `ERPEZ.Domain/Entities/Planning/`
 
 9. **ProcurementMode** - Procurement Mode master list
    - Properties: Name, Description
@@ -75,7 +75,7 @@ Located in: `ERPEZ.Domain/Entities/Procurement/`
     - Navigation: PPMPItems (collection)
 
 ### Other/Linking Entities (4)
-Located in: `ERPEZ.Domain/Entities/Other/`
+Located in: `ERPEZ.Domain/Entities/Planning/`
 
 13. **PPMPItem** - Individual procurement items in PPMP
     - Properties: PPMPId, LineItemBudgetDetailId, CSEItemId, NonCSEItemId, ProcurementModelId, PAPCode (List<string>), Name, Description, Unit, UnitCost, IsNonCSE
@@ -154,8 +154,8 @@ All located in: `ERPEZ.Infrastructure/Persistence/Configurations/`
 ## Database Schema
 
 ### Migration Details
-- Migration Name: `20260114053856_Add16NewERDEntitiesWithNavigation`
-- Creates 4 new database schemas:
+- Migration Name: `20260114055624_Add16NewERDEntitiesInPlanningSchema`
+- Tables created in planning schema:
   - `performance` - for Performance entities
   - `budget` - for Budget entities
   - `procurement` - for Procurement entities

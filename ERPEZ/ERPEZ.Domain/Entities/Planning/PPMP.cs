@@ -1,9 +1,8 @@
 using ERPEZ.Domain.Common;
 using ERPEZ.Domain.Entities.Planning;
-using ERPEZ.Domain.Entities.Other;
 using Sieve.Attributes;
 
-namespace ERPEZ.Domain.Entities.Budget;
+namespace ERPEZ.Domain.Entities.Planning;
 
 /// <summary>
 /// Project Procurement Management Plan (PPMP)

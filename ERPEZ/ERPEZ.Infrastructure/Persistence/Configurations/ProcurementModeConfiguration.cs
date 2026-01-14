@@ -1,4 +1,4 @@
-using ERPEZ.Domain.Entities.Procurement;
+using ERPEZ.Domain.Entities.Planning;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 

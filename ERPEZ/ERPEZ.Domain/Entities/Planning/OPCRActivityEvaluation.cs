@@ -2,7 +2,7 @@ using ERPEZ.Domain.Common;
 using ERPEZ.Domain.Enums;
 using Sieve.Attributes;
 
-namespace ERPEZ.Domain.Entities.Performance;
+namespace ERPEZ.Domain.Entities.Planning;
 
 /// <summary>
 /// Evaluation record to "confirm" the score or not
