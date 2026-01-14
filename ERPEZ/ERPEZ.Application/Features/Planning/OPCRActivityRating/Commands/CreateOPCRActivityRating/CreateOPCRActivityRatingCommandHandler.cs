@@ -15,9 +15,8 @@ public class CreateOPCRActivityRatingCommandHandler(IUnitOfWork unitOfWork)
             ?? throw new NotFoundException("OPCR Activity not found.");
 
         // Verify PerformanceMeasure exists
-        var performanceMeasure = await unitOfWork.PerformanceMeasureRepository.FindAsync(
-            pm => pm.Id == request.PerformanceMeasureId,
-            cancellationToken: cancellationToken)
+        var performanceMeasure = await unitOfWork.PerformanceMeasureRepository.GetByIdAsync(
+            request.PerformanceMeasureId, cancellationToken: cancellationToken)
             ?? throw new NotFoundException("Performance Measure not found.");
 
         // Get the KPI associated with the OPCR Activity

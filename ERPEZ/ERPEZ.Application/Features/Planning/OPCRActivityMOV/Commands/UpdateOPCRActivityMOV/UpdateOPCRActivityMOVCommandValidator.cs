@@ -1,3 +1,4 @@
+using ERPEZ.Application.Common.Validators;
 using FluentValidation;
 
 namespace ERPEZ.Application.Features.Planning.OPCRActivityMOV.Commands.UpdateOPCRActivityMOV;
@@ -35,7 +36,7 @@ public class UpdateOPCRActivityMOVCommandValidator : AbstractValidator<UpdateOPC
 
         // Validate URL format if provided
         RuleFor(x => x.UpdateMOV.Url)
-            .Must(BeAValidUrl)
+            .Must(ValidationUtilities.IsValidHttpUrl)
             .WithMessage("URL must be a valid URL format.")
             .When(x => !string.IsNullOrWhiteSpace(x.UpdateMOV.Url));
 
@@ -44,14 +45,5 @@ public class UpdateOPCRActivityMOVCommandValidator : AbstractValidator<UpdateOPC
             .LessThanOrEqualTo(DateTime.UtcNow)
             .WithMessage("Uploaded Date cannot be in the future.")
             .When(x => x.UpdateMOV.UploadedDate.HasValue);
-    }
-
-    private static bool BeAValidUrl(string? url)
-    {
-        if (string.IsNullOrWhiteSpace(url))
-            return true;
-
-        return Uri.TryCreate(url, UriKind.Absolute, out var uriResult)
-            && (uriResult.Scheme == Uri.UriSchemeHttp || uriResult.Scheme == Uri.UriSchemeHttps);
     }
 }

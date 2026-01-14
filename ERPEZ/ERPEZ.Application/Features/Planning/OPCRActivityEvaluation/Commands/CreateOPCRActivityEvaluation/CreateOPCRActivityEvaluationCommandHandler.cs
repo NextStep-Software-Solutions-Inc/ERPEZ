@@ -31,12 +31,6 @@ public class CreateOPCRActivityEvaluationCommandHandler(IUnitOfWork unitOfWork)
             throw new ConflictException("An evaluation for this rating already exists.");
         }
 
-        // Verify that the RatingId belongs to the ActivityId in the evaluation context
-        // This is already guaranteed by the FK relationship, but we add explicit validation
-        var opcrActivity = await unitOfWork.OPCRActivityRepository.GetByIdAsync(
-            rating.OPCRActivityId, cancellationToken: cancellationToken)
-            ?? throw new NotFoundException("OPCR Activity not found.");
-
         // Create the evaluation
         var evaluation = new Domain.Entities.Planning.OPCRActivityEvaluation
         {
