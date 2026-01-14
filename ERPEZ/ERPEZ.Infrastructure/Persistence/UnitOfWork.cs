@@ -45,6 +45,9 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IWFPObjectiveTimelineRepository wfpObjectiveTimelineRepository;
     private readonly ISDGRepository sdgRepository;
     private readonly IKPIPerformanceMeasureRepository kpiPerformanceMeasureRepository;
+    private readonly IOPCRActivityRatingRepository opcrActivityRatingRepository;
+    private readonly IOPCRActivityEvaluationRepository opcrActivityEvaluationRepository;
+    private readonly IOPCRActivityMOVRepository opcrActivityMOVRepository;
 
     // Constructor initializes all repositories once
     public UnitOfWork(ApplicationDbContext context, IServiceProvider serviceProvider)
@@ -87,6 +90,9 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         wfpObjectiveTimelineRepository = new WFPObjectiveTimelineRepository(context, sieveProcessor);
         sdgRepository = new SDGRepository(context, sieveProcessor);
         kpiPerformanceMeasureRepository = new KPIPerformanceMeasureRepository(context, sieveProcessor);
+        opcrActivityRatingRepository = new OPCRActivityRatingRepository(context, sieveProcessor);
+        opcrActivityEvaluationRepository = new OPCRActivityEvaluationRepository(context, sieveProcessor);
+        opcrActivityMOVRepository = new OPCRActivityMOVRepository(context, sieveProcessor);
 
     }
 
@@ -125,6 +131,9 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IWFPObjectiveTimelineRepository WFPObjectiveTimelineRepository => wfpObjectiveTimelineRepository;
     public ISDGRepository SDGRepository => sdgRepository;
     public IKPIPerformanceMeasureRepository KPIPerformanceMeasureRepository => kpiPerformanceMeasureRepository;
+    public IOPCRActivityRatingRepository OPCRActivityRatingRepository => opcrActivityRatingRepository;
+    public IOPCRActivityEvaluationRepository OPCRActivityEvaluationRepository => opcrActivityEvaluationRepository;
+    public IOPCRActivityMOVRepository OPCRActivityMOVRepository => opcrActivityMOVRepository;
 
     public async Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default)
     {
