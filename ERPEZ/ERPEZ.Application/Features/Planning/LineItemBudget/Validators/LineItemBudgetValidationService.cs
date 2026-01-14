@@ -95,9 +95,8 @@ public class LineItemBudgetValidationService : ILineItemBudgetValidationService
                 else
                 {
                     // Validate fiscal year consistency
-                    var opcrFiscalYear = opcr.FiscalYearId != Guid.Empty
-                        ? (await unitOfWork.FiscalYearRepository.GetByIdAsync(opcr.FiscalYearId, cancellationToken))?.Year
-                        : null;
+                    // Note: OPCR.FiscalYearId is non-nullable Guid, always has a value
+                    var opcrFiscalYear = (await unitOfWork.FiscalYearRepository.GetByIdAsync(opcr.FiscalYearId, cancellationToken))?.Year;
                     
                     if (!LineItemBudgetValidationRules.ValidateFiscalYearConsistency(
                         fiscalYear, opcrFiscalYear, null))
