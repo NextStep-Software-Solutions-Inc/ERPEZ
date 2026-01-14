@@ -13,8 +13,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ERPEZ.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260114055624_Add16NewERDEntitiesInPlanningSchema")]
-    partial class Add16NewERDEntitiesInPlanningSchema
+    [Migration("20260114061054_Add16NewERDEntitiesWithStatusEnum")]
+    partial class Add16NewERDEntitiesWithStatusEnum
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
