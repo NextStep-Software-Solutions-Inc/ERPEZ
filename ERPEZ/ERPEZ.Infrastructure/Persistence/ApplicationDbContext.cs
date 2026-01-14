@@ -1,4 +1,8 @@
 using ERPEZ.Domain.Entities.Planning;
+using ERPEZ.Domain.Entities.Performance;
+using ERPEZ.Domain.Entities.Budget;
+using ERPEZ.Domain.Entities.Procurement;
+using ERPEZ.Domain.Entities.Other;
 using ERPEZ.Shared.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Object = ERPEZ.Domain.Entities.Planning.Object;
@@ -46,10 +50,37 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<WFPPAP>? WFPPAPs { get; set; }
     public DbSet<WFPPAPDepartment>? WFPPAPDepartments { get; set; }
 
+    //Performance
+    public DbSet<OPCRActivityMOV>? OPCRActivityMOVs { get; set; }
+    public DbSet<OPCRActivityRating>? OPCRActivityRatings { get; set; }
+    public DbSet<OPCRActivityEvaluation>? OPCRActivityEvaluations { get; set; }
+
+    //Budget
+    public DbSet<LineItemBudget>? LineItemBudgets { get; set; }
+    public DbSet<PPMP>? PPMPs { get; set; }
+    public DbSet<APP>? APPs { get; set; }
+    public DbSet<LineItemBudgetActivity>? LineItemBudgetActivities { get; set; }
+    public DbSet<LineItemBudgetDetail>? LineItemBudgetDetails { get; set; }
+
+    //Procurement
+    public DbSet<ProcurementMode>? ProcurementModes { get; set; }
+    public DbSet<ProcurementActivityType>? ProcurementActivityTypes { get; set; }
+    public DbSet<CSEItem>? CSEItems { get; set; }
+    public DbSet<NonCSEItem>? NonCSEItems { get; set; }
+
+    //Other
+    public DbSet<PPMPItem>? PPMPItems { get; set; }
+    public DbSet<PPMPItemAllocation>? PPMPItemAllocations { get; set; }
+    public DbSet<APPItem>? APPItems { get; set; }
+    public DbSet<APPProcurementSchedule>? APPProcurementSchedules { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // Apply default conventions for all entities
         modelBuilder.ConfigureDefaultEntityConventions();
+
+        // Apply configurations from separate configuration files
+        modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
 
         //KPI
         modelBuilder.Entity<KPI>()
