@@ -1,4 +1,5 @@
 using ERPEZ.Domain.Common;
+using ERPEZ.Domain.Entities.Other;
 using ERPEZ.Domain.Enums;
 using Sieve.Attributes;
 
@@ -43,4 +44,7 @@ public class CSEItem : BaseEntity
     
     [Sieve(CanFilter = true, CanSort = true)]
     public string? Remarks { get; set; }
+    
+    // Navigation properties
+    public virtual List<PPMPItem> PPMPItems { get; set; } = [];
 }

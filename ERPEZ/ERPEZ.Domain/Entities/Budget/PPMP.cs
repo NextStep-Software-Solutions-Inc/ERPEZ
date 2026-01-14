@@ -1,4 +1,6 @@
 using ERPEZ.Domain.Common;
+using ERPEZ.Domain.Entities.Planning;
+using ERPEZ.Domain.Entities.Other;
 using Sieve.Attributes;
 
 namespace ERPEZ.Domain.Entities.Budget;
@@ -33,6 +35,11 @@ public class PPMP : ApprovableEntity
     
     [Sieve(CanFilter = true, CanSort = true)]
     public string? EndUser { get; set; }
+    
+    // Navigation properties
+    public virtual DeliveryUnit DeliveryUnit { get; set; } = null!;
+    public virtual DUAllocation? DUAllocation { get; set; }
+    public virtual List<PPMPItem> PPMPItems { get; set; } = [];
     
     // Inherited from ApprovableEntity:  
     // public string Status { get; set; }

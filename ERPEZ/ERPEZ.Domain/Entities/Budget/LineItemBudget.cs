@@ -1,4 +1,5 @@
 using ERPEZ.Domain.Common;
+using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Domain.Enums;
 using Sieve.Attributes;
 
@@ -57,6 +58,12 @@ public class LineItemBudget : ApprovableEntity
     /// </summary>
     [Sieve(CanFilter = true, CanSort = true)]
     public new LIBStatus Status { get; set; }
+    
+    // Navigation properties
+    public virtual DeliveryUnit DeliveryUnit { get; set; } = null!;
+    public virtual DUAllocation? DUAllocation { get; set; }
+    public virtual List<LineItemBudgetActivity> LineItemBudgetActivities { get; set; } = [];
+    public virtual List<LineItemBudgetDetail> LineItemBudgetDetails { get; set; } = [];
     
     // Inherited from ApprovableEntity: 
     // public DateTime? SubmittedDate { get; set; }

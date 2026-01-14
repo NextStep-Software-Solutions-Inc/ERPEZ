@@ -1,4 +1,6 @@
 using ERPEZ.Domain.Common;
+using ERPEZ.Domain.Entities.Budget;
+using ERPEZ.Domain.Entities.Procurement;
 using Sieve.Attributes;
 
 namespace ERPEZ.Domain.Entities.Other;
@@ -46,4 +48,14 @@ public class PPMPItem : BaseEntity
     
     [Sieve(CanFilter = true, CanSort = true)]
     public bool IsNonCSE { get; set; }
+    
+    // Navigation properties
+    public virtual PPMP PPMP { get; set; } = null!;
+    public virtual LineItemBudgetDetail LineItemBudgetDetail { get; set; } = null!;
+    public virtual CSEItem? CSEItem { get; set; }
+    public virtual NonCSEItem? NonCSEItem { get; set; }
+    public virtual ProcurementMode ProcurementMode { get; set; } = null!;
+    public virtual List<PPMPItemAllocation> PPMPItemAllocations { get; set; } = [];
+    public virtual List<APPItem> APPItems { get; set; } = [];
+    public virtual List<APPProcurementSchedule> APPProcurementSchedules { get; set; } = [];
 }

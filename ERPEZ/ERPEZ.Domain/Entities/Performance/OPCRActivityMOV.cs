@@ -1,4 +1,5 @@
 using ERPEZ.Domain.Common;
+using ERPEZ.Domain.Entities.Planning;
 using Sieve.Attributes;
 
 namespace ERPEZ.Domain.Entities.Performance;
@@ -23,4 +24,7 @@ public class OPCRActivityMOV : BaseEntity
     
     [Sieve(CanFilter = true, CanSort = true)]
     public DateTime? UploadedDate { get; set; }
+    
+    // Navigation properties
+    public virtual OPCRActivity OPCRActivity { get; set; } = null!;
 }

@@ -1,4 +1,7 @@
 using ERPEZ.Domain.Common;
+using ERPEZ.Domain.Entities.Budget;
+using ERPEZ.Domain.Entities.Planning;
+using ERPEZ.Domain.Entities.Procurement;
 using Sieve.Attributes;
 
 namespace ERPEZ.Domain.Entities.Other;
@@ -43,4 +46,11 @@ public class APPItem : BaseEntity
     
     [Sieve(CanFilter = true, CanSort = true)]
     public string? ProcurementStrategy { get; set; }
+    
+    // Navigation properties
+    public virtual APP APP { get; set; } = null!;
+    public virtual PPMPItem PPMPItem { get; set; } = null!;
+    public virtual ProcurementMode ProcurementMode { get; set; } = null!;
+    public virtual DeliveryUnit DeliveryUnit { get; set; } = null!;
+    public virtual FundSource FundSource { get; set; } = null!;
 }

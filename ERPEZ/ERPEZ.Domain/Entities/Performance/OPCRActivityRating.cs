@@ -1,4 +1,5 @@
 using ERPEZ.Domain.Common;
+using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Domain.Enums;
 using Sieve.Attributes;
 
@@ -36,4 +37,9 @@ public class OPCRActivityRating : BaseEntity
     
     [Sieve(CanFilter = true, CanSort = true)]
     public DateTime? SubmittedDate { get; set; }
+    
+    // Navigation properties
+    public virtual OPCRActivity OPCRActivity { get; set; } = null!;
+    public virtual PerformanceMeasure PerformanceMeasure { get; set; } = null!;
+    public virtual List<OPCRActivityEvaluation> OPCRActivityEvaluations { get; set; } = [];
 }

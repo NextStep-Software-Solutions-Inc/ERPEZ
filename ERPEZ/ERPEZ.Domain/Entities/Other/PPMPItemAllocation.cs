@@ -23,4 +23,7 @@ public class PPMPItemAllocation : BaseEntity
     
     [Sieve(CanFilter = true, CanSort = true)]
     public int Quantity { get; set; }
+    
+    // Navigation properties
+    public virtual PPMPItem PPMPItem { get; set; } = null!;
 }

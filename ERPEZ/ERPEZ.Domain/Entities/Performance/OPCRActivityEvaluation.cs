@@ -41,4 +41,7 @@ public class OPCRActivityEvaluation : BaseEntity
     /// </summary>
     [Sieve(CanFilter = true, CanSort = true)]
     public OPCREvaluationStatus Status { get; set; }
+    
+    // Navigation properties
+    public virtual OPCRActivityRating OPCRActivityRating { get; set; } = null!;
 }

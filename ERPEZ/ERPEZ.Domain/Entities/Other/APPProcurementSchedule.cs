@@ -1,4 +1,5 @@
 using ERPEZ.Domain.Common;
+using ERPEZ.Domain.Entities.Procurement;
 using Sieve.Attributes;
 
 namespace ERPEZ.Domain.Entities.Other;
@@ -19,4 +20,8 @@ public class APPProcurementSchedule : BaseEntity
     
     [Sieve(CanFilter = true, CanSort = true)]
     public DateTime ScheduledDate { get; set; }
+    
+    // Navigation properties
+    public virtual PPMPItem PPMPItem { get; set; } = null!;
+    public virtual ProcurementActivityType ProcurementActivityType { get; set; } = null!;
 }

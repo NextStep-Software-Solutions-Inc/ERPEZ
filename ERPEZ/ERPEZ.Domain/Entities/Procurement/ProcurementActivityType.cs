@@ -1,4 +1,5 @@
 using ERPEZ.Domain.Common;
+using ERPEZ.Domain.Entities.Other;
 using Sieve.Attributes;
 
 namespace ERPEZ.Domain.Entities.Procurement;
@@ -20,4 +21,7 @@ public class ProcurementActivityType : BaseEntity
     
     [Sieve(CanFilter = true, CanSort = true)]
     public string Description { get; set; } = string.Empty;
+    
+    // Navigation properties
+    public virtual List<APPProcurementSchedule> APPProcurementSchedules { get; set; } = [];
 }

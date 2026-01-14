@@ -1,6 +1,9 @@
 using ERPEZ.Domain.Common;
+using ERPEZ.Domain.Entities.Planning;
+using ERPEZ.Domain.Entities.Other;
 using ERPEZ.Domain.Enums;
 using Sieve.Attributes;
+using PlanningObject = ERPEZ.Domain.Entities.Planning.Object;
 
 namespace ERPEZ.Domain.Entities.Budget;
 
@@ -43,4 +46,11 @@ public class LineItemBudgetDetail : BaseEntity
     
     [Sieve(CanFilter = true, CanSort = true)]
     public decimal Budget { get; set; }
+    
+    // Navigation properties
+    public virtual LineItemBudget LineItemBudget { get; set; } = null!;
+    public virtual LineItemBudgetActivity? LineItemBudgetActivity { get; set; }
+    public virtual WFPObjectiveTargetExpenditure? WFPExpenditure { get; set; }
+    public virtual PlanningObject Object { get; set; } = null!;
+    public virtual List<PPMPItem> PPMPItems { get; set; } = [];
 }

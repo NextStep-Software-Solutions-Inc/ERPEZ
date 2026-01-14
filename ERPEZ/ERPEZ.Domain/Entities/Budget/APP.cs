@@ -1,4 +1,5 @@
 using ERPEZ.Domain.Common;
+using ERPEZ.Domain.Entities.Other;
 using Sieve.Attributes;
 
 namespace ERPEZ.Domain.Entities.Budget;
@@ -28,6 +29,9 @@ public class APP : ApprovableEntity
     
     [Sieve(CanFilter = true, CanSort = true)]
     public string? Description { get; set; }
+    
+    // Navigation properties
+    public virtual List<APPItem> APPItems { get; set; } = [];
     
     // Inherited from ApprovableEntity: 
     // public string Status { get; set; }
