@@ -1,4 +1,5 @@
 using ERPEZ.Application.Features.Planning.OPCRActivityRating.Commands.CreateOPCRActivityRating;
+using ERPEZ.Application.Features.Planning.OPCRActivityRating.Commands.CreateOPCRActivityRatingsBatch;
 using ERPEZ.Application.Features.Planning.OPCRActivityRating.Commands.DeleteOPCRActivityRating;
 using ERPEZ.Application.Features.Planning.OPCRActivityRating.Commands.UpdateOPCRActivityRating;
 using ERPEZ.Application.Features.Planning.OPCRActivityRating.Dtos;
@@ -25,6 +26,19 @@ public class OPCRActivityRatingController(ISender mediator) : ControllerBase
             return BadRequest(result);
 
         return CreatedAtAction(nameof(GetOPCRActivityRatingById), new { id = result.Data }, result);
+    }
+
+    [HttpPost("batch")]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> CreateOPCRActivityRatingsBatch([FromBody] CreateOPCRActivityRatingsBatchCommand command)
+    {
+        var result = await mediator.Send(command);
+
+        if (!result.Succeeded)
+            return BadRequest(result);
+
+        return Created(string.Empty, result);
     }
 
     [HttpGet]
