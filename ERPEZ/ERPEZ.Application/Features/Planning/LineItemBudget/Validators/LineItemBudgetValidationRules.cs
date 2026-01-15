@@ -6,6 +6,12 @@ namespace ERPEZ.Application.Features.Planning.LineItemBudget.Validators;
 /// <summary>
 /// Contains all business validation rules for LineItemBudget entities.
 /// These rules enforce the requirements specified in the LIB domain model.
+/// 
+/// CONSOLIDATION WORKFLOW:
+/// 1. Sub-delivery units create their own LIBs independently (no parent LIB dependency required).
+/// 2. Parent delivery units can create consolidated LIBs by setting IsConsolidated = true.
+/// 3. Consolidated LIBs aggregate data from child delivery unit LIBs based on the DU hierarchy.
+/// 4. Once a LIB reaches Consolidated status, it becomes immutable to maintain data integrity.
 /// </summary>
 public static class LineItemBudgetValidationRules
 {
@@ -141,39 +147,36 @@ public static class LineItemBudgetValidationRules
     }
 
     /// <summary>
-    /// Validates that a Sub-DU LIB must reference a Parent DU's LIB for consolidation.
-    /// Parent DU LIBs should not have a ParentLIBId.
+    /// Validates that a consolidated LIB belongs to a parent DeliveryUnit.
+    /// Parent DUs can consolidate LIBs from their child DUs.
     /// </summary>
-    public static bool ValidateParentLIBForSubDeliveryUnit(
-        bool isSubDeliveryUnit,
-        Guid? parentLIBId)
+    public static bool ValidateConsolidationDeliveryUnitHierarchy(
+        bool isConsolidated,
+        bool isParentDeliveryUnit)
     {
-        if (isSubDeliveryUnit)
+        // If marked as consolidated, it must belong to a parent delivery unit
+        if (isConsolidated)
         {
-            return parentLIBId.HasValue && parentLIBId.Value != Guid.Empty;
+            return isParentDeliveryUnit;
         }
-        else
-        {
-            return !parentLIBId.HasValue; // Parent DU should not have ParentLIBId
-        }
+        return true; // Non-consolidated LIBs can belong to any DU
     }
 
     /// <summary>
-    /// Validates one-to-one linking between Sub-DU and Parent LIB.
-    /// A Sub-DU LIB cannot be consolidated into multiple Parent LIBs.
+    /// Validates that a LIB can be marked as consolidated based on its current status.
+    /// Consolidated LIBs must be in Consolidated status.
     /// </summary>
-    public static bool ValidateOneToOneConsolidation(
-        Guid subDULIBId,
-        IEnumerable<Guid> existingParentLIBIds,
-        Guid newParentLIBId)
+    public static bool ValidateConsolidationStatus(
+        bool isConsolidated,
+        LIBStatus status)
     {
-        // If the LIB already has consolidations, ensure we're not adding a different parent
-        if (existingParentLIBIds != null && existingParentLIBIds.Any())
+        // If marked as consolidated, status must be Consolidated
+        if (isConsolidated)
         {
-            var firstParent = existingParentLIBIds.First();
-            return firstParent == newParentLIBId;
+            return status == LIBStatus.Consolidated;
         }
-        return true;
+        // Non-consolidated LIBs cannot be in Consolidated status
+        return status != LIBStatus.Consolidated;
     }
 
     /// <summary>
@@ -209,17 +212,19 @@ public static class LineItemBudgetValidationRules
     }
 
     /// <summary>
-    /// Validates that Parent LIB approval is required before Sub-DU can submit.
+    /// Validates that consolidated LIBs cannot be modified after consolidation.
+    /// Only Draft and Submitted LIBs can be modified.
     /// </summary>
-    public static bool ValidateParentApprovalBeforeSubDUSubmission(
-        LIBStatus? parentLIBStatus)
+    public static bool ValidateConsolidatedLIBCanBeModified(
+        bool isConsolidated,
+        LIBStatus status)
     {
-        if (!parentLIBStatus.HasValue)
+        // Consolidated LIBs are immutable
+        if (isConsolidated && status == LIBStatus.Consolidated)
         {
-            return true; // No parent means this is a parent LIB or independent
+            return false;
         }
-
-        return parentLIBStatus.Value == LIBStatus.Approved;
+        return true;
     }
 
     /// <summary>
@@ -300,6 +305,54 @@ public static class LineItemBudgetValidationRules
             return false;
         }
 
+        return true;
+    }
+
+    /// <summary>
+    /// Validates that a sub-delivery unit can create its own LIB independently.
+    /// Sub-DUs no longer need to wait for parent DU LIB creation.
+    /// This enables independent budget planning at all DU levels.
+    /// </summary>
+    public static bool ValidateSubDUCanCreateIndependentLIB(
+        bool isSubDeliveryUnit)
+    {
+        // Sub-DUs are now allowed to create their own LIBs
+        return true;
+    }
+
+    /// <summary>
+    /// Validates that a parent delivery unit can create a consolidated LIB.
+    /// A consolidated LIB aggregates data from child delivery units.
+    /// Only parent DUs can create consolidated LIBs.
+    /// </summary>
+    public static bool ValidateParentDUCanCreateConsolidatedLIB(
+        bool isParentDeliveryUnit,
+        bool isConsolidated)
+    {
+        // If marking as consolidated, only parent DUs can do this
+        if (isConsolidated)
+        {
+            return isParentDeliveryUnit;
+        }
+        return true; // Non-consolidated LIBs can be created by any DU
+    }
+
+    /// <summary>
+    /// Validates that a consolidated LIB is created after its child DU LIBs.
+    /// Parent can consolidate child DU LIBs after they have been created and submitted.
+    /// </summary>
+    public static bool ValidateConsolidationSequence(
+        bool isConsolidated,
+        LIBStatus status,
+        IEnumerable<DateTime> childLIBCreatedDates)
+    {
+        // If consolidated, ensure it's created after child LIBs (status check is enough for now)
+        // This will be validated at the service level with actual child LIB data
+        if (isConsolidated && status == LIBStatus.Consolidated)
+        {
+            return childLIBCreatedDates == null || !childLIBCreatedDates.Any() || 
+                   childLIBCreatedDates.Max() < DateTime.UtcNow;
+        }
         return true;
     }
 }

@@ -41,11 +41,11 @@ public class LineItemBudget : ApprovableEntity
     public BudgetScope Scope { get; set; }
     
     /// <summary>
-    /// For Sub-DU consolidation: References the Parent DU's LIB
-    /// Null if this is a Parent DU's LIB or not part of consolidation
+    /// Flag indicating whether this LIB is consolidated from child delivery units
+    /// True if this LIB consolidates data from child DUs, False otherwise
     /// </summary>
     [Sieve(CanFilter = true, CanSort = true)]
-    public Guid? ParentLIBId { get; set; }
+    public bool IsConsolidated { get; set; }
     
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid? DUAllocationId { get; set; }
@@ -70,12 +70,7 @@ public class LineItemBudget : ApprovableEntity
     // Navigation properties
     public virtual DeliveryUnit DeliveryUnit { get; set; } = null!;
     public virtual DUAllocation? DUAllocation { get; set; }
-    public virtual LineItemBudget? ParentLIB { get; set; }
-    public virtual List<LineItemBudget> ChildLIBs { get; set; } = [];
     public virtual List<LineItemBudgetActivity> LineItemBudgetActivities { get; set; } = [];
     public virtual List<LineItemBudgetDetail> LineItemBudgetDetails { get; set; } = [];
-    
-    // Inherited from ApprovableEntity: 
-    // public DateTime? SubmittedDate { get; set; }
-    // public DateTime? ApprovedDate { get; set; }
+
 }

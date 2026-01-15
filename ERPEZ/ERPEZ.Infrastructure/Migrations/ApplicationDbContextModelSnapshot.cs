@@ -1047,6 +1047,11 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<int>("FiscalYear")
                         .HasColumnType("integer");
 
+                    b.Property<bool>("IsConsolidated")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
@@ -1058,9 +1063,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("Name")
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
-
-                    b.Property<Guid?>("ParentLIBId")
-                        .HasColumnType("uuid");
 
                     b.Property<string>("Scope")
                         .IsRequired()
@@ -1095,10 +1097,10 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("FiscalYear");
 
+                    b.HasIndex("IsConsolidated");
+
                     b.HasIndex("LIBNumber")
                         .IsUnique();
-
-                    b.HasIndex("ParentLIBId");
 
                     b.HasIndex("Status");
 
@@ -3346,16 +3348,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.LineItemBudget", "ParentLIB")
-                        .WithMany("ChildLIBs")
-                        .HasForeignKey("ParentLIBId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.Navigation("DUAllocation");
 
                     b.Navigation("DeliveryUnit");
-
-                    b.Navigation("ParentLIB");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.LineItemBudgetActivity", b =>
@@ -3972,8 +3967,6 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.LineItemBudget", b =>
                 {
-                    b.Navigation("ChildLIBs");
-
                     b.Navigation("LineItemBudgetActivities");
 
                     b.Navigation("LineItemBudgetDetails");

@@ -68,11 +68,13 @@ public interface ILineItemBudgetValidationService
         CancellationToken cancellationToken = default);
 
     /// <summary>
-    /// Validates consolidation rules for a Sub-DU LineItemBudget.
+    /// Validates consolidation rules for marking a LineItemBudget as consolidated.
+    /// Consolidated LIBs represent consolidated data from child delivery units.
     /// </summary>
     Task<ValidationResult> ValidateConsolidationAsync(
-        Guid subDULineItemBudgetId,
-        Guid parentLineItemBudgetId,
+        Guid lineItemBudgetId,
+        bool markAsConsolidated,
+        Guid? parentDeliveryUnitId,
         CancellationToken cancellationToken = default);
 }
 

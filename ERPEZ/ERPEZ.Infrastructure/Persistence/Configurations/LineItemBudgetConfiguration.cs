@@ -1,5 +1,4 @@
 using ERPEZ.Domain.Entities.Planning;
-using ERPEZ.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -33,6 +32,10 @@ public class LineItemBudgetConfiguration : IEntityTypeConfiguration<LineItemBudg
         builder.Property(e => e.Name)
             .HasMaxLength(500);
         
+        builder.Property(e => e.IsConsolidated)
+            .IsRequired()
+            .HasDefaultValue(false);
+        
         // Indexes
         builder.HasIndex(e => e.LIBNumber)
             .IsUnique();
@@ -40,12 +43,6 @@ public class LineItemBudgetConfiguration : IEntityTypeConfiguration<LineItemBudg
         builder.HasIndex(e => e.FiscalYear);
         builder.HasIndex(e => new { e.DeliveryUnitId, e.FiscalYear });
         builder.HasIndex(e => e.Status);
-        builder.HasIndex(e => e.ParentLIBId);
-        
-        // Relationships
-        builder.HasOne(e => e.ParentLIB)
-            .WithMany(e => e.ChildLIBs)
-            .HasForeignKey(e => e.ParentLIBId)
-            .OnDelete(DeleteBehavior.Restrict);
+        builder.HasIndex(e => e.IsConsolidated);
     }
 }

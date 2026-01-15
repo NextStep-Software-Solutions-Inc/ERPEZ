@@ -6,6 +6,12 @@ namespace ERPEZ.Application.Features.Planning.LineItemBudget.Validators;
 
 /// <summary>
 /// Implementation of LineItemBudget validation service with database access.
+/// 
+/// CONSOLIDATION WORKFLOW SUPPORT:
+/// - Sub-delivery units can now create LIBs independently without waiting for parent DU LIB.
+/// - Parent delivery units can create consolidated LIBs (IsConsolidated = true) that aggregate child DU LIBs.
+/// - Consolidated LIBs are immutable once in Consolidated status.
+/// 
 /// NOTE: This service requires repositories to be added to IUnitOfWork.
 /// Repositories needed: ILineItemBudgetRepository, and existing repositories for related entities.
 /// </summary>
@@ -195,14 +201,23 @@ public class LineItemBudgetValidationService : ILineItemBudgetValidationService
     }
 
     public async Task<ValidationResult> ValidateConsolidationAsync(
-        Guid subDULineItemBudgetId,
-        Guid parentLineItemBudgetId,
+        Guid lineItemBudgetId,
+        bool markAsConsolidated,
+        Guid? parentDeliveryUnitId,
         CancellationToken cancellationToken = default)
     {
         var result = new ValidationResult { IsValid = true };
 
         // TODO: Add ILineItemBudgetRepository to IUnitOfWork
-        // Get both LIBs - placeholder until repository is implemented
+        // Implementation steps:
+        // 1. Get the LIB and its DeliveryUnit
+        // 2. If marking as consolidated:
+        //    a. Verify the DeliveryUnit is a parent DU (has SubDeliveryUnits)
+        //    b. Verify the LIB status can be set to Consolidated
+        //    c. Verify child DU LIBs exist and are submitted/approved
+        //    d. Validate consolidation hierarchy if parentDeliveryUnitId is provided
+        // 3. Return validation errors if any checks fail
+        
         result.AddError("LineItemBudget repository not yet implemented in IUnitOfWork.");
         return result;
     }
