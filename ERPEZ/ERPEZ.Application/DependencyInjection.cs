@@ -3,6 +3,7 @@ using Sieve.Services;
 using System.Reflection;
 using FluentValidation;
 using ERPEZ.Application.Common.Behaviors;
+using ERPEZ.Application.Common.Services;
 using ERPEZ.Application.Common.Sieve;
 using Microsoft.AspNetCore.Builder;
 using Sieve.Models;
@@ -17,6 +18,9 @@ public static class DependencyInjection
 
         builder.Services.Configure<SieveOptions>(options => { });
         builder.Services.AddScoped<ISieveProcessor, ApplicationSieveProcessor>();
+
+        // Register PIN hashing service
+        builder.Services.AddScoped<IPINHashingService, PINHashingService>();
 
         builder.Services.AddMediatR(config =>
         {

@@ -5,13 +5,10 @@ public interface IUnitOfWork
     IWFPObjectiveTargetExpenditureRepository WFPObjectiveTargetExpenditureRepository { get; }
     IAttributeRepository AttributeRepository { get; }
     IPerformanceMeasureRepository PerformanceMeasureRepository { get; }
-    IDUFundAllocationRepository DUFundAllocationRepository { get; }
     IRatingRepository RatingRepository { get; }
-    IDUAllocationRepository DUAllocationRepository { get; }
     IKPITargetRepository KPITargetRepository { get; }
     IDUKPITargetAssignmentRepository DUKPITargetAssignmentRepository { get; }
     IKPIModeOfVerificationRepository KPIModeOfVerificationRepository { get; }
-    IReceivedFundRepository ReceivedFundRepository { get; }
     IKPIRepository KPIRepository { get; }
     ILocationRepository LocationRepository { get; }
     IDeliveryUnitRepository DeliveryUnitRepository { get; }
@@ -39,6 +36,9 @@ public interface IUnitOfWork
     IOPCRActivityRatingRepository OPCRActivityRatingRepository { get; }
     IOPCRActivityEvaluationRepository OPCRActivityEvaluationRepository { get; }
     IOPCRActivityMOVRepository OPCRActivityMOVRepository { get; }
+    IAccountRepository AccountRepository { get; }
+    IAccountTransactionRepository AccountTransactionRepository { get; }
+    IUserPINRepository UserPINRepository { get; }
     Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default);
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

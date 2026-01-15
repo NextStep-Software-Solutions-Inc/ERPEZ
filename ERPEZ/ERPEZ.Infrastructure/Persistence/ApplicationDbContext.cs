@@ -1,3 +1,5 @@
+using ERPEZ.Domain.Entities.Core;
+using ERPEZ.Domain.Entities.Finance;
 using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Shared.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -10,8 +12,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 {
     //Planning
     public DbSet<WFPObjectiveTargetExpenditure>? WFPObjectiveTargetExpenditures { get; set; }
-    public DbSet<DUAllocation>? DUAllocations { get; set; }
-    public DbSet<DUFundAllocation>? DUFundAllocations { get; set; }
     public DbSet<FunctionAllocation>? FunctionAllocations { get; set; }
     public DbSet<FundSource>? FundSources { get; set; }
     public DbSet<KPI>? KPIs { get; set; }
@@ -30,7 +30,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<OPCRPAPDepartment>? OPCRPAPDepartments { get; set; }
     public DbSet<Organization>? Organizations { get; set; }
     public DbSet<PerformanceMeasure>? PerformanceMeasures { get; set; }
-    public DbSet<ReceivedFund>? ReceivedFunds { get; set; }
     public DbSet<Transaction>? Transactions { get; set; }
     public DbSet<WFP>? WFPs { get; set; }
     public DbSet<WFPObjective>? WFPObjectives { get; set; }
@@ -69,6 +68,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<PPMPItemAllocation>? PPMPItemAllocations { get; set; }
     public DbSet<APPItem>? APPItems { get; set; }
     public DbSet<APPProcurementSchedule>? APPProcurementSchedules { get; set; }
+
+    //Finance
+    public DbSet<Account>? Accounts { get; set; }
+    public DbSet<AccountTransaction>? AccountTransactions { get; set; }
+
+    //Core
+    public DbSet<UserPIN>? UserPINs { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -300,12 +306,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         //FundSource
         modelBuilder.Entity<FundSource>()
-            .HasMany(f => f.ReceivedFunds)
-            .WithOne(rf => rf.FundSource)
-            .HasForeignKey(rf => rf.FundSourceId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        modelBuilder.Entity<FundSource>()
             .HasMany(f => f.Transactions)
             .WithOne(t => t.FundSource)
             .HasForeignKey(t => t.FundSourceId)
@@ -314,55 +314,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<FundSource>()
             .HasIndex(f => new { f.ParentId, f.Code })
             .IsUnique();
-
-        //ReceivedFund
-        modelBuilder.Entity<ReceivedFund>()
-            .HasIndex(rf => new { rf.FundSourceId, rf.Amount });
-
-        modelBuilder.Entity<ReceivedFund>()
-            .HasMany(rf => rf.DUFundAllocations)
-            .WithOne(du => du.ReceivedFund)
-            .HasForeignKey(du => du.ReceivedFundId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        modelBuilder.Entity<ReceivedFund>()
-            .HasOne(rf => rf.FundSource)
-            .WithMany(f => f.ReceivedFunds)
-            .HasForeignKey(rf => rf.FundSourceId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        //DUAllocation
-        modelBuilder.Entity<DUAllocation>()
-            .HasIndex(dua => new { dua.DeliveryUnitId, dua.Purpose });
-
-        modelBuilder.Entity<DUAllocation>()
-            .HasMany(du => du.DUFundAllocations)
-            .WithOne(fa => fa.DUAllocation)
-            .HasForeignKey(fa => fa.DUAllocationId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        modelBuilder.Entity<DUAllocation>()
-            .HasOne(du => du.DeliveryUnit)
-            .WithMany(d => d.DUAllocations)
-            .HasForeignKey(dua => dua.DeliveryUnitId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        //DUFund Allocation
-        modelBuilder.Entity<DUFundAllocation>()
-            .HasIndex(df => new { df.DUAllocationId, df.ReceivedFundId })
-            .IsUnique(false);
-
-        modelBuilder.Entity<DUFundAllocation>()
-            .HasOne(df => df.DUAllocation)
-            .WithMany(du => du.DUFundAllocations)
-            .HasForeignKey(df => df.DUAllocationId)
-            .OnDelete(DeleteBehavior.Restrict);
-
-        modelBuilder.Entity<DUFundAllocation>()
-            .HasOne(df => df.ReceivedFund)
-            .WithMany(rf => rf.DUFundAllocations)
-            .HasForeignKey(df => df.ReceivedFundId)
-            .OnDelete(DeleteBehavior.Restrict);
 
         //DeliveryUnit
         modelBuilder.Entity<DeliveryUnit>()
@@ -378,10 +329,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .WithOne()
             .HasForeignKey(du => du.ParentId);
 
-        modelBuilder.Entity<DeliveryUnit>()
-            .HasMany(du => du.DUAllocations)
-            .WithOne(dua => dua.DeliveryUnit)
-            .HasForeignKey(dua => dua.DeliveryUnitId);
+        // DUAllocations relationship removed - entity deleted
 
         modelBuilder.Entity<DeliveryUnit>()
             .HasMany(du => du.WFPs)

@@ -2,7 +2,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ERPEZ.Api.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("[controller]")]
     [ApiController]
     public class WFPPAPDepartmentController : ControllerBase
     {

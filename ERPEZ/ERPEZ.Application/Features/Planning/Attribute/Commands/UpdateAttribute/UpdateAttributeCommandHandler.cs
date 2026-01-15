@@ -25,11 +25,7 @@ public class UpdateAttributeCommandHandler(IUnitOfWork unitOfWork) : IRequestHan
                 throw new BadRequestException("Attribute cannot be its own parent.");
             }
 
-            var parentAttribute = await unitOfWork.AttributeRepository.GetByIdAsync(request.ParentAttributeId.Value, cancellationToken);
-            if (parentAttribute == null)
-            {
-                throw new NotFoundException($"Parent Attribute with ID {request.ParentAttributeId.Value} not found.");
-            }
+            var parentAttribute = await unitOfWork.AttributeRepository.GetByIdAsync(request.ParentAttributeId.Value, cancellationToken) ?? throw new NotFoundException($"Parent Attribute with ID {request.ParentAttributeId.Value} not found.");
         }
 
         attributeEntity.Name = request.Name;

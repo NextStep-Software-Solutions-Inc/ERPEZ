@@ -17,11 +17,7 @@ public class CreateAttributeCommandHandler(IUnitOfWork unitOfWork) : IRequestHan
 
         if (request.ParentAttributeId.HasValue)
         {
-            var parentAttribute = await unitOfWork.AttributeRepository.GetByIdAsync(request.ParentAttributeId.Value, cancellationToken);
-            if (parentAttribute == null)
-            {
-                throw new NotFoundException($"Parent Attribute with ID {request.ParentAttributeId.Value} not found.");
-            }
+            var parentAttribute = await unitOfWork.AttributeRepository.GetByIdAsync(request.ParentAttributeId.Value, cancellationToken) ?? throw new NotFoundException($"Parent Attribute with ID {request.ParentAttributeId.Value} not found.");
         }
 
         var attributeEntity = new Domain.Entities.Planning.Attribute

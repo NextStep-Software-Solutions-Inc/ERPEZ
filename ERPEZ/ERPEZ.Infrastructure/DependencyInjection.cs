@@ -57,7 +57,6 @@ public static class DependencyInjection
 
         // Register repositories and Unit of Work
         services.AddScoped<IWFPObjectiveTargetExpenditureRepository, WFPObjectiveTargetExpenditureRepository>();
-        services.AddScoped<IDUAllocationRepository, DUAllocationRepository>();
         services.AddScoped<IOPCRRepository, OPCRRepository>();
         services.AddScoped<IOPCRActivityRepository, OPCRActivityRepository>();
         services.AddScoped<IOPCREvaluationRepository, OPCREvaluationRepository>();
@@ -74,7 +73,6 @@ public static class DependencyInjection
         services.AddScoped<IKPITargetRepository, KPITargetRepository>();
         services.AddScoped<IDUKPITargetAssignmentRepository, DUKPITargetAssignmentRepository>();
         services.AddScoped<IKPIModeOfVerificationRepository, KPIModeOfVerificationRepository>();
-        services.AddScoped<IReceivedFundRepository, ReceivedFundRepository>();
         services.AddScoped<IKPIRepository, KPIRepository>();
         services.AddScoped<IOfficeRepository, OfficeRepository>();
         services.AddScoped<IDeliveryUnitRepository, DeliveryUnitRepository>();
@@ -86,12 +84,13 @@ public static class DependencyInjection
         services.AddScoped<IMFOPAPRepository, MFOPAPRepository>();
         services.AddScoped<IFunctionAllocationRepository, FunctionAllocationRepository>();
         services.AddScoped<IFiscalYearRepository, FiscalYearRepository>();
-        services.AddScoped<IDUFundAllocationRepository, DUFundAllocationRepository>();
         services.AddScoped<IClusterRepository, ClusterRepository>();
         services.AddScoped<IWFPObjectiveTargetExpenditureRepository, WFPObjectiveTargetExpenditureRepository>();
         services.AddScoped<IWFPObjectiveTargetRepository, WFPObjectiveTargetRepository>();
         services.AddScoped<IWFPObjectiveTimelineRepository, WFPObjectiveTimelineRepository>();
         services.AddScoped<IAttributeRepository, AttributeRepository>();
+        services.AddScoped<IAccountRepository, AccountRepository>();
+        services.AddScoped<IAccountTransactionRepository, AccountTransactionRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IFileStorageService, AzureBlobStorageService>();
         services.AddHostedService<TempFileCleanupService>();

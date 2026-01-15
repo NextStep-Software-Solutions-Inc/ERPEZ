@@ -30,12 +30,7 @@ public class CreateOPCRActivityRatingCommandHandler(IUnitOfWork unitOfWork)
         // Verify that the PerformanceMeasure belongs to the KPI
         var kpiPerformanceMeasure = await unitOfWork.KPIPerformanceMeasureRepository.FindAsync(
             kpm => kpm.KPIId == kpi.Id && kpm.PerformanceMeasureId == request.PerformanceMeasureId,
-            cancellationToken: cancellationToken);
-
-        if (kpiPerformanceMeasure == null)
-        {
-            throw new ValidationException("The Performance Measure does not belong to the KPI associated with this OPCR Activity.");
-        }
+            cancellationToken: cancellationToken) ?? throw new ValidationException("The Performance Measure does not belong to the KPI associated with this OPCR Activity.");
 
         // Check for duplicate rating (same activity + performance measure)
         var duplicate = await unitOfWork.OPCRActivityRatingRepository.FindAsync(

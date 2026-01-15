@@ -69,6 +69,226 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.ToTable("DeliveryUnitOPCRActivity", "planning");
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Core.UserPIN", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("EncryptedPIN")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime?>("ExpiresAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("FailedAttempts")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(0);
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsLocked")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
+                    b.Property<DateTime?>("LastUsedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("LockedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Salt")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExpiresAt");
+
+                    b.HasIndex("IsLocked");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("UserPINs", "core");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Finance.Account", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("Balance")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("FiscalYearId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("FundSourceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .HasMaxLength(255)
+                        .HasColumnType("character varying(255)");
+
+                    b.Property<Guid>("OfficeId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("RunningBalance")
+                        .ValueGeneratedOnAdd()
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)")
+                        .HasDefaultValue(0m);
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Balance");
+
+                    b.HasIndex("FiscalYearId");
+
+                    b.HasIndex("FundSourceId");
+
+                    b.HasIndex("OfficeId");
+
+                    b.HasIndex("OfficeId", "FundSourceId", "FiscalYearId")
+                        .IsUnique();
+
+                    b.ToTable("Accounts", "finance");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Finance.AccountTransaction", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("AmountTransfer")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<Guid?>("AuthorizedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("AuthorizedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int>("Code")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("FromAccountId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Purpose")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<Guid>("ToAccountId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("TransactionDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("AuthorizedByUserId");
+
+                    b.HasIndex("AuthorizedDate");
+
+                    b.HasIndex("Code");
+
+                    b.HasIndex("FromAccountId");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("ToAccountId");
+
+                    b.HasIndex("TransactionDate");
+
+                    b.ToTable("AccountTransactions", "finance");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.APP", b =>
                 {
                     b.Property<Guid>("Id")
@@ -486,11 +706,11 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("DeliveryUnitId");
+
                     b.HasIndex("ReceivedFundId");
 
-                    b.HasIndex("DeliveryUnitId", "Purpose");
-
-                    b.ToTable("DUAllocations", "planning");
+                    b.ToTable("DUAllocation", "planning");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.DUFundAllocation", b =>
@@ -532,11 +752,11 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("DUAllocationId");
+
                     b.HasIndex("ReceivedFundId");
 
-                    b.HasIndex("DUAllocationId", "ReceivedFundId");
-
-                    b.ToTable("DUFundAllocations", "planning");
+                    b.ToTable("DUFundAllocation", "planning");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.DUKPITargetAssignment", b =>
@@ -1474,11 +1694,24 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime?>("RatingReturnedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("RatingStatus")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime?>("RatingSubmittedDate")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -1488,7 +1721,17 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("DeliveryUnitId");
+
                     b.HasIndex("FiscalYearId");
+
+                    b.HasIndex("RatingReturnedDate");
+
+                    b.HasIndex("RatingStatus");
+
+                    b.HasIndex("RatingSubmittedDate");
+
+                    b.HasIndex("Status");
 
                     b.HasIndex("DeliveryUnitId", "FiscalYearId")
                         .IsUnique();
@@ -1703,14 +1946,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<int>("Score")
                         .HasColumnType("integer");
 
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<DateTime?>("SubmittedDate")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -1720,10 +1955,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("PerformanceMeasureId");
-
-                    b.HasIndex("Status");
-
-                    b.HasIndex("SubmittedDate");
 
                     b.HasIndex("OPCRActivityId", "PerformanceMeasureId");
 
@@ -2549,9 +2780,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("FundSourceId", "Amount");
+                    b.HasIndex("FundSourceId");
 
-                    b.ToTable("ReceivedFunds", "planning");
+                    b.ToTable("ReceivedFund", "planning");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.SDG", b =>
@@ -3107,6 +3338,51 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Finance.Account", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.FiscalYear", "FiscalYear")
+                        .WithMany()
+                        .HasForeignKey("FiscalYearId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.FundSource", "FundSource")
+                        .WithMany()
+                        .HasForeignKey("FundSourceId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.Office", "Office")
+                        .WithMany()
+                        .HasForeignKey("OfficeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("FiscalYear");
+
+                    b.Navigation("FundSource");
+
+                    b.Navigation("Office");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Finance.AccountTransaction", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Finance.Account", "FromAccount")
+                        .WithMany("OutgoingTransactions")
+                        .HasForeignKey("FromAccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERPEZ.Domain.Entities.Finance.Account", "ToAccount")
+                        .WithMany("IncomingTransactions")
+                        .HasForeignKey("ToAccountId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("FromAccount");
+
+                    b.Navigation("ToAccount");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.APPItem", b =>
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Planning.APP", "APP")
@@ -3181,9 +3457,9 @@ namespace ERPEZ.Infrastructure.Migrations
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.DUAllocation", b =>
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Planning.DeliveryUnit", "DeliveryUnit")
-                        .WithMany("DUAllocations")
+                        .WithMany()
                         .HasForeignKey("DeliveryUnitId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("ERPEZ.Domain.Entities.Planning.ReceivedFund", null)
@@ -3198,13 +3474,13 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasOne("ERPEZ.Domain.Entities.Planning.DUAllocation", "DUAllocation")
                         .WithMany("DUFundAllocations")
                         .HasForeignKey("DUAllocationId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("ERPEZ.Domain.Entities.Planning.ReceivedFund", "ReceivedFund")
                         .WithMany("DUFundAllocations")
                         .HasForeignKey("ReceivedFundId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("DUAllocation");
@@ -3715,9 +3991,9 @@ namespace ERPEZ.Infrastructure.Migrations
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.ReceivedFund", b =>
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Planning.FundSource", "FundSource")
-                        .WithMany("ReceivedFunds")
+                        .WithMany()
                         .HasForeignKey("FundSourceId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("FundSource");
@@ -3880,6 +4156,13 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Finance.Account", b =>
+                {
+                    b.Navigation("IncomingTransactions");
+
+                    b.Navigation("OutgoingTransactions");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.APP", b =>
                 {
                     b.Navigation("APPItems");
@@ -3907,8 +4190,6 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.DeliveryUnit", b =>
                 {
-                    b.Navigation("DUAllocations");
-
                     b.Navigation("KPITargetAssignments");
 
                     b.Navigation("OPCRPAPDepartments");
@@ -3930,8 +4211,6 @@ namespace ERPEZ.Infrastructure.Migrations
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.FundSource", b =>
                 {
                     b.Navigation("FundSources");
-
-                    b.Navigation("ReceivedFunds");
 
                     b.Navigation("Transactions");
                 });

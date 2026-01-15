@@ -7,5 +7,8 @@ public enum StatusEnum
     Returned,
     Approved,
     Active,
-    Archived
+    Archived,
+    Completed,
+    Failed,
+    Pending
 }

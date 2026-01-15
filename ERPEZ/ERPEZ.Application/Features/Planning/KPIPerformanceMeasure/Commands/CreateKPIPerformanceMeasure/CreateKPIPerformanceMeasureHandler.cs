@@ -1,4 +1,3 @@
-using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -33,7 +32,7 @@ public class CreateKPIPerformanceMeasureHandler(IUnitOfWork unitOfWork) : IReque
             PerformanceMeasureId = request.PerformanceMeasureId
         };
 
-        await unitOfWork.KPIPerformanceMeasureRepository.AddAsync(kpiPerformanceMeasure);
+        await unitOfWork.KPIPerformanceMeasureRepository.AddAsync(kpiPerformanceMeasure, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return ApiResponse<Guid>.Success(kpiPerformanceMeasure.Id, "KPI Performance Measure created successfully.");

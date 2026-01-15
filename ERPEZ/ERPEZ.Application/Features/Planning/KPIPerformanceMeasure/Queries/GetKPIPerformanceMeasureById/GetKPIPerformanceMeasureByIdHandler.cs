@@ -10,10 +10,7 @@ public class GetKPIPerformanceMeasureByIdHandler(IUnitOfWork unitOfWork) : IRequ
 {
     public async Task<ApiResponse<KPIPerformanceMeasureDetailedResponse>> Handle(GetKPIPerformanceMeasureByIdQuery request, CancellationToken cancellationToken)
     {
-        var kpiPerformanceMeasure = await unitOfWork.KPIPerformanceMeasureRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken);
-
-        if (kpiPerformanceMeasure == null)
-            throw new NotFoundException("KPI Performance Measure not found.");
+        var kpiPerformanceMeasure = await unitOfWork.KPIPerformanceMeasureRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("KPI Performance Measure not found.");
 
         var response = new KPIPerformanceMeasureDetailedResponse
         {
