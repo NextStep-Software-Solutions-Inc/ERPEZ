@@ -41,7 +41,6 @@ public class CreateOPCRActivityEvaluationCommandHandler(IUnitOfWork unitOfWork)
             OPCRActivityRatingId = request.OPCRActivityRatingId,
             EvaluatorScore = request.EvaluatorScore,
             Remarks = request.Remarks,
-            EvaluatedDate = request.EvaluatedDate,
             Status = Domain.Enums.OPCREvaluationStatus.Pending
         };
 

@@ -22,6 +22,12 @@ public class UpdateOPCRActivityEvaluationStatusCommandHandler(IUnitOfWork unitOf
         // Update the status
         evaluation.Status = status;
 
+        // Set EvaluatedDate when status changes to Evaluated
+        if (status == Domain.Enums.OPCREvaluationStatus.Evaluated)
+        {
+            evaluation.EvaluatedDate = DateTime.UtcNow;
+        }
+
         unitOfWork.OPCRActivityEvaluationRepository.Update(evaluation);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 

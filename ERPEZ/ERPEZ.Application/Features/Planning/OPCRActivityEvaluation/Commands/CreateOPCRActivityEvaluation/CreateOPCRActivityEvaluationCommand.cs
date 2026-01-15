@@ -9,5 +9,4 @@ public class CreateOPCRActivityEvaluationCommand : IRequest<ApiResponse<Guid>>
     public required Guid OPCRActivityRatingId { get; set; }
     public int EvaluatorScore { get; set; }
     public string? Remarks { get; set; }
-    public DateTime? EvaluatedDate { get; set; }
 }

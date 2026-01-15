@@ -25,11 +25,5 @@ public class CreateOPCRActivityEvaluationCommandValidator : AbstractValidator<Cr
             .MaximumLength(1000)
             .WithMessage("Remarks cannot exceed 1000 characters.")
             .When(x => !string.IsNullOrWhiteSpace(x.Remarks));
-
-        // EvaluatedDate validation
-        RuleFor(x => x.EvaluatedDate)
-            .LessThanOrEqualTo(DateTime.UtcNow)
-            .WithMessage("Evaluated Date cannot be in the future.")
-            .When(x => x.EvaluatedDate.HasValue);
     }
 }
