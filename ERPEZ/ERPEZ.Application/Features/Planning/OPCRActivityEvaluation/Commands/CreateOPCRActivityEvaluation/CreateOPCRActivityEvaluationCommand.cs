@@ -10,5 +10,4 @@ public class CreateOPCRActivityEvaluationCommand : IRequest<ApiResponse<Guid>>
     public int EvaluatorScore { get; set; }
     public string? Remarks { get; set; }
     public DateTime? EvaluatedDate { get; set; }
-    public OPCREvaluationStatus Status { get; set; } = OPCREvaluationStatus.Pending;
 }

@@ -26,9 +26,6 @@ public class UpdateOPCRActivityEvaluationCommandHandler(IUnitOfWork unitOfWork)
         if (dto.EvaluatedDate.HasValue)
             evaluation.EvaluatedDate = dto.EvaluatedDate;
 
-        if (dto.Status.HasValue)
-            evaluation.Status = dto.Status.Value;
-
         unitOfWork.OPCRActivityEvaluationRepository.Update(evaluation);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 

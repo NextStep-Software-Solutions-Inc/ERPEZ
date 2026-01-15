@@ -42,7 +42,7 @@ public class CreateOPCRActivityEvaluationCommandHandler(IUnitOfWork unitOfWork)
             EvaluatorScore = request.EvaluatorScore,
             Remarks = request.Remarks,
             EvaluatedDate = request.EvaluatedDate,
-            Status = request.Status
+            Status = Domain.Enums.OPCREvaluationStatus.Pending
         };
 
         await unitOfWork.OPCRActivityEvaluationRepository.AddAsync(evaluation, cancellationToken);

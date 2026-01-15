@@ -31,23 +31,10 @@ public class UpdateOPCRActivityEvaluationCommandValidator : AbstractValidator<Up
             .WithMessage("Remarks cannot exceed 1000 characters.")
             .When(x => !string.IsNullOrWhiteSpace(x.UpdateEvaluation.Remarks));
 
-        // Status (Optional, but must be valid enum value if provided)
-        RuleFor(x => x.UpdateEvaluation.Status)
-            .IsInEnum()
-            .WithMessage("Status must be a valid OPCR Evaluation Status (Pending, Evaluated, or Returned).")
-            .When(x => x.UpdateEvaluation.Status.HasValue);
-
         // EvaluatedDate validation
         RuleFor(x => x.UpdateEvaluation.EvaluatedDate)
             .LessThanOrEqualTo(DateTime.UtcNow)
             .WithMessage("Evaluated Date cannot be in the future.")
             .When(x => x.UpdateEvaluation.EvaluatedDate.HasValue);
-
-        // EvaluatedDate required when Status is Evaluated
-        RuleFor(x => x.UpdateEvaluation.EvaluatedDate)
-            .NotEmpty()
-            .WithMessage("Evaluated Date is required when Status is Evaluated.")
-            .When(x => x.UpdateEvaluation.Status.HasValue && 
-                      x.UpdateEvaluation.Status.Value == Domain.Enums.OPCREvaluationStatus.Evaluated);
     }
 }
