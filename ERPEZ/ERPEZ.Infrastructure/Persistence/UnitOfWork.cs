@@ -23,13 +23,10 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IOPCREvaluationRepository opcrEvaluationRepository;
     private readonly IOPCRRatingRepository opcrRatingRepository;
     private readonly IObjectRepository objectRepository;
-    private readonly IDUFundAllocationRepository duFundAllocationRepository;
     private readonly IRatingRepository ratingRepository;
-    private readonly IDUAllocationRepository duAllocationRepository;
     private readonly IKPITargetRepository kpiTargetRepository;
     private readonly IDUKPITargetAssignmentRepository dukpiTargetAssignmentRepository;
     private readonly IKPIModeOfVerificationRepository kpiModeOfVerificationRepository;
-    private readonly IReceivedFundRepository receivedFundRepository;
     private readonly IKPIRepository kpiRepository;
     private readonly IDeliveryUnitRepository deliveryUnitRepository;
     private readonly IOfficeRepository officeRepository;
@@ -48,6 +45,9 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IOPCRActivityRatingRepository opcrActivityRatingRepository;
     private readonly IOPCRActivityEvaluationRepository opcrActivityEvaluationRepository;
     private readonly IOPCRActivityMOVRepository opcrActivityMOVRepository;
+    private readonly IAccountRepository accountRepository;
+    private readonly IAccountTransactionRepository accountTransactionRepository;
+    private readonly IUserPINRepository userPINRepository;
 
     // Constructor initializes all repositories once
     public UnitOfWork(ApplicationDbContext context, IServiceProvider serviceProvider)
@@ -68,13 +68,10 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         opcrEvaluationRepository = new OPCREvaluationRepository(context, sieveProcessor);
         opcrRatingRepository = new OPCRRatingRepository(context, sieveProcessor);
         objectRepository = new ObjectRepository(context, sieveProcessor);
-        duFundAllocationRepository = new DUFundAllocationRepository(context, sieveProcessor);
         ratingRepository = new RatingRepository(context, sieveProcessor);
-        duAllocationRepository = new DUAllocationRepository(context, sieveProcessor);
         kpiTargetRepository = new KPITargetRepository(context, sieveProcessor);
         dukpiTargetAssignmentRepository = new DUKPITargetAssignmentRepository(context, sieveProcessor);
         kpiModeOfVerificationRepository = new KPIModeOfVerificationRepository(context, sieveProcessor);
-        receivedFundRepository = new ReceivedFundRepository(context, sieveProcessor);
         kpiRepository = new KPIRepository(context, sieveProcessor);
         deliveryUnitRepository = new DeliveryUnitRepository(context, sieveProcessor);
         officeRepository = new OfficeRepository(context, sieveProcessor);
@@ -93,6 +90,9 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         opcrActivityRatingRepository = new OPCRActivityRatingRepository(context, sieveProcessor);
         opcrActivityEvaluationRepository = new OPCRActivityEvaluationRepository(context, sieveProcessor);
         opcrActivityMOVRepository = new OPCRActivityMOVRepository(context, sieveProcessor);
+        accountRepository = new AccountRepository(context, sieveProcessor);
+        accountTransactionRepository = new AccountTransactionRepository(context, sieveProcessor);
+        userPINRepository = new UserPINRepository(context, sieveProcessor);
 
     }
 
@@ -109,13 +109,10 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IOPCREvaluationRepository OPCREvaluationRepository => opcrEvaluationRepository;
     public IOPCRRatingRepository OPCRRatingRepository => opcrRatingRepository;
     public IObjectRepository ObjectRepository => objectRepository;
-    public IDUFundAllocationRepository DUFundAllocationRepository => duFundAllocationRepository;
     public IRatingRepository RatingRepository => ratingRepository;
-    public IDUAllocationRepository DUAllocationRepository => duAllocationRepository;
     public IKPITargetRepository KPITargetRepository => kpiTargetRepository;
     public IDUKPITargetAssignmentRepository DUKPITargetAssignmentRepository => dukpiTargetAssignmentRepository;
     public IKPIModeOfVerificationRepository KPIModeOfVerificationRepository => kpiModeOfVerificationRepository;
-    public IReceivedFundRepository ReceivedFundRepository => receivedFundRepository;
     public IKPIRepository KPIRepository => kpiRepository;
     public IDeliveryUnitRepository DeliveryUnitRepository => deliveryUnitRepository;
     public IOfficeRepository OfficeRepository => officeRepository;
@@ -134,6 +131,9 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IOPCRActivityRatingRepository OPCRActivityRatingRepository => opcrActivityRatingRepository;
     public IOPCRActivityEvaluationRepository OPCRActivityEvaluationRepository => opcrActivityEvaluationRepository;
     public IOPCRActivityMOVRepository OPCRActivityMOVRepository => opcrActivityMOVRepository;
+    public IAccountRepository AccountRepository => accountRepository;
+    public IUserPINRepository UserPINRepository => userPINRepository;
+    public IAccountTransactionRepository AccountTransactionRepository => accountTransactionRepository;
 
     public async Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default)
     {

@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using ERPEZ.Application.Features.Planning.DeliveryUnit.Dtos;
+using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
@@ -10,6 +11,9 @@ public class GetDeliveryUnitsQueryHandler(IUnitOfWork unitOfWork) : IRequestHand
 {
     public async Task<PaginatedApiResponse<DeliveryUnitsResponse>> Handle(GetDeliveryUnitsQuery query, CancellationToken cancellationToken)
     {
+        var accountsQuery = unitOfWork.AccountRepository.Query();
+        var transactionsQuery = unitOfWork.AccountTransactionRepository.Query(t => t.Status == StatusEnum.Completed);
+
         var sieveModel = new Sieve.Models.SieveModel
         {
             PageSize = query.PageSize,
@@ -37,11 +41,19 @@ public class GetDeliveryUnitsQueryHandler(IUnitOfWork unitOfWork) : IRequestHand
             SubDUCount = du.SubDeliveryUnits.Count,
             ParentId = du.ParentId,
             CreatedAt = du.CreatedAt,
-            TotalAmountAllocated = du.DUAllocations.Sum(da => da.Amount),
-            TotalAmountUtilized = 0,
-            FundSourceCount = du.DUAllocations
-                .SelectMany(da => da.DUFundAllocations)
-                .Select(fa => fa.ReceivedFundId)
+            TotalAmountAllocated = accountsQuery
+                .Where(a => a.OfficeId == du.OfficeId)
+                .Select(a => a.Balance)
+                .DefaultIfEmpty(0m)
+                .Sum(),
+            TotalAmountUtilized = transactionsQuery
+                .Where(t => t.FromAccount.OfficeId == du.OfficeId)
+                .Select(t => t.AmountTransfer)
+                .DefaultIfEmpty(0m)
+                .Sum(),
+            FundSourceCount = accountsQuery
+                .Where(a => a.OfficeId == du.OfficeId && a.FundSourceId.HasValue)
+                .Select(a => a.FundSourceId)
                 .Distinct()
                 .Count(),
         };

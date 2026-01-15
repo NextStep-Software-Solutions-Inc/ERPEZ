@@ -66,13 +66,7 @@ public class UpdateKPICommandHandler(IUnitOfWork unitOfWork, IFileStorageService
             // Handle MFOPAP - Only update if provided
             if (request.Dto.MFOPAPId.HasValue)
             {
-                var existingMfopap = await unitOfWork.MFOPAPRepository.GetByIdAsync(request.Dto.MFOPAPId.Value, cancellationToken: cancellationToken);
-                
-                if (existingMfopap == null)
-                {
-                    throw new NotFoundException($"MFOPAP with ID {request.Dto.MFOPAPId.Value} not found.");
-                }
-                
+                var existingMfopap = await unitOfWork.MFOPAPRepository.GetByIdAsync(request.Dto.MFOPAPId.Value, cancellationToken: cancellationToken) ?? throw new NotFoundException($"MFOPAP with ID {request.Dto.MFOPAPId.Value} not found.");
                 kpi.MFOPAPId = request.Dto.MFOPAPId.Value;
             }
 

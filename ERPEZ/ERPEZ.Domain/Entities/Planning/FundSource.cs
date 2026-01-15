@@ -18,6 +18,5 @@ public class FundSource : BaseEntity
     public bool IsActive { get; set; }
     public virtual FundSource? ParentSource { get; set; }
     public virtual List<FundSource> FundSources { get; set; } = [];
-    public virtual List<ReceivedFund> ReceivedFunds { get; set; } = [];
     public virtual List<Transaction> Transactions { get; set; } = [];
 }

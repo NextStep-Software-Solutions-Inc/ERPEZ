@@ -72,13 +72,7 @@ public class CreateKPICommandHandler(IUnitOfWork unitOfWork, IFileStorageService
 
             if (request.MFOPAPId.HasValue)
             {
-                var existingMfopap = await unitOfWork.MFOPAPRepository.GetByIdAsync(request.MFOPAPId.Value, cancellationToken: cancellationToken);
-                
-                if (existingMfopap == null)
-                {
-                    throw new NotFoundException($"MFOPAP with ID {request.MFOPAPId.Value} was not found.");
-                }
-                
+                var existingMfopap = await unitOfWork.MFOPAPRepository.GetByIdAsync(request.MFOPAPId.Value, cancellationToken: cancellationToken) ?? throw new NotFoundException($"MFOPAP with ID {request.MFOPAPId.Value} was not found.");
                 kpi.MFOPAPId = request.MFOPAPId.Value;
             }
 
