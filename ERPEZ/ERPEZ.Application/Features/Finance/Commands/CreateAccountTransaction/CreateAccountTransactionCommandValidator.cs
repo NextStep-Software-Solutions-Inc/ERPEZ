@@ -13,12 +13,13 @@ public class CreateAccountTransactionCommandValidator : AbstractValidator<Create
             .NotEmpty()
             .WithMessage("Source account is required.");
 
-        RuleFor(x => x.ToAccountId)
-            .NotEmpty()
-            .WithMessage("Destination account is required.");
+        RuleFor(x => x)
+            .Must(x => x.ToAccountId.HasValue || x.OfficeId.HasValue)
+            .WithMessage("Either destination account or office identifier must be provided.");
 
-        RuleFor(x => x.FromAccountId)
-            .NotEqual(x => x.ToAccountId)
+        RuleFor(x => x.ToAccountId)
+            .NotEqual(x => x.FromAccountId)
+            .When(x => x.ToAccountId.HasValue)
             .WithMessage("Source and destination accounts must be different.");
 
         RuleFor(x => x.Purpose)
