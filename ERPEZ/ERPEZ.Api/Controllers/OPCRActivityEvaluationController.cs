@@ -1,6 +1,7 @@
 using ERPEZ.Application.Features.Planning.OPCRActivityEvaluation.Commands.CreateOPCRActivityEvaluation;
 using ERPEZ.Application.Features.Planning.OPCRActivityEvaluation.Commands.DeleteOPCRActivityEvaluation;
 using ERPEZ.Application.Features.Planning.OPCRActivityEvaluation.Commands.UpdateOPCRActivityEvaluation;
+using ERPEZ.Application.Features.Planning.OPCRActivityEvaluation.Commands.UpdateOPCRActivityEvaluationStatus;
 using ERPEZ.Application.Features.Planning.OPCRActivityEvaluation.Dtos;
 using ERPEZ.Application.Features.Planning.OPCRActivityEvaluation.Queries.GetOPCRActivityEvaluationById;
 using ERPEZ.Application.Features.Planning.OPCRActivityEvaluation.Queries.GetOPCRActivityEvaluations;
@@ -54,6 +55,22 @@ public class OPCRActivityEvaluationController(ISender mediator) : ControllerBase
         {
             Id = id,
             UpdateEvaluation = dto
+        };
+
+        var result = await mediator.Send(command);
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    [HttpPatch("{id}/status")]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateOPCRActivityEvaluationStatus(Guid id, [FromBody] UpdateOPCRActivityEvaluationStatusRequest dto)
+    {
+        var command = new UpdateOPCRActivityEvaluationStatusCommand
+        {
+            Id = id,
+            StatusString = dto.Status
         };
 
         var result = await mediator.Send(command);
