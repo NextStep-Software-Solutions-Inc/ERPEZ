@@ -226,8 +226,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<DateTime?>("AuthorizedDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("Code")
-                        .HasColumnType("integer");
+                    b.Property<long>("Code")
+                        .HasColumnType("bigint");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
