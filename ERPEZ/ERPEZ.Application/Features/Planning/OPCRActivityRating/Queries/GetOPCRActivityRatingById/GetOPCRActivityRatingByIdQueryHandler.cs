@@ -27,8 +27,6 @@ public class GetOPCRActivityRatingByIdQueryHandler(IUnitOfWork unitOfWork)
             ActualAccomplishedValue = rating.ActualAccomplishedValue,
             Score = rating.Score,
             Remarks = rating.Remarks,
-            Status = rating.Status,
-            SubmittedDate = rating.SubmittedDate,
             CreatedAt = rating.CreatedAt,
             CreatedBy = rating.CreatedBy
         };

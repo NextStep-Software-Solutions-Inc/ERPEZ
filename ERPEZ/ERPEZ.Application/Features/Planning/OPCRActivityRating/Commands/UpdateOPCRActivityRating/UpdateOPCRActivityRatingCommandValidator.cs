@@ -36,24 +36,5 @@ public class UpdateOPCRActivityRatingCommandValidator : AbstractValidator<Update
             .MaximumLength(1000)
             .WithMessage("Remarks cannot exceed 1000 characters.")
             .When(x => !string.IsNullOrWhiteSpace(x.UpdateRating.Remarks));
-
-        // Status (Optional, but must be valid enum value if provided)
-        RuleFor(x => x.UpdateRating.Status)
-            .IsInEnum()
-            .WithMessage("Status must be a valid OPCR Activity Rating Status (Draft, Submitted, or Returned).")
-            .When(x => x.UpdateRating.Status.HasValue);
-
-        // SubmittedDate validation
-        RuleFor(x => x.UpdateRating.SubmittedDate)
-            .LessThanOrEqualTo(DateTime.UtcNow)
-            .WithMessage("Submitted Date cannot be in the future.")
-            .When(x => x.UpdateRating.SubmittedDate.HasValue);
-
-        // SubmittedDate required when Status is Submitted
-        RuleFor(x => x.UpdateRating.SubmittedDate)
-            .NotEmpty()
-            .WithMessage("Submitted Date is required when Status is Submitted.")
-            .When(x => x.UpdateRating.Status.HasValue && 
-                      x.UpdateRating.Status.Value == Domain.Enums.OPCRActivityRatingStatus.Submitted);
     }
 }

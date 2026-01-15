@@ -3,8 +3,9 @@ namespace ERPEZ.Domain.Enums;
 /// <summary>
 /// Status values: Draft, Submitted, Returned
 /// </summary>
-public enum OPCRActivityRatingStatus
+public enum OPCRRatingStatus
 {
+    Unknown,
     Draft,
     Submitted,
     Returned

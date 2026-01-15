@@ -1,4 +1,3 @@
-using ERPEZ.Domain.Enums;
 using ERPEZ.Shared.Common;
 using MediatR;
 
@@ -11,6 +10,4 @@ public class CreateOPCRActivityRatingCommand : IRequest<ApiResponse<Guid>>
     public int ActualAccomplishedValue { get; set; }
     public int Score { get; set; }
     public string? Remarks { get; set; }
-    public OPCRActivityRatingStatus Status { get; set; } = OPCRActivityRatingStatus.Draft;
-    public DateTime? SubmittedDate { get; set; }
 }

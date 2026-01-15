@@ -15,8 +15,12 @@ public class CreateOPCRActivityEvaluationCommandHandler(IUnitOfWork unitOfWork)
             request.OPCRActivityRatingId, cancellationToken: cancellationToken)
             ?? throw new NotFoundException("OPCR Activity Rating not found.");
 
-        // Verify the rating is submitted (cannot evaluate a draft rating)
-        if (rating.Status != Domain.Enums.OPCRActivityRatingStatus.Submitted)
+        // Get the OPCR to check rating status
+        var opcr = await unitOfWork.OPCRRepository.GetByIdAsync(rating.OPCRActivity.OPCRId, cancellationToken: cancellationToken)
+            ?? throw new NotFoundException("OPCR not found.");
+
+        // Verify the OPCR rating is submitted (cannot evaluate if not submitted)
+        if (opcr.RatingStatus != Domain.Enums.OPCRRatingStatus.Submitted)
         {
             throw new ValidationException("Cannot evaluate a rating that has not been submitted.");
         }

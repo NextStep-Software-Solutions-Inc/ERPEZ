@@ -19,6 +19,9 @@ public class GetOPCRByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<G
             {
                 Id = o.Id,
                 Status = o.Status.ToString(),
+                RatingStatus = o.RatingStatus.ToString(),
+                SubmittedDate = o.RatingSubmittedDate.HasValue ? DateOnly.FromDateTime(o.RatingSubmittedDate.Value) : null,
+                ReturnedDate = o.RatingReturnedDate.HasValue ? DateOnly.FromDateTime(o.RatingReturnedDate.Value) : null,
                 Name = o.Name,
                 TotalBudget = o.OPCRActivities.Sum(a => a.Budget),
                 CreatedDate = DateOnly.FromDateTime(o.CreatedAt),

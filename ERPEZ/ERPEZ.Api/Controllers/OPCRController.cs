@@ -2,6 +2,7 @@ using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using ERPEZ.Domain.Entities.Planning;
+using ERPEZ.Domain.Enums;
 using ERPEZ.Application.Features.Planning.OPCR.Commands.CreateOPCR;
 using ERPEZ.Application.Features.Planning.OPCR.Dtos;
 using ERPEZ.Application.Features.Planning.OPCR.Queries.GetOPCRs;
@@ -9,6 +10,8 @@ using ERPEZ.Application.Features.Planning.OPCR.Queries.GetOPCRById;
 using ERPEZ.Application.Features.Planning.OPCR.Commands.UpdateOPCR;
 using ERPEZ.Application.Features.Planning.OPCR.Commands.UpdateOPCRStatus;
 using ERPEZ.Application.Features.Planning.OPCR.Commands.DeleteOPCR;
+using ERPEZ.Application.Features.Planning.OPCRActivityRating.Commands.UpdateOPCRRatingStatus;
+using ERPEZ.Application.Features.Planning.OPCRActivityRating.Dtos;
 
 namespace ERPEZ.Api.Controllers
 {
@@ -68,6 +71,44 @@ namespace ERPEZ.Api.Controllers
             {
                 Id = id,
                 UpdateOPCRStatus = dto
+            };
+
+            var result = await mediator.Send(command);
+            return result.Succeeded ? Ok(result) : BadRequest(result);
+        }
+
+        [HttpPost("{id}/rating/submit")]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> SubmitOPCRRating(Guid id)
+        {
+            var command = new UpdateOPCRRatingStatusCommand
+            {
+                Id = id,
+                UpdateStatus = new UpdateOPCRRatingStatusRequest
+                {
+                    Status = OPCRRatingStatus.Submitted
+                }
+            };
+
+            var result = await mediator.Send(command);
+            return result.Succeeded ? Ok(result) : BadRequest(result);
+        }
+
+        [HttpPost("{id}/rating/return")]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> ReturnOPCRRating(Guid id)
+        {
+            var command = new UpdateOPCRRatingStatusCommand
+            {
+                Id = id,
+                UpdateStatus = new UpdateOPCRRatingStatusRequest
+                {
+                    Status = OPCRRatingStatus.Returned,
+                }
             };
 
             var result = await mediator.Send(command);

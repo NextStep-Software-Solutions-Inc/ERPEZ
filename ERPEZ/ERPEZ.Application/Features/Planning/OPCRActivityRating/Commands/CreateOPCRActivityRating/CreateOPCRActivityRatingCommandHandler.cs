@@ -54,9 +54,7 @@ public class CreateOPCRActivityRatingCommandHandler(IUnitOfWork unitOfWork)
             PerformanceMeasureId = request.PerformanceMeasureId,
             ActualAccomplishedValue = request.ActualAccomplishedValue,
             Score = request.Score,
-            Remarks = request.Remarks,
-            Status = request.Status,
-            SubmittedDate = request.SubmittedDate
+            Remarks = request.Remarks
         };
 
         await unitOfWork.OPCRActivityRatingRepository.AddAsync(rating, cancellationToken);

@@ -25,12 +25,6 @@ public class UpdateOPCRActivityRatingCommandHandler(IUnitOfWork unitOfWork)
         if (dto.Remarks is not null)
             rating.Remarks = dto.Remarks;
 
-        if (dto.Status.HasValue)
-            rating.Status = dto.Status.Value;
-
-        if (dto.SubmittedDate.HasValue)
-            rating.SubmittedDate = dto.SubmittedDate;
-
         unitOfWork.OPCRActivityRatingRepository.Update(rating);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 

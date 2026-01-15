@@ -7,7 +7,7 @@ namespace ERPEZ.Domain.Entities.Planning;
 
 /// <summary>
 /// Self-rating or final rating for OPCR Activities
-/// Status: Draft, Submitted, Returned (enum converted to string in DB)
+/// Note: Rating status moved to OPCR entity level
 /// </summary>
 public class OPCRActivityRating : BaseEntity
 {
@@ -27,16 +27,6 @@ public class OPCRActivityRating : BaseEntity
     
     [Sieve(CanFilter = true, CanSort = true)]
     public string? Remarks { get; set; }
-    
-    /// <summary>
-    /// EF Config: .HasConversion<string>()
-    /// Values: Draft, Submitted, Returned
-    /// </summary>
-    [Sieve(CanFilter = true, CanSort = true)]
-    public OPCRActivityRatingStatus Status { get; set; }
-    
-    [Sieve(CanFilter = true, CanSort = true)]
-    public DateTime? SubmittedDate { get; set; }
     
     // Navigation properties
     public virtual OPCRActivity OPCRActivity { get; set; } = null!;
