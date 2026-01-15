@@ -1,3 +1,4 @@
+using ERPEZ.Application.Interfaces;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -5,7 +6,7 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.OPCRActivityMOV.Commands.UpdateOPCRActivityMOV;
 
-public class UpdateOPCRActivityMOVCommandHandler(IUnitOfWork unitOfWork)
+public class UpdateOPCRActivityMOVCommandHandler(IUnitOfWork unitOfWork, IFileStorageService fileStorageService)
     : IRequestHandler<UpdateOPCRActivityMOVCommand, ApiResponse<Unit>>
 {
     public async Task<ApiResponse<Unit>> Handle(UpdateOPCRActivityMOVCommand request, CancellationToken cancellationToken)
@@ -16,15 +17,19 @@ public class UpdateOPCRActivityMOVCommandHandler(IUnitOfWork unitOfWork)
             request.Id, cancellationToken: cancellationToken)
             ?? throw new NotFoundException("OPCR Activity MOV not found.");
 
-        // Update only provided fields
-        if (!string.IsNullOrWhiteSpace(dto.FileName))
-            mov.FileName = dto.FileName;
+        // Update file if FileId is provided
+        if (dto.FileId.HasValue)
+        {
+            var url = await fileStorageService.PromoteFileAsync(dto.FileId.Value);
 
-        if (dto.Url is not null)
-            mov.Url = dto.Url;
+            // Extract filename from the URL (blob name format: {fileId}_{filename})
+            var blobName = url.Split('/').Last();
+            var fileName = blobName.Contains('_') ? blobName[(blobName.IndexOf('_') + 1)..] : blobName;
 
-        if (dto.UploadedDate.HasValue)
-            mov.UploadedDate = dto.UploadedDate;
+            mov.FileName = fileName;
+            mov.Url = url;
+            mov.UploadedDate = DateTime.UtcNow;
+        }
 
         unitOfWork.OPCRActivityMOVRepository.Update(mov);
         await unitOfWork.SaveChangesAsync(cancellationToken);

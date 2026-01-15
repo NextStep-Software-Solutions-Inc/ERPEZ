@@ -16,31 +16,9 @@ public class CreateOPCRActivityMOVCommandValidator : AbstractValidator<CreateOPC
             .NotEmpty()
             .WithMessage("OPCR Activity ID is required and must be a valid, non-empty GUID.");
 
-        // FileName (Required, with length constraints)
-        RuleFor(x => x.FileName)
+        // FileId (Required GUID)
+        RuleFor(x => x.FileId)
             .NotEmpty()
-            .WithMessage("File Name is required.")
-            .MinimumLength(3)
-            .WithMessage("File Name must be at least 3 characters.")
-            .MaximumLength(500)
-            .WithMessage("File Name cannot exceed 500 characters.");
-
-        // Url (Optional, but with max length constraint and format validation)
-        RuleFor(x => x.Url)
-            .MaximumLength(2000)
-            .WithMessage("URL cannot exceed 2000 characters.")
-            .When(x => !string.IsNullOrWhiteSpace(x.Url));
-
-        // Validate URL format if provided
-        RuleFor(x => x.Url)
-            .Must(ValidationUtilities.IsValidHttpUrl)
-            .WithMessage("URL must be a valid URL format.")
-            .When(x => !string.IsNullOrWhiteSpace(x.Url));
-
-        // UploadedDate validation
-        RuleFor(x => x.UploadedDate)
-            .LessThanOrEqualTo(DateTime.UtcNow)
-            .WithMessage("Uploaded Date cannot be in the future.")
-            .When(x => x.UploadedDate.HasValue);
+            .WithMessage("File ID is required and must be a valid, non-empty GUID.");
     }
 }
