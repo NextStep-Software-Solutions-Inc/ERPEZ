@@ -35,12 +35,33 @@ public class CreateAccountTransactionCommandValidator : AbstractValidator<Create
             .LessThanOrEqualTo(999999999999.99m)
             .WithMessage("Transfer amount exceeds maximum limit.");
 
-        RuleFor(x => x.Code)
-            .GreaterThan(0)
-            .WithMessage("Transaction code must be a positive integer.");
-
         RuleFor(x => x.TransactionDate)
             .NotEmpty()
-            .WithMessage("Transaction date is required.");
+            .WithMessage("Transaction date is required.")
+            .Must(date => IsAtLeast10WorkingDaysFromNow(date))
+            .WithMessage("Transaction date must be at least 10 working days from today.");
+    }
+
+    private static bool IsAtLeast10WorkingDaysFromNow(DateTime transactionDate)
+    {
+        var today = DateTime.UtcNow.Date;
+        var workingDaysNeeded = 10;
+        var workingDaysCount = 0;
+        var currentDate = today.AddDays(1);
+
+        while (workingDaysCount < workingDaysNeeded)
+        {
+            if (currentDate.DayOfWeek != DayOfWeek.Saturday && currentDate.DayOfWeek != DayOfWeek.Sunday)
+            {
+                workingDaysCount++;
+            }
+
+            if (workingDaysCount < workingDaysNeeded)
+            {
+                currentDate = currentDate.AddDays(1);
+            }
+        }
+
+        return transactionDate.Date >= currentDate;
     }
 }

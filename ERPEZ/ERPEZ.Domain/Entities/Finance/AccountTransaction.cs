@@ -23,7 +23,7 @@ public class AccountTransaction : BaseEntity
     public decimal AmountTransfer { get; set; }
     
     [Sieve(CanFilter = true, CanSort = true)]
-    public int Code { get; set; }
+    public long Code { get; set; }
     
     [Sieve(CanFilter = true, CanSort = true)]
     public DateTime TransactionDate { get; set; }

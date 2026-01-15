@@ -9,7 +9,7 @@ public record AccountTransactionResponse
     public AccountSummaryResponse ToAccount { get; init; } = null!;
     public string Purpose { get; init; } = string.Empty;
     public decimal AmountTransfer { get; init; }
-    public int Code { get; init; }
+    public long Code { get; init; }
     public DateTime TransactionDate { get; init; }
     public string Status { get; init; } = string.Empty;
     public Guid? AuthorizedByUserId { get; init; }

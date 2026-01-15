@@ -11,7 +11,9 @@ namespace ERPEZ.Application.Features.Finance.Commands.CreateAccountTransaction;
 /// Handler for creating a new account transaction in Draft status.
 /// No balance changes occur until the transaction is authorized.
 /// </summary>
-public class CreateAccountTransactionCommandHandler(IUnitOfWork unitOfWork)
+public class CreateAccountTransactionCommandHandler(
+    IUnitOfWork unitOfWork,
+    ITransactionCodeGeneratorService codeGeneratorService)
     : IRequestHandler<CreateAccountTransactionCommand, ApiResponse<Guid>>
 {
     public async Task<ApiResponse<Guid>> Handle(CreateAccountTransactionCommand request, CancellationToken cancellationToken)
@@ -30,6 +32,9 @@ public class CreateAccountTransactionCommandHandler(IUnitOfWork unitOfWork)
             throw new BadRequestException($"Insufficient balance in source account. Available: {fromAccount.Balance}, Required: {request.AmountTransfer}");
         }
 
+        // Generate transaction code using service
+        var generatedCode = await codeGeneratorService.GenerateTransactionCodeAsync(cancellationToken);
+
         // Create transaction in Draft status
         var transaction = new AccountTransaction
         {
@@ -37,7 +42,7 @@ public class CreateAccountTransactionCommandHandler(IUnitOfWork unitOfWork)
             ToAccountId = request.ToAccountId,
             Purpose = request.Purpose,
             AmountTransfer = request.AmountTransfer,
-            Code = request.Code,
+            Code = generatedCode,
             TransactionDate = request.TransactionDate,
             Status = StatusEnum.Draft,
             AuthorizedByUserId = null,
