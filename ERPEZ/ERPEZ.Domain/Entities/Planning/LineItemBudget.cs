@@ -1,5 +1,4 @@
 using ERPEZ.Domain.Common;
-using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Domain.Enums;
 using Sieve.Attributes;
 
@@ -28,9 +27,10 @@ public class LineItemBudget : ApprovableEntity
     
     /// <summary>
     /// SourceId is either OPCRId or WFPId
+    /// Nullable because Independent source type doesn't need a source ID
     /// </summary>
     [Sieve(CanFilter = true, CanSort = true)]
-    public Guid SourceId { get; set; }
+    public Guid? SourceId { get; set; }
     
     /// <summary>
     /// EF Config: .HasConversion<string>()
@@ -38,6 +38,13 @@ public class LineItemBudget : ApprovableEntity
     /// </summary>
     [Sieve(CanFilter = true, CanSort = true)]
     public BudgetScope Scope { get; set; }
+    
+    /// <summary>
+    /// Flag indicating whether this LIB is consolidated from child delivery units
+    /// True if this LIB consolidates data from child DUs, False otherwise
+    /// </summary>
+    [Sieve(CanFilter = true, CanSort = true)]
+    public bool IsConsolidated { get; set; }
     
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid? DUAllocationId { get; set; }
@@ -64,8 +71,5 @@ public class LineItemBudget : ApprovableEntity
     public virtual DUAllocation? DUAllocation { get; set; }
     public virtual List<LineItemBudgetActivity> LineItemBudgetActivities { get; set; } = [];
     public virtual List<LineItemBudgetDetail> LineItemBudgetDetails { get; set; } = [];
-    
-    // Inherited from ApprovableEntity: 
-    // public DateTime? SubmittedDate { get; set; }
-    // public DateTime? ApprovedDate { get; set; }
+
 }

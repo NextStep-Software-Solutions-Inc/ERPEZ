@@ -1267,6 +1267,11 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<int>("FiscalYear")
                         .HasColumnType("integer");
 
+                    b.Property<bool>("IsConsolidated")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("boolean")
+                        .HasDefaultValue(false);
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
@@ -1284,7 +1289,7 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
-                    b.Property<Guid>("SourceId")
+                    b.Property<Guid?>("SourceId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("SourceType")
@@ -1311,6 +1316,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("DUAllocationId");
 
                     b.HasIndex("FiscalYear");
+
+                    b.HasIndex("IsConsolidated");
 
                     b.HasIndex("LIBNumber")
                         .IsUnique();
@@ -1408,9 +1415,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
-                    b.Property<Guid>("LIBId")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid?>("LineItemBudgetActivityId")
                         .HasColumnType("uuid");
 
@@ -1434,12 +1438,10 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("UpdatedBy")
                         .HasColumnType("text");
 
-                    b.Property<Guid?>("WFPExpenditureId")
+                    b.Property<Guid?>("WFPObjectiveTargetExpenditureId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("LIBId");
 
                     b.HasIndex("LineItemBudgetActivityId");
 
@@ -1447,7 +1449,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("ObjectId");
 
-                    b.HasIndex("WFPExpenditureId");
+                    b.HasIndex("WFPObjectiveTargetExpenditureId");
 
                     b.HasIndex("StartDate", "EndDate");
 
@@ -3668,9 +3670,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.WFPObjectiveTargetExpenditure", "WFPExpenditure")
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.WFPObjectiveTargetExpenditure", "WFPObjectiveTargetExpenditure")
                         .WithMany()
-                        .HasForeignKey("WFPExpenditureId");
+                        .HasForeignKey("WFPObjectiveTargetExpenditureId");
 
                     b.Navigation("LineItemBudget");
 
@@ -3678,7 +3680,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Navigation("Object");
 
-                    b.Navigation("WFPExpenditure");
+                    b.Navigation("WFPObjectiveTargetExpenditure");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.Location", b =>
