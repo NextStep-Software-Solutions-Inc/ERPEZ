@@ -89,8 +89,6 @@ public static class DependencyInjection
         services.AddScoped<IWFPObjectiveTargetRepository, WFPObjectiveTargetRepository>();
         services.AddScoped<IWFPObjectiveTimelineRepository, WFPObjectiveTimelineRepository>();
         services.AddScoped<IAttributeRepository, AttributeRepository>();
-        services.AddScoped<IAccountRepository, AccountRepository>();
-        services.AddScoped<IAccountTransactionRepository, AccountTransactionRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IFileStorageService, AzureBlobStorageService>();
         services.AddHostedService<TempFileCleanupService>();

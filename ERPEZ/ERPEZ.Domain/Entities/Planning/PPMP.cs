@@ -21,9 +21,6 @@ public class PPMP : ApprovableEntity
     public string PPMPNumber { get; set; } = string.Empty;
     
     [Sieve(CanFilter = true, CanSort = true)]
-    public Guid? DUAllocationId { get; set; }
-    
-    [Sieve(CanFilter = true, CanSort = true)]
     public string? Description { get; set; }
     
     [Sieve(CanFilter = true, CanSort = true)]
@@ -37,7 +34,6 @@ public class PPMP : ApprovableEntity
     
     // Navigation properties
     public virtual DeliveryUnit DeliveryUnit { get; set; } = null!;
-    public virtual DUAllocation? DUAllocation { get; set; }
     public virtual List<PPMPItem> PPMPItems { get; set; } = [];
     
     // Inherited from ApprovableEntity:  

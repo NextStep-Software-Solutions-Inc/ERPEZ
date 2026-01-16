@@ -7,19 +7,13 @@ using Microsoft.EntityFrameworkCore.Migrations;
 namespace ERPEZ.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class InitialSquash20260115_Resquash : Migration
+    public partial class InitialSquash : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
             migrationBuilder.EnsureSchema(
-                name: "finance");
-
-            migrationBuilder.EnsureSchema(
                 name: "planning");
-
-            migrationBuilder.EnsureSchema(
-                name: "core");
 
             migrationBuilder.CreateTable(
                 name: "APPs",
@@ -397,33 +391,6 @@ namespace ERPEZ.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "UserPINs",
-                schema: "core",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    UserId = table.Column<Guid>(type: "uuid", nullable: false),
-                    EncryptedPIN = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
-                    Salt = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: false),
-                    ExpiresAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    FailedAttempts = table.Column<int>(type: "integer", nullable: false, defaultValue: 0),
-                    IsLocked = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
-                    LockedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    LastUsedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
-                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
-                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    DeletedBy = table.Column<string>(type: "text", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_UserPINs", x => x.Id);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "Offices",
                 schema: "planning",
                 columns: table => new
@@ -486,82 +453,6 @@ namespace ERPEZ.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "ReceivedFund",
-                schema: "planning",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    FundSourceId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Amount = table.Column<decimal>(type: "numeric", nullable: false),
-                    ReceivedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    Description = table.Column<string>(type: "text", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
-                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
-                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    DeletedBy = table.Column<string>(type: "text", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_ReceivedFund", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_ReceivedFund_FundSources_FundSourceId",
-                        column: x => x.FundSourceId,
-                        principalSchema: "planning",
-                        principalTable: "FundSources",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "Accounts",
-                schema: "finance",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    OfficeId = table.Column<Guid>(type: "uuid", nullable: false),
-                    FundSourceId = table.Column<Guid>(type: "uuid", nullable: true),
-                    FiscalYearId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Name = table.Column<string>(type: "character varying(255)", maxLength: 255, nullable: true),
-                    Balance = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false, defaultValue: 0m),
-                    RunningBalance = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false, defaultValue: 0m),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
-                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
-                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    DeletedBy = table.Column<string>(type: "text", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_Accounts", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_Accounts_FiscalYears_FiscalYearId",
-                        column: x => x.FiscalYearId,
-                        principalSchema: "planning",
-                        principalTable: "FiscalYears",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_Accounts_FundSources_FundSourceId",
-                        column: x => x.FundSourceId,
-                        principalSchema: "planning",
-                        principalTable: "FundSources",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_Accounts_Offices_OfficeId",
-                        column: x => x.OfficeId,
-                        principalSchema: "planning",
-                        principalTable: "Offices",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                });
-
-            migrationBuilder.CreateTable(
                 name: "DeliveryUnits",
                 schema: "planning",
                 columns: table => new
@@ -596,82 +487,40 @@ namespace ERPEZ.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
-                name: "AccountTransactions",
-                schema: "finance",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    FromAccountId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ToAccountId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Purpose = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: false),
-                    AmountTransfer = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
-                    Code = table.Column<int>(type: "integer", nullable: false),
-                    TransactionDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    Status = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    AuthorizedByUserId = table.Column<Guid>(type: "uuid", nullable: true),
-                    AuthorizedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
-                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
-                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    DeletedBy = table.Column<string>(type: "text", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_AccountTransactions", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_AccountTransactions_Accounts_FromAccountId",
-                        column: x => x.FromAccountId,
-                        principalSchema: "finance",
-                        principalTable: "Accounts",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                    table.ForeignKey(
-                        name: "FK_AccountTransactions_Accounts_ToAccountId",
-                        column: x => x.ToAccountId,
-                        principalSchema: "finance",
-                        principalTable: "Accounts",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Restrict);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "DUAllocation",
+                name: "LineItemBudgets",
                 schema: "planning",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
                     DeliveryUnitId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Purpose = table.Column<string>(type: "text", nullable: false),
-                    Amount = table.Column<decimal>(type: "numeric", nullable: false),
-                    IsLocked = table.Column<bool>(type: "boolean", nullable: false),
-                    ReceivedFundId = table.Column<Guid>(type: "uuid", nullable: true),
+                    SourceType = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    SourceId = table.Column<Guid>(type: "uuid", nullable: true),
+                    Scope = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    IsConsolidated = table.Column<bool>(type: "boolean", nullable: false, defaultValue: false),
+                    LIBNumber = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    FiscalYear = table.Column<int>(type: "integer", nullable: false),
+                    Name = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
+                    Status = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     CreatedBy = table.Column<string>(type: "text", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
                     UpdatedBy = table.Column<string>(type: "text", nullable: true),
                     IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
                     DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    DeletedBy = table.Column<string>(type: "text", nullable: true)
+                    DeletedBy = table.Column<string>(type: "text", nullable: true),
+                    SubmittedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    ApprovedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
                 },
                 constraints: table =>
                 {
-                    table.PrimaryKey("PK_DUAllocation", x => x.Id);
+                    table.PrimaryKey("PK_LineItemBudgets", x => x.Id);
                     table.ForeignKey(
-                        name: "FK_DUAllocation_DeliveryUnits_DeliveryUnitId",
+                        name: "FK_LineItemBudgets_DeliveryUnits_DeliveryUnitId",
                         column: x => x.DeliveryUnitId,
                         principalSchema: "planning",
                         principalTable: "DeliveryUnits",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_DUAllocation_ReceivedFund_ReceivedFundId",
-                        column: x => x.ReceivedFundId,
-                        principalSchema: "planning",
-                        principalTable: "ReceivedFund",
-                        principalColumn: "Id");
                 });
 
             migrationBuilder.CreateTable(
@@ -715,6 +564,41 @@ namespace ERPEZ.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateTable(
+                name: "PPMPs",
+                schema: "planning",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    DeliveryUnitId = table.Column<Guid>(type: "uuid", nullable: false),
+                    PPMPNumber = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
+                    Description = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
+                    FiscalYear = table.Column<int>(type: "integer", nullable: false),
+                    IsFinal = table.Column<bool>(type: "boolean", nullable: false),
+                    EndUser = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    CreatedBy = table.Column<string>(type: "text", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    DeletedBy = table.Column<string>(type: "text", nullable: true),
+                    Status = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
+                    SubmittedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    ApprovedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_PPMPs", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_PPMPs_DeliveryUnits_DeliveryUnitId",
+                        column: x => x.DeliveryUnitId,
+                        principalSchema: "planning",
+                        principalTable: "DeliveryUnits",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                });
+
+            migrationBuilder.CreateTable(
                 name: "WFPs",
                 schema: "planning",
                 columns: table => new
@@ -753,127 +637,6 @@ namespace ERPEZ.Infrastructure.Migrations
                         principalSchema: "planning",
                         principalTable: "FiscalYears",
                         principalColumn: "Id");
-                });
-
-            migrationBuilder.CreateTable(
-                name: "DUFundAllocation",
-                schema: "planning",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    DUAllocationId = table.Column<Guid>(type: "uuid", nullable: false),
-                    ReceivedFundId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Amount = table.Column<decimal>(type: "numeric", nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
-                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
-                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    DeletedBy = table.Column<string>(type: "text", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_DUFundAllocation", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_DUFundAllocation_DUAllocation_DUAllocationId",
-                        column: x => x.DUAllocationId,
-                        principalSchema: "planning",
-                        principalTable: "DUAllocation",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                    table.ForeignKey(
-                        name: "FK_DUFundAllocation_ReceivedFund_ReceivedFundId",
-                        column: x => x.ReceivedFundId,
-                        principalSchema: "planning",
-                        principalTable: "ReceivedFund",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "LineItemBudgets",
-                schema: "planning",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    DeliveryUnitId = table.Column<Guid>(type: "uuid", nullable: false),
-                    SourceType = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    SourceId = table.Column<Guid>(type: "uuid", nullable: false),
-                    Scope = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    DUAllocationId = table.Column<Guid>(type: "uuid", nullable: true),
-                    LIBNumber = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    FiscalYear = table.Column<int>(type: "integer", nullable: false),
-                    Name = table.Column<string>(type: "character varying(500)", maxLength: 500, nullable: true),
-                    Status = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
-                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
-                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    DeletedBy = table.Column<string>(type: "text", nullable: true),
-                    SubmittedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    ApprovedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_LineItemBudgets", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_LineItemBudgets_DUAllocation_DUAllocationId",
-                        column: x => x.DUAllocationId,
-                        principalSchema: "planning",
-                        principalTable: "DUAllocation",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_LineItemBudgets_DeliveryUnits_DeliveryUnitId",
-                        column: x => x.DeliveryUnitId,
-                        principalSchema: "planning",
-                        principalTable: "DeliveryUnits",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
-                });
-
-            migrationBuilder.CreateTable(
-                name: "PPMPs",
-                schema: "planning",
-                columns: table => new
-                {
-                    Id = table.Column<Guid>(type: "uuid", nullable: false),
-                    DeliveryUnitId = table.Column<Guid>(type: "uuid", nullable: false),
-                    PPMPNumber = table.Column<string>(type: "character varying(100)", maxLength: 100, nullable: false),
-                    DUAllocationId = table.Column<Guid>(type: "uuid", nullable: true),
-                    Description = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
-                    FiscalYear = table.Column<int>(type: "integer", nullable: false),
-                    IsFinal = table.Column<bool>(type: "boolean", nullable: false),
-                    EndUser = table.Column<string>(type: "character varying(200)", maxLength: 200, nullable: true),
-                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
-                    CreatedBy = table.Column<string>(type: "text", nullable: false),
-                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
-                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
-                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    DeletedBy = table.Column<string>(type: "text", nullable: true),
-                    Status = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
-                    SubmittedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
-                    ApprovedDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: true)
-                },
-                constraints: table =>
-                {
-                    table.PrimaryKey("PK_PPMPs", x => x.Id);
-                    table.ForeignKey(
-                        name: "FK_PPMPs_DUAllocation_DUAllocationId",
-                        column: x => x.DUAllocationId,
-                        principalSchema: "planning",
-                        principalTable: "DUAllocation",
-                        principalColumn: "Id");
-                    table.ForeignKey(
-                        name: "FK_PPMPs_DeliveryUnits_DeliveryUnitId",
-                        column: x => x.DeliveryUnitId,
-                        principalSchema: "planning",
-                        principalTable: "DeliveryUnits",
-                        principalColumn: "Id",
-                        onDelete: ReferentialAction.Cascade);
                 });
 
             migrationBuilder.CreateTable(
@@ -1859,16 +1622,15 @@ namespace ERPEZ.Infrastructure.Migrations
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    LineItemBudgetId = table.Column<Guid>(type: "uuid", nullable: false),
                     LineItemBudgetActivityId = table.Column<Guid>(type: "uuid", nullable: true),
-                    LIBId = table.Column<Guid>(type: "uuid", nullable: false),
-                    WFPExpenditureId = table.Column<Guid>(type: "uuid", nullable: true),
+                    WFPObjectiveTargetExpenditureId = table.Column<Guid>(type: "uuid", nullable: true),
                     ObjectId = table.Column<Guid>(type: "uuid", nullable: false),
                     Description = table.Column<string>(type: "character varying(1000)", maxLength: 1000, nullable: true),
                     TimelineType = table.Column<string>(type: "character varying(50)", maxLength: 50, nullable: false),
                     StartDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     EndDate = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     Budget = table.Column<decimal>(type: "numeric(18,2)", precision: 18, scale: 2, nullable: false),
-                    LineItemBudgetId = table.Column<Guid>(type: "uuid", nullable: false),
                     CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
                     CreatedBy = table.Column<string>(type: "text", nullable: false),
                     UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
@@ -1901,8 +1663,8 @@ namespace ERPEZ.Infrastructure.Migrations
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
                     table.ForeignKey(
-                        name: "FK_LineItemBudgetDetails_WFPObjectiveTargetExpenditures_WFPExp~",
-                        column: x => x.WFPExpenditureId,
+                        name: "FK_LineItemBudgetDetails_WFPObjectiveTargetExpenditures_WFPObj~",
+                        column: x => x.WFPObjectiveTargetExpenditureId,
                         principalSchema: "planning",
                         principalTable: "WFPObjectiveTargetExpenditures",
                         principalColumn: "Id");
@@ -2034,79 +1796,6 @@ namespace ERPEZ.Infrastructure.Migrations
                 });
 
             migrationBuilder.CreateIndex(
-                name: "IX_Accounts_Balance",
-                schema: "finance",
-                table: "Accounts",
-                column: "Balance");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Accounts_FiscalYearId",
-                schema: "finance",
-                table: "Accounts",
-                column: "FiscalYearId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Accounts_FundSourceId",
-                schema: "finance",
-                table: "Accounts",
-                column: "FundSourceId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Accounts_OfficeId",
-                schema: "finance",
-                table: "Accounts",
-                column: "OfficeId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_Accounts_OfficeId_FundSourceId_FiscalYearId",
-                schema: "finance",
-                table: "Accounts",
-                columns: new[] { "OfficeId", "FundSourceId", "FiscalYearId" },
-                unique: true);
-
-            migrationBuilder.CreateIndex(
-                name: "IX_AccountTransactions_AuthorizedByUserId",
-                schema: "finance",
-                table: "AccountTransactions",
-                column: "AuthorizedByUserId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_AccountTransactions_AuthorizedDate",
-                schema: "finance",
-                table: "AccountTransactions",
-                column: "AuthorizedDate");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_AccountTransactions_Code",
-                schema: "finance",
-                table: "AccountTransactions",
-                column: "Code");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_AccountTransactions_FromAccountId",
-                schema: "finance",
-                table: "AccountTransactions",
-                column: "FromAccountId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_AccountTransactions_Status",
-                schema: "finance",
-                table: "AccountTransactions",
-                column: "Status");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_AccountTransactions_ToAccountId",
-                schema: "finance",
-                table: "AccountTransactions",
-                column: "ToAccountId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_AccountTransactions_TransactionDate",
-                schema: "finance",
-                table: "AccountTransactions",
-                column: "TransactionDate");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_APPItems_APPId",
                 schema: "planning",
                 table: "APPItems",
@@ -2221,30 +1910,6 @@ namespace ERPEZ.Infrastructure.Migrations
                 schema: "planning",
                 table: "DeliveryUnits",
                 column: "ParentId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_DUAllocation_DeliveryUnitId",
-                schema: "planning",
-                table: "DUAllocation",
-                column: "DeliveryUnitId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_DUAllocation_ReceivedFundId",
-                schema: "planning",
-                table: "DUAllocation",
-                column: "ReceivedFundId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_DUFundAllocation_DUAllocationId",
-                schema: "planning",
-                table: "DUFundAllocation",
-                column: "DUAllocationId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_DUFundAllocation_ReceivedFundId",
-                schema: "planning",
-                table: "DUFundAllocation",
-                column: "ReceivedFundId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_DUKPITargetAssignmentOPCR_OPCRsId",
@@ -2375,12 +2040,6 @@ namespace ERPEZ.Infrastructure.Migrations
                 column: "WFPObjectiveTargetId");
 
             migrationBuilder.CreateIndex(
-                name: "IX_LineItemBudgetDetails_LIBId",
-                schema: "planning",
-                table: "LineItemBudgetDetails",
-                column: "LIBId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_LineItemBudgetDetails_LineItemBudgetActivityId",
                 schema: "planning",
                 table: "LineItemBudgetDetails",
@@ -2405,10 +2064,10 @@ namespace ERPEZ.Infrastructure.Migrations
                 columns: new[] { "StartDate", "EndDate" });
 
             migrationBuilder.CreateIndex(
-                name: "IX_LineItemBudgetDetails_WFPExpenditureId",
+                name: "IX_LineItemBudgetDetails_WFPObjectiveTargetExpenditureId",
                 schema: "planning",
                 table: "LineItemBudgetDetails",
-                column: "WFPExpenditureId");
+                column: "WFPObjectiveTargetExpenditureId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_LineItemBudgets_DeliveryUnitId_FiscalYear",
@@ -2417,16 +2076,16 @@ namespace ERPEZ.Infrastructure.Migrations
                 columns: new[] { "DeliveryUnitId", "FiscalYear" });
 
             migrationBuilder.CreateIndex(
-                name: "IX_LineItemBudgets_DUAllocationId",
-                schema: "planning",
-                table: "LineItemBudgets",
-                column: "DUAllocationId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_LineItemBudgets_FiscalYear",
                 schema: "planning",
                 table: "LineItemBudgets",
                 column: "FiscalYear");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_LineItemBudgets_IsConsolidated",
+                schema: "planning",
+                table: "LineItemBudgets",
+                column: "IsConsolidated");
 
             migrationBuilder.CreateIndex(
                 name: "IX_LineItemBudgets_LIBNumber",
@@ -2763,12 +2422,6 @@ namespace ERPEZ.Infrastructure.Migrations
                 columns: new[] { "DeliveryUnitId", "FiscalYear" });
 
             migrationBuilder.CreateIndex(
-                name: "IX_PPMPs_DUAllocationId",
-                schema: "planning",
-                table: "PPMPs",
-                column: "DUAllocationId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_PPMPs_IsFinal",
                 schema: "planning",
                 table: "PPMPs",
@@ -2802,12 +2455,6 @@ namespace ERPEZ.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_ReceivedFund_FundSourceId",
-                schema: "planning",
-                table: "ReceivedFund",
-                column: "FundSourceId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_Transactions_FundSourceId_OrganizationId_LocationId_MFOPAPI~",
                 schema: "planning",
                 table: "Transactions",
@@ -2837,25 +2484,6 @@ namespace ERPEZ.Infrastructure.Migrations
                 schema: "planning",
                 table: "Transactions",
                 column: "OrganizationId");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_UserPINs_ExpiresAt",
-                schema: "core",
-                table: "UserPINs",
-                column: "ExpiresAt");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_UserPINs_IsLocked",
-                schema: "core",
-                table: "UserPINs",
-                column: "IsLocked");
-
-            migrationBuilder.CreateIndex(
-                name: "IX_UserPINs_UserId",
-                schema: "core",
-                table: "UserPINs",
-                column: "UserId",
-                unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_WFPObjectives_WFPId_Description",
@@ -3044,10 +2672,6 @@ namespace ERPEZ.Infrastructure.Migrations
                 table: "MFOPAPs");
 
             migrationBuilder.DropTable(
-                name: "AccountTransactions",
-                schema: "finance");
-
-            migrationBuilder.DropTable(
                 name: "APPItems",
                 schema: "planning");
 
@@ -3061,10 +2685,6 @@ namespace ERPEZ.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "DeliveryUnitOPCRActivity",
-                schema: "planning");
-
-            migrationBuilder.DropTable(
-                name: "DUFundAllocation",
                 schema: "planning");
 
             migrationBuilder.DropTable(
@@ -3116,20 +2736,12 @@ namespace ERPEZ.Infrastructure.Migrations
                 schema: "planning");
 
             migrationBuilder.DropTable(
-                name: "UserPINs",
-                schema: "core");
-
-            migrationBuilder.DropTable(
                 name: "WFPObjectiveTimelines",
                 schema: "planning");
 
             migrationBuilder.DropTable(
                 name: "WFPPAPDepartments",
                 schema: "planning");
-
-            migrationBuilder.DropTable(
-                name: "Accounts",
-                schema: "finance");
 
             migrationBuilder.DropTable(
                 name: "APPs",
@@ -3161,6 +2773,10 @@ namespace ERPEZ.Infrastructure.Migrations
 
             migrationBuilder.DropTable(
                 name: "KPIPerformanceMeasures",
+                schema: "planning");
+
+            migrationBuilder.DropTable(
+                name: "FundSources",
                 schema: "planning");
 
             migrationBuilder.DropTable(
@@ -3224,10 +2840,6 @@ namespace ERPEZ.Infrastructure.Migrations
                 schema: "planning");
 
             migrationBuilder.DropTable(
-                name: "DUAllocation",
-                schema: "planning");
-
-            migrationBuilder.DropTable(
                 name: "DUKPITargetAssignments",
                 schema: "planning");
 
@@ -3240,19 +2852,11 @@ namespace ERPEZ.Infrastructure.Migrations
                 schema: "planning");
 
             migrationBuilder.DropTable(
-                name: "ReceivedFund",
-                schema: "planning");
-
-            migrationBuilder.DropTable(
                 name: "KPITargets",
                 schema: "planning");
 
             migrationBuilder.DropTable(
                 name: "WFPs",
-                schema: "planning");
-
-            migrationBuilder.DropTable(
-                name: "FundSources",
                 schema: "planning");
 
             migrationBuilder.DropTable(

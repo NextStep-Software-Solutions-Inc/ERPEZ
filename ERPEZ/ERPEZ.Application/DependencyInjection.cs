@@ -24,7 +24,6 @@ public static class DependencyInjection
         builder.Services.AddScoped<IPINHashingService, PINHashingService>();
 
         // Register transaction code generator service
-        builder.Services.AddScoped<ITransactionCodeGeneratorService, TransactionCodeGeneratorService>();
 
         builder.Services.AddMediatR(config =>
         {

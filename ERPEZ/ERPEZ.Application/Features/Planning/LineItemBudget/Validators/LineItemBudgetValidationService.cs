@@ -113,18 +113,6 @@ public class LineItemBudgetValidationService : ILineItemBudgetValidationService
             }
         }
 
-        // Validate DUAllocation if provided
-        if (duAllocationId.HasValue)
-        {
-            var allocation = await unitOfWork.DUAllocationRepository
-                .GetByIdAsync(duAllocationId.Value, cancellationToken);
-            
-            if (allocation == null)
-            {
-                result.AddError("DU Allocation not found.");
-            }
-        }
-
         return result;
     }
 

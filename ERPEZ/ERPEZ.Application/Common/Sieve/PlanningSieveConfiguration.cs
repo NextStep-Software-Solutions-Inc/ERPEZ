@@ -10,14 +10,6 @@ public class PlanningSieveConfiguration : ISieveConfiguration
 {
     public void Configure(SievePropertyMapper mapper)
     {
-        mapper.Property<DUAllocation>(allocation => allocation.DeliveryUnit.ParentId)
-            .CanFilter()
-            .CanSort()
-            .HasName("deliveryUnit.parentId");
-        
-        mapper.Property<DUFundAllocation>(allocation => allocation.ReceivedFund.FundSourceId)
-            .CanFilter()
-            .CanSort()
-            .HasName("receivedFund.fundSourceId");
+        // Placeholder for future Sieve mappings
     }
 }

@@ -1,5 +1,3 @@
-using ERPEZ.Domain.Entities.Core;
-using ERPEZ.Domain.Entities.Finance;
 using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Shared.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -68,13 +66,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<PPMPItemAllocation>? PPMPItemAllocations { get; set; }
     public DbSet<APPItem>? APPItems { get; set; }
     public DbSet<APPProcurementSchedule>? APPProcurementSchedules { get; set; }
-
-    //Finance
-    public DbSet<Account>? Accounts { get; set; }
-    public DbSet<AccountTransaction>? AccountTransactions { get; set; }
-
-    //Core
-    public DbSet<UserPIN>? UserPINs { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {

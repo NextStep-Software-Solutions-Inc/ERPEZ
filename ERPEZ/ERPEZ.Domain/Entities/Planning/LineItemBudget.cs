@@ -47,9 +47,6 @@ public class LineItemBudget : ApprovableEntity
     public bool IsConsolidated { get; set; }
     
     [Sieve(CanFilter = true, CanSort = true)]
-    public Guid? DUAllocationId { get; set; }
-    
-    [Sieve(CanFilter = true, CanSort = true)]
     public string LIBNumber { get; set; } = string.Empty;
     
     [Sieve(CanFilter = true, CanSort = true)]
@@ -68,7 +65,6 @@ public class LineItemBudget : ApprovableEntity
     
     // Navigation properties
     public virtual DeliveryUnit DeliveryUnit { get; set; } = null!;
-    public virtual DUAllocation? DUAllocation { get; set; }
     public virtual List<LineItemBudgetActivity> LineItemBudgetActivities { get; set; } = [];
     public virtual List<LineItemBudgetDetail> LineItemBudgetDetails { get; set; } = [];
 
