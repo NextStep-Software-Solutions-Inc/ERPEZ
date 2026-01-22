@@ -45,6 +45,9 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IOPCRActivityRatingRepository opcrActivityRatingRepository;
     private readonly IOPCRActivityEvaluationRepository opcrActivityEvaluationRepository;
     private readonly IOPCRActivityMOVRepository opcrActivityMOVRepository;
+    private readonly IUACSCodeSegmentRepository uacsCodeSegmentRepository;
+    private readonly IUACSValidationRuleRepository uacsValidationRuleRepository;
+    private readonly IUACSCodeCombinationRepository uacsCodeCombinationRepository;
     // Constructor initializes all repositories once
     public UnitOfWork(ApplicationDbContext context, IServiceProvider serviceProvider)
     {
@@ -86,6 +89,9 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         opcrActivityRatingRepository = new OPCRActivityRatingRepository(context, sieveProcessor);
         opcrActivityEvaluationRepository = new OPCRActivityEvaluationRepository(context, sieveProcessor);
         opcrActivityMOVRepository = new OPCRActivityMOVRepository(context, sieveProcessor);
+        uacsCodeSegmentRepository = new UACSCodeSegmentRepository(context, sieveProcessor);
+        uacsValidationRuleRepository = new UACSValidationRuleRepository(context, sieveProcessor);
+        uacsCodeCombinationRepository = new UACSCodeCombinationRepository(context, sieveProcessor);
     }
 
     // Public properties return cached instances
@@ -123,6 +129,9 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IOPCRActivityRatingRepository OPCRActivityRatingRepository => opcrActivityRatingRepository;
     public IOPCRActivityEvaluationRepository OPCRActivityEvaluationRepository => opcrActivityEvaluationRepository;
     public IOPCRActivityMOVRepository OPCRActivityMOVRepository => opcrActivityMOVRepository;
+    public IUACSCodeSegmentRepository UACSCodeSegmentRepository => uacsCodeSegmentRepository;
+    public IUACSValidationRuleRepository UACSValidationRuleRepository => uacsValidationRuleRepository;
+    public IUACSCodeCombinationRepository UACSCodeCombinationRepository => uacsCodeCombinationRepository;
     public async Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default)
     {
         await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
