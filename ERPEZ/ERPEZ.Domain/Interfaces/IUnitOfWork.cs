@@ -44,6 +44,7 @@ public interface IUnitOfWork
     IExpenseClassRepository ExpenseClassRepository { get; }
     IObjectExpenseClassRepository ObjectExpenseClassRepository { get; }
     IUACSImportLogRepository UACSImportLogRepository { get; }
+    IObjectChildCodeRepository ObjectChildCodeRepository { get; }
     Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default);
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

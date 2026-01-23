@@ -50,6 +50,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<UACSCodeSegmentFiscalYear>? UACSCodeSegmentFiscalYears { get; set; }
     public DbSet<UACSCodeCombinationFiscalYear>? UACSCodeCombinationFiscalYears { get; set; }
     public DbSet<UACSImportLog>? UACSImportLogs { get; set; }
+    public DbSet<ObjectChildCode>? ObjectChildCodes { get; set; }
     public DbSet<ExpenseClass>? ExpenseClasses { get; set; }
     public DbSet<ObjectExpenseClass>? ObjectExpenseClasses { get; set; }
 

@@ -1950,6 +1950,66 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.ToTable("Objects", "planning");
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.ObjectChildCode", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("AgencyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ChildObjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("ParentObjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChildObjectId");
+
+                    b.HasIndex("ParentObjectId");
+
+                    b.ToTable("ObjectChildCodes", "planning");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.ObjectExpenseClass", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3929,6 +3989,25 @@ namespace ERPEZ.Infrastructure.Migrations
                         .WithMany("ChildObjects")
                         .HasForeignKey("ParentId")
                         .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("ParentObject");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.ObjectChildCode", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.Object", "ChildObject")
+                        .WithMany()
+                        .HasForeignKey("ChildObjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.Object", "ParentObject")
+                        .WithMany()
+                        .HasForeignKey("ParentObjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ChildObject");
 
                     b.Navigation("ParentObject");
                 });
