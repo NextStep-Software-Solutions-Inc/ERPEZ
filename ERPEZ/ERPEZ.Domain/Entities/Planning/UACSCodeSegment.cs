@@ -59,4 +59,9 @@ public class UACSCodeSegment : BaseEntity
     /// Navigation property for validation rules associated with this segment.
     /// </summary>
     public virtual List<UACSValidationRule> ValidationRules { get; set; } = [];
+
+    /// <summary>
+    /// Navigation property for fiscal year associations.
+    /// </summary>
+    public virtual List<UACSCodeSegmentFiscalYear> FiscalYearAssociations { get; set; } = [];
 }

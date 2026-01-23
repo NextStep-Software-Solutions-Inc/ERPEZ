@@ -115,4 +115,9 @@ public class UACSCodeCombination : BaseEntity
     /// Navigation property for transactions using this combination.
     /// </summary>
     public virtual List<Transaction> Transactions { get; set; } = [];
+
+    /// <summary>
+    /// Navigation property for fiscal year associations.
+    /// </summary>
+    public virtual List<UACSCodeCombinationFiscalYear> FiscalYearAssociations { get; set; } = [];
 }

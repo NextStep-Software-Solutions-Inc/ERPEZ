@@ -47,6 +47,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<UACSCodeSegment>? UACSCodeSegments { get; set; }
     public DbSet<UACSValidationRule>? UACSValidationRules { get; set; }
     public DbSet<UACSCodeCombination>? UACSCodeCombinations { get; }
+    public DbSet<UACSCodeSegmentFiscalYear>? UACSCodeSegmentFiscalYears { get; set; }
+    public DbSet<UACSCodeCombinationFiscalYear>? UACSCodeCombinationFiscalYears { get; set; }
     public DbSet<ExpenseClass>? ExpenseClasses { get; set; }
     public DbSet<ObjectExpenseClass>? ObjectExpenseClasses { get; set; }
 
