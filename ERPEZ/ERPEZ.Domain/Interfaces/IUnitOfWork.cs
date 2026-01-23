@@ -43,6 +43,7 @@ public interface IUnitOfWork
     IUACSCodeCombinationFiscalYearRepository UACSCodeCombinationFiscalYearRepository { get; }
     IExpenseClassRepository ExpenseClassRepository { get; }
     IObjectExpenseClassRepository ObjectExpenseClassRepository { get; }
+    IUACSImportLogRepository UACSImportLogRepository { get; }
     Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default);
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

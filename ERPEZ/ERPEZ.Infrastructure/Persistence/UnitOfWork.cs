@@ -52,6 +52,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IUACSCodeCombinationFiscalYearRepository uacsCodeCombinationFiscalYearRepository;
     private readonly IExpenseClassRepository expenseClassRepository;
     private readonly IObjectExpenseClassRepository objectExpenseClassRepository;
+    private readonly IUACSImportLogRepository uacsImportLogRepository;
     // Constructor initializes all repositories once
     public UnitOfWork(ApplicationDbContext context, IServiceProvider serviceProvider)
     {
@@ -100,6 +101,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         uacsCodeCombinationFiscalYearRepository = new UACSCodeCombinationFiscalYearRepository(context, sieveProcessor);
         expenseClassRepository = new ExpenseClassRepository(context, sieveProcessor);
         objectExpenseClassRepository = new ObjectExpenseClassRepository(context, sieveProcessor);
+        uacsImportLogRepository = new UACSImportLogRepository(context, sieveProcessor);
     }
 
     // Public properties return cached instances
@@ -144,6 +146,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IUACSCodeCombinationFiscalYearRepository UACSCodeCombinationFiscalYearRepository => uacsCodeCombinationFiscalYearRepository;
     public IExpenseClassRepository ExpenseClassRepository => expenseClassRepository;
     public IObjectExpenseClassRepository ObjectExpenseClassRepository => objectExpenseClassRepository;
+    public IUACSImportLogRepository UACSImportLogRepository => uacsImportLogRepository;
     public async Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default)
     {
         await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
