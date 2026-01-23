@@ -2952,6 +2952,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid?>("CodeSegmentId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("Condition")
+                        .HasColumnType("text");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -2973,16 +2976,29 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<Guid?>("FundSourceId")
+                        .HasColumnType("uuid");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
+                    b.Property<Guid?>("LocationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("ObjectId")
+                        .HasColumnType("uuid");
+
                     b.Property<int>("Priority")
                         .HasColumnType("integer");
 
                     b.Property<string>("RuleName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("RuleType")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -3002,6 +3018,12 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CodeSegmentId");
+
+                    b.HasIndex("FundSourceId");
+
+                    b.HasIndex("LocationId");
+
+                    b.HasIndex("ObjectId");
 
                     b.ToTable("UACSValidationRules", "planning");
                 });
@@ -4154,7 +4176,25 @@ namespace ERPEZ.Infrastructure.Migrations
                         .WithMany("ValidationRules")
                         .HasForeignKey("CodeSegmentId");
 
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.FundSource", "FundSource")
+                        .WithMany()
+                        .HasForeignKey("FundSourceId");
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.Location", "Location")
+                        .WithMany()
+                        .HasForeignKey("LocationId");
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.Object", "Object")
+                        .WithMany()
+                        .HasForeignKey("ObjectId");
+
                     b.Navigation("CodeSegment");
+
+                    b.Navigation("FundSource");
+
+                    b.Navigation("Location");
+
+                    b.Navigation("Object");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WFP", b =>

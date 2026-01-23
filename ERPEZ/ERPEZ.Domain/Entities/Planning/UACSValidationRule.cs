@@ -50,13 +50,54 @@ public class UACSValidationRule : BaseEntity
     public bool IsActive { get; set; }
 
     /// <summary>
-    /// Priority/order in which this rule should be executed (lower number = higher priority).
+    /// Priority/order in which this rule should be executed (lower number = higher priority, 1-100).
     /// </summary>
     [Sieve(CanFilter = true, CanSort = true)]
     public int Priority { get; set; }
 
     /// <summary>
+    /// The type of validation rule (AllowedCombination, ForbiddenCombination, ConditionalValidation).
+    /// </summary>
+    [Sieve(CanFilter = true, CanSort = true)]
+    public UACSRuleTypeEnum RuleType { get; set; }
+
+    /// <summary>
+    /// Conditional expression or lambda/rule script for advanced validation.
+    /// </summary>
+    public string? Condition { get; set; }
+
+    /// <summary>
+    /// Optional filter: applies rule only to this specific FundSource.
+    /// </summary>
+    public Guid? FundSourceId { get; set; }
+
+    /// <summary>
+    /// Optional filter: applies rule only to this specific Object.
+    /// </summary>
+    public Guid? ObjectId { get; set; }
+
+    /// <summary>
+    /// Optional filter: applies rule only to this specific Location.
+    /// </summary>
+    public Guid? LocationId { get; set; }
+
+    /// <summary>
     /// Navigation property for the associated code segment.
     /// </summary>
     public virtual UACSCodeSegment? CodeSegment { get; set; }
+
+    /// <summary>
+    /// Navigation property for the associated FundSource filter.
+    /// </summary>
+    public virtual FundSource? FundSource { get; set; }
+
+    /// <summary>
+    /// Navigation property for the associated Object filter.
+    /// </summary>
+    public virtual Object? Object { get; set; }
+
+    /// <summary>
+    /// Navigation property for the associated Location filter.
+    /// </summary>
+    public virtual Location? Location { get; set; }
 }
