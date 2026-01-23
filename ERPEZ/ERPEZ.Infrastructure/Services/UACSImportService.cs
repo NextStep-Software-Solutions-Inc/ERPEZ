@@ -2,6 +2,7 @@ using System.Globalization;
 using System.Text.Json;
 using CsvHelper;
 using CsvHelper.Configuration;
+using ClosedXML.Excel;
 using ERPEZ.Application.Features.Planning.UACSImport.Dtos;
 using ERPEZ.Application.Interfaces;
 using ERPEZ.Domain.Entities.Planning;
@@ -10,6 +11,7 @@ using ERPEZ.Domain.Interfaces;
 using FluentValidation;
 using Microsoft.AspNetCore.Http;
 using ObjectEntity = ERPEZ.Domain.Entities.Planning.Object;
+using System.Text;
 
 namespace ERPEZ.Infrastructure.Services;
 
@@ -42,8 +44,14 @@ public class UACSImportService : IUACSCsvImporter
         int totalRows;
         try
         {
+            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+            var isExcel = extension is ".xlsx" or ".xls";
+
             using var stream = file.OpenReadStream();
-            using var reader = new StreamReader(stream);
+            using var reader = isExcel
+                ? CreateCsvTextReaderFromExcel(stream)
+                : new StreamReader(stream);
+
             using var csv = new CsvReader(reader, new CsvConfiguration(CultureInfo.InvariantCulture)
             {
                 HasHeaderRecord = true,
@@ -79,7 +87,7 @@ public class UACSImportService : IUACSCsvImporter
             errors.Add(new ImportError
             {
                 LineNumber = 0,
-                Message = $"Failed to read CSV file: {ex.Message}"
+                Message = $"Failed to read file: {ex.Message}"
             });
         }
 
@@ -389,6 +397,61 @@ public class UACSImportService : IUACSCsvImporter
         }
 
         return errors;
+    }
+
+    private static TextReader CreateCsvTextReaderFromExcel(Stream fileStream)
+    {
+        // Convert the first worksheet of the Excel file into a CSV representation
+        // so we can reuse the existing CsvHelper parsing and validation pipeline.
+        var workbook = new XLWorkbook(fileStream);
+        var worksheet = workbook.Worksheets.First();
+
+        var lastRow = worksheet.LastRowUsed()?.RowNumber() ?? 0;
+        if (lastRow < 1)
+        {
+            return new StringReader(string.Empty);
+        }
+
+        var headerCells = worksheet.Row(1).Cells().ToList();
+        var headerCount = headerCells.Count;
+        if (headerCount == 0)
+        {
+            throw new InvalidOperationException("Excel file is missing a header row.");
+        }
+
+        var stringBuilder = new StringBuilder();
+        using (var stringWriter = new StringWriter(stringBuilder))
+        using (var csvWriter = new CsvWriter(stringWriter, CultureInfo.InvariantCulture))
+        {
+            // Write header row
+            foreach (var cell in headerCells)
+            {
+                csvWriter.WriteField(cell.GetString());
+            }
+            csvWriter.NextRecord();
+
+            // Write data rows
+            for (var rowNumber = 2; rowNumber <= lastRow; rowNumber++)
+            {
+                var row = worksheet.Row(rowNumber);
+                var cells = row.Cells(1, headerCount).ToList();
+
+                // Skip empty rows
+                var isEmpty = cells.All(c => string.IsNullOrWhiteSpace(c.GetString()));
+                if (isEmpty)
+                {
+                    continue;
+                }
+
+                foreach (var cell in cells)
+                {
+                    csvWriter.WriteField(cell.GetString());
+                }
+                csvWriter.NextRecord();
+            }
+        }
+
+        return new StringReader(stringBuilder.ToString());
     }
 
     private async Task BatchInsertRecordsAsync(List<object> records, CancellationToken cancellationToken)

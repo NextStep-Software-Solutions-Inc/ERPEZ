@@ -1,0 +1,4 @@
+Code,Name,IsActive
+LOC-001,Head Office,true
+LOC-002,Region I,true
+LOC-003,Region II,false

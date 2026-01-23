@@ -1,5 +1,6 @@
 using ERPEZ.Application.Features.Planning.UACSImport.Dtos;
 using ERPEZ.Application.Interfaces;
+using ERPEZ.Domain.Enums;
 using ERPEZ.Shared.Common;
 using MediatR;
 
@@ -15,9 +16,15 @@ public class ImportUACSDataCommandHandler(IUACSCsvImporter csvImporter)
         ImportUACSDataCommand request,
         CancellationToken cancellationToken)
     {
+        if (string.IsNullOrWhiteSpace(request.SegmentType) ||
+            !Enum.TryParse<UACSSegmentTypeEnum>(request.SegmentType, true, out var segmentType))
+        {
+            return ApiResponse<UACSImportResultResponse>.Fail("Invalid segment type. Use FundSource, Organization, Location, MFOPAP, or Object.");
+        }
+
         var result = await csvImporter.ImportAsync(
             request.File,
-            request.SegmentType,
+            segmentType,
             request.IsDryRun,
             request.ImportedBy,
             cancellationToken);

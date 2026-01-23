@@ -21,11 +21,10 @@ public static class MiddlewareExtensions
             app.UseSwagger();
             app.UseSwaggerUI(options =>
             {
-                options.SwaggerEndpoint("/swagger/v1/swagger.json", "ERPEZ API v1");
                 options.EnablePersistAuthorization();
                 options.DisplayRequestDuration();
-                options.DocExpansion(Swashbuckle.AspNetCore.SwaggerUI.DocExpansion.List);
-                options.DefaultModelsExpandDepth(0);
+                options.DocExpansion(Swashbuckle.AspNetCore.SwaggerUI.DocExpansion.None);
+                options.DefaultModelsExpandDepth(-1); // Disable schema section
                 options.EnableDeepLinking();
             });
         }

@@ -1,0 +1,4 @@
+Code,Name,IsActive
+ORG-101,Planning Office,true
+ORG-201,Finance Division,true
+ORG-301,Operations Unit,false

@@ -1,5 +1,6 @@
 using ERPEZ.Shared.Middlewares;
 using ERPEZ.Api.Extensions;
+using ERPEZ.Api.Configuration;
 
 namespace ERPEZ.Api;
 
@@ -21,6 +22,9 @@ public static class DependencyInjection
             // from colliding (e.g., different SDGResponse types in different namespaces).
             c.CustomSchemaIds(type => type.FullName?.Replace('+', '.') ?? type.Name);
             c.AddJwtSecurityDefinition();
+            
+            // Handle file uploads with [FromForm] attribute
+            c.OperationFilter<SwaggerFileOperationFilter>();
         });
         
         services.AddCorsPolicies(configuration); // Register CORS policies from extension method

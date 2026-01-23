@@ -19,7 +19,7 @@ public class ImportUACSDataCommand : IRequest<ApiResponse<UACSImportResultRespon
     /// <summary>
     /// The type of UACS segment to import (FundSource, Organization, Location, MFOPAP, Object).
     /// </summary>
-    public required UACSSegmentTypeEnum SegmentType { get; init; }
+    public required string SegmentType { get; init; }
 
     /// <summary>
     /// If true, validates only without importing data (dry-run mode).
