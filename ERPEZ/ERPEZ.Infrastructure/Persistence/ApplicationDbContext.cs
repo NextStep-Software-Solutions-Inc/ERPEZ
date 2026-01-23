@@ -46,7 +46,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     //UACS Library
     public DbSet<UACSCodeSegment>? UACSCodeSegments { get; set; }
     public DbSet<UACSValidationRule>? UACSValidationRules { get; set; }
-    public DbSet<UACSCodeCombination>? UACSCodeCombinations { get; set; }
+    public DbSet<UACSCodeCombination>? UACSCodeCombinations { get; }
+    public DbSet<ExpenseClass>? ExpenseClasses { get; set; }
+    public DbSet<ObjectExpenseClass>? ObjectExpenseClasses { get; set; }
 
     //Performance
     public DbSet<OPCRActivityMOV>? OPCRActivityMOVs { get; set; }

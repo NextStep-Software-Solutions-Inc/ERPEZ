@@ -39,6 +39,8 @@ public interface IUnitOfWork
     IUACSCodeSegmentRepository UACSCodeSegmentRepository { get; }
     IUACSValidationRuleRepository UACSValidationRuleRepository { get; }
     IUACSCodeCombinationRepository UACSCodeCombinationRepository { get; }
+    IExpenseClassRepository ExpenseClassRepository { get; }
+    IObjectExpenseClassRepository ObjectExpenseClassRepository { get; }
     Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default);
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
