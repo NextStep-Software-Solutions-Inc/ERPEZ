@@ -36,6 +36,15 @@ public interface IUnitOfWork
     IOPCRActivityRatingRepository OPCRActivityRatingRepository { get; }
     IOPCRActivityEvaluationRepository OPCRActivityEvaluationRepository { get; }
     IOPCRActivityMOVRepository OPCRActivityMOVRepository { get; }
+    IUACSCodeSegmentRepository UACSCodeSegmentRepository { get; }
+    IUACSValidationRuleRepository UACSValidationRuleRepository { get; }
+    IUACSCodeCombinationRepository UACSCodeCombinationRepository { get; }
+    IUACSCodeSegmentFiscalYearRepository UACSCodeSegmentFiscalYearRepository { get; }
+    IUACSCodeCombinationFiscalYearRepository UACSCodeCombinationFiscalYearRepository { get; }
+    IExpenseClassRepository ExpenseClassRepository { get; }
+    IObjectExpenseClassRepository ObjectExpenseClassRepository { get; }
+    IUACSImportLogRepository UACSImportLogRepository { get; }
+    IObjectChildCodeRepository ObjectChildCodeRepository { get; }
     Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default);
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

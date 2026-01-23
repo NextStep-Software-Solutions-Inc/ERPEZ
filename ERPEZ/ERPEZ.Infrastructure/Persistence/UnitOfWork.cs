@@ -45,6 +45,15 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IOPCRActivityRatingRepository opcrActivityRatingRepository;
     private readonly IOPCRActivityEvaluationRepository opcrActivityEvaluationRepository;
     private readonly IOPCRActivityMOVRepository opcrActivityMOVRepository;
+    private readonly IUACSCodeSegmentRepository uacsCodeSegmentRepository;
+    private readonly IUACSValidationRuleRepository uacsValidationRuleRepository;
+    private readonly IUACSCodeCombinationRepository uacsCodeCombinationRepository;
+    private readonly IUACSCodeSegmentFiscalYearRepository uacsCodeSegmentFiscalYearRepository;
+    private readonly IUACSCodeCombinationFiscalYearRepository uacsCodeCombinationFiscalYearRepository;
+    private readonly IExpenseClassRepository expenseClassRepository;
+    private readonly IObjectExpenseClassRepository objectExpenseClassRepository;
+    private readonly IUACSImportLogRepository uacsImportLogRepository;
+    private readonly IObjectChildCodeRepository objectChildCodeRepository;
     // Constructor initializes all repositories once
     public UnitOfWork(ApplicationDbContext context, IServiceProvider serviceProvider)
     {
@@ -86,6 +95,15 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         opcrActivityRatingRepository = new OPCRActivityRatingRepository(context, sieveProcessor);
         opcrActivityEvaluationRepository = new OPCRActivityEvaluationRepository(context, sieveProcessor);
         opcrActivityMOVRepository = new OPCRActivityMOVRepository(context, sieveProcessor);
+        uacsCodeSegmentRepository = new UACSCodeSegmentRepository(context, sieveProcessor);
+        uacsValidationRuleRepository = new UACSValidationRuleRepository(context, sieveProcessor);
+        uacsCodeCombinationRepository = new UACSCodeCombinationRepository(context, sieveProcessor);
+        uacsCodeSegmentFiscalYearRepository = new UACSCodeSegmentFiscalYearRepository(context, sieveProcessor);
+        uacsCodeCombinationFiscalYearRepository = new UACSCodeCombinationFiscalYearRepository(context, sieveProcessor);
+        expenseClassRepository = new ExpenseClassRepository(context, sieveProcessor);
+        objectExpenseClassRepository = new ObjectExpenseClassRepository(context, sieveProcessor);
+        uacsImportLogRepository = new UACSImportLogRepository(context, sieveProcessor);
+        objectChildCodeRepository = new ObjectChildCodeRepository(context, sieveProcessor);
     }
 
     // Public properties return cached instances
@@ -123,6 +141,15 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IOPCRActivityRatingRepository OPCRActivityRatingRepository => opcrActivityRatingRepository;
     public IOPCRActivityEvaluationRepository OPCRActivityEvaluationRepository => opcrActivityEvaluationRepository;
     public IOPCRActivityMOVRepository OPCRActivityMOVRepository => opcrActivityMOVRepository;
+    public IUACSCodeSegmentRepository UACSCodeSegmentRepository => uacsCodeSegmentRepository;
+    public IUACSValidationRuleRepository UACSValidationRuleRepository => uacsValidationRuleRepository;
+    public IUACSCodeCombinationRepository UACSCodeCombinationRepository => uacsCodeCombinationRepository;
+    public IUACSCodeSegmentFiscalYearRepository UACSCodeSegmentFiscalYearRepository => uacsCodeSegmentFiscalYearRepository;
+    public IUACSCodeCombinationFiscalYearRepository UACSCodeCombinationFiscalYearRepository => uacsCodeCombinationFiscalYearRepository;
+    public IExpenseClassRepository ExpenseClassRepository => expenseClassRepository;
+    public IObjectExpenseClassRepository ObjectExpenseClassRepository => objectExpenseClassRepository;
+    public IUACSImportLogRepository UACSImportLogRepository => uacsImportLogRepository;
+    public IObjectChildCodeRepository ObjectChildCodeRepository => objectChildCodeRepository;
     public async Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default)
     {
         await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);

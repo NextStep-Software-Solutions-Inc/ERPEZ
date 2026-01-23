@@ -535,6 +535,58 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.ToTable("DeliveryUnits", "planning");
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.ExpenseClass", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ExpenseClasses", "planning");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.FiscalYear", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1898,6 +1950,120 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.ToTable("Objects", "planning");
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.ObjectChildCode", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("AgencyId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ChildObjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("ParentObjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ChildObjectId");
+
+                    b.HasIndex("ParentObjectId");
+
+                    b.ToTable("ObjectChildCodes", "planning");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.ObjectExpenseClass", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("ExpenseClassId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("ObjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ExpenseClassId");
+
+                    b.HasIndex("ObjectId");
+
+                    b.ToTable("ObjectExpenseClasses", "planning");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.Office", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2502,6 +2668,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<DateTime>("TransactionDate")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid?>("UACSCodeCombinationId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -2518,10 +2687,405 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("OrganizationId");
 
+                    b.HasIndex("UACSCodeCombinationId");
+
                     b.HasIndex("FundSourceId", "OrganizationId", "LocationId", "MFOPAPId", "ObjectId", "TransactionDate")
                         .IsUnique();
 
                     b.ToTable("Transactions", "planning");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.UACSCodeCombination", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("CombinationCode")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("EffectiveDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("ExpiryDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("FiscalYearId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("FundSourceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsValid")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid?>("LocationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("MFOPAPId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("ObjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("OrganizationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FiscalYearId");
+
+                    b.HasIndex("FundSourceId");
+
+                    b.HasIndex("LocationId");
+
+                    b.HasIndex("MFOPAPId");
+
+                    b.HasIndex("ObjectId");
+
+                    b.HasIndex("OrganizationId");
+
+                    b.ToTable("UACSCodeCombinations", "planning");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.UACSCodeCombinationFiscalYear", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("FiscalYearId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("IsValidFrom")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("IsValidTo")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("UACSCodeCombinationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FiscalYearId");
+
+                    b.HasIndex("UACSCodeCombinationId");
+
+                    b.ToTable("UACSCodeCombinationFiscalYears", "planning");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.UACSCodeSegment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("DisplayOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsRequired")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("MaxLength")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Pattern")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("SegmentType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("UACSCodeSegments", "planning");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.UACSCodeSegmentFiscalYear", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("EffectiveEndDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("EffectiveStartDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid>("FiscalYearId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("UACSCodeSegmentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FiscalYearId");
+
+                    b.HasIndex("UACSCodeSegmentId");
+
+                    b.ToTable("UACSCodeSegmentFiscalYears", "planning");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.UACSImportLog", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ErrorLog")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("FailedRows")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("ImportId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("ImportedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ImportedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<int>("SuccessfulRows")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("TotalRows")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("UACSImportLogs", "planning");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.UACSValidationRule", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("CodeSegmentId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Condition")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ErrorMessage")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("FundSourceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid?>("LocationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("ObjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("Priority")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("RuleName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("RuleType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int?>("SegmentType")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("ValidationExpression")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CodeSegmentId");
+
+                    b.HasIndex("FundSourceId");
+
+                    b.HasIndex("LocationId");
+
+                    b.HasIndex("ObjectId");
+
+                    b.ToTable("UACSValidationRules", "planning");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WFP", b =>
@@ -3429,6 +3993,44 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("ParentObject");
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.ObjectChildCode", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.Object", "ChildObject")
+                        .WithMany()
+                        .HasForeignKey("ChildObjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.Object", "ParentObject")
+                        .WithMany()
+                        .HasForeignKey("ParentObjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ChildObject");
+
+                    b.Navigation("ParentObject");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.ObjectExpenseClass", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.ExpenseClass", "ExpenseClass")
+                        .WithMany("ObjectExpenseClasses")
+                        .HasForeignKey("ExpenseClassId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.Object", "Object")
+                        .WithMany()
+                        .HasForeignKey("ObjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ExpenseClass");
+
+                    b.Navigation("Object");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.Office", b =>
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Planning.Cluster", "Cluster")
@@ -3555,6 +4157,10 @@ namespace ERPEZ.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.UACSCodeCombination", null)
+                        .WithMany("Transactions")
+                        .HasForeignKey("UACSCodeCombinationId");
+
                     b.Navigation("FundSource");
 
                     b.Navigation("Location");
@@ -3564,6 +4170,110 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("Object");
 
                     b.Navigation("Organization");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.UACSCodeCombination", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.FiscalYear", "FiscalYear")
+                        .WithMany()
+                        .HasForeignKey("FiscalYearId");
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.FundSource", "FundSource")
+                        .WithMany()
+                        .HasForeignKey("FundSourceId");
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.Location", "Location")
+                        .WithMany()
+                        .HasForeignKey("LocationId");
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.MFOPAP", "MFOPAP")
+                        .WithMany()
+                        .HasForeignKey("MFOPAPId");
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.Object", "Object")
+                        .WithMany()
+                        .HasForeignKey("ObjectId");
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.Organization", "Organization")
+                        .WithMany()
+                        .HasForeignKey("OrganizationId");
+
+                    b.Navigation("FiscalYear");
+
+                    b.Navigation("FundSource");
+
+                    b.Navigation("Location");
+
+                    b.Navigation("MFOPAP");
+
+                    b.Navigation("Object");
+
+                    b.Navigation("Organization");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.UACSCodeCombinationFiscalYear", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.FiscalYear", "FiscalYear")
+                        .WithMany("UACSCodeCombinationFiscalYears")
+                        .HasForeignKey("FiscalYearId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.UACSCodeCombination", "UACSCodeCombination")
+                        .WithMany("FiscalYearAssociations")
+                        .HasForeignKey("UACSCodeCombinationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("FiscalYear");
+
+                    b.Navigation("UACSCodeCombination");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.UACSCodeSegmentFiscalYear", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.FiscalYear", "FiscalYear")
+                        .WithMany("UACSCodeSegmentFiscalYears")
+                        .HasForeignKey("FiscalYearId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.UACSCodeSegment", "UACSCodeSegment")
+                        .WithMany("FiscalYearAssociations")
+                        .HasForeignKey("UACSCodeSegmentId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("FiscalYear");
+
+                    b.Navigation("UACSCodeSegment");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.UACSValidationRule", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.UACSCodeSegment", "CodeSegment")
+                        .WithMany("ValidationRules")
+                        .HasForeignKey("CodeSegmentId");
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.FundSource", "FundSource")
+                        .WithMany()
+                        .HasForeignKey("FundSourceId");
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.Location", "Location")
+                        .WithMany()
+                        .HasForeignKey("LocationId");
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.Object", "Object")
+                        .WithMany()
+                        .HasForeignKey("ObjectId");
+
+                    b.Navigation("CodeSegment");
+
+                    b.Navigation("FundSource");
+
+                    b.Navigation("Location");
+
+                    b.Navigation("Object");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WFP", b =>
@@ -3715,9 +4425,18 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("WFPs");
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.ExpenseClass", b =>
+                {
+                    b.Navigation("ObjectExpenseClasses");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.FiscalYear", b =>
                 {
                     b.Navigation("FunctionAllocations");
+
+                    b.Navigation("UACSCodeCombinationFiscalYears");
+
+                    b.Navigation("UACSCodeSegmentFiscalYears");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.FundSource", b =>
@@ -3866,6 +4585,20 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("APPItems");
 
                     b.Navigation("PPMPItems");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.UACSCodeCombination", b =>
+                {
+                    b.Navigation("FiscalYearAssociations");
+
+                    b.Navigation("Transactions");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.UACSCodeSegment", b =>
+                {
+                    b.Navigation("FiscalYearAssociations");
+
+                    b.Navigation("ValidationRules");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WFP", b =>

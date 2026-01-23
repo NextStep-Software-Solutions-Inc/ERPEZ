@@ -1,0 +1,4 @@
+Code,Name,Type,IsActive
+01,General Fund,FundCluster,true
+02,Special Account,FundCluster,true
+FIN-01,World Bank Loan,FinancingSource,false

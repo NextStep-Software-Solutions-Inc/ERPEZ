@@ -43,6 +43,17 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<WFPPAP>? WFPPAPs { get; set; }
     public DbSet<WFPPAPDepartment>? WFPPAPDepartments { get; set; }
 
+    //UACS Library
+    public DbSet<UACSCodeSegment>? UACSCodeSegments { get; set; }
+    public DbSet<UACSValidationRule>? UACSValidationRules { get; set; }
+    public DbSet<UACSCodeCombination>? UACSCodeCombinations { get; set; }
+    public DbSet<UACSCodeSegmentFiscalYear>? UACSCodeSegmentFiscalYears { get; set; }
+    public DbSet<UACSCodeCombinationFiscalYear>? UACSCodeCombinationFiscalYears { get; set; }
+    public DbSet<UACSImportLog>? UACSImportLogs { get; set; }
+    public DbSet<ObjectChildCode>? ObjectChildCodes { get; set; }
+    public DbSet<ExpenseClass>? ExpenseClasses { get; set; }
+    public DbSet<ObjectExpenseClass>? ObjectExpenseClasses { get; set; }
+
     //Performance
     public DbSet<OPCRActivityMOV>? OPCRActivityMOVs { get; set; }
     public DbSet<OPCRActivityRating>? OPCRActivityRatings { get; set; }

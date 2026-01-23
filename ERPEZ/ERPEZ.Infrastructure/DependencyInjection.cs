@@ -91,6 +91,8 @@ public static class DependencyInjection
         services.AddScoped<IAttributeRepository, AttributeRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IFileStorageService, AzureBlobStorageService>();
+        services.AddScoped<IUACSCsvImporter, UACSImportService>();
+        services.AddScoped<IUACSValidationEngine, UACSValidationEngine>();
         services.AddHostedService<TempFileCleanupService>();
 
         // Add Hangfire
