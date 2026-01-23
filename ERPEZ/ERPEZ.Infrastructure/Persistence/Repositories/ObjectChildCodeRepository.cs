@@ -42,6 +42,14 @@ public class ObjectChildCodeRepository(ApplicationDbContext context, ISieveProce
         return descendants;
     }
 
+    /// <summary>
+    /// Gets all ancestors (parent chain) of a child object.
+    /// Note: This method uses sequential queries for simplicity. For deep hierarchies,
+    /// consider implementing a recursive CTE for better performance.
+    /// </summary>
+    /// <param name="childObjectId">The child object ID.</param>
+    /// <param name="cancellationToken">Cancellation token.</param>
+    /// <returns>List of all ancestors.</returns>
     public async Task<List<ObjectChildCode>> GetAncestorsAsync(Guid childObjectId, CancellationToken cancellationToken = default)
     {
         var ancestors = new List<ObjectChildCode>();

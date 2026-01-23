@@ -9,7 +9,6 @@ using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using FluentValidation;
 using Microsoft.AspNetCore.Http;
-using EFCore.BulkExtensions;
 using ObjectEntity = ERPEZ.Domain.Entities.Planning.Object;
 
 namespace ERPEZ.Infrastructure.Services;
@@ -378,13 +377,15 @@ public class UACSImportService : IUACSCsvImporter
         var errors = new List<string>();
         var validator = serviceProvider.GetService(typeof(IValidator<T>)) as IValidator<T>;
 
-        if (validator != null)
+        if (validator == null)
         {
-            var validationResult = await validator.ValidateAsync(record, cancellationToken);
-            if (!validationResult.IsValid)
-            {
-                errors.AddRange(validationResult.Errors.Select(e => e.ErrorMessage));
-            }
+            return errors;
+        }
+
+        var validationResult = await validator.ValidateAsync(record, cancellationToken);
+        if (!validationResult.IsValid)
+        {
+            errors.AddRange(validationResult.Errors.Select(e => e.ErrorMessage));
         }
 
         return errors;
