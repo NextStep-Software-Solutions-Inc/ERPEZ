@@ -5,9 +5,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Location.Commands.UpdateLocation;
 
-public sealed class UpdateLocationCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateLocationCommand, ApiResponse<Domain.Entities.Planning.Location>>
+public sealed class UpdateLocationCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateLocationCommand, ApiResponse<Unit>>
 {
-    public async Task<ApiResponse<Domain.Entities.Planning.Location>> Handle(UpdateLocationCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<Unit>> Handle(UpdateLocationCommand request, CancellationToken cancellationToken)
     {
         var location = await unitOfWork.LocationRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("Location not found.");
         if (location.Name == request.UpdateLocation?.Name) throw new ConflictException("Location already exist.");
@@ -23,6 +23,6 @@ public sealed class UpdateLocationCommandHandler(IUnitOfWork unitOfWork) : IRequ
         unitOfWork.LocationRepository.Update(location);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return ApiResponse<Domain.Entities.Planning.Location>.Success(location, "Location updated successfully.");
+        return ApiResponse<Unit>.Success(Unit.Value, "Location updated successfully.");
     }
 }

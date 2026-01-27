@@ -1,3 +1,4 @@
+using ERPEZ.Application.Features.Planning.Object.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -5,14 +6,26 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Object.Queries.GetObjectById;
 
-public class GetObjectByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetObjectByIdQuery, ApiResponse<Domain.Entities.Planning.Object>>
+public class GetObjectByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetObjectByIdQuery, ApiResponse<ObjectDetailedResponse>>
 {
-    public async Task<ApiResponse<Domain.Entities.Planning.Object>> Handle(GetObjectByIdQuery request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<ObjectDetailedResponse>> Handle(GetObjectByIdQuery request, CancellationToken cancellationToken)
     {
-        var req = await unitOfWork.ObjectRepository.FindAsync(
+        var objectEntity = await unitOfWork.ObjectRepository.FindAsync(
            t => t.Id == request.Id,
             cancellationToken: cancellationToken) ?? throw new NotFoundException("No data found.");
 
-        return ApiResponse<Domain.Entities.Planning.Object>.Success(req, "Retrieved successfully");
+        var response = new ObjectDetailedResponse
+        {
+            Id = objectEntity.Id,
+            Name = objectEntity.Name,
+            Description = null,
+            Code = objectEntity.Code,
+            CreatedAt = objectEntity.CreatedAt,
+            CreatedBy = objectEntity.CreatedBy,
+            UpdatedAt = objectEntity.UpdatedAt,
+            UpdatedBy = objectEntity.UpdatedBy
+        };
+
+        return ApiResponse<ObjectDetailedResponse>.Success(response, "Retrieved successfully");
     }
 }

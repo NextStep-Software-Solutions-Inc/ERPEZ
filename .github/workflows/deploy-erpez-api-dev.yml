@@ -55,6 +55,13 @@ jobs:
       shell: bash
       continue-on-error: false
     
+    - name: Check DTO Contract Compliance
+      run: |
+        echo "Checking API contract compliance (DTOs vs Domain Entities)..."
+        bash scripts/check-dto-contracts.sh
+      shell: bash
+      continue-on-error: false
+    
     - name: Run Tests
       run: dotnet test ERPEZ.sln --no-build --configuration Release --verbosity normal --nologo
       continue-on-error: false

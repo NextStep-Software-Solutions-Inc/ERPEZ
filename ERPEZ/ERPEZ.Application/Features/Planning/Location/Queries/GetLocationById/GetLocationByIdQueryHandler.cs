@@ -1,3 +1,4 @@
+using ERPEZ.Application.Features.Planning.Location.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -5,9 +6,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Location.Queries.GetLocationById;
 
-public class GetLocationByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetLocationByIdQuery, ApiResponse<Domain.Entities.Planning.Location>>
+public class GetLocationByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetLocationByIdQuery, ApiResponse<LocationDetailedResponse>>
 {
-    public async Task<ApiResponse<Domain.Entities.Planning.Location>> Handle(
+    public async Task<ApiResponse<LocationDetailedResponse>> Handle(
         GetLocationByIdQuery request,
         CancellationToken cancellationToken)
     {
@@ -15,6 +16,21 @@ public class GetLocationByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandl
            t => t.Id == request.Id,
             cancellationToken: cancellationToken) ?? throw new NotFoundException("No data found.");
 
-        return ApiResponse<Domain.Entities.Planning.Location>.Success(location, "Retrieved successfully");
+        var response = new LocationDetailedResponse
+        {
+            Id = location.Id,
+            Name = location.Name,
+            Code = location.Code,
+            Region = null,
+            Province = null,
+            Municipality = null,
+            Barangay = null,
+            CreatedAt = location.CreatedAt,
+            CreatedBy = location.CreatedBy,
+            UpdatedAt = location.UpdatedAt,
+            UpdatedBy = location.UpdatedBy
+        };
+
+        return ApiResponse<LocationDetailedResponse>.Success(response, "Retrieved successfully");
     }
 }

@@ -1,13 +1,15 @@
+using ERPEZ.Application.Features.Planning.Location.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
 using Sieve.Models;
+using System.Linq.Expressions;
 
 namespace ERPEZ.Application.Features.Planning.Location.Queries.GetLocations;
 
-public class GetLocationsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetLocationsQuery, PaginatedApiResponse<Domain.Entities.Planning.Location>>
+public class GetLocationsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetLocationsQuery, PaginatedApiResponse<LocationResponse>>
 {
-    public async Task<PaginatedApiResponse<Domain.Entities.Planning.Location>> Handle(GetLocationsQuery query, CancellationToken cancellationToken)
+    public async Task<PaginatedApiResponse<LocationResponse>> Handle(GetLocationsQuery query, CancellationToken cancellationToken)
     {
         var sieveModel = new SieveModel
         {
@@ -16,9 +18,19 @@ public class GetLocationsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<
             Filters = query.Filters,
             Sorts = query.Sorts
         };
-        var (locations, totalCount) = await unitOfWork.LocationRepository.GetAllAsync(sieveModel, cancellationToken: cancellationToken);
 
-        return new PaginatedApiResponse<Domain.Entities.Planning.Location>(
+        Expression<Func<Domain.Entities.Planning.Location, LocationResponse>> projection = location => new LocationResponse
+        {
+            ParentId = location.ParentId,
+            Name = location.Name,
+            Code = location.Code,
+            Type = location.Type,
+            IsActive = location.IsActive
+        };
+
+        var (locations, totalCount) = await unitOfWork.LocationRepository.GetAllAsync(sieveModel, projection, cancellationToken);
+
+        return new PaginatedApiResponse<LocationResponse>(
             [.. locations],
             query.PageNumber,
             query.PageSize,

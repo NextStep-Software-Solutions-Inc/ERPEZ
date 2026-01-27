@@ -2,6 +2,7 @@ namespace ERPEZ.Application.Features.Planning.Location.Dtos;
 
 public record LocationResponse
 {
+    public Guid Id { get; init; }
     public Guid? ParentId { get; init; }
     public string? Name { get; init; }
     public string? Code { get; init; }

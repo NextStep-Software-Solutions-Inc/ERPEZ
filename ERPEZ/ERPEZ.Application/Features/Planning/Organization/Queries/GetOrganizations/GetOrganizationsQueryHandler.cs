@@ -1,12 +1,14 @@
+using ERPEZ.Application.Features.Planning.Organization.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
+using System.Linq.Expressions;
 
 namespace ERPEZ.Application.Features.Planning.Organization.Queries.GetOrganizations;
 
-public class GetOrganizationsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetOrganizationsQuery, PaginatedApiResponse<Domain.Entities.Planning.Organization>>
+public class GetOrganizationsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetOrganizationsQuery, PaginatedApiResponse<OrganizationResponse>>
 {
-    public async Task<PaginatedApiResponse<Domain.Entities.Planning.Organization>> Handle(GetOrganizationsQuery query, CancellationToken cancellationToken)
+    public async Task<PaginatedApiResponse<OrganizationResponse>> Handle(GetOrganizationsQuery query, CancellationToken cancellationToken)
     {
         var sieveModel = new Sieve.Models.SieveModel
         {
@@ -15,8 +17,19 @@ public class GetOrganizationsQueryHandler(IUnitOfWork unitOfWork) : IRequestHand
             Filters = query.Filters,
             Sorts = query.Sorts
         };
-        var (organizations, totalCount) = await unitOfWork.OrganizationRepository.GetAllAsync(sieveModel, cancellationToken: cancellationToken);
-        return new PaginatedApiResponse<Domain.Entities.Planning.Organization>(
+
+        Expression<Func<Domain.Entities.Planning.Organization, OrganizationResponse>> projection = org => new OrganizationResponse
+        {
+            Id = org.Id,
+            ParentId = org.ParentId,
+            Name = org.Name,
+            Code = org.Code,
+            Type = org.Type,
+            IsActive = org.IsActive
+        };
+
+        var (organizations, totalCount) = await unitOfWork.OrganizationRepository.GetAllAsync(sieveModel, projection, cancellationToken);
+        return new PaginatedApiResponse<OrganizationResponse>(
             [.. organizations],
             query.PageNumber,
             query.PageSize,

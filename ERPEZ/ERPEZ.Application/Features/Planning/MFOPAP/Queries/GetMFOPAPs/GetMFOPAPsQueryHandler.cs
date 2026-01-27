@@ -1,14 +1,15 @@
-using ERPEZ.Application.Features.Planning.Location.Queries.GetLocations;
+using ERPEZ.Application.Features.Planning.MFOPAP.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
 using Sieve.Models;
+using System.Linq.Expressions;
 
 namespace ERPEZ.Application.Features.Planning.MFOPAP.Queries.GetMFOPAPs;
 
-public class GetMFOPAPsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetMFOPAPsQuery, PaginatedApiResponse<Domain.Entities.Planning.MFOPAP>>
+public class GetMFOPAPsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetMFOPAPsQuery, PaginatedApiResponse<MFOPAPResponse>>
 {
-    public async Task<PaginatedApiResponse<Domain.Entities.Planning.MFOPAP>> Handle(GetMFOPAPsQuery query, CancellationToken cancellationToken)
+    public async Task<PaginatedApiResponse<MFOPAPResponse>> Handle(GetMFOPAPsQuery query, CancellationToken cancellationToken)
     {
         var sieveModel = new SieveModel
         {
@@ -17,9 +18,20 @@ public class GetMFOPAPsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
             Filters = query.Filters,
             Sorts = query.Sorts
         };
-        var (mfoPAPs, totalCount) = await unitOfWork.MFOPAPRepository.GetAllAsync(sieveModel, cancellationToken: cancellationToken);
 
-        return new PaginatedApiResponse<Domain.Entities.Planning.MFOPAP>(
+        Expression<Func<Domain.Entities.Planning.MFOPAP, MFOPAPResponse>> projection = mfopap => new MFOPAPResponse
+        {
+            Id = mfopap.Id,
+            ParentId = mfopap.ParentId,
+            Name = mfopap.Name,
+            Code = mfopap.Code,
+            Type = mfopap.Type,
+            IsActive = mfopap.IsActive
+        };
+
+        var (mfoPAPs, totalCount) = await unitOfWork.MFOPAPRepository.GetAllAsync(sieveModel, projection, cancellationToken);
+
+        return new PaginatedApiResponse<MFOPAPResponse>(
             [.. mfoPAPs],
             query.PageNumber,
             query.PageSize,

@@ -1,6 +1,6 @@
 # Validation Scripts
 
-This folder contains automated scripts to check and maintain validation coverage across the application.
+This folder contains automated scripts to check and maintain code quality standards across the application.
 
 ## Scripts
 
@@ -62,9 +62,69 @@ Queries that:
 
 Delete commands with only an ID parameter may skip validators, but should document why.
 
+---
+
+### check-dto-contracts.sh (Linux/Mac/Bash)
+
+Detects queries and commands that return domain entities instead of DTOs, preventing API contract violations.
+
+**Usage:**
+
+```bash
+# Make executable
+chmod +x scripts/check-dto-contracts.sh
+
+# Run from project root
+./scripts/check-dto-contracts.sh
+```
+
+**Features:**
+
+- ✅ Scans all Queries and Commands
+- ✅ Detects `Domain.Entities.*` in return types
+- ✅ Ensures clean architecture separation
+- ✅ Prevents domain entity leakage through API
+- ✅ Color-coded output for violations
+
+### check-dto-contracts.ps1 (Windows/PowerShell)
+
+PowerShell version of the DTO contract checker.
+
+**Usage:**
+
+```powershell
+# Run from project root
+.\scripts\check-dto-contracts.ps1
+
+# Or with execution policy bypass
+powershell -ExecutionPolicy Bypass -File .\scripts\check-dto-contracts.ps1
+```
+
+**What It Checks:**
+
+The script ensures that:
+
+- ❌ Queries/Commands do NOT return `ApiResponse<Domain.Entities.*>`
+- ❌ Queries do NOT return `PaginatedApiResponse<Domain.Entities.*>`
+- ✅ All return types use proper DTO classes (e.g., `LocationResponse`, `ObjectDetailedResponse`)
+
+**Example Violations:**
+
+```csharp
+// ❌ BAD - Returns domain entity
+public record GetLocationByIdQuery(Guid Id) 
+    : IRequest<ApiResponse<Domain.Entities.Planning.Location>>;
+
+// ✅ GOOD - Returns DTO
+public record GetLocationByIdQuery(Guid Id) 
+    : IRequest<ApiResponse<LocationDetailedResponse>>;
+```
+
+---
+
 ## Output Example
 
-```
+```text
 ======================================
   Validation Coverage Check
 ======================================
@@ -91,7 +151,7 @@ Commands:
 
 When the PowerShell script finds missing validators, it offers to generate template files:
 
-```
+```text
 Generate validator template files? (Y/N): Y
 ```
 
@@ -99,7 +159,7 @@ This creates basic validator classes with:
 
 - Proper namespace
 - Correct class name
-- Inherits from AbstractValidator<T>
+- Inherits from AbstractValidator&lt;T&gt;
 - TODO comments for adding rules
 
 **Example Generated Template:**
@@ -150,23 +210,52 @@ Reviewer should verify:
 
 ### 4. CI/CD Pipeline
 
-Add to your CI pipeline to fail builds if validation coverage drops below threshold:
+The scripts are integrated into the GitHub Actions CI/CD pipeline and run automatically on every push and pull request:
 
 ```yaml
-# Example GitHub Actions
+# .github/workflows/deploy-erpez-api-dev.yml
 - name: Check Validation Coverage
   run: |
-    $result = .\scripts\check-validators.ps1
-    if ($LASTEXITCODE -ne 0) {
-      Write-Error "Validation coverage check failed"
-      exit 1
-    }
+    echo "Checking FluentValidation coverage..."
+    bash scripts/check-validators.sh
+  shell: bash
+  continue-on-error: false
+
+- name: Check DTO Contract Compliance
+  run: |
+    echo "Checking API contract compliance..."
+    bash scripts/check-dto-contracts.sh
+  shell: bash
+  continue-on-error: false
+```
+
+**Pipeline Behavior:**
+
+- ✅ Build fails if any Command is missing a validator
+- ✅ Build fails if any Query/Command returns a domain entity
+- ✅ Runs after build but before tests
+- ✅ Prevents non-compliant code from being deployed
+
+### 5. Local Development
+
+Run both scripts before committing:
+
+```bash
+# Linux/Mac
+./scripts/check-validators.sh
+./scripts/check-dto-contracts.sh
+
+# Windows PowerShell
+.\scripts\check-validators.ps1
+.\scripts\check-dto-contracts.ps1
 ```
 
 ## Exit Codes
 
-- **0**: All commands have validators (success)
-- **1**: One or more commands missing validators (failure)
+Both scripts use the following exit codes:
+
+- **0**: All checks passed (success)
+- **1**: One or more violations found (failure)
 
 ## Related Documentation
 

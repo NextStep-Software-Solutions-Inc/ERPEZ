@@ -1,3 +1,4 @@
+using ERPEZ.Application.Features.Planning.MFOPAP.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -5,9 +6,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.MFOPAP.Queries.GetMFOPAPById;
 
-public class GetMFOPAPByIdHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetMFOPAPByIdQuery, ApiResponse<Domain.Entities.Planning.MFOPAP>>
+public class GetMFOPAPByIdHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetMFOPAPByIdQuery, ApiResponse<MFOPAPDetailedResponse>>
 {
-    public async Task<ApiResponse<Domain.Entities.Planning.MFOPAP>> Handle(
+    public async Task<ApiResponse<MFOPAPDetailedResponse>> Handle(
         GetMFOPAPByIdQuery request,
         CancellationToken cancellationToken)
     {
@@ -15,6 +16,19 @@ public class GetMFOPAPByIdHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetM
            t => t.Id == request.Id,
             cancellationToken: cancellationToken) ?? throw new NotFoundException("No data found.");
 
-        return ApiResponse<Domain.Entities.Planning.MFOPAP>.Success(mfopap, "Retrieved successfully");
+        var response = new MFOPAPDetailedResponse
+        {
+            Id = mfopap.Id,
+            Name = mfopap.Name,
+            Code = mfopap.Code,
+            Description = null,
+            OPCRId = null,
+            CreatedAt = mfopap.CreatedAt,
+            CreatedBy = mfopap.CreatedBy,
+            UpdatedAt = mfopap.UpdatedAt,
+            UpdatedBy = mfopap.UpdatedBy
+        };
+
+        return ApiResponse<MFOPAPDetailedResponse>.Success(response, "Retrieved successfully");
     }
 }
