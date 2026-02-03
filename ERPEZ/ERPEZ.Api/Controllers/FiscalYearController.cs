@@ -3,9 +3,8 @@ using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using ERPEZ.Application.Features.Planning.FiscalYear.Commands.CreateFiscalYear;
 using ERPEZ.Application.Features.Planning.FiscalYear.Commands.UpdateFiscalYear;
+using ERPEZ.Application.Features.Planning.FiscalYear.Commands.UpdateFiscalYearStatus;
 using ERPEZ.Application.Features.Planning.FiscalYear.Commands.DeleteFiscalYear;
-using ERPEZ.Application.Features.Planning.FiscalYear.Commands.LockFiscalYear;
-using ERPEZ.Application.Features.Planning.FiscalYear.Commands.UnlockFiscalYear;
 using ERPEZ.Application.Features.Planning.FiscalYear.Queries.GetFiscalYears;
 using ERPEZ.Application.Features.Planning.FiscalYear.Queries.GetFiscalYearById;
 using ERPEZ.Application.Features.Planning.FiscalYear.Dtos;
@@ -59,30 +58,23 @@ public class FiscalYearController(ISender mediator) : ControllerBase
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 
+    [HttpPatch("{id}/status")]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateFiscalYearStatus(Guid id, [FromBody] string status)
+    {
+        var command = new UpdateFiscalYearStatusCommand(id, status);
+        var result = await mediator.Send(command);
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
     [HttpDelete("{id}")]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteFiscalYear(Guid id)
     {
         var result = await mediator.Send(new DeleteFiscalYearCommand(id));
-        return result.Succeeded ? Ok(result) : NotFound(result);
-    }
-
-    [HttpPost("{id}/lock")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> LockFiscalYear(Guid id)
-    {
-        var result = await mediator.Send(new LockFiscalYearCommand(id));
-        return result.Succeeded ? Ok(result) : NotFound(result);
-    }
-
-    [HttpPost("{id}/unlock")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> UnlockFiscalYear(Guid id)
-    {
-        var result = await mediator.Send(new UnlockFiscalYearCommand(id));
         return result.Succeeded ? Ok(result) : NotFound(result);
     }
 }

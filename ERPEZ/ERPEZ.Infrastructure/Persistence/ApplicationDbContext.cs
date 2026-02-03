@@ -38,6 +38,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<DeliveryUnit>? DeliveryUnits { get; set; }
     public DbSet<DUKPITargetAssignment>? DUKPITargetAssignments { get; set; }
     public DbSet<FiscalYear>? FiscalYears { get; set; }
+    public DbSet<FiscalMonth>? FiscalMonths { get; set; }
+    public DbSet<BudgetCall>? BudgetCalls { get; set; }
     public DbSet<OPCRPAP>? OPCRPAPs { get; set; }
     public DbSet<SDG>? SDGs { get; set; }
     public DbSet<WFPPAP>? WFPPAPs { get; set; }
@@ -347,6 +349,36 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasMany(du => du.KPITargetAssignments)
             .WithOne(kpia => kpia.DeliveryUnit)
             .HasForeignKey(kpia => kpia.DeliveryUnitId);
+
+        //FiscalYear
+        modelBuilder.Entity<FiscalYear>()
+            .HasMany(fy => fy.FiscalMonths)
+            .WithOne(fm => fm.FiscalYear)
+            .HasForeignKey(fm => fm.FiscalYearId);
+
+        modelBuilder.Entity<FiscalYear>()
+            .HasMany(fy => fy.BudgetCalls)
+            .WithOne(bc => bc.FiscalYear)
+            .HasForeignKey(bc => bc.FiscalYearId);
+
+        //FiscalMonth
+        modelBuilder.Entity<FiscalMonth>()
+            .HasIndex(fm => new { fm.FiscalYearId, fm.MonthIndex })
+            .IsUnique();
+
+        modelBuilder.Entity<FiscalMonth>()
+            .HasOne(fm => fm.FiscalYear)
+            .WithMany(fy => fy.FiscalMonths)
+            .HasForeignKey(fm => fm.FiscalYearId);
+
+        //BudgetCall
+        modelBuilder.Entity<BudgetCall>()
+            .HasIndex(bc => new { bc.FiscalYearId, bc.SubmissionDeadline });
+
+        modelBuilder.Entity<BudgetCall>()
+            .HasOne(bc => bc.FiscalYear)
+            .WithMany(fy => fy.BudgetCalls)
+            .HasForeignKey(bc => bc.FiscalYearId);
 
         //WFP
         modelBuilder.Entity<WFP>()

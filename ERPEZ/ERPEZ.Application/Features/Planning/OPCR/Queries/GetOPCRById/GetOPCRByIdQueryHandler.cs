@@ -30,7 +30,7 @@ public class GetOPCRByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<G
                     Id = o.FiscalYear.Id,
                     Year = o.FiscalYear.Year,
                     Description = o.FiscalYear.Description,
-                    IsLocked = o.FiscalYear.IsLocked,
+                    Status = o.FiscalYear.Status,
                     FunctionAllocations = o.FiscalYear.FunctionAllocations.Select(fa => new FunctionAllocationResponse
                     {
                         Id = fa.Id,

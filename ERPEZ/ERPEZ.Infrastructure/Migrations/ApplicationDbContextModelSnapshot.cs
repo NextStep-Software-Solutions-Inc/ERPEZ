@@ -318,6 +318,51 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.ToTable("Attributes", "planning");
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.BudgetCall", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("FiscalYearId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("SubmissionDeadline")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FiscalYearId", "SubmissionDeadline");
+
+                    b.ToTable("BudgetCalls", "planning");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.CSEItem", b =>
                 {
                     b.Property<Guid>("Id")
@@ -587,6 +632,58 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.ToTable("ExpenseClasses", "planning");
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.FiscalMonth", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("FiscalYearId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsLocked")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid?>("ModifiedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("MonthIndex")
+                        .HasColumnType("integer");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FiscalYearId", "MonthIndex")
+                        .IsUnique();
+
+                    b.ToTable("FiscalMonths", "planning");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.FiscalYear", b =>
                 {
                     b.Property<Guid>("Id")
@@ -612,8 +709,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
-                    b.Property<bool>("IsLocked")
-                        .HasColumnType("boolean");
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -3599,6 +3697,17 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("ParentAttribute");
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.BudgetCall", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.FiscalYear", "FiscalYear")
+                        .WithMany("BudgetCalls")
+                        .HasForeignKey("FiscalYearId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("FiscalYear");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.DUKPITargetAssignment", b =>
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Planning.DeliveryUnit", "DeliveryUnit")
@@ -3639,6 +3748,17 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasForeignKey("ParentId");
 
                     b.Navigation("Office");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.FiscalMonth", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.FiscalYear", "FiscalYear")
+                        .WithMany("FiscalMonths")
+                        .HasForeignKey("FiscalYearId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("FiscalYear");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.FunctionAllocation", b =>
@@ -4432,6 +4552,10 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.FiscalYear", b =>
                 {
+                    b.Navigation("BudgetCalls");
+
+                    b.Navigation("FiscalMonths");
+
                     b.Navigation("FunctionAllocations");
 
                     b.Navigation("UACSCodeCombinationFiscalYears");
