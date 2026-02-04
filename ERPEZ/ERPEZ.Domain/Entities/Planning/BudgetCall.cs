@@ -12,7 +12,7 @@ public class BudgetCall : BaseEntity
     public Guid FiscalYearId { get; set; }
 
     [Sieve(CanFilter = true, CanSort = true)]
-    public string Type { get; set; } = string.Empty;
+    public string? Type { get; set; }
 
     [Sieve(CanFilter = true, CanSort = true)]
     public DateTime SubmissionDeadline { get; set; }

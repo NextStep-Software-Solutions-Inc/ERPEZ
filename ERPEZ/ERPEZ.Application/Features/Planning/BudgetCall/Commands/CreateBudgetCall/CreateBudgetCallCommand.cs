@@ -6,6 +6,6 @@ namespace ERPEZ.Application.Features.Planning.BudgetCall.Commands.CreateBudgetCa
 public record CreateBudgetCallCommand : IRequest<ApiResponse<Guid>>
 {
     public Guid FiscalYearId { get; init; }
-    public string Type { get; init; } = string.Empty;
+    public string? Type { get; init; }
     public DateTime SubmissionDeadline { get; init; }
 }

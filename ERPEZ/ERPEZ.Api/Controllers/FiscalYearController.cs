@@ -62,9 +62,9 @@ public class FiscalYearController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> UpdateFiscalYearStatus(Guid id, [FromBody] string status)
+    public async Task<IActionResult> UpdateFiscalYearStatus(Guid id, [FromBody] UpdateStatusRequest request)
     {
-        var command = new UpdateFiscalYearStatusCommand(id, status);
+        var command = new UpdateFiscalYearStatusCommand(id, request.Status);
         var result = await mediator.Send(command);
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }

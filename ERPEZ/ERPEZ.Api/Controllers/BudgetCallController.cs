@@ -43,9 +43,9 @@ public class BudgetCallController(ISender mediator) : ControllerBase
     }
 
     [HttpPut("{id}")]
-    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<BudgetCallResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<BudgetCallResponse>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<BudgetCallResponse>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateBudgetCall(Guid id, [FromBody] UpdateBudgetCallRequest updateBudgetCall)
     {
         var request = new UpdateBudgetCallCommand
@@ -55,7 +55,7 @@ public class BudgetCallController(ISender mediator) : ControllerBase
         };
 
         var budgetCall = await mediator.Send(request);
-        return budgetCall.Succeeded ? Ok(ApiResponse<Unit>.Success(Unit.Value)) : BadRequest(budgetCall);
+        return budgetCall.Succeeded ? Ok(budgetCall) : BadRequest(budgetCall);
     }
 
     [HttpDelete("{id}")]

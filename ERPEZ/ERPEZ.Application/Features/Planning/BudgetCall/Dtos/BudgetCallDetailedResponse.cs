@@ -4,7 +4,7 @@ public record BudgetCallDetailedResponse
 {
     public Guid Id { get; init; }
     public Guid FiscalYearId { get; init; }
-    public required string Type { get; init; }
+    public string? Type { get; init; }
     public DateTime SubmissionDeadline { get; init; }
     public DateTime CreatedAt { get; init; }
     public string CreatedBy { get; init; } = string.Empty;

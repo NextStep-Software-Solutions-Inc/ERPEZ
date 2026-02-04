@@ -347,7 +347,6 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Type")
-                        .IsRequired()
                         .HasColumnType("text");
 
                     b.Property<DateTime?>("UpdatedAt")
