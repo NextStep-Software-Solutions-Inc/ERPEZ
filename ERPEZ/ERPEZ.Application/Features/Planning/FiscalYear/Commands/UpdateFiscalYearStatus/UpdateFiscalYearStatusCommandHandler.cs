@@ -28,6 +28,9 @@ public class UpdateFiscalYearStatusCommandHandler(IUnitOfWork unitOfWork) : IReq
 
         var currentStatus = fiscalYear.Status.ToLowerInvariant();
         
+        if (!allowedTransitions.ContainsKey(currentStatus))
+            throw new ConflictException($"Invalid current status '{currentStatus}'. Cannot determine allowed transitions.");
+        
         if (!allowedTransitions[currentStatus].Contains(newStatus))
             throw new ConflictException($"Cannot transition from '{currentStatus}' to '{newStatus}'. Allowed transitions: {string.Join(", ", allowedTransitions[currentStatus])}");
 

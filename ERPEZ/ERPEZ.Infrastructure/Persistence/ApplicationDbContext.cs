@@ -366,19 +366,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasIndex(fm => new { fm.FiscalYearId, fm.MonthIndex })
             .IsUnique();
 
-        modelBuilder.Entity<FiscalMonth>()
-            .HasOne(fm => fm.FiscalYear)
-            .WithMany(fy => fy.FiscalMonths)
-            .HasForeignKey(fm => fm.FiscalYearId);
-
         //BudgetCall
         modelBuilder.Entity<BudgetCall>()
             .HasIndex(bc => new { bc.FiscalYearId, bc.SubmissionDeadline });
-
-        modelBuilder.Entity<BudgetCall>()
-            .HasOne(bc => bc.FiscalYear)
-            .WithMany(fy => fy.BudgetCalls)
-            .HasForeignKey(bc => bc.FiscalYearId);
 
         //WFP
         modelBuilder.Entity<WFP>()

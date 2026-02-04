@@ -28,7 +28,7 @@ public class FiscalMonthController(ISender mediator) : ControllerBase
     {
         var fiscalMonth = await mediator.Send(new GetFiscalMonthByIdQuery(id));
 
-        return fiscalMonth.Succeeded ? Ok(fiscalMonth) : BadRequest(fiscalMonth);
+        return fiscalMonth.Succeeded ? Ok(fiscalMonth) : NotFound(fiscalMonth);
     }
 
     [HttpPost("{id}/lock")]

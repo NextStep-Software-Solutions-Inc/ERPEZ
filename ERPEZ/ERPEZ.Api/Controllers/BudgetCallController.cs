@@ -39,7 +39,7 @@ public class BudgetCallController(ISender mediator) : ControllerBase
     {
         var budgetCall = await mediator.Send(new GetBudgetCallByIdQuery(id));
 
-        return budgetCall.Succeeded ? Ok(budgetCall) : BadRequest(budgetCall);
+        return budgetCall.Succeeded ? Ok(budgetCall) : NotFound(budgetCall);
     }
 
     [HttpPut("{id}")]
@@ -59,13 +59,13 @@ public class BudgetCallController(ISender mediator) : ControllerBase
     }
 
     [HttpDelete("{id}")]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteBudgetCall(Guid id)
     {
         var command = new DeleteBudgetCallCommand(id);
         var budgetCall = await mediator.Send(command);
 
-        return budgetCall.Succeeded ? NoContent() : NotFound();
+        return budgetCall.Succeeded ? Ok(budgetCall) : NotFound(budgetCall);
     }
 }
