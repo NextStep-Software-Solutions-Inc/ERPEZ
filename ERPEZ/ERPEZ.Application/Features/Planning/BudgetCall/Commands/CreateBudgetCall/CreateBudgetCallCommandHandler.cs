@@ -11,8 +11,10 @@ public class CreateBudgetCallCommandHandler(IUnitOfWork unitOfWork)
     public async Task<ApiResponse<Guid>> Handle(CreateBudgetCallCommand request, CancellationToken cancellationToken)
     {
         // Verify fiscal year exists
-        var fiscalYear = await unitOfWork.FiscalYearRepository.GetByIdAsync(request.FiscalYearId, cancellationToken: cancellationToken)
-            ?? throw new NotFoundException("Fiscal year not found.");
+        if (await unitOfWork.FiscalYearRepository.GetByIdAsync(request.FiscalYearId, cancellationToken: cancellationToken) is null)
+        {
+            throw new NotFoundException("Fiscal year not found.");
+        }
 
         var budgetCall = new Domain.Entities.Planning.BudgetCall
         {
