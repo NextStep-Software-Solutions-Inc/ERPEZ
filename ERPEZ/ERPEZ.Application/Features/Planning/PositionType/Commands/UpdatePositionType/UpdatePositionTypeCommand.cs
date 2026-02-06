@@ -4,4 +4,8 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.PositionType.Commands.UpdatePositionType;
 
-public record UpdatePositionTypeCommand(Guid Id, UpdatePositionTypeRequest Request) : IRequest<ApiResponse<Unit>>;
+public record UpdatePositionTypeCommand : IRequest<ApiResponse<Unit>>
+{
+    public required Guid Id { get; init; }
+    public required UpdatePositionTypeRequest UpdatePositionType { get; init; }
+}

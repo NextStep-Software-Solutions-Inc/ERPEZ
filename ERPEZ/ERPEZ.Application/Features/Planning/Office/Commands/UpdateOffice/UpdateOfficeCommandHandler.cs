@@ -61,8 +61,20 @@ public class UpdateOfficeCommandHandler(IUnitOfWork unitOfWork) : IRequestHandle
         }
         if (dto?.ParentId.HasValue == true)
         {
-            _ = await unitOfWork.OfficeRepository.GetByIdAsync(dto.ParentId.Value, cancellationToken: cancellationToken) ??
+            // Prevent self-reference
+            if (dto.ParentId.Value == request.Id)
+                throw new ConflictException("Office cannot be its own parent.");
+
+            var parent = await unitOfWork.OfficeRepository.GetByIdAsync(dto.ParentId.Value, cancellationToken: cancellationToken) ??
                 throw new NotFoundException("Parent Office not found.");
+
+            // Validate parent can have children
+            var parentCategory = await unitOfWork.CategoryRepository.GetByIdAsync(parent.CategoryId, cancellationToken);
+            if (parentCategory != null && !parentCategory.CanHaveChildren)
+                throw new ConflictException($"Parent Office '{parent.Name}' cannot have children based on its category configuration.");
+
+            // Check for circular reference (prevent descendant from becoming ancestor)
+            await ValidateNoCircularReferenceAsync(request.Id, dto.ParentId.Value, cancellationToken);
         }
 
         // Update properties
@@ -85,5 +97,25 @@ public class UpdateOfficeCommandHandler(IUnitOfWork unitOfWork) : IRequestHandle
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return ApiResponse<Unit>.Success(Unit.Value, "Office updated successfully.");
+    }
+
+    private async Task ValidateNoCircularReferenceAsync(Guid officeId, Guid newParentId, CancellationToken cancellationToken)
+    {
+        var currentParentId = newParentId;
+        var visitedIds = new HashSet<Guid> { officeId };
+
+        while (currentParentId != Guid.Empty)
+        {
+            if (visitedIds.Contains(currentParentId))
+                throw new ConflictException("Circular reference detected in office hierarchy. An office cannot be moved under one of its descendants.");
+
+            visitedIds.Add(currentParentId);
+
+            var parentOffice = await unitOfWork.OfficeRepository.GetByIdAsync(currentParentId, cancellationToken);
+            if (parentOffice == null || !parentOffice.ParentId.HasValue)
+                break;
+
+            currentParentId = parentOffice.ParentId.Value;
+        }
     }
 }

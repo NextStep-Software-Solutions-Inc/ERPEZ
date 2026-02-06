@@ -16,29 +16,29 @@ public class UpdateProcurementWorkflowCommandHandler(IUnitOfWork unitOfWork)
             throw new NotFoundException($"Procurement Workflow with ID '{request.Id}' not found.");
 
         // Check for duplicate Code if Code is being updated
-        if (request.Request.Code != null && request.Request.Code != entity.Code)
+        if (request.UpdateProcurementWorkflow.Code != null && request.UpdateProcurementWorkflow.Code != entity.Code)
         {
             var existingWorkflow = await unitOfWork.ProcurementWorkflowRepository.FindAsync(
-                x => x.Code == request.Request.Code && x.Id != request.Id,
+                x => x.Code == request.UpdateProcurementWorkflow.Code && x.Id != request.Id,
                 cancellationToken
             );
 
             if (existingWorkflow != null)
-                throw new ConflictException($"Procurement Workflow with Code '{request.Request.Code}' already exists.");
+                throw new ConflictException($"Procurement Workflow with Code '{request.UpdateProcurementWorkflow.Code}' already exists.");
         }
 
         // Update properties if provided
-        if (request.Request.Name != null)
-            entity.Name = request.Request.Name;
+        if (request.UpdateProcurementWorkflow.Name != null)
+            entity.Name = request.UpdateProcurementWorkflow.Name;
 
-        if (request.Request.Code != null)
-            entity.Code = request.Request.Code;
+        if (request.UpdateProcurementWorkflow.Code != null)
+            entity.Code = request.UpdateProcurementWorkflow.Code;
 
-        if (request.Request.ApprovalLevel.HasValue)
-            entity.ApprovalLevel = request.Request.ApprovalLevel.Value;
+        if (request.UpdateProcurementWorkflow.ApprovalLevel.HasValue)
+            entity.ApprovalLevel = request.UpdateProcurementWorkflow.ApprovalLevel.Value;
 
-        if (request.Request.IsActive.HasValue)
-            entity.IsActive = request.Request.IsActive.Value;
+        if (request.UpdateProcurementWorkflow.IsActive.HasValue)
+            entity.IsActive = request.UpdateProcurementWorkflow.IsActive.Value;
 
         unitOfWork.ProcurementWorkflowRepository.Update(entity);
         await unitOfWork.SaveChangesAsync(cancellationToken);
@@ -46,3 +46,4 @@ public class UpdateProcurementWorkflowCommandHandler(IUnitOfWork unitOfWork)
         return ApiResponse<Unit>.Success(Unit.Value);
     }
 }
+

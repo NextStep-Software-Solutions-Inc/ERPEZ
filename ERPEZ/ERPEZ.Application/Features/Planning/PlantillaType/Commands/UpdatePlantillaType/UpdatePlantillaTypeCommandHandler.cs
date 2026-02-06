@@ -15,36 +15,36 @@ public class UpdatePlantillaTypeCommandHandler(IUnitOfWork unitOfWork)
         if (entity == null)
             throw new NotFoundException($"Plantilla Type with ID '{request.Id}' not found.");
 
-        if (!string.IsNullOrEmpty(request.Request.Code) && request.Request.Code != entity.Code)
+        if (!string.IsNullOrEmpty(request.UpdatePlantillaType.Code) && request.UpdatePlantillaType.Code != entity.Code)
         {
             var existingByCode = await unitOfWork.PlantillaTypeRepository.FindAsync(
-                x => x.Code == request.Request.Code && x.Id != request.Id,
+                x => x.Code == request.UpdatePlantillaType.Code && x.Id != request.Id,
                 cancellationToken
             );
 
             if (existingByCode != null)
-                throw new ConflictException($"PlantillaType with Code '{request.Request.Code}' already exists.");
+                throw new ConflictException($"PlantillaType with Code '{request.UpdatePlantillaType.Code}' already exists.");
 
-            entity.Code = request.Request.Code;
+            entity.Code = request.UpdatePlantillaType.Code;
         }
 
-        if (!string.IsNullOrEmpty(request.Request.Name))
-            entity.Name = request.Request.Name;
+        if (!string.IsNullOrEmpty(request.UpdatePlantillaType.Name))
+            entity.Name = request.UpdatePlantillaType.Name;
 
-        if (request.Request.Duration != null)
-            entity.Duration = request.Request.Duration;
+        if (request.UpdatePlantillaType.Duration != null)
+            entity.Duration = request.UpdatePlantillaType.Duration;
 
-        if (request.Request.RequiresActingAppointments.HasValue)
-            entity.RequiresActingAppointments = request.Request.RequiresActingAppointments.Value;
+        if (request.UpdatePlantillaType.RequiresActingAppointments.HasValue)
+            entity.RequiresActingAppointments = request.UpdatePlantillaType.RequiresActingAppointments.Value;
 
-        if (request.Request.AllowsContractual.HasValue)
-            entity.AllowsContractual = request.Request.AllowsContractual.Value;
+        if (request.UpdatePlantillaType.AllowsContractual.HasValue)
+            entity.AllowsContractual = request.UpdatePlantillaType.AllowsContractual.Value;
 
-        if (request.Request.IsActive.HasValue)
-            entity.IsActive = request.Request.IsActive.Value;
+        if (request.UpdatePlantillaType.IsActive.HasValue)
+            entity.IsActive = request.UpdatePlantillaType.IsActive.Value;
 
-        if (request.Request.Benefits != null)
-            entity.Benefits = request.Request.Benefits;
+        if (request.UpdatePlantillaType.Benefits != null)
+            entity.Benefits = request.UpdatePlantillaType.Benefits;
 
         unitOfWork.PlantillaTypeRepository.Update(entity);
         await unitOfWork.SaveChangesAsync(cancellationToken);
@@ -52,3 +52,4 @@ public class UpdatePlantillaTypeCommandHandler(IUnitOfWork unitOfWork)
         return ApiResponse<Unit>.Success(Unit.Value);
     }
 }
+

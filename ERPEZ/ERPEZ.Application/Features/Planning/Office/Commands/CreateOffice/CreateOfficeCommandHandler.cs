@@ -32,8 +32,13 @@ public class CreateOfficeCommandHandler(IUnitOfWork unitOfWork) : IRequestHandle
         }
         if (request.ParentId.HasValue)
         {
-            _ = await unitOfWork.OfficeRepository.GetByIdAsync(request.ParentId.Value, cancellationToken: cancellationToken) ??
+            var parent = await unitOfWork.OfficeRepository.GetByIdAsync(request.ParentId.Value, cancellationToken: cancellationToken) ??
                 throw new NotFoundException("Parent Office not found.");
+
+            // Validate parent can have children
+            var parentCategory = await unitOfWork.CategoryRepository.GetByIdAsync(parent.CategoryId, cancellationToken);
+            if (parentCategory != null && !parentCategory.CanHaveChildren)
+                throw new ConflictException($"Parent Office '{parent.Name}' cannot have children based on its category configuration.");
         }
 
         // Check for duplicate Code

@@ -15,36 +15,36 @@ public class UpdateStepCommandHandler(IUnitOfWork unitOfWork)
         if (entity == null)
             throw new NotFoundException("Step not found.");
 
-        if (!string.IsNullOrEmpty(request.Request.Code) && request.Request.Code != entity.Code)
+        if (!string.IsNullOrEmpty(request.UpdateStep.Code) && request.UpdateStep.Code != entity.Code)
         {
             var existingStep = await unitOfWork.StepRepository.FindAsync(
-                x => x.Code == request.Request.Code && x.Id != request.Id,
+                x => x.Code == request.UpdateStep.Code && x.Id != request.Id,
                 cancellationToken
             );
 
             if (existingStep != null)
                 throw new ConflictException("A Step with this Code already exists.");
 
-            entity.Code = request.Request.Code;
+            entity.Code = request.UpdateStep.Code;
         }
 
-        if (!string.IsNullOrEmpty(request.Request.Name))
-            entity.Name = request.Request.Name;
+        if (!string.IsNullOrEmpty(request.UpdateStep.Name))
+            entity.Name = request.UpdateStep.Name;
 
-        if (request.Request.StepNumber.HasValue)
-            entity.StepNumber = request.Request.StepNumber.Value;
+        if (request.UpdateStep.StepNumber.HasValue)
+            entity.StepNumber = request.UpdateStep.StepNumber.Value;
 
-        if (request.Request.MinStep.HasValue)
-            entity.MinStep = request.Request.MinStep.Value;
+        if (request.UpdateStep.MinStep.HasValue)
+            entity.MinStep = request.UpdateStep.MinStep.Value;
 
-        if (request.Request.MaxStep.HasValue)
-            entity.MaxStep = request.Request.MaxStep.Value;
+        if (request.UpdateStep.MaxStep.HasValue)
+            entity.MaxStep = request.UpdateStep.MaxStep.Value;
 
-        if (request.Request.Description != null)
-            entity.Description = request.Request.Description;
+        if (request.UpdateStep.Description != null)
+            entity.Description = request.UpdateStep.Description;
 
-        if (request.Request.IsActive.HasValue)
-            entity.IsActive = request.Request.IsActive.Value;
+        if (request.UpdateStep.IsActive.HasValue)
+            entity.IsActive = request.UpdateStep.IsActive.Value;
 
         // Validate MaxStep >= MinStep after updates
         if (entity.MaxStep < entity.MinStep)
@@ -56,3 +56,4 @@ public class UpdateStepCommandHandler(IUnitOfWork unitOfWork)
         return ApiResponse<Unit>.Success(Unit.Value);
     }
 }
+

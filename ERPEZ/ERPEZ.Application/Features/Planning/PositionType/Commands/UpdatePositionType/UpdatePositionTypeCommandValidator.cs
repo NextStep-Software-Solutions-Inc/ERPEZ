@@ -6,12 +6,13 @@ public class UpdatePositionTypeCommandValidator : AbstractValidator<UpdatePositi
 {
     public UpdatePositionTypeCommandValidator()
     {
-        RuleFor(x => x.Request.Name)
+        RuleFor(x => x.UpdatePositionType.Name)
             .MaximumLength(200).WithMessage("Position Type Name cannot exceed 200 characters.")
-            .When(x => !string.IsNullOrEmpty(x.Request.Name));
+            .When(x => !string.IsNullOrEmpty(x.UpdatePositionType.Name));
 
-        RuleFor(x => x.Request.Code)
+        RuleFor(x => x.UpdatePositionType.Code)
             .MaximumLength(50).WithMessage("Position Type Code cannot exceed 50 characters.")
-            .When(x => !string.IsNullOrEmpty(x.Request.Code));
+            .When(x => !string.IsNullOrEmpty(x.UpdatePositionType.Code));
     }
 }
+

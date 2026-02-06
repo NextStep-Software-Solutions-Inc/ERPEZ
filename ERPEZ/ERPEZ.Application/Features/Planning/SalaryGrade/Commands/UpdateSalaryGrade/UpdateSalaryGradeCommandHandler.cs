@@ -15,39 +15,39 @@ public class UpdateSalaryGradeCommandHandler(IUnitOfWork unitOfWork)
         if (salaryGrade == null)
             throw new NotFoundException($"Salary Grade with ID '{request.Id}' not found.");
 
-        if (!string.IsNullOrWhiteSpace(request.Request.Code) && request.Request.Code != salaryGrade.Code)
+        if (!string.IsNullOrWhiteSpace(request.UpdateSalaryGrade.Code) && request.UpdateSalaryGrade.Code != salaryGrade.Code)
         {
             var existingSalaryGrade = await unitOfWork.SalaryGradeRepository.FindAsync(
-                x => x.Code == request.Request.Code && x.Id != request.Id,
+                x => x.Code == request.UpdateSalaryGrade.Code && x.Id != request.Id,
                 cancellationToken
             );
 
             if (existingSalaryGrade != null)
-                throw new ConflictException($"A Salary Grade with Code '{request.Request.Code}' already exists.");
+                throw new ConflictException($"A Salary Grade with Code '{request.UpdateSalaryGrade.Code}' already exists.");
 
-            salaryGrade.Code = request.Request.Code;
+            salaryGrade.Code = request.UpdateSalaryGrade.Code;
         }
 
-        if (!string.IsNullOrWhiteSpace(request.Request.Name))
-            salaryGrade.Name = request.Request.Name;
+        if (!string.IsNullOrWhiteSpace(request.UpdateSalaryGrade.Name))
+            salaryGrade.Name = request.UpdateSalaryGrade.Name;
 
-        if (request.Request.GradeNumber.HasValue)
-            salaryGrade.GradeNumber = request.Request.GradeNumber.Value;
+        if (request.UpdateSalaryGrade.GradeNumber.HasValue)
+            salaryGrade.GradeNumber = request.UpdateSalaryGrade.GradeNumber.Value;
 
-        if (request.Request.StepIncrementAmount.HasValue)
-            salaryGrade.StepIncrementAmount = request.Request.StepIncrementAmount.Value;
+        if (request.UpdateSalaryGrade.StepIncrementAmount.HasValue)
+            salaryGrade.StepIncrementAmount = request.UpdateSalaryGrade.StepIncrementAmount.Value;
 
-        if (request.Request.NumberOfSteps.HasValue)
-            salaryGrade.NumberOfSteps = request.Request.NumberOfSteps.Value;
+        if (request.UpdateSalaryGrade.NumberOfSteps.HasValue)
+            salaryGrade.NumberOfSteps = request.UpdateSalaryGrade.NumberOfSteps.Value;
 
-        if (request.Request.EffectiveDate.HasValue)
-            salaryGrade.EffectiveDate = request.Request.EffectiveDate.Value;
+        if (request.UpdateSalaryGrade.EffectiveDate.HasValue)
+            salaryGrade.EffectiveDate = request.UpdateSalaryGrade.EffectiveDate.Value;
 
-        if (request.Request.Description != null)
-            salaryGrade.Description = request.Request.Description;
+        if (request.UpdateSalaryGrade.Description != null)
+            salaryGrade.Description = request.UpdateSalaryGrade.Description;
 
-        if (request.Request.IsActive.HasValue)
-            salaryGrade.IsActive = request.Request.IsActive.Value;
+        if (request.UpdateSalaryGrade.IsActive.HasValue)
+            salaryGrade.IsActive = request.UpdateSalaryGrade.IsActive.Value;
 
         unitOfWork.SalaryGradeRepository.Update(salaryGrade);
         await unitOfWork.SaveChangesAsync(cancellationToken);
@@ -55,3 +55,4 @@ public class UpdateSalaryGradeCommandHandler(IUnitOfWork unitOfWork)
         return ApiResponse<Unit>.Success(Unit.Value, "Salary Grade updated successfully.");
     }
 }
+

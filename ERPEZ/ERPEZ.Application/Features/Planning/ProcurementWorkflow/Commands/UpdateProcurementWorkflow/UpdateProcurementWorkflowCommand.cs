@@ -7,5 +7,5 @@ namespace ERPEZ.Application.Features.Planning.ProcurementWorkflow.Commands.Updat
 public record UpdateProcurementWorkflowCommand : IRequest<ApiResponse<Unit>>
 {
     public required Guid Id { get; init; }
-    public required UpdateProcurementWorkflowRequest Request { get; init; }
+    public required UpdateProcurementWorkflowRequest UpdateProcurementWorkflow { get; init; }
 }

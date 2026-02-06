@@ -10,19 +10,20 @@ public class UpdatePlantillaTypeCommandValidator : AbstractValidator<UpdatePlant
             .NotEmpty()
             .WithMessage("Id is required.");
 
-        RuleFor(x => x.Request.Name)
+        RuleFor(x => x.UpdatePlantillaType.Name)
             .MaximumLength(200)
             .WithMessage("Name cannot exceed 200 characters.")
-            .When(x => !string.IsNullOrEmpty(x.Request.Name));
+            .When(x => !string.IsNullOrEmpty(x.UpdatePlantillaType.Name));
 
-        RuleFor(x => x.Request.Code)
+        RuleFor(x => x.UpdatePlantillaType.Code)
             .MaximumLength(50)
             .WithMessage("Code cannot exceed 50 characters.")
-            .When(x => !string.IsNullOrEmpty(x.Request.Code));
+            .When(x => !string.IsNullOrEmpty(x.UpdatePlantillaType.Code));
 
-        RuleFor(x => x.Request.Benefits)
+        RuleFor(x => x.UpdatePlantillaType.Benefits)
             .MaximumLength(2000)
             .WithMessage("Benefits cannot exceed 2000 characters.")
-            .When(x => !string.IsNullOrEmpty(x.Request.Benefits));
+            .When(x => !string.IsNullOrEmpty(x.UpdatePlantillaType.Benefits));
     }
 }
+

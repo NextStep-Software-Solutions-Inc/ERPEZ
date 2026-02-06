@@ -13,42 +13,43 @@ public class UpdatePositionTypeCommandHandler(IUnitOfWork unitOfWork)
         var entity = await unitOfWork.PositionTypeRepository.GetByIdAsync(request.Id, cancellationToken)
             ?? throw new NotFoundException($"Position Type with ID '{request.Id}' not found.");
 
-        if (!string.IsNullOrEmpty(request.Request.Code) && request.Request.Code != entity.Code)
+        if (!string.IsNullOrEmpty(request.UpdatePositionType.Code) && request.UpdatePositionType.Code != entity.Code)
         {
             var existing = await unitOfWork.PositionTypeRepository.FindAsync(
-                x => x.Code == request.Request.Code && x.Id != request.Id,
+                x => x.Code == request.UpdatePositionType.Code && x.Id != request.Id,
                 cancellationToken
             );
 
             if (existing != null)
-                throw new ConflictException($"Position Type with code '{request.Request.Code}' already exists.");
+                throw new ConflictException($"Position Type with code '{request.UpdatePositionType.Code}' already exists.");
 
-            entity.Code = request.Request.Code;
+            entity.Code = request.UpdatePositionType.Code;
         }
 
-        if (!string.IsNullOrEmpty(request.Request.Name))
-            entity.Name = request.Request.Name;
+        if (!string.IsNullOrEmpty(request.UpdatePositionType.Name))
+            entity.Name = request.UpdatePositionType.Name;
 
-        if (request.Request.Description != null)
-            entity.Description = request.Request.Description;
+        if (request.UpdatePositionType.Description != null)
+            entity.Description = request.UpdatePositionType.Description;
 
-        if (request.Request.EducationalLevel != null)
-            entity.EducationalLevel = request.Request.EducationalLevel;
+        if (request.UpdatePositionType.EducationalLevel != null)
+            entity.EducationalLevel = request.UpdatePositionType.EducationalLevel;
 
-        if (request.Request.Category != null)
-            entity.Category = request.Request.Category;
+        if (request.UpdatePositionType.Category != null)
+            entity.Category = request.UpdatePositionType.Category;
 
-        if (request.Request.IsCareerEligibilityRequired.HasValue)
-            entity.IsCareerEligibilityRequired = request.Request.IsCareerEligibilityRequired.Value;
+        if (request.UpdatePositionType.IsCareerEligibilityRequired.HasValue)
+            entity.IsCareerEligibilityRequired = request.UpdatePositionType.IsCareerEligibilityRequired.Value;
 
-        if (request.Request.CanReportDirectly.HasValue)
-            entity.CanReportDirectly = request.Request.CanReportDirectly.Value;
+        if (request.UpdatePositionType.CanReportDirectly.HasValue)
+            entity.CanReportDirectly = request.UpdatePositionType.CanReportDirectly.Value;
 
-        if (request.Request.IsActive.HasValue)
-            entity.IsActive = request.Request.IsActive.Value;
+        if (request.UpdatePositionType.IsActive.HasValue)
+            entity.IsActive = request.UpdatePositionType.IsActive.Value;
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return ApiResponse<Unit>.Success(Unit.Value);
     }
 }
+

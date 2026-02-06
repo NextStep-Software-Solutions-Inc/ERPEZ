@@ -10,38 +10,39 @@ public class UpdateStepCommandValidator : AbstractValidator<UpdateStepCommand>
             .NotEmpty()
             .WithMessage("Id is required.");
 
-        RuleFor(x => x.Request.Name)
+        RuleFor(x => x.UpdateStep.Name)
             .MaximumLength(200)
-            .When(x => !string.IsNullOrEmpty(x.Request.Name))
+            .When(x => !string.IsNullOrEmpty(x.UpdateStep.Name))
             .WithMessage("Name cannot exceed 200 characters.");
 
-        RuleFor(x => x.Request.Code)
+        RuleFor(x => x.UpdateStep.Code)
             .MaximumLength(50)
-            .When(x => !string.IsNullOrEmpty(x.Request.Code))
+            .When(x => !string.IsNullOrEmpty(x.UpdateStep.Code))
             .WithMessage("Code cannot exceed 50 characters.");
 
-        RuleFor(x => x.Request.StepNumber)
+        RuleFor(x => x.UpdateStep.StepNumber)
             .GreaterThan(0)
-            .When(x => x.Request.StepNumber.HasValue)
+            .When(x => x.UpdateStep.StepNumber.HasValue)
             .WithMessage("StepNumber must be greater than 0.");
 
-        RuleFor(x => x.Request.MinStep)
+        RuleFor(x => x.UpdateStep.MinStep)
             .GreaterThan(0)
-            .When(x => x.Request.MinStep.HasValue)
+            .When(x => x.UpdateStep.MinStep.HasValue)
             .WithMessage("MinStep must be greater than 0.");
 
-        RuleFor(x => x.Request.MaxStep)
+        RuleFor(x => x.UpdateStep.MaxStep)
             .GreaterThan(0)
-            .When(x => x.Request.MaxStep.HasValue)
+            .When(x => x.UpdateStep.MaxStep.HasValue)
             .WithMessage("MaxStep must be greater than 0.");
 
         RuleFor(x => x)
-            .Must(x => !x.Request.MaxStep.HasValue || !x.Request.MinStep.HasValue || x.Request.MaxStep >= x.Request.MinStep)
+            .Must(x => !x.UpdateStep.MaxStep.HasValue || !x.UpdateStep.MinStep.HasValue || x.UpdateStep.MaxStep >= x.UpdateStep.MinStep)
             .WithMessage("MaxStep must be greater than or equal to MinStep.");
 
-        RuleFor(x => x.Request.Description)
+        RuleFor(x => x.UpdateStep.Description)
             .MaximumLength(500)
-            .When(x => !string.IsNullOrEmpty(x.Request.Description))
+            .When(x => !string.IsNullOrEmpty(x.UpdateStep.Description))
             .WithMessage("Description cannot exceed 500 characters.");
     }
 }
+

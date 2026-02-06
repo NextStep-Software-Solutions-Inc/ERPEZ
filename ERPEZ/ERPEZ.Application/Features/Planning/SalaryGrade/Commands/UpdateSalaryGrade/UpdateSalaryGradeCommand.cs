@@ -7,5 +7,5 @@ namespace ERPEZ.Application.Features.Planning.SalaryGrade.Commands.UpdateSalaryG
 public record UpdateSalaryGradeCommand : IRequest<ApiResponse<Unit>>
 {
     public required Guid Id { get; init; }
-    public required UpdateSalaryGradeRequest Request { get; init; }
+    public required UpdateSalaryGradeRequest UpdateSalaryGrade { get; init; }
 }

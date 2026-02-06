@@ -15,6 +15,15 @@ public class DeleteSalaryGradeCommandHandler(IUnitOfWork unitOfWork)
         if (salaryGrade == null)
             throw new NotFoundException($"Salary Grade with ID '{request.Id}' not found.");
 
+        // Check if linked to active positions
+        var hasActivePositions = await unitOfWork.PositionRepository.FindAsync(
+            x => x.SalaryGradeId == request.Id && !x.IsDeleted,
+            cancellationToken
+        );
+
+        if (hasActivePositions != null)
+            throw new ConflictException($"Cannot delete Salary Grade '{salaryGrade.Name}' because it is linked to active positions.");
+
         unitOfWork.SalaryGradeRepository.Remove(salaryGrade);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 

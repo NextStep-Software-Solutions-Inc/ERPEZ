@@ -10,19 +10,20 @@ public class UpdateProcurementWorkflowCommandValidator : AbstractValidator<Updat
             .NotEmpty()
             .WithMessage("Id is required.");
 
-        RuleFor(x => x.Request.Name)
+        RuleFor(x => x.UpdateProcurementWorkflow.Name)
             .MaximumLength(200)
             .WithMessage("Name cannot exceed 200 characters.")
-            .When(x => x.Request.Name != null);
+            .When(x => x.UpdateProcurementWorkflow.Name != null);
 
-        RuleFor(x => x.Request.Code)
+        RuleFor(x => x.UpdateProcurementWorkflow.Code)
             .MaximumLength(50)
             .WithMessage("Code cannot exceed 50 characters.")
-            .When(x => x.Request.Code != null);
+            .When(x => x.UpdateProcurementWorkflow.Code != null);
 
-        RuleFor(x => x.Request.ApprovalLevel)
+        RuleFor(x => x.UpdateProcurementWorkflow.ApprovalLevel)
             .GreaterThan(0)
             .WithMessage("Approval Level must be greater than 0.")
-            .When(x => x.Request.ApprovalLevel.HasValue);
+            .When(x => x.UpdateProcurementWorkflow.ApprovalLevel.HasValue);
     }
 }
+

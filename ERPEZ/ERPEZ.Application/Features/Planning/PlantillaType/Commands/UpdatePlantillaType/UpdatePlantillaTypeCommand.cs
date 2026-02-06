@@ -7,5 +7,5 @@ namespace ERPEZ.Application.Features.Planning.PlantillaType.Commands.UpdatePlant
 public record UpdatePlantillaTypeCommand : IRequest<ApiResponse<Unit>>
 {
     public required Guid Id { get; init; }
-    public required UpdatePlantillaTypeRequest Request { get; init; }
+    public required UpdatePlantillaTypeRequest UpdatePlantillaType { get; init; }
 }

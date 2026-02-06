@@ -6,6 +6,6 @@ namespace ERPEZ.Application.Features.Planning.Step.Commands.UpdateStep;
 
 public record UpdateStepCommand : IRequest<ApiResponse<Unit>>
 {
-    public Guid Id { get; init; }
-    public UpdateStepRequest Request { get; init; } = new();
+    public required Guid Id { get; init; }
+    public required UpdateStepRequest UpdateStep { get; init; }
 }
