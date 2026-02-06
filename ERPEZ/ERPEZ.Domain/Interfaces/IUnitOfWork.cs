@@ -49,6 +49,11 @@ public interface IUnitOfWork
     ICategoryRepository CategoryRepository { get; }
     IAdministrativeLevelRepository AdministrativeLevelRepository { get; }
     IProcurementWorkflowRepository ProcurementWorkflowRepository { get; }
+    IPositionRepository PositionRepository { get; }
+    IPositionTypeRepository PositionTypeRepository { get; }
+    ISalaryGradeRepository SalaryGradeRepository { get; }
+    IPlantillaTypeRepository PlantillaTypeRepository { get; }
+    IStepRepository StepRepository { get; }
     Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default);
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
