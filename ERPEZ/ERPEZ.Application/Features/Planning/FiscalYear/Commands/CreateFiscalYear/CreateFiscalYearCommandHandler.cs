@@ -4,11 +4,18 @@ using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
+using FiscalMonthEntity = ERPEZ.Domain.Entities.Planning.FiscalMonth;
 
 namespace ERPEZ.Application.Features.Planning.FiscalYear.Commands.CreateFiscalYear;
 
 public class CreateFiscalYearCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateFiscalYearCommand, ApiResponse<Guid>>
 {
+    private static readonly string[] monthNames = 
+    [
+        "January", "February", "March", "April", "May", "June",
+        "July", "August", "September", "October", "November", "December"
+    ];
+
     public async Task<ApiResponse<Guid>> Handle(CreateFiscalYearCommand request, CancellationToken cancellationToken)
     {
         var existing = await unitOfWork.FiscalYearRepository.GetByYearAsync(request.Year, cancellationToken);
@@ -18,7 +25,7 @@ public class CreateFiscalYearCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
         {
             Year = request.Year,
             Description = request.Description,
-            IsLocked = false
+            Status = "setup"
         };
 
         await unitOfWork.ExecuteInTransactionAsync(async () =>
@@ -26,15 +33,24 @@ public class CreateFiscalYearCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
             await unitOfWork.FiscalYearRepository.AddAsync(fiscalYear, cancellationToken);
             await unitOfWork.SaveChangesAsync(cancellationToken);
 
-            var allocations = request.FunctionAllocations.Select(a => new FunctionAllocation
+            // Auto-generate 12 fiscal months
+            var fiscalMonths = new List<FiscalMonthEntity>();
+            for (int i = 0; i < 12; i++)
             {
-                FiscalYearId = fiscalYear.Id,
-                FunctionType = Enum.Parse<FunctionTypeEnum>(a.FunctionType),
-                Percentage = a.Percentage
-            }).ToList();
+                fiscalMonths.Add(new FiscalMonthEntity
+                {
+                    FiscalYearId = fiscalYear.Id,
+                    Name = monthNames[i],
+                    MonthIndex = i + 1,
+                    IsLocked = false
+                });
+            }
 
-            fiscalYear.FunctionAllocations = allocations;
-            unitOfWork.FiscalYearRepository.Update(fiscalYear);
+            foreach (var month in fiscalMonths)
+            {
+                await unitOfWork.FiscalMonthRepository.AddAsync(month, cancellationToken);
+            }
+
             await unitOfWork.SaveChangesAsync(cancellationToken);
 
         }, cancellationToken);

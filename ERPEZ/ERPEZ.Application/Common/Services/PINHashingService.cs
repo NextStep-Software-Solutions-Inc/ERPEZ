@@ -30,13 +30,13 @@ public class PINHashingService : IPINHashingService
 
     private static string HashPINWithSalt(string plainTextPIN, byte[] salt)
     {
-        using var pbkdf2 = new Rfc2898DeriveBytes(
+        byte[] hash = Rfc2898DeriveBytes.Pbkdf2(
             Encoding.UTF8.GetBytes(plainTextPIN),
             salt,
             iterations,
-            HashAlgorithmName.SHA256);
+            HashAlgorithmName.SHA256,
+            hashSize);
 
-        byte[] hash = pbkdf2.GetBytes(hashSize);
         return Convert.ToBase64String(hash);
     }
 }

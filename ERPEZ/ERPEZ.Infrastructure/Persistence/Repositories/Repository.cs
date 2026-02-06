@@ -22,7 +22,7 @@ public class Repository<T>(ApplicationDbContext context, ISieveProcessor sievePr
     
     public virtual async Task<(IReadOnlyList<T> Entities, int TotalCount)> GetAllAsync(SieveModel sieveModel, CancellationToken cancellationToken = default)
     {
-        IQueryable<T> query = context.Set<T>().AsNoTracking();
+        IQueryable<T> query = context.Set<T>().AsNoTracking().Where(e => !e.IsDeleted);
 
         var filteredQuery = sieveProcessor.Apply(sieveModel, query, applyPagination: false);
 
@@ -37,7 +37,7 @@ public class Repository<T>(ApplicationDbContext context, ISieveProcessor sievePr
 
     public virtual async Task<(IReadOnlyList<TDto> Entities, int TotalCount)> GetAllAsync<TDto>(SieveModel sieveModel, Expression<Func<T, TDto>> projection, CancellationToken cancellationToken = default)
     {
-        IQueryable<T> query = context.Set<T>().AsNoTracking();
+        IQueryable<T> query = context.Set<T>().AsNoTracking().Where(e => !e.IsDeleted);
 
         var filteredQuery = sieveProcessor.Apply(sieveModel, query, applyPagination: false);
 
@@ -52,12 +52,14 @@ public class Repository<T>(ApplicationDbContext context, ISieveProcessor sievePr
 
     public async Task<T?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return await context.Set<T>().FirstOrDefaultAsync(e => EF.Property<Guid>(e, "Id") == id, cancellationToken);
+        return await context.Set<T>()
+            .Where(e => !e.IsDeleted)
+            .FirstOrDefaultAsync(e => EF.Property<Guid>(e, "Id") == id, cancellationToken);
     }
 
     public async Task<T?> FindAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
     {
-        return await context.Set<T>().FirstOrDefaultAsync(predicate, cancellationToken);
+        return await context.Set<T>().Where(e => !e.IsDeleted).FirstOrDefaultAsync(predicate, cancellationToken);
     }
 
     public void Remove(T entity, bool hardDelete = false)
@@ -90,6 +92,7 @@ public class Repository<T>(ApplicationDbContext context, ISieveProcessor sievePr
     {
         IQueryable<T> query = context.Set<T>();
         if (ignoreQueryFilters == true) query = query.IgnoreQueryFilters();
+        else query = query.Where(e => !e.IsDeleted);
         if (predicate != null) query = query.Where(predicate);
 
         return query;

@@ -14,7 +14,8 @@ public class UpdateFiscalYearCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
         var fiscalYear = await unitOfWork.FiscalYearRepository.GetWithAllocationsAsync(request.Id, cancellationToken)
             ?? throw new NotFoundException("Fiscal year not found.");
 
-        if (fiscalYear.IsLocked) throw new ForbiddenException("Fiscal year is locked.");
+        if (fiscalYear.Status == "closed")
+            throw new ForbiddenException("Cannot update a closed fiscal year.");
 
         await unitOfWork.ExecuteInTransactionAsync(async () =>
         {
@@ -31,19 +32,6 @@ public class UpdateFiscalYearCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
             unitOfWork.FiscalYearRepository.Update(fiscalYear);
             await unitOfWork.SaveChangesAsync(cancellationToken);
         }, cancellationToken);
-
-        var dto = new FiscalYearResponse
-        {
-            Id = fiscalYear.Id,
-            Year = fiscalYear.Year,
-            Description = fiscalYear.Description,
-            IsLocked = fiscalYear.IsLocked,
-            FunctionAllocations = request.FunctionAllocations.Select(a => new FunctionAllocationResponse
-            {
-                FunctionType = a.FunctionType,
-                Percentage = a.Percentage
-            }).ToList()
-        };
 
         return ApiResponse<Unit>.Success(Unit.Value, "Fiscal year updated successfully.");
     }
