@@ -54,6 +54,10 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IObjectExpenseClassRepository objectExpenseClassRepository;
     private readonly IUACSImportLogRepository uacsImportLogRepository;
     private readonly IObjectChildCodeRepository objectChildCodeRepository;
+    private readonly IOfficeTypeRepository officeTypeRepository;
+    private readonly ICategoryRepository categoryRepository;
+    private readonly IAdministrativeLevelRepository administrativeLevelRepository;
+    private readonly IProcurementWorkflowRepository procurementWorkflowRepository;
     // Constructor initializes all repositories once
     public UnitOfWork(ApplicationDbContext context, IServiceProvider serviceProvider)
     {
@@ -104,6 +108,10 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         objectExpenseClassRepository = new ObjectExpenseClassRepository(context, sieveProcessor);
         uacsImportLogRepository = new UACSImportLogRepository(context, sieveProcessor);
         objectChildCodeRepository = new ObjectChildCodeRepository(context, sieveProcessor);
+        officeTypeRepository = new OfficeTypeRepository(context, sieveProcessor);
+        categoryRepository = new CategoryRepository(context, sieveProcessor);
+        administrativeLevelRepository = new AdministrativeLevelRepository(context, sieveProcessor);
+        procurementWorkflowRepository = new ProcurementWorkflowRepository(context, sieveProcessor);
     }
 
     // Public properties return cached instances
@@ -150,6 +158,10 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IObjectExpenseClassRepository ObjectExpenseClassRepository => objectExpenseClassRepository;
     public IUACSImportLogRepository UACSImportLogRepository => uacsImportLogRepository;
     public IObjectChildCodeRepository ObjectChildCodeRepository => objectChildCodeRepository;
+    public IOfficeTypeRepository OfficeTypeRepository => officeTypeRepository;
+    public ICategoryRepository CategoryRepository => categoryRepository;
+    public IAdministrativeLevelRepository AdministrativeLevelRepository => administrativeLevelRepository;
+    public IProcurementWorkflowRepository ProcurementWorkflowRepository => procurementWorkflowRepository;
     public async Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default)
     {
         await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);

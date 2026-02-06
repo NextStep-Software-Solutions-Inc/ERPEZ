@@ -15,17 +15,21 @@ public class GetOfficeByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler
         var result = new OfficeResponse()
         {
             Id = office.Id,
-            ClusterId = office.ClusterId,
-            OfficeHead = office.OfficeHead,
             Name = office.Name,
-            Description = office.Description,
+            Code = office.Code,
             Address = office.Address,
-            Email = office.Email,
-            ContactNumber = office.ContactNumber,
+            Description = office.Description,
             ResponsibilityCenterCode = office.ResponsibilityCenterCode,
+            BudgetCostCenter = office.BudgetCostCenter,
+            OfficeTypeId = office.OfficeTypeId,
+            OrganizationId = office.OrganizationId,
+            CategoryId = office.CategoryId,
+            AdministrativeLevelId = office.AdministrativeLevelId,
+            ClusterId = office.ClusterId,
+            ProcurementWorkflowId = office.ProcurementWorkflowId,
+            ParentId = office.ParentId,
             CreatedBy = office.CreatedBy,
-            CreatedAt = office.CreatedAt,
-            IsDeliveryUnit = office.DeliveryUnits.Any(du => du.OfficeId == office.Id)
+            CreatedAt = office.CreatedAt
         };
 
         return ApiResponse<OfficeResponse>.Success(result, "Retrieved successfully");

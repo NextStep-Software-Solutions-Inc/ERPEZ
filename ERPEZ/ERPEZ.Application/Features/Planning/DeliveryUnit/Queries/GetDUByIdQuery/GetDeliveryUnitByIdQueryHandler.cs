@@ -20,12 +20,10 @@ public class GetDeliveryUnitByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestH
             {
                 Id = du.Office.Id,
                 Name = du.Office.Name,
+                Code = du.Office.Code,
                 Address = du.Office.Address,
-                ContactNumber = du.Office.ContactNumber,
                 ClusterId = du.Office.ClusterId,
-                Email = du.Office.Email,
                 Description = du.Office.Description,
-                OfficeHead = du.Office.OfficeHead,
                 ResponsibilityCenterCode = du.Office.ResponsibilityCenterCode,
                 CreatedBy = du.Office.CreatedBy,
                 CreatedAt = du.Office.CreatedAt,
@@ -33,7 +31,6 @@ public class GetDeliveryUnitByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestH
                     {
                         Id = du.Office.Cluster.Id,
                         Name = du.Office.Cluster.Name,
-                        Description = du.Office.Cluster.Description,
                         CreatedAt = du.Office.Cluster.CreatedAt,
                         CreatedBy = du.Office.Cluster.CreatedBy,
                     }
@@ -90,12 +87,10 @@ public class GetDeliveryUnitByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestH
                 {
                     Id = subDU.Office.Id,
                     Name = subDU.Office.Name,
+                    Code = subDU.Office.Code,
                     Address = subDU.Office.Address,
-                    ContactNumber = subDU.Office.ContactNumber,
                     ClusterId = subDU.Office.ClusterId,
-                    Email = subDU.Office.Email,
                     Description = subDU.Office.Description,
-                    OfficeHead = subDU.Office.OfficeHead,
                     ResponsibilityCenterCode = subDU.Office.ResponsibilityCenterCode,
                     CreatedBy = subDU.Office.CreatedBy,
                     CreatedAt = subDU.Office.CreatedAt,
@@ -103,7 +98,6 @@ public class GetDeliveryUnitByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestH
                         {
                             Id = du.Office.Cluster.Id,
                             Name = du.Office.Cluster.Name,
-                            Description = du.Office.Cluster.Description,
                             CreatedAt = du.Office.Cluster.CreatedAt,
                             CreatedBy = du.Office.Cluster.CreatedBy,
                         }

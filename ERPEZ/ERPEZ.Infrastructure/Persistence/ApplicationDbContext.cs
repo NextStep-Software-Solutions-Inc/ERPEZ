@@ -43,6 +43,17 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<WFPPAP>? WFPPAPs { get; set; }
     public DbSet<WFPPAPDepartment>? WFPPAPDepartments { get; set; }
 
+    //Position Management
+    public DbSet<Position>? Positions { get; set; }
+    public DbSet<PositionType>? PositionTypes { get; set; }
+    public DbSet<SalaryGrade>? SalaryGrades { get; set; }
+    public DbSet<PlantillaType>? PlantillaTypes { get; set; }
+    public DbSet<Step>? Steps { get; set; }
+    public DbSet<Category>? Categories { get; set; }
+    public DbSet<AdministrativeLevel>? AdministrativeLevels { get; set; }
+    public DbSet<ProcurementWorkflow>? ProcurementWorkflows { get; set; }
+    public DbSet<OfficeType>? OfficeTypes { get; set; }
+
     //UACS Library
     public DbSet<UACSCodeSegment>? UACSCodeSegments { get; set; }
     public DbSet<UACSValidationRule>? UACSValidationRules { get; set; }
@@ -569,10 +580,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasMaxLength(256);
 
         modelBuilder.Entity<Cluster>()
-            .Property(c => c.Description)
-            .HasMaxLength(1000);
-
-        modelBuilder.Entity<Cluster>()
             .HasMany(c => c.Offices)
             .WithOne(o => o.Cluster)
             .HasForeignKey(o => o.ClusterId);
@@ -624,6 +631,135 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<FunctionAllocation>()
             .HasIndex(fpa => new { fpa.FunctionType, fpa.FiscalYearId })
             .IsUnique();
+
+        //Position Management
+        
+        //OfficeType
+        modelBuilder.Entity<OfficeType>()
+            .HasIndex(ot => ot.Code)
+            .IsUnique();
+
+        //Category
+        modelBuilder.Entity<Category>()
+            .HasIndex(c => c.Code)
+            .IsUnique();
+
+        //AdministrativeLevel
+        modelBuilder.Entity<AdministrativeLevel>()
+            .HasIndex(al => al.Code)
+            .IsUnique();
+
+        //ProcurementWorkflow
+        modelBuilder.Entity<ProcurementWorkflow>()
+            .HasIndex(pw => pw.Code)
+            .IsUnique();
+
+        //Cluster
+        modelBuilder.Entity<Cluster>()
+            .HasIndex(c => c.Code)
+            .IsUnique();
+
+        //Office
+        modelBuilder.Entity<Office>()
+            .HasIndex(o => o.Code)
+            .IsUnique();
+
+        modelBuilder.Entity<Office>()
+            .HasOne(o => o.OfficeType)
+            .WithMany(ot => ot.Offices)
+            .HasForeignKey(o => o.OfficeTypeId);
+
+        modelBuilder.Entity<Office>()
+            .HasOne(o => o.Organization)
+            .WithMany(org => org.Offices)
+            .HasForeignKey(o => o.OrganizationId);
+
+        modelBuilder.Entity<Office>()
+            .HasOne(o => o.Category)
+            .WithMany(c => c.Offices)
+            .HasForeignKey(o => o.CategoryId);
+
+        modelBuilder.Entity<Office>()
+            .HasOne(o => o.AdministrativeLevel)
+            .WithMany(al => al.Offices)
+            .HasForeignKey(o => o.AdministrativeLevelId);
+
+        modelBuilder.Entity<Office>()
+            .HasOne(o => o.Cluster)
+            .WithMany(c => c.Offices)
+            .HasForeignKey(o => o.ClusterId);
+
+        modelBuilder.Entity<Office>()
+            .HasOne(o => o.ProcurementWorkflow)
+            .WithMany(pw => pw.Offices)
+            .HasForeignKey(o => o.ProcurementWorkflowId);
+
+        // Self-referencing relationship for office hierarchy
+        modelBuilder.Entity<Office>()
+            .HasOne(o => o.Parent)
+            .WithMany(o => o.Children)
+            .HasForeignKey(o => o.ParentId);
+
+        //PositionType
+        modelBuilder.Entity<PositionType>()
+            .HasIndex(pt => pt.Code)
+            .IsUnique();
+
+        //SalaryGrade
+        modelBuilder.Entity<SalaryGrade>()
+            .HasIndex(sg => sg.Code)
+            .IsUnique();
+
+        modelBuilder.Entity<SalaryGrade>()
+            .HasIndex(sg => sg.GradeNumber)
+            .IsUnique();
+
+        //PlantillaType
+        modelBuilder.Entity<PlantillaType>()
+            .HasIndex(pt => pt.Code)
+            .IsUnique();
+
+        //Step
+        modelBuilder.Entity<Step>()
+            .HasIndex(s => s.Code)
+            .IsUnique();
+
+        modelBuilder.Entity<Step>()
+            .HasIndex(s => s.StepNumber)
+            .IsUnique();
+
+        //Position
+        modelBuilder.Entity<Position>()
+            .HasIndex(p => p.Code)
+            .IsUnique();
+
+        modelBuilder.Entity<Position>()
+            .HasIndex(p => new { p.OfficeId, p.Title });
+
+        modelBuilder.Entity<Position>()
+            .HasOne(p => p.PositionType)
+            .WithMany(pt => pt.Positions)
+            .HasForeignKey(p => p.PositionTypeId);
+
+        modelBuilder.Entity<Position>()
+            .HasOne(p => p.PlantillaType)
+            .WithMany(pt => pt.Positions)
+            .HasForeignKey(p => p.PlantillaTypeId);
+
+        modelBuilder.Entity<Position>()
+            .HasOne(p => p.SalaryGrade)
+            .WithMany(sg => sg.Positions)
+            .HasForeignKey(p => p.SalaryGradeId);
+
+        modelBuilder.Entity<Position>()
+            .HasOne(p => p.Step)
+            .WithMany(s => s.Positions)
+            .HasForeignKey(p => p.StepId);
+
+        modelBuilder.Entity<Position>()
+            .HasOne(p => p.Office)
+            .WithMany(o => o.Positions)
+            .HasForeignKey(p => p.OfficeId);
 
         base.OnModelCreating(modelBuilder);
     }

@@ -9,7 +9,16 @@ public class Cluster : BaseEntity
     public string Name { get; set; } = string.Empty;
 
     [Sieve(CanFilter = true, CanSort = true)]
-    public string? Description { get; set; }
+    public string Code { get; set; } = string.Empty;
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public string? Address { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public int? MaxSubUnits { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public bool IsActive { get; set; } = true;
 
     public virtual List<Office> Offices { get; set; } = [];
 }

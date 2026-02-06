@@ -9,32 +9,53 @@ public class CreateOfficeCommandHandler(IUnitOfWork unitOfWork) : IRequestHandle
 {
     public async Task<ApiResponse<Guid>> Handle(CreateOfficeCommand request, CancellationToken cancellationToken)
     {
+        // Validate required foreign keys
+        _ = await unitOfWork.OfficeTypeRepository.GetByIdAsync(request.OfficeTypeId, cancellationToken: cancellationToken) ??
+            throw new NotFoundException("OfficeType not found.");
+        _ = await unitOfWork.OrganizationRepository.GetByIdAsync(request.OrganizationId, cancellationToken: cancellationToken) ??
+            throw new NotFoundException("Organization not found.");
+        _ = await unitOfWork.CategoryRepository.GetByIdAsync(request.CategoryId, cancellationToken: cancellationToken) ??
+            throw new NotFoundException("Category not found.");
+        _ = await unitOfWork.AdministrativeLevelRepository.GetByIdAsync(request.AdministrativeLevelId, cancellationToken: cancellationToken) ??
+            throw new NotFoundException("AdministrativeLevel not found.");
+
+        // Validate optional foreign keys
         if (request.ClusterId.HasValue)
         {
             _ = await unitOfWork.ClusterRepository.GetByIdAsync(request.ClusterId.Value, cancellationToken: cancellationToken) ??
                 throw new NotFoundException("Cluster not found.");
         }
+        if (request.ProcurementWorkflowId.HasValue)
+        {
+            _ = await unitOfWork.ProcurementWorkflowRepository.GetByIdAsync(request.ProcurementWorkflowId.Value, cancellationToken: cancellationToken) ??
+                throw new NotFoundException("ProcurementWorkflow not found.");
+        }
+        if (request.ParentId.HasValue)
+        {
+            _ = await unitOfWork.OfficeRepository.GetByIdAsync(request.ParentId.Value, cancellationToken: cancellationToken) ??
+                throw new NotFoundException("Parent Office not found.");
+        }
 
-        var officeExist = await unitOfWork.OfficeRepository.FindAsync(t => t.Name == request.Name, cancellationToken: cancellationToken);
-        if (officeExist != null) throw new ConflictException("Office already exists.");
+        // Check for duplicate Code
+        var officeExist = await unitOfWork.OfficeRepository.FindAsync(t => t.Code == request.Code, cancellationToken: cancellationToken);
+        if (officeExist != null) throw new ConflictException("Office with this code already exists.");
 
         var office = new Domain.Entities.Planning.Office
         {
-            ClusterId = request.ClusterId,
             Name = request.Name,
-            Description = request.Description,
+            Code = request.Code,
             Address = request.Address,
-            Email = request.Email,
-            ContactNumber = request.ContactNumber,
-            OfficeHead = request.OfficeHead,
+            Description = request.Description,
             ResponsibilityCenterCode = request.ResponsibilityCenterCode,
+            BudgetCostCenter = request.BudgetCostCenter,
+            OfficeTypeId = request.OfficeTypeId,
+            OrganizationId = request.OrganizationId,
+            CategoryId = request.CategoryId,
+            AdministrativeLevelId = request.AdministrativeLevelId,
+            ClusterId = request.ClusterId,
+            ProcurementWorkflowId = request.ProcurementWorkflowId,
+            ParentId = request.ParentId
         };
-
-        if(request.IsDeliveryUnit.HasValue && request.IsDeliveryUnit.Value)
-        {
-            office.DeliveryUnits.Add(new Domain.Entities.Planning.DeliveryUnit());
-        }
-
 
         await unitOfWork.OfficeRepository.AddAsync(office, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);

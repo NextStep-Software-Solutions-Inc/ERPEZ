@@ -31,12 +31,10 @@ public class GetWFPByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
                     {
                         Id = w.DeliveryUnit.Office.Id,
                         Name = w.DeliveryUnit.Office.Name,
+                        Code = w.DeliveryUnit.Office.Code,
                         Address = w.DeliveryUnit.Office.Address,
-                        ContactNumber = w.DeliveryUnit.Office.ContactNumber,
                         ClusterId = w.DeliveryUnit.Office.ClusterId,
-                        Email = w.DeliveryUnit.Office.Email,
                         Description = w.DeliveryUnit.Office.Description,
-                        OfficeHead = w.DeliveryUnit.Office.OfficeHead,
                         ResponsibilityCenterCode = w.DeliveryUnit.Office.ResponsibilityCenterCode,
                         CreatedBy = w.DeliveryUnit.Office.CreatedBy,
                         CreatedAt = w.DeliveryUnit.Office.CreatedAt,
@@ -44,7 +42,6 @@ public class GetWFPByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
                             {
                                 Id = w.DeliveryUnit.Office.Cluster.Id,
                                 Name = w.DeliveryUnit.Office.Cluster.Name,
-                                Description = w.DeliveryUnit.Office.Cluster.Description,
                                 CreatedBy = w.DeliveryUnit.Office.Cluster.CreatedBy,
                                 CreatedAt = w.DeliveryUnit.Office.Cluster.CreatedAt,
                             } : null,
@@ -80,12 +77,10 @@ public class GetWFPByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
                         {
                             Id = sdu.Office.Id,
                             Name = sdu.Office.Name,
+                            Code = sdu.Office.Code,
                             Address = sdu.Office.Address,
-                            ContactNumber = sdu.Office.ContactNumber,
                             ClusterId = sdu.Office.ClusterId,
-                            Email = sdu.Office.Email,
                             Description = sdu.Office.Description,
-                            OfficeHead = sdu.Office.OfficeHead,
                             ResponsibilityCenterCode = sdu.Office.ResponsibilityCenterCode,
                             CreatedBy = sdu.Office.CreatedBy,
                             CreatedAt = sdu.Office.CreatedAt,
@@ -93,7 +88,6 @@ public class GetWFPByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
                                 {
                                     Id = sdu.Office.Cluster.Id,
                                     Name = sdu.Office.Cluster.Name,
-                                    Description = sdu.Office.Cluster.Description,
                                     CreatedBy = sdu.Office.Cluster.CreatedBy,
                                     CreatedAt = sdu.Office.Cluster.CreatedAt,
                                 } : null,

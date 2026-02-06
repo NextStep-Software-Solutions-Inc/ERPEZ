@@ -18,7 +18,10 @@ public class GetClusterByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandle
         {
             Id = cluster.Id,
             Name = cluster.Name,
-            Description = cluster.Description,
+            Code = cluster.Code,
+            Address = cluster.Address,
+            MaxSubUnits = cluster.MaxSubUnits,
+            IsActive = cluster.IsActive,
             CreatedAt = cluster.CreatedAt,
             CreatedBy = cluster.CreatedBy
         };

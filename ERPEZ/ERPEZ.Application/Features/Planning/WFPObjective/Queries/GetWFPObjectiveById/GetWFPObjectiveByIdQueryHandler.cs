@@ -45,11 +45,9 @@ public class GetWFPObjectiveByIdQueryHandler(IUnitOfWork unitOfWork)
                         {
                             Id = o.WFP.DeliveryUnit.Office.Id,
                             Name = o.WFP.DeliveryUnit.Office.Name,
+                            Code = o.WFP.DeliveryUnit.Office.Code,
                             Address = o.WFP.DeliveryUnit.Office.Address,
-                            ContactNumber = o.WFP.DeliveryUnit.Office.ContactNumber,
                             CreatedBy = o.WFP.DeliveryUnit.Office.CreatedBy,
-                            Email = o.WFP.DeliveryUnit.Office.Email,
-                            OfficeHead = o.WFP.DeliveryUnit.Office.OfficeHead,
                         }
                     },
                     CreatedAt = o.WFP.CreatedAt,

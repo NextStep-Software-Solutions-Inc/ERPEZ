@@ -30,16 +30,13 @@ public class GetOPCRPAPDepartmentsQueryHandler(IUnitOfWork unitOfWork) : IReques
                 Office = new OfficeResponse
                 {
                     Id = dept.DeliveryUnit.Office.Id,
-                    OfficeHead = dept.DeliveryUnit.Office.OfficeHead,
                     Name = dept.DeliveryUnit.Office.Name,
+                    Code = dept.DeliveryUnit.Office.Code,
                     Description = dept.DeliveryUnit.Office.Description,
                     Address = dept.DeliveryUnit.Office.Address,
-                    Email = dept.DeliveryUnit.Office.Email,
-                    ContactNumber = dept.DeliveryUnit.Office.ContactNumber,
                     ResponsibilityCenterCode = dept.DeliveryUnit.Office.ResponsibilityCenterCode,
                     CreatedAt = dept.DeliveryUnit.Office.CreatedAt,
                     CreatedBy = dept.DeliveryUnit.Office.CreatedBy,
-                    IsDeliveryUnit = false,
                     ClusterId = dept.DeliveryUnit.Office.ClusterId,
                     Cluster = null
                 },
