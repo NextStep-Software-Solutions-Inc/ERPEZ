@@ -28,6 +28,8 @@ public interface IUnitOfWork
     IWFPPAPDepartmentRepository WFPPAPDepartmentRepository { get; }
     IFunctionAllocationRepository FunctionAllocationRepository { get; }
     IFiscalYearRepository FiscalYearRepository { get; }
+    IFiscalMonthRepository FiscalMonthRepository { get; }
+    IBudgetCallRepository BudgetCallRepository { get; }
     IClusterRepository ClusterRepository { get; }
     IWFPObjectiveTargetRepository WFPObjectiveTargetRepository { get; }
     IWFPObjectiveTimelineRepository WFPObjectiveTimelineRepository { get; }

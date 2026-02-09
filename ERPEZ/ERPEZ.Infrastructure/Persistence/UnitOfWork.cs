@@ -37,6 +37,8 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IMFOPAPRepository mfoPapRepository;
     private readonly IFunctionAllocationRepository functionAllocationRepository;
     private readonly IFiscalYearRepository fiscalYearRepository;
+    private readonly IFiscalMonthRepository fiscalMonthRepository;
+    private readonly IBudgetCallRepository budgetCallRepository;
     private readonly IClusterRepository clusterRepository;
     private readonly IWFPObjectiveTargetRepository wfpObjectiveTargetRepository;
     private readonly IWFPObjectiveTimelineRepository wfpObjectiveTimelineRepository;
@@ -96,6 +98,8 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         mfoPapRepository = new MFOPAPRepository(context, sieveProcessor);
         functionAllocationRepository = new FunctionAllocationRepository(context, sieveProcessor);
         fiscalYearRepository = new FiscalYearRepository(context, sieveProcessor);
+        fiscalMonthRepository = new FiscalMonthRepository(context, sieveProcessor);
+        budgetCallRepository = new BudgetCallRepository(context, sieveProcessor);
         clusterRepository = new ClusterRepository(context, sieveProcessor);
         wfpObjectiveTargetRepository = new WFPObjectiveTargetRepository(context, sieveProcessor);
         wfpObjectiveTimelineRepository = new WFPObjectiveTimelineRepository(context, sieveProcessor);
@@ -151,6 +155,8 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IMFOPAPRepository MFOPAPRepository => mfoPapRepository;
     public IFunctionAllocationRepository FunctionAllocationRepository => functionAllocationRepository;
     public IFiscalYearRepository FiscalYearRepository => fiscalYearRepository;
+    public IFiscalMonthRepository FiscalMonthRepository => fiscalMonthRepository;
+    public IBudgetCallRepository BudgetCallRepository => budgetCallRepository;
     public IClusterRepository ClusterRepository => clusterRepository;
     public IWFPObjectiveTargetRepository WFPObjectiveTargetRepository => wfpObjectiveTargetRepository;
     public IWFPObjectiveTimelineRepository WFPObjectiveTimelineRepository => wfpObjectiveTimelineRepository;

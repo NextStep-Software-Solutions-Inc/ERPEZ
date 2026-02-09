@@ -10,7 +10,19 @@ public class FiscalYear : BaseEntity
 
     [Sieve(CanFilter = true, CanSort = true)]
     public string? Description { get; set; }
-    public bool IsLocked { get; set; } = false;
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public string Status { get; set; } = "setup";
+
+    /// <summary>
+    /// Navigation property for fiscal months.
+    /// </summary>
+    public virtual List<FiscalMonth> FiscalMonths { get; set; } = [];
+
+    /// <summary>
+    /// Navigation property for budget calls.
+    /// </summary>
+    public virtual List<BudgetCall> BudgetCalls { get; set; } = [];
 
     /// <summary>
     /// Navigation property for function allocations.
