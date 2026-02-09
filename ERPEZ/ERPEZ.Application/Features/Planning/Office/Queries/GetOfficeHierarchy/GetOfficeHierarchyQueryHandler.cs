@@ -14,7 +14,7 @@ public class GetOfficeHierarchyQueryHandler(IUnitOfWork unitOfWork)
         CancellationToken cancellationToken)
     {
         // Load all offices with related entities from repository
-        var allOffices = await unitOfWork.OfficeRepository.GetAllAsync(request.IncludeDeleted, cancellationToken);
+        var allOffices = await unitOfWork.OfficeRepository.GetAllWithDetailsAsync(request.IncludeDeleted, cancellationToken);
 
         // If RootOfficeId is specified, validate it exists
         if (request.RootOfficeId.HasValue)
