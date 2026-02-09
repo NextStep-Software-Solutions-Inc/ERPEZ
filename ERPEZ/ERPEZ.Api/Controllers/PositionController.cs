@@ -1,10 +1,12 @@
 using ERPEZ.Application.Features.Planning.Position.Commands.CreatePosition;
 using ERPEZ.Application.Features.Planning.Position.Commands.DeletePosition;
 using ERPEZ.Application.Features.Planning.Position.Commands.UpdatePosition;
+using ERPEZ.Application.Features.Planning.Position.Commands.UploadPositionPSI;
 using ERPEZ.Application.Features.Planning.Position.Dtos;
 using ERPEZ.Application.Features.Planning.Position.Queries.GetPositionById;
 using ERPEZ.Application.Features.Planning.Position.Queries.GetPositions;
 using ERPEZ.Application.Features.Planning.Position.Queries.GetPositionStatistics;
+using ERPEZ.Application.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -72,5 +74,15 @@ public class PositionController(ISender mediator) : ControllerBase
     {
         var result = await mediator.Send(new GetPositionStatisticsQuery());
         return Ok(result);
+    }
+
+    [HttpPost("upload-psi")]
+    [ProducesResponseType(typeof(ApiResponse<PositionImportResult>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<PositionImportResult>), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> UploadPositionPSI([FromForm] IFormFile file)
+    {
+        var command = new UploadPositionPSICommand { File = file };
+        var result = await mediator.Send(command);
+        return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 }

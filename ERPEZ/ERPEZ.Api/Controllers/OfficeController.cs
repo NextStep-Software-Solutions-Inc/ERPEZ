@@ -1,6 +1,7 @@
 using ERPEZ.Application.Features.Planning.Office.Commands.CreateOffice;
 using ERPEZ.Application.Features.Planning.Office.Commands.DeleteOffice;
 using ERPEZ.Application.Features.Planning.Office.Commands.UpdateOffice;
+using ERPEZ.Application.Features.Planning.Office.Commands.UpdateOfficeWorkflow;
 using ERPEZ.Application.Features.Planning.Office.Dtos;
 using ERPEZ.Application.Features.Planning.Office.Queries.GetOfficeByIdQuery;
 using ERPEZ.Application.Features.Planning.Office.Queries.GetOfficesQuery;
@@ -66,6 +67,17 @@ namespace ERPEZ.Api.Controllers
             var office = await mediator.Send(command);
 
             return office.Succeeded ? NoContent() : NotFound();
+        }
+
+        [HttpPut("{id}/workflow")]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> UpdateOfficeWorkflow(Guid id, [FromBody] UpdateOfficeWorkflowCommand command)
+        {
+            command.Id = id;
+            var result = await mediator.Send(command);
+            return result.Succeeded ? Ok(result) : BadRequest(result);
         }
     }
 }
