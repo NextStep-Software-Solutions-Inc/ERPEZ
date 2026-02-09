@@ -4,6 +4,7 @@ using ERPEZ.Application.Features.Planning.Office.Commands.UpdateOffice;
 using ERPEZ.Application.Features.Planning.Office.Commands.UpdateOfficeWorkflow;
 using ERPEZ.Application.Features.Planning.Office.Dtos;
 using ERPEZ.Application.Features.Planning.Office.Queries.GetOfficeByIdQuery;
+using ERPEZ.Application.Features.Planning.Office.Queries.GetOfficeHierarchy;
 using ERPEZ.Application.Features.Planning.Office.Queries.GetOfficesQuery;
 using ERPEZ.Shared.Common;
 using MediatR;
@@ -77,6 +78,15 @@ namespace ERPEZ.Api.Controllers
         {
             command.Id = id;
             var result = await mediator.Send(command);
+            return result.Succeeded ? Ok(result) : BadRequest(result);
+        }
+
+        [HttpGet("hierarchy")]
+        [ProducesResponseType(typeof(ApiResponse<List<OfficeHierarchyResponse>>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<List<OfficeHierarchyResponse>>), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetOfficeHierarchy([FromQuery] GetOfficeHierarchyQuery query)
+        {
+            var result = await mediator.Send(query);
             return result.Succeeded ? Ok(result) : BadRequest(result);
         }
     }
