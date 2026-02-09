@@ -56,7 +56,7 @@ namespace ERPEZ.Api.Controllers
             };
 
             var office = await mediator.Send(request);
-            return office.Succeeded ? Ok(ApiResponse<Unit>.Success(Unit.Value)) : BadRequest(office);
+            return office.Succeeded ? Ok(office) : BadRequest(office);
         }
 
         [HttpDelete("{id}")]

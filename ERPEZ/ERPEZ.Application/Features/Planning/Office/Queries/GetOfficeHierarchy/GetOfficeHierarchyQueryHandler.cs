@@ -3,7 +3,6 @@ using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.Application.Features.Planning.Office.Queries.GetOfficeHierarchy;
 
@@ -14,21 +13,8 @@ public class GetOfficeHierarchyQueryHandler(IUnitOfWork unitOfWork)
         GetOfficeHierarchyQuery request,
         CancellationToken cancellationToken)
     {
-        // Load all offices with related entities
-        var query = unitOfWork.OfficeRepository.Query()
-            .Include(o => o.OfficeType)
-            .Include(o => o.Category)
-            .Include(o => o.AdministrativeLevel)
-            .Include(o => o.Cluster)
-            .AsQueryable();
-
-        // Filter by soft-deleted status
-        if (!request.IncludeDeleted)
-        {
-            query = query.Where(o => !o.IsDeleted);
-        }
-
-        var allOffices = await query.ToListAsync(cancellationToken);
+        // Load all offices with related entities from repository
+        var allOffices = await unitOfWork.OfficeRepository.GetAllAsync(request.IncludeDeleted, cancellationToken);
 
         // If RootOfficeId is specified, validate it exists
         if (request.RootOfficeId.HasValue)

@@ -20,5 +20,13 @@ public record OfficeResponse
     public Guid? ParentId { get; init; }
     public DateTime CreatedAt { get; init; }
     public required string CreatedBy { get; init; }
+    
+    // Lookup Details
+    public string OfficeTypeName { get; init; } = string.Empty;
+    public string OrganizationName { get; init; } = string.Empty;
+    public string CategoryName { get; init; } = string.Empty;
+    public string AdministrativeLevelName { get; init; } = string.Empty;
     public ClusterResponse? Cluster { get; init; }
+    public string? ProcurementWorkflowName { get; init; }
+    public string? ParentOfficeName { get; init; }
 }
