@@ -5,12 +5,19 @@ using Sieve.Services;
 
 namespace ERPEZ.Infrastructure.Persistence.Repositories;
 
-public class OfficeRepository(ApplicationDbContext context, ISieveProcessor sieveProcessor)
-    : Repository<Office>(context, sieveProcessor), IOfficeRepository
+public class OfficeRepository : Repository<Office>, IOfficeRepository
 {
+    private readonly ApplicationDbContext dbContext;
+
+    public OfficeRepository(ApplicationDbContext context, ISieveProcessor sieveProcessor)
+        : base(context, sieveProcessor)
+    {
+        dbContext = context;
+    }
+
     public async Task<Office?> GetByIdWithDetailsAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return await context.Offices
+        return await dbContext.Offices
             .Include(o => o.OfficeType)
             .Include(o => o.Organization)
             .Include(o => o.Category)
@@ -23,7 +30,7 @@ public class OfficeRepository(ApplicationDbContext context, ISieveProcessor siev
 
     public async Task<List<Office>> GetAllWithDetailsAsync(bool includeDeleted = false, CancellationToken cancellationToken = default)
     {
-        var query = context.Offices
+        var query = dbContext.Offices
             .Include(o => o.OfficeType)
             .Include(o => o.Organization)
             .Include(o => o.Category)
