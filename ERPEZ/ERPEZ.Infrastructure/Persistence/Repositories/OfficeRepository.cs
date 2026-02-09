@@ -17,7 +17,7 @@ public class OfficeRepository : Repository<Office>, IOfficeRepository
 
     public async Task<Office?> GetByIdWithDetailsAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return await dbContext.Offices
+        return await dbContext.Offices!
             .Include(o => o.OfficeType)
             .Include(o => o.Organization)
             .Include(o => o.Category)
@@ -30,7 +30,7 @@ public class OfficeRepository : Repository<Office>, IOfficeRepository
 
     public async Task<List<Office>> GetAllWithDetailsAsync(bool includeDeleted = false, CancellationToken cancellationToken = default)
     {
-        var query = dbContext.Offices
+        var query = dbContext.Offices!
             .Include(o => o.OfficeType)
             .Include(o => o.Organization)
             .Include(o => o.Category)
