@@ -77,11 +77,11 @@ public class PositionController(ISender mediator) : ControllerBase
     }
 
     [HttpPost("upload-psi")]
+    [Consumes("multipart/form-data")]
     [ProducesResponseType(typeof(ApiResponse<PositionImportResult>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<PositionImportResult>), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> UploadPositionPSI([FromForm] IFormFile file)
+    public async Task<IActionResult> UploadPositionPSI([FromForm] UploadPositionPSICommand command)
     {
-        var command = new UploadPositionPSICommand { File = file };
         var result = await mediator.Send(command);
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
