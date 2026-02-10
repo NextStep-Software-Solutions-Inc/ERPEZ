@@ -50,8 +50,8 @@ public class FiscalYearController(ISender mediator) : ControllerBase
         var command = new UpdateFiscalYearCommand
         {
             Id = id,
-            Description = dto.Description,
-            FunctionAllocations = dto.FunctionAllocations
+            Year = dto.Year,
+            Description = dto.Description
         };
 
         var result = await mediator.Send(command);
