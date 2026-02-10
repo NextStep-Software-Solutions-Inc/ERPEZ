@@ -18,5 +18,10 @@ public enum PositionStatusEnum
     /// <summary>
     /// Position is temporarily suspended from being filled.
     /// </summary>
-    Frozen = 3
+    Frozen = 3,
+
+    /// <summary>
+    /// Position has been permanently eliminated from the organizational structure.
+    /// </summary>
+    Abolished = 4
 }

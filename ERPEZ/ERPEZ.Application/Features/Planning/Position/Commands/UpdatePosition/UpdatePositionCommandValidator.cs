@@ -1,10 +1,16 @@
+using ERPEZ.Domain.Enums;
 using FluentValidation;
 
 namespace ERPEZ.Application.Features.Planning.Position.Commands.UpdatePosition;
 
 public class UpdatePositionCommandValidator : AbstractValidator<UpdatePositionCommand>
 {
-    private static readonly string[] allowedOperationalStatuses = ["Vacant", "Filled", "Abolished"];
+    private static readonly string[] allowedOperationalStatuses = 
+    [
+        nameof(PositionStatusEnum.Vacant),
+        nameof(PositionStatusEnum.Filled),
+        nameof(PositionStatusEnum.Abolished)
+    ];
 
     public UpdatePositionCommandValidator()
     {

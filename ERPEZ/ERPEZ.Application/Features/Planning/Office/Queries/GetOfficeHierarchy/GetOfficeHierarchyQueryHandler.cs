@@ -16,7 +16,7 @@ public class GetOfficeHierarchyQueryHandler(IUnitOfWork unitOfWork)
         // Load all offices with related entities from repository
         var allOffices = await unitOfWork.OfficeRepository.GetAllWithDetailsAsync(request.IncludeDeleted, cancellationToken);
 
-        // If RootOfficeId is specified, validate it exists
+        // If RootOfficeId is specified, validate it exists and build hierarchy from that root
         if (request.RootOfficeId.HasValue)
         {
             var rootOffice = allOffices.FirstOrDefault(o => o.Id == request.RootOfficeId.Value);
@@ -25,11 +25,22 @@ public class GetOfficeHierarchyQueryHandler(IUnitOfWork unitOfWork)
                 throw new NotFoundException($"Office with ID {request.RootOfficeId.Value} not found.");
             }
 
-            // Get the root office and all its descendants
-            var descendants = GetDescendants(allOffices, request.RootOfficeId.Value);
-            var rootHierarchy = BuildHierarchy(allOffices, request.RootOfficeId);
+            // Build hierarchy including the root office itself
+            var rootHierarchy = new OfficeHierarchyResponse
+            {
+                Id = rootOffice.Id,
+                Name = rootOffice.Name,
+                Code = rootOffice.Code,
+                ParentId = rootOffice.ParentId,
+                OfficeTypeName = rootOffice.OfficeType.Name,
+                CategoryName = rootOffice.Category.Name,
+                AdministrativeLevelName = rootOffice.AdministrativeLevel.Name,
+                ClusterName = rootOffice.Cluster?.Name,
+                IsDeleted = rootOffice.IsDeleted,
+                Children = BuildHierarchy(allOffices, request.RootOfficeId.Value)
+            };
             
-            return ApiResponse<List<OfficeHierarchyResponse>>.Success(rootHierarchy);
+            return ApiResponse<List<OfficeHierarchyResponse>>.Success(new List<OfficeHierarchyResponse> { rootHierarchy });
         }
 
         // Build hierarchy from top-level offices (those with no parent)
@@ -61,19 +72,5 @@ public class GetOfficeHierarchyQueryHandler(IUnitOfWork unitOfWork)
             .ToList();
 
         return offices;
-    }
-
-    private HashSet<Guid> GetDescendants(List<Domain.Entities.Planning.Office> allOffices, Guid parentId)
-    {
-        var descendants = new HashSet<Guid> { parentId };
-        var children = allOffices.Where(o => o.ParentId == parentId).ToList();
-
-        foreach (var child in children)
-        {
-            var childDescendants = GetDescendants(allOffices, child.Id);
-            descendants.UnionWith(childDescendants);
-        }
-
-        return descendants;
     }
 }
