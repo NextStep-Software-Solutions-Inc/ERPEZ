@@ -20,17 +20,21 @@ public class GetOfficesQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
         Expression<Func<Domain.Entities.Planning.Office, OfficeResponse>> projection = o => new OfficeResponse
         {
             Id = o.Id,
-            ClusterId = o.ClusterId,
-            OfficeHead = o.OfficeHead,
             Name = o.Name,
-            Description = o.Description,
+            Code = o.Code,
             Address = o.Address,
-            Email = o.Email,
-            ContactNumber = o.ContactNumber,
+            Description = o.Description,
             ResponsibilityCenterCode = o.ResponsibilityCenterCode,
+            BudgetCostCenter = o.BudgetCostCenter,
+            OfficeTypeId = o.OfficeTypeId,
+            OrganizationId = o.OrganizationId,
+            CategoryId = o.CategoryId,
+            AdministrativeLevelId = o.AdministrativeLevelId,
+            ClusterId = o.ClusterId,
+            ProcurementWorkflowId = o.ProcurementWorkflowId,
+            ParentId = o.ParentId,
             CreatedBy = o.CreatedBy,
-            CreatedAt = o.CreatedAt,
-            IsDeliveryUnit = o.DeliveryUnits.Any(du => du.OfficeId == o.Id)
+            CreatedAt = o.CreatedAt
         };
         var (offices, totalCount) = await unitOfWork.OfficeRepository.GetAllAsync(sieveModel, projection, cancellationToken: cancellationToken);
         return new PaginatedApiResponse<OfficeResponse>(

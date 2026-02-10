@@ -45,12 +45,10 @@ public class GetOPCRByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<G
                     {
                         Id = o.DeliveryUnit.Office.Id,
                         Name = o.DeliveryUnit.Office.Name,
+                        Code = o.DeliveryUnit.Office.Code,
                         Address = o.DeliveryUnit.Office.Address,
-                        ContactNumber = o.DeliveryUnit.Office.ContactNumber,
                         ClusterId = o.DeliveryUnit.Office.ClusterId,
-                        Email = o.DeliveryUnit.Office.Email,
                         Description = o.DeliveryUnit.Office.Description,
-                        OfficeHead = o.DeliveryUnit.Office.OfficeHead,
                         ResponsibilityCenterCode = o.DeliveryUnit.Office.ResponsibilityCenterCode,
                         CreatedBy = o.DeliveryUnit.Office.CreatedBy,
                         CreatedAt = o.DeliveryUnit.Office.CreatedAt,
@@ -58,7 +56,6 @@ public class GetOPCRByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<G
                             {
                                 Id = o.DeliveryUnit.Office.Cluster.Id,
                                 Name = o.DeliveryUnit.Office.Cluster.Name,
-                                Description = o.DeliveryUnit.Office.Cluster.Description,
                                 CreatedBy = o.DeliveryUnit.Office.Cluster.CreatedBy,
                                 CreatedAt = o.DeliveryUnit.Office.Cluster.CreatedAt,
                             } : null,

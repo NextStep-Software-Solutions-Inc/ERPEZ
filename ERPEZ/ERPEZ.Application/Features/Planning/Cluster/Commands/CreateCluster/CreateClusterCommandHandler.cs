@@ -9,14 +9,16 @@ public class CreateClusterCommandHandler(IUnitOfWork unitOfWork) : IRequestHandl
 {
     public async Task<ApiResponse<Guid>> Handle(CreateClusterCommand request, CancellationToken cancellationToken)
     {
-        var duplicate = await unitOfWork.ClusterRepository.FindAsync(w => w.Name == request.Name && w.Description == request.Description, cancellationToken);
-        if (duplicate != null) throw new ConflictException("Cluster already exists.");
+        var duplicate = await unitOfWork.ClusterRepository.FindAsync(w => w.Code == request.Code, cancellationToken);
+        if (duplicate != null) throw new ConflictException("Cluster with this code already exists.");
 
         var cluster = new Domain.Entities.Planning.Cluster
         {
             Name = request.Name,
-            Description = request.Description
-
+            Code = request.Code,
+            Address = request.Address,
+            MaxSubUnits = request.MaxSubUnits,
+            IsActive = true
         };
 
         await unitOfWork.ClusterRepository.AddAsync(cluster, cancellationToken);

@@ -1,3 +1,4 @@
+using ERPEZ.Application.Features.Planning.Cluster.Dtos;
 using ERPEZ.Application.Features.Planning.Office.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
@@ -10,22 +11,44 @@ public class GetOfficeByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler
 {
     public async Task<ApiResponse<OfficeResponse>> Handle(GetOfficeByIdQuery request, CancellationToken cancellationToken)
     {
-        var office = await unitOfWork.OfficeRepository.FindAsync(t => t.Id == request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("No data found.");
+        var office = await unitOfWork.OfficeRepository.GetByIdAsync(request.Id, cancellationToken) 
+            ?? throw new NotFoundException("No data found.");
 
         var result = new OfficeResponse()
         {
             Id = office.Id,
-            ClusterId = office.ClusterId,
-            OfficeHead = office.OfficeHead,
             Name = office.Name,
-            Description = office.Description,
+            Code = office.Code,
             Address = office.Address,
-            Email = office.Email,
-            ContactNumber = office.ContactNumber,
+            Description = office.Description,
             ResponsibilityCenterCode = office.ResponsibilityCenterCode,
+            BudgetCostCenter = office.BudgetCostCenter,
+            OfficeTypeId = office.OfficeTypeId,
+            OrganizationId = office.OrganizationId,
+            CategoryId = office.CategoryId,
+            AdministrativeLevelId = office.AdministrativeLevelId,
+            ClusterId = office.ClusterId,
+            ProcurementWorkflowId = office.ProcurementWorkflowId,
+            ParentId = office.ParentId,
             CreatedBy = office.CreatedBy,
             CreatedAt = office.CreatedAt,
-            IsDeliveryUnit = office.DeliveryUnits.Any(du => du.OfficeId == office.Id)
+            OfficeTypeName = office.OfficeType.Name,
+            OrganizationName = office.Organization.Name,
+            CategoryName = office.Category.Name,
+            AdministrativeLevelName = office.AdministrativeLevel.Name,
+            Cluster = office.Cluster != null ? new ClusterResponse
+            {
+                Id = office.Cluster.Id,
+                Name = office.Cluster.Name,
+                Code = office.Cluster.Code,
+                Address = office.Cluster.Address,
+                IsActive = office.Cluster.IsActive,
+                MaxSubUnits = office.Cluster.MaxSubUnits,
+                CreatedAt = office.Cluster.CreatedAt,
+                CreatedBy = office.Cluster.CreatedBy
+            } : null,
+            ProcurementWorkflowName = office.ProcurementWorkflow?.Name,
+            ParentOfficeName = office.Parent?.Name
         };
 
         return ApiResponse<OfficeResponse>.Success(result, "Retrieved successfully");

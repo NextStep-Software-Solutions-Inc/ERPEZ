@@ -21,7 +21,10 @@ public class GetClustersQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<G
         {
             Id = c.Id,
             Name = c.Name,
-            Description = c.Description,
+            Code = c.Code,
+            Address = c.Address,
+            MaxSubUnits = c.MaxSubUnits,
+            IsActive = c.IsActive,
             CreatedAt = c.CreatedAt,
             CreatedBy = c.CreatedBy
         };
