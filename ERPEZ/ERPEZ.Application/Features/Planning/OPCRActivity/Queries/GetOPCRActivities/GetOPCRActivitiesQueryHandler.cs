@@ -39,19 +39,16 @@ public class GetOPCRActivitiesQueryHandler(IUnitOfWork unitOfWork) : IRequestHan
                     {
                         Id = p.DeliveryUnit.Office.Id,
                         Name = p.DeliveryUnit.Office.Name,
+                        Code = p.DeliveryUnit.Office.Code,
                         Address = p.DeliveryUnit.Office.Address,
-                        ContactNumber = p.DeliveryUnit.Office.ContactNumber,
                         CreatedBy = p.DeliveryUnit.Office.CreatedBy,
                         CreatedAt = p.DeliveryUnit.Office.CreatedAt,
-                        Email = p.DeliveryUnit.Office.Email,
                         Description = p.DeliveryUnit.Office.Description,
-                        OfficeHead = p.DeliveryUnit.Office.OfficeHead,
                         ResponsibilityCenterCode = p.DeliveryUnit.Office.ResponsibilityCenterCode,
                         Cluster = p.DeliveryUnit.Office.Cluster == null ? null : new()
                         {
                             Id = p.DeliveryUnit.Office.Cluster.Id,
                             Name = p.DeliveryUnit.Office.Cluster.Name,
-                            Description = p.DeliveryUnit.Office.Cluster.Description,
                             CreatedAt = p.DeliveryUnit.Office.Cluster.CreatedAt,
                             CreatedBy = p.DeliveryUnit.Office.Cluster.CreatedBy,
                         }

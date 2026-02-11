@@ -26,16 +26,13 @@ public class GetOPCRPAPDepartmentByIdQueryHandler(IUnitOfWork unitOfWork) : IReq
                 Office = new OfficeResponse
                 {
                     Id = oPCRPAPDepartment.DeliveryUnit.Office.Id,
-                    OfficeHead = oPCRPAPDepartment.DeliveryUnit.Office.OfficeHead,
                     Name = oPCRPAPDepartment.DeliveryUnit.Office.Name,
+                    Code = oPCRPAPDepartment.DeliveryUnit.Office.Code,
                     Description = oPCRPAPDepartment.DeliveryUnit.Office.Description,
                     Address = oPCRPAPDepartment.DeliveryUnit.Office.Address,
-                    Email = oPCRPAPDepartment.DeliveryUnit.Office.Email,
-                    ContactNumber = oPCRPAPDepartment.DeliveryUnit.Office.ContactNumber,
                     ResponsibilityCenterCode = oPCRPAPDepartment.DeliveryUnit.Office.ResponsibilityCenterCode,
                     CreatedAt = oPCRPAPDepartment.DeliveryUnit.Office.CreatedAt,
                     CreatedBy = oPCRPAPDepartment.DeliveryUnit.Office.CreatedBy,
-                    IsDeliveryUnit = false,
                     ClusterId = oPCRPAPDepartment.DeliveryUnit.Office.ClusterId,
                     Cluster = null
                 },

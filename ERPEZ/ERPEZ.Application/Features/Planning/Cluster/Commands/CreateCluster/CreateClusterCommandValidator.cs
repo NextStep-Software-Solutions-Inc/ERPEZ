@@ -15,10 +15,23 @@ public class CreateClusterCommandValidator : AbstractValidator<CreateClusterComm
             .MaximumLength(256)
             .WithMessage("Cluster Name cannot exceed 256 characters.");
 
-        // Description (Optional String, Max Length)
-        RuleFor(x => x.Description)
-            .MaximumLength(1000)
-            .WithMessage("Description cannot exceed 1000 characters.")
-            .When(x => !string.IsNullOrWhiteSpace(x.Description));
+        // Code (Required String, Max Length)
+        RuleFor(x => x.Code)
+            .NotEmpty()
+            .WithMessage("Cluster Code is required.")
+            .MaximumLength(50)
+            .WithMessage("Cluster Code cannot exceed 50 characters.");
+
+        // Address (Optional String, Max Length)
+        RuleFor(x => x.Address)
+            .MaximumLength(500)
+            .WithMessage("Address cannot exceed 500 characters.")
+            .When(x => !string.IsNullOrWhiteSpace(x.Address));
+
+        // MaxSubUnits (Optional Integer, must be positive)
+        RuleFor(x => x.MaxSubUnits)
+            .GreaterThan(0)
+            .WithMessage("MaxSubUnits must be greater than zero.")
+            .When(x => x.MaxSubUnits.HasValue);
     }
 }
