@@ -80,7 +80,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<LineItemBudgetDetail>? LineItemBudgetDetails { get; set; }
 
     //Procurement
+    public DbSet<ProcurementCategory>? ProcurementCategories { get; set; }
     public DbSet<ProcurementMode>? ProcurementModes { get; set; }
+    public DbSet<ProcurementModeThreshold>? ProcurementModeThresholds { get; set; }
+    public DbSet<UOM>? UOMs { get; set; }
+    public DbSet<UNSPSCCode>? UNSPSCCodes { get; set; }
+    public DbSet<ProcurementItem>? ProcurementItems { get; set; }
     public DbSet<ProcurementActivityType>? ProcurementActivityTypes { get; set; }
     public DbSet<CSEItem>? CSEItems { get; set; }
     public DbSet<NonCSEItem>? NonCSEItems { get; set; }
