@@ -13,15 +13,6 @@ public class UpdateProcurementModeThresholdCommandHandler(IUnitOfWork unitOfWork
         var entity = await unitOfWork.ProcurementModeThresholdRepository.GetByIdAsync(request.Id, cancellationToken)
             ?? throw new NotFoundException("Procurement mode threshold not found.");
 
-        if (request.ProcurementModeId.HasValue)
-        {
-            // Validate procurement mode exists
-            var mode = await unitOfWork.ProcurementModeRepository.GetByIdAsync(request.ProcurementModeId.Value, cancellationToken)
-                ?? throw new NotFoundException("Procurement mode not found.");
-
-            entity.ProcurementModeId = request.ProcurementModeId.Value;
-        }
-
         if (request.MinThreshold.HasValue)
             entity.MinThreshold = request.MinThreshold.Value;
 

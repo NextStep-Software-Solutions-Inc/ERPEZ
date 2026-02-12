@@ -23,7 +23,7 @@ public class UpdateProcurementItemCommandValidator : AbstractValidator<UpdatePro
 
         RuleFor(x => x.Type)
             .Must(BeValidProcurementItemType)
-            .WithMessage("Type must be one of: Expendable, SemiExpandable, Equipment, PPE.")
+            .WithMessage("Type must be one of: Expendable, SemiExpendable, Equipment, PPE.")
             .When(x => !string.IsNullOrEmpty(x.Type));
 
         RuleFor(x => x.ItemLife)

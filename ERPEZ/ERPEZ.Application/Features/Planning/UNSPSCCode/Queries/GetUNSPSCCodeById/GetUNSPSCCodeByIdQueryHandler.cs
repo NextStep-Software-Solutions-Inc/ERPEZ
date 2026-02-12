@@ -19,6 +19,28 @@ public class GetUNSPSCCodeByIdQueryHandler(IUnitOfWork unitOfWork)
             .FirstOrDefaultAsync(x => x.Id == request.Id, cancellationToken)
             ?? throw new NotFoundException("UNSPSC code not found.");
 
+        // Get children recursively based on level
+        List<UNSPSCCodeResponse>? children = null;
+        if (entity.Level < 4)
+        {
+            var childEntities = await unitOfWork.UNSPSCCodeRepository.Query()
+                .Where(x => x.ParentId == entity.Id)
+                .ToListAsync(cancellationToken);
+
+            children = childEntities.Select(child => new UNSPSCCodeResponse
+            {
+                Id = child.Id,
+                Code = child.Code,
+                Name = child.Name,
+                Level = child.Level,
+                ParentId = child.ParentId,
+                ParentName = entity.Name,
+                CreatedAt = child.CreatedAt,
+                UpdatedAt = child.UpdatedAt,
+                Children = null // Only show one level down
+            }).ToList();
+        }
+
         var response = new UNSPSCCodeResponse
         {
             Id = entity.Id,
@@ -27,6 +49,7 @@ public class GetUNSPSCCodeByIdQueryHandler(IUnitOfWork unitOfWork)
             Level = entity.Level,
             ParentId = entity.ParentId,
             ParentName = entity.Parent?.Name,
+            Children = children,
             CreatedAt = entity.CreatedAt,
             UpdatedAt = entity.UpdatedAt
         };

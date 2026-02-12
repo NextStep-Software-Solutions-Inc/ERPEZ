@@ -16,6 +16,22 @@ namespace ERPEZ.Api.Controllers;
 public class ProcurementCategoryController(ISender mediator) : ControllerBase
 {
     /// <summary>
+    /// Create a new procurement category
+    /// </summary>
+    [HttpPost]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> CreateProcurementCategory([FromBody] CreateProcurementCategoryCommand command)
+    {
+        var result = await mediator.Send(command);
+
+        if (!result.Succeeded)
+            return BadRequest(result);
+
+        return CreatedAtAction(nameof(GetProcurementCategoryById), new { id = result.Data }, result);
+    }
+
+    /// <summary>
     /// Get all procurement categories with filtering, sorting, and pagination
     /// </summary>
     [HttpGet]
@@ -38,22 +54,6 @@ public class ProcurementCategoryController(ISender mediator) : ControllerBase
         var query = new GetProcurementCategoryByIdQuery(id);
         var result = await mediator.Send(query);
         return result.Succeeded ? Ok(result) : NotFound(result);
-    }
-
-    /// <summary>
-    /// Create a new procurement category
-    /// </summary>
-    [HttpPost]
-    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> CreateProcurementCategory([FromBody] CreateProcurementCategoryCommand command)
-    {
-        var result = await mediator.Send(command);
-
-        if (!result.Succeeded)
-            return BadRequest(result);
-
-        return CreatedAtAction(nameof(GetProcurementCategoryById), new { id = result.Data }, result);
     }
 
     /// <summary>

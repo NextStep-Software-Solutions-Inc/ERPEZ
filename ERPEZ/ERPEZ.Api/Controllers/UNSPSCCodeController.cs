@@ -16,6 +16,22 @@ namespace ERPEZ.Api.Controllers;
 public class UNSPSCCodeController(ISender mediator) : ControllerBase
 {
     /// <summary>
+    /// Create a new UNSPSC code
+    /// </summary>
+    [HttpPost]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> CreateUNSPSCCode([FromBody] CreateUNSPSCCodeCommand command)
+    {
+        var result = await mediator.Send(command);
+
+        if (!result.Succeeded)
+            return BadRequest(result);
+
+        return CreatedAtAction(nameof(GetUNSPSCCodeById), new { id = result.Data }, result);
+    }
+
+    /// <summary>
     /// Get all UNSPSC codes with filtering, sorting, and pagination
     /// </summary>
     [HttpGet]
@@ -38,22 +54,6 @@ public class UNSPSCCodeController(ISender mediator) : ControllerBase
         var query = new GetUNSPSCCodeByIdQuery(id);
         var result = await mediator.Send(query);
         return result.Succeeded ? Ok(result) : NotFound(result);
-    }
-
-    /// <summary>
-    /// Create a new UNSPSC code
-    /// </summary>
-    [HttpPost]
-    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> CreateUNSPSCCode([FromBody] CreateUNSPSCCodeCommand command)
-    {
-        var result = await mediator.Send(command);
-
-        if (!result.Succeeded)
-            return BadRequest(result);
-
-        return CreatedAtAction(nameof(GetUNSPSCCodeById), new { id = result.Data }, result);
     }
 
     /// <summary>

@@ -7,8 +7,13 @@ public record ProcurementModeResponse
     public string? Description { get; init; }
     public bool IsArchived { get; init; }
     public bool IsActive { get; init; }
-    public Guid? ProcurementCategoryId { get; init; }
-    public string? ProcurementCategoryName { get; init; }
+    public ProcurementCategoryDto? ProcurementCategory { get; init; }
     public DateTime CreatedAt { get; init; }
     public DateTime? UpdatedAt { get; init; }
+}
+
+public record ProcurementCategoryDto
+{
+    public Guid Id { get; init; }
+    public string Name { get; init; } = string.Empty;
 }

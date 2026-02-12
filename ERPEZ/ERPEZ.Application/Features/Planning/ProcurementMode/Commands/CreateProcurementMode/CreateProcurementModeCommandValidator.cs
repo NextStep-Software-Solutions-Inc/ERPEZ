@@ -16,9 +16,5 @@ public class CreateProcurementModeCommandValidator : AbstractValidator<CreatePro
             .MaximumLength(1000)
             .WithMessage("Description cannot exceed 1000 characters.")
             .When(x => !string.IsNullOrEmpty(x.Description));
-
-        RuleFor(x => x.ProcurementCategoryId)
-            .NotEmpty()
-            .WithMessage("Procurement category is required.");
     }
 }

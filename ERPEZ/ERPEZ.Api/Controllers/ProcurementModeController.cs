@@ -18,6 +18,22 @@ namespace ERPEZ.Api.Controllers;
 public class ProcurementModeController(ISender mediator) : ControllerBase
 {
     /// <summary>
+    /// Create a new procurement mode
+    /// </summary>
+    [HttpPost]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> CreateProcurementMode([FromBody] CreateProcurementModeCommand command)
+    {
+        var result = await mediator.Send(command);
+
+        if (!result.Succeeded)
+            return BadRequest(result);
+
+        return CreatedAtAction(nameof(GetProcurementModeById), new { id = result.Data }, result);
+    }
+
+    /// <summary>
     /// Get all procurement modes with filtering, sorting, and pagination
     /// </summary>
     [HttpGet]
@@ -40,22 +56,6 @@ public class ProcurementModeController(ISender mediator) : ControllerBase
         var query = new GetProcurementModeByIdQuery(id);
         var result = await mediator.Send(query);
         return result.Succeeded ? Ok(result) : NotFound(result);
-    }
-
-    /// <summary>
-    /// Create a new procurement mode
-    /// </summary>
-    [HttpPost]
-    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> CreateProcurementMode([FromBody] CreateProcurementModeCommand command)
-    {
-        var result = await mediator.Send(command);
-
-        if (!result.Succeeded)
-            return BadRequest(result);
-
-        return CreatedAtAction(nameof(GetProcurementModeById), new { id = result.Data }, result);
     }
 
     /// <summary>

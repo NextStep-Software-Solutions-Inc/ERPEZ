@@ -18,8 +18,11 @@ public class GetProcurementModesQueryHandler(IUnitOfWork unitOfWork)
             Id = x.Id,
             Name = x.Name,
             Description = x.Description,
-            ProcurementCategoryId = x.ProcurementCategoryId,
-            ProcurementCategoryName = x.ProcurementCategory != null ? x.ProcurementCategory.Name : string.Empty,
+            ProcurementCategory = x.ProcurementCategory != null ? new ProcurementCategoryDto
+            {
+                Id = x.ProcurementCategory.Id,
+                Name = x.ProcurementCategory.Name
+            } : null,
             IsArchived = x.IsArchived,
             IsActive = x.IsActive,
             CreatedAt = x.CreatedAt,

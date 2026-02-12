@@ -16,6 +16,22 @@ namespace ERPEZ.Api.Controllers;
 public class UOMController(ISender mediator) : ControllerBase
 {
     /// <summary>
+    /// Create a new unit of measure
+    /// </summary>
+    [HttpPost]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> CreateUOM([FromBody] CreateUOMCommand command)
+    {
+        var result = await mediator.Send(command);
+
+        if (!result.Succeeded)
+            return BadRequest(result);
+
+        return CreatedAtAction(nameof(GetUOMById), new { id = result.Data }, result);
+    }
+
+    /// <summary>
     /// Get all units of measure with filtering, sorting, and pagination
     /// </summary>
     [HttpGet]
@@ -38,22 +54,6 @@ public class UOMController(ISender mediator) : ControllerBase
         var query = new GetUOMByIdQuery(id);
         var result = await mediator.Send(query);
         return result.Succeeded ? Ok(result) : NotFound(result);
-    }
-
-    /// <summary>
-    /// Create a new unit of measure
-    /// </summary>
-    [HttpPost]
-    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> CreateUOM([FromBody] CreateUOMCommand command)
-    {
-        var result = await mediator.Send(command);
-
-        if (!result.Succeeded)
-            return BadRequest(result);
-
-        return CreatedAtAction(nameof(GetUOMById), new { id = result.Data }, result);
     }
 
     /// <summary>

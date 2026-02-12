@@ -16,6 +16,22 @@ namespace ERPEZ.Api.Controllers;
 public class ProcurementModeThresholdController(ISender mediator) : ControllerBase
 {
     /// <summary>
+    /// Create a new procurement mode threshold
+    /// </summary>
+    [HttpPost]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> CreateProcurementModeThreshold([FromBody] CreateProcurementModeThresholdCommand command)
+    {
+        var result = await mediator.Send(command);
+
+        if (!result.Succeeded)
+            return BadRequest(result);
+
+        return CreatedAtAction(nameof(GetProcurementModeThresholdById), new { id = result.Data }, result);
+    }
+
+    /// <summary>
     /// Get all procurement mode thresholds with filtering, sorting, and pagination
     /// </summary>
     [HttpGet]
@@ -38,22 +54,6 @@ public class ProcurementModeThresholdController(ISender mediator) : ControllerBa
         var query = new GetProcurementModeThresholdByIdQuery(id);
         var result = await mediator.Send(query);
         return result.Succeeded ? Ok(result) : NotFound(result);
-    }
-
-    /// <summary>
-    /// Create a new procurement mode threshold
-    /// </summary>
-    [HttpPost]
-    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> CreateProcurementModeThreshold([FromBody] CreateProcurementModeThresholdCommand command)
-    {
-        var result = await mediator.Send(command);
-
-        if (!result.Succeeded)
-            return BadRequest(result);
-
-        return CreatedAtAction(nameof(GetProcurementModeThresholdById), new { id = result.Data }, result);
     }
 
     /// <summary>

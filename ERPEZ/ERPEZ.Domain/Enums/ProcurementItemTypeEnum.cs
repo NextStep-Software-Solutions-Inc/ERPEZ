@@ -13,7 +13,7 @@ public enum ProcurementItemTypeEnum
     /// <summary>
     /// Items with moderate lifespan that are consumed over time but not immediately.
     /// </summary>
-    SemiExpandable = 2,
+    SemiExpendable = 2,
 
     /// <summary>
     /// Durable items with long lifespan used for operations.

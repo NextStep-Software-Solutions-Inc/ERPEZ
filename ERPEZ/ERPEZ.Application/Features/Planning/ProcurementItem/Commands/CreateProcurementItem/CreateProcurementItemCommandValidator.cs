@@ -22,7 +22,7 @@ public class CreateProcurementItemCommandValidator : AbstractValidator<CreatePro
             .NotEmpty()
             .WithMessage("Type is required.")
             .Must(BeValidProcurementItemType)
-            .WithMessage("Type must be one of: Expendable, SemiExpandable, Equipment, PPE.");
+            .WithMessage("Type must be one of: Expendable, SemiExpendable, Equipment, PPE.");
 
         RuleFor(x => x.ItemLife)
             .GreaterThan(0)
@@ -37,10 +37,6 @@ public class CreateProcurementItemCommandValidator : AbstractValidator<CreatePro
         RuleFor(x => x.ObjectCodeId)
             .NotEmpty()
             .WithMessage("Object code is required.");
-
-        RuleFor(x => x.UNSPSCCodeId)
-            .NotEmpty()
-            .WithMessage("UNSPSC code is required.");
 
         RuleFor(x => x.UOMId)
             .NotEmpty()
