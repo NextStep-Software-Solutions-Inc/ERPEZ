@@ -15,9 +15,12 @@ public class CreateProcurementItemCommandHandler(IUnitOfWork unitOfWork)
         var objectCode = await unitOfWork.ObjectRepository.GetByIdAsync(request.ObjectCodeId, cancellationToken)
             ?? throw new NotFoundException("Object code not found.");
 
-        // Validate UNSPSCCode exists
-        var unspscCode = await unitOfWork.UNSPSCCodeRepository.GetByIdAsync(request.UNSPSCCodeId, cancellationToken)
-            ?? throw new NotFoundException("UNSPSC code not found.");
+        // Validate UNSPSCCode exists if provided
+        if (request.UNSPSCCodeId.HasValue)
+        {
+            var unspscCode = await unitOfWork.UNSPSCCodeRepository.GetByIdAsync(request.UNSPSCCodeId.Value, cancellationToken)
+                ?? throw new NotFoundException("UNSPSC code not found.");
+        }
 
         // Validate UOM exists
         var uom = await unitOfWork.UOMRepository.GetByIdAsync(request.UOMId, cancellationToken)

@@ -19,12 +19,13 @@ public class ProcurementItemRepository : Repository<Domain.Entities.Planning.Pro
             .Include(pi => pi.ObjectCode)
             .Include(pi => pi.UOM)
             .Include(pi => pi.UNSPSCCode)
-            .FirstOrDefaultAsync(pi => pi.Id == id, cancellationToken);
+            .FirstOrDefaultAsync(pi => pi.Id == id && !pi.IsDeleted, cancellationToken);
     }
 
     public async Task<List<Domain.Entities.Planning.ProcurementItem>> GetAllWithDetailsAsync(bool includeInactive = false, CancellationToken cancellationToken = default)
     {
         var query = dbContext.ProcurementItems!
+            .Where(pi => !pi.IsDeleted)
             .Include(pi => pi.ObjectCode)
             .Include(pi => pi.UOM)
             .Include(pi => pi.UNSPSCCode)

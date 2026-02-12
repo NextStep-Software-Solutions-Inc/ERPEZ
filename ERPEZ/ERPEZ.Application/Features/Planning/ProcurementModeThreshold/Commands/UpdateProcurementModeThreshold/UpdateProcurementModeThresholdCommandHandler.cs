@@ -25,6 +25,14 @@ public class UpdateProcurementModeThresholdCommandHandler(IUnitOfWork unitOfWork
         if (request.EffectivityEnd.HasValue)
             entity.EffectivityEnd = request.EffectivityEnd.Value;
 
+        // Validate threshold range after partial update
+        if (entity.MaxThreshold <= entity.MinThreshold)
+            throw new ConflictException("Max threshold must be greater than min threshold.");
+
+        // Validate effectivity date range after partial update
+        if (entity.EffectivityEnd.HasValue && entity.EffectivityEnd <= entity.EffectivityStart)
+            throw new ConflictException("Effectivity end date must be after start date.");
+
         unitOfWork.ProcurementModeThresholdRepository.Update(entity);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 

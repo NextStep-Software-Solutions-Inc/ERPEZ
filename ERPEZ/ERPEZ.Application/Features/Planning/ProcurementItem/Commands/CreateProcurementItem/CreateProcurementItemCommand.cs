@@ -13,6 +13,6 @@ public record CreateProcurementItemCommand : IRequest<ApiResponse<Guid>>
     public string? ProductCode { get; init; }
     public string? ImageURL { get; init; }
     public Guid ObjectCodeId { get; init; }
-    public Guid UNSPSCCodeId { get; init; }
+    public Guid? UNSPSCCodeId { get; init; }
     public Guid UOMId { get; init; }
 }
