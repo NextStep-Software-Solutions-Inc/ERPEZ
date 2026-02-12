@@ -47,7 +47,7 @@ public class UpdateUOMCommandHandler(IUnitOfWork unitOfWork)
         if (request.ParentId.HasValue)
         {
             // Validate parent exists
-            var parent = await unitOfWork.UOMRepository.GetByIdAsync(request.ParentId.Value, cancellationToken)
+            _ = await unitOfWork.UOMRepository.GetByIdAsync(request.ParentId.Value, cancellationToken)
                 ?? throw new NotFoundException("Parent UOM not found.");
 
             // Prevent circular reference

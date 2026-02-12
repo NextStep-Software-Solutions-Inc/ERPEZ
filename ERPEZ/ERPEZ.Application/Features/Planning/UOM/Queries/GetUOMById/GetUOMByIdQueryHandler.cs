@@ -27,6 +27,8 @@ public class GetUOMByIdQueryHandler(IUnitOfWork unitOfWork)
             ConversionFactor = entity.ConversionFactor,
             ParentId = entity.ParentId,
             ParentName = entity.Parent?.Name,
+            Description = entity.Description,
+            IsActive = entity.IsActive,
             CreatedAt = entity.CreatedAt,
             UpdatedAt = entity.UpdatedAt
         };

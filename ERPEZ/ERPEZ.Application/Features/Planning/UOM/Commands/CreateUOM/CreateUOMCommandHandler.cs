@@ -22,7 +22,7 @@ public class CreateUOMCommandHandler(IUnitOfWork unitOfWork)
         // Validate parent if provided
         if (request.ParentId.HasValue)
         {
-            var parent = await unitOfWork.UOMRepository.GetByIdAsync(request.ParentId.Value, cancellationToken)
+            _ = await unitOfWork.UOMRepository.GetByIdAsync(request.ParentId.Value, cancellationToken)
                 ?? throw new NotFoundException("Parent UOM not found.");
         }
 

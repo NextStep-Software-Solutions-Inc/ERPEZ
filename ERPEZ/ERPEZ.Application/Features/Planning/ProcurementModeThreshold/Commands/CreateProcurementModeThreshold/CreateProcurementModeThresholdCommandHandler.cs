@@ -12,7 +12,7 @@ public class CreateProcurementModeThresholdCommandHandler(IUnitOfWork unitOfWork
     public async Task<ApiResponse<Guid>> Handle(CreateProcurementModeThresholdCommand request, CancellationToken cancellationToken)
     {
         // Validate procurement mode exists
-        var mode = await unitOfWork.ProcurementModeRepository.GetByIdAsync(request.ProcurementModeId, cancellationToken)
+        _ = await unitOfWork.ProcurementModeRepository.GetByIdAsync(request.ProcurementModeId, cancellationToken)
             ?? throw new NotFoundException("Procurement mode not found.");
 
         // Check for overlapping date ranges

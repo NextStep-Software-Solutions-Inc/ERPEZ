@@ -16,6 +16,6 @@ public class UNSPSCCodeRepository : Repository<Domain.Entities.Planning.UNSPSCCo
     public async Task<bool> IsInUseAsync(Guid unspscCodeId, CancellationToken cancellationToken = default)
     {
         return await dbContext.ProcurementItems!
-            .AnyAsync(pi => pi.UNSPSCCodeId == unspscCodeId && pi.IsActive, cancellationToken);
+            .AnyAsync(pi => pi.UNSPSCCodeId == unspscCodeId && pi.IsActive && !pi.IsDeleted, cancellationToken);
     }
 }
