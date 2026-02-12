@@ -12,18 +12,18 @@ public class CreateProcurementItemCommandHandler(IUnitOfWork unitOfWork)
     public async Task<ApiResponse<Guid>> Handle(CreateProcurementItemCommand request, CancellationToken cancellationToken)
     {
         // Validate ObjectCode exists
-        var objectCode = await unitOfWork.ObjectRepository.GetByIdAsync(request.ObjectCodeId, cancellationToken)
+        _ = await unitOfWork.ObjectRepository.GetByIdAsync(request.ObjectCodeId, cancellationToken)
             ?? throw new NotFoundException("Object code not found.");
 
         // Validate UNSPSCCode exists if provided
         if (request.UNSPSCCodeId.HasValue)
         {
-            var unspscCode = await unitOfWork.UNSPSCCodeRepository.GetByIdAsync(request.UNSPSCCodeId.Value, cancellationToken)
+            _ = await unitOfWork.UNSPSCCodeRepository.GetByIdAsync(request.UNSPSCCodeId.Value, cancellationToken)
                 ?? throw new NotFoundException("UNSPSC code not found.");
         }
 
         // Validate UOM exists
-        var uom = await unitOfWork.UOMRepository.GetByIdAsync(request.UOMId, cancellationToken)
+        _ = await unitOfWork.UOMRepository.GetByIdAsync(request.UOMId, cancellationToken)
             ?? throw new NotFoundException("Unit of measure not found.");
 
         // Check for duplicates
