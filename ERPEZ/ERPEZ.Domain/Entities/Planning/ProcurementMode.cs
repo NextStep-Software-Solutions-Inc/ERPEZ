@@ -29,7 +29,19 @@ public class ProcurementMode : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public string? Description { get; set; }
     
+    [Sieve(CanFilter = true, CanSort = true)]
+    public bool IsArchived { get; set; } = false;
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public bool IsActive { get; set; } = true;
+
+    // Foreign Keys
+    [Sieve(CanFilter = true, CanSort = true)]
+    public Guid? ProcurementCategoryId { get; set; }
+    
     // Navigation properties
+    public virtual ProcurementCategory? ProcurementCategory { get; set; }
+    public virtual List<ProcurementModeThreshold> ProcurementModeThresholds { get; set; } = [];
     public virtual List<PPMPItem> PPMPItems { get; set; } = [];
     public virtual List<APPItem> APPItems { get; set; } = [];
 }

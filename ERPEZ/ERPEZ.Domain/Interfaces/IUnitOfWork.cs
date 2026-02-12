@@ -56,6 +56,12 @@ public interface IUnitOfWork
     ISalaryGradeRepository SalaryGradeRepository { get; }
     IPlantillaTypeRepository PlantillaTypeRepository { get; }
     IStepRepository StepRepository { get; }
+    IProcurementCategoryRepository ProcurementCategoryRepository { get; }
+    IProcurementModeRepository ProcurementModeRepository { get; }
+    IProcurementModeThresholdRepository ProcurementModeThresholdRepository { get; }
+    IUOMRepository UOMRepository { get; }
+    IUNSPSCCodeRepository UNSPSCCodeRepository { get; }
+    IProcurementItemRepository ProcurementItemRepository { get; }
     Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default);
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

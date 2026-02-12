@@ -65,6 +65,12 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly ISalaryGradeRepository salaryGradeRepository;
     private readonly IPlantillaTypeRepository plantillaTypeRepository;
     private readonly IStepRepository stepRepository;
+    private readonly IProcurementCategoryRepository procurementCategoryRepository;
+    private readonly IProcurementModeRepository procurementModeRepository;
+    private readonly IProcurementModeThresholdRepository procurementModeThresholdRepository;
+    private readonly IUOMRepository uomRepository;
+    private readonly IUNSPSCCodeRepository unspscCodeRepository;
+    private readonly IProcurementItemRepository procurementItemRepository;
     // Constructor initializes all repositories once
     public UnitOfWork(ApplicationDbContext context, IServiceProvider serviceProvider)
     {
@@ -126,6 +132,12 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         salaryGradeRepository = new SalaryGradeRepository(context, sieveProcessor);
         plantillaTypeRepository = new PlantillaTypeRepository(context, sieveProcessor);
         stepRepository = new StepRepository(context, sieveProcessor);
+        procurementCategoryRepository = new ProcurementCategoryRepository(context, sieveProcessor);
+        procurementModeRepository = new ProcurementModeRepository(context, sieveProcessor);
+        procurementModeThresholdRepository = new ProcurementModeThresholdRepository(context, sieveProcessor);
+        uomRepository = new UOMRepository(context, sieveProcessor);
+        unspscCodeRepository = new UNSPSCCodeRepository(context, sieveProcessor);
+        procurementItemRepository = new ProcurementItemRepository(context, sieveProcessor);
     }
 
     // Public properties return cached instances
@@ -183,6 +195,12 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public ISalaryGradeRepository SalaryGradeRepository => salaryGradeRepository;
     public IPlantillaTypeRepository PlantillaTypeRepository => plantillaTypeRepository;
     public IStepRepository StepRepository => stepRepository;
+    public IProcurementCategoryRepository ProcurementCategoryRepository => procurementCategoryRepository;
+    public IProcurementModeRepository ProcurementModeRepository => procurementModeRepository;
+    public IProcurementModeThresholdRepository ProcurementModeThresholdRepository => procurementModeThresholdRepository;
+    public IUOMRepository UOMRepository => uomRepository;
+    public IUNSPSCCodeRepository UNSPSCCodeRepository => unspscCodeRepository;
+    public IProcurementItemRepository ProcurementItemRepository => procurementItemRepository;
     public async Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default)
     {
         await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
