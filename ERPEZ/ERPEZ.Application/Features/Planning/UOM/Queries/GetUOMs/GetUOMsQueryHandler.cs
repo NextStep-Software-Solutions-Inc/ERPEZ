@@ -21,6 +21,8 @@ public class GetUOMsQueryHandler(IUnitOfWork unitOfWork)
             ConversionFactor = x.ConversionFactor,
             ParentId = x.ParentId,
             ParentName = x.Parent != null ? x.Parent.Name : null,
+            Description = x.Description,
+            IsActive = x.IsActive,
             CreatedAt = x.CreatedAt,
             UpdatedAt = x.UpdatedAt
         };

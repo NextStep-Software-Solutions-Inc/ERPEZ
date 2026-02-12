@@ -10,9 +10,12 @@ public class CreateProcurementModeCommandHandler(IUnitOfWork unitOfWork)
 {
     public async Task<ApiResponse<Guid>> Handle(CreateProcurementModeCommand request, CancellationToken cancellationToken)
     {
-        // Validate category exists
-        var category = await unitOfWork.ProcurementCategoryRepository.GetByIdAsync(request.ProcurementCategoryId, cancellationToken)
-            ?? throw new NotFoundException("Procurement category not found.");
+        // Validate category exists if provided
+        if (request.ProcurementCategoryId != Guid.Empty)
+        {
+            _ = await unitOfWork.ProcurementCategoryRepository.GetByIdAsync(request.ProcurementCategoryId, cancellationToken)
+                ?? throw new NotFoundException("Procurement category not found.");
+        }
 
         // Check for duplicates
         var existing = await unitOfWork.ProcurementModeRepository.FindAsync(

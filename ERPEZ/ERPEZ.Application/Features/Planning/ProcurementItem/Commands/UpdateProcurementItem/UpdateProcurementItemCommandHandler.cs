@@ -51,7 +51,7 @@ public class UpdateProcurementItemCommandHandler(IUnitOfWork unitOfWork)
         if (request.ObjectCodeId.HasValue)
         {
             // Validate object code exists
-            var objectCode = await unitOfWork.ObjectRepository.GetByIdAsync(request.ObjectCodeId.Value, cancellationToken)
+            _ = await unitOfWork.ObjectRepository.GetByIdAsync(request.ObjectCodeId.Value, cancellationToken)
                 ?? throw new NotFoundException("Object code not found.");
 
             entity.ObjectCodeId = request.ObjectCodeId.Value;
@@ -60,7 +60,7 @@ public class UpdateProcurementItemCommandHandler(IUnitOfWork unitOfWork)
         if (request.UNSPSCCodeId.HasValue)
         {
             // Validate UNSPSC code exists
-            var unspscCode = await unitOfWork.UNSPSCCodeRepository.GetByIdAsync(request.UNSPSCCodeId.Value, cancellationToken)
+            _ = await unitOfWork.UNSPSCCodeRepository.GetByIdAsync(request.UNSPSCCodeId.Value, cancellationToken)
                 ?? throw new NotFoundException("UNSPSC code not found.");
 
             entity.UNSPSCCodeId = request.UNSPSCCodeId.Value;
@@ -69,7 +69,7 @@ public class UpdateProcurementItemCommandHandler(IUnitOfWork unitOfWork)
         if (request.UOMId.HasValue)
         {
             // Validate UOM exists
-            var uom = await unitOfWork.UOMRepository.GetByIdAsync(request.UOMId.Value, cancellationToken)
+            _ = await unitOfWork.UOMRepository.GetByIdAsync(request.UOMId.Value, cancellationToken)
                 ?? throw new NotFoundException("Unit of measure not found.");
 
             entity.UOMId = request.UOMId.Value;

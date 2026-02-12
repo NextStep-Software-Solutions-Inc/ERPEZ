@@ -33,7 +33,7 @@ public class UpdateProcurementModeCommandHandler(IUnitOfWork unitOfWork)
         if (request.ProcurementCategoryId.HasValue)
         {
             // Validate category exists
-            var category = await unitOfWork.ProcurementCategoryRepository.GetByIdAsync(request.ProcurementCategoryId.Value, cancellationToken)
+            _ = await unitOfWork.ProcurementCategoryRepository.GetByIdAsync(request.ProcurementCategoryId.Value, cancellationToken)
                 ?? throw new NotFoundException("Procurement category not found.");
 
             entity.ProcurementCategoryId = request.ProcurementCategoryId.Value;
