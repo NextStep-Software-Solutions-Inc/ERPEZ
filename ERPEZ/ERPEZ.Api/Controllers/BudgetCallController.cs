@@ -1,3 +1,4 @@
+using ERPEZ.Application.Features.Planning.BudgetCall.Commands.ChangeBudgetCallStatus;
 using ERPEZ.Application.Features.Planning.BudgetCall.Commands.CreateBudgetCall;
 using ERPEZ.Application.Features.Planning.BudgetCall.Commands.DeleteBudgetCall;
 using ERPEZ.Application.Features.Planning.BudgetCall.Commands.UpdateBudgetCall;
@@ -56,6 +57,19 @@ public class BudgetCallController(ISender mediator) : ControllerBase
 
         var budgetCall = await mediator.Send(request);
         return budgetCall.Succeeded ? Ok(budgetCall) : BadRequest(budgetCall);
+    }
+
+    [HttpPatch("{id}/status")]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ChangeBudgetCallStatus(Guid id, [FromBody] UpdateBudgetCallStatusRequest request)
+    {
+        var command = new ChangeBudgetCallStatusCommand(id, request.Status);
+        
+        var result = await mediator.Send(command);
+
+        return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 
     [HttpDelete("{id}")]

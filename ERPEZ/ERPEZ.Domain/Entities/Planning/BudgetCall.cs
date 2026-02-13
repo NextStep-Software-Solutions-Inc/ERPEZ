@@ -17,6 +17,9 @@ public class BudgetCall : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public DateTime SubmissionDeadline { get; set; }
 
+    [Sieve(CanFilter = true, CanSort = true)]
+    public string Status { get; set; } = "Draft";
+
     /// <summary>
     /// Navigation property to the parent Fiscal Year.
     /// </summary>

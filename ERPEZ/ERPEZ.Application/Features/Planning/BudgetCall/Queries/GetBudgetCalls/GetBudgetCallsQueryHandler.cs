@@ -26,6 +26,7 @@ public class GetBudgetCallsQueryHandler(IUnitOfWork unitOfWork)
             FiscalYearId = budgetCall.FiscalYearId,
             Type = budgetCall.Type,
             SubmissionDeadline = budgetCall.SubmissionDeadline,
+            Status = budgetCall.Status,
             CreatedAt = budgetCall.CreatedAt
         };
 
