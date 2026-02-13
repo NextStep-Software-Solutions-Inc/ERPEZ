@@ -71,6 +71,12 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IUOMRepository uomRepository;
     private readonly IUNSPSCCodeRepository unspscCodeRepository;
     private readonly IProcurementItemRepository procurementItemRepository;
+    private readonly IFunctionConfigRepository functionConfigRepository;
+    private readonly IProcurementPolicyConfigRepository procurementPolicyConfigRepository;
+    private readonly IGeneralRatingScaleRepository generalRatingScaleRepository;
+    private readonly IEconomicIndicatorRepository economicIndicatorRepository;
+    private readonly IWorkflowMatrixRepository workflowMatrixRepository;
+
     // Constructor initializes all repositories once
     public UnitOfWork(ApplicationDbContext context, IServiceProvider serviceProvider)
     {
@@ -138,6 +144,11 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         uomRepository = new UOMRepository(context, sieveProcessor);
         unspscCodeRepository = new UNSPSCCodeRepository(context, sieveProcessor);
         procurementItemRepository = new ProcurementItemRepository(context, sieveProcessor);
+        functionConfigRepository = new FunctionConfigRepository(context, sieveProcessor);
+        procurementPolicyConfigRepository = new ProcurementPolicyConfigRepository(context, sieveProcessor);
+        generalRatingScaleRepository = new GeneralRatingScaleRepository(context, sieveProcessor);
+        economicIndicatorRepository = new EconomicIndicatorRepository(context, sieveProcessor);
+        workflowMatrixRepository = new WorkflowMatrixRepository(context, sieveProcessor);
     }
 
     // Public properties return cached instances
@@ -201,6 +212,12 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IUOMRepository UOMRepository => uomRepository;
     public IUNSPSCCodeRepository UNSPSCCodeRepository => unspscCodeRepository;
     public IProcurementItemRepository ProcurementItemRepository => procurementItemRepository;
+    public IFunctionConfigRepository FunctionConfigRepository => functionConfigRepository;
+    public IProcurementPolicyConfigRepository ProcurementPolicyConfigRepository => procurementPolicyConfigRepository;
+    public IGeneralRatingScaleRepository GeneralRatingScaleRepository => generalRatingScaleRepository;
+    public IEconomicIndicatorRepository EconomicIndicatorRepository => economicIndicatorRepository;
+    public IWorkflowMatrixRepository WorkflowMatrixRepository => workflowMatrixRepository;
+
     public async Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default)
     {
         await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
