@@ -16,7 +16,7 @@ namespace ERPEZ.Infrastructure.Migrations
                 table: "BudgetCalls",
                 type: "text",
                 nullable: false,
-                defaultValue: "");
+                defaultValue: "Draft");
         }
 
         /// <inheritdoc />
