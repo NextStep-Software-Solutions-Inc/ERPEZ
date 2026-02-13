@@ -1,3 +1,4 @@
+using ERPEZ.Domain.Enums;
 using FluentValidation;
 
 namespace ERPEZ.Application.Features.Planning.BudgetCall.Commands.ChangeBudgetCallStatus;
@@ -9,14 +10,7 @@ public class ChangeBudgetCallStatusCommandValidator : AbstractValidator<ChangeBu
         RuleFor(x => x.Status)
             .NotEmpty()
             .WithMessage("Status is required.")
-            .Must(IsValidBudgetCallStatus)
-            .WithMessage("Status must be one of: Draft, Active, Closed.");
-    }
-
-    private static bool IsValidBudgetCallStatus(string? status)
-    {
-        if (string.IsNullOrWhiteSpace(status)) return false;
-        var validStatuses = new[] { "Draft", "Active", "Closed" };
-        return validStatuses.Contains(status, StringComparer.OrdinalIgnoreCase);
+            .Must(status => Enum.TryParse<BudgetCallStatusEnum>(status, true, out _))
+            .WithMessage($"Status must be one of the following: {string.Join(", ", Enum.GetNames<BudgetCallStatusEnum>())}.");
     }
 }

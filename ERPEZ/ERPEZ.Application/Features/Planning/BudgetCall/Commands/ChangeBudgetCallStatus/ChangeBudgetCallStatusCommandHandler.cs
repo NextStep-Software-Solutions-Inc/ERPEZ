@@ -1,3 +1,4 @@
+using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -13,13 +14,17 @@ public sealed class ChangeBudgetCallStatusCommandHandler(IUnitOfWork unitOfWork)
         var budgetCall = await unitOfWork.BudgetCallRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken) 
             ?? throw new NotFoundException("Budget call not found.");
 
+        // Parse and validate using enum (validation ensures this will succeed)
+        var currentStatusEnum = Enum.Parse<BudgetCallStatusEnum>(budgetCall.Status, ignoreCase: true);
+        var newStatusEnum = Enum.Parse<BudgetCallStatusEnum>(request.Status, ignoreCase: true);
+
         // Validate status transition
-        if (!IsValidTransition(budgetCall.Status, request.Status))
+        if (!IsValidTransition(currentStatusEnum, newStatusEnum))
         {
-            throw new ConflictException($"Cannot change status from {budgetCall.Status} to {request.Status}.");
+            throw new ConflictException($"Cannot change status from {currentStatusEnum} to {newStatusEnum}.");
         }
 
-        budgetCall.Status = request.Status;
+        budgetCall.Status = newStatusEnum.ToString();
 
         unitOfWork.BudgetCallRepository.Update(budgetCall);
         await unitOfWork.SaveChangesAsync(cancellationToken);
@@ -27,22 +32,18 @@ public sealed class ChangeBudgetCallStatusCommandHandler(IUnitOfWork unitOfWork)
         return ApiResponse<Unit>.Success(Unit.Value, "Budget call status updated successfully.");
     }
 
-    private static bool IsValidTransition(string currentStatus, string newStatus)
+    private static bool IsValidTransition(BudgetCallStatusEnum currentStatus, BudgetCallStatusEnum newStatus)
     {
-        // Normalize to handle case-insensitive comparisons
-        var current = currentStatus?.Trim();
-        var requested = newStatus?.Trim();
-
         // Same status is allowed (idempotent)
-        if (string.Equals(current, requested, StringComparison.OrdinalIgnoreCase))
+        if (currentStatus == newStatus)
             return true;
 
         // Define valid transitions
-        return (current, requested) switch
+        return (currentStatus, newStatus) switch
         {
-            ("Draft", "Active") => true,
-            ("Active", "Closed") => true,
-            ("Draft", "Closed") => true, // Allow direct close from draft
+            (BudgetCallStatusEnum.Draft, BudgetCallStatusEnum.Active) => true,
+            (BudgetCallStatusEnum.Active, BudgetCallStatusEnum.Closed) => true,
+            (BudgetCallStatusEnum.Draft, BudgetCallStatusEnum.Closed) => true, // Allow direct close from draft
             _ => false // All other transitions are invalid
         };
     }

@@ -5,7 +5,7 @@
 namespace ERPEZ.Infrastructure.Migrations
 {
     /// <inheritdoc />
-    public partial class AddStatusToBudgetCall : Migration
+    public partial class AddStatusColumnToBudgetCallTable : Migration
     {
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
