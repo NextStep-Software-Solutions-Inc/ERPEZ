@@ -13,7 +13,7 @@ public record UpdateFunctionConfigRequest
     public decimal? SupportMaxWeight { get; init; }
 }
 
-public record UpdateFunctionConfigCommand : IRequest<ApiResponse<Guid>>
+public record UpdateFunctionConfigCommand : IRequest<ApiResponse<Unit>>
 {
     public Guid Id { get; init; }
     public decimal StrategicMinWeight { get; init; }

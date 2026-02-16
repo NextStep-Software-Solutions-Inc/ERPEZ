@@ -10,7 +10,7 @@ public record UpdateGeneralRatingScaleRequest
     public decimal MaxScore { get; init; }
 }
 
-public record UpdateGeneralRatingScaleCommand : IRequest<ApiResponse<Guid>>
+public record UpdateGeneralRatingScaleCommand : IRequest<ApiResponse<Unit>>
 {
     public Guid Id { get; init; }
     public string AdjectivalRatingName { get; init; } = string.Empty;

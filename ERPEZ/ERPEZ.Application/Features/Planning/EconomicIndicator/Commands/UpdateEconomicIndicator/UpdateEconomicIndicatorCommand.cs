@@ -10,7 +10,7 @@ public record UpdateEconomicIndicatorRequest
     public decimal IncomeTaxRate { get; init; }
 }
 
-public record UpdateEconomicIndicatorCommand : IRequest<ApiResponse<Guid>>
+public record UpdateEconomicIndicatorCommand : IRequest<ApiResponse<Unit>>
 {
     public Guid Id { get; init; }
     public decimal VATRate { get; init; }

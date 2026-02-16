@@ -6,9 +6,9 @@ using MediatR;
 namespace ERPEZ.Application.Features.Planning.WorkflowMatrix.Commands.UpdateWorkflowMatrix;
 
 public class UpdateWorkflowMatrixCommandHandler(IUnitOfWork unitOfWork)
-    : IRequestHandler<UpdateWorkflowMatrixCommand, ApiResponse<Guid>>
+    : IRequestHandler<UpdateWorkflowMatrixCommand, ApiResponse<Unit>>
 {
-    public async Task<ApiResponse<Guid>> Handle(UpdateWorkflowMatrixCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<Unit>> Handle(UpdateWorkflowMatrixCommand request, CancellationToken cancellationToken)
     {
         var entity = await unitOfWork.WorkflowMatrixRepository.GetByIdAsync(request.Id, cancellationToken);
         if (entity == null)
@@ -19,6 +19,6 @@ public class UpdateWorkflowMatrixCommandHandler(IUnitOfWork unitOfWork)
         unitOfWork.WorkflowMatrixRepository.Update(entity);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return ApiResponse<Guid>.Success(entity.Id);
+        return ApiResponse<Unit>.Success(Unit.Value);
     }
 }

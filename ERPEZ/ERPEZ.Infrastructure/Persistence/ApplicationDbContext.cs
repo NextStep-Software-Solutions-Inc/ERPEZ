@@ -449,7 +449,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasForeignKey(wm => wm.OrganizationId);
 
         modelBuilder.Entity<WorkflowMatrix>()
-            .HasIndex(wm => new { wm.FiscalYearId, wm.OrganizationId, wm.DocumentType });
+            .HasIndex(wm => new { wm.FiscalYearId, wm.OrganizationId, wm.DocumentType })
+            .IsUnique();
 
         //WFP
         modelBuilder.Entity<WFP>()

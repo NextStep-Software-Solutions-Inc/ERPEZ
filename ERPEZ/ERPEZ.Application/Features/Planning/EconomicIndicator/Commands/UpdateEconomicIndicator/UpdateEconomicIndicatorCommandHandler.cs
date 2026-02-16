@@ -6,9 +6,9 @@ using MediatR;
 namespace ERPEZ.Application.Features.Planning.EconomicIndicator.Commands.UpdateEconomicIndicator;
 
 public class UpdateEconomicIndicatorCommandHandler(IUnitOfWork unitOfWork)
-    : IRequestHandler<UpdateEconomicIndicatorCommand, ApiResponse<Guid>>
+    : IRequestHandler<UpdateEconomicIndicatorCommand, ApiResponse<Unit>>
 {
-    public async Task<ApiResponse<Guid>> Handle(UpdateEconomicIndicatorCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<Unit>> Handle(UpdateEconomicIndicatorCommand request, CancellationToken cancellationToken)
     {
         var entity = await unitOfWork.EconomicIndicatorRepository.GetByIdAsync(request.Id, cancellationToken);
         if (entity == null)
@@ -21,6 +21,6 @@ public class UpdateEconomicIndicatorCommandHandler(IUnitOfWork unitOfWork)
         unitOfWork.EconomicIndicatorRepository.Update(entity);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return ApiResponse<Guid>.Success(entity.Id);
+        return ApiResponse<Unit>.Success(Unit.Value);
     }
 }

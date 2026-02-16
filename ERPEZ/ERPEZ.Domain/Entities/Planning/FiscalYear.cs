@@ -1,5 +1,4 @@
 using ERPEZ.Domain.Common;
-using ERPEZ.Domain.Enums;
 using Sieve.Attributes;
 
 namespace ERPEZ.Domain.Entities.Planning;

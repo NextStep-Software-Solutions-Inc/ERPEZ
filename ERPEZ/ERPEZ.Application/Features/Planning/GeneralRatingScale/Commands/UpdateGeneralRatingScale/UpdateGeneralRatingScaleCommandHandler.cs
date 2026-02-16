@@ -6,9 +6,9 @@ using MediatR;
 namespace ERPEZ.Application.Features.Planning.GeneralRatingScale.Commands.UpdateGeneralRatingScale;
 
 public class UpdateGeneralRatingScaleCommandHandler(IUnitOfWork unitOfWork)
-    : IRequestHandler<UpdateGeneralRatingScaleCommand, ApiResponse<Guid>>
+    : IRequestHandler<UpdateGeneralRatingScaleCommand, ApiResponse<Unit>>
 {
-    public async Task<ApiResponse<Guid>> Handle(UpdateGeneralRatingScaleCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<Unit>> Handle(UpdateGeneralRatingScaleCommand request, CancellationToken cancellationToken)
     {
         var entity = await unitOfWork.GeneralRatingScaleRepository.GetByIdAsync(request.Id, cancellationToken);
         if (entity == null)
@@ -21,6 +21,6 @@ public class UpdateGeneralRatingScaleCommandHandler(IUnitOfWork unitOfWork)
         unitOfWork.GeneralRatingScaleRepository.Update(entity);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return ApiResponse<Guid>.Success(entity.Id);
+        return ApiResponse<Unit>.Success(Unit.Value);
     }
 }

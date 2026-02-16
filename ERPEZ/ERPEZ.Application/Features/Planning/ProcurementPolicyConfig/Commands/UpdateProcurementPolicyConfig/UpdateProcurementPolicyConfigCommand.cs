@@ -10,7 +10,7 @@ public record UpdateProcurementPolicyConfigRequest
     public decimal? MaxAmount { get; init; }
 }
 
-public record UpdateProcurementPolicyConfigCommand : IRequest<ApiResponse<Guid>>
+public record UpdateProcurementPolicyConfigCommand : IRequest<ApiResponse<Unit>>
 {
     public Guid Id { get; init; }
     public Guid ProcurementModeThresholdId { get; init; }

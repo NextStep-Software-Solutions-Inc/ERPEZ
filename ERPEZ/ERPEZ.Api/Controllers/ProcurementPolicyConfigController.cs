@@ -45,9 +45,9 @@ public class ProcurementPolicyConfigController(ISender mediator) : ControllerBas
     }
 
     [HttpPut("{id:guid}")]
-    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateProcurementPolicyConfig(Guid id, [FromBody] UpdateProcurementPolicyConfigRequest request)
     {
         var command = new UpdateProcurementPolicyConfigCommand

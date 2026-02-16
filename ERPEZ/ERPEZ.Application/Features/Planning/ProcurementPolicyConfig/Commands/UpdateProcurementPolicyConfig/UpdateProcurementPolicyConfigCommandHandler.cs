@@ -6,9 +6,9 @@ using MediatR;
 namespace ERPEZ.Application.Features.Planning.ProcurementPolicyConfig.Commands.UpdateProcurementPolicyConfig;
 
 public class UpdateProcurementPolicyConfigCommandHandler(IUnitOfWork unitOfWork)
-    : IRequestHandler<UpdateProcurementPolicyConfigCommand, ApiResponse<Guid>>
+    : IRequestHandler<UpdateProcurementPolicyConfigCommand, ApiResponse<Unit>>
 {
-    public async Task<ApiResponse<Guid>> Handle(UpdateProcurementPolicyConfigCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<Unit>> Handle(UpdateProcurementPolicyConfigCommand request, CancellationToken cancellationToken)
     {
         var entity = await unitOfWork.ProcurementPolicyConfigRepository.GetByIdAsync(request.Id, cancellationToken);
         if (entity == null)
@@ -25,6 +25,6 @@ public class UpdateProcurementPolicyConfigCommandHandler(IUnitOfWork unitOfWork)
         unitOfWork.ProcurementPolicyConfigRepository.Update(entity);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return ApiResponse<Guid>.Success(entity.Id);
+        return ApiResponse<Unit>.Success(Unit.Value);
     }
 }

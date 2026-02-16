@@ -4678,7 +4678,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("OrganizationId");
 
-                    b.HasIndex("FiscalYearId", "OrganizationId", "DocumentType");
+                    b.HasIndex("FiscalYearId", "OrganizationId", "DocumentType")
+                        .IsUnique();
 
                     b.ToTable("WorkflowMatrices", "planning");
                 });
