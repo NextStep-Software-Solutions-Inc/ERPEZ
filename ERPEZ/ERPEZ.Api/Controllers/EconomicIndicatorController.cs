@@ -48,10 +48,15 @@ public class EconomicIndicatorController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> UpdateEconomicIndicator(Guid id, [FromBody] UpdateEconomicIndicatorCommand command)
+    public async Task<IActionResult> UpdateEconomicIndicator(Guid id, [FromBody] UpdateEconomicIndicatorRequest request)
     {
-        if (id != command.Id)
-            return BadRequest(ApiResponse<Guid>.Fail("Id mismatch"));
+        var command = new UpdateEconomicIndicatorCommand
+        {
+            Id = id,
+            VATRate = request.VATRate,
+            InflationRate = request.InflationRate,
+            IncomeTaxRate = request.IncomeTaxRate
+        };
 
         var result = await mediator.Send(command);
         return result.Succeeded ? Ok(result) : NotFound(result);

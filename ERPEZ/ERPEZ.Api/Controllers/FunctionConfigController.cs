@@ -48,10 +48,18 @@ public class FunctionConfigController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> UpdateFunctionConfig(Guid id, [FromBody] UpdateFunctionConfigCommand command)
+    public async Task<IActionResult> UpdateFunctionConfig(Guid id, [FromBody] UpdateFunctionConfigRequest request)
     {
-        if (id != command.Id)
-            return BadRequest(ApiResponse<Guid>.Fail("Id mismatch"));
+        var command = new UpdateFunctionConfigCommand
+        {
+            Id = id,
+            StrategicMinWeight = request.StrategicMinWeight,
+            StrategicMaxWeight = request.StrategicMaxWeight,
+            CoreFunctionMinWeight = request.CoreFunctionMinWeight,
+            CoreFunctionMaxWeight = request.CoreFunctionMaxWeight,
+            SupportMinWeight = request.SupportMinWeight,
+            SupportMaxWeight = request.SupportMaxWeight
+        };
 
         var result = await mediator.Send(command);
         return result.Succeeded ? Ok(result) : NotFound(result);

@@ -48,10 +48,13 @@ public class WorkflowMatrixController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> UpdateWorkflowMatrix(Guid id, [FromBody] UpdateWorkflowMatrixCommand command)
+    public async Task<IActionResult> UpdateWorkflowMatrix(Guid id, [FromBody] UpdateWorkflowMatrixRequest request)
     {
-        if (id != command.Id)
-            return BadRequest(ApiResponse<Guid>.Fail("Id mismatch"));
+        var command = new UpdateWorkflowMatrixCommand
+        {
+            Id = id,
+            DocumentType = request.DocumentType
+        };
 
         var result = await mediator.Send(command);
         return result.Succeeded ? Ok(result) : NotFound(result);

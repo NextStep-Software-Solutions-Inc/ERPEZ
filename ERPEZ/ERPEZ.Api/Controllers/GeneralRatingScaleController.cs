@@ -48,10 +48,15 @@ public class GeneralRatingScaleController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> UpdateGeneralRatingScale(Guid id, [FromBody] UpdateGeneralRatingScaleCommand command)
+    public async Task<IActionResult> UpdateGeneralRatingScale(Guid id, [FromBody] UpdateGeneralRatingScaleRequest request)
     {
-        if (id != command.Id)
-            return BadRequest(ApiResponse<Guid>.Fail("Id mismatch"));
+        var command = new UpdateGeneralRatingScaleCommand
+        {
+            Id = id,
+            AdjectivalRatingName = request.AdjectivalRatingName,
+            MinScore = request.MinScore,
+            MaxScore = request.MaxScore
+        };
 
         var result = await mediator.Send(command);
         return result.Succeeded ? Ok(result) : NotFound(result);

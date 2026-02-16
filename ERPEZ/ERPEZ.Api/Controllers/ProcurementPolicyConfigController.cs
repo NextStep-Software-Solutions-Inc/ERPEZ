@@ -48,10 +48,15 @@ public class ProcurementPolicyConfigController(ISender mediator) : ControllerBas
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> UpdateProcurementPolicyConfig(Guid id, [FromBody] UpdateProcurementPolicyConfigCommand command)
+    public async Task<IActionResult> UpdateProcurementPolicyConfig(Guid id, [FromBody] UpdateProcurementPolicyConfigRequest request)
     {
-        if (id != command.Id)
-            return BadRequest(ApiResponse<Guid>.Fail("Id mismatch"));
+        var command = new UpdateProcurementPolicyConfigCommand
+        {
+            Id = id,
+            ProcurementModeThresholdId = request.ProcurementModeThresholdId,
+            MinAmount = request.MinAmount,
+            MaxAmount = request.MaxAmount
+        };
 
         var result = await mediator.Send(command);
         return result.Succeeded ? Ok(result) : NotFound(result);
