@@ -11,24 +11,26 @@ public class UpdateSupplierCommandHandler(IUnitOfWork unitOfWork)
 {
     public async Task<ApiResponse<Unit>> Handle(UpdateSupplierCommand request, CancellationToken cancellationToken)
     {
+        var updateRequest = request.UpdateSupplier;
+
         // Validate existing entity
         var entity = await unitOfWork.SupplierRepository.GetByIdAsync(request.Id, cancellationToken)
             ?? throw new NotFoundException("Supplier not found.");
 
         // Validate SupplierCategory exists
-        _ = await unitOfWork.SupplierCategoryRepository.GetByIdAsync(request.SupplierCategoryId, cancellationToken)
+        _ = await unitOfWork.SupplierCategoryRepository.GetByIdAsync(updateRequest.SupplierCategoryId, cancellationToken)
             ?? throw new NotFoundException("Supplier category not found.");
 
         // Check for duplicate TIN Number (excluding current supplier)
-        if (await unitOfWork.SupplierRepository.ExistsByTINAsync(request.TINNumber, request.Id, cancellationToken))
-            throw new ConflictException($"A supplier with TIN Number '{request.TINNumber}' already exists.");
+        if (await unitOfWork.SupplierRepository.ExistsByTINAsync(updateRequest.TINNumber, request.Id, cancellationToken))
+            throw new ConflictException($"A supplier with TIN Number '{updateRequest.TINNumber}' already exists.");
 
         // Check for duplicate Business Permit (excluding current supplier)
-        if (await unitOfWork.SupplierRepository.ExistsByBusinessPermitAsync(request.BusinessPermitNo, request.Id, cancellationToken))
-            throw new ConflictException($"A supplier with Business Permit Number '{request.BusinessPermitNo}' already exists.");
+        if (await unitOfWork.SupplierRepository.ExistsByBusinessPermitAsync(updateRequest.BusinessPermitNo, request.Id, cancellationToken))
+            throw new ConflictException($"A supplier with Business Permit Number '{updateRequest.BusinessPermitNo}' already exists.");
 
         // Validate supplier status can only be Approved if requirements are verified
-        if (request.Status == nameof(SupplierStatusEnum.Approved))
+        if (updateRequest.Status == nameof(SupplierStatusEnum.Approved))
         {
             var allVerified = await unitOfWork.SupplierRequirementRepository.AllMandatoryRequirementsVerifiedAsync(
                 request.Id, cancellationToken);
@@ -38,17 +40,17 @@ public class UpdateSupplierCommandHandler(IUnitOfWork unitOfWork)
         }
 
         // Update entity
-        entity.Name = request.Name;
-        entity.BusinessPermitNo = request.BusinessPermitNo;
-        entity.ContactPerson = request.ContactPerson;
-        entity.ContactNumber = request.ContactNumber;
-        entity.Address = request.Address;
-        entity.Email = request.Email;
-        entity.TINNumber = request.TINNumber;
-        entity.PhilGEPSNumber = request.PhilGEPSNumber;
-        entity.IsBlacklisted = request.IsBlacklisted;
-        entity.Status = request.Status;
-        entity.SupplierCategoryId = request.SupplierCategoryId;
+        entity.Name = updateRequest.Name;
+        entity.BusinessPermitNo = updateRequest.BusinessPermitNo;
+        entity.ContactPerson = updateRequest.ContactPerson;
+        entity.ContactNumber = updateRequest.ContactNumber;
+        entity.Address = updateRequest.Address;
+        entity.Email = updateRequest.Email;
+        entity.TINNumber = updateRequest.TINNumber;
+        entity.PhilGEPSNumber = updateRequest.PhilGEPSNumber;
+        entity.IsBlacklisted = updateRequest.IsBlacklisted;
+        entity.Status = updateRequest.Status;
+        entity.SupplierCategoryId = updateRequest.SupplierCategoryId;
 
         unitOfWork.SupplierRepository.Update(entity);
         await unitOfWork.SaveChangesAsync(cancellationToken);

@@ -10,25 +10,27 @@ public class UpdateItemPriceCommandHandler(IUnitOfWork unitOfWork)
 {
     public async Task<ApiResponse<Unit>> Handle(UpdateItemPriceCommand request, CancellationToken cancellationToken)
     {
+        var updateRequest = request.UpdateItemPrice;
+
         // Validate existing entity
         var entity = await unitOfWork.ItemPriceRepository.GetByIdAsync(request.Id, cancellationToken)
             ?? throw new NotFoundException("Item price not found.");
 
         // Validate ProcurementItem exists
-        _ = await unitOfWork.ProcurementItemRepository.GetByIdAsync(request.ProcurementItemId, cancellationToken)
+        _ = await unitOfWork.ProcurementItemRepository.GetByIdAsync(updateRequest.ProcurementItemId, cancellationToken)
             ?? throw new NotFoundException("Procurement item not found.");
 
         // Validate FiscalYear exists
-        _ = await unitOfWork.FiscalYearRepository.GetByIdAsync(request.FiscalYearId, cancellationToken)
+        _ = await unitOfWork.FiscalYearRepository.GetByIdAsync(updateRequest.FiscalYearId, cancellationToken)
             ?? throw new NotFoundException("Fiscal year not found.");
 
         // Check if updating to a different ProcurementItem/FiscalYear combination
-        if (entity.ProcurementItemId != request.ProcurementItemId || entity.FiscalYearId != request.FiscalYearId)
+        if (entity.ProcurementItemId != updateRequest.ProcurementItemId || entity.FiscalYearId != updateRequest.FiscalYearId)
         {
             // Check for existing price entry (ensure uniqueness)
             var existingPrice = await unitOfWork.ItemPriceRepository.FindAsync(
-                ip => ip.ProcurementItemId == request.ProcurementItemId
-                    && ip.FiscalYearId == request.FiscalYearId
+                ip => ip.ProcurementItemId == updateRequest.ProcurementItemId
+                    && ip.FiscalYearId == updateRequest.FiscalYearId
                     && ip.Id != request.Id
                     && !ip.IsDeleted,
                 cancellationToken
@@ -39,9 +41,9 @@ public class UpdateItemPriceCommandHandler(IUnitOfWork unitOfWork)
         }
 
         // Update entity
-        entity.ProcurementItemId = request.ProcurementItemId;
-        entity.FiscalYearId = request.FiscalYearId;
-        entity.UnitPrice = request.UnitPrice;
+        entity.ProcurementItemId = updateRequest.ProcurementItemId;
+        entity.FiscalYearId = updateRequest.FiscalYearId;
+        entity.UnitPrice = updateRequest.UnitPrice;
 
         unitOfWork.ItemPriceRepository.Update(entity);
         await unitOfWork.SaveChangesAsync(cancellationToken);

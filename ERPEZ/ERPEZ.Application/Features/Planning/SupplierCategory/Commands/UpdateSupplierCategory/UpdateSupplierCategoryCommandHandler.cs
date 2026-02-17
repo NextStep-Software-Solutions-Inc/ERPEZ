@@ -10,17 +10,19 @@ public class UpdateSupplierCategoryCommandHandler(IUnitOfWork unitOfWork)
 {
     public async Task<ApiResponse<Unit>> Handle(UpdateSupplierCategoryCommand request, CancellationToken cancellationToken)
     {
+        var updateRequest = request.UpdateSupplierCategory;
+
         // Validate existing entity
         var entity = await unitOfWork.SupplierCategoryRepository.GetByIdAsync(request.Id, cancellationToken)
             ?? throw new NotFoundException("Supplier category not found.");
 
         // Check for duplicate name (excluding current entity)
-        if (await unitOfWork.SupplierCategoryRepository.ExistsByNameAsync(request.Name, request.Id, cancellationToken))
-            throw new ConflictException($"Supplier category with name '{request.Name}' already exists.");
+        if (await unitOfWork.SupplierCategoryRepository.ExistsByNameAsync(updateRequest.Name, request.Id, cancellationToken))
+            throw new ConflictException($"Supplier category with name '{updateRequest.Name}' already exists.");
 
         // Update entity
-        entity.Name = request.Name;
-        entity.Description = request.Description;
+        entity.Name = updateRequest.Name;
+        entity.Description = updateRequest.Description;
 
         unitOfWork.SupplierCategoryRepository.Update(entity);
         await unitOfWork.SaveChangesAsync(cancellationToken);

@@ -1,11 +1,11 @@
+using ERPEZ.Application.Features.Planning.ItemPrice.Dtos;
 using ERPEZ.Shared.Common;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.ItemPrice.Commands.UpdateItemPrice;
 
-public record UpdateItemPriceCommand(Guid Id) : IRequest<ApiResponse<Unit>>
+public record UpdateItemPriceCommand : IRequest<ApiResponse<Unit>>
 {
-    public Guid ProcurementItemId { get; init; }
-    public Guid FiscalYearId { get; init; }
-    public decimal UnitPrice { get; init; }
+    public Guid Id { get; init; }
+    public required UpdateItemPriceRequest UpdateItemPrice { get; init; }
 }

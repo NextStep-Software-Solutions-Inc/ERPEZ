@@ -6,15 +6,15 @@ public class UpdateItemPriceCommandValidator : AbstractValidator<UpdateItemPrice
 {
     public UpdateItemPriceCommandValidator()
     {
-        RuleFor(x => x.ProcurementItemId)
+        RuleFor(x => x.UpdateItemPrice.ProcurementItemId)
             .NotEmpty()
             .WithMessage("Procurement Item is required.");
 
-        RuleFor(x => x.FiscalYearId)
+        RuleFor(x => x.UpdateItemPrice.FiscalYearId)
             .NotEmpty()
             .WithMessage("Fiscal Year is required.");
 
-        RuleFor(x => x.UnitPrice)
+        RuleFor(x => x.UpdateItemPrice.UnitPrice)
             .GreaterThan(0)
             .WithMessage("Unit Price must be greater than 0.")
             .LessThanOrEqualTo(999999999999.99m)

@@ -6,15 +6,15 @@ public class UpdateSupplierCategoryCommandValidator : AbstractValidator<UpdateSu
 {
     public UpdateSupplierCategoryCommandValidator()
     {
-        RuleFor(x => x.Name)
+        RuleFor(x => x.UpdateSupplierCategory.Name)
             .NotEmpty()
             .WithMessage("Supplier Category Name is required.")
             .MaximumLength(250)
             .WithMessage("Supplier Category Name cannot exceed 250 characters.");
 
-        RuleFor(x => x.Description)
+        RuleFor(x => x.UpdateSupplierCategory.Description)
             .MaximumLength(500)
             .WithMessage("Description cannot exceed 500 characters.")
-            .When(x => !string.IsNullOrEmpty(x.Description));
+            .When(x => !string.IsNullOrEmpty(x.UpdateSupplierCategory.Description));
     }
 }

@@ -63,10 +63,14 @@ public class SupplierController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> UpdateSupplier(Guid id, [FromBody] UpdateSupplierCommand command)
+    public async Task<IActionResult> UpdateSupplier(Guid id, [FromBody] UpdateSupplierRequest updateSupplier)
     {
-        var commandWithId = command with { Id = id };
-        var result = await mediator.Send(commandWithId);
+        var command = new UpdateSupplierCommand
+        {
+            Id = id,
+            UpdateSupplier = updateSupplier
+        };
+        var result = await mediator.Send(command);
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 

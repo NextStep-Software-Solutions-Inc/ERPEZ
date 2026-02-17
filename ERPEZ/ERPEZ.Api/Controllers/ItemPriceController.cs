@@ -63,10 +63,14 @@ public class ItemPriceController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> UpdateItemPrice(Guid id, [FromBody] UpdateItemPriceCommand command)
+    public async Task<IActionResult> UpdateItemPrice(Guid id, [FromBody] UpdateItemPriceRequest updateItemPrice)
     {
-        var commandWithId = command with { Id = id };
-        var result = await mediator.Send(commandWithId);
+        var command = new UpdateItemPriceCommand
+        {
+            Id = id,
+            UpdateItemPrice = updateItemPrice
+        };
+        var result = await mediator.Send(command);
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 
