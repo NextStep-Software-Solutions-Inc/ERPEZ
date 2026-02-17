@@ -3,7 +3,6 @@ using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.Application.Features.Planning.WorkflowMatrix.Queries.GetWorkflowMatrixById;
 
@@ -12,10 +11,7 @@ public class GetWorkflowMatrixByIdQueryHandler(IUnitOfWork unitOfWork)
 {
     public async Task<ApiResponse<WorkflowMatrixResponse>> Handle(GetWorkflowMatrixByIdQuery request, CancellationToken cancellationToken)
     {
-        var entity = await unitOfWork.WorkflowMatrixRepository.Query()
-            .Include(x => x.FiscalYear)
-            .Include(x => x.Organization)
-            .FirstOrDefaultAsync(x => x.Id == request.Id && !x.IsDeleted, cancellationToken);
+        var entity = await unitOfWork.WorkflowMatrixRepository.GetByIdWithNavigationAsync(request.Id, cancellationToken);
 
         if (entity == null)
             throw new NotFoundException("Workflow Matrix not found.");

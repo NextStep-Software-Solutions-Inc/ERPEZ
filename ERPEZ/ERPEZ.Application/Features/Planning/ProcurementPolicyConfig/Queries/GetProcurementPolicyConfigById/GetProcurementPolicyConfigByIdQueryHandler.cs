@@ -3,7 +3,6 @@ using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.Application.Features.Planning.ProcurementPolicyConfig.Queries.GetProcurementPolicyConfigById;
 
@@ -12,11 +11,7 @@ public class GetProcurementPolicyConfigByIdQueryHandler(IUnitOfWork unitOfWork)
 {
     public async Task<ApiResponse<ProcurementPolicyConfigResponse>> Handle(GetProcurementPolicyConfigByIdQuery request, CancellationToken cancellationToken)
     {
-        var entity = await unitOfWork.ProcurementPolicyConfigRepository.Query()
-            .Include(x => x.FiscalYear)
-            .Include(x => x.ProcurementMode)
-            .Include(x => x.ProcurementModeThreshold)
-            .FirstOrDefaultAsync(x => x.Id == request.Id && !x.IsDeleted, cancellationToken);
+        var entity = await unitOfWork.ProcurementPolicyConfigRepository.GetByIdWithNavigationAsync(request.Id, cancellationToken);
 
         if (entity == null)
             throw new NotFoundException("Procurement Policy Configuration not found.");

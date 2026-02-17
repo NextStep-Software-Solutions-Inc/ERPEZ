@@ -1,6 +1,7 @@
 using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Infrastructure.Persistence;
+using Microsoft.EntityFrameworkCore;
 using Sieve.Services;
 
 namespace ERPEZ.Infrastructure.Persistence.Repositories;
@@ -8,4 +9,10 @@ namespace ERPEZ.Infrastructure.Persistence.Repositories;
 public class GeneralRatingScaleRepository(ApplicationDbContext context, ISieveProcessor sieveProcessor) 
     : Repository<GeneralRatingScale>(context, sieveProcessor), IGeneralRatingScaleRepository
 {
+    public async Task<GeneralRatingScale?> GetByIdWithNavigationAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return await context.GeneralRatingScales!
+            .Include(x => x.FiscalYear)
+            .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted, cancellationToken);
+    }
 }

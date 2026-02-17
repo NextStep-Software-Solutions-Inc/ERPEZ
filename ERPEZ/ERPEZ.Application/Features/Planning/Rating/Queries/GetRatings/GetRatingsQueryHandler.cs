@@ -2,7 +2,6 @@ using ERPEZ.Application.Features.Planning.Rating.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
 
 namespace ERPEZ.Application.Features.Planning.Rating.Queries.GetRatings;

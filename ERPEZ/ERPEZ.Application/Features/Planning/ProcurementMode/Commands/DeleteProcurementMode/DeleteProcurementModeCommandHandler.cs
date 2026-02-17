@@ -2,7 +2,6 @@ using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.Application.Features.Planning.ProcurementMode.Commands.DeleteProcurementMode;
 
@@ -15,8 +14,7 @@ public class DeleteProcurementModeCommandHandler(IUnitOfWork unitOfWork)
             ?? throw new NotFoundException("Procurement mode not found.");
 
         // Check if in use
-        var hasThresholds = await unitOfWork.ProcurementModeThresholdRepository.Query()
-            .AnyAsync(pmt => pmt.ProcurementModeId == request.Id, cancellationToken);
+        var hasThresholds = await unitOfWork.ProcurementModeThresholdRepository.HasReferencesByProcurementModeAsync(request.Id, cancellationToken);
 
         if (hasThresholds)
             throw new ConflictException("Cannot delete procurement mode that has thresholds assigned.");
