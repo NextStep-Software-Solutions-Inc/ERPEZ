@@ -1099,6 +1099,54 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.ToTable("GeneralRatingScales", "planning");
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.ItemPrice", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("FiscalYearId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("ProcurementItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FiscalYearId");
+
+                    b.HasIndex("ProcurementItemId", "FiscalYearId")
+                        .IsUnique();
+
+                    b.ToTable("ItemPrices", "planning");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.KPI", b =>
                 {
                     b.Property<Guid>("Id")
@@ -3672,6 +3720,184 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.ToTable("Steps", "planning");
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.Supplier", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Address")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("BusinessPermitNo")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ContactNumber")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ContactPerson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Email")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsBlacklisted")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("PhilGEPSNumber")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("SupplierCategoryId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("TINNumber")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("BusinessPermitNo")
+                        .IsUnique();
+
+                    b.HasIndex("Email");
+
+                    b.HasIndex("PhilGEPSNumber");
+
+                    b.HasIndex("SupplierCategoryId");
+
+                    b.HasIndex("TINNumber")
+                        .IsUnique();
+
+                    b.ToTable("Suppliers", "planning");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.SupplierCategory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Name")
+                        .IsUnique();
+
+                    b.ToTable("SupplierCategories", "planning");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.SupplierRequirement", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsVerified")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("RequirementName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("SupplierId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("URL")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("SupplierId", "RequirementName");
+
+                    b.ToTable("SupplierRequirements", "planning");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.Transaction", b =>
                 {
                     b.Property<Guid>("Id")
@@ -4932,6 +5158,25 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("FiscalYear");
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.ItemPrice", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.FiscalYear", "FiscalYear")
+                        .WithMany()
+                        .HasForeignKey("FiscalYearId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.ProcurementItem", "ProcurementItem")
+                        .WithMany()
+                        .HasForeignKey("ProcurementItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("FiscalYear");
+
+                    b.Navigation("ProcurementItem");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.KPI", b =>
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Planning.MFOPAP", "MFOPAP")
@@ -5555,6 +5800,28 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("KPIPerformanceMeasure");
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.Supplier", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.SupplierCategory", "SupplierCategory")
+                        .WithMany("Suppliers")
+                        .HasForeignKey("SupplierCategoryId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("SupplierCategory");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.SupplierRequirement", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.Supplier", "Supplier")
+                        .WithMany("SupplierRequirements")
+                        .HasForeignKey("SupplierId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Supplier");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.Transaction", b =>
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Planning.FundSource", "FundSource")
@@ -6119,6 +6386,16 @@ namespace ERPEZ.Infrastructure.Migrations
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.Step", b =>
                 {
                     b.Navigation("Positions");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.Supplier", b =>
+                {
+                    b.Navigation("SupplierRequirements");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.SupplierCategory", b =>
+                {
+                    b.Navigation("Suppliers");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.UACSCodeCombination", b =>

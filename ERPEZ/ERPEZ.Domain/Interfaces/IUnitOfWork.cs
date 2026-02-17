@@ -67,6 +67,10 @@ public interface IUnitOfWork
     IGeneralRatingScaleRepository GeneralRatingScaleRepository { get; }
     IEconomicIndicatorRepository EconomicIndicatorRepository { get; }
     IWorkflowMatrixRepository WorkflowMatrixRepository { get; }
+    IItemPriceRepository ItemPriceRepository { get; }
+    ISupplierRepository SupplierRepository { get; }
+    ISupplierRequirementRepository SupplierRequirementRepository { get; }
+    ISupplierCategoryRepository SupplierCategoryRepository { get; }
     Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default);
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
