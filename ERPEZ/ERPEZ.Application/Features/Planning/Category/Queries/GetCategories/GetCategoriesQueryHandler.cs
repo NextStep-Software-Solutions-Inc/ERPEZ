@@ -25,9 +25,7 @@ public class GetCategoriesQueryHandler(IUnitOfWork unitOfWork)
             Name = c.Name,
             Code = c.Code,
             CanHaveChildren = c.CanHaveChildren,
-            IsActive = c.IsActive,
-            CreatedAt = c.CreatedAt,
-            CreatedBy = c.CreatedBy
+            IsActive = c.IsActive
         };
 
         var (categories, totalCount) = await unitOfWork.CategoryRepository.GetAllAsync(

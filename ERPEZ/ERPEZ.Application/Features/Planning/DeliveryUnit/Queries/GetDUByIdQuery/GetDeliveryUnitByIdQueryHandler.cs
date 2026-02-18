@@ -30,9 +30,7 @@ public class GetDeliveryUnitByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestH
                  Cluster = du.Office.Cluster == null ? null : new()
                     {
                         Id = du.Office.Cluster.Id,
-                        Name = du.Office.Cluster.Name,
-                        CreatedAt = du.Office.Cluster.CreatedAt,
-                        CreatedBy = du.Office.Cluster.CreatedBy,
+                        Name = du.Office.Cluster.Name
                     }
             },
            
@@ -97,9 +95,7 @@ public class GetDeliveryUnitByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestH
                     Cluster = du.Office.Cluster == null ? null : new()
                         {
                             Id = du.Office.Cluster.Id,
-                            Name = du.Office.Cluster.Name,
-                            CreatedAt = du.Office.Cluster.CreatedAt,
-                            CreatedBy = du.Office.Cluster.CreatedBy,
+                            Name = du.Office.Cluster.Name
                         }
                 },
                 ParentId = subDU.ParentId,

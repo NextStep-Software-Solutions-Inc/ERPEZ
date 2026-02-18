@@ -25,9 +25,7 @@ public class GetOfficeTypesQueryHandler(IUnitOfWork unitOfWork)
             Name = ot.Name,
             Code = ot.Code,
             CanHaveChildren = ot.CanHaveChildren,
-            IsActive = ot.IsActive,
-            CreatedAt = ot.CreatedAt,
-            CreatedBy = ot.CreatedBy
+            IsActive = ot.IsActive
         };
 
         var (officeTypes, totalCount) = await unitOfWork.OfficeTypeRepository.GetAllAsync(

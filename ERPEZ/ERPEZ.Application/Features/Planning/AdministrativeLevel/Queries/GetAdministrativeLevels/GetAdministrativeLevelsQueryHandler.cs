@@ -25,9 +25,7 @@ public class GetAdministrativeLevelsQueryHandler(IUnitOfWork unitOfWork)
             Name = a.Name,
             Code = a.Code,
             CanHaveChildren = a.CanHaveChildren,
-            IsActive = a.IsActive,
-            CreatedAt = a.CreatedAt,
-            CreatedBy = a.CreatedBy
+            IsActive = a.IsActive
         };
 
         var (administrativeLevels, totalCount) = await unitOfWork.AdministrativeLevelRepository.GetAllAsync(

@@ -41,9 +41,7 @@ public class GetOPCRActivityByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestH
                             Cluster = p.DeliveryUnit.Office.Cluster == null ? null : new()
                             {
                                 Id = p.DeliveryUnit.Office.Cluster.Id,
-                                Name = p.DeliveryUnit.Office.Cluster.Name,
-                                CreatedAt = p.DeliveryUnit.Office.Cluster.CreatedAt,
-                                CreatedBy = p.DeliveryUnit.Office.Cluster.CreatedBy,
+                                Name = p.DeliveryUnit.Office.Cluster.Name
                             }
                         },
                     }
