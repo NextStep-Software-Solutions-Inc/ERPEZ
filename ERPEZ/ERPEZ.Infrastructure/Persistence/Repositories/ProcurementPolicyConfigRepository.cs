@@ -6,12 +6,19 @@ using Sieve.Services;
 
 namespace ERPEZ.Infrastructure.Persistence.Repositories;
 
-public class ProcurementPolicyConfigRepository(ApplicationDbContext context, ISieveProcessor sieveProcessor) 
-    : Repository<ProcurementPolicyConfig>(context, sieveProcessor), IProcurementPolicyConfigRepository
+public class ProcurementPolicyConfigRepository : Repository<ProcurementPolicyConfig>, IProcurementPolicyConfigRepository
 {
+    private readonly ApplicationDbContext dbContext;
+
+    public ProcurementPolicyConfigRepository(ApplicationDbContext context, ISieveProcessor sieveProcessor)
+        : base(context, sieveProcessor)
+    {
+        dbContext = context;
+    }
+
     public async Task<ProcurementPolicyConfig?> GetByIdWithNavigationAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return await context.ProcurementPolicyConfigs!
+        return await dbContext.ProcurementPolicyConfigs!
             .Include(x => x.FiscalYear)
             .Include(x => x.ProcurementMode)
             .Include(x => x.ProcurementModeThreshold)

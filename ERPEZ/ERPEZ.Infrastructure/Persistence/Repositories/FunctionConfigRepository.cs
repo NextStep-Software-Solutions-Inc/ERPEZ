@@ -6,12 +6,19 @@ using Sieve.Services;
 
 namespace ERPEZ.Infrastructure.Persistence.Repositories;
 
-public class FunctionConfigRepository(ApplicationDbContext context, ISieveProcessor sieveProcessor) 
-    : Repository<FunctionConfig>(context, sieveProcessor), IFunctionConfigRepository
+public class FunctionConfigRepository : Repository<FunctionConfig>, IFunctionConfigRepository
 {
+    private readonly ApplicationDbContext dbContext;
+
+    public FunctionConfigRepository(ApplicationDbContext context, ISieveProcessor sieveProcessor)
+        : base(context, sieveProcessor)
+    {
+        dbContext = context;
+    }
+
     public async Task<FunctionConfig?> GetByIdWithNavigationAsync(Guid id, CancellationToken cancellationToken = default)
     {
-        return await context.FunctionConfigs!
+        return await dbContext.FunctionConfigs!
             .Include(x => x.FiscalYear)
             .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted, cancellationToken);
     }
