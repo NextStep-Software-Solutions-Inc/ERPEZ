@@ -61,9 +61,9 @@ public class OfficeRepository : Repository<Office>, IOfficeRepository
             .Include(o => o.ProcurementWorkflow)
             .Include(o => o.Parent)
             .Where(o => !o.IsDeleted)
+            .AsNoTracking()
             .AsQueryable();
 
-        var totalCount = await query.CountAsync(cancellationToken);
         var filteredQuery = sieveProcessor.Apply(sieveModel, query, applyPagination: false);
         var filteredCount = await filteredQuery.CountAsync(cancellationToken);
         var paginatedQuery = sieveProcessor.Apply(sieveModel, filteredQuery, applyFiltering: false, applySorting: false);
