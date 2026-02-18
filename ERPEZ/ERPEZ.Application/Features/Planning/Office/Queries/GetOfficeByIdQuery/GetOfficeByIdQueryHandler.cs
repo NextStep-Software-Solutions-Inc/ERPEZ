@@ -11,7 +11,7 @@ public class GetOfficeByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler
 {
     public async Task<ApiResponse<OfficeResponse>> Handle(GetOfficeByIdQuery request, CancellationToken cancellationToken)
     {
-        var office = await unitOfWork.OfficeRepository.GetByIdAsync(request.Id, cancellationToken) 
+        var office = await unitOfWork.OfficeRepository.GetByIdWithDetailsAsync(request.Id, cancellationToken) 
             ?? throw new NotFoundException("No data found.");
 
         var result = new OfficeResponse()
@@ -32,10 +32,10 @@ public class GetOfficeByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler
             ParentId = office.ParentId,
             CreatedBy = office.CreatedBy,
             CreatedAt = office.CreatedAt,
-            OfficeTypeName = office.OfficeType.Name,
-            OrganizationName = office.Organization.Name,
-            CategoryName = office.Category.Name,
-            AdministrativeLevelName = office.AdministrativeLevel.Name,
+            OfficeTypeName = office.OfficeType?.Name ?? string.Empty,
+            OrganizationName = office.Organization?.Name ?? string.Empty,
+            CategoryName = office.Category?.Name ?? string.Empty,
+            AdministrativeLevelName = office.AdministrativeLevel?.Name ?? string.Empty,
             Cluster = office.Cluster != null ? new ClusterResponse
             {
                 Id = office.Cluster.Id,
