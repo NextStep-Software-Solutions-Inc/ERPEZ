@@ -21,9 +21,7 @@ public class GetClusterByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandle
             Code = cluster.Code,
             Address = cluster.Address,
             MaxSubUnits = cluster.MaxSubUnits,
-            IsActive = cluster.IsActive,
-            CreatedAt = cluster.CreatedAt,
-            CreatedBy = cluster.CreatedBy
+            IsActive = cluster.IsActive
         };
         return ApiResponse<ClusterResponse>.Success(result, "Retrieved successfully");
     }

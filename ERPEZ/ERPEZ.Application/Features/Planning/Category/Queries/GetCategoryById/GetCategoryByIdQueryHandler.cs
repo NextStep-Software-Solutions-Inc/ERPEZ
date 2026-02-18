@@ -22,9 +22,7 @@ public class GetCategoryByIdQueryHandler(IUnitOfWork unitOfWork)
             Name = category.Name,
             Code = category.Code,
             CanHaveChildren = category.CanHaveChildren,
-            IsActive = category.IsActive,
-            CreatedAt = category.CreatedAt,
-            CreatedBy = category.CreatedBy
+            IsActive = category.IsActive
         };
 
         return ApiResponse<CategoryResponse>.Success(result, "Retrieved successfully.");

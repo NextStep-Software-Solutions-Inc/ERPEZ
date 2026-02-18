@@ -27,8 +27,7 @@ public class GetProcurementWorkflowsQueryHandler(IUnitOfWork unitOfWork)
             Name = x.Name,
             Code = x.Code,
             ApprovalLevel = x.ApprovalLevel,
-            IsActive = x.IsActive,
-            CreatedAt = x.CreatedAt
+            IsActive = x.IsActive
         };
 
         var (workflows, totalCount) = await unitOfWork.ProcurementWorkflowRepository.GetAllAsync(

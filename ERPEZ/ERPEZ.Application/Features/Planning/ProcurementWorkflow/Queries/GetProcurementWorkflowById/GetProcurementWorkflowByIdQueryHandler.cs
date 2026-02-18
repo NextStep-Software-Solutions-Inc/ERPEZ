@@ -24,8 +24,7 @@ public class GetProcurementWorkflowByIdQueryHandler(IUnitOfWork unitOfWork)
             Name = entity.Name,
             Code = entity.Code,
             ApprovalLevel = entity.ApprovalLevel,
-            IsActive = entity.IsActive,
-            CreatedAt = entity.CreatedAt
+            IsActive = entity.IsActive
         };
 
         return ApiResponse<ProcurementWorkflowResponse>.Success(response);

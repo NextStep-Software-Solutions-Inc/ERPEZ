@@ -8,6 +8,4 @@ public record ClusterResponse
     public string? Address { get; init; }
     public int? MaxSubUnits { get; init; }
     public bool IsActive { get; init; }
-    public DateTime CreatedAt { get; init; }
-    public string CreatedBy { get; init; } = string.Empty;
 }
