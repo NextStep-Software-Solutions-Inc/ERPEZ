@@ -22,6 +22,7 @@ public class GetBudgetCallByIdHandler(IUnitOfWork unitOfWork) : IRequestHandler<
             FiscalYearId = budgetCall.FiscalYearId,
             Type = budgetCall.Type,
             SubmissionDeadline = budgetCall.SubmissionDeadline,
+            Status = budgetCall.Status,
             CreatedAt = budgetCall.CreatedAt,
             CreatedBy = budgetCall.CreatedBy,
             UpdatedAt = budgetCall.UpdatedAt,
