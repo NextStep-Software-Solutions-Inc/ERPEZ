@@ -26,6 +26,7 @@ public sealed class UpdateBudgetCallCommandHandler(IUnitOfWork unitOfWork) : IRe
             FiscalYearId = budgetCall.FiscalYearId,
             Type = budgetCall.Type,
             SubmissionDeadline = budgetCall.SubmissionDeadline,
+            Status = budgetCall.Status,
             CreatedAt = budgetCall.CreatedAt
         };
 
