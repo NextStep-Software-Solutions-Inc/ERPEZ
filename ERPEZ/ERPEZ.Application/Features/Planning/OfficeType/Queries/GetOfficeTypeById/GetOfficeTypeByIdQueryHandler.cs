@@ -22,9 +22,7 @@ public class GetOfficeTypeByIdQueryHandler(IUnitOfWork unitOfWork)
             Name = officeType.Name,
             Code = officeType.Code,
             CanHaveChildren = officeType.CanHaveChildren,
-            IsActive = officeType.IsActive,
-            CreatedAt = officeType.CreatedAt,
-            CreatedBy = officeType.CreatedBy
+            IsActive = officeType.IsActive
         };
 
         return ApiResponse<OfficeTypeResponse>.Success(result, "Retrieved successfully.");

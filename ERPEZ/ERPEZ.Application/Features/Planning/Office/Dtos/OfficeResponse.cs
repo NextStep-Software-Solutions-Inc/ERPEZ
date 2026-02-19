@@ -1,4 +1,9 @@
+using ERPEZ.Application.Features.Planning.AdministrativeLevel.Dtos;
+using ERPEZ.Application.Features.Planning.Category.Dtos;
 using ERPEZ.Application.Features.Planning.Cluster.Dtos;
+using ERPEZ.Application.Features.Planning.OfficeType.Dtos;
+using ERPEZ.Application.Features.Planning.Organization.Dtos;
+using ERPEZ.Application.Features.Planning.ProcurementWorkflow.Dtos;
 
 namespace ERPEZ.Application.Features.Planning.Office.Dtos;
 
@@ -21,12 +26,19 @@ public record OfficeResponse
     public DateTime CreatedAt { get; init; }
     public required string CreatedBy { get; init; }
     
-    // Lookup Details
-    public string OfficeTypeName { get; init; } = string.Empty;
-    public string OrganizationName { get; init; } = string.Empty;
-    public string CategoryName { get; init; } = string.Empty;
-    public string AdministrativeLevelName { get; init; } = string.Empty;
+    // Navigation Properties - Full nested objects
+    public OfficeTypeResponse? OfficeType { get; init; }
+    public OrganizationResponse? Organization { get; init; }
+    public CategoryResponse? Category { get; init; }
+    public AdministrativeLevelResponse? AdministrativeLevel { get; init; }
     public ClusterResponse? Cluster { get; init; }
-    public string? ProcurementWorkflowName { get; init; }
-    public string? ParentOfficeName { get; init; }
+    public ProcurementWorkflowResponse? ProcurementWorkflow { get; init; }
+    public ParentOfficeResponse? ParentOffice { get; init; }
+}
+
+public record ParentOfficeResponse
+{
+    public Guid Id { get; init; }
+    public string Name { get; init; } = string.Empty;
+    public string Code { get; init; } = string.Empty;
 }
