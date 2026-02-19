@@ -3,7 +3,6 @@ using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.Application.Features.Planning.FunctionConfig.Queries.GetFunctionConfigById;
 
@@ -12,9 +11,7 @@ public class GetFunctionConfigByIdQueryHandler(IUnitOfWork unitOfWork)
 {
     public async Task<ApiResponse<FunctionConfigResponse>> Handle(GetFunctionConfigByIdQuery request, CancellationToken cancellationToken)
     {
-        var entity = await unitOfWork.FunctionConfigRepository.Query()
-            .Include(x => x.FiscalYear)
-            .FirstOrDefaultAsync(x => x.Id == request.Id && !x.IsDeleted, cancellationToken);
+        var entity = await unitOfWork.FunctionConfigRepository.GetByIdWithNavigationAsync(request.Id, cancellationToken);
 
         if (entity == null)
             throw new NotFoundException("Function Configuration not found.");

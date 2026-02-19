@@ -76,6 +76,10 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IGeneralRatingScaleRepository generalRatingScaleRepository;
     private readonly IEconomicIndicatorRepository economicIndicatorRepository;
     private readonly IWorkflowMatrixRepository workflowMatrixRepository;
+    private readonly IItemPriceRepository itemPriceRepository;
+    private readonly ISupplierRepository supplierRepository;
+    private readonly ISupplierRequirementRepository supplierRequirementRepository;
+    private readonly ISupplierCategoryRepository supplierCategoryRepository;
 
     // Constructor initializes all repositories once
     public UnitOfWork(ApplicationDbContext context, IServiceProvider serviceProvider)
@@ -149,6 +153,10 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         generalRatingScaleRepository = new GeneralRatingScaleRepository(context, sieveProcessor);
         economicIndicatorRepository = new EconomicIndicatorRepository(context, sieveProcessor);
         workflowMatrixRepository = new WorkflowMatrixRepository(context, sieveProcessor);
+        itemPriceRepository = new ItemPriceRepository(context, sieveProcessor);
+        supplierRepository = new SupplierRepository(context, sieveProcessor);
+        supplierRequirementRepository = new SupplierRequirementRepository(context, sieveProcessor);
+        supplierCategoryRepository = new SupplierCategoryRepository(context, sieveProcessor);
     }
 
     // Public properties return cached instances
@@ -217,6 +225,10 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IGeneralRatingScaleRepository GeneralRatingScaleRepository => generalRatingScaleRepository;
     public IEconomicIndicatorRepository EconomicIndicatorRepository => economicIndicatorRepository;
     public IWorkflowMatrixRepository WorkflowMatrixRepository => workflowMatrixRepository;
+    public IItemPriceRepository ItemPriceRepository => itemPriceRepository;
+    public ISupplierRepository SupplierRepository => supplierRepository;
+    public ISupplierRequirementRepository SupplierRequirementRepository => supplierRequirementRepository;
+    public ISupplierCategoryRepository SupplierCategoryRepository => supplierCategoryRepository;
 
     public async Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default)
     {

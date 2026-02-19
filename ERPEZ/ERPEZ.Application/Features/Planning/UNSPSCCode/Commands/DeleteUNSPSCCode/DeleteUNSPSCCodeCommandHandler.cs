@@ -2,7 +2,6 @@ using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.Application.Features.Planning.UNSPSCCode.Commands.DeleteUNSPSCCode;
 
@@ -21,8 +20,7 @@ public class DeleteUNSPSCCodeCommandHandler(IUnitOfWork unitOfWork)
             throw new ConflictException("Cannot delete UNSPSC code that is assigned to procurement items.");
 
         // Check if has children
-        var hasChildren = await unitOfWork.UNSPSCCodeRepository.Query()
-            .AnyAsync(x => x.ParentId == request.Id, cancellationToken);
+        var hasChildren = await unitOfWork.UNSPSCCodeRepository.HasChildrenAsync(request.Id, cancellationToken);
 
         if (hasChildren)
             throw new ConflictException("Cannot delete UNSPSC code that has child codes.");

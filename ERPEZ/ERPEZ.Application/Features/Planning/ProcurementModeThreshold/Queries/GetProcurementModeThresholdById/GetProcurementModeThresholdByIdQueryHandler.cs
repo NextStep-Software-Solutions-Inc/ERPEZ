@@ -3,7 +3,6 @@ using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.Application.Features.Planning.ProcurementModeThreshold.Queries.GetProcurementModeThresholdById;
 
@@ -14,9 +13,7 @@ public class GetProcurementModeThresholdByIdQueryHandler(IUnitOfWork unitOfWork)
         GetProcurementModeThresholdByIdQuery request,
         CancellationToken cancellationToken)
     {
-        var entity = await unitOfWork.ProcurementModeThresholdRepository.Query()
-            .Include(x => x.ProcurementMode)
-            .FirstOrDefaultAsync(x => x.Id == request.Id, cancellationToken)
+        var entity = await unitOfWork.ProcurementModeThresholdRepository.GetByIdWithNavigationAsync(request.Id, cancellationToken)
             ?? throw new NotFoundException("Procurement mode threshold not found.");
 
         var response = new ProcurementModeThresholdResponse

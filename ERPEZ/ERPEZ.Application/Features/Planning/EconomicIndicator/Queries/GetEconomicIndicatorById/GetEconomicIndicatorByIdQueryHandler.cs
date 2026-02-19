@@ -3,7 +3,6 @@ using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.Application.Features.Planning.EconomicIndicator.Queries.GetEconomicIndicatorById;
 
@@ -12,9 +11,7 @@ public class GetEconomicIndicatorByIdQueryHandler(IUnitOfWork unitOfWork)
 {
     public async Task<ApiResponse<EconomicIndicatorResponse>> Handle(GetEconomicIndicatorByIdQuery request, CancellationToken cancellationToken)
     {
-        var entity = await unitOfWork.EconomicIndicatorRepository.Query()
-            .Include(x => x.FiscalYear)
-            .FirstOrDefaultAsync(x => x.Id == request.Id && !x.IsDeleted, cancellationToken);
+        var entity = await unitOfWork.EconomicIndicatorRepository.GetByIdWithNavigationAsync(request.Id, cancellationToken);
 
         if (entity == null)
             throw new NotFoundException("Economic Indicator not found.");

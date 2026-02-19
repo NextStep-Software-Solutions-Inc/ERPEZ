@@ -3,7 +3,6 @@ using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.Application.Features.Planning.GeneralRatingScale.Queries.GetGeneralRatingScaleById;
 
@@ -12,9 +11,7 @@ public class GetGeneralRatingScaleByIdQueryHandler(IUnitOfWork unitOfWork)
 {
     public async Task<ApiResponse<GeneralRatingScaleResponse>> Handle(GetGeneralRatingScaleByIdQuery request, CancellationToken cancellationToken)
     {
-        var entity = await unitOfWork.GeneralRatingScaleRepository.Query()
-            .Include(x => x.FiscalYear)
-            .FirstOrDefaultAsync(x => x.Id == request.Id && !x.IsDeleted, cancellationToken);
+        var entity = await unitOfWork.GeneralRatingScaleRepository.GetByIdWithNavigationAsync(request.Id, cancellationToken);
 
         if (entity == null)
             throw new NotFoundException("General Rating Scale not found.");

@@ -89,6 +89,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ProcurementActivityType>? ProcurementActivityTypes { get; set; }
     public DbSet<CSEItem>? CSEItems { get; set; }
     public DbSet<NonCSEItem>? NonCSEItems { get; set; }
+    public DbSet<ItemPrice>? ItemPrices { get; set; }
+    public DbSet<Supplier>? Suppliers { get; set; }
+    public DbSet<SupplierRequirement>? SupplierRequirements { get; set; }
+    public DbSet<SupplierCategory>? SupplierCategories { get; set; }
     // Fiscal Year Lifecycle Ecosystem
     public DbSet<FunctionConfig>? FunctionConfigs { get; set; }
     public DbSet<ProcurementPolicyConfig>? ProcurementPolicyConfigs { get; set; }
@@ -853,6 +857,63 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasOne(p => p.Office)
             .WithMany(o => o.Positions)
             .HasForeignKey(p => p.OfficeId);
+
+        //ItemPrice - Pricing Schedule
+        modelBuilder.Entity<ItemPrice>()
+            .HasIndex(ip => new { ip.ProcurementItemId, ip.FiscalYearId })
+            .IsUnique();
+
+        modelBuilder.Entity<ItemPrice>()
+            .HasOne(ip => ip.ProcurementItem)
+            .WithMany()
+            .HasForeignKey(ip => ip.ProcurementItemId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<ItemPrice>()
+            .HasOne(ip => ip.FiscalYear)
+            .WithMany()
+            .HasForeignKey(ip => ip.FiscalYearId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<ItemPrice>()
+            .Property(ip => ip.UnitPrice)
+            .HasPrecision(18, 2);
+
+        //Supplier - Merchant Registry
+        modelBuilder.Entity<Supplier>()
+            .HasIndex(s => s.BusinessPermitNo)
+            .IsUnique();
+
+        modelBuilder.Entity<Supplier>()
+            .HasIndex(s => s.TINNumber)
+            .IsUnique();
+
+        modelBuilder.Entity<Supplier>()
+            .HasIndex(s => s.Email);
+
+        modelBuilder.Entity<Supplier>()
+            .HasIndex(s => s.PhilGEPSNumber);
+
+        modelBuilder.Entity<Supplier>()
+            .HasOne(s => s.SupplierCategory)
+            .WithMany(sc => sc.Suppliers)
+            .HasForeignKey(s => s.SupplierCategoryId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        //SupplierCategory
+        modelBuilder.Entity<SupplierCategory>()
+            .HasIndex(sc => sc.Name)
+            .IsUnique();
+
+        //SupplierRequirement
+        modelBuilder.Entity<SupplierRequirement>()
+            .HasOne(sr => sr.Supplier)
+            .WithMany(s => s.SupplierRequirements)
+            .HasForeignKey(sr => sr.SupplierId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<SupplierRequirement>()
+            .HasIndex(sr => new { sr.SupplierId, sr.RequirementName });
 
         base.OnModelCreating(modelBuilder);
     }
