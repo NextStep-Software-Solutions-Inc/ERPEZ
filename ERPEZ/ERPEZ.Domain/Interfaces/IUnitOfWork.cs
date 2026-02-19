@@ -62,6 +62,10 @@ public interface IUnitOfWork
     IUOMRepository UOMRepository { get; }
     IUNSPSCCodeRepository UNSPSCCodeRepository { get; }
     IProcurementItemRepository ProcurementItemRepository { get; }
+    IUserRepository UserRepository { get; }
+    IPersonnelPositionRepository PersonnelPositionRepository { get; }
+    IPMTRepository PMTRepository { get; }
+    IPMTMemberRepository PMTMemberRepository { get; }
     IFunctionConfigRepository FunctionConfigRepository { get; }
     IProcurementPolicyConfigRepository ProcurementPolicyConfigRepository { get; }
     IGeneralRatingScaleRepository GeneralRatingScaleRepository { get; }

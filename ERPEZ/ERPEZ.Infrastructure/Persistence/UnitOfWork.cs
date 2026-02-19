@@ -71,6 +71,10 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IUOMRepository uomRepository;
     private readonly IUNSPSCCodeRepository unspscCodeRepository;
     private readonly IProcurementItemRepository procurementItemRepository;
+    private readonly IUserRepository userRepository;
+    private readonly IPersonnelPositionRepository personnelPositionRepository;
+    private readonly IPMTRepository pmtRepository;
+    private readonly IPMTMemberRepository pmtMemberRepository;
     private readonly IFunctionConfigRepository functionConfigRepository;
     private readonly IProcurementPolicyConfigRepository procurementPolicyConfigRepository;
     private readonly IGeneralRatingScaleRepository generalRatingScaleRepository;
@@ -148,6 +152,10 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         uomRepository = new UOMRepository(context, sieveProcessor);
         unspscCodeRepository = new UNSPSCCodeRepository(context, sieveProcessor);
         procurementItemRepository = new ProcurementItemRepository(context, sieveProcessor);
+        userRepository = new UserRepository(context, sieveProcessor);
+        personnelPositionRepository = new PersonnelPositionRepository(context, sieveProcessor);
+        pmtRepository = new PMTRepository(context, sieveProcessor);
+        pmtMemberRepository = new PMTMemberRepository(context, sieveProcessor);
         functionConfigRepository = new FunctionConfigRepository(context, sieveProcessor);
         procurementPolicyConfigRepository = new ProcurementPolicyConfigRepository(context, sieveProcessor);
         generalRatingScaleRepository = new GeneralRatingScaleRepository(context, sieveProcessor);
@@ -220,6 +228,10 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IUOMRepository UOMRepository => uomRepository;
     public IUNSPSCCodeRepository UNSPSCCodeRepository => unspscCodeRepository;
     public IProcurementItemRepository ProcurementItemRepository => procurementItemRepository;
+    public IUserRepository UserRepository => userRepository;
+    public IPersonnelPositionRepository PersonnelPositionRepository => personnelPositionRepository;
+    public IPMTRepository PMTRepository => pmtRepository;
+    public IPMTMemberRepository PMTMemberRepository => pmtMemberRepository;
     public IFunctionConfigRepository FunctionConfigRepository => functionConfigRepository;
     public IProcurementPolicyConfigRepository ProcurementPolicyConfigRepository => procurementPolicyConfigRepository;
     public IGeneralRatingScaleRepository GeneralRatingScaleRepository => generalRatingScaleRepository;

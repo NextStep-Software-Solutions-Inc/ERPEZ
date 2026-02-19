@@ -55,6 +55,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<AdministrativeLevel>? AdministrativeLevels { get; set; }
     public DbSet<ProcurementWorkflow>? ProcurementWorkflows { get; set; }
     public DbSet<OfficeType>? OfficeTypes { get; set; }
+    public DbSet<User>? Users { get; set; }
+    public DbSet<PersonnelPosition>? PersonnelPositions { get; set; }
+    public DbSet<PMT>? PMTs { get; set; }
+    public DbSet<PMTMember>? PMTMembers { get; set; }
 
     //UACS Library
     public DbSet<UACSCodeSegment>? UACSCodeSegments { get; set; }
