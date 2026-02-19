@@ -71,6 +71,20 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IUOMRepository uomRepository;
     private readonly IUNSPSCCodeRepository unspscCodeRepository;
     private readonly IProcurementItemRepository procurementItemRepository;
+    private readonly IUserRepository userRepository;
+    private readonly IPersonnelPositionRepository personnelPositionRepository;
+    private readonly IPMTRepository pmtRepository;
+    private readonly IPMTMemberRepository pmtMemberRepository;
+    private readonly IFunctionConfigRepository functionConfigRepository;
+    private readonly IProcurementPolicyConfigRepository procurementPolicyConfigRepository;
+    private readonly IGeneralRatingScaleRepository generalRatingScaleRepository;
+    private readonly IEconomicIndicatorRepository economicIndicatorRepository;
+    private readonly IWorkflowMatrixRepository workflowMatrixRepository;
+    private readonly IItemPriceRepository itemPriceRepository;
+    private readonly ISupplierRepository supplierRepository;
+    private readonly ISupplierRequirementRepository supplierRequirementRepository;
+    private readonly ISupplierCategoryRepository supplierCategoryRepository;
+
     // Constructor initializes all repositories once
     public UnitOfWork(ApplicationDbContext context, IServiceProvider serviceProvider)
     {
@@ -138,6 +152,19 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         uomRepository = new UOMRepository(context, sieveProcessor);
         unspscCodeRepository = new UNSPSCCodeRepository(context, sieveProcessor);
         procurementItemRepository = new ProcurementItemRepository(context, sieveProcessor);
+        userRepository = new UserRepository(context, sieveProcessor);
+        personnelPositionRepository = new PersonnelPositionRepository(context, sieveProcessor);
+        pmtRepository = new PMTRepository(context, sieveProcessor);
+        pmtMemberRepository = new PMTMemberRepository(context, sieveProcessor);
+        functionConfigRepository = new FunctionConfigRepository(context, sieveProcessor);
+        procurementPolicyConfigRepository = new ProcurementPolicyConfigRepository(context, sieveProcessor);
+        generalRatingScaleRepository = new GeneralRatingScaleRepository(context, sieveProcessor);
+        economicIndicatorRepository = new EconomicIndicatorRepository(context, sieveProcessor);
+        workflowMatrixRepository = new WorkflowMatrixRepository(context, sieveProcessor);
+        itemPriceRepository = new ItemPriceRepository(context, sieveProcessor);
+        supplierRepository = new SupplierRepository(context, sieveProcessor);
+        supplierRequirementRepository = new SupplierRequirementRepository(context, sieveProcessor);
+        supplierCategoryRepository = new SupplierCategoryRepository(context, sieveProcessor);
     }
 
     // Public properties return cached instances
@@ -201,6 +228,20 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IUOMRepository UOMRepository => uomRepository;
     public IUNSPSCCodeRepository UNSPSCCodeRepository => unspscCodeRepository;
     public IProcurementItemRepository ProcurementItemRepository => procurementItemRepository;
+    public IUserRepository UserRepository => userRepository;
+    public IPersonnelPositionRepository PersonnelPositionRepository => personnelPositionRepository;
+    public IPMTRepository PMTRepository => pmtRepository;
+    public IPMTMemberRepository PMTMemberRepository => pmtMemberRepository;
+    public IFunctionConfigRepository FunctionConfigRepository => functionConfigRepository;
+    public IProcurementPolicyConfigRepository ProcurementPolicyConfigRepository => procurementPolicyConfigRepository;
+    public IGeneralRatingScaleRepository GeneralRatingScaleRepository => generalRatingScaleRepository;
+    public IEconomicIndicatorRepository EconomicIndicatorRepository => economicIndicatorRepository;
+    public IWorkflowMatrixRepository WorkflowMatrixRepository => workflowMatrixRepository;
+    public IItemPriceRepository ItemPriceRepository => itemPriceRepository;
+    public ISupplierRepository SupplierRepository => supplierRepository;
+    public ISupplierRequirementRepository SupplierRequirementRepository => supplierRequirementRepository;
+    public ISupplierCategoryRepository SupplierCategoryRepository => supplierCategoryRepository;
+
     public async Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default)
     {
         await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);

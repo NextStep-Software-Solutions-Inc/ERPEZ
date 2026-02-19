@@ -18,4 +18,17 @@ public class UOMRepository : Repository<Domain.Entities.Planning.UOM>, Domain.In
         return await dbContext.ProcurementItems!
             .AnyAsync(pi => pi.UOMId == uomId && pi.IsActive && !pi.IsDeleted, cancellationToken);
     }
+
+    public async Task<Domain.Entities.Planning.UOM?> GetByIdWithNavigationAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return await dbContext.UOMs!
+            .Include(x => x.Parent)
+            .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
+    }
+
+    public async Task<bool> HasChildrenAsync(Guid uomId, CancellationToken cancellationToken = default)
+    {
+        return await dbContext.UOMs!
+            .AnyAsync(x => x.ParentId == uomId, cancellationToken);
+    }
 }

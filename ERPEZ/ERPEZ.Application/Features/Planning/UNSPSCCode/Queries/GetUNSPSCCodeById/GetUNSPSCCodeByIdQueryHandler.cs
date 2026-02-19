@@ -3,7 +3,6 @@ using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.Application.Features.Planning.UNSPSCCode.Queries.GetUNSPSCCodeById;
 
@@ -14,18 +13,14 @@ public class GetUNSPSCCodeByIdQueryHandler(IUnitOfWork unitOfWork)
         GetUNSPSCCodeByIdQuery request,
         CancellationToken cancellationToken)
     {
-        var entity = await unitOfWork.UNSPSCCodeRepository.Query()
-            .Include(x => x.Parent)
-            .FirstOrDefaultAsync(x => x.Id == request.Id, cancellationToken)
+        var entity = await unitOfWork.UNSPSCCodeRepository.GetByIdWithNavigationAsync(request.Id, cancellationToken)
             ?? throw new NotFoundException("UNSPSC code not found.");
 
         // Get children recursively based on level
         List<UNSPSCCodeResponse>? children = null;
         if (entity.Level < 4)
         {
-            var childEntities = await unitOfWork.UNSPSCCodeRepository.Query()
-                .Where(x => x.ParentId == entity.Id)
-                .ToListAsync(cancellationToken);
+            var childEntities = await unitOfWork.UNSPSCCodeRepository.GetChildrenAsync(entity.Id, cancellationToken);
 
             children = childEntities.Select(child => new UNSPSCCodeResponse
             {

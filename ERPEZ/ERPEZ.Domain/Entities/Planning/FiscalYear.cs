@@ -12,7 +12,7 @@ public class FiscalYear : BaseEntity
     public string? Description { get; set; }
 
     [Sieve(CanFilter = true, CanSort = true)]
-    public string Status { get; set; } = "setup";
+    public string Status { get; set; } = "Setup";
 
     /// <summary>
     /// Navigation property for fiscal months.
@@ -38,4 +38,29 @@ public class FiscalYear : BaseEntity
     /// Navigation property for UACS code combination fiscal year associations.
     /// </summary>
     public virtual List<UACSCodeCombinationFiscalYear> UACSCodeCombinationFiscalYears { get; set; } = [];
+
+    /// <summary>
+    /// Navigation property for function configurations.
+    /// </summary>
+    public virtual List<FunctionConfig> FunctionConfigs { get; set; } = [];
+
+    /// <summary>
+    /// Navigation property for procurement policy configurations.
+    /// </summary>
+    public virtual List<ProcurementPolicyConfig> ProcurementPolicyConfigs { get; set; } = [];
+
+    /// <summary>
+    /// Navigation property for general rating scales.
+    /// </summary>
+    public virtual List<GeneralRatingScale> GeneralRatingScales { get; set; } = [];
+
+    /// <summary>
+    /// Navigation property for economic indicators.
+    /// </summary>
+    public virtual List<EconomicIndicator> EconomicIndicators { get; set; } = [];
+
+    /// <summary>
+    /// Navigation property for workflow matrices.
+    /// </summary>
+    public virtual List<WorkflowMatrix> WorkflowMatrices { get; set; } = [];
 }

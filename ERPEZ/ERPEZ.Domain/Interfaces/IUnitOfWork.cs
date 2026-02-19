@@ -62,6 +62,19 @@ public interface IUnitOfWork
     IUOMRepository UOMRepository { get; }
     IUNSPSCCodeRepository UNSPSCCodeRepository { get; }
     IProcurementItemRepository ProcurementItemRepository { get; }
+    IUserRepository UserRepository { get; }
+    IPersonnelPositionRepository PersonnelPositionRepository { get; }
+    IPMTRepository PMTRepository { get; }
+    IPMTMemberRepository PMTMemberRepository { get; }
+    IFunctionConfigRepository FunctionConfigRepository { get; }
+    IProcurementPolicyConfigRepository ProcurementPolicyConfigRepository { get; }
+    IGeneralRatingScaleRepository GeneralRatingScaleRepository { get; }
+    IEconomicIndicatorRepository EconomicIndicatorRepository { get; }
+    IWorkflowMatrixRepository WorkflowMatrixRepository { get; }
+    IItemPriceRepository ItemPriceRepository { get; }
+    ISupplierRepository SupplierRepository { get; }
+    ISupplierRequirementRepository SupplierRequirementRepository { get; }
+    ISupplierCategoryRepository SupplierCategoryRepository { get; }
     Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default);
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

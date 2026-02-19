@@ -3,7 +3,6 @@ using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.Application.Features.Planning.ProcurementMode.Queries.GetProcurementModeById;
 
@@ -14,9 +13,7 @@ public class GetProcurementModeByIdQueryHandler(IUnitOfWork unitOfWork)
         GetProcurementModeByIdQuery request,
         CancellationToken cancellationToken)
     {
-        var entity = await unitOfWork.ProcurementModeRepository.Query()
-            .Include(x => x.ProcurementCategory)
-            .FirstOrDefaultAsync(x => x.Id == request.Id, cancellationToken)
+        var entity = await unitOfWork.ProcurementModeRepository.GetByIdWithNavigationAsync(request.Id, cancellationToken)
             ?? throw new NotFoundException("Procurement mode not found.");
 
         var response = new ProcurementModeResponse
