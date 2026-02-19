@@ -49,6 +49,15 @@ public class UpdatePMTMemberCommandHandler(IUnitOfWork unitOfWork)
         // Validate UserId if provided and PMT is unchanged or not provided
         if (request.UpdatePMTMember.UserId.HasValue && request.UpdatePMTMember.UserId.Value != pmtMember.UserId)
         {
+            // Validate User exists
+            var user = await unitOfWork.UserRepository.GetByIdAsync(
+                request.UpdatePMTMember.UserId.Value,
+                cancellationToken
+            );
+
+            if (user == null)
+                throw new NotFoundException($"User with ID '{request.UpdatePMTMember.UserId}' not found.");
+
             var isUserInPMT = await unitOfWork.PMTMemberRepository.IsUserInPMTAsync(
                 pmtMember.PMTId,
                 request.UpdatePMTMember.UserId.Value,

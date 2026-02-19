@@ -26,7 +26,7 @@ public class GetPMTsQueryHandler(IUnitOfWork unitOfWork)
             OrganizationName = p.Organization != null ? p.Organization.Name : null,
             ActiveYear = p.ActiveYear,
             IsManualWorkflow = p.IsManualWorkflow,
-            IsActive = !p.IsDeleted,
+            IsActive = p.IsActive,
             CreatedAt = p.CreatedAt,
             CreatedBy = p.CreatedBy
         };

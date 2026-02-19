@@ -10,6 +10,15 @@ public class CreatePersonnelPositionCommandHandler(IUnitOfWork unitOfWork)
 {
     public async Task<ApiResponse<Guid>> Handle(CreatePersonnelPositionCommand request, CancellationToken cancellationToken)
     {
+        // Validate User exists
+        var user = await unitOfWork.UserRepository.GetByIdAsync(
+            request.UserId,
+            cancellationToken
+        );
+
+        if (user == null)
+            throw new NotFoundException($"User with ID '{request.UserId}' not found.");
+
         // Validate Position exists
         var position = await unitOfWork.PositionRepository.GetByIdAsync(
             request.PositionId,
