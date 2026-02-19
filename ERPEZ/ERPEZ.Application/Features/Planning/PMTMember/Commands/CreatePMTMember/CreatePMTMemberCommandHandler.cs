@@ -19,6 +19,15 @@ public class CreatePMTMemberCommandHandler(IUnitOfWork unitOfWork)
         if (pmt == null)
             throw new NotFoundException($"PMT with ID '{request.PMTId}' not found.");
 
+        // Validate User exists
+        var user = await unitOfWork.UserRepository.GetByIdAsync(
+            request.UserId,
+            cancellationToken
+        );
+
+        if (user == null)
+            throw new NotFoundException($"User with ID '{request.UserId}' not found.");
+
         // Check if user is already a member of this PMT
         var isUserInPMT = await unitOfWork.PMTMemberRepository.IsUserInPMTAsync(
             request.PMTId,

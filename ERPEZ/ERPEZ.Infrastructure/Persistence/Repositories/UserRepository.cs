@@ -73,4 +73,11 @@ public class UserRepository : Repository<User>, IUserRepository
             .ThenBy(u => u.FirstName)
             .ToListAsync(cancellationToken);
     }
+
+    public async Task<User?> GetByIdWithOfficeAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return await dbContext.Users!
+            .Include(u => u.Office)
+            .FirstOrDefaultAsync(u => u.Id == id && !u.IsDeleted, cancellationToken);
+    }
 }

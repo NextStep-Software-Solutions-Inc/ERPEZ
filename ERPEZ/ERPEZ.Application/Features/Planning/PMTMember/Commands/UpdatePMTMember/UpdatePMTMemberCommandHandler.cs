@@ -77,6 +77,12 @@ public class UpdatePMTMemberCommandHandler(IUnitOfWork unitOfWork)
         if (request.UpdatePMTMember.AppointmentDate.HasValue)
             pmtMember.AppointmentDate = request.UpdatePMTMember.AppointmentDate.Value;
 
+        if (request.UpdatePMTMember.IsActive.HasValue)
+            pmtMember.IsActive = request.UpdatePMTMember.IsActive.Value;
+
+        if (request.UpdatePMTMember.EndDate.HasValue)
+            pmtMember.EndDate = request.UpdatePMTMember.EndDate;
+
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return ApiResponse<Unit>.Success(Unit.Value);

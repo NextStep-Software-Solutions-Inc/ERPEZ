@@ -3,7 +3,6 @@ using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.Application.Features.Planning.User.Queries.GetUserById;
 
@@ -12,10 +11,10 @@ public class GetUserByIdQueryHandler(IUnitOfWork unitOfWork)
 {
     public async Task<ApiResponse<UserResponse>> Handle(GetUserByIdQuery request, CancellationToken cancellationToken)
     {
-        var user = await unitOfWork.UserRepository
-            .Query()
-            .Include(u => u.Office)
-            .FirstOrDefaultAsync(u => u.Id == request.Id, cancellationToken);
+        var user = await unitOfWork.UserRepository.GetByIdWithOfficeAsync(
+            request.Id,
+            cancellationToken
+        );
 
         if (user == null)
             throw new NotFoundException($"User with ID '{request.Id}' not found.");

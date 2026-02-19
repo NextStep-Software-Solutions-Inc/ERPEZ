@@ -43,4 +43,9 @@ public interface IUserRepository : IRepository<User>
     /// Gets all users by office ID.
     /// </summary>
     Task<List<User>> GetByOfficeIdAsync(Guid officeId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets a user by ID with Office navigation property included.
+    /// </summary>
+    Task<User?> GetByIdWithOfficeAsync(Guid id, CancellationToken cancellationToken = default);
 }

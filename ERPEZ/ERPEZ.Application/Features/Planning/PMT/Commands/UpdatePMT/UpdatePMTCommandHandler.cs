@@ -66,6 +66,9 @@ public class UpdatePMTCommandHandler(IUnitOfWork unitOfWork)
         if (request.UpdatePMT.IsManualWorkflow.HasValue)
             pmt.IsManualWorkflow = request.UpdatePMT.IsManualWorkflow.Value;
 
+        if (request.UpdatePMT.IsActive.HasValue)
+            pmt.IsActive = request.UpdatePMT.IsActive.Value;
+
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return ApiResponse<Unit>.Success(Unit.Value);
