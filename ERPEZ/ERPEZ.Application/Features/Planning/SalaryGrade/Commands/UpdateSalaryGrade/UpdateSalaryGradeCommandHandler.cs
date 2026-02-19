@@ -31,8 +31,18 @@ public class UpdateSalaryGradeCommandHandler(IUnitOfWork unitOfWork)
         if (!string.IsNullOrWhiteSpace(request.UpdateSalaryGrade.Name))
             salaryGrade.Name = request.UpdateSalaryGrade.Name;
 
-        if (request.UpdateSalaryGrade.GradeNumber.HasValue)
+        if (request.UpdateSalaryGrade.GradeNumber.HasValue && request.UpdateSalaryGrade.GradeNumber.Value != salaryGrade.GradeNumber)
+        {
+            var existingGradeNumber = await unitOfWork.SalaryGradeRepository.FindAsync(
+                x => x.GradeNumber == request.UpdateSalaryGrade.GradeNumber.Value && x.Id != request.Id,
+                cancellationToken
+            );
+
+            if (existingGradeNumber != null)
+                throw new ConflictException($"A Salary Grade with Grade Number '{request.UpdateSalaryGrade.GradeNumber.Value}' already exists.");
+
             salaryGrade.GradeNumber = request.UpdateSalaryGrade.GradeNumber.Value;
+        }
 
         if (request.UpdateSalaryGrade.StepIncrementAmount.HasValue)
             salaryGrade.StepIncrementAmount = request.UpdateSalaryGrade.StepIncrementAmount.Value;

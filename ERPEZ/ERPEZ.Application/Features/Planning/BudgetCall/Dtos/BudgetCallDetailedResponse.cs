@@ -6,6 +6,7 @@ public record BudgetCallDetailedResponse
     public Guid FiscalYearId { get; init; }
     public string? Type { get; init; }
     public DateTime SubmissionDeadline { get; init; }
+    public string Status { get; init; } = string.Empty;
     public DateTime CreatedAt { get; init; }
     public string CreatedBy { get; init; } = string.Empty;
     public DateTime? UpdatedAt { get; init; }

@@ -41,9 +41,7 @@ public class GetWFPByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
                         Cluster = w.DeliveryUnit.Office.Cluster != null ? new()
                             {
                                 Id = w.DeliveryUnit.Office.Cluster.Id,
-                                Name = w.DeliveryUnit.Office.Cluster.Name,
-                                CreatedBy = w.DeliveryUnit.Office.Cluster.CreatedBy,
-                                CreatedAt = w.DeliveryUnit.Office.Cluster.CreatedAt,
+                                Name = w.DeliveryUnit.Office.Cluster.Name
                             } : null,
                     },
                    
@@ -87,9 +85,7 @@ public class GetWFPByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
                             Cluster = sdu.Office.Cluster != null ? new()
                                 {
                                     Id = sdu.Office.Cluster.Id,
-                                    Name = sdu.Office.Cluster.Name,
-                                    CreatedBy = sdu.Office.Cluster.CreatedBy,
-                                    CreatedAt = sdu.Office.Cluster.CreatedAt,
+                                    Name = sdu.Office.Cluster.Name
                                 } : null,
                         },
                        

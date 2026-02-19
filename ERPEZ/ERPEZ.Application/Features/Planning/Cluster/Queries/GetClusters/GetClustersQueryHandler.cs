@@ -24,9 +24,7 @@ public class GetClustersQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<G
             Code = c.Code,
             Address = c.Address,
             MaxSubUnits = c.MaxSubUnits,
-            IsActive = c.IsActive,
-            CreatedAt = c.CreatedAt,
-            CreatedBy = c.CreatedBy
+            IsActive = c.IsActive
         };
         var (clusters, totalCount) = await unitOfWork.ClusterRepository.GetAllAsync(sieveModel, projection, cancellationToken: cancellationToken);
 

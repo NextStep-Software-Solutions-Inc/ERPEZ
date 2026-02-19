@@ -18,6 +18,14 @@ public class CreateSalaryGradeCommandHandler(IUnitOfWork unitOfWork)
         if (existingSalaryGrade != null)
             throw new ConflictException($"A Salary Grade with Code '{request.Code}' already exists.");
 
+        var existingGradeNumber = await unitOfWork.SalaryGradeRepository.FindAsync(
+            x => x.GradeNumber == request.GradeNumber,
+            cancellationToken
+        );
+
+        if (existingGradeNumber != null)
+            throw new ConflictException($"A Salary Grade with Grade Number '{request.GradeNumber}' already exists.");
+
         var salaryGrade = new Domain.Entities.Planning.SalaryGrade
         {
             Id = Guid.NewGuid(),

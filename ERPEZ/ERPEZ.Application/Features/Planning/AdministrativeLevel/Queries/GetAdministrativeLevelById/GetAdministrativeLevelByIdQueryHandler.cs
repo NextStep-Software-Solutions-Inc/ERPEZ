@@ -22,9 +22,7 @@ public class GetAdministrativeLevelByIdQueryHandler(IUnitOfWork unitOfWork)
             Name = administrativeLevel.Name,
             Code = administrativeLevel.Code,
             CanHaveChildren = administrativeLevel.CanHaveChildren,
-            IsActive = administrativeLevel.IsActive,
-            CreatedAt = administrativeLevel.CreatedAt,
-            CreatedBy = administrativeLevel.CreatedBy
+            IsActive = administrativeLevel.IsActive
         };
 
         return ApiResponse<AdministrativeLevelResponse>.Success(result, "Retrieved successfully.");
