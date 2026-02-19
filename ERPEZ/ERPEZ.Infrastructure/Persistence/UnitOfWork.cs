@@ -71,6 +71,10 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IUOMRepository uomRepository;
     private readonly IUNSPSCCodeRepository unspscCodeRepository;
     private readonly IProcurementItemRepository procurementItemRepository;
+    private readonly IUserRepository userRepository;
+    private readonly IPersonnelPositionRepository personnelPositionRepository;
+    private readonly IPMTRepository pmtRepository;
+    private readonly IPMTMemberRepository pmtMemberRepository;
     // Constructor initializes all repositories once
     public UnitOfWork(ApplicationDbContext context, IServiceProvider serviceProvider)
     {
@@ -138,6 +142,10 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         uomRepository = new UOMRepository(context, sieveProcessor);
         unspscCodeRepository = new UNSPSCCodeRepository(context, sieveProcessor);
         procurementItemRepository = new ProcurementItemRepository(context, sieveProcessor);
+        userRepository = new UserRepository(context, sieveProcessor);
+        personnelPositionRepository = new PersonnelPositionRepository(context, sieveProcessor);
+        pmtRepository = new PMTRepository(context, sieveProcessor);
+        pmtMemberRepository = new PMTMemberRepository(context, sieveProcessor);
     }
 
     // Public properties return cached instances
@@ -201,6 +209,10 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IUOMRepository UOMRepository => uomRepository;
     public IUNSPSCCodeRepository UNSPSCCodeRepository => unspscCodeRepository;
     public IProcurementItemRepository ProcurementItemRepository => procurementItemRepository;
+    public IUserRepository UserRepository => userRepository;
+    public IPersonnelPositionRepository PersonnelPositionRepository => personnelPositionRepository;
+    public IPMTRepository PMTRepository => pmtRepository;
+    public IPMTMemberRepository PMTMemberRepository => pmtMemberRepository;
     public async Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default)
     {
         await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
