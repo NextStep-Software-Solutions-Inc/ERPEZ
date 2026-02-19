@@ -2,7 +2,6 @@ using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.Application.Features.Planning.ProcurementCategory.Commands.DeleteProcurementCategory;
 
@@ -15,8 +14,7 @@ public class DeleteProcurementCategoryCommandHandler(IUnitOfWork unitOfWork)
             ?? throw new NotFoundException("Procurement category not found.");
 
         // Check if in use
-        var hasReferences = await unitOfWork.ProcurementModeRepository.Query()
-            .AnyAsync(pm => pm.ProcurementCategoryId == request.Id, cancellationToken);
+        var hasReferences = await unitOfWork.ProcurementModeRepository.HasReferencesByProcurementCategoryAsync(request.Id, cancellationToken);
 
         if (hasReferences)
             throw new ConflictException("Cannot delete procurement category that is assigned to procurement modes.");

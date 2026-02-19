@@ -2,7 +2,6 @@ using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.Application.Features.Planning.UOM.Commands.DeleteUOM;
 
@@ -21,8 +20,7 @@ public class DeleteUOMCommandHandler(IUnitOfWork unitOfWork)
             throw new ConflictException("Cannot delete UOM that is assigned to procurement items.");
 
         // Check if has children
-        var hasChildren = await unitOfWork.UOMRepository.Query()
-            .AnyAsync(x => x.ParentId == request.Id, cancellationToken);
+        var hasChildren = await unitOfWork.UOMRepository.HasChildrenAsync(request.Id, cancellationToken);
 
         if (hasChildren)
             throw new ConflictException("Cannot delete UOM that has child UOMs.");

@@ -93,7 +93,16 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ProcurementActivityType>? ProcurementActivityTypes { get; set; }
     public DbSet<CSEItem>? CSEItems { get; set; }
     public DbSet<NonCSEItem>? NonCSEItems { get; set; }
-
+    public DbSet<ItemPrice>? ItemPrices { get; set; }
+    public DbSet<Supplier>? Suppliers { get; set; }
+    public DbSet<SupplierRequirement>? SupplierRequirements { get; set; }
+    public DbSet<SupplierCategory>? SupplierCategories { get; set; }
+    // Fiscal Year Lifecycle Ecosystem
+    public DbSet<FunctionConfig>? FunctionConfigs { get; set; }
+    public DbSet<ProcurementPolicyConfig>? ProcurementPolicyConfigs { get; set; }
+    public DbSet<GeneralRatingScale>? GeneralRatingScales { get; set; }
+    public DbSet<EconomicIndicator>? EconomicIndicators { get; set; }
+    public DbSet<WorkflowMatrix>? WorkflowMatrices { get; set; }
     //Other
     public DbSet<PPMPItem>? PPMPItems { get; set; }
     public DbSet<PPMPItemAllocation>? PPMPItemAllocations { get; set; }
@@ -389,6 +398,67 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         //BudgetCall
         modelBuilder.Entity<BudgetCall>()
             .HasIndex(bc => new { bc.FiscalYearId, bc.SubmissionDeadline });
+
+        //FunctionConfig
+        modelBuilder.Entity<FunctionConfig>()
+            .HasOne(fc => fc.FiscalYear)
+            .WithMany(fy => fy.FunctionConfigs)
+            .HasForeignKey(fc => fc.FiscalYearId);
+
+        modelBuilder.Entity<FunctionConfig>()
+            .HasIndex(fc => fc.FiscalYearId);
+
+        //ProcurementPolicyConfig
+        modelBuilder.Entity<ProcurementPolicyConfig>()
+            .HasOne(ppc => ppc.FiscalYear)
+            .WithMany(fy => fy.ProcurementPolicyConfigs)
+            .HasForeignKey(ppc => ppc.FiscalYearId);
+
+        modelBuilder.Entity<ProcurementPolicyConfig>()
+            .HasOne(ppc => ppc.ProcurementMode)
+            .WithMany()
+            .HasForeignKey(ppc => ppc.ProcurementModeId);
+
+        modelBuilder.Entity<ProcurementPolicyConfig>()
+            .HasOne(ppc => ppc.ProcurementModeThreshold)
+            .WithMany()
+            .HasForeignKey(ppc => ppc.ProcurementModeThresholdId);
+
+        modelBuilder.Entity<ProcurementPolicyConfig>()
+            .HasIndex(ppc => new { ppc.FiscalYearId, ppc.ProcurementModeId });
+
+        //GeneralRatingScale
+        modelBuilder.Entity<GeneralRatingScale>()
+            .HasOne(grs => grs.FiscalYear)
+            .WithMany(fy => fy.GeneralRatingScales)
+            .HasForeignKey(grs => grs.FiscalYearId);
+
+        modelBuilder.Entity<GeneralRatingScale>()
+            .HasIndex(grs => new { grs.FiscalYearId, grs.AdjectivalRatingName });
+
+        //EconomicIndicator
+        modelBuilder.Entity<EconomicIndicator>()
+            .HasOne(ei => ei.FiscalYear)
+            .WithMany(fy => fy.EconomicIndicators)
+            .HasForeignKey(ei => ei.FiscalYearId);
+
+        modelBuilder.Entity<EconomicIndicator>()
+            .HasIndex(ei => ei.FiscalYearId);
+
+        //WorkflowMatrix
+        modelBuilder.Entity<WorkflowMatrix>()
+            .HasOne(wm => wm.FiscalYear)
+            .WithMany(fy => fy.WorkflowMatrices)
+            .HasForeignKey(wm => wm.FiscalYearId);
+
+        modelBuilder.Entity<WorkflowMatrix>()
+            .HasOne(wm => wm.Organization)
+            .WithMany()
+            .HasForeignKey(wm => wm.OrganizationId);
+
+        modelBuilder.Entity<WorkflowMatrix>()
+            .HasIndex(wm => new { wm.FiscalYearId, wm.OrganizationId, wm.DocumentType })
+            .IsUnique();
 
         //WFP
         modelBuilder.Entity<WFP>()
@@ -791,6 +861,63 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasOne(p => p.Office)
             .WithMany(o => o.Positions)
             .HasForeignKey(p => p.OfficeId);
+
+        //ItemPrice - Pricing Schedule
+        modelBuilder.Entity<ItemPrice>()
+            .HasIndex(ip => new { ip.ProcurementItemId, ip.FiscalYearId })
+            .IsUnique();
+
+        modelBuilder.Entity<ItemPrice>()
+            .HasOne(ip => ip.ProcurementItem)
+            .WithMany()
+            .HasForeignKey(ip => ip.ProcurementItemId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<ItemPrice>()
+            .HasOne(ip => ip.FiscalYear)
+            .WithMany()
+            .HasForeignKey(ip => ip.FiscalYearId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<ItemPrice>()
+            .Property(ip => ip.UnitPrice)
+            .HasPrecision(18, 2);
+
+        //Supplier - Merchant Registry
+        modelBuilder.Entity<Supplier>()
+            .HasIndex(s => s.BusinessPermitNo)
+            .IsUnique();
+
+        modelBuilder.Entity<Supplier>()
+            .HasIndex(s => s.TINNumber)
+            .IsUnique();
+
+        modelBuilder.Entity<Supplier>()
+            .HasIndex(s => s.Email);
+
+        modelBuilder.Entity<Supplier>()
+            .HasIndex(s => s.PhilGEPSNumber);
+
+        modelBuilder.Entity<Supplier>()
+            .HasOne(s => s.SupplierCategory)
+            .WithMany(sc => sc.Suppliers)
+            .HasForeignKey(s => s.SupplierCategoryId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        //SupplierCategory
+        modelBuilder.Entity<SupplierCategory>()
+            .HasIndex(sc => sc.Name)
+            .IsUnique();
+
+        //SupplierRequirement
+        modelBuilder.Entity<SupplierRequirement>()
+            .HasOne(sr => sr.Supplier)
+            .WithMany(s => s.SupplierRequirements)
+            .HasForeignKey(sr => sr.SupplierId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<SupplierRequirement>()
+            .HasIndex(sr => new { sr.SupplierId, sr.RequirementName });
 
         base.OnModelCreating(modelBuilder);
     }
