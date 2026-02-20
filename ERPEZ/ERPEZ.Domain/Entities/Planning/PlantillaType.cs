@@ -15,7 +15,7 @@ public class PlantillaType : BaseEntity
     public string Code { get; set; } = string.Empty;
 
     [Sieve(CanFilter = true, CanSort = true)]
-    public string? Duration { get; set; }
+    public int? Duration { get; set; }
 
     [Sieve(CanFilter = true, CanSort = true)]
     public bool RequiresActingAppointments { get; set; }
