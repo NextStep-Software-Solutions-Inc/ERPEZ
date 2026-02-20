@@ -59,6 +59,17 @@ public class BudgetCallController(ISender mediator) : ControllerBase
         return budgetCall.Succeeded ? Ok(budgetCall) : BadRequest(budgetCall);
     }
 
+    [HttpDelete("{id}")]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteBudgetCall(Guid id)
+    {
+        var command = new DeleteBudgetCallCommand(id);
+        var budgetCall = await mediator.Send(command);
+
+        return budgetCall.Succeeded ? Ok(budgetCall) : NotFound(budgetCall);
+    }
+
     [HttpPatch("{id}/status")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
@@ -70,16 +81,5 @@ public class BudgetCallController(ISender mediator) : ControllerBase
         var result = await mediator.Send(command);
 
         return result.Succeeded ? Ok(result) : BadRequest(result);
-    }
-
-    [HttpDelete("{id}")]
-    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> DeleteBudgetCall(Guid id)
-    {
-        var command = new DeleteBudgetCallCommand(id);
-        var budgetCall = await mediator.Send(command);
-
-        return budgetCall.Succeeded ? Ok(budgetCall) : NotFound(budgetCall);
     }
 }

@@ -58,6 +58,15 @@ public class FiscalYearController(ISender mediator) : ControllerBase
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 
+    [HttpDelete("{id}")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteFiscalYear(Guid id)
+    {
+        var result = await mediator.Send(new DeleteFiscalYearCommand(id));
+        return result.Succeeded ? Ok(result) : NotFound(result);
+    }
+
     [HttpPatch("{id}/status")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -67,14 +76,5 @@ public class FiscalYearController(ISender mediator) : ControllerBase
         var command = new UpdateFiscalYearStatusCommand(id, request.Status);
         var result = await mediator.Send(command);
         return result.Succeeded ? Ok(result) : BadRequest(result);
-    }
-
-    [HttpDelete("{id}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> DeleteFiscalYear(Guid id)
-    {
-        var result = await mediator.Send(new DeleteFiscalYearCommand(id));
-        return result.Succeeded ? Ok(result) : NotFound(result);
     }
 }

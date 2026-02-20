@@ -14,6 +14,19 @@ namespace ERPEZ.Api.Controllers;
 [ApiController]
 public class FunctionConfigController(ISender mediator) : ControllerBase
 {
+    [HttpPost]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> CreateFunctionConfig([FromBody] CreateFunctionConfigCommand command)
+    {
+        var result = await mediator.Send(command);
+
+        if (!result.Succeeded)
+            return BadRequest(result);
+
+        return CreatedAtAction(nameof(GetFunctionConfigById), new { id = result.Data }, result);
+    }
+
     [HttpGet]
     [ProducesResponseType(typeof(PaginatedApiResponse<FunctionConfigResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetFunctionConfigs([FromQuery] GetFunctionConfigsQuery query)
@@ -29,19 +42,6 @@ public class FunctionConfigController(ISender mediator) : ControllerBase
     {
         var result = await mediator.Send(new GetFunctionConfigByIdQuery(id));
         return result.Succeeded ? Ok(result) : NotFound(result);
-    }
-
-    [HttpPost]
-    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> CreateFunctionConfig([FromBody] CreateFunctionConfigCommand command)
-    {
-        var result = await mediator.Send(command);
-
-        if (!result.Succeeded)
-            return BadRequest(result);
-
-        return CreatedAtAction(nameof(GetFunctionConfigById), new { id = result.Data }, result);
     }
 
     [HttpPut("{id:guid}")]
