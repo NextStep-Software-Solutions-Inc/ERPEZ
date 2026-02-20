@@ -24,6 +24,11 @@ public class UpdatePlantillaTypeCommandValidator : AbstractValidator<UpdatePlant
             .MaximumLength(2000)
             .WithMessage("Benefits cannot exceed 2000 characters.")
             .When(x => !string.IsNullOrEmpty(x.UpdatePlantillaType.Benefits));
+
+        RuleFor(x => x.UpdatePlantillaType.Duration)
+            .GreaterThan(0)
+            .WithMessage("Duration must be a positive integer.")
+            .When(x => x.UpdatePlantillaType.Duration.HasValue);
     }
 }
 

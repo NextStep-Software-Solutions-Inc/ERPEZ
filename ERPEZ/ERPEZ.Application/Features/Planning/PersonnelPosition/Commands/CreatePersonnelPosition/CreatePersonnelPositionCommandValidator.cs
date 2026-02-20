@@ -5,12 +5,6 @@ namespace ERPEZ.Application.Features.Planning.PersonnelPosition.Commands.CreateP
 
 public class CreatePersonnelPositionCommandValidator : AbstractValidator<CreatePersonnelPositionCommand>
 {
-    private static readonly string[] allowedAssignmentTypes = 
-    [
-        nameof(AssignmentTypeEnum.Permanent),
-        nameof(AssignmentTypeEnum.OIC)
-    ];
-
     public CreatePersonnelPositionCommandValidator()
     {
         RuleFor(x => x.UserId)
@@ -24,8 +18,8 @@ public class CreatePersonnelPositionCommandValidator : AbstractValidator<CreateP
         RuleFor(x => x.AssignmentType)
             .NotEmpty()
             .WithMessage("Assignment Type is required.")
-            .Must(type => allowedAssignmentTypes.Contains(type))
-            .WithMessage($"Assignment Type must be one of: {string.Join(", ", allowedAssignmentTypes)}.");
+            .Must(type => Enum.GetNames<AssignmentTypeEnum>().Contains(type))
+            .WithMessage($"Assignment Type must be one of: {string.Join(", ", Enum.GetNames<AssignmentTypeEnum>())}.");
 
         RuleFor(x => x.StartDate)
             .NotEmpty()

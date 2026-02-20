@@ -5,14 +5,6 @@ namespace ERPEZ.Application.Features.Planning.PMTMember.Commands.UpdatePMTMember
 
 public class UpdatePMTMemberCommandValidator : AbstractValidator<UpdatePMTMemberCommand>
 {
-    private static readonly string[] allowedRoles = 
-    [
-        nameof(PMTRoleEnum.Chair),
-        nameof(PMTRoleEnum.ViceChair),
-        nameof(PMTRoleEnum.Member),
-        nameof(PMTRoleEnum.Secretariat)
-    ];
-
     public UpdatePMTMemberCommandValidator()
     {
         RuleFor(x => x.Id)
@@ -20,8 +12,8 @@ public class UpdatePMTMemberCommandValidator : AbstractValidator<UpdatePMTMember
             .WithMessage("PMT Member ID is required.");
 
         RuleFor(x => x.UpdatePMTMember.Role)
-            .Must(role => allowedRoles.Contains(role!))
-            .WithMessage($"Role must be one of: {string.Join(", ", allowedRoles)}.")
+            .Must(role => Enum.GetNames<PMTRoleEnum>().Contains(role!))
+            .WithMessage($"Role must be one of: {string.Join(", ", Enum.GetNames<PMTRoleEnum>())}.")
             .When(x => !string.IsNullOrEmpty(x.UpdatePMTMember.Role));
 
         RuleFor(x => x.UpdatePMTMember.AppointmentDate)

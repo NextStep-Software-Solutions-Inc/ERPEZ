@@ -14,6 +14,19 @@ namespace ERPEZ.Api.Controllers;
 [ApiController]
 public class GeneralRatingScaleController(ISender mediator) : ControllerBase
 {
+    [HttpPost]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> CreateGeneralRatingScale([FromBody] CreateGeneralRatingScaleCommand command)
+    {
+        var result = await mediator.Send(command);
+
+        if (!result.Succeeded)
+            return BadRequest(result);
+
+        return CreatedAtAction(nameof(GetGeneralRatingScaleById), new { id = result.Data }, result);
+    }
+
     [HttpGet]
     [ProducesResponseType(typeof(PaginatedApiResponse<GeneralRatingScaleResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetGeneralRatingScales([FromQuery] GetGeneralRatingScalesQuery query)
@@ -29,19 +42,6 @@ public class GeneralRatingScaleController(ISender mediator) : ControllerBase
     {
         var result = await mediator.Send(new GetGeneralRatingScaleByIdQuery(id));
         return result.Succeeded ? Ok(result) : NotFound(result);
-    }
-
-    [HttpPost]
-    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> CreateGeneralRatingScale([FromBody] CreateGeneralRatingScaleCommand command)
-    {
-        var result = await mediator.Send(command);
-
-        if (!result.Succeeded)
-            return BadRequest(result);
-
-        return CreatedAtAction(nameof(GetGeneralRatingScaleById), new { id = result.Data }, result);
     }
 
     [HttpPut("{id:guid}")]

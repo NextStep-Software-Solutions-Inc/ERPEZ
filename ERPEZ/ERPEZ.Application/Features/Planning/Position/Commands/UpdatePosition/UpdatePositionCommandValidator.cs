@@ -5,13 +5,6 @@ namespace ERPEZ.Application.Features.Planning.Position.Commands.UpdatePosition;
 
 public class UpdatePositionCommandValidator : AbstractValidator<UpdatePositionCommand>
 {
-    private static readonly string[] allowedOperationalStatuses = 
-    [
-        nameof(PositionStatusEnum.Vacant),
-        nameof(PositionStatusEnum.Filled),
-        nameof(PositionStatusEnum.Abolished)
-    ];
-
     public UpdatePositionCommandValidator()
     {
         RuleFor(x => x.Id)
@@ -34,8 +27,8 @@ public class UpdatePositionCommandValidator : AbstractValidator<UpdatePositionCo
             .When(x => x.UpdatePosition.FTE.HasValue);
 
         RuleFor(x => x.UpdatePosition.OperationalStatus)
-            .Must(status => allowedOperationalStatuses.Contains(status!))
-            .WithMessage($"Operational Status must be one of: {string.Join(", ", allowedOperationalStatuses)}.")
+            .Must(status => new[] { nameof(PositionStatusEnum.Vacant), nameof(PositionStatusEnum.Filled), nameof(PositionStatusEnum.Abolished) }.Contains(status!))
+            .WithMessage("Operational Status must be one of: Vacant, Filled, Abolished.")
             .When(x => !string.IsNullOrEmpty(x.UpdatePosition.OperationalStatus));
     }
 }

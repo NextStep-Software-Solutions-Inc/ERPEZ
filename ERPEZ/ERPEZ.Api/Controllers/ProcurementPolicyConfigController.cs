@@ -14,6 +14,19 @@ namespace ERPEZ.Api.Controllers;
 [ApiController]
 public class ProcurementPolicyConfigController(ISender mediator) : ControllerBase
 {
+    [HttpPost]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> CreateProcurementPolicyConfig([FromBody] CreateProcurementPolicyConfigCommand command)
+    {
+        var result = await mediator.Send(command);
+
+        if (!result.Succeeded)
+            return BadRequest(result);
+
+        return CreatedAtAction(nameof(GetProcurementPolicyConfigById), new { id = result.Data }, result);
+    }
+
     [HttpGet]
     [ProducesResponseType(typeof(PaginatedApiResponse<ProcurementPolicyConfigResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetProcurementPolicyConfigs([FromQuery] GetProcurementPolicyConfigsQuery query)
@@ -29,19 +42,6 @@ public class ProcurementPolicyConfigController(ISender mediator) : ControllerBas
     {
         var result = await mediator.Send(new GetProcurementPolicyConfigByIdQuery(id));
         return result.Succeeded ? Ok(result) : NotFound(result);
-    }
-
-    [HttpPost]
-    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> CreateProcurementPolicyConfig([FromBody] CreateProcurementPolicyConfigCommand command)
-    {
-        var result = await mediator.Send(command);
-
-        if (!result.Succeeded)
-            return BadRequest(result);
-
-        return CreatedAtAction(nameof(GetProcurementPolicyConfigById), new { id = result.Data }, result);
     }
 
     [HttpPut("{id:guid}")]
