@@ -27,8 +27,8 @@ public class CreatePositionCommandValidator : AbstractValidator<CreatePositionCo
         RuleFor(x => x.OperationalStatus)
             .NotEmpty()
             .WithMessage("Operational Status is required.")
-            .Must(status => Enum.GetNames<PositionStatusEnum>().Contains(status))
-            .WithMessage($"Operational Status must be one of: {string.Join(", ", Enum.GetNames<PositionStatusEnum>())}.");
+            .Must(status => new[] { nameof(PositionStatusEnum.Vacant), nameof(PositionStatusEnum.Filled), nameof(PositionStatusEnum.Abolished) }.Contains(status))
+            .WithMessage("Operational Status must be one of: Vacant, Filled, Abolished.");
 
         RuleFor(x => x.PositionTypeId)
             .NotEmpty()

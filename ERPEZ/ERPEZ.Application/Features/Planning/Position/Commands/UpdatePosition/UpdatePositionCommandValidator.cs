@@ -27,8 +27,8 @@ public class UpdatePositionCommandValidator : AbstractValidator<UpdatePositionCo
             .When(x => x.UpdatePosition.FTE.HasValue);
 
         RuleFor(x => x.UpdatePosition.OperationalStatus)
-            .Must(status => Enum.GetNames<PositionStatusEnum>().Contains(status!))
-            .WithMessage($"Operational Status must be one of: {string.Join(", ", Enum.GetNames<PositionStatusEnum>())}.")
+            .Must(status => new[] { nameof(PositionStatusEnum.Vacant), nameof(PositionStatusEnum.Filled), nameof(PositionStatusEnum.Abolished) }.Contains(status!))
+            .WithMessage("Operational Status must be one of: Vacant, Filled, Abolished.")
             .When(x => !string.IsNullOrEmpty(x.UpdatePosition.OperationalStatus));
     }
 }
