@@ -5,15 +5,6 @@ namespace ERPEZ.Application.Features.Planning.User.Commands.CreateUser;
 
 public class CreateUserCommandValidator : AbstractValidator<CreateUserCommand>
 {
-    private static readonly string[] allowedEmploymentStatuses = 
-    [
-        nameof(EmploymentStatusEnum.Regular),
-        nameof(EmploymentStatusEnum.Probationary),
-        nameof(EmploymentStatusEnum.Contractual),
-        nameof(EmploymentStatusEnum.Casual),
-        nameof(EmploymentStatusEnum.Inactive)
-    ];
-
     public CreateUserCommandValidator()
     {
         RuleFor(x => x.EmployeeNumber)
@@ -53,7 +44,7 @@ public class CreateUserCommandValidator : AbstractValidator<CreateUserCommand>
         RuleFor(x => x.EmploymentStatus)
             .NotEmpty()
             .WithMessage("Employment Status is required.")
-            .Must(status => allowedEmploymentStatuses.Contains(status))
-            .WithMessage($"Employment Status must be one of: {string.Join(", ", allowedEmploymentStatuses)}.");
+            .Must(status => Enum.GetNames<EmploymentStatusEnum>().Contains(status))
+            .WithMessage($"Employment Status must be one of: {string.Join(", ", Enum.GetNames<EmploymentStatusEnum>())}.");
     }
 }

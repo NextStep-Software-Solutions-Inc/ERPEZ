@@ -5,15 +5,6 @@ namespace ERPEZ.Application.Features.Planning.User.Commands.UpdateUser;
 
 public class UpdateUserCommandValidator : AbstractValidator<UpdateUserCommand>
 {
-    private static readonly string[] allowedEmploymentStatuses = 
-    [
-        nameof(EmploymentStatusEnum.Regular),
-        nameof(EmploymentStatusEnum.Probationary),
-        nameof(EmploymentStatusEnum.Contractual),
-        nameof(EmploymentStatusEnum.Casual),
-        nameof(EmploymentStatusEnum.Inactive)
-    ];
-
     public UpdateUserCommandValidator()
     {
         RuleFor(x => x.Id)
@@ -50,8 +41,8 @@ public class UpdateUserCommandValidator : AbstractValidator<UpdateUserCommand>
             .When(x => !string.IsNullOrEmpty(x.UpdateUser.LastName));
 
         RuleFor(x => x.UpdateUser.EmploymentStatus)
-            .Must(status => allowedEmploymentStatuses.Contains(status!))
-            .WithMessage($"Employment Status must be one of: {string.Join(", ", allowedEmploymentStatuses)}.")
+            .Must(status => Enum.GetNames<EmploymentStatusEnum>().Contains(status!))
+            .WithMessage($"Employment Status must be one of: {string.Join(", ", Enum.GetNames<EmploymentStatusEnum>())}.")
             .When(x => !string.IsNullOrEmpty(x.UpdateUser.EmploymentStatus));
     }
 }
