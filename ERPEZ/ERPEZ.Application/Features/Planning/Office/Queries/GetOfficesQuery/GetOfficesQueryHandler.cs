@@ -41,8 +41,6 @@ public class GetOfficesQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
             ClusterId = o.ClusterId,
             ProcurementWorkflowId = o.ProcurementWorkflowId,
             ParentId = o.ParentId,
-            CreatedBy = o.CreatedBy,
-            CreatedAt = o.CreatedAt,
             OfficeType = o.OfficeType != null ? new OfficeTypeResponse
             {
                 Id = o.OfficeType.Id,

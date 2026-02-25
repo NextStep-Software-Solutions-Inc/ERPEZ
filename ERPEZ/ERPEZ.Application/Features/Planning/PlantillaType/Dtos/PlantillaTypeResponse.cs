@@ -10,5 +10,5 @@ public record PlantillaTypeResponse
     public required bool AllowsContractual { get; init; }
     public required bool IsActive { get; init; }
     public string? Benefits { get; init; }
-    public required DateTime CreatedAt { get; init; }
+    public DateTime CreatedAt { get; init; }
 }

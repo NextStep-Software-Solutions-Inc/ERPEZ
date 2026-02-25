@@ -10,5 +10,5 @@ public record StepResponse
     public required int MaxStep { get; init; }
     public string? Description { get; init; }
     public required bool IsActive { get; init; }
-    public required DateTime CreatedAt { get; init; }
+    public DateTime CreatedAt { get; init; }
 }

@@ -8,6 +8,7 @@ public record CreatePositionCommand : IRequest<ApiResponse<Guid>>
     public string Title { get; init; } = string.Empty;
     public string? FunctionalTitle { get; init; }
     public string Code { get; init; } = string.Empty;
+    public string? ItemNumber { get; init; }
     public string? JobDescription { get; init; }
     public string? Qualifications { get; init; }
     public decimal? FTE { get; init; }

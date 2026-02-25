@@ -3185,6 +3185,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
+                    b.Property<string>("ItemNumber")
+                        .HasColumnType("text");
+
                     b.Property<string>("JobDescription")
                         .HasColumnType("text");
 

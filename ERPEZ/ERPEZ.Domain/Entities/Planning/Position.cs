@@ -18,6 +18,9 @@ public class Position : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public string Code { get; set; } = string.Empty;
 
+    [Sieve(CanFilter = true, CanSort = true)]
+    public string? ItemNumber { get; set; }
+
     public string? JobDescription { get; set; }
 
     public string? Qualifications { get; set; }

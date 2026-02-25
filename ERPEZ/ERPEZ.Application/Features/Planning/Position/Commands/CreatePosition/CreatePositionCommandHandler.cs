@@ -71,6 +71,7 @@ public class CreatePositionCommandHandler(IUnitOfWork unitOfWork)
             Title = request.Title,
             FunctionalTitle = request.FunctionalTitle,
             Code = request.Code,
+            ItemNumber = request.ItemNumber,
             JobDescription = request.JobDescription,
             Qualifications = request.Qualifications,
             FTE = request.FTE,

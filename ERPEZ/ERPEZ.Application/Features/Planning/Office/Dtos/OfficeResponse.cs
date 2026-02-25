@@ -24,7 +24,7 @@ public record OfficeResponse
     public Guid? ProcurementWorkflowId { get; init; }
     public Guid? ParentId { get; init; }
     public DateTime CreatedAt { get; init; }
-    public required string CreatedBy { get; init; }
+    public string CreatedBy { get; init; } = string.Empty;
     
     // Navigation Properties - Full nested objects
     public OfficeTypeResponse? OfficeType { get; init; }
