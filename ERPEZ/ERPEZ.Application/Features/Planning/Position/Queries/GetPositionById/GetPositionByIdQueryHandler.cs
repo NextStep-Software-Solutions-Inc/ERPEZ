@@ -27,6 +27,7 @@ public class GetPositionByIdQueryHandler(IUnitOfWork unitOfWork)
             Title = position.Title,
             FunctionalTitle = position.FunctionalTitle,
             Code = position.Code,
+            ItemNumber = position.ItemNumber,
             JobDescription = position.JobDescription,
             Qualifications = position.Qualifications,
             FTE = position.FTE,

@@ -12,6 +12,7 @@ public record PositionResponse
     public required string Title { get; init; }
     public string? FunctionalTitle { get; init; }
     public required string Code { get; init; }
+    public string? ItemNumber { get; init; }
     public string? JobDescription { get; init; }
     public string? Qualifications { get; init; }
     public decimal? FTE { get; init; }

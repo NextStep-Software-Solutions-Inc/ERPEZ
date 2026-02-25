@@ -31,6 +31,7 @@ public class GetPositionsQueryHandler(IUnitOfWork unitOfWork)
             Title = p.Title,
             FunctionalTitle = p.FunctionalTitle,
             Code = p.Code,
+            ItemNumber = p.ItemNumber,
             JobDescription = p.JobDescription,
             Qualifications = p.Qualifications,
             FTE = p.FTE,

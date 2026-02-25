@@ -107,6 +107,9 @@ public class UpdatePositionCommandHandler(IUnitOfWork unitOfWork)
         if (!string.IsNullOrEmpty(request.UpdatePosition.Code))
             position.Code = request.UpdatePosition.Code;
 
+        if (request.UpdatePosition.ItemNumber != null)
+            position.ItemNumber = request.UpdatePosition.ItemNumber;
+
         if (request.UpdatePosition.JobDescription != null)
             position.JobDescription = request.UpdatePosition.JobDescription;
 
