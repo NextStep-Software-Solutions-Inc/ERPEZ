@@ -16,5 +16,10 @@ public class UpdateFiscalYearCommandValidator : AbstractValidator<UpdateFiscalYe
             .LessThanOrEqualTo(2100)
             .WithMessage("Year must be less than or equal to 2100.")
             .When(x => x.Year.HasValue);
+
+        RuleFor(x => x)
+            .Must(x => !x.StartDate.HasValue || !x.EndDate.HasValue || x.EndDate.Value >= x.StartDate.Value)
+            .WithMessage("End date must be greater than or equal to start date.")
+            .When(x => x.StartDate.HasValue && x.EndDate.HasValue);
     }
 }

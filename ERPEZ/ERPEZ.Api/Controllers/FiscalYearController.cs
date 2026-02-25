@@ -5,6 +5,7 @@ using ERPEZ.Application.Features.Planning.FiscalYear.Commands.CreateFiscalYear;
 using ERPEZ.Application.Features.Planning.FiscalYear.Commands.UpdateFiscalYear;
 using ERPEZ.Application.Features.Planning.FiscalYear.Commands.UpdateFiscalYearStatus;
 using ERPEZ.Application.Features.Planning.FiscalYear.Commands.DeleteFiscalYear;
+using ERPEZ.Application.Features.Planning.FiscalYear.Commands.UpdateFiscalYearLock;
 using ERPEZ.Application.Features.Planning.FiscalYear.Queries.GetFiscalYears;
 using ERPEZ.Application.Features.Planning.FiscalYear.Queries.GetFiscalYearById;
 using ERPEZ.Application.Features.Planning.FiscalYear.Dtos;
@@ -51,7 +52,9 @@ public class FiscalYearController(ISender mediator) : ControllerBase
         {
             Id = id,
             Year = dto.Year,
-            Description = dto.Description
+            Description = dto.Description,
+            StartDate = dto.StartDate,
+            EndDate = dto.EndDate
         };
 
         var result = await mediator.Send(command);
@@ -76,5 +79,25 @@ public class FiscalYearController(ISender mediator) : ControllerBase
         var command = new UpdateFiscalYearStatusCommand(id, request.Status);
         var result = await mediator.Send(command);
         return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    [HttpPatch("{id}/lock")]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> LockFiscalYear(Guid id)
+    {
+        var command = new UpdateFiscalYearLockCommand(id, true);
+        var result = await mediator.Send(command);
+        return result.Succeeded ? Ok(result) : NotFound(result);
+    }
+
+    [HttpPatch("{id}/unlock")]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UnlockFiscalYear(Guid id)
+    {
+        var command = new UpdateFiscalYearLockCommand(id, false);
+        var result = await mediator.Send(command);
+        return result.Succeeded ? Ok(result) : NotFound(result);
     }
 }

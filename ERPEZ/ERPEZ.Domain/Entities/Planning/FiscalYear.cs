@@ -14,6 +14,15 @@ public class FiscalYear : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public string Status { get; set; } = "Setup";
 
+    [Sieve(CanFilter = true, CanSort = true)]
+    public bool IsLocked { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public DateTime? StartDate { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public DateTime? EndDate { get; set; }
+
     /// <summary>
     /// Navigation property for fiscal months.
     /// </summary>

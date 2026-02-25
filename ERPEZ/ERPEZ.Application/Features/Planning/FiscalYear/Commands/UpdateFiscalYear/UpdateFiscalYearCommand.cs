@@ -8,4 +8,6 @@ public record UpdateFiscalYearCommand : IRequest<ApiResponse<Unit>>
     public Guid Id { get; init; }
     public int? Year { get; init; }
     public string? Description { get; init; }
+    public DateTime? StartDate { get; init; }
+    public DateTime? EndDate { get; init; }
 }

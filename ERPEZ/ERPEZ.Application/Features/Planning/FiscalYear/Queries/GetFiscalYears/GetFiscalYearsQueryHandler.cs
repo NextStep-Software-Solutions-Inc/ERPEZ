@@ -26,6 +26,9 @@ public class GetFiscalYearsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandle
             Year = fy.Year,
             Description = fy.Description,
             Status = fy.Status,
+            IsLocked = fy.IsLocked,
+            StartDate = fy.StartDate,
+            EndDate = fy.EndDate,
             FunctionAllocations = fy.FunctionAllocations.Select(fa => new FunctionAllocationResponse
             {
                 Id = fa.Id,
