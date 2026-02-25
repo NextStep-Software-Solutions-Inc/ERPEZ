@@ -11,5 +11,5 @@ public record PositionTypeResponse
     public required bool IsCareerEligibilityRequired { get; init; }
     public required bool CanReportDirectly { get; init; }
     public required bool IsActive { get; init; }
-    public required DateTime CreatedAt { get; init; }
+    public DateTime CreatedAt { get; init; }
 }

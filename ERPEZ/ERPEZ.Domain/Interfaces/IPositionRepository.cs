@@ -1,4 +1,5 @@
 using ERPEZ.Domain.Entities.Planning;
+using Sieve.Models;
 
 namespace ERPEZ.Domain.Interfaces;
 
@@ -13,4 +14,10 @@ public interface IPositionRepository : IRepository<Position>
     /// Gets the total count of all positions.
     /// </summary>
     Task<int> CountAllAsync(CancellationToken cancellationToken = default);
+    Task<(IEnumerable<Position>, int)> GetAllWithDetailsAsync(SieveModel sieveModel, CancellationToken cancellationToken = default);
+    
+    /// <summary>
+    /// Gets a position by ID with all related entities.
+    /// </summary>
+    Task<Position?> GetByIdWithDetailsAsync(Guid id, CancellationToken cancellationToken = default);
 }
