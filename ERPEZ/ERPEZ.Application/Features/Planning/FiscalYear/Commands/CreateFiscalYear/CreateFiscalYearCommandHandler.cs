@@ -25,7 +25,10 @@ public class CreateFiscalYearCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
         {
             Year = request.Year,
             Description = request.Description,
-            Status = "setup"
+            Status = "setup",
+            IsLocked = false,
+            StartDate = request.StartDate,
+            EndDate = request.EndDate
         };
 
         await unitOfWork.ExecuteInTransactionAsync(async () =>

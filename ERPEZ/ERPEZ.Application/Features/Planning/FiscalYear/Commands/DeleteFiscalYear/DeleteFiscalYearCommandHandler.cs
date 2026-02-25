@@ -11,6 +11,9 @@ public class DeleteFiscalYearCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
     {
         var fiscalYear = await unitOfWork.FiscalYearRepository.FindAsync(f => f.Id == request.Id, cancellationToken) ?? throw new NotFoundException("Fiscal year not found.");
 
+        if (fiscalYear.IsLocked)
+            throw new ForbiddenException("Cannot delete a locked fiscal year.");
+
         if (fiscalYear.Status == "closed" || fiscalYear.Status == "active")
             throw new ForbiddenException("Cannot delete an active or closed fiscal year.");
 

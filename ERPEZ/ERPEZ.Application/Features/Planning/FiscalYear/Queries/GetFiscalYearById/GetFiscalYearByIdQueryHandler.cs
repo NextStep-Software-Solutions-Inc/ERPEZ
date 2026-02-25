@@ -19,6 +19,9 @@ public class GetFiscalYearByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHan
             Year = fy.Year,
             Description = fy.Description,
             Status = fy.Status,
+            IsLocked = fy.IsLocked,
+            StartDate = fy.StartDate,
+            EndDate = fy.EndDate,
             FunctionAllocations = fy.FunctionAllocations.Select(a => new FunctionAllocationResponse
             {
                 Id = a.Id,

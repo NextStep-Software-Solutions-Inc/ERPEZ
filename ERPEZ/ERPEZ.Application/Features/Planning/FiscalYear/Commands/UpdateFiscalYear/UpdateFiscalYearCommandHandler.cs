@@ -12,6 +12,9 @@ public class UpdateFiscalYearCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
         var fiscalYear = await unitOfWork.FiscalYearRepository.GetByIdAsync(request.Id, cancellationToken)
             ?? throw new NotFoundException("Fiscal year not found.");
 
+        if (fiscalYear.IsLocked)
+            throw new ForbiddenException("Cannot update a locked fiscal year.");
+
         if (fiscalYear.Status == "closed")
             throw new ForbiddenException("Cannot update a closed fiscal year.");
 
@@ -20,6 +23,12 @@ public class UpdateFiscalYearCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
             
         if (!string.IsNullOrEmpty(request.Description))
             fiscalYear.Description = request.Description;
+
+        if (request.StartDate.HasValue)
+            fiscalYear.StartDate = request.StartDate;
+
+        if (request.EndDate.HasValue)
+            fiscalYear.EndDate = request.EndDate;
 
         unitOfWork.FiscalYearRepository.Update(fiscalYear);
         await unitOfWork.SaveChangesAsync(cancellationToken);
