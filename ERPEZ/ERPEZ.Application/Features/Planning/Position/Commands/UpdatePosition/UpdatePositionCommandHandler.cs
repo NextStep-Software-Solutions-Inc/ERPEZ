@@ -119,8 +119,8 @@ public class UpdatePositionCommandHandler(IUnitOfWork unitOfWork)
         if (request.UpdatePosition.FTE.HasValue)
             position.FTE = request.UpdatePosition.FTE;
 
-        if (!string.IsNullOrEmpty(request.UpdatePosition.OperationalStatus))
-            position.OperationalStatus = request.UpdatePosition.OperationalStatus;
+        // Note: OperationalStatus is auto-managed by PersonnelPosition commands
+        // Manual updates have been removed to prevent conflicts with automatic updates
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
 

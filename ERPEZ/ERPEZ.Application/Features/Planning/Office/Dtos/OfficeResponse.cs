@@ -10,7 +10,7 @@ namespace ERPEZ.Application.Features.Planning.Office.Dtos;
 public record OfficeResponse
 {
     public Guid Id { get; init; }
-    public int PositionCounts { get; init; }
+    public int PositionCount { get; init; }
     public required string Name { get; init; }
     public required string Code { get; init; }
     public required string Address { get; init; }

@@ -21,7 +21,6 @@ public class DeletePersonnelPositionCommandHandler(IUnitOfWork unitOfWork)
         var positionId = personnelPosition.PositionId;
 
         unitOfWork.PersonnelPositionRepository.Remove(personnelPosition);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         // Update Position OperationalStatus based on remaining active assignments
         var position = await unitOfWork.PositionRepository.GetByIdAsync(positionId, cancellationToken);
@@ -37,8 +36,9 @@ public class DeletePersonnelPositionCommandHandler(IUnitOfWork unitOfWork)
                 : nameof(Domain.Enums.PositionStatusEnum.Vacant);
 
             unitOfWork.PositionRepository.Update(position);
-            await unitOfWork.SaveChangesAsync(cancellationToken);
         }
+
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return ApiResponse<Unit>.Success(Unit.Value);
     }

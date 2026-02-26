@@ -66,8 +66,6 @@ public class UpdatePersonnelPositionCommandHandler(IUnitOfWork unitOfWork)
             personnelPosition.EndDate = request.UpdatePersonnelPosition.EndDate.Value;
         }
 
-        await unitOfWork.SaveChangesAsync(cancellationToken);
-
         // Update Position OperationalStatus for current position
         var currentPosition = await unitOfWork.PositionRepository.GetByIdAsync(
             personnelPosition.PositionId,

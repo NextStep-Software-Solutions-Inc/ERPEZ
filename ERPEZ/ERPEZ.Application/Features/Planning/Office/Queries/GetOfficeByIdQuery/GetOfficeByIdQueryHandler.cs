@@ -22,7 +22,7 @@ public class GetOfficeByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler
         var result = new OfficeResponse()
         {
             Id = office.Id,
-            PositionCounts = office.Positions.Count(p => !p.IsDeleted),
+            PositionCount = office.Positions.Count(p => !p.IsDeleted),
             Name = office.Name,
             Code = office.Code,
             Address = office.Address,
