@@ -27,6 +27,7 @@ public class OfficeRepository : Repository<Office>, IOfficeRepository
             .Include(o => o.Cluster)
             .Include(o => o.ProcurementWorkflow)
             .Include(o => o.Parent)
+            .Include(o => o.Positions)
             .FirstOrDefaultAsync(o => o.Id == id, cancellationToken);
     }
 
@@ -40,6 +41,7 @@ public class OfficeRepository : Repository<Office>, IOfficeRepository
             .Include(o => o.Cluster)
             .Include(o => o.ProcurementWorkflow)
             .Include(o => o.Parent)
+            .Include(o => o.Positions)
             .AsQueryable();
 
         if (!includeDeleted)
@@ -60,6 +62,7 @@ public class OfficeRepository : Repository<Office>, IOfficeRepository
             .Include(o => o.Cluster)
             .Include(o => o.ProcurementWorkflow)
             .Include(o => o.Parent)
+            .Include(o => o.Positions)
             .Where(o => !o.IsDeleted)
             .AsNoTracking()
             .AsQueryable();

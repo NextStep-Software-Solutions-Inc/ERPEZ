@@ -97,9 +97,7 @@ public class GetPositionByIdQueryHandler(IUnitOfWork unitOfWork)
                 AdministrativeLevelId = position.Office.AdministrativeLevelId,
                 ClusterId = position.Office.ClusterId,
                 ProcurementWorkflowId = position.Office.ProcurementWorkflowId,
-                ParentId = position.Office.ParentId,
-                CreatedAt = position.Office.CreatedAt,
-                CreatedBy = position.Office.CreatedBy
+                ParentId = position.Office.ParentId
             } : null
         };
 

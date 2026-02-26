@@ -25,8 +25,6 @@ public class GetDeliveryUnitByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestH
                 ClusterId = du.Office.ClusterId,
                 Description = du.Office.Description,
                 ResponsibilityCenterCode = du.Office.ResponsibilityCenterCode,
-                CreatedBy = du.Office.CreatedBy,
-                CreatedAt = du.Office.CreatedAt,
                  Cluster = du.Office.Cluster == null ? null : new()
                     {
                         Id = du.Office.Cluster.Id,
@@ -90,8 +88,6 @@ public class GetDeliveryUnitByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestH
                     ClusterId = subDU.Office.ClusterId,
                     Description = subDU.Office.Description,
                     ResponsibilityCenterCode = subDU.Office.ResponsibilityCenterCode,
-                    CreatedBy = subDU.Office.CreatedBy,
-                    CreatedAt = subDU.Office.CreatedAt,
                     Cluster = du.Office.Cluster == null ? null : new()
                         {
                             Id = du.Office.Cluster.Id,

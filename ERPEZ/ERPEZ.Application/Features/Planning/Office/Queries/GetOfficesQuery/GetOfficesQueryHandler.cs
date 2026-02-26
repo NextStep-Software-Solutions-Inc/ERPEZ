@@ -28,6 +28,7 @@ public class GetOfficesQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
         var officeResponses = offices.Select(o => new OfficeResponse
         {
             Id = o.Id,
+            PositionCounts = o.Positions.Count(p => !p.IsDeleted),
             Name = o.Name,
             Code = o.Code,
             Address = o.Address,

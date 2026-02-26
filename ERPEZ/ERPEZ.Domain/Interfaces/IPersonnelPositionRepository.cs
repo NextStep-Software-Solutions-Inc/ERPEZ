@@ -25,6 +25,11 @@ public interface IPersonnelPositionRepository : IRepository<PersonnelPosition>
     Task<bool> HasActiveAssignmentAsync(Guid userId, Guid positionId, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Checks if a position has any active assignment.
+    /// </summary>
+    Task<bool> HasAnyActiveAssignmentForPositionAsync(Guid positionId, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Gets a personnel position by ID with User, Position, and Office navigation properties included.
     /// </summary>
     Task<PersonnelPosition?> GetByIdWithIncludesAsync(Guid id, CancellationToken cancellationToken = default);

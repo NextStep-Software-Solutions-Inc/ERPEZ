@@ -22,6 +22,7 @@ public class GetOfficeByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler
         var result = new OfficeResponse()
         {
             Id = office.Id,
+            PositionCounts = office.Positions.Count(p => !p.IsDeleted),
             Name = office.Name,
             Code = office.Code,
             Address = office.Address,
@@ -35,8 +36,6 @@ public class GetOfficeByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler
             ClusterId = office.ClusterId,
             ProcurementWorkflowId = office.ProcurementWorkflowId,
             ParentId = office.ParentId,
-            CreatedBy = office.CreatedBy,
-            CreatedAt = office.CreatedAt,
             OfficeType = office.OfficeType != null ? new OfficeTypeResponse
             {
                 Id = office.OfficeType.Id,

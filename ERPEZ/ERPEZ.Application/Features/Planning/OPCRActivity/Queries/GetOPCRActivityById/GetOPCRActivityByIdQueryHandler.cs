@@ -34,8 +34,6 @@ public class GetOPCRActivityByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestH
                             Name = p.DeliveryUnit.Office.Name,
                             Code = p.DeliveryUnit.Office.Code,
                             Address = p.DeliveryUnit.Office.Address,
-                            CreatedBy = p.DeliveryUnit.Office.CreatedBy,
-                            CreatedAt = p.DeliveryUnit.Office.CreatedAt,
                             Description = p.DeliveryUnit.Office.Description,
                             ResponsibilityCenterCode = p.DeliveryUnit.Office.ResponsibilityCenterCode,
                             Cluster = p.DeliveryUnit.Office.Cluster == null ? null : new()

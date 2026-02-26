@@ -43,6 +43,12 @@ public class PersonnelPositionRepository : Repository<PersonnelPosition>, IPerso
             .AnyAsync(pp => pp.UserId == userId && pp.PositionId == positionId && pp.IsActive && !pp.IsDeleted, cancellationToken);
     }
 
+    public async Task<bool> HasAnyActiveAssignmentForPositionAsync(Guid positionId, CancellationToken cancellationToken = default)
+    {
+        return await dbContext.PersonnelPositions!
+            .AnyAsync(pp => pp.PositionId == positionId && pp.IsActive && !pp.IsDeleted, cancellationToken);
+    }
+
     public async Task<PersonnelPosition?> GetByIdWithIncludesAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await dbContext.PersonnelPositions!
