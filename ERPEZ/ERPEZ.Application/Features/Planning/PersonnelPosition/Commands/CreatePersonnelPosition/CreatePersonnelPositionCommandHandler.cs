@@ -51,6 +51,18 @@ public class CreatePersonnelPositionCommandHandler(IUnitOfWork unitOfWork)
         };
 
         await unitOfWork.PersonnelPositionRepository.AddAsync(personnelPosition, cancellationToken);
+
+        // Update Position OperationalStatus based on all active assignments for the position
+        var hasAnyActiveAssignmentForPosition = await unitOfWork.PersonnelPositionRepository.HasAnyActiveAssignmentForPositionAsync(
+            request.PositionId,
+            cancellationToken
+        );
+
+        position.OperationalStatus = hasAnyActiveAssignmentForPosition
+            ? nameof(Domain.Enums.PositionStatusEnum.Filled)
+            : nameof(Domain.Enums.PositionStatusEnum.Vacant);
+
+        unitOfWork.PositionRepository.Update(position);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return ApiResponse<Guid>.Success(personnelPosition.Id);

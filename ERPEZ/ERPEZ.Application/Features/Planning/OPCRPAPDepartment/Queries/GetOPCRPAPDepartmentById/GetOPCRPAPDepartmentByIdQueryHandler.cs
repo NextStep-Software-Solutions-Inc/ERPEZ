@@ -31,8 +31,6 @@ public class GetOPCRPAPDepartmentByIdQueryHandler(IUnitOfWork unitOfWork) : IReq
                     Description = oPCRPAPDepartment.DeliveryUnit.Office.Description,
                     Address = oPCRPAPDepartment.DeliveryUnit.Office.Address,
                     ResponsibilityCenterCode = oPCRPAPDepartment.DeliveryUnit.Office.ResponsibilityCenterCode,
-                    CreatedAt = oPCRPAPDepartment.DeliveryUnit.Office.CreatedAt,
-                    CreatedBy = oPCRPAPDepartment.DeliveryUnit.Office.CreatedBy,
                     ClusterId = oPCRPAPDepartment.DeliveryUnit.Office.ClusterId,
                     Cluster = null
                 },

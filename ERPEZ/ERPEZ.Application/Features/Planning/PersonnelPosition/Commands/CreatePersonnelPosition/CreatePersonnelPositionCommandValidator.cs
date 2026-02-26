@@ -23,9 +23,7 @@ public class CreatePersonnelPositionCommandValidator : AbstractValidator<CreateP
 
         RuleFor(x => x.StartDate)
             .NotEmpty()
-            .WithMessage("Start Date is required.")
-            .LessThanOrEqualTo(DateTime.UtcNow)
-            .WithMessage("Start Date cannot be in the future.");
+            .WithMessage("Start Date is required.");
 
         RuleFor(x => x.EndDate)
             .GreaterThan(x => x.StartDate)

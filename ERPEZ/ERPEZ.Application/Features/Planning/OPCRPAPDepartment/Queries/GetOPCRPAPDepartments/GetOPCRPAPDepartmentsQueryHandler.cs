@@ -35,8 +35,6 @@ public class GetOPCRPAPDepartmentsQueryHandler(IUnitOfWork unitOfWork) : IReques
                     Description = dept.DeliveryUnit.Office.Description,
                     Address = dept.DeliveryUnit.Office.Address,
                     ResponsibilityCenterCode = dept.DeliveryUnit.Office.ResponsibilityCenterCode,
-                    CreatedAt = dept.DeliveryUnit.Office.CreatedAt,
-                    CreatedBy = dept.DeliveryUnit.Office.CreatedBy,
                     ClusterId = dept.DeliveryUnit.Office.ClusterId,
                     Cluster = null
                 },

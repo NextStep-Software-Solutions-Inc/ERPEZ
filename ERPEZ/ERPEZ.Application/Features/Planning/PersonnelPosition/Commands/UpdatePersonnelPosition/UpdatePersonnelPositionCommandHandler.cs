@@ -18,6 +18,8 @@ public class UpdatePersonnelPositionCommandHandler(IUnitOfWork unitOfWork)
         if (personnelPosition == null)
             throw new NotFoundException($"Personnel Position with ID '{request.Id}' not found.");
 
+        var oldPositionId = personnelPosition.PositionId;
+
         // Validate Position if provided
         if (request.UpdatePersonnelPosition.PositionId.HasValue)
         {
@@ -62,6 +64,49 @@ public class UpdatePersonnelPositionCommandHandler(IUnitOfWork unitOfWork)
                 throw new ConflictException("End Date must be after Start Date.");
 
             personnelPosition.EndDate = request.UpdatePersonnelPosition.EndDate.Value;
+        }
+
+        // Update Position OperationalStatus for current position
+        var currentPosition = await unitOfWork.PositionRepository.GetByIdAsync(
+            personnelPosition.PositionId,
+            cancellationToken
+        );
+
+        if (currentPosition != null)
+        {
+            var hasActiveAssignment = await unitOfWork.PersonnelPositionRepository.HasAnyActiveAssignmentForPositionAsync(
+                personnelPosition.PositionId,
+                cancellationToken
+            );
+
+            currentPosition.OperationalStatus = hasActiveAssignment
+                ? nameof(Domain.Enums.PositionStatusEnum.Filled)
+                : nameof(Domain.Enums.PositionStatusEnum.Vacant);
+
+            unitOfWork.PositionRepository.Update(currentPosition);
+        }
+
+        // If PositionId changed, also update the old position's status
+        if (oldPositionId != personnelPosition.PositionId)
+        {
+            var oldPosition = await unitOfWork.PositionRepository.GetByIdAsync(
+                oldPositionId,
+                cancellationToken
+            );
+
+            if (oldPosition != null)
+            {
+                var hasActiveAssignment = await unitOfWork.PersonnelPositionRepository.HasAnyActiveAssignmentForPositionAsync(
+                    oldPositionId,
+                    cancellationToken
+                );
+
+                oldPosition.OperationalStatus = hasActiveAssignment
+                    ? nameof(Domain.Enums.PositionStatusEnum.Filled)
+                    : nameof(Domain.Enums.PositionStatusEnum.Vacant);
+
+                unitOfWork.PositionRepository.Update(oldPosition);
+            }
         }
 
         await unitOfWork.SaveChangesAsync(cancellationToken);

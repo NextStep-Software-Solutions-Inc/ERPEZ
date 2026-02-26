@@ -50,8 +50,6 @@ public class GetOPCRByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<G
                         ClusterId = o.DeliveryUnit.Office.ClusterId,
                         Description = o.DeliveryUnit.Office.Description,
                         ResponsibilityCenterCode = o.DeliveryUnit.Office.ResponsibilityCenterCode,
-                        CreatedBy = o.DeliveryUnit.Office.CreatedBy,
-                        CreatedAt = o.DeliveryUnit.Office.CreatedAt,
                         Cluster = o.DeliveryUnit.Office.Cluster != null ? new()
                             {
                                 Id = o.DeliveryUnit.Office.Cluster.Id,
