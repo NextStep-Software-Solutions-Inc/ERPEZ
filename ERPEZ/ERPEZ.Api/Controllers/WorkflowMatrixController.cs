@@ -53,7 +53,9 @@ public class WorkflowMatrixController(ISender mediator) : ControllerBase
         var command = new UpdateWorkflowMatrixCommand
         {
             Id = id,
-            DocumentType = request.DocumentType
+            DocumentType = request.DocumentType,
+            RecommendingApproverPositionId = request.RecommendingApproverPositionId,
+            FinalApproverPositionId = request.FinalApproverPositionId
         };
 
         var result = await mediator.Send(command);

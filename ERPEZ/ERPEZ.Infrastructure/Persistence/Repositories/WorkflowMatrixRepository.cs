@@ -20,7 +20,9 @@ public class WorkflowMatrixRepository : Repository<WorkflowMatrix>, IWorkflowMat
     {
         return await dbContext.WorkflowMatrices!
             .Include(x => x.FiscalYear)
-            .Include(x => x.Organization)
+            .Include(x => x.Office)
+            .Include(x => x.RecommendingApproverPosition)
+            .Include(x => x.FinalApproverPosition)
             .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted, cancellationToken);
     }
 }

@@ -14,25 +14,37 @@ public class CreateWorkflowMatrixCommandHandler(IUnitOfWork unitOfWork)
         if (fiscalYear == null)
             throw new NotFoundException("Fiscal Year not found.");
 
-        var organization = await unitOfWork.OrganizationRepository.GetByIdAsync(request.OrganizationId, cancellationToken);
-        if (organization == null)
-            throw new NotFoundException("Organization not found.");
+        var office = await unitOfWork.OfficeRepository.GetByIdAsync(request.OfficeId, cancellationToken);
+        if (office == null)
+            throw new NotFoundException("Office not found.");
+
+        // Validate Positions exist
+        var recommendingPosition = await unitOfWork.PositionRepository.GetByIdAsync(request.RecommendingApproverPositionId, cancellationToken);
+        if (recommendingPosition == null)
+            throw new NotFoundException("Recommending Approver Position not found.");
+
+        var finalPosition = await unitOfWork.PositionRepository.GetByIdAsync(request.FinalApproverPositionId, cancellationToken);
+        if (finalPosition == null)
+            throw new NotFoundException("Final Approver Position not found.");
 
         var existingMatrix = await unitOfWork.WorkflowMatrixRepository.FindAsync(
             x => x.FiscalYearId == request.FiscalYearId && 
-                 x.OrganizationId == request.OrganizationId && 
+                 x.OfficeId == request.OfficeId && 
                  x.DocumentType == request.DocumentType,
             cancellationToken);
 
         if (existingMatrix != null)
-            throw new ConflictException("Workflow Matrix already exists for this Fiscal Year, Organization, and Document Type combination.");
+            throw new ConflictException("Workflow Matrix already exists for this Fiscal Year, Office, and Document Type combination.");
 
         var entity = new Domain.Entities.Planning.WorkflowMatrix
         {
             Id = Guid.NewGuid(),
+            OfficeId = request.OfficeId,
             FiscalYearId = request.FiscalYearId,
-            OrganizationId = request.OrganizationId,
-            DocumentType = request.DocumentType
+            RecommendingApproverPositionId = request.RecommendingApproverPositionId,
+            FinalApproverPositionId = request.FinalApproverPositionId,
+            DocumentType = request.DocumentType,
+            Status = "Active"
         };
 
         await unitOfWork.WorkflowMatrixRepository.AddAsync(entity, cancellationToken);

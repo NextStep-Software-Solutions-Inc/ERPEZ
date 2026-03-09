@@ -14,7 +14,26 @@ public class UpdateWorkflowMatrixCommandHandler(IUnitOfWork unitOfWork)
         if (entity == null)
             throw new NotFoundException("Workflow Matrix not found.");
 
-        entity.DocumentType = request.DocumentType;
+        if (request.DocumentType != null)
+            entity.DocumentType = request.DocumentType;
+
+        if (request.RecommendingApproverPositionId.HasValue)
+        {
+            var recommendingPosition = await unitOfWork.PositionRepository.GetByIdAsync(request.RecommendingApproverPositionId.Value, cancellationToken);
+            if (recommendingPosition == null)
+                throw new NotFoundException("Recommending Approver Position not found.");
+            
+            entity.RecommendingApproverPositionId = request.RecommendingApproverPositionId.Value;
+        }
+
+        if (request.FinalApproverPositionId.HasValue)
+        {
+            var finalPosition = await unitOfWork.PositionRepository.GetByIdAsync(request.FinalApproverPositionId.Value, cancellationToken);
+            if (finalPosition == null)
+                throw new NotFoundException("Final Approver Position not found.");
+            
+            entity.FinalApproverPositionId = request.FinalApproverPositionId.Value;
+        }
 
         unitOfWork.WorkflowMatrixRepository.Update(entity);
         await unitOfWork.SaveChangesAsync(cancellationToken);

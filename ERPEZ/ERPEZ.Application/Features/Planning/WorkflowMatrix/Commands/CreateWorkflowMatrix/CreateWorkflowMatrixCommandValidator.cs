@@ -6,13 +6,21 @@ public class CreateWorkflowMatrixCommandValidator : AbstractValidator<CreateWork
 {
     public CreateWorkflowMatrixCommandValidator()
     {
+        RuleFor(x => x.OfficeId)
+            .NotEmpty()
+            .WithMessage("Department is required.");
+
         RuleFor(x => x.FiscalYearId)
             .NotEmpty()
             .WithMessage("Fiscal Year is required.");
 
-        RuleFor(x => x.OrganizationId)
+        RuleFor(x => x.RecommendingApproverPositionId)
             .NotEmpty()
-            .WithMessage("Organization is required.");
+            .WithMessage("Recommending Approver Position is required.");
+
+        RuleFor(x => x.FinalApproverPositionId)
+            .NotEmpty()
+            .WithMessage("Final Approver Position is required.");
 
         RuleFor(x => x.DocumentType)
             .MaximumLength(100)
