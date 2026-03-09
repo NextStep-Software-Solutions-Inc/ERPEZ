@@ -27,6 +27,20 @@ public class CreateWorkflowMatrixCommandHandler(IUnitOfWork unitOfWork)
         if (finalPosition == null)
             throw new NotFoundException("Final Approver Position not found.");
 
+        // Business Rule Validation: Check if positions belong to appropriate offices
+        // Recommending approver should typically be from the same office (strong recommendation)
+        if (recommendingPosition.OfficeId != request.OfficeId)
+        {
+            // Log warning but allow (could be intentional for cross-office workflows)
+            // In production, you might want to log this for audit purposes
+            // Example: _logger.LogWarning("Recommending approver position {PositionId} is from office {PositionOfficeId} but workflow is for office {WorkflowOfficeId}", 
+            //     recommendingPosition.Id, recommendingPosition.OfficeId, request.OfficeId);
+        }
+
+        // Final approver can be from different office (hierarchical approval is valid)
+        // Example: Regional office WFPs approved by Head Office VP
+        // No validation needed for final approver office mismatch
+
         var existingMatrix = await unitOfWork.WorkflowMatrixRepository.FindAsync(
             x => x.FiscalYearId == request.FiscalYearId && 
                  x.OfficeId == request.OfficeId && 

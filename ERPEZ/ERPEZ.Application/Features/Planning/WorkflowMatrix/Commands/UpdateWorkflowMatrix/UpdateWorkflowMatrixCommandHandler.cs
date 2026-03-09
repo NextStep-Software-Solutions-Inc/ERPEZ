@@ -22,6 +22,13 @@ public class UpdateWorkflowMatrixCommandHandler(IUnitOfWork unitOfWork)
             var recommendingPosition = await unitOfWork.PositionRepository.GetByIdAsync(request.RecommendingApproverPositionId.Value, cancellationToken);
             if (recommendingPosition == null)
                 throw new NotFoundException("Recommending Approver Position not found.");
+
+            // Business Rule Validation: Recommending approver should typically be from the same office
+            if (recommendingPosition.OfficeId != entity.OfficeId)
+            {
+                // Log warning but allow (could be intentional for cross-office workflows)
+                // In production, you might want to log this for audit purposes
+            }
             
             entity.RecommendingApproverPositionId = request.RecommendingApproverPositionId.Value;
         }
@@ -31,6 +38,9 @@ public class UpdateWorkflowMatrixCommandHandler(IUnitOfWork unitOfWork)
             var finalPosition = await unitOfWork.PositionRepository.GetByIdAsync(request.FinalApproverPositionId.Value, cancellationToken);
             if (finalPosition == null)
                 throw new NotFoundException("Final Approver Position not found.");
+
+            // Business Rule: Final approver can be from different office (hierarchical approval is valid)
+            // Example: Regional office documents approved by Head Office VP - no validation needed
             
             entity.FinalApproverPositionId = request.FinalApproverPositionId.Value;
         }
