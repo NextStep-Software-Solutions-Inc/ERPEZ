@@ -6318,7 +6318,7 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasForeignKey("FiscalYearId");
 
                     b.HasOne("ERPEZ.Domain.Entities.Planning.Office", "Office")
-                        .WithMany()
+                        .WithMany("WFPs")
                         .HasForeignKey("OfficeId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();

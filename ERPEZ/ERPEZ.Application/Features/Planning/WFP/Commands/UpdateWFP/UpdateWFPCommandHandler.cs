@@ -14,7 +14,7 @@ public class UpdateWFPCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<U
         var wfp = await unitOfWork.WFPRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken)
             ?? throw new NotFoundException("Work and Financial Plan not found.");
 
-        var coalescedOfficeId = dto.OfficeId;
+        var coalescedOfficeId = dto.OfficeId ?? wfp.OfficeId;
         var coalescedFiscalYearId = dto.FiscalYearId ?? wfp.FiscalYearId;
         var coalescedProjectTitle = dto.ProjectTitle ?? wfp.ProjectTitle;
         var coalescedDescription = dto.Description ?? wfp.Description;
@@ -31,7 +31,7 @@ public class UpdateWFPCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<U
         if (duplicate != null) 
             throw new ConflictException("Work and Financial Plan with the same Office, Fiscal Year, Project Title, and Description already exists.");
 
-        wfp.OfficeId = dto.OfficeId;
+        wfp.OfficeId = dto.OfficeId ?? wfp.OfficeId;
         wfp.FiscalYearId = dto.FiscalYearId ?? wfp.FiscalYearId;
         wfp.ProjectTitle = dto.ProjectTitle ?? wfp.ProjectTitle;
         wfp.Description = dto.Description ?? wfp.Description;

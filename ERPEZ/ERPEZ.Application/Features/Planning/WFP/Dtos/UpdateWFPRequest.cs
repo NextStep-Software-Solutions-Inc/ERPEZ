@@ -4,7 +4,7 @@ namespace ERPEZ.Application.Features.Planning.WFP.Dtos;
 
 public record UpdateWFPRequest
 {
-    public Guid OfficeId { get; init; }
+    public Guid? OfficeId { get; init; }
     public string? ProjectTitle { get; init; }
     public string? Description { get; init; }
     public Guid? FiscalYearId { get; init; }

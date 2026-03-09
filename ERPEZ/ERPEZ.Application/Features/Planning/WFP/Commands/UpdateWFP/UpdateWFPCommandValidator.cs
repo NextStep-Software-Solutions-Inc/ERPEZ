@@ -15,10 +15,11 @@ public class UpdateWFPCommandValidator : AbstractValidator<UpdateWFPCommand>
             .NotEmpty()
             .WithMessage("Work and Financial Plan ID is required for update.");
 
-        // OfficeId (Required GUID)
+        // OfficeId (Optional GUID for updates)
         RuleFor(x => x.UpdateWFP.OfficeId)
             .NotEmpty()
-            .WithMessage("Office ID is required.");
+            .WithMessage("Office ID must be a valid GUID.")
+            .When(x => x.UpdateWFP.OfficeId.HasValue);
 
         // ProjectTitle (Optional for updates, Min/Max Length)
         RuleFor(x => x.UpdateWFP.ProjectTitle)
