@@ -10,10 +10,10 @@ public class CreateWFPCommandValidator : AbstractValidator<CreateWFPCommand>
 {
     public CreateWFPCommandValidator()
     {
-        // DeliveryUnitId (Required GUID)
-        RuleFor(x => x.DeliveryUnitId)
+        // OfficeId (Required GUID)
+        RuleFor(x => x.OfficeId)
             .NotEmpty()
-            .WithMessage("Delivery Unit ID is required.");
+            .WithMessage("Office ID is required.");
 
         // ProjectTitle (Required, Min/Max Length)
         RuleFor(x => x.ProjectTitle)
@@ -60,5 +60,11 @@ public class CreateWFPCommandValidator : AbstractValidator<CreateWFPCommand>
             .WithMessage("General Objective cannot exceed 1000 characters.")
             .When(x => !string.IsNullOrWhiteSpace(x.GeneralObjective));
 
+        // Mode (Required, must be valid enum value)
+        RuleFor(x => x.Mode)
+            .NotEmpty()
+            .WithMessage("Mode is required.")
+            .Must(mode => Enum.TryParse<ModeEnum>(mode, true, out _))
+            .WithMessage("Mode must be 'OPCR' or 'External'.");
     }
 }

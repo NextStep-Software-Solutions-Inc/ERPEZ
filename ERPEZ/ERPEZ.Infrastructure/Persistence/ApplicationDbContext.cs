@@ -365,11 +365,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         // DUAllocations relationship removed - entity deleted
 
         modelBuilder.Entity<DeliveryUnit>()
-            .HasMany(du => du.WFPs)
-            .WithOne(wfp => wfp.DeliveryUnit)
-            .HasForeignKey(wfp => wfp.DeliveryUnitId);
-
-        modelBuilder.Entity<DeliveryUnit>()
             .HasMany(du => du.OPCRs)
             .WithOne(opcr => opcr.DeliveryUnit)
             .HasForeignKey(opcr => opcr.DeliveryUnitId);
@@ -462,12 +457,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         //WFP
         modelBuilder.Entity<WFP>()
-            .HasIndex(w => new { w.DeliveryUnitId, w.FiscalYearId });
+            .HasIndex(w => new { w.OfficeId, w.FiscalYearId });
 
         modelBuilder.Entity<WFP>()
-            .HasOne(w => w.DeliveryUnit)
-            .WithMany(du => du.WFPs)
-            .HasForeignKey(w => w.DeliveryUnitId);
+            .HasOne(w => w.Office)
+            .WithMany(o => o.WFPs)
+            .HasForeignKey(w => w.OfficeId);
 
         modelBuilder.Entity<WFP>()
             .HasOne(w => w.FiscalYear)
