@@ -11,7 +11,6 @@ public class DeliveryUnit : BaseEntity
     public Guid? ParentId { get; set; }
     public virtual List<DUKPITargetAssignment> KPITargetAssignments { get; set; } = [];
     public virtual List<DeliveryUnit> SubDeliveryUnits { get; set; } = [];
-    public virtual List<WFP> WFPs { get; set; } = [];
     public virtual List<WFPPAPDepartment> WFPPAPDepartments { get; set; } = [];
     public virtual List<OPCRPAPDepartment> OPCRPAPDepartments { get; set; } = [];
     public virtual List<OPCR> OPCRs { get; set; } = [];

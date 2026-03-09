@@ -11,23 +11,23 @@ public class CreateWFPCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<C
 {
     public async Task<ApiResponse<Guid>> Handle(CreateWFPCommand request, CancellationToken cancellationToken)
     {
-        _ = await unitOfWork.DeliveryUnitRepository.FindAsync(
-            x => x.Id == request.DeliveryUnitId,
-            cancellationToken) ?? throw new NotFoundException("Delivery Unit not found.");
+        _ = await unitOfWork.OfficeRepository.FindAsync(
+            x => x.Id == request.OfficeId,
+            cancellationToken) ?? throw new NotFoundException("Office not found.");
 
         var duplicate = await unitOfWork.WFPRepository.FindAsync(w => w.ProjectTitle == request.ProjectTitle
-            && w.DeliveryUnitId == request.DeliveryUnitId
+            && w.OfficeId == request.OfficeId
             && w.Description == request.Description
             && w.FiscalYearId == request.FiscalYearId,
             cancellationToken
         );
 
         if (duplicate != null)
-            throw new ConflictException("Work and Financial Plan with the same Delivery Unit, Fiscal Year, Project Title, and Description already exists.");
+            throw new ConflictException("Work and Financial Plan with the same Office, Fiscal Year, Project Title, and Description already exists.");
 
         var wfp = new Domain.Entities.Planning.WFP
         {
-            DeliveryUnitId = request.DeliveryUnitId,
+            OfficeId = request.OfficeId,
             ProjectTitle = request.ProjectTitle,
             Description = request.Description,
             FiscalYearId = request.FiscalYearId,
@@ -35,6 +35,7 @@ public class CreateWFPCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<C
             ProjectEndDate = request.ProjectEndDate,
             ProposedBudget = request.ProposedBudget,
             GeneralObjective = request.GeneralObjective,
+            Mode = request.Mode,
             Status = StatusEnum.Draft,
         };
 

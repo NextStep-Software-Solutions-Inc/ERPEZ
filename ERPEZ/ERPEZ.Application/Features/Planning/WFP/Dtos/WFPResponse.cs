@@ -1,5 +1,5 @@
 
-using ERPEZ.Application.Features.Planning.DeliveryUnit.Dtos;
+using ERPEZ.Application.Features.Planning.Office.Dtos;
 using ERPEZ.Application.Features.Planning.FiscalYear.Dtos;
 using ERPEZ.Application.Features.Planning.WFPObjective.Dtos;
 
@@ -8,7 +8,7 @@ namespace ERPEZ.Application.Features.Planning.WFP.Dtos;
 public record WFPResponse
 {
     public Guid Id { get; init; }
-    public required DeliveryUnitResponse DeliveryUnit { get; init; }
+    public required OfficeResponse Office { get; init; }
     public string ProjectTitle { get; init; } = string.Empty;
     public string? Description { get; init; }
     public FiscalYearResponse? FiscalYear { get; init; }
@@ -16,6 +16,7 @@ public record WFPResponse
     public DateOnly ProjectEndDate { get; init; }
     public decimal? ProposedBudget { get; init; }
     public string? GeneralObjective { get; init; }
+    public string Mode { get; init; } = string.Empty;
     public string Status { get; init; } = string.Empty;
     public DateTime CreatedAt { get; init; }
     public string CreatedBy { get; init; } = string.Empty;

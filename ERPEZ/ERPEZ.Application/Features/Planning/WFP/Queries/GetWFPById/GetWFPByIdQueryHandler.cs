@@ -1,5 +1,5 @@
 using ERPEZ.Application.Features.Planning.WFPObjectiveTargetExpenditure.Dtos;
-using ERPEZ.Application.Features.Planning.DeliveryUnit.Dtos;
+using ERPEZ.Application.Features.Planning.Office.Dtos;
 using ERPEZ.Application.Features.Planning.FiscalYear.Dtos;
 using ERPEZ.Application.Features.Planning.MFOPAP.Dtos;
 using ERPEZ.Application.Features.Planning.Object.Dtos;
@@ -24,73 +24,27 @@ public class GetWFPByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
             .Select(w => new WFPResponse
             {
                 Id = w.Id,
-                DeliveryUnit = new()
+                Office = new()
                 {
-                    Id = w.DeliveryUnit.Id,
-                    Office = new()
-                    {
-                        Id = w.DeliveryUnit.Office.Id,
-                        Name = w.DeliveryUnit.Office.Name,
-                        Code = w.DeliveryUnit.Office.Code,
-                        Address = w.DeliveryUnit.Office.Address,
-                        ClusterId = w.DeliveryUnit.Office.ClusterId,
-                        Description = w.DeliveryUnit.Office.Description,
-                        ResponsibilityCenterCode = w.DeliveryUnit.Office.ResponsibilityCenterCode,
-                        Cluster = w.DeliveryUnit.Office.Cluster != null ? new()
-                            {
-                                Id = w.DeliveryUnit.Office.Cluster.Id,
-                                Name = w.DeliveryUnit.Office.Cluster.Name
-                            } : null,
-                    },
-                   
-                    CreatedAt = w.DeliveryUnit.CreatedAt,
-                    ParentId = w.DeliveryUnit.ParentId,
-                    KPITargetAssignments = w.DeliveryUnit.KPITargetAssignments.Select(ka => new KPITargetAssignmentResponse
-                    {
-                        Id = ka.Id,
-                        KPI = new()
-                        {
-                            Id = ka.KPI.Id,
-                            Name = ka.KPI.Name,
-                            Description = ka.KPI.Description,
-                            FunctionType = ka.KPI.FunctionType,
-                            MFOPAP = ka.KPI.MFOPAP != null ? new MFOPAPResponse
-                            {
-                                Id = ka.KPI.MFOPAP.Id,
-                                Name = ka.KPI.MFOPAP.Name,
-                                Code = ka.KPI.MFOPAP.Code,
-                                Type = ka.KPI.MFOPAP.Type,
-                                IsActive = ka.KPI.MFOPAP.IsActive,
-                                ParentId = ka.KPI.MFOPAP.ParentId,
-                            } : null,
-                            SDGs = ka.KPI.SDGs.Select(s => s.Name).ToList(),
-                        },
-                    }).ToList(),
-                    SubDeliveryUnits = w.DeliveryUnit.SubDeliveryUnits.Select(sdu => new DeliveryUnitResponse
-                    {
-                        Id = sdu.Id,
-                        Office = new()
-                        {
-                            Id = sdu.Office.Id,
-                            Name = sdu.Office.Name,
-                            Code = sdu.Office.Code,
-                            Address = sdu.Office.Address,
-                            ClusterId = sdu.Office.ClusterId,
-                            Description = sdu.Office.Description,
-                            ResponsibilityCenterCode = sdu.Office.ResponsibilityCenterCode,
-                            Cluster = sdu.Office.Cluster != null ? new()
-                                {
-                                    Id = sdu.Office.Cluster.Id,
-                                    Name = sdu.Office.Cluster.Name
-                                } : null,
-                        },
-                       
-                        CreatedAt = sdu.CreatedAt,
-                        ParentId = sdu.ParentId,
-                    }).ToList(),
+                    Id = w.Office.Id,
+                    Name = w.Office.Name,
+                    Code = w.Office.Code,
+                    Address = w.Office.Address,
+                    Description = w.Office.Description,
+                    ResponsibilityCenterCode = w.Office.ResponsibilityCenterCode,
+                    BudgetCostCenter = w.Office.BudgetCostCenter,
+                    OfficeTypeId = w.Office.OfficeTypeId,
+                    OrganizationId = w.Office.OrganizationId,
+                    CategoryId = w.Office.CategoryId,
+                    AdministrativeLevelId = w.Office.AdministrativeLevelId,
+                    ClusterId = w.Office.ClusterId,
+                    ProcurementWorkflowId = w.Office.ProcurementWorkflowId,
+                    ParentId = w.Office.ParentId,
                 },
                 ProjectTitle = w.ProjectTitle,
+                Description = w.Description,
                 GeneralObjective = w.GeneralObjective,
+                Mode = w.Mode,
                 Status = w.Status.ToString(),
                 CreatedBy = w.CreatedBy,
                 CreatedAt = w.CreatedAt,
@@ -173,7 +127,6 @@ public class GetWFPByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
                         }).ToList(),
                     }).ToList(),
                 }).ToList(),
-                Description = w.Description,
                 ProjectStartDate = w.ProjectStartDate,
                 ProjectEndDate = w.ProjectEndDate,
                 ProposedBudget = w.ProposedBudget,

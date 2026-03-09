@@ -4751,9 +4751,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text");
 
-                    b.Property<Guid>("DeliveryUnitId")
-                        .HasColumnType("uuid");
-
                     b.Property<string>("Description")
                         .HasColumnType("text");
 
@@ -4765,6 +4762,13 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
+
+                    b.Property<string>("Mode")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("OfficeId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateOnly>("ProjectEndDate")
                         .HasColumnType("date");
@@ -4793,7 +4797,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("FiscalYearId");
 
-                    b.HasIndex("DeliveryUnitId", "FiscalYearId");
+                    b.HasIndex("OfficeId", "FiscalYearId");
 
                     b.ToTable("WFPs", "planning");
                 });
@@ -6306,19 +6310,19 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WFP", b =>
                 {
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.DeliveryUnit", "DeliveryUnit")
-                        .WithMany("WFPs")
-                        .HasForeignKey("DeliveryUnitId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("ERPEZ.Domain.Entities.Planning.FiscalYear", "FiscalYear")
                         .WithMany()
                         .HasForeignKey("FiscalYearId");
 
-                    b.Navigation("DeliveryUnit");
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.Office", "Office")
+                        .WithMany("WFPs")
+                        .HasForeignKey("OfficeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("FiscalYear");
+
+                    b.Navigation("Office");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WFPObjective", b =>
@@ -6478,8 +6482,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("SubDeliveryUnits");
 
                     b.Navigation("WFPPAPDepartments");
-
-                    b.Navigation("WFPs");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.ExpenseClass", b =>
@@ -6620,6 +6622,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("DeliveryUnits");
 
                     b.Navigation("Positions");
+
+                    b.Navigation("WFPs");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OfficeType", b =>

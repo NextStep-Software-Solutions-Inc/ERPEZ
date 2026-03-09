@@ -59,4 +59,5 @@ public class Office : BaseEntity
     public virtual List<Office> Children { get; set; } = [];
     public virtual List<DeliveryUnit> DeliveryUnits { get; set; } = [];
     public virtual List<Position> Positions { get; set; } = [];
+    public virtual List<WFP> WFPs { get; set; } = [];
 }

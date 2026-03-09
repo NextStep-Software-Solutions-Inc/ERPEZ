@@ -1,8 +1,10 @@
+using ERPEZ.Domain.Enums;
+
 namespace ERPEZ.Application.Features.Planning.WFP.Dtos;
 
 public record UpdateWFPRequest
 {
-    public Guid DeliveryUnitId { get; init; }
+    public Guid OfficeId { get; init; }
     public string? ProjectTitle { get; init; }
     public string? Description { get; init; }
     public Guid? FiscalYearId { get; init; }
@@ -10,4 +12,5 @@ public record UpdateWFPRequest
     public DateOnly? ProjectEndDate { get; init; }
     public decimal? ProposedBudget { get; init; }
     public string? GeneralObjective { get; init; }
+    public string? Mode { get; init; }
 }

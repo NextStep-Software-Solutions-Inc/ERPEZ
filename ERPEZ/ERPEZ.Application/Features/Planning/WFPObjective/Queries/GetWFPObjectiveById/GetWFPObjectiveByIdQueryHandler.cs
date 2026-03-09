@@ -36,18 +36,19 @@ public class GetWFPObjectiveByIdQueryHandler(IUnitOfWork unitOfWork)
                     ProjectStartDate = o.WFP.ProjectStartDate,
                     ProjectTitle = o.WFP.ProjectTitle,
                     ProposedBudget = o.WFP.ProposedBudget,
+                    Mode = o.WFP.Mode,
                     Status = o.WFP.Status.ToString(),
                     ObjectiveCount = o.WFP.WFPObjectives.Count,
-                    DeliveryUnit = new ()
+                    Office = new ()
                     {
-                        Id = o.WFP.DeliveryUnit.Id,
-                        Office = new ()
-                        {
-                            Id = o.WFP.DeliveryUnit.Office.Id,
-                            Name = o.WFP.DeliveryUnit.Office.Name,
-                            Code = o.WFP.DeliveryUnit.Office.Code,
-                            Address = o.WFP.DeliveryUnit.Office.Address
-                        }
+                        Id = o.WFP.Office.Id,
+                        Name = o.WFP.Office.Name,
+                        Code = o.WFP.Office.Code,
+                        Address = o.WFP.Office.Address,
+                        OfficeTypeId = o.WFP.Office.OfficeTypeId,
+                        OrganizationId = o.WFP.Office.OrganizationId,
+                        CategoryId = o.WFP.Office.CategoryId,
+                        AdministrativeLevelId = o.WFP.Office.AdministrativeLevelId
                     },
                     CreatedAt = o.WFP.CreatedAt,
                     CreatedBy = o.WFP.CreatedBy,
