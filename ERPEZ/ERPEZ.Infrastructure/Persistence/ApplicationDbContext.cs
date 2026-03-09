@@ -447,12 +447,24 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasForeignKey(wm => wm.FiscalYearId);
 
         modelBuilder.Entity<WorkflowMatrix>()
-            .HasOne(wm => wm.Organization)
+            .HasOne(wm => wm.Office)
             .WithMany()
-            .HasForeignKey(wm => wm.OrganizationId);
+            .HasForeignKey(wm => wm.OfficeId);
 
         modelBuilder.Entity<WorkflowMatrix>()
-            .HasIndex(wm => new { wm.FiscalYearId, wm.OrganizationId, wm.DocumentType })
+            .HasOne(wm => wm.RecommendingApproverPosition)
+            .WithMany()
+            .HasForeignKey(wm => wm.RecommendingApproverPositionId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<WorkflowMatrix>()
+            .HasOne(wm => wm.FinalApproverPosition)
+            .WithMany()
+            .HasForeignKey(wm => wm.FinalApproverPositionId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<WorkflowMatrix>()
+            .HasIndex(wm => new { wm.FiscalYearId, wm.OfficeId, wm.DocumentType })
             .IsUnique();
 
         //WFP

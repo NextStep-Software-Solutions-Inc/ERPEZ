@@ -5122,9 +5122,6 @@ namespace ERPEZ.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("ApprovedByUserId")
-                        .HasColumnType("uuid");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -5141,17 +5138,24 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("DocumentType")
                         .HasColumnType("text");
 
+                    b.Property<Guid>("FinalApproverPositionId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid>("FiscalYearId")
                         .HasColumnType("uuid");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
-                    b.Property<Guid>("OrganizationId")
+                    b.Property<Guid>("OfficeId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("RecommendedByUserId")
+                    b.Property<Guid>("RecommendingApproverPositionId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -5161,9 +5165,13 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("OrganizationId");
+                    b.HasIndex("FinalApproverPositionId");
 
-                    b.HasIndex("FiscalYearId", "OrganizationId", "DocumentType")
+                    b.HasIndex("OfficeId");
+
+                    b.HasIndex("RecommendingApproverPositionId");
+
+                    b.HasIndex("FiscalYearId", "OfficeId", "DocumentType")
                         .IsUnique();
 
                     b.ToTable("WorkflowMatrices", "planning");
@@ -6409,21 +6417,37 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WorkflowMatrix", b =>
                 {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.Position", "FinalApproverPosition")
+                        .WithMany()
+                        .HasForeignKey("FinalApproverPositionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("ERPEZ.Domain.Entities.Planning.FiscalYear", "FiscalYear")
                         .WithMany("WorkflowMatrices")
                         .HasForeignKey("FiscalYearId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.Organization", "Organization")
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.Office", "Office")
                         .WithMany()
-                        .HasForeignKey("OrganizationId")
+                        .HasForeignKey("OfficeId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.Position", "RecommendingApproverPosition")
+                        .WithMany()
+                        .HasForeignKey("RecommendingApproverPositionId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("FinalApproverPosition");
+
                     b.Navigation("FiscalYear");
 
-                    b.Navigation("Organization");
+                    b.Navigation("Office");
+
+                    b.Navigation("RecommendingApproverPosition");
                 });
 
             modelBuilder.Entity("KPISDG", b =>

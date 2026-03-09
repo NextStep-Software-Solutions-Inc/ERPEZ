@@ -91,6 +91,7 @@ public static class DependencyInjection
         services.AddScoped<IWFPObjectiveTargetRepository, WFPObjectiveTargetRepository>();
         services.AddScoped<IWFPObjectiveTimelineRepository, WFPObjectiveTimelineRepository>();
         services.AddScoped<IAttributeRepository, AttributeRepository>();
+        services.AddScoped<IWorkflowMatrixRepository, WorkflowMatrixRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IFileStorageService, AzureBlobStorageService>();
         services.AddScoped<IUACSCsvImporter, UACSImportService>();
