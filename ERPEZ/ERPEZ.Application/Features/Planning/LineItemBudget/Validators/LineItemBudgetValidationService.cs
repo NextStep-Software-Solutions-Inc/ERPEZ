@@ -67,10 +67,9 @@ public class LineItemBudgetValidationService : ILineItemBudgetValidationService
                 {
                     result.AddError("Work and Financial Plan not found.");
                 }
-                else if (!LineItemBudgetValidationRules.ValidateSourceBelongsToDeliveryUnit(
-                    sourceType, sourceId, deliveryUnitId, wfp.DeliveryUnitId))
+                else if (wfp.OfficeId != deliveryUnit.OfficeId)
                 {
-                    result.AddError("Work and Financial Plan does not belong to the specified Delivery Unit.");
+                    result.AddError("Work and Financial Plan does not belong to the same Office as the specified Delivery Unit.");
                 }
                 else
                 {

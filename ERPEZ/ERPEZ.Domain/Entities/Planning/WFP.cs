@@ -7,7 +7,7 @@ namespace ERPEZ.Domain.Entities.Planning;
 public class WFP : BaseEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
-    public Guid DeliveryUnitId { get; set; }
+    public Guid OfficeId { get; set; }
     [Sieve(CanFilter = true, CanSort = true)]
     public string ProjectTitle { get; set; } = string.Empty;
     [Sieve(CanFilter = true, CanSort = true)]
@@ -24,8 +24,10 @@ public class WFP : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public string? GeneralObjective { get; set; }
     [Sieve(CanFilter = true, CanSort = true)]
+    public string Mode { get; set; } = "External";
+    [Sieve(CanFilter = true, CanSort = true)]
     public StatusEnum Status { get; set; } = StatusEnum.Draft;
     public virtual List<WFPObjective> WFPObjectives { get; set; } = [];
-    public virtual DeliveryUnit DeliveryUnit { get; set; } = null!;
+    public virtual Office Office { get; set; } = null!;
     public virtual FiscalYear? FiscalYear { get; set; }
 }

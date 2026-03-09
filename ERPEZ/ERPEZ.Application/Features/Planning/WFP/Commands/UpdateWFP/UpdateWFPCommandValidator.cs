@@ -15,10 +15,11 @@ public class UpdateWFPCommandValidator : AbstractValidator<UpdateWFPCommand>
             .NotEmpty()
             .WithMessage("Work and Financial Plan ID is required for update.");
 
-        // DeliveryUnitId (Required GUID)
-        RuleFor(x => x.UpdateWFP.DeliveryUnitId)
+        // OfficeId (Optional GUID for updates)
+        RuleFor(x => x.UpdateWFP.OfficeId)
             .NotEmpty()
-            .WithMessage("Delivery Unit ID is required.");
+            .WithMessage("Office ID must be a valid GUID.")
+            .When(x => x.UpdateWFP.OfficeId.HasValue);
 
         // ProjectTitle (Optional for updates, Min/Max Length)
         RuleFor(x => x.UpdateWFP.ProjectTitle)
@@ -58,5 +59,10 @@ public class UpdateWFPCommandValidator : AbstractValidator<UpdateWFPCommand>
             .WithMessage("General Objective cannot exceed 1000 characters.")
             .When(x => !string.IsNullOrWhiteSpace(x.UpdateWFP.GeneralObjective));
 
+        // Mode (Optional, must be valid enum value when provided)
+        RuleFor(x => x.UpdateWFP.Mode)
+            .Must(mode => Enum.TryParse<ModeEnum>(mode, true, out _))
+            .WithMessage("Mode must be 'OPCR' or 'External'.")
+            .When(x => !string.IsNullOrWhiteSpace(x.UpdateWFP.Mode));
     }
 }
