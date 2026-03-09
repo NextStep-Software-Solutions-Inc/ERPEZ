@@ -69,7 +69,7 @@ public class LineItemBudgetValidationService : ILineItemBudgetValidationService
                 }
                 else if (wfp.OfficeId != deliveryUnit.OfficeId)
                 {
-                    result.AddError("Work and Financial Plan does not belong to the specified Delivery Unit.");
+                    result.AddError("Work and Financial Plan does not belong to the same Office as the specified Delivery Unit.");
                 }
                 else
                 {

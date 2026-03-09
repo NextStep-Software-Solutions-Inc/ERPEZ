@@ -35,7 +35,7 @@ public class CreateWFPCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<C
             ProjectEndDate = request.ProjectEndDate,
             ProposedBudget = request.ProposedBudget,
             GeneralObjective = request.GeneralObjective,
-            Mode = request.Mode,
+            Mode = Enum.Parse<ModeEnum>(request.Mode, true).ToString(),
             Status = StatusEnum.Draft,
         };
 

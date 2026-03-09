@@ -40,7 +40,7 @@ public class UpdateWFPCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<U
         wfp.ProposedBudget = dto.ProposedBudget ?? wfp.ProposedBudget;
         wfp.GeneralObjective = dto.GeneralObjective ?? wfp.GeneralObjective;
         if (!string.IsNullOrWhiteSpace(dto.Mode))
-            wfp.Mode = dto.Mode;
+            wfp.Mode = dto.Mode.ToUpperInvariant();
 
         unitOfWork.WFPRepository.Update(wfp);
         await unitOfWork.SaveChangesAsync(cancellationToken);
