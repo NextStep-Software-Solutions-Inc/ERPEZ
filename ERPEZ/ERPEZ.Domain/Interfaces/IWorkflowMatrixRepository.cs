@@ -9,4 +9,10 @@ public interface IWorkflowMatrixRepository : IRepository<WorkflowMatrix>
     /// Actual users are resolved at runtime via PersonnelPosition lookups.
     /// </summary>
     Task<WorkflowMatrix?> GetByIdWithNavigationAsync(Guid id, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Get all workflow matrices with FiscalYear, Office, and Position navigation properties included.
+    /// Returns IQueryable for further filtering and pagination.
+    /// </summary>
+    IQueryable<WorkflowMatrix> GetAllWithNavigation();
 }

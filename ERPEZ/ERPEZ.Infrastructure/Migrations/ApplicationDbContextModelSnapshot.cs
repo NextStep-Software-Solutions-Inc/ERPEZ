@@ -5172,7 +5172,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("RecommendingApproverPositionId");
 
                     b.HasIndex("FiscalYearId", "OfficeId", "DocumentType")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("\"IsDeleted\" = false");
 
                     b.ToTable("WorkflowMatrices", "planning");
                 });

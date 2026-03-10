@@ -1,6 +1,7 @@
 using ERPEZ.Application.Features.Planning.WorkflowMatrix.Commands.CreateWorkflowMatrix;
 using ERPEZ.Application.Features.Planning.WorkflowMatrix.Commands.DeleteWorkflowMatrix;
 using ERPEZ.Application.Features.Planning.WorkflowMatrix.Commands.UpdateWorkflowMatrix;
+using ERPEZ.Application.Features.Planning.WorkflowMatrix.Commands.UpdateWorkflowMatrixStatus;
 using ERPEZ.Application.Features.Planning.WorkflowMatrix.Dtos;
 using ERPEZ.Application.Features.Planning.WorkflowMatrix.Queries.GetWorkflowMatrices;
 using ERPEZ.Application.Features.Planning.WorkflowMatrix.Queries.GetWorkflowMatrixById;
@@ -73,5 +74,21 @@ public class WorkflowMatrixController(ISender mediator) : ControllerBase
             return NotFound(result);
 
         return NoContent();
+    }
+
+    [HttpPatch("{id:guid}/status")]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateWorkflowMatrixStatus(Guid id, [FromBody] UpdateWorkflowMatrixStatusRequest request)
+    {
+        var command = new UpdateWorkflowMatrixStatusCommand
+        {
+            Id = id,
+            Status = request.Status
+        };
+
+        var result = await mediator.Send(command);
+        return result.Succeeded ? Ok(result) : NotFound(result);
     }
 }

@@ -8,7 +8,7 @@ public class CreateWorkflowMatrixCommandValidator : AbstractValidator<CreateWork
     {
         RuleFor(x => x.OfficeId)
             .NotEmpty()
-            .WithMessage("Department is required.");
+            .WithMessage("Office is required.");
 
         RuleFor(x => x.FiscalYearId)
             .NotEmpty()

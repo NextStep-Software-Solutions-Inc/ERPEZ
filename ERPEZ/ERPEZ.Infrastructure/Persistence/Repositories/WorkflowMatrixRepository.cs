@@ -25,4 +25,14 @@ public class WorkflowMatrixRepository : Repository<WorkflowMatrix>, IWorkflowMat
             .Include(x => x.FinalApproverPosition)
             .FirstOrDefaultAsync(x => x.Id == id && !x.IsDeleted, cancellationToken);
     }
+
+    public IQueryable<WorkflowMatrix> GetAllWithNavigation()
+    {
+        return dbContext.WorkflowMatrices!
+            .Include(x => x.FiscalYear)
+            .Include(x => x.Office)
+            .Include(x => x.RecommendingApproverPosition)
+            .Include(x => x.FinalApproverPosition)
+            .Where(x => !x.IsDeleted);
+    }
 }

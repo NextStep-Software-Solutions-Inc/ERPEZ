@@ -41,6 +41,7 @@ public class CreateWorkflowMatrixCommandHandler(IUnitOfWork unitOfWork)
         // Example: Regional office WFPs approved by Head Office VP
         // No validation needed for final approver office mismatch
 
+        // Check for duplicates - Partial unique index handles soft-deleted records at DB level
         var existingMatrix = await unitOfWork.WorkflowMatrixRepository.FindAsync(
             x => x.FiscalYearId == request.FiscalYearId && 
                  x.OfficeId == request.OfficeId && 
@@ -58,7 +59,7 @@ public class CreateWorkflowMatrixCommandHandler(IUnitOfWork unitOfWork)
             RecommendingApproverPositionId = request.RecommendingApproverPositionId,
             FinalApproverPositionId = request.FinalApproverPositionId,
             DocumentType = request.DocumentType,
-            Status = "Active"
+            Status = "Inactive" // New workflows start inactive, must be explicitly activated
         };
 
         await unitOfWork.WorkflowMatrixRepository.AddAsync(entity, cancellationToken);

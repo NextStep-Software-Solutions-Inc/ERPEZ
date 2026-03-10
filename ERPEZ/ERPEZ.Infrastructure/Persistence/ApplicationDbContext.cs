@@ -465,7 +465,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<WorkflowMatrix>()
             .HasIndex(wm => new { wm.FiscalYearId, wm.OfficeId, wm.DocumentType })
-            .IsUnique();
+            .IsUnique()
+            .HasFilter("\"IsDeleted\" = false"); // Partial index - only enforce uniqueness for non-deleted records
 
         //WFP
         modelBuilder.Entity<WFP>()

@@ -2,7 +2,6 @@ using ERPEZ.Application.Features.Planning.WorkflowMatrix.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Sieve.Models;
 
 namespace ERPEZ.Application.Features.Planning.WorkflowMatrix.Queries.GetWorkflowMatrices;
@@ -20,21 +19,17 @@ public class GetWorkflowMatricesQueryHandler(IUnitOfWork unitOfWork)
             PageSize = request.PageSize
         };
 
-        // Get workflow matrices with navigation properties
-        var query = unitOfWork.WorkflowMatrixRepository.Query()
-            .Include(wm => wm.FiscalYear)
-            .Include(wm => wm.Office)
-            .Include(wm => wm.RecommendingApproverPosition)
-            .Include(wm => wm.FinalApproverPosition);
-
-        // Apply basic filtering and pagination manually
-        var filteredQuery = query.Where(wm => !wm.IsDeleted);
+        // Get workflow matrices with navigation properties from Repository (No EF Core in Application layer)
+        var query = unitOfWork.WorkflowMatrixRepository.GetAllWithNavigation();
         
-        var totalCount = await filteredQuery.CountAsync(cancellationToken);
-        var matrices = await filteredQuery
+        // Count total before pagination
+        var totalCount = query.Count();
+        
+        // Apply pagination
+        var matrices = query
             .Skip(((sieveModel.Page ?? 1) - 1) * (sieveModel.PageSize ?? 10))
             .Take(sieveModel.PageSize ?? 10)
-            .ToListAsync(cancellationToken);
+            .ToList();
 
         // Collect all unique position IDs for batch loading
         var positionIds = matrices
@@ -43,18 +38,21 @@ public class GetWorkflowMatricesQueryHandler(IUnitOfWork unitOfWork)
             .ToList();
 
         // Batch load all active personnel positions
-        var personnelPositions = await unitOfWork.PersonnelPositionRepository.Query()
-            .Where(pp => positionIds.Contains(pp.PositionId) && pp.IsActive == true)
-            .ToListAsync(cancellationToken);
+        var personnelPositionsQuery = unitOfWork.PersonnelPositionRepository.Query(
+            pp => positionIds.Contains(pp.PositionId) && pp.IsActive == true);
+        var personnelPositions = await unitOfWork.PersonnelPositionRepository.ToListAsync(
+            personnelPositionsQuery,
+            cancellationToken);
 
         // Batch load users
         var userIds = personnelPositions.Select(pp => pp.UserId).Distinct().ToList();
-        var users = await unitOfWork.UserRepository.Query()
-            .Where(u => userIds.Contains(u.Id))
-            .ToListAsync(cancellationToken);
+        var usersQuery = unitOfWork.UserRepository.Query(u => userIds.Contains(u.Id));
+        var users = await unitOfWork.UserRepository.ToListAsync(usersQuery, cancellationToken);
 
-        // Create lookup dictionaries
-        var positionToPersonnel = personnelPositions.ToDictionary(pp => pp.PositionId);
+        // Create lookup dictionaries (Use GroupBy to avoid duplicate key exceptions)
+        var positionToPersonnel = personnelPositions
+            .GroupBy(pp => pp.PositionId)
+            .ToDictionary(g => g.Key, g => g.First());
         var userLookup = users.ToDictionary(u => u.Id);
 
         // Map to response with nested structure

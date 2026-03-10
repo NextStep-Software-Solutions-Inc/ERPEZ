@@ -51,7 +51,7 @@ namespace ERPEZ.Infrastructure.Migrations
                 table: "WorkflowMatrices",
                 type: "text",
                 nullable: false,
-                defaultValue: "");
+                defaultValue: "Inactive");
 
             migrationBuilder.CreateIndex(
                 name: "IX_WorkflowMatrices_FinalApproverPositionId",
