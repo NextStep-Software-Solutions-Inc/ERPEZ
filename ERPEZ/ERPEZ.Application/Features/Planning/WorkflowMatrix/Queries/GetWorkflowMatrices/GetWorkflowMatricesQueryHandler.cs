@@ -4,7 +4,6 @@ using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Sieve.Models;
-using System.Linq.Expressions;
 
 namespace ERPEZ.Application.Features.Planning.WorkflowMatrix.Queries.GetWorkflowMatrices;
 
@@ -21,37 +20,21 @@ public class GetWorkflowMatricesQueryHandler(IUnitOfWork unitOfWork)
             PageSize = request.PageSize
         };
 
-        // Define projection for workflow matrices with basic navigation data
-        Expression<Func<Domain.Entities.Planning.WorkflowMatrix, WorkflowMatrixResponse>> projection = wm => new WorkflowMatrixResponse
-        {
-            Id = wm.Id,
-            FiscalYearId = wm.FiscalYearId,
-            FiscalYear = wm.FiscalYear != null ? wm.FiscalYear.Year : 0,
-            OfficeId = wm.OfficeId,
-            OfficeName = wm.Office != null ? wm.Office.Name : string.Empty,
-            DocumentType = wm.DocumentType,
-            
-            // Position information (always available)
-            RecommendingApproverPositionId = wm.RecommendingApproverPositionId,
-            RecommendingApproverPositionTitle = wm.RecommendingApproverPosition != null ? wm.RecommendingApproverPosition.Title : string.Empty,
-            
-            FinalApproverPositionId = wm.FinalApproverPositionId,
-            FinalApproverPositionTitle = wm.FinalApproverPosition != null ? wm.FinalApproverPosition.Title : string.Empty,
-            
-            // User info will be resolved after query
-            RecommendingApproverId = null,
-            RecommendingApproverName = null,
-            FinalApproverId = null,
-            FinalApproverName = null,
-            
-            CreatedAt = wm.CreatedAt,
-            CreatedBy = wm.CreatedBy,
-            UpdatedAt = wm.UpdatedAt,
-            UpdatedBy = wm.UpdatedBy
-        };
+        // Get workflow matrices with navigation properties
+        var query = unitOfWork.WorkflowMatrixRepository.Query()
+            .Include(wm => wm.FiscalYear)
+            .Include(wm => wm.Office)
+            .Include(wm => wm.RecommendingApproverPosition)
+            .Include(wm => wm.FinalApproverPosition);
 
-        // Get paginated matrices using repository's GetAllAsync
-        var (matrices, totalCount) = await unitOfWork.WorkflowMatrixRepository.GetAllAsync(sieveModel, projection, cancellationToken);
+        // Apply basic filtering and pagination manually
+        var filteredQuery = query.Where(wm => !wm.IsDeleted);
+        
+        var totalCount = await filteredQuery.CountAsync(cancellationToken);
+        var matrices = await filteredQuery
+            .Skip(((sieveModel.Page ?? 1) - 1) * (sieveModel.PageSize ?? 10))
+            .Take(sieveModel.PageSize ?? 10)
+            .ToListAsync(cancellationToken);
 
         // Collect all unique position IDs for batch loading
         var positionIds = matrices
@@ -74,58 +57,76 @@ public class GetWorkflowMatricesQueryHandler(IUnitOfWork unitOfWork)
         var positionToPersonnel = personnelPositions.ToDictionary(pp => pp.PositionId);
         var userLookup = users.ToDictionary(u => u.Id);
 
-        // Resolve user information for each matrix
-        var response = matrices.Select(matrix =>
+        // Map to response with nested structure
+        var response = matrices.Select(wm =>
         {
-            // Resolve recommending approver
-            Guid? recommendingApproverId = null;
-            string? recommendingApproverName = null;
-            if (positionToPersonnel.TryGetValue(matrix.RecommendingApproverPositionId, out var recPersonnel) &&
-                userLookup.TryGetValue(recPersonnel.UserId, out var recUser))
+            // Resolve recommending approver user
+            UserInfo? recommendingUser = null;
+            if (positionToPersonnel.TryGetValue(wm.RecommendingApproverPositionId, out var recPersonnel) &&
+                userLookup.TryGetValue(recPersonnel.UserId, out var recUserEntity))
             {
-                recommendingApproverId = recUser.Id;
-                recommendingApproverName = $"{recUser.FirstName} {recUser.LastName}";
+                recommendingUser = new UserInfo
+                {
+                    Id = recUserEntity.Id,
+                    Name = $"{recUserEntity.FirstName} {recUserEntity.LastName}",
+                    Email = recUserEntity.Email ?? string.Empty
+                };
             }
 
-            // Resolve final approver
-            Guid? finalApproverId = null;
-            string? finalApproverName = null;
-            if (positionToPersonnel.TryGetValue(matrix.FinalApproverPositionId, out var finPersonnel) &&
-                userLookup.TryGetValue(finPersonnel.UserId, out var finUser))
+            // Resolve final approver user
+            UserInfo? finalUser = null;
+            if (positionToPersonnel.TryGetValue(wm.FinalApproverPositionId, out var finPersonnel) &&
+                userLookup.TryGetValue(finPersonnel.UserId, out var finUserEntity))
             {
-                finalApproverId = finUser.Id;
-                finalApproverName = $"{finUser.FirstName} {finUser.LastName}";
+                finalUser = new UserInfo
+                {
+                    Id = finUserEntity.Id,
+                    Name = $"{finUserEntity.FirstName} {finUserEntity.LastName}",
+                    Email = finUserEntity.Email ?? string.Empty
+                };
             }
 
-            // Return new response with resolved user info
             return new WorkflowMatrixResponse
             {
-                Id = matrix.Id,
-                FiscalYearId = matrix.FiscalYearId,
-                FiscalYear = matrix.FiscalYear,
-                OfficeId = matrix.OfficeId,
-                OfficeName = matrix.OfficeName,
-                DocumentType = matrix.DocumentType,
+                Id = wm.Id,
+                FiscalYearId = wm.FiscalYearId,
+                FiscalYear = wm.FiscalYear?.Year ?? 0,
+                OfficeId = wm.OfficeId,
+                OfficeName = wm.Office?.Name ?? string.Empty,
+                DocumentType = wm.DocumentType,
+                Status = wm.Status,
                 
-                RecommendingApproverPositionId = matrix.RecommendingApproverPositionId,
-                RecommendingApproverPositionTitle = matrix.RecommendingApproverPositionTitle,
-                FinalApproverPositionId = matrix.FinalApproverPositionId,
-                FinalApproverPositionTitle = matrix.FinalApproverPositionTitle,
+                // Nested recommending approver
+                RecommendingApprover = new ApproverInfo
+                {
+                    Position = new PositionInfo
+                    {
+                        Id = wm.RecommendingApproverPositionId,
+                        Title = wm.RecommendingApproverPosition?.Title ?? string.Empty,
+                        Code = wm.RecommendingApproverPosition?.Code ?? string.Empty
+                    },
+                    CurrentUser = recommendingUser
+                },
                 
-                // Resolved user information
-                RecommendingApproverId = recommendingApproverId,
-                RecommendingApproverName = recommendingApproverName,
-                FinalApproverId = finalApproverId,
-                FinalApproverName = finalApproverName,
+                // Nested final approver
+                FinalApprover = new ApproverInfo
+                {
+                    Position = new PositionInfo
+                    {
+                        Id = wm.FinalApproverPositionId,
+                        Title = wm.FinalApproverPosition?.Title ?? string.Empty,
+                        Code = wm.FinalApproverPosition?.Code ?? string.Empty
+                    },
+                    CurrentUser = finalUser
+                },
                 
-                CreatedAt = matrix.CreatedAt,
-                CreatedBy = matrix.CreatedBy,
-                UpdatedAt = matrix.UpdatedAt,
-                UpdatedBy = matrix.UpdatedBy
+                CreatedAt = wm.CreatedAt,
+                CreatedBy = wm.CreatedBy,
+                UpdatedAt = wm.UpdatedAt,
+                UpdatedBy = wm.UpdatedBy
             };
         }).ToList();
 
         return new PaginatedApiResponse<WorkflowMatrixResponse>(response, request.Page ?? 1, request.PageSize ?? 10, totalCount);
     }
 }
-

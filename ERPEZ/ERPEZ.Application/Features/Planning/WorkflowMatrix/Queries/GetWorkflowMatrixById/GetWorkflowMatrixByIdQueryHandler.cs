@@ -16,19 +16,19 @@ public class GetWorkflowMatrixByIdQueryHandler(IUnitOfWork unitOfWork)
         if (entity == null)
             throw new NotFoundException("Workflow Matrix not found.");
 
-        // Resolve actual users from positions (who currently holds these positions)
+        // Resolve recommending approver user
         var recommendingPersonnel = await unitOfWork.PersonnelPositionRepository.FindAsync(
             pp => pp.PositionId == entity.RecommendingApproverPositionId && pp.IsActive == true,
             cancellationToken);
 
-        var finalPersonnel = await unitOfWork.PersonnelPositionRepository.FindAsync(
-            pp => pp.PositionId == entity.FinalApproverPositionId && pp.IsActive == true,
-            cancellationToken);
-
-        // Get user details if personnel assignments exist
         Domain.Entities.Planning.User? recommendingUser = null;
         if (recommendingPersonnel != null)
             recommendingUser = await unitOfWork.UserRepository.GetByIdAsync(recommendingPersonnel.UserId, cancellationToken);
+
+        // Resolve final approver user
+        var finalPersonnel = await unitOfWork.PersonnelPositionRepository.FindAsync(
+            pp => pp.PositionId == entity.FinalApproverPositionId && pp.IsActive == true,
+            cancellationToken);
 
         Domain.Entities.Planning.User? finalUser = null;
         if (finalPersonnel != null)
@@ -42,24 +42,41 @@ public class GetWorkflowMatrixByIdQueryHandler(IUnitOfWork unitOfWork)
             OfficeId = entity.OfficeId,
             OfficeName = entity.Office?.Name ?? string.Empty,
             DocumentType = entity.DocumentType,
+            Status = entity.Status,
             
-            // Position information
-            RecommendingApproverPositionId = entity.RecommendingApproverPositionId,
-            RecommendingApproverPositionTitle = entity.RecommendingApproverPosition?.Title ?? string.Empty,
+            // Nested recommending approver
+            RecommendingApprover = new ApproverInfo
+            {
+                Position = new PositionInfo
+                {
+                    Id = entity.RecommendingApproverPositionId,
+                    Title = entity.RecommendingApproverPosition?.Title ?? string.Empty,
+                    Code = entity.RecommendingApproverPosition?.Code ?? string.Empty
+                },
+                CurrentUser = recommendingUser != null ? new UserInfo
+                {
+                    Id = recommendingUser.Id,
+                    Name = $"{recommendingUser.FirstName} {recommendingUser.LastName}",
+                    Email = recommendingUser.Email ?? string.Empty
+                } : null
+            },
             
-            FinalApproverPositionId = entity.FinalApproverPositionId,
-            FinalApproverPositionTitle = entity.FinalApproverPosition?.Title ?? string.Empty,
-            
-            // Resolved user information (can be null if position is vacant)
-            RecommendingApproverId = recommendingUser?.Id,
-            RecommendingApproverName = recommendingUser != null 
-                ? $"{recommendingUser.FirstName} {recommendingUser.LastName}" 
-                : null,
-            
-            FinalApproverId = finalUser?.Id,
-            FinalApproverName = finalUser != null 
-                ? $"{finalUser.FirstName} {finalUser.LastName}" 
-                : null,
+            // Nested final approver
+            FinalApprover = new ApproverInfo
+            {
+                Position = new PositionInfo
+                {
+                    Id = entity.FinalApproverPositionId,
+                    Title = entity.FinalApproverPosition?.Title ?? string.Empty,
+                    Code = entity.FinalApproverPosition?.Code ?? string.Empty
+                },
+                CurrentUser = finalUser != null ? new UserInfo
+                {
+                    Id = finalUser.Id,
+                    Name = $"{finalUser.FirstName} {finalUser.LastName}",
+                    Email = finalUser.Email ?? string.Empty
+                } : null
+            },
             
             CreatedAt = entity.CreatedAt,
             CreatedBy = entity.CreatedBy,
