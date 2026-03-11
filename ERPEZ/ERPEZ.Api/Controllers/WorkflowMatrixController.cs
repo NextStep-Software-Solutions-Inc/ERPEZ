@@ -1,7 +1,9 @@
 using ERPEZ.Application.Features.Planning.WorkflowMatrix.Commands.CreateWorkflowMatrix;
 using ERPEZ.Application.Features.Planning.WorkflowMatrix.Commands.DeleteWorkflowMatrix;
 using ERPEZ.Application.Features.Planning.WorkflowMatrix.Commands.UpdateWorkflowMatrix;
+using ERPEZ.Application.Features.Planning.WorkflowMatrix.Commands.UpdateWorkflowMatrixStatus;
 using ERPEZ.Application.Features.Planning.WorkflowMatrix.Dtos;
+using ERPEZ.Application.Features.Planning.WorkflowMatrix.Queries.ResolveWorkflowMatrixApprovers;
 using ERPEZ.Application.Features.Planning.WorkflowMatrix.Queries.GetWorkflowMatrices;
 using ERPEZ.Application.Features.Planning.WorkflowMatrix.Queries.GetWorkflowMatrixById;
 using ERPEZ.Shared.Common;
@@ -14,6 +16,37 @@ namespace ERPEZ.Api.Controllers;
 [ApiController]
 public class WorkflowMatrixController(ISender mediator) : ControllerBase
 {
+    [HttpPost]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> CreateWorkflowMatrix([FromBody] CreateWorkflowMatrixCommand command)
+    {
+        var result = await mediator.Send(command);
+
+        if (!result.Succeeded)
+            return BadRequest(result);
+
+        return CreatedAtAction(nameof(GetWorkflowMatrixById), new { id = result.Data }, result);
+    }
+
+    [HttpPost("resolve-approvers")]
+    [ProducesResponseType(typeof(ApiResponse<ResolveWorkflowMatrixApproversResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<ResolveWorkflowMatrixApproversResponse>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<ResolveWorkflowMatrixApproversResponse>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<ResolveWorkflowMatrixApproversResponse>), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> ResolveApprovers([FromBody] ResolveWorkflowMatrixApproversRequest request)
+    {
+        var query = new ResolveWorkflowMatrixApproversQuery
+        {
+            OfficeId = request.OfficeId,
+            RecommendingApproverUserId = request.RecommendingApproverUserId,
+            FinalApproverUserId = request.FinalApproverUserId
+        };
+
+        var result = await mediator.Send(query);
+        return Ok(result);
+    }
+    
     [HttpGet]
     [ProducesResponseType(typeof(PaginatedApiResponse<WorkflowMatrixResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetWorkflowMatrices([FromQuery] GetWorkflowMatricesQuery query)
@@ -31,19 +64,6 @@ public class WorkflowMatrixController(ISender mediator) : ControllerBase
         return result.Succeeded ? Ok(result) : NotFound(result);
     }
 
-    [HttpPost]
-    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> CreateWorkflowMatrix([FromBody] CreateWorkflowMatrixCommand command)
-    {
-        var result = await mediator.Send(command);
-
-        if (!result.Succeeded)
-            return BadRequest(result);
-
-        return CreatedAtAction(nameof(GetWorkflowMatrixById), new { id = result.Data }, result);
-    }
-
     [HttpPut("{id:guid}")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
@@ -53,7 +73,9 @@ public class WorkflowMatrixController(ISender mediator) : ControllerBase
         var command = new UpdateWorkflowMatrixCommand
         {
             Id = id,
-            DocumentType = request.DocumentType
+            DocumentType = request.DocumentType,
+            RecommendingApproverPositionId = request.RecommendingApproverPositionId,
+            FinalApproverPositionId = request.FinalApproverPositionId
         };
 
         var result = await mediator.Send(command);
@@ -71,5 +93,21 @@ public class WorkflowMatrixController(ISender mediator) : ControllerBase
             return NotFound(result);
 
         return NoContent();
+    }
+
+    [HttpPatch("{id:guid}/status")]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateWorkflowMatrixStatus(Guid id, [FromBody] UpdateWorkflowMatrixStatusRequest request)
+    {
+        var command = new UpdateWorkflowMatrixStatusCommand
+        {
+            Id = id,
+            Status = request.Status
+        };
+
+        var result = await mediator.Send(command);
+        return result.Succeeded ? Ok(result) : NotFound(result);
     }
 }

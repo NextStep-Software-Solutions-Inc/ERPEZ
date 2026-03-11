@@ -5,7 +5,9 @@ namespace ERPEZ.Application.Features.Planning.WorkflowMatrix.Commands.CreateWork
 
 public record CreateWorkflowMatrixCommand : IRequest<ApiResponse<Guid>>
 {
+    public Guid OfficeId { get; init; }
     public Guid FiscalYearId { get; init; }
-    public Guid OrganizationId { get; init; }
+    public Guid RecommendingApproverPositionId { get; init; }
+    public Guid FinalApproverPositionId { get; init; }
     public string? DocumentType { get; init; }
 }
