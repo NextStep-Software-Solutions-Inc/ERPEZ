@@ -3,6 +3,7 @@ using ERPEZ.Application.Features.Planning.WorkflowMatrix.Commands.DeleteWorkflow
 using ERPEZ.Application.Features.Planning.WorkflowMatrix.Commands.UpdateWorkflowMatrix;
 using ERPEZ.Application.Features.Planning.WorkflowMatrix.Commands.UpdateWorkflowMatrixStatus;
 using ERPEZ.Application.Features.Planning.WorkflowMatrix.Dtos;
+using ERPEZ.Application.Features.Planning.WorkflowMatrix.Queries.ResolveWorkflowMatrixApprovers;
 using ERPEZ.Application.Features.Planning.WorkflowMatrix.Queries.GetWorkflowMatrices;
 using ERPEZ.Application.Features.Planning.WorkflowMatrix.Queries.GetWorkflowMatrixById;
 using ERPEZ.Shared.Common;
@@ -26,6 +27,24 @@ public class WorkflowMatrixController(ISender mediator) : ControllerBase
             return BadRequest(result);
 
         return CreatedAtAction(nameof(GetWorkflowMatrixById), new { id = result.Data }, result);
+    }
+
+    [HttpPost("resolve-approvers")]
+    [ProducesResponseType(typeof(ApiResponse<ResolveWorkflowMatrixApproversResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<ResolveWorkflowMatrixApproversResponse>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<ResolveWorkflowMatrixApproversResponse>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<ResolveWorkflowMatrixApproversResponse>), StatusCodes.Status409Conflict)]
+    public async Task<IActionResult> ResolveApprovers([FromBody] ResolveWorkflowMatrixApproversRequest request)
+    {
+        var query = new ResolveWorkflowMatrixApproversQuery
+        {
+            OfficeId = request.OfficeId,
+            RecommendingApproverUserId = request.RecommendingApproverUserId,
+            FinalApproverUserId = request.FinalApproverUserId
+        };
+
+        var result = await mediator.Send(query);
+        return Ok(result);
     }
     
     [HttpGet]

@@ -89,7 +89,6 @@ Authorization: Bearer {your-jwt-token}
   "fiscalYearId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
   "officeId": "3fa85f64-5717-4562-b3fc-2c963f66afa7",
   "documentType": "WFP",
-  "status": "Active",
   "recommendingApproverPositionId": "3fa85f64-5717-4562-b3fc-2c963f66afa8",
   "finalApproverPositionId": "3fa85f64-5717-4562-b3fc-2c963f66afa9"
 }
@@ -253,7 +252,8 @@ POST /api/workflow-matrices
 1. Create a workflow (use Scenario 1 data)
 2. Attempt to create the same workflow again
 
-**Request**: (Same as Scenario 1)
+
+**Request**: (Same as Scenario 1)x`
 
 **Expected Result**:
 - ❌ Status Code: `400 Bad Request` or `409 Conflict`
@@ -375,7 +375,6 @@ VALUES
 | `fiscalYearId` | Required, must exist | "Fiscal Year is required." / "Fiscal Year not found." |
 | `officeId` | Required, must exist | "Office is required." / "Office not found." |
 | `documentType` | Optional (nullable) | - |
-| `status` | Required | "Status is required." |
 | `recommendingApproverPositionId` | Required, must exist | "Recommending Approver Position is required." / "Recommending Approver Position not found." |
 | `finalApproverPositionId` | Required, must exist | "Final Approver Position is required." / "Final Approver Position not found." |
 | **Uniqueness** | FiscalYear + Office + DocumentType must be unique | "A Workflow Matrix for this Fiscal Year, Office, and Document Type already exists." |
@@ -404,7 +403,6 @@ curl -X POST "http://localhost:5000/api/workflow-matrices" \
     "fiscalYearId": "3fa85f64-5717-4562-b3fc-2c963f66afa6",
     "officeId": "3fa85f64-5717-4562-b3fc-2c963f66afa7",
     "documentType": "WFP",
-    "status": "Active",
     "recommendingApproverPositionId": "3fa85f64-5717-4562-b3fc-2c963f66afa8",
     "finalApproverPositionId": "3fa85f64-5717-4562-b3fc-2c963f66afa9"
   }'
@@ -563,7 +561,6 @@ public async Task CreateWorkflowMatrix_ValidData_ReturnsCreated()
         FiscalYearId = _testFiscalYearId,
         OfficeId = _testOfficeId,
         DocumentType = "WFP",
-        Status = "Active",
         RecommendingApproverPositionId = _testPositionId1,
         FinalApproverPositionId = _testPositionId2
     };
