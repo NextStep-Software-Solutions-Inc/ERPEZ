@@ -1,6 +1,5 @@
 using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Domain.Interfaces;
-using ERPEZ.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Sieve.Services;
 
@@ -29,10 +28,24 @@ public class WorkflowMatrixRepository : Repository<WorkflowMatrix>, IWorkflowMat
     public IQueryable<WorkflowMatrix> GetAllWithNavigation()
     {
         return dbContext.WorkflowMatrices!
+            .AsNoTracking()
             .Include(x => x.FiscalYear)
             .Include(x => x.Office)
             .Include(x => x.RecommendingApproverPosition)
             .Include(x => x.FinalApproverPosition)
             .Where(x => !x.IsDeleted);
+    }
+
+    public async Task<(List<WorkflowMatrix> Items, int TotalCount)> GetPagedWithNavigationAsync(int page, int pageSize, CancellationToken cancellationToken = default)
+    {
+        var query = GetAllWithNavigation();
+        
+        var totalCount = await query.CountAsync(cancellationToken);
+        var items = await query
+            .Skip((page - 1) * pageSize)
+            .Take(pageSize)
+            .ToListAsync(cancellationToken);
+
+        return (items, totalCount);
     }
 }

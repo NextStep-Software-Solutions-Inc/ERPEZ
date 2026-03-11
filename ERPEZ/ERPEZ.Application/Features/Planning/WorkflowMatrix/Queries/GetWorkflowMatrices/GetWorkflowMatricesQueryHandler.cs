@@ -19,17 +19,11 @@ public class GetWorkflowMatricesQueryHandler(IUnitOfWork unitOfWork)
             PageSize = request.PageSize
         };
 
-        // Get workflow matrices with navigation properties from Repository (No EF Core in Application layer)
-        var query = unitOfWork.WorkflowMatrixRepository.GetAllWithNavigation();
-        
-        // Count total before pagination
-        var totalCount = query.Count();
-        
-        // Apply pagination
-        var matrices = query
-            .Skip(((sieveModel.Page ?? 1) - 1) * (sieveModel.PageSize ?? 10))
-            .Take(sieveModel.PageSize ?? 10)
-            .ToList();
+        // Get workflow matrices with count from Repository (uses async pagination)
+        var (matrices, totalCount) = await unitOfWork.WorkflowMatrixRepository.GetPagedWithNavigationAsync(
+            sieveModel.Page ?? 1,
+            sieveModel.PageSize ?? 10,
+            cancellationToken);
 
         // Collect all unique position IDs for batch loading
         var positionIds = matrices

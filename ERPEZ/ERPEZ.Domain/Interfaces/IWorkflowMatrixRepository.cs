@@ -15,4 +15,9 @@ public interface IWorkflowMatrixRepository : IRepository<WorkflowMatrix>
     /// Returns IQueryable for further filtering and pagination.
     /// </summary>
     IQueryable<WorkflowMatrix> GetAllWithNavigation();
+
+    /// <summary>
+    /// Get paged workflow matrices with count for pagination.
+    /// </summary>
+    Task<(List<WorkflowMatrix> Items, int TotalCount)> GetPagedWithNavigationAsync(int page, int pageSize, CancellationToken cancellationToken = default);
 }

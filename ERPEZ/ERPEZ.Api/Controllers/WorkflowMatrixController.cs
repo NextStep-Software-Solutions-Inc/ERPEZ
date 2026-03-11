@@ -15,6 +15,19 @@ namespace ERPEZ.Api.Controllers;
 [ApiController]
 public class WorkflowMatrixController(ISender mediator) : ControllerBase
 {
+    [HttpPost]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> CreateWorkflowMatrix([FromBody] CreateWorkflowMatrixCommand command)
+    {
+        var result = await mediator.Send(command);
+
+        if (!result.Succeeded)
+            return BadRequest(result);
+
+        return CreatedAtAction(nameof(GetWorkflowMatrixById), new { id = result.Data }, result);
+    }
+    
     [HttpGet]
     [ProducesResponseType(typeof(PaginatedApiResponse<WorkflowMatrixResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetWorkflowMatrices([FromQuery] GetWorkflowMatricesQuery query)
@@ -30,19 +43,6 @@ public class WorkflowMatrixController(ISender mediator) : ControllerBase
     {
         var result = await mediator.Send(new GetWorkflowMatrixByIdQuery(id));
         return result.Succeeded ? Ok(result) : NotFound(result);
-    }
-
-    [HttpPost]
-    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> CreateWorkflowMatrix([FromBody] CreateWorkflowMatrixCommand command)
-    {
-        var result = await mediator.Send(command);
-
-        if (!result.Succeeded)
-            return BadRequest(result);
-
-        return CreatedAtAction(nameof(GetWorkflowMatrixById), new { id = result.Data }, result);
     }
 
     [HttpPut("{id:guid}")]
