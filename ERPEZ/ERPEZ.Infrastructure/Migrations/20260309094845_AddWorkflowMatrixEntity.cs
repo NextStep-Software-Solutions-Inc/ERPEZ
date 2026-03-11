@@ -53,6 +53,26 @@ namespace ERPEZ.Infrastructure.Migrations
                 nullable: false,
                 defaultValue: "Inactive");
 
+            // Development safety cleanup:
+            // Old rows may reference Organization/User IDs that no longer map to Office/Position IDs.
+            // Remove orphaned rows before adding new FKs to avoid migration failure.
+            migrationBuilder.Sql(@"
+                DELETE FROM planning.""WorkflowMatrices"" wm
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM planning.""Offices"" o WHERE o.""Id"" = wm.""OfficeId""
+                );
+            ");
+
+            migrationBuilder.Sql(@"
+                DELETE FROM planning.""WorkflowMatrices"" wm
+                WHERE NOT EXISTS (
+                    SELECT 1 FROM planning.""Positions"" p WHERE p.""Id"" = wm.""RecommendingApproverPositionId""
+                )
+                OR NOT EXISTS (
+                    SELECT 1 FROM planning.""Positions"" p WHERE p.""Id"" = wm.""FinalApproverPositionId""
+                );
+            ");
+
             migrationBuilder.CreateIndex(
                 name: "IX_WorkflowMatrices_FinalApproverPositionId",
                 schema: "planning",
