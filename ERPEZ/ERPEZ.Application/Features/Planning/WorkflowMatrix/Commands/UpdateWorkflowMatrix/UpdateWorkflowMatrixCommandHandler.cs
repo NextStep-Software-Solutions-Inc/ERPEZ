@@ -15,7 +15,19 @@ public class UpdateWorkflowMatrixCommandHandler(IUnitOfWork unitOfWork)
             throw new NotFoundException("Workflow Matrix not found.");
 
         if (request.DocumentType != null)
+        {
+            var conflictingMatrix = await unitOfWork.WorkflowMatrixRepository.FindAsync(
+                x => x.Id != request.Id &&
+                     x.FiscalYearId == entity.FiscalYearId &&
+                     x.OfficeId == entity.OfficeId &&
+                     x.DocumentType == request.DocumentType,
+                cancellationToken);
+
+            if (conflictingMatrix != null)
+                throw new ConflictException("Workflow Matrix already exists for this Fiscal Year, Office, and Document Type combination.");
+
             entity.DocumentType = request.DocumentType;
+        }
 
         if (request.RecommendingApproverPositionId.HasValue)
         {

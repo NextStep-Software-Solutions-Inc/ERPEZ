@@ -5171,6 +5171,10 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("RecommendingApproverPositionId");
 
+                    b.HasIndex("FiscalYearId", "OfficeId")
+                        .IsUnique()
+                        .HasFilter("\"IsDeleted\" = false AND \"DocumentType\" IS NULL");
+
                     b.HasIndex("FiscalYearId", "OfficeId", "DocumentType")
                         .IsUnique()
                         .HasFilter("\"IsDeleted\" = false");

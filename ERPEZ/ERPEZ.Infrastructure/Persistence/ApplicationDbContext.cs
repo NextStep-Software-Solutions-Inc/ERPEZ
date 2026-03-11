@@ -468,6 +468,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .IsUnique()
             .HasFilter("\"IsDeleted\" = false"); // Partial index - only enforce uniqueness for non-deleted records
 
+        modelBuilder.Entity<WorkflowMatrix>()
+            .HasIndex(wm => new { wm.FiscalYearId, wm.OfficeId })
+            .IsUnique()
+            .HasFilter("\"IsDeleted\" = false AND \"DocumentType\" IS NULL"); // One default workflow per FiscalYear and Office
+
         //WFP
         modelBuilder.Entity<WFP>()
             .HasIndex(w => new { w.OfficeId, w.FiscalYearId });

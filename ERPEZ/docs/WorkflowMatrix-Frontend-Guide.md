@@ -259,10 +259,6 @@ const validateForm = (formData) => {
     errors.push("Final Approver Position is required");
   }
   
-  if (!formData.status) {
-    errors.push("Status is required");
-  }
-  
   return errors;
 };
 ```
@@ -310,8 +306,7 @@ const WorkflowMatrixForm = () => {
     officeId: '',
     recommendingApproverPositionId: '',
     finalApproverPositionId: '',
-    documentType: 'WFP',
-    status: 'Active'
+    documentType: 'WFP'
   });
 
   useEffect(() => {

@@ -1,4 +1,5 @@
 using ERPEZ.Domain.Entities.Planning;
+using Sieve.Models;
 
 namespace ERPEZ.Domain.Interfaces;
 
@@ -19,5 +20,5 @@ public interface IWorkflowMatrixRepository : IRepository<WorkflowMatrix>
     /// <summary>
     /// Get paged workflow matrices with count for pagination.
     /// </summary>
-    Task<(List<WorkflowMatrix> Items, int TotalCount)> GetPagedWithNavigationAsync(int page, int pageSize, CancellationToken cancellationToken = default);
+    Task<(List<WorkflowMatrix> Items, int TotalCount)> GetPagedWithNavigationAsync(SieveModel sieveModel, CancellationToken cancellationToken = default);
 }

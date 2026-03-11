@@ -11,19 +11,24 @@ public class GetWorkflowMatricesQueryHandler(IUnitOfWork unitOfWork)
 {
     public async Task<PaginatedApiResponse<WorkflowMatrixResponse>> Handle(GetWorkflowMatricesQuery request, CancellationToken cancellationToken)
     {
+        var page = request.Page.GetValueOrDefault(1);
+        if (page < 1)
+            page = 1;
+
+        var pageSize = request.PageSize.GetValueOrDefault(10);
+        if (pageSize <= 0)
+            pageSize = 10;
+
         var sieveModel = new SieveModel
         {
             Filters = request.Filters,
             Sorts = request.Sorts,
-            Page = request.Page,
-            PageSize = request.PageSize
+            Page = page,
+            PageSize = pageSize
         };
 
         // Get workflow matrices with count from Repository (uses async pagination)
-        var (matrices, totalCount) = await unitOfWork.WorkflowMatrixRepository.GetPagedWithNavigationAsync(
-            sieveModel.Page ?? 1,
-            sieveModel.PageSize ?? 10,
-            cancellationToken);
+        var (matrices, totalCount) = await unitOfWork.WorkflowMatrixRepository.GetPagedWithNavigationAsync(sieveModel, cancellationToken);
 
         // Collect all unique position IDs for batch loading
         var positionIds = matrices
@@ -119,6 +124,6 @@ public class GetWorkflowMatricesQueryHandler(IUnitOfWork unitOfWork)
             };
         }).ToList();
 
-        return new PaginatedApiResponse<WorkflowMatrixResponse>(response, request.Page ?? 1, request.PageSize ?? 10, totalCount);
+        return new PaginatedApiResponse<WorkflowMatrixResponse>(response, page, pageSize, totalCount);
     }
 }

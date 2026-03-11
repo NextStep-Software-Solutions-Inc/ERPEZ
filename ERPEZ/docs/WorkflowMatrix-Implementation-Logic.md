@@ -137,7 +137,8 @@ if (existingMatrix != null)
 - Prevents duplicate approval routing for same document type
 
 **Edge Cases**:
-- `DocumentType = null` is treated as distinct value (applies to all documents)
+- `DocumentType = null` means default workflow (applies to all documents)
+- Only one default workflow is allowed per `(FiscalYear, Office)`
 - Two workflows can exist for same Office+FiscalYear if DocumentType differs:
   - Workflow 1: Office A + FY 2026 + "WFP"
   - Workflow 2: Office A + FY 2026 + "Budget"
@@ -154,7 +155,7 @@ var entity = new WorkflowMatrix
     FiscalYearId = request.FiscalYearId,
     OfficeId = request.OfficeId,
     DocumentType = request.DocumentType,
-    Status = request.Status,
+  Status = "Inactive",
     RecommendingApproverPositionId = request.RecommendingApproverPositionId,
     FinalApproverPositionId = request.FinalApproverPositionId
 };
@@ -163,6 +164,7 @@ var entity = new WorkflowMatrix
 **Logic**:
 - Generate new GUID for entity ID
 - Map all request properties to entity
+- Initialize `Status` to `Inactive` on create
 - **Note**: User IDs are NOT stored - only Position IDs
 - BaseEntity properties (CreatedAt, CreatedBy) auto-populated by EF Core interceptor
 
@@ -234,9 +236,6 @@ RuleFor(x => x.FiscalYearId)
 
 RuleFor(x => x.OfficeId)
     .NotEmpty().WithMessage("Office is required.");
-
-RuleFor(x => x.Status)
-    .NotEmpty().WithMessage("Status is required.");
 
 RuleFor(x => x.RecommendingApproverPositionId)
     .NotEmpty().WithMessage("Recommending Approver Position is required.");
