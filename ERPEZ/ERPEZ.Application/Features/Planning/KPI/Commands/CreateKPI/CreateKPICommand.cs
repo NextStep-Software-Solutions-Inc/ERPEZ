@@ -1,7 +1,4 @@
 using System.Text.Json.Serialization;
-using ERPEZ.Application.Features.Planning.KPIModeOfVerification.Dtos;
-using ERPEZ.Application.Features.Planning.Rating.Dtos;
-using ERPEZ.Application.Features.Planning.KPITarget.Dtos;
 using ERPEZ.Shared.Common;
 using MediatR;
 
@@ -25,23 +22,4 @@ public record CreateKPICommand : IRequest<ApiResponse<Guid>>
     public List<Guid> SDGIds { get; init; } = [];
     [JsonPropertyName("AttributeIds")]
     public List<Guid> AttributeIds { get; init; } = [];
-    [JsonPropertyName("KPIMeasurements")]
-    public List<CreateKPIMeasurementRequest> KPIMeasurements { get; init; } = [];
-    
-    // Legacy support - can be deprecated later
-    [JsonPropertyName("KPIRatings")]
-    public List<CreateRatingRequest> KPIRatings { get; init; } = [];
-    [JsonPropertyName("KPITargets")]
-    public List<CreateKPITargetRequest> KPITargets { get; init; } = [];
-    [JsonPropertyName("KPIMOVs")]
-    public List<CreateKPIMOVRequest> KPIMOVs { get; init; } = [];
-}
-
-public record CreateKPIMeasurementRequest
-{
-    public string Dimension { get; init; } = string.Empty;
-    public Guid? RatingScaleTemplateId { get; init; }
-    public List<string> MOVs { get; init; } = [];
-    public bool IsMOVEditable { get; init; } = true;
-    public bool IsScaleEditable { get; init; } = true;
 }
