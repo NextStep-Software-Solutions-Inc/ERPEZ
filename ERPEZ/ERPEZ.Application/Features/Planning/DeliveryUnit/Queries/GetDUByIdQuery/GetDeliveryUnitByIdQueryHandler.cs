@@ -40,7 +40,8 @@ public class GetDeliveryUnitByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestH
                     Id = ka.KPI.Id,
                     Name = ka.KPI.Name,
                     Description = ka.KPI.Description,
-                    FunctionType = ka.KPI.FunctionType,
+                    // TODO: Version 2 - FunctionType replaced with FunctionCategory
+                    // FunctionType = ka.KPI.FunctionCategory,
                     MFOPAP = ka.KPI.MFOPAP != null ? new MFOPAPResponse
                     {
                         Id = ka.KPI.MFOPAP.Id,
@@ -68,7 +69,8 @@ public class GetDeliveryUnitByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestH
                     Id = subKPI.Id,
                     Name = subKPI.Name,
                     Description = subKPI.Description,
-                    FunctionType = subKPI.FunctionType,
+                    // TODO: Version 2 - FunctionType replaced with FunctionCategory
+                    // FunctionType = subKPI.FunctionCategory,
                     SDGs = subKPI.SDGs.Select(sdg => sdg.Name).ToList(),
                     AllocatedTargetValue = subKPI.KPITargetAssignments
                         .Where(a => a.KPIId == subKPI.Id && a.DeliveryUnitId == du.Id)
@@ -103,7 +105,8 @@ public class GetDeliveryUnitByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestH
                         Id = ka.KPI.Id,
                         Name = ka.KPI.Name,
                         Description = ka.KPI.Description,
-                        FunctionType = ka.KPI.FunctionType,
+                        // TODO: Version 2 - FunctionType replaced with FunctionCategory
+                        // FunctionType = ka.KPI.FunctionCategory,
                         MFOPAP = ka.KPI.MFOPAP != null ? new MFOPAPResponse
                         {
                             Id = ka.KPI.MFOPAP.Id,
@@ -131,7 +134,8 @@ public class GetDeliveryUnitByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestH
                         Id = subKPI.Id,
                         Name = subKPI.Name,
                         Description = subKPI.Description,
-                        FunctionType = subKPI.FunctionType,
+                        // TODO: Version 2 - FunctionType replaced with FunctionCategory
+                        // FunctionType = subKPI.FunctionCategory,
                         SDGs = subKPI.SDGs.Select(sdg => sdg.Name).ToList(),
                         AllocatedTargetValue = subKPI.KPITargetAssignments
                             .Where(a => a.KPIId == subKPI.Id && a.DeliveryUnitId == subDU.Id)
