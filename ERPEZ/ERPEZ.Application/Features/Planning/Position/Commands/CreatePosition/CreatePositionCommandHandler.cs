@@ -67,7 +67,6 @@ public class CreatePositionCommandHandler(IUnitOfWork unitOfWork)
         // Create entity
         var position = new Domain.Entities.Planning.Position
         {
-            Id = Guid.NewGuid(),
             Title = request.Title,
             FunctionalTitle = request.FunctionalTitle,
             Code = request.Code,
