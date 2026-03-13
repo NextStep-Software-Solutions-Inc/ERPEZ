@@ -84,6 +84,12 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly ISupplierRepository supplierRepository;
     private readonly ISupplierRequirementRepository supplierRequirementRepository;
     private readonly ISupplierCategoryRepository supplierCategoryRepository;
+    private readonly IKPIMeasurementRepository kpiMeasurementRepository;
+    private readonly IFYActiveKPIRepository fyActiveKPIRepository;
+    private readonly IFYActiveKPIMeasurementRepository fyActiveKPIMeasurementRepository;
+    private readonly IKPIAssignmentRepository kpiAssignmentRepository;
+    private readonly IRatingScaleTemplateRepository ratingScaleTemplateRepository;
+    private readonly IRatingScaleLevelRepository ratingScaleLevelRepository;
 
     // Constructor initializes all repositories once
     public UnitOfWork(ApplicationDbContext context, IServiceProvider serviceProvider)
@@ -165,6 +171,12 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         supplierRepository = new SupplierRepository(context, sieveProcessor);
         supplierRequirementRepository = new SupplierRequirementRepository(context, sieveProcessor);
         supplierCategoryRepository = new SupplierCategoryRepository(context, sieveProcessor);
+        kpiMeasurementRepository = new KPIMeasurementRepository(context, sieveProcessor);
+        fyActiveKPIRepository = new FYActiveKPIRepository(context, sieveProcessor);
+        fyActiveKPIMeasurementRepository = new FYActiveKPIMeasurementRepository(context, sieveProcessor);
+        kpiAssignmentRepository = new KPIAssignmentRepository(context, sieveProcessor);
+        ratingScaleTemplateRepository = new RatingScaleTemplateRepository(context, sieveProcessor);
+        ratingScaleLevelRepository = new RatingScaleLevelRepository(context, sieveProcessor);
     }
 
     // Public properties return cached instances
@@ -235,6 +247,12 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IFunctionConfigRepository FunctionConfigRepository => functionConfigRepository;
     public IProcurementPolicyConfigRepository ProcurementPolicyConfigRepository => procurementPolicyConfigRepository;
     public IGeneralRatingScaleRepository GeneralRatingScaleRepository => generalRatingScaleRepository;
+    public IKPIMeasurementRepository KPIMeasurementRepository => kpiMeasurementRepository;
+    public IFYActiveKPIRepository FYActiveKPIRepository => fyActiveKPIRepository;
+    public IFYActiveKPIMeasurementRepository FYActiveKPIMeasurementRepository => fyActiveKPIMeasurementRepository;
+    public IKPIAssignmentRepository KPIAssignmentRepository => kpiAssignmentRepository;
+    public IRatingScaleTemplateRepository RatingScaleTemplateRepository => ratingScaleTemplateRepository;
+    public IRatingScaleLevelRepository RatingScaleLevelRepository => ratingScaleLevelRepository;
     public IEconomicIndicatorRepository EconomicIndicatorRepository => economicIndicatorRepository;
     public IWorkflowMatrixRepository WorkflowMatrixRepository => workflowMatrixRepository;
     public IItemPriceRepository ItemPriceRepository => itemPriceRepository;
