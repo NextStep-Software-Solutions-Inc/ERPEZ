@@ -30,7 +30,6 @@ public class CreateItemPriceCommandHandler(IUnitOfWork unitOfWork)
 
         var entity = new Domain.Entities.Planning.ItemPrice
         {
-            Id = Guid.NewGuid(),
             ProcurementItemId = request.ProcurementItemId,
             FiscalYearId = request.FiscalYearId,
             UnitPrice = request.UnitPrice

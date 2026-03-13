@@ -16,7 +16,6 @@ public class CreateSupplierRequirementCommandHandler(IUnitOfWork unitOfWork)
 
         var entity = new Domain.Entities.Planning.SupplierRequirement
         {
-            Id = Guid.NewGuid(),
             SupplierId = request.SupplierId,
             RequirementName = request.RequirementName,
             URL = request.URL,

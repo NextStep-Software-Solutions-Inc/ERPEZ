@@ -65,7 +65,8 @@ public class GetOPCRByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<G
                             Id = ka.KPI.Id,
                             Name = ka.KPI.Name,
                             Description = ka.KPI.Description,
-                            FunctionType = ka.KPI.FunctionType,
+                            // TODO: Version 2 - FunctionType replaced with FunctionCategory
+                            // FunctionType = ka.KPI.FunctionCategory,
                             SDGs = ka.KPI.SDGs.Select(s => s.Name).ToList(),
                             MFOPAP = ka.KPI.MFOPAP != null ? new MFOPAPResponse
                             {
