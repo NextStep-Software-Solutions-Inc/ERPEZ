@@ -55,12 +55,13 @@ public class UpdateKPIsForDeliveryUnitCommandHandler(IUnitOfWork unitOfWork)
 
                     decimal allocatedValue = update.AllocatedTargetValue;
 
-                    if (!kpi.IsTargetValueAllocable)
-                    {
-                        // Automatically set to the full KPI target value for better UX
-                        allocatedValue = kpiTarget.TargetValue;
-                    }
-                    else
+                    // TODO: Version 2 - IsTargetValueAllocable property removed
+                    // if (!kpi.IsTargetValueAllocable)
+                    // {
+                    //     // Automatically set to the full KPI target value for better UX
+                    //     allocatedValue = kpiTarget.TargetValue;
+                    // }
+                    // else
                     {
                         // Check remaining target value
                         var totalPreviouslyAllocated = allocationSums.GetValueOrDefault(update.TargetId, 0);
