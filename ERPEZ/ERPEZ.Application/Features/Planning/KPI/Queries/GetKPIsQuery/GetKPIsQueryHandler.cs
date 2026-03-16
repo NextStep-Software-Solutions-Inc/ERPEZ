@@ -25,6 +25,15 @@ Expression<Func<Domain.Entities.Planning.KPI, KPIResponse>> projection = kpi => 
         {
             Id = kpi.Id,
             ParentKPIId = kpi.ParentKPIId,
+            ParentKPI = kpi.ParentKPI != null ? new Dtos.ParentKPIResponse
+            {
+                Id = kpi.ParentKPI.Id,
+                Name = kpi.ParentKPI.Name,
+                Code = kpi.ParentKPI.Code,
+                Description = kpi.ParentKPI.Description,
+                Status = kpi.ParentKPI.Status,
+                FunctionCategory = kpi.ParentKPI.FunctionCategory
+            } : null,
             MFOPAPId = kpi.MFOPAPId,
             Name = kpi.Name,
             Code = kpi.Code,

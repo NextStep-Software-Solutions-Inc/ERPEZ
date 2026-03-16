@@ -70,10 +70,25 @@ public class GetKPIByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
             Description = m.Description
         }).ToList();
 
+        ParentKPIResponse? parentKpi = null;
+        if (kpi.ParentKPI != null)
+        {
+            parentKpi = new ParentKPIResponse
+            {
+                Id = kpi.ParentKPI.Id,
+                Name = kpi.ParentKPI.Name,
+                Code = kpi.ParentKPI.Code,
+                Description = kpi.ParentKPI.Description,
+                Status = kpi.ParentKPI.Status,
+                FunctionCategory = kpi.ParentKPI.FunctionCategory
+            };
+        }
+
         var dto = new KPIResponse()
         {
             Id = kpi.Id,
             ParentKPIId = kpi.ParentKPIId,
+            ParentKPI = parentKpi,
             MFOPAPId = kpi.MFOPAPId,
             Name = kpi.Name,
             Code = kpi.Code,
