@@ -9,7 +9,6 @@ public class CreateKPICommandValidator : AbstractValidator<CreateKPICommand>
     private readonly string[] validDistributionBehaviors = Enum.GetNames<DistributionBehaviorEnum>();
     private readonly string[] validFunctionCategories = Enum.GetNames<FunctionCategoryEnum>();
     private readonly string[] validMonitoringFrequencies = Enum.GetNames<MonitoringFrequencyEnum>();
-    private readonly string[] validDimensions = Enum.GetNames<DimensionEnum>();
 
     public CreateKPICommandValidator()
     {
@@ -75,29 +74,5 @@ public class CreateKPICommandValidator : AbstractValidator<CreateKPICommand>
         RuleForEach(x => x.AttributeIds)
             .NotEmpty()
             .WithMessage("Attribute ID cannot be empty.");
-
-        // Validate KPIMeasurements (Version 2)
-        RuleForEach(x => x.KPIMeasurements)
-            .ChildRules(measurement =>
-            {
-                measurement.RuleFor(m => m.Dimension)
-                    .NotEmpty()
-                    .WithMessage("Dimension is required.")
-                    .Must(dim => validDimensions.Contains(dim))
-                    .WithMessage($"Dimension must be one of: {string.Join(", ", validDimensions)}.");
-
-                measurement.RuleFor(m => m.RatingScaleTemplateId)
-                    .Must(id => !id.HasValue || id.Value != Guid.Empty)
-                    .WithMessage("If provided, Rating Scale Template ID must be a valid, non-empty GUID.")
-                    .When(m => m.RatingScaleTemplateId.HasValue);
-
-                measurement.RuleFor(m => m.IsMOVEditable)
-                    .NotNull()
-                    .WithMessage("Is MOV Editable must be provided (true or false).");
-
-                measurement.RuleFor(m => m.IsScaleEditable)
-                    .NotNull()
-                    .WithMessage("Is Scale Editable must be provided (true or false).");
-            });
     }
 }

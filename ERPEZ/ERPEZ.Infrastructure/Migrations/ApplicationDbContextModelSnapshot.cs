@@ -794,6 +794,188 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.ToTable("ExpenseClasses", "planning");
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.FYActiveKPI", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("AgencyTargetAnnual")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<decimal?>("AgencyTargetQ1")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<decimal?>("AgencyTargetQ2")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<decimal?>("AgencyTargetQ3")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<decimal?>("AgencyTargetQ4")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(2000)
+                        .HasColumnType("character varying(2000)");
+
+                    b.Property<string>("DistributionBehavior")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<Guid>("FiscalYearId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("FunctionCategory")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsGAD")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsOptInAvailable")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid?>("MFOPAPId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("MasterKPIId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("MeasurementUnit")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("MonitoringFrequency")
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid?>("ParentKPIId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Code");
+
+                    b.HasIndex("FiscalYearId");
+
+                    b.HasIndex("MFOPAPId");
+
+                    b.HasIndex("MasterKPIId");
+
+                    b.HasIndex("ParentKPIId");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("FiscalYearId", "MasterKPIId");
+
+                    b.ToTable("FYActiveKPIs", "planning");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.FYActiveKPIMeasurement", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Dimension")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("FYActiveKPIId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsMOVEditable")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsScaleEditable")
+                        .HasColumnType("boolean");
+
+                    b.PrimitiveCollection<List<string>>("MOVs")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<Guid?>("RatingScaleTemplateId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Dimension");
+
+                    b.HasIndex("FYActiveKPIId");
+
+                    b.HasIndex("RatingScaleTemplateId");
+
+                    b.ToTable("FYActiveKPIMeasurements", "planning");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.FiscalMonth", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1166,6 +1348,10 @@ namespace ERPEZ.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -1182,39 +1368,32 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("text");
 
-                    b.Property<string>("FunctionType")
+                    b.Property<string>("DistributionBehavior")
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("IsAverage")
-                        .HasColumnType("boolean");
+                    b.Property<string>("FunctionCategory")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
-                    b.Property<bool>("IsFixed")
+                    b.Property<bool>("IsGAD")
                         .HasColumnType("boolean");
 
-                    b.Property<bool>("IsGlobal")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("IsMultiple")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("IsOfficeMandate")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("IsPercentage")
-                        .HasColumnType("boolean");
-
-                    b.Property<bool>("IsTargetValueAllocable")
+                    b.Property<bool>("IsOptInAvailable")
                         .HasColumnType("boolean");
 
                     b.Property<Guid?>("MFOPAPId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("MeasurementUnit")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("MonitoringFrequency")
+                        .HasColumnType("text");
 
                     b.Property<string>("Name")
                         .IsRequired()
@@ -1243,6 +1422,132 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("ParentKPIId");
 
                     b.ToTable("KPIs", "planning");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.KPIAssignment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("AssignedTargetAnnual")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<decimal?>("AssignedTargetQ1")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<decimal?>("AssignedTargetQ2")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<decimal?>("AssignedTargetQ3")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<decimal?>("AssignedTargetQ4")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("FYActiveKPIId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsLocked")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("OfficeId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OfficeId");
+
+                    b.HasIndex("FYActiveKPIId", "OfficeId")
+                        .IsUnique();
+
+                    b.ToTable("KPIAssignments", "planning");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.KPIMeasurement", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Dimension")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsMOVEditable")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsScaleEditable")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("KPIId")
+                        .HasColumnType("uuid");
+
+                    b.PrimitiveCollection<List<string>>("MOVs")
+                        .IsRequired()
+                        .HasColumnType("jsonb");
+
+                    b.Property<Guid?>("RatingScaleTemplateId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Dimension");
+
+                    b.HasIndex("KPIId");
+
+                    b.HasIndex("RatingScaleTemplateId");
+
+                    b.ToTable("KPIMeasurements", "planning");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.KPIModeOfVerification", b =>
@@ -3726,6 +4031,114 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.ToTable("Ratings", "planning");
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.RatingScaleLevel", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<decimal>("MaxValue")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<decimal>("MinValue")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<Guid>("RatingScaleTemplateId")
+                        .HasColumnType("uuid");
+
+                    b.Property<int>("RatingValue")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RatingScaleTemplateId", "RatingValue")
+                        .IsUnique();
+
+                    b.ToTable("RatingScaleLevels", "planning");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.RatingScaleTemplate", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("GeneralRatingScaleId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsDefault")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsFixed")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("GeneralRatingScaleId");
+
+                    b.HasIndex("IsDefault");
+
+                    b.HasIndex("Name");
+
+                    b.ToTable("RatingScaleTemplates", "planning");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.SDG", b =>
                 {
                     b.Property<Guid>("Id")
@@ -5377,6 +5790,57 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("FiscalYear");
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.FYActiveKPI", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.FiscalYear", "FiscalYear")
+                        .WithMany()
+                        .HasForeignKey("FiscalYearId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.MFOPAP", "MFOPAP")
+                        .WithMany()
+                        .HasForeignKey("MFOPAPId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.KPI", "MasterKPI")
+                        .WithMany("FYActiveKPIs")
+                        .HasForeignKey("MasterKPIId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.FYActiveKPI", "ParentFYActiveKPI")
+                        .WithMany("ChildFYActiveKPIs")
+                        .HasForeignKey("ParentKPIId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("FiscalYear");
+
+                    b.Navigation("MFOPAP");
+
+                    b.Navigation("MasterKPI");
+
+                    b.Navigation("ParentFYActiveKPI");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.FYActiveKPIMeasurement", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.FYActiveKPI", "FYActiveKPI")
+                        .WithMany("FYActiveKPIMeasurements")
+                        .HasForeignKey("FYActiveKPIId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.RatingScaleTemplate", "RatingScaleTemplate")
+                        .WithMany("FYActiveKPIMeasurements")
+                        .HasForeignKey("RatingScaleTemplateId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("FYActiveKPI");
+
+                    b.Navigation("RatingScaleTemplate");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.FiscalMonth", b =>
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Planning.FiscalYear", "FiscalYear")
@@ -5462,6 +5926,43 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("MFOPAP");
 
                     b.Navigation("ParentKPI");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.KPIAssignment", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.FYActiveKPI", "FYActiveKPI")
+                        .WithMany("KPIAssignments")
+                        .HasForeignKey("FYActiveKPIId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.Office", "Office")
+                        .WithMany()
+                        .HasForeignKey("OfficeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("FYActiveKPI");
+
+                    b.Navigation("Office");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.KPIMeasurement", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.KPI", "KPI")
+                        .WithMany("KPIMeasurements")
+                        .HasForeignKey("KPIId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.RatingScaleTemplate", "RatingScaleTemplate")
+                        .WithMany("KPIMeasurements")
+                        .HasForeignKey("RatingScaleTemplateId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("KPI");
+
+                    b.Navigation("RatingScaleTemplate");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.KPIModeOfVerification", b =>
@@ -6121,6 +6622,27 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("KPIPerformanceMeasure");
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.RatingScaleLevel", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.RatingScaleTemplate", "RatingScaleTemplate")
+                        .WithMany("RatingScaleLevels")
+                        .HasForeignKey("RatingScaleTemplateId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("RatingScaleTemplate");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.RatingScaleTemplate", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.GeneralRatingScale", "GeneralRatingScale")
+                        .WithMany()
+                        .HasForeignKey("GeneralRatingScaleId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("GeneralRatingScale");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.Supplier", b =>
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Planning.SupplierCategory", "SupplierCategory")
@@ -6518,6 +7040,15 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("ObjectExpenseClasses");
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.FYActiveKPI", b =>
+                {
+                    b.Navigation("ChildFYActiveKPIs");
+
+                    b.Navigation("FYActiveKPIMeasurements");
+
+                    b.Navigation("KPIAssignments");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.FiscalYear", b =>
                 {
                     b.Navigation("BudgetCalls");
@@ -6551,6 +7082,10 @@ namespace ERPEZ.Infrastructure.Migrations
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.KPI", b =>
                 {
                     b.Navigation("ChildKPIs");
+
+                    b.Navigation("FYActiveKPIs");
+
+                    b.Navigation("KPIMeasurements");
 
                     b.Navigation("KPIModeOfVerifications");
 
@@ -6727,6 +7262,15 @@ namespace ERPEZ.Infrastructure.Migrations
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.ProcurementWorkflow", b =>
                 {
                     b.Navigation("Offices");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.RatingScaleTemplate", b =>
+                {
+                    b.Navigation("FYActiveKPIMeasurements");
+
+                    b.Navigation("KPIMeasurements");
+
+                    b.Navigation("RatingScaleLevels");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.SalaryGrade", b =>
