@@ -18,52 +18,26 @@ public class GetKPIByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
     {
         var kpi = await unitOfWork.KPIRepository.GetKPIWithDetailsAsync(request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("No data found.");
 
-        var kpiRatings = kpi.KPIPerformanceMeasures
-            .SelectMany(kpm => kpm.Ratings.Select(r => new RatingResponse
-            {
-                Id = r.Id,
-                KPIId = kpm.KPIId,
-                PerformanceMeasureId = kpm.PerformanceMeasureId,
-                NumericalRating = r.NumericalRating,
-                Remarks = r.Remarks,
-            }))
-            .ToList();
-
-        var kpiTargets = kpi.KPITargets
-            .Select(m => new KPITargetResponse
+        // Map KPIMeasurements (Version 2)
+        var kpiMeasurements = kpi.KPIMeasurements
+            .Select(m => new KPIMeasurement.Dtos.KPIMeasurementResponse
             {
                 Id = m.Id,
                 KPIId = m.KPIId,
-                Period = m.Period.ToString(),
-                QuarterName = m.QuarterName,
-                TargetValue = m.TargetValue,
-                RemainingTargetValue = m.TargetValue, // Temporary value, will be calculated below
+                Dimension = m.Dimension,
+                MOVs = m.MOVs,
+                RatingScaleTemplateId = m.RatingScaleTemplateId,
+                IsMOVEditable = m.IsMOVEditable,
+                IsScaleEditable = m.IsScaleEditable,
                 CreatedAt = m.CreatedAt,
                 CreatedBy = m.CreatedBy
             }).ToList();
 
-        // Calculate remaining target values
-        var kpiTargetIds = kpiTargets.Select(t => t.Id).ToList();
-        if (kpiTargetIds.Count != 0)
-        {
-            var allocationsByTarget = await unitOfWork.DUKPITargetAssignmentRepository.GetTotalAllocatedByKPITargetIdsAsync(kpiTargetIds, cancellationToken);
-
-            kpiTargets = [.. kpiTargets.Select(target => target with
-            {
-                RemainingTargetValue = target.TargetValue - 
-                    (allocationsByTarget.TryGetValue(target.Id, out var allocated) ? allocated : 0)
-            })];
-        }
-
-        var modeOfVerification = kpi.KPIModeOfVerifications
-            .Select(m => new KPIModeOfVerificationResponse
-            {
-                Id = m.Id,
-                KPIId = m.KPIId,
-                Name = m.Name,
-                Description = m.Description,
-                Url = m.Url
-            }).ToList();
+        // Legacy collections - not used in Version 2
+        // KPIRatings, KPITargets, KPIModeOfVerifications are now managed differently
+        // Targets are set at FYActiveKPI level
+        // MOVs are stored in KPIMeasurement.MOVs
+        // Ratings use RatingScaleTemplate system
 
         MFOPAPResponse? mfopap = null;
         if (kpi.MFOPAP != null)
@@ -100,18 +74,21 @@ public class GetKPIByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
         {
             Id = kpi.Id,
             ParentKPIId = kpi.ParentKPIId,
-            FunctionType = kpi.FunctionType,
-            Description = kpi.Description,
+            MFOPAPId = kpi.MFOPAPId,
             Name = kpi.Name,
-            IsOfficeMandate = kpi.IsOfficeMandate,
-            IsPercentage = kpi.IsPercentage,
-            IsTargetValueAllocable = kpi.IsTargetValueAllocable,
+            Code = kpi.Code,
+            Description = kpi.Description,
+            MeasurementUnit = kpi.MeasurementUnit,
+            DistributionBehavior = kpi.DistributionBehavior,
+            FunctionCategory = kpi.FunctionCategory,
+            MonitoringFrequency = kpi.MonitoringFrequency,
+            IsOptInAvailable = kpi.IsOptInAvailable,
+            IsGAD = kpi.IsGAD,
             Status = kpi.Status,
-            CreatedBy = kpi.CreatedBy,
-            CreatedAt = kpi.CreatedAt,
-            KPIRatings = kpiRatings,
-            KPITargets = kpiTargets,
-            KPIModeOfVerifications = modeOfVerification,
+            KPIMeasurements = kpiMeasurements,
+            KPIRatings = new List<RatingResponse>(),
+            KPITargets = new List<KPITargetResponse>(),
+            KPIModeOfVerifications = new List<KPIModeOfVerificationResponse>(),
             MFOPAP = mfopap,
             Attributes = attributes,
             SDGs = sdgs
