@@ -1,3 +1,6 @@
+using ERPEZ.Application.Features.Planning.Attribute.Dtos;
+using ERPEZ.Application.Features.Planning.MFOPAP.Dtos;
+using ERPEZ.Application.Features.Planning.SDG.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -58,6 +61,29 @@ public class GetFYActiveKPIByIdQueryHandler(IUnitOfWork unitOfWork)
                 AssignedTargetQ3 = a.AssignedTargetQ3,
                 AssignedTargetQ4 = a.AssignedTargetQ4,
                 IsLocked = a.IsLocked
+            }).ToList() ?? [],
+            MFOPAP = fyActiveKPI.MasterKPI?.MFOPAP != null ? new MFOPAPResponse
+            {
+                Id = fyActiveKPI.MasterKPI.MFOPAP.Id,
+                ParentId = fyActiveKPI.MasterKPI.MFOPAP.ParentId,
+                Name = fyActiveKPI.MasterKPI.MFOPAP.Name,
+                Code = fyActiveKPI.MasterKPI.MFOPAP.Code,
+                Type = fyActiveKPI.MasterKPI.MFOPAP.Type,
+                IsActive = fyActiveKPI.MasterKPI.MFOPAP.IsActive
+            } : null,
+            Attributes = fyActiveKPI.MasterKPI?.Attributes?.Select(a => new AttributeResponse
+            {
+                Id = a.Id,
+                Name = a.Name,
+                Code = a.Code,
+                Description = a.Description,
+                ParentAttributeId = a.ParentAttributeId
+            }).ToList() ?? [],
+            SDGs = fyActiveKPI.MasterKPI?.SDGs?.Select(s => new SDGResponse
+            {
+                Id = s.Id,
+                Name = s.Name,
+                Description = s.Description
             }).ToList() ?? [],
         };
 

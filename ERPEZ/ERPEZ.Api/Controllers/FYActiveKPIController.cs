@@ -10,7 +10,6 @@ using FYActiveKPIDetails = ERPEZ.Application.Features.Planning.FYActiveKPI.Queri
 using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using Sieve.Models;
 
 namespace ERPEZ.Api.Controllers;
 
@@ -59,9 +58,8 @@ public class FYActiveKPIController(ISender mediator) : ControllerBase
 
     [HttpGet]
     [ProducesResponseType(typeof(PaginatedApiResponse<FYActiveKPIResponse>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetFYActiveKPIs([FromQuery] SieveModel sieveModel)
+    public async Task<IActionResult> GetFYActiveKPIs([FromQuery] GetFYActiveKPIsQuery query)
     {
-        var query = new GetFYActiveKPIsQuery(sieveModel);
         var result = await mediator.Send(query);
         return Ok(result);
     }
@@ -78,11 +76,9 @@ public class FYActiveKPIController(ISender mediator) : ControllerBase
     [HttpPut("{id}")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> UpdateFYActiveKPI(Guid id, [FromBody] UpdateFYActiveKPICommand command)
+    public async Task<IActionResult> UpdateFYActiveKPI(Guid id, [FromBody] UpdateFYActiveKPIRequest dto)
     {
-        if (id != command.Id)
-            return BadRequest(ApiResponse<Unit>.Fail("ID mismatch."));
-
+        var command = new UpdateFYActiveKPICommand { Id = id, UpdateFYActiveKPI = dto };
         var result = await mediator.Send(command);
         return result.Succeeded ? Ok(result) : NotFound(result);
     }

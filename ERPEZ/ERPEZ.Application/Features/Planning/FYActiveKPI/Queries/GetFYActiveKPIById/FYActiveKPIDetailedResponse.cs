@@ -1,3 +1,7 @@
+using ERPEZ.Application.Features.Planning.Attribute.Dtos;
+using ERPEZ.Application.Features.Planning.MFOPAP.Dtos;
+using ERPEZ.Application.Features.Planning.SDG.Dtos;
+
 namespace ERPEZ.Application.Features.Planning.FYActiveKPI.Queries.GetFYActiveKPIById;
 
 public record FYActiveKPIDetailedResponse
@@ -25,6 +29,9 @@ public record FYActiveKPIDetailedResponse
     public decimal? AgencyTargetQ4 { get; init; }
     public List<FYActiveKPIMeasurementResponse> Measurements { get; init; } = [];
     public List<KPIAssignmentResponse> Assignments { get; init; } = [];
+    public MFOPAPResponse? MFOPAP { get; init; }
+    public List<AttributeResponse> Attributes { get; init; } = [];
+    public List<SDGResponse> SDGs { get; init; } = [];
     public DateTime CreatedAt { get; init; }
 }
 

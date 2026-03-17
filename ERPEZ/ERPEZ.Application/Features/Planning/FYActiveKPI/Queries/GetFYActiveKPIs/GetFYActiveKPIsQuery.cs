@@ -1,8 +1,7 @@
+using ERPEZ.Application.Common.Queries;
 using ERPEZ.Application.Features.Planning.FYActiveKPI.Dtos;
 using ERPEZ.Shared.Common;
-using MediatR;
-using Sieve.Models;
 
 namespace ERPEZ.Application.Features.Planning.FYActiveKPI.Queries.GetFYActiveKPIs;
 
-public record GetFYActiveKPIsQuery(SieveModel SieveModel) : IRequest<PaginatedApiResponse<FYActiveKPIResponse>>;
+public record GetFYActiveKPIsQuery : PaginatedQuery<PaginatedApiResponse<FYActiveKPIResponse>>;
