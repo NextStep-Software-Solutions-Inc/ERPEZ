@@ -34,13 +34,15 @@ public class FYActiveKPIController(ISender mediator) : ControllerBase
     }
 
     /// <summary>
-    /// Bulk set/update agency targets for activated KPIs
+    /// Bulk set/update agency targets for activated KPIs.
+    /// All KPIs in the batch must belong to the same fiscal year.
     /// </summary>
     [HttpPut("targets/bulk")]
     [ProducesResponseType(typeof(ApiResponse<int>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<int>), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> SetTargets([FromBody] SetFYActiveKPITargetsCommand command)
+    public async Task<IActionResult> SetTargets([FromBody] List<SetTargetRequest> targets)
     {
+        var command = new SetFYActiveKPITargetsCommand(targets);
         var result = await mediator.Send(command);
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
@@ -79,11 +81,7 @@ public class FYActiveKPIController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateFYActiveKPI(Guid id, [FromBody] UpdateFYActiveKPICommand command)
     {
-        if (id != command.Id)
-        {
-            return BadRequest("The ID in the URL does not match the ID in the request body.");
-        }
-        var response = await mediator.Send(command);
+        var response = await mediator.Send(command with { Id = id });
         return Ok(response);
     }
 
