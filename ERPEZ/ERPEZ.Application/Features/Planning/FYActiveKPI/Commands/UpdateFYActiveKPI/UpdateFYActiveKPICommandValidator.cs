@@ -52,7 +52,6 @@ public class UpdateFYActiveKPICommandValidator : AbstractValidator<UpdateFYActiv
             .Must(status => validStatuses.Contains(status!))
             .WithMessage($"Status must be one of: {string.Join(", ", validStatuses)}.")
             .When(x => !string.IsNullOrWhiteSpace(x.Status));
-
     }
 
     private bool BeAValidMeasurementUnit(string? value)

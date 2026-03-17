@@ -20,7 +20,7 @@ public class FYActiveKPIController(ISender mediator) : ControllerBase
     /// <summary>
     /// Activates Master KPIs for a specific fiscal year (Bulk Clone Service)
     /// </summary>
-    [HttpPost("activate")]
+    [HttpPost("activate/bulk")]
     [ProducesResponseType(typeof(ApiResponse<List<FYActiveKPIResponse>>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<List<FYActiveKPIResponse>>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ActivateFYActiveKPI([FromBody] ActivateFYActiveKPICommand command)

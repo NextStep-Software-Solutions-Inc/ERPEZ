@@ -4,7 +4,7 @@ using System.Text.Json.Serialization;
 
 namespace ERPEZ.Application.Features.Planning.FYActiveKPI.Commands.UpdateFYActiveKPI;
 
-public record UpdateFYActiveKPICommand(Guid Id) : IRequest<ApiResponse<Unit>>
+public record UpdateFYActiveKPICommand([property: JsonIgnore] Guid Id) : IRequest<ApiResponse<Unit>>
 {
     public Guid? MFOPAPId { get; init; }
     public string? Name { get; init; }
