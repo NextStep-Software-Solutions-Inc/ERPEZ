@@ -54,11 +54,9 @@ public class KPIMeasurementController(ISender mediator) : ControllerBase
     [HttpPut("{id}")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> UpdateKPIMeasurement(Guid id, [FromBody] UpdateKPIMeasurementCommand command)
+    public async Task<IActionResult> UpdateKPIMeasurement(Guid id, [FromBody] UpdateKPIMeasurementRequest dto)
     {
-        if (id != command.Id)
-            return BadRequest(ApiResponse<Unit>.Fail("ID mismatch."));
-
+        var command = new UpdateKPIMeasurementCommand { Id = id, UpdateKPIMeasurement = dto };
         var result = await mediator.Send(command);
         return result.Succeeded ? Ok(result) : NotFound(result);
     }
