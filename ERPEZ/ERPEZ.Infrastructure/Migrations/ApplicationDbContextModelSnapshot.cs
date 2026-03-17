@@ -954,7 +954,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.PrimitiveCollection<List<string>>("MOVs")
                         .IsRequired()
-                        .HasColumnType("jsonb");
+                        .HasColumnType("text[]");
 
                     b.Property<Guid?>("RatingScaleTemplateId")
                         .HasColumnType("uuid");

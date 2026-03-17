@@ -1077,7 +1077,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<FYActiveKPIMeasurement>()
             .Property(fm => fm.MOVs)
-            .HasColumnType("jsonb");
+            .HasColumnType("text[]");
 
         // KPI Version 2 - KPIAssignment
         modelBuilder.Entity<KPIAssignment>()

@@ -25,6 +25,8 @@ public class KPIRepository : Repository<Domain.Entities.Planning.KPI>, IKPIRepos
                 .ThenInclude(kpm => kpm.Ratings)
             .Include(k => k.KPITargets)
             .Include(k => k.KPIModeOfVerifications)
+            .Include(k => k.KPIMeasurements)
+                .ThenInclude(km => km.RatingScaleTemplate)
             .Include(k => k.MFOPAP)
             .Include(k => k.SDGs)
             .Include(k => k.Attributes)
