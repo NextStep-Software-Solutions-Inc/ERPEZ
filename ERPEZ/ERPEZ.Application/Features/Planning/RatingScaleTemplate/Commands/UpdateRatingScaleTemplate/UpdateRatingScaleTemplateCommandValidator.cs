@@ -10,14 +10,18 @@ public class UpdateRatingScaleTemplateCommandValidator : AbstractValidator<Updat
             .NotEmpty()
             .WithMessage("Rating Scale Template ID is required.");
 
-        RuleFor(x => x.Name)
+        RuleFor(x => x.UpdateRatingScaleTemplate)
+            .NotNull()
+            .WithMessage("Update data is required.");
+
+        RuleFor(x => x.UpdateRatingScaleTemplate.Name)
             .MaximumLength(200)
             .WithMessage("Name cannot exceed 200 characters.")
-            .When(x => !string.IsNullOrWhiteSpace(x.Name));
+            .When(x => !string.IsNullOrWhiteSpace(x.UpdateRatingScaleTemplate.Name));
 
-        RuleFor(x => x.Description)
+        RuleFor(x => x.UpdateRatingScaleTemplate.Description)
             .MaximumLength(1000)
             .WithMessage("Description cannot exceed 1000 characters.")
-            .When(x => x.Description != null);
+            .When(x => x.UpdateRatingScaleTemplate.Description != null);
     }
 }

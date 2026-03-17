@@ -35,7 +35,7 @@ public class RatingScaleTemplateController(ISender mediator) : ControllerBase
         return Ok(result);
     }
 
-    [HttpGet("{id:guid}")]
+    [HttpGet("{id}")]
     [ProducesResponseType(typeof(ApiResponse<RatingScaleTemplateResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<RatingScaleTemplateResponse>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetRatingScaleTemplateById(Guid id)
@@ -47,16 +47,14 @@ public class RatingScaleTemplateController(ISender mediator) : ControllerBase
     [HttpPut("{id}")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> UpdateRatingScaleTemplate(Guid id, [FromBody] UpdateRatingScaleTemplateCommand command)
+    public async Task<IActionResult> UpdateRatingScaleTemplate(Guid id, [FromBody] UpdateRatingScaleTemplateRequest dto)
     {
-        if (id != command.Id)
-            return BadRequest(ApiResponse<Unit>.Fail("ID mismatch."));
-
+        var command = new UpdateRatingScaleTemplateCommand { Id = id, UpdateRatingScaleTemplate = dto };
         var result = await mediator.Send(command);
         return result.Succeeded ? Ok(result) : NotFound(result);
     }
 
-    [HttpDelete("{id:guid}")]
+    [HttpDelete("{id}")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteRatingScaleTemplate(Guid id)

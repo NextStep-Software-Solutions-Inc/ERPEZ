@@ -959,7 +959,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<KPIMeasurement>()
             .Property(km => km.MOVs)
-            .HasColumnType("jsonb");
+            .HasColumnType("text[]");
 
         // KPI Version 2 - FYActiveKPI
         modelBuilder.Entity<FYActiveKPI>()

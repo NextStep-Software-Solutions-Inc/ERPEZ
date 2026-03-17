@@ -5,7 +5,12 @@ namespace ERPEZ.Application.Features.Planning.RatingScaleTemplate.Commands.Updat
 
 public record UpdateRatingScaleTemplateCommand : IRequest<ApiResponse<Unit>>
 {
-    public Guid Id { get; init; }
+    public required Guid Id { get; init; }
+    public required UpdateRatingScaleTemplateRequest UpdateRatingScaleTemplate { get; init; }
+}
+
+public record UpdateRatingScaleTemplateRequest
+{
     public string? Name { get; init; }
     public string? Description { get; init; }
     public bool? IsFixed { get; init; }
