@@ -10,9 +10,13 @@ public class UpdateKPIMeasurementCommandValidator : AbstractValidator<UpdateKPIM
             .NotEmpty()
             .WithMessage("KPI Measurement ID is required.");
 
-        RuleFor(x => x.RatingScaleTemplateId)
+        RuleFor(x => x.UpdateKPIMeasurement)
+            .NotNull()
+            .WithMessage("Update data is required.");
+
+        RuleFor(x => x.UpdateKPIMeasurement.RatingScaleTemplateId)
             .Must(id => id!.Value != Guid.Empty)
             .WithMessage("Rating Scale Template ID must be a valid GUID.")
-            .When(x => x.RatingScaleTemplateId.HasValue);
+            .When(x => x.UpdateKPIMeasurement.RatingScaleTemplateId.HasValue);
     }
 }
