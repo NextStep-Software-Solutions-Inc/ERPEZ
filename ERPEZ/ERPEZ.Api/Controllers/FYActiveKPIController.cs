@@ -75,12 +75,16 @@ public class FYActiveKPIController(ISender mediator) : ControllerBase
 
     [HttpPut("{id}")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> UpdateFYActiveKPI(Guid id, [FromBody] UpdateFYActiveKPIRequest dto)
+    public async Task<IActionResult> UpdateFYActiveKPI(Guid id, [FromBody] UpdateFYActiveKPICommand command)
     {
-        var command = new UpdateFYActiveKPICommand { Id = id, UpdateFYActiveKPI = dto };
-        var result = await mediator.Send(command);
-        return result.Succeeded ? Ok(result) : NotFound(result);
+        if (id != command.Id)
+        {
+            return BadRequest("The ID in the URL does not match the ID in the request body.");
+        }
+        var response = await mediator.Send(command);
+        return Ok(response);
     }
 
     [HttpDelete("{id}")]

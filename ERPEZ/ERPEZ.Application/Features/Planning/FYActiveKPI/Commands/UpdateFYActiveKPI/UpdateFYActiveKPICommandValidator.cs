@@ -9,37 +9,73 @@ public class UpdateFYActiveKPICommandValidator : AbstractValidator<UpdateFYActiv
 
     public UpdateFYActiveKPICommandValidator()
     {
-        RuleFor(x => x.Id)
-            .NotEmpty()
-            .WithMessage("FY Active KPI ID is required.");
+        RuleFor(x => x.Name)
+            .MinimumLength(5)
+            .WithMessage("KPI Name must be at least 5 characters long.")
+            .MaximumLength(250)
+            .WithMessage("KPI Name cannot exceed 250 characters.")
+            .When(x => !string.IsNullOrWhiteSpace(x.Name));
 
-        RuleFor(x => x.AgencyTargetAnnual)
-            .GreaterThanOrEqualTo(0)
-            .WithMessage("Agency Target Annual must be greater than or equal to 0.");
+        RuleFor(x => x.Code)
+            .MinimumLength(2)
+            .WithMessage("KPI Code must be at least 2 characters long.")
+            .MaximumLength(50)
+            .WithMessage("KPI Code cannot exceed 50 characters.")
+            .When(x => !string.IsNullOrWhiteSpace(x.Code));
 
-        RuleFor(x => x.AgencyTargetQ1)
-            .GreaterThanOrEqualTo(0)
-            .WithMessage("Agency Target Q1 must be greater than or equal to 0.")
-            .When(x => x.AgencyTargetQ1.HasValue);
+        RuleFor(x => x.Description)
+            .MaximumLength(1000)
+            .WithMessage("KPI Description cannot exceed 1000 characters.")
+            .When(x => !string.IsNullOrWhiteSpace(x.Description));
 
-        RuleFor(x => x.AgencyTargetQ2)
-            .GreaterThanOrEqualTo(0)
-            .WithMessage("Agency Target Q2 must be greater than or equal to 0.")
-            .When(x => x.AgencyTargetQ2.HasValue);
+        RuleFor(x => x.MeasurementUnit)
+            .Must(BeAValidMeasurementUnit)
+            .WithMessage("Invalid MeasurementUnit. Allowed values are: Count, Percentage, Amount, Rating.")
+            .When(x => !string.IsNullOrWhiteSpace(x.MeasurementUnit));
 
-        RuleFor(x => x.AgencyTargetQ3)
-            .GreaterThanOrEqualTo(0)
-            .WithMessage("Agency Target Q3 must be greater than or equal to 0.")
-            .When(x => x.AgencyTargetQ3.HasValue);
+        RuleFor(x => x.DistributionBehavior)
+            .Must(BeAValidDistributionBehavior)
+            .WithMessage("Invalid DistributionBehavior. Allowed values are: Summation, Average, Maximum, Minimum, Custom.")
+            .When(x => !string.IsNullOrWhiteSpace(x.DistributionBehavior));
 
-        RuleFor(x => x.AgencyTargetQ4)
-            .GreaterThanOrEqualTo(0)
-            .WithMessage("Agency Target Q4 must be greater than or equal to 0.")
-            .When(x => x.AgencyTargetQ4.HasValue);
+        RuleFor(x => x.FunctionCategory)
+            .Must(BeAValidFunctionCategory)
+            .WithMessage("Invalid FunctionCategory. Allowed values are: Core, Support, Strategic.")
+            .When(x => !string.IsNullOrWhiteSpace(x.FunctionCategory));
+
+        RuleFor(x => x.MonitoringFrequency)
+            .Must(BeAValidMonitoringFrequency)
+            .WithMessage("Invalid MonitoringFrequency. Allowed values are: Annual, Quarterly, Monthly, Semestral.")
+            .When(x => !string.IsNullOrWhiteSpace(x.MonitoringFrequency));
 
         RuleFor(x => x.Status)
             .Must(status => validStatuses.Contains(status!))
             .WithMessage($"Status must be one of: {string.Join(", ", validStatuses)}.")
             .When(x => !string.IsNullOrWhiteSpace(x.Status));
+
+    }
+
+    private bool BeAValidMeasurementUnit(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return true;
+        return Enum.TryParse<MeasurementUnitEnum>(value, true, out _);
+    }
+
+    private bool BeAValidDistributionBehavior(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return true;
+        return Enum.TryParse<DistributionBehaviorEnum>(value, true, out _);
+    }
+
+    private bool BeAValidFunctionCategory(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return true;
+        return Enum.TryParse<FunctionCategoryEnum>(value, true, out _);
+    }
+
+    private bool BeAValidMonitoringFrequency(string? value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return true;
+        return Enum.TryParse<MonitoringFrequencyEnum>(value, true, out _);
     }
 }
