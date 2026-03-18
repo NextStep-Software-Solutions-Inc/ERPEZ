@@ -97,60 +97,57 @@ public class SetFYActiveKPITargetsCommandHandler(IUnitOfWork unitOfWork)
         switch (distributionBehavior)
         {
             case "summation":
-            case "divisible":
                 // Sum of PROVIDED quarterly targets should not exceed annual
                 var quarterlySum = providedQuarters.Sum();
                 if (quarterlySum > annual)
                 {
                     throw new ValidationException(
-                        $"KPI '{fyActiveKPI.Name}' has Summation/Divisible behavior. " +
+                        $"KPI '{fyActiveKPI.Name}' has Summation behavior. " +
                         $"Sum of provided quarterly targets ({quarterlySum}) cannot exceed the annual target ({annual}).");
                 }
                 break;
 
-            case "average":
-            case "uniform":
-                // All provided quarters should be equal to annual (uniform distribution)
-                foreach (var quarter in providedQuarters)
-                {
-                    if (Math.Abs(quarter - annual) > 0.01m)
-                    {
-                        throw new ValidationException(
-                            $"KPI '{fyActiveKPI.Name}' has Average/Uniform behavior. " +
-                            $"Each provided quarterly target must equal the annual target ({annual}).");
-                    }
-                }
-                break;
-
             case "maximum":
-                // No provided quarterly target should exceed annual
+                // No provided quarterly target should exceed annual target
                 var quarterlyMax = providedQuarters.Any() ? providedQuarters.Max() : 0;
                 if (quarterlyMax > annual)
                 {
                     throw new ValidationException(
                         $"KPI '{fyActiveKPI.Name}' has Maximum behavior. " +
-                        $"No quarterly target should exceed the annual target ({annual}).");
+                        $"No quarterly target may exceed the annual target ({annual}).");
                 }
                 break;
 
             case "minimum":
-                // No provided quarterly target should fall below annual
+                // No provided quarterly target should be below annual target
                 var quarterlyMin = providedQuarters.Any() ? providedQuarters.Min() : annual;
                 if (quarterlyMin < annual)
                 {
                     throw new ValidationException(
                         $"KPI '{fyActiveKPI.Name}' has Minimum behavior. " +
-                        $"No quarterly target should fall below the annual target ({annual}).");
+                        $"No quarterly target may be below the annual target ({annual}).");
+                }
+                break;
+
+            case "uniform":
+                // For Uniform behavior, each provided quarterly target must match annual target.
+                foreach (var quarter in providedQuarters)
+                {
+                    if (Math.Abs(quarter - annual) > 0.01m)
+                    {
+                        throw new ValidationException(
+                            $"KPI '{fyActiveKPI.Name}' has Uniform behavior. " +
+                            $"Each provided quarterly target must equal the annual target ({annual}).");
+                    }
                 }
                 break;
 
             case "milestone":
-            case "custom":
-                // For milestone/custom, quarterly targets are flexible - no strict validation
+                // For Milestone behavior, quarterly targets are flexible
                 break;
 
             default:
-                // Unknown behavior - just ensure provided quarters don't exceed annual
+                // Unknown behavior - apply summation validation as conservative default
                 var defaultSum = providedQuarters.Sum();
                 if (defaultSum > annual)
                 {
