@@ -76,10 +76,8 @@ public class KPIAssignmentController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateKPIAssignment(Guid id, [FromBody] UpdateKPIAssignmentCommand command)
     {
-        if (id != command.Id)
-            return BadRequest(ApiResponse<Unit>.Fail("ID mismatch."));
-
-        var result = await mediator.Send(command);
+        var request = command with { Id = id };
+        var result = await mediator.Send(request);
         return result.Succeeded ? Ok(result) : NotFound(result);
     }
 
