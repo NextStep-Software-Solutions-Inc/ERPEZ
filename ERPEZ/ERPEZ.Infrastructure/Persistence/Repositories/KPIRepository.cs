@@ -30,6 +30,7 @@ public class KPIRepository : Repository<Domain.Entities.Planning.KPI>, IKPIRepos
             .Include(k => k.MFOPAP)
             .Include(k => k.SDGs)
             .Include(k => k.Attributes)
+                .AsSplitQuery()
             .FirstOrDefaultAsync(k => EF.Property<Guid>(k, "Id") == id, cancellationToken);
     }
 

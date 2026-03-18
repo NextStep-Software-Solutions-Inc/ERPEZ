@@ -17,6 +17,7 @@ public class RatingScaleTemplateRepository : Repository<Domain.Entities.Planning
     public async Task<Domain.Entities.Planning.RatingScaleTemplate?> GetTemplateWithLevelsAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await context.Set<Domain.Entities.Planning.RatingScaleTemplate>()
+            .Where(r => !r.IsDeleted)
             .Include(r => r.RatingScaleLevels)
             .Include(r => r.GeneralRatingScale)
             .FirstOrDefaultAsync(r => r.Id == id, cancellationToken);

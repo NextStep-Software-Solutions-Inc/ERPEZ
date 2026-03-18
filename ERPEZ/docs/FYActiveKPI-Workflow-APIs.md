@@ -4,7 +4,7 @@
 
 ### 1) Activate FY KPIs
 ```http
-POST /fy-active-kpis/activate
+POST /fy-active-kpis/activate/bulk
 ```
 Creates FYActiveKPI snapshots from master KPI definitions.
 

@@ -20,7 +20,7 @@ public class KPIAssignmentRepository : Repository<Domain.Entities.Planning.KPIAs
     public async Task<List<Domain.Entities.Planning.KPIAssignment>> GetAssignmentsByFYActiveKPIIdAsync(Guid fyActiveKPIId, CancellationToken cancellationToken = default)
     {
         return await context.Set<Domain.Entities.Planning.KPIAssignment>()
-            .Where(a => a.FYActiveKPIId == fyActiveKPIId)
+            .Where(a => a.FYActiveKPIId == fyActiveKPIId && !a.IsDeleted)
             .Include(a => a.Office)
             .ToListAsync(cancellationToken);
     }

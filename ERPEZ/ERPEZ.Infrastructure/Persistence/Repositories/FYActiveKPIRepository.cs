@@ -17,6 +17,7 @@ public class FYActiveKPIRepository : Repository<Domain.Entities.Planning.FYActiv
     public async Task<Domain.Entities.Planning.FYActiveKPI?> GetFYActiveKPIWithDetailsAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await context.Set<Domain.Entities.Planning.FYActiveKPI>()
+            .Where(f => !f.IsDeleted)
             .Include(f => f.FYActiveKPIMeasurements)
                 .ThenInclude(m => m.RatingScaleTemplate)
                     .ThenInclude(r => r!.RatingScaleLevels)
