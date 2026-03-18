@@ -34,8 +34,7 @@ public class UpdateFYActiveKPICommandHandler(IUnitOfWork unitOfWork)
         // Validate MFOPAPId if provided
         if (request.MFOPAPId.HasValue)
         {
-            var mfopapExists = await unitOfWork.MFOPAPRepository.GetByIdAsync(request.MFOPAPId.Value, cancellationToken: cancellationToken);
-            if (mfopapExists == null)
+            if (await unitOfWork.MFOPAPRepository.GetByIdAsync(request.MFOPAPId.Value, cancellationToken: cancellationToken) is null)
                 throw new NotFoundException($"MFOPAP with ID {request.MFOPAPId.Value} not found.");
         }
         

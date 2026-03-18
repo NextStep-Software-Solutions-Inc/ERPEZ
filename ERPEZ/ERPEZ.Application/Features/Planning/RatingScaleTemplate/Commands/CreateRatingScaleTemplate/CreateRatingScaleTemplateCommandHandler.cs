@@ -13,8 +13,7 @@ public class CreateRatingScaleTemplateCommandHandler(IUnitOfWork unitOfWork)
         // Validate GeneralRatingScale if provided
         if (request.GeneralRatingScaleId.HasValue)
         {
-            var generalRatingScale = await unitOfWork.GeneralRatingScaleRepository.GetByIdAsync(request.GeneralRatingScaleId.Value, cancellationToken);
-            if (generalRatingScale == null)
+            if (await unitOfWork.GeneralRatingScaleRepository.GetByIdAsync(request.GeneralRatingScaleId.Value, cancellationToken) is null)
                 throw new NotFoundException("General Rating Scale not found.");
         }
 

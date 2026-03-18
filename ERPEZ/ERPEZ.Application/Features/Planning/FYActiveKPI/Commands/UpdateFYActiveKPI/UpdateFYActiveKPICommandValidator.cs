@@ -6,6 +6,8 @@ namespace ERPEZ.Application.Features.Planning.FYActiveKPI.Commands.UpdateFYActiv
 public class UpdateFYActiveKPICommandValidator : AbstractValidator<UpdateFYActiveKPICommand>
 {
     private readonly string[] validStatuses = Enum.GetNames<StatusEnum>();
+    private readonly string[] validMeasurementUnits = Enum.GetNames<MeasurementUnitEnum>();
+    private readonly string[] validMonitoringFrequencies = Enum.GetNames<MonitoringFrequencyEnum>();
 
     public UpdateFYActiveKPICommandValidator()
     {
@@ -30,7 +32,7 @@ public class UpdateFYActiveKPICommandValidator : AbstractValidator<UpdateFYActiv
 
         RuleFor(x => x.MeasurementUnit)
             .Must(BeAValidMeasurementUnit)
-            .WithMessage("Invalid MeasurementUnit. Allowed values are: Count, Percentage, Amount, Rating.")
+            .WithMessage($"Invalid MeasurementUnit. Allowed values are: {string.Join(", ", validMeasurementUnits)}.")
             .When(x => !string.IsNullOrWhiteSpace(x.MeasurementUnit));
 
         RuleFor(x => x.DistributionBehavior)
@@ -45,7 +47,7 @@ public class UpdateFYActiveKPICommandValidator : AbstractValidator<UpdateFYActiv
 
         RuleFor(x => x.MonitoringFrequency)
             .Must(BeAValidMonitoringFrequency)
-            .WithMessage("Invalid MonitoringFrequency. Allowed values are: Annual, Quarterly, Monthly, Semestral.")
+            .WithMessage($"Invalid MonitoringFrequency. Allowed values are: {string.Join(", ", validMonitoringFrequencies)}.")
             .When(x => !string.IsNullOrWhiteSpace(x.MonitoringFrequency));
 
         RuleFor(x => x.Status)

@@ -81,8 +81,8 @@ public class FYActiveKPIController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateFYActiveKPI(Guid id, [FromBody] UpdateFYActiveKPICommand command)
     {
-        var response = await mediator.Send(command with { Id = id });
-        return Ok(response);
+        var result = await mediator.Send(command with { Id = id });
+        return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 
     [HttpDelete("{id}")]
