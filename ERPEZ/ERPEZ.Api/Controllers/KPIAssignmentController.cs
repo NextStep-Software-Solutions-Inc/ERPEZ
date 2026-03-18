@@ -1,4 +1,5 @@
 using ERPEZ.Application.Features.Planning.KPIAssignment.Commands.CreateKPIAssignment;
+using ERPEZ.Application.Features.Planning.KPIAssignment.Commands.BulkCreateKPIAssignment;
 using ERPEZ.Application.Features.Planning.KPIAssignment.Commands.UpdateKPIAssignment;
 using ERPEZ.Application.Features.Planning.KPIAssignment.Commands.DeleteKPIAssignment;
 using ERPEZ.Application.Features.Planning.KPIAssignment.Dtos;
@@ -29,6 +30,25 @@ public class KPIAssignmentController(ISender mediator) : ControllerBase
             return BadRequest(result);
 
         return CreatedAtAction(nameof(CreateKPIAssignment), new { id = result.Data }, result);
+    }
+
+    /// <summary>
+    /// Bulk assign KPIs to multiple offices (Level 2 - Office Target Distribution)
+    /// Assigns multiple offices per KPI in a single transaction.
+    /// Validates distribution behavior for each KPI.
+    /// </summary>
+    [HttpPost("bulk")]
+    [ProducesResponseType(typeof(ApiResponse<BulkAssignmentResult>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<BulkAssignmentResult>), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> BulkCreateKPIAssignment([FromBody] List<KPIOfficeAssignmentRequest> assignments)
+    {
+        var command = new BulkCreateKPIAssignmentCommand(assignments);
+        var result = await mediator.Send(command);
+
+        if (!result.Succeeded)
+            return BadRequest(result);
+
+        return CreatedAtAction(nameof(GetKPIAssignments), result, result);
     }
 
     /// <summary>

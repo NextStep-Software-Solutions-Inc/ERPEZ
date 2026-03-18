@@ -35,7 +35,7 @@ public class UpdateFYActiveKPICommandValidator : AbstractValidator<UpdateFYActiv
 
         RuleFor(x => x.DistributionBehavior)
             .Must(BeAValidDistributionBehavior)
-            .WithMessage("Invalid DistributionBehavior. Allowed values are: Summation, Average, Maximum, Minimum, Custom.")
+            .WithMessage("Invalid DistributionBehavior. Allowed values are: Summation, Uniform, Maximum, Minimum, Milestone.")
             .When(x => !string.IsNullOrWhiteSpace(x.DistributionBehavior));
 
         RuleFor(x => x.FunctionCategory)

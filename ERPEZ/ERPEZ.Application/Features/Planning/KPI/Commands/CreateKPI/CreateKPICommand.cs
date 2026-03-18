@@ -12,7 +12,7 @@ public record CreateKPICommand : IRequest<ApiResponse<Guid>>
     public string Code { get; init; } = string.Empty;
     public string? Description { get; init; }
     public string MeasurementUnit { get; init; } = string.Empty; // Number, Percentage, Currency
-    public string DistributionBehavior { get; init; } = string.Empty; // Divisible, Uniform, Milestone
+    public string DistributionBehavior { get; init; } = string.Empty; // Summation, Uniform, Maximum, Minimum, Milestone
     public string FunctionCategory { get; init; } = string.Empty; // Strategic, Core, Support
     public string? MonitoringFrequency { get; init; } // Quarterly, SemiAnnual, Annual
     public bool IsOptInAvailable { get; init; } = false;
