@@ -1,5 +1,6 @@
 using ERPEZ.Application.Features.Planning.KPIAssignment.Commands.CreateKPIAssignment;
 using ERPEZ.Application.Features.Planning.KPIAssignment.Commands.BulkCreateKPIAssignment;
+using ERPEZ.Application.Features.Planning.KPIAssignment.Commands.BulkUpdateKPIAssignmentLockStatus;
 using ERPEZ.Application.Features.Planning.KPIAssignment.Commands.UpdateKPIAssignment;
 using ERPEZ.Application.Features.Planning.KPIAssignment.Commands.DeleteKPIAssignment;
 using ERPEZ.Application.Features.Planning.KPIAssignment.Dtos;
@@ -49,6 +50,24 @@ public class KPIAssignmentController(ISender mediator) : ControllerBase
             return BadRequest(result);
 
         return CreatedAtAction(nameof(GetKPIAssignments), result, result);
+    }
+
+    /// <summary>
+    /// Bulk update lock/unlock status for existing KPI assignments.
+    /// Updates IsLocked per office assignment for each FYActiveKPI.
+    /// </summary>
+    [HttpPut("lock-status/bulk")]
+    [ProducesResponseType(typeof(ApiResponse<BulkLockStatusUpdateResult>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<BulkLockStatusUpdateResult>), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> BulkUpdateKPIAssignmentLockStatus([FromBody] List<KPIOfficeLockStatusRequest> assignments)
+    {
+        var command = new BulkUpdateKPIAssignmentLockStatusCommand(assignments);
+        var result = await mediator.Send(command);
+
+        if (!result.Succeeded)
+            return BadRequest(result);
+
+        return Ok(result);
     }
 
     /// <summary>
