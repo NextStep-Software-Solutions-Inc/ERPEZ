@@ -37,7 +37,9 @@ public class GetRatingScaleTemplatesQueryHandler(IUnitOfWork unitOfWork)
                 Description = level.Description,
                 MinValue = level.MinValue,
                 MaxValue = level.MaxValue,
-            }).ToList()
+            }).ToList(),
+            CreatedAt = template.CreatedAt,
+            CreatedBy = template.CreatedBy,
         };
 
         var (items, totalCount) = await unitOfWork.RatingScaleTemplateRepository.GetAllAsync(sieveModel, projection, cancellationToken: cancellationToken);

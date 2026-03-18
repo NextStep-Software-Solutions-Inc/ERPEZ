@@ -4,7 +4,6 @@ using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.Application.Features.Planning.KPIAssignment.Commands.UpdateKPIAssignment;
 
@@ -45,9 +44,10 @@ public class UpdateKPIAssignmentCommandHandler(IUnitOfWork unitOfWork, IKPIAssig
         }
 
         // Get all other assignments for cumulative checks
-        var otherAssignments = await unitOfWork.KPIAssignmentRepository
-            .Query(a => a.FYActiveKPIId == assignment.FYActiveKPIId && a.Id != request.Id)
-            .ToListAsync(cancellationToken);
+        var otherAssignments = await unitOfWork.KPIAssignmentRepository.ToListAsync(
+            unitOfWork.KPIAssignmentRepository.Query(
+                a => a.FYActiveKPIId == assignment.FYActiveKPIId && a.Id != request.Id),
+            cancellationToken);
 
         var otherTotalAnnual = otherAssignments.Sum(a => a.AssignedTargetAnnual);
         var cumulativeTotalAnnual = otherTotalAnnual + request.AssignedTargetAnnual;

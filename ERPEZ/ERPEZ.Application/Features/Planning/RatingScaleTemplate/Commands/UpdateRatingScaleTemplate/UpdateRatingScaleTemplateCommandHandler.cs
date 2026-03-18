@@ -2,7 +2,6 @@ using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.Application.Features.Planning.RatingScaleTemplate.Commands.UpdateRatingScaleTemplate;
 
@@ -42,8 +41,10 @@ public class UpdateRatingScaleTemplateCommandHandler(IUnitOfWork unitOfWork)
             if (updateData.IsDefault.Value && template.GeneralRatingScaleId.HasValue)
             {
                 var otherDefaults = await unitOfWork.RatingScaleTemplateRepository
-                    .Query(t => t.GeneralRatingScaleId == template.GeneralRatingScaleId && t.IsDefault && t.Id != request.Id)
-                    .ToListAsync(cancellationToken);
+                    .ToListAsync(
+                        unitOfWork.RatingScaleTemplateRepository.Query(
+                            t => t.GeneralRatingScaleId == template.GeneralRatingScaleId && t.IsDefault && t.Id != request.Id),
+                        cancellationToken);
 
                 foreach (var other in otherDefaults)
                 {

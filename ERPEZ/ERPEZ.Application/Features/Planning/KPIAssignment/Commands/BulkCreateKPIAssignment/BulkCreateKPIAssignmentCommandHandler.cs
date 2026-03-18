@@ -58,7 +58,10 @@ public class BulkCreateKPIAssignmentCommandHandler(IUnitOfWork unitOfWork, IKPIA
                 }
 
                 // Validate distribution behavior
-                ValidateDistributionBehavior(fyActiveKPI, kpiAssignment.OfficeAssignments.ToList());
+                await ValidateDistributionBehavior(
+                    fyActiveKPI,
+                    kpiAssignment.OfficeAssignments.ToList(),
+                    cancellationToken);
 
                 // Create assignments for each office
                 foreach (var officeAssignment in kpiAssignment.OfficeAssignments)
@@ -106,18 +109,19 @@ public class BulkCreateKPIAssignmentCommandHandler(IUnitOfWork unitOfWork, IKPIA
             $"Successfully assigned {totalKPIsProcessed} KPI(s) to {totalOfficesAssigned} office(s).");
     }
 
-    private void ValidateDistributionBehavior(
+    private async Task ValidateDistributionBehavior(
         Domain.Entities.Planning.FYActiveKPI fyActiveKPI, 
-        List<OfficeTargetAssignment> officeAssignments)
+        List<OfficeTargetAssignment> officeAssignments,
+        CancellationToken cancellationToken)
     {
         var measurementUnit = fyActiveKPI.MeasurementUnit?.ToLower();
         var agencyAnnualTarget = fyActiveKPI.AgencyTargetAnnual;
         var totalAssignedAnnual = officeAssignments.Sum(o => o.AssignedTargetAnnual);
 
         // Get existing assignments for this KPI to track cumulative totals
-        var existingAssignments = unitOfWork.KPIAssignmentRepository
-            .Query(a => a.FYActiveKPIId == fyActiveKPI.Id)
-            .ToList();
+        var existingAssignments = await unitOfWork.KPIAssignmentRepository.ToListAsync(
+            unitOfWork.KPIAssignmentRepository.Query(a => a.FYActiveKPIId == fyActiveKPI.Id),
+            cancellationToken);
         
         var existingTotalAnnual = existingAssignments.Sum(a => a.AssignedTargetAnnual);
         var cumulativeTotalAnnual = existingTotalAnnual + totalAssignedAnnual;

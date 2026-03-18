@@ -33,7 +33,9 @@ public class GetRatingScaleTemplateByIdQueryHandler(IUnitOfWork unitOfWork)
                 Description = level.Description,
                 MinValue = level.MinValue,
                 MaxValue = level.MaxValue,
-            }).ToList()
+            }).ToList(),
+            CreatedAt = template.CreatedAt,
+            CreatedBy = template.CreatedBy,
         };
 
         return ApiResponse<RatingScaleTemplateResponse>.Success(response);
