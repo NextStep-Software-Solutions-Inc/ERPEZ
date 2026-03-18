@@ -1,5 +1,4 @@
-﻿using System.Collections.Generic;
-using Microsoft.EntityFrameworkCore.Migrations;
+﻿using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
 
@@ -11,31 +10,29 @@ namespace ERPEZ.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            // Drop and recreate column to change type from jsonb to text[]
-            // This will clear existing MOVs data
             migrationBuilder.Sql(@"
-                ALTER TABLE planning.""KPIMeasurements"" 
-                DROP COLUMN ""MOVs"";
-            ");
-            
-            migrationBuilder.Sql(@"
-                ALTER TABLE planning.""KPIMeasurements"" 
-                ADD COLUMN ""MOVs"" text[] NOT NULL DEFAULT '{}';
+                ALTER TABLE planning.""KPIMeasurements""
+                ALTER COLUMN ""MOVs"" TYPE text[]
+                USING CASE
+                    WHEN ""MOVs"" IS NULL THEN ARRAY[]::text[]
+                    ELSE ARRAY(SELECT jsonb_array_elements_text(""MOVs""))
+                END;
+
+                ALTER TABLE planning.""KPIMeasurements""
+                ALTER COLUMN ""MOVs"" SET DEFAULT '{}';
             ");
         }
 
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            // Drop and recreate as jsonb
             migrationBuilder.Sql(@"
-                ALTER TABLE planning.""KPIMeasurements"" 
-                DROP COLUMN ""MOVs"";
-            ");
-            
-            migrationBuilder.Sql(@"
-                ALTER TABLE planning.""KPIMeasurements"" 
-                ADD COLUMN ""MOVs"" jsonb NOT NULL DEFAULT '[]'::jsonb;
+                ALTER TABLE planning.""KPIMeasurements""
+                ALTER COLUMN ""MOVs"" TYPE jsonb
+                USING COALESCE(to_jsonb(""MOVs""), '[]'::jsonb);
+
+                ALTER TABLE planning.""KPIMeasurements""
+                ALTER COLUMN ""MOVs"" SET DEFAULT '[]'::jsonb;
             ");
         }
     }

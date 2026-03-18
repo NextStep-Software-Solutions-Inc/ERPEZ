@@ -19,6 +19,6 @@ public class RatingScaleTemplateRepository : Repository<Domain.Entities.Planning
         return await context.Set<Domain.Entities.Planning.RatingScaleTemplate>()
             .Include(r => r.RatingScaleLevels)
             .Include(r => r.GeneralRatingScale)
-            .FirstOrDefaultAsync(r => EF.Property<Guid>(r, "Id") == id, cancellationToken);
+            .FirstOrDefaultAsync(r => r.Id == id, cancellationToken);
     }
 }

@@ -25,6 +25,6 @@ public class FYActiveKPIRepository : Repository<Domain.Entities.Planning.FYActiv
             .Include(f => f.FiscalYear)
             .Include(f => f.MasterKPI)
             .Include(f => f.MFOPAP)
-            .FirstOrDefaultAsync(f => EF.Property<Guid>(f, "Id") == id, cancellationToken);
+            .FirstOrDefaultAsync(f => f.Id == id, cancellationToken);
     }
 }

@@ -10,7 +10,7 @@ public class CreateRatingScaleTemplateCommandValidator : AbstractValidator<Creat
             .NotEmpty()
             .WithMessage("Rating Scale Template Name is required.")
             .MaximumLength(200)
-            .WithMessage("Name cannot exceed 200  characters.");
+            .WithMessage("Name cannot exceed 200 characters.");
 
         RuleFor(x => x.Description)
             .MaximumLength(1000)

@@ -29,6 +29,8 @@ public class GetKPIMeasurementsQueryHandler(IUnitOfWork unitOfWork)
             MOVs = measurement.MOVs,
             IsMOVEditable = measurement.IsMOVEditable,
             IsScaleEditable = measurement.IsScaleEditable,
+            CreatedAt = measurement.CreatedAt,
+            CreatedBy = measurement.CreatedBy,
         };
 
         var (items, totalCount) = await unitOfWork.KPIMeasurementRepository.GetAllAsync(sieveModel, projection, cancellationToken: cancellationToken);

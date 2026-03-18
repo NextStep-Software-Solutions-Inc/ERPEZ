@@ -28,7 +28,7 @@ public class KPIMeasurementController(ISender mediator) : ControllerBase
         if (!result.Succeeded)
             return BadRequest(result);
 
-        return CreatedAtAction(nameof(CreateKPIMeasurement), new { id = result.Data }, result);
+        return CreatedAtAction(nameof(GetKPIMeasurementById), new { id = result.Data }, result);
     }
 
     /// <summary>

@@ -30,7 +30,7 @@ public class KPIAssignmentController(ISender mediator) : ControllerBase
         if (!result.Succeeded)
             return BadRequest(result);
 
-        return CreatedAtAction(nameof(CreateKPIAssignment), new { id = result.Data }, result);
+        return CreatedAtAction(nameof(GetKPIAssignmentById), new { id = result.Data }, result);
     }
 
     /// <summary>
@@ -39,7 +39,7 @@ public class KPIAssignmentController(ISender mediator) : ControllerBase
     /// Validates distribution behavior for each KPI.
     /// </summary>
     [HttpPost("bulk")]
-    [ProducesResponseType(typeof(ApiResponse<BulkAssignmentResult>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<BulkAssignmentResult>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<BulkAssignmentResult>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> BulkCreateKPIAssignment([FromBody] List<KPIOfficeAssignmentRequest> assignments)
     {
@@ -49,7 +49,7 @@ public class KPIAssignmentController(ISender mediator) : ControllerBase
         if (!result.Succeeded)
             return BadRequest(result);
 
-        return CreatedAtAction(nameof(GetKPIAssignments), result, result);
+        return Ok(result);
     }
 
     /// <summary>
