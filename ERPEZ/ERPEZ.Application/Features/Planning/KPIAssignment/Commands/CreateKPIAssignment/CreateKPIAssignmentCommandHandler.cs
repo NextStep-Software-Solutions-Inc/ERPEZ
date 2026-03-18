@@ -29,7 +29,7 @@ public class CreateKPIAssignmentCommandHandler(IUnitOfWork unitOfWork, IKPIAssig
         }
 
         // Validate Office exists
-        var office = await unitOfWork.OfficeRepository.GetByIdAsync(request.OfficeId, cancellationToken: cancellationToken)
+        _ = await unitOfWork.OfficeRepository.GetByIdAsync(request.OfficeId, cancellationToken: cancellationToken)
             ?? throw new NotFoundException($"Office with ID {request.OfficeId} not found.");
 
         // Check for duplicate assignment

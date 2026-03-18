@@ -1,10 +1,14 @@
 using ERPEZ.Application.Features.Planning.KPI.Dtos;
+using ERPEZ.Application.Features.Planning.KPIMeasurement.Dtos;
+using ERPEZ.Application.Features.Planning.KPIModeOfVerification.Dtos;
+using ERPEZ.Application.Features.Planning.KPITarget.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
 using System.Linq.Expressions;
 using ERPEZ.Application.Features.Planning.MFOPAP.Dtos;
 using ERPEZ.Application.Features.Planning.Attribute.Dtos;
+using ERPEZ.Application.Features.Planning.Rating.Dtos;
 using ERPEZ.Application.Features.Planning.SDG.Dtos;
 
 namespace ERPEZ.Application.Features.Planning.KPI.Queries.GetKPIsQuery;
@@ -21,11 +25,11 @@ public class GetKPIsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetKP
             Sorts = query.Sorts
         };
 
-Expression<Func<Domain.Entities.Planning.KPI, KPIResponse>> projection = kpi => new KPIResponse
+        Expression<Func<Domain.Entities.Planning.KPI, KPIResponse>> projection = kpi => new KPIResponse
         {
             Id = kpi.Id,
             ParentKPIId = kpi.ParentKPIId,
-            ParentKPI = kpi.ParentKPI != null ? new Dtos.ParentKPIResponse
+            ParentKPI = kpi.ParentKPI != null ? new ParentKPIResponse
             {
                 Id = kpi.ParentKPI.Id,
                 Name = kpi.ParentKPI.Name,
@@ -48,7 +52,7 @@ Expression<Func<Domain.Entities.Planning.KPI, KPIResponse>> projection = kpi => 
             CreatedBy = kpi.CreatedBy,
             CreatedAt = kpi.CreatedAt,
             
-            KPIMeasurements = kpi.KPIMeasurements.Select(m => new KPIMeasurement.Dtos.KPIMeasurementResponse
+            KPIMeasurements = kpi.KPIMeasurements.Select(m => new KPIMeasurementResponse
             {
                 Id = m.Id,
                 KPIId = m.KPIId,
@@ -61,7 +65,7 @@ Expression<Func<Domain.Entities.Planning.KPI, KPIResponse>> projection = kpi => 
                 CreatedBy = m.CreatedBy
             }).ToList(),
             
-            MFOPAP = kpi.MFOPAP != null ? new MFOPAP.Dtos.MFOPAPResponse
+            MFOPAP = kpi.MFOPAP != null ? new MFOPAPResponse
             {
                 Id = kpi.MFOPAP.Id,
                 ParentId = kpi.MFOPAP.ParentId,
@@ -71,7 +75,7 @@ Expression<Func<Domain.Entities.Planning.KPI, KPIResponse>> projection = kpi => 
                 IsActive = kpi.MFOPAP.IsActive
             } : null,
             
-            Attributes = kpi.Attributes.Select(a => new Attribute.Dtos.AttributeResponse
+            Attributes = kpi.Attributes.Select(a => new AttributeResponse
             {
                 Id = a.Id,
                 Name = a.Name,
@@ -80,7 +84,7 @@ Expression<Func<Domain.Entities.Planning.KPI, KPIResponse>> projection = kpi => 
                 ParentAttributeId = a.ParentAttributeId
             }).ToList(),
             
-            SDGs = kpi.SDGs.Select(s => new SDG.Dtos.SDGResponse
+            SDGs = kpi.SDGs.Select(s => new SDGResponse
             {
                 Id = s.Id,
                 Name = s.Name,
@@ -88,9 +92,9 @@ Expression<Func<Domain.Entities.Planning.KPI, KPIResponse>> projection = kpi => 
             }).ToList(),
             
             // Legacy collections - empty in Version 2
-            KPITargets = new List<KPITarget.Dtos.KPITargetResponse>(),
-            KPIRatings = new List<Rating.Dtos.RatingResponse>(),
-            KPIModeOfVerifications = new List<KPIModeOfVerification.Dtos.KPIModeOfVerificationResponse>()
+            KPITargets = new List<KPITargetResponse>(),
+            KPIRatings = new List<RatingResponse>(),
+            KPIModeOfVerifications = new List<KPIModeOfVerificationResponse>()
         };
 
         var (kpiDtos, totalCount) = await unitOfWork.KPIRepository.GetAllAsync(sieveModel, projection, cancellationToken);

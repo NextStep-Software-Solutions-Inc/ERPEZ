@@ -51,7 +51,6 @@ public class BulkCreateKPIAssignmentCommandHandler(IUnitOfWork unitOfWork, IKPIA
 
                 if (existingAssignments.Any())
                 {
-                    var existingOfficeIds = existingAssignments.Select(a => a.OfficeId).ToList();
                     throw new ConflictException(
                         $"KPI '{fyActiveKPI.Name}' is already assigned to {existingAssignments.Count} office(s). " +
                         $"Remove existing assignments first or use PUT to update.");
@@ -67,7 +66,7 @@ public class BulkCreateKPIAssignmentCommandHandler(IUnitOfWork unitOfWork, IKPIA
                 foreach (var officeAssignment in kpiAssignment.OfficeAssignments)
                 {
                     // Validate office exists
-                    var office = await unitOfWork.OfficeRepository.GetByIdAsync(
+                    _ = await unitOfWork.OfficeRepository.GetByIdAsync(
                         officeAssignment.OfficeId, 
                         cancellationToken: cancellationToken)
                         ?? throw new NotFoundException($"Office with ID {officeAssignment.OfficeId} not found.");

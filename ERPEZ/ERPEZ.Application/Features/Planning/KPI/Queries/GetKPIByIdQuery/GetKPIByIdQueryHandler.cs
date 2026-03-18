@@ -1,6 +1,7 @@
 using ERPEZ.Application.Features.Planning.Attribute.Dtos;
 using ERPEZ.Application.Features.Planning.KPI.Dtos;
 using ERPEZ.Application.Features.Planning.KPIModeOfVerification.Dtos;
+using ERPEZ.Application.Features.Planning.KPIMeasurement.Dtos;
 using ERPEZ.Application.Features.Planning.Rating.Dtos;
 using ERPEZ.Application.Features.Planning.KPITarget.Dtos;
 using ERPEZ.Application.Features.Planning.MFOPAP.Dtos;
@@ -20,7 +21,7 @@ public class GetKPIByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
 
         // Map KPIMeasurements (Version 2)
         var kpiMeasurements = kpi.KPIMeasurements
-            .Select(m => new KPIMeasurement.Dtos.KPIMeasurementResponse
+            .Select(m => new KPIMeasurementResponse
             {
                 Id = m.Id,
                 KPIId = m.KPIId,

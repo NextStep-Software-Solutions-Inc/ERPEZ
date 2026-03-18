@@ -22,7 +22,7 @@ public class CreateKPICommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<C
         // Validate Parent KPI if provided
         if (request.ParentKPIId != null)
         {
-            var parentKpi = await unitOfWork.KPIRepository.GetByIdAsync(request.ParentKPIId.Value, cancellationToken: cancellationToken)
+            _ = await unitOfWork.KPIRepository.GetByIdAsync(request.ParentKPIId.Value, cancellationToken: cancellationToken)
                 ?? throw new NotFoundException("Parent KPI not found.");
         }
 
@@ -63,7 +63,7 @@ public class CreateKPICommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<C
             // Validate and link MFOPAP
             if (request.MFOPAPId.HasValue)
             {
-                var existingMfopap = await unitOfWork.MFOPAPRepository.GetByIdAsync(request.MFOPAPId.Value, cancellationToken: cancellationToken) 
+                _ = await unitOfWork.MFOPAPRepository.GetByIdAsync(request.MFOPAPId.Value, cancellationToken: cancellationToken)
                     ?? throw new NotFoundException($"MFOPAP with ID {request.MFOPAPId.Value} was not found.");
             }
 

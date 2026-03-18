@@ -30,7 +30,7 @@ public class CreateKPIMeasurementCommandHandler(IUnitOfWork unitOfWork)
         // Validate RatingScaleTemplate if provided
         if (request.RatingScaleTemplateId.HasValue)
         {
-            var template = await unitOfWork.RatingScaleTemplateRepository.GetByIdAsync(
+            _ = await unitOfWork.RatingScaleTemplateRepository.GetByIdAsync(
                 request.RatingScaleTemplateId.Value, cancellationToken: cancellationToken)
                 ?? throw new NotFoundException($"RatingScaleTemplate with ID {request.RatingScaleTemplateId.Value} not found.");
         }
