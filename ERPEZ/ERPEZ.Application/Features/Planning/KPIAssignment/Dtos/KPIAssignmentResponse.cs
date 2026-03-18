@@ -1,3 +1,6 @@
+using ERPEZ.Application.Features.Planning.FYActiveKPI.Dtos;
+using ERPEZ.Application.Features.Planning.Office.Dtos;
+
 namespace ERPEZ.Application.Features.Planning.KPIAssignment.Dtos;
 
 public record KPIAssignmentResponse
@@ -12,6 +15,8 @@ public record KPIAssignmentResponse
     public decimal? AssignedTargetQ3 { get; init; }
     public decimal? AssignedTargetQ4 { get; init; }
     public bool IsLocked { get; init; }
+    public FYActiveKPIResponse? FYActiveKPI { get; init; }
+    public OfficeResponse? Office { get; init; }
     public DateTime CreatedAt { get; init; }
     public string CreatedBy { get; init; } = string.Empty;
 }
