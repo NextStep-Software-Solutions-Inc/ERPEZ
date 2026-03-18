@@ -5,6 +5,7 @@ using FluentValidation;
 using ERPEZ.Application.Common.Behaviors;
 using ERPEZ.Application.Common.Services;
 using ERPEZ.Application.Common.Sieve;
+using ERPEZ.Application.Features.Planning.KPIAssignment.Validators;
 using ERPEZ.Domain.Interfaces;
 using Microsoft.AspNetCore.Builder;
 using Sieve.Models;
@@ -22,6 +23,9 @@ public static class DependencyInjection
 
         // Register PIN hashing service
         builder.Services.AddScoped<IPINHashingService, PINHashingService>();
+
+        // Register KPI Assignment behavior validator
+        builder.Services.AddScoped<IKPIAssignmentBehaviorValidator, KPIAssignmentBehaviorValidator>();
 
         // Register transaction code generator service
 

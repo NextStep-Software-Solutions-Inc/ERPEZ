@@ -1,3 +1,4 @@
+using ERPEZ.Application.Features.Planning.KPIAssignment.Validators;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -5,7 +6,7 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.KPIAssignment.Commands.BulkCreateKPIAssignment;
 
-public class BulkCreateKPIAssignmentCommandHandler(IUnitOfWork unitOfWork)
+public class BulkCreateKPIAssignmentCommandHandler(IUnitOfWork unitOfWork, IKPIAssignmentBehaviorValidator behaviorValidator)
     : IRequestHandler<BulkCreateKPIAssignmentCommand, ApiResponse<BulkAssignmentResult>>
 {
     public async Task<ApiResponse<BulkAssignmentResult>> Handle(
@@ -109,7 +110,6 @@ public class BulkCreateKPIAssignmentCommandHandler(IUnitOfWork unitOfWork)
         Domain.Entities.Planning.FYActiveKPI fyActiveKPI, 
         List<OfficeTargetAssignment> officeAssignments)
     {
-        var distributionBehavior = fyActiveKPI.DistributionBehavior?.ToLower();
         var measurementUnit = fyActiveKPI.MeasurementUnit?.ToLower();
         var agencyAnnualTarget = fyActiveKPI.AgencyTargetAnnual;
         var totalAssignedAnnual = officeAssignments.Sum(o => o.AssignedTargetAnnual);
@@ -127,108 +127,70 @@ public class BulkCreateKPIAssignmentCommandHandler(IUnitOfWork unitOfWork)
         {
             foreach (var office in officeAssignments)
             {
-                if (office.AssignedTargetAnnual > 100)
-                {
-                    throw new ValidationException(
-                        $"KPI '{fyActiveKPI.Name}' measures Percentage. " +
-                        $"Office {office.OfficeId} target ({office.AssignedTargetAnnual}%) cannot exceed 100%.");
-                }
-
-                // Validate quarterly percentage targets as well
-                if (office.AssignedTargetQ1.HasValue && office.AssignedTargetQ1.Value > 100)
-                    throw new ValidationException($"Q1 percentage target cannot exceed 100%.");
-                if (office.AssignedTargetQ2.HasValue && office.AssignedTargetQ2.Value > 100)
-                    throw new ValidationException($"Q2 percentage target cannot exceed 100%.");
-                if (office.AssignedTargetQ3.HasValue && office.AssignedTargetQ3.Value > 100)
-                    throw new ValidationException($"Q3 percentage target cannot exceed 100%.");
-                if (office.AssignedTargetQ4.HasValue && office.AssignedTargetQ4.Value > 100)
-                    throw new ValidationException($"Q4 percentage target cannot exceed 100%.");
+                behaviorValidator.ValidatePercentageMeasurement(
+                    fyActiveKPI.Name,
+                    office.AssignedTargetAnnual,
+                    office.AssignedTargetQ1,
+                    office.AssignedTargetQ2,
+                    office.AssignedTargetQ3,
+                    office.AssignedTargetQ4);
             }
         }
+
+        var distributionBehavior = fyActiveKPI.DistributionBehavior?.ToLower();
 
         switch (distributionBehavior)
         {
             case "summation":
-                // Cumulative sum (existing + new) must not exceed agency annual target
-                // This supports incremental assignment and prevents over-allocation
-                if (cumulativeTotalAnnual > agencyAnnualTarget)
-                {
-                    var remainingTarget = agencyAnnualTarget - existingTotalAnnual;
-                    throw new ValidationException(
-                        $"KPI '{fyActiveKPI.Name}' has Summation behavior. " +
-                        $"Total assigned ({cumulativeTotalAnnual:F2}) exceeds agency annual target ({agencyAnnualTarget:F2}). " +
-                        $"Already assigned: {existingTotalAnnual:F2}, Attempting to assign: {totalAssignedAnnual:F2}. " +
-                        $"Maximum remaining: {remainingTarget:F2}.");
-                }
+                behaviorValidator.ValidateSummation(
+                    fyActiveKPI.Name,
+                    agencyAnnualTarget,
+                    cumulativeTotalAnnual,
+                    existingTotalAnnual,
+                    totalAssignedAnnual);
                 break;
 
             case "uniform":
-                // All offices must receive the exact same target (equals agency target)
-                // Each provided quarterly target must equal the assigned annual target
+                // All offices must receive the exact same target
                 foreach (var office in officeAssignments)
                 {
-                    if (Math.Abs(office.AssignedTargetAnnual - agencyAnnualTarget) > 0.01m)
-                    {
-                        throw new ValidationException(
-                            $"KPI '{fyActiveKPI.Name}' has Uniform behavior. " +
-                            $"Each office must receive the exact agency annual target ({agencyAnnualTarget}). " +
-                            $"Office {office.OfficeId} has {office.AssignedTargetAnnual}.");
-                    }
-                    
-                    // Validate quarterly targets match annual
-                    if (office.AssignedTargetQ1.HasValue && Math.Abs(office.AssignedTargetQ1.Value - office.AssignedTargetAnnual) > 0.01m)
-                        throw new ValidationException($"For Uniform behavior, Q1 target must equal assigned annual target ({office.AssignedTargetAnnual}). Office {office.OfficeId} has {office.AssignedTargetQ1}.");
-                    if (office.AssignedTargetQ2.HasValue && Math.Abs(office.AssignedTargetQ2.Value - office.AssignedTargetAnnual) > 0.01m)
-                        throw new ValidationException($"For Uniform behavior, Q2 target must equal assigned annual target ({office.AssignedTargetAnnual}). Office {office.OfficeId} has {office.AssignedTargetQ2}.");
-                    if (office.AssignedTargetQ3.HasValue && Math.Abs(office.AssignedTargetQ3.Value - office.AssignedTargetAnnual) > 0.01m)
-                        throw new ValidationException($"For Uniform behavior, Q3 target must equal assigned annual target ({office.AssignedTargetAnnual}). Office {office.OfficeId} has {office.AssignedTargetQ3}.");
-                    if (office.AssignedTargetQ4.HasValue && Math.Abs(office.AssignedTargetQ4.Value - office.AssignedTargetAnnual) > 0.01m)
-                        throw new ValidationException($"For Uniform behavior, Q4 target must equal assigned annual target ({office.AssignedTargetAnnual}). Office {office.OfficeId} has {office.AssignedTargetQ4}.");
+                    behaviorValidator.ValidateUniform(fyActiveKPI.Name, agencyAnnualTarget, office.AssignedTargetAnnual);
+                    behaviorValidator.ValidateUniformQuarterly(
+                        fyActiveKPI.Name,
+                        office.AssignedTargetAnnual,
+                        office.AssignedTargetQ1,
+                        office.AssignedTargetQ2,
+                        office.AssignedTargetQ3,
+                        office.AssignedTargetQ4);
                 }
                 break;
 
             case "maximum":
                 foreach (var office in officeAssignments)
                 {
-                    if (office.AssignedTargetAnnual > agencyAnnualTarget)
-                    {
-                        throw new ValidationException(
-                            $"KPI '{fyActiveKPI.Name}' has Maximum behavior. " +
-                            $"No office target may exceed the agency annual target ({agencyAnnualTarget}). " +
-                            $"Office {office.OfficeId} has {office.AssignedTargetAnnual}.");
-                    }
+                    behaviorValidator.ValidateMaximum(fyActiveKPI.Name, agencyAnnualTarget, office.AssignedTargetAnnual);
                 }
                 break;
 
             case "minimum":
                 foreach (var office in officeAssignments)
                 {
-                    if (office.AssignedTargetAnnual < agencyAnnualTarget)
-                    {
-                        throw new ValidationException(
-                            $"KPI '{fyActiveKPI.Name}' has Minimum behavior. " +
-                            $"No office target may be below the agency annual target ({agencyAnnualTarget}). " +
-                            $"Office {office.OfficeId} has {office.AssignedTargetAnnual}.");
-                    }
+                    behaviorValidator.ValidateMinimum(fyActiveKPI.Name, agencyAnnualTarget, office.AssignedTargetAnnual);
                 }
                 break;
 
             case "milestone":
                 // Flexible - no strict validation
-                // Event-based KPIs: "System Go-Live", "Certification Achieved", "Policy Approved"
-                // Targets can vary by office based on their role/capacity
                 break;
 
             default:
                 // Unknown behavior - apply summation validation as conservative default
-                if (cumulativeTotalAnnual > agencyAnnualTarget)
-                {
-                    var remainingTarget = agencyAnnualTarget - existingTotalAnnual;
-                    throw new ValidationException(
-                        $"KPI '{fyActiveKPI.Name}' (Unknown behavior: {distributionBehavior}): " +
-                        $"Cumulative total assigned ({cumulativeTotalAnnual:F2}) exceeds agency annual target ({agencyAnnualTarget:F2}). " +
-                        $"Maximum remaining: {remainingTarget:F2}.");
-                }
+                behaviorValidator.ValidateSummation(
+                    fyActiveKPI.Name,
+                    agencyAnnualTarget,
+                    cumulativeTotalAnnual,
+                    existingTotalAnnual,
+                    totalAssignedAnnual);
                 break;
         }
     }
