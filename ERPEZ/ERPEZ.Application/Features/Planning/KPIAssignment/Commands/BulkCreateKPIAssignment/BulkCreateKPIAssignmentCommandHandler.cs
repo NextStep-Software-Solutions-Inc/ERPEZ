@@ -1,4 +1,5 @@
 using ERPEZ.Application.Features.Planning.KPIAssignment.Validators;
+using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -113,7 +114,12 @@ public class BulkCreateKPIAssignmentCommandHandler(IUnitOfWork unitOfWork, IKPIA
         List<OfficeTargetAssignment> officeAssignments,
         CancellationToken cancellationToken)
     {
-        var measurementUnit = fyActiveKPI.MeasurementUnit?.ToLower();
+        if (!Enum.TryParse<MeasurementUnitEnum>(fyActiveKPI.MeasurementUnit, true, out var measurementUnit))
+            throw new ValidationException($"Invalid MeasurementUnit on FYActiveKPI '{fyActiveKPI.Name}': {fyActiveKPI.MeasurementUnit}");
+
+        if (!Enum.TryParse<DistributionBehaviorEnum>(fyActiveKPI.DistributionBehavior, true, out var distributionBehavior))
+            throw new ValidationException($"Invalid DistributionBehavior on FYActiveKPI '{fyActiveKPI.Name}': {fyActiveKPI.DistributionBehavior}");
+
         var agencyAnnualTarget = fyActiveKPI.AgencyTargetAnnual;
         var totalAssignedAnnual = officeAssignments.Sum(o => o.AssignedTargetAnnual);
 
@@ -121,12 +127,12 @@ public class BulkCreateKPIAssignmentCommandHandler(IUnitOfWork unitOfWork, IKPIA
         var existingAssignments = await unitOfWork.KPIAssignmentRepository.ToListAsync(
             unitOfWork.KPIAssignmentRepository.Query(a => a.FYActiveKPIId == fyActiveKPI.Id),
             cancellationToken);
-        
+
         var existingTotalAnnual = existingAssignments.Sum(a => a.AssignedTargetAnnual);
         var cumulativeTotalAnnual = existingTotalAnnual + totalAssignedAnnual;
 
         // Percentage validation: targets cannot exceed 100%
-        if (measurementUnit == "percentage")
+        if (measurementUnit == MeasurementUnitEnum.Percentage)
         {
             foreach (var office in officeAssignments)
             {
@@ -140,11 +146,9 @@ public class BulkCreateKPIAssignmentCommandHandler(IUnitOfWork unitOfWork, IKPIA
             }
         }
 
-        var distributionBehavior = fyActiveKPI.DistributionBehavior?.ToLower();
-
         switch (distributionBehavior)
         {
-            case "summation":
+            case DistributionBehaviorEnum.Summation:
                 behaviorValidator.ValidateSummation(
                     fyActiveKPI.Name,
                     agencyAnnualTarget,
@@ -153,7 +157,7 @@ public class BulkCreateKPIAssignmentCommandHandler(IUnitOfWork unitOfWork, IKPIA
                     totalAssignedAnnual);
                 break;
 
-            case "uniform":
+            case DistributionBehaviorEnum.Uniform:
                 // All offices must receive the exact same target
                 foreach (var office in officeAssignments)
                 {
@@ -168,32 +172,22 @@ public class BulkCreateKPIAssignmentCommandHandler(IUnitOfWork unitOfWork, IKPIA
                 }
                 break;
 
-            case "maximum":
+            case DistributionBehaviorEnum.Maximum:
                 foreach (var office in officeAssignments)
                 {
                     behaviorValidator.ValidateMaximum(fyActiveKPI.Name, agencyAnnualTarget, office.AssignedTargetAnnual);
                 }
                 break;
 
-            case "minimum":
+            case DistributionBehaviorEnum.Minimum:
                 foreach (var office in officeAssignments)
                 {
                     behaviorValidator.ValidateMinimum(fyActiveKPI.Name, agencyAnnualTarget, office.AssignedTargetAnnual);
                 }
                 break;
 
-            case "milestone":
-                // Flexible - no strict validation
-                break;
-
-            default:
-                // Unknown behavior - apply summation validation as conservative default
-                behaviorValidator.ValidateSummation(
-                    fyActiveKPI.Name,
-                    agencyAnnualTarget,
-                    cumulativeTotalAnnual,
-                    existingTotalAnnual,
-                    totalAssignedAnnual);
+            case DistributionBehaviorEnum.Milestone:
+                // Event-based KPIs: flexible target assignment
                 break;
         }
     }

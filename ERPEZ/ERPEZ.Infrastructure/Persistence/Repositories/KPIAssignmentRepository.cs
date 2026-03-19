@@ -60,6 +60,7 @@ public class KPIAssignmentRepository : Repository<Domain.Entities.Planning.KPIAs
                 .ThenInclude(f => f.MasterKPI!)
                     .ThenInclude(k => k.SDGs)
             .Where(a => !a.IsDeleted)
+            .AsSplitQuery()
             .AsNoTracking()
             .AsQueryable();
 
@@ -105,6 +106,7 @@ public class KPIAssignmentRepository : Repository<Domain.Entities.Planning.KPIAs
             .Include(a => a.FYActiveKPI!)
                 .ThenInclude(f => f.MasterKPI!)
                     .ThenInclude(k => k.SDGs)
+            .AsSplitQuery()
             .FirstOrDefaultAsync(a => a.Id == id && !a.IsDeleted, cancellationToken);
     }
 }

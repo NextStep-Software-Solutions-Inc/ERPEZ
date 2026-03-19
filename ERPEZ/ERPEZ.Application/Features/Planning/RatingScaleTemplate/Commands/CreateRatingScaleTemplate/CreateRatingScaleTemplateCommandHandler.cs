@@ -30,6 +30,22 @@ public class CreateRatingScaleTemplateCommandHandler(IUnitOfWork unitOfWork)
         if (ratingValues.Count != ratingValues.Distinct().Count())
             throw new ValidationException("Rating values must be unique.");
 
+        // If setting as default, unset other defaults for the same GeneralRatingScale
+        if (request.IsDefault && request.GeneralRatingScaleId.HasValue)
+        {
+            var otherDefaults = await unitOfWork.RatingScaleTemplateRepository
+                .ToListAsync(
+                    unitOfWork.RatingScaleTemplateRepository.Query(
+                        t => t.GeneralRatingScaleId == request.GeneralRatingScaleId && t.IsDefault),
+                    cancellationToken);
+
+            foreach (var other in otherDefaults)
+            {
+                other.IsDefault = false;
+                unitOfWork.RatingScaleTemplateRepository.Update(other);
+            }
+        }
+
         var template = new Domain.Entities.Planning.RatingScaleTemplate
         {
             Id = Guid.NewGuid(),

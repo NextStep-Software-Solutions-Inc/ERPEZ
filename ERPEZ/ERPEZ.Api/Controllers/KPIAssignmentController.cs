@@ -18,7 +18,7 @@ public class KPIAssignmentController(ISender mediator) : ControllerBase
 {
     /// <summary>
     /// Creates a KPI Assignment (Level 2 - Office Target Distribution)
-    /// Validates distribution behavior (Divisible, Uniform, Milestone)
+    /// Validates distribution behavior (Divisible, Uniform, Maximum, Minimum, Milestone)
     /// </summary>
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
