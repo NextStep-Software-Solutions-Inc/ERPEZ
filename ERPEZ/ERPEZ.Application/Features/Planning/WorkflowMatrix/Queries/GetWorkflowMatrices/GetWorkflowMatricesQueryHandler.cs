@@ -116,7 +116,6 @@ public class GetWorkflowMatricesQueryHandler(IUnitOfWork unitOfWork)
                     },
                     CurrentUser = finalUser
                 },
-                
                 CreatedAt = wm.CreatedAt,
                 CreatedBy = wm.CreatedBy,
                 UpdatedAt = wm.UpdatedAt,

@@ -14,6 +14,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<FundSource>? FundSources { get; set; }
     public DbSet<KPI>? KPIs { get; set; }
     public DbSet<KPIModeOfVerification>? KPIModeOfVerifications { get; set; }
+    public DbSet<KPIMeasurement>? KPIMeasurements { get; set; }
+    public DbSet<FYActiveKPI>? FYActiveKPIs { get; set; }
+    public DbSet<FYActiveKPIMeasurement>? FYActiveKPIMeasurements { get; set; }
+    public DbSet<KPIAssignment>? KPIAssignments { get; set; }
+    public DbSet<RatingScaleTemplate>? RatingScaleTemplates { get; set; }
+    public DbSet<RatingScaleLevel>? RatingScaleLevels { get; set; }
     public DbSet<Rating>? Ratings { get; set; }
     public DbSet<KPIPerformanceMeasure>? KPIPerformanceMeasures { get; set; }
     public DbSet<KPITarget>? KPITargets { get; set; }
@@ -931,6 +937,216 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<SupplierRequirement>()
             .HasIndex(sr => new { sr.SupplierId, sr.RequirementName });
+
+        // KPI Version 2 - KPIMeasurement
+        modelBuilder.Entity<KPIMeasurement>()
+            .HasOne(km => km.KPI)
+            .WithMany(k => k.KPIMeasurements)
+            .HasForeignKey(km => km.KPIId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<KPIMeasurement>()
+            .HasOne(km => km.RatingScaleTemplate)
+            .WithMany(r => r.KPIMeasurements)
+            .HasForeignKey(km => km.RatingScaleTemplateId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<KPIMeasurement>()
+            .HasIndex(km => km.KPIId);
+
+        modelBuilder.Entity<KPIMeasurement>()
+            .HasIndex(km => km.Dimension);
+
+        modelBuilder.Entity<KPIMeasurement>()
+            .Property(km => km.MOVs)
+            .HasColumnType("text[]");
+
+        // KPI Version 2 - FYActiveKPI
+        modelBuilder.Entity<FYActiveKPI>()
+            .Property(fk => fk.Name)
+            .HasMaxLength(500);
+
+        modelBuilder.Entity<FYActiveKPI>()
+            .Property(fk => fk.Code)
+            .HasMaxLength(100);
+
+        modelBuilder.Entity<FYActiveKPI>()
+            .Property(fk => fk.Description)
+            .HasMaxLength(2000);
+
+        modelBuilder.Entity<FYActiveKPI>()
+            .Property(fk => fk.MeasurementUnit)
+            .HasMaxLength(50);
+
+        modelBuilder.Entity<FYActiveKPI>()
+            .Property(fk => fk.DistributionBehavior)
+            .HasMaxLength(50);
+
+        modelBuilder.Entity<FYActiveKPI>()
+            .Property(fk => fk.FunctionCategory)
+            .HasMaxLength(50);
+
+        modelBuilder.Entity<FYActiveKPI>()
+            .Property(fk => fk.MonitoringFrequency)
+            .HasMaxLength(50);
+
+        modelBuilder.Entity<FYActiveKPI>()
+            .Property(fk => fk.Status)
+            .HasMaxLength(50);
+
+        modelBuilder.Entity<FYActiveKPI>()
+            .Property(fk => fk.AgencyTargetAnnual)
+            .HasPrecision(18, 4);
+
+        modelBuilder.Entity<FYActiveKPI>()
+            .Property(fk => fk.AgencyTargetQ1)
+            .HasPrecision(18, 4);
+
+        modelBuilder.Entity<FYActiveKPI>()
+            .Property(fk => fk.AgencyTargetQ2)
+            .HasPrecision(18, 4);
+
+        modelBuilder.Entity<FYActiveKPI>()
+            .Property(fk => fk.AgencyTargetQ3)
+            .HasPrecision(18, 4);
+
+        modelBuilder.Entity<FYActiveKPI>()
+            .Property(fk => fk.AgencyTargetQ4)
+            .HasPrecision(18, 4);
+
+        modelBuilder.Entity<FYActiveKPI>()
+            .HasIndex(fk => fk.FiscalYearId);
+
+        modelBuilder.Entity<FYActiveKPI>()
+            .HasIndex(fk => fk.MasterKPIId);
+
+        modelBuilder.Entity<FYActiveKPI>()
+            .HasIndex(fk => fk.ParentKPIId);
+
+        modelBuilder.Entity<FYActiveKPI>()
+            .HasIndex(fk => fk.Code);
+
+        modelBuilder.Entity<FYActiveKPI>()
+            .HasIndex(fk => fk.Status);
+
+        modelBuilder.Entity<FYActiveKPI>()
+            .HasIndex(fk => new { fk.FiscalYearId, fk.MasterKPIId });
+
+        modelBuilder.Entity<FYActiveKPI>()
+            .HasOne(fk => fk.FiscalYear)
+            .WithMany()
+            .HasForeignKey(fk => fk.FiscalYearId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<FYActiveKPI>()
+            .HasOne(fk => fk.MasterKPI)
+            .WithMany(k => k.FYActiveKPIs)
+            .HasForeignKey(fk => fk.MasterKPIId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<FYActiveKPI>()
+            .HasOne(fk => fk.ParentFYActiveKPI)
+            .WithMany(p => p.ChildFYActiveKPIs)
+            .HasForeignKey(fk => fk.ParentKPIId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<FYActiveKPI>()
+            .HasOne(fk => fk.MFOPAP)
+            .WithMany()
+            .HasForeignKey(fk => fk.MFOPAPId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        // KPI Version 2 - FYActiveKPIMeasurement
+        modelBuilder.Entity<FYActiveKPIMeasurement>()
+            .HasOne(fm => fm.FYActiveKPI)
+            .WithMany(f => f.FYActiveKPIMeasurements)
+            .HasForeignKey(fm => fm.FYActiveKPIId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<FYActiveKPIMeasurement>()
+            .HasOne(fm => fm.RatingScaleTemplate)
+            .WithMany(r => r.FYActiveKPIMeasurements)
+            .HasForeignKey(fm => fm.RatingScaleTemplateId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<FYActiveKPIMeasurement>()
+            .HasIndex(fm => fm.FYActiveKPIId);
+
+        modelBuilder.Entity<FYActiveKPIMeasurement>()
+            .HasIndex(fm => fm.Dimension);
+
+        modelBuilder.Entity<FYActiveKPIMeasurement>()
+            .Property(fm => fm.MOVs)
+            .HasColumnType("text[]");
+
+        // KPI Version 2 - KPIAssignment
+        modelBuilder.Entity<KPIAssignment>()
+            .HasOne(ka => ka.FYActiveKPI)
+            .WithMany(f => f.KPIAssignments)
+            .HasForeignKey(ka => ka.FYActiveKPIId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<KPIAssignment>()
+            .HasOne(ka => ka.Office)
+            .WithMany()
+            .HasForeignKey(ka => ka.OfficeId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<KPIAssignment>()
+            .HasIndex(ka => new { ka.FYActiveKPIId, ka.OfficeId })
+            .IsUnique();
+
+        modelBuilder.Entity<KPIAssignment>()
+            .Property(ka => ka.AssignedTargetAnnual)
+            .HasPrecision(18, 4);
+
+        modelBuilder.Entity<KPIAssignment>()
+            .Property(ka => ka.AssignedTargetQ1)
+            .HasPrecision(18, 4);
+
+        modelBuilder.Entity<KPIAssignment>()
+            .Property(ka => ka.AssignedTargetQ2)
+            .HasPrecision(18, 4);
+
+        modelBuilder.Entity<KPIAssignment>()
+            .Property(ka => ka.AssignedTargetQ3)
+            .HasPrecision(18, 4);
+
+        modelBuilder.Entity<KPIAssignment>()
+            .Property(ka => ka.AssignedTargetQ4)
+            .HasPrecision(18, 4);
+
+        // KPI Version 2 - RatingScaleTemplate
+        modelBuilder.Entity<RatingScaleTemplate>()
+            .HasOne(r => r.GeneralRatingScale)
+            .WithMany()
+            .HasForeignKey(r => r.GeneralRatingScaleId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<RatingScaleTemplate>()
+            .HasIndex(r => r.Name);
+
+        modelBuilder.Entity<RatingScaleTemplate>()
+            .HasIndex(r => r.IsDefault);
+
+        // KPI Version 2 - RatingScaleLevel
+        modelBuilder.Entity<RatingScaleLevel>()
+            .HasOne(rl => rl.RatingScaleTemplate)
+            .WithMany(r => r.RatingScaleLevels)
+            .HasForeignKey(rl => rl.RatingScaleTemplateId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<RatingScaleLevel>()
+            .HasIndex(rl => new { rl.RatingScaleTemplateId, rl.RatingValue })
+            .IsUnique();
+
+        modelBuilder.Entity<RatingScaleLevel>()
+            .Property(rl => rl.MinValue)
+            .HasPrecision(18, 4);
+
+        modelBuilder.Entity<RatingScaleLevel>()
+            .Property(rl => rl.MaxValue)
+            .HasPrecision(18, 4);
 
         base.OnModelCreating(modelBuilder);
     }

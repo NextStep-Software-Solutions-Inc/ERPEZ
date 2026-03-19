@@ -77,7 +77,6 @@ public class GetWorkflowMatrixByIdQueryHandler(IUnitOfWork unitOfWork)
                     Email = finalUser.Email ?? string.Empty
                 } : null
             },
-            
             CreatedAt = entity.CreatedAt,
             CreatedBy = entity.CreatedBy,
             UpdatedAt = entity.UpdatedAt,

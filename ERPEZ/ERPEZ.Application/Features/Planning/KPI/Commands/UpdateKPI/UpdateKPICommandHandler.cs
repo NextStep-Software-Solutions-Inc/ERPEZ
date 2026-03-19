@@ -1,4 +1,3 @@
-using ERPEZ.Application.Interfaces;
 using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
@@ -7,7 +6,7 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.KPI.Commands.UpdateKPI;
 
-public class UpdateKPICommandHandler(IUnitOfWork unitOfWork, IFileStorageService fileStorageService) : IRequestHandler<UpdateKPICommand, ApiResponse<Unit>>
+public class UpdateKPICommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateKPICommand, ApiResponse<Unit>>
 {
     public async Task<ApiResponse<Unit>> Handle(UpdateKPICommand request, CancellationToken cancellationToken)
     {
@@ -16,32 +15,48 @@ public class UpdateKPICommandHandler(IUnitOfWork unitOfWork, IFileStorageService
             var kpi = await unitOfWork.KPIRepository.GetKPIWithDetailsAsync(request.Id, cancellationToken)
                 ?? throw new NotFoundException("KPI not found.");
 
-            // Build duplicate check query conditionally for partial updates - only if name or functionType is being updated
-            if (request.Dto.Name != null || request.Dto.FunctionType != null)
+            // Build duplicate check query conditionally for partial updates - check Code + FunctionCategory
+            if (request.Dto.Code != null || request.Dto.FunctionCategory != null)
             {
-                var duplicateQuery = unitOfWork.KPIRepository.Query(x => x.Id != request.Id);
-                if (request.Dto.Name != null)
-                    duplicateQuery = duplicateQuery.Where(x => x.Name == request.Dto.Name);
-                if (request.Dto.FunctionType != null)
-                    duplicateQuery = duplicateQuery.Where(x => x.FunctionType == request.Dto.FunctionType);
-
-                var duplicate = await unitOfWork.KPIRepository.GetFirstAsync(duplicateQuery, cancellationToken);
+                var codeToCheck = request.Dto.Code ?? kpi.Code;
+                var categoryToCheck = request.Dto.FunctionCategory ?? kpi.FunctionCategory;
+                
+                var duplicate = await unitOfWork.KPIRepository.FindAsync(
+                    x => x.Id != request.Id && x.Code == codeToCheck && x.FunctionCategory == categoryToCheck,
+                    cancellationToken);
+                    
                 if (duplicate != null)
-                    throw new ConflictException("KPI with the same name and Function type already exists.");
+                    throw new ConflictException("KPI with the same code and function category already exists.");
             }
 
+            // Validate enums if provided
+            if (request.Dto.MeasurementUnit != null && 
+                !Enum.TryParse<MeasurementUnitEnum>(request.Dto.MeasurementUnit, true, out _))
+                throw new ValidationException($"Invalid MeasurementUnit: {request.Dto.MeasurementUnit}");
+
+            if (request.Dto.DistributionBehavior != null && 
+                !Enum.TryParse<DistributionBehaviorEnum>(request.Dto.DistributionBehavior, true, out _))
+                throw new ValidationException($"Invalid DistributionBehavior: {request.Dto.DistributionBehavior}");
+
+            if (request.Dto.FunctionCategory != null && 
+                !Enum.TryParse<FunctionCategoryEnum>(request.Dto.FunctionCategory, true, out _))
+                throw new ValidationException($"Invalid FunctionCategory: {request.Dto.FunctionCategory}");
+
+            if (!string.IsNullOrEmpty(request.Dto.MonitoringFrequency) && 
+                !Enum.TryParse<MonitoringFrequencyEnum>(request.Dto.MonitoringFrequency, true, out _))
+                throw new ValidationException($"Invalid MonitoringFrequency: {request.Dto.MonitoringFrequency}");
+
+            // Update KPI properties
             kpi.Name = request.Dto.Name ?? kpi.Name;
+            kpi.Code = request.Dto.Code ?? kpi.Code;
             kpi.Description = request.Dto.Description ?? kpi.Description;
-            kpi.FunctionType = request.Dto.FunctionType ?? kpi.FunctionType;
-            kpi.IsOfficeMandate = request.Dto.IsOfficeMandate ?? kpi.IsOfficeMandate;
-            kpi.IsPercentage = request.Dto.IsPercentage ?? kpi.IsPercentage;
+            kpi.MeasurementUnit = request.Dto.MeasurementUnit ?? kpi.MeasurementUnit;
+            kpi.DistributionBehavior = request.Dto.DistributionBehavior ?? kpi.DistributionBehavior;
+            kpi.FunctionCategory = request.Dto.FunctionCategory ?? kpi.FunctionCategory;
+            kpi.MonitoringFrequency = request.Dto.MonitoringFrequency ?? kpi.MonitoringFrequency;
+            kpi.IsOptInAvailable = request.Dto.IsOptInAvailable ?? kpi.IsOptInAvailable;
+            kpi.IsGAD = request.Dto.IsGAD ?? kpi.IsGAD;
             kpi.Status = request.Dto.Status ?? kpi.Status;
-            kpi.IsTargetValueAllocable = request.Dto.IsTargetValueAllocable ?? kpi.IsTargetValueAllocable;
-            kpi.IsFixed = request.Dto.IsFixed ?? kpi.IsFixed;
-            kpi.IsGlobal = request.Dto.IsGlobal ?? kpi.IsGlobal;
-            kpi.IsMultiple = request.Dto.IsMultiple ?? kpi.IsMultiple;
-            kpi.IsAverage = request.Dto.IsAverage ?? kpi.IsAverage;
-            kpi.IsActive = request.Dto.IsActive ?? kpi.IsActive;
 
             // Handle SDGs - Only update if provided
             if (request.Dto.SDGIds?.Count > 0)
@@ -90,7 +105,22 @@ public class UpdateKPICommandHandler(IUnitOfWork unitOfWork, IFileStorageService
                 }
             }
 
-            // Handle KPIRatings - Upsert logic (update existing, add new, delete orphaned)
+            // ========== NESTED ENTITIES REMOVED ==========
+            // KPIMeasurements, KPIRatings, KPITargets, and KPIMOVs are now managed via their own separate endpoints.
+            // Use the dedicated endpoints for managing these entities:
+            // - KPIMeasurement: POST/PUT/DELETE /kpi-measurements
+            // - KPITargets: Managed via FYActiveKPI
+            // - KPIRatings: Legacy - not used in Version 2
+            // - KPIMOVs: MOVs stored as List<string> in KPIMeasurement.MOVs
+            
+            // ========== LEGACY SUPPORT - COMMENTED OUT (Version 2 uses KPIMeasurements only) ==========
+            // In Version 2:
+            // - Targets are set at FYActiveKPI level (AgencyTargetAnnual, Q1-Q4), not master KPI
+            // - MOVs are stored in KPIMeasurement.MOVs (List<string>), not separate entities
+            // - Ratings use RatingScaleTemplate system, not KPIPerformanceMeasure
+            
+            /*
+            // Legacy support: Handle KPIRatings - Upsert logic (update existing, add new, delete orphaned)
             if (request.Dto.KPIRatings?.Count > 0)
             {
                 var kpmByPmId = kpi.KPIPerformanceMeasures
@@ -285,6 +315,7 @@ public class UpdateKPICommandHandler(IUnitOfWork unitOfWork, IFileStorageService
                     }
                 }
             }
+            */
 
             unitOfWork.KPIRepository.Update(kpi);
             await unitOfWork.SaveChangesAsync(cancellationToken);

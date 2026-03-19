@@ -17,10 +17,11 @@ public class CreateKPITargetCommandHandler(IUnitOfWork unitOfWork)
 
         decimal targetValueToSave = request.TargetValue;
 
-        if (kpi.IsPercentage)
-        {
-            targetValueToSave = request.TargetValue / 100;
-        }
+        // TODO: Version 2 - IsPercentage property removed
+        // if (kpi.IsPercentage)
+        // {
+        //     targetValueToSave = request.TargetValue / 100;
+        // }
 
         var kPITarget = await unitOfWork.KPITargetRepository.FindAsync(
             t => t.KPIId == request.KPIId && t.QuarterName == request.QuarterName,

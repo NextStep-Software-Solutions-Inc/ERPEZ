@@ -29,10 +29,11 @@ public class UpdateKPITargetCommandHandler(IUnitOfWork unitOfWork) : IRequestHan
         if (dto != null && dto.TargetValue.HasValue)
         {
             targetValueToSave = dto.TargetValue.Value;
-            if (kpi != null && kpi.IsPercentage)
-            {
-                targetValueToSave = dto.TargetValue.Value / 100;
-            }
+            // TODO: Version 2 - IsPercentage property removed
+            // if (kpi != null && kpi.IsPercentage)
+            // {
+            //     targetValueToSave = dto.TargetValue.Value / 100;
+            // }
         }
         else
         {

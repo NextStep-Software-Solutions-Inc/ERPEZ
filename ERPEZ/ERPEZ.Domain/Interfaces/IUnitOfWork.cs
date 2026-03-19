@@ -75,6 +75,12 @@ public interface IUnitOfWork
     ISupplierRepository SupplierRepository { get; }
     ISupplierRequirementRepository SupplierRequirementRepository { get; }
     ISupplierCategoryRepository SupplierCategoryRepository { get; }
+    IKPIMeasurementRepository KPIMeasurementRepository { get; }
+    IFYActiveKPIRepository FYActiveKPIRepository { get; }
+    IFYActiveKPIMeasurementRepository FYActiveKPIMeasurementRepository { get; }
+    IKPIAssignmentRepository KPIAssignmentRepository { get; }
+    IRatingScaleTemplateRepository RatingScaleTemplateRepository { get; }
+    IRatingScaleLevelRepository RatingScaleLevelRepository { get; }
     Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default);
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

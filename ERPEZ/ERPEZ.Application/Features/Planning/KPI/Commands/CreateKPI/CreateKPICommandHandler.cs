@@ -1,4 +1,3 @@
-using ERPEZ.Application.Interfaces;
 using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
@@ -7,75 +6,68 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.KPI.Commands.CreateKPI;
 
-public class CreateKPICommandHandler(IUnitOfWork unitOfWork, IFileStorageService fileStorageService) : IRequestHandler<CreateKPICommand, ApiResponse<Guid>>
+public class CreateKPICommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateKPICommand, ApiResponse<Guid>>
 {
     public async Task<ApiResponse<Guid>> Handle(CreateKPICommand request, CancellationToken cancellationToken)
     {
+        // Validate uniqueness (Code + FunctionCategory)
         var existingKpi = await unitOfWork.KPIRepository.FindAsync(
-            x => x.Name == request.Name && x.FunctionType == request.FunctionType,
+            x => x.Code == request.Code && x.FunctionCategory == request.FunctionCategory,
             cancellationToken
         );
 
-        if (existingKpi != null)
-            throw new ConflictException("KPI with the same name and Function type already exists.");
+        if (existingKpi != null) 
+            throw new ConflictException("KPI with the same code and function category already exists.");
 
+        // Validate Parent KPI if provided
         if (request.ParentKPIId != null)
         {
-            var parentKpi = await unitOfWork.KPIRepository.GetByIdAsync(request.ParentKPIId.Value, cancellationToken: cancellationToken)
+            _ = await unitOfWork.KPIRepository.GetByIdAsync(request.ParentKPIId.Value, cancellationToken: cancellationToken)
                 ?? throw new NotFoundException("Parent KPI not found.");
         }
 
-        var requiredMeasureIds = request.KPIRatings
-            .Select(r => r.PerformanceMeasureId)
-            .Distinct()
-            .ToList();
+        // Validate enums
+        if (!Enum.TryParse<MeasurementUnitEnum>(request.MeasurementUnit, true, out _))
+            throw new ValidationException($"Invalid MeasurementUnit: {request.MeasurementUnit}");
 
-        if (requiredMeasureIds.Count > 0)
-        {
-            var existingMeasures = await unitOfWork.PerformanceMeasureRepository.ToListAsync(
-                unitOfWork.PerformanceMeasureRepository.Query(pm => requiredMeasureIds.Contains(pm.Id)), cancellationToken);
+        if (!Enum.TryParse<DistributionBehaviorEnum>(request.DistributionBehavior, true, out _))
+            throw new ValidationException($"Invalid DistributionBehavior: {request.DistributionBehavior}");
 
-            var existingMeasureIds = existingMeasures.Select(pm => pm.Id).ToList();
+        if (!Enum.TryParse<FunctionCategoryEnum>(request.FunctionCategory, true, out _))
+            throw new ValidationException($"Invalid FunctionCategory: {request.FunctionCategory}");
 
-            var missingMeasureIds = requiredMeasureIds
-                .Where(id => !existingMeasureIds.Contains(id))
-                .ToList();
-
-            if (missingMeasureIds.Count > 0)
-            {
-                var idList = string.Join(", ", missingMeasureIds);
-                throw new NotFoundException($"One or more referenced Performance Measure IDs were not found: {idList}");
-            }
-        }
+        if (!string.IsNullOrEmpty(request.MonitoringFrequency) && 
+            !Enum.TryParse<MonitoringFrequencyEnum>(request.MonitoringFrequency, true, out _))
+            throw new ValidationException($"Invalid MonitoringFrequency: {request.MonitoringFrequency}");
 
         var kpi = new Domain.Entities.Planning.KPI
         {
             ParentKPIId = request.ParentKPIId,
-            FunctionType = request.FunctionType,
+            MFOPAPId = request.MFOPAPId,
             Name = request.Name,
+            Code = request.Code,
             Description = request.Description,
-            IsOfficeMandate = request.IsOfficeMandate,
-            IsPercentage = request.IsPercentage,
-            IsTargetValueAllocable = request.IsTargetValueAllocable,
-            IsFixed = request.IsFixed,
-            IsGlobal = request.IsGlobal,
-            IsMultiple = request.IsMultiple,
-            IsAverage = request.IsAverage,
-            Status = "Draft",
-            MFOPAPId = request.MFOPAPId
+            MeasurementUnit = request.MeasurementUnit,
+            DistributionBehavior = request.DistributionBehavior,
+            FunctionCategory = request.FunctionCategory,
+            MonitoringFrequency = request.MonitoringFrequency,
+            IsOptInAvailable = request.IsOptInAvailable,
+            IsGAD = request.IsGAD,
+            Status = "Active",
         };
 
         await unitOfWork.ExecuteInTransactionAsync(async () =>
         {
             await unitOfWork.KPIRepository.AddAsync(kpi, cancellationToken);
-            await unitOfWork.SaveChangesAsync(cancellationToken);
 
+            // Validate and link MFOPAP
             if (request.MFOPAPId.HasValue)
             {
-                var existingMfopap = await unitOfWork.MFOPAPRepository.GetByIdAsync(request.MFOPAPId.Value, cancellationToken: cancellationToken) ?? throw new NotFoundException($"MFOPAP with ID {request.MFOPAPId.Value} was not found.");
-                kpi.MFOPAPId = request.MFOPAPId.Value;
+                _ = await unitOfWork.MFOPAPRepository.GetByIdAsync(request.MFOPAPId.Value, cancellationToken: cancellationToken)
+                    ?? throw new NotFoundException($"MFOPAP with ID {request.MFOPAPId.Value} was not found.");
             }
 
+            // Link SDGs
             if (request.SDGIds.Count > 0)
             {
                 var existingSDGsQuery = unitOfWork.SDGRepository
@@ -93,6 +85,7 @@ public class CreateKPICommandHandler(IUnitOfWork unitOfWork, IFileStorageService
                 kpi.SDGs = existingSDGs;
             }
 
+            // Link Attributes
             if (request.AttributeIds.Count > 0)
             {
                 var existingAttributesQuery = unitOfWork.AttributeRepository
@@ -110,59 +103,6 @@ public class CreateKPICommandHandler(IUnitOfWork unitOfWork, IFileStorageService
                 kpi.Attributes = existingAttributes;
             }
 
-            var kpiPerformanceMeasures = new List<Domain.Entities.Planning.KPIPerformanceMeasure>();
-            foreach (var ratingRequest in request.KPIRatings)
-            {
-                var kpm = new Domain.Entities.Planning.KPIPerformanceMeasure
-                {
-                    KPIId = kpi.Id,
-                    PerformanceMeasureId = ratingRequest.PerformanceMeasureId
-                };
-
-                foreach (var ratingDto in ratingRequest.Ratings)
-                {
-                    kpm.Ratings.Add(new Domain.Entities.Planning.Rating
-                    {
-                        NumericalRating = ratingDto.Value,
-                        Remarks = ratingDto.Remarks
-                    });
-                }
-
-                kpiPerformanceMeasures.Add(kpm);
-            }
-
-            var kpiTargets = request.KPITargets
-                .Select(targetRequest => new Domain.Entities.Planning.KPITarget
-                {
-                    KPIId = kpi.Id,
-                    TargetValue = targetRequest.TargetValue,
-                    QuarterName = targetRequest.QuarterName,
-                    Period = Enum.Parse<PeriodEnum>(targetRequest.Period),
-                }).ToList();
-
-            var kpiModeOfVerifications = new List<Domain.Entities.Planning.KPIModeOfVerification>();
-            foreach (var m in request.KPIMOVs)
-            {
-                string? url = null;
-                if (m.FileId.HasValue)
-                {
-                    url = await fileStorageService.PromoteFileAsync(m.FileId.Value);
-                }
-
-                kpiModeOfVerifications.Add(new Domain.Entities.Planning.KPIModeOfVerification
-                {
-                    KPIId = kpi.Id,
-                    Name = m.Name,
-                    Description = m.Description,
-                    Url = url
-                });
-            }
-
-            kpi.KPIPerformanceMeasures = kpiPerformanceMeasures;
-            kpi.KPITargets = kpiTargets;
-            kpi.KPIModeOfVerifications = kpiModeOfVerifications;
-
-            unitOfWork.KPIRepository.Update(kpi);
             await unitOfWork.SaveChangesAsync(cancellationToken);
 
         }, cancellationToken);

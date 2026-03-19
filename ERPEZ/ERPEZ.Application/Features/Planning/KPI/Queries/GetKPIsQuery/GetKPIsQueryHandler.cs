@@ -1,8 +1,15 @@
 using ERPEZ.Application.Features.Planning.KPI.Dtos;
+using ERPEZ.Application.Features.Planning.KPIMeasurement.Dtos;
+using ERPEZ.Application.Features.Planning.KPIModeOfVerification.Dtos;
+using ERPEZ.Application.Features.Planning.KPITarget.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
 using System.Linq.Expressions;
+using ERPEZ.Application.Features.Planning.MFOPAP.Dtos;
+using ERPEZ.Application.Features.Planning.Attribute.Dtos;
+using ERPEZ.Application.Features.Planning.Rating.Dtos;
+using ERPEZ.Application.Features.Planning.SDG.Dtos;
 
 namespace ERPEZ.Application.Features.Planning.KPI.Queries.GetKPIsQuery;
 
@@ -22,33 +29,75 @@ public class GetKPIsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetKP
         {
             Id = kpi.Id,
             ParentKPIId = kpi.ParentKPIId,
-            FunctionType = kpi.FunctionType,
-            Description = kpi.Description,
+            ParentKPI = kpi.ParentKPI != null ? new ParentKPIResponse
+            {
+                Id = kpi.ParentKPI.Id,
+                Name = kpi.ParentKPI.Name,
+                Code = kpi.ParentKPI.Code,
+                Description = kpi.ParentKPI.Description,
+                Status = kpi.ParentKPI.Status,
+                FunctionCategory = kpi.ParentKPI.FunctionCategory
+            } : null,
+            MFOPAPId = kpi.MFOPAPId,
             Name = kpi.Name,
-            IsOfficeMandate = kpi.IsOfficeMandate,
-            IsPercentage = kpi.IsPercentage,
-            IsTargetValueAllocable = kpi.IsTargetValueAllocable,
+            Code = kpi.Code,
+            Description = kpi.Description,
+            MeasurementUnit = kpi.MeasurementUnit,
+            DistributionBehavior = kpi.DistributionBehavior,
+            FunctionCategory = kpi.FunctionCategory,
+            MonitoringFrequency = kpi.MonitoringFrequency,
+            IsOptInAvailable = kpi.IsOptInAvailable,
+            IsGAD = kpi.IsGAD,
             Status = kpi.Status,
             CreatedBy = kpi.CreatedBy,
             CreatedAt = kpi.CreatedAt,
+            
+            KPIMeasurements = kpi.KPIMeasurements.Select(m => new KPIMeasurementResponse
+            {
+                Id = m.Id,
+                KPIId = m.KPIId,
+                Dimension = m.Dimension,
+                MOVs = m.MOVs,
+                RatingScaleTemplateId = m.RatingScaleTemplateId,
+                IsMOVEditable = m.IsMOVEditable,
+                IsScaleEditable = m.IsScaleEditable,
+                CreatedAt = m.CreatedAt,
+                CreatedBy = m.CreatedBy
+            }).ToList(),
+            
+            MFOPAP = kpi.MFOPAP != null ? new MFOPAPResponse
+            {
+                Id = kpi.MFOPAP.Id,
+                ParentId = kpi.MFOPAP.ParentId,
+                Name = kpi.MFOPAP.Name,
+                Code = kpi.MFOPAP.Code,
+                Type = kpi.MFOPAP.Type,
+                IsActive = kpi.MFOPAP.IsActive
+            } : null,
+            
+            Attributes = kpi.Attributes.Select(a => new AttributeResponse
+            {
+                Id = a.Id,
+                Name = a.Name,
+                Code = a.Code,
+                Description = a.Description,
+                ParentAttributeId = a.ParentAttributeId
+            }).ToList(),
+            
+            SDGs = kpi.SDGs.Select(s => new SDGResponse
+            {
+                Id = s.Id,
+                Name = s.Name,
+                Description = s.Description
+            }).ToList(),
+            
+            // Legacy collections - empty in Version 2
+            KPITargets = new List<KPITargetResponse>(),
+            KPIRatings = new List<RatingResponse>(),
+            KPIModeOfVerifications = new List<KPIModeOfVerificationResponse>()
         };
 
-        var includes = new List<Expression<Func<Domain.Entities.Planning.KPI, object>>>
-        {
-            k => k.KPIPerformanceMeasures,
-            k => k.KPITargets,
-            k => k.KPIModeOfVerifications,
-            k => k.MFOPAP!,  // Null-forgiving operator required for expression tree with nullable navigation property
-            k => k.Attributes,
-            k => k.SDGs
-        };
-
-        var (kpiDtos, totalCount) = await unitOfWork.KPIRepository.GetKPIsWithDetailsAsync(
-            sieveModel,
-            projection,
-            includes,
-            cancellationToken
-        );
+        var (kpiDtos, totalCount) = await unitOfWork.KPIRepository.GetAllAsync(sieveModel, projection, cancellationToken);
 
         return new PaginatedApiResponse<KPIResponse>([.. kpiDtos], query.PageNumber, query.PageSize, totalCount);
     }
