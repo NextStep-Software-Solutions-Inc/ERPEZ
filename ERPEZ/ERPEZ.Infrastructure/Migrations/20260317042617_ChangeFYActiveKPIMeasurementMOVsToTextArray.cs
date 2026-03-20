@@ -15,7 +15,10 @@ namespace ERPEZ.Infrastructure.Migrations
                 ALTER COLUMN ""MOVs"" TYPE text[]
                 USING CASE
                     WHEN ""MOVs"" IS NULL THEN ARRAY[]::text[]
-                    ELSE ARRAY(SELECT jsonb_array_elements_text(""MOVs""))
+                    ELSE string_to_array(
+                        trim(both '[]' from regexp_replace(""MOVs""::text, chr(34), '', 'g')),
+                        ','
+                    )::text[]
                 END;
 
                 ALTER TABLE planning.""FYActiveKPIMeasurements""
