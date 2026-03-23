@@ -12,6 +12,7 @@ public class UpdateKPIAssignmentCommandValidator : AbstractValidator<UpdateKPIAs
 
         RuleFor(x => x.AssignedTargetAnnual)
             .GreaterThanOrEqualTo(0)
+            .When(x => x.AssignedTargetAnnual.HasValue)
             .WithMessage("Assigned Target Annual must be greater than or equal to 0.");
 
         RuleFor(x => x.AssignedTargetQ1)
