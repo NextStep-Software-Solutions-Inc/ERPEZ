@@ -36,6 +36,12 @@ public class BulkCreateKPIAssignmentCommandHandler(IUnitOfWork unitOfWork, IKPIA
                         $"Use PUT /fy-active-kpis/targets/bulk to set targets.");
                 }
 
+                // For any Shopped office assignments in this batch, validate opt-in availability
+                var hasShoppedEntries = kpiAssignment.OfficeAssignments
+                    .Any(o => string.Equals(o.Source, "Shopped", StringComparison.OrdinalIgnoreCase));
+                if (hasShoppedEntries && !fyActiveKPI.IsOptInAvailable)
+                    throw new ValidationException($"KPI '{fyActiveKPI.Name}' is not available for opt-in. Only KPIs marked as opt-in available can be shopped by offices.");
+
                 // Check for duplicate office assignments within this KPI
                 var officeIds = kpiAssignment.OfficeAssignments.Select(o => o.OfficeId).ToList();
                 if (officeIds.Count != officeIds.Distinct().Count())
@@ -60,12 +66,17 @@ public class BulkCreateKPIAssignmentCommandHandler(IUnitOfWork unitOfWork, IKPIA
                 // Validate distribution behavior
                 await ValidateDistributionBehavior(
                     fyActiveKPI,
-                    kpiAssignment.OfficeAssignments.ToList(),
+                    kpiAssignment.OfficeAssignments
+                        .Where(o => string.Equals(o.Source, "Assigned", StringComparison.OrdinalIgnoreCase))
+                        .ToList(),
                     cancellationToken);
 
                 // Create assignments for each office
                 foreach (var officeAssignment in kpiAssignment.OfficeAssignments)
                 {
+                    if (!Enum.TryParse<KPIAssignmentSourceEnum>(officeAssignment.Source, true, out _))
+                        throw new ValidationException($"Invalid Source: {officeAssignment.Source}. Must be 'Assigned' or 'Shopped'.");
+
                     // Validate office exists
                     _ = await unitOfWork.OfficeRepository.GetByIdAsync(
                         officeAssignment.OfficeId, 
@@ -78,6 +89,7 @@ public class BulkCreateKPIAssignmentCommandHandler(IUnitOfWork unitOfWork, IKPIA
                         Id = assignmentId,
                         FYActiveKPIId = kpiAssignment.FYActiveKPIId,
                         OfficeId = officeAssignment.OfficeId,
+                        Source = officeAssignment.Source,
                         AssignedTargetAnnual = officeAssignment.AssignedTargetAnnual,
                         AssignedTargetQ1 = officeAssignment.AssignedTargetQ1,
                         AssignedTargetQ2 = officeAssignment.AssignedTargetQ2,
@@ -114,6 +126,9 @@ public class BulkCreateKPIAssignmentCommandHandler(IUnitOfWork unitOfWork, IKPIA
         List<OfficeTargetAssignment> officeAssignments,
         CancellationToken cancellationToken)
     {
+        if (officeAssignments.Count == 0)
+            return;
+
         if (!Enum.TryParse<MeasurementUnitEnum>(fyActiveKPI.MeasurementUnit, true, out var measurementUnit))
             throw new ValidationException($"Invalid MeasurementUnit on FYActiveKPI '{fyActiveKPI.Name}': {fyActiveKPI.MeasurementUnit}");
 
@@ -121,14 +136,14 @@ public class BulkCreateKPIAssignmentCommandHandler(IUnitOfWork unitOfWork, IKPIA
             throw new ValidationException($"Invalid DistributionBehavior on FYActiveKPI '{fyActiveKPI.Name}': {fyActiveKPI.DistributionBehavior}");
 
         var agencyAnnualTarget = fyActiveKPI.AgencyTargetAnnual;
-        var totalAssignedAnnual = officeAssignments.Sum(o => o.AssignedTargetAnnual);
+        var totalAssignedAnnual = officeAssignments.Sum(o => o.AssignedTargetAnnual ?? 0m);
 
         // Get existing assignments for this KPI to track cumulative totals
         var existingAssignments = await unitOfWork.KPIAssignmentRepository.ToListAsync(
             unitOfWork.KPIAssignmentRepository.Query(a => a.FYActiveKPIId == fyActiveKPI.Id),
             cancellationToken);
 
-        var existingTotalAnnual = existingAssignments.Sum(a => a.AssignedTargetAnnual);
+        var existingTotalAnnual = existingAssignments.Sum(a => a.AssignedTargetAnnual ?? 0m);
         var cumulativeTotalAnnual = existingTotalAnnual + totalAssignedAnnual;
 
         // Percentage validation: targets cannot exceed 100%
@@ -138,7 +153,7 @@ public class BulkCreateKPIAssignmentCommandHandler(IUnitOfWork unitOfWork, IKPIA
             {
                 behaviorValidator.ValidatePercentageMeasurement(
                     fyActiveKPI.Name,
-                    office.AssignedTargetAnnual,
+                    office.AssignedTargetAnnual ?? 0m,
                     office.AssignedTargetQ1,
                     office.AssignedTargetQ2,
                     office.AssignedTargetQ3,
@@ -161,10 +176,10 @@ public class BulkCreateKPIAssignmentCommandHandler(IUnitOfWork unitOfWork, IKPIA
                 // All offices must receive the exact same target
                 foreach (var office in officeAssignments)
                 {
-                    behaviorValidator.ValidateUniform(fyActiveKPI.Name, agencyAnnualTarget, office.AssignedTargetAnnual);
+                    behaviorValidator.ValidateUniform(fyActiveKPI.Name, agencyAnnualTarget, office.AssignedTargetAnnual ?? 0m);
                     behaviorValidator.ValidateUniformQuarterly(
                         fyActiveKPI.Name,
-                        office.AssignedTargetAnnual,
+                        office.AssignedTargetAnnual ?? 0m,
                         office.AssignedTargetQ1,
                         office.AssignedTargetQ2,
                         office.AssignedTargetQ3,
@@ -175,14 +190,14 @@ public class BulkCreateKPIAssignmentCommandHandler(IUnitOfWork unitOfWork, IKPIA
             case DistributionBehaviorEnum.Maximum:
                 foreach (var office in officeAssignments)
                 {
-                    behaviorValidator.ValidateMaximum(fyActiveKPI.Name, agencyAnnualTarget, office.AssignedTargetAnnual);
+                    behaviorValidator.ValidateMaximum(fyActiveKPI.Name, agencyAnnualTarget, office.AssignedTargetAnnual ?? 0m);
                 }
                 break;
 
             case DistributionBehaviorEnum.Minimum:
                 foreach (var office in officeAssignments)
                 {
-                    behaviorValidator.ValidateMinimum(fyActiveKPI.Name, agencyAnnualTarget, office.AssignedTargetAnnual);
+                    behaviorValidator.ValidateMinimum(fyActiveKPI.Name, agencyAnnualTarget, office.AssignedTargetAnnual ?? 0m);
                 }
                 break;
 

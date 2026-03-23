@@ -9,7 +9,18 @@ public record KPIAssignmentResponse
     public Guid FYActiveKPIId { get; init; }
     public Guid OfficeId { get; init; }
     public string OfficeName { get; init; } = string.Empty;
-    public decimal AssignedTargetAnnual { get; init; }
+    
+    /// <summary>
+    /// Source of the assignment: "Assigned" (by Planning) or "Shopped" (by Office).
+    /// </summary>
+    public string Source { get; init; } = "Assigned";
+    
+    /// <summary>
+    /// Annual target for the Office.
+    /// Null if Source="Shopped"; has value if Source="Assigned".
+    /// </summary>
+    public decimal? AssignedTargetAnnual { get; init; }
+    
     public decimal? AssignedTargetQ1 { get; init; }
     public decimal? AssignedTargetQ2 { get; init; }
     public decimal? AssignedTargetQ3 { get; init; }

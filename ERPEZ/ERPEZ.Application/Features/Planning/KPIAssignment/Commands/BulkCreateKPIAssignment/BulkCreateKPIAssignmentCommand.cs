@@ -24,7 +24,8 @@ public record KPIOfficeAssignmentRequest
 public record OfficeTargetAssignment
 {
     public Guid OfficeId { get; init; }
-    public decimal AssignedTargetAnnual { get; init; }
+    public string Source { get; init; } = "Assigned";
+    public decimal? AssignedTargetAnnual { get; init; }
     public decimal? AssignedTargetQ1 { get; init; }
     public decimal? AssignedTargetQ2 { get; init; }
     public decimal? AssignedTargetQ3 { get; init; }
