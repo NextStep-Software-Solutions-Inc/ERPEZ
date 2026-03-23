@@ -1430,7 +1430,7 @@ namespace ERPEZ.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<decimal>("AssignedTargetAnnual")
+                    b.Property<decimal?>("AssignedTargetAnnual")
                         .HasPrecision(18, 4)
                         .HasColumnType("numeric(18,4)");
 
@@ -1474,6 +1474,10 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Property<Guid>("OfficeId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("Source")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
