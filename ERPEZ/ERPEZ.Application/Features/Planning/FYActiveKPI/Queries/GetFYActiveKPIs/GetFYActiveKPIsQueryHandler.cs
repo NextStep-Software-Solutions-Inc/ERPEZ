@@ -97,18 +97,11 @@ public class GetFYActiveKPIsQueryHandler(IUnitOfWork unitOfWork)
 
         if (request.AvailableForOfficeId.HasValue)
         {
-            // Fetch FYActiveKPI IDs already assigned/shopped by this office (cheap bounded query)
-            var alreadyAssignedIds = await unitOfWork.KPIAssignmentRepository.ToListAsync(
-                unitOfWork.KPIAssignmentRepository
-                    .Query(a => a.OfficeId == request.AvailableForOfficeId.Value)
-                    .Select(a => a.FYActiveKPIId),
-                cancellationToken);
-
-            (items, totalCount) = await unitOfWork.FYActiveKPIRepository.GetAllAsync(
+            (items, totalCount) = await unitOfWork.FYActiveKPIRepository.GetAvailableForOfficeAsync(
                 sieveModel,
+                request.AvailableForOfficeId.Value,
                 projection,
-                preFilter: fy => !alreadyAssignedIds.Contains(fy.Id),
-                cancellationToken: cancellationToken);
+                cancellationToken);
         }
         else
         {
