@@ -6,13 +6,9 @@ public class CreateOPCRActivityCommandValidator : AbstractValidator<CreateOPCRAc
 {
     public CreateOPCRActivityCommandValidator()
     {
-        RuleFor(x => x.OPCRId)
+        RuleFor(x => x.OPCRItemId)
             .NotEmpty()
-            .WithMessage("OPCR ID is required.");
-
-        RuleFor(x => x.DUKPITargetAssignmentId)
-            .NotEmpty()
-            .WithMessage("DU KPI Target Assignment ID is required.");
+            .WithMessage("OPCR Item ID is required.");
 
         RuleFor(x => x.Name)
             .NotEmpty()
