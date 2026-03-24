@@ -58,6 +58,7 @@ public static class DependencyInjection
         // Register repositories and Unit of Work
         services.AddScoped<IWFPObjectiveTargetExpenditureRepository, WFPObjectiveTargetExpenditureRepository>();
         services.AddScoped<IOPCRRepository, OPCRRepository>();
+        services.AddScoped<IOPCRItemRepository, OPCRItemRepository>();
         services.AddScoped<IOPCRActivityRepository, OPCRActivityRepository>();
         services.AddScoped<IOPCREvaluationRepository, OPCREvaluationRepository>();
         services.AddScoped<IOPCRPAPDepartmentRepository, OPCRPAPDepartmentRepository>();
