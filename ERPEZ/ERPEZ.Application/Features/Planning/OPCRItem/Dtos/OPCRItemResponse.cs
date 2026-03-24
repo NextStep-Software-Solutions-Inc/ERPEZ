@@ -1,3 +1,6 @@
+using System.Text.Json.Serialization;
+using ERPEZ.Application.Features.Planning.OPCRActivity.Dtos;
+
 namespace ERPEZ.Application.Features.Planning.OPCRItem.Dtos;
 
 public record OPCRItemResponse
@@ -26,4 +29,7 @@ public record OPCRItemResponse
     public int ProposedAnnualTarget { get; init; }
     public DateTime CreatedAt { get; init; }
     public string CreatedBy { get; init; } = string.Empty;
+
+    [JsonPropertyName("OPCRActivities")]
+    public List<OPCRActivityResponse> OPCRActivities { get; init; } = [];
 }

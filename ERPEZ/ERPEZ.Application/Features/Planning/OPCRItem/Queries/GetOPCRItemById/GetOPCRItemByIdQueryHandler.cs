@@ -1,4 +1,7 @@
+using ERPEZ.Application.Features.Planning.OPCRActivity.Dtos;
+using ERPEZ.Application.Features.Planning.Office.Dtos;
 using ERPEZ.Application.Features.Planning.OPCRItem.Dtos;
+using ERPEZ.Application.Features.Planning.OPCRPAPDepartment.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -37,7 +40,35 @@ public class GetOPCRItemByIdQueryHandler(IUnitOfWork unitOfWork)
                 Q4Target = item.Q4Target,
                 ProposedAnnualTarget = item.Q1Target + item.Q2Target + item.Q3Target + item.Q4Target,
                 CreatedAt = item.CreatedAt,
-                CreatedBy = item.CreatedBy
+                CreatedBy = item.CreatedBy,
+                OPCRActivities = item.OPCRActivities.Select(a => new OPCRActivityResponse
+                {
+                    Id = a.Id,
+                    OPCRItemId = a.OPCRItemId,
+                    Name = a.Name,
+                    Description = a.Description,
+                    Budget = a.Budget,
+                    PAPDepartments = a.OPCRPAPDepartments.Select(p => new OPCRPAPDepartmentResponse
+                    {
+                        Id = p.Id,
+                        OPCRActivityId = p.OPCRActivityId,
+                        Office = new OfficeResponse
+                        {
+                            Id = p.Office!.Id,
+                            Name = p.Office.Name,
+                            Code = p.Office.Code,
+                            Address = p.Office.Address,
+                            Description = p.Office.Description,
+                            ResponsibilityCenterCode = p.Office.ResponsibilityCenterCode,
+                            ClusterId = p.Office.ClusterId,
+                            Cluster = p.Office.Cluster == null ? null : new()
+                            {
+                                Id = p.Office.Cluster.Id,
+                                Name = p.Office.Cluster.Name
+                            }
+                        }
+                    }).ToList()
+                }).ToList()
             });
 
         var itemResponse = await unitOfWork.OPCRItemRepository.GetFirstAsync(query, cancellationToken)
