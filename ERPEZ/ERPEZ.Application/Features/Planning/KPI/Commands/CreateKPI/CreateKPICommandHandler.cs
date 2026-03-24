@@ -1,3 +1,4 @@
+using ERPEZ.Application.Common.Validators;
 using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
@@ -30,8 +31,11 @@ public class CreateKPICommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<C
         if (!Enum.TryParse<MeasurementUnitEnum>(request.MeasurementUnit, true, out _))
             throw new ValidationException($"Invalid MeasurementUnit: {request.MeasurementUnit}");
 
-        if (!Enum.TryParse<DistributionBehaviorEnum>(request.DistributionBehavior, true, out _))
-            throw new ValidationException($"Invalid DistributionBehavior: {request.DistributionBehavior}");
+        if (!ValidationUtilities.TryParseDistributionBehavior(request.DistributionBehavior, out _))
+            throw new ValidationException(
+                $"Invalid DistributionBehavior '{request.DistributionBehavior}'. " +
+                $"Normalized value: '{ValidationUtilities.NormalizeDistributionBehavior(request.DistributionBehavior)}'. " +
+                $"Accepted values: {ValidationUtilities.GetDistributionBehaviorOptions()}.");
 
         if (!Enum.TryParse<FunctionCategoryEnum>(request.FunctionCategory, true, out _))
             throw new ValidationException($"Invalid FunctionCategory: {request.FunctionCategory}");

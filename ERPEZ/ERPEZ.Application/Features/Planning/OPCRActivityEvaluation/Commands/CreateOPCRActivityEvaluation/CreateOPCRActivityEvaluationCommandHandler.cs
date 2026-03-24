@@ -15,8 +15,15 @@ public class CreateOPCRActivityEvaluationCommandHandler(IUnitOfWork unitOfWork)
             request.OPCRActivityRatingId, cancellationToken: cancellationToken)
             ?? throw new NotFoundException("OPCR Activity Rating not found.");
 
+        var opcrIdQuery = unitOfWork.OPCRActivityRepository
+            .Query(a => a.Id == rating.OPCRActivityId)
+            .Select(a => (Guid?)a.OPCRItem.OPCRId);
+
+        var opcrId = await unitOfWork.OPCRActivityRepository.GetFirstAsync(opcrIdQuery, cancellationToken)
+            ?? throw new NotFoundException("OPCR not found.");
+
         // Get the OPCR to check rating status
-        var opcr = await unitOfWork.OPCRRepository.GetByIdAsync(rating.OPCRActivity.OPCRId, cancellationToken: cancellationToken)
+        var opcr = await unitOfWork.OPCRRepository.GetByIdAsync(opcrId, cancellationToken: cancellationToken)
             ?? throw new NotFoundException("OPCR not found.");
 
         // Verify the OPCR rating is submitted (cannot evaluate if not submitted)

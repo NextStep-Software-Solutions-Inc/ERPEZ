@@ -1,3 +1,4 @@
+using ERPEZ.Application.Common.Validators;
 using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
@@ -20,8 +21,11 @@ public class UpdateFYActiveKPICommandHandler(IUnitOfWork unitOfWork)
             throw new ValidationException($"Invalid MeasurementUnit: {request.MeasurementUnit}");
 
         if (request.DistributionBehavior != null && 
-            !Enum.TryParse<DistributionBehaviorEnum>(request.DistributionBehavior, true, out _))
-            throw new ValidationException($"Invalid DistributionBehavior: {request.DistributionBehavior}");
+            !ValidationUtilities.TryParseDistributionBehavior(request.DistributionBehavior, out _))
+            throw new ValidationException(
+                $"Invalid DistributionBehavior '{request.DistributionBehavior}'. " +
+                $"Normalized value: '{ValidationUtilities.NormalizeDistributionBehavior(request.DistributionBehavior)}'. " +
+                $"Accepted values: {ValidationUtilities.GetDistributionBehaviorOptions()}.");
 
         if (request.FunctionCategory != null && 
             !Enum.TryParse<FunctionCategoryEnum>(request.FunctionCategory, true, out _))

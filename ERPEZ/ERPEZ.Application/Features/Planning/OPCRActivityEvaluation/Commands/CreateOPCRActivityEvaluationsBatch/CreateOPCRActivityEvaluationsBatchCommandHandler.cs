@@ -29,8 +29,15 @@ public class CreateOPCRActivityEvaluationsBatchCommandHandler(IUnitOfWork unitOf
                 evaluationRequest.OPCRActivityRatingId, cancellationToken: cancellationToken)
                 ?? throw new NotFoundException($"OPCR Activity Rating with ID '{evaluationRequest.OPCRActivityRatingId}' not found.");
 
+            var opcrIdQuery = unitOfWork.OPCRActivityRepository
+                .Query(a => a.Id == rating.OPCRActivityId)
+                .Select(a => (Guid?)a.OPCRItem.OPCRId);
+
+            var opcrId = await unitOfWork.OPCRActivityRepository.GetFirstAsync(opcrIdQuery, cancellationToken)
+                ?? throw new NotFoundException($"OPCR not found for rating ID '{evaluationRequest.OPCRActivityRatingId}'.");
+
             // Get the OPCR to check rating status
-            var opcr = await unitOfWork.OPCRRepository.GetByIdAsync(rating.OPCRActivity.OPCRId, cancellationToken: cancellationToken)
+            var opcr = await unitOfWork.OPCRRepository.GetByIdAsync(opcrId, cancellationToken: cancellationToken)
                 ?? throw new NotFoundException($"OPCR not found for rating ID '{evaluationRequest.OPCRActivityRatingId}'.");
 
             // Verify the OPCR rating is submitted (cannot evaluate if not submitted)
