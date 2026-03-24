@@ -4,7 +4,6 @@ public record OPCRsResponse
 {
     public Guid Id { get; init; }
     public required string Name { get; init; }
-    public Guid DeliveryUnitId { get; init; }
     public required string OfficeName { get; init; }
     public int FiscalYear { get; init; }
     public required decimal TotalBudget { get; init; }
