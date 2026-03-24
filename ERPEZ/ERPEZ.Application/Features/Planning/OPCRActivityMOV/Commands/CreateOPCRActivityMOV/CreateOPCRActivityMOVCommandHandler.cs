@@ -16,13 +16,27 @@ public class CreateOPCRActivityMOVCommandHandler(IUnitOfWork unitOfWork, IFileSt
             request.OPCRActivityId, cancellationToken: cancellationToken)
             ?? throw new NotFoundException("OPCR Activity not found.");
 
-        // Get the KPI associated with the OPCR Activity to ensure traceability
-        var duKPITargetAssignment = await unitOfWork.DUKPITargetAssignmentRepository.GetByIdAsync(
-            opcrActivity.DUKPITargetAssignmentId, cancellationToken: cancellationToken)
-            ?? throw new NotFoundException("KPI Target Assignment not found.");
+        var activityContextQuery = unitOfWork.OPCRActivityRepository
+            .Query(a => a.Id == request.OPCRActivityId)
+            .Select(a => new
+            {
+                MasterKPIId = a.OPCRItem.KPIAssignment.FYActiveKPI != null
+                    ? (Guid?)a.OPCRItem.KPIAssignment.FYActiveKPI.MasterKPIId
+                    : null
+            });
 
-        var kpi = await unitOfWork.KPIRepository.GetByIdAsync(
-            duKPITargetAssignment.KPIId, cancellationToken: cancellationToken)
+        var activityContext = await unitOfWork.OPCRActivityRepository.GetSingleAsync(
+            activityContextQuery,
+            cancellationToken)
+            ?? throw new NotFoundException("OPCR Activity context not found.");
+
+        if (!activityContext.MasterKPIId.HasValue)
+        {
+            throw new NotFoundException("KPI not found.");
+        }
+
+        _ = await unitOfWork.KPIRepository.GetByIdAsync(
+            activityContext.MasterKPIId.Value, cancellationToken: cancellationToken)
             ?? throw new NotFoundException("KPI not found.");
 
         // MOV is now traceable to the parent KPI through the OPCR Activity
