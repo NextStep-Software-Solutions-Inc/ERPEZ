@@ -1,4 +1,3 @@
-using System.ComponentModel.DataAnnotations.Schema;
 using ERPEZ.Domain.Common;
 using Sieve.Attributes;
 
@@ -7,17 +6,16 @@ namespace ERPEZ.Domain.Entities.Planning;
 public class OPCRActivity : BaseEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
-    public Guid OPCRId { get; set; }
-    [Sieve(CanFilter = true, CanSort = true)]
-    [Column("DUKPITargetAssignmentId")]
-    public Guid DUKPITargetAssignmentId { get; set; }
+    public Guid OPCRItemId { get; set; }
+
     [Sieve(CanFilter = true, CanSort = true)]
     public string Name { get; set; } = string.Empty;
+
     public string? Description { get; set; }
+
     [Sieve(CanFilter = true, CanSort = true)]
     public decimal Budget { get; set; }
-    public virtual OPCR OPCR { get; set; } = null!;
-    public virtual DUKPITargetAssignment DUKPITargetAssignment { get; set; } = null!;
-    public virtual List<DeliveryUnit> DeliveryUnits { get; set; } = [];
+
+    public virtual OPCRItem OPCRItem { get; set; } = null!;
     public virtual List<OPCRPAPDepartment> OPCRPAPDepartments { get; set; } = [];
 }
