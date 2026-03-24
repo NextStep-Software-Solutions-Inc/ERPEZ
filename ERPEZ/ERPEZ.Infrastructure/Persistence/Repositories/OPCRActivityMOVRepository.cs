@@ -14,8 +14,10 @@ public class OPCRActivityMOVRepository(ApplicationDbContext context, ISieveProce
     {
         return context.Set<OPCRActivityMOV>()
             .Include(m => m.OPCRActivity)
-                .ThenInclude(a => a.DUKPITargetAssignment)
-                    .ThenInclude(t => t.KPI)
+                .ThenInclude(a => a.OPCRItem)
+                    .ThenInclude(i => i.KPIAssignment)
+                        .ThenInclude(a => a.FYActiveKPI)
+                            .ThenInclude(f => f!.MasterKPI)
             .FirstOrDefaultAsync(m => m.Id == id, cancellationToken);
     }
 }
