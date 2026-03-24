@@ -1,4 +1,3 @@
-using System.Linq.Expressions;
 using ERPEZ.Application.Features.Planning.OPCR.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
@@ -18,12 +17,11 @@ public class GetOPCRsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetO
             Sorts = query.Sorts
         };
 
-        Expression<Func<Domain.Entities.Planning.OPCR, OPCRsResponse>> projection = opcr => new OPCRsResponse
+        System.Linq.Expressions.Expression<Func<Domain.Entities.Planning.OPCR, OPCRsResponse>> projection = opcr => new OPCRsResponse
         {
             Id = opcr.Id,
             Name = opcr.Name,
-            DeliveryUnitId = opcr.DeliveryUnitId,
-            OfficeName = opcr.DeliveryUnit.Office.Name,
+            OfficeName = opcr.Office.Name,
             FiscalYear = opcr.FiscalYear.Year,
             Status = opcr.Status.ToString(),
             RatingStatus = opcr.RatingStatus.ToString(),
@@ -32,7 +30,7 @@ public class GetOPCRsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetO
             TotalBudget = opcr.OPCRActivities.Sum(a => a.Budget),
             CreatedDate = DateOnly.FromDateTime(opcr.CreatedAt),
             EvaluationCount = opcr.OPCREvaluations.Count,
-            KPITargetAssignmentCount = opcr.DeliveryUnit.KPITargetAssignments.Count,
+            KPITargetAssignmentCount = opcr.OPCRItems.Select(i => i.KPIAssignmentId).Distinct().Count(),
             ActivityCount = opcr.OPCRActivities.Count,
         };
 
