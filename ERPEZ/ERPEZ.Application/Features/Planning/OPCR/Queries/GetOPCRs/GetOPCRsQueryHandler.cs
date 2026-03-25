@@ -27,11 +27,11 @@ public class GetOPCRsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetO
             RatingStatus = opcr.RatingStatus.ToString(),
             SubmittedDate = opcr.RatingSubmittedDate.HasValue ? DateOnly.FromDateTime(opcr.RatingSubmittedDate.Value) : null,
             ReturnedDate = opcr.RatingReturnedDate.HasValue ? DateOnly.FromDateTime(opcr.RatingReturnedDate.Value) : null,
-            TotalBudget = opcr.OPCRActivities.Sum(a => a.Budget),
+            TotalBudget = opcr.OPCRItems.SelectMany(i => i.OPCRActivities).Sum(a => a.Budget),
             CreatedDate = DateOnly.FromDateTime(opcr.CreatedAt),
             EvaluationCount = opcr.OPCREvaluations.Count,
             KPIAssignmentCount = opcr.OPCRItems.Select(i => i.KPIAssignmentId).Distinct().Count(),
-            ActivityCount = opcr.OPCRActivities.Count,
+            ActivityCount = opcr.OPCRItems.SelectMany(i => i.OPCRActivities).Count(),
         };
 
         var (opcrs, totalCount) = await unitOfWork.OPCRRepository.GetAllAsync(sieveModel, projection, cancellationToken: cancellationToken);

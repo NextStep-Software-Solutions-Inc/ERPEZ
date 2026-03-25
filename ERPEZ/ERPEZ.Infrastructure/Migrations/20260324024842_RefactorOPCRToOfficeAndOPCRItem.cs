@@ -91,11 +91,25 @@ namespace ERPEZ.Infrastructure.Migrations
                 table: "OPCRs",
                 newName: "IX_OPCRs_OfficeId_FiscalYearId");
 
+            // Backfill OPCR.OfficeId from the old DeliveryUnit foreign key values.
+            migrationBuilder.Sql(@"
+                UPDATE planning.""OPCRs"" opcr
+                SET ""OfficeId"" = du.""OfficeId""
+                FROM planning.""DeliveryUnits"" du
+                WHERE opcr.""OfficeId"" = du.""Id"";
+            ");
+
             migrationBuilder.RenameColumn(
                 name: "DUKPITargetAssignmentId",
                 schema: "planning",
                 table: "OPCRActivities",
                 newName: "OPCRItemId");
+
+            // NOTE: OPCRItemId is intentionally left as the renamed column without backfill.
+            // Old data will have NULL OPCRItemId; new data must provide a valid OPCRItemId.
+            // The semantic relationship between DUKPITargetAssignment and OPCRItem is distinct
+            // and requires business logic to map. Manual post-migration mapping is required.
+            // A CHECK constraint below ensures data integrity by requiring OPCRId OR OPCRItemId.
 
             migrationBuilder.AlterColumn<string>(
                 name: "Status",
@@ -149,24 +163,25 @@ namespace ERPEZ.Infrastructure.Migrations
                 schema: "planning",
                 table: "OPCRPAPDepartments",
                 type: "uuid",
-                nullable: false,
-                defaultValue: new Guid("00000000-0000-0000-0000-000000000000"));
+                nullable: true);
+
+            // Backfill OPCRPAPDepartment.OfficeId from existing DeliveryUnit -> Office mapping.
+            migrationBuilder.Sql(@"
+                UPDATE planning.""OPCRPAPDepartments"" pap
+                SET ""OfficeId"" = du.""OfficeId""
+                FROM planning.""DeliveryUnits"" du
+                WHERE pap.""DeliveryUnitId"" = du.""Id"";
+            ");
 
             migrationBuilder.AlterColumn<Guid>(
-                name: "OPCRId",
+                name: "OfficeId",
                 schema: "planning",
-                table: "OPCRActivities",
+                table: "OPCRPAPDepartments",
                 type: "uuid",
-                nullable: true,
+                nullable: false,
                 oldClrType: typeof(Guid),
-                oldType: "uuid");
-
-            migrationBuilder.AddColumn<Guid>(
-                name: "DeliveryUnitId",
-                schema: "planning",
-                table: "OPCRActivities",
-                type: "uuid",
-                nullable: true);
+                oldType: "uuid",
+                oldNullable: true);
 
             migrationBuilder.CreateTable(
                 name: "OPCRItems",
@@ -221,6 +236,13 @@ namespace ERPEZ.Infrastructure.Migrations
                 column: "OPCRActivityId");
 
             migrationBuilder.CreateIndex(
+                name: "IX_OPCRPAPDepartments_OPCRActivityId_OfficeId",
+                schema: "planning",
+                table: "OPCRPAPDepartments",
+                columns: new[] { "OPCRActivityId", "OfficeId" },
+                unique: true);
+
+            migrationBuilder.CreateIndex(
                 name: "IX_OPCRActivities_DeliveryUnitId",
                 schema: "planning",
                 table: "OPCRActivities",
@@ -250,6 +272,13 @@ namespace ERPEZ.Infrastructure.Migrations
                 schema: "planning",
                 table: "OPCRItems",
                 column: "OPCRId");
+
+            migrationBuilder.CreateIndex(
+                name: "IX_OPCRItems_OPCRId_KPIAssignmentId",
+                schema: "planning",
+                table: "OPCRItems",
+                columns: new[] { "OPCRId", "KPIAssignmentId" },
+                unique: true);
 
             migrationBuilder.AddForeignKey(
                 name: "FK_OPCRActivities_DeliveryUnits_DeliveryUnitId",
@@ -307,6 +336,14 @@ namespace ERPEZ.Infrastructure.Migrations
                 principalTable: "Offices",
                 principalColumn: "Id",
                 onDelete: ReferentialAction.Cascade);
+
+            // Enforce that OPCRActivities must reference either OPCR or OPCRItem (or both).
+            // This ensures no orphaned activities and maintains referential integrity.
+            migrationBuilder.Sql(@"
+                ALTER TABLE planning.""OPCRActivities""
+                ADD CONSTRAINT CK_OPCRActivities_RequireOwner 
+                CHECK (""OPCRId"" IS NOT NULL OR ""OPCRItemId"" IS NOT NULL);
+            ");
         }
 
         /// <inheritdoc />
@@ -357,16 +394,6 @@ namespace ERPEZ.Infrastructure.Migrations
                 table: "OPCRPAPDepartments");
 
             migrationBuilder.DropIndex(
-                name: "IX_OPCRActivities_DeliveryUnitId",
-                schema: "planning",
-                table: "OPCRActivities");
-
-            migrationBuilder.DropIndex(
-                name: "IX_OPCRActivities_OPCRId",
-                schema: "planning",
-                table: "OPCRActivities");
-
-            migrationBuilder.DropIndex(
                 name: "IX_OPCRActivities_OPCRItemId_Name",
                 schema: "planning",
                 table: "OPCRActivities");
@@ -380,11 +407,6 @@ namespace ERPEZ.Infrastructure.Migrations
                 name: "OfficeId",
                 schema: "planning",
                 table: "OPCRPAPDepartments");
-
-            migrationBuilder.DropColumn(
-                name: "DeliveryUnitId",
-                schema: "planning",
-                table: "OPCRActivities");
 
             migrationBuilder.RenameColumn(
                 name: "OfficeId",
@@ -438,17 +460,6 @@ namespace ERPEZ.Infrastructure.Migrations
                 name: "DeliveryUnitId",
                 schema: "planning",
                 table: "OPCRPAPDepartments",
-                type: "uuid",
-                nullable: false,
-                defaultValue: new Guid("00000000-0000-0000-0000-000000000000"),
-                oldClrType: typeof(Guid),
-                oldType: "uuid",
-                oldNullable: true);
-
-            migrationBuilder.AlterColumn<Guid>(
-                name: "OPCRId",
-                schema: "planning",
-                table: "OPCRActivities",
                 type: "uuid",
                 nullable: false,
                 defaultValue: new Guid("00000000-0000-0000-0000-000000000000"),

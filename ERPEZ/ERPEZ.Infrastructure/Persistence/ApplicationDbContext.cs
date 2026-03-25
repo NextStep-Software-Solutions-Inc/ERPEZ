@@ -613,6 +613,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .WithMany(o => o.OPCRPAPDepartments)
             .HasForeignKey(d => d.OfficeId);
 
+        modelBuilder.Entity<OPCRPAPDepartment>()
+            .HasIndex(d => new { d.OPCRActivityId, d.OfficeId })
+            .IsUnique();
+
         // OPCREvaluation
         modelBuilder.Entity<OPCREvaluation>()
             .HasIndex(e => new { e.OPCRId, e.EvaluatorId, e.EvaluationDate });
@@ -677,6 +681,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasOne(i => i.KPIAssignment)
             .WithMany()
             .HasForeignKey(i => i.KPIAssignmentId);
+
+        modelBuilder.Entity<OPCRItem>()
+            .HasIndex(i => new { i.OPCRId, i.KPIAssignmentId })
+            .IsUnique();
 
         //Cluster
         modelBuilder.Entity<Cluster>()

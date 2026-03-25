@@ -8,5 +8,5 @@ public class OPCRPAPDepartment : BaseEntity
     public Guid OfficeId { get; set; }
 
     public virtual OPCRActivity OPCRActivity { get; set; } = null!;
-    public virtual Office? Office { get; set; }
+    public virtual Office Office { get; set; } = null!;
 }

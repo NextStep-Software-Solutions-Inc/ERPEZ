@@ -40,6 +40,5 @@ public class OPCR : BaseEntity
     public virtual List<OPCREvaluation> OPCREvaluations { get; set; } = [];
     public virtual List<DUKPITargetAssignment> DUKPITargetAssignments { get; set; } = [];
     public virtual List<OPCRItem> OPCRItems { get; set; } = [];
-    public virtual List<OPCRActivity> OPCRActivities { get; set; } = [];
 
 }
