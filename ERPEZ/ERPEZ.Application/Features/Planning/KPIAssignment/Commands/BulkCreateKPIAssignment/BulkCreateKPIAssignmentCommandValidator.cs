@@ -30,14 +30,26 @@ public class BulkCreateKPIAssignmentCommandValidator : AbstractValidator<BulkCre
                 office.RuleFor(x => x.Source)
                     .NotEmpty()
                     .WithMessage("Source is required.")
-                    .Must(source => Enum.TryParse<KPIAssignmentSourceEnum>(source, true, out _))
+                    .Must(source =>
+                    {
+                        if (string.IsNullOrWhiteSpace(source))
+                            return false;
+                        // Reject numeric inputs like "0", "1"
+                        if (int.TryParse(source, out _))
+                            return false;
+                        return Enum.TryParse<KPIAssignmentSourceEnum>(source, true, out _);
+                    })
                     .WithMessage("Source must be 'Assigned' or 'Shopped'.");
 
                 office.RuleFor(x => x.AssignedTargetAnnual)
                     .NotNull()
-                    .GreaterThan(0)
                     .When(x => string.Equals(x.Source, "Assigned", StringComparison.OrdinalIgnoreCase))
-                    .WithMessage("For Source='Assigned', AssignedTargetAnnual is required and must be greater than 0.");
+                    .WithMessage("For Source='Assigned', AssignedTargetAnnual is required.");
+
+                office.RuleFor(x => x.AssignedTargetAnnual)
+                    .GreaterThan(0)
+                    .When(x => x.AssignedTargetAnnual.HasValue && string.Equals(x.Source, "Assigned", StringComparison.OrdinalIgnoreCase))
+                    .WithMessage("For Source='Assigned', AssignedTargetAnnual must be greater than 0.");
 
                 office.RuleFor(x => x.AssignedTargetAnnual)
                     .Null()

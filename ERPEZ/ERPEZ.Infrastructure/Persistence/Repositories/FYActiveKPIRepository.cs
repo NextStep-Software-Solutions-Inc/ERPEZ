@@ -44,7 +44,7 @@ public class FYActiveKPIRepository : Repository<Domain.Entities.Planning.FYActiv
         IQueryable<Domain.Entities.Planning.FYActiveKPI> query = context
             .Set<Domain.Entities.Planning.FYActiveKPI>()
             .AsNoTracking()
-            .Where(fy => !fy.IsDeleted && !assignedIds.Contains(fy.Id));
+            .Where(fy => !fy.IsDeleted && fy.IsOptInAvailable && !assignedIds.Contains(fy.Id));
 
         var filteredQuery = sieveProcessor.Apply(sieveModel, query, applyPagination: false);
         var totalCount = await filteredQuery.CountAsync(cancellationToken);
