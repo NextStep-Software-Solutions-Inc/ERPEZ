@@ -74,7 +74,7 @@ public class BulkCreateKPIAssignmentCommandHandler(IUnitOfWork unitOfWork, IKPIA
                 // Create assignments for each office
                 foreach (var officeAssignment in kpiAssignment.OfficeAssignments)
                 {
-                    if (!Enum.TryParse<KPIAssignmentSourceEnum>(officeAssignment.Source, true, out _))
+                    if (!Enum.TryParse<KPIAssignmentSourceEnum>(officeAssignment.Source, true, out var sourceEnum))
                         throw new ValidationException($"Invalid Source: {officeAssignment.Source}. Must be 'Assigned' or 'Shopped'.");
 
                     // Validate office exists
@@ -89,7 +89,7 @@ public class BulkCreateKPIAssignmentCommandHandler(IUnitOfWork unitOfWork, IKPIA
                         Id = assignmentId,
                         FYActiveKPIId = kpiAssignment.FYActiveKPIId,
                         OfficeId = officeAssignment.OfficeId,
-                        Source = officeAssignment.Source,
+                        Source = sourceEnum.ToString(),
                         AssignedTargetAnnual = officeAssignment.AssignedTargetAnnual,
                         AssignedTargetQ1 = officeAssignment.AssignedTargetQ1,
                         AssignedTargetQ2 = officeAssignment.AssignedTargetQ2,

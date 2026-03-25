@@ -1,4 +1,5 @@
 using FluentValidation;
+using ERPEZ.Domain.Enums;
 
 namespace ERPEZ.Application.Features.Planning.KPIAssignment.Commands.CreateKPIAssignment;
 
@@ -18,47 +19,68 @@ public class CreateKPIAssignmentCommandValidator : AbstractValidator<CreateKPIAs
         RuleFor(x => x.Source)
             .NotEmpty()
             .WithMessage("Source is required.")
-            .Must(source => source == "Assigned" || source == "Shopped")
+            .Must(source => Enum.TryParse<KPIAssignmentSourceEnum>(source, true, out _))
             .WithMessage("Source must be 'Assigned' or 'Shopped'.");
 
         // AssignedTargetAnnual validation: required for Assigned, must be null for Shopped
         RuleFor(x => x.AssignedTargetAnnual)
             .NotNull()
             .GreaterThan(0)
-            .When(x => x.Source == "Assigned")
+            .When(x => string.Equals(x.Source, "Assigned", StringComparison.OrdinalIgnoreCase))
             .WithMessage("For Source='Assigned', AssignedTargetAnnual is required and must be greater than 0.");
 
         RuleFor(x => x.AssignedTargetAnnual)
             .Null()
-            .When(x => x.Source == "Shopped")
+            .When(x => string.Equals(x.Source, "Shopped", StringComparison.OrdinalIgnoreCase))
             .WithMessage("For Source='Shopped', AssignedTargetAnnual must be null.");
 
         // Quarterly targets validation: only for Assigned source
         RuleFor(x => x.AssignedTargetQ1)
             .GreaterThanOrEqualTo(0)
-            .When(x => x.AssignedTargetQ1.HasValue && x.Source == "Assigned")
+            .When(x => x.AssignedTargetQ1.HasValue && string.Equals(x.Source, "Assigned", StringComparison.OrdinalIgnoreCase))
             .WithMessage("AssignedTargetQ1 must be greater than or equal to 0.");
+
+        RuleFor(x => x.AssignedTargetQ1)
+            .Null()
+            .When(x => string.Equals(x.Source, "Shopped", StringComparison.OrdinalIgnoreCase))
+            .WithMessage("For Source='Shopped', AssignedTargetQ1 must be null.");
 
         RuleFor(x => x.AssignedTargetQ2)
             .GreaterThanOrEqualTo(0)
-            .When(x => x.AssignedTargetQ2.HasValue && x.Source == "Assigned")
+            .When(x => x.AssignedTargetQ2.HasValue && string.Equals(x.Source, "Assigned", StringComparison.OrdinalIgnoreCase))
             .WithMessage("AssignedTargetQ2 must be greater than or equal to 0.");
+
+        RuleFor(x => x.AssignedTargetQ2)
+            .Null()
+            .When(x => string.Equals(x.Source, "Shopped", StringComparison.OrdinalIgnoreCase))
+            .WithMessage("For Source='Shopped', AssignedTargetQ2 must be null.");
 
         RuleFor(x => x.AssignedTargetQ3)
             .GreaterThanOrEqualTo(0)
-            .When(x => x.AssignedTargetQ3.HasValue && x.Source == "Assigned")
+            .When(x => x.AssignedTargetQ3.HasValue && string.Equals(x.Source, "Assigned", StringComparison.OrdinalIgnoreCase))
             .WithMessage("AssignedTargetQ3 must be greater than or equal to 0.");
+
+        RuleFor(x => x.AssignedTargetQ3)
+            .Null()
+            .When(x => string.Equals(x.Source, "Shopped", StringComparison.OrdinalIgnoreCase))
+            .WithMessage("For Source='Shopped', AssignedTargetQ3 must be null.");
 
         RuleFor(x => x.AssignedTargetQ4)
             .GreaterThanOrEqualTo(0)
-            .When(x => x.AssignedTargetQ4.HasValue && x.Source == "Assigned")
+            .When(x => x.AssignedTargetQ4.HasValue && string.Equals(x.Source, "Assigned", StringComparison.OrdinalIgnoreCase))
             .WithMessage("AssignedTargetQ4 must be greater than or equal to 0.");
+
+        RuleFor(x => x.AssignedTargetQ4)
+            .Null()
+            .When(x => string.Equals(x.Source, "Shopped", StringComparison.OrdinalIgnoreCase))
+            .WithMessage("For Source='Shopped', AssignedTargetQ4 must be null.");
 
         // Validate quarterly alignment if provided
         RuleFor(x => x)
             .Must(command => ValidateQuarterlyAlignment(command))
             .When(x => (x.AssignedTargetQ1.HasValue || x.AssignedTargetQ2.HasValue || 
-                       x.AssignedTargetQ3.HasValue || x.AssignedTargetQ4.HasValue) && x.Source == "Assigned")
+                       x.AssignedTargetQ3.HasValue || x.AssignedTargetQ4.HasValue) &&
+                       string.Equals(x.Source, "Assigned", StringComparison.OrdinalIgnoreCase))
             .WithMessage("If quarterly targets are provided for Assigned source, all quarters must be specified and sum to the annual target.");
     }
 

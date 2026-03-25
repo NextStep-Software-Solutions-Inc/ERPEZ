@@ -60,6 +60,15 @@ public class CreateKPIAssignmentCommandHandler(IUnitOfWork unitOfWork, IKPIAssig
             // Shopped: AssignedTargetAnnual must be null (Office will propose later)
             if (request.AssignedTargetAnnual != null)
                 throw new ValidationException("For Source='Shopped', AssignedTargetAnnual must be null. Office will propose their own target.");
+
+            // Shopped: quarterly targets must also be null
+            if (request.AssignedTargetQ1 != null ||
+                request.AssignedTargetQ2 != null ||
+                request.AssignedTargetQ3 != null ||
+                request.AssignedTargetQ4 != null)
+            {
+                throw new ValidationException("For Source='Shopped', quarterly targets Q1-Q4 must be null. Office will propose their own targets.");
+            }
         }
 
         // Only apply distribution behavior validation for Assigned source
@@ -134,7 +143,7 @@ public class CreateKPIAssignmentCommandHandler(IUnitOfWork unitOfWork, IKPIAssig
             Id = Guid.NewGuid(),
             FYActiveKPIId = request.FYActiveKPIId,
             OfficeId = request.OfficeId,
-            Source = request.Source,
+            Source = sourceEnum.ToString(),
             AssignedTargetAnnual = request.AssignedTargetAnnual,
             AssignedTargetQ1 = request.AssignedTargetQ1,
             AssignedTargetQ2 = request.AssignedTargetQ2,

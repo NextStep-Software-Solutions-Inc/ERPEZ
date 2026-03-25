@@ -123,14 +123,24 @@ public class GetKPIsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetKP
                 ? activationRows
                     .Where(x => x.FiscalYearId == query.TargetFiscalYearId.Value)
                     .GroupBy(x => x.MasterKPIId)
-                    .ToDictionary(x => x.Key, x => x.First().Id)
+                    .ToDictionary(
+                        group => group.Key,
+                        group => group
+                            .OrderByDescending(row => row.Id)
+                            .First()
+                            .Id)
                 : new Dictionary<Guid, Guid>();
 
             var sourceActivationMap = query.SourceFiscalYearId.HasValue
                 ? activationRows
                     .Where(x => x.FiscalYearId == query.SourceFiscalYearId.Value)
                     .GroupBy(x => x.MasterKPIId)
-                    .ToDictionary(x => x.Key, x => x.First().Id)
+                    .ToDictionary(
+                        group => group.Key,
+                        group => group
+                            .OrderByDescending(row => row.Id)
+                            .First()
+                            .Id)
                 : new Dictionary<Guid, Guid>();
 
             responseItems = responseItems
