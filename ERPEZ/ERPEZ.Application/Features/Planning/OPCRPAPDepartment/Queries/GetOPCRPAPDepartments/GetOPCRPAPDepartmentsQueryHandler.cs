@@ -1,4 +1,3 @@
-using ERPEZ.Application.Features.Planning.DeliveryUnit.Dtos;
 using ERPEZ.Application.Features.Planning.Office.Dtos;
 using ERPEZ.Application.Features.Planning.OPCRPAPDepartment.Dtos;
 using ERPEZ.Domain.Interfaces;
@@ -24,22 +23,16 @@ public class GetOPCRPAPDepartmentsQueryHandler(IUnitOfWork unitOfWork) : IReques
         {
             Id = dept.Id,
             OPCRActivityId = dept.OPCRActivityId,
-            DeliveryUnit = new DeliveryUnitResponse
+            Office = new OfficeResponse
             {
-                Id = dept.DeliveryUnit.Id,
-                Office = new OfficeResponse
-                {
-                    Id = dept.DeliveryUnit.Office.Id,
-                    Name = dept.DeliveryUnit.Office.Name,
-                    Code = dept.DeliveryUnit.Office.Code,
-                    Description = dept.DeliveryUnit.Office.Description,
-                    Address = dept.DeliveryUnit.Office.Address,
-                    ResponsibilityCenterCode = dept.DeliveryUnit.Office.ResponsibilityCenterCode,
-                    ClusterId = dept.DeliveryUnit.Office.ClusterId,
-                    Cluster = null
-                },
-                ParentId = dept.DeliveryUnit.ParentId,
-                CreatedAt = dept.DeliveryUnit.CreatedAt
+                Id = dept.Office!.Id,
+                Name = dept.Office.Name,
+                Code = dept.Office.Code,
+                Description = dept.Office.Description,
+                Address = dept.Office.Address,
+                ResponsibilityCenterCode = dept.Office.ResponsibilityCenterCode,
+                ClusterId = dept.Office.ClusterId,
+                Cluster = null
             }
         };
 

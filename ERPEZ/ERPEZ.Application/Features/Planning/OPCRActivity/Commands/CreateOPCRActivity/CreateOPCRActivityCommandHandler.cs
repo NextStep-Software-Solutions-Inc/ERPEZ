@@ -1,11 +1,14 @@
 using ERPEZ.Domain.Interfaces;
+using ERPEZ.Application.Features.Planning.OPCRPAPDepartment.Validators;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.OPCRActivity.Commands.CreateOPCRActivity;
 
-public class CreateOPCRActivityCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateOPCRActivityCommand, ApiResponse<Guid>>
+public class CreateOPCRActivityCommandHandler(
+    IUnitOfWork unitOfWork,
+    IOPCRPAPDepartmentOfficeValidator officeValidator) : IRequestHandler<CreateOPCRActivityCommand, ApiResponse<Guid>>
 {
     public async Task<ApiResponse<Guid>> Handle(CreateOPCRActivityCommand request, CancellationToken cancellationToken)
     {
@@ -23,17 +26,7 @@ public class CreateOPCRActivityCommandHandler(IUnitOfWork unitOfWork) : IRequest
             throw new ConflictException("An OPCR Activity with the same name already exists under this OPCR Item.");
         }
 
-        if (request.PAPDepartmentIds.Count != 0)
-        {
-            var offices = await unitOfWork.OfficeRepository.ToListAsync(
-                unitOfWork.OfficeRepository.Query(o => request.PAPDepartmentIds.Contains(o.Id)),
-                cancellationToken);
-
-            if (offices.Count != request.PAPDepartmentIds.Count)
-            {
-                throw new BadRequestException("One or more Offices not found.");
-            }
-        }
+        await officeValidator.ValidateForOPCRItemAsync(request.OPCRItemId, request.PAPDepartmentIds, cancellationToken);
 
         var opcrActivity = new Domain.Entities.Planning.OPCRActivity
         {

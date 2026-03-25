@@ -1,4 +1,5 @@
 using ERPEZ.Application.Features.Planning.OPCRActivity.Dtos;
+using ERPEZ.Application.Features.Planning.OPCRPAPDepartment.Validators;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -6,7 +7,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.OPCRActivity.Commands.UpdateOPCRActivity;
 
-public class UpdateOPCRActivityCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdateOPCRActivityCommand, ApiResponse<Unit>>
+public class UpdateOPCRActivityCommandHandler(
+    IUnitOfWork unitOfWork,
+    IOPCRPAPDepartmentOfficeValidator officeValidator) : IRequestHandler<UpdateOPCRActivityCommand, ApiResponse<Unit>>
 {
     public async Task<ApiResponse<Unit>> Handle(UpdateOPCRActivityCommand request, CancellationToken cancellationToken)
     {
@@ -15,18 +18,7 @@ public class UpdateOPCRActivityCommandHandler(IUnitOfWork unitOfWork) : IRequest
 
         if (request.UpdateOPCRActivity.PAPDepartmentIds != null)
         {
-            if (request.UpdateOPCRActivity.PAPDepartmentIds.Any())
-            {
-                var offices = await unitOfWork.OfficeRepository.ToListAsync(
-                    unitOfWork.OfficeRepository.Query(o => request.UpdateOPCRActivity.PAPDepartmentIds.Contains(o.Id)),
-                    cancellationToken);
-
-                if (offices.Count != request.UpdateOPCRActivity.PAPDepartmentIds.Count)
-                {
-                    throw new BadRequestException("One or more Offices not found.");
-                }
-
-            }
+            await officeValidator.ValidateForOPCRActivityAsync(opcrActivity.Id, request.UpdateOPCRActivity.PAPDepartmentIds, cancellationToken);
 
             // Update PAP Departments
             var existingDepartments = await unitOfWork.OPCRPAPDepartmentRepository.ToListAsync(
