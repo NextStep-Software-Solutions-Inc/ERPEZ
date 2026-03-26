@@ -2,6 +2,7 @@ using ERPEZ.Application.Features.Planning.FYActiveKPI.Commands.ActivateFYActiveK
 using ERPEZ.Application.Features.Planning.FYActiveKPI.Commands.UpdateFYActiveKPI;
 using ERPEZ.Application.Features.Planning.FYActiveKPI.Commands.DeleteFYActiveKPI;
 using ERPEZ.Application.Features.Planning.FYActiveKPI.Commands.SetTargets;
+using ERPEZ.Application.Features.Planning.FYActiveKPI.Commands.SetLockStatus;
 using ERPEZ.Application.Features.Planning.FYActiveKPI.Dtos;
 using ERPEZ.Application.Features.Planning.FYActiveKPI.Queries.GetFYActiveKPIs;
 using ERPEZ.Application.Features.Planning.FYActiveKPI.Queries.GetFYActiveKPIById;
@@ -45,6 +46,15 @@ public class FYActiveKPIController(ISender mediator) : ControllerBase
         var command = new SetFYActiveKPITargetsCommand(targets);
         var result = await mediator.Send(command);
         return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    [HttpPut("fiscal-years/{fiscalYearId}/lock-status")]
+    [ProducesResponseType(typeof(ApiResponse<int>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<int>), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> SetLockStatus(Guid fiscalYearId, [FromBody] SetFYActiveKPILockStatusCommand command)
+    {
+        var result = await mediator.Send(command with { FiscalYearId = fiscalYearId });
+        return result.Succeeded ? Ok(result) : NotFound(result);
     }
 
     /// <summary>
