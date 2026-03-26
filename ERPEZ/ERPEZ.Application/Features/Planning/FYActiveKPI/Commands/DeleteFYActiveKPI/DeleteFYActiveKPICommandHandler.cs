@@ -13,6 +13,10 @@ public class DeleteFYActiveKPICommandHandler(IUnitOfWork unitOfWork)
         var fyActiveKpi = await unitOfWork.FYActiveKPIRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken)
             ?? throw new NotFoundException("FY Active KPI not found.");
 
+        // Block deletion when the fiscal year KPIs are locked
+        if (fyActiveKpi.IsLocked)
+            throw new ConflictException("FY Active KPI is locked and cannot be deleted. Unlock the fiscal year KPIs first.");
+
         // Check for dependent KPI Assignments
         var hasAssignments = await unitOfWork.KPIAssignmentRepository.FindAsync(
             a => a.FYActiveKPIId == request.Id,
