@@ -8,5 +8,8 @@ public class SetFYActiveKPILockStatusCommandValidator : AbstractValidator<SetFYA
     {
         RuleFor(x => x.FiscalYearId)
             .NotEmpty().WithMessage("FiscalYearId is required.");
+
+        RuleFor(x => x.IsLocked)
+            .NotNull().WithMessage("IsLocked is required. Pass true to lock or false to unlock.");
     }
 }

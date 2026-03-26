@@ -8,5 +8,5 @@ public record SetFYActiveKPILockStatusCommand : IRequest<ApiResponse<int>>
 {
     [JsonIgnore]
     public Guid FiscalYearId { get; init; }
-    public bool IsLocked { get; init; }
+    public bool? IsLocked { get; init; }
 }

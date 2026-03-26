@@ -24,23 +24,22 @@ public class SetFYActiveKPILockStatusCommandHandler(IUnitOfWork unitOfWork)
         var fyActiveKPIs = await unitOfWork.FYActiveKPIRepository.ToListAsync(query, cancellationToken);
 
         if (fyActiveKPIs.Count == 0)
-            throw new NotFoundException($"No active KPIs found for Fiscal Year {fiscalYear.Year}.");
+            throw new NotFoundException($"No FY Active KPIs found for Fiscal Year {fiscalYear.Year}.");
 
-        int updatedCount = 0;
+        // Validator guarantees IsLocked is not null; null-coalesce provides compile-time safety
+        var isLocked = request.IsLocked ?? throw new ValidationException("IsLocked is required.");
+        var updatedCount = fyActiveKPIs.Count;
 
         await unitOfWork.ExecuteInTransactionAsync(async () =>
         {
             foreach (var fyActiveKPI in fyActiveKPIs)
-            {
-                fyActiveKPI.IsLocked = request.IsLocked;
-                unitOfWork.FYActiveKPIRepository.Update(fyActiveKPI);
-                updatedCount++;
-            }
+                fyActiveKPI.IsLocked = isLocked;
 
+            await unitOfWork.FYActiveKPIRepository.UpdateBulkAsync(fyActiveKPIs, cancellationToken);
             await unitOfWork.SaveChangesAsync(cancellationToken);
         }, cancellationToken);
 
-        var action = request.IsLocked ? "locked" : "unlocked";
+        var action = isLocked ? "locked" : "unlocked";
         return ApiResponse<int>.Success(updatedCount, $"{updatedCount} KPI(s) successfully {action} for Fiscal Year {fiscalYear.Year}.");
     }
 }

@@ -37,13 +37,15 @@ public class SetFYActiveKPITargetsCommandHandler(IUnitOfWork unitOfWork)
                     throw new ValidationException($"All KPIs in the batch must belong to the same fiscal year. KPI '{fyActiveKPI.Name}' belongs to a different fiscal year.");
                 }
 
-                // Prevent updating if already assigned to offices
-                if (fyActiveKPI.KPIAssignments?.Count > 0)
-                    throw new ConflictException($"Cannot update targets for KPI '{fyActiveKPI.Name}' - it has already been assigned to offices.");
-
                 // Prevent updating if the fiscal year is locked
                 if (fyActiveKPI.IsLocked)
                     throw new ConflictException($"Cannot update targets for KPI '{fyActiveKPI.Name}' - the fiscal year KPIs are locked.");
+
+                // Prevent updating if already assigned to offices (query directly — nav prop not loaded by GetByIdAsync)
+                var hasAssignment = await unitOfWork.KPIAssignmentRepository.FindAsync(
+                    a => a.FYActiveKPIId == targetRequest.FYActiveKPIId, cancellationToken);
+                if (hasAssignment != null)
+                    throw new ConflictException($"Cannot update targets for KPI '{fyActiveKPI.Name}' - it has already been assigned to offices.");
 
                 // Validate quarterly targets based on Distribution Behavior
                 ValidateQuarterlyTargets(fyActiveKPI, targetRequest);
