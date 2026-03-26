@@ -7,7 +7,6 @@ using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.Application.Features.Planning.FYActiveKPI.Commands.ActivateFYActiveKPI;
 
@@ -59,20 +58,11 @@ public class ActivateFYActiveKPICommandHandler(IUnitOfWork unitOfWork)
             {
                 var requestedMasterKPIIds = request.KPIs.Select(x => x.MasterKPIId).Distinct().ToList();
 
-                var sourceSnapshots = await unitOfWork.FYActiveKPIRepository.ToListAsync(
-                    unitOfWork.FYActiveKPIRepository
-                        .Query(f => f.FiscalYearId == request.SourceFiscalYearId!.Value && requestedMasterKPIIds.Contains(f.MasterKPIId))
-                        .Include(f => f.FYActiveKPIMeasurements),
-                    cancellationToken);
-
-                sourceSnapshotsByMasterKPIId = sourceSnapshots
-                    .GroupBy(s => s.MasterKPIId)
-                    .ToDictionary(
-                        group => group.Key,
-                        group => group
-                            .OrderByDescending(row => row.CreatedAt)
-                            .ThenByDescending(row => row.Id)
-                            .First());
+                sourceSnapshotsByMasterKPIId = new Dictionary<Guid, Domain.Entities.Planning.FYActiveKPI>(
+                    await unitOfWork.FYActiveKPIRepository.GetLatestSnapshotsByMasterKPIIdsAsync(
+                        request.SourceFiscalYearId!.Value,
+                        requestedMasterKPIIds,
+                        cancellationToken));
             }
 
             foreach (var kpiRequest in request.KPIs)
@@ -84,10 +74,7 @@ public class ActivateFYActiveKPICommandHandler(IUnitOfWork unitOfWork)
                 Domain.Entities.Planning.FYActiveKPI? sourceSnapshot = null;
                 if (cloneFromSourceFiscalYear)
                 {
-                    if (!sourceSnapshotsByMasterKPIId.TryGetValue(kpiRequest.MasterKPIId, out sourceSnapshot))
-                        throw new NotFoundException(
-                            $"KPI '{masterKPI.Name}' is not activated in source Fiscal Year {request.SourceFiscalYearId}. " +
-                            "Activate it in the source year first or use CloneMode='Master'.");
+                    sourceSnapshotsByMasterKPIId.TryGetValue(kpiRequest.MasterKPIId, out sourceSnapshot);
                 }
 
                 // Check if this KPI is already activated for this fiscal year

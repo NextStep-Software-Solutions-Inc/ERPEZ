@@ -7,6 +7,15 @@ public interface IFYActiveKPIRepository : IRepository<FYActiveKPI>
     Task<FYActiveKPI?> GetFYActiveKPIWithDetailsAsync(Guid id, CancellationToken cancellationToken = default);
 
     /// <summary>
+    /// Returns the latest FYActiveKPI snapshot per master KPI for a source fiscal year,
+    /// including FYActiveKPIMeasurements for clone operations.
+    /// </summary>
+    Task<IReadOnlyDictionary<Guid, FYActiveKPI>> GetLatestSnapshotsByMasterKPIIdsAsync(
+        Guid fiscalYearId,
+        IReadOnlyCollection<Guid> masterKPIIds,
+        CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Returns paginated FYActiveKPIs not yet assigned or shopped by the given office,
     /// with Sieve filtering, sorting, and pagination applied inside the method.
     /// </summary>
