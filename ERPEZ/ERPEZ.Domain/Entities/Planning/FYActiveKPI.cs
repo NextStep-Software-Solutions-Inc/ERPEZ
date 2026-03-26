@@ -52,6 +52,9 @@ public class FYActiveKPI : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public string Status { get; set; } = "Active";
 
+    [Sieve(CanFilter = true, CanSort = true)]
+    public bool IsLocked { get; set; } = false;
+
     // Agency-Level Targets (Level 1)
     [Sieve(CanFilter = true, CanSort = true)]
     public decimal AgencyTargetAnnual { get; set; }

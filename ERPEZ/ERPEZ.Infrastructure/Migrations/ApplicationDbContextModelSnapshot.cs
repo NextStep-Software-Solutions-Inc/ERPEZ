@@ -861,6 +861,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<bool>("IsGAD")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("IsLocked")
+                        .HasColumnType("boolean");
+
                     b.Property<bool>("IsOptInAvailable")
                         .HasColumnType("boolean");
 
