@@ -36,6 +36,7 @@ public class GetFYActiveKPIByIdQueryHandler(IUnitOfWork unitOfWork)
             IsOptInAvailable = fyActiveKPI.IsOptInAvailable,
             IsGAD = fyActiveKPI.IsGAD,
             Status = fyActiveKPI.Status,
+            IsLocked = fyActiveKPI.IsLocked,
             AgencyTargetAnnual = fyActiveKPI.AgencyTargetAnnual,
             AgencyTargetQ1 = fyActiveKPI.AgencyTargetQ1,
             AgencyTargetQ2 = fyActiveKPI.AgencyTargetQ2,
