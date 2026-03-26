@@ -22,6 +22,7 @@ public record FYActiveKPIDetailedResponse
     public bool IsOptInAvailable { get; init; }
     public bool IsGAD { get; init; }
     public string Status { get; init; } = string.Empty;
+    public bool IsLocked { get; init; }
     public decimal AgencyTargetAnnual { get; init; }
     public decimal? AgencyTargetQ1 { get; init; }
     public decimal? AgencyTargetQ2 { get; init; }

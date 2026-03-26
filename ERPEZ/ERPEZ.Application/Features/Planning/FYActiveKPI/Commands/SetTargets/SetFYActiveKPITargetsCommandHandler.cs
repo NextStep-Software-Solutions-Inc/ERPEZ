@@ -41,6 +41,10 @@ public class SetFYActiveKPITargetsCommandHandler(IUnitOfWork unitOfWork)
                 if (fyActiveKPI.KPIAssignments?.Count > 0)
                     throw new ConflictException($"Cannot update targets for KPI '{fyActiveKPI.Name}' - it has already been assigned to offices.");
 
+                // Prevent updating if the fiscal year is locked
+                if (fyActiveKPI.IsLocked)
+                    throw new ConflictException($"Cannot update targets for KPI '{fyActiveKPI.Name}' - the fiscal year KPIs are locked.");
+
                 // Validate quarterly targets based on Distribution Behavior
                 ValidateQuarterlyTargets(fyActiveKPI, targetRequest);
 

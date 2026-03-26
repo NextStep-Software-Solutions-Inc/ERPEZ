@@ -14,6 +14,10 @@ public class UpdateFYActiveKPICommandHandler(IUnitOfWork unitOfWork)
         var fyActiveKpi = await unitOfWork.FYActiveKPIRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken)
             ?? throw new NotFoundException("FY Active KPI not found.");
 
+        // Prevent editing a KPI that belongs to a locked fiscal year
+        if (fyActiveKpi.IsLocked)
+            throw new ConflictException("FY Active KPI is locked and cannot be modified. Unlock the fiscal year KPIs first.");
+
         // Validate enums if provided
         if (request.MeasurementUnit != null && 
             !Enum.TryParse<MeasurementUnitEnum>(request.MeasurementUnit, true, out _))
