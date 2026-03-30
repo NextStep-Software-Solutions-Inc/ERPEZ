@@ -243,12 +243,6 @@ namespace ERPEZ.Infrastructure.Migrations
                 unique: true);
 
             migrationBuilder.CreateIndex(
-                name: "IX_OPCRActivities_DeliveryUnitId",
-                schema: "planning",
-                table: "OPCRActivities",
-                column: "DeliveryUnitId");
-
-            migrationBuilder.CreateIndex(
                 name: "IX_OPCRActivities_OPCRId",
                 schema: "planning",
                 table: "OPCRActivities",
@@ -279,15 +273,6 @@ namespace ERPEZ.Infrastructure.Migrations
                 table: "OPCRItems",
                 columns: new[] { "OPCRId", "KPIAssignmentId" },
                 unique: true);
-
-            migrationBuilder.AddForeignKey(
-                name: "FK_OPCRActivities_DeliveryUnits_DeliveryUnitId",
-                schema: "planning",
-                table: "OPCRActivities",
-                column: "DeliveryUnitId",
-                principalSchema: "planning",
-                principalTable: "DeliveryUnits",
-                principalColumn: "Id");
 
             migrationBuilder.AddForeignKey(
                 name: "FK_OPCRActivities_OPCRItems_OPCRItemId",
@@ -349,11 +334,6 @@ namespace ERPEZ.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropForeignKey(
-                name: "FK_OPCRActivities_DeliveryUnits_DeliveryUnitId",
-                schema: "planning",
-                table: "OPCRActivities");
-
             migrationBuilder.DropForeignKey(
                 name: "FK_OPCRActivities_OPCRItems_OPCRItemId",
                 schema: "planning",
