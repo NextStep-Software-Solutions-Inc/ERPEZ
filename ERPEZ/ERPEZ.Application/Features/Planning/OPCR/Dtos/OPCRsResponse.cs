@@ -4,7 +4,6 @@ public record OPCRsResponse
 {
     public Guid Id { get; init; }
     public required string Name { get; init; }
-    public Guid DeliveryUnitId { get; init; }
     public required string OfficeName { get; init; }
     public int FiscalYear { get; init; }
     public required decimal TotalBudget { get; init; }
@@ -14,7 +13,7 @@ public record OPCRsResponse
     public DateOnly? SubmittedDate { get; init; }
     public DateOnly? ReturnedDate { get; init; }
     public int EvaluationCount { get; init; } = 0;
-    public int KPITargetAssignmentCount { get; init; } = 0;
+    public int KPIAssignmentCount { get; init; } = 0;
     public int ActivityCount { get; init; } = 0;
 
 }

@@ -1,4 +1,5 @@
 using ERPEZ.Application.Features.Planning.KPIAssignment.Validators;
+using ERPEZ.Application.Common.Validators;
 using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
@@ -26,8 +27,12 @@ public class UpdateKPIAssignmentCommandHandler(IUnitOfWork unitOfWork, IKPIAssig
                 $"Targets must be set first (Current Status: {fyActiveKpi.Status}).");
         }
 
-        if (!Enum.TryParse<DistributionBehaviorEnum>(fyActiveKpi.DistributionBehavior, true, out var distributionBehavior))
-            throw new ValidationException($"Invalid DistributionBehavior: {fyActiveKpi.DistributionBehavior}");
+        if (!ValidationUtilities.TryParseDistributionBehavior(fyActiveKpi.DistributionBehavior, out var distributionBehavior))
+            throw new ValidationException(
+                $"Invalid DistributionBehavior for KPI '{fyActiveKpi.Name}'. " +
+                $"Received '{fyActiveKpi.DistributionBehavior}'. " +
+                $"Normalized value: '{ValidationUtilities.NormalizeDistributionBehavior(fyActiveKpi.DistributionBehavior)}'. " +
+                $"Accepted values: {ValidationUtilities.GetDistributionBehaviorOptions()}.");
 
         if (!Enum.TryParse<MeasurementUnitEnum>(fyActiveKpi.MeasurementUnit, true, out var measurementUnit))
             throw new ValidationException($"Invalid MeasurementUnit: {fyActiveKpi.MeasurementUnit}");

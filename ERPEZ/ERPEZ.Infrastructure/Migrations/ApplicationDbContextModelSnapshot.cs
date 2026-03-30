@@ -54,21 +54,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.ToTable("DUKPITargetAssignmentOPCR", "planning");
                 });
 
-            modelBuilder.Entity("DeliveryUnitOPCRActivity", b =>
-                {
-                    b.Property<Guid>("DeliveryUnitsId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("OPCRActivitiesId")
-                        .HasColumnType("uuid");
-
-                    b.HasKey("DeliveryUnitsId", "OPCRActivitiesId");
-
-                    b.HasIndex("OPCRActivitiesId");
-
-                    b.ToTable("DeliveryUnitOPCRActivity", "planning");
-                });
-
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.APP", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2132,6 +2117,10 @@ namespace ERPEZ.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -2145,9 +2134,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text");
 
-                    b.Property<Guid>("DeliveryUnitId")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid>("FiscalYearId")
                         .HasColumnType("uuid");
 
@@ -2156,24 +2142,24 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("OfficeId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime?>("RatingReturnedDate")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("RatingStatus")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                        .HasColumnType("text");
 
                     b.Property<DateTime?>("RatingSubmittedDate")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                        .HasColumnType("text");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -2183,19 +2169,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DeliveryUnitId");
-
                     b.HasIndex("FiscalYearId");
 
-                    b.HasIndex("RatingReturnedDate");
-
-                    b.HasIndex("RatingStatus");
-
-                    b.HasIndex("RatingSubmittedDate");
-
-                    b.HasIndex("Status");
-
-                    b.HasIndex("DeliveryUnitId", "FiscalYearId")
+                    b.HasIndex("OfficeId", "FiscalYearId")
                         .IsUnique();
 
                     b.ToTable("OPCRs", "planning");
@@ -2217,15 +2193,14 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<Guid>("DUKPITargetAssignmentId")
-                        .HasColumnType("uuid")
-                        .HasColumnName("DUKPITargetAssignmentId");
-
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text");
+
+                    b.Property<Guid?>("DeliveryUnitId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Description")
                         .HasColumnType("text");
@@ -2240,7 +2215,10 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<Guid>("OPCRId")
+                    b.Property<Guid?>("OPCRId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("OPCRItemId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
@@ -2251,11 +2229,13 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DUKPITargetAssignmentId");
+                    b.HasIndex("DeliveryUnitId");
 
                     b.HasIndex("KPIId");
 
-                    b.HasIndex("OPCRId", "DUKPITargetAssignmentId", "Name")
+                    b.HasIndex("OPCRId");
+
+                    b.HasIndex("OPCRItemId", "Name")
                         .IsUnique();
 
                     b.ToTable("OPCRActivities", "planning");
@@ -2474,14 +2454,11 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.ToTable("OPCREvaluations", "planning");
                 });
 
-            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OPCRPAP", b =>
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OPCRItem", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
-
-                    b.Property<decimal>("Budget")
-                        .HasColumnType("numeric");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -2496,21 +2473,29 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text");
 
-                    b.Property<string>("Description")
-                        .HasColumnType("text");
-
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
-                    b.Property<Guid>("KPIId")
-                        .HasColumnType("uuid");
+                    b.Property<bool>("IsShopped")
+                        .HasColumnType("boolean");
 
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<Guid>("KPIAssignmentId")
+                        .HasColumnType("uuid");
 
                     b.Property<Guid>("OPCRId")
                         .HasColumnType("uuid");
+
+                    b.Property<int>("Q1Target")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Q2Target")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Q3Target")
+                        .HasColumnType("integer");
+
+                    b.Property<int>("Q4Target")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -2520,11 +2505,11 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("KPIId");
+                    b.HasIndex("KPIAssignmentId");
 
                     b.HasIndex("OPCRId");
 
-                    b.ToTable("OPCRPAPs", "planning");
+                    b.ToTable("OPCRItems", "planning");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OPCRPAPDepartment", b =>
@@ -2546,13 +2531,16 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text");
 
-                    b.Property<Guid>("DeliveryUnitId")
+                    b.Property<Guid?>("DeliveryUnitId")
                         .HasColumnType("uuid");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
                     b.Property<Guid>("OPCRActivityId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("OfficeId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
@@ -2565,8 +2553,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("DeliveryUnitId");
 
-                    b.HasIndex("OPCRActivityId", "DeliveryUnitId")
-                        .IsUnique();
+                    b.HasIndex("OPCRActivityId");
+
+                    b.HasIndex("OfficeId");
 
                     b.ToTable("OPCRPAPDepartments", "planning");
                 });
@@ -5643,21 +5632,6 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired();
                 });
 
-            modelBuilder.Entity("DeliveryUnitOPCRActivity", b =>
-                {
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.DeliveryUnit", null)
-                        .WithMany()
-                        .HasForeignKey("DeliveryUnitsId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.OPCRActivity", null)
-                        .WithMany()
-                        .HasForeignKey("OPCRActivitiesId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-                });
-
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.APPItem", b =>
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Planning.APP", "APP")
@@ -6110,44 +6084,44 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OPCR", b =>
                 {
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.DeliveryUnit", "DeliveryUnit")
-                        .WithMany("OPCRs")
-                        .HasForeignKey("DeliveryUnitId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("ERPEZ.Domain.Entities.Planning.FiscalYear", "FiscalYear")
                         .WithMany()
                         .HasForeignKey("FiscalYearId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("DeliveryUnit");
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.Office", "Office")
+                        .WithMany("OPCRs")
+                        .HasForeignKey("OfficeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("FiscalYear");
+
+                    b.Navigation("Office");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OPCRActivity", b =>
                 {
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.DUKPITargetAssignment", "DUKPITargetAssignment")
-                        .WithMany()
-                        .HasForeignKey("DUKPITargetAssignmentId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.DeliveryUnit", null)
+                        .WithMany("OPCRActivities")
+                        .HasForeignKey("DeliveryUnitId");
 
                     b.HasOne("ERPEZ.Domain.Entities.Planning.KPI", null)
                         .WithMany("OPCRActivities")
                         .HasForeignKey("KPIId");
 
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.OPCR", "OPCR")
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.OPCR", null)
                         .WithMany("OPCRActivities")
-                        .HasForeignKey("OPCRId")
+                        .HasForeignKey("OPCRId");
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.OPCRItem", "OPCRItem")
+                        .WithMany("OPCRActivities")
+                        .HasForeignKey("OPCRItemId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("DUKPITargetAssignment");
-
-                    b.Navigation("OPCR");
+                    b.Navigation("OPCRItem");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OPCRActivityEvaluation", b =>
@@ -6202,32 +6176,30 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("OPCR");
                 });
 
-            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OPCRPAP", b =>
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OPCRItem", b =>
                 {
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.KPI", "KPI")
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.KPIAssignment", "KPIAssignment")
                         .WithMany()
-                        .HasForeignKey("KPIId")
+                        .HasForeignKey("KPIAssignmentId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.HasOne("ERPEZ.Domain.Entities.Planning.OPCR", "OPCR")
-                        .WithMany()
+                        .WithMany("OPCRItems")
                         .HasForeignKey("OPCRId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("KPI");
+                    b.Navigation("KPIAssignment");
 
                     b.Navigation("OPCR");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OPCRPAPDepartment", b =>
                 {
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.DeliveryUnit", "DeliveryUnit")
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.DeliveryUnit", null)
                         .WithMany("OPCRPAPDepartments")
-                        .HasForeignKey("DeliveryUnitId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("DeliveryUnitId");
 
                     b.HasOne("ERPEZ.Domain.Entities.Planning.OPCRActivity", "OPCRActivity")
                         .WithMany("OPCRPAPDepartments")
@@ -6235,9 +6207,15 @@ namespace ERPEZ.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("DeliveryUnit");
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.Office", "Office")
+                        .WithMany("OPCRPAPDepartments")
+                        .HasForeignKey("OfficeId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("OPCRActivity");
+
+                    b.Navigation("Office");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OPCRRating", b =>
@@ -7029,9 +7007,9 @@ namespace ERPEZ.Infrastructure.Migrations
                 {
                     b.Navigation("KPITargetAssignments");
 
-                    b.Navigation("OPCRPAPDepartments");
+                    b.Navigation("OPCRActivities");
 
-                    b.Navigation("OPCRs");
+                    b.Navigation("OPCRPAPDepartments");
 
                     b.Navigation("SubDeliveryUnits");
 
@@ -7156,6 +7134,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("OPCRActivities");
 
                     b.Navigation("OPCREvaluations");
+
+                    b.Navigation("OPCRItems");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OPCRActivity", b =>
@@ -7173,6 +7153,11 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("OPCRRatings");
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OPCRItem", b =>
+                {
+                    b.Navigation("OPCRActivities");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.Object", b =>
                 {
                     b.Navigation("ChildObjects");
@@ -7187,6 +7172,10 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("Children");
 
                     b.Navigation("DeliveryUnits");
+
+                    b.Navigation("OPCRPAPDepartments");
+
+                    b.Navigation("OPCRs");
 
                     b.Navigation("Positions");
 

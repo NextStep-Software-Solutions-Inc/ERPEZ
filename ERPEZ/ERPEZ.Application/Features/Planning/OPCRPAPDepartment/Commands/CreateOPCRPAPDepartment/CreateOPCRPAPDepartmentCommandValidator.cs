@@ -13,12 +13,12 @@ public class CreateOPCRPAPDepartmentCommandValidator : AbstractValidator<CreateO
             .Must(id => id != Guid.Empty)
             .WithMessage("OPCR Activity ID must be a valid, non-empty GUID.");
 
-        // DeliveryUnitId (Required GUID)
-        RuleFor(x => x.DeliveryUnitId)
+        // OfficeId (Required GUID)
+        RuleFor(x => x.OfficeId)
             .NotEmpty()
-            .WithMessage("Delivery Unit ID is required and must be a valid, non-empty GUID.")
+            .WithMessage("Office ID is required and must be a valid, non-empty GUID.")
             .Must(id => id != Guid.Empty)
-            .WithMessage("Delivery Unit ID must be a valid, non-empty GUID.");
+            .WithMessage("Office ID must be a valid, non-empty GUID.");
 
         // Note: Business logic to check for duplicate associations should be placed in the handler.
     }

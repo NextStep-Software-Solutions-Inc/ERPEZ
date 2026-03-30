@@ -11,14 +11,8 @@ public class UpdateOPCRCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<
     {
         var dto = request.UpdateOPCR;
         var opcr = await unitOfWork.OPCRRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("OPCR not found.");
-        if (dto.DeliveryUnitId != null)
-        {
-            _ = await unitOfWork.DeliveryUnitRepository.FindAsync(du => du.Id == dto.DeliveryUnitId, cancellationToken) ?? throw new NotFoundException("Delivery Unit not found.");
-        }
-
-        opcr.DeliveryUnitId = dto?.DeliveryUnitId ?? opcr.DeliveryUnitId;
-        opcr.FiscalYearId = dto?.FiscalYearId ?? opcr.FiscalYearId;
         opcr.Name = !string.IsNullOrWhiteSpace(dto?.Name) ? dto!.Name : opcr.Name;
+        opcr.Code = !string.IsNullOrWhiteSpace(dto?.Code) ? dto!.Code : opcr.Code;
 
         unitOfWork.OPCRRepository.Update(opcr);
         await unitOfWork.SaveChangesAsync(cancellationToken);

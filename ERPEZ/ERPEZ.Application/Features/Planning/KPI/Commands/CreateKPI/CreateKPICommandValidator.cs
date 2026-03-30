@@ -1,4 +1,5 @@
 using FluentValidation;
+using ERPEZ.Application.Common.Validators;
 using ERPEZ.Domain.Enums;
 
 namespace ERPEZ.Application.Features.Planning.KPI.Commands.CreateKPI;
@@ -45,8 +46,8 @@ public class CreateKPICommandValidator : AbstractValidator<CreateKPICommand>
         RuleFor(x => x.DistributionBehavior)
             .NotEmpty()
             .WithMessage("Distribution Behavior is required.")
-            .Must(behavior => validDistributionBehaviors.Contains(behavior))
-            .WithMessage($"Distribution Behavior must be one of: {string.Join(", ", validDistributionBehaviors)}.");
+            .Must(behavior => ValidationUtilities.TryParseDistributionBehavior(behavior, out _))
+            .WithMessage($"Distribution Behavior must be one of: {ValidationUtilities.GetDistributionBehaviorOptions()}.");
 
         RuleFor(x => x.FunctionCategory)
             .NotEmpty()

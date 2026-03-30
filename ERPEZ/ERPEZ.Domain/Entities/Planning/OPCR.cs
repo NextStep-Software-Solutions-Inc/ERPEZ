@@ -7,14 +7,17 @@ namespace ERPEZ.Domain.Entities.Planning;
 public class OPCR : BaseEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
-    public Guid DeliveryUnitId { get; set; }
+    public Guid OfficeId { get; set; }
 
     [Sieve(CanFilter = true, CanSort = true)]
     public string Name { get; set; } = string.Empty;
 
     [Sieve(CanFilter = true, CanSort = true)]
+    public string Code { get; set; } = string.Empty;
+
+    [Sieve(CanFilter = true, CanSort = true)]
     public Guid FiscalYearId { get; set; }
-    
+
     [Sieve(CanFilter = true, CanSort = true)]
     public StatusEnum Status { get; set; } = StatusEnum.Draft;
     
@@ -32,10 +35,10 @@ public class OPCR : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public DateTime? RatingReturnedDate { get; set; }
     
-    public virtual DeliveryUnit DeliveryUnit { get; set; } = null!;
+    public virtual Office Office { get; set; } = null!;
     public virtual FiscalYear FiscalYear { get; set; } = null!;
     public virtual List<OPCREvaluation> OPCREvaluations { get; set; } = [];
     public virtual List<DUKPITargetAssignment> DUKPITargetAssignments { get; set; } = [];
-    public virtual List<OPCRActivity> OPCRActivities { get; set; } = [];
+    public virtual List<OPCRItem> OPCRItems { get; set; } = [];
 
 }

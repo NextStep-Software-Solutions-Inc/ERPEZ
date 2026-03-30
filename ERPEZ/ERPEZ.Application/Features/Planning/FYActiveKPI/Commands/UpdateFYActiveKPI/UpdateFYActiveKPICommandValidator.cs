@@ -1,3 +1,4 @@
+using ERPEZ.Application.Common.Validators;
 using ERPEZ.Domain.Enums;
 using FluentValidation;
 
@@ -37,7 +38,7 @@ public class UpdateFYActiveKPICommandValidator : AbstractValidator<UpdateFYActiv
 
         RuleFor(x => x.DistributionBehavior)
             .Must(BeAValidDistributionBehavior)
-            .WithMessage("Invalid DistributionBehavior. Allowed values are: Summation, Uniform, Maximum, Minimum, Milestone.")
+            .WithMessage("Invalid DistributionBehavior. Allowed values are: Summation, Divisible, Uniform, Maximum, Minimum, Milestone.")
             .When(x => !string.IsNullOrWhiteSpace(x.DistributionBehavior));
 
         RuleFor(x => x.FunctionCategory)
@@ -65,7 +66,7 @@ public class UpdateFYActiveKPICommandValidator : AbstractValidator<UpdateFYActiv
     private bool BeAValidDistributionBehavior(string? value)
     {
         if (string.IsNullOrWhiteSpace(value)) return true;
-        return Enum.TryParse<DistributionBehaviorEnum>(value, true, out _);
+        return ValidationUtilities.TryParseDistributionBehavior(value, out _);
     }
 
     private bool BeAValidFunctionCategory(string? value)

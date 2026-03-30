@@ -1,5 +1,6 @@
 using System.Linq.Expressions;
 using ERPEZ.Application.Features.Planning.OPCRActivity.Dtos;
+using ERPEZ.Application.Features.Planning.Office.Dtos;
 using ERPEZ.Application.Features.Planning.OPCRPAPDepartment.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
@@ -22,8 +23,7 @@ public class GetOPCRActivitiesQueryHandler(IUnitOfWork unitOfWork) : IRequestHan
         Expression<Func<Domain.Entities.Planning.OPCRActivity, OPCRActivityResponse>> projection = a => new OPCRActivityResponse
         {
             Id = a.Id,
-            OPCRId = a.OPCRId,
-            DUKPITargetAssignmentId = a.DUKPITargetAssignmentId,
+            OPCRItemId = a.OPCRItemId,
             Name = a.Name,
             Description = a.Description,
             Budget = a.Budget,
@@ -31,24 +31,20 @@ public class GetOPCRActivitiesQueryHandler(IUnitOfWork unitOfWork) : IRequestHan
             {
                 Id = p.Id,
                 OPCRActivityId = p.OPCRActivityId,
-                DeliveryUnit = new ()
+                Office = new OfficeResponse
                 {
-                    Id = p.DeliveryUnit.Id,
-                    CreatedAt = p.DeliveryUnit.CreatedAt,
-                    Office = new()
+                    Id = p.Office!.Id,
+                    Name = p.Office.Name,
+                    Code = p.Office.Code,
+                    Address = p.Office.Address,
+                    Description = p.Office.Description,
+                    ResponsibilityCenterCode = p.Office.ResponsibilityCenterCode,
+                    ClusterId = p.Office.ClusterId,
+                    Cluster = p.Office.Cluster == null ? null : new()
                     {
-                        Id = p.DeliveryUnit.Office.Id,
-                        Name = p.DeliveryUnit.Office.Name,
-                        Code = p.DeliveryUnit.Office.Code,
-                        Address = p.DeliveryUnit.Office.Address,
-                        Description = p.DeliveryUnit.Office.Description,
-                        ResponsibilityCenterCode = p.DeliveryUnit.Office.ResponsibilityCenterCode,
-                        Cluster = p.DeliveryUnit.Office.Cluster == null ? null : new()
-                        {
-                            Id = p.DeliveryUnit.Office.Cluster.Id,
-                            Name = p.DeliveryUnit.Office.Cluster.Name
-                        }
-                    },
+                        Id = p.Office.Cluster.Id,
+                        Name = p.Office.Cluster.Name
+                    }
                 }
             }).ToList()
         };

@@ -6,6 +6,8 @@ using ERPEZ.Application.Common.Behaviors;
 using ERPEZ.Application.Common.Services;
 using ERPEZ.Application.Common.Sieve;
 using ERPEZ.Application.Features.Planning.KPIAssignment.Validators;
+using ERPEZ.Application.Features.Planning.OPCRItem.Validators;
+using ERPEZ.Application.Features.Planning.OPCRPAPDepartment.Validators;
 using ERPEZ.Domain.Interfaces;
 using Microsoft.AspNetCore.Builder;
 using Sieve.Models;
@@ -26,6 +28,8 @@ public static class DependencyInjection
 
         // Register KPI Assignment behavior validator
         builder.Services.AddScoped<IKPIAssignmentBehaviorValidator, KPIAssignmentBehaviorValidator>();
+        builder.Services.AddScoped<IOPCRItemTargetValidator, OPCRItemTargetValidator>();
+        builder.Services.AddScoped<IOPCRPAPDepartmentOfficeValidator, OPCRPAPDepartmentOfficeValidator>();
 
         // Register transaction code generator service
 

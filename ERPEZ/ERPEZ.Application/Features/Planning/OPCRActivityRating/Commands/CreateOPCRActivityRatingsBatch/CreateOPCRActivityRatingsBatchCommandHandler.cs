@@ -20,13 +20,27 @@ public class CreateOPCRActivityRatingsBatchCommandHandler(IUnitOfWork unitOfWork
             request.OPCRActivityId, cancellationToken: cancellationToken)
             ?? throw new NotFoundException("OPCR Activity not found.");
 
-        // Get the KPI associated with the OPCR Activity
-        var duKPITargetAssignment = await unitOfWork.DUKPITargetAssignmentRepository.GetByIdAsync(
-            opcrActivity.DUKPITargetAssignmentId, cancellationToken: cancellationToken)
-            ?? throw new NotFoundException("KPI Target Assignment not found.");
+        var activityContextQuery = unitOfWork.OPCRActivityRepository
+            .Query(a => a.Id == request.OPCRActivityId)
+            .Select(a => new
+            {
+                MasterKPIId = a.OPCRItem.KPIAssignment.FYActiveKPI != null
+                    ? (Guid?)a.OPCRItem.KPIAssignment.FYActiveKPI.MasterKPIId
+                    : null
+            });
+
+        var activityContext = await unitOfWork.OPCRActivityRepository.GetSingleAsync(
+            activityContextQuery,
+            cancellationToken)
+            ?? throw new NotFoundException("OPCR Activity context not found.");
+
+        if (!activityContext.MasterKPIId.HasValue)
+        {
+            throw new NotFoundException("KPI not found.");
+        }
 
         var kpi = await unitOfWork.KPIRepository.GetByIdAsync(
-            duKPITargetAssignment.KPIId, cancellationToken: cancellationToken)
+            activityContext.MasterKPIId.Value, cancellationToken: cancellationToken)
             ?? throw new NotFoundException("KPI not found.");
 
         // Get all performance measure IDs from the batch

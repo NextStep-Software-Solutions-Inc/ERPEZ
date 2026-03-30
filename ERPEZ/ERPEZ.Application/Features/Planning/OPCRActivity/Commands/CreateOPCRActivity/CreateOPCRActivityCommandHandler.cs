@@ -1,56 +1,42 @@
 using ERPEZ.Domain.Interfaces;
+using ERPEZ.Application.Features.Planning.OPCRPAPDepartment.Validators;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.OPCRActivity.Commands.CreateOPCRActivity;
 
-public class CreateOPCRActivityCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateOPCRActivityCommand, ApiResponse<Guid>>
+public class CreateOPCRActivityCommandHandler(
+    IUnitOfWork unitOfWork,
+    IOPCRPAPDepartmentOfficeValidator officeValidator) : IRequestHandler<CreateOPCRActivityCommand, ApiResponse<Guid>>
 {
     public async Task<ApiResponse<Guid>> Handle(CreateOPCRActivityCommand request, CancellationToken cancellationToken)
     {
-        var opcr = await unitOfWork.OPCRRepository.FindAsync(o => o.Id == request.OPCRId, cancellationToken) ?? throw new NotFoundException("OPCR not found.");
-        var duKPITargetAssignment = await unitOfWork.DUKPITargetAssignmentRepository.FindAsync(d => d.Id == request.DUKPITargetAssignmentId, cancellationToken) ?? throw new NotFoundException("DU KPI Assignment not found.");
+        _ = await unitOfWork.OPCRRepository.GetSingleAsync(
+            unitOfWork.OPCRRepository.Query(o => o.OPCRItems.Any(i => i.Id == request.OPCRItemId))
+                .Select(o => (Guid?)o.Id),
+            cancellationToken) ?? throw new NotFoundException("OPCR Item not found.");
 
-        if (duKPITargetAssignment.DeliveryUnitId != opcr.DeliveryUnitId)
-        {
-            throw new BadRequestException("The DU KPI Assignment must belong to the same Delivery Unit as the OPCR.");
-        }
-
-        if (request.PAPDepartmentIds.Count != 0)
-        {
-            var deliveryUnits = await unitOfWork.DeliveryUnitRepository.ToListAsync(
-                unitOfWork.DeliveryUnitRepository.Query(du => request.PAPDepartmentIds.Contains(du.Id)),
-                cancellationToken);
-
-            if (deliveryUnits.Count != request.PAPDepartmentIds.Count)
-            {
-                throw new BadRequestException("One or more Delivery Units not found.");
-            }
-
-            if (deliveryUnits.Any(du => du.ParentId != opcr.DeliveryUnitId))
-            {
-                throw new BadRequestException("One or more Delivery Units are not children of the OPCR Delivery Unit.");
-            }
-        }
-
-        // do not allow duplicate OPCRActivity names under the same OPCR and DUKPITargetAssignment
-        var existingActivity = await unitOfWork.OPCRActivityRepository.FindAsync(a => a.OPCRId == request.OPCRId && a.DUKPITargetAssignmentId == request.DUKPITargetAssignmentId && a.Name.ToLower() == request.Name.ToLower(), cancellationToken);
+        // do not allow duplicate OPCRActivity names under the same OPCR Item
+        var existingActivity = await unitOfWork.OPCRActivityRepository.FindAsync(
+            a => a.OPCRItemId == request.OPCRItemId && a.Name.ToLower() == request.Name.ToLower(),
+            cancellationToken);
         if (existingActivity != null)
         {
-            throw new ConflictException("An OPCR Activity with the same name already exists under this OPCR and DUKPI Target Assignment.");
+            throw new ConflictException("An OPCR Activity with the same name already exists under this OPCR Item.");
         }
+
+        await officeValidator.ValidateForOPCRItemAsync(request.OPCRItemId, request.PAPDepartmentIds, cancellationToken);
 
         var opcrActivity = new Domain.Entities.Planning.OPCRActivity
         {
-            OPCRId = request.OPCRId,
-            DUKPITargetAssignmentId = request.DUKPITargetAssignmentId,
+            OPCRItemId = request.OPCRItemId,
             Name = request.Name,
             Description = request.Description,
             Budget = request.Budget,
             OPCRPAPDepartments = [.. request.PAPDepartmentIds.Select(id => new Domain.Entities.Planning.OPCRPAPDepartment
             {
-                DeliveryUnitId = id
+                OfficeId = id
             })]
         };
 

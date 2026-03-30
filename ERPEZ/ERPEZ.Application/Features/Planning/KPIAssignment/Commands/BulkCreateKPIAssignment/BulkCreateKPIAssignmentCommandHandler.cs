@@ -1,3 +1,4 @@
+using ERPEZ.Application.Common.Validators;
 using ERPEZ.Application.Features.Planning.KPIAssignment.Validators;
 using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
@@ -117,8 +118,12 @@ public class BulkCreateKPIAssignmentCommandHandler(IUnitOfWork unitOfWork, IKPIA
         if (!Enum.TryParse<MeasurementUnitEnum>(fyActiveKPI.MeasurementUnit, true, out var measurementUnit))
             throw new ValidationException($"Invalid MeasurementUnit on FYActiveKPI '{fyActiveKPI.Name}': {fyActiveKPI.MeasurementUnit}");
 
-        if (!Enum.TryParse<DistributionBehaviorEnum>(fyActiveKPI.DistributionBehavior, true, out var distributionBehavior))
-            throw new ValidationException($"Invalid DistributionBehavior on FYActiveKPI '{fyActiveKPI.Name}': {fyActiveKPI.DistributionBehavior}");
+        if (!ValidationUtilities.TryParseDistributionBehavior(fyActiveKPI.DistributionBehavior, out var distributionBehavior))
+            throw new ValidationException(
+                $"Invalid DistributionBehavior on FYActiveKPI '{fyActiveKPI.Name}'. " +
+                $"Received '{fyActiveKPI.DistributionBehavior}'. " +
+                $"Normalized value: '{ValidationUtilities.NormalizeDistributionBehavior(fyActiveKPI.DistributionBehavior)}'. " +
+                $"Accepted values: {ValidationUtilities.GetDistributionBehaviorOptions()}.");
 
         var agencyAnnualTarget = fyActiveKPI.AgencyTargetAnnual;
         var totalAssignedAnnual = officeAssignments.Sum(o => o.AssignedTargetAnnual);
