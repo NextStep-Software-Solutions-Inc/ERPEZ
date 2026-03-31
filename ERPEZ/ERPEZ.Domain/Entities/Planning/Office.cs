@@ -62,5 +62,4 @@ public class Office : BaseEntity
     public virtual List<OPCRPAPDepartment> OPCRPAPDepartments { get; set; } = [];
     public virtual List<Position> Positions { get; set; } = [];
     public virtual List<WFP> WFPs { get; set; } = [];
-    public virtual List<OPCR> OPCRs { get; set; } = [];
 }
