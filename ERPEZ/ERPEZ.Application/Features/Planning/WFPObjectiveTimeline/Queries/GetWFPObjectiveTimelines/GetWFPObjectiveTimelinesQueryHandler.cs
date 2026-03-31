@@ -1,4 +1,4 @@
-using ERPEZ.Application.Features.Planning.WFPObjectiveTimeline.Dtos;
+﻿using ERPEZ.Application.Features.Planning.WFPObjectiveTimeline.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
@@ -25,7 +25,7 @@ public class GetWFPObjectiveTimelinesQueryHandler(IUnitOfWork unitOfWork)
         Expression<Func<Domain.Entities.Planning.WFPObjectiveTimeline, WFPObjectiveTimelineResponse>> projection = timeline => new WFPObjectiveTimelineResponse
         {
             Id = timeline.Id,
-            WFPObjectiveTargetId = timeline.WFPObjectiveTargetId,
+            WFPObjectiveActivityId = timeline.WFPObjectiveActivityId,
             TimelineType = timeline.TimelineType.ToString(),
             StartDate = timeline.StartDate,
             EndDate = timeline.EndDate,

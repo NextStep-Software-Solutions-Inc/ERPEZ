@@ -1,4 +1,4 @@
-using FluentValidation;
+﻿using FluentValidation;
 
 namespace ERPEZ.Application.Features.Planning.WFPObjectiveTimeline.Commands.CreateWFPObjectiveTimeline;
 using ERPEZ.Domain.Enums;
@@ -10,8 +10,8 @@ public class CreateWFPObjectiveTimelineCommandValidator : AbstractValidator<Crea
 {
     public CreateWFPObjectiveTimelineCommandValidator()
     {
-        // WFPObjectiveTargetId (Required GUID)
-        RuleFor(x => x.WFPObjectiveTargetId)
+        // WFPObjectiveActivityId (Required GUID)
+        RuleFor(x => x.WFPObjectiveActivityId)
             .NotEmpty()
             .WithMessage("Activity ID is required.")
             .Must(id => id != Guid.Empty)

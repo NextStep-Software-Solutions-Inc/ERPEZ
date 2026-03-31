@@ -1,11 +1,9 @@
-using ERPEZ.Application.Features.Planning.WFPObjectiveTargetExpenditure.Dtos;
+using ERPEZ.Application.Features.Planning.WFPObjectiveActivityExpenditure.Dtos;
 using ERPEZ.Application.Features.Planning.Office.Dtos;
-using ERPEZ.Application.Features.Planning.FiscalYear.Dtos;
-using ERPEZ.Application.Features.Planning.MFOPAP.Dtos;
 using ERPEZ.Application.Features.Planning.Object.Dtos;
 using ERPEZ.Application.Features.Planning.WFP.Dtos;
 using ERPEZ.Application.Features.Planning.WFPObjective.Dtos;
-using ERPEZ.Application.Features.Planning.WFPObjectiveTarget.Dtos;
+using ERPEZ.Application.Features.Planning.WFPObjectiveActivity.Dtos;
 using ERPEZ.Application.Features.Planning.WFPObjectiveTimeline.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
@@ -42,14 +40,15 @@ public class GetWFPByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
                     ParentId = w.Office.ParentId,
                 },
                 ProjectTitle = w.ProjectTitle,
-                Description = w.Description,
+                OPCRId = w.OPCRId,
+                FundSourceId = w.FundSourceId,
                 GeneralObjective = w.GeneralObjective,
-                Mode = w.Mode,
+                Mode = w.Mode.ToString(),
                 Status = w.Status.ToString(),
                 CreatedBy = w.CreatedBy,
                 CreatedAt = w.CreatedAt,
                 ObjectiveCount = w.WFPObjectives.Count,
-                ActivityCount = w.WFPObjectives.SelectMany(o => o.WFPObjectiveTargets).Count(),
+                ActivityCount = w.WFPObjectives.SelectMany(o => o.WFPObjectiveActivities).Count(),
                 WFPObjectives = w.WFPObjectives.Select(o => new WFPObjectiveResponse
                 {
                     Id = o.Id,
@@ -58,7 +57,7 @@ public class GetWFPByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
                     Description = o.Description,
                     CreatedAt = o.CreatedAt,
                     CreatedBy = o.CreatedBy,
-                    WFPObjectiveTargets = o.WFPObjectiveTargets.Select(t => new WFPObjectiveTargetResponse
+                    WFPObjectiveActivities = o.WFPObjectiveActivities.Select(t => new WFPObjectiveActivityResponse
                     {
                         Id = t.Id,
                         ActivityName = t.ActivityName,
@@ -76,12 +75,12 @@ public class GetWFPByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
                             CreatedAt = ot.CreatedAt,
                             CreatedBy = ot.CreatedBy,
                         }).ToList(),
-                        WFPObjectiveTargetExpenditures = t.WFPObjectiveTargetExpenditures.Select(ab => new WFPObjectiveTargetExpenditureResponse
+                        WFPObjectiveActivityExpenditures = t.WFPObjectiveActivityExpenditures.Select(ab => new WFPObjectiveActivityExpenditureResponse
                         {
                             Id = ab.Id,
                             ItemDescription = ab.ItemDescription,
-                            Quantity = ab.Quantity,
-                            CostEstimates = ab.CostEstimates,
+                            Quantity = ab.Quantity ?? 0,
+                            UnitCost = ab.UnitCost ?? 0,
                             CreatedAt = ab.CreatedAt,
                             CreatedBy = ab.CreatedBy,
                             Object = new ObjectResponse
@@ -91,7 +90,7 @@ public class GetWFPByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
                                 Code = ab.Object.Code,
                                 IsActive = ab.Object.IsActive,
                                 ChildObjectCount = ab.Object.ChildObjects.Count,
-                                WFPObjectiveTargetExpenditureCount = ab.Object.WFPObjectiveTargetExpenditures.Count,
+                                WFPObjectiveActivityExpenditureCount = ab.Object.WFPObjectiveActivityExpenditures.Count,
                                 TransactionCount = ab.Object.Transactions.Count,
                                 Parent = ab.Object.ParentObject != null ? new ObjectResponse
                                 {
@@ -100,7 +99,7 @@ public class GetWFPByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
                                     Code = ab.Object.ParentObject.Code,
                                     IsActive = ab.Object.ParentObject.IsActive,
                                     ChildObjectCount = ab.Object.ParentObject.ChildObjects.Count,
-                                    WFPObjectiveTargetExpenditureCount = ab.Object.ParentObject.WFPObjectiveTargetExpenditures.Count,
+                                    WFPObjectiveActivityExpenditureCount = ab.Object.ParentObject.WFPObjectiveActivityExpenditures.Count,
                                     TransactionCount = ab.Object.ParentObject.Transactions.Count,
                                     Parent = ab.Object.ParentObject.ParentObject != null ? new ObjectResponse
                                     {
@@ -109,7 +108,7 @@ public class GetWFPByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
                                         Code = ab.Object.ParentObject.ParentObject.Code,
                                         IsActive = ab.Object.ParentObject.ParentObject.IsActive,
                                         ChildObjectCount = ab.Object.ParentObject.ParentObject.ChildObjects.Count,
-                                        WFPObjectiveTargetExpenditureCount = ab.Object.ParentObject.ParentObject.WFPObjectiveTargetExpenditures.Count,
+                                        WFPObjectiveActivityExpenditureCount = ab.Object.ParentObject.ParentObject.WFPObjectiveActivityExpenditures.Count,
                                         TransactionCount = ab.Object.ParentObject.ParentObject.Transactions.Count,
                                         Parent = ab.Object.ParentObject.ParentObject.ParentObject != null ? new ObjectResponse
                                         {
@@ -118,7 +117,7 @@ public class GetWFPByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
                                             Code = ab.Object.ParentObject.ParentObject.ParentObject.Code,
                                             IsActive = ab.Object.ParentObject.ParentObject.ParentObject.IsActive,
                                             ChildObjectCount = ab.Object.ParentObject.ParentObject.ParentObject.ChildObjects.Count,
-                                            WFPObjectiveTargetExpenditureCount = ab.Object.ParentObject.ParentObject.ParentObject.WFPObjectiveTargetExpenditures.Count,
+                                            WFPObjectiveActivityExpenditureCount = ab.Object.ParentObject.ParentObject.ParentObject.WFPObjectiveActivityExpenditures.Count,
                                             TransactionCount = ab.Object.ParentObject.ParentObject.ParentObject.Transactions.Count
                                         } : null!
                                     } : null!
@@ -130,18 +129,6 @@ public class GetWFPByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
                 ProjectStartDate = w.ProjectStartDate,
                 ProjectEndDate = w.ProjectEndDate,
                 ProposedBudget = w.ProposedBudget,
-                FiscalYear = w.FiscalYear != null ? new FiscalYearResponse
-                {
-                    Id = w.FiscalYear.Id,
-                    Year = w.FiscalYear.Year,
-                    Description = w.FiscalYear.Description,
-                    FunctionAllocations = w.FiscalYear.FunctionAllocations.Select(fa => new FunctionAllocationResponse
-                    {
-                        Id = fa.Id,
-                        FunctionType = fa.FunctionType.ToString(),
-                        Percentage = fa.Percentage,
-                    }).ToList(),
-                } : null,
             });
         
     

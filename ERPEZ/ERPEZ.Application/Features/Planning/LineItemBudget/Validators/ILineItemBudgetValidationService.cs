@@ -36,7 +36,7 @@ public interface ILineItemBudgetValidationService
     /// </summary>
     Task<ValidationResult> ValidateAddActivityAsync(
         Guid lineItemBudgetId,
-        Guid? wfpObjectiveTargetId,
+        Guid? wfpObjectiveActivityId,
         Guid? opcrActivityId,
         string activityName,
         CancellationToken cancellationToken = default);
@@ -47,7 +47,7 @@ public interface ILineItemBudgetValidationService
     Task<ValidationResult> ValidateAddDetailAsync(
         Guid lineItemBudgetId,
         Guid? lineItemBudgetActivityId,
-        Guid? wfpObjectiveTargetExpenditureId,
+        Guid? wfpObjectiveActivityExpenditureId,
         decimal budget,
         DateTime startDate,
         DateTime endDate,

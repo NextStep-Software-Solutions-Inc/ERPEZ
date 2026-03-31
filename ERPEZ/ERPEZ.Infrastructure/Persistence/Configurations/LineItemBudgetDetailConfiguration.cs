@@ -1,4 +1,4 @@
-using ERPEZ.Domain.Entities.Planning;
+﻿using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
@@ -24,7 +24,7 @@ public class LineItemBudgetDetailConfiguration : IEntityTypeConfiguration<LineIt
         builder.HasIndex(e => e.LineItemBudgetId);
         builder.HasIndex(e => e.LineItemBudgetActivityId);
         builder.HasIndex(e => e.ObjectId);
-        builder.HasIndex(e => e.WFPObjectiveTargetExpenditureId);
+        builder.HasIndex(e => e.WFPObjectiveActivityExpenditureId);
         builder.HasIndex(e => new { e.StartDate, e.EndDate });
     }
 }

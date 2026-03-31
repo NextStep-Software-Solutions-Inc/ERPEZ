@@ -2,7 +2,7 @@ namespace ERPEZ.Domain.Interfaces;
 
 public interface IUnitOfWork
 {
-    IWFPObjectiveTargetExpenditureRepository WFPObjectiveTargetExpenditureRepository { get; }
+    IWFPObjectiveActivityExpenditureRepository WFPObjectiveActivityExpenditureRepository { get; }
     IAttributeRepository AttributeRepository { get; }
     IPerformanceMeasureRepository PerformanceMeasureRepository { get; }
     IRatingRepository RatingRepository { get; }
@@ -32,7 +32,7 @@ public interface IUnitOfWork
     IFiscalMonthRepository FiscalMonthRepository { get; }
     IBudgetCallRepository BudgetCallRepository { get; }
     IClusterRepository ClusterRepository { get; }
-    IWFPObjectiveTargetRepository WFPObjectiveTargetRepository { get; }
+    IWFPObjectiveActivityRepository WFPObjectiveActivityRepository { get; }
     IWFPObjectiveTimelineRepository WFPObjectiveTimelineRepository { get; }
     ISDGRepository SDGRepository { get; }
     IKPIPerformanceMeasureRepository KPIPerformanceMeasureRepository { get; }

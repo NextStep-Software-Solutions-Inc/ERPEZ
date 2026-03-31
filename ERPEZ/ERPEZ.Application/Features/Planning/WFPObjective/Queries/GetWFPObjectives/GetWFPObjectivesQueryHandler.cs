@@ -1,4 +1,4 @@
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
 using ERPEZ.Application.Features.Planning.WFPObjective.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
@@ -27,17 +27,17 @@ public class GetWFPObjectivesQueryHandler(IUnitOfWork unitOfWork) : IRequestHand
             Outcome = wfpObjective.Outcome,
             CreatedAt = wfpObjective.CreatedAt,
             CreatedBy = wfpObjective.CreatedBy,
-            WFPObjectiveTargetsCount = wfpObjective.WFPObjectiveTargets.Count,
-            // WFPObjectiveTargets = wfpObjective.WFPObjectiveTargets.Select(target => new WFPObjectiveTargetResponse
+            WFPObjectiveActivitiesCount = wfpObjective.WFPObjectiveActivities.Count,
+            // WFPObjectiveActivities = wfpObjective.WFPObjectiveActivities.Select(target => new WFPObjectiveActivityResponse
             // {
             //     Id = target.Id,
             //     WFPObjectiveId = target.WFPObjectiveId,
             //     ActivityName = target.ActivityName,
             //     Indicator = target.Indicator,
-            //     WFPObjectiveTargetExpenditures = target.WFPObjectiveTargetExpenditures.Select(expenditure => new WFPObjectiveTargetExpenditureResponse
+            //     WFPObjectiveActivityExpenditures = target.WFPObjectiveActivityExpenditures.Select(expenditure => new WFPObjectiveActivityExpenditureResponse
             //     {
             //         Id = expenditure.Id,
-            //         WFPObjectiveTargetId = expenditure.WFPObjectiveTargetId,
+            //         WFPObjectiveActivityId = expenditure.WFPObjectiveActivityId,
             //         ItemDescription = expenditure.ItemDescription,
             //         CostEstimates = expenditure.CostEstimates,
             //         Quantity = expenditure.Quantity,
@@ -49,7 +49,7 @@ public class GetWFPObjectivesQueryHandler(IUnitOfWork unitOfWork) : IRequestHand
             //             IsActive = expenditure.Object.IsActive,
             //             ChildObjectCount = expenditure.Object.ChildObjects.Count,
             //             TransactionCount = expenditure.Object.Transactions.Count,
-            //             WFPObjectiveTargetExpenditureCount = expenditure.Object.WFPObjectiveTargetExpenditures.Count,
+            //             WFPObjectiveActivityExpenditureCount = expenditure.Object.WFPObjectiveActivityExpenditures.Count,
             //             Parent = expenditure.Object.ParentObject != null ? new()
             //             {
             //                 Id = expenditure.Object.ParentObject.Id,
@@ -62,7 +62,7 @@ public class GetWFPObjectivesQueryHandler(IUnitOfWork unitOfWork) : IRequestHand
             //     WFPObjectiveTimelines = target.WFPObjectiveTimelines.Select(timeline => new WFPObjectiveTimelineResponse
             //     {
             //         Id = timeline.Id,
-            //         WFPObjectiveTargetId = timeline.WFPObjectiveTargetId,
+            //         WFPObjectiveActivityId = timeline.WFPObjectiveActivityId,
             //         TargetValue = timeline.TargetValue,
             //         TimelineType = timeline.TimelineType.ToString(),
             //         StartDate = timeline.StartDate,

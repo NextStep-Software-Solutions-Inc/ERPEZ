@@ -19,7 +19,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IOPCRPAPDepartmentRepository opcrPapDepartmentRepository;
     private readonly IWFPRepository wfpRepository;
     private readonly IWFPObjectiveRepository wfpObjectiveRepository;
-    private readonly IWFPObjectiveTargetExpenditureRepository wfpObjectiveTargetExpenditureRepository;
+    private readonly IWFPObjectiveActivityExpenditureRepository wfpObjectiveActivityExpenditureRepository;
     private readonly IWFPPAPDepartmentRepository wfpPapDepartmentRepository;
     private readonly IOPCREvaluationRepository opcrEvaluationRepository;
     private readonly IOPCRRatingRepository opcrRatingRepository;
@@ -41,7 +41,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IFiscalMonthRepository fiscalMonthRepository;
     private readonly IBudgetCallRepository budgetCallRepository;
     private readonly IClusterRepository clusterRepository;
-    private readonly IWFPObjectiveTargetRepository wfpObjectiveTargetRepository;
+    private readonly IWFPObjectiveActivityRepository wfpObjectiveActivityRepository;
     private readonly IWFPObjectiveTimelineRepository wfpObjectiveTimelineRepository;
     private readonly ISDGRepository sdgRepository;
     private readonly IKPIPerformanceMeasureRepository kpiPerformanceMeasureRepository;
@@ -107,7 +107,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         opcrPapDepartmentRepository = new OPCRPAPDepartmentRepository(context, sieveProcessor);
         wfpRepository = new WFPRepository(context, sieveProcessor);
         wfpObjectiveRepository = new WFPObjectiveRepository(context, sieveProcessor);
-        wfpObjectiveTargetExpenditureRepository = new WFPObjectiveTargetExpenditureRepository(context, sieveProcessor);
+        wfpObjectiveActivityExpenditureRepository = new WFPObjectiveActivityExpenditureRepository(context, sieveProcessor);
         wfpPapDepartmentRepository = new WFPPAPDepartmentRepository(context, sieveProcessor);
         opcrEvaluationRepository = new OPCREvaluationRepository(context, sieveProcessor);
         opcrRatingRepository = new OPCRRatingRepository(context, sieveProcessor);
@@ -129,7 +129,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         fiscalMonthRepository = new FiscalMonthRepository(context, sieveProcessor);
         budgetCallRepository = new BudgetCallRepository(context, sieveProcessor);
         clusterRepository = new ClusterRepository(context, sieveProcessor);
-        wfpObjectiveTargetRepository = new WFPObjectiveTargetRepository(context, sieveProcessor);
+        wfpObjectiveActivityRepository = new WFPObjectiveActivityRepository(context, sieveProcessor);
         wfpObjectiveTimelineRepository = new WFPObjectiveTimelineRepository(context, sieveProcessor);
         sdgRepository = new SDGRepository(context, sieveProcessor);
         kpiPerformanceMeasureRepository = new KPIPerformanceMeasureRepository(context, sieveProcessor);
@@ -190,7 +190,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IOPCRPAPDepartmentRepository OPCRPAPDepartmentRepository => opcrPapDepartmentRepository;
     public IWFPRepository WFPRepository => wfpRepository;
     public IWFPObjectiveRepository WFPObjectiveRepository => wfpObjectiveRepository;
-    public IWFPObjectiveTargetExpenditureRepository WFPObjectiveTargetExpenditureRepository => wfpObjectiveTargetExpenditureRepository;
+    public IWFPObjectiveActivityExpenditureRepository WFPObjectiveActivityExpenditureRepository => wfpObjectiveActivityExpenditureRepository;
     public IWFPPAPDepartmentRepository WFPPAPDepartmentRepository => wfpPapDepartmentRepository;
     public IOPCREvaluationRepository OPCREvaluationRepository => opcrEvaluationRepository;
     public IOPCRRatingRepository OPCRRatingRepository => opcrRatingRepository;
@@ -212,7 +212,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IFiscalMonthRepository FiscalMonthRepository => fiscalMonthRepository;
     public IBudgetCallRepository BudgetCallRepository => budgetCallRepository;
     public IClusterRepository ClusterRepository => clusterRepository;
-    public IWFPObjectiveTargetRepository WFPObjectiveTargetRepository => wfpObjectiveTargetRepository;
+    public IWFPObjectiveActivityRepository WFPObjectiveActivityRepository => wfpObjectiveActivityRepository;
     public IWFPObjectiveTimelineRepository WFPObjectiveTimelineRepository => wfpObjectiveTimelineRepository;
     public ISDGRepository SDGRepository => sdgRepository;
     public IKPIPerformanceMeasureRepository KPIPerformanceMeasureRepository => kpiPerformanceMeasureRepository;

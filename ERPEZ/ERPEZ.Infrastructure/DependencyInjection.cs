@@ -56,7 +56,7 @@ public static class DependencyInjection
         services.AddHttpContextAccessor();
 
         // Register repositories and Unit of Work
-        services.AddScoped<IWFPObjectiveTargetExpenditureRepository, WFPObjectiveTargetExpenditureRepository>();
+        services.AddScoped<IWFPObjectiveActivityExpenditureRepository, WFPObjectiveActivityExpenditureRepository>();
         services.AddScoped<IOPCRRepository, OPCRRepository>();
         services.AddScoped<IOPCRItemRepository, OPCRItemRepository>();
         services.AddScoped<IOPCRActivityRepository, OPCRActivityRepository>();
@@ -88,8 +88,8 @@ public static class DependencyInjection
         services.AddScoped<IFiscalMonthRepository, FiscalMonthRepository>();
         services.AddScoped<IBudgetCallRepository, BudgetCallRepository>();
         services.AddScoped<IClusterRepository, ClusterRepository>();
-        services.AddScoped<IWFPObjectiveTargetExpenditureRepository, WFPObjectiveTargetExpenditureRepository>();
-        services.AddScoped<IWFPObjectiveTargetRepository, WFPObjectiveTargetRepository>();
+        services.AddScoped<IWFPObjectiveActivityExpenditureRepository, WFPObjectiveActivityExpenditureRepository>();
+        services.AddScoped<IWFPObjectiveActivityRepository, WFPObjectiveActivityRepository>();
         services.AddScoped<IWFPObjectiveTimelineRepository, WFPObjectiveTimelineRepository>();
         services.AddScoped<IAttributeRepository, AttributeRepository>();
         services.AddScoped<IWorkflowMatrixRepository, WorkflowMatrixRepository>();

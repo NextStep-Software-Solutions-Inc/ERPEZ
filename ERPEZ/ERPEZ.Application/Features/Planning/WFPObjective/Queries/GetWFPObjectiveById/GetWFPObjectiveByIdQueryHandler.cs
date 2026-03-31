@@ -1,4 +1,4 @@
-using ERPEZ.Application.Features.Planning.WFPObjectiveTargetExpenditure.Dtos;
+﻿using ERPEZ.Application.Features.Planning.WFPObjectiveActivityExpenditure.Dtos;
 using ERPEZ.Application.Features.Planning.Object.Dtos;
 using ERPEZ.Application.Features.Planning.WFPObjective.Dtos;
 using ERPEZ.Application.Features.Planning.WFPObjectiveTimeline.Dtos;
@@ -6,7 +6,7 @@ using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
-using ERPEZ.Application.Features.Planning.WFPObjectiveTarget.Dtos;
+using ERPEZ.Application.Features.Planning.WFPObjectiveActivity.Dtos;
 
 namespace ERPEZ.Application.Features.Planning.WFPObjective.Queries.GetWFPObjectiveById;
 
@@ -30,15 +30,16 @@ public class GetWFPObjectiveByIdQueryHandler(IUnitOfWork unitOfWork)
                 WFP = new ()
                 {
                     Id = o.WFP.Id,
-                    Description = o.WFP.Description,
                     GeneralObjective = o.WFP.GeneralObjective,
                     ProjectEndDate = o.WFP.ProjectEndDate,
                     ProjectStartDate = o.WFP.ProjectStartDate,
                     ProjectTitle = o.WFP.ProjectTitle,
                     ProposedBudget = o.WFP.ProposedBudget,
-                    Mode = o.WFP.Mode,
+                    Mode = o.WFP.Mode.ToString(),
                     Status = o.WFP.Status.ToString(),
                     ObjectiveCount = o.WFP.WFPObjectives.Count,
+                    OPCRId = o.WFP.OPCRId,
+                    FundSourceId = o.WFP.FundSourceId,
                     Office = new ()
                     {
                         Id = o.WFP.Office.Id,
@@ -52,25 +53,19 @@ public class GetWFPObjectiveByIdQueryHandler(IUnitOfWork unitOfWork)
                     },
                     CreatedAt = o.WFP.CreatedAt,
                     CreatedBy = o.WFP.CreatedBy,
-                    FiscalYear = o.WFP.FiscalYear != null ? new ()
-                    {   
-                        Id = o.WFP.FiscalYear.Id,
-                        Year = o.WFP.FiscalYear.Year,
-                        Description = o.WFP.FiscalYear.Description,
-                    } : null,
                 },
-                WFPObjectiveTargets = o.WFPObjectiveTargets.Select(t => new WFPObjectiveTargetDetailedResponse
+                WFPObjectiveActivities = o.WFPObjectiveActivities.Select(t => new WFPObjectiveActivityDetailedResponse
                 {
                     Id = t.Id,
                     ActivityName = t.ActivityName,
                     Indicator = t.Indicator,
                     Weight = t.Weight,
-                    WFPObjectiveTargetExpenditures = t.WFPObjectiveTargetExpenditures.Select(ab => new WFPObjectiveTargetExpenditureResponse
+                    WFPObjectiveActivityExpenditures = t.WFPObjectiveActivityExpenditures.Select(ab => new WFPObjectiveActivityExpenditureResponse
                     {
                         Id = ab.Id,
                         ItemDescription = ab.ItemDescription,
-                        Quantity = ab.Quantity,
-                        CostEstimates = ab.CostEstimates,
+                        Quantity = ab.Quantity ?? 0,
+                        UnitCost = ab.UnitCost ?? 0,
                         CreatedAt = ab.CreatedAt,
                         CreatedBy = ab.CreatedBy,
                         Object = new ObjectResponse
@@ -80,7 +75,7 @@ public class GetWFPObjectiveByIdQueryHandler(IUnitOfWork unitOfWork)
                             Code = ab.Object.Code,
                             IsActive = ab.Object.IsActive,
                             ChildObjectCount = ab.Object.ChildObjects.Count,
-                            WFPObjectiveTargetExpenditureCount = ab.Object.WFPObjectiveTargetExpenditures.Count,
+                            WFPObjectiveActivityExpenditureCount = ab.Object.WFPObjectiveActivityExpenditures.Count,
                             TransactionCount = ab.Object.Transactions.Count,
                         }
                     }).ToList(),

@@ -1,5 +1,5 @@
-using ERPEZ.Application.Features.Planning.WFP.Dtos;
-using ERPEZ.Application.Features.Planning.WFPObjectiveTarget.Dtos;
+﻿using ERPEZ.Application.Features.Planning.WFP.Dtos;
+using ERPEZ.Application.Features.Planning.WFPObjectiveActivity.Dtos;
 
 namespace ERPEZ.Application.Features.Planning.WFPObjective.Dtos;
 
@@ -14,6 +14,6 @@ public record WFPObjectiveDetailedResponse
     public string? Outcome { get; init; }
     public DateTime CreatedAt { get; init; }
     public string CreatedBy { get; init; } = string.Empty;
-    public List<WFPObjectiveTargetDetailedResponse> WFPObjectiveTargets { get; init; } = [];
+    public List<WFPObjectiveActivityDetailedResponse> WFPObjectiveActivities { get; init; } = [];
     public WFPResponse? WFP { get; init; }
 }

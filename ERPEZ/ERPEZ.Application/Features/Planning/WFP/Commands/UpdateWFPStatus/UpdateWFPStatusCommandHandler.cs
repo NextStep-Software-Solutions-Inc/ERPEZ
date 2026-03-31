@@ -22,6 +22,11 @@ public class UpdateWFPStatusCommandHandler(IUnitOfWork unitOfWork)
 
         wfp.Status = newStatusEnum;
 
+        if (newStatusEnum == StatusEnum.Submitted)
+            wfp.SubmittedDate = DateTime.UtcNow;
+        else if (newStatusEnum == StatusEnum.Approved)
+            wfp.ApprovedDate = DateTime.UtcNow;
+
         unitOfWork.WFPRepository.Update(wfp);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 

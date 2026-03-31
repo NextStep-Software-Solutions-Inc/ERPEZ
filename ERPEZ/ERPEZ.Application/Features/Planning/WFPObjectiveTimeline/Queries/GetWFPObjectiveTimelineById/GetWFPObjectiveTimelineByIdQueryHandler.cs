@@ -1,4 +1,4 @@
-using ERPEZ.Application.Features.Planning.WFPObjectiveTimeline.Dtos;
+﻿using ERPEZ.Application.Features.Planning.WFPObjectiveTimeline.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -19,7 +19,7 @@ public class GetWFPObjectiveTimelineByIdQueryHandler(IUnitOfWork unitOfWork)
         var response = new WFPObjectiveTimelineResponse
         {
             Id = timeline.Id,
-            WFPObjectiveTargetId = timeline.WFPObjectiveTargetId,
+            WFPObjectiveActivityId = timeline.WFPObjectiveActivityId,
             TimelineType = timeline.TimelineType.ToString(),
             StartDate = timeline.StartDate,
             EndDate = timeline.EndDate,

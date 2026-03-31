@@ -1,4 +1,4 @@
-using ERPEZ.Domain.Enums;
+﻿using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -14,12 +14,12 @@ public class CreateWFPObjectiveTimelineCommandHandler(IUnitOfWork unitOfWork)
         CancellationToken cancellationToken)
     {
         // Validate WFP Objective Target exists
-        _ = await unitOfWork.WFPObjectiveTargetRepository.GetByIdAsync(request.WFPObjectiveTargetId, cancellationToken)
+        _ = await unitOfWork.WFPObjectiveActivityRepository.GetByIdAsync(request.WFPObjectiveActivityId, cancellationToken)
             ?? throw new NotFoundException("Activity not found.");
 
         // Check for overlapping timelines
         var existingTimelineQuery = unitOfWork.WFPObjectiveTimelineRepository.Query(
-            t => t.WFPObjectiveTargetId == request.WFPObjectiveTargetId);
+            t => t.WFPObjectiveActivityId == request.WFPObjectiveActivityId);
         var existingTimelines = await unitOfWork.WFPObjectiveTimelineRepository.ToListAsync(existingTimelineQuery, cancellationToken);
 
         var hasOverlap = existingTimelines.Any(t => 
@@ -32,7 +32,7 @@ public class CreateWFPObjectiveTimelineCommandHandler(IUnitOfWork unitOfWork)
 
         var timeline = new Domain.Entities.Planning.WFPObjectiveTimeline
         {
-            WFPObjectiveTargetId = request.WFPObjectiveTargetId,
+            WFPObjectiveActivityId = request.WFPObjectiveActivityId,
             TimelineType = Enum.Parse<TimelineTypeEnum>(request.TimelineType),
             StartDate = request.StartDate,
             EndDate = request.EndDate,

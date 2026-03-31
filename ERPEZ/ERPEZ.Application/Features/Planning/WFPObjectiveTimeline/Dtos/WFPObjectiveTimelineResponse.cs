@@ -1,9 +1,9 @@
-namespace ERPEZ.Application.Features.Planning.WFPObjectiveTimeline.Dtos;
+﻿namespace ERPEZ.Application.Features.Planning.WFPObjectiveTimeline.Dtos;
 
 public record WFPObjectiveTimelineResponse
 {
     public Guid Id { get; init; }
-    public Guid WFPObjectiveTargetId { get; init; }
+    public Guid WFPObjectiveActivityId { get; init; }
     public string TimelineType { get; init; } = string.Empty;
     public DateOnly StartDate { get; init; }
     public DateOnly EndDate { get; init; }

@@ -1,4 +1,4 @@
-using ERPEZ.Domain.Entities.Planning;
+﻿using ERPEZ.Domain.Entities.Planning;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Metadata.Builders;
 
@@ -13,7 +13,7 @@ public class LineItemBudgetActivityConfiguration : IEntityTypeConfiguration<Line
             .HasMaxLength(500);
         
         builder.HasIndex(e => e.LineItemBudgetId);
-        builder.HasIndex(e => e.WFPObjectiveTargetId);
+        builder.HasIndex(e => e.WFPObjectiveActivityId);
         builder.HasIndex(e => e.OPCRActivityId);
     }
 }

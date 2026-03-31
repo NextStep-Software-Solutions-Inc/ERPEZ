@@ -1,4 +1,4 @@
-using ERPEZ.Domain.Common;
+﻿using ERPEZ.Domain.Common;
 using ERPEZ.Domain.Entities.Planning;
 using Sieve.Attributes;
 
@@ -19,7 +19,7 @@ public class LineItemBudgetActivity : BaseEntity
     public Guid LineItemBudgetId { get; set; }
     
     [Sieve(CanFilter = true, CanSort = true)]
-    public Guid? WFPObjectiveTargetId { get; set; }
+    public Guid? WFPObjectiveActivityId { get; set; }
     
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid? OPCRActivityId { get; set; }
@@ -29,7 +29,7 @@ public class LineItemBudgetActivity : BaseEntity
     
     // Navigation properties
     public virtual LineItemBudget LineItemBudget { get; set; } = null!;
-    public virtual WFPObjectiveTarget? WFPObjectiveTarget { get; set; }
+    public virtual WFPObjectiveActivity? WFPObjectiveActivity { get; set; }
     public virtual OPCRActivity? OPCRActivity { get; set; }
     public virtual List<LineItemBudgetDetail> LineItemBudgetDetails { get; set; } = [];
 }

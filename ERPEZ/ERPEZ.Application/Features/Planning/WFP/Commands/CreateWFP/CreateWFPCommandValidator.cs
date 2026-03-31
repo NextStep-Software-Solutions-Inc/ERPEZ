@@ -3,9 +3,6 @@ using FluentValidation;
 
 namespace ERPEZ.Application.Features.Planning.WFP.Commands.CreateWFP;
 
-/// <summary>
-/// Validator for CreateWFPCommand ensuring all user input meets business requirements.
-/// </summary>
 public class CreateWFPCommandValidator : AbstractValidator<CreateWFPCommand>
 {
     public CreateWFPCommandValidator()
@@ -24,17 +21,11 @@ public class CreateWFPCommandValidator : AbstractValidator<CreateWFPCommand>
             .MaximumLength(250)
             .WithMessage("Project Title cannot exceed 250 characters.");
 
-        // Description (Optional, Max Length)
-        RuleFor(x => x.Description)
-            .MaximumLength(1000)
-            .WithMessage("Description cannot exceed 1000 characters.")
-            .When(x => !string.IsNullOrWhiteSpace(x.Description));
-
-        // FiscalYearId (Optional GUID)
-        RuleFor(x => x.FiscalYearId)
-            .NotEqual(Guid.Empty)
-            .WithMessage("Fiscal Year ID must be a valid GUID.")
-            .When(x => x.FiscalYearId.HasValue);
+        // OPCRId (Required when Mode is OPCR)
+        RuleFor(x => x.OPCRId)
+            .NotEmpty()
+            .WithMessage("OPCR ID is required when Mode is OPCR.")
+            .When(x => x.Mode == ModeEnum.OPCR);
 
         // ProjectStartDate (Required)
         RuleFor(x => x.ProjectStartDate)
@@ -48,7 +39,7 @@ public class CreateWFPCommandValidator : AbstractValidator<CreateWFPCommand>
             .GreaterThan(x => x.ProjectStartDate)
             .WithMessage("Project End Date must be after Project Start Date.");
 
-        // ProposedBudget (Optional, Non-Negative - will be auto-calculated from line items)
+        // ProposedBudget (Optional, Non-Negative)
         RuleFor(x => x.ProposedBudget)
             .GreaterThanOrEqualTo(0)
             .WithMessage("Proposed Budget must be a non-negative value.")
@@ -60,11 +51,9 @@ public class CreateWFPCommandValidator : AbstractValidator<CreateWFPCommand>
             .WithMessage("General Objective cannot exceed 1000 characters.")
             .When(x => !string.IsNullOrWhiteSpace(x.GeneralObjective));
 
-        // Mode (Required, must be valid enum value)
+        // Mode (Required)
         RuleFor(x => x.Mode)
-            .NotEmpty()
-            .WithMessage("Mode is required.")
-            .Must(mode => Enum.TryParse<ModeEnum>(mode, true, out _))
+            .IsInEnum()
             .WithMessage("Mode must be 'OPCR' or 'External'.");
     }
 }
