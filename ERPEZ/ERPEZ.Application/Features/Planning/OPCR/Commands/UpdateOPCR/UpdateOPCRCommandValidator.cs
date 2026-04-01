@@ -14,20 +14,6 @@ public class UpdateOPCRCommandValidator : AbstractValidator<UpdateOPCRCommand>
             .WithMessage("OPCR ID must be a valid, non-empty GUID.");
 
 
-        When(x => x.UpdateOPCR.OfficeId.HasValue, () =>
-        {
-            RuleFor(x => x.UpdateOPCR.OfficeId)
-                .Must(id => id != Guid.Empty)
-                .WithMessage("Office ID must be a valid, non-empty GUID.");
-        });
-
-        When(x => x.UpdateOPCR.FiscalYearId.HasValue, () =>
-        {
-            RuleFor(x => x.UpdateOPCR.FiscalYearId)
-                .Must(id => id != Guid.Empty)
-                .WithMessage("Fiscal Year ID must be a valid, non-empty GUID.");
-        });
-
         When(x => !string.IsNullOrWhiteSpace(x.UpdateOPCR.Name), () =>
         {
             RuleFor(x => x.UpdateOPCR.Name)
