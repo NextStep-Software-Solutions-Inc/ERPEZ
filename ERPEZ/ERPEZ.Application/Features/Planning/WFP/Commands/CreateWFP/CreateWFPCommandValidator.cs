@@ -21,11 +21,16 @@ public class CreateWFPCommandValidator : AbstractValidator<CreateWFPCommand>
             .MaximumLength(250)
             .WithMessage("Project Title cannot exceed 250 characters.");
 
-        // OPCRId (Required when Mode is OPCR)
+        // OPCRId (Required when Mode is OPCR, must be empty when External)
         RuleFor(x => x.OPCRId)
             .NotEmpty()
             .WithMessage("OPCR ID is required when Mode is OPCR.")
             .When(x => x.Mode == ModeEnum.OPCR);
+
+        RuleFor(x => x.OPCRId)
+            .Empty()
+            .WithMessage("OPCR ID must not be provided when Mode is External.")
+            .When(x => x.Mode == ModeEnum.External);
 
         // ProjectStartDate (Required)
         RuleFor(x => x.ProjectStartDate)

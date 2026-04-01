@@ -6,7 +6,6 @@ using ERPEZ.Application.Features.Planning.WFPObjectiveActivity.Queries.GetWFPObj
 using ERPEZ.Application.Features.Planning.WFPObjectiveActivity.Queries.GetWFPObjectiveActivities;
 using ERPEZ.Application.Features.Planning.WFPObjectiveActivityExpenditure.Commands.BulkCreateWFPObjectiveActivityExpenditure;
 using ERPEZ.Application.Features.Planning.WFPObjectiveActivityExpenditure.Dtos;
-using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -31,7 +30,7 @@ public class WFPObjectiveActivityController(ISender mediator) : ControllerBase
     }
 
     [HttpGet]
-    [ProducesResponseType(typeof(PaginatedApiResponse<WFPObjectiveActivity>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PaginatedApiResponse<WFPObjectiveActivityResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetWFPObjectiveActivities([FromQuery] GetWFPObjectiveActivitiesQuery query)
     {
         var result = await mediator.Send(query);
@@ -39,7 +38,7 @@ public class WFPObjectiveActivityController(ISender mediator) : ControllerBase
     }
 
     [HttpGet("{id}")]
-    [ProducesResponseType(typeof(ApiResponse<WFPObjectiveActivity>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<WFPObjectiveActivityDetailedResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetWFPObjectiveActivityById(Guid id)
     {

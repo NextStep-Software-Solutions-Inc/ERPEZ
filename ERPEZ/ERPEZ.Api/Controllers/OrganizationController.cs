@@ -4,7 +4,6 @@ using ERPEZ.Application.Features.Planning.Organization.Commands.UpdateOrganizati
 using ERPEZ.Application.Features.Planning.Organization.Dtos;
 using ERPEZ.Application.Features.Planning.Organization.Queries.GetOrganizationById;
 using ERPEZ.Application.Features.Planning.Organization.Queries.GetOrganizations;
-using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -16,8 +15,8 @@ namespace ERPEZ.Api.Controllers
     public class OrganizationController(ISender mediator) : ControllerBase
     {
         [HttpPost]
-        [ProducesResponseType(typeof(ApiResponse<Organization>), StatusCodes.Status201Created)]
-        [ProducesResponseType(typeof(ApiResponse<Organization>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
+        [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateOrganization([FromBody] CreateOrganizationCommand command)
         {
             var organization = await mediator.Send(command);
