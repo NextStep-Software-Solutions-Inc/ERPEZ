@@ -1,4 +1,5 @@
 using ERPEZ.Application.Features.Planning.KPIAssignment.Validators;
+using ERPEZ.Application.Common.Validators;
 using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
@@ -75,8 +76,12 @@ public class CreateKPIAssignmentCommandHandler(IUnitOfWork unitOfWork, IKPIAssig
         if (sourceEnum == KPIAssignmentSourceEnum.Assigned)
         {
             // Parse DistributionBehavior
-            if (!Enum.TryParse<DistributionBehaviorEnum>(fyActiveKPI.DistributionBehavior, true, out var distributionBehavior))
-                throw new ValidationException($"Invalid DistributionBehavior: {fyActiveKPI.DistributionBehavior}");
+            if (!ValidationUtilities.TryParseDistributionBehavior(fyActiveKPI.DistributionBehavior, out var distributionBehavior))
+                throw new ValidationException(
+                    $"Invalid DistributionBehavior for KPI '{fyActiveKPI.Name}'. " +
+                    $"Received '{fyActiveKPI.DistributionBehavior}'. " +
+                    $"Normalized value: '{ValidationUtilities.NormalizeDistributionBehavior(fyActiveKPI.DistributionBehavior)}'. " +
+                    $"Accepted values: {ValidationUtilities.GetDistributionBehaviorOptions()}.");
 
             // Parse MeasurementUnit
             if (!Enum.TryParse<MeasurementUnitEnum>(fyActiveKPI.MeasurementUnit, true, out var measurementUnit))

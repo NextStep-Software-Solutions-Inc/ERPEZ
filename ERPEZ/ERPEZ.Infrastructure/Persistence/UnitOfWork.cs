@@ -14,6 +14,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IPerformanceMeasureRepository performanceMeasureRepository;
     private readonly IAttributeRepository attributeRepository;
     private readonly IOPCRRepository opcrRepository;
+    private readonly IOPCRItemRepository opcrItemRepository;
     private readonly IOPCRActivityRepository opcrActivityRepository;
     private readonly IOPCRPAPDepartmentRepository opcrPapDepartmentRepository;
     private readonly IWFPRepository wfpRepository;
@@ -101,6 +102,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         performanceMeasureRepository = new PerformanceMeasureRepository(context, sieveProcessor);
         attributeRepository = new AttributeRepository(context, sieveProcessor);
         opcrRepository = new OPCRRepository(context, sieveProcessor);
+        opcrItemRepository = new OPCRItemRepository(context, sieveProcessor);
         opcrActivityRepository = new OPCRActivityRepository(context, sieveProcessor);
         opcrPapDepartmentRepository = new OPCRPAPDepartmentRepository(context, sieveProcessor);
         wfpRepository = new WFPRepository(context, sieveProcessor);
@@ -183,6 +185,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IPerformanceMeasureRepository PerformanceMeasureRepository => performanceMeasureRepository;
     public IAttributeRepository AttributeRepository => attributeRepository;
     public IOPCRRepository OPCRRepository => opcrRepository;
+    public IOPCRItemRepository OPCRItemRepository => opcrItemRepository;
     public IOPCRActivityRepository OPCRActivityRepository => opcrActivityRepository;
     public IOPCRPAPDepartmentRepository OPCRPAPDepartmentRepository => opcrPapDepartmentRepository;
     public IWFPRepository WFPRepository => wfpRepository;

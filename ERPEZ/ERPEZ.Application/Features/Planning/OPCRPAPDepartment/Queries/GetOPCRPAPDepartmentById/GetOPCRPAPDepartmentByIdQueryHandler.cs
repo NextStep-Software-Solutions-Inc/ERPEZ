@@ -1,4 +1,3 @@
-using ERPEZ.Application.Features.Planning.DeliveryUnit.Dtos;
 using ERPEZ.Application.Features.Planning.Office.Dtos;
 using ERPEZ.Application.Features.Planning.OPCRPAPDepartment.Dtos;
 using ERPEZ.Domain.Interfaces;
@@ -20,22 +19,16 @@ public class GetOPCRPAPDepartmentByIdQueryHandler(IUnitOfWork unitOfWork) : IReq
         {
             Id = oPCRPAPDepartment.Id,
             OPCRActivityId = oPCRPAPDepartment.OPCRActivityId,
-            DeliveryUnit = new DeliveryUnitResponse
+            Office = new OfficeResponse
             {
-                Id = oPCRPAPDepartment.DeliveryUnit.Id,
-                Office = new OfficeResponse
-                {
-                    Id = oPCRPAPDepartment.DeliveryUnit.Office.Id,
-                    Name = oPCRPAPDepartment.DeliveryUnit.Office.Name,
-                    Code = oPCRPAPDepartment.DeliveryUnit.Office.Code,
-                    Description = oPCRPAPDepartment.DeliveryUnit.Office.Description,
-                    Address = oPCRPAPDepartment.DeliveryUnit.Office.Address,
-                    ResponsibilityCenterCode = oPCRPAPDepartment.DeliveryUnit.Office.ResponsibilityCenterCode,
-                    ClusterId = oPCRPAPDepartment.DeliveryUnit.Office.ClusterId,
-                    Cluster = null
-                },
-                ParentId = oPCRPAPDepartment.DeliveryUnit.ParentId,
-                CreatedAt = oPCRPAPDepartment.DeliveryUnit.CreatedAt
+                Id = oPCRPAPDepartment.Office!.Id,
+                Name = oPCRPAPDepartment.Office.Name,
+                Code = oPCRPAPDepartment.Office.Code,
+                Description = oPCRPAPDepartment.Office.Description,
+                Address = oPCRPAPDepartment.Office.Address,
+                ResponsibilityCenterCode = oPCRPAPDepartment.Office.ResponsibilityCenterCode,
+                ClusterId = oPCRPAPDepartment.Office.ClusterId,
+                Cluster = null
             }
         };
 

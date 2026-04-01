@@ -6,5 +6,5 @@ namespace ERPEZ.Application.Features.Planning.OPCRPAPDepartment.Commands.CreateO
 public class CreateOPCRPAPDepartmentCommand : IRequest<ApiResponse<Guid>>
 {
     public Guid OPCRActivityId { get; set; }
-    public Guid DeliveryUnitId { get; set; }
+    public Guid OfficeId { get; set; }
 }

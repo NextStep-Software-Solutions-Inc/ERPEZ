@@ -14,9 +14,11 @@ public class OPCRActivityRatingRepository(ApplicationDbContext context, ISievePr
     {
         return context.Set<OPCRActivityRating>()
             .Include(r => r.OPCRActivity)
-                .ThenInclude(a => a.DUKPITargetAssignment)
-                    .ThenInclude(t => t.KPI)
-                        .ThenInclude(k => k.KPIPerformanceMeasures)
+                .ThenInclude(a => a.OPCRItem)
+                    .ThenInclude(i => i.KPIAssignment)
+                        .ThenInclude(a => a.FYActiveKPI)
+                            .ThenInclude(f => f!.MasterKPI)
+                                .ThenInclude(k => k!.KPIPerformanceMeasures)
             .Include(r => r.PerformanceMeasure)
             .Include(r => r.OPCRActivityEvaluations)
             .FirstOrDefaultAsync(r => r.Id == id, cancellationToken);

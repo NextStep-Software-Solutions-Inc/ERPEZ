@@ -1,3 +1,4 @@
+using ERPEZ.Application.Common.Validators;
 using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
@@ -14,14 +15,21 @@ public class UpdateFYActiveKPICommandHandler(IUnitOfWork unitOfWork)
         var fyActiveKpi = await unitOfWork.FYActiveKPIRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken)
             ?? throw new NotFoundException("FY Active KPI not found.");
 
+        // Prevent editing a KPI that belongs to a locked fiscal year
+        if (fyActiveKpi.IsLocked)
+            throw new ConflictException("FY Active KPI is locked and cannot be modified. Unlock the fiscal year KPIs first.");
+
         // Validate enums if provided
         if (request.MeasurementUnit != null && 
             !Enum.TryParse<MeasurementUnitEnum>(request.MeasurementUnit, true, out _))
             throw new ValidationException($"Invalid MeasurementUnit: {request.MeasurementUnit}");
 
         if (request.DistributionBehavior != null && 
-            !Enum.TryParse<DistributionBehaviorEnum>(request.DistributionBehavior, true, out _))
-            throw new ValidationException($"Invalid DistributionBehavior: {request.DistributionBehavior}");
+            !ValidationUtilities.TryParseDistributionBehavior(request.DistributionBehavior, out _))
+            throw new ValidationException(
+                $"Invalid DistributionBehavior '{request.DistributionBehavior}'. " +
+                $"Normalized value: '{ValidationUtilities.NormalizeDistributionBehavior(request.DistributionBehavior)}'. " +
+                $"Accepted values: {ValidationUtilities.GetDistributionBehaviorOptions()}.");
 
         if (request.FunctionCategory != null && 
             !Enum.TryParse<FunctionCategoryEnum>(request.FunctionCategory, true, out _))

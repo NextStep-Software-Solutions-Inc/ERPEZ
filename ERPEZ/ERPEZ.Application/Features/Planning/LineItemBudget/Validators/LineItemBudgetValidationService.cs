@@ -92,11 +92,6 @@ public class LineItemBudgetValidationService : ILineItemBudgetValidationService
                 {
                     result.AddError("OPCR not found.");
                 }
-                else if (!LineItemBudgetValidationRules.ValidateSourceBelongsToDeliveryUnit(
-                    sourceType, sourceId, deliveryUnitId, opcr.DeliveryUnitId))
-                {
-                    result.AddError("OPCR does not belong to the specified Delivery Unit.");
-                }
                 else
                 {
                     // Validate fiscal year consistency

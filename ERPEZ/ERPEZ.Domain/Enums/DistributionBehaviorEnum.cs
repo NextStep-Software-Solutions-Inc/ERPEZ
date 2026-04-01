@@ -14,6 +14,11 @@ public enum DistributionBehaviorEnum
     Summation,
 
     /// <summary>
+    /// Alias for Summation retained for compatibility with persisted/API values.
+    /// </summary>
+    Divisible = Summation,
+
+    /// <summary>
     /// Each office receives the exact same target as the agency target.
     /// Example: Agency: 80%, all offices get 80% each
     /// Example: Agency: 50 units, all offices get 50 units each

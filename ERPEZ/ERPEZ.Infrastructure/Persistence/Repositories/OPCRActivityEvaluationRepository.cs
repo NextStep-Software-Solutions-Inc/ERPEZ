@@ -15,7 +15,7 @@ public class OPCRActivityEvaluationRepository(ApplicationDbContext context, ISie
         return context.Set<OPCRActivityEvaluation>()
             .Include(e => e.OPCRActivityRating)
                 .ThenInclude(r => r.OPCRActivity)
-                    .ThenInclude(a => a.DUKPITargetAssignment)
+                    .ThenInclude(a => a.OPCRItem)
             .Include(e => e.OPCRActivityRating)
                 .ThenInclude(r => r.PerformanceMeasure)
             .FirstOrDefaultAsync(e => e.Id == id, cancellationToken);

@@ -2,7 +2,7 @@ namespace ERPEZ.Domain.Enums;
 
 public enum DimensionEnum
 {
-    Quantity,
+    Efficiency,
     Quality,
     Timeliness
 }

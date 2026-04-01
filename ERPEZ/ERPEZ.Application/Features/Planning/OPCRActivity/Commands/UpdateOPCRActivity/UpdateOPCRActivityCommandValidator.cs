@@ -10,16 +10,6 @@ public class UpdateOPCRActivityCommandValidator : AbstractValidator<UpdateOPCRAc
             .NotEmpty()
             .WithMessage("OPCR Activity ID is required for update.");
 
-        RuleFor(x => x.UpdateOPCRActivity.OPCRId)
-            .NotEmpty()
-            .WithMessage("OPCR ID is required.")
-            .When(x => x.UpdateOPCRActivity.OPCRId.HasValue);
-
-        RuleFor(x => x.UpdateOPCRActivity.DUKPITargetAssignmentId)
-            .NotEmpty()
-            .WithMessage("DU KPI Target Assignment is required.")
-            .When(x => x.UpdateOPCRActivity.DUKPITargetAssignmentId.HasValue);
-
         RuleFor(x => x.UpdateOPCRActivity.Name)
             .NotEmpty()
             .MinimumLength(3)

@@ -43,6 +43,7 @@ public class GetFYActiveKPIsQueryHandler(IUnitOfWork unitOfWork)
             IsOptInAvailable = fy.IsOptInAvailable,
             IsGAD = fy.IsGAD,
             Status = fy.Status,
+            IsLocked = fy.IsLocked,
             AgencyTargetAnnual = fy.AgencyTargetAnnual,
             AgencyTargetQ1 = fy.AgencyTargetQ1,
             AgencyTargetQ2 = fy.AgencyTargetQ2,
