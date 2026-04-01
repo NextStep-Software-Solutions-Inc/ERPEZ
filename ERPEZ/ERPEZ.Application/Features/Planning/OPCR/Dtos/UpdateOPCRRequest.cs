@@ -2,8 +2,6 @@ namespace ERPEZ.Application.Features.Planning.OPCR.Dtos;
 
 public record UpdateOPCRRequest
 {
-    public Guid? OfficeId { get; init; }
-    public Guid? FiscalYearId { get; init; }
     public string? Name { get; init; }
     public string? Code { get; init; }
 }
