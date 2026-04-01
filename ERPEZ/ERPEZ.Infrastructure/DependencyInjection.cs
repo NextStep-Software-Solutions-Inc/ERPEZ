@@ -56,7 +56,6 @@ public static class DependencyInjection
         services.AddHttpContextAccessor();
 
         // Register repositories and Unit of Work
-        services.AddScoped<IWFPObjectiveActivityExpenditureRepository, WFPObjectiveActivityExpenditureRepository>();
         services.AddScoped<IOPCRRepository, OPCRRepository>();
         services.AddScoped<IOPCRItemRepository, OPCRItemRepository>();
         services.AddScoped<IOPCRActivityRepository, OPCRActivityRepository>();

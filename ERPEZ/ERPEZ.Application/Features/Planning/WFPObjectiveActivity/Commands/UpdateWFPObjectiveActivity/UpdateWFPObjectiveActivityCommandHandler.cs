@@ -22,7 +22,8 @@ public class UpdateWFPObjectiveActivityCommandHandler(IUnitOfWork unitOfWork)
         {
             var duplicate = await unitOfWork.WFPObjectiveActivityRepository.FindAsync(
                 t => t.WFPObjectiveId == activity.WFPObjectiveId 
-                     && t.ActivityName == dto.ActivityName 
+                     && t.ActivityName == dto.ActivityName
+                     && t.Indicator == (dto.Indicator ?? activity.Indicator)
                      && t.Id != request.Id,
                 cancellationToken);
 

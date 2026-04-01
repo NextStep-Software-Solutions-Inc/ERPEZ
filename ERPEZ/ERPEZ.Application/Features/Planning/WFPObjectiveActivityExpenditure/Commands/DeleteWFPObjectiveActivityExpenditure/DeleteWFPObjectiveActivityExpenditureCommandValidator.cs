@@ -9,8 +9,8 @@ public class DeleteWFPObjectiveActivityExpenditureCommandValidator : AbstractVal
         // Id (Required Primary Key)
         RuleFor(x => x.Id)
             .NotEmpty()
-            .WithMessage("WFP Objective Target Activity ID is required for deletion.")
+            .WithMessage("Activity Expenditure ID is required for deletion.")
             .Must(id => id != Guid.Empty)
-            .WithMessage("WFP Objective Target Activity ID must be a valid, non-empty GUID.");
+            .WithMessage("Activity Expenditure ID must be a valid, non-empty GUID.");
     }
 }

@@ -132,7 +132,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasIndex(k => k.Name)
             .IsUnique();
 
-        // KPI ΓåÆ KPIPerformanceMeasures
+        // KPI -> KPIPerformanceMeasures
         modelBuilder.Entity<KPI>()
             .HasMany(k => k.KPIPerformanceMeasures)
             .WithOne(kpm => kpm.KPI)
@@ -477,7 +477,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         //WFP
         modelBuilder.Entity<WFP>()
-            .HasIndex(w => new { w.OfficeId, w.OPCRId });
+            .HasIndex(w => new { w.OfficeId, w.Mode });
+
+        modelBuilder.Entity<WFP>()
+            .HasIndex(w => w.OPCRId);
 
         modelBuilder.Entity<WFP>()
             .HasOne(w => w.Office)

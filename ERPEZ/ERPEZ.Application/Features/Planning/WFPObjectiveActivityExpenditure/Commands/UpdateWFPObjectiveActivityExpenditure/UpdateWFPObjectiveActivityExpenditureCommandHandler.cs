@@ -12,7 +12,7 @@ public class UpdateWFPObjectiveActivityExpenditureCommandHandler(IUnitOfWork uni
     {
         var dto = request.UpdateWFPObjectiveActivityExpenditure;
         var abr = await unitOfWork.WFPObjectiveActivityExpenditureRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken)
-            ?? throw new NotFoundException("WFP Objective Target Expenditure not found.");
+            ?? throw new NotFoundException("WFP Objective Activity Expenditure not found.");
 
         var duplicate = await unitOfWork.WFPObjectiveActivityExpenditureRepository.FindAsync(
             abr => abr.ItemDescription == dto.ItemDescription &&
@@ -22,7 +22,7 @@ public class UpdateWFPObjectiveActivityExpenditureCommandHandler(IUnitOfWork uni
         );
 
         if (duplicate != null && duplicate.Id != request.Id)
-            throw new ConflictException("WFP Objective Target Expenditure already exists.");
+            throw new ConflictException("WFP Objective Activity Expenditure already exists.");
 
         abr.ItemDescription = dto.ItemDescription ?? abr.ItemDescription;
         abr.Quantity = dto.Quantity;
@@ -31,6 +31,6 @@ public class UpdateWFPObjectiveActivityExpenditureCommandHandler(IUnitOfWork uni
         unitOfWork.WFPObjectiveActivityExpenditureRepository.Update(abr);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return ApiResponse<Unit>.Success(Unit.Value, "WFP Objective Target Expenditure updated successfully.");
+        return ApiResponse<Unit>.Success(Unit.Value, "WFP Objective Activity Expenditure updated successfully.");
     }
 }

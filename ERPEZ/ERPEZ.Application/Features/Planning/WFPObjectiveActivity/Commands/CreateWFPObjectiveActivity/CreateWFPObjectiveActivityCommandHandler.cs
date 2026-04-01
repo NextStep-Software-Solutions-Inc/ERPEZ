@@ -61,7 +61,8 @@ public class CreateWFPObjectiveActivityCommandHandler(IUnitOfWork unitOfWork)
         var duplicate = await unitOfWork.WFPObjectiveActivityRepository.FindAsync(
             t => t.WFPObjectiveId == request.WFPObjectiveId
               && t.OPCRActivityId == request.OPCRActivityId
-              && t.ActivityName == resolvedActivityName,
+              && t.ActivityName == resolvedActivityName
+              && t.Indicator == request.Indicator,
             cancellationToken);
 
         if (duplicate != null)
@@ -105,7 +106,8 @@ public class CreateWFPObjectiveActivityCommandHandler(IUnitOfWork unitOfWork)
             })];
         }
 
-        await unitOfWork.WFPObjectiveActivityRepository.AddAsync(activity, cancellationToken);        await unitOfWork.SaveChangesAsync(cancellationToken);
+        await unitOfWork.WFPObjectiveActivityRepository.AddAsync(activity, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return ApiResponse<Guid>.Success(activity.Id, "Activity created successfully.");
     }
