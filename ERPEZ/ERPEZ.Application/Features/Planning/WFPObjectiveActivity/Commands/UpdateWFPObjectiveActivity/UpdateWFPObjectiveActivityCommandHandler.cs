@@ -51,6 +51,10 @@ public class UpdateWFPObjectiveActivityCommandHandler(IUnitOfWork unitOfWork)
             }
         }
 
+        // ActivityName is auto-synced from OPCRActivity on the OPCR path and must not diverge
+        if (activity.OPCRActivityId.HasValue && dto.ActivityName != null)
+            throw new BadRequestException("ActivityName cannot be manually updated for OPCR-linked activities.");
+
         activity.ActivityName = dto.ActivityName ?? activity.ActivityName;
         activity.Indicator = dto.Indicator ?? activity.Indicator;
         activity.Weight = dto.Weight ?? activity.Weight;
