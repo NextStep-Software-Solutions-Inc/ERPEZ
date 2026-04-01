@@ -95,7 +95,7 @@ public class UpdateOPCRItemCommandHandler(IUnitOfWork unitOfWork, IOPCRItemTarge
             distributionBehavior,
             assignmentData.IsLocked,
             isShopped,
-            assignmentData.AssignedTargetAnnual,
+            assignmentData.AssignedTargetAnnual ?? 0m,
             assignmentData.AssignedTargetQ1,
             assignmentData.AssignedTargetQ2,
             assignmentData.AssignedTargetQ3,

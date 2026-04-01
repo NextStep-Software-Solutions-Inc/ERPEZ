@@ -87,7 +87,7 @@ public class CreateOPCRItemCommandHandler(IUnitOfWork unitOfWork, IOPCRItemTarge
             distributionBehavior,
             assignmentData.IsLocked,
             request.IsShopped,
-            assignmentData.AssignedTargetAnnual,
+            assignmentData.AssignedTargetAnnual ?? 0m,
             assignmentData.AssignedTargetQ1,
             assignmentData.AssignedTargetQ2,
             assignmentData.AssignedTargetQ3,
