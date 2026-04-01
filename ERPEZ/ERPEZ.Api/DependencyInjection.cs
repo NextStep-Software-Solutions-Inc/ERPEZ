@@ -25,6 +25,11 @@ public static class DependencyInjection
             
             // Handle file uploads with [FromForm] attribute
             c.OperationFilter<SwaggerFileOperationFilter>();
+
+            // Break circular $refs caused by self-referential DTOs (ObjectResponse.Parent,
+            // DeliveryUnitResponse.SubDeliveryUnits, OfficeHierarchyResponse.Children).
+            // Without this, Swagger UI hangs for seconds whenever one of these endpoints is clicked.
+            c.SchemaFilter<BreakCircularReferenceSchemaFilter>();
         });
         
         services.AddCorsPolicies(configuration); // Register CORS policies from extension method
