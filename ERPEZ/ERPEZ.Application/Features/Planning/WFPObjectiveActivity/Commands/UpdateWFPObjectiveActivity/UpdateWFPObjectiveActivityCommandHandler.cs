@@ -17,8 +17,8 @@ public class UpdateWFPObjectiveActivityCommandHandler(IUnitOfWork unitOfWork)
         var activity = await unitOfWork.WFPObjectiveActivityRepository.GetByIdAsync(request.Id, cancellationToken)
             ?? throw new NotFoundException("Activity not found.");
 
-        // Check for duplicate activity name if it's being changed
-        if (!string.IsNullOrWhiteSpace(dto.ActivityName) && dto.ActivityName != activity.ActivityName)
+        // Check for duplicate activity name if it's being changed (External path only)
+        if (!activity.OPCRActivityId.HasValue && !string.IsNullOrWhiteSpace(dto.ActivityName) && dto.ActivityName != activity.ActivityName)
         {
             var duplicate = await unitOfWork.WFPObjectiveActivityRepository.FindAsync(
                 t => t.WFPObjectiveId == activity.WFPObjectiveId 
@@ -51,11 +51,9 @@ public class UpdateWFPObjectiveActivityCommandHandler(IUnitOfWork unitOfWork)
             }
         }
 
-        // ActivityName is auto-synced from OPCRActivity on the OPCR path and must not diverge
-        if (activity.OPCRActivityId.HasValue && dto.ActivityName != null)
-            throw new BadRequestException("ActivityName cannot be manually updated for OPCR-linked activities.");
-
-        activity.ActivityName = dto.ActivityName ?? activity.ActivityName;
+        // ActivityName is auto-managed on the OPCR path; silently ignore updates for OPCR-linked activities
+        if (!activity.OPCRActivityId.HasValue)
+            activity.ActivityName = dto.ActivityName ?? activity.ActivityName;
         activity.Indicator = dto.Indicator ?? activity.Indicator;
         activity.Weight = dto.Weight ?? activity.Weight;
 

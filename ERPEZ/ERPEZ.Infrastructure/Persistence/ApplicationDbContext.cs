@@ -519,6 +519,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         //WFPObjectiveActivity
         modelBuilder.Entity<WFPObjectiveActivity>()
+            .HasOne(a => a.WFP)
+            .WithMany()
+            .HasForeignKey(a => a.WFPId);
+
+        modelBuilder.Entity<WFPObjectiveActivity>()
             .HasOne(a => a.WFPObjective)
             .WithMany(o => o.WFPObjectiveActivities)
             .HasForeignKey(a => a.WFPObjectiveId);

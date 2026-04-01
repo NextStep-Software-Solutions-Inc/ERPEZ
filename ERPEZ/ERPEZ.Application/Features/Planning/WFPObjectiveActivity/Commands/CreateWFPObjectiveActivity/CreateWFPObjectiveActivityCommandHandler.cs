@@ -57,13 +57,24 @@ public class CreateWFPObjectiveActivityCommandHandler(IUnitOfWork unitOfWork)
             resolvedActivityName = request.ActivityName;
         }
 
-        // Check for duplicate activity name under the same objective (or OPCR activity)
-        var duplicate = await unitOfWork.WFPObjectiveActivityRepository.FindAsync(
-            t => t.WFPObjectiveId == request.WFPObjectiveId
-              && t.OPCRActivityId == request.OPCRActivityId
-              && t.ActivityName == resolvedActivityName
-              && t.Indicator == request.Indicator,
-            cancellationToken);
+        // Check for duplicate: OPCR path scoped to this WFP; External path scoped to objective
+        Domain.Entities.Planning.WFPObjectiveActivity? duplicate;
+        if (wfp.Mode == ModeEnum.OPCR)
+        {
+            duplicate = await unitOfWork.WFPObjectiveActivityRepository.FindAsync(
+                t => t.WFPId == request.WFPId
+                  && t.OPCRActivityId == request.OPCRActivityId
+                  && t.Indicator == request.Indicator,
+                cancellationToken);
+        }
+        else
+        {
+            duplicate = await unitOfWork.WFPObjectiveActivityRepository.FindAsync(
+                t => t.WFPObjectiveId == request.WFPObjectiveId
+                  && t.ActivityName == resolvedActivityName
+                  && t.Indicator == request.Indicator,
+                cancellationToken);
+        }
 
         if (duplicate != null)
             throw new ConflictException("Activity with the same name already exists for this objective.");
@@ -88,6 +99,7 @@ public class CreateWFPObjectiveActivityCommandHandler(IUnitOfWork unitOfWork)
 
         var activity = new Domain.Entities.Planning.WFPObjectiveActivity
         {
+            WFPId = request.WFPId,
             WFPObjectiveId = request.WFPObjectiveId,
             OPCRActivityId = request.OPCRActivityId,
             ActivityName = resolvedActivityName,
