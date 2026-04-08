@@ -18,6 +18,7 @@ public class Object : BaseEntity
     public virtual FiscalYear? FiscalYear { get; set; }
     public virtual Object? ParentObject { get; set; }
     public virtual List<Object> ChildObjects { get; set; } = [];
+    public virtual List<ObjectExpenseClass> ObjectExpenseClasses { get; set; } = [];
     public virtual List<WFPObjectiveActivityExpenditure> WFPObjectiveActivityExpenditures { get; set; } = [];
     public virtual List<Transaction> Transactions { get; set; } = [];
 }

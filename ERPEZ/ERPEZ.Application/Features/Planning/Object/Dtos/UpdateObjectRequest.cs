@@ -6,4 +6,5 @@ public record UpdateObjectRequest
     public string? Code { get; init; }
     public bool? IsActive { get; init; }
     public Guid? FiscalYearId { get; init; }
+    public Guid? ExpenseClassId { get; init; }
 }

@@ -21,6 +21,11 @@ public class CreateObjectCommandHandler(IUnitOfWork unitOfWork) : IRequestHandle
             _ = await unitOfWork.FiscalYearRepository.GetByIdAsync(request.FiscalYearId.Value, cancellationToken) ?? throw new NotFoundException($"Fiscal Year with the specified ID ({request.FiscalYearId.Value}) does not exist.");
         }
 
+        if (request.ExpenseClassId.HasValue)
+        {
+            _ = await unitOfWork.ExpenseClassRepository.GetByIdAsync(request.ExpenseClassId.Value, cancellationToken) ?? throw new NotFoundException($"Expense Class with the specified ID ({request.ExpenseClassId.Value}) does not exist.");
+        }
+
         var duplicate = await unitOfWork.ObjectRepository.FindAsync(o => o.ParentId == request.ParentId &&
         o.Name == request.Name &&
         o.Code == request.Code &&
@@ -38,6 +43,22 @@ public class CreateObjectCommandHandler(IUnitOfWork unitOfWork) : IRequestHandle
 
         await unitOfWork.ObjectRepository.AddAsync(requestObject, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        // Auto-create ObjectExpenseClass relationship if ExpenseClassId is provided
+        if (request.ExpenseClassId.HasValue)
+        {
+            var objectExpenseClass = new Domain.Entities.Planning.ObjectExpenseClass
+            {
+                ObjectId = requestObject.Id,
+                ExpenseClassId = request.ExpenseClassId.Value,
+                Name = $"{requestObject.Name} Classification",
+                Description = "Auto-created during object creation",
+                IsActive = true
+            };
+
+            await unitOfWork.ObjectExpenseClassRepository.AddAsync(objectExpenseClass, cancellationToken);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+        }
 
         return ApiResponse<Guid>.Success(requestObject.Id, "Object created successfully.");
     }

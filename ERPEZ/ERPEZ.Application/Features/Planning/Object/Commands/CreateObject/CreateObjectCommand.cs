@@ -10,4 +10,5 @@ public class CreateObjectCommand : IRequest<ApiResponse<Guid>>
     public string Code { get; set; } = string.Empty;
     public bool IsActive { get; set; }
     public Guid? FiscalYearId { get; set; }
+    public Guid? ExpenseClassId { get; set; }
 }

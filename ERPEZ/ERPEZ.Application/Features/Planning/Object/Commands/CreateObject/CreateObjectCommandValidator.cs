@@ -32,5 +32,11 @@ public class CreateObjectCommandValidator : AbstractValidator<CreateObjectComman
             .Must(id => !id.HasValue || id.Value != Guid.Empty)
             .WithMessage("If provided, the Fiscal Year ID must be a valid, non-empty GUID.")
             .When(x => x.FiscalYearId.HasValue);
+
+        // ExpenseClassId (Optional GUID)
+        RuleFor(x => x.ExpenseClassId)
+            .Must(id => !id.HasValue || id.Value != Guid.Empty)
+            .WithMessage("If provided, the Expense Class ID must be a valid, non-empty GUID.")
+            .When(x => x.ExpenseClassId.HasValue);
     }
 }

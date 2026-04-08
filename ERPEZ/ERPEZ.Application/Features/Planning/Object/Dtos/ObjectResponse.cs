@@ -8,6 +8,7 @@ public record ObjectResponse
     public string Code { get; init; } = string.Empty;
     public bool IsActive { get; init; }
     public Guid? FiscalYearId { get; init; }
+    public Guid? ExpenseClassId { get; init; }
 
     public int ChildObjectCount { get; init; } = 0;
     public int WFPObjectiveActivityExpenditureCount { get; init; } = 0;

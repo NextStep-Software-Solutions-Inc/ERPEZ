@@ -14,6 +14,11 @@ public class GetObjectByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler
            t => t.Id == request.Id,
             cancellationToken: cancellationToken) ?? throw new NotFoundException("No data found.");
 
+        // Get the first active ObjectExpenseClass if exists
+        var objectExpenseClass = await unitOfWork.ObjectExpenseClassRepository.FindAsync(
+            oec => oec.ObjectId == request.Id && oec.IsActive,
+            cancellationToken);
+
         var response = new ObjectDetailedResponse
         {
             Id = objectEntity.Id,
@@ -21,6 +26,7 @@ public class GetObjectByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler
             Description = null,
             Code = objectEntity.Code,
             FiscalYearId = objectEntity.FiscalYearId,
+            ExpenseClassId = objectExpenseClass?.ExpenseClassId,
             CreatedAt = objectEntity.CreatedAt,
             CreatedBy = objectEntity.CreatedBy,
             UpdatedAt = objectEntity.UpdatedAt,
