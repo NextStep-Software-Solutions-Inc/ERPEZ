@@ -8,6 +8,7 @@ public record FundSourceResponse
     public required string Code { get; init; }
     public required string Type { get; init; }
     public bool IsActive { get; init; }
+    public Guid? FiscalYearId { get; init; }
     public required decimal TotalReceivedFunds { get; init; } = 0m;
     public required decimal TotalDUAllocatedFunds { get; init; } = 0m;
     public DateTime CreatedAt { get; init; }

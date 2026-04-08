@@ -19,6 +19,15 @@ public class GetFundSourcesQueryHandler(IUnitOfWork unitOfWork) : IRequestHandle
             Sorts = query.Sorts
         };
 
+        // Add fiscal year filter to Sieve filters if provided
+        if (query.FiscalYearId.HasValue)
+        {
+            var fiscalYearFilter = $"FiscalYearId=={query.FiscalYearId.Value}";
+            sieveModel.Filters = string.IsNullOrEmpty(sieveModel.Filters) 
+                ? fiscalYearFilter 
+                : $"{sieveModel.Filters},{fiscalYearFilter}";
+        }
+
         Expression<Func<Domain.Entities.Planning.FundSource, FundSourceResponse>> projection = fundSource => new FundSourceResponse
         {
             Id = fundSource.Id,
@@ -29,11 +38,12 @@ public class GetFundSourcesQueryHandler(IUnitOfWork unitOfWork) : IRequestHandle
             TotalDUAllocatedFunds = 0m,
             TotalReceivedFunds = 0m,
             IsActive = fundSource.IsActive,
+            FiscalYearId = fundSource.FiscalYearId,
             CreatedBy = fundSource.CreatedBy,
             CreatedAt = fundSource.CreatedAt
         };
 
-        var (fundSources, totalCount) = await unitOfWork.FundSourceRepository.GetAllAsync(sieveModel, projection, cancellationToken: cancellationToken);
+        var (fundSources, totalCount) = await unitOfWork.FundSourceRepository.GetAllAsync(sieveModel, projection, cancellationToken);
         return new PaginatedApiResponse<FundSourceResponse>(
             [.. fundSources],
             query.PageNumber,

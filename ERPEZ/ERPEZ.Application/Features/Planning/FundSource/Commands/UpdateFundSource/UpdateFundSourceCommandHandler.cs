@@ -17,13 +17,18 @@ public class UpdateFundSourceCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
             _ = await unitOfWork.FundSourceRepository.GetByIdAsync(dto.ParentId.Value, cancellationToken) ?? throw new NotFoundException("Parent Fund Source with the specified ID does not exist.");
         }
 
+        if (dto.FiscalYearId.HasValue)
+        {
+            _ = await unitOfWork.FiscalYearRepository.GetByIdAsync(dto.FiscalYearId.Value, cancellationToken) ?? throw new NotFoundException($"Fiscal Year with the specified ID ({dto.FiscalYearId.Value}) does not exist.");
+        }
+
         var fundSourceType = Enum.Parse<FundSourceTypeEnum>(dto.Type);
         var fundSource = await unitOfWork.FundSourceRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("Fund Source not found.");
 
         // Check for duplicate name and type combination (excluding current fund source)
         if (dto.Name != null)
         {
-            var existingFundSource = await unitOfWork.FundSourceRepository.FindAsync(fs => fs.Name == dto.Name && fs.Type == fundSourceType && fs.Id != request.Id,
+            var existingFundSource = await unitOfWork.FundSourceRepository.FindAsync(fs => fs.Name == dto.Name && fs.Type == fundSourceType && fs.Id != request.Id && fs.FiscalYearId == dto.FiscalYearId,
                 cancellationToken);
             if (existingFundSource != null)
                 throw new ConflictException("Fund Source with the same name and type already exists.");
@@ -34,6 +39,7 @@ public class UpdateFundSourceCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
         fundSource.Code = dto!.Code ?? fundSource.Code;
         fundSource.Type = fundSourceType;
         fundSource.IsActive = dto!.IsActive ?? fundSource.IsActive;
+        fundSource.FiscalYearId = dto!.FiscalYearId ?? fundSource.FiscalYearId;
 
         unitOfWork.FundSourceRepository.Update(fundSource);
         await unitOfWork.SaveChangesAsync(cancellationToken);

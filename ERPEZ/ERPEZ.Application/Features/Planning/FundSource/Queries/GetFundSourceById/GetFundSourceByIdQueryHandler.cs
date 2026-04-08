@@ -21,6 +21,7 @@ public class GetFundSourceByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHan
                 TotalReceivedFunds = 0m,
                 Type = fundSource.Type.ToString(),
                 IsActive = fundSource.IsActive,
+                FiscalYearId = fundSource.FiscalYearId,
                 CreatedBy = fundSource.CreatedBy,
                 CreatedAt = fundSource.CreatedAt
             });
