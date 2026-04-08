@@ -1195,6 +1195,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text");
 
+                    b.Property<Guid?>("FiscalYearId")
+                        .HasColumnType("uuid");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
@@ -1222,6 +1225,8 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("FiscalYearId");
 
                     b.HasIndex("ParentSourceId");
 
@@ -1924,6 +1929,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text");
 
+                    b.Property<Guid?>("FiscalYearId")
+                        .HasColumnType("uuid");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
@@ -1951,6 +1959,8 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("FiscalYearId");
 
                     b.HasIndex("ParentId");
 
@@ -1985,6 +1995,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text");
 
+                    b.Property<Guid?>("FiscalYearId")
+                        .HasColumnType("uuid");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
@@ -2015,6 +2028,8 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("FiscalYearId");
 
                     b.HasIndex("KPIId");
 
@@ -2631,6 +2646,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text");
 
+                    b.Property<Guid?>("FiscalYearId")
+                        .HasColumnType("uuid");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
@@ -2651,6 +2669,8 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("FiscalYearId");
 
                     b.HasIndex("ParentId", "Code")
                         .IsUnique();
@@ -2937,6 +2957,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text");
 
+                    b.Property<Guid?>("FiscalYearId")
+                        .HasColumnType("uuid");
+
                     b.Property<bool>("IsActive")
                         .HasColumnType("boolean");
 
@@ -2964,6 +2987,8 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("FiscalYearId");
 
                     b.HasIndex("ParentId");
 
@@ -5854,9 +5879,15 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.FundSource", b =>
                 {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.FiscalYear", "FiscalYear")
+                        .WithMany()
+                        .HasForeignKey("FiscalYearId");
+
                     b.HasOne("ERPEZ.Domain.Entities.Planning.FundSource", "ParentSource")
                         .WithMany("FundSources")
                         .HasForeignKey("ParentSourceId");
+
+                    b.Navigation("FiscalYear");
 
                     b.Navigation("ParentSource");
                 });
@@ -6055,6 +6086,10 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.Location", b =>
                 {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.FiscalYear", "FiscalYear")
+                        .WithMany()
+                        .HasForeignKey("FiscalYearId");
+
                     b.HasOne("ERPEZ.Domain.Entities.Planning.Location", null)
                         .WithMany()
                         .HasForeignKey("ParentId");
@@ -6063,11 +6098,17 @@ namespace ERPEZ.Infrastructure.Migrations
                         .WithMany("Locations")
                         .HasForeignKey("ParentLocationId");
 
+                    b.Navigation("FiscalYear");
+
                     b.Navigation("ParentLocation");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.MFOPAP", b =>
                 {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.FiscalYear", "FiscalYear")
+                        .WithMany()
+                        .HasForeignKey("FiscalYearId");
+
                     b.HasOne("ERPEZ.Domain.Entities.Planning.KPI", null)
                         .WithMany("MFOPAPs")
                         .HasForeignKey("KPIId");
@@ -6079,6 +6120,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasOne("ERPEZ.Domain.Entities.Planning.MFOPAP", "ParentMFOPAP")
                         .WithMany("MFOPAPs")
                         .HasForeignKey("ParentMFOPAPId");
+
+                    b.Navigation("FiscalYear");
 
                     b.Navigation("ParentMFOPAP");
                 });
@@ -6244,10 +6287,16 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.Object", b =>
                 {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.FiscalYear", "FiscalYear")
+                        .WithMany()
+                        .HasForeignKey("FiscalYearId");
+
                     b.HasOne("ERPEZ.Domain.Entities.Planning.Object", "ParentObject")
                         .WithMany("ChildObjects")
                         .HasForeignKey("ParentId")
                         .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("FiscalYear");
 
                     b.Navigation("ParentObject");
                 });
@@ -6345,6 +6394,10 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.Organization", b =>
                 {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.FiscalYear", "FiscalYear")
+                        .WithMany()
+                        .HasForeignKey("FiscalYearId");
+
                     b.HasOne("ERPEZ.Domain.Entities.Planning.Organization", null)
                         .WithMany()
                         .HasForeignKey("ParentId");
@@ -6352,6 +6405,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasOne("ERPEZ.Domain.Entities.Planning.Organization", "ParentOrganization")
                         .WithMany("Organizations")
                         .HasForeignKey("ParentOrganizationId");
+
+                    b.Navigation("FiscalYear");
 
                     b.Navigation("ParentOrganization");
                 });
