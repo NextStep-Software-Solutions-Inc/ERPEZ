@@ -30,5 +30,11 @@ public class UpdateObjectCommandValidator : AbstractValidator<UpdateObjectComman
             .When(x => !string.IsNullOrWhiteSpace(x.UpdateObject.Code));
 
         // IsActive (Optional Bool?) - No validation needed for non-nullable bool
+
+        // FiscalYearId (Optional GUID)
+        RuleFor(x => x.UpdateObject.FiscalYearId)
+            .Must(id => !id.HasValue || id.Value != Guid.Empty)
+            .WithMessage("If provided, the Fiscal Year ID must be a valid, non-empty GUID.")
+            .When(x => x.UpdateObject.FiscalYearId.HasValue);
     }
 }

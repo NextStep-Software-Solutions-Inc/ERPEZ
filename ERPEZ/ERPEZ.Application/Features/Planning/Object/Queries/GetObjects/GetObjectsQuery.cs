@@ -6,4 +6,5 @@ namespace ERPEZ.Application.Features.Planning.Object.Queries.GetObjects;
 
 public record GetObjectsQuery : PaginatedQuery<PaginatedApiResponse<ObjectResponse>>
 {
+    public Guid? FiscalYearId { get; init; }
 }

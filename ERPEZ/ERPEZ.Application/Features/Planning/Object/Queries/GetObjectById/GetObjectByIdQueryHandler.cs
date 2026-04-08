@@ -20,6 +20,7 @@ public class GetObjectByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler
             Name = objectEntity.Name,
             Description = null,
             Code = objectEntity.Code,
+            FiscalYearId = objectEntity.FiscalYearId,
             CreatedAt = objectEntity.CreatedAt,
             CreatedBy = objectEntity.CreatedBy,
             UpdatedAt = objectEntity.UpdatedAt,
