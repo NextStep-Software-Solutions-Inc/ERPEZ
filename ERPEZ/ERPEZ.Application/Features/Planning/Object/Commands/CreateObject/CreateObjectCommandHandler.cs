@@ -42,7 +42,6 @@ public class CreateObjectCommandHandler(IUnitOfWork unitOfWork) : IRequestHandle
         };
 
         await unitOfWork.ObjectRepository.AddAsync(requestObject, cancellationToken);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         // Auto-create ObjectExpenseClass relationship if ExpenseClassId is provided
         if (request.ExpenseClassId.HasValue)
@@ -57,8 +56,9 @@ public class CreateObjectCommandHandler(IUnitOfWork unitOfWork) : IRequestHandle
             };
 
             await unitOfWork.ObjectExpenseClassRepository.AddAsync(objectExpenseClass, cancellationToken);
-            await unitOfWork.SaveChangesAsync(cancellationToken);
         }
+
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return ApiResponse<Guid>.Success(requestObject.Id, "Object created successfully.");
     }

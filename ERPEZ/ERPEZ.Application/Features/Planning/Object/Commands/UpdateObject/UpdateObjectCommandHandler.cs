@@ -46,7 +46,6 @@ public class UpdateObjectCommandHandler(IUnitOfWork unitOfWork) : IRequestHandle
         reqObject.FiscalYearId = newFiscalYearId;
 
         unitOfWork.ObjectRepository.Update(reqObject);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         // Update or create ObjectExpenseClass relationship if ExpenseClassId is provided
         if (dto.ExpenseClassId.HasValue)
@@ -75,9 +74,9 @@ public class UpdateObjectCommandHandler(IUnitOfWork unitOfWork) : IRequestHandle
 
                 await unitOfWork.ObjectExpenseClassRepository.AddAsync(objectExpenseClass, cancellationToken);
             }
-
-            await unitOfWork.SaveChangesAsync(cancellationToken);
         }
+
+        await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return ApiResponse<Unit>.Success(Unit.Value, "Object updated successfully.");
     }

@@ -28,10 +28,11 @@ public class UpdateFundSourceCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
         var effectiveName = dto.Name ?? fundSource.Name;
         var effectiveFiscalYearId = dto.FiscalYearId ?? fundSource.FiscalYearId;
         var isNameChanged = dto.Name != null;
+        var isTypeChanged = fundSource.Type != fundSourceType;
         var isFiscalYearChanged = dto.FiscalYearId.HasValue && dto.FiscalYearId.Value != fundSource.FiscalYearId;
 
         // Check for duplicate name and type combination in the fiscal year that will be persisted (excluding current fund source)
-        if (isNameChanged || isFiscalYearChanged)
+        if (isNameChanged || isTypeChanged || isFiscalYearChanged)
         {
             var existingFundSource = await unitOfWork.FundSourceRepository.FindAsync(fs => fs.Name == effectiveName && fs.Type == fundSourceType && fs.Id != request.Id && fs.FiscalYearId == effectiveFiscalYearId,
                 cancellationToken);
