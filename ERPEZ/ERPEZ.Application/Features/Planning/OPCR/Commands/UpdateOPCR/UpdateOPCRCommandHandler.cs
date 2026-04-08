@@ -11,6 +11,7 @@ public class UpdateOPCRCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<
     {
         var dto = request.UpdateOPCR;
         var opcr = await unitOfWork.OPCRRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("OPCR not found.");
+
         opcr.Name = !string.IsNullOrWhiteSpace(dto?.Name) ? dto!.Name : opcr.Name;
         opcr.Code = !string.IsNullOrWhiteSpace(dto?.Code) ? dto!.Code : opcr.Code;
 

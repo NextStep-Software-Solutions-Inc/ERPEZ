@@ -1813,7 +1813,7 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("UpdatedBy")
                         .HasColumnType("text");
 
-                    b.Property<Guid?>("WFPObjectiveTargetId")
+                    b.Property<Guid?>("WFPObjectiveActivityId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
@@ -1822,7 +1822,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("OPCRActivityId");
 
-                    b.HasIndex("WFPObjectiveTargetId");
+                    b.HasIndex("WFPObjectiveActivityId");
 
                     b.ToTable("LineItemBudgetActivities", "planning");
                 });
@@ -1883,7 +1883,7 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("UpdatedBy")
                         .HasColumnType("text");
 
-                    b.Property<Guid?>("WFPObjectiveTargetExpenditureId")
+                    b.Property<Guid?>("WFPObjectiveActivityExpenditureId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
@@ -1894,7 +1894,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("ObjectId");
 
-                    b.HasIndex("WFPObjectiveTargetExpenditureId");
+                    b.HasIndex("WFPObjectiveActivityExpenditureId");
 
                     b.HasIndex("StartDate", "EndDate");
 
@@ -2199,9 +2199,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text");
 
-                    b.Property<Guid?>("DeliveryUnitId")
-                        .HasColumnType("uuid");
-
                     b.Property<string>("Description")
                         .HasColumnType("text");
 
@@ -2215,9 +2212,6 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<Guid?>("OPCRId")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid>("OPCRItemId")
                         .HasColumnType("uuid");
 
@@ -2229,11 +2223,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DeliveryUnitId");
-
                     b.HasIndex("KPIId");
-
-                    b.HasIndex("OPCRId");
 
                     b.HasIndex("OPCRItemId", "Name")
                         .IsUnique();
@@ -2507,7 +2497,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("KPIAssignmentId");
 
-                    b.HasIndex("OPCRId");
+                    b.HasIndex("OPCRId", "KPIAssignmentId")
+                        .IsUnique();
 
                     b.ToTable("OPCRItems", "planning");
                 });
@@ -2531,9 +2522,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text");
 
-                    b.Property<Guid?>("DeliveryUnitId")
-                        .HasColumnType("uuid");
-
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
@@ -2551,11 +2539,10 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("DeliveryUnitId");
-
-                    b.HasIndex("OPCRActivityId");
-
                     b.HasIndex("OfficeId");
+
+                    b.HasIndex("OPCRActivityId", "OfficeId")
+                        .IsUnique();
 
                     b.ToTable("OPCRPAPDepartments", "planning");
                 });
@@ -5143,6 +5130,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime?>("ApprovedDate")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -5156,10 +5146,7 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text");
 
-                    b.Property<string>("Description")
-                        .HasColumnType("text");
-
-                    b.Property<Guid?>("FiscalYearId")
+                    b.Property<Guid?>("FundSourceId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("GeneralObjective")
@@ -5171,6 +5158,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("Mode")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<Guid?>("OPCRId")
+                        .HasColumnType("uuid");
 
                     b.Property<Guid>("OfficeId")
                         .HasColumnType("uuid");
@@ -5192,6 +5182,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<DateTime?>("SubmittedDate")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -5200,9 +5193,11 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("FiscalYearId");
+                    b.HasIndex("FundSourceId");
 
-                    b.HasIndex("OfficeId", "FiscalYearId");
+                    b.HasIndex("OPCRId");
+
+                    b.HasIndex("OfficeId", "Mode");
 
                     b.ToTable("WFPs", "planning");
                 });
@@ -5256,7 +5251,7 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.ToTable("WFPObjectives", "planning");
                 });
 
-            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WFPObjectiveTarget", b =>
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WFPObjectiveActivity", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
@@ -5286,13 +5281,19 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
+                    b.Property<Guid?>("OPCRActivityId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("UpdatedBy")
                         .HasColumnType("text");
 
-                    b.Property<Guid>("WFPObjectiveId")
+                    b.Property<Guid>("WFPId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("WFPObjectiveId")
                         .HasColumnType("uuid");
 
                     b.Property<decimal>("Weight")
@@ -5300,23 +5301,20 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("WFPObjectiveId", "ActivityName")
-                        .IsUnique();
+                    b.HasIndex("OPCRActivityId");
 
-                    b.HasIndex("WFPObjectiveId", "ActivityName", "Indicator")
-                        .IsUnique();
+                    b.HasIndex("WFPId");
 
-                    b.ToTable("WFPObjectiveTargets", "planning");
+                    b.HasIndex("WFPObjectiveId");
+
+                    b.ToTable("WFPObjectiveActivities", "planning");
                 });
 
-            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WFPObjectiveTargetExpenditure", b =>
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WFPObjectiveActivityExpenditure", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
-
-                    b.Property<decimal>("CostEstimates")
-                        .HasColumnType("numeric");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -5340,8 +5338,11 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid>("ObjectId")
                         .HasColumnType("uuid");
 
-                    b.Property<int>("Quantity")
+                    b.Property<int?>("Quantity")
                         .HasColumnType("integer");
+
+                    b.Property<decimal?>("UnitCost")
+                        .HasColumnType("numeric");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -5349,16 +5350,16 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("UpdatedBy")
                         .HasColumnType("text");
 
-                    b.Property<Guid>("WFPObjectiveTargetId")
+                    b.Property<Guid>("WFPObjectiveActivityId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
                     b.HasIndex("ObjectId");
 
-                    b.HasIndex("WFPObjectiveTargetId", "ObjectId", "ItemDescription");
+                    b.HasIndex("WFPObjectiveActivityId", "ObjectId", "ItemDescription");
 
-                    b.ToTable("WFPObjectiveTargetExpenditures", "planning");
+                    b.ToTable("WFPObjectiveActivityExpenditures", "planning");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WFPObjectiveTimeline", b =>
@@ -5402,15 +5403,15 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("UpdatedBy")
                         .HasColumnType("text");
 
-                    b.Property<Guid>("WFPObjectiveTargetId")
+                    b.Property<Guid>("WFPObjectiveActivityId")
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
 
-                    b.HasIndex("WFPObjectiveTargetId", "StartDate")
+                    b.HasIndex("WFPObjectiveActivityId", "StartDate")
                         .IsUnique();
 
-                    b.HasIndex("WFPObjectiveTargetId", "StartDate", "EndDate")
+                    b.HasIndex("WFPObjectiveActivityId", "StartDate", "EndDate")
                         .IsUnique();
 
                     b.ToTable("WFPObjectiveTimelines", "planning", t =>
@@ -6010,15 +6011,15 @@ namespace ERPEZ.Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("OPCRActivityId");
 
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.WFPObjectiveTarget", "WFPObjectiveTarget")
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.WFPObjectiveActivity", "WFPObjectiveActivity")
                         .WithMany()
-                        .HasForeignKey("WFPObjectiveTargetId");
+                        .HasForeignKey("WFPObjectiveActivityId");
 
                     b.Navigation("LineItemBudget");
 
                     b.Navigation("OPCRActivity");
 
-                    b.Navigation("WFPObjectiveTarget");
+                    b.Navigation("WFPObjectiveActivity");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.LineItemBudgetDetail", b =>
@@ -6039,9 +6040,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.WFPObjectiveTargetExpenditure", "WFPObjectiveTargetExpenditure")
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.WFPObjectiveActivityExpenditure", "WFPObjectiveActivityExpenditure")
                         .WithMany()
-                        .HasForeignKey("WFPObjectiveTargetExpenditureId");
+                        .HasForeignKey("WFPObjectiveActivityExpenditureId");
 
                     b.Navigation("LineItemBudget");
 
@@ -6049,7 +6050,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Navigation("Object");
 
-                    b.Navigation("WFPObjectiveTargetExpenditure");
+                    b.Navigation("WFPObjectiveActivityExpenditure");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.Location", b =>
@@ -6103,17 +6104,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OPCRActivity", b =>
                 {
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.DeliveryUnit", null)
-                        .WithMany("OPCRActivities")
-                        .HasForeignKey("DeliveryUnitId");
-
                     b.HasOne("ERPEZ.Domain.Entities.Planning.KPI", null)
                         .WithMany("OPCRActivities")
                         .HasForeignKey("KPIId");
-
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.OPCR", null)
-                        .WithMany("OPCRActivities")
-                        .HasForeignKey("OPCRId");
 
                     b.HasOne("ERPEZ.Domain.Entities.Planning.OPCRItem", "OPCRItem")
                         .WithMany("OPCRActivities")
@@ -6197,10 +6190,6 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OPCRPAPDepartment", b =>
                 {
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.DeliveryUnit", null)
-                        .WithMany("OPCRPAPDepartments")
-                        .HasForeignKey("DeliveryUnitId");
-
                     b.HasOne("ERPEZ.Domain.Entities.Planning.OPCRActivity", "OPCRActivity")
                         .WithMany("OPCRPAPDepartments")
                         .HasForeignKey("OPCRActivityId")
@@ -6826,9 +6815,13 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WFP", b =>
                 {
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.FiscalYear", "FiscalYear")
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.FundSource", "FundSource")
                         .WithMany()
-                        .HasForeignKey("FiscalYearId");
+                        .HasForeignKey("FundSourceId");
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.OPCR", "OPCR")
+                        .WithMany()
+                        .HasForeignKey("OPCRId");
 
                     b.HasOne("ERPEZ.Domain.Entities.Planning.Office", "Office")
                         .WithMany("WFPs")
@@ -6836,7 +6829,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("FiscalYear");
+                    b.Navigation("FundSource");
+
+                    b.Navigation("OPCR");
 
                     b.Navigation("Office");
                 });
@@ -6852,45 +6847,57 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("WFP");
                 });
 
-            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WFPObjectiveTarget", b =>
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WFPObjectiveActivity", b =>
                 {
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.WFPObjective", "WFPObjective")
-                        .WithMany("WFPObjectiveTargets")
-                        .HasForeignKey("WFPObjectiveId")
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.OPCRActivity", "OPCRActivity")
+                        .WithMany()
+                        .HasForeignKey("OPCRActivityId");
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.WFP", "WFP")
+                        .WithMany()
+                        .HasForeignKey("WFPId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.WFPObjective", "WFPObjective")
+                        .WithMany("WFPObjectiveActivities")
+                        .HasForeignKey("WFPObjectiveId");
+
+                    b.Navigation("OPCRActivity");
+
+                    b.Navigation("WFP");
 
                     b.Navigation("WFPObjective");
                 });
 
-            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WFPObjectiveTargetExpenditure", b =>
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WFPObjectiveActivityExpenditure", b =>
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Planning.Object", "Object")
-                        .WithMany("WFPObjectiveTargetExpenditures")
+                        .WithMany("WFPObjectiveActivityExpenditures")
                         .HasForeignKey("ObjectId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.WFPObjectiveTarget", "WFPObjectiveTarget")
-                        .WithMany("WFPObjectiveTargetExpenditures")
-                        .HasForeignKey("WFPObjectiveTargetId")
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.WFPObjectiveActivity", "WFPObjectiveActivity")
+                        .WithMany("WFPObjectiveActivityExpenditures")
+                        .HasForeignKey("WFPObjectiveActivityId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("Object");
 
-                    b.Navigation("WFPObjectiveTarget");
+                    b.Navigation("WFPObjectiveActivity");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WFPObjectiveTimeline", b =>
                 {
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.WFPObjectiveTarget", "WFPObjectiveTarget")
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.WFPObjectiveActivity", "WFPObjectiveActivity")
                         .WithMany("WFPObjectiveTimelines")
-                        .HasForeignKey("WFPObjectiveTargetId")
+                        .HasForeignKey("WFPObjectiveActivityId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("WFPObjectiveTarget");
+                    b.Navigation("WFPObjectiveActivity");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WFPPAP", b =>
@@ -7006,10 +7013,6 @@ namespace ERPEZ.Infrastructure.Migrations
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.DeliveryUnit", b =>
                 {
                     b.Navigation("KPITargetAssignments");
-
-                    b.Navigation("OPCRActivities");
-
-                    b.Navigation("OPCRPAPDepartments");
 
                     b.Navigation("SubDeliveryUnits");
 
@@ -7131,8 +7134,6 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OPCR", b =>
                 {
-                    b.Navigation("OPCRActivities");
-
                     b.Navigation("OPCREvaluations");
 
                     b.Navigation("OPCRItems");
@@ -7164,7 +7165,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Navigation("Transactions");
 
-                    b.Navigation("WFPObjectiveTargetExpenditures");
+                    b.Navigation("WFPObjectiveActivityExpenditures");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.Office", b =>
@@ -7325,12 +7326,12 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WFPObjective", b =>
                 {
-                    b.Navigation("WFPObjectiveTargets");
+                    b.Navigation("WFPObjectiveActivities");
                 });
 
-            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WFPObjectiveTarget", b =>
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.WFPObjectiveActivity", b =>
                 {
-                    b.Navigation("WFPObjectiveTargetExpenditures");
+                    b.Navigation("WFPObjectiveActivityExpenditures");
 
                     b.Navigation("WFPObjectiveTimelines");
                 });

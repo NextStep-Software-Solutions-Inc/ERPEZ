@@ -1,4 +1,4 @@
-namespace ERPEZ.Application.Features.Planning.Object.Dtos;
+﻿namespace ERPEZ.Application.Features.Planning.Object.Dtos;
 
 public record ObjectResponse
 {
@@ -9,6 +9,6 @@ public record ObjectResponse
     public bool IsActive { get; init; }
 
     public int ChildObjectCount { get; init; } = 0;
-    public int WFPObjectiveTargetExpenditureCount { get; init; } = 0;
+    public int WFPObjectiveActivityExpenditureCount { get; init; } = 0;
     public int TransactionCount { get; init; } = 0;
 }

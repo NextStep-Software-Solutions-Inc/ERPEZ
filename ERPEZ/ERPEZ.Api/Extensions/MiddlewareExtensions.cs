@@ -25,6 +25,7 @@ public static class MiddlewareExtensions
                 options.DisplayRequestDuration();
                 options.DocExpansion(Swashbuckle.AspNetCore.SwaggerUI.DocExpansion.None);
                 options.DefaultModelsExpandDepth(-1); // Disable schema section
+                options.DefaultModelExpandDepth(1);   // Only expand one level deep inline per endpoint
                 options.EnableDeepLinking();
             });
         }

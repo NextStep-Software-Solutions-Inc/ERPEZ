@@ -73,10 +73,8 @@ public class LineItemBudgetValidationService : ILineItemBudgetValidationService
                 }
                 else
                 {
-                    // Validate fiscal year consistency
-                    var wfpFiscalYear = wfp.FiscalYearId.HasValue 
-                        ? (await unitOfWork.FiscalYearRepository.GetByIdAsync(wfp.FiscalYearId.Value, cancellationToken))?.Year
-                        : null;
+                    // WFP no longer has FiscalYearId; skip fiscal year validation for WFP source
+                    int? wfpFiscalYear = null;
                     
                     if (!LineItemBudgetValidationRules.ValidateFiscalYearConsistency(
                         fiscalYear, wfpFiscalYear, null))

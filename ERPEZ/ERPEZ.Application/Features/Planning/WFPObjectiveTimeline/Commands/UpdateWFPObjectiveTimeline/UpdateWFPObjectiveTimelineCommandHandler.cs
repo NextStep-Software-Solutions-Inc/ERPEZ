@@ -1,4 +1,4 @@
-using ERPEZ.Domain.Enums;
+﻿using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -27,7 +27,7 @@ public class UpdateWFPObjectiveTimelineCommandHandler(IUnitOfWork unitOfWork)
 
         // Check for overlapping timelines (excluding current one)
         var existingTimelineQuery = unitOfWork.WFPObjectiveTimelineRepository.Query(
-            t => t.WFPObjectiveTargetId == timeline.WFPObjectiveTargetId && t.Id != request.Id);
+            t => t.WFPObjectiveActivityId == timeline.WFPObjectiveActivityId && t.Id != request.Id);
         var existingTimelines = await unitOfWork.WFPObjectiveTimelineRepository.ToListAsync(existingTimelineQuery, cancellationToken);
 
         var hasOverlap = existingTimelines.Any(t => 

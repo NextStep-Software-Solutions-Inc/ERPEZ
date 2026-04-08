@@ -1,4 +1,4 @@
-using System.Linq.Expressions;
+﻿using System.Linq.Expressions;
 using ERPEZ.Application.Features.Planning.Object.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
@@ -25,7 +25,7 @@ public class GetObjectsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
             Code = obj.Code,
             IsActive = obj.IsActive,
             ChildObjectCount = obj.ChildObjects.Count,
-            WFPObjectiveTargetExpenditureCount = obj.WFPObjectiveTargetExpenditures.Count,
+            WFPObjectiveActivityExpenditureCount = obj.WFPObjectiveActivityExpenditures.Count,
             TransactionCount = obj.Transactions.Count,
             Parent = obj.ParentObject != null ? new ObjectResponse
             {
@@ -34,7 +34,7 @@ public class GetObjectsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
                 Code = obj.ParentObject.Code,
                 IsActive = obj.ParentObject.IsActive,
                 ChildObjectCount = obj.ParentObject.ChildObjects.Count,
-                WFPObjectiveTargetExpenditureCount = obj.ParentObject.WFPObjectiveTargetExpenditures.Count,
+                WFPObjectiveActivityExpenditureCount = obj.ParentObject.WFPObjectiveActivityExpenditures.Count,
                 TransactionCount = obj.ParentObject.Transactions.Count,
                 Parent = obj.ParentObject.ParentObject != null ? new ObjectResponse
                 {
@@ -43,7 +43,7 @@ public class GetObjectsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
                     Code = obj.ParentObject.ParentObject.Code,
                     IsActive = obj.ParentObject.ParentObject.IsActive,
                     ChildObjectCount = obj.ParentObject.ParentObject.ChildObjects.Count,
-                    WFPObjectiveTargetExpenditureCount = obj.ParentObject.ParentObject.WFPObjectiveTargetExpenditures.Count,
+                    WFPObjectiveActivityExpenditureCount = obj.ParentObject.ParentObject.WFPObjectiveActivityExpenditures.Count,
                     TransactionCount = obj.ParentObject.ParentObject.Transactions.Count,
                     Parent = obj.ParentObject.ParentObject.ParentObject != null ? new ObjectResponse
                     {
@@ -52,7 +52,7 @@ public class GetObjectsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
                         Code = obj.ParentObject.ParentObject.ParentObject.Code,
                         IsActive = obj.ParentObject.ParentObject.ParentObject.IsActive,
                         ChildObjectCount = obj.ParentObject.ParentObject.ParentObject.ChildObjects.Count,
-                        WFPObjectiveTargetExpenditureCount = obj.ParentObject.ParentObject.ParentObject.WFPObjectiveTargetExpenditures.Count,
+                        WFPObjectiveActivityExpenditureCount = obj.ParentObject.ParentObject.ParentObject.WFPObjectiveActivityExpenditures.Count,
                         TransactionCount = obj.ParentObject.ParentObject.ParentObject.Transactions.Count
                     }: null
                 }: null

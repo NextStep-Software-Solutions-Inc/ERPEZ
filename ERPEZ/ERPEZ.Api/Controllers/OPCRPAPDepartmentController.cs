@@ -1,7 +1,6 @@
 using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Application.Features.Planning.OPCRPAPDepartment.Commands.CreateOPCRPAPDepartment;
 using ERPEZ.Application.Features.Planning.OPCRPAPDepartment.Dtos;
 using ERPEZ.Application.Features.Planning.OPCRPAPDepartment.Queries.GetOPCRPAPDepartments;
@@ -28,7 +27,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet]
-        [ProducesResponseType(typeof(PaginatedApiResponse<OPCRPAPDepartment>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(PaginatedApiResponse<OPCRPAPDepartmentResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetOPCRPAPDepartments([FromQuery] GetOPCRPAPDepartmentsQuery query)
         {
             var result = await mediator.Send(query);
@@ -36,7 +35,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<OPCRPAPDepartment>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<OPCRPAPDepartmentResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetOPCRPAPDepartmentById(Guid id)
         {

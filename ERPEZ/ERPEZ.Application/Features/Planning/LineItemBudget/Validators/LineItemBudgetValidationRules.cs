@@ -65,11 +65,11 @@ public static class LineItemBudgetValidationRules
     /// An activity can only reference one source type (either OPCR or WFP, not both).
     /// </summary>
     public static bool ValidateActivitySourceExclusivity(
-        Guid? wfpObjectiveTargetId,
+        Guid? wfpObjectiveActivityId,
         Guid? opcrActivityId)
     {
         // Both cannot be set at the same time
-        if (wfpObjectiveTargetId.HasValue && opcrActivityId.HasValue)
+        if (wfpObjectiveActivityId.HasValue && opcrActivityId.HasValue)
         {
             return false;
         }
@@ -82,14 +82,14 @@ public static class LineItemBudgetValidationRules
     /// </summary>
     public static bool ValidateActivitySourceConsistency(
         SourceType headerSourceType,
-        Guid? wfpObjectiveTargetId,
+        Guid? wfpObjectiveActivityId,
         Guid? opcrActivityId,
         string activityName)
     {
         return headerSourceType switch
         {
             SourceType.OPCR => opcrActivityId.HasValue && opcrActivityId.Value != Guid.Empty,
-            SourceType.WFP => wfpObjectiveTargetId.HasValue && wfpObjectiveTargetId.Value != Guid.Empty,
+            SourceType.WFP => wfpObjectiveActivityId.HasValue && wfpObjectiveActivityId.Value != Guid.Empty,
             SourceType.Independent => !string.IsNullOrWhiteSpace(activityName), // Ad-hoc activities must have names
             _ => false
         };
@@ -264,25 +264,25 @@ public static class LineItemBudgetValidationRules
 
     /// <summary>
     /// Validates that WFP expenditure detail is properly linked.
-    /// If WFPObjectiveTargetExpenditureId is provided, it must be valid and match the activity.
+    /// If wfpObjectiveActivityExpenditureId is provided, it must be valid and match the activity.
     /// </summary>
     public static bool ValidateWFPExpenditureConsistency(
-        Guid? wfpObjectiveTargetExpenditureId,
-        Guid? activityWFPObjectiveTargetId,
-        Guid? expenditureWFPObjectiveTargetId)
+        Guid? wfpObjectiveActivityExpenditureId,
+        Guid? activityWFPObjectiveActivityId,
+        Guid? expenditureWFPObjectiveActivityId)
     {
-        if (!wfpObjectiveTargetExpenditureId.HasValue)
+        if (!wfpObjectiveActivityExpenditureId.HasValue)
         {
             return true; // Optional field
         }
 
-        if (!expenditureWFPObjectiveTargetId.HasValue || !activityWFPObjectiveTargetId.HasValue)
+        if (!expenditureWFPObjectiveActivityId.HasValue || !activityWFPObjectiveActivityId.HasValue)
         {
             return false; // If expenditure is set, both must be available
         }
 
         // Expenditure must belong to the same WFP objective target as the activity
-        return expenditureWFPObjectiveTargetId.Value == activityWFPObjectiveTargetId.Value;
+        return expenditureWFPObjectiveActivityId.Value == activityWFPObjectiveActivityId.Value;
     }
 
     /// <summary>

@@ -15,32 +15,29 @@ public class UpdateWFPCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<U
             ?? throw new NotFoundException("Work and Financial Plan not found.");
 
         var coalescedOfficeId = dto.OfficeId ?? wfp.OfficeId;
-        var coalescedFiscalYearId = dto.FiscalYearId ?? wfp.FiscalYearId;
         var coalescedProjectTitle = dto.ProjectTitle ?? wfp.ProjectTitle;
-        var coalescedDescription = dto.Description ?? wfp.Description;
+        var coalescedMode = dto.Mode ?? wfp.Mode;
         
         var duplicate = await unitOfWork.WFPRepository.FindAsync(
             w => w.Id != request.Id
                 && w.OfficeId == coalescedOfficeId
-                && w.FiscalYearId == coalescedFiscalYearId
                 && w.ProjectTitle == coalescedProjectTitle
-                && w.Description == coalescedDescription,
+                && w.Mode == coalescedMode,
             cancellationToken
         );
 
         if (duplicate != null) 
-            throw new ConflictException("Work and Financial Plan with the same Office, Fiscal Year, Project Title, and Description already exists.");
+            throw new ConflictException("Work and Financial Plan with the same Office, Mode, and Project Title already exists.");
 
         wfp.OfficeId = dto.OfficeId ?? wfp.OfficeId;
-        wfp.FiscalYearId = dto.FiscalYearId ?? wfp.FiscalYearId;
+        wfp.OPCRId = dto.OPCRId ?? wfp.OPCRId;
+        wfp.FundSourceId = dto.FundSourceId ?? wfp.FundSourceId;
         wfp.ProjectTitle = dto.ProjectTitle ?? wfp.ProjectTitle;
-        wfp.Description = dto.Description ?? wfp.Description;
         wfp.ProjectStartDate = dto.ProjectStartDate ?? wfp.ProjectStartDate;
         wfp.ProjectEndDate = dto.ProjectEndDate ?? wfp.ProjectEndDate;
         wfp.ProposedBudget = dto.ProposedBudget ?? wfp.ProposedBudget;
         wfp.GeneralObjective = dto.GeneralObjective ?? wfp.GeneralObjective;
-        if (!string.IsNullOrWhiteSpace(dto.Mode))
-            wfp.Mode = dto.Mode.ToUpperInvariant();
+        wfp.Mode = dto.Mode ?? wfp.Mode;
 
         unitOfWork.WFPRepository.Update(wfp);
         await unitOfWork.SaveChangesAsync(cancellationToken);

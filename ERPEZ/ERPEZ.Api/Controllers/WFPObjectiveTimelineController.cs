@@ -4,7 +4,6 @@ using ERPEZ.Application.Features.Planning.WFPObjectiveTimeline.Commands.UpdateWF
 using ERPEZ.Application.Features.Planning.WFPObjectiveTimeline.Dtos;
 using ERPEZ.Application.Features.Planning.WFPObjectiveTimeline.Queries.GetWFPObjectiveTimelineById;
 using ERPEZ.Application.Features.Planning.WFPObjectiveTimeline.Queries.GetWFPObjectiveTimelines;
-using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -29,7 +28,7 @@ public class WFPObjectiveTimelineController(ISender mediator) : ControllerBase
     }
 
     [HttpGet]
-    [ProducesResponseType(typeof(PaginatedApiResponse<WFPObjectiveTimeline>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PaginatedApiResponse<WFPObjectiveTimelineResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetWFPObjectiveTimelines([FromQuery] GetWFPObjectiveTimelinesQuery query)
     {
         var result = await mediator.Send(query);
@@ -37,7 +36,7 @@ public class WFPObjectiveTimelineController(ISender mediator) : ControllerBase
     }
 
     [HttpGet("{id}")]
-    [ProducesResponseType(typeof(ApiResponse<WFPObjectiveTimeline>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<WFPObjectiveTimelineResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetWFPObjectiveTimelineById(Guid id)
     {

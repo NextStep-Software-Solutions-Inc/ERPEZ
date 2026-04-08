@@ -4,7 +4,6 @@ using ERPEZ.Application.Features.Planning.OPCREvaluation.Commands.UpdateOPCREval
 using ERPEZ.Application.Features.Planning.OPCREvaluation.Dtos;
 using ERPEZ.Application.Features.Planning.OPCREvaluation.Queries.GetOPCREvaluationById;
 using ERPEZ.Application.Features.Planning.OPCREvaluation.Queries.GetOPCREvaluations;
-using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -38,7 +37,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet("{id}")]
-        [ProducesResponseType(typeof(ApiResponse<OPCREvaluation>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<OPCREvaluationResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetOPCREvaluationById(Guid id)
         {

@@ -7,7 +7,7 @@ namespace ERPEZ.Domain.Entities.Planning;
 public class WFPObjectiveTimeline : BaseEntity
 {
     [Sieve(CanFilter = true, CanSort = true)]
-    public Guid WFPObjectiveTargetId { get; set; }
+    public Guid WFPObjectiveActivityId { get; set; }
     [Sieve(CanFilter = true, CanSort = true)]
     public TimelineTypeEnum TimelineType { get; set; } = TimelineTypeEnum.Quarterly;
     
@@ -17,5 +17,5 @@ public class WFPObjectiveTimeline : BaseEntity
     public DateOnly EndDate { get; set; }
     [Sieve(CanFilter = true, CanSort = true)]
     public decimal TargetValue { get; set; }
-    public virtual WFPObjectiveTarget WFPObjectiveTarget { get; set; } = null!;
+    public virtual WFPObjectiveActivity WFPObjectiveActivity { get; set; } = null!;
 }

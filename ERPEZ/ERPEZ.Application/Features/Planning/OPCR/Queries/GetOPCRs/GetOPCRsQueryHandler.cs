@@ -21,6 +21,7 @@ public class GetOPCRsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetO
         {
             Id = opcr.Id,
             Name = opcr.Name,
+            OfficeId = opcr.OfficeId,
             OfficeName = opcr.Office.Name,
             FiscalYear = opcr.FiscalYear.Year,
             Status = opcr.Status.ToString(),

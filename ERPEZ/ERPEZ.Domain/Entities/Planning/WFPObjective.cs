@@ -13,6 +13,6 @@ public class WFPObjective : BaseEntity
     public decimal Weight { get; set; }
     [Sieve(CanFilter = true, CanSort = true)]
     public string? Outcome { get; set; }
-    public virtual List<WFPObjectiveTarget> WFPObjectiveTargets { get; set; } = [];
+    public virtual List<WFPObjectiveActivity> WFPObjectiveActivities { get; set; } = [];
     public virtual WFP WFP { get; set; } = null!;
 }

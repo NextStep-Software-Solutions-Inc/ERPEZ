@@ -1,7 +1,6 @@
 using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
-using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Application.Features.Planning.WFPObjective.Dtos;
 using ERPEZ.Application.Features.Planning.WFPObjective.Commands.CreateWFPObjective;
 using ERPEZ.Application.Features.Planning.WFPObjective.Commands.CreateWFPObjectivesBatch;
@@ -43,7 +42,7 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet]
-        [ProducesResponseType(typeof(PaginatedApiResponse<WFPObjective>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(PaginatedApiResponse<WFPObjectiveResponse>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetWFPObjectives([FromQuery] GetWFPObjectivesQuery query)
         {
             var result = await mediator.Send(query);
