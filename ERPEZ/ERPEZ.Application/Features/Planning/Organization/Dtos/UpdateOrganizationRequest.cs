@@ -7,4 +7,5 @@ public record UpdateOrganizationRequest
     public string? Code { get; init; } = string.Empty;
     public string? Type { get; init; } = string.Empty;
     public bool? IsActive { get; init; }
+    public Guid? FiscalYearId { get; init; }
 }

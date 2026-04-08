@@ -44,5 +44,11 @@ public class CreateOrganizationCommandValidator : AbstractValidator<CreateOrgani
             .WithMessage("Organization Type is required.")
             .Must(type => validTypes.Contains(type, StringComparer.OrdinalIgnoreCase))
             .WithMessage($"Organization Type must be one of the following: {string.Join(", ", validTypes)}.");
+
+        // FiscalYearId (Optional GUID)
+        RuleFor(x => x.FiscalYearId)
+            .Must(id => !id.HasValue || id.Value != Guid.Empty)
+            .WithMessage("If provided, the Fiscal Year ID must be a valid, non-empty GUID.")
+            .When(x => x.FiscalYearId.HasValue);
     }
 }
