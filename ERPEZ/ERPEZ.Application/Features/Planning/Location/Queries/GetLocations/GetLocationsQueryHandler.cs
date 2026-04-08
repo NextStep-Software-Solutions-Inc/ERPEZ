@@ -19,13 +19,23 @@ public class GetLocationsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<
             Sorts = query.Sorts
         };
 
+        // Add fiscal year filter to Sieve filters if provided
+        if (query.FiscalYearId.HasValue)
+        {
+            var fiscalYearFilter = $"FiscalYearId=={query.FiscalYearId.Value}";
+            sieveModel.Filters = string.IsNullOrEmpty(sieveModel.Filters) 
+                ? fiscalYearFilter 
+                : $"{sieveModel.Filters},{fiscalYearFilter}";
+        }
+
         Expression<Func<Domain.Entities.Planning.Location, LocationResponse>> projection = location => new LocationResponse
         {
             ParentId = location.ParentId,
             Name = location.Name,
             Code = location.Code,
             Type = location.Type,
-            IsActive = location.IsActive
+            IsActive = location.IsActive,
+            FiscalYearId = location.FiscalYearId
         };
 
         var (locations, totalCount) = await unitOfWork.LocationRepository.GetAllAsync(sieveModel, projection, cancellationToken);
