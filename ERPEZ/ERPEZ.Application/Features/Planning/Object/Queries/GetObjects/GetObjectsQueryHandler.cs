@@ -69,9 +69,9 @@ public class GetObjectsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
             } : null
         };
 
-        var (objectives, totalCount) = await unitOfWork.ObjectRepository.GetAllAsync(sieveModel, projection, cancellationToken);
+        var (objects, totalCount) = await unitOfWork.ObjectRepository.GetAllAsync(sieveModel, projection, cancellationToken);
         return new PaginatedApiResponse<ObjectResponse>(
-            [.. objectives],
+            [.. objects],
             query.PageNumber,
             query.PageSize,
             totalCount);

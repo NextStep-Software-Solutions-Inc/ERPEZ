@@ -25,6 +25,7 @@ public class UpdateObjectCommandHandler(IUnitOfWork unitOfWork) : IRequestHandle
 
         var duplicate = await unitOfWork.ObjectRepository.FindAsync(o =>
             o.Id != request.Id &&
+            o.ParentId == reqObject.ParentId &&
             o.Name == newName &&
             o.Code == newCode &&
             o.FiscalYearId == newFiscalYearId,

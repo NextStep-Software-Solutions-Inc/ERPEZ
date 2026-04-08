@@ -18,10 +18,17 @@ public sealed class UpdateMFOPAPCommandHandler(IUnitOfWork unitOfWork) : IReques
 
         var mfoPAP = await unitOfWork.MFOPAPRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("MFOPAP not found.");
 
-        // Check for duplicate name and code (excluding current MFOPAP)
-        if (dto.Name != null && dto.Code != null)
+        var effectiveName = dto.Name ?? mfoPAP.Name;
+        var effectiveCode = dto.Code ?? mfoPAP.Code;
+        var effectiveFiscalYearId = dto.FiscalYearId ?? mfoPAP.FiscalYearId;
+        var isNameChanged = dto.Name != null;
+        var isCodeChanged = dto.Code != null;
+        var isFiscalYearChanged = dto.FiscalYearId.HasValue && dto.FiscalYearId.Value != mfoPAP.FiscalYearId;
+
+        // Check for duplicate name and code in the fiscal year that will be persisted (excluding current MFOPAP)
+        if (isNameChanged || isCodeChanged || isFiscalYearChanged)
         {
-            var existingMFOPAP = await unitOfWork.MFOPAPRepository.FindAsync(m => m.Name == dto.Name && m.Code == dto.Code && m.Id != request.Id && m.FiscalYearId == dto.FiscalYearId,
+            var existingMFOPAP = await unitOfWork.MFOPAPRepository.FindAsync(m => m.Name == effectiveName && m.Code == effectiveCode && m.Id != request.Id && m.FiscalYearId == effectiveFiscalYearId,
                 cancellationToken);
             if (existingMFOPAP != null)
                 throw new ConflictException("MFOPAP already exist.");

@@ -18,10 +18,15 @@ public class UpdateOrganizationCommandHandler(IUnitOfWork unitOfWork) : IRequest
 
         var organization = await unitOfWork.OrganizationRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("Organization not found.");
         
-        // Check for duplicate name (excluding current organization)
-        if (dto.Name != null)
+        var effectiveName = dto.Name ?? organization.Name;
+        var effectiveFiscalYearId = dto.FiscalYearId ?? organization.FiscalYearId;
+        var isNameChanged = dto.Name != null;
+        var isFiscalYearChanged = dto.FiscalYearId.HasValue && dto.FiscalYearId.Value != organization.FiscalYearId;
+
+        // Check for duplicate name in the fiscal year that will be persisted (excluding current organization)
+        if (isNameChanged || isFiscalYearChanged)
         {
-            var existingOrganization = await unitOfWork.OrganizationRepository.FindAsync(o => o.Name == dto.Name && o.Id != request.Id && o.FiscalYearId == dto.FiscalYearId,
+            var existingOrganization = await unitOfWork.OrganizationRepository.FindAsync(o => o.Name == effectiveName && o.Id != request.Id && o.FiscalYearId == effectiveFiscalYearId,
                 cancellationToken);
             if (existingOrganization != null)
                 throw new ConflictException("Organization already exist.");

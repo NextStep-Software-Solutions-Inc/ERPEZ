@@ -18,10 +18,15 @@ public sealed class UpdateLocationCommandHandler(IUnitOfWork unitOfWork) : IRequ
 
         var location = await unitOfWork.LocationRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken) ?? throw new NotFoundException("Location not found.");
         
-        // Check for duplicate name (excluding current location)
-        if (dto.Name != null)
+        var effectiveName = dto.Name ?? location.Name;
+        var effectiveFiscalYearId = dto.FiscalYearId ?? location.FiscalYearId;
+        var isNameChanged = dto.Name != null;
+        var isFiscalYearChanged = dto.FiscalYearId.HasValue && dto.FiscalYearId.Value != location.FiscalYearId;
+
+        // Check for duplicate name in the fiscal year that will be persisted (excluding current location)
+        if (isNameChanged || isFiscalYearChanged)
         {
-            var existingLocation = await unitOfWork.LocationRepository.FindAsync(l => l.Name == dto.Name && l.Id != request.Id && l.FiscalYearId == dto.FiscalYearId,
+            var existingLocation = await unitOfWork.LocationRepository.FindAsync(l => l.Name == effectiveName && l.Id != request.Id && l.FiscalYearId == effectiveFiscalYearId,
                 cancellationToken);
             if (existingLocation != null)
                 throw new ConflictException("Location already exist.");
