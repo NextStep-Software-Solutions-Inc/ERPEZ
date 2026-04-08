@@ -18,12 +18,22 @@ public class GetObjectsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
             Sorts = query.Sorts
         };
 
+        // Add fiscal year filter to Sieve filters if provided
+        if (query.FiscalYearId.HasValue)
+        {
+            var fiscalYearFilter = $"FiscalYearId=={query.FiscalYearId.Value}";
+            sieveModel.Filters = string.IsNullOrEmpty(sieveModel.Filters) 
+                ? fiscalYearFilter 
+                : $"{sieveModel.Filters},{fiscalYearFilter}";
+        }
+
         Expression<Func<Domain.Entities.Planning.Object, ObjectResponse>> projection = obj => new ObjectResponse
         {
             Id = obj.Id,
             Name = obj.Name,
             Code = obj.Code,
             IsActive = obj.IsActive,
+            FiscalYearId = obj.FiscalYearId,
             ChildObjectCount = obj.ChildObjects.Count,
             WFPObjectiveActivityExpenditureCount = obj.WFPObjectiveActivityExpenditures.Count,
             TransactionCount = obj.Transactions.Count,
@@ -59,7 +69,7 @@ public class GetObjectsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
             } : null
         };
 
-        var (objectives, totalCount) = await unitOfWork.ObjectRepository.GetAllAsync(sieveModel, projection, cancellationToken: cancellationToken);
+        var (objectives, totalCount) = await unitOfWork.ObjectRepository.GetAllAsync(sieveModel, projection, cancellationToken);
         return new PaginatedApiResponse<ObjectResponse>(
             [.. objectives],
             query.PageNumber,

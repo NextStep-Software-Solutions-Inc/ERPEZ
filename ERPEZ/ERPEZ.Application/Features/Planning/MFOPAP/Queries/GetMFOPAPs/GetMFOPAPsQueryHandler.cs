@@ -19,6 +19,15 @@ public class GetMFOPAPsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
             Sorts = query.Sorts
         };
 
+        // Add fiscal year filter to Sieve filters if provided
+        if (query.FiscalYearId.HasValue)
+        {
+            var fiscalYearFilter = $"FiscalYearId=={query.FiscalYearId.Value}";
+            sieveModel.Filters = string.IsNullOrEmpty(sieveModel.Filters) 
+                ? fiscalYearFilter 
+                : $"{sieveModel.Filters},{fiscalYearFilter}";
+        }
+
         Expression<Func<Domain.Entities.Planning.MFOPAP, MFOPAPResponse>> projection = mfopap => new MFOPAPResponse
         {
             Id = mfopap.Id,
@@ -26,7 +35,8 @@ public class GetMFOPAPsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
             Name = mfopap.Name,
             Code = mfopap.Code,
             Type = mfopap.Type,
-            IsActive = mfopap.IsActive
+            IsActive = mfopap.IsActive,
+            FiscalYearId = mfopap.FiscalYearId
         };
 
         var (mfoPAPs, totalCount) = await unitOfWork.MFOPAPRepository.GetAllAsync(sieveModel, projection, cancellationToken);

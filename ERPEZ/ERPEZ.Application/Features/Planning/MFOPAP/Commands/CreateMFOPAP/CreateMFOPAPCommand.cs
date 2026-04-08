@@ -10,4 +10,5 @@ public class CreateMFOPAPCommand : IRequest<ApiResponse<Guid>>
     public string Code { get; set; } = string.Empty;
     public string Type { get; set; } = string.Empty;
     public bool IsActive { get; set; }
+    public Guid? FiscalYearId { get; set; }
 }

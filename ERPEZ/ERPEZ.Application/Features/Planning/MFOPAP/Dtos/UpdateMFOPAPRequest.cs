@@ -7,4 +7,5 @@ public record UpdateMFOPAPRequest
     public string? Code { get; init; }
     public string? Type { get; init; }
     public bool? IsActive { get; init; }
+    public Guid? FiscalYearId { get; init; }
 }
