@@ -1,3 +1,4 @@
+using ERPEZ.Application.Features.Planning.FiscalYear.Dtos;
 using ERPEZ.Application.Features.Planning.FundSource.Dtos;
 using ERPEZ.Application.Features.Planning.FundSource.Queries.FundSources;
 using ERPEZ.Domain.Interfaces;
@@ -32,6 +33,20 @@ public class GetFundSourcesQueryHandler(IUnitOfWork unitOfWork) : IRequestHandle
         {
             Id = fundSource.Id,
             ParentId = fundSource.ParentId,
+            Parent = fundSource.ParentSource != null ? new FundSourceResponse
+            {
+                Id = fundSource.ParentSource.Id,
+                ParentId = fundSource.ParentSource.ParentId,
+                Name = fundSource.ParentSource.Name,
+                Code = fundSource.ParentSource.Code,
+                Type = fundSource.ParentSource.Type.ToString(),
+                TotalDUAllocatedFunds = 0m,
+                TotalReceivedFunds = 0m,
+                IsActive = fundSource.ParentSource.IsActive,
+                FiscalYearId = fundSource.ParentSource.FiscalYearId,
+                CreatedBy = fundSource.ParentSource.CreatedBy,
+                CreatedAt = fundSource.ParentSource.CreatedAt
+            } : null,
             Name = fundSource.Name,
             Code = fundSource.Code,
             Type = fundSource.Type.ToString(),
@@ -39,6 +54,16 @@ public class GetFundSourcesQueryHandler(IUnitOfWork unitOfWork) : IRequestHandle
             TotalReceivedFunds = 0m,
             IsActive = fundSource.IsActive,
             FiscalYearId = fundSource.FiscalYearId,
+            FiscalYear = fundSource.FiscalYear != null ? new FiscalYearResponse
+            {
+                Id = fundSource.FiscalYear.Id,
+                Year = fundSource.FiscalYear.Year,
+                Description = fundSource.FiscalYear.Description,
+                Status = fundSource.FiscalYear.Status.ToString(),
+                IsLocked = fundSource.FiscalYear.IsLocked,
+                StartDate = fundSource.FiscalYear.StartDate,
+                EndDate = fundSource.FiscalYear.EndDate
+            } : null,
             CreatedBy = fundSource.CreatedBy,
             CreatedAt = fundSource.CreatedAt
         };
