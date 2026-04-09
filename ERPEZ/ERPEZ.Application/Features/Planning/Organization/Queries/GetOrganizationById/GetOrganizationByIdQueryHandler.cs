@@ -21,7 +21,8 @@ public class GetFundSourceByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHan
             Name = organization.Name,
             Code = organization.Code,
             Type = organization.Type,
-            IsActive = organization.IsActive
+            IsActive = organization.IsActive,
+            FiscalYearId = organization.FiscalYearId
         };
 
         return ApiResponse<OrganizationResponse>.Success(response, "Retrieved successfully");

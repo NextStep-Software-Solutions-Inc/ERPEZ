@@ -15,6 +15,9 @@ public class MFOPAP : BaseEntity
     public string Type { get; set; } = string.Empty;
     [Sieve(CanFilter = true, CanSort = true)]
     public bool IsActive { get; set; }
+    [Sieve(CanFilter = true, CanSort = true)]
+    public Guid? FiscalYearId { get; set; }
+    public virtual FiscalYear? FiscalYear { get; set; }
     public virtual MFOPAP? ParentMFOPAP { get; set; }
     public virtual List<MFOPAP> MFOPAPs { get; set; } = [];
     public virtual List<Transaction> Transactions { get; set; } = [];

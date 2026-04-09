@@ -10,7 +10,12 @@ public class CreateOrganizationCommandHandler(IUnitOfWork unitOfWork) : IRequest
 {
     public async Task<ApiResponse<Guid>> Handle(CreateOrganizationCommand request, CancellationToken cancellationToken)
     {
-        var organizationExist = await unitOfWork.OrganizationRepository.FindAsync(t => t.Name == request.Name, cancellationToken: cancellationToken);
+        if (request.FiscalYearId.HasValue)
+        {
+            _ = await unitOfWork.FiscalYearRepository.GetByIdAsync(request.FiscalYearId.Value, cancellationToken) ?? throw new NotFoundException($"Fiscal Year with the specified ID ({request.FiscalYearId.Value}) does not exist.");
+        }
+
+        var organizationExist = await unitOfWork.OrganizationRepository.FindAsync(t => t.Name == request.Name && t.FiscalYearId == request.FiscalYearId, cancellationToken: cancellationToken);
         if (organizationExist != null) throw new ConflictException("Organization already exists.");
         var organization = new Domain.Entities.Planning.Organization
         {
@@ -18,7 +23,8 @@ public class CreateOrganizationCommandHandler(IUnitOfWork unitOfWork) : IRequest
             Name = request.Name,
             Code = request.Code,
             Type = request.Type,
-            IsActive = request.IsActive
+            IsActive = request.IsActive,
+            FiscalYearId = request.FiscalYearId
         };
         await unitOfWork.OrganizationRepository.AddAsync(organization, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);

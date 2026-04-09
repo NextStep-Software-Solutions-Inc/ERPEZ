@@ -26,5 +26,17 @@ public class CreateObjectCommandValidator : AbstractValidator<CreateObjectComman
             .WithMessage("Code must be at least 2 characters long.")
             .MaximumLength(20)
             .WithMessage("Code cannot exceed 20 characters.");
+
+        // FiscalYearId (Optional GUID)
+        RuleFor(x => x.FiscalYearId)
+            .Must(id => !id.HasValue || id.Value != Guid.Empty)
+            .WithMessage("If provided, the Fiscal Year ID must be a valid, non-empty GUID.")
+            .When(x => x.FiscalYearId.HasValue);
+
+        // ExpenseClassId (Optional GUID)
+        RuleFor(x => x.ExpenseClassId)
+            .Must(id => !id.HasValue || id.Value != Guid.Empty)
+            .WithMessage("If provided, the Expense Class ID must be a valid, non-empty GUID.")
+            .When(x => x.ExpenseClassId.HasValue);
     }
 }

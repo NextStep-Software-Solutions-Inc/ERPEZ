@@ -6,4 +6,5 @@ namespace ERPEZ.Application.Features.Planning.Location.Queries.GetLocations;
 
 public record GetLocationsQuery : PaginatedQuery<PaginatedApiResponse<LocationResponse>>
 {
+    public Guid? FiscalYearId { get; init; }
 }

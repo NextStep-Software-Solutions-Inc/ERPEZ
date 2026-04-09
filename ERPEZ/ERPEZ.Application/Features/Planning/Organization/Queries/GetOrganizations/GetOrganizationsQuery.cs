@@ -6,4 +6,5 @@ namespace ERPEZ.Application.Features.Planning.Organization.Queries.GetOrganizati
 
 public record GetOrganizationsQuery : PaginatedQuery<PaginatedApiResponse<OrganizationResponse>>
 {
+    public Guid? FiscalYearId { get; init; }
 }

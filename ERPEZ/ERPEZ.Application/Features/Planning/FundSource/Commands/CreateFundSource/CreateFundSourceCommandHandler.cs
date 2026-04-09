@@ -16,8 +16,13 @@ public class CreateFundSourceCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
             _ = await unitOfWork.FundSourceRepository.GetByIdAsync(request.ParentId.Value, cancellationToken) ?? throw new NotFoundException($"Parent Fund Source with the specified ID ({request.ParentId.Value}) does not exist.");
         }
 
-        var fundSourceType = Enum.Parse<FundSourceTypeEnum>(request.Type);
-        var fundSourceExist = await unitOfWork.FundSourceRepository.FindAsync(t => t.Name == request.Name && t.Type == fundSourceType, cancellationToken: cancellationToken);
+        if (request.FiscalYearId.HasValue)
+        {
+            _ = await unitOfWork.FiscalYearRepository.GetByIdAsync(request.FiscalYearId.Value, cancellationToken) ?? throw new NotFoundException($"Fiscal Year with the specified ID ({request.FiscalYearId.Value}) does not exist.");
+        }
+
+        var fundSourceType = Enum.Parse<FundSourceTypeEnum>(request.Type, ignoreCase: true);
+        var fundSourceExist = await unitOfWork.FundSourceRepository.FindAsync(t => t.Name == request.Name && t.Type == fundSourceType && t.FiscalYearId == request.FiscalYearId, cancellationToken: cancellationToken);
         if (fundSourceExist != null) throw new ConflictException("Fund Source already exists.");
         var fundSource = new Domain.Entities.Planning.FundSource
         {
@@ -25,7 +30,8 @@ public class CreateFundSourceCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
             Name = request.Name,
             Code = request.Code,
             Type = fundSourceType,
-            IsActive = request.IsActive
+            IsActive = request.IsActive,
+            FiscalYearId = request.FiscalYearId
         };
 
         await unitOfWork.FundSourceRepository.AddAsync(fundSource, cancellationToken);

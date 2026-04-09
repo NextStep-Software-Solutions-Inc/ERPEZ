@@ -56,5 +56,11 @@ public class UpdateFundSourceCommandValidator : AbstractValidator<UpdateFundSour
             .NotEqual(x => x.Id)
             .When(x => x.UpdateFundSource.ParentId.HasValue)
             .WithMessage("A Fund Source cannot be its own parent.");
+
+        // FiscalYearId (Optional GUID)
+        RuleFor(x => x.UpdateFundSource.FiscalYearId)
+            .Must(id => !id.HasValue || id.Value != Guid.Empty)
+            .WithMessage("If provided, the Fiscal Year ID must be a valid, non-empty GUID.")
+            .When(x => x.UpdateFundSource.FiscalYearId.HasValue);
     }
 }

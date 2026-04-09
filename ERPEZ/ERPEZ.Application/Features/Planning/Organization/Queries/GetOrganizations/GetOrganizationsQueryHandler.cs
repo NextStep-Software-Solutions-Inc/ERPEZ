@@ -18,6 +18,15 @@ public class GetOrganizationsQueryHandler(IUnitOfWork unitOfWork) : IRequestHand
             Sorts = query.Sorts
         };
 
+        // Add fiscal year filter to Sieve filters if provided
+        if (query.FiscalYearId.HasValue)
+        {
+            var fiscalYearFilter = $"FiscalYearId=={query.FiscalYearId.Value}";
+            sieveModel.Filters = string.IsNullOrEmpty(sieveModel.Filters) 
+                ? fiscalYearFilter 
+                : $"{sieveModel.Filters},{fiscalYearFilter}";
+        }
+
         Expression<Func<Domain.Entities.Planning.Organization, OrganizationResponse>> projection = org => new OrganizationResponse
         {
             Id = org.Id,
@@ -25,7 +34,8 @@ public class GetOrganizationsQueryHandler(IUnitOfWork unitOfWork) : IRequestHand
             Name = org.Name,
             Code = org.Code,
             Type = org.Type,
-            IsActive = org.IsActive
+            IsActive = org.IsActive,
+            FiscalYearId = org.FiscalYearId
         };
 
         var (organizations, totalCount) = await unitOfWork.OrganizationRepository.GetAllAsync(sieveModel, projection, cancellationToken);

@@ -25,6 +25,7 @@ public class GetLocationByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandl
             Province = null,
             Municipality = null,
             Barangay = null,
+            FiscalYearId = location.FiscalYearId,
             CreatedAt = location.CreatedAt,
             CreatedBy = location.CreatedBy,
             UpdatedAt = location.UpdatedAt,

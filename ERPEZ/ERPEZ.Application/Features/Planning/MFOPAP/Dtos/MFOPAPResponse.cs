@@ -8,6 +8,7 @@ namespace ERPEZ.Application.Features.Planning.MFOPAP.Dtos
         public required string Code { get; init; }
         public required string Type { get; init; }
         public bool IsActive { get; init; }
+        public Guid? FiscalYearId { get; init; }
     }
 }
 

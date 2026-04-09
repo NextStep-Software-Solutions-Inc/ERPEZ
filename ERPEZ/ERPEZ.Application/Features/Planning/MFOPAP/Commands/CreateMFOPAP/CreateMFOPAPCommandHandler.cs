@@ -10,7 +10,12 @@ public class CreateMFOPAPCommandHandler(IUnitOfWork unitOfWork) : IRequestHandle
 {
     public async Task<ApiResponse<Guid>> Handle(CreateMFOPAPCommand request, CancellationToken cancellationToken)
     {
-        var mfoPAPExist = await unitOfWork.MFOPAPRepository.FindAsync(t => t.Name == request.Name && t.Code == request.Code, cancellationToken: cancellationToken);
+        if (request.FiscalYearId.HasValue)
+        {
+            _ = await unitOfWork.FiscalYearRepository.GetByIdAsync(request.FiscalYearId.Value, cancellationToken) ?? throw new NotFoundException($"Fiscal Year with the specified ID ({request.FiscalYearId.Value}) does not exist.");
+        }
+
+        var mfoPAPExist = await unitOfWork.MFOPAPRepository.FindAsync(t => t.Name == request.Name && t.Code == request.Code && t.FiscalYearId == request.FiscalYearId, cancellationToken: cancellationToken);
         if (mfoPAPExist != null) throw new ConflictException("MFOPAP already exists.");
         var mfoPAP = new Domain.Entities.Planning.MFOPAP
         {
@@ -18,7 +23,8 @@ public class CreateMFOPAPCommandHandler(IUnitOfWork unitOfWork) : IRequestHandle
             Name = request.Name,
             Code = request.Code,
             Type = request.Type,
-            IsActive = request.IsActive
+            IsActive = request.IsActive,
+            FiscalYearId = request.FiscalYearId
         };
         await unitOfWork.MFOPAPRepository.AddAsync(mfoPAP, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);

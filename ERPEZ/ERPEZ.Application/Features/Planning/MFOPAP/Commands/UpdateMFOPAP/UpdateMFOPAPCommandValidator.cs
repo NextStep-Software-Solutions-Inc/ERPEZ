@@ -58,5 +58,11 @@ public class UpdateMFOPAPCommandValidator : AbstractValidator<UpdateMFOPAPComman
             .NotEqual(x => x.Id)
             .When(x => x.UpdateMFOPAP.ParentId.HasValue)
             .WithMessage("An MFO/PAP cannot be its own parent.");
+
+        // 7. FiscalYearId (Optional GUID)
+        RuleFor(x => x.UpdateMFOPAP.FiscalYearId)
+            .Must(id => !id.HasValue || id.Value != Guid.Empty)
+            .WithMessage("If provided, the Fiscal Year ID must be a valid, non-empty GUID.")
+            .When(x => x.UpdateMFOPAP.FiscalYearId.HasValue);
     }
 }

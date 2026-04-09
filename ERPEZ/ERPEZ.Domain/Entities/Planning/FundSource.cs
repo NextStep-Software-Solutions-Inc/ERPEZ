@@ -16,6 +16,9 @@ public class FundSource : BaseEntity
     public FundSourceTypeEnum Type { get; set; } = FundSourceTypeEnum.FundCluster;
     [Sieve(CanFilter = true, CanSort = true)]
     public bool IsActive { get; set; }
+    [Sieve(CanFilter = true, CanSort = true)]
+    public Guid? FiscalYearId { get; set; }
+    public virtual FiscalYear? FiscalYear { get; set; }
     public virtual FundSource? ParentSource { get; set; }
     public virtual List<FundSource> FundSources { get; set; } = [];
     public virtual List<Transaction> Transactions { get; set; } = [];

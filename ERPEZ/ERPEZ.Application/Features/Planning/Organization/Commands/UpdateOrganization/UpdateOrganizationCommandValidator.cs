@@ -57,5 +57,11 @@ public class UpdateOrganizationCommandValidator : AbstractValidator<UpdateOrgani
             .NotEqual(x => x.Id)
             .When(x => x.UpdateOrganization.ParentId.HasValue)
             .WithMessage("An Organization cannot be its own parent.");
+
+        // 7. FiscalYearId (Optional GUID)
+        RuleFor(x => x.UpdateOrganization.FiscalYearId)
+            .Must(id => !id.HasValue || id.Value != Guid.Empty)
+            .WithMessage("If provided, the Fiscal Year ID must be a valid, non-empty GUID.")
+            .When(x => x.UpdateOrganization.FiscalYearId.HasValue);
     }
 }

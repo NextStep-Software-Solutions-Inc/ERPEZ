@@ -56,5 +56,11 @@ public class UpdateLocationCommandValidator : AbstractValidator<UpdateLocationCo
             .NotEqual(x => x.Id)
             .When(x => x.UpdateLocation.ParentId.HasValue)
             .WithMessage("A Location cannot be its own parent.");
+
+        // 7. FiscalYearId (Optional GUID)
+        RuleFor(x => x.UpdateLocation.FiscalYearId)
+            .Must(id => !id.HasValue || id.Value != Guid.Empty)
+            .WithMessage("If provided, the Fiscal Year ID must be a valid, non-empty GUID.")
+            .When(x => x.UpdateLocation.FiscalYearId.HasValue);
     }
 }

@@ -18,12 +18,23 @@ public class GetObjectsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
             Sorts = query.Sorts
         };
 
+        // Add fiscal year filter to Sieve filters if provided
+        if (query.FiscalYearId.HasValue)
+        {
+            var fiscalYearFilter = $"FiscalYearId=={query.FiscalYearId.Value}";
+            sieveModel.Filters = string.IsNullOrEmpty(sieveModel.Filters) 
+                ? fiscalYearFilter 
+                : $"{sieveModel.Filters},{fiscalYearFilter}";
+        }
+
         Expression<Func<Domain.Entities.Planning.Object, ObjectResponse>> projection = obj => new ObjectResponse
         {
             Id = obj.Id,
             Name = obj.Name,
             Code = obj.Code,
             IsActive = obj.IsActive,
+            FiscalYearId = obj.FiscalYearId,
+            ExpenseClassId = obj.ObjectExpenseClasses.Where(oec => oec.IsActive).Select(oec => (Guid?)oec.ExpenseClassId).FirstOrDefault(),
             ChildObjectCount = obj.ChildObjects.Count,
             WFPObjectiveActivityExpenditureCount = obj.WFPObjectiveActivityExpenditures.Count,
             TransactionCount = obj.Transactions.Count,
@@ -33,6 +44,8 @@ public class GetObjectsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
                 Name = obj.ParentObject.Name,
                 Code = obj.ParentObject.Code,
                 IsActive = obj.ParentObject.IsActive,
+                FiscalYearId = obj.ParentObject.FiscalYearId,
+                ExpenseClassId = obj.ParentObject.ObjectExpenseClasses.Where(oec => oec.IsActive).Select(oec => (Guid?)oec.ExpenseClassId).FirstOrDefault(),
                 ChildObjectCount = obj.ParentObject.ChildObjects.Count,
                 WFPObjectiveActivityExpenditureCount = obj.ParentObject.WFPObjectiveActivityExpenditures.Count,
                 TransactionCount = obj.ParentObject.Transactions.Count,
@@ -42,6 +55,8 @@ public class GetObjectsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
                     Name = obj.ParentObject.ParentObject.Name,
                     Code = obj.ParentObject.ParentObject.Code,
                     IsActive = obj.ParentObject.ParentObject.IsActive,
+                    FiscalYearId = obj.ParentObject.ParentObject.FiscalYearId,
+                    ExpenseClassId = obj.ParentObject.ParentObject.ObjectExpenseClasses.Where(oec => oec.IsActive).Select(oec => (Guid?)oec.ExpenseClassId).FirstOrDefault(),
                     ChildObjectCount = obj.ParentObject.ParentObject.ChildObjects.Count,
                     WFPObjectiveActivityExpenditureCount = obj.ParentObject.ParentObject.WFPObjectiveActivityExpenditures.Count,
                     TransactionCount = obj.ParentObject.ParentObject.Transactions.Count,
@@ -51,6 +66,8 @@ public class GetObjectsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
                         Name = obj.ParentObject.ParentObject.ParentObject.Name,
                         Code = obj.ParentObject.ParentObject.ParentObject.Code,
                         IsActive = obj.ParentObject.ParentObject.ParentObject.IsActive,
+                        FiscalYearId = obj.ParentObject.ParentObject.ParentObject.FiscalYearId,
+                        ExpenseClassId = obj.ParentObject.ParentObject.ParentObject.ObjectExpenseClasses.Where(oec => oec.IsActive).Select(oec => (Guid?)oec.ExpenseClassId).FirstOrDefault(),
                         ChildObjectCount = obj.ParentObject.ParentObject.ParentObject.ChildObjects.Count,
                         WFPObjectiveActivityExpenditureCount = obj.ParentObject.ParentObject.ParentObject.WFPObjectiveActivityExpenditures.Count,
                         TransactionCount = obj.ParentObject.ParentObject.ParentObject.Transactions.Count
@@ -59,9 +76,9 @@ public class GetObjectsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
             } : null
         };
 
-        var (objectives, totalCount) = await unitOfWork.ObjectRepository.GetAllAsync(sieveModel, projection, cancellationToken: cancellationToken);
+        var (objects, totalCount) = await unitOfWork.ObjectRepository.GetAllAsync(sieveModel, projection, cancellationToken);
         return new PaginatedApiResponse<ObjectResponse>(
-            [.. objectives],
+            [.. objects],
             query.PageNumber,
             query.PageSize,
             totalCount);
