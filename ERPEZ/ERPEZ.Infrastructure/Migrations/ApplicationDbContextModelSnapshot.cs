@@ -1211,9 +1211,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid?>("ParentId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("ParentSourceId")
-                        .HasColumnType("uuid");
-
                     b.Property<string>("Type")
                         .IsRequired()
                         .HasColumnType("text");
@@ -1227,8 +1224,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("FiscalYearId");
-
-                    b.HasIndex("ParentSourceId");
 
                     b.HasIndex("ParentId", "Code")
                         .IsUnique();
@@ -5881,11 +5876,13 @@ namespace ERPEZ.Infrastructure.Migrations
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Planning.FiscalYear", "FiscalYear")
                         .WithMany()
-                        .HasForeignKey("FiscalYearId");
+                        .HasForeignKey("FiscalYearId")
+                        .OnDelete(DeleteBehavior.NoAction);
 
                     b.HasOne("ERPEZ.Domain.Entities.Planning.FundSource", "ParentSource")
                         .WithMany("FundSources")
-                        .HasForeignKey("ParentSourceId");
+                        .HasForeignKey("ParentId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("FiscalYear");
 
@@ -6329,7 +6326,7 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired();
 
                     b.HasOne("ERPEZ.Domain.Entities.Planning.Object", "Object")
-                        .WithMany()
+                        .WithMany("ObjectExpenseClasses")
                         .HasForeignKey("ObjectId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
@@ -7217,6 +7214,8 @@ namespace ERPEZ.Infrastructure.Migrations
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.Object", b =>
                 {
                     b.Navigation("ChildObjects");
+
+                    b.Navigation("ObjectExpenseClasses");
 
                     b.Navigation("Transactions");
 
