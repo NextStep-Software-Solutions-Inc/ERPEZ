@@ -352,6 +352,18 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<FundSource>()
+            .HasOne(f => f.ParentSource)
+            .WithMany(f => f.FundSources)
+            .HasForeignKey(f => f.ParentId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<FundSource>()
+            .HasOne(f => f.FiscalYear)
+            .WithMany()
+            .HasForeignKey(f => f.FiscalYearId)
+            .OnDelete(DeleteBehavior.NoAction);
+
+        modelBuilder.Entity<FundSource>()
             .HasIndex(f => new { f.ParentId, f.Code })
             .IsUnique();
 

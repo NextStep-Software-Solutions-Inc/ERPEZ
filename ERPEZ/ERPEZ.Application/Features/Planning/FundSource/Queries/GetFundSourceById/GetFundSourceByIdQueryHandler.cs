@@ -11,7 +11,8 @@ public class GetFundSourceByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHan
 {
     public async Task<ApiResponse<FundSourceResponse>> Handle(GetFundSourceByIdQuery request, CancellationToken cancellationToken)
     {
-        var query = unitOfWork.FundSourceRepository.Query(f => f.Id == request.Id)
+        var query = unitOfWork.FundSourceRepository.GetAllWithNavigation()
+            .Where(f => f.Id == request.Id)
             .Select(fundSource => new FundSourceResponse
             {
                 Id = fundSource.Id,
