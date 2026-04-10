@@ -49,7 +49,7 @@ public class GetOfficeDashboardQueryHandler(
 
         var overview = new DashboardOverviewResponse
         {
-            KPIStats = await GetKPIStatisticsAsync(officeId.Value, currentMonthStart, previousMonthStart, previousMonthEnd, cancellationToken),
+            KPIStats = await GetKPIStatisticsAsync(query.FiscalYearId, officeId.Value, currentMonthStart, previousMonthStart, previousMonthEnd, cancellationToken),
             OPCRStats = await GetOPCRStatisticsAsync(query.FiscalYearId, officeId.Value, cancellationToken),
             BudgetStats = GetBudgetStatisticsPlaceholder(),
             PPMPStats = GetPPMPStatisticsPlaceholder(),
@@ -63,6 +63,7 @@ public class GetOfficeDashboardQueryHandler(
     }
 
     private async Task<KPIStatistics> GetKPIStatisticsAsync(
+        Guid fiscalYearId,
         Guid officeId,
         DateTime currentMonthStart,
         DateTime previousMonthStart,
@@ -73,7 +74,9 @@ public class GetOfficeDashboardQueryHandler(
 
         // Execute aggregate counts at query-provider level to avoid materializing large datasets.
         var baseQuery = unitOfWork.FYActiveKPIRepository.Query()
-            .Where(x => !x.IsDeleted && x.KPIAssignments.Any(a => a.OfficeId == officeId));
+            .Where(x => !x.IsDeleted
+                && x.FiscalYearId == fiscalYearId
+                && x.KPIAssignments.Any(a => a.OfficeId == officeId));
 
         var total = baseQuery.Count();
         var thisMonth = baseQuery.Count(x => x.CreatedAt >= currentMonthStart);

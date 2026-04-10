@@ -58,7 +58,7 @@ public class CurrentUserService(IHttpContextAccessor httpContextAccessor) : ICur
 
     public bool IsInRole(string role)
     {
-        return httpContextAccessor.HttpContext?.User?.IsInRole(role) ?? false;
+        return Roles.Contains(role, StringComparer.OrdinalIgnoreCase);
     }
 
     public bool IsPlanningUser => Roles.Contains(rolePlanningUser, StringComparer.OrdinalIgnoreCase);

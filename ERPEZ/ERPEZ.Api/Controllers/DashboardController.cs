@@ -65,7 +65,7 @@ public class DashboardController(ISender mediator) : ControllerBase
 
         var result = await mediator.Send(query);
 
-        return result.Succeeded ? Ok(result) : NotFound(result);
+        return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 
     /// <summary>

@@ -29,7 +29,7 @@ public class GetDashboardTasksQueryHandler(
 
         if (!query.TaskType.HasValue || query.TaskType == TaskType.WFP || query.TaskType == TaskType.WFPExternal)
         {
-            tasks.AddRange(await GetWFPTasksAsync(officeId, cancellationToken));
+            tasks.AddRange(await GetWFPTasksAsync(officeId, query.TaskType, cancellationToken));
         }
 
         if (!query.TaskType.HasValue || query.TaskType == TaskType.Budget)
@@ -176,7 +176,7 @@ public class GetDashboardTasksQueryHandler(
         return cards;
     }
 
-    private async Task<List<SmartTaskCardResponse>> GetWFPTasksAsync(Guid? officeId, CancellationToken cancellationToken)
+    private async Task<List<SmartTaskCardResponse>> GetWFPTasksAsync(Guid? officeId, TaskType? requestedTaskType, CancellationToken cancellationToken)
     {
         var wfpQuery = unitOfWork.WFPRepository.Query()
             .Where(w => !w.IsDeleted && (w.Status == StatusEnum.Submitted || w.Status == StatusEnum.Returned));
@@ -199,6 +199,12 @@ public class GetDashboardTasksQueryHandler(
 
         foreach (var wfp in wfps)
         {
+            var taskType = wfp.Mode == ModeEnum.External ? TaskType.WFPExternal : TaskType.WFP;
+            if (requestedTaskType.HasValue && requestedTaskType.Value != taskType)
+            {
+                continue;
+            }
+
             var total = wfp.ProposedBudget ?? 0m;
             var utilized = 0m;
             var utilization = total > 0 ? (utilized / total) * 100m : 0m;
@@ -213,7 +219,7 @@ public class GetDashboardTasksQueryHandler(
                 DueDate = dueDate,
                 AssignedToUserId = Guid.Empty,
                 AssignedToUserName = "Approver",
-                TaskType = TaskType.WFP,
+                TaskType = taskType,
                 ActionTitle = wfp.Status == StatusEnum.Submitted
                     ? $"Approve WFP Submission - {officeName}"
                     : $"Review Returned WFP - {officeName}",
