@@ -13,7 +13,7 @@ public class SDGConfiguration : IEntityTypeConfiguration<SDG>
             .HasMaxLength(200);
         
         builder.Property(e => e.Description)
-            .HasMaxLength(500);
+            .HasMaxLength(1000);
         
         builder.HasIndex(e => e.Name)
             .IsUnique();
