@@ -19,7 +19,18 @@ public class GetOfficeDashboardQueryHandler(
         GetOfficeDashboardQuery query,
         CancellationToken cancellationToken)
     {
-        var officeId = query.OfficeId ?? currentUserService.OfficeId;
+        var currentUserOfficeId = currentUserService.OfficeId;
+        var officeId = query.OfficeId ?? currentUserOfficeId;
+
+        // Office users must be restricted to their own office.
+        if (currentUserService.IsOfficeUser
+            && currentUserOfficeId.HasValue
+            && query.OfficeId.HasValue
+            && query.OfficeId.Value != currentUserOfficeId.Value)
+        {
+            throw new ValidationException("Office users can only access their assigned office dashboard.");
+        }
+
         if (!officeId.HasValue)
         {
             throw new ValidationException("Office ID is required. User must be assigned to an office.");
@@ -58,13 +69,15 @@ public class GetOfficeDashboardQueryHandler(
         DateTime previousMonthEnd,
         CancellationToken cancellationToken)
     {
-        var activeKpis = unitOfWork.FYActiveKPIRepository.Query()
+        await Task.CompletedTask;
+
+        // Execute aggregate counts at query-provider level to avoid materializing large datasets.
+        var baseQuery = unitOfWork.FYActiveKPIRepository.Query()
             .Where(x => !x.IsDeleted && x.KPIAssignments.Any(a => a.OfficeId == officeId));
 
-        var activeKpiList = await unitOfWork.FYActiveKPIRepository.ToListAsync(activeKpis, cancellationToken);
-        var total = activeKpiList.Count;
-        var thisMonth = activeKpiList.Count(x => x.CreatedAt >= currentMonthStart);
-        var lastMonth = activeKpiList.Count(x => x.CreatedAt >= previousMonthStart && x.CreatedAt <= previousMonthEnd);
+        var total = baseQuery.Count();
+        var thisMonth = baseQuery.Count(x => x.CreatedAt >= currentMonthStart);
+        var lastMonth = baseQuery.Count(x => x.CreatedAt >= previousMonthStart && x.CreatedAt <= previousMonthEnd);
 
         var change = lastMonth > 0 ? ((thisMonth - lastMonth) / (decimal)lastMonth) * 100m : 0m;
 
@@ -98,24 +111,26 @@ public class GetOfficeDashboardQueryHandler(
 
     private static BudgetStatistics GetBudgetStatisticsPlaceholder()
     {
+        // Placeholder until Budget repositories are integrated; avoid fabricated live-looking values.
         return new BudgetStatistics
         {
-            PlannedAmount = 8800000m,
-            UtilizedAmount = 5100000m,
-            UtilizationPercentage = 57.95m,
+            PlannedAmount = 0m,
+            UtilizedAmount = 0m,
+            UtilizationPercentage = 0m,
             Currency = "PHP"
         };
     }
 
     private static PPMPStatistics GetPPMPStatisticsPlaceholder()
     {
+        // Placeholder until Procurement repositories are integrated; avoid fabricated metrics.
         return new PPMPStatistics
         {
-            TotalPPMPs = 30,
-            ConsolidatedCount = 15,
-            InProgressCount = 9,
-            PendingItemsCount = 6,
-            ConsolidatedPercentage = 50m
+            TotalPPMPs = 0,
+            ConsolidatedCount = 0,
+            InProgressCount = 0,
+            PendingItemsCount = 0,
+            ConsolidatedPercentage = 0m
         };
     }
 
@@ -132,7 +147,7 @@ public class GetOfficeDashboardQueryHandler(
             .Select(g =>
             {
                 var planned = g.Sum(x => x.Budget);
-                var actual = planned * 0.86m;
+                var actual = 0m;
                 return new OPCRPlannedActual
                 {
                     Month = new DateTime(2000, g.Key, 1).ToString("MMM"),
@@ -158,6 +173,7 @@ public class GetOfficeDashboardQueryHandler(
         var total = mfoList.Count;
         var ongoing = mfoList.Count(x => x.IsActive);
         var pending = mfoList.Count(x => !x.IsActive);
+        // Completed count is intentionally zero until a completed-state source is integrated.
         var completed = 0;
         var completion = total > 0 ? (completed / (decimal)total) * 100m : 0m;
 

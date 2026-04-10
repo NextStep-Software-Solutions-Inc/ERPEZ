@@ -14,8 +14,7 @@ namespace ERPEZ.Api.Controllers;
 /// </summary>
 [Route("dashboard")]
 [ApiController]
-[AllowAnonymous]
-// [Authorize] // Temporarily disabled for local dashboard testing
+//[Authorize]
 public class DashboardController(ISender mediator) : ControllerBase
 {
     /// <summary>

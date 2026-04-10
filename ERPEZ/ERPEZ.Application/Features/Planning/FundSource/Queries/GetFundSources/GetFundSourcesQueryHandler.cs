@@ -34,9 +34,7 @@ public class GetFundSourcesQueryHandler(IUnitOfWork unitOfWork, ISieveProcessor 
 
         // Apply Sieve filtering/sorting
         var filteredQuery = sieveProcessor.Apply(sieveModel, baseQuery, applyPagination: false);
-        var totalCount = (await unitOfWork.FundSourceRepository.ToListAsync(
-            filteredQuery.Select(f => f.Id),
-            cancellationToken)).Count;
+        var totalCount = filteredQuery.Count();
 
         // Apply pagination
         var paginatedQuery = sieveProcessor.Apply(sieveModel, filteredQuery, applyFiltering: false, applySorting: false);

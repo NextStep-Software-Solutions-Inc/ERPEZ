@@ -27,17 +27,18 @@ public class GetPlanningDashboardQueryHandler(IUnitOfWork unitOfWork)
         {
             KPIStats = await GetKPIStatisticsAsync(
                 query.FiscalYearId, 
+                query.OrganizationId,
                 currentMonthStart, 
                 previousMonthStart, 
                 previousMonthEnd, 
                 cancellationToken),
-            OPCRStats = await GetOPCRStatisticsAsync(query.FiscalYearId, cancellationToken),
+            OPCRStats = await GetOPCRStatisticsAsync(query.FiscalYearId, query.OrganizationId, cancellationToken),
             BudgetStats = await GetBudgetStatisticsAsync(query.FiscalYearId, cancellationToken),
             PPMPStats = await GetPPMPStatisticsAsync(query.FiscalYearId, cancellationToken),
-            OPCRCommitments = await GetOPCRCommitmentsAsync(query.FiscalYearId, cancellationToken),
-            MFOStatus = await GetMFOStatusAsync(query.FiscalYearId, cancellationToken),
-            KPILibraryHealth = await GetKPILibraryHealthAsync(query.FiscalYearId, cancellationToken),
-            BudgetUtilizationHeatmap = await GetBudgetHeatmapAsync(query.FiscalYearId, cancellationToken)
+            OPCRCommitments = await GetOPCRCommitmentsAsync(query.FiscalYearId, query.OrganizationId, cancellationToken),
+            MFOStatus = await GetMFOStatusAsync(query.FiscalYearId, query.OrganizationId, cancellationToken),
+            KPILibraryHealth = await GetKPILibraryHealthAsync(query.FiscalYearId, query.OrganizationId, cancellationToken),
+            BudgetUtilizationHeatmap = await GetBudgetHeatmapAsync(query.FiscalYearId, query.OrganizationId, cancellationToken)
         };
 
         return ApiResponse<DashboardOverviewResponse>.Success(overview);
@@ -45,23 +46,32 @@ public class GetPlanningDashboardQueryHandler(IUnitOfWork unitOfWork)
 
     private async Task<KPIStatistics> GetKPIStatisticsAsync(
         Guid fiscalYearId,
+        Guid? organizationId,
         DateTime currentMonthStart,
         DateTime previousMonthStart,
         DateTime previousMonthEnd,
         CancellationToken cancellationToken)
     {
-        var kpiCreatedDates = await unitOfWork.KPIRepository.ToListAsync(
-            unitOfWork.KPIRepository.Query()
-                .Where(k => !k.IsDeleted)
-                .Select(k => k.CreatedAt),
-            cancellationToken);
-        var totalKPIs = kpiCreatedDates.Count;
+        await Task.CompletedTask;
+
+        // Execute aggregate counts at query-provider level to avoid materializing large datasets.
+        var scopedOfficeIds = await GetScopedOfficeIdsAsync(organizationId, cancellationToken);
+
+        var baseQuery = unitOfWork.FYActiveKPIRepository.Query()
+            .Where(k => !k.IsDeleted && k.FiscalYearId == fiscalYearId);
+
+        if (scopedOfficeIds != null)
+        {
+            baseQuery = baseQuery.Where(k => k.KPIAssignments.Any(a => scopedOfficeIds.Contains(a.OfficeId)));
+        }
+
+        var totalKPIs = baseQuery.Count();
 
         // KPIs encoded this month
-        var thisMonthKPIs = kpiCreatedDates.Count(createdAt => createdAt >= currentMonthStart);
+        var thisMonthKPIs = baseQuery.Count(k => k.CreatedAt >= currentMonthStart);
 
         // KPIs encoded last month for comparison
-        var lastMonthKPIs = kpiCreatedDates.Count(createdAt => createdAt >= previousMonthStart && createdAt <= previousMonthEnd);
+        var lastMonthKPIs = baseQuery.Count(k => k.CreatedAt >= previousMonthStart && k.CreatedAt <= previousMonthEnd);
 
         // Calculate month-over-month change
         var monthOverMonthChange = lastMonthKPIs > 0 
@@ -78,11 +88,15 @@ public class GetPlanningDashboardQueryHandler(IUnitOfWork unitOfWork)
 
     private async Task<OPCRStatistics> GetOPCRStatisticsAsync(
         Guid fiscalYearId, 
+        Guid? organizationId,
         CancellationToken cancellationToken)
     {
+        var scopedOfficeIds = await GetScopedOfficeIdsAsync(organizationId, cancellationToken);
+
         var opcrs = await unitOfWork.OPCRRepository.ToListAsync(
             unitOfWork.OPCRRepository.Query()
                 .Where(o => o.FiscalYearId == fiscalYearId && !o.IsDeleted)
+                .Where(o => scopedOfficeIds == null || scopedOfficeIds.Contains(o.OfficeId))
                 .Select(o => o.Status),
             cancellationToken);
         var totalOPCRs = opcrs.Count;
@@ -113,11 +127,12 @@ public class GetPlanningDashboardQueryHandler(IUnitOfWork unitOfWork)
         await Task.CompletedTask;
 
         // Placeholder until Budget module repositories are exposed in IUnitOfWork.
+        // Use neutral values to avoid presenting fabricated financial figures as real data.
         return new BudgetStatistics
         {
-            PlannedAmount = 68000000m,
-            UtilizedAmount = 61000000m,
-            UtilizationPercentage = 89.71m,
+            PlannedAmount = 0m,
+            UtilizedAmount = 0m,
+            UtilizationPercentage = 0m,
             Currency = "PHP"
         };
     }
@@ -129,24 +144,29 @@ public class GetPlanningDashboardQueryHandler(IUnitOfWork unitOfWork)
         await Task.CompletedTask;
 
         // Placeholder until Procurement repositories are exposed in IUnitOfWork.
+        // Use neutral values to avoid presenting fabricated consolidation metrics as real data.
         return new PPMPStatistics
         {
-            TotalPPMPs = 100,
-            ConsolidatedCount = 52,
-            InProgressCount = 30,
-            PendingItemsCount = 18,
-            ConsolidatedPercentage = 52m
+            TotalPPMPs = 0,
+            ConsolidatedCount = 0,
+            InProgressCount = 0,
+            PendingItemsCount = 0,
+            ConsolidatedPercentage = 0m
         };
     }
 
     private async Task<List<OPCRPlannedActual>> GetOPCRCommitmentsAsync(
         Guid fiscalYearId, 
+        Guid? organizationId,
         CancellationToken cancellationToken)
     {
+        var scopedOfficeIds = await GetScopedOfficeIdsAsync(organizationId, cancellationToken);
+
         // Get OPCR activities with their planned and actual budgets by month
         var opcrActivities = await unitOfWork.OPCRActivityRepository.ToListAsync(
             unitOfWork.OPCRActivityRepository.Query()
                 .Where(a => a.OPCRItem.OPCR.FiscalYearId == fiscalYearId && !a.IsDeleted)
+                .Where(a => scopedOfficeIds == null || scopedOfficeIds.Contains(a.OPCRItem.OPCR.OfficeId))
                 .Select(a => new { a.CreatedAt, a.Budget }),
             cancellationToken);
 
@@ -158,8 +178,8 @@ public class GetPlanningDashboardQueryHandler(IUnitOfWork unitOfWork)
             {
                 Month = new DateTime(2000, g.Key, 1).ToString("MMM"),
                 PlannedAmount = g.Sum(a => a.Budget),
-                ActualAmount = g.Sum(a => a.Budget) * 0.85m,
-                Variance = (g.Sum(a => a.Budget) * 0.85m) - g.Sum(a => a.Budget)
+                ActualAmount = 0m,
+                Variance = -g.Sum(a => a.Budget)
             })
             .ToList();
 
@@ -168,15 +188,27 @@ public class GetPlanningDashboardQueryHandler(IUnitOfWork unitOfWork)
 
     private async Task<MFOReferenceSummary> GetMFOStatusAsync(
         Guid fiscalYearId, 
+        Guid? organizationId,
         CancellationToken cancellationToken)
     {
+        var scopedOfficeIds = await GetScopedOfficeIdsAsync(organizationId, cancellationToken);
+
+        var mfoIds = await unitOfWork.FYActiveKPIRepository.ToListAsync(
+            unitOfWork.FYActiveKPIRepository.Query()
+                .Where(k => !k.IsDeleted && k.FiscalYearId == fiscalYearId && k.MFOPAPId != null)
+                .Where(k => scopedOfficeIds == null || k.KPIAssignments.Any(a => scopedOfficeIds.Contains(a.OfficeId)))
+                .Select(k => k.MFOPAPId!.Value)
+                .Distinct(),
+            cancellationToken);
+
         var mfos = await unitOfWork.MFOPAPRepository.ToListAsync(
             unitOfWork.MFOPAPRepository.Query()
-                .Where(m => m.FiscalYearId == fiscalYearId && !m.IsDeleted)
+                .Where(m => !m.IsDeleted && mfoIds.Contains(m.Id))
                 .Select(m => m.IsActive),
             cancellationToken);
         var totalMFOs = mfos.Count;
 
+        // Completed count is intentionally zero until a completed-state source is integrated.
         var completedMFOs = 0;
 
         var activeMFOs = mfos.Count(isActive => isActive);
@@ -199,12 +231,16 @@ public class GetPlanningDashboardQueryHandler(IUnitOfWork unitOfWork)
 
     private async Task<KPILibraryHealth> GetKPILibraryHealthAsync(
         Guid fiscalYearId, 
+        Guid? organizationId,
         CancellationToken cancellationToken)
     {
+        var scopedOfficeIds = await GetScopedOfficeIdsAsync(organizationId, cancellationToken);
+
         // Get FY Active KPIs for this fiscal year
         var fyActiveKpis = await unitOfWork.FYActiveKPIRepository.ToListAsync(
             unitOfWork.FYActiveKPIRepository.Query()
                 .Where(fk => fk.FiscalYearId == fiscalYearId && !fk.IsDeleted)
+                .Where(fk => scopedOfficeIds == null || fk.KPIAssignments.Any(a => scopedOfficeIds.Contains(a.OfficeId)))
                 .Select(fk => fk.Status),
             cancellationToken);
         var totalKPIs = fyActiveKpis.Count;
@@ -245,12 +281,16 @@ public class GetPlanningDashboardQueryHandler(IUnitOfWork unitOfWork)
 
     private async Task<List<BudgetHeatmapData>> GetBudgetHeatmapAsync(
         Guid fiscalYearId, 
+        Guid? organizationId,
         CancellationToken cancellationToken)
     {
+        var scopedOfficeIds = await GetScopedOfficeIdsAsync(organizationId, cancellationToken);
+
         // Placeholder heatmap derived from office list until budget repositories are exposed.
         var offices = await unitOfWork.OfficeRepository.ToListAsync(
             unitOfWork.OfficeRepository.Query()
                 .Where(o => !o.IsDeleted)
+                .Where(o => scopedOfficeIds == null || scopedOfficeIds.Contains(o.Id))
                 .Select(o => new { o.Id, o.Name }),
             cancellationToken);
 
@@ -268,5 +308,21 @@ public class GetPlanningDashboardQueryHandler(IUnitOfWork unitOfWork)
                 AverageUtilization = Math.Round(monthly.Average(), 2)
             };
         }).OrderByDescending(x => x.AverageUtilization).ToList();
+    }
+
+    private async Task<List<Guid>?> GetScopedOfficeIdsAsync(Guid? organizationId, CancellationToken cancellationToken)
+    {
+        if (!organizationId.HasValue)
+        {
+            return null;
+        }
+
+        var scopedOfficeIds = await unitOfWork.OfficeRepository.ToListAsync(
+            unitOfWork.OfficeRepository.Query()
+                .Where(o => !o.IsDeleted && o.OrganizationId == organizationId.Value)
+                .Select(o => o.Id),
+            cancellationToken);
+
+        return scopedOfficeIds;
     }
 }

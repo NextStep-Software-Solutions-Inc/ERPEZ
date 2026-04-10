@@ -34,12 +34,12 @@ public class GetDashboardTasksQueryHandler(
 
         if (!query.TaskType.HasValue || query.TaskType == TaskType.Budget)
         {
-            tasks.AddRange(await GetBudgetPlaceholderTasksAsync(query.FiscalYearId, officeId, cancellationToken));
+            // Disabled until real Budget repositories/entities are integrated.
         }
 
         if (!query.TaskType.HasValue || query.TaskType == TaskType.Procurement)
         {
-            tasks.AddRange(await GetProcurementPlaceholderTasksAsync(query.FiscalYearId, officeId, cancellationToken));
+            // Disabled until real Procurement repositories/entities are integrated.
         }
 
         if (query.Priority.HasValue)
@@ -136,7 +136,7 @@ public class GetDashboardTasksQueryHandler(
         {
             var agg = activityLookup.GetValueOrDefault(opcr.Id);
             var planned = agg?.PlannedAmount ?? 0m;
-            var actual = planned * 0.86m;
+            var actual = 0m;
             var completion = planned > 0 ? (actual / planned) * 100m : 0m;
             var officeName = officeNameLookup.GetValueOrDefault(opcr.OfficeId, "Office");
             var strategic = strategicLookup.GetValueOrDefault(opcr.Id);
@@ -200,7 +200,7 @@ public class GetDashboardTasksQueryHandler(
         foreach (var wfp in wfps)
         {
             var total = wfp.ProposedBudget ?? 0m;
-            var utilized = total * 0.65m;
+            var utilized = 0m;
             var utilization = total > 0 ? (utilized / total) * 100m : 0m;
             var remaining = total - utilized;
             var dueDate = wfp.SubmittedDate?.AddDays(10) ?? wfp.CreatedAt.AddDays(10);
@@ -213,7 +213,7 @@ public class GetDashboardTasksQueryHandler(
                 DueDate = dueDate,
                 AssignedToUserId = Guid.Empty,
                 AssignedToUserName = "Approver",
-                TaskType = TaskType.WFPExternal,
+                TaskType = TaskType.WFP,
                 ActionTitle = wfp.Status == StatusEnum.Submitted
                     ? $"Approve WFP Submission - {officeName}"
                     : $"Review Returned WFP - {officeName}",
@@ -242,106 +242,7 @@ public class GetDashboardTasksQueryHandler(
         return cards;
     }
 
-    private async Task<List<SmartTaskCardResponse>> GetBudgetPlaceholderTasksAsync(
-        Guid fiscalYearId,
-        Guid? officeId,
-        CancellationToken cancellationToken)
-    {
-        var seed = await unitOfWork.OPCRRepository.GetFirstAsync(
-            unitOfWork.OPCRRepository.Query()
-                .Where(o => !o.IsDeleted && o.FiscalYearId == fiscalYearId && (!officeId.HasValue || o.OfficeId == officeId.Value))
-                .Select(o => new { o.Id, o.CreatedAt, o.OfficeId }),
-            cancellationToken);
-
-        if (seed == null)
-        {
-            return [];
-        }
-
-        var allocated = 1000000m;
-        var utilized = 920000m;
-        var pct = 92m;
-
-        return
-        [
-            new SmartTaskCardResponse
-            {
-                TaskId = seed.Id,
-                Priority = TaskPriority.High,
-                DueDate = seed.CreatedAt.AddDays(5),
-                AssignedToUserId = Guid.Empty,
-                AssignedToUserName = "Budget Approver",
-                TaskType = TaskType.Budget,
-                ActionTitle = "Review Line-Item Budget Request",
-                Description = "Line-Item Utilization near limit.",
-                RelatedEntityId = seed.Id,
-                RelatedEntityType = "Budget",
-                ContextStatistics = new TaskContextStatistics
-                {
-                    BudgetContext = new BudgetTaskContext
-                    {
-                        UACSCode = "50101010",
-                        LineItemDescription = "Sample UACS Budget Line",
-                        AllocatedAmount = allocated,
-                        UtilizedAmount = utilized,
-                        UtilizationPercentage = pct,
-                        WarningLevel = "Warning"
-                    }
-                },
-                StrategicLink = null,
-                CreatedAt = seed.CreatedAt,
-                Status = "Submitted"
-            }
-        ];
-    }
-
-    private async Task<List<SmartTaskCardResponse>> GetProcurementPlaceholderTasksAsync(
-        Guid fiscalYearId,
-        Guid? officeId,
-        CancellationToken cancellationToken)
-    {
-        var seed = await unitOfWork.WFPRepository.GetFirstAsync(
-            unitOfWork.WFPRepository.Query()
-                .Where(w => !w.IsDeleted && (!officeId.HasValue || w.OfficeId == officeId.Value))
-                .Select(w => new { w.Id, w.CreatedAt }),
-            cancellationToken);
-
-        if (seed == null)
-        {
-            return [];
-        }
-
-        return
-        [
-            new SmartTaskCardResponse
-            {
-                TaskId = seed.Id,
-                Priority = TaskPriority.Medium,
-                DueDate = seed.CreatedAt.AddDays(7),
-                AssignedToUserId = Guid.Empty,
-                AssignedToUserName = "Procurement Approver",
-                TaskType = TaskType.Procurement,
-                ActionTitle = "Review PPMP Consolidation",
-                Description = "Procurement consolidation progress is in-flight.",
-                RelatedEntityId = seed.Id,
-                RelatedEntityType = "PPMP",
-                ContextStatistics = new TaskContextStatistics
-                {
-                    ProcurementContext = new ProcurementTaskContext
-                    {
-                        TotalItems = 50,
-                        ConsolidatedItems = 26,
-                        ConsolidationProgress = 52m,
-                        PendingItems = 24,
-                        Status = "InProgress"
-                    }
-                },
-                StrategicLink = null,
-                CreatedAt = seed.CreatedAt,
-                Status = "Submitted"
-            }
-        ];
-    }
+    
     private static TaskPriority DeterminePriority(DateTime dueDate, StatusEnum status)
     {
         if (status == StatusEnum.Returned)
