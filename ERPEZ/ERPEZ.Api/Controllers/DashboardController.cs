@@ -114,9 +114,10 @@ public class DashboardController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<DashboardOverviewResponse>), StatusCodes.Status401Unauthorized)]
     public async Task<IActionResult> GetDashboard([FromQuery] Guid fiscalYearId)
     {
-        var isAuthenticated = User?.Identity?.IsAuthenticated ?? false;
-        var isPlanningUser = User.IsInRole("PlanningUser");
-        var hasOfficeContext = !string.IsNullOrWhiteSpace(User?.FindFirst("office_id")?.Value);
+        var principal = HttpContext?.User;
+        var isAuthenticated = principal?.Identity?.IsAuthenticated ?? false;
+        var isPlanningUser = principal?.IsInRole("PlanningUser") ?? false;
+        var hasOfficeContext = !string.IsNullOrWhiteSpace(principal?.FindFirst("office_id")?.Value);
 
         // Fallback to planning dashboard when there is no office context
         // (e.g., anonymous testing or tokens without office claim).
