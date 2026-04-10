@@ -4167,7 +4167,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Property<string>("Name")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -4177,7 +4178,165 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("Name")
+                        .IsUnique();
+
                     b.ToTable("SDGs", "planning");
+
+                    b.HasData(
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0000-000000000001"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedBy = "System",
+                            Description = "End poverty in all its forms everywhere.",
+                            IsDeleted = false,
+                            Name = "Goal 1: No Poverty"
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0000-000000000002"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedBy = "System",
+                            Description = "End hunger, achieve food security, and promote sustainable agriculture.",
+                            IsDeleted = false,
+                            Name = "Goal 2: Zero Hunger"
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0000-000000000003"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedBy = "System",
+                            Description = "Ensure healthy lives and promote well-being for all.",
+                            IsDeleted = false,
+                            Name = "Goal 3: Good Health and Well-being"
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0000-000000000004"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedBy = "System",
+                            Description = "Ensure inclusive and equitable quality education for all.",
+                            IsDeleted = false,
+                            Name = "Goal 4: Quality Education"
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0000-000000000005"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedBy = "System",
+                            Description = "Achieve gender equality and empower all women and girls.",
+                            IsDeleted = false,
+                            Name = "Goal 5: Gender Equality"
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0000-000000000006"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedBy = "System",
+                            Description = "Ensure availability and sustainable management of water.",
+                            IsDeleted = false,
+                            Name = "Goal 6: Clean Water and Sanitation"
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0000-000000000007"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedBy = "System",
+                            Description = "Ensure access to affordable, reliable, and sustainable energy.",
+                            IsDeleted = false,
+                            Name = "Goal 7: Affordable and Clean Energy"
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0000-000000000008"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedBy = "System",
+                            Description = "Promote inclusive economic growth and decent work for all.",
+                            IsDeleted = false,
+                            Name = "Goal 8: Decent Work and Economic Growth"
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0000-000000000009"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedBy = "System",
+                            Description = "Build resilient infrastructure and foster innovation.",
+                            IsDeleted = false,
+                            Name = "Goal 9: Industry, Innovation and Infrastructure"
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0000-000000000010"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedBy = "System",
+                            Description = "Reduce inequality within and among countries.",
+                            IsDeleted = false,
+                            Name = "Goal 10: Reduced Inequalities"
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0000-000000000011"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedBy = "System",
+                            Description = "Make cities safe, resilient, and sustainable.",
+                            IsDeleted = false,
+                            Name = "Goal 11: Sustainable Cities and Communities"
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0000-000000000012"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedBy = "System",
+                            Description = "Ensure sustainable consumption and production patterns.",
+                            IsDeleted = false,
+                            Name = "Goal 12: Responsible Consumption and Production"
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0000-000000000013"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedBy = "System",
+                            Description = "Take urgent action to combat climate change.",
+                            IsDeleted = false,
+                            Name = "Goal 13: Climate Action"
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0000-000000000014"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedBy = "System",
+                            Description = "Conserve and sustainably use oceans, seas, and marine resources.",
+                            IsDeleted = false,
+                            Name = "Goal 14: Life Below Water"
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0000-000000000015"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedBy = "System",
+                            Description = "Protect, restore, and promote sustainable terrestrial ecosystems.",
+                            IsDeleted = false,
+                            Name = "Goal 15: Life on Land"
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0000-000000000016"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedBy = "System",
+                            Description = "Promote peaceful societies and access to justice.",
+                            IsDeleted = false,
+                            Name = "Goal 16: Peace, Justice and Strong Institutions"
+                        },
+                        new
+                        {
+                            Id = new Guid("00000000-0000-0000-0000-000000000017"),
+                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
+                            CreatedBy = "System",
+                            Description = "Strengthen global partnerships for sustainable development.",
+                            IsDeleted = false,
+                            Name = "Goal 17: Partnerships for the Goals"
+                        });
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.SalaryGrade", b =>
