@@ -4,7 +4,6 @@ using ERPEZ.Application.Features.Planning.FundSource.Queries.FundSources;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using Sieve.Services;
 
 namespace ERPEZ.Application.Features.Planning.FundSource.Queries.GetFundSources;
@@ -35,14 +34,16 @@ public class GetFundSourcesQueryHandler(IUnitOfWork unitOfWork, ISieveProcessor 
 
         // Apply Sieve filtering/sorting
         var filteredQuery = sieveProcessor.Apply(sieveModel, baseQuery, applyPagination: false);
-        var totalCount = await filteredQuery.CountAsync(cancellationToken);
+        var totalCount = (await unitOfWork.FundSourceRepository.ToListAsync(
+            filteredQuery.Select(f => f.Id),
+            cancellationToken)).Count;
 
         // Apply pagination
         var paginatedQuery = sieveProcessor.Apply(sieveModel, filteredQuery, applyFiltering: false, applySorting: false);
 
         // Project to DTO
-        var fundSources = await paginatedQuery
-            .Select(fundSource => new FundSourceResponse
+        var fundSources = await unitOfWork.FundSourceRepository.ToListAsync(
+            paginatedQuery.Select(fundSource => new FundSourceResponse
             {
                 Id = fundSource.Id,
                 ParentId = fundSource.ParentId,
@@ -79,8 +80,8 @@ public class GetFundSourcesQueryHandler(IUnitOfWork unitOfWork, ISieveProcessor 
                 } : null,
                 CreatedBy = fundSource.CreatedBy,
                 CreatedAt = fundSource.CreatedAt
-            })
-            .ToListAsync(cancellationToken);
+            }),
+            cancellationToken);
 
         return new PaginatedApiResponse<FundSourceResponse>(
             [.. fundSources],
