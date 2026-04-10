@@ -24,14 +24,17 @@ public class RolloverFiscalYearCommandHandler(IUnitOfWork unitOfWork)
 
         await unitOfWork.ExecuteInTransactionAsync(async () =>
         {
+            Dictionary<Guid, Guid>? fundSourceIdMap = null;
+            Dictionary<Guid, Guid>? mfopapIdMap = null;
+
             if (request.IncludeOrgStructure)
-                fundSourcesCopied = await RolloverFundSourcesAsync(request, cancellationToken);
+                (fundSourcesCopied, fundSourceIdMap) = await RolloverFundSourcesAsync(request, cancellationToken);
 
             if (request.IncludeRecurringExpenses)
-                mfopapsCopied = await RolloverMFOPAPsAsync(request, cancellationToken);
+                (mfopapsCopied, mfopapIdMap) = await RolloverMFOPAPsAsync(request, cancellationToken);
 
             if (request.IncludeUACSLibrary)
-                (uacsCombinationsCopied, uacsSegmentYearsCopied) = await RolloverUACSLibraryAsync(request, cancellationToken);
+                (uacsCombinationsCopied, uacsSegmentYearsCopied) = await RolloverUACSLibraryAsync(request, fundSourceIdMap, mfopapIdMap, cancellationToken);
 
             await unitOfWork.SaveChangesAsync(cancellationToken);
 
@@ -50,13 +53,13 @@ public class RolloverFiscalYearCommandHandler(IUnitOfWork unitOfWork)
             $"Rollover completed successfully. {result.TotalRecordsCopied} record(s) copied.");
     }
 
-    private async Task<int> RolloverFundSourcesAsync(RolloverFiscalYearCommand request, CancellationToken cancellationToken)
+    private async Task<(int Count, Dictionary<Guid, Guid> IdMap)> RolloverFundSourcesAsync(RolloverFiscalYearCommand request, CancellationToken cancellationToken)
     {
         var sources = await unitOfWork.FundSourceRepository.ToListAsync(
             unitOfWork.FundSourceRepository.Query(fs => fs.FiscalYearId == request.SourceFiscalYearId),
             cancellationToken);
 
-        if (sources.Count == 0) return 0;
+        if (sources.Count == 0) return (0, []);
 
         // Build old → new ID map upfront for self-referential ParentId remapping
         var idMap = sources.ToDictionary(fs => fs.Id, _ => Guid.NewGuid());
@@ -75,16 +78,16 @@ public class RolloverFiscalYearCommandHandler(IUnitOfWork unitOfWork)
         }).ToList();
 
         await unitOfWork.FundSourceRepository.AddRangeAsync(newFundSources, cancellationToken);
-        return newFundSources.Count;
+        return (newFundSources.Count, idMap);
     }
 
-    private async Task<int> RolloverMFOPAPsAsync(RolloverFiscalYearCommand request, CancellationToken cancellationToken)
+    private async Task<(int Count, Dictionary<Guid, Guid> IdMap)> RolloverMFOPAPsAsync(RolloverFiscalYearCommand request, CancellationToken cancellationToken)
     {
         var sources = await unitOfWork.MFOPAPRepository.ToListAsync(
             unitOfWork.MFOPAPRepository.Query(m => m.FiscalYearId == request.SourceFiscalYearId),
             cancellationToken);
 
-        if (sources.Count == 0) return 0;
+        if (sources.Count == 0) return (0, []);
 
         // Build old → new ID map upfront for self-referential ParentId remapping
         var idMap = sources.ToDictionary(m => m.Id, _ => Guid.NewGuid());
@@ -103,11 +106,14 @@ public class RolloverFiscalYearCommandHandler(IUnitOfWork unitOfWork)
         }).ToList();
 
         await unitOfWork.MFOPAPRepository.AddRangeAsync(newMFOPAPs, cancellationToken);
-        return newMFOPAPs.Count;
+        return (newMFOPAPs.Count, idMap);
     }
 
     private async Task<(int CombinationsCopied, int SegmentYearsCopied)> RolloverUACSLibraryAsync(
-        RolloverFiscalYearCommand request, CancellationToken cancellationToken)
+        RolloverFiscalYearCommand request,
+        Dictionary<Guid, Guid>? fundSourceIdMap,
+        Dictionary<Guid, Guid>? mfopapIdMap,
+        CancellationToken cancellationToken)
     {
         int combinationsCopied = 0;
         int segmentYearsCopied = 0;
@@ -122,10 +128,17 @@ public class RolloverFiscalYearCommandHandler(IUnitOfWork unitOfWork)
             var newCombinations = sourceCombinations.Select(c => new Domain.Entities.Planning.UACSCodeCombination
             {
                 Id = Guid.NewGuid(),
-                FundSourceId = c.FundSourceId,
+                // Remap FundSourceId to the newly created target-FY record if org structure was rolled over;
+                // otherwise keep the original reference (UACS rolled over independently).
+                FundSourceId = c.FundSourceId.HasValue && fundSourceIdMap != null && fundSourceIdMap.TryGetValue(c.FundSourceId.Value, out var newFsId)
+                    ? newFsId
+                    : c.FundSourceId,
                 OrganizationId = c.OrganizationId,
                 LocationId = c.LocationId,
-                MFOPAPId = c.MFOPAPId,
+                // Remap MFOPAPId to the newly created target-FY record if recurring expenses were rolled over.
+                MFOPAPId = c.MFOPAPId.HasValue && mfopapIdMap != null && mfopapIdMap.TryGetValue(c.MFOPAPId.Value, out var newMfId)
+                    ? newMfId
+                    : c.MFOPAPId,
                 ObjectId = c.ObjectId,
                 CombinationCode = c.CombinationCode,
                 Description = c.Description,

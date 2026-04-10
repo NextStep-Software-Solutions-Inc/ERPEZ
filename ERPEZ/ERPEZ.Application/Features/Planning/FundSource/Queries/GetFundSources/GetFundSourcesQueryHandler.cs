@@ -12,10 +12,13 @@ public class GetFundSourcesQueryHandler(IUnitOfWork unitOfWork) : IRequestHandle
 {
     public async Task<PaginatedApiResponse<FundSourceResponse>> Handle(GetFundSourcesQuery query, CancellationToken cancellationToken)
     {
+        var page = query.PageNumber < 1 ? 1 : query.PageNumber;
+        var pageSize = query.PageSize <= 0 ? 10 : query.PageSize;
+
         var sieveModel = new SieveModel
         {
-            PageSize = query.PageSize,
-            Page = query.PageNumber,
+            PageSize = pageSize,
+            Page = page,
             Filters = query.Filters,
             Sorts = query.Sorts
         };
@@ -72,8 +75,8 @@ public class GetFundSourcesQueryHandler(IUnitOfWork unitOfWork) : IRequestHandle
 
         return new PaginatedApiResponse<FundSourceResponse>(
             [.. response],
-            query.PageNumber,
-            query.PageSize,
+            page,
+            pageSize,
             totalCount);
     }
 }

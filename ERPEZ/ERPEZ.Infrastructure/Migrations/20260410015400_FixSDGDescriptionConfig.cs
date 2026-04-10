@@ -25,6 +25,9 @@ namespace ERPEZ.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
+            // Clear any nulls before making the column non-nullable to prevent ALTER failure.
+            migrationBuilder.Sql("UPDATE planning.\"SDGs\" SET \"Description\" = '' WHERE \"Description\" IS NULL;");
+
             migrationBuilder.AlterColumn<string>(
                 name: "Description",
                 schema: "planning",
