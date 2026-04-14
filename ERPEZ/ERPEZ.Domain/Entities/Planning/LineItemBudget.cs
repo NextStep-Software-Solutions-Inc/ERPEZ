@@ -14,16 +14,27 @@ namespace ERPEZ.Domain.Entities.Planning;
 public class LineItemBudget : ApprovableEntity
 {
     public LineItemBudget() { }
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public Guid? FiscalYearId { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public Guid? FundClusterId { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public Guid? OfficeId { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public Guid? ParentLIBId { get; set; }
     
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid DeliveryUnitId { get; set; }
     
     /// <summary>
-    /// EF Config: .HasConversion<string>()
     /// Values: OPCR, WFP, Independent
     /// </summary>
     [Sieve(CanFilter = true, CanSort = true)]
-    public SourceType SourceType { get; set; }
+    public string SourceType { get; set; } = string.Empty;
     
     /// <summary>
     /// SourceId is either OPCRId or WFPId
@@ -33,39 +44,52 @@ public class LineItemBudget : ApprovableEntity
     public Guid? SourceId { get; set; }
     
     /// <summary>
-    /// EF Config: .HasConversion<string>()
     /// Values: ActivityLevel, ProjectLevel
     /// </summary>
     [Sieve(CanFilter = true, CanSort = true)]
-    public BudgetScope Scope { get; set; }
-    
-    /// <summary>
-    /// Flag indicating whether this LIB is consolidated from child delivery units
-    /// True if this LIB consolidates data from child DUs, False otherwise
-    /// </summary>
+    public string Scope { get; set; } = string.Empty;
+
     [Sieve(CanFilter = true, CanSort = true)]
-    public bool IsConsolidated { get; set; }
+    public string Level { get; set; } = string.Empty;
     
     [Sieve(CanFilter = true, CanSort = true)]
     public string LIBNumber { get; set; } = string.Empty;
     
     [Sieve(CanFilter = true, CanSort = true)]
-    public int FiscalYear { get; set; }
-    
-    [Sieve(CanFilter = true, CanSort = true)]
     public string? Name { get; set; }
     
     /// <summary>
-    /// Overrides ApprovableEntity.Status to use LIBStatus enum
-    /// EF Config: .HasConversion<string>()
-    /// Values: Draft, Submitted, Approved, Returned, Consolidated
+    /// Overrides ApprovableEntity.Status to use a string-backed LIB workflow status.
     /// </summary>
     [Sieve(CanFilter = true, CanSort = true)]
-    public new LIBStatus Status { get; set; }
+    public new string Status { get; set; } = "Draft";
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public Guid? ConsolidatedIntoLIBId { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public decimal? TotalAmount { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public int Version { get; set; } = 1;
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public Guid? PreviousVersionId { get; set; }
     
     // Navigation properties
+    public virtual FiscalYear? FiscalYearEntity { get; set; }
+    public virtual FundSource? FundCluster { get; set; }
+    public virtual Office? Office { get; set; }
+    public virtual LineItemBudget? ParentLIB { get; set; }
+    public virtual LineItemBudget? ConsolidatedIntoLIB { get; set; }
+    public virtual LineItemBudget? PreviousVersion { get; set; }
     public virtual DeliveryUnit DeliveryUnit { get; set; } = null!;
     public virtual List<LineItemBudgetActivity> LineItemBudgetActivities { get; set; } = [];
     public virtual List<LineItemBudgetDetail> LineItemBudgetDetails { get; set; } = [];
+    public virtual List<LineItemBudget> ChildLIBs { get; set; } = [];
+    public virtual List<LineItemBudget> ConsolidatedChildLIBs { get; set; } = [];
+    public virtual List<LineItemBudget> VersionHistory { get; set; } = [];
+    public virtual List<LIBAmendmentRequest> LIBAmendmentRequests { get; set; } = [];
+    public virtual List<LIBAmendmentRequest> ProposedLIBAmendmentRequests { get; set; } = [];
 
 }

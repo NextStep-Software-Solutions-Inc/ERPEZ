@@ -1,6 +1,5 @@
 ﻿using ERPEZ.Domain.Common;
 using ERPEZ.Domain.Entities.Planning;
-using ERPEZ.Domain.Enums;
 using Sieve.Attributes;
 using PlanningObject = ERPEZ.Domain.Entities.Planning.Object;
 
@@ -31,11 +30,10 @@ public class LineItemBudgetDetail : BaseEntity
     public string? Description { get; set; }
     
     /// <summary>
-    /// EF Config: .HasConversion<string>()
     /// Values: Monthly, Quarterly
     /// </summary>
     [Sieve(CanFilter = true, CanSort = true)]
-    public TimelineTypeEnum TimelineType { get; set; }
+    public string TimelineType { get; set; } = string.Empty;
     
     [Sieve(CanFilter = true, CanSort = true)]
     public DateTime StartDate { get; set; }
