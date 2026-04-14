@@ -6,6 +6,7 @@ using ERPEZ.Application.Features.Planning.FiscalYear.Commands.UpdateFiscalYear;
 using ERPEZ.Application.Features.Planning.FiscalYear.Commands.UpdateFiscalYearStatus;
 using ERPEZ.Application.Features.Planning.FiscalYear.Commands.DeleteFiscalYear;
 using ERPEZ.Application.Features.Planning.FiscalYear.Commands.UpdateFiscalYearLock;
+using ERPEZ.Application.Features.Planning.FiscalYear.Commands.RolloverFiscalYear;
 using ERPEZ.Application.Features.Planning.FiscalYear.Queries.GetFiscalYears;
 using ERPEZ.Application.Features.Planning.FiscalYear.Queries.GetFiscalYearById;
 using ERPEZ.Application.Features.Planning.FiscalYear.Dtos;
@@ -99,5 +100,24 @@ public class FiscalYearController(ISender mediator) : ControllerBase
         var command = new UpdateFiscalYearLockCommand(id, false);
         var result = await mediator.Send(command);
         return result.Succeeded ? Ok(result) : NotFound(result);
+    }
+
+    [HttpPost("{id}/rollover")]
+    [ProducesResponseType(typeof(ApiResponse<RolloverResultResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<RolloverResultResponse>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> RolloverFiscalYear(Guid id, [FromBody] RolloverFiscalYearRequest request)
+    {
+        var command = new RolloverFiscalYearCommand
+        {
+            TargetFiscalYearId = id,
+            SourceFiscalYearId = request.SourceFiscalYearId,
+            IncludeOrgStructure = request.IncludeOrgStructure,
+            IncludeUACSLibrary = request.IncludeUACSLibrary,
+            IncludeRecurringExpenses = request.IncludeRecurringExpenses
+        };
+
+        var result = await mediator.Send(command);
+        return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 }
