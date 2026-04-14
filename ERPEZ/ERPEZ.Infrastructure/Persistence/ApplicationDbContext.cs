@@ -722,13 +722,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .WithOne(o => o.Cluster)
             .HasForeignKey(o => o.ClusterId);
 
-        //SDG
-        modelBuilder.Entity<SDG>()
-            .Property(s => s.Description)
-            .IsRequired()
-            .HasMaxLength(1000);
-
-//WFPObjectiveTimeline
+        //WFPObjectiveTimeline
         modelBuilder.Entity<WFPObjectiveTimeline>()
             .HasOne(t => t.WFPObjectiveActivity)
             .WithMany(a => a.WFPObjectiveTimelines)
