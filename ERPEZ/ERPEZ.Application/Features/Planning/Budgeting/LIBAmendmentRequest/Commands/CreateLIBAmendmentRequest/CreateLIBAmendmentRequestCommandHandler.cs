@@ -28,9 +28,9 @@ public class CreateLIBAmendmentRequestCommandHandler(IUnitOfWork unitOfWork)
         {
             LineItemBudgetId = request.LineItemBudgetId,
             ProposedLineItemBudgetId = request.ProposedLineItemBudgetId,
-            Reason = BudgetingEnumMapper.ToEntityValue(request.Reason),
+            Reason = request.Reason.ToString(),
             Justification = request.Justification,
-            Status = BudgetingEnumMapper.ToEntityValue(request.Status)
+            Status = request.Status.ToString()
         };
 
         await unitOfWork.LIBAmendmentRequestRepository.AddAsync(entity, cancellationToken);

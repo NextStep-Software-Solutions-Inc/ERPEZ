@@ -48,7 +48,7 @@ public class CreateLIBCommandHandler(IUnitOfWork unitOfWork)
             throw new ERPEZ.Shared.Exceptions.ValidationException("SourceId is required for LIB source types OPCR and WFP.");
         }
 
-        var sourceType = BudgetingEnumMapper.ToEntityValue(request.SourceType);
+        var sourceType = request.SourceType.ToString();
         if (request.SourceType == Common.Enums.LIBSourceTypeEnum.OPCR)
         {
             _ = await unitOfWork.OPCRRepository.GetByIdAsync(request.SourceId.Value, cancellationToken)
@@ -76,10 +76,10 @@ public class CreateLIBCommandHandler(IUnitOfWork unitOfWork)
             Scope = request.Scope,
             Name = request.Name,
             LIBNumber = request.LIBNumber,
-            Level = BudgetingEnumMapper.ToEntityValue(request.Level),
+            Level = request.Level.ToString(),
             SourceType = sourceType,
             SourceId = request.SourceId,
-            Status = BudgetingEnumMapper.ToEntityValue(request.Status),
+            Status = request.Status.ToString(),
             ConsolidatedIntoLIBId = request.ConsolidatedIntoLIBId,
             TotalAmount = request.TotalAmount,
             Version = request.Version,

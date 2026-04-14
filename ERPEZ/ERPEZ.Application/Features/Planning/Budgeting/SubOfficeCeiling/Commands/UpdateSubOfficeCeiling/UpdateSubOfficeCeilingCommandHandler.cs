@@ -55,7 +55,7 @@ public class UpdateSubOfficeCeilingCommandHandler(IUnitOfWork unitOfWork)
             throw new ERPEZ.Shared.Exceptions.ValidationException("Sub-Office Ceiling totals must not exceed the parent Office Ceiling amounts.");
         }
 
-        var status = BudgetingEnumMapper.ToEntityValue(request.Status);
+        var status = request.Status.ToString();
 
         var existing = await unitOfWork.SubOfficeCeilingRepository.FindAsync(
             x => x.Id != request.Id

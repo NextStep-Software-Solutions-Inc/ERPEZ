@@ -21,7 +21,7 @@ public class GetAgencyMasterBudgetByIdQueryHandler(IUnitOfWork unitOfWork)
             Id = entity.Id,
             FiscalYearId = entity.FiscalYearId,
             FundClusterId = entity.FundClusterId,
-            SourceDocumentType = BudgetingEnumMapper.ToEnum<SourceDocumentTypeEnum>(entity.SourceDocumentType, nameof(entity.SourceDocumentType)),
+            SourceDocumentType = Enum.Parse<SourceDocumentTypeEnum>(entity.SourceDocumentType, true),
             PSAmount = entity.PSAmount,
             MOOEAmount = entity.MOOEAmount,
             COAmount = entity.COAmount,
@@ -54,11 +54,11 @@ public class GetAgencyMasterBudgetByIdQueryHandler(IUnitOfWork unitOfWork)
                     FiscalYearId = oc.FiscalYearId,
                     OfficeId = oc.OfficeId,
                     OfficeName = oc.Office?.Name ?? string.Empty,
-                    TargetType = BudgetingEnumMapper.ToEnum<CeilingTargetTypeEnum>(oc.TargetType, nameof(oc.TargetType)),
+                    TargetType = Enum.Parse<CeilingTargetTypeEnum>(oc.TargetType, true),
                     PSAmount = oc.PSAmount,
                     MOOEAmount = oc.MOOEAmount,
                     COAmount = oc.COAmount,
-                    Status = BudgetingEnumMapper.ToEnum<CeilingStatusEnum>(oc.Status, nameof(oc.Status)),
+                    Status = Enum.Parse<CeilingStatusEnum>(oc.Status, true),
                     IsSupplemental = oc.IsSupplemental,
                     SubOfficeCeilingCount = oc.SubOfficeCeilings.Count
                 })

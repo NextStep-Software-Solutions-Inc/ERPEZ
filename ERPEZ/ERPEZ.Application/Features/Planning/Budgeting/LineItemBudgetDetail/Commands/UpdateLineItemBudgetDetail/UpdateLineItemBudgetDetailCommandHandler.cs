@@ -44,7 +44,7 @@ public class UpdateLineItemBudgetDetailCommandHandler(IUnitOfWork unitOfWork)
         entity.WFPObjectiveActivityExpenditureId = request.WFPObjectiveActivityExpenditureId;
         entity.ObjectId = request.ObjectId;
         entity.Description = request.Description;
-        entity.TimelineType = BudgetingEnumMapper.ToEntityValue(request.TimelineType);
+        entity.TimelineType = request.TimelineType.ToString();
         entity.StartDate = request.StartDate;
         entity.EndDate = request.EndDate;
         entity.Budget = request.Budget;

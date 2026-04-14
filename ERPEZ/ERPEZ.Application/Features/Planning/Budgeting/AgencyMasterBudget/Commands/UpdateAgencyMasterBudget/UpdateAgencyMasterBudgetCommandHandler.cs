@@ -29,7 +29,7 @@ public class UpdateAgencyMasterBudgetCommandHandler(IUnitOfWork unitOfWork)
             throw new ERPEZ.Shared.Exceptions.ValidationException("Selected Fund Source is not a Fund Cluster.");
         }
 
-        var sourceDocumentType = BudgetingEnumMapper.ToEntityValue(request.SourceDocumentType);
+        var sourceDocumentType = request.SourceDocumentType.ToString();
 
         var existing = await unitOfWork.AgencyMasterBudgetRepository.FindAsync(
             x => x.Id != request.Id

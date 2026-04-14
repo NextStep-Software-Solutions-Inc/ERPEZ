@@ -26,13 +26,13 @@ public class GetSubOfficeCeilingByIdQueryHandler(IUnitOfWork unitOfWork)
             PSAmount = entity.PSAmount,
             MOOEAmount = entity.MOOEAmount,
             COAmount = entity.COAmount,
-            Status = BudgetingEnumMapper.ToEnum<CeilingStatusEnum>(entity.Status, nameof(entity.Status)),
+            Status = Enum.Parse<CeilingStatusEnum>(entity.Status, true),
             OfficeCeiling = entity.OfficeCeiling == null ? null : new SubOfficeCeilingOfficeCeilingResponse
             {
                 Id = entity.OfficeCeiling.Id,
                 OfficeId = entity.OfficeCeiling.OfficeId,
                 OfficeName = entity.OfficeCeiling.Office?.Name ?? string.Empty,
-                TargetType = BudgetingEnumMapper.ToEnum<CeilingTargetTypeEnum>(entity.OfficeCeiling.TargetType, nameof(entity.OfficeCeiling.TargetType))
+                TargetType = Enum.Parse<CeilingTargetTypeEnum>(entity.OfficeCeiling.TargetType, true)
             },
             SubOffice = entity.SubOffice == null ? null : new SubOfficeCeilingOfficeResponse
             {

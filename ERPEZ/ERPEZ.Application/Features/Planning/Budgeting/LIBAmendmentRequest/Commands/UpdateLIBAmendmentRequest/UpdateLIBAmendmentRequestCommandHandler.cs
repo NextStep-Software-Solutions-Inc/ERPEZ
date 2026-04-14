@@ -29,9 +29,9 @@ public class UpdateLIBAmendmentRequestCommandHandler(IUnitOfWork unitOfWork)
 
         entity.LineItemBudgetId = request.LineItemBudgetId;
         entity.ProposedLineItemBudgetId = request.ProposedLineItemBudgetId;
-        entity.Reason = BudgetingEnumMapper.ToEntityValue(request.Reason);
+        entity.Reason = request.Reason.ToString();
         entity.Justification = request.Justification;
-        entity.Status = BudgetingEnumMapper.ToEntityValue(request.Status);
+        entity.Status = request.Status.ToString();
 
         unitOfWork.LIBAmendmentRequestRepository.Update(entity);
         await unitOfWork.SaveChangesAsync(cancellationToken);

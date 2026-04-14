@@ -21,9 +21,9 @@ public class GetLIBAmendmentRequestByIdQueryHandler(IUnitOfWork unitOfWork)
             Id = entity.Id,
             LineItemBudgetId = entity.LineItemBudgetId,
             ProposedLineItemBudgetId = entity.ProposedLineItemBudgetId,
-            Reason = BudgetingEnumMapper.ToEnum<LIBAmendmentReasonEnum>(entity.Reason, nameof(entity.Reason)),
+            Reason = Enum.Parse<LIBAmendmentReasonEnum>(entity.Reason, true),
             Justification = entity.Justification,
-            Status = BudgetingEnumMapper.ToEnum<LIBAmendmentStatusEnum>(entity.Status, nameof(entity.Status)),
+            Status = Enum.Parse<LIBAmendmentStatusEnum>(entity.Status, true),
             LineItemBudget = entity.LineItemBudget == null ? null : new LIBAmendmentRequestLIBResponse
             {
                 Id = entity.LineItemBudget.Id,

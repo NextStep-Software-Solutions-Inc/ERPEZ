@@ -20,13 +20,13 @@ public class GetOfficeCeilingByIdQueryHandler(IUnitOfWork unitOfWork)
         {
             Id = entity.Id,
             FiscalYearId = entity.FiscalYearId,
-            TargetType = BudgetingEnumMapper.ToEnum<CeilingTargetTypeEnum>(entity.TargetType, nameof(entity.TargetType)),
+            TargetType = Enum.Parse<CeilingTargetTypeEnum>(entity.TargetType, true),
             OfficeId = entity.OfficeId,
             AgencyMasterBudgetId = entity.AgencyMasterBudgetId,
             PSAmount = entity.PSAmount,
             MOOEAmount = entity.MOOEAmount,
             COAmount = entity.COAmount,
-            Status = BudgetingEnumMapper.ToEnum<CeilingStatusEnum>(entity.Status, nameof(entity.Status)),
+            Status = Enum.Parse<CeilingStatusEnum>(entity.Status, true),
             IsSupplemental = entity.IsSupplemental,
             FiscalYear = entity.FiscalYear == null ? null : new OfficeCeilingFiscalYearResponse
             {
@@ -43,7 +43,7 @@ public class GetOfficeCeilingByIdQueryHandler(IUnitOfWork unitOfWork)
             AgencyMasterBudget = entity.AgencyMasterBudget == null ? null : new OfficeCeilingAgencyMasterBudgetResponse
             {
                 Id = entity.AgencyMasterBudget.Id,
-                SourceDocumentType = BudgetingEnumMapper.ToEnum<SourceDocumentTypeEnum>(entity.AgencyMasterBudget.SourceDocumentType, nameof(entity.AgencyMasterBudget.SourceDocumentType)),
+                SourceDocumentType = Enum.Parse<SourceDocumentTypeEnum>(entity.AgencyMasterBudget.SourceDocumentType, true),
                 FundClusterId = entity.AgencyMasterBudget.FundClusterId,
                 FiscalYearId = entity.AgencyMasterBudget.FiscalYearId,
                 PSAmount = entity.AgencyMasterBudget.PSAmount,

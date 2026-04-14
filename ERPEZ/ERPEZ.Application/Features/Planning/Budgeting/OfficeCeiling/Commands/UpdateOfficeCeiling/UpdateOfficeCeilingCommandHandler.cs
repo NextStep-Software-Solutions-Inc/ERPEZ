@@ -37,8 +37,8 @@ public class UpdateOfficeCeilingCommandHandler(IUnitOfWork unitOfWork)
             throw new ERPEZ.Shared.Exceptions.ValidationException("PS, MOOE, and CO amounts must match the selected Agency Master Budget.");
         }
 
-        var targetType = BudgetingEnumMapper.ToEntityValue(request.TargetType);
-        var status = BudgetingEnumMapper.ToEntityValue(request.Status);
+        var targetType = request.TargetType.ToString();
+        var status = request.Status.ToString();
 
         var existing = await unitOfWork.OfficeCeilingRepository.FindAsync(
             x => x.Id != request.Id

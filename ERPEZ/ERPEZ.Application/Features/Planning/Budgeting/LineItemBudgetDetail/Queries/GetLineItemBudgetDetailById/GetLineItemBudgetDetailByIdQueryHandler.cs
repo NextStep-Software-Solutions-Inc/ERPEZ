@@ -24,7 +24,7 @@ public class GetLineItemBudgetDetailByIdQueryHandler(IUnitOfWork unitOfWork)
             WFPObjectiveActivityExpenditureId = entity.WFPObjectiveActivityExpenditureId,
             ObjectId = entity.ObjectId,
             Description = entity.Description,
-            TimelineType = BudgetingEnumMapper.ToEnum<LIBTimelineTypeEnum>(entity.TimelineType, nameof(entity.TimelineType)),
+            TimelineType = Enum.Parse<LIBTimelineTypeEnum>(entity.TimelineType, true),
             StartDate = entity.StartDate,
             EndDate = entity.EndDate,
             Budget = entity.Budget,

@@ -78,10 +78,10 @@ public class UpdateLIBCommandHandler(IUnitOfWork unitOfWork)
         entity.Scope = request.Scope;
         entity.Name = request.Name;
         entity.LIBNumber = request.LIBNumber;
-        entity.Level = BudgetingEnumMapper.ToEntityValue(request.Level);
-        entity.SourceType = BudgetingEnumMapper.ToEntityValue(request.SourceType);
+        entity.Level = request.Level.ToString();
+        entity.SourceType = request.SourceType.ToString();
         entity.SourceId = request.SourceId;
-        entity.Status = BudgetingEnumMapper.ToEntityValue(request.Status);
+        entity.Status = request.Status.ToString();
         entity.ConsolidatedIntoLIBId = request.ConsolidatedIntoLIBId;
         entity.TotalAmount = request.TotalAmount;
         entity.Version = request.Version;

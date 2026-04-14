@@ -43,7 +43,7 @@ public class CreateLineItemBudgetDetailCommandHandler(IUnitOfWork unitOfWork)
             WFPObjectiveActivityExpenditureId = request.WFPObjectiveActivityExpenditureId,
             ObjectId = request.ObjectId,
             Description = request.Description,
-            TimelineType = BudgetingEnumMapper.ToEntityValue(request.TimelineType),
+            TimelineType = request.TimelineType.ToString(),
             StartDate = request.StartDate,
             EndDate = request.EndDate,
             Budget = request.Budget
