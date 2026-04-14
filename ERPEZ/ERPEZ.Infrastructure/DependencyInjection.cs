@@ -12,9 +12,11 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using ERPEZ.Shared.Interfaces;
 using ERPEZ.Shared.Interceptors;
-using ERPEZ.Shared.Services;
+using AppCurrentUserService = ERPEZ.Application.Interfaces.ICurrentUserService;
+using InfraCurrentUserService = ERPEZ.Infrastructure.Services.CurrentUserService;
+using SharedCurrentUserService = ERPEZ.Shared.Interfaces.ICurrentUserService;
+using SharedCurrentUserServiceImpl = ERPEZ.Shared.Services.CurrentUserService;
 
 namespace ERPEZ.Infrastructure;
 
@@ -37,7 +39,8 @@ public static class DependencyInjection
                 options.ConnectionString = envConnectionString;
             }
         });
-        services.AddScoped<ICurrentUserService, CurrentUserService>();
+        services.AddScoped<AppCurrentUserService, InfraCurrentUserService>();
+        services.AddScoped<SharedCurrentUserService, SharedCurrentUserServiceImpl>();
         services.AddScoped<AuditingInterceptor>();
 
         services.AddDbContext<ApplicationDbContext>((sp, options) =>
