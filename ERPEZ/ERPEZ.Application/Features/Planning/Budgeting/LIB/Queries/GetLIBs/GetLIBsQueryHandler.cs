@@ -4,15 +4,25 @@ using ERPEZ.Application.Features.Planning.Budgeting.LIB.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
+using Sieve.Models;
 
 namespace ERPEZ.Application.Features.Planning.Budgeting.LIB.Queries.GetLIBs;
 
 public class GetLIBsQueryHandler(IUnitOfWork unitOfWork)
-    : IRequestHandler<GetLIBsQuery, ApiResponse<List<LIBResponse>>>
+    : IRequestHandler<GetLIBsQuery, PaginatedApiResponse<LIBResponse>>
 {
-    public async Task<ApiResponse<List<LIBResponse>>> Handle(GetLIBsQuery request, CancellationToken cancellationToken)
+    public async Task<PaginatedApiResponse<LIBResponse>> Handle(GetLIBsQuery request, CancellationToken cancellationToken)
     {
-        var entities = await unitOfWork.LineItemBudgetRepository.GetAllWithDetailsAsync(cancellationToken: cancellationToken);
+        var sieveModel = new SieveModel
+        {
+            Page = request.PageNumber,
+            PageSize = request.PageSize,
+            Filters = request.Filters,
+            Sorts = request.Sorts
+        };
+
+        var (entities, totalCount) = await unitOfWork.LineItemBudgetRepository
+            .GetAllWithDetailsAsync(sieveModel, cancellationToken);
 
         var items = entities.Select(entity => new LIBResponse
                 {
@@ -81,7 +91,7 @@ public class GetLIBsQueryHandler(IUnitOfWork unitOfWork)
                 })
             .ToList();
 
-        return ApiResponse<List<LIBResponse>>.Success(items);
+        return new PaginatedApiResponse<LIBResponse>(items, request.PageNumber, request.PageSize, totalCount);
     }
 }
 

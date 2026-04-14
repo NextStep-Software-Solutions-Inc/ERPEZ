@@ -4,15 +4,25 @@ using ERPEZ.Application.Features.Planning.Budgeting.Common.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
+using Sieve.Models;
 
 namespace ERPEZ.Application.Features.Planning.Budgeting.AgencyMasterBudget.Queries.GetAgencyMasterBudgets;
 
 public class GetAgencyMasterBudgetsQueryHandler(IUnitOfWork unitOfWork)
-    : IRequestHandler<GetAgencyMasterBudgetsQuery, ApiResponse<List<AgencyMasterBudgetResponse>>>
+    : IRequestHandler<GetAgencyMasterBudgetsQuery, PaginatedApiResponse<AgencyMasterBudgetResponse>>
 {
-    public async Task<ApiResponse<List<AgencyMasterBudgetResponse>>> Handle(GetAgencyMasterBudgetsQuery request, CancellationToken cancellationToken)
+    public async Task<PaginatedApiResponse<AgencyMasterBudgetResponse>> Handle(GetAgencyMasterBudgetsQuery request, CancellationToken cancellationToken)
     {
-        var entities = await unitOfWork.AgencyMasterBudgetRepository.GetAllWithDetailsAsync(cancellationToken: cancellationToken);
+        var sieveModel = new SieveModel
+        {
+            Page = request.PageNumber,
+            PageSize = request.PageSize,
+            Filters = request.Filters,
+            Sorts = request.Sorts
+        };
+
+        var (entities, totalCount) = await unitOfWork.AgencyMasterBudgetRepository
+            .GetAllWithDetailsAsync(sieveModel, cancellationToken);
 
         var items = entities
             .Select(entity => new AgencyMasterBudgetResponse
@@ -65,6 +75,6 @@ public class GetAgencyMasterBudgetsQueryHandler(IUnitOfWork unitOfWork)
                 })
             .ToList();
 
-        return ApiResponse<List<AgencyMasterBudgetResponse>>.Success(items);
+        return new PaginatedApiResponse<AgencyMasterBudgetResponse>(items, request.PageNumber, request.PageSize, totalCount);
     }
 }

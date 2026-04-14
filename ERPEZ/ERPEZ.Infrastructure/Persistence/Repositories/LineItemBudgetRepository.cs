@@ -1,6 +1,7 @@
 using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Sieve.Models;
 using Sieve.Services;
 
 namespace ERPEZ.Infrastructure.Persistence.Repositories;
@@ -8,11 +9,13 @@ namespace ERPEZ.Infrastructure.Persistence.Repositories;
 public class LineItemBudgetRepository : Repository<LineItemBudget>, ILineItemBudgetRepository
 {
     private readonly ApplicationDbContext dbContext;
+    private readonly ISieveProcessor sieveProcessor;
 
     public LineItemBudgetRepository(ApplicationDbContext context, ISieveProcessor sieveProcessor)
         : base(context, sieveProcessor)
     {
         dbContext = context;
+        this.sieveProcessor = sieveProcessor;
     }
 
     public async Task<LineItemBudget?> GetByIdWithDetailsAsync(Guid id, CancellationToken cancellationToken = default)
@@ -50,5 +53,30 @@ public class LineItemBudgetRepository : Repository<LineItemBudget>, ILineItemBud
         }
 
         return await query.ToListAsync(cancellationToken);
+    }
+
+    public async Task<(IEnumerable<LineItemBudget>, int)> GetAllWithDetailsAsync(SieveModel sieveModel, CancellationToken cancellationToken = default)
+    {
+        var query = dbContext.LineItemBudgets!
+            .Include(x => x.FiscalYearEntity)
+            .Include(x => x.FundCluster)
+            .Include(x => x.Office)
+            .Include(x => x.DeliveryUnit)
+            .Include(x => x.ParentLIB)
+            .Include(x => x.ConsolidatedIntoLIB)
+            .Include(x => x.PreviousVersion)
+            .Include(x => x.LineItemBudgetActivities)
+            .Include(x => x.LineItemBudgetDetails)
+            .Where(x => !x.IsDeleted)
+            .AsSplitQuery()
+            .AsNoTracking()
+            .AsQueryable();
+
+        var filteredQuery = sieveProcessor.Apply(sieveModel, query, applyPagination: false);
+        var filteredCount = await filteredQuery.CountAsync(cancellationToken);
+        var paginatedQuery = sieveProcessor.Apply(sieveModel, filteredQuery, applyFiltering: false, applySorting: false);
+        var results = await paginatedQuery.ToListAsync(cancellationToken);
+
+        return (results, filteredCount);
     }
 }

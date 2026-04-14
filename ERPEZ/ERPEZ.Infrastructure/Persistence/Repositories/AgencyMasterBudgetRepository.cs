@@ -1,6 +1,7 @@
 using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Sieve.Models;
 using Sieve.Services;
 
 namespace ERPEZ.Infrastructure.Persistence.Repositories;
@@ -8,11 +9,13 @@ namespace ERPEZ.Infrastructure.Persistence.Repositories;
 public class AgencyMasterBudgetRepository : Repository<AgencyMasterBudget>, IAgencyMasterBudgetRepository
 {
     private readonly ApplicationDbContext dbContext;
+    private readonly ISieveProcessor sieveProcessor;
 
     public AgencyMasterBudgetRepository(ApplicationDbContext context, ISieveProcessor sieveProcessor)
         : base(context, sieveProcessor)
     {
         dbContext = context;
+        this.sieveProcessor = sieveProcessor;
     }
 
     public async Task<AgencyMasterBudget?> GetByIdWithDetailsAsync(Guid id, CancellationToken cancellationToken = default)
@@ -50,5 +53,30 @@ public class AgencyMasterBudgetRepository : Repository<AgencyMasterBudget>, IAge
         }
 
         return await query.ToListAsync(cancellationToken);
+    }
+
+    public async Task<(IEnumerable<AgencyMasterBudget>, int)> GetAllWithDetailsAsync(SieveModel sieveModel, CancellationToken cancellationToken = default)
+    {
+        var query = dbContext.AgencyMasterBudgets!
+            .Include(x => x.FiscalYear)
+            .Include(x => x.FundCluster)
+                .ThenInclude(f => f.ParentSource)
+            .Include(x => x.FundCluster)
+                .ThenInclude(f => f.FiscalYear)
+            .Include(x => x.OfficeCeilings)
+                .ThenInclude(oc => oc.Office)
+            .Include(x => x.OfficeCeilings)
+                .ThenInclude(oc => oc.SubOfficeCeilings)
+            .Where(x => !x.IsDeleted)
+            .AsSplitQuery()
+            .AsNoTracking()
+            .AsQueryable();
+
+        var filteredQuery = sieveProcessor.Apply(sieveModel, query, applyPagination: false);
+        var filteredCount = await filteredQuery.CountAsync(cancellationToken);
+        var paginatedQuery = sieveProcessor.Apply(sieveModel, filteredQuery, applyFiltering: false, applySorting: false);
+        var results = await paginatedQuery.ToListAsync(cancellationToken);
+
+        return (results, filteredCount);
     }
 }

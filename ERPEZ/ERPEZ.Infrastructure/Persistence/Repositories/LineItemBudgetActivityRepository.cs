@@ -1,6 +1,7 @@
 using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
+using Sieve.Models;
 using Sieve.Services;
 
 namespace ERPEZ.Infrastructure.Persistence.Repositories;
@@ -8,11 +9,13 @@ namespace ERPEZ.Infrastructure.Persistence.Repositories;
 public class LineItemBudgetActivityRepository : Repository<LineItemBudgetActivity>, ILineItemBudgetActivityRepository
 {
     private readonly ApplicationDbContext dbContext;
+    private readonly ISieveProcessor sieveProcessor;
 
     public LineItemBudgetActivityRepository(ApplicationDbContext context, ISieveProcessor sieveProcessor)
         : base(context, sieveProcessor)
     {
         dbContext = context;
+        this.sieveProcessor = sieveProcessor;
     }
 
     public async Task<LineItemBudgetActivity?> GetByIdWithDetailsAsync(Guid id, CancellationToken cancellationToken = default)
@@ -40,5 +43,25 @@ public class LineItemBudgetActivityRepository : Repository<LineItemBudgetActivit
         }
 
         return await query.ToListAsync(cancellationToken);
+    }
+
+    public async Task<(IEnumerable<LineItemBudgetActivity>, int)> GetAllWithDetailsAsync(SieveModel sieveModel, CancellationToken cancellationToken = default)
+    {
+        var query = dbContext.LineItemBudgetActivities!
+            .Include(x => x.LineItemBudget)
+            .Include(x => x.WFPObjectiveActivity)
+            .Include(x => x.OPCRActivity)
+            .Include(x => x.LineItemBudgetDetails)
+            .Where(x => !x.IsDeleted)
+            .AsSplitQuery()
+            .AsNoTracking()
+            .AsQueryable();
+
+        var filteredQuery = sieveProcessor.Apply(sieveModel, query, applyPagination: false);
+        var filteredCount = await filteredQuery.CountAsync(cancellationToken);
+        var paginatedQuery = sieveProcessor.Apply(sieveModel, filteredQuery, applyFiltering: false, applySorting: false);
+        var results = await paginatedQuery.ToListAsync(cancellationToken);
+
+        return (results, filteredCount);
     }
 }
