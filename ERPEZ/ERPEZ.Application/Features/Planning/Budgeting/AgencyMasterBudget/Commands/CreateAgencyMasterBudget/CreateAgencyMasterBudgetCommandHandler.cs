@@ -1,6 +1,5 @@
 using ERPEZ.Application.Features.Planning.Budgeting.AgencyMasterBudget.Dtos;
 using ERPEZ.Application.Features.Planning.Budgeting.Common.Enums;
-using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -18,13 +17,8 @@ public class CreateAgencyMasterBudgetCommandHandler(IUnitOfWork unitOfWork)
         _ = await unitOfWork.FiscalYearRepository.GetByIdAsync(request.FiscalYearId, cancellationToken)
             ?? throw new NotFoundException($"Fiscal Year with ID {request.FiscalYearId} not found.");
 
-        var fundCluster = await unitOfWork.FundSourceRepository.GetByIdAsync(request.FundClusterId, cancellationToken)
-            ?? throw new NotFoundException($"Fund Cluster with ID {request.FundClusterId} not found.");
-
-        if (fundCluster.Type != FundSourceTypeEnum.FundCluster)
-        {
-            throw new ERPEZ.Shared.Exceptions.ValidationException("Selected Fund Source is not a Fund Cluster.");
-        }
+        _ = await unitOfWork.FundSourceRepository.GetByIdAsync(request.FundSourceId, cancellationToken)
+            ?? throw new NotFoundException($"Fund Source with ID {request.FundSourceId} not found.");
 
         if (!Enum.TryParse<SourceDocumentTypeEnum>(request.SourceDocumentType, true, out var parsedSourceDocumentType))
         {
@@ -35,7 +29,7 @@ public class CreateAgencyMasterBudgetCommandHandler(IUnitOfWork unitOfWork)
 
         var existing = await unitOfWork.AgencyMasterBudgetRepository.FindAsync(
             x => x.FiscalYearId == request.FiscalYearId
-                && x.FundClusterId == request.FundClusterId
+                && x.FundClusterId == request.FundSourceId
                 && x.SourceDocumentType == sourceDocumentType,
             cancellationToken);
 
@@ -47,7 +41,7 @@ public class CreateAgencyMasterBudgetCommandHandler(IUnitOfWork unitOfWork)
         var entity = new Domain.Entities.Planning.AgencyMasterBudget
         {
             FiscalYearId = request.FiscalYearId,
-            FundClusterId = request.FundClusterId,
+            FundClusterId = request.FundSourceId,
             SourceDocumentType = sourceDocumentType,
             PSAmount = request.PSAmount,
             MOOEAmount = request.MOOEAmount,

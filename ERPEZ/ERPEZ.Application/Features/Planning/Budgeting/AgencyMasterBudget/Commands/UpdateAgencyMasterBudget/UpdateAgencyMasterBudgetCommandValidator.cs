@@ -15,7 +15,7 @@ public class UpdateAgencyMasterBudgetCommandValidator : AbstractValidator<Update
             .NotEmpty()
             .WithMessage("{PropertyName} is required.");
 
-        RuleFor(x => x.Request.FundClusterId)
+        RuleFor(x => x.Request.FundSourceId)
             .NotEmpty()
             .WithMessage("{PropertyName} is required.");
 
