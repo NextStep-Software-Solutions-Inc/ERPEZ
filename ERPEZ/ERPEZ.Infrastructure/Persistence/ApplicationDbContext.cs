@@ -84,11 +84,15 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<OPCRActivityEvaluation>? OPCRActivityEvaluations { get; set; }
 
     //Budget
+    public DbSet<AgencyMasterBudget>? AgencyMasterBudgets { get; set; }
+    public DbSet<OfficeCeiling>? OfficeCeilings { get; set; }
+    public DbSet<SubOfficeCeiling>? SubOfficeCeilings { get; set; }
     public DbSet<LineItemBudget>? LineItemBudgets { get; set; }
     public DbSet<PPMP>? PPMPs { get; set; }
     public DbSet<APP>? APPs { get; set; }
     public DbSet<LineItemBudgetActivity>? LineItemBudgetActivities { get; set; }
     public DbSet<LineItemBudgetDetail>? LineItemBudgetDetails { get; set; }
+    public DbSet<LIBAmendmentRequest>? LIBAmendmentRequests { get; set; }
 
     //Procurement
     public DbSet<ProcurementCategory>? ProcurementCategories { get; set; }

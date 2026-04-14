@@ -31,6 +31,13 @@ public interface IUnitOfWork
     IFiscalYearRepository FiscalYearRepository { get; }
     IFiscalMonthRepository FiscalMonthRepository { get; }
     IBudgetCallRepository BudgetCallRepository { get; }
+    IAgencyMasterBudgetRepository AgencyMasterBudgetRepository { get; }
+    IOfficeCeilingRepository OfficeCeilingRepository { get; }
+    ISubOfficeCeilingRepository SubOfficeCeilingRepository { get; }
+    ILineItemBudgetRepository LineItemBudgetRepository { get; }
+    ILineItemBudgetActivityRepository LineItemBudgetActivityRepository { get; }
+    ILineItemBudgetDetailRepository LineItemBudgetDetailRepository { get; }
+    ILIBAmendmentRequestRepository LIBAmendmentRequestRepository { get; }
     IClusterRepository ClusterRepository { get; }
     IWFPObjectiveActivityRepository WFPObjectiveActivityRepository { get; }
     IWFPObjectiveTimelineRepository WFPObjectiveTimelineRepository { get; }
