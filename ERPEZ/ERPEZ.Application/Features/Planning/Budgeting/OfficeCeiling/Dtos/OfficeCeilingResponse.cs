@@ -38,7 +38,7 @@ public record OfficeCeilingAgencyMasterBudgetResponse
 {
     public Guid Id { get; init; }
     public SourceDocumentTypeEnum SourceDocumentType { get; init; }
-    public Guid FundClusterId { get; init; }
+    public Guid FundSourceId { get; init; }
     public Guid FiscalYearId { get; init; }
     public decimal PSAmount { get; init; }
     public decimal MOOEAmount { get; init; }

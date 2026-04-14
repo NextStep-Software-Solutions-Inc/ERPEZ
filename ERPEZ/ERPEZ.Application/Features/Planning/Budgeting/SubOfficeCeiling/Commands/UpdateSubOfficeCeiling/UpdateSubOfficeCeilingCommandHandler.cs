@@ -31,7 +31,7 @@ public class UpdateSubOfficeCeilingCommandHandler(IUnitOfWork unitOfWork)
         var masterBudget = await unitOfWork.AgencyMasterBudgetRepository.GetByIdAsync(officeCeiling.AgencyMasterBudgetId, cancellationToken)
             ?? throw new NotFoundException($"Agency Master Budget with ID {officeCeiling.AgencyMasterBudgetId} not found.");
 
-        if (masterBudget.FundClusterId != request.FundClusterId)
+        if (masterBudget.FundSourceId != request.FundClusterId)
         {
             throw new ERPEZ.Shared.Exceptions.ValidationException("Fund Cluster must match the Fund Cluster from the linked Agency Master Budget.");
         }

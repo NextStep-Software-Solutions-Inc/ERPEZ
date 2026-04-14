@@ -33,7 +33,7 @@ public class UpdateAgencyMasterBudgetCommandHandler(IUnitOfWork unitOfWork)
         var existing = await unitOfWork.AgencyMasterBudgetRepository.FindAsync(
             x => x.Id != request.Id
                 && x.FiscalYearId == request.FiscalYearId
-                && x.FundClusterId == request.FundSourceId
+                && x.FundSourceId == request.FundSourceId
                 && x.SourceDocumentType == sourceDocumentType,
             cancellationToken);
 
@@ -43,7 +43,7 @@ public class UpdateAgencyMasterBudgetCommandHandler(IUnitOfWork unitOfWork)
         }
 
         entity.FiscalYearId = request.FiscalYearId;
-        entity.FundClusterId = request.FundSourceId;
+        entity.FundSourceId = request.FundSourceId;
         entity.SourceDocumentType = sourceDocumentType;
         entity.PSAmount = request.PSAmount;
         entity.MOOEAmount = request.MOOEAmount;

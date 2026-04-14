@@ -331,7 +331,7 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid>("FiscalYearId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("FundClusterId")
+                    b.Property<Guid>("FundSourceId")
                         .HasColumnType("uuid");
 
                     b.Property<bool>("IsDeleted")
@@ -360,11 +360,11 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("FiscalYearId");
 
-                    b.HasIndex("FundClusterId");
+                    b.HasIndex("FundSourceId");
 
                     b.HasIndex("SourceDocumentType");
 
-                    b.HasIndex("FiscalYearId", "FundClusterId", "SourceDocumentType")
+                    b.HasIndex("FiscalYearId", "FundSourceId", "SourceDocumentType")
                         .IsUnique();
 
                     b.ToTable("AgencyMasterBudgets", "planning");
@@ -6191,15 +6191,15 @@ namespace ERPEZ.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.FundSource", "FundCluster")
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.FundSource", "FundSource")
                         .WithMany()
-                        .HasForeignKey("FundClusterId")
+                        .HasForeignKey("FundSourceId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("FiscalYear");
 
-                    b.Navigation("FundCluster");
+                    b.Navigation("FundSource");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.Attribute", b =>

@@ -52,7 +52,7 @@ public class GetOfficeCeilingsQueryHandler(IUnitOfWork unitOfWork)
                     {
                         Id = entity.AgencyMasterBudget.Id,
                         SourceDocumentType = Enum.Parse<SourceDocumentTypeEnum>(entity.AgencyMasterBudget.SourceDocumentType, true),
-                        FundClusterId = entity.AgencyMasterBudget.FundClusterId,
+                        FundSourceId = entity.AgencyMasterBudget.FundSourceId,
                         FiscalYearId = entity.AgencyMasterBudget.FiscalYearId,
                         PSAmount = entity.AgencyMasterBudget.PSAmount,
                         MOOEAmount = entity.AgencyMasterBudget.MOOEAmount,

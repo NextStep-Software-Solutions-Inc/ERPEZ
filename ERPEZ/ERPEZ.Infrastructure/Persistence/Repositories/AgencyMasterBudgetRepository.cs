@@ -22,9 +22,9 @@ public class AgencyMasterBudgetRepository : Repository<AgencyMasterBudget>, IAge
     {
         return await dbContext.AgencyMasterBudgets!
             .Include(x => x.FiscalYear)
-            .Include(x => x.FundCluster)
+            .Include(x => x.FundSource)
                 .ThenInclude(f => f.ParentSource)
-            .Include(x => x.FundCluster)
+            .Include(x => x.FundSource)
                 .ThenInclude(f => f.FiscalYear)
             .Include(x => x.OfficeCeilings)
                 .ThenInclude(oc => oc.Office)
@@ -37,9 +37,9 @@ public class AgencyMasterBudgetRepository : Repository<AgencyMasterBudget>, IAge
     {
         var query = dbContext.AgencyMasterBudgets!
             .Include(x => x.FiscalYear)
-            .Include(x => x.FundCluster)
+            .Include(x => x.FundSource)
                 .ThenInclude(f => f.ParentSource)
-            .Include(x => x.FundCluster)
+            .Include(x => x.FundSource)
                 .ThenInclude(f => f.FiscalYear)
             .Include(x => x.OfficeCeilings)
                 .ThenInclude(oc => oc.Office)
@@ -59,9 +59,9 @@ public class AgencyMasterBudgetRepository : Repository<AgencyMasterBudget>, IAge
     {
         var query = dbContext.AgencyMasterBudgets!
             .Include(x => x.FiscalYear)
-            .Include(x => x.FundCluster)
+            .Include(x => x.FundSource)
                 .ThenInclude(f => f.ParentSource)
-            .Include(x => x.FundCluster)
+            .Include(x => x.FundSource)
                 .ThenInclude(f => f.FiscalYear)
             .Include(x => x.OfficeCeilings)
                 .ThenInclude(oc => oc.Office)

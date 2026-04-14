@@ -20,7 +20,7 @@ public class GetAgencyMasterBudgetByIdQueryHandler(IUnitOfWork unitOfWork)
         {
             Id = entity.Id,
             FiscalYearId = entity.FiscalYearId,
-            FundClusterId = entity.FundClusterId,
+            FundSourceId = entity.FundSourceId,
             SourceDocumentType = Enum.Parse<SourceDocumentTypeEnum>(entity.SourceDocumentType, true),
             PSAmount = entity.PSAmount,
             MOOEAmount = entity.MOOEAmount,
@@ -35,16 +35,16 @@ public class GetAgencyMasterBudgetByIdQueryHandler(IUnitOfWork unitOfWork)
                 StartDate = entity.FiscalYear.StartDate,
                 EndDate = entity.FiscalYear.EndDate
             },
-            FundCluster = entity.FundCluster == null ? null : new AgencyFundClusterResponse
+            FundSource = entity.FundSource == null ? null : new AgencyFundSourceResponse
             {
-                Id = entity.FundCluster.Id,
-                Name = entity.FundCluster.Name,
-                Code = entity.FundCluster.Code,
-                Type = entity.FundCluster.Type.ToString(),
-                IsActive = entity.FundCluster.IsActive,
-                ParentId = entity.FundCluster.ParentId,
-                ParentName = entity.FundCluster.ParentSource?.Name,
-                FiscalYearId = entity.FundCluster.FiscalYearId
+                Id = entity.FundSource.Id,
+                Name = entity.FundSource.Name,
+                Code = entity.FundSource.Code,
+                Type = entity.FundSource.Type.ToString(),
+                IsActive = entity.FundSource.IsActive,
+                ParentId = entity.FundSource.ParentId,
+                ParentName = entity.FundSource.ParentSource?.Name,
+                FiscalYearId = entity.FundSource.FiscalYearId
             },
             OfficeCeilings =
             [

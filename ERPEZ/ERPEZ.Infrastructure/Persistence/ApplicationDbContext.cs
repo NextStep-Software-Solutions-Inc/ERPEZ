@@ -1169,22 +1169,22 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<AgencyMasterBudget>()
-            .HasOne(e => e.FundCluster)
+            .HasOne(e => e.FundSource)
             .WithMany()
-            .HasForeignKey(e => e.FundClusterId)
+            .HasForeignKey(e => e.FundSourceId)
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<AgencyMasterBudget>()
             .HasIndex(e => e.FiscalYearId);
 
         modelBuilder.Entity<AgencyMasterBudget>()
-            .HasIndex(e => e.FundClusterId);
+            .HasIndex(e => e.FundSourceId);
 
         modelBuilder.Entity<AgencyMasterBudget>()
             .HasIndex(e => e.SourceDocumentType);
 
         modelBuilder.Entity<AgencyMasterBudget>()
-            .HasIndex(e => new { e.FiscalYearId, e.FundClusterId, e.SourceDocumentType })
+            .HasIndex(e => new { e.FiscalYearId, e.FundSourceId, e.SourceDocumentType })
             .IsUnique();
 
         // Budget - OfficeCeiling

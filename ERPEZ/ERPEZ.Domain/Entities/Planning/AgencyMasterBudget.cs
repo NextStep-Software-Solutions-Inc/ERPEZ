@@ -9,7 +9,7 @@ public class AgencyMasterBudget : BaseEntity
     public Guid FiscalYearId { get; set; }
 
     [Sieve(CanFilter = true, CanSort = true)]
-    public Guid FundClusterId { get; set; }
+    public Guid FundSourceId { get; set; }
 
     [Sieve(CanFilter = true, CanSort = true)]
     public string SourceDocumentType { get; set; } = string.Empty;
@@ -24,6 +24,6 @@ public class AgencyMasterBudget : BaseEntity
     public decimal COAmount { get; set; }
 
     public virtual FiscalYear FiscalYear { get; set; } = null!;
-    public virtual FundSource FundCluster { get; set; } = null!;
+    public virtual FundSource FundSource { get; set; } = null!;
     public virtual List<OfficeCeiling> OfficeCeilings { get; set; } = [];
 }

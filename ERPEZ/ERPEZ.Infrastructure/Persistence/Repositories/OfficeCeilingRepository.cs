@@ -24,7 +24,7 @@ public class OfficeCeilingRepository : Repository<OfficeCeiling>, IOfficeCeiling
             .Include(x => x.FiscalYear)
             .Include(x => x.Office)
             .Include(x => x.AgencyMasterBudget)
-                .ThenInclude(amb => amb.FundCluster)
+                .ThenInclude(amb => amb.FundSource)
             .Include(x => x.AgencyMasterBudget)
                 .ThenInclude(amb => amb.FiscalYear)
             .Include(x => x.SubOfficeCeilings)
@@ -37,7 +37,7 @@ public class OfficeCeilingRepository : Repository<OfficeCeiling>, IOfficeCeiling
             .Include(x => x.FiscalYear)
             .Include(x => x.Office)
             .Include(x => x.AgencyMasterBudget)
-                .ThenInclude(amb => amb.FundCluster)
+                .ThenInclude(amb => amb.FundSource)
             .Include(x => x.AgencyMasterBudget)
                 .ThenInclude(amb => amb.FiscalYear)
             .Include(x => x.SubOfficeCeilings)
@@ -57,7 +57,7 @@ public class OfficeCeilingRepository : Repository<OfficeCeiling>, IOfficeCeiling
             .Include(x => x.FiscalYear)
             .Include(x => x.Office)
             .Include(x => x.AgencyMasterBudget)
-                .ThenInclude(amb => amb.FundCluster)
+                .ThenInclude(amb => amb.FundSource)
             .Include(x => x.AgencyMasterBudget)
                 .ThenInclude(amb => amb.FiscalYear)
             .Include(x => x.SubOfficeCeilings)
@@ -68,7 +68,8 @@ public class OfficeCeilingRepository : Repository<OfficeCeiling>, IOfficeCeiling
 
         var filteredQuery = sieveProcessor.Apply(sieveModel, query, applyPagination: false);
         var filteredCount = await filteredQuery.CountAsync(cancellationToken);
-        var paginatedQuery = sieveProcessor.Apply(sieveModel, filteredQuery, applyFiltering: false, applySorting: false);
+        var paginatedQuery = sieveProcessor.Apply(sieveModel, filteredQuery, applyFiltering: false, applySorting: false)
+            .Cast<OfficeCeiling>();
         var results = await paginatedQuery.ToListAsync(cancellationToken);
 
         return (results, filteredCount);

@@ -29,7 +29,7 @@ public class CreateAgencyMasterBudgetCommandHandler(IUnitOfWork unitOfWork)
 
         var existing = await unitOfWork.AgencyMasterBudgetRepository.FindAsync(
             x => x.FiscalYearId == request.FiscalYearId
-                && x.FundClusterId == request.FundSourceId
+                && x.FundSourceId == request.FundSourceId
                 && x.SourceDocumentType == sourceDocumentType,
             cancellationToken);
 
@@ -41,7 +41,7 @@ public class CreateAgencyMasterBudgetCommandHandler(IUnitOfWork unitOfWork)
         var entity = new Domain.Entities.Planning.AgencyMasterBudget
         {
             FiscalYearId = request.FiscalYearId,
-            FundClusterId = request.FundSourceId,
+            FundSourceId = request.FundSourceId,
             SourceDocumentType = sourceDocumentType,
             PSAmount = request.PSAmount,
             MOOEAmount = request.MOOEAmount,

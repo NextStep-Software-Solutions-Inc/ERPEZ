@@ -6,13 +6,13 @@ public record AgencyMasterBudgetResponse
 {
     public Guid Id { get; init; }
     public Guid FiscalYearId { get; init; }
-    public Guid FundClusterId { get; init; }
+    public Guid FundSourceId { get; init; }
     public SourceDocumentTypeEnum SourceDocumentType { get; init; }
     public decimal PSAmount { get; init; }
     public decimal MOOEAmount { get; init; }
     public decimal COAmount { get; init; }
     public AgencyFiscalYearResponse? FiscalYear { get; init; }
-    public AgencyFundClusterResponse? FundCluster { get; init; }
+    public AgencyFundSourceResponse? FundSource { get; init; }
     public List<AgencyOfficeCeilingResponse> OfficeCeilings { get; init; } = [];
 }
 
@@ -27,7 +27,7 @@ public record AgencyFiscalYearResponse
     public DateTime? EndDate { get; init; }
 }
 
-public record AgencyFundClusterResponse
+public record AgencyFundSourceResponse
 {
     public Guid Id { get; init; }
     public string Name { get; init; } = string.Empty;
