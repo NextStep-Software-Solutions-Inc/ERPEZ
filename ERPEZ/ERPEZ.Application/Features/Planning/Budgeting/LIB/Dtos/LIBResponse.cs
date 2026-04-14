@@ -19,6 +19,51 @@ public record LIBResponse
     public decimal? TotalAmount { get; init; }
     public int Version { get; init; }
     public Guid? PreviousVersionId { get; init; }
+    public LIBFiscalYearResponse? FiscalYear { get; init; }
+    public LIBFundClusterResponse? FundCluster { get; init; }
+    public LIBOfficeResponse? Office { get; init; }
+    public LIBDeliveryUnitResponse? DeliveryUnit { get; init; }
+    public LIBSummaryResponse? ParentLIB { get; init; }
+    public LIBSummaryResponse? ConsolidatedIntoLIB { get; init; }
+    public LIBSummaryResponse? PreviousVersion { get; init; }
+    public int ActivityCount { get; init; }
+    public int DetailCount { get; init; }
+}
+
+public record LIBFiscalYearResponse
+{
+    public Guid Id { get; init; }
+    public int Year { get; init; }
+    public string? Description { get; init; }
+}
+
+public record LIBFundClusterResponse
+{
+    public Guid Id { get; init; }
+    public string Name { get; init; } = string.Empty;
+    public string Code { get; init; } = string.Empty;
+    public string Type { get; init; } = string.Empty;
+}
+
+public record LIBOfficeResponse
+{
+    public Guid Id { get; init; }
+    public string Name { get; init; } = string.Empty;
+    public string Code { get; init; } = string.Empty;
+}
+
+public record LIBDeliveryUnitResponse
+{
+    public Guid Id { get; init; }
+    public Guid OfficeId { get; init; }
+}
+
+public record LIBSummaryResponse
+{
+    public Guid Id { get; init; }
+    public string LIBNumber { get; init; } = string.Empty;
+    public string Name { get; init; } = string.Empty;
+    public int Version { get; init; }
 }
 
 public record CreateLIBRequest

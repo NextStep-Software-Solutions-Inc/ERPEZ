@@ -1,0 +1,96 @@
+using ERPEZ.Application.Features.Planning.Budgeting.Common;
+using ERPEZ.Domain.Interfaces;
+using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Exceptions;
+using MediatR;
+
+namespace ERPEZ.Application.Features.Planning.Budgeting.LIB.Commands.UpdateLIB;
+
+public class UpdateLIBCommandHandler(IUnitOfWork unitOfWork)
+    : IRequestHandler<UpdateLIBCommand, ApiResponse<Unit>>
+{
+    public async Task<ApiResponse<Unit>> Handle(UpdateLIBCommand command, CancellationToken cancellationToken)
+    {
+        var request = command.Request;
+
+        var entity = await unitOfWork.LineItemBudgetRepository.GetByIdAsync(request.Id, cancellationToken)
+            ?? throw new NotFoundException($"LIB with ID {request.Id} not found.");
+
+        _ = await unitOfWork.FiscalYearRepository.GetByIdAsync(request.FiscalYearId!.Value, cancellationToken)
+            ?? throw new NotFoundException($"Fiscal Year with ID {request.FiscalYearId} not found.");
+
+        _ = await unitOfWork.FundSourceRepository.GetByIdAsync(request.FundClusterId!.Value, cancellationToken)
+            ?? throw new NotFoundException($"Fund Cluster with ID {request.FundClusterId} not found.");
+
+        _ = await unitOfWork.OfficeRepository.GetByIdAsync(request.OfficeId!.Value, cancellationToken)
+            ?? throw new NotFoundException($"Office with ID {request.OfficeId} not found.");
+
+        _ = await unitOfWork.DeliveryUnitRepository.GetByIdAsync(request.DeliveryUnitId, cancellationToken)
+            ?? throw new NotFoundException($"Delivery Unit with ID {request.DeliveryUnitId} not found.");
+
+        if (request.ParentLIBId.HasValue)
+        {
+            _ = await unitOfWork.LineItemBudgetRepository.GetByIdAsync(request.ParentLIBId.Value, cancellationToken)
+                ?? throw new NotFoundException($"Parent LIB with ID {request.ParentLIBId} not found.");
+        }
+
+        if (request.ConsolidatedIntoLIBId.HasValue)
+        {
+            _ = await unitOfWork.LineItemBudgetRepository.GetByIdAsync(request.ConsolidatedIntoLIBId.Value, cancellationToken)
+                ?? throw new NotFoundException($"Consolidated-Into LIB with ID {request.ConsolidatedIntoLIBId} not found.");
+        }
+
+        if (request.PreviousVersionId.HasValue)
+        {
+            _ = await unitOfWork.LineItemBudgetRepository.GetByIdAsync(request.PreviousVersionId.Value, cancellationToken)
+                ?? throw new NotFoundException($"Previous Version LIB with ID {request.PreviousVersionId} not found.");
+        }
+
+        if (!request.SourceId.HasValue)
+        {
+            throw new ERPEZ.Shared.Exceptions.ValidationException("SourceId is required for LIB source types OPCR and WFP.");
+        }
+
+        if (request.SourceType == Common.Enums.LIBSourceTypeEnum.OPCR)
+        {
+            _ = await unitOfWork.OPCRRepository.GetByIdAsync(request.SourceId.Value, cancellationToken)
+                ?? throw new NotFoundException($"OPCR source with ID {request.SourceId} not found.");
+        }
+        else
+        {
+            _ = await unitOfWork.WFPRepository.GetByIdAsync(request.SourceId.Value, cancellationToken)
+                ?? throw new NotFoundException($"WFP source with ID {request.SourceId} not found.");
+        }
+
+        var existing = await unitOfWork.LineItemBudgetRepository.FindAsync(
+            x => x.Id != request.Id && x.LIBNumber == request.LIBNumber,
+            cancellationToken);
+        if (existing != null)
+        {
+            throw new ConflictException($"LIB number '{request.LIBNumber}' already exists.");
+        }
+
+        entity.FiscalYearId = request.FiscalYearId;
+        entity.FundClusterId = request.FundClusterId;
+        entity.OfficeId = request.OfficeId;
+        entity.ParentLIBId = request.ParentLIBId;
+        entity.DeliveryUnitId = request.DeliveryUnitId;
+        entity.Scope = request.Scope;
+        entity.Name = request.Name;
+        entity.LIBNumber = request.LIBNumber;
+        entity.Level = BudgetingEnumMapper.ToEntityValue(request.Level);
+        entity.SourceType = BudgetingEnumMapper.ToEntityValue(request.SourceType);
+        entity.SourceId = request.SourceId;
+        entity.Status = BudgetingEnumMapper.ToEntityValue(request.Status);
+        entity.ConsolidatedIntoLIBId = request.ConsolidatedIntoLIBId;
+        entity.TotalAmount = request.TotalAmount;
+        entity.Version = request.Version;
+        entity.PreviousVersionId = request.PreviousVersionId;
+
+        unitOfWork.LineItemBudgetRepository.Update(entity);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+
+        return ApiResponse<Unit>.Success(Unit.Value, "LIB updated successfully.");
+    }
+}
+
