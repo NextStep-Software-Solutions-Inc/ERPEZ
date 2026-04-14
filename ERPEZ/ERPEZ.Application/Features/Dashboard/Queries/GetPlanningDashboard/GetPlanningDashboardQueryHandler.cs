@@ -18,7 +18,7 @@ public class GetPlanningDashboardQueryHandler(IUnitOfWork unitOfWork)
     {
         // Get current and previous month dates for month-over-month comparison
         var currentDate = DateTime.UtcNow;
-        var currentMonthStart = new DateTime(currentDate.Year, currentDate.Month, 1);
+        var currentMonthStart = new DateTime(currentDate.Year, currentDate.Month, 1, 0, 0, 0, DateTimeKind.Utc);
         var previousMonthStart = currentMonthStart.AddMonths(-1);
         var previousMonthEnd = currentMonthStart.AddDays(-1);
 
