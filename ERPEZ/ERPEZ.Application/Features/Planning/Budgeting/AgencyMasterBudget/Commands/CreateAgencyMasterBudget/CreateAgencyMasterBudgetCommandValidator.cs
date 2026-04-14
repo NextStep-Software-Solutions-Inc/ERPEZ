@@ -1,4 +1,5 @@
 using FluentValidation;
+using ERPEZ.Application.Features.Planning.Budgeting.Common.Enums;
 
 namespace ERPEZ.Application.Features.Planning.Budgeting.AgencyMasterBudget.Commands.CreateAgencyMasterBudget;
 
@@ -13,6 +14,12 @@ public class CreateAgencyMasterBudgetCommandValidator : AbstractValidator<Create
         RuleFor(x => x.Request.FundClusterId)
             .NotEmpty()
             .WithMessage("{PropertyName} is required.");
+
+        RuleFor(x => x.Request.SourceDocumentType)
+            .NotEmpty()
+            .WithMessage("{PropertyName} is required.")
+            .Must(value => Enum.TryParse<SourceDocumentTypeEnum>(value, true, out _))
+            .WithMessage("{PropertyName} must be a valid SourceDocumentTypeEnum value.");
 
         RuleFor(x => x.Request.PSAmount)
             .GreaterThanOrEqualTo(0)

@@ -1,5 +1,5 @@
-using ERPEZ.Application.Features.Planning.Budgeting.Common;
 using ERPEZ.Application.Features.Planning.Budgeting.AgencyMasterBudget.Dtos;
+using ERPEZ.Application.Features.Planning.Budgeting.Common.Enums;
 using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
@@ -26,7 +26,12 @@ public class CreateAgencyMasterBudgetCommandHandler(IUnitOfWork unitOfWork)
             throw new ERPEZ.Shared.Exceptions.ValidationException("Selected Fund Source is not a Fund Cluster.");
         }
 
-        var sourceDocumentType = request.SourceDocumentType.ToString();
+        if (!Enum.TryParse<SourceDocumentTypeEnum>(request.SourceDocumentType, true, out var parsedSourceDocumentType))
+        {
+            throw new ERPEZ.Shared.Exceptions.ValidationException("SourceDocumentType must be a valid SourceDocumentTypeEnum value.");
+        }
+
+        var sourceDocumentType = parsedSourceDocumentType.ToString();
 
         var existing = await unitOfWork.AgencyMasterBudgetRepository.FindAsync(
             x => x.FiscalYearId == request.FiscalYearId
