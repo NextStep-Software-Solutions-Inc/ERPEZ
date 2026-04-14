@@ -26,10 +26,10 @@ public class AgencyMasterBudgetController(ISender mediator) : ControllerBase
     }
 
     [HttpGet]
-    [ProducesResponseType(typeof(ApiResponse<List<AgencyMasterBudgetResponse>>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetAgencyMasterBudgets()
+    [ProducesResponseType(typeof(PaginatedApiResponse<AgencyMasterBudgetResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAgencyMasterBudgets([FromQuery] GetAgencyMasterBudgetsQuery query)
     {
-        var result = await mediator.Send(new GetAgencyMasterBudgetsQuery());
+        var result = await mediator.Send(query);
         return Ok(result);
     }
 

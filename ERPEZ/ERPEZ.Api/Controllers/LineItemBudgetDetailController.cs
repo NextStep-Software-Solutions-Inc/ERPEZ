@@ -26,10 +26,10 @@ public class LineItemBudgetDetailController(ISender mediator) : ControllerBase
     }
 
     [HttpGet]
-    [ProducesResponseType(typeof(ApiResponse<List<LineItemBudgetDetailResponse>>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetLineItemBudgetDetails()
+    [ProducesResponseType(typeof(PaginatedApiResponse<LineItemBudgetDetailResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetLineItemBudgetDetails([FromQuery] GetLineItemBudgetDetailsQuery query)
     {
-        var result = await mediator.Send(new GetLineItemBudgetDetailsQuery());
+        var result = await mediator.Send(query);
         return Ok(result);
     }
 

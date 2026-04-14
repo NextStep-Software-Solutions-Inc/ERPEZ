@@ -26,10 +26,10 @@ public class SubOfficeCeilingController(ISender mediator) : ControllerBase
     }
 
     [HttpGet]
-    [ProducesResponseType(typeof(ApiResponse<List<SubOfficeCeilingResponse>>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetSubOfficeCeilings()
+    [ProducesResponseType(typeof(PaginatedApiResponse<SubOfficeCeilingResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetSubOfficeCeilings([FromQuery] GetSubOfficeCeilingsQuery query)
     {
-        var result = await mediator.Send(new GetSubOfficeCeilingsQuery());
+        var result = await mediator.Send(query);
         return Ok(result);
     }
 

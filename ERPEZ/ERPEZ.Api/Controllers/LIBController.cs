@@ -26,10 +26,10 @@ public class LIBController(ISender mediator) : ControllerBase
     }
 
     [HttpGet]
-    [ProducesResponseType(typeof(ApiResponse<List<LIBResponse>>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetLIBs()
+    [ProducesResponseType(typeof(PaginatedApiResponse<LIBResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetLIBs([FromQuery] GetLIBsQuery query)
     {
-        var result = await mediator.Send(new GetLIBsQuery());
+        var result = await mediator.Send(query);
         return Ok(result);
     }
 

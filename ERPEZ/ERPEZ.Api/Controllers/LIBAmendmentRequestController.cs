@@ -26,10 +26,10 @@ public class LIBAmendmentRequestController(ISender mediator) : ControllerBase
     }
 
     [HttpGet]
-    [ProducesResponseType(typeof(ApiResponse<List<LIBAmendmentRequestResponse>>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetLIBAmendmentRequests()
+    [ProducesResponseType(typeof(PaginatedApiResponse<LIBAmendmentRequestResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetLIBAmendmentRequests([FromQuery] GetLIBAmendmentRequestsQuery query)
     {
-        var result = await mediator.Send(new GetLIBAmendmentRequestsQuery());
+        var result = await mediator.Send(query);
         return Ok(result);
     }
 
