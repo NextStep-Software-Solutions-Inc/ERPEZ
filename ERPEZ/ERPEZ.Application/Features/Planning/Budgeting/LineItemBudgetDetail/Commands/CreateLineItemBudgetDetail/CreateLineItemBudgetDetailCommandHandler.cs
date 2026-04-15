@@ -16,6 +16,9 @@ public class CreateLineItemBudgetDetailCommandHandler(IUnitOfWork unitOfWork)
         var lib = await unitOfWork.LineItemBudgetRepository.GetByIdAsync(request.LineItemBudgetId, cancellationToken)
             ?? throw new NotFoundException($"LIB with ID {request.LineItemBudgetId} not found.");
 
+        if (!lib.Status.Equals("Draft", StringComparison.OrdinalIgnoreCase))
+            throw new ERPEZ.Shared.Exceptions.ValidationException("Line item details can only be added to a Draft LIB.");
+
         _ = await unitOfWork.ObjectRepository.GetByIdAsync(request.ObjectId, cancellationToken)
             ?? throw new NotFoundException($"Object with ID {request.ObjectId} not found.");
 

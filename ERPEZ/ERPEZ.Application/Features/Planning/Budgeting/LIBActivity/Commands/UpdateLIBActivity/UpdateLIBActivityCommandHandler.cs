@@ -19,6 +19,9 @@ public class UpdateLIBActivityCommandHandler(IUnitOfWork unitOfWork)
         var lib = await unitOfWork.LineItemBudgetRepository.GetByIdAsync(request.LineItemBudgetId, cancellationToken)
             ?? throw new NotFoundException($"LIB with ID {request.LineItemBudgetId} not found.");
 
+        if (!lib.Status.Equals("Draft", StringComparison.OrdinalIgnoreCase))
+            throw new ERPEZ.Shared.Exceptions.ValidationException("Activities can only be modified on a Draft LIB.");
+
         if (request.WFPObjectiveActivityId.HasValue && request.OPCRActivityId.HasValue)
         {
             throw new ERPEZ.Shared.Exceptions.ValidationException("Only one source activity reference is allowed (either WFPObjectiveActivityId or OPCRActivityId).");
