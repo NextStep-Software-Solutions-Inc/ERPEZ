@@ -19,7 +19,6 @@ public record LIBActivityNestedDetailResponse
     public Guid ObjectId { get; init; }
     public string? ObjectName { get; init; }
     public string? ObjectCode { get; init; }
-    public Guid? ExpenseClassId { get; init; }
     public string? ExpenseClassName { get; init; }
     public string? ExpenseClassType { get; init; }
     public Guid? WFPObjectiveActivityExpenditureId { get; init; }
@@ -66,7 +65,7 @@ public record CreateLIBActivityRequest
     public Guid LineItemBudgetId { get; init; }
     public Guid? WFPObjectiveActivityId { get; init; }
     public Guid? OPCRActivityId { get; init; }
-    public string Name { get; init; } = string.Empty;
+    public string? Name { get; init; }
 }
 
 public record UpdateLIBActivityRequest
@@ -74,5 +73,5 @@ public record UpdateLIBActivityRequest
     public Guid LineItemBudgetId { get; init; }
     public Guid? WFPObjectiveActivityId { get; init; }
     public Guid? OPCRActivityId { get; init; }
-    public string Name { get; init; } = string.Empty;
+    public string? Name { get; init; }
 }

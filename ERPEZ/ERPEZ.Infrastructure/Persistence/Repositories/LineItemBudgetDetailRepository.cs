@@ -25,7 +25,8 @@ public class LineItemBudgetDetailRepository : Repository<LineItemBudgetDetail>, 
             .Include(x => x.LineItemBudgetActivity)
             .Include(x => x.WFPObjectiveActivityExpenditure)
             .Include(x => x.Object)
-            .Include(x => x.ExpenseClass)
+                .ThenInclude(o => o.ObjectExpenseClasses)
+                    .ThenInclude(oc => oc.ExpenseClass)
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
     }
 
@@ -36,7 +37,8 @@ public class LineItemBudgetDetailRepository : Repository<LineItemBudgetDetail>, 
             .Include(x => x.LineItemBudgetActivity)
             .Include(x => x.WFPObjectiveActivityExpenditure)
             .Include(x => x.Object)
-            .Include(x => x.ExpenseClass)
+                .ThenInclude(o => o.ObjectExpenseClasses)
+                    .ThenInclude(oc => oc.ExpenseClass)
             .AsQueryable();
 
         if (!includeDeleted)
@@ -54,7 +56,8 @@ public class LineItemBudgetDetailRepository : Repository<LineItemBudgetDetail>, 
             .Include(x => x.LineItemBudgetActivity)
             .Include(x => x.WFPObjectiveActivityExpenditure)
             .Include(x => x.Object)
-            .Include(x => x.ExpenseClass)
+                .ThenInclude(o => o.ObjectExpenseClasses)
+                    .ThenInclude(oc => oc.ExpenseClass)
             .Where(x => !x.IsDeleted)
             .AsSplitQuery()
             .AsNoTracking()

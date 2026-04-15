@@ -26,7 +26,6 @@ public class GetLineItemBudgetDetailByIdQueryHandler(IUnitOfWork unitOfWork)
             StartDate = entity.StartDate,
             EndDate = entity.EndDate,
             Budget = entity.Budget,
-            ExpenseClassId = entity.ExpenseClassId,
             UnitQuantity = entity.UnitQuantity,
             UnitCost = entity.UnitCost,
             LineItemBudget = entity.LineItemBudget == null ? null : new LineItemBudgetDetailLIBResponse
@@ -53,13 +52,9 @@ public class GetLineItemBudgetDetailByIdQueryHandler(IUnitOfWork unitOfWork)
                 Quantity = entity.WFPObjectiveActivityExpenditure.Quantity,
                 UnitCost = entity.WFPObjectiveActivityExpenditure.UnitCost
             },
-            ExpenseClass = entity.ExpenseClass == null ? null : new LineItemBudgetDetailExpenseClassResponse
-            {
-                Id = entity.ExpenseClass.Id,
-                Name = entity.ExpenseClass.Name,
-                Code = entity.ExpenseClass.Code,
-                Type = entity.ExpenseClass.Type.ToString()
-            }
+            ExpenseClass = entity.Object?.ObjectExpenseClasses.FirstOrDefault(oc => oc.IsActive)?.ExpenseClass is { } ec
+                ? new LineItemBudgetDetailExpenseClassResponse { Id = ec.Id, Name = ec.Name, Code = ec.Code, Type = ec.Type.ToString() }
+                : null
         };
 
         return ApiResponse<LineItemBudgetDetailResponse>.Success(item);

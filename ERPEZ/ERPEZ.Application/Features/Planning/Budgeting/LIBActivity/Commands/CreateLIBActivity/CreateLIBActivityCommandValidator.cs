@@ -13,7 +13,8 @@ public class CreateLIBActivityCommandValidator : AbstractValidator<CreateLIBActi
             .NotEmpty()
             .WithMessage("{PropertyName} is required.")
             .MaximumLength(500)
-            .WithMessage("{PropertyName} must not exceed 500 characters.");
+            .WithMessage("{PropertyName} must not exceed 500 characters.")
+            .When(x => !x.Request.WFPObjectiveActivityId.HasValue && !x.Request.OPCRActivityId.HasValue);
     }
 }
 

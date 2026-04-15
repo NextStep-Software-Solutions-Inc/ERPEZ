@@ -1519,14 +1519,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<BudgetAllocation>()
             .HasIndex(e => e.LineItemBudgetDetailId);
 
-        // Budget - LineItemBudgetDetail ExpenseClass FK
-        modelBuilder.Entity<LineItemBudgetDetail>()
-            .HasOne(e => e.ExpenseClass)
-            .WithMany()
-            .HasForeignKey(e => e.ExpenseClassId)
-            .OnDelete(DeleteBehavior.Restrict)
-            .IsRequired(false);
-
         base.OnModelCreating(modelBuilder);
     }
 }

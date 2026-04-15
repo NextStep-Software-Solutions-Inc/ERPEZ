@@ -101,14 +101,9 @@ public class GetLIBByIdQueryHandler(IUnitOfWork unitOfWork)
                                 Name = d.Object.Name,
                                 Code = d.Object.Code
                             },
-                            ExpenseClassId = d.ExpenseClassId,
-                            ExpenseClass = d.ExpenseClass == null ? null : new LIBNestedExpenseClassResponse
-                            {
-                                Id = d.ExpenseClass.Id,
-                                Name = d.ExpenseClass.Name,
-                                Code = d.ExpenseClass.Code,
-                                Type = d.ExpenseClass.Type.ToString()
-                            },
+                            ExpenseClass = d.Object?.ObjectExpenseClasses.FirstOrDefault(oc => oc.IsActive)?.ExpenseClass is { } ec1
+                                ? new LIBNestedExpenseClassResponse { Id = ec1.Id, Name = ec1.Name, Code = ec1.Code, Type = ec1.Type.ToString() }
+                                : null,
                             WFPObjectiveActivityExpenditureId = d.WFPObjectiveActivityExpenditureId,
                             WFPObjectiveActivityExpenditure = d.WFPObjectiveActivityExpenditure == null ? null : new LIBNestedWFPExpenditureResponse
                             {
@@ -151,14 +146,9 @@ public class GetLIBByIdQueryHandler(IUnitOfWork unitOfWork)
                         Name = d.Object.Name,
                         Code = d.Object.Code
                     },
-                    ExpenseClassId = d.ExpenseClassId,
-                    ExpenseClass = d.ExpenseClass == null ? null : new LIBNestedExpenseClassResponse
-                    {
-                        Id = d.ExpenseClass.Id,
-                        Name = d.ExpenseClass.Name,
-                        Code = d.ExpenseClass.Code,
-                        Type = d.ExpenseClass.Type.ToString()
-                    },
+                    ExpenseClass = d.Object?.ObjectExpenseClasses.FirstOrDefault(oc => oc.IsActive)?.ExpenseClass is { } ec2
+                        ? new LIBNestedExpenseClassResponse { Id = ec2.Id, Name = ec2.Name, Code = ec2.Code, Type = ec2.Type.ToString() }
+                        : null,
                     WFPObjectiveActivityExpenditureId = d.WFPObjectiveActivityExpenditureId,
                     WFPObjectiveActivityExpenditure = d.WFPObjectiveActivityExpenditure == null ? null : new LIBNestedWFPExpenditureResponse
                     {

@@ -19,8 +19,9 @@ public class GetLIBSummaryQueryHandler(IUnitOfWork unitOfWork)
         var details = await unitOfWork.LineItemBudgetDetailRepository
             .Query()
             .Where(x => x.LineItemBudgetId == query.Id && !x.IsDeleted)
-            .Include(x => x.ExpenseClass)
             .Include(x => x.Object)
+                .ThenInclude(o => o.ObjectExpenseClasses)
+                    .ThenInclude(oc => oc.ExpenseClass)
             .AsNoTracking()
             .ToListAsync(cancellationToken);
 
@@ -35,16 +36,16 @@ public class GetLIBSummaryQueryHandler(IUnitOfWork unitOfWork)
                     ActivityId = activity.Id,
                     ActivityName = activity.Name,
                     PersonnelServices = activityDetails
-                        .Where(d => d.ExpenseClass?.Type == ExpenseClassTypeEnum.PersonnelServices)
+                        .Where(d => d.Object?.ObjectExpenseClasses.FirstOrDefault(oc => oc.IsActive)?.ExpenseClass?.Type == ExpenseClassTypeEnum.PersonnelServices)
                         .Sum(d => d.Budget),
                     MOOE = activityDetails
-                        .Where(d => d.ExpenseClass?.Type == ExpenseClassTypeEnum.MaintenanceAndOperatingExpenses)
+                        .Where(d => d.Object?.ObjectExpenseClasses.FirstOrDefault(oc => oc.IsActive)?.ExpenseClass?.Type == ExpenseClassTypeEnum.MaintenanceAndOperatingExpenses)
                         .Sum(d => d.Budget),
                     CapitalOutlay = activityDetails
-                        .Where(d => d.ExpenseClass?.Type == ExpenseClassTypeEnum.CapitalOutlay)
+                        .Where(d => d.Object?.ObjectExpenseClasses.FirstOrDefault(oc => oc.IsActive)?.ExpenseClass?.Type == ExpenseClassTypeEnum.CapitalOutlay)
                         .Sum(d => d.Budget),
                     Financial = activityDetails
-                        .Where(d => d.ExpenseClass?.Type == ExpenseClassTypeEnum.FinancialExpenses)
+                        .Where(d => d.Object?.ObjectExpenseClasses.FirstOrDefault(oc => oc.IsActive)?.ExpenseClass?.Type == ExpenseClassTypeEnum.FinancialExpenses)
                         .Sum(d => d.Budget),
                     Total = activityDetails.Sum(d => d.Budget)
                 };
@@ -55,16 +56,16 @@ public class GetLIBSummaryQueryHandler(IUnitOfWork unitOfWork)
         var grandTotals = new LIBSummaryTotals
         {
             PersonnelServices = details
-                .Where(d => d.ExpenseClass?.Type == ExpenseClassTypeEnum.PersonnelServices)
+                .Where(d => d.Object?.ObjectExpenseClasses.FirstOrDefault(oc => oc.IsActive)?.ExpenseClass?.Type == ExpenseClassTypeEnum.PersonnelServices)
                 .Sum(d => d.Budget),
             MOOE = details
-                .Where(d => d.ExpenseClass?.Type == ExpenseClassTypeEnum.MaintenanceAndOperatingExpenses)
+                .Where(d => d.Object?.ObjectExpenseClasses.FirstOrDefault(oc => oc.IsActive)?.ExpenseClass?.Type == ExpenseClassTypeEnum.MaintenanceAndOperatingExpenses)
                 .Sum(d => d.Budget),
             CapitalOutlay = details
-                .Where(d => d.ExpenseClass?.Type == ExpenseClassTypeEnum.CapitalOutlay)
+                .Where(d => d.Object?.ObjectExpenseClasses.FirstOrDefault(oc => oc.IsActive)?.ExpenseClass?.Type == ExpenseClassTypeEnum.CapitalOutlay)
                 .Sum(d => d.Budget),
             Financial = details
-                .Where(d => d.ExpenseClass?.Type == ExpenseClassTypeEnum.FinancialExpenses)
+                .Where(d => d.Object?.ObjectExpenseClasses.FirstOrDefault(oc => oc.IsActive)?.ExpenseClass?.Type == ExpenseClassTypeEnum.FinancialExpenses)
                 .Sum(d => d.Budget),
             Grand = details.Sum(d => d.Budget)
         };

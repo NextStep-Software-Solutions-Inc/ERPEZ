@@ -74,7 +74,6 @@ public record LIBNestedDetailResponse
     public Guid Id { get; init; }
     public Guid ObjectId { get; init; }
     public LIBNestedObjectResponse? Object { get; init; }
-    public Guid? ExpenseClassId { get; init; }
     public LIBNestedExpenseClassResponse? ExpenseClass { get; init; }
     public Guid? WFPObjectiveActivityExpenditureId { get; init; }
     public LIBNestedWFPExpenditureResponse? WFPObjectiveActivityExpenditure { get; init; }

@@ -14,7 +14,6 @@ public record LineItemBudgetDetailResponse
     public DateTime? StartDate { get; init; }
     public DateTime? EndDate { get; init; }
     public decimal Budget { get; init; }
-    public Guid? ExpenseClassId { get; init; }
     public LineItemBudgetDetailLIBResponse? LineItemBudget { get; init; }
     public LineItemBudgetDetailActivityResponse? LineItemBudgetActivity { get; init; }
     public LineItemBudgetDetailObjectResponse? Object { get; init; }
@@ -71,7 +70,6 @@ public record CreateLineItemBudgetDetailRequest
     public DateTime? StartDate { get; init; }
     public DateTime? EndDate { get; init; }
     public decimal Budget { get; init; }
-    public Guid? ExpenseClassId { get; init; }
 }
 
 public record UpdateLineItemBudgetDetailRequest
@@ -87,5 +85,4 @@ public record UpdateLineItemBudgetDetailRequest
     public DateTime? StartDate { get; init; }
     public DateTime? EndDate { get; init; }
     public decimal Budget { get; init; }
-    public Guid? ExpenseClassId { get; init; }
 }

@@ -2067,9 +2067,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<DateTime?>("EndDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<Guid?>("ExpenseClassId")
-                        .HasColumnType("uuid");
-
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
@@ -2106,8 +2103,6 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("ExpenseClassId");
 
                     b.HasIndex("LineItemBudgetActivityId");
 
@@ -6673,11 +6668,6 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.LineItemBudgetDetail", b =>
                 {
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.ExpenseClass", "ExpenseClass")
-                        .WithMany()
-                        .HasForeignKey("ExpenseClassId")
-                        .OnDelete(DeleteBehavior.Restrict);
-
                     b.HasOne("ERPEZ.Domain.Entities.Planning.LineItemBudgetActivity", "LineItemBudgetActivity")
                         .WithMany("LineItemBudgetDetails")
                         .HasForeignKey("LineItemBudgetActivityId");
@@ -6697,8 +6687,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasOne("ERPEZ.Domain.Entities.Planning.WFPObjectiveActivityExpenditure", "WFPObjectiveActivityExpenditure")
                         .WithMany()
                         .HasForeignKey("WFPObjectiveActivityExpenditureId");
-
-                    b.Navigation("ExpenseClass");
 
                     b.Navigation("LineItemBudget");
 

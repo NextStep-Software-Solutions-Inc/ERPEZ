@@ -66,12 +66,6 @@ public class UpdateLineItemBudgetDetailCommandHandler(IUnitOfWork unitOfWork)
                 ?? throw new NotFoundException($"WFP Objective Activity Expenditure with ID {request.WFPObjectiveActivityExpenditureId} not found.");
         }
 
-        if (request.ExpenseClassId.HasValue)
-        {
-            _ = await unitOfWork.ExpenseClassRepository.GetByIdAsync(request.ExpenseClassId.Value, cancellationToken)
-                ?? throw new NotFoundException($"Expense Class with ID {request.ExpenseClassId} not found.");
-        }
-
         entity.LineItemBudgetId = request.LineItemBudgetId;
         entity.LineItemBudgetActivityId = request.LineItemBudgetActivityId;
         entity.WFPObjectiveActivityExpenditureId = request.WFPObjectiveActivityExpenditureId;
@@ -83,7 +77,6 @@ public class UpdateLineItemBudgetDetailCommandHandler(IUnitOfWork unitOfWork)
         entity.StartDate = request.StartDate;
         entity.EndDate = request.EndDate;
         entity.Budget = request.Budget;
-        entity.ExpenseClassId = request.ExpenseClassId;
 
         unitOfWork.LineItemBudgetDetailRepository.Update(entity);
         await unitOfWork.SaveChangesAsync(cancellationToken);

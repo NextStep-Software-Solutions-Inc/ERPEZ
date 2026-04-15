@@ -66,12 +66,6 @@ public class CreateLineItemBudgetDetailCommandHandler(IUnitOfWork unitOfWork)
                 ?? throw new NotFoundException($"WFP Objective Activity Expenditure with ID {request.WFPObjectiveActivityExpenditureId} not found.");
         }
 
-        if (request.ExpenseClassId.HasValue)
-        {
-            _ = await unitOfWork.ExpenseClassRepository.GetByIdAsync(request.ExpenseClassId.Value, cancellationToken)
-                ?? throw new NotFoundException($"Expense Class with ID {request.ExpenseClassId} not found.");
-        }
-
         var entity = new Domain.Entities.Planning.LineItemBudgetDetail
         {
             LineItemBudgetId = request.LineItemBudgetId,
@@ -84,8 +78,7 @@ public class CreateLineItemBudgetDetailCommandHandler(IUnitOfWork unitOfWork)
             TimelineType = request.TimelineType,
             StartDate = request.StartDate,
             EndDate = request.EndDate,
-            Budget = request.Budget,
-            ExpenseClassId = request.ExpenseClassId
+            Budget = request.Budget
         };
 
         await unitOfWork.LineItemBudgetDetailRepository.AddAsync(entity, cancellationToken);

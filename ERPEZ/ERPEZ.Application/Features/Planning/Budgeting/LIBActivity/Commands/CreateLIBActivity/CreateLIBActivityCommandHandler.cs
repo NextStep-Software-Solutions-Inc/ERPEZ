@@ -21,12 +21,15 @@ public class CreateLIBActivityCommandHandler(IUnitOfWork unitOfWork)
             throw new ERPEZ.Shared.Exceptions.ValidationException("Only one source activity reference is allowed (either WFPObjectiveActivityId or OPCRActivityId).");
         }
 
+        Domain.Entities.Planning.WFPObjectiveActivity? wfpActivity = null;
+        Domain.Entities.Planning.OPCRActivity? opcrActivity = null;
+
         if (lib.SourceType.Equals("WFP", StringComparison.OrdinalIgnoreCase))
         {
             if (!request.WFPObjectiveActivityId.HasValue)
                 throw new ERPEZ.Shared.Exceptions.ValidationException("WFPObjectiveActivityId is required for WFP-sourced LIB.");
 
-            _ = await unitOfWork.WFPObjectiveActivityRepository.GetByIdAsync(request.WFPObjectiveActivityId.Value, cancellationToken)
+            wfpActivity = await unitOfWork.WFPObjectiveActivityRepository.GetByIdAsync(request.WFPObjectiveActivityId.Value, cancellationToken)
                 ?? throw new NotFoundException($"WFP Objective Activity with ID {request.WFPObjectiveActivityId} not found.");
         }
         else if (lib.SourceType.Equals("OPCR", StringComparison.OrdinalIgnoreCase))
@@ -34,7 +37,7 @@ public class CreateLIBActivityCommandHandler(IUnitOfWork unitOfWork)
             if (!request.OPCRActivityId.HasValue)
                 throw new ERPEZ.Shared.Exceptions.ValidationException("OPCRActivityId is required for OPCR-sourced LIB.");
 
-            _ = await unitOfWork.OPCRActivityRepository.GetByIdAsync(request.OPCRActivityId.Value, cancellationToken)
+            opcrActivity = await unitOfWork.OPCRActivityRepository.GetByIdAsync(request.OPCRActivityId.Value, cancellationToken)
                 ?? throw new NotFoundException($"OPCR Activity with ID {request.OPCRActivityId} not found.");
         }
 
@@ -43,7 +46,10 @@ public class CreateLIBActivityCommandHandler(IUnitOfWork unitOfWork)
             LineItemBudgetId = request.LineItemBudgetId,
             WFPObjectiveActivityId = request.WFPObjectiveActivityId,
             OPCRActivityId = request.OPCRActivityId,
-            Name = request.Name
+            Name = wfpActivity?.ActivityName
+                ?? opcrActivity?.Name
+                ?? request.Name
+                ?? throw new ERPEZ.Shared.Exceptions.ValidationException("Name is required for independent activities.")
         };
 
         await unitOfWork.LineItemBudgetActivityRepository.AddAsync(entity, cancellationToken);
