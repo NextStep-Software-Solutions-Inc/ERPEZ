@@ -25,7 +25,7 @@ public class CreateSubOfficeCeilingCommandHandler(IUnitOfWork unitOfWork)
         }
 
         _ = await unitOfWork.FundSourceRepository.GetByIdAsync(request.FundSourceId, cancellationToken)
-            ?? throw new NotFoundException($"Fund Cluster with ID {request.FundSourceId} not found.");
+            ?? throw new NotFoundException($"Fund Source with ID {request.FundSourceId} not found.");
 
         _ = await unitOfWork.FiscalYearRepository.GetByIdAsync(request.FiscalYearId, cancellationToken)
             ?? throw new NotFoundException($"Fiscal Year with ID {request.FiscalYearId} not found.");
@@ -35,7 +35,7 @@ public class CreateSubOfficeCeilingCommandHandler(IUnitOfWork unitOfWork)
 
         if (masterBudget.FundSourceId != request.FundSourceId)
         {
-            throw new ERPEZ.Shared.Exceptions.ValidationException("Fund Cluster must match the Fund Cluster from the linked Agency Master Budget.");
+            throw new ERPEZ.Shared.Exceptions.ValidationException("Fund Source must match the Fund Source from the linked Agency Master Budget.");
         }
 
         if (officeCeiling.FiscalYearId != request.FiscalYearId)

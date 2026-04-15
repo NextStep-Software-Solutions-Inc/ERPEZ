@@ -13,7 +13,7 @@ public class SubmitLIBAmendmentRequestCommandHandler(IUnitOfWork unitOfWork)
         var entity = await unitOfWork.LIBAmendmentRequestRepository.GetByIdAsync(command.Id, cancellationToken)
             ?? throw new NotFoundException($"LIB Amendment Request with ID {command.Id} not found.");
 
-        if (entity.Status != "Draft")
+        if (!entity.Status.Equals("Draft", StringComparison.OrdinalIgnoreCase))
             throw new ValidationException("Only Draft amendment requests can be submitted.");
 
         entity.Status = "Submitted";

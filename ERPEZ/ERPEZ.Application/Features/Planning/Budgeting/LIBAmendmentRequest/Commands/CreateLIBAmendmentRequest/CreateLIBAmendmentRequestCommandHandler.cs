@@ -17,7 +17,7 @@ public class CreateLIBAmendmentRequestCommandHandler(IUnitOfWork unitOfWork)
             request.LineItemBudgetId, cancellationToken)
             ?? throw new NotFoundException($"LIB with ID {request.LineItemBudgetId} not found.");
 
-        if (originalLIB.Status != "Approved")
+        if (!originalLIB.Status.Equals("Approved", StringComparison.OrdinalIgnoreCase))
             throw new ValidationException("Only Approved LIBs can be amended.");
 
         var newVersion = originalLIB.Version + 1;

@@ -82,6 +82,30 @@ public class UpdateLineItemBudgetDetailCommandHandler(IUnitOfWork unitOfWork)
         entity.Budget = request.Budget;
 
         unitOfWork.LineItemBudgetDetailRepository.Update(entity);
+
+        if (request.BudgetAllocations != null)
+        {
+            var existing = unitOfWork.BudgetAllocationRepository
+                .Query()
+                .Where(b => b.LineItemBudgetDetailId == entity.Id)
+                .ToList();
+
+            foreach (var old in existing)
+                unitOfWork.BudgetAllocationRepository.Remove(old, hardDelete: true);
+
+            foreach (var alloc in request.BudgetAllocations)
+            {
+                await unitOfWork.BudgetAllocationRepository.AddAsync(new Domain.Entities.Planning.BudgetAllocation
+                {
+                    LineItemBudgetDetailId = entity.Id,
+                    BudgetPeriod = alloc.BudgetPeriod,
+                    StartDate = alloc.StartDate,
+                    EndDate = alloc.EndDate,
+                    TotalAllocated = alloc.TotalAllocated
+                }, cancellationToken);
+            }
+        }
+
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return ApiResponse<Unit>.Success(Unit.Value, "Line Item Budget Detail updated successfully.");

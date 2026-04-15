@@ -70,4 +70,16 @@ public class LineItemBudgetDetailRepository : Repository<LineItemBudgetDetail>, 
 
         return (results, filteredCount);
     }
+
+    public async Task<List<LineItemBudgetDetail>> GetDetailsByLibIdAsync(Guid libId, CancellationToken cancellationToken = default)
+    {
+        return await dbContext.LineItemBudgetDetails!
+            .Where(x => x.LineItemBudgetId == libId && !x.IsDeleted)
+            .Include(x => x.Object)
+                .ThenInclude(o => o.ObjectExpenseClasses)
+                    .ThenInclude(oc => oc.ExpenseClass)
+            .AsSplitQuery()
+            .AsNoTracking()
+            .ToListAsync(cancellationToken);
+    }
 }

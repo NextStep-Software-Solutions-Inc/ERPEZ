@@ -95,6 +95,7 @@ public static class DependencyInjection
         services.AddScoped<ILineItemBudgetRepository, LineItemBudgetRepository>();
         services.AddScoped<ILineItemBudgetActivityRepository, LineItemBudgetActivityRepository>();
         services.AddScoped<ILineItemBudgetDetailRepository, LineItemBudgetDetailRepository>();
+        services.AddScoped<IBudgetAllocationRepository, BudgetAllocationRepository>();
         services.AddScoped<ILIBAmendmentRequestRepository, LIBAmendmentRequestRepository>();
         services.AddScoped<IClusterRepository, ClusterRepository>();
         services.AddScoped<IWFPObjectiveActivityExpenditureRepository, WFPObjectiveActivityExpenditureRepository>();

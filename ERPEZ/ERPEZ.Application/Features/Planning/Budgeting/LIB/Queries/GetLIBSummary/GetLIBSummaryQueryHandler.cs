@@ -3,7 +3,6 @@ using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.Application.Features.Planning.Budgeting.LIB.Queries.GetLIBSummary;
 
@@ -15,15 +14,9 @@ public class GetLIBSummaryQueryHandler(IUnitOfWork unitOfWork)
         var lib = await unitOfWork.LineItemBudgetRepository.GetByIdWithDetailsAsync(query.Id, cancellationToken)
             ?? throw new NotFoundException($"LIB with ID {query.Id} not found.");
 
-        // Load details with includes not covered by the base query
+        // Load details with Object→ObjectExpenseClasses→ExpenseClass chain
         var details = await unitOfWork.LineItemBudgetDetailRepository
-            .Query()
-            .Where(x => x.LineItemBudgetId == query.Id && !x.IsDeleted)
-            .Include(x => x.Object)
-                .ThenInclude(o => o.ObjectExpenseClasses)
-                    .ThenInclude(oc => oc.ExpenseClass)
-            .AsNoTracking()
-            .ToListAsync(cancellationToken);
+            .GetDetailsByLibIdAsync(query.Id, cancellationToken);
 
         // Activity rows
         var activityRows = lib.LineItemBudgetActivities

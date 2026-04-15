@@ -70,6 +70,7 @@ public record CreateLineItemBudgetDetailRequest
     public DateTime? StartDate { get; init; }
     public DateTime? EndDate { get; init; }
     public decimal Budget { get; init; }
+    public List<NestedBudgetAllocationRequest>? BudgetAllocations { get; init; }
 }
 
 public record UpdateLineItemBudgetDetailRequest
@@ -85,4 +86,13 @@ public record UpdateLineItemBudgetDetailRequest
     public DateTime? StartDate { get; init; }
     public DateTime? EndDate { get; init; }
     public decimal Budget { get; init; }
+    public List<NestedBudgetAllocationRequest>? BudgetAllocations { get; init; }
+}
+
+public record NestedBudgetAllocationRequest
+{
+    public string BudgetPeriod { get; init; } = string.Empty;
+    public DateTime StartDate { get; init; }
+    public DateTime EndDate { get; init; }
+    public decimal TotalAllocated { get; init; }
 }
