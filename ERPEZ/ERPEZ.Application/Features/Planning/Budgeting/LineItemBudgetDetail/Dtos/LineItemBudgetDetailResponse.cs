@@ -12,10 +12,12 @@ public record LineItemBudgetDetailResponse
     public DateTime StartDate { get; init; }
     public DateTime EndDate { get; init; }
     public decimal Budget { get; init; }
+    public Guid? ExpenseClassId { get; init; }
     public LineItemBudgetDetailLIBResponse? LineItemBudget { get; init; }
     public LineItemBudgetDetailActivityResponse? LineItemBudgetActivity { get; init; }
     public LineItemBudgetDetailObjectResponse? Object { get; init; }
     public LineItemBudgetDetailWFPExpenditureResponse? WFPObjectiveActivityExpenditure { get; init; }
+    public LineItemBudgetDetailExpenseClassResponse? ExpenseClass { get; init; }
 }
 
 public record LineItemBudgetDetailLIBResponse
@@ -46,6 +48,14 @@ public record LineItemBudgetDetailWFPExpenditureResponse
     public decimal? UnitCost { get; init; }
 }
 
+public record LineItemBudgetDetailExpenseClassResponse
+{
+    public Guid Id { get; init; }
+    public string Name { get; init; } = string.Empty;
+    public string Code { get; init; } = string.Empty;
+    public string Type { get; init; } = string.Empty;
+}
+
 public record CreateLineItemBudgetDetailRequest
 {
     public Guid LineItemBudgetId { get; init; }
@@ -57,6 +67,7 @@ public record CreateLineItemBudgetDetailRequest
     public DateTime StartDate { get; init; }
     public DateTime EndDate { get; init; }
     public decimal Budget { get; init; }
+    public Guid? ExpenseClassId { get; init; }
 }
 
 public record UpdateLineItemBudgetDetailRequest
@@ -70,4 +81,5 @@ public record UpdateLineItemBudgetDetailRequest
     public DateTime StartDate { get; init; }
     public DateTime EndDate { get; init; }
     public decimal Budget { get; init; }
+    public Guid? ExpenseClassId { get; init; }
 }

@@ -34,6 +34,7 @@ public class GetLineItemBudgetDetailsQueryHandler(IUnitOfWork unitOfWork)
                     StartDate = entity.StartDate,
                     EndDate = entity.EndDate,
                     Budget = entity.Budget,
+                    ExpenseClassId = entity.ExpenseClassId,
                     LineItemBudget = entity.LineItemBudget == null ? null : new LineItemBudgetDetailLIBResponse
                     {
                         Id = entity.LineItemBudget.Id,
@@ -57,6 +58,13 @@ public class GetLineItemBudgetDetailsQueryHandler(IUnitOfWork unitOfWork)
                         ItemDescription = entity.WFPObjectiveActivityExpenditure.ItemDescription,
                         Quantity = entity.WFPObjectiveActivityExpenditure.Quantity,
                         UnitCost = entity.WFPObjectiveActivityExpenditure.UnitCost
+                    },
+                    ExpenseClass = entity.ExpenseClass == null ? null : new LineItemBudgetDetailExpenseClassResponse
+                    {
+                        Id = entity.ExpenseClass.Id,
+                        Name = entity.ExpenseClass.Name,
+                        Code = entity.ExpenseClass.Code,
+                        Type = entity.ExpenseClass.Type.ToString()
                     }
                 })
             .ToList();

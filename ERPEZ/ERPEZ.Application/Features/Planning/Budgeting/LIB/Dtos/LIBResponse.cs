@@ -66,7 +66,6 @@ public record CreateLIBRequest
     public Guid? ParentLIBId { get; init; }
     public string Scope { get; init; } = string.Empty;
     public string Name { get; init; } = string.Empty;
-    public string LIBNumber { get; init; } = string.Empty;
     public string SourceType { get; init; } = string.Empty;
     public Guid? SourceId { get; init; }
     public Guid? ConsolidatedIntoLIBId { get; init; }

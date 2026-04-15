@@ -43,11 +43,16 @@ public class LineItemBudgetDetail : BaseEntity
     
     [Sieve(CanFilter = true, CanSort = true)]
     public decimal Budget { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public Guid? ExpenseClassId { get; set; }
     
     // Navigation properties
     public virtual LineItemBudget LineItemBudget { get; set; } = null!;
     public virtual LineItemBudgetActivity? LineItemBudgetActivity { get; set; }
     public virtual WFPObjectiveActivityExpenditure? WFPObjectiveActivityExpenditure { get; set; }
     public virtual PlanningObject Object { get; set; } = null!;
+    public virtual ExpenseClass? ExpenseClass { get; set; }
     public virtual List<PPMPItem> PPMPItems { get; set; } = [];
+    public virtual List<BudgetAllocation> BudgetAllocations { get; set; } = [];
 }

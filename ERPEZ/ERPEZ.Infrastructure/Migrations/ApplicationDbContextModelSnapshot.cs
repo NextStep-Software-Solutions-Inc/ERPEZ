@@ -418,6 +418,59 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.ToTable("Attributes", "planning");
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.BudgetAllocation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("BudgetPeriod")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("EndDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("LineItemBudgetDetailId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("StartDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal>("TotalAllocated")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("LineItemBudgetDetailId");
+
+                    b.ToTable("BudgetAllocations", "planning");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.BudgetCall", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2014,6 +2067,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<DateTime>("EndDate")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid?>("ExpenseClassId")
+                        .HasColumnType("uuid");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
@@ -2044,6 +2100,8 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ExpenseClassId");
 
                     b.HasIndex("LineItemBudgetActivityId");
 
@@ -6211,6 +6269,17 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("ParentAttribute");
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.BudgetAllocation", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.LineItemBudgetDetail", "LineItemBudgetDetail")
+                        .WithMany("BudgetAllocations")
+                        .HasForeignKey("LineItemBudgetDetailId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("LineItemBudgetDetail");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.BudgetCall", b =>
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Planning.FiscalYear", "FiscalYear")
@@ -6598,6 +6667,11 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.LineItemBudgetDetail", b =>
                 {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.ExpenseClass", "ExpenseClass")
+                        .WithMany()
+                        .HasForeignKey("ExpenseClassId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("ERPEZ.Domain.Entities.Planning.LineItemBudgetActivity", "LineItemBudgetActivity")
                         .WithMany("LineItemBudgetDetails")
                         .HasForeignKey("LineItemBudgetActivityId");
@@ -6617,6 +6691,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasOne("ERPEZ.Domain.Entities.Planning.WFPObjectiveActivityExpenditure", "WFPObjectiveActivityExpenditure")
                         .WithMany()
                         .HasForeignKey("WFPObjectiveActivityExpenditureId");
+
+                    b.Navigation("ExpenseClass");
 
                     b.Navigation("LineItemBudget");
 
@@ -7783,6 +7859,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.LineItemBudgetDetail", b =>
                 {
+                    b.Navigation("BudgetAllocations");
+
                     b.Navigation("PPMPItems");
                 });
 

@@ -5,6 +5,7 @@ using ERPEZ.Application.Features.Planning.Budgeting.LIB.Commands.UpdateLIBStatus
 using ERPEZ.Application.Features.Planning.Budgeting.LIB.Dtos;
 using ERPEZ.Application.Features.Planning.Budgeting.LIB.Queries.GetLIBById;
 using ERPEZ.Application.Features.Planning.Budgeting.LIB.Queries.GetLIBs;
+using ERPEZ.Application.Features.Planning.Budgeting.LIB.Queries.GetLIBSummary;
 using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -62,6 +63,15 @@ public class LIBController(ISender mediator) : ControllerBase
     {
         var result = await mediator.Send(new UpdateLIBStatusCommand(id, request.Status));
         return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    [HttpGet("{id}/summary")]
+    [ProducesResponseType(typeof(ApiResponse<LIBDashboardSummaryResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetLIBSummary(Guid id)
+    {
+        var result = await mediator.Send(new GetLIBSummaryQuery(id));
+        return result.Succeeded ? Ok(result) : NotFound(result);
     }
 
     [HttpDelete("{id}")]

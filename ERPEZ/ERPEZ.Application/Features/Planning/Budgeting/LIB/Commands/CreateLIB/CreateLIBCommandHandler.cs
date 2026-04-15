@@ -13,13 +13,13 @@ public class CreateLIBCommandHandler(IUnitOfWork unitOfWork)
     {
         var request = command.Request;
 
-        _ = await unitOfWork.FiscalYearRepository.GetByIdAsync(request.FiscalYearId!.Value, cancellationToken)
+        var fiscalYear = await unitOfWork.FiscalYearRepository.GetByIdAsync(request.FiscalYearId!.Value, cancellationToken)
             ?? throw new NotFoundException($"Fiscal Year with ID {request.FiscalYearId} not found.");
 
         _ = await unitOfWork.FundSourceRepository.GetByIdAsync(request.FundSourceId!.Value, cancellationToken)
             ?? throw new NotFoundException($"Fund Cluster with ID {request.FundSourceId} not found.");
 
-        _ = await unitOfWork.OfficeRepository.GetByIdAsync(request.OfficeId!.Value, cancellationToken)
+        var office = await unitOfWork.OfficeRepository.GetByIdAsync(request.OfficeId!.Value, cancellationToken)
             ?? throw new NotFoundException($"Office with ID {request.OfficeId} not found.");
 
         if (request.ParentLIBId.HasValue)
@@ -51,10 +51,12 @@ public class CreateLIBCommandHandler(IUnitOfWork unitOfWork)
                 ?? throw new NotFoundException($"WFP source with ID {request.SourceId} not found.");
         }
 
-        var existing = await unitOfWork.LineItemBudgetRepository.FindAsync(x => x.LIBNumber == request.LIBNumber, cancellationToken);
+        var existing = await unitOfWork.LineItemBudgetRepository.FindAsync(
+            x => x.OfficeId == request.OfficeId && x.FiscalYearId == request.FiscalYearId && !x.IsDeleted,
+            cancellationToken);
         if (existing != null)
         {
-            throw new ConflictException($"LIB number '{request.LIBNumber}' already exists.");
+            throw new ConflictException($"A LIB already exists for this Office and Fiscal Year.");
         }
 
         var entity = new Domain.Entities.Planning.LineItemBudget
@@ -65,7 +67,7 @@ public class CreateLIBCommandHandler(IUnitOfWork unitOfWork)
             ParentLIBId = request.ParentLIBId,
             Scope = request.Scope,
             Name = request.Name,
-            LIBNumber = request.LIBNumber,
+            LIBNumber = $"LIB-{office.Code}-{fiscalYear.Year}",
             Level = string.Empty,
             SourceType = sourceType,
             SourceId = request.SourceId,

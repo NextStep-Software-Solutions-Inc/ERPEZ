@@ -16,11 +16,6 @@ public class CreateLIBCommandValidator : AbstractValidator<CreateLIBCommand>
         RuleFor(x => x.Request.OfficeId)
             .NotEmpty()
             .WithMessage("{PropertyName} is required.");
-        RuleFor(x => x.Request.LIBNumber)
-            .NotEmpty()
-            .WithMessage("{PropertyName} is required.")
-            .MaximumLength(100)
-            .WithMessage("{PropertyName} must not exceed 100 characters.");
         RuleFor(x => x.Request.Name)
             .NotEmpty()
             .WithMessage("{PropertyName} is required.")
