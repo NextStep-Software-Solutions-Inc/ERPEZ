@@ -48,8 +48,7 @@ public class LIBActivityController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateLIBActivity(Guid id, [FromBody] UpdateLIBActivityRequest request)
     {
-        var command = new UpdateLIBActivityCommand(request with { Id = id });
-        var result = await mediator.Send(command);
+        var result = await mediator.Send(new UpdateLIBActivityCommand(id, request));
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 

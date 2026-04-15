@@ -4,7 +4,7 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Budgeting.LIBActivity.Commands.UpdateLIBActivity;
 
-public record UpdateLIBActivityCommand(UpdateLIBActivityRequest Request) : IRequest<ApiResponse<Unit>>;
+public record UpdateLIBActivityCommand(Guid Id, UpdateLIBActivityRequest Request) : IRequest<ApiResponse<Unit>>;
 
 
 

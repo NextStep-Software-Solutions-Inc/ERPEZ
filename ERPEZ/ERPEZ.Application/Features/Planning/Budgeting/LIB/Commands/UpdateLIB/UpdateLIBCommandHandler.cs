@@ -13,14 +13,14 @@ public class UpdateLIBCommandHandler(IUnitOfWork unitOfWork)
     {
         var request = command.Request;
 
-        var entity = await unitOfWork.LineItemBudgetRepository.GetByIdAsync(request.Id, cancellationToken)
-            ?? throw new NotFoundException($"LIB with ID {request.Id} not found.");
+        var entity = await unitOfWork.LineItemBudgetRepository.GetByIdAsync(command.Id, cancellationToken)
+            ?? throw new NotFoundException($"LIB with ID {command.Id} not found.");
 
         _ = await unitOfWork.FiscalYearRepository.GetByIdAsync(request.FiscalYearId!.Value, cancellationToken)
             ?? throw new NotFoundException($"Fiscal Year with ID {request.FiscalYearId} not found.");
 
-        _ = await unitOfWork.FundSourceRepository.GetByIdAsync(request.FundClusterId!.Value, cancellationToken)
-            ?? throw new NotFoundException($"Fund Cluster with ID {request.FundClusterId} not found.");
+        _ = await unitOfWork.FundSourceRepository.GetByIdAsync(request.FundSourceId!.Value, cancellationToken)
+            ?? throw new NotFoundException($"Fund Cluster with ID {request.FundSourceId} not found.");
 
         _ = await unitOfWork.OfficeRepository.GetByIdAsync(request.OfficeId!.Value, cancellationToken)
             ?? throw new NotFoundException($"Office with ID {request.OfficeId} not found.");
@@ -40,12 +40,6 @@ public class UpdateLIBCommandHandler(IUnitOfWork unitOfWork)
                 ?? throw new NotFoundException($"Consolidated-Into LIB with ID {request.ConsolidatedIntoLIBId} not found.");
         }
 
-        if (request.PreviousVersionId.HasValue)
-        {
-            _ = await unitOfWork.LineItemBudgetRepository.GetByIdAsync(request.PreviousVersionId.Value, cancellationToken)
-                ?? throw new NotFoundException($"Previous Version LIB with ID {request.PreviousVersionId} not found.");
-        }
-
         if (!request.SourceId.HasValue)
         {
             throw new ERPEZ.Shared.Exceptions.ValidationException("SourceId is required for LIB source types OPCR and WFP.");
@@ -63,7 +57,7 @@ public class UpdateLIBCommandHandler(IUnitOfWork unitOfWork)
         }
 
         var existing = await unitOfWork.LineItemBudgetRepository.FindAsync(
-            x => x.Id != request.Id && x.LIBNumber == request.LIBNumber,
+            x => x.Id != command.Id && x.LIBNumber == request.LIBNumber,
             cancellationToken);
         if (existing != null)
         {
@@ -71,7 +65,7 @@ public class UpdateLIBCommandHandler(IUnitOfWork unitOfWork)
         }
 
         entity.FiscalYearId = request.FiscalYearId;
-        entity.FundClusterId = request.FundClusterId;
+        entity.FundClusterId = request.FundSourceId;
         entity.OfficeId = request.OfficeId;
         entity.ParentLIBId = request.ParentLIBId;
         entity.DeliveryUnitId = request.DeliveryUnitId;
@@ -81,11 +75,8 @@ public class UpdateLIBCommandHandler(IUnitOfWork unitOfWork)
         entity.Level = request.Level.ToString();
         entity.SourceType = request.SourceType.ToString();
         entity.SourceId = request.SourceId;
-        entity.Status = request.Status.ToString();
         entity.ConsolidatedIntoLIBId = request.ConsolidatedIntoLIBId;
         entity.TotalAmount = request.TotalAmount;
-        entity.Version = request.Version;
-        entity.PreviousVersionId = request.PreviousVersionId;
 
         unitOfWork.LineItemBudgetRepository.Update(entity);
         await unitOfWork.SaveChangesAsync(cancellationToken);

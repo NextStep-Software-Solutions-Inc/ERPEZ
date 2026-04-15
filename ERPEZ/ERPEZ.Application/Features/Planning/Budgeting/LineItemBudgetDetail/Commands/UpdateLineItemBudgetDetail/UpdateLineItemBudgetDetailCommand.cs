@@ -5,7 +5,7 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Budgeting.LineItemBudgetDetail.Commands.UpdateLineItemBudgetDetail;
 
-public record UpdateLineItemBudgetDetailCommand(UpdateLineItemBudgetDetailRequest Request) : IRequest<ApiResponse<Unit>>;
+public record UpdateLineItemBudgetDetailCommand(Guid Id, UpdateLineItemBudgetDetailRequest Request) : IRequest<ApiResponse<Unit>>;
 
 
 

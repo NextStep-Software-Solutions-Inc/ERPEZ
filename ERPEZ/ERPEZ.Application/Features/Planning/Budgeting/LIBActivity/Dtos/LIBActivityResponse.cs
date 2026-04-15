@@ -42,7 +42,6 @@ public record CreateLIBActivityRequest
 
 public record UpdateLIBActivityRequest
 {
-    public Guid Id { get; init; }
     public Guid LineItemBudgetId { get; init; }
     public Guid? WFPObjectiveActivityId { get; init; }
     public Guid? OPCRActivityId { get; init; }

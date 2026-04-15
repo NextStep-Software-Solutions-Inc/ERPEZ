@@ -5,7 +5,7 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Budgeting.LIBAmendmentRequest.Commands.UpdateLIBAmendmentRequest;
 
-public record UpdateLIBAmendmentRequestCommand(UpdateLIBAmendmentRequestRequest Request) : IRequest<ApiResponse<Unit>>;
+public record UpdateLIBAmendmentRequestCommand(Guid Id, UpdateLIBAmendmentRequestRequest Request) : IRequest<ApiResponse<Unit>>;
 
 
 

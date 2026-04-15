@@ -48,26 +48,25 @@ public record OfficeCeilingAgencyMasterBudgetResponse
 public record CreateOfficeCeilingRequest
 {
     public Guid FiscalYearId { get; init; }
-    public CeilingTargetTypeEnum TargetType { get; init; }
+    public string TargetType { get; init; } = string.Empty;
     public Guid OfficeId { get; init; }
     public Guid AgencyMasterBudgetId { get; init; }
     public decimal PSAmount { get; init; }
     public decimal MOOEAmount { get; init; }
     public decimal COAmount { get; init; }
-    public CeilingStatusEnum Status { get; init; }
+    public string Status { get; init; } = string.Empty;
     public bool IsSupplemental { get; init; }
 }
 
 public record UpdateOfficeCeilingRequest
 {
-    public Guid Id { get; init; }
     public Guid FiscalYearId { get; init; }
-    public CeilingTargetTypeEnum TargetType { get; init; }
+    public string TargetType { get; init; } = string.Empty;
     public Guid OfficeId { get; init; }
     public Guid AgencyMasterBudgetId { get; init; }
     public decimal PSAmount { get; init; }
     public decimal MOOEAmount { get; init; }
     public decimal COAmount { get; init; }
-    public CeilingStatusEnum Status { get; init; }
+    public string Status { get; init; } = string.Empty;
     public bool IsSupplemental { get; init; }
 }

@@ -13,8 +13,8 @@ public class UpdateOfficeCeilingCommandHandler(IUnitOfWork unitOfWork)
     {
         var request = command.Request;
 
-        var entity = await unitOfWork.OfficeCeilingRepository.GetByIdAsync(request.Id, cancellationToken)
-            ?? throw new NotFoundException($"Office Ceiling with ID {request.Id} not found.");
+        var entity = await unitOfWork.OfficeCeilingRepository.GetByIdAsync(command.Id, cancellationToken)
+            ?? throw new NotFoundException($"Office Ceiling with ID {command.Id} not found.");
 
         _ = await unitOfWork.FiscalYearRepository.GetByIdAsync(request.FiscalYearId, cancellationToken)
             ?? throw new NotFoundException($"Fiscal Year with ID {request.FiscalYearId} not found.");
@@ -30,18 +30,11 @@ public class UpdateOfficeCeilingCommandHandler(IUnitOfWork unitOfWork)
             throw new ERPEZ.Shared.Exceptions.ValidationException("Fiscal Year must match the selected Agency Master Budget.");
         }
 
-        if (request.PSAmount != masterBudget.PSAmount
-            || request.MOOEAmount != masterBudget.MOOEAmount
-            || request.COAmount != masterBudget.COAmount)
-        {
-            throw new ERPEZ.Shared.Exceptions.ValidationException("PS, MOOE, and CO amounts must match the selected Agency Master Budget.");
-        }
-
-        var targetType = request.TargetType.ToString();
-        var status = request.Status.ToString();
+        var targetType = request.TargetType;
+        var status = request.Status;
 
         var existing = await unitOfWork.OfficeCeilingRepository.FindAsync(
-            x => x.Id != request.Id
+            x => x.Id != command.Id
                 && x.FiscalYearId == request.FiscalYearId
                 && x.OfficeId == request.OfficeId
                 && x.AgencyMasterBudgetId == request.AgencyMasterBudgetId

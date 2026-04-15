@@ -6,7 +6,7 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Budgeting.AgencyMasterBudget.Commands.UpdateAgencyMasterBudget;
 
-public record UpdateAgencyMasterBudgetCommand(UpdateAgencyMasterBudgetRequest Request) : IRequest<ApiResponse<Unit>>;
+public record UpdateAgencyMasterBudgetCommand(Guid Id, UpdateAgencyMasterBudgetRequest Request) : IRequest<ApiResponse<Unit>>;
 
 
 

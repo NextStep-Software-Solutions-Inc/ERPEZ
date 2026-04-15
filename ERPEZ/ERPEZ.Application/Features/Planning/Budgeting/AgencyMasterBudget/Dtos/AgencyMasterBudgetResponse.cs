@@ -66,7 +66,6 @@ public record CreateAgencyMasterBudgetRequest
 
 public record UpdateAgencyMasterBudgetRequest
 {
-    public Guid Id { get; init; }
     public Guid FiscalYearId { get; init; }
     public Guid FundSourceId { get; init; }
     public string SourceDocumentType { get; init; } = string.Empty;

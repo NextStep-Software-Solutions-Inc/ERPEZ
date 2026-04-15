@@ -13,8 +13,8 @@ public class UpdateLineItemBudgetDetailCommandHandler(IUnitOfWork unitOfWork)
     {
         var request = command.Request;
 
-        var entity = await unitOfWork.LineItemBudgetDetailRepository.GetByIdAsync(request.Id, cancellationToken)
-            ?? throw new NotFoundException($"Line Item Budget Detail with ID {request.Id} not found.");
+        var entity = await unitOfWork.LineItemBudgetDetailRepository.GetByIdAsync(command.Id, cancellationToken)
+            ?? throw new NotFoundException($"Line Item Budget Detail with ID {command.Id} not found.");
 
         _ = await unitOfWork.LineItemBudgetRepository.GetByIdAsync(request.LineItemBudgetId, cancellationToken)
             ?? throw new NotFoundException($"LIB with ID {request.LineItemBudgetId} not found.");
@@ -44,7 +44,7 @@ public class UpdateLineItemBudgetDetailCommandHandler(IUnitOfWork unitOfWork)
         entity.WFPObjectiveActivityExpenditureId = request.WFPObjectiveActivityExpenditureId;
         entity.ObjectId = request.ObjectId;
         entity.Description = request.Description;
-        entity.TimelineType = request.TimelineType.ToString();
+        entity.TimelineType = request.TimelineType;
         entity.StartDate = request.StartDate;
         entity.EndDate = request.EndDate;
         entity.Budget = request.Budget;

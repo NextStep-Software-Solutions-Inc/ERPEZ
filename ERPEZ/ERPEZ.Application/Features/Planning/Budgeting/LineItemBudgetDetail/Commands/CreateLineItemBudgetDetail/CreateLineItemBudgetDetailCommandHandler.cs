@@ -43,7 +43,7 @@ public class CreateLineItemBudgetDetailCommandHandler(IUnitOfWork unitOfWork)
             WFPObjectiveActivityExpenditureId = request.WFPObjectiveActivityExpenditureId,
             ObjectId = request.ObjectId,
             Description = request.Description,
-            TimelineType = request.TimelineType.ToString(),
+            TimelineType = request.TimelineType,
             StartDate = request.StartDate,
             EndDate = request.EndDate,
             Budget = request.Budget

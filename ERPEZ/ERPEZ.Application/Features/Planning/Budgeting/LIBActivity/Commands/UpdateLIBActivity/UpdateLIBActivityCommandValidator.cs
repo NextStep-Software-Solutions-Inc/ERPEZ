@@ -6,9 +6,6 @@ public class UpdateLIBActivityCommandValidator : AbstractValidator<UpdateLIBActi
 {
     public UpdateLIBActivityCommandValidator()
     {
-        RuleFor(x => x.Request.Id)
-            .NotEmpty()
-            .WithMessage("{PropertyName} is required.");
         RuleFor(x => x.Request.LineItemBudgetId)
             .NotEmpty()
             .WithMessage("{PropertyName} is required.");

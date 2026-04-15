@@ -1,6 +1,7 @@
 using ERPEZ.Application.Features.Planning.Budgeting.LIB.Commands.CreateLIB;
 using ERPEZ.Application.Features.Planning.Budgeting.LIB.Commands.DeleteLIB;
 using ERPEZ.Application.Features.Planning.Budgeting.LIB.Commands.UpdateLIB;
+using ERPEZ.Application.Features.Planning.Budgeting.LIB.Commands.UpdateLIBStatus;
 using ERPEZ.Application.Features.Planning.Budgeting.LIB.Dtos;
 using ERPEZ.Application.Features.Planning.Budgeting.LIB.Queries.GetLIBById;
 using ERPEZ.Application.Features.Planning.Budgeting.LIB.Queries.GetLIBs;
@@ -48,8 +49,18 @@ public class LIBController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateLIB(Guid id, [FromBody] UpdateLIBRequest request)
     {
-        var command = new UpdateLIBCommand(request with { Id = id });
+        var command = new UpdateLIBCommand(id, request);
         var result = await mediator.Send(command);
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    [HttpPut("{id}/status")]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateLIBStatus(Guid id, [FromBody] string status)
+    {
+        var result = await mediator.Send(new UpdateLIBStatusCommand(id, status));
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 

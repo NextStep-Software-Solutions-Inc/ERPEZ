@@ -27,15 +27,8 @@ public class CreateOfficeCeilingCommandHandler(IUnitOfWork unitOfWork)
             throw new ERPEZ.Shared.Exceptions.ValidationException("Fiscal Year must match the selected Agency Master Budget.");
         }
 
-        if (request.PSAmount != masterBudget.PSAmount
-            || request.MOOEAmount != masterBudget.MOOEAmount
-            || request.COAmount != masterBudget.COAmount)
-        {
-            throw new ERPEZ.Shared.Exceptions.ValidationException("PS, MOOE, and CO amounts must match the selected Agency Master Budget.");
-        }
-
-        var targetType = request.TargetType.ToString();
-        var status = request.Status.ToString();
+        var targetType = request.TargetType;
+        var status = request.Status;
 
         var existing = await unitOfWork.OfficeCeilingRepository.FindAsync(
             x => x.FiscalYearId == request.FiscalYearId

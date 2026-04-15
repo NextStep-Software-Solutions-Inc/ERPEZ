@@ -1,4 +1,5 @@
 using FluentValidation;
+using ERPEZ.Application.Features.Planning.Budgeting.Common.Enums;
 
 namespace ERPEZ.Application.Features.Planning.Budgeting.LIBAmendmentRequest.Commands.UpdateLIBAmendmentRequest;
 
@@ -6,15 +7,14 @@ public class UpdateLIBAmendmentRequestCommandValidator : AbstractValidator<Updat
 {
     public UpdateLIBAmendmentRequestCommandValidator()
     {
-        RuleFor(x => x.Request.Id)
-            .NotEmpty()
-            .WithMessage("{PropertyName} is required.");
         RuleFor(x => x.Request.LineItemBudgetId)
             .NotEmpty()
             .WithMessage("{PropertyName} is required.");
-        RuleFor(x => x.Request.ProposedLineItemBudgetId)
+        RuleFor(x => x.Request.Reason)
             .NotEmpty()
-            .WithMessage("{PropertyName} is required.");
+            .WithMessage("{PropertyName} is required.")
+            .Must(v => Enum.TryParse<LIBAmendmentReasonEnum>(v, true, out _))
+            .WithMessage("{PropertyName} must be a valid LIBAmendmentReasonEnum value.");
         RuleFor(x => x.Request.Justification)
             .NotEmpty()
             .WithMessage("{PropertyName} is required.")
@@ -22,6 +22,5 @@ public class UpdateLIBAmendmentRequestCommandValidator : AbstractValidator<Updat
             .WithMessage("{PropertyName} must not exceed 2000 characters.");
     }
 }
-
 
 

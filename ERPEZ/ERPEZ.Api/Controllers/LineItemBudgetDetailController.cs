@@ -48,8 +48,7 @@ public class LineItemBudgetDetailController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateLineItemBudgetDetail(Guid id, [FromBody] UpdateLineItemBudgetDetailRequest request)
     {
-        var command = new UpdateLineItemBudgetDetailCommand(request with { Id = id });
-        var result = await mediator.Send(command);
+        var result = await mediator.Send(new UpdateLineItemBudgetDetailCommand(id, request));
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 

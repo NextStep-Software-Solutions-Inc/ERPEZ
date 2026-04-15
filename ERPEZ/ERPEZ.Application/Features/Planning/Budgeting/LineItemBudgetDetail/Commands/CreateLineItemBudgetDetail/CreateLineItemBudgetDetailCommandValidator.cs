@@ -1,4 +1,5 @@
 using FluentValidation;
+using ERPEZ.Application.Features.Planning.Budgeting.Common.Enums;
 
 namespace ERPEZ.Application.Features.Planning.Budgeting.LineItemBudgetDetail.Commands.CreateLineItemBudgetDetail;
 
@@ -12,6 +13,11 @@ public class CreateLineItemBudgetDetailCommandValidator : AbstractValidator<Crea
         RuleFor(x => x.Request.ObjectId)
             .NotEmpty()
             .WithMessage("{PropertyName} is required.");
+        RuleFor(x => x.Request.TimelineType)
+            .NotEmpty()
+            .WithMessage("{PropertyName} is required.")
+            .Must(v => Enum.TryParse<LIBTimelineTypeEnum>(v, true, out _))
+            .WithMessage("{PropertyName} must be a valid LIBTimelineTypeEnum value.");
         RuleFor(x => x.Request.Budget)
             .GreaterThanOrEqualTo(0)
             .WithMessage("{PropertyName} must be greater than or equal to 0.");
@@ -20,6 +26,5 @@ public class CreateLineItemBudgetDetailCommandValidator : AbstractValidator<Crea
             .WithMessage("{PropertyName} must be greater than or equal to StartDate.");
     }
 }
-
 
 

@@ -18,8 +18,8 @@ public enum CeilingStatusEnum
 
 public enum CeilingTargetTypeEnum
 {
-    Office,
-    Department
+    OrganizationalUnit,
+    WFP
 }
 
 public enum LIBLevelEnum

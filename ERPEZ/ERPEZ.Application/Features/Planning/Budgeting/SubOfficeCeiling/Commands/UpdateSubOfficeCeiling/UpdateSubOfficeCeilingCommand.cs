@@ -5,7 +5,7 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Budgeting.SubOfficeCeiling.Commands.UpdateSubOfficeCeiling;
 
-public record UpdateSubOfficeCeilingCommand(UpdateSubOfficeCeilingRequest Request) : IRequest<ApiResponse<Unit>>;
+public record UpdateSubOfficeCeilingCommand(Guid Id, UpdateSubOfficeCeilingRequest Request) : IRequest<ApiResponse<Unit>>;
 
 
 

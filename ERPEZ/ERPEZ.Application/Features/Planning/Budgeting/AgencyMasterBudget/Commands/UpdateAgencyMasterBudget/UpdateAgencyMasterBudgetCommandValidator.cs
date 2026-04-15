@@ -7,10 +7,6 @@ public class UpdateAgencyMasterBudgetCommandValidator : AbstractValidator<Update
 {
     public UpdateAgencyMasterBudgetCommandValidator()
     {
-        RuleFor(x => x.Request.Id)
-        .NotEmpty()
-        .WithMessage("{PropertyName} is required.");
-
         RuleFor(x => x.Request.FiscalYearId)
             .NotEmpty()
             .WithMessage("{PropertyName} is required.");

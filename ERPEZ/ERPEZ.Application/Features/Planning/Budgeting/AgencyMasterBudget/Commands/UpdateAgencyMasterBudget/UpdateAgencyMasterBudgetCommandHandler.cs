@@ -14,8 +14,8 @@ public class UpdateAgencyMasterBudgetCommandHandler(IUnitOfWork unitOfWork)
     {
         var request = command.Request;
 
-        var entity = await unitOfWork.AgencyMasterBudgetRepository.GetByIdAsync(request.Id, cancellationToken)
-            ?? throw new NotFoundException($"Agency Master Budget with ID {request.Id} not found.");
+        var entity = await unitOfWork.AgencyMasterBudgetRepository.GetByIdAsync(command.Id, cancellationToken)
+            ?? throw new NotFoundException($"Agency Master Budget with ID {command.Id} not found.");
 
         _ = await unitOfWork.FiscalYearRepository.GetByIdAsync(request.FiscalYearId, cancellationToken)
             ?? throw new NotFoundException($"Fiscal Year with ID {request.FiscalYearId} not found.");
@@ -31,7 +31,7 @@ public class UpdateAgencyMasterBudgetCommandHandler(IUnitOfWork unitOfWork)
         var sourceDocumentType = parsedSourceDocumentType.ToString();
 
         var existing = await unitOfWork.AgencyMasterBudgetRepository.FindAsync(
-            x => x.Id != request.Id
+            x => x.Id != command.Id
                 && x.FiscalYearId == request.FiscalYearId
                 && x.FundSourceId == request.FundSourceId
                 && x.SourceDocumentType == sourceDocumentType,

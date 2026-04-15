@@ -1,5 +1,6 @@
 using ERPEZ.Application.Features.Planning.Budgeting.LIBAmendmentRequest.Commands.CreateLIBAmendmentRequest;
 using ERPEZ.Application.Features.Planning.Budgeting.LIBAmendmentRequest.Commands.DeleteLIBAmendmentRequest;
+using ERPEZ.Application.Features.Planning.Budgeting.LIBAmendmentRequest.Commands.SubmitLIBAmendmentRequest;
 using ERPEZ.Application.Features.Planning.Budgeting.LIBAmendmentRequest.Commands.UpdateLIBAmendmentRequest;
 using ERPEZ.Application.Features.Planning.Budgeting.LIBAmendmentRequest.Dtos;
 using ERPEZ.Application.Features.Planning.Budgeting.LIBAmendmentRequest.Queries.GetLIBAmendmentRequestById;
@@ -48,8 +49,17 @@ public class LIBAmendmentRequestController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateLIBAmendmentRequest(Guid id, [FromBody] UpdateLIBAmendmentRequestRequest request)
     {
-        var command = new UpdateLIBAmendmentRequestCommand(request with { Id = id });
-        var result = await mediator.Send(command);
+        var result = await mediator.Send(new UpdateLIBAmendmentRequestCommand(id, request));
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    [HttpPost("{id}/submit")]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> SubmitLIBAmendmentRequest(Guid id)
+    {
+        var result = await mediator.Send(new SubmitLIBAmendmentRequestCommand(id));
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 

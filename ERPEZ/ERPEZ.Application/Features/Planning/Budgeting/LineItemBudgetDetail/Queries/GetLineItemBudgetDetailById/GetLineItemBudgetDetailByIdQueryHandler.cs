@@ -1,5 +1,3 @@
-using ERPEZ.Application.Features.Planning.Budgeting.Common;
-using ERPEZ.Application.Features.Planning.Budgeting.Common.Enums;
 using ERPEZ.Application.Features.Planning.Budgeting.LineItemBudgetDetail.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
@@ -24,7 +22,7 @@ public class GetLineItemBudgetDetailByIdQueryHandler(IUnitOfWork unitOfWork)
             WFPObjectiveActivityExpenditureId = entity.WFPObjectiveActivityExpenditureId,
             ObjectId = entity.ObjectId,
             Description = entity.Description,
-            TimelineType = Enum.Parse<LIBTimelineTypeEnum>(entity.TimelineType, true),
+            TimelineType = entity.TimelineType,
             StartDate = entity.StartDate,
             EndDate = entity.EndDate,
             Budget = entity.Budget,

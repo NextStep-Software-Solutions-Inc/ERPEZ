@@ -48,7 +48,7 @@ public class AgencyMasterBudgetController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateAgencyMasterBudget(Guid id, [FromBody] UpdateAgencyMasterBudgetRequest request)
     {
-        var command = new UpdateAgencyMasterBudgetCommand(request with { Id = id });
+        var command = new UpdateAgencyMasterBudgetCommand(id, request);
         var result = await mediator.Send(command);
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }

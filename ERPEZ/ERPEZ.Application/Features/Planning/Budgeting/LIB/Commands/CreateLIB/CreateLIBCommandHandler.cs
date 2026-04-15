@@ -16,8 +16,8 @@ public class CreateLIBCommandHandler(IUnitOfWork unitOfWork)
         _ = await unitOfWork.FiscalYearRepository.GetByIdAsync(request.FiscalYearId!.Value, cancellationToken)
             ?? throw new NotFoundException($"Fiscal Year with ID {request.FiscalYearId} not found.");
 
-        _ = await unitOfWork.FundSourceRepository.GetByIdAsync(request.FundClusterId!.Value, cancellationToken)
-            ?? throw new NotFoundException($"Fund Cluster with ID {request.FundClusterId} not found.");
+        _ = await unitOfWork.FundSourceRepository.GetByIdAsync(request.FundSourceId!.Value, cancellationToken)
+            ?? throw new NotFoundException($"Fund Cluster with ID {request.FundSourceId} not found.");
 
         _ = await unitOfWork.OfficeRepository.GetByIdAsync(request.OfficeId!.Value, cancellationToken)
             ?? throw new NotFoundException($"Office with ID {request.OfficeId} not found.");
@@ -35,12 +35,6 @@ public class CreateLIBCommandHandler(IUnitOfWork unitOfWork)
         {
             _ = await unitOfWork.LineItemBudgetRepository.GetByIdAsync(request.ConsolidatedIntoLIBId.Value, cancellationToken)
                 ?? throw new NotFoundException($"Consolidated-Into LIB with ID {request.ConsolidatedIntoLIBId} not found.");
-        }
-
-        if (request.PreviousVersionId.HasValue)
-        {
-            _ = await unitOfWork.LineItemBudgetRepository.GetByIdAsync(request.PreviousVersionId.Value, cancellationToken)
-                ?? throw new NotFoundException($"Previous Version LIB with ID {request.PreviousVersionId} not found.");
         }
 
         if (!request.SourceId.HasValue)
@@ -69,7 +63,7 @@ public class CreateLIBCommandHandler(IUnitOfWork unitOfWork)
         var entity = new Domain.Entities.Planning.LineItemBudget
         {
             FiscalYearId = request.FiscalYearId,
-            FundClusterId = request.FundClusterId,
+            FundClusterId = request.FundSourceId,
             OfficeId = request.OfficeId,
             ParentLIBId = request.ParentLIBId,
             DeliveryUnitId = request.DeliveryUnitId,
@@ -79,11 +73,10 @@ public class CreateLIBCommandHandler(IUnitOfWork unitOfWork)
             Level = request.Level.ToString(),
             SourceType = sourceType,
             SourceId = request.SourceId,
-            Status = request.Status.ToString(),
+            Status = "Draft",
             ConsolidatedIntoLIBId = request.ConsolidatedIntoLIBId,
             TotalAmount = request.TotalAmount,
-            Version = request.Version,
-            PreviousVersionId = request.PreviousVersionId
+            Version = 1
         };
 
         await unitOfWork.LineItemBudgetRepository.AddAsync(entity, cancellationToken);

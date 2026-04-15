@@ -13,8 +13,8 @@ public class UpdateLIBActivityCommandHandler(IUnitOfWork unitOfWork)
     {
         var request = command.Request;
 
-        var entity = await unitOfWork.LineItemBudgetActivityRepository.GetByIdAsync(request.Id, cancellationToken)
-            ?? throw new NotFoundException($"LIB Activity with ID {request.Id} not found.");
+        var entity = await unitOfWork.LineItemBudgetActivityRepository.GetByIdAsync(command.Id, cancellationToken)
+            ?? throw new NotFoundException($"LIB Activity with ID {command.Id} not found.");
 
         var lib = await unitOfWork.LineItemBudgetRepository.GetByIdAsync(request.LineItemBudgetId, cancellationToken)
             ?? throw new NotFoundException($"LIB with ID {request.LineItemBudgetId} not found.");

@@ -53,23 +53,22 @@ public record CreateSubOfficeCeilingRequest
 {
     public Guid OfficeCeilingId { get; init; }
     public Guid SubOfficeId { get; init; }
-    public Guid FundClusterId { get; init; }
+    public Guid FundSourceId { get; init; }
     public Guid FiscalYearId { get; init; }
     public decimal PSAmount { get; init; }
     public decimal MOOEAmount { get; init; }
     public decimal COAmount { get; init; }
-    public CeilingStatusEnum Status { get; init; }
+    public string Status { get; init; } = string.Empty;
 }
 
 public record UpdateSubOfficeCeilingRequest
 {
-    public Guid Id { get; init; }
     public Guid OfficeCeilingId { get; init; }
     public Guid SubOfficeId { get; init; }
-    public Guid FundClusterId { get; init; }
+    public Guid FundSourceId { get; init; }
     public Guid FiscalYearId { get; init; }
     public decimal PSAmount { get; init; }
     public decimal MOOEAmount { get; init; }
     public decimal COAmount { get; init; }
-    public CeilingStatusEnum Status { get; init; }
+    public string Status { get; init; } = string.Empty;
 }

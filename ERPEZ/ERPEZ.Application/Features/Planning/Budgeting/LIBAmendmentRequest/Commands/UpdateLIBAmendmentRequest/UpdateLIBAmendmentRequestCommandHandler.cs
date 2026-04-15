@@ -1,4 +1,3 @@
-using ERPEZ.Application.Features.Planning.Budgeting.Common;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -13,25 +12,15 @@ public class UpdateLIBAmendmentRequestCommandHandler(IUnitOfWork unitOfWork)
     {
         var request = command.Request;
 
-        var entity = await unitOfWork.LIBAmendmentRequestRepository.GetByIdAsync(request.Id, cancellationToken)
-            ?? throw new NotFoundException($"LIB Amendment Request with ID {request.Id} not found.");
+        var entity = await unitOfWork.LIBAmendmentRequestRepository.GetByIdAsync(command.Id, cancellationToken)
+            ?? throw new NotFoundException($"LIB Amendment Request with ID {command.Id} not found.");
 
         _ = await unitOfWork.LineItemBudgetRepository.GetByIdAsync(request.LineItemBudgetId, cancellationToken)
             ?? throw new NotFoundException($"LIB with ID {request.LineItemBudgetId} not found.");
 
-        _ = await unitOfWork.LineItemBudgetRepository.GetByIdAsync(request.ProposedLineItemBudgetId, cancellationToken)
-            ?? throw new NotFoundException($"Proposed LIB with ID {request.ProposedLineItemBudgetId} not found.");
-
-        if (request.LineItemBudgetId == request.ProposedLineItemBudgetId)
-        {
-            throw new ERPEZ.Shared.Exceptions.ValidationException("Proposed LIB cannot be the same as the original LIB.");
-        }
-
         entity.LineItemBudgetId = request.LineItemBudgetId;
-        entity.ProposedLineItemBudgetId = request.ProposedLineItemBudgetId;
-        entity.Reason = request.Reason.ToString();
+        entity.Reason = request.Reason;
         entity.Justification = request.Justification;
-        entity.Status = request.Status.ToString();
 
         unitOfWork.LIBAmendmentRequestRepository.Update(entity);
         await unitOfWork.SaveChangesAsync(cancellationToken);

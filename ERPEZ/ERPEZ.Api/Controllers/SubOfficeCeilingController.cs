@@ -48,7 +48,7 @@ public class SubOfficeCeilingController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateSubOfficeCeiling(Guid id, [FromBody] UpdateSubOfficeCeilingRequest request)
     {
-        var command = new UpdateSubOfficeCeilingCommand(request with { Id = id });
+        var command = new UpdateSubOfficeCeilingCommand(id, request);
         var result = await mediator.Send(command);
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
