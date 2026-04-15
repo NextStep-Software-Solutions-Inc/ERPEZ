@@ -1836,7 +1836,7 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text");
 
-                    b.Property<Guid>("DeliveryUnitId")
+                    b.Property<Guid?>("DeliveryUnitId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid?>("FiscalYearId")
@@ -6531,9 +6531,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasOne("ERPEZ.Domain.Entities.Planning.DeliveryUnit", "DeliveryUnit")
                         .WithMany()
-                        .HasForeignKey("DeliveryUnitId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("DeliveryUnitId");
 
                     b.HasOne("ERPEZ.Domain.Entities.Planning.FiscalYear", "FiscalYearEntity")
                         .WithMany()

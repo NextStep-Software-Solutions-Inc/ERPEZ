@@ -58,9 +58,9 @@ public class LIBController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> UpdateLIBStatus(Guid id, [FromBody] string status)
+    public async Task<IActionResult> UpdateLIBStatus(Guid id, [FromBody] UpdateLIBStatusRequest request)
     {
-        var result = await mediator.Send(new UpdateLIBStatusCommand(id, status));
+        var result = await mediator.Send(new UpdateLIBStatusCommand(id, request.Status));
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 

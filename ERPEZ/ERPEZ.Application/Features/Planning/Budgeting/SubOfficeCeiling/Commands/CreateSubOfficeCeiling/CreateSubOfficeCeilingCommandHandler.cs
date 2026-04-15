@@ -16,8 +16,13 @@ public class CreateSubOfficeCeilingCommandHandler(IUnitOfWork unitOfWork)
         var officeCeiling = await unitOfWork.OfficeCeilingRepository.GetByIdAsync(request.OfficeCeilingId, cancellationToken)
             ?? throw new NotFoundException($"Office Ceiling with ID {request.OfficeCeilingId} not found.");
 
-        _ = await unitOfWork.OfficeRepository.GetByIdAsync(request.SubOfficeId, cancellationToken)
+        var subOffice = await unitOfWork.OfficeRepository.GetByIdAsync(request.SubOfficeId, cancellationToken)
             ?? throw new NotFoundException($"Sub-Office with ID {request.SubOfficeId} not found.");
+
+        if (subOffice.ParentId != officeCeiling.OfficeId)
+        {
+            throw new ERPEZ.Shared.Exceptions.ValidationException("Sub-Office must be a direct child of the Office in the selected Office Ceiling.");
+        }
 
         _ = await unitOfWork.FundSourceRepository.GetByIdAsync(request.FundSourceId, cancellationToken)
             ?? throw new NotFoundException($"Fund Cluster with ID {request.FundSourceId} not found.");

@@ -28,6 +28,12 @@ public enum LIBLevelEnum
     Department
 }
 
+public enum LIBScopeEnum
+{
+    Activity,
+    Project
+}
+
 public enum LIBSourceTypeEnum
 {
     OPCR,

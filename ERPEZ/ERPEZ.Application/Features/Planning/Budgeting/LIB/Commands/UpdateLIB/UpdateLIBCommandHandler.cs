@@ -25,9 +25,6 @@ public class UpdateLIBCommandHandler(IUnitOfWork unitOfWork)
         _ = await unitOfWork.OfficeRepository.GetByIdAsync(request.OfficeId!.Value, cancellationToken)
             ?? throw new NotFoundException($"Office with ID {request.OfficeId} not found.");
 
-        _ = await unitOfWork.DeliveryUnitRepository.GetByIdAsync(request.DeliveryUnitId, cancellationToken)
-            ?? throw new NotFoundException($"Delivery Unit with ID {request.DeliveryUnitId} not found.");
-
         if (request.ParentLIBId.HasValue)
         {
             _ = await unitOfWork.LineItemBudgetRepository.GetByIdAsync(request.ParentLIBId.Value, cancellationToken)
@@ -45,7 +42,7 @@ public class UpdateLIBCommandHandler(IUnitOfWork unitOfWork)
             throw new ERPEZ.Shared.Exceptions.ValidationException("SourceId is required for LIB source types OPCR and WFP.");
         }
 
-        if (request.SourceType == Common.Enums.LIBSourceTypeEnum.OPCR)
+        if (request.SourceType.Equals("OPCR", StringComparison.OrdinalIgnoreCase))
         {
             _ = await unitOfWork.OPCRRepository.GetByIdAsync(request.SourceId.Value, cancellationToken)
                 ?? throw new NotFoundException($"OPCR source with ID {request.SourceId} not found.");
@@ -68,12 +65,11 @@ public class UpdateLIBCommandHandler(IUnitOfWork unitOfWork)
         entity.FundClusterId = request.FundSourceId;
         entity.OfficeId = request.OfficeId;
         entity.ParentLIBId = request.ParentLIBId;
-        entity.DeliveryUnitId = request.DeliveryUnitId;
         entity.Scope = request.Scope;
         entity.Name = request.Name;
         entity.LIBNumber = request.LIBNumber;
-        entity.Level = request.Level.ToString();
-        entity.SourceType = request.SourceType.ToString();
+        entity.Level = string.Empty;
+        entity.SourceType = request.SourceType;
         entity.SourceId = request.SourceId;
         entity.ConsolidatedIntoLIBId = request.ConsolidatedIntoLIBId;
         entity.TotalAmount = request.TotalAmount;

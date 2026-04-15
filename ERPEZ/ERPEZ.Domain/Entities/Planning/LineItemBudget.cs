@@ -28,7 +28,7 @@ public class LineItemBudget : ApprovableEntity
     public Guid? ParentLIBId { get; set; }
     
     [Sieve(CanFilter = true, CanSort = true)]
-    public Guid DeliveryUnitId { get; set; }
+    public Guid? DeliveryUnitId { get; set; }
     
     /// <summary>
     /// Values: OPCR, WFP, Independent

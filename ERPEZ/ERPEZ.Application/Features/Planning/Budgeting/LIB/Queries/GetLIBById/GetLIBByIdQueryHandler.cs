@@ -25,8 +25,7 @@ public class GetLIBByIdQueryHandler(IUnitOfWork unitOfWork)
             ParentLIBId = entity.ParentLIBId,
             Name = entity.Name ?? string.Empty,
             LIBNumber = entity.LIBNumber,
-            Level = Enum.Parse<LIBLevelEnum>(entity.Level, true),
-            SourceType = Enum.Parse<LIBSourceTypeEnum>(entity.SourceType, true),
+            SourceType = entity.SourceType,
             SourceId = entity.SourceId,
             Status = Enum.Parse<LIBStatusEnum>(entity.Status, true),
             ConsolidatedIntoLIBId = entity.ConsolidatedIntoLIBId,
@@ -51,11 +50,6 @@ public class GetLIBByIdQueryHandler(IUnitOfWork unitOfWork)
                 Id = entity.Office.Id,
                 Name = entity.Office.Name,
                 Code = entity.Office.Code
-            },
-            DeliveryUnit = entity.DeliveryUnit == null ? null : new LIBDeliveryUnitResponse
-            {
-                Id = entity.DeliveryUnit.Id,
-                OfficeId = entity.DeliveryUnit.OfficeId
             },
             ParentLIB = entity.ParentLIB == null ? null : new LIBSummaryResponse
             {
