@@ -44,8 +44,7 @@ public class GetLIBActivitiesQueryHandler(IUnitOfWork unitOfWork)
                     {
                         Id = entity.OPCRActivity.Id,
                         Name = entity.OPCRActivity.Name
-                    },
-                    DetailCount = entity.LineItemBudgetDetails.Count
+                    }
                 })
             .ToList();
 

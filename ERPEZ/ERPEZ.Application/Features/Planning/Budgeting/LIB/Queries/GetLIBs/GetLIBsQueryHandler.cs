@@ -79,9 +79,7 @@ public class GetLIBsQueryHandler(IUnitOfWork unitOfWork)
                         LIBNumber = entity.PreviousVersion.LIBNumber,
                         Name = entity.PreviousVersion.Name ?? string.Empty,
                         Version = entity.PreviousVersion.Version
-                    },
-                    ActivityCount = entity.LineItemBudgetActivities.Count,
-                    DetailCount = entity.LineItemBudgetDetails.Count
+                    }
                 })
             .ToList();
 

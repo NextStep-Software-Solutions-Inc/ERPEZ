@@ -2064,7 +2064,7 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
 
-                    b.Property<DateTime>("EndDate")
+                    b.Property<DateTime?>("EndDate")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid?>("ExpenseClassId")
@@ -2082,13 +2082,19 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid>("ObjectId")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime>("StartDate")
+                    b.Property<DateTime?>("StartDate")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("TimelineType")
                         .IsRequired()
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
+
+                    b.Property<decimal?>("UnitCost")
+                        .HasColumnType("numeric");
+
+                    b.Property<decimal?>("UnitQuantity")
+                        .HasColumnType("numeric");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");

@@ -24,8 +24,8 @@ public record LIBResponse
     public LIBSummaryResponse? ParentLIB { get; init; }
     public LIBSummaryResponse? ConsolidatedIntoLIB { get; init; }
     public LIBSummaryResponse? PreviousVersion { get; init; }
-    public int ActivityCount { get; init; }
-    public int DetailCount { get; init; }
+    public List<LIBNestedActivityResponse> Activities { get; init; } = [];
+    public List<LIBNestedDetailResponse> OrphanDetails { get; init; } = [];
 }
 
 public record LIBFiscalYearResponse
@@ -56,6 +56,80 @@ public record LIBSummaryResponse
     public string LIBNumber { get; init; } = string.Empty;
     public string Name { get; init; } = string.Empty;
     public int Version { get; init; }
+}
+
+public record LIBNestedActivityResponse
+{
+    public Guid Id { get; init; }
+    public string Name { get; init; } = string.Empty;
+    public Guid? WFPObjectiveActivityId { get; init; }
+    public Guid? OPCRActivityId { get; init; }
+    public LIBNestedWFPActivityResponse? WFPObjectiveActivity { get; init; }
+    public LIBNestedOPCRActivityResponse? OPCRActivity { get; init; }
+    public List<LIBNestedDetailResponse> Details { get; init; } = [];
+}
+
+public record LIBNestedDetailResponse
+{
+    public Guid Id { get; init; }
+    public Guid ObjectId { get; init; }
+    public LIBNestedObjectResponse? Object { get; init; }
+    public Guid? ExpenseClassId { get; init; }
+    public LIBNestedExpenseClassResponse? ExpenseClass { get; init; }
+    public Guid? WFPObjectiveActivityExpenditureId { get; init; }
+    public LIBNestedWFPExpenditureResponse? WFPObjectiveActivityExpenditure { get; init; }
+    public string? Description { get; init; }
+    public decimal? UnitQuantity { get; init; }
+    public decimal? UnitCost { get; init; }
+    public string? TimelineType { get; init; }
+    public DateTime? StartDate { get; init; }
+    public DateTime? EndDate { get; init; }
+    public decimal Budget { get; init; }
+    public List<LIBNestedBudgetAllocationResponse> BudgetAllocations { get; init; } = [];
+}
+
+public record LIBNestedBudgetAllocationResponse
+{
+    public Guid Id { get; init; }
+    public string BudgetPeriod { get; init; } = string.Empty;
+    public DateTime StartDate { get; init; }
+    public DateTime EndDate { get; init; }
+    public decimal TotalAllocated { get; init; }
+}
+
+public record LIBNestedObjectResponse
+{
+    public Guid Id { get; init; }
+    public string Name { get; init; } = string.Empty;
+    public string Code { get; init; } = string.Empty;
+}
+
+public record LIBNestedExpenseClassResponse
+{
+    public Guid Id { get; init; }
+    public string Name { get; init; } = string.Empty;
+    public string Code { get; init; } = string.Empty;
+    public string Type { get; init; } = string.Empty;
+}
+
+public record LIBNestedWFPActivityResponse
+{
+    public Guid Id { get; init; }
+    public string ActivityName { get; init; } = string.Empty;
+}
+
+public record LIBNestedOPCRActivityResponse
+{
+    public Guid Id { get; init; }
+    public string Name { get; init; } = string.Empty;
+}
+
+public record LIBNestedWFPExpenditureResponse
+{
+    public Guid Id { get; init; }
+    public string? ItemDescription { get; init; }
+    public int? Quantity { get; init; }
+    public decimal? UnitCost { get; init; }
 }
 
 public record CreateLIBRequest

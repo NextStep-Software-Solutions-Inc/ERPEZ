@@ -37,7 +37,38 @@ public class GetLIBActivityByIdQueryHandler(IUnitOfWork unitOfWork)
                 Id = entity.OPCRActivity.Id,
                 Name = entity.OPCRActivity.Name
             },
-            DetailCount = entity.LineItemBudgetDetails.Count
+            Details = entity.LineItemBudgetDetails
+                .Where(d => !d.IsDeleted)
+                .Select(d => new LIBActivityNestedDetailResponse
+                {
+                    Id = d.Id,
+                    ObjectId = d.ObjectId,
+                    ObjectName = d.Object?.Name,
+                    ObjectCode = d.Object?.Code,
+                    ExpenseClassId = d.ExpenseClassId,
+                    ExpenseClassName = d.ExpenseClass?.Name,
+                    ExpenseClassType = d.ExpenseClass?.Type.ToString(),
+                    WFPObjectiveActivityExpenditureId = d.WFPObjectiveActivityExpenditureId,
+                    Description = d.Description,
+                    UnitQuantity = d.UnitQuantity,
+                    UnitCost = d.UnitCost,
+                    TimelineType = d.TimelineType,
+                    StartDate = d.StartDate,
+                    EndDate = d.EndDate,
+                    Budget = d.Budget,
+                    BudgetAllocations = d.BudgetAllocations
+                        .Where(b => !b.IsDeleted)
+                        .Select(b => new LIBActivityNestedAllocationResponse
+                        {
+                            Id = b.Id,
+                            BudgetPeriod = b.BudgetPeriod,
+                            StartDate = b.StartDate,
+                            EndDate = b.EndDate,
+                            TotalAllocated = b.TotalAllocated
+                        })
+                        .ToList()
+                })
+                .ToList()
         };
 
         return ApiResponse<LIBActivityResponse>.Success(item);

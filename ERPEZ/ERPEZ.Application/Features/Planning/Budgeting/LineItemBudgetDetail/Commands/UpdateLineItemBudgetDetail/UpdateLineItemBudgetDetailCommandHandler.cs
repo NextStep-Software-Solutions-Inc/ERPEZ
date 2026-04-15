@@ -16,11 +16,40 @@ public class UpdateLineItemBudgetDetailCommandHandler(IUnitOfWork unitOfWork)
         var entity = await unitOfWork.LineItemBudgetDetailRepository.GetByIdAsync(command.Id, cancellationToken)
             ?? throw new NotFoundException($"Line Item Budget Detail with ID {command.Id} not found.");
 
-        _ = await unitOfWork.LineItemBudgetRepository.GetByIdAsync(request.LineItemBudgetId, cancellationToken)
+        var lib = await unitOfWork.LineItemBudgetRepository.GetByIdAsync(request.LineItemBudgetId, cancellationToken)
             ?? throw new NotFoundException($"LIB with ID {request.LineItemBudgetId} not found.");
 
         _ = await unitOfWork.ObjectRepository.GetByIdAsync(request.ObjectId, cancellationToken)
             ?? throw new NotFoundException($"Object with ID {request.ObjectId} not found.");
+
+        // Source + scope validation
+        var isWfp = lib.SourceType.Equals("WFP", StringComparison.OrdinalIgnoreCase);
+        var isOpcr = lib.SourceType.Equals("OPCR", StringComparison.OrdinalIgnoreCase);
+        var isProjectLevel = lib.Scope.Equals("ProjectLevel", StringComparison.OrdinalIgnoreCase);
+
+        if (isWfp && !isProjectLevel)
+        {
+            if (!request.LineItemBudgetActivityId.HasValue)
+                throw new ERPEZ.Shared.Exceptions.ValidationException("LineItemBudgetActivityId is required for WFP ActivityLevel LIBs.");
+            if (request.WFPObjectiveActivityExpenditureId.HasValue)
+                throw new ERPEZ.Shared.Exceptions.ValidationException("WFPObjectiveActivityExpenditureId must not be set for WFP ActivityLevel LIBs.");
+        }
+        else if (isWfp && isProjectLevel)
+        {
+            if (!request.WFPObjectiveActivityExpenditureId.HasValue)
+                throw new ERPEZ.Shared.Exceptions.ValidationException("WFPObjectiveActivityExpenditureId is required for WFP ProjectLevel LIBs.");
+            if (request.LineItemBudgetActivityId.HasValue)
+                throw new ERPEZ.Shared.Exceptions.ValidationException("LineItemBudgetActivityId must not be set for WFP ProjectLevel LIBs.");
+        }
+        else if (isOpcr)
+        {
+            if (!request.LineItemBudgetActivityId.HasValue)
+                throw new ERPEZ.Shared.Exceptions.ValidationException("LineItemBudgetActivityId is required for OPCR LIBs.");
+            if (request.WFPObjectiveActivityExpenditureId.HasValue)
+                throw new ERPEZ.Shared.Exceptions.ValidationException("WFPObjectiveActivityExpenditureId must not be set for OPCR LIBs.");
+            if (!request.StartDate.HasValue || !request.EndDate.HasValue || string.IsNullOrWhiteSpace(request.TimelineType))
+                throw new ERPEZ.Shared.Exceptions.ValidationException("StartDate, EndDate and TimelineType are required for OPCR LIBs.");
+        }
 
         if (request.LineItemBudgetActivityId.HasValue)
         {
@@ -28,9 +57,7 @@ public class UpdateLineItemBudgetDetailCommandHandler(IUnitOfWork unitOfWork)
                 ?? throw new NotFoundException($"LIB Activity with ID {request.LineItemBudgetActivityId} not found.");
 
             if (activity.LineItemBudgetId != request.LineItemBudgetId)
-            {
                 throw new ERPEZ.Shared.Exceptions.ValidationException("Selected LIB Activity does not belong to the provided LIB.");
-            }
         }
 
         if (request.WFPObjectiveActivityExpenditureId.HasValue)
@@ -50,6 +77,8 @@ public class UpdateLineItemBudgetDetailCommandHandler(IUnitOfWork unitOfWork)
         entity.WFPObjectiveActivityExpenditureId = request.WFPObjectiveActivityExpenditureId;
         entity.ObjectId = request.ObjectId;
         entity.Description = request.Description;
+        entity.UnitQuantity = request.UnitQuantity;
+        entity.UnitCost = request.UnitCost;
         entity.TimelineType = request.TimelineType;
         entity.StartDate = request.StartDate;
         entity.EndDate = request.EndDate;

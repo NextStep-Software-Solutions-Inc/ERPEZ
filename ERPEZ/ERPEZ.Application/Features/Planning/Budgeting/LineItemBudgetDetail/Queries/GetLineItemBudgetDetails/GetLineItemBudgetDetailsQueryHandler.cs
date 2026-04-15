@@ -35,6 +35,8 @@ public class GetLineItemBudgetDetailsQueryHandler(IUnitOfWork unitOfWork)
                     EndDate = entity.EndDate,
                     Budget = entity.Budget,
                     ExpenseClassId = entity.ExpenseClassId,
+                    UnitQuantity = entity.UnitQuantity,
+                    UnitCost = entity.UnitCost,
                     LineItemBudget = entity.LineItemBudget == null ? null : new LineItemBudgetDetailLIBResponse
                     {
                         Id = entity.LineItemBudget.Id,

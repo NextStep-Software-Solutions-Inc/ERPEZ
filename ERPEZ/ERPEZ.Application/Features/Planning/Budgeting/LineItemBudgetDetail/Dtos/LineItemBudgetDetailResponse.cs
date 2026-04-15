@@ -8,9 +8,11 @@ public record LineItemBudgetDetailResponse
     public Guid? WFPObjectiveActivityExpenditureId { get; init; }
     public Guid ObjectId { get; init; }
     public string? Description { get; init; }
-    public string TimelineType { get; init; } = string.Empty;
-    public DateTime StartDate { get; init; }
-    public DateTime EndDate { get; init; }
+    public decimal? UnitQuantity { get; init; }
+    public decimal? UnitCost { get; init; }
+    public string? TimelineType { get; init; }
+    public DateTime? StartDate { get; init; }
+    public DateTime? EndDate { get; init; }
     public decimal Budget { get; init; }
     public Guid? ExpenseClassId { get; init; }
     public LineItemBudgetDetailLIBResponse? LineItemBudget { get; init; }
@@ -63,9 +65,11 @@ public record CreateLineItemBudgetDetailRequest
     public Guid? WFPObjectiveActivityExpenditureId { get; init; }
     public Guid ObjectId { get; init; }
     public string? Description { get; init; }
-    public string TimelineType { get; init; } = string.Empty;
-    public DateTime StartDate { get; init; }
-    public DateTime EndDate { get; init; }
+    public decimal? UnitQuantity { get; init; }
+    public decimal? UnitCost { get; init; }
+    public string? TimelineType { get; init; }
+    public DateTime? StartDate { get; init; }
+    public DateTime? EndDate { get; init; }
     public decimal Budget { get; init; }
     public Guid? ExpenseClassId { get; init; }
 }
@@ -77,9 +81,11 @@ public record UpdateLineItemBudgetDetailRequest
     public Guid? WFPObjectiveActivityExpenditureId { get; init; }
     public Guid ObjectId { get; init; }
     public string? Description { get; init; }
-    public string TimelineType { get; init; } = string.Empty;
-    public DateTime StartDate { get; init; }
-    public DateTime EndDate { get; init; }
+    public decimal? UnitQuantity { get; init; }
+    public decimal? UnitCost { get; init; }
+    public string? TimelineType { get; init; }
+    public DateTime? StartDate { get; init; }
+    public DateTime? EndDate { get; init; }
     public decimal Budget { get; init; }
     public Guid? ExpenseClassId { get; init; }
 }

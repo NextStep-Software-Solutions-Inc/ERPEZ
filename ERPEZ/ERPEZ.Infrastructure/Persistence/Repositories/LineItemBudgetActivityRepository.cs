@@ -25,6 +25,14 @@ public class LineItemBudgetActivityRepository : Repository<LineItemBudgetActivit
             .Include(x => x.WFPObjectiveActivity)
             .Include(x => x.OPCRActivity)
             .Include(x => x.LineItemBudgetDetails)
+                .ThenInclude(d => d.Object)
+            .Include(x => x.LineItemBudgetDetails)
+                .ThenInclude(d => d.ExpenseClass)
+            .Include(x => x.LineItemBudgetDetails)
+                .ThenInclude(d => d.WFPObjectiveActivityExpenditure)
+            .Include(x => x.LineItemBudgetDetails)
+                .ThenInclude(d => d.BudgetAllocations)
+            .AsSplitQuery()
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
     }
 

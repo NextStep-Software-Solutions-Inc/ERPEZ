@@ -5,6 +5,7 @@ using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
+using DomainDetail = ERPEZ.Domain.Entities.Planning.LineItemBudgetDetail;
 
 namespace ERPEZ.Application.Features.Planning.Budgeting.LIB.Queries.GetLIBById;
 
@@ -72,11 +73,83 @@ public class GetLIBByIdQueryHandler(IUnitOfWork unitOfWork)
                 Name = entity.PreviousVersion.Name ?? string.Empty,
                 Version = entity.PreviousVersion.Version
             },
-            ActivityCount = entity.LineItemBudgetActivities.Count,
-            DetailCount = entity.LineItemBudgetDetails.Count
+            Activities = entity.LineItemBudgetActivities
+                .Where(a => !a.IsDeleted)
+                .Select(a => new LIBNestedActivityResponse
+                {
+                    Id = a.Id,
+                    Name = a.Name,
+                    WFPObjectiveActivityId = a.WFPObjectiveActivityId,
+                    OPCRActivityId = a.OPCRActivityId,
+                    WFPObjectiveActivity = a.WFPObjectiveActivity == null ? null : new LIBNestedWFPActivityResponse
+                    {
+                        Id = a.WFPObjectiveActivity.Id,
+                        ActivityName = a.WFPObjectiveActivity.ActivityName
+                    },
+                    OPCRActivity = a.OPCRActivity == null ? null : new LIBNestedOPCRActivityResponse
+                    {
+                        Id = a.OPCRActivity.Id,
+                        Name = a.OPCRActivity.Name
+                    },
+                    Details = a.LineItemBudgetDetails
+                        .Where(d => !d.IsDeleted)
+                        .Select(MapDetail)
+                        .ToList()
+                })
+                .ToList(),
+            OrphanDetails = entity.LineItemBudgetDetails
+                .Where(d => !d.IsDeleted && d.LineItemBudgetActivityId == null)
+                .Select(MapDetail)
+                .ToList()
         };
 
         return ApiResponse<LIBResponse>.Success(item);
     }
+
+    private static LIBNestedDetailResponse MapDetail(DomainDetail d) => new()
+    {
+        Id = d.Id,
+        ObjectId = d.ObjectId,
+        Object = d.Object == null ? null : new LIBNestedObjectResponse
+        {
+            Id = d.Object.Id,
+            Name = d.Object.Name,
+            Code = d.Object.Code
+        },
+        ExpenseClassId = d.ExpenseClassId,
+        ExpenseClass = d.ExpenseClass == null ? null : new LIBNestedExpenseClassResponse
+        {
+            Id = d.ExpenseClass.Id,
+            Name = d.ExpenseClass.Name,
+            Code = d.ExpenseClass.Code,
+            Type = d.ExpenseClass.Type.ToString()
+        },
+        WFPObjectiveActivityExpenditureId = d.WFPObjectiveActivityExpenditureId,
+        WFPObjectiveActivityExpenditure = d.WFPObjectiveActivityExpenditure == null ? null : new LIBNestedWFPExpenditureResponse
+        {
+            Id = d.WFPObjectiveActivityExpenditure.Id,
+            ItemDescription = d.WFPObjectiveActivityExpenditure.ItemDescription,
+            Quantity = d.WFPObjectiveActivityExpenditure.Quantity,
+            UnitCost = d.WFPObjectiveActivityExpenditure.UnitCost
+        },
+        Description = d.Description,
+        UnitQuantity = d.UnitQuantity,
+        UnitCost = d.UnitCost,
+        TimelineType = d.TimelineType,
+        StartDate = d.StartDate,
+        EndDate = d.EndDate,
+        Budget = d.Budget,
+        BudgetAllocations = d.BudgetAllocations
+            .Where(b => !b.IsDeleted)
+            .Select(b => new LIBNestedBudgetAllocationResponse
+            {
+                Id = b.Id,
+                BudgetPeriod = b.BudgetPeriod,
+                StartDate = b.StartDate,
+                EndDate = b.EndDate,
+                TotalAllocated = b.TotalAllocated
+            })
+            .ToList()
+    };
 }
 

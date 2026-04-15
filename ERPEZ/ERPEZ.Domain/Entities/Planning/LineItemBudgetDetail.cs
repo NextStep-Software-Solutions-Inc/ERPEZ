@@ -28,18 +28,36 @@ public class LineItemBudgetDetail : BaseEntity
     
     [Sieve(CanFilter = true, CanSort = true)]
     public string? Description { get; set; }
-    
+
     /// <summary>
-    /// Values: Monthly, Quarterly
+    /// WFP ActivityLevel only: quantity of items.
     /// </summary>
     [Sieve(CanFilter = true, CanSort = true)]
-    public string TimelineType { get; set; } = string.Empty;
-    
+    public decimal? UnitQuantity { get; set; }
+
+    /// <summary>
+    /// WFP ActivityLevel only: cost per unit.
+    /// </summary>
     [Sieve(CanFilter = true, CanSort = true)]
-    public DateTime StartDate { get; set; }
-    
+    public decimal? UnitCost { get; set; }
+
+    /// <summary>
+    /// Values: Monthly, Quarterly. Null for WFP (period lives on BudgetAllocation).
+    /// </summary>
     [Sieve(CanFilter = true, CanSort = true)]
-    public DateTime EndDate { get; set; }
+    public string? TimelineType { get; set; }
+    
+    /// <summary>
+    /// Null for WFP (period lives on BudgetAllocation).
+    /// </summary>
+    [Sieve(CanFilter = true, CanSort = true)]
+    public DateTime? StartDate { get; set; }
+    
+    /// <summary>
+    /// Null for WFP (period lives on BudgetAllocation).
+    /// </summary>
+    [Sieve(CanFilter = true, CanSort = true)]
+    public DateTime? EndDate { get; set; }
     
     [Sieve(CanFilter = true, CanSort = true)]
     public decimal Budget { get; set; }
