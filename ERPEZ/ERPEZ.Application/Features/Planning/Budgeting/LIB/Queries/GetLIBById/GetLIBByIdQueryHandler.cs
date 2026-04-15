@@ -1,11 +1,9 @@
-using ERPEZ.Application.Features.Planning.Budgeting.Common;
 using ERPEZ.Application.Features.Planning.Budgeting.Common.Enums;
 using ERPEZ.Application.Features.Planning.Budgeting.LIB.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
-using DomainDetail = ERPEZ.Domain.Entities.Planning.LineItemBudgetDetail;
 
 namespace ERPEZ.Application.Features.Planning.Budgeting.LIB.Queries.GetLIBById;
 
@@ -93,63 +91,105 @@ public class GetLIBByIdQueryHandler(IUnitOfWork unitOfWork)
                     },
                     Details = a.LineItemBudgetDetails
                         .Where(d => !d.IsDeleted)
-                        .Select(MapDetail)
+                        .Select(d => new LIBNestedDetailResponse
+                        {
+                            Id = d.Id,
+                            ObjectId = d.ObjectId,
+                            Object = d.Object == null ? null : new LIBNestedObjectResponse
+                            {
+                                Id = d.Object.Id,
+                                Name = d.Object.Name,
+                                Code = d.Object.Code
+                            },
+                            ExpenseClassId = d.ExpenseClassId,
+                            ExpenseClass = d.ExpenseClass == null ? null : new LIBNestedExpenseClassResponse
+                            {
+                                Id = d.ExpenseClass.Id,
+                                Name = d.ExpenseClass.Name,
+                                Code = d.ExpenseClass.Code,
+                                Type = d.ExpenseClass.Type.ToString()
+                            },
+                            WFPObjectiveActivityExpenditureId = d.WFPObjectiveActivityExpenditureId,
+                            WFPObjectiveActivityExpenditure = d.WFPObjectiveActivityExpenditure == null ? null : new LIBNestedWFPExpenditureResponse
+                            {
+                                Id = d.WFPObjectiveActivityExpenditure.Id,
+                                ItemDescription = d.WFPObjectiveActivityExpenditure.ItemDescription,
+                                Quantity = d.WFPObjectiveActivityExpenditure.Quantity,
+                                UnitCost = d.WFPObjectiveActivityExpenditure.UnitCost
+                            },
+                            Description = d.Description,
+                            UnitQuantity = d.UnitQuantity,
+                            UnitCost = d.UnitCost,
+                            TimelineType = d.TimelineType,
+                            StartDate = d.StartDate,
+                            EndDate = d.EndDate,
+                            Budget = d.Budget,
+                            BudgetAllocations = d.BudgetAllocations
+                                .Where(b => !b.IsDeleted)
+                                .Select(b => new LIBNestedBudgetAllocationResponse
+                                {
+                                    Id = b.Id,
+                                    BudgetPeriod = b.BudgetPeriod,
+                                    StartDate = b.StartDate,
+                                    EndDate = b.EndDate,
+                                    TotalAllocated = b.TotalAllocated
+                                })
+                                .ToList()
+                        })
                         .ToList()
                 })
                 .ToList(),
             OrphanDetails = entity.LineItemBudgetDetails
                 .Where(d => !d.IsDeleted && d.LineItemBudgetActivityId == null)
-                .Select(MapDetail)
+                .Select(d => new LIBNestedDetailResponse
+                {
+                    Id = d.Id,
+                    ObjectId = d.ObjectId,
+                    Object = d.Object == null ? null : new LIBNestedObjectResponse
+                    {
+                        Id = d.Object.Id,
+                        Name = d.Object.Name,
+                        Code = d.Object.Code
+                    },
+                    ExpenseClassId = d.ExpenseClassId,
+                    ExpenseClass = d.ExpenseClass == null ? null : new LIBNestedExpenseClassResponse
+                    {
+                        Id = d.ExpenseClass.Id,
+                        Name = d.ExpenseClass.Name,
+                        Code = d.ExpenseClass.Code,
+                        Type = d.ExpenseClass.Type.ToString()
+                    },
+                    WFPObjectiveActivityExpenditureId = d.WFPObjectiveActivityExpenditureId,
+                    WFPObjectiveActivityExpenditure = d.WFPObjectiveActivityExpenditure == null ? null : new LIBNestedWFPExpenditureResponse
+                    {
+                        Id = d.WFPObjectiveActivityExpenditure.Id,
+                        ItemDescription = d.WFPObjectiveActivityExpenditure.ItemDescription,
+                        Quantity = d.WFPObjectiveActivityExpenditure.Quantity,
+                        UnitCost = d.WFPObjectiveActivityExpenditure.UnitCost
+                    },
+                    Description = d.Description,
+                    UnitQuantity = d.UnitQuantity,
+                    UnitCost = d.UnitCost,
+                    TimelineType = d.TimelineType,
+                    StartDate = d.StartDate,
+                    EndDate = d.EndDate,
+                    Budget = d.Budget,
+                    BudgetAllocations = d.BudgetAllocations
+                        .Where(b => !b.IsDeleted)
+                        .Select(b => new LIBNestedBudgetAllocationResponse
+                        {
+                            Id = b.Id,
+                            BudgetPeriod = b.BudgetPeriod,
+                            StartDate = b.StartDate,
+                            EndDate = b.EndDate,
+                            TotalAllocated = b.TotalAllocated
+                        })
+                        .ToList()
+                })
                 .ToList()
         };
 
         return ApiResponse<LIBResponse>.Success(item);
     }
-
-    private static LIBNestedDetailResponse MapDetail(DomainDetail d) => new()
-    {
-        Id = d.Id,
-        ObjectId = d.ObjectId,
-        Object = d.Object == null ? null : new LIBNestedObjectResponse
-        {
-            Id = d.Object.Id,
-            Name = d.Object.Name,
-            Code = d.Object.Code
-        },
-        ExpenseClassId = d.ExpenseClassId,
-        ExpenseClass = d.ExpenseClass == null ? null : new LIBNestedExpenseClassResponse
-        {
-            Id = d.ExpenseClass.Id,
-            Name = d.ExpenseClass.Name,
-            Code = d.ExpenseClass.Code,
-            Type = d.ExpenseClass.Type.ToString()
-        },
-        WFPObjectiveActivityExpenditureId = d.WFPObjectiveActivityExpenditureId,
-        WFPObjectiveActivityExpenditure = d.WFPObjectiveActivityExpenditure == null ? null : new LIBNestedWFPExpenditureResponse
-        {
-            Id = d.WFPObjectiveActivityExpenditure.Id,
-            ItemDescription = d.WFPObjectiveActivityExpenditure.ItemDescription,
-            Quantity = d.WFPObjectiveActivityExpenditure.Quantity,
-            UnitCost = d.WFPObjectiveActivityExpenditure.UnitCost
-        },
-        Description = d.Description,
-        UnitQuantity = d.UnitQuantity,
-        UnitCost = d.UnitCost,
-        TimelineType = d.TimelineType,
-        StartDate = d.StartDate,
-        EndDate = d.EndDate,
-        Budget = d.Budget,
-        BudgetAllocations = d.BudgetAllocations
-            .Where(b => !b.IsDeleted)
-            .Select(b => new LIBNestedBudgetAllocationResponse
-            {
-                Id = b.Id,
-                BudgetPeriod = b.BudgetPeriod,
-                StartDate = b.StartDate,
-                EndDate = b.EndDate,
-                TotalAllocated = b.TotalAllocated
-            })
-            .ToList()
-    };
 }
 
