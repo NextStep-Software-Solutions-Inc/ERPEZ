@@ -21,7 +21,7 @@ public class GetSubOfficeCeilingByIdQueryHandler(IUnitOfWork unitOfWork)
             Id = entity.Id,
             OfficeCeilingId = entity.OfficeCeilingId,
             SubOfficeId = entity.SubOfficeId,
-            FundClusterId = entity.FundClusterId,
+            FundSourceId = entity.FundClusterId,
             FiscalYearId = entity.FiscalYearId,
             PSAmount = entity.PSAmount,
             MOOEAmount = entity.MOOEAmount,
@@ -40,7 +40,7 @@ public class GetSubOfficeCeilingByIdQueryHandler(IUnitOfWork unitOfWork)
                 Name = entity.SubOffice.Name,
                 Code = entity.SubOffice.Code
             },
-            FundCluster = entity.FundCluster == null ? null : new SubOfficeCeilingFundClusterResponse
+            FundSource = entity.FundCluster == null ? null : new SubOfficeCeilingFundSourceResponse
             {
                 Id = entity.FundCluster.Id,
                 Name = entity.FundCluster.Name,

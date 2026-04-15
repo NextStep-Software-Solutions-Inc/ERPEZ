@@ -7,7 +7,7 @@ public record SubOfficeCeilingResponse
     public Guid Id { get; init; }
     public Guid OfficeCeilingId { get; init; }
     public Guid SubOfficeId { get; init; }
-    public Guid FundClusterId { get; init; }
+    public Guid FundSourceId { get; init; }
     public Guid FiscalYearId { get; init; }
     public decimal PSAmount { get; init; }
     public decimal MOOEAmount { get; init; }
@@ -15,7 +15,7 @@ public record SubOfficeCeilingResponse
     public CeilingStatusEnum Status { get; init; }
     public SubOfficeCeilingOfficeCeilingResponse? OfficeCeiling { get; init; }
     public SubOfficeCeilingOfficeResponse? SubOffice { get; init; }
-    public SubOfficeCeilingFundClusterResponse? FundCluster { get; init; }
+    public SubOfficeCeilingFundSourceResponse? FundSource { get; init; }
     public SubOfficeCeilingFiscalYearResponse? FiscalYear { get; init; }
 }
 
@@ -34,7 +34,7 @@ public record SubOfficeCeilingOfficeResponse
     public string Code { get; init; } = string.Empty;
 }
 
-public record SubOfficeCeilingFundClusterResponse
+public record SubOfficeCeilingFundSourceResponse
 {
     public Guid Id { get; init; }
     public string Name { get; init; } = string.Empty;
