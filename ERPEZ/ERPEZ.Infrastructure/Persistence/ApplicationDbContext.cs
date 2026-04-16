@@ -84,11 +84,15 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<OPCRActivityEvaluation>? OPCRActivityEvaluations { get; set; }
 
     //Budget
+    public DbSet<AgencyMasterBudget>? AgencyMasterBudgets { get; set; }
+    public DbSet<OfficeCeiling>? OfficeCeilings { get; set; }
+    public DbSet<SubOfficeCeiling>? SubOfficeCeilings { get; set; }
     public DbSet<LineItemBudget>? LineItemBudgets { get; set; }
     public DbSet<PPMP>? PPMPs { get; set; }
     public DbSet<APP>? APPs { get; set; }
     public DbSet<LineItemBudgetActivity>? LineItemBudgetActivities { get; set; }
     public DbSet<LineItemBudgetDetail>? LineItemBudgetDetails { get; set; }
+    public DbSet<LIBAmendmentRequest>? LIBAmendmentRequests { get; set; }
 
     //Procurement
     public DbSet<ProcurementCategory>? ProcurementCategories { get; set; }
@@ -1136,6 +1140,363 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<RatingScaleLevel>()
             .Property(rl => rl.MaxValue)
             .HasPrecision(18, 4);
+
+        // Budget - AgencyMasterBudget
+        modelBuilder.Entity<AgencyMasterBudget>()
+            .Property(e => e.SourceDocumentType)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        modelBuilder.Entity<AgencyMasterBudget>()
+            .Property(e => e.PSAmount)
+            .HasPrecision(18, 2)
+            .IsRequired();
+
+        modelBuilder.Entity<AgencyMasterBudget>()
+            .Property(e => e.MOOEAmount)
+            .HasPrecision(18, 2)
+            .IsRequired();
+
+        modelBuilder.Entity<AgencyMasterBudget>()
+            .Property(e => e.COAmount)
+            .HasPrecision(18, 2)
+            .IsRequired();
+
+        modelBuilder.Entity<AgencyMasterBudget>()
+            .HasOne(e => e.FiscalYear)
+            .WithMany()
+            .HasForeignKey(e => e.FiscalYearId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<AgencyMasterBudget>()
+            .HasOne(e => e.FundSource)
+            .WithMany()
+            .HasForeignKey(e => e.FundSourceId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<AgencyMasterBudget>()
+            .HasIndex(e => e.FiscalYearId);
+
+        modelBuilder.Entity<AgencyMasterBudget>()
+            .HasIndex(e => e.FundSourceId);
+
+        modelBuilder.Entity<AgencyMasterBudget>()
+            .HasIndex(e => e.SourceDocumentType);
+
+        modelBuilder.Entity<AgencyMasterBudget>()
+            .HasIndex(e => new { e.FiscalYearId, e.FundSourceId, e.SourceDocumentType })
+            .IsUnique();
+
+        // Budget - OfficeCeiling
+        modelBuilder.Entity<OfficeCeiling>()
+            .Property(e => e.TargetType)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        modelBuilder.Entity<OfficeCeiling>()
+            .Property(e => e.Status)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        modelBuilder.Entity<OfficeCeiling>()
+            .Property(e => e.PSAmount)
+            .HasPrecision(18, 2)
+            .IsRequired();
+
+        modelBuilder.Entity<OfficeCeiling>()
+            .Property(e => e.MOOEAmount)
+            .HasPrecision(18, 2)
+            .IsRequired();
+
+        modelBuilder.Entity<OfficeCeiling>()
+            .Property(e => e.COAmount)
+            .HasPrecision(18, 2)
+            .IsRequired();
+
+        modelBuilder.Entity<OfficeCeiling>()
+            .Property(e => e.IsSupplemental)
+            .IsRequired()
+            .HasDefaultValue(false);
+
+        modelBuilder.Entity<OfficeCeiling>()
+            .HasOne(e => e.FiscalYear)
+            .WithMany()
+            .HasForeignKey(e => e.FiscalYearId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<OfficeCeiling>()
+            .HasOne(e => e.Office)
+            .WithMany()
+            .HasForeignKey(e => e.OfficeId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<OfficeCeiling>()
+            .HasOne(e => e.AgencyMasterBudget)
+            .WithMany(e => e.OfficeCeilings)
+            .HasForeignKey(e => e.AgencyMasterBudgetId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<OfficeCeiling>()
+            .HasIndex(e => e.FiscalYearId);
+
+        modelBuilder.Entity<OfficeCeiling>()
+            .HasIndex(e => e.OfficeId);
+
+        modelBuilder.Entity<OfficeCeiling>()
+            .HasIndex(e => e.AgencyMasterBudgetId);
+
+        modelBuilder.Entity<OfficeCeiling>()
+            .HasIndex(e => e.Status);
+
+        modelBuilder.Entity<OfficeCeiling>()
+            .HasIndex(e => new { e.OfficeId, e.FiscalYearId, e.AgencyMasterBudgetId, e.TargetType, e.IsSupplemental })
+            .IsUnique();
+
+        // Budget - SubOfficeCeiling
+        modelBuilder.Entity<SubOfficeCeiling>()
+            .Property(e => e.Status)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        modelBuilder.Entity<SubOfficeCeiling>()
+            .Property(e => e.PSAmount)
+            .HasPrecision(18, 2)
+            .IsRequired();
+
+        modelBuilder.Entity<SubOfficeCeiling>()
+            .Property(e => e.MOOEAmount)
+            .HasPrecision(18, 2)
+            .IsRequired();
+
+        modelBuilder.Entity<SubOfficeCeiling>()
+            .Property(e => e.COAmount)
+            .HasPrecision(18, 2)
+            .IsRequired();
+
+        modelBuilder.Entity<SubOfficeCeiling>()
+            .HasOne(e => e.OfficeCeiling)
+            .WithMany(e => e.SubOfficeCeilings)
+            .HasForeignKey(e => e.OfficeCeilingId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<SubOfficeCeiling>()
+            .HasOne(e => e.SubOffice)
+            .WithMany()
+            .HasForeignKey(e => e.SubOfficeId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<SubOfficeCeiling>()
+            .HasOne(e => e.FundCluster)
+            .WithMany()
+            .HasForeignKey(e => e.FundClusterId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<SubOfficeCeiling>()
+            .HasOne(e => e.FiscalYear)
+            .WithMany()
+            .HasForeignKey(e => e.FiscalYearId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<SubOfficeCeiling>()
+            .HasIndex(e => e.OfficeCeilingId);
+
+        modelBuilder.Entity<SubOfficeCeiling>()
+            .HasIndex(e => e.SubOfficeId);
+
+        modelBuilder.Entity<SubOfficeCeiling>()
+            .HasIndex(e => e.FundClusterId);
+
+        modelBuilder.Entity<SubOfficeCeiling>()
+            .HasIndex(e => e.FiscalYearId);
+
+        modelBuilder.Entity<SubOfficeCeiling>()
+            .HasIndex(e => new { e.OfficeCeilingId, e.SubOfficeId, e.FundClusterId })
+            .IsUnique();
+
+        // Budget - LineItemBudget
+        modelBuilder.Entity<LineItemBudget>()
+            .Property(e => e.SourceType)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        modelBuilder.Entity<LineItemBudget>()
+            .Property(e => e.Scope)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        modelBuilder.Entity<LineItemBudget>()
+            .Property(e => e.Level)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        modelBuilder.Entity<LineItemBudget>()
+            .Property(e => e.Status)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        modelBuilder.Entity<LineItemBudget>()
+            .Property(e => e.LIBNumber)
+            .IsRequired()
+            .HasMaxLength(100);
+
+        modelBuilder.Entity<LineItemBudget>()
+            .Property(e => e.Name)
+            .HasMaxLength(500);
+
+        modelBuilder.Entity<LineItemBudget>()
+            .Property(e => e.TotalAmount)
+            .HasPrecision(18, 2);
+
+        modelBuilder.Entity<LineItemBudget>()
+            .Property(e => e.Version)
+            .IsRequired()
+            .HasDefaultValue(1);
+
+        modelBuilder.Entity<LineItemBudget>()
+            .HasOne(e => e.FiscalYearEntity)
+            .WithMany()
+            .HasForeignKey(e => e.FiscalYearId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<LineItemBudget>()
+            .HasOne(e => e.FundCluster)
+            .WithMany()
+            .HasForeignKey(e => e.FundClusterId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<LineItemBudget>()
+            .HasOne(e => e.Office)
+            .WithMany()
+            .HasForeignKey(e => e.OfficeId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<LineItemBudget>()
+            .HasOne(e => e.ParentLIB)
+            .WithMany(e => e.ChildLIBs)
+            .HasForeignKey(e => e.ParentLIBId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<LineItemBudget>()
+            .HasOne(e => e.ConsolidatedIntoLIB)
+            .WithMany(e => e.ConsolidatedChildLIBs)
+            .HasForeignKey(e => e.ConsolidatedIntoLIBId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<LineItemBudget>()
+            .HasOne(e => e.PreviousVersion)
+            .WithMany(e => e.VersionHistory)
+            .HasForeignKey(e => e.PreviousVersionId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<LineItemBudget>()
+            .HasIndex(e => e.LIBNumber)
+            .IsUnique();
+
+        modelBuilder.Entity<LineItemBudget>()
+            .HasIndex(e => e.FiscalYearId);
+
+        modelBuilder.Entity<LineItemBudget>()
+            .HasIndex(e => e.FundClusterId);
+
+        modelBuilder.Entity<LineItemBudget>()
+            .HasIndex(e => e.OfficeId);
+
+        modelBuilder.Entity<LineItemBudget>()
+            .HasIndex(e => e.DeliveryUnitId);
+
+        modelBuilder.Entity<LineItemBudget>()
+            .HasIndex(e => e.Status);
+
+        modelBuilder.Entity<LineItemBudget>()
+            .HasIndex(e => e.ParentLIBId);
+
+        modelBuilder.Entity<LineItemBudget>()
+            .HasIndex(e => e.ConsolidatedIntoLIBId);
+
+        modelBuilder.Entity<LineItemBudget>()
+            .HasIndex(e => e.PreviousVersionId);
+
+        // Budget - LineItemBudgetActivity
+        modelBuilder.Entity<LineItemBudgetActivity>()
+            .Property(e => e.Name)
+            .IsRequired()
+            .HasMaxLength(500);
+
+        modelBuilder.Entity<LineItemBudgetActivity>()
+            .HasIndex(e => e.LineItemBudgetId);
+
+        modelBuilder.Entity<LineItemBudgetActivity>()
+            .HasIndex(e => e.WFPObjectiveActivityId);
+
+        modelBuilder.Entity<LineItemBudgetActivity>()
+            .HasIndex(e => e.OPCRActivityId);
+
+        // Budget - LineItemBudgetDetail
+        modelBuilder.Entity<LineItemBudgetDetail>()
+            .Property(e => e.TimelineType)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        modelBuilder.Entity<LineItemBudgetDetail>()
+            .Property(e => e.Budget)
+            .HasPrecision(18, 2)
+            .IsRequired();
+
+        modelBuilder.Entity<LineItemBudgetDetail>()
+            .Property(e => e.Description)
+            .HasMaxLength(1000);
+
+        modelBuilder.Entity<LineItemBudgetDetail>()
+            .HasIndex(e => e.LineItemBudgetId);
+
+        modelBuilder.Entity<LineItemBudgetDetail>()
+            .HasIndex(e => e.LineItemBudgetActivityId);
+
+        modelBuilder.Entity<LineItemBudgetDetail>()
+            .HasIndex(e => e.ObjectId);
+
+        modelBuilder.Entity<LineItemBudgetDetail>()
+            .HasIndex(e => e.WFPObjectiveActivityExpenditureId);
+
+        modelBuilder.Entity<LineItemBudgetDetail>()
+            .HasIndex(e => new { e.StartDate, e.EndDate });
+
+        // Budget - LIBAmendmentRequest
+        modelBuilder.Entity<LIBAmendmentRequest>()
+            .Property(e => e.Reason)
+            .IsRequired()
+            .HasMaxLength(250);
+
+        modelBuilder.Entity<LIBAmendmentRequest>()
+            .Property(e => e.Justification)
+            .IsRequired()
+            .HasMaxLength(2000);
+
+        modelBuilder.Entity<LIBAmendmentRequest>()
+            .Property(e => e.Status)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        modelBuilder.Entity<LIBAmendmentRequest>()
+            .HasOne(e => e.LineItemBudget)
+            .WithMany(e => e.LIBAmendmentRequests)
+            .HasForeignKey(e => e.LineItemBudgetId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<LIBAmendmentRequest>()
+            .HasOne(e => e.ProposedLineItemBudget)
+            .WithMany(e => e.ProposedLIBAmendmentRequests)
+            .HasForeignKey(e => e.ProposedLineItemBudgetId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<LIBAmendmentRequest>()
+            .HasIndex(e => e.LineItemBudgetId);
+
+        modelBuilder.Entity<LIBAmendmentRequest>()
+            .HasIndex(e => e.ProposedLineItemBudgetId);
+
+        modelBuilder.Entity<LIBAmendmentRequest>()
+            .HasIndex(e => e.Status);
 
         base.OnModelCreating(modelBuilder);
     }

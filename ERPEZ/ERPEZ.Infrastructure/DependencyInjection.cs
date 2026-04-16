@@ -89,6 +89,13 @@ public static class DependencyInjection
         services.AddScoped<IFiscalYearRepository, FiscalYearRepository>();
         services.AddScoped<IFiscalMonthRepository, FiscalMonthRepository>();
         services.AddScoped<IBudgetCallRepository, BudgetCallRepository>();
+        services.AddScoped<IAgencyMasterBudgetRepository, AgencyMasterBudgetRepository>();
+        services.AddScoped<IOfficeCeilingRepository, OfficeCeilingRepository>();
+        services.AddScoped<ISubOfficeCeilingRepository, SubOfficeCeilingRepository>();
+        services.AddScoped<ILineItemBudgetRepository, LineItemBudgetRepository>();
+        services.AddScoped<ILineItemBudgetActivityRepository, LineItemBudgetActivityRepository>();
+        services.AddScoped<ILineItemBudgetDetailRepository, LineItemBudgetDetailRepository>();
+        services.AddScoped<ILIBAmendmentRequestRepository, LIBAmendmentRequestRepository>();
         services.AddScoped<IClusterRepository, ClusterRepository>();
         services.AddScoped<IWFPObjectiveActivityExpenditureRepository, WFPObjectiveActivityExpenditureRepository>();
         services.AddScoped<IWFPObjectiveActivityRepository, WFPObjectiveActivityRepository>();
