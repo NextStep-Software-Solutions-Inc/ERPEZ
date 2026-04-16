@@ -39,7 +39,7 @@ public class UpdateLIBCommandHandler(IUnitOfWork unitOfWork)
 
         if (!request.SourceId.HasValue)
         {
-            throw new ERPEZ.Shared.Exceptions.ValidationException("SourceId is required for LIB source types OPCR and WFP.");
+            throw new ERPEZ.Shared.Exceptions.ValidationException("SourceId is required.");
         }
 
         if (request.SourceType.Equals("OPCR", StringComparison.OrdinalIgnoreCase))
@@ -68,7 +68,7 @@ public class UpdateLIBCommandHandler(IUnitOfWork unitOfWork)
         entity.Scope = request.Scope;
         entity.Name = request.Name;
         entity.LIBNumber = request.LIBNumber;
-        entity.Level = string.Empty;
+        entity.Level = request.Level;
         entity.SourceType = request.SourceType;
         entity.SourceId = request.SourceId;
         entity.ConsolidatedIntoLIBId = request.ConsolidatedIntoLIBId;

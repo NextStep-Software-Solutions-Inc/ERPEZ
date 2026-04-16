@@ -38,7 +38,6 @@ public class LineItemBudget : ApprovableEntity
     
     /// <summary>
     /// SourceId is either OPCRId or WFPId
-    /// Nullable because Independent source type doesn't need a source ID
     /// </summary>
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid? SourceId { get; set; }

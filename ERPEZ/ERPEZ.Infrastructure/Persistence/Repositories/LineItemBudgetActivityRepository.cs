@@ -30,8 +30,6 @@ public class LineItemBudgetActivityRepository : Repository<LineItemBudgetActivit
                         .ThenInclude(oc => oc.ExpenseClass)
             .Include(x => x.LineItemBudgetDetails)
                 .ThenInclude(d => d.WFPObjectiveActivityExpenditure)
-            .Include(x => x.LineItemBudgetDetails)
-                .ThenInclude(d => d.BudgetAllocations)
             .AsSplitQuery()
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
     }

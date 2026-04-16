@@ -84,16 +84,6 @@ public record LIBNestedDetailResponse
     public DateTime? StartDate { get; init; }
     public DateTime? EndDate { get; init; }
     public decimal Budget { get; init; }
-    public List<LIBNestedBudgetAllocationResponse> BudgetAllocations { get; init; } = [];
-}
-
-public record LIBNestedBudgetAllocationResponse
-{
-    public Guid Id { get; init; }
-    public string BudgetPeriod { get; init; } = string.Empty;
-    public DateTime StartDate { get; init; }
-    public DateTime EndDate { get; init; }
-    public decimal TotalAllocated { get; init; }
 }
 
 public record LIBNestedObjectResponse
@@ -138,6 +128,7 @@ public record CreateLIBRequest
     public Guid? OfficeId { get; init; }
     public Guid? ParentLIBId { get; init; }
     public string Scope { get; init; } = string.Empty;
+    public string Level { get; init; } = string.Empty;
     public string Name { get; init; } = string.Empty;
     public string SourceType { get; init; } = string.Empty;
     public Guid? SourceId { get; init; }
@@ -152,6 +143,7 @@ public record UpdateLIBRequest
     public Guid? OfficeId { get; init; }
     public Guid? ParentLIBId { get; init; }
     public string Scope { get; init; } = string.Empty;
+    public string Level { get; init; } = string.Empty;
     public string Name { get; init; } = string.Empty;
     public string LIBNumber { get; init; } = string.Empty;
     public string SourceType { get; init; } = string.Empty;

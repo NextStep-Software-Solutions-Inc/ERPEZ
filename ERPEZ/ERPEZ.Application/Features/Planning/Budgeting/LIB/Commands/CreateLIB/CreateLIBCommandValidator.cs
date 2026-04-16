@@ -26,6 +26,11 @@ public class CreateLIBCommandValidator : AbstractValidator<CreateLIBCommand>
             .WithMessage("{PropertyName} is required.")
             .Must(v => Enum.TryParse<LIBScopeEnum>(v, true, out _))
             .WithMessage("{PropertyName} must be a valid value (Activity or Project).");
+        RuleFor(x => x.Request.Level)
+            .NotEmpty()
+            .WithMessage("{PropertyName} is required.")
+            .Must(v => Enum.TryParse<LIBLevelEnum>(v, true, out _))
+            .WithMessage("{PropertyName} must be a valid value (Office or Department).");
         RuleFor(x => x.Request.SourceType)
             .NotEmpty()
             .WithMessage("{PropertyName} is required.")

@@ -93,7 +93,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<LineItemBudgetActivity>? LineItemBudgetActivities { get; set; }
     public DbSet<LineItemBudgetDetail>? LineItemBudgetDetails { get; set; }
     public DbSet<LIBAmendmentRequest>? LIBAmendmentRequests { get; set; }
-    public DbSet<BudgetAllocation>? BudgetAllocations { get; set; }
 
     //Procurement
     public DbSet<ProcurementCategory>? ProcurementCategories { get; set; }
@@ -1498,26 +1497,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<LIBAmendmentRequest>()
             .HasIndex(e => e.Status);
-
-        // Budget - BudgetAllocation
-        modelBuilder.Entity<BudgetAllocation>()
-            .Property(e => e.BudgetPeriod)
-            .IsRequired()
-            .HasMaxLength(50);
-
-        modelBuilder.Entity<BudgetAllocation>()
-            .Property(e => e.TotalAllocated)
-            .HasPrecision(18, 2)
-            .IsRequired();
-
-        modelBuilder.Entity<BudgetAllocation>()
-            .HasOne(e => e.LineItemBudgetDetail)
-            .WithMany(e => e.BudgetAllocations)
-            .HasForeignKey(e => e.LineItemBudgetDetailId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        modelBuilder.Entity<BudgetAllocation>()
-            .HasIndex(e => e.LineItemBudgetDetailId);
 
         base.OnModelCreating(modelBuilder);
     }

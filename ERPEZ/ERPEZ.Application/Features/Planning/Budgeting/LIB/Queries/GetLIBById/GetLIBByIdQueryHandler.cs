@@ -118,18 +118,7 @@ public class GetLIBByIdQueryHandler(IUnitOfWork unitOfWork)
                             TimelineType = d.TimelineType,
                             StartDate = d.StartDate,
                             EndDate = d.EndDate,
-                            Budget = d.Budget,
-                            BudgetAllocations = d.BudgetAllocations
-                                .Where(b => !b.IsDeleted)
-                                .Select(b => new LIBNestedBudgetAllocationResponse
-                                {
-                                    Id = b.Id,
-                                    BudgetPeriod = b.BudgetPeriod,
-                                    StartDate = b.StartDate,
-                                    EndDate = b.EndDate,
-                                    TotalAllocated = b.TotalAllocated
-                                })
-                                .ToList()
+                            Budget = d.Budget
                         })
                         .ToList()
                 })
@@ -163,18 +152,7 @@ public class GetLIBByIdQueryHandler(IUnitOfWork unitOfWork)
                     TimelineType = d.TimelineType,
                     StartDate = d.StartDate,
                     EndDate = d.EndDate,
-                    Budget = d.Budget,
-                    BudgetAllocations = d.BudgetAllocations
-                        .Where(b => !b.IsDeleted)
-                        .Select(b => new LIBNestedBudgetAllocationResponse
-                        {
-                            Id = b.Id,
-                            BudgetPeriod = b.BudgetPeriod,
-                            StartDate = b.StartDate,
-                            EndDate = b.EndDate,
-                            TotalAllocated = b.TotalAllocated
-                        })
-                        .ToList()
+                    Budget = d.Budget
                 })
                 .ToList()
         };

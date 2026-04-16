@@ -40,17 +40,12 @@ public class LineItemBudgetRepository : Repository<LineItemBudget>, ILineItemBud
             .Include(x => x.LineItemBudgetActivities)
                 .ThenInclude(a => a.LineItemBudgetDetails)
                     .ThenInclude(d => d.WFPObjectiveActivityExpenditure)
-            .Include(x => x.LineItemBudgetActivities)
-                .ThenInclude(a => a.LineItemBudgetDetails)
-                    .ThenInclude(d => d.BudgetAllocations)
             .Include(x => x.LineItemBudgetDetails)
                 .ThenInclude(d => d.Object)
                     .ThenInclude(o => o.ObjectExpenseClasses)
                         .ThenInclude(oc => oc.ExpenseClass)
             .Include(x => x.LineItemBudgetDetails)
                 .ThenInclude(d => d.WFPObjectiveActivityExpenditure)
-            .Include(x => x.LineItemBudgetDetails)
-                .ThenInclude(d => d.BudgetAllocations)
             .AsSplitQuery()
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
     }

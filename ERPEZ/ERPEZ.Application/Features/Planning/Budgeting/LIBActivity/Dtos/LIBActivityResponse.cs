@@ -29,16 +29,6 @@ public record LIBActivityNestedDetailResponse
     public DateTime? StartDate { get; init; }
     public DateTime? EndDate { get; init; }
     public decimal Budget { get; init; }
-    public List<LIBActivityNestedAllocationResponse> BudgetAllocations { get; init; } = [];
-}
-
-public record LIBActivityNestedAllocationResponse
-{
-    public Guid Id { get; init; }
-    public string BudgetPeriod { get; init; } = string.Empty;
-    public DateTime StartDate { get; init; }
-    public DateTime EndDate { get; init; }
-    public decimal TotalAllocated { get; init; }
 }
 
 public record LIBActivityLineItemBudgetResponse

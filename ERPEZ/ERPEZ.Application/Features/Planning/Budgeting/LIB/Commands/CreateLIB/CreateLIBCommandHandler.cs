@@ -36,7 +36,7 @@ public class CreateLIBCommandHandler(IUnitOfWork unitOfWork)
 
         if (!request.SourceId.HasValue)
         {
-            throw new ERPEZ.Shared.Exceptions.ValidationException("SourceId is required for LIB source types OPCR and WFP.");
+            throw new ERPEZ.Shared.Exceptions.ValidationException("SourceId is required.");
         }
 
         var sourceType = request.SourceType;
@@ -74,7 +74,7 @@ public class CreateLIBCommandHandler(IUnitOfWork unitOfWork)
             Scope = request.Scope,
             Name = request.Name,
             LIBNumber = $"LIB-{office.Code}-{fiscalYear.Year}",
-            Level = string.Empty,
+            Level = request.Level,
             SourceType = sourceType,
             SourceId = request.SourceId,
             Status = "Draft",

@@ -38,7 +38,6 @@ public interface IUnitOfWork
     ILineItemBudgetActivityRepository LineItemBudgetActivityRepository { get; }
     ILineItemBudgetDetailRepository LineItemBudgetDetailRepository { get; }
     ILIBAmendmentRequestRepository LIBAmendmentRequestRepository { get; }
-    IBudgetAllocationRepository BudgetAllocationRepository { get; }
     IClusterRepository ClusterRepository { get; }
     IWFPObjectiveActivityRepository WFPObjectiveActivityRepository { get; }
     IWFPObjectiveTimelineRepository WFPObjectiveTimelineRepository { get; }

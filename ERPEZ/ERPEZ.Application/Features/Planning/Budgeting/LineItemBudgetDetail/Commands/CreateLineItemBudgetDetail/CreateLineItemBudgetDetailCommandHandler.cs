@@ -86,21 +86,6 @@ public class CreateLineItemBudgetDetailCommandHandler(IUnitOfWork unitOfWork)
 
         await unitOfWork.LineItemBudgetDetailRepository.AddAsync(entity, cancellationToken);
 
-        if (request.BudgetAllocations is { Count: > 0 })
-        {
-            foreach (var alloc in request.BudgetAllocations)
-            {
-                await unitOfWork.BudgetAllocationRepository.AddAsync(new Domain.Entities.Planning.BudgetAllocation
-                {
-                    LineItemBudgetDetailId = entity.Id,
-                    BudgetPeriod = alloc.BudgetPeriod,
-                    StartDate = alloc.StartDate,
-                    EndDate = alloc.EndDate,
-                    TotalAllocated = alloc.TotalAllocated
-                }, cancellationToken);
-            }
-        }
-
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return ApiResponse<Guid>.Success(entity.Id, "Line Item Budget Detail created successfully.");
