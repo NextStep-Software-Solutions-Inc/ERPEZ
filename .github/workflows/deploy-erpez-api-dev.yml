@@ -113,11 +113,9 @@ jobs:
           docker stop ${{ env.CONTAINER_NAME }} || true
           docker rm ${{ env.CONTAINER_NAME }} || true
 
-          # Pull the latest image
-          docker pull ${{ secrets.DOCKER_HUB_USERNAME }}/${{ env.CONTAINER_NAME }}:${{ env.IMAGE_TAG }}
-
           # Run the new container
           docker run -d \
+            --pull always \
             --name ${{ env.CONTAINER_NAME }} \
             --cpus=0.3 \
             --memory=384m \
