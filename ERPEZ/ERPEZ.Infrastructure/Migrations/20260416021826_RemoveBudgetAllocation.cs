@@ -11,9 +11,9 @@ namespace ERPEZ.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropTable(
-                name: "BudgetAllocations",
-                schema: "planning");
+            migrationBuilder.Sql(@"
+                DROP TABLE IF EXISTS planning.""BudgetAllocations"" CASCADE;
+            ");
         }
 
         /// <inheritdoc />
