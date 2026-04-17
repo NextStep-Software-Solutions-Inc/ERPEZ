@@ -1,8 +1,7 @@
 using ERPEZ.Application.Features.Planning.PPMPActivity.Commands.CreatePPMPActivity;
 using ERPEZ.Application.Features.Planning.PPMPActivity.Commands.DeletePPMPActivity;
-using ERPEZ.Application.Features.Planning.PPMPActivity.Commands.UpdatePPMPActivity;
-using ERPEZ.Application.Features.Planning.PPMPActivity.Dtos;
 using ERPEZ.Application.Features.Planning.PPMPActivity.Queries.GetPPMPActivities;
+using ERPEZ.Application.Features.Planning.PPMPActivity.Dtos;
 using ERPEZ.Application.Features.Planning.PPMPActivity.Queries.GetPPMPActivityById;
 using ERPEZ.Shared.Common;
 using MediatR;
@@ -42,22 +41,6 @@ public class PPMPActivityController(ISender mediator) : ControllerBase
     {
         var result = await mediator.Send(new GetPPMPActivityByIdQuery(id));
         return result.Succeeded ? Ok(result) : NotFound(result);
-    }
-
-    [HttpPut("{id}")]
-    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> UpdatePPMPActivity(Guid id, [FromBody] UpdatePPMPActivityRequest dto)
-    {
-        var command = new UpdatePPMPActivityCommand
-        {
-            Id = id,
-            LIBActivityId = dto.LIBActivityId
-        };
-
-        var result = await mediator.Send(command);
-        return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 
     [HttpDelete("{id}")]

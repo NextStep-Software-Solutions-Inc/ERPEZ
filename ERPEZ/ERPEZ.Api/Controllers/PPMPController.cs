@@ -115,4 +115,14 @@ public class PPMPController(ISender mediator) : ControllerBase
         var result = await mediator.Send(new GetPPMPApprovalHistoryQuery(id));
         return result.Succeeded ? Ok(result) : NotFound(result);
     }
+
+    [HttpPost("approval-history")]
+    [ProducesResponseType(typeof(ApiResponse<List<ApprovalEventResponse>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetPPMPApprovalHistoryByBody([FromBody] GetPPMPApprovalHistoryRequest request)
+    {
+        var result = await mediator.Send(new GetPPMPApprovalHistoryQuery(request.PPMPId));
+        return result.Succeeded ? Ok(result) : NotFound(result);
+    }
 }

@@ -17,13 +17,12 @@ public class CreatePPMPItemCommandHandler(IUnitOfWork unitOfWork)
             throw new NotFoundException("PPMP Expenditure Item not found.");
 
         // Validate CSE Item exists if provided
-        // TODO: Uncomment when CSEItemRepository is implemented
-        //if (request.CSEItemId.HasValue)
-        //{
-        //    var cseItem = await unitOfWork.CSEItemRepository.GetByIdAsync(request.CSEItemId.Value, cancellationToken);
-        //    if (cseItem == null)
-        //        throw new NotFoundException("CSE Item not found.");
-        //}
+        if (request.CSEItemId.HasValue)
+        {
+            var cseItem = await unitOfWork.CSEItemRepository.GetByIdAsync(request.CSEItemId.Value, cancellationToken);
+            if (cseItem == null)
+                throw new NotFoundException("CSE Item not found.");
+        }
 
         // Validate Non-CSE Item exists if provided
         if (request.NonCSEItemId.HasValue)

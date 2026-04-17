@@ -2,6 +2,7 @@ using ERPEZ.Application.Features.Planning.PPMPExpenditureItem.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
+using Sieve.Models;
 using System.Linq.Expressions;
 
 namespace ERPEZ.Application.Features.Planning.PPMPExpenditureItem.Queries.GetPPMPExpenditureItems;
@@ -11,6 +12,14 @@ public class GetPPMPExpenditureItemsQueryHandler(IUnitOfWork unitOfWork)
 {
     public async Task<PaginatedApiResponse<PPMPExpenditureItemResponse>> Handle(GetPPMPExpenditureItemsQuery query, CancellationToken cancellationToken)
     {
+        var sieveModel = new SieveModel
+        {
+            Page = query.PageNumber,
+            PageSize = query.PageSize,
+            Filters = query.Filters,
+            Sorts = query.Sorts
+        };
+
         Expression<Func<Domain.Entities.Planning.PPMPExpenditureItem, PPMPExpenditureItemResponse>> projection = item => new PPMPExpenditureItemResponse
         {
             Id = item.Id,
@@ -23,13 +32,10 @@ public class GetPPMPExpenditureItemsQueryHandler(IUnitOfWork unitOfWork)
         };
 
         var (items, totalCount) = await unitOfWork.PPMPExpenditureItemRepository.GetAllAsync(
-            query.SieveModel,
+            sieveModel,
             projection,
             cancellationToken);
 
-        var pageNumber = query.SieveModel.Page ?? 1;
-        var pageSize = query.SieveModel.PageSize ?? 10;
-
-        return new PaginatedApiResponse<PPMPExpenditureItemResponse>(items.ToList(), totalCount, pageNumber, pageSize);
+        return new PaginatedApiResponse<PPMPExpenditureItemResponse>(items.ToList(), totalCount, query.PageNumber, query.PageSize);
     }
 }

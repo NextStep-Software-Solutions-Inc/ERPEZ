@@ -111,6 +111,7 @@ public static class DependencyInjection
         services.AddScoped<IPPMPItemAllocationRepository, PPMPItemAllocationRepository>();
         services.AddScoped<IItemRequestRepository, ItemRequestRepository>();
         services.AddScoped<INonCSEItemRepository, NonCSEItemRepository>();
+        services.AddScoped<ICSEItemRepository, CSEItemRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IFileStorageService, AzureBlobStorageService>();
         services.AddScoped<IUACSCsvImporter, UACSImportService>();

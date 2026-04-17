@@ -16,8 +16,4 @@ public record UpdateItemRequestCommand : IRequest<ApiResponse<Guid>>
     public string? TWGRemarks { get; init; }
     public string? UACSCode { get; init; }
     public string? UNSCPSCCode { get; init; }
-    public DateTime? RequestDate { get; init; }
-    public Guid? ReviewedBy { get; init; }
-    public DateTime? SubmittedAt { get; init; }
-    public DateTime? ReviewedAt { get; init; }
 }

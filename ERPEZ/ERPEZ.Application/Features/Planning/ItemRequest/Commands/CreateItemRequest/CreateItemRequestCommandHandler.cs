@@ -47,10 +47,10 @@ public class CreateItemRequestCommandHandler(IUnitOfWork unitOfWork)
             TWGRemarks = request.TWGRemarks,
             UACSCode = request.UACSCode,
             UNSCPSCCode = request.UNSCPSCCode,
-            RequestDate = request.RequestDate,
-            ReviewedBy = request.ReviewedBy,
-            SubmittedAt = request.SubmittedAt,
-            ReviewedAt = request.ReviewedAt,
+            RequestDate = DateTime.UtcNow,
+            SubmittedAt = string.Equals(request.Status, "Submitted", StringComparison.OrdinalIgnoreCase)
+                ? DateTime.UtcNow
+                : null,
             CreatedAt = DateTime.UtcNow
         };
 

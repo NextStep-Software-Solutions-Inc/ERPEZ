@@ -61,18 +61,6 @@ public class UpdateItemRequestCommandHandler(IUnitOfWork unitOfWork)
         if (request.UNSCPSCCode != null)
             itemRequest.UNSCPSCCode = request.UNSCPSCCode;
 
-        if (request.RequestDate.HasValue)
-            itemRequest.RequestDate = request.RequestDate.Value;
-
-        if (request.ReviewedBy.HasValue)
-            itemRequest.ReviewedBy = request.ReviewedBy.Value;
-
-        if (request.SubmittedAt.HasValue)
-            itemRequest.SubmittedAt = request.SubmittedAt.Value;
-
-        if (request.ReviewedAt.HasValue)
-            itemRequest.ReviewedAt = request.ReviewedAt.Value;
-
         itemRequest.UpdatedAt = DateTime.UtcNow;
 
         unitOfWork.ItemRequestRepository.Update(itemRequest);

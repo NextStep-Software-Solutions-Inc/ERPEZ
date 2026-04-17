@@ -4,7 +4,6 @@ using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Exceptions;
 using ERPEZ.Shared.Common;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.Application.Features.Planning.PPMPItem.Queries.GetPPMPItemById;
 
@@ -15,30 +14,7 @@ public class GetPPMPItemByIdQueryHandler(IUnitOfWork unitOfWork)
         GetPPMPItemByIdQuery query, 
         CancellationToken cancellationToken)
     {
-        var ppmpItem = await unitOfWork.PPMPItemRepository.GetSingleAsync(
-            unitOfWork.PPMPItemRepository.Query(x => x.Id == query.Id)
-                .Include(item => item.PPMPExpenditureItem)
-                    .ThenInclude(expenditure => expenditure.PPMPActivity)
-                        .ThenInclude(activity => activity.PPMP)
-                            .ThenInclude(ppmp => ppmp.Office)
-                .Include(item => item.PPMPExpenditureItem)
-                    .ThenInclude(expenditure => expenditure.PPMPActivity)
-                        .ThenInclude(activity => activity.PPMP)
-                            .ThenInclude(ppmp => ppmp.FiscalYear)
-                .Include(item => item.PPMPExpenditureItem)
-                    .ThenInclude(expenditure => expenditure.PPMPActivity)
-                        .ThenInclude(activity => activity.PPMP)
-                            .ThenInclude(ppmp => ppmp.FundSource)
-                .Include(item => item.PPMPExpenditureItem)
-                    .ThenInclude(expenditure => expenditure.PPMPActivity)
-                        .ThenInclude(activity => activity.PPMP)
-                            .ThenInclude(ppmp => ppmp.LineItemBudget)
-                .Include(item => item.PPMPItemAllocations)
-                .Include(item => item.ProcurementMode)
-                .Include(item => item.CSEItem)
-                .Include(item => item.NonCSEItem)
-                    .ThenInclude(n => n!.UOM),
-            cancellationToken);
+        var ppmpItem = await unitOfWork.PPMPItemRepository.GetByIdWithDetailsAsync(query.Id, cancellationToken);
         if (ppmpItem == null)
             throw new NotFoundException("PPMP Item not found.");
 

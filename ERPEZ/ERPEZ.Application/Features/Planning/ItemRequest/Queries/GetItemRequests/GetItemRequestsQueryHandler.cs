@@ -2,6 +2,7 @@ using ERPEZ.Application.Features.Planning.ItemRequest.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
+using Sieve.Models;
 using System.Linq.Expressions;
 
 namespace ERPEZ.Application.Features.Planning.ItemRequest.Queries.GetItemRequests;
@@ -13,6 +14,14 @@ public class GetItemRequestsQueryHandler(IUnitOfWork unitOfWork)
         GetItemRequestsQuery query, 
         CancellationToken cancellationToken)
     {
+        var sieveModel = new SieveModel
+        {
+            Page = query.PageNumber,
+            PageSize = query.PageSize,
+            Filters = query.Filters,
+            Sorts = query.Sorts
+        };
+
         Expression<Func<Domain.Entities.Planning.ItemRequest, ItemRequestResponse>> projection = 
             request => new ItemRequestResponse
             {
@@ -40,13 +49,10 @@ public class GetItemRequestsQueryHandler(IUnitOfWork unitOfWork)
             };
 
         var (requests, totalCount) = await unitOfWork.ItemRequestRepository.GetAllAsync(
-            query.SieveModel,
+            sieveModel,
             projection,
             cancellationToken);
 
-        var pageNumber = query.SieveModel.Page ?? 1;
-        var pageSize = query.SieveModel.PageSize ?? 10;
-
-        return new PaginatedApiResponse<ItemRequestResponse>(requests.ToList(), totalCount, pageNumber, pageSize);
+        return new PaginatedApiResponse<ItemRequestResponse>(requests.ToList(), totalCount, query.PageNumber, query.PageSize);
     }
 }

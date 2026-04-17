@@ -2,6 +2,7 @@ using ERPEZ.Application.Features.Planning.NonCSEItem.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
+using Sieve.Models;
 using System.Linq.Expressions;
 
 namespace ERPEZ.Application.Features.Planning.NonCSEItem.Queries.GetNonCSEItems;
@@ -13,6 +14,14 @@ public class GetNonCSEItemsQueryHandler(IUnitOfWork unitOfWork)
         GetNonCSEItemsQuery query, 
         CancellationToken cancellationToken)
     {
+        var sieveModel = new SieveModel
+        {
+            Page = query.PageNumber,
+            PageSize = query.PageSize,
+            Filters = query.Filters,
+            Sorts = query.Sorts
+        };
+
         Expression<Func<Domain.Entities.Planning.NonCSEItem, NonCSEItemResponse>> projection = 
             item => new NonCSEItemResponse
             {
@@ -31,13 +40,10 @@ public class GetNonCSEItemsQueryHandler(IUnitOfWork unitOfWork)
             };
 
         var (items, totalCount) = await unitOfWork.NonCSEItemRepository.GetAllAsync(
-            query.SieveModel,
+            sieveModel,
             projection,
             cancellationToken);
 
-        var pageNumber = query.SieveModel.Page ?? 1;
-        var pageSize = query.SieveModel.PageSize ?? 10;
-
-        return new PaginatedApiResponse<NonCSEItemResponse>(items.ToList(), totalCount, pageNumber, pageSize);
+        return new PaginatedApiResponse<NonCSEItemResponse>(items.ToList(), totalCount, query.PageNumber, query.PageSize);
     }
 }

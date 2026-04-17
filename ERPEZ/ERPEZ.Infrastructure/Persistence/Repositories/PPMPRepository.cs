@@ -19,9 +19,11 @@ public class PPMPRepository : Repository<PPMP>, IPPMPRepository
         this.sieveProcessor = sieveProcessor;
     }
 
-    public async Task<PPMP?> GetPPMPWithDetailsAsync(Guid id, CancellationToken cancellationToken = default)
+    private IQueryable<PPMP> BuildDetailedQuery(IQueryable<PPMP>? query = null)
     {
-        return await context.Set<PPMP>()
+        var baseQuery = query ?? context.Set<PPMP>();
+
+        return baseQuery
             .Include(p => p.Office)
             .Include(p => p.FiscalYear)
             .Include(p => p.FundSource)
@@ -62,8 +64,35 @@ public class PPMPRepository : Repository<PPMP>, IPPMPRepository
                 .ThenInclude(child => child.FundSource)
             .Include(p => p.ChildPPMPs)
                 .ThenInclude(child => child.LineItemBudget)
-            .AsSplitQuery()
+            .AsSplitQuery();
+    }
+
+    public async Task<PPMP?> GetPPMPWithDetailsAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return await BuildDetailedQuery()
             .FirstOrDefaultAsync(p => p.Id == id && !p.IsDeleted, cancellationToken);
+    }
+
+    public async Task<(IReadOnlyList<PPMP> Entities, int TotalCount)> GetDetailedPagedAsync(SieveModel sieveModel, CancellationToken cancellationToken = default)
+    {
+        var query = BuildDetailedQuery(context.Set<PPMP>().AsNoTracking().Where(p => !p.IsDeleted));
+        var filteredQuery = sieveProcessor.Apply(sieveModel, query, applyPagination: false);
+        var totalCount = await filteredQuery.CountAsync(cancellationToken);
+        var pagedQuery = sieveProcessor.Apply(sieveModel, filteredQuery, applyFiltering: false, applySorting: false);
+        var entities = await pagedQuery.ToListAsync(cancellationToken);
+        return (entities, totalCount);
+    }
+
+    public async Task<List<PPMP>> GetDetailedByOfficeAsync(Guid officeId, CancellationToken cancellationToken = default)
+    {
+        return await BuildDetailedQuery(context.Set<PPMP>().Where(p => !p.IsDeleted && p.OfficeId == officeId))
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<List<PPMP>> GetDetailedByFiscalYearAsync(Guid fiscalYearId, CancellationToken cancellationToken = default)
+    {
+        return await BuildDetailedQuery(context.Set<PPMP>().Where(p => !p.IsDeleted && p.FiscalYearId == fiscalYearId))
+            .ToListAsync(cancellationToken);
     }
 
     public async Task<(IReadOnlyList<TDto> Entities, int TotalCount)> GetPPMPsWithDetailsAsync<TDto>(

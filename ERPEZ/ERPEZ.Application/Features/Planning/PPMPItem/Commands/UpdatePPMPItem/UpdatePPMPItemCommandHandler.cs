@@ -27,16 +27,15 @@ public class UpdatePPMPItemCommandHandler(IUnitOfWork unitOfWork)
         }
 
         // Validate CSE Item exists if provided
-        // TODO: Uncomment when CSEItemRepository is implemented
-        //if (request.CSEItemId.HasValue)
-        //{
-        //    var cseItem = await unitOfWork.CSEItemRepository.GetByIdAsync(request.CSEItemId.Value, cancellationToken);
-        //    if (cseItem == null)
-        //        throw new NotFoundException("CSE Item not found.");
-        //    
-        //    ppmpItem.CSEItemId = request.CSEItemId.Value;
-        //    ppmpItem.NonCSEItemId = null; // Clear NonCSEItemId if CSEItemId is set
-        //}
+        if (request.CSEItemId.HasValue)
+        {
+            var cseItem = await unitOfWork.CSEItemRepository.GetByIdAsync(request.CSEItemId.Value, cancellationToken);
+            if (cseItem == null)
+                throw new NotFoundException("CSE Item not found.");
+
+            ppmpItem.CSEItemId = request.CSEItemId.Value;
+            ppmpItem.NonCSEItemId = null; // Clear NonCSEItemId if CSEItemId is set
+        }
 
         // Validate Non-CSE Item exists if provided
         if (request.NonCSEItemId.HasValue)
