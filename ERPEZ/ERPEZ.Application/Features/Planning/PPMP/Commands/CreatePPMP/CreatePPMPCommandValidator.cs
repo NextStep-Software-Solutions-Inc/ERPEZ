@@ -20,19 +20,17 @@ public class CreatePPMPCommandValidator : AbstractValidator<CreatePPMPCommand>
             .NotEmpty()
             .WithMessage("Fiscal Year ID is required.");
 
+        RuleFor(x => x.FundSourceId)
+            .NotEmpty()
+            .WithMessage("Fund Source ID is required.");
+
+        RuleFor(x => x.LIBId)
+            .NotEmpty()
+            .WithMessage("LIB ID is required.");
+
         RuleFor(x => x.ParentId)
             .Must(id => !id.HasValue || id.Value != Guid.Empty)
             .WithMessage("If provided, the Parent ID must be a valid, non-empty GUID.")
             .When(x => x.ParentId.HasValue);
-
-        RuleFor(x => x.FundSourceId)
-            .Must(id => !id.HasValue || id.Value != Guid.Empty)
-            .WithMessage("If provided, the Fund Source ID must be a valid, non-empty GUID.")
-            .When(x => x.FundSourceId.HasValue);
-
-        RuleFor(x => x.LIBId)
-            .Must(id => !id.HasValue || id.Value != Guid.Empty)
-            .WithMessage("If provided, the LIB ID must be a valid, non-empty GUID.")
-            .When(x => x.LIBId.HasValue);
     }
 }

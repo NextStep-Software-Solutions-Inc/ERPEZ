@@ -22,10 +22,10 @@ public class PPMP : ApprovableEntity
     public Guid FiscalYearId { get; set; }
     
     [Sieve(CanFilter = true, CanSort = true)]
-    public Guid FundSourceId { get; set; }
+    public Guid? FundSourceId { get; set; }
     
     [Sieve(CanFilter = true, CanSort = true)]
-    public Guid LIBId { get; set; }
+    public Guid? LIBId { get; set; }
     
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid? ParentId { get; set; }

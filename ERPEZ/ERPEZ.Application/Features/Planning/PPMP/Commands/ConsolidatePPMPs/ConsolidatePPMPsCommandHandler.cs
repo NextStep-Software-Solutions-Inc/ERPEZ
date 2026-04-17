@@ -49,14 +49,18 @@ public class ConsolidatePPMPsCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
             // Calculate total budget
             var totalBudget = childPPMPs.Sum(p => p.TotalEstimatedBudget);
 
+            // Derive FundSourceId and LIBId from first child PPMP (assuming all children have same values)
+            var fundSourceId = childPPMPs.First().FundSourceId;
+            var libId = childPPMPs.First().LIBId;
+
             // Create consolidated PPMP
             var consolidatedPPMP = new Domain.Entities.Planning.PPMP
             {
                 PPMPNumber = request.ConsolidatedPPMPNumber,
                 OfficeId = request.ParentOfficeId,
                 FiscalYearId = request.FiscalYearId,
-                FundSourceId = Guid.Empty,
-                LIBId = Guid.Empty,
+                FundSourceId = fundSourceId,
+                LIBId = libId,
                 Version = 1,
                 TotalEstimatedBudget = totalBudget,
                 Status = ERPEZ.Domain.Enums.StatusEnum.Approved,

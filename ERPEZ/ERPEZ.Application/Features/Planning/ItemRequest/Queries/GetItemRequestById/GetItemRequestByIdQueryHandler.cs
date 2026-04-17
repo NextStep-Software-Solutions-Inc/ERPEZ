@@ -13,7 +13,7 @@ public class GetItemRequestByIdQueryHandler(IUnitOfWork unitOfWork)
         GetItemRequestByIdQuery query, 
         CancellationToken cancellationToken)
     {
-        var itemRequest = await unitOfWork.ItemRequestRepository.GetByIdAsync(query.Id, cancellationToken);
+        var itemRequest = await unitOfWork.ItemRequestRepository.GetByIdWithRelationsAsync(query.Id, cancellationToken);
         if (itemRequest == null)
             throw new NotFoundException("Item Request not found.");
 

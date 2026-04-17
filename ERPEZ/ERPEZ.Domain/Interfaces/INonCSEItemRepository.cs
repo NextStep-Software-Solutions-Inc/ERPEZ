@@ -5,4 +5,6 @@ namespace ERPEZ.Domain.Interfaces;
 public interface INonCSEItemRepository : IRepository<NonCSEItem>
 {
     Task<List<NonCSEItem>> GetActiveItemsAsync(CancellationToken cancellationToken = default);
+    
+    Task<NonCSEItem?> GetByIdWithRelationsAsync(Guid id, CancellationToken cancellationToken = default);
 }

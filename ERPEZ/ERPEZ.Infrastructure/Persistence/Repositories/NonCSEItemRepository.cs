@@ -8,13 +8,11 @@ namespace ERPEZ.Infrastructure.Persistence.Repositories;
 public class NonCSEItemRepository : Repository<NonCSEItem>, INonCSEItemRepository
 {
     private readonly ApplicationDbContext context;
-    private readonly ISieveProcessor sieveProcessor;
 
     public NonCSEItemRepository(ApplicationDbContext context, ISieveProcessor sieveProcessor)
         : base(context, sieveProcessor)
     {
         this.context = context;
-        this.sieveProcessor = sieveProcessor;
     }
 
     public async Task<List<NonCSEItem>> GetActiveItemsAsync(CancellationToken cancellationToken = default)
@@ -25,5 +23,12 @@ public class NonCSEItemRepository : Repository<NonCSEItem>, INonCSEItemRepositor
             .Where(n => n.IsActive && !n.IsDeleted)
             .OrderBy(n => n.Name)
             .ToListAsync(cancellationToken);
+    }
+
+    public async Task<NonCSEItem?> GetByIdWithRelationsAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        return await context.Set<NonCSEItem>()
+            .Include(n => n.UOM)
+            .FirstOrDefaultAsync(n => n.Id == id && !n.IsDeleted, cancellationToken);
     }
 }

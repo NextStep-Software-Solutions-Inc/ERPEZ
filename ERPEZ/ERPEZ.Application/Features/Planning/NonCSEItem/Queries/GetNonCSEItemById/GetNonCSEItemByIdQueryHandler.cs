@@ -13,7 +13,7 @@ public class GetNonCSEItemByIdQueryHandler(IUnitOfWork unitOfWork)
         GetNonCSEItemByIdQuery query, 
         CancellationToken cancellationToken)
     {
-        var nonCseItem = await unitOfWork.NonCSEItemRepository.GetByIdAsync(query.Id, cancellationToken);
+        var nonCseItem = await unitOfWork.NonCSEItemRepository.GetByIdWithRelationsAsync(query.Id, cancellationToken);
         if (nonCseItem == null)
             throw new NotFoundException("Non-CSE Item not found.");
 
