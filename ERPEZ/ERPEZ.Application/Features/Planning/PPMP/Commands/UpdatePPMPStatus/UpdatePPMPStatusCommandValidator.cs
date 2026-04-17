@@ -19,10 +19,6 @@ public class UpdatePPMPStatusCommandValidator : AbstractValidator<UpdatePPMPStat
             })
             .WithMessage("Action must be submit, approve, or reject.");
 
-        RuleFor(x => x.ActorName)
-            .NotEmpty()
-            .WithMessage("Actor name is required.");
-
         RuleFor(x => x.Role)
             .NotEmpty()
             .When(x =>

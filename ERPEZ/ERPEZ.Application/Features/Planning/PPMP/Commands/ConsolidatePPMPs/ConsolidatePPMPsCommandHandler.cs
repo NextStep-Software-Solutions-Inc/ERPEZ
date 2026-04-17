@@ -37,6 +37,17 @@ public class ConsolidatePPMPsCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
             _ = await unitOfWork.FiscalYearRepository.GetByIdAsync(request.FiscalYearId, cancellationToken: cancellationToken)
                 ?? throw new NotFoundException($"Fiscal Year with ID {request.FiscalYearId} not found.");
 
+            if (childPPMPs.Any(p => p.FiscalYearId != request.FiscalYearId))
+                throw new ValidationException("All child PPMPs must belong to the specified fiscal year.");
+
+            var distinctFundSourceIds = childPPMPs.Select(p => p.FundSourceId).Distinct().ToList();
+            if (distinctFundSourceIds.Count != 1)
+                throw new ValidationException("All child PPMPs must have the same fund source for consolidation.");
+
+            var distinctLibIds = childPPMPs.Select(p => p.LIBId).Distinct().ToList();
+            if (distinctLibIds.Count != 1)
+                throw new ValidationException("All child PPMPs must have the same LIB for consolidation.");
+
             // Check uniqueness
             var existingPPMP = await unitOfWork.PPMPRepository.FindAsync(
                 x => x.PPMPNumber == request.ConsolidatedPPMPNumber && x.FiscalYearId == request.FiscalYearId,
@@ -49,9 +60,9 @@ public class ConsolidatePPMPsCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
             // Calculate total budget
             var totalBudget = childPPMPs.Sum(p => p.TotalEstimatedBudget);
 
-            // Derive FundSourceId and LIBId from first child PPMP (assuming all children have same values)
-            var fundSourceId = childPPMPs.First().FundSourceId;
-            var libId = childPPMPs.First().LIBId;
+            // Child PPMPs are already approved, so consolidated PPMP is marked approved by design.
+            var fundSourceId = distinctFundSourceIds[0];
+            var libId = distinctLibIds[0];
 
             // Create consolidated PPMP
             var consolidatedPPMP = new Domain.Entities.Planning.PPMP

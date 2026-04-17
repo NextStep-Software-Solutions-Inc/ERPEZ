@@ -1,5 +1,6 @@
 using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Domain.Enums;
+using ERPEZ.Application.Interfaces;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -7,10 +8,22 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.PPMP.Commands.UpdatePPMPStatus;
 
-public class UpdatePPMPStatusCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<UpdatePPMPStatusCommand, ApiResponse<Unit>>
+public class UpdatePPMPStatusCommandHandler(
+    IUnitOfWork unitOfWork,
+    ICurrentUserService currentUserService) : IRequestHandler<UpdatePPMPStatusCommand, ApiResponse<Unit>>
 {
     public async Task<ApiResponse<Unit>> Handle(UpdatePPMPStatusCommand request, CancellationToken cancellationToken)
     {
+        if (!currentUserService.IsAuthenticated)
+            throw new ValidationException("Authenticated user is required to update PPMP status.");
+
+        if (!Guid.TryParse(currentUserService.UserId, out var actorId))
+            throw new ValidationException("Current user ID claim is invalid.");
+
+        var actorName = currentUserService.Name
+            ?? currentUserService.Username
+            ?? request.ActorName;
+
         await unitOfWork.ExecuteInTransactionAsync(async () =>
         {
             var ppmp = await unitOfWork.PPMPRepository.GetByIdAsync(request.Id, cancellationToken)
@@ -21,8 +34,8 @@ public class UpdatePPMPStatusCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
             {
                 PPMPId = ppmp.Id,
                 Role = request.Role ?? "Submitter",
-                ActorId = Guid.Empty,
-                ActorName = request.ActorName,
+                ActorId = actorId,
+                ActorName = actorName,
                 Notes = request.Notes,
                 Timestamp = DateTime.UtcNow
             };

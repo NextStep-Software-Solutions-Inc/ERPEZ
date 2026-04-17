@@ -12,7 +12,7 @@ public static class PPMPItemAllocationAmountCalculator
         CancellationToken cancellationToken)
     {
         if (quantity <= 0)
-            throw new ConflictException("Quantity must be greater than 0.");
+            throw new ValidationException("Quantity must be greater than 0.");
 
         var unitPrice = await ResolveUnitPriceAsync(unitOfWork, ppmpItemId, cancellationToken);
         return unitPrice * quantity;

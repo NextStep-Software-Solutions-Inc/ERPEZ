@@ -30,21 +30,30 @@ public class CreatePPMPItemAllocationCommandHandler(IUnitOfWork unitOfWork)
             request.Quantity,
             cancellationToken);
 
-        // Create PPMP Item Allocation
-        var allocation = new Domain.Entities.Planning.PPMPItemAllocation
+        Guid allocationId = Guid.Empty;
+
+        await unitOfWork.ExecuteInTransactionAsync(async () =>
         {
-            Id = Guid.NewGuid(),
-            PPMPItemId = request.PPMPItemId,
-            AllocationMonth = request.AllocationMonth,
-            Quantity = request.Quantity,
-            Amount = computedAmount,
-            CreatedAt = DateTime.UtcNow
-        };
+            // Create PPMP Item Allocation
+            var allocation = new Domain.Entities.Planning.PPMPItemAllocation
+            {
+                Id = Guid.NewGuid(),
+                PPMPItemId = request.PPMPItemId,
+                AllocationMonth = request.AllocationMonth,
+                Quantity = request.Quantity,
+                Amount = computedAmount,
+                CreatedAt = DateTime.UtcNow
+            };
 
-        await unitOfWork.PPMPItemAllocationRepository.AddAsync(allocation, cancellationToken);
-        await PPMPBudgetCalculator.RecalculateForPPMPItemAsync(unitOfWork, request.PPMPItemId, cancellationToken);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+            await unitOfWork.PPMPItemAllocationRepository.AddAsync(allocation, cancellationToken);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return ApiResponse<Guid>.Success(allocation.Id, "PPMP Item Allocation created successfully.");
+            await PPMPBudgetCalculator.RecalculateForPPMPItemAsync(unitOfWork, request.PPMPItemId, cancellationToken);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+
+            allocationId = allocation.Id;
+        }, cancellationToken);
+
+        return ApiResponse<Guid>.Success(allocationId, "PPMP Item Allocation created successfully.");
     }
 }
