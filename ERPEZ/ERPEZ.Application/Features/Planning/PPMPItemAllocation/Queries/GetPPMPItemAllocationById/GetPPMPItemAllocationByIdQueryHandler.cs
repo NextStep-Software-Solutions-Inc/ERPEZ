@@ -1,5 +1,5 @@
 using ERPEZ.Application.Features.Planning.PPMPItemAllocation.Dtos;
-using ERPEZ.Application.Features.Planning.PPMP.Dtos;
+using ERPEZ.Application.Features.Planning.PPMP.Queries.Common;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Exceptions;
 using ERPEZ.Shared.Common;
@@ -18,6 +18,6 @@ public class GetPPMPItemAllocationByIdQueryHandler(IUnitOfWork unitOfWork)
         if (allocation == null)
             throw new NotFoundException("PPMP Item Allocation not found.");
 
-        return ApiResponse<PPMPItemAllocationResponse>.Success(PPMPResponseMapper.MapAllocation(allocation));
+        return ApiResponse<PPMPItemAllocationResponse>.Success(PPMPQueryProjection.BuildAllocationResponse(allocation));
     }
 }

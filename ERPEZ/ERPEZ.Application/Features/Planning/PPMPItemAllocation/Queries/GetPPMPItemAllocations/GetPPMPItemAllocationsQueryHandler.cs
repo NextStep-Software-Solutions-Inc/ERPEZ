@@ -1,10 +1,9 @@
 using ERPEZ.Application.Features.Planning.PPMPItemAllocation.Dtos;
-using ERPEZ.Application.Features.Planning.PPMP.Dtos;
+using ERPEZ.Application.Features.Planning.PPMP.Queries.Common;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
 using Sieve.Models;
-using Sieve.Services;
 
 namespace ERPEZ.Application.Features.Planning.PPMPItemAllocation.Queries.GetPPMPItemAllocations;
 
@@ -25,6 +24,6 @@ public class GetPPMPItemAllocationsQueryHandler(IUnitOfWork unitOfWork)
 
         var (allocations, totalCount) = await unitOfWork.PPMPItemAllocationRepository.GetDetailedPagedAsync(sieveModel, cancellationToken);
 
-        return new PaginatedApiResponse<PPMPItemAllocationResponse>(allocations.Select(allocation => PPMPResponseMapper.MapAllocation(allocation)).ToList(), totalCount, query.PageNumber, query.PageSize);
+        return new PaginatedApiResponse<PPMPItemAllocationResponse>(allocations.Select(PPMPQueryProjection.BuildAllocationResponse).ToList(), totalCount, query.PageNumber, query.PageSize);
     }
 }

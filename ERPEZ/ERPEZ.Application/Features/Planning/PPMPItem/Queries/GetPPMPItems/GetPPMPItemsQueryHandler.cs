@@ -1,10 +1,9 @@
 using ERPEZ.Application.Features.Planning.PPMPItem.Dtos;
-using ERPEZ.Application.Features.Planning.PPMP.Dtos;
+using ERPEZ.Application.Features.Planning.PPMP.Queries.Common;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
 using Sieve.Models;
-using Sieve.Services;
 
 namespace ERPEZ.Application.Features.Planning.PPMPItem.Queries.GetPPMPItems;
 
@@ -25,6 +24,6 @@ public class GetPPMPItemsQueryHandler(IUnitOfWork unitOfWork)
 
         var (items, totalCount) = await unitOfWork.PPMPItemRepository.GetDetailedPagedAsync(sieveModel, cancellationToken);
 
-        return new PaginatedApiResponse<PPMPItemResponse>(items.Select(item => PPMPResponseMapper.MapItem(item)).ToList(), totalCount, query.PageNumber, query.PageSize);
+        return new PaginatedApiResponse<PPMPItemResponse>(items.Select(PPMPQueryProjection.BuildItemResponse).ToList(), totalCount, query.PageNumber, query.PageSize);
     }
 }

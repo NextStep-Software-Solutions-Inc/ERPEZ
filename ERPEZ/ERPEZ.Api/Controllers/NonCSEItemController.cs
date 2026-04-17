@@ -1,5 +1,6 @@
 using ERPEZ.Application.Features.Planning.NonCSEItem.Commands.CreateNonCSEItem;
 using ERPEZ.Application.Features.Planning.NonCSEItem.Commands.DeleteNonCSEItem;
+using ERPEZ.Application.Features.Planning.NonCSEItem.Commands.UpdateNonCSEItemStatus;
 using ERPEZ.Application.Features.Planning.NonCSEItem.Commands.UpdateNonCSEItem;
 using ERPEZ.Application.Features.Planning.NonCSEItem.Dtos;
 using ERPEZ.Application.Features.Planning.NonCSEItem.Queries.GetNonCSEItemById;
@@ -64,6 +65,21 @@ public class NonCSEItemController(ISender mediator) : ControllerBase
         };
         var result = await mediator.Send(command);
         return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    [HttpPut("{id}/status")]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateNonCSEItemStatus(Guid id, [FromBody] UpdateNonCSEItemStatusRequest request)
+    {
+        var command = new UpdateNonCSEItemStatusCommand
+        {
+            Id = id,
+            IsActive = request.IsActive
+        };
+
+        var result = await mediator.Send(command);
+        return result.Succeeded ? Ok(result) : NotFound(result);
     }
 
     [HttpDelete("{id}")]

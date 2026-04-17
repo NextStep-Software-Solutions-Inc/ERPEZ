@@ -24,6 +24,12 @@ public class CreatePPMPItemAllocationCommandHandler(IUnitOfWork unitOfWork)
         if (existingAllocation != null)
             throw new ConflictException($"Allocation for {request.AllocationMonth} already exists for this PPMP Item.");
 
+        var computedAmount = await PPMPItemAllocationAmountCalculator.CalculateAmountAsync(
+            unitOfWork,
+            request.PPMPItemId,
+            request.Quantity,
+            cancellationToken);
+
         // Create PPMP Item Allocation
         var allocation = new Domain.Entities.Planning.PPMPItemAllocation
         {
@@ -31,7 +37,7 @@ public class CreatePPMPItemAllocationCommandHandler(IUnitOfWork unitOfWork)
             PPMPItemId = request.PPMPItemId,
             AllocationMonth = request.AllocationMonth,
             Quantity = request.Quantity,
-            Amount = request.Amount,
+            Amount = computedAmount,
             CreatedAt = DateTime.UtcNow
         };
 

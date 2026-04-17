@@ -54,8 +54,7 @@ public class PPMPItemAllocationController(ISender mediator) : ControllerBase
         {
             Id = id,
             AllocationMonth = dto.AllocationMonth,
-            Quantity = dto.Quantity,
-            Amount = dto.Amount
+            Quantity = dto.Quantity
         };
         var result = await mediator.Send(command);
         return result.Succeeded ? Ok(result) : BadRequest(result);

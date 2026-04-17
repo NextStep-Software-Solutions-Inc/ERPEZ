@@ -1,4 +1,5 @@
 using ERPEZ.Application.Features.Planning.PPMP.Dtos;
+using ERPEZ.Application.Features.Planning.PPMP.Queries.Common;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
@@ -11,6 +12,6 @@ public class GetPPMPsByFiscalYearQueryHandler(IUnitOfWork unitOfWork) : IRequest
     {
         var ppmps = await unitOfWork.PPMPRepository.GetDetailedByFiscalYearAsync(query.FiscalYearId, cancellationToken);
 
-        return ApiResponse<List<PPMPDetailedResponse>>.Success(ppmps.Select(ppmp => PPMPResponseMapper.MapDetailed(ppmp)).ToList());
+        return ApiResponse<List<PPMPDetailedResponse>>.Success(ppmps.Select(PPMPQueryProjection.BuildDetailedResponse).ToList());
     }
 }

@@ -9,5 +9,4 @@ public record CreatePPMPItemAllocationCommand : IRequest<ApiResponse<Guid>>
     public Guid PPMPItemId { get; init; }
     public AllocationMonthEnum AllocationMonth { get; init; }
     public int Quantity { get; init; }
-    public decimal Amount { get; init; }
 }

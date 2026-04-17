@@ -18,9 +18,5 @@ public class CreatePPMPItemAllocationCommandValidator : AbstractValidator<Create
         RuleFor(x => x.Quantity)
             .GreaterThan(0)
             .WithMessage("Quantity must be greater than 0.");
-
-        RuleFor(x => x.Amount)
-            .GreaterThanOrEqualTo(0)
-            .WithMessage("Amount must be greater than or equal to 0.");
     }
 }

@@ -34,8 +34,11 @@ public class UpdatePPMPItemAllocationCommandHandler(IUnitOfWork unitOfWork)
         if (request.Quantity.HasValue)
             allocation.Quantity = request.Quantity.Value;
 
-        if (request.Amount.HasValue)
-            allocation.Amount = request.Amount.Value;
+        allocation.Amount = await PPMPItemAllocationAmountCalculator.CalculateAmountAsync(
+            unitOfWork,
+            allocation.PPMPItemId,
+            allocation.Quantity,
+            cancellationToken);
 
         allocation.UpdatedAt = DateTime.UtcNow;
 

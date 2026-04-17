@@ -1,4 +1,5 @@
 using ERPEZ.Application.Features.Planning.NonCSEItem.Dtos;
+using ERPEZ.Application.Features.Planning.PPMP.Dtos;
 using ERPEZ.Application.Features.Planning.PPMPItem.Dtos;
 using ERPEZ.Application.Features.Planning.PPMPItemAllocation.Dtos;
 using PPMPActivityEntity = ERPEZ.Domain.Entities.Planning.PPMPActivity;
@@ -7,11 +8,11 @@ using PPMPEntity = ERPEZ.Domain.Entities.Planning.PPMP;
 using PPMPExpenditureItemEntity = ERPEZ.Domain.Entities.Planning.PPMPExpenditureItem;
 using PPMPItemEntity = ERPEZ.Domain.Entities.Planning.PPMPItem;
 
-namespace ERPEZ.Application.Features.Planning.PPMP.Dtos;
+namespace ERPEZ.Application.Features.Planning.PPMP.Queries.Common;
 
-public static class PPMPResponseMapper
+internal static class PPMPQueryProjection
 {
-    public static PPMPDetailedResponse MapDetailed(PPMPEntity ppmp)
+    internal static PPMPDetailedResponse BuildDetailedResponse(PPMPEntity ppmp)
     {
         var items = GetPPMPItems(ppmp);
         var allocations = items.SelectMany(item => item.PPMPItemAllocations.Where(alloc => !alloc.IsDeleted)).ToList();
@@ -39,10 +40,10 @@ public static class PPMPResponseMapper
             CreatedBy = ppmp.CreatedBy,
             UpdatedAt = ppmp.UpdatedAt,
             UpdatedBy = ppmp.UpdatedBy,
-            ParentPPMP = ppmp.ParentPPMP == null ? null : MapSummary(ppmp.ParentPPMP, true),
-            PPMPItems = items.Select(MapItem).ToList(),
-            PPMPItemAllocations = allocations.Select(MapAllocation).ToList(),
-            PPMPActivities = ppmp.PPMPActivities.Where(x => !x.IsDeleted).Select(MapActivity).ToList(),
+            ParentPPMP = ppmp.ParentPPMP == null ? null : BuildSummaryResponse(ppmp.ParentPPMP, true),
+            PPMPItems = items.Select(BuildItemResponse).ToList(),
+            PPMPItemAllocations = allocations.Select(BuildAllocationResponse).ToList(),
+            PPMPActivities = ppmp.PPMPActivities.Where(x => !x.IsDeleted).Select(BuildActivityResponse).ToList(),
             ApprovalEvents = ppmp.ApprovalEvents.Where(x => !x.IsDeleted).OrderByDescending(x => x.Timestamp).Select(x => new ApprovalEventResponse
             {
                 Id = x.Id,
@@ -54,11 +55,74 @@ public static class PPMPResponseMapper
                 Notes = x.Notes,
                 Timestamp = x.Timestamp
             }).ToList(),
-            ChildPPMPs = ppmp.ChildPPMPs.Where(x => !x.IsDeleted).Select(x => MapSummary(x, false)).ToList()
+            ChildPPMPs = ppmp.ChildPPMPs.Where(x => !x.IsDeleted).Select(x => BuildSummaryResponse(x, false)).ToList()
         };
     }
 
-    public static PPMPResponse MapSummary(PPMPEntity ppmp, bool includeCollections)
+    internal static PPMPItemResponse BuildItemResponse(PPMPItemEntity item)
+    {
+        var allocations = item.PPMPItemAllocations.Where(x => !x.IsDeleted).ToList();
+        var ppmp = item.PPMPExpenditureItem?.PPMPActivity?.PPMP;
+
+        return new PPMPItemResponse
+        {
+            Id = item.Id,
+            PPMPExpenditureItemId = item.PPMPExpenditureItemId,
+            CSEItemId = item.CSEItemId,
+            NonCSEItemId = item.NonCSEItemId,
+            ProcurementModeId = item.ProcurementModeId,
+            PAPCode = item.PAPCode,
+            Name = item.Name,
+            Description = item.Description,
+            Unit = item.Unit,
+            UnitPrice = item.UnitPrice,
+            MOPOverride = item.MOPOverride,
+            MOPJustification = item.MOPJustification,
+            CreatedAt = item.CreatedAt,
+            CreatedBy = item.CreatedBy,
+            PPMP = ppmp == null ? null : BuildSummaryResponse(ppmp, false),
+            TotalAllocationAmount = allocations.Sum(x => x.Amount),
+            PPMPItemAllocations = allocations.Select(BuildAllocationWithoutParents).ToList(),
+            CSEItemName = item.CSEItem?.Name,
+            NonCSEItemName = item.NonCSEItem?.Name,
+            ProcurementModeName = item.ProcurementMode?.Name ?? string.Empty,
+            NonCSEItem = item.NonCSEItem == null ? null : new NonCSEItemResponse
+            {
+                Id = item.NonCSEItem.Id,
+                Name = item.NonCSEItem.Name,
+                Description = item.NonCSEItem.Description,
+                UOMId = item.NonCSEItem.UOMId,
+                UOMName = item.NonCSEItem.UOM?.Name,
+                ItemRequestId = item.NonCSEItem.ItemRequestId,
+                ProductCode = item.NonCSEItem.ProductCode,
+                CurrentPrice = item.NonCSEItem.CurrentPrice,
+                Remarks = item.NonCSEItem.Remarks,
+                IsActive = item.NonCSEItem.IsActive,
+                CreatedAt = item.NonCSEItem.CreatedAt,
+                CreatedBy = item.NonCSEItem.CreatedBy
+            }
+        };
+    }
+
+    internal static PPMPItemAllocationResponse BuildAllocationResponse(PPMPAllocationEntity allocation)
+    {
+        return new PPMPItemAllocationResponse
+        {
+            Id = allocation.Id,
+            PPMPItemId = allocation.PPMPItemId,
+            AllocationMonth = allocation.AllocationMonth,
+            Quantity = allocation.Quantity,
+            Amount = allocation.Amount,
+            CreatedAt = allocation.CreatedAt,
+            CreatedBy = allocation.CreatedBy,
+            PPMPItem = BuildItemWithoutAllocations(allocation.PPMPItem),
+            PPMP = allocation.PPMPItem?.PPMPExpenditureItem?.PPMPActivity?.PPMP == null
+                ? null
+                : BuildSummaryResponse(allocation.PPMPItem.PPMPExpenditureItem.PPMPActivity.PPMP, false)
+        };
+    }
+
+    private static PPMPResponse BuildSummaryResponse(PPMPEntity ppmp, bool includeCollections)
     {
         var items = includeCollections ? GetPPMPItems(ppmp) : [];
         var allocations = includeCollections ? items.SelectMany(item => item.PPMPItemAllocations.Where(alloc => !alloc.IsDeleted)).ToList() : [];
@@ -86,9 +150,9 @@ public static class PPMPResponseMapper
             CreatedBy = ppmp.CreatedBy,
             UpdatedAt = ppmp.UpdatedAt,
             UpdatedBy = ppmp.UpdatedBy,
-            PPMPItems = includeCollections ? items.Select(MapItem).ToList() : [],
-            PPMPItemAllocations = includeCollections ? allocations.Select(MapAllocation).ToList() : [],
-            PPMPActivities = includeCollections ? ppmp.PPMPActivities.Where(x => !x.IsDeleted).Select(MapActivity).ToList() : [],
+            PPMPItems = includeCollections ? items.Select(BuildItemResponse).ToList() : [],
+            PPMPItemAllocations = includeCollections ? allocations.Select(BuildAllocationResponse).ToList() : [],
+            PPMPActivities = includeCollections ? ppmp.PPMPActivities.Where(x => !x.IsDeleted).Select(BuildActivityResponse).ToList() : [],
             ApprovalEvents = includeCollections ? ppmp.ApprovalEvents.Where(x => !x.IsDeleted).OrderByDescending(x => x.Timestamp).Select(x => new ApprovalEventResponse
             {
                 Id = x.Id,
@@ -104,8 +168,16 @@ public static class PPMPResponseMapper
         };
     }
 
-    public static PPMPActivityResponse MapActivity(PPMPActivityEntity activity)
+    private static PPMPActivityResponse BuildActivityResponse(PPMPActivityEntity activity)
     {
+        var items = activity.PPMPExpenditureItems
+            .Where(expenditureItem => !expenditureItem.IsDeleted)
+            .SelectMany(expenditureItem => expenditureItem.PPMPItems.Where(item => !item.IsDeleted))
+            .ToList();
+        var allocations = items
+            .SelectMany(item => item.PPMPItemAllocations.Where(allocation => !allocation.IsDeleted))
+            .ToList();
+
         return new PPMPActivityResponse
         {
             Id = activity.Id,
@@ -113,12 +185,16 @@ public static class PPMPResponseMapper
             LIBActivityId = activity.LIBActivityId,
             ActivityName = activity.LIBActivity?.Name ?? string.Empty,
             ActivityCode = string.Empty,
+            TotalItems = items.Count,
+            TotalItemAllocations = allocations.Count,
+            TotalAllocationQuantity = allocations.Sum(allocation => allocation.Quantity),
+            TotalAllocationAmount = allocations.Sum(allocation => allocation.Amount),
             CreatedAt = activity.CreatedAt,
-            PPMPExpenditureItems = activity.PPMPExpenditureItems.Where(x => !x.IsDeleted).Select(MapExpenditureItem).ToList()
+            PPMPExpenditureItems = activity.PPMPExpenditureItems.Where(x => !x.IsDeleted).Select(BuildExpenditureItemResponse).ToList()
         };
     }
 
-    public static PPMPExpenditureItemResponse MapExpenditureItem(PPMPExpenditureItemEntity expenditureItem)
+    private static PPMPExpenditureItemResponse BuildExpenditureItemResponse(PPMPExpenditureItemEntity expenditureItem)
     {
         return new PPMPExpenditureItemResponse
         {
@@ -128,74 +204,11 @@ public static class PPMPResponseMapper
             TotalCost = expenditureItem.TotalCost,
             CreatedAt = expenditureItem.CreatedAt,
             CreatedBy = expenditureItem.CreatedBy,
-            PPMPItems = expenditureItem.PPMPItems.Where(x => !x.IsDeleted).Select(MapItem).ToList()
+            PPMPItems = expenditureItem.PPMPItems.Where(x => !x.IsDeleted).Select(BuildItemResponse).ToList()
         };
     }
 
-    public static PPMPItemResponse MapItem(PPMPItemEntity item)
-    {
-        var allocations = item.PPMPItemAllocations.Where(x => !x.IsDeleted).ToList();
-        var ppmp = item.PPMPExpenditureItem?.PPMPActivity?.PPMP;
-
-        return new PPMPItemResponse
-        {
-            Id = item.Id,
-            PPMPExpenditureItemId = item.PPMPExpenditureItemId,
-            CSEItemId = item.CSEItemId,
-            NonCSEItemId = item.NonCSEItemId,
-            ProcurementModeId = item.ProcurementModeId,
-            PAPCode = item.PAPCode,
-            Name = item.Name,
-            Description = item.Description,
-            Unit = item.Unit,
-            UnitPrice = item.UnitPrice,
-            MOPOverride = item.MOPOverride,
-            MOPJustification = item.MOPJustification,
-            CreatedAt = item.CreatedAt,
-            CreatedBy = item.CreatedBy,
-            PPMP = ppmp == null ? null : MapSummary(ppmp, false),
-            TotalAllocationAmount = allocations.Sum(x => x.Amount),
-            PPMPItemAllocations = allocations.Select(MapAllocationWithoutParents).ToList(),
-            CSEItemName = item.CSEItem?.Name,
-            NonCSEItemName = item.NonCSEItem?.Name,
-            ProcurementModeName = item.ProcurementMode?.Name ?? string.Empty,
-            NonCSEItem = item.NonCSEItem == null ? null : new NonCSEItemResponse
-            {
-                Id = item.NonCSEItem.Id,
-                Name = item.NonCSEItem.Name,
-                Description = item.NonCSEItem.Description,
-                UOMId = item.NonCSEItem.UOMId,
-                UOMName = item.NonCSEItem.UOM?.Name,
-                ItemRequestId = item.NonCSEItem.ItemRequestId,
-                ProductCode = item.NonCSEItem.ProductCode,
-                CurrentPrice = item.NonCSEItem.CurrentPrice,
-                Remarks = item.NonCSEItem.Remarks,
-                IsActive = item.NonCSEItem.IsActive,
-                CreatedAt = item.NonCSEItem.CreatedAt,
-                CreatedBy = item.NonCSEItem.CreatedBy
-            }
-        };
-    }
-
-    public static PPMPItemAllocationResponse MapAllocation(PPMPAllocationEntity allocation)
-    {
-        return new PPMPItemAllocationResponse
-        {
-            Id = allocation.Id,
-            PPMPItemId = allocation.PPMPItemId,
-            AllocationMonth = allocation.AllocationMonth,
-            Quantity = allocation.Quantity,
-            Amount = allocation.Amount,
-            CreatedAt = allocation.CreatedAt,
-            CreatedBy = allocation.CreatedBy,
-            PPMPItem = MapItemWithoutAllocations(allocation.PPMPItem),
-            PPMP = allocation.PPMPItem?.PPMPExpenditureItem?.PPMPActivity?.PPMP == null
-                ? null
-                : MapSummary(allocation.PPMPItem.PPMPExpenditureItem.PPMPActivity.PPMP, false)
-        };
-    }
-
-    private static PPMPItemAllocationResponse MapAllocationWithoutParents(PPMPAllocationEntity allocation)
+    private static PPMPItemAllocationResponse BuildAllocationWithoutParents(PPMPAllocationEntity allocation)
     {
         return new PPMPItemAllocationResponse
         {
@@ -209,7 +222,7 @@ public static class PPMPResponseMapper
         };
     }
 
-    private static PPMPItemResponse MapItemWithoutAllocations(PPMPItemEntity item)
+    private static PPMPItemResponse BuildItemWithoutAllocations(PPMPItemEntity item)
     {
         return new PPMPItemResponse
         {

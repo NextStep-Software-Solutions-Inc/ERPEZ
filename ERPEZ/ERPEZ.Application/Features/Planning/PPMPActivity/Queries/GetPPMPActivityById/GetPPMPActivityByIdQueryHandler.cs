@@ -19,6 +19,25 @@ public class GetPPMPActivityByIdQueryHandler(IUnitOfWork unitOfWork)
                     PPMPId = activity.PPMPId,
                     LIBActivityId = activity.LIBActivityId,
                     ActivityName = activity.LIBActivity.Name,
+                    TotalItems = activity.PPMPExpenditureItems
+                        .Where(expenditure => !expenditure.IsDeleted)
+                        .SelectMany(expenditure => expenditure.PPMPItems.Where(item => !item.IsDeleted))
+                        .Count(),
+                    TotalItemAllocations = activity.PPMPExpenditureItems
+                        .Where(expenditure => !expenditure.IsDeleted)
+                        .SelectMany(expenditure => expenditure.PPMPItems.Where(item => !item.IsDeleted))
+                        .SelectMany(item => item.PPMPItemAllocations.Where(allocation => !allocation.IsDeleted))
+                        .Count(),
+                    TotalAllocationQuantity = activity.PPMPExpenditureItems
+                        .Where(expenditure => !expenditure.IsDeleted)
+                        .SelectMany(expenditure => expenditure.PPMPItems.Where(item => !item.IsDeleted))
+                        .SelectMany(item => item.PPMPItemAllocations.Where(allocation => !allocation.IsDeleted))
+                        .Sum(allocation => (int?)allocation.Quantity) ?? 0,
+                    TotalAllocationAmount = activity.PPMPExpenditureItems
+                        .Where(expenditure => !expenditure.IsDeleted)
+                        .SelectMany(expenditure => expenditure.PPMPItems.Where(item => !item.IsDeleted))
+                        .SelectMany(item => item.PPMPItemAllocations.Where(allocation => !allocation.IsDeleted))
+                        .Sum(allocation => (decimal?)allocation.Amount) ?? 0m,
                     CreatedAt = activity.CreatedAt,
                     CreatedBy = activity.CreatedBy
                 }),

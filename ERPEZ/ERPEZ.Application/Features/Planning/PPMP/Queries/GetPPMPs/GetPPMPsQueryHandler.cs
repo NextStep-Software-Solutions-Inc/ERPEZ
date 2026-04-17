@@ -1,4 +1,5 @@
 using ERPEZ.Application.Features.Planning.PPMP.Dtos;
+using ERPEZ.Application.Features.Planning.PPMP.Queries.Common;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
@@ -20,7 +21,7 @@ public class GetPPMPsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetP
         var (entities, totalCount) = await unitOfWork.PPMPRepository.GetDetailedPagedAsync(sieveModel, cancellationToken);
 
         return new PaginatedApiResponse<PPMPDetailedResponse>(
-            entities.Select(entity => PPMPResponseMapper.MapDetailed(entity)).ToList(),
+            entities.Select(PPMPQueryProjection.BuildDetailedResponse).ToList(),
             totalCount,
             query.PageNumber,
             query.PageSize);
