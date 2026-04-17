@@ -19,8 +19,9 @@ public class CreatePPMPItemCommandHandler(IUnitOfWork unitOfWork)
         // Validate CSE Item exists if provided
         if (request.CSEItemId.HasValue)
         {
-            var cseItem = await unitOfWork.CSEItemRepository.GetByIdAsync(request.CSEItemId.Value, cancellationToken);
-            if (cseItem == null)
+            var procurementItem = await unitOfWork.ProcurementItemRepository.FindAsync(
+                x => x.Id == request.CSEItemId.Value && x.IsCSE, cancellationToken);
+            if (procurementItem == null)
                 throw new NotFoundException("CSE Item not found.");
         }
 

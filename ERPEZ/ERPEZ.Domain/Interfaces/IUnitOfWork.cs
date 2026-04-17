@@ -97,7 +97,6 @@ public interface IUnitOfWork
     IPPMPItemAllocationRepository PPMPItemAllocationRepository { get; }
     IItemRequestRepository ItemRequestRepository { get; }
     INonCSEItemRepository NonCSEItemRepository { get; }
-    ICSEItemRepository CSEItemRepository { get; }
     Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default);
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

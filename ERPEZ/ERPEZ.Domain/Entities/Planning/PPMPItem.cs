@@ -49,7 +49,7 @@ public class PPMPItem : BaseEntity
     
     // Navigation properties
     public virtual PPMPExpenditureItem PPMPExpenditureItem { get; set; } = null!;
-    public virtual CSEItem? CSEItem { get; set; }
+    public virtual ProcurementItem? CSEItem { get; set; }
     public virtual NonCSEItem? NonCSEItem { get; set; }
     public virtual ProcurementMode ProcurementMode { get; set; } = null!;
     public virtual List<PPMPItemAllocation> PPMPItemAllocations { get; set; } = [];

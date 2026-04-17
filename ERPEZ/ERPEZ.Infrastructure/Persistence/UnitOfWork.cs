@@ -106,7 +106,6 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IPPMPItemAllocationRepository ppmpItemAllocationRepository;
     private readonly IItemRequestRepository itemRequestRepository;
     private readonly INonCSEItemRepository nonCSEItemRepository;
-    private readonly ICSEItemRepository cseItemRepository;
 
     // Constructor initializes all repositories once
     public UnitOfWork(ApplicationDbContext context, IServiceProvider serviceProvider)
@@ -210,7 +209,6 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         ppmpItemAllocationRepository = new PPMPItemAllocationRepository(context, sieveProcessor);
         itemRequestRepository = new ItemRequestRepository(context, sieveProcessor);
         nonCSEItemRepository = new NonCSEItemRepository(context, sieveProcessor);
-        cseItemRepository = new CSEItemRepository(context, sieveProcessor);
     }
 
     // Public properties return cached instances
@@ -309,7 +307,6 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IPPMPItemAllocationRepository PPMPItemAllocationRepository => ppmpItemAllocationRepository;
     public IItemRequestRepository ItemRequestRepository => itemRequestRepository;
     public INonCSEItemRepository NonCSEItemRepository => nonCSEItemRepository;
-    public ICSEItemRepository CSEItemRepository => cseItemRepository;
 
     public async Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default)
     {

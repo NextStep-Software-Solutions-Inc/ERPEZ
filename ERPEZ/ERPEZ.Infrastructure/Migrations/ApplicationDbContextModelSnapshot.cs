@@ -7445,7 +7445,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.PPMPItem", b =>
                 {
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.CSEItem", "CSEItem")
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.ProcurementItem", "CSEItem")
                         .WithMany()
                         .HasForeignKey("CSEItemId")
                         .OnDelete(DeleteBehavior.Restrict);
