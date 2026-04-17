@@ -57,6 +57,7 @@ public class PPMPItemController(ISender mediator) : ControllerBase
             CSEItemId = dto.CSEItemId,
             NonCSEItemId = dto.NonCSEItemId,
             ProcurementModeId = dto.ProcurementModeId,
+            PAPCode = dto.PAPCode,
             Name = dto.Name,
             Description = dto.Description,
             Unit = dto.Unit,

@@ -1,9 +1,7 @@
-using ERPEZ.Application.Features.Planning.PPMP.Commands.ApprovePPMP;
 using ERPEZ.Application.Features.Planning.PPMP.Commands.ConsolidatePPMPs;
 using ERPEZ.Application.Features.Planning.PPMP.Commands.CreatePPMP;
 using ERPEZ.Application.Features.Planning.PPMP.Commands.DeletePPMP;
-using ERPEZ.Application.Features.Planning.PPMP.Commands.RejectPPMP;
-using ERPEZ.Application.Features.Planning.PPMP.Commands.SubmitPPMPForApproval;
+using ERPEZ.Application.Features.Planning.PPMP.Commands.UpdatePPMPStatus;
 using ERPEZ.Application.Features.Planning.PPMP.Commands.UpdatePPMP;
 using ERPEZ.Application.Features.Planning.PPMP.Dtos;
 using ERPEZ.Application.Features.Planning.PPMP.Queries.GetPPMPApprovalHistory;
@@ -14,6 +12,7 @@ using ERPEZ.Application.Features.Planning.PPMP.Queries.GetPPMPsByOffice;
 using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
+using Unit = MediatR.Unit;
 
 namespace ERPEZ.Api.Controllers;
 
@@ -35,7 +34,7 @@ public class PPMPController(ISender mediator) : ControllerBase
     }
 
     [HttpGet]
-    [ProducesResponseType(typeof(PaginatedApiResponse<PPMPResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(PaginatedApiResponse<PPMPDetailedResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetPPMPs([FromQuery] GetPPMPsQuery query)
     {
         var result = await mediator.Send(query);
@@ -52,7 +51,7 @@ public class PPMPController(ISender mediator) : ControllerBase
     }
 
     [HttpGet("by-office/{officeId}")]
-    [ProducesResponseType(typeof(PaginatedApiResponse<PPMPResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<List<PPMPDetailedResponse>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetPPMPsByOffice(Guid officeId, [FromQuery] GetPPMPsByOfficeQuery query)
     {
         var result = await mediator.Send(query with { OfficeId = officeId });
@@ -60,7 +59,7 @@ public class PPMPController(ISender mediator) : ControllerBase
     }
 
     [HttpGet("by-fiscal-year/{fiscalYearId}")]
-    [ProducesResponseType(typeof(PaginatedApiResponse<PPMPResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<List<PPMPDetailedResponse>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetPPMPsByFiscalYear(Guid fiscalYearId, [FromQuery] GetPPMPsByFiscalYearQuery query)
     {
         var result = await mediator.Send(query with { FiscalYearId = fiscalYearId });
@@ -89,33 +88,13 @@ public class PPMPController(ISender mediator) : ControllerBase
         return result.Succeeded ? NoContent() : NotFound();
     }
 
-    [HttpPost("{id}/submit")]
+    [HttpPut("status")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> SubmitPPMPForApproval(Guid id, [FromBody] SubmitPPMPForApprovalCommand command)
+    public async Task<IActionResult> UpdatePPMPStatus([FromBody] UpdatePPMPStatusCommand command)
     {
-        var result = await mediator.Send(command with { Id = id });
-        return result.Succeeded ? Ok(result) : BadRequest(result);
-    }
-
-    [HttpPost("{id}/approve")]
-    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> ApprovePPMP(Guid id, [FromBody] ApprovePPMPCommand command)
-    {
-        var result = await mediator.Send(command with { Id = id });
-        return result.Succeeded ? Ok(result) : BadRequest(result);
-    }
-
-    [HttpPost("{id}/reject")]
-    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> RejectPPMP(Guid id, [FromBody] RejectPPMPCommand command)
-    {
-        var result = await mediator.Send(command with { Id = id });
+        var result = await mediator.Send(command);
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 
