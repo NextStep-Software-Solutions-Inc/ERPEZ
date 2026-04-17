@@ -24,7 +24,10 @@ public class PPMPItemRepository : Repository<PPMPItem>, IPPMPItemRepository
             .Include(pi => pi.CSEItem)
             .Include(pi => pi.NonCSEItem)
             .Include(pi => pi.ProcurementMode)
-            .Where(pi => pi.PPMPId == ppmpId && !pi.IsDeleted)
+            .Where(pi => !pi.IsDeleted
+                && pi.PPMPExpenditureItem != null
+                && pi.PPMPExpenditureItem.PPMPActivity != null
+                && pi.PPMPExpenditureItem.PPMPActivity.PPMPId == ppmpId)
             .AsSplitQuery()
             .ToListAsync(cancellationToken);
     }

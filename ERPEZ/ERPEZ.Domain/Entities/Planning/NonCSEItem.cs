@@ -28,9 +28,6 @@ public class NonCSEItem : BaseEntity
     public string? Description { get; set; }
     
     [Sieve(CanFilter = true, CanSort = true)]
-    public string Unit { get; set; } = string.Empty;
-    
-    [Sieve(CanFilter = true, CanSort = true)]
     public decimal CurrentPrice { get; set; }
     
     [Sieve(CanFilter = true, CanSort = true)]

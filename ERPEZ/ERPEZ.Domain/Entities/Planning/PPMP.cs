@@ -56,7 +56,6 @@ public class PPMP : ApprovableEntity
     public virtual PPMP? ParentPPMP { get; set; }
     public virtual PPMP? ConsolidatedInto { get; set; }
     public virtual List<PPMP> ChildPPMPs { get; set; } = [];
-    public virtual List<PPMPItem> PPMPItems { get; set; } = [];
     public virtual List<PPMPActivity> PPMPActivities { get; set; } = [];
     public virtual List<ApprovalEvent> ApprovalEvents { get; set; } = [];
     

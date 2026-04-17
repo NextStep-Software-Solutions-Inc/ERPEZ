@@ -2431,11 +2431,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid?>("UOMId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Unit")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -3734,9 +3729,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
-                    b.Property<bool>("IsNonCSE")
-                        .HasColumnType("boolean");
-
                     b.Property<Guid?>("LineItemBudgetDetailId")
                         .HasColumnType("uuid");
 
@@ -3755,13 +3747,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.PrimitiveCollection<List<string>>("PAPCode")
-                        .IsRequired()
                         .HasColumnType("text[]");
 
                     b.Property<Guid>("PPMPExpenditureItemId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("PPMPId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("ProcurementModeId")
@@ -3796,8 +3784,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("NonCSEItemId");
 
                     b.HasIndex("PPMPExpenditureItemId");
-
-                    b.HasIndex("PPMPId");
 
                     b.HasIndex("ProcurementModeId");
 
@@ -7483,12 +7469,6 @@ namespace ERPEZ.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.PPMP", "PPMP")
-                        .WithMany("PPMPItems")
-                        .HasForeignKey("PPMPId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("ERPEZ.Domain.Entities.Planning.ProcurementMode", "ProcurementMode")
                         .WithMany()
                         .HasForeignKey("ProcurementModeId")
@@ -7502,8 +7482,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("CSEItem");
 
                     b.Navigation("NonCSEItem");
-
-                    b.Navigation("PPMP");
 
                     b.Navigation("PPMPExpenditureItem");
 
@@ -8345,8 +8323,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("ChildPPMPs");
 
                     b.Navigation("PPMPActivities");
-
-                    b.Navigation("PPMPItems");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.PPMPActivity", b =>

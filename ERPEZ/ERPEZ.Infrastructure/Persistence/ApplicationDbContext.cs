@@ -117,6 +117,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     //Other
     public DbSet<PPMPItem>? PPMPItems { get; set; }
     public DbSet<PPMPItemAllocation>? PPMPItemAllocations { get; set; }
+    public DbSet<PPMPActivity>? PPMPActivities { get; set; }
+    public DbSet<PPMPExpenditureItem>? PPMPExpenditureItems { get; set; }
+    public DbSet<ApprovalEvent>? ApprovalEvents { get; set; }
+    public DbSet<ItemRequest>? ItemRequests { get; set; }
     public DbSet<APPItem>? APPItems { get; set; }
     public DbSet<APPProcurementSchedule>? APPProcurementSchedules { get; set; }
 
@@ -1497,6 +1501,279 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<LIBAmendmentRequest>()
             .HasIndex(e => e.Status);
+
+        // PPMP (Project Procurement Management Plan)
+        modelBuilder.Entity<PPMP>()
+            .HasOne(p => p.Office)
+            .WithMany()
+            .HasForeignKey(p => p.OfficeId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<PPMP>()
+            .HasOne(p => p.FiscalYear)
+            .WithMany()
+            .HasForeignKey(p => p.FiscalYearId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<PPMP>()
+            .HasOne(p => p.FundSource)
+            .WithMany()
+            .HasForeignKey(p => p.FundSourceId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<PPMP>()
+            .HasOne(p => p.LineItemBudget)
+            .WithMany()
+            .HasForeignKey(p => p.LIBId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<PPMP>()
+            .HasOne(p => p.ParentPPMP)
+            .WithMany(p => p.ChildPPMPs)
+            .HasForeignKey(p => p.ParentId)
+            .OnDelete(DeleteBehavior.SetNull)
+            .IsRequired(false);
+
+        modelBuilder.Entity<PPMP>()
+            .HasOne(p => p.ConsolidatedInto)
+            .WithMany()
+            .HasForeignKey(p => p.ConsolidatedIntoId)
+            .OnDelete(DeleteBehavior.SetNull)
+            .IsRequired(false);
+
+        modelBuilder.Entity<PPMP>()
+            .HasIndex(p => p.PPMPNumber)
+            .IsUnique();
+
+        modelBuilder.Entity<PPMP>()
+            .HasIndex(p => new { p.OfficeId, p.FiscalYearId, p.IsFinal });
+
+        modelBuilder.Entity<PPMP>()
+            .Property(p => p.TotalEstimatedBudget)
+            .HasPrecision(18, 2);
+
+        // ApprovalEvent
+        modelBuilder.Entity<ApprovalEvent>()
+            .HasOne(ae => ae.PPMP)
+            .WithMany(p => p.ApprovalEvents)
+            .HasForeignKey(ae => ae.PPMPId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ApprovalEvent>()
+            .HasIndex(ae => new { ae.PPMPId, ae.Timestamp });
+
+        modelBuilder.Entity<ApprovalEvent>()
+            .Property(ae => ae.Role)
+            .IsRequired()
+            .HasMaxLength(100);
+
+        modelBuilder.Entity<ApprovalEvent>()
+            .Property(ae => ae.Action)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        modelBuilder.Entity<ApprovalEvent>()
+            .Property(ae => ae.ActorName)
+            .IsRequired()
+            .HasMaxLength(200);
+
+        // PPMPActivity
+        modelBuilder.Entity<PPMPActivity>()
+            .HasOne(pa => pa.PPMP)
+            .WithMany(p => p.PPMPActivities)
+            .HasForeignKey(pa => pa.PPMPId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<PPMPActivity>()
+            .HasOne(pa => pa.LIBActivity)
+            .WithMany()
+            .HasForeignKey(pa => pa.LIBActivityId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<PPMPActivity>()
+            .HasIndex(pa => new { pa.PPMPId, pa.LIBActivityId })
+            .IsUnique();
+
+        // PPMPExpenditureItem
+        modelBuilder.Entity<PPMPExpenditureItem>()
+            .HasOne(pei => pei.PPMPActivity)
+            .WithMany(pa => pa.PPMPExpenditureItems)
+            .HasForeignKey(pei => pei.PPMPActivityId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<PPMPExpenditureItem>()
+            .Property(pei => pei.TotalCost)
+            .HasPrecision(18, 2);
+
+        modelBuilder.Entity<PPMPExpenditureItem>()
+            .ToTable(t => t.HasCheckConstraint(
+                "CK_PPMPExpenditureItem_TotalCost",
+                "\"TotalCost\" >= 0"
+            ));
+
+        // PPMPItem
+        modelBuilder.Entity<PPMPItem>()
+            .HasOne(pi => pi.PPMPExpenditureItem)
+            .WithMany(pei => pei.PPMPItems)
+            .HasForeignKey(pi => pi.PPMPExpenditureItemId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<PPMPItem>()
+            .HasOne(pi => pi.CSEItem)
+            .WithMany()
+            .HasForeignKey(pi => pi.CSEItemId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .IsRequired(false);
+
+        modelBuilder.Entity<PPMPItem>()
+            .HasOne(pi => pi.NonCSEItem)
+            .WithMany(n => n.PPMPItems)
+            .HasForeignKey(pi => pi.NonCSEItemId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .IsRequired(false);
+
+        modelBuilder.Entity<PPMPItem>()
+            .HasOne(pi => pi.ProcurementMode)
+            .WithMany()
+            .HasForeignKey(pi => pi.ProcurementModeId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<PPMPItem>()
+            .Property(pi => pi.UnitPrice)
+            .HasPrecision(18, 4);
+
+        modelBuilder.Entity<PPMPItem>()
+            .Property(pi => pi.PAPCode)
+            .HasColumnType("text[]");
+
+        modelBuilder.Entity<PPMPItem>()
+            .Property(pi => pi.Name)
+            .IsRequired()
+            .HasMaxLength(500);
+
+        modelBuilder.Entity<PPMPItem>()
+            .Property(pi => pi.Unit)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        // PPMPItemAllocation
+        modelBuilder.Entity<PPMPItemAllocation>()
+            .HasOne(pia => pia.PPMPItem)
+            .WithMany(pi => pi.PPMPItemAllocations)
+            .HasForeignKey(pia => pia.PPMPItemId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<PPMPItemAllocation>()
+            .Property(pia => pia.Amount)
+            .HasPrecision(18, 2);
+
+        modelBuilder.Entity<PPMPItemAllocation>()
+            .ToTable(t => t.HasCheckConstraint(
+                "CK_PPMPItemAllocation_Amount",
+                "\"Amount\" >= 0"
+            ));
+
+        modelBuilder.Entity<PPMPItemAllocation>()
+            .HasIndex(pia => new { pia.PPMPItemId, pia.AllocationMonth })
+            .IsUnique();
+
+        // ItemRequest
+        modelBuilder.Entity<ItemRequest>()
+            .HasOne(ir => ir.Office)
+            .WithMany()
+            .HasForeignKey(ir => ir.OfficeId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<ItemRequest>()
+            .HasOne(ir => ir.UOM)
+            .WithMany()
+            .HasForeignKey(ir => ir.UOMId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .IsRequired(false);
+
+        modelBuilder.Entity<ItemRequest>()
+            .HasOne(ir => ir.ProcurementCategory)
+            .WithMany()
+            .HasForeignKey(ir => ir.ProcurementCategoryId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .IsRequired(false);
+
+        modelBuilder.Entity<ItemRequest>()
+            .Property(ir => ir.Name)
+            .IsRequired()
+            .HasMaxLength(500);
+
+        modelBuilder.Entity<ItemRequest>()
+            .Property(ir => ir.ItemCategory)
+            .IsRequired()
+            .HasMaxLength(100);
+
+        modelBuilder.Entity<ItemRequest>()
+            .Property(ir => ir.Status)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        modelBuilder.Entity<ItemRequest>()
+            .Property(ir => ir.EstimatedUnitCost)
+            .HasPrecision(18, 2);
+
+        modelBuilder.Entity<ItemRequest>()
+            .HasIndex(ir => ir.Status);
+
+        modelBuilder.Entity<ItemRequest>()
+            .HasIndex(ir => new { ir.OfficeId, ir.RequestDate });
+
+        // NonCSEItem
+        modelBuilder.Entity<NonCSEItem>()
+            .HasOne(n => n.UOM)
+            .WithMany()
+            .HasForeignKey(n => n.UOMId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .IsRequired(false);
+
+        modelBuilder.Entity<NonCSEItem>()
+            .HasOne(n => n.ItemRequest)
+            .WithMany(ir => ir.NonCSEItems)
+            .HasForeignKey(n => n.ItemRequestId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .IsRequired(false);
+
+        modelBuilder.Entity<NonCSEItem>()
+            .Property(n => n.Name)
+            .IsRequired()
+            .HasMaxLength(500);
+
+        modelBuilder.Entity<NonCSEItem>()
+            .Property(n => n.Type)
+            .IsRequired()
+            .HasMaxLength(100);
+
+        modelBuilder.Entity<NonCSEItem>()
+            .Property(n => n.Status)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        modelBuilder.Entity<NonCSEItem>()
+            .Property(n => n.CurrentPrice)
+            .HasPrecision(18, 2);
+
+        modelBuilder.Entity<NonCSEItem>()
+            .Property(n => n.BaseCost)
+            .HasPrecision(18, 2);
+
+        modelBuilder.Entity<NonCSEItem>()
+            .Property(n => n.Margin)
+            .HasPrecision(18, 2);
+
+        modelBuilder.Entity<NonCSEItem>()
+            .Property(n => n.SellingPrice)
+            .HasPrecision(18, 2);
+
+        modelBuilder.Entity<NonCSEItem>()
+            .HasIndex(n => n.IsActive);
+
+        modelBuilder.Entity<NonCSEItem>()
+            .HasIndex(n => new { n.Name, n.IsActive });
 
         base.OnModelCreating(modelBuilder);
     }

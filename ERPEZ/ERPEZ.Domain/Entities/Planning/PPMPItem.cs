@@ -15,9 +15,6 @@ public class PPMPItem : BaseEntity
     public PPMPItem() { }
     
     [Sieve(CanFilter = true, CanSort = true)]
-    public Guid PPMPId { get; set; }
-    
-    [Sieve(CanFilter = true, CanSort = true)]
     public Guid PPMPExpenditureItemId { get; set; }
     
     [Sieve(CanFilter = true, CanSort = true)]
@@ -30,7 +27,7 @@ public class PPMPItem : BaseEntity
     public Guid ProcurementModeId { get; set; }
     
     [Sieve(CanFilter = true, CanSort = true)]
-    public List<string> PAPCode { get; set; } = new();
+    public List<string>? PAPCode { get; set; }
     
     [Sieve(CanFilter = true, CanSort = true)]
     public string Name { get; set; } = string.Empty;
@@ -50,11 +47,7 @@ public class PPMPItem : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public string? MOPJustification { get; set; }
     
-    [Sieve(CanFilter = true, CanSort = true)]
-    public bool IsNonCSE { get; set; }
-    
     // Navigation properties
-    public virtual PPMP PPMP { get; set; } = null!;
     public virtual PPMPExpenditureItem PPMPExpenditureItem { get; set; } = null!;
     public virtual CSEItem? CSEItem { get; set; }
     public virtual NonCSEItem? NonCSEItem { get; set; }

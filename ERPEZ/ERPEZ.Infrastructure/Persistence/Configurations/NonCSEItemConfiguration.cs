@@ -27,10 +27,6 @@ public class NonCSEItemConfiguration : IEntityTypeConfiguration<NonCSEItem>
         builder.Property(e => e.Description)
             .HasMaxLength(1000);
         
-        builder.Property(e => e.Unit)
-            .IsRequired()
-            .HasMaxLength(50);
-        
         builder.Property(e => e.Type)
             .IsRequired()
             .HasMaxLength(100);
