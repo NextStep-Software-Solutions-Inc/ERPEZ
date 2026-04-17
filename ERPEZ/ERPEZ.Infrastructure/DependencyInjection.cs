@@ -181,7 +181,11 @@ BEGIN
                  ALTER COLUMN ""PAPCode"" TYPE text[]
                  USING CASE
                      WHEN ""PAPCode"" IS NULL OR btrim(""PAPCode"") = '''' THEN ARRAY[]::text[]
-                     ELSE ARRAY[""PAPCode""]
+                     ELSE ARRAY(
+                         SELECT btrim(value)
+                         FROM unnest(string_to_array(""PAPCode"", '','')) AS value
+                         WHERE btrim(value) <> ''''
+                     )
                  END';
     END IF;
 END $$;

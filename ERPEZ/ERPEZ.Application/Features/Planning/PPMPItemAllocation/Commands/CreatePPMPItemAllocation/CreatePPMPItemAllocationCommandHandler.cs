@@ -42,7 +42,7 @@ public class CreatePPMPItemAllocationCommandHandler(IUnitOfWork unitOfWork)
         };
 
         await unitOfWork.PPMPItemAllocationRepository.AddAsync(allocation, cancellationToken);
-    await PPMPBudgetCalculator.RecalculateForPPMPItemAsync(unitOfWork, request.PPMPItemId, cancellationToken);
+        await PPMPBudgetCalculator.RecalculateForPPMPItemAsync(unitOfWork, request.PPMPItemId, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return ApiResponse<Guid>.Success(allocation.Id, "PPMP Item Allocation created successfully.");
