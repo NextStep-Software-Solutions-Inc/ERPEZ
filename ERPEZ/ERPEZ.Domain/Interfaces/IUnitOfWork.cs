@@ -89,6 +89,14 @@ public interface IUnitOfWork
     IKPIAssignmentRepository KPIAssignmentRepository { get; }
     IRatingScaleTemplateRepository RatingScaleTemplateRepository { get; }
     IRatingScaleLevelRepository RatingScaleLevelRepository { get; }
+    IPPMPRepository PPMPRepository { get; }
+    IApprovalEventRepository ApprovalEventRepository { get; }
+    IPPMPActivityRepository PPMPActivityRepository { get; }
+    IPPMPExpenditureItemRepository PPMPExpenditureItemRepository { get; }
+    IPPMPItemRepository PPMPItemRepository { get; }
+    IPPMPItemAllocationRepository PPMPItemAllocationRepository { get; }
+    IItemRequestRepository ItemRequestRepository { get; }
+    INonCSEItemRepository NonCSEItemRepository { get; }
     Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default);
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

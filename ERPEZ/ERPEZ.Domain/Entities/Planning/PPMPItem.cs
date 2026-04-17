@@ -4,9 +4,9 @@ using Sieve.Attributes;
 namespace ERPEZ.Domain.Entities.Planning;
 
 /// <summary>
-/// Individual procurement items in PPMP
-/// Note: IsNonCSE is a flag used to identify non-cse manual entry items.  
-///       If Non-CSE there is no CSEItemId, CSEItem = PSDBM
+/// Individual procurement items in PPMP (Line Items)
+/// Note: IsNonCSE is a flag used to identify non-CSE manual entry items.  
+///       If Non-CSE there is no CSEItemId, CSEItem navigation is null
 ///       The procurement project name and code in an APP item should be copied directly 
 ///       from the corresponding PPMP item.
 /// </summary>
@@ -18,7 +18,7 @@ public class PPMPItem : BaseEntity
     public Guid PPMPId { get; set; }
     
     [Sieve(CanFilter = true, CanSort = true)]
-    public Guid LineItemBudgetDetailId { get; set; }
+    public Guid PPMPExpenditureItemId { get; set; }
     
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid? CSEItemId { get; set; }
@@ -27,7 +27,7 @@ public class PPMPItem : BaseEntity
     public Guid? NonCSEItemId { get; set; }
     
     [Sieve(CanFilter = true, CanSort = true)]
-    public Guid ProcurementModelId { get; set; }
+    public Guid ProcurementModeId { get; set; }
     
     [Sieve(CanFilter = true, CanSort = true)]
     public List<string> PAPCode { get; set; } = new();
@@ -42,14 +42,20 @@ public class PPMPItem : BaseEntity
     public string Unit { get; set; } = string.Empty;
     
     [Sieve(CanFilter = true, CanSort = true)]
-    public decimal UnitCost { get; set; }
+    public decimal UnitPrice { get; set; }
+    
+    [Sieve(CanFilter = true, CanSort = true)]
+    public bool MOPOverride { get; set; }
+    
+    [Sieve(CanFilter = true, CanSort = true)]
+    public string? MOPJustification { get; set; }
     
     [Sieve(CanFilter = true, CanSort = true)]
     public bool IsNonCSE { get; set; }
     
     // Navigation properties
     public virtual PPMP PPMP { get; set; } = null!;
-    public virtual LineItemBudgetDetail LineItemBudgetDetail { get; set; } = null!;
+    public virtual PPMPExpenditureItem PPMPExpenditureItem { get; set; } = null!;
     public virtual CSEItem? CSEItem { get; set; }
     public virtual NonCSEItem? NonCSEItem { get; set; }
     public virtual ProcurementMode ProcurementMode { get; set; } = null!;

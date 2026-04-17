@@ -370,6 +370,68 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.ToTable("AgencyMasterBudgets", "planning");
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.ApprovalEvent", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Action")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<Guid>("ActorId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ActorName")
+                        .IsRequired()
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Notes")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("PPMPId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Role")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime>("Timestamp")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PPMPId", "Timestamp");
+
+                    b.ToTable("ApprovalEvents", "planning");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.Attribute", b =>
                 {
                     b.Property<Guid>("Id")
@@ -1395,6 +1457,99 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.ToTable("ItemPrices", "planning");
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.ItemRequest", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("EstimatedUnitCost")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("ItemCategory")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid>("OfficeId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("ProcurementCategoryId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("RequestDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("ReviewedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("ReviewedBy")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<DateTime?>("SubmittedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("TWGRemarks")
+                        .HasColumnType("text");
+
+                    b.Property<string>("TechnicalSpecification")
+                        .HasColumnType("text");
+
+                    b.Property<string>("UACSCode")
+                        .HasColumnType("text");
+
+                    b.Property<string>("UNSCPSCCode")
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("UOMId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProcurementCategoryId");
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("UOMId");
+
+                    b.HasIndex("OfficeId", "RequestDate");
+
+                    b.ToTable("ItemRequests", "planning");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.KPI", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2218,6 +2373,10 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<decimal>("CurrentPrice")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -2237,6 +2396,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<int?>("ItemLife")
                         .HasColumnType("integer");
 
+                    b.Property<Guid?>("ItemRequestId")
+                        .HasColumnType("uuid");
+
                     b.Property<decimal>("Margin")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
@@ -2245,6 +2407,12 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
+
+                    b.Property<string>("ProductCode")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Remarks")
+                        .HasColumnType("text");
 
                     b.Property<decimal>("SellingPrice")
                         .HasPrecision(18, 2)
@@ -2259,6 +2427,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired()
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
+
+                    b.Property<Guid?>("UOMId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Unit")
                         .IsRequired()
@@ -2275,11 +2446,17 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("IsActive");
 
+                    b.HasIndex("ItemRequestId");
+
                     b.HasIndex("Name");
 
                     b.HasIndex("Status");
 
                     b.HasIndex("Type");
+
+                    b.HasIndex("UOMId");
+
+                    b.HasIndex("Name", "IsActive");
 
                     b.ToTable("NonCSEItems", "planning");
                 });
@@ -3350,6 +3527,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<DateTime?>("ApprovedDate")
                         .HasColumnType("timestamp with time zone");
 
+                    b.Property<Guid?>("ConsolidatedIntoId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -3363,19 +3543,14 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text");
 
-                    b.Property<Guid>("DeliveryUnitId")
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("FiscalYearId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Description")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
-
-                    b.Property<string>("EndUser")
-                        .HasMaxLength(200)
-                        .HasColumnType("character varying(200)");
-
-                    b.Property<int>("FiscalYear")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("FundSourceId")
+                        .HasColumnType("uuid");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
@@ -3383,18 +3558,86 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<bool>("IsFinal")
                         .HasColumnType("boolean");
 
+                    b.Property<Guid>("LIBId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("OfficeId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("PPMPNumber")
                         .IsRequired()
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("ParentId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Status")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                        .HasColumnType("text");
 
                     b.Property<DateTime?>("SubmittedDate")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal>("TotalEstimatedBudget")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<int>("Version")
+                        .HasColumnType("integer");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ConsolidatedIntoId");
+
+                    b.HasIndex("FiscalYearId");
+
+                    b.HasIndex("FundSourceId");
+
+                    b.HasIndex("LIBId");
+
+                    b.HasIndex("PPMPNumber")
+                        .IsUnique();
+
+                    b.HasIndex("ParentId");
+
+                    b.HasIndex("OfficeId", "FiscalYearId", "IsFinal");
+
+                    b.ToTable("PPMPs", "planning");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.PPMPActivity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("LIBActivityId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("PPMPId")
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -3404,23 +3647,18 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("IsFinal");
+                    b.HasIndex("LIBActivityId");
 
-                    b.HasIndex("PPMPNumber")
+                    b.HasIndex("PPMPId", "LIBActivityId")
                         .IsUnique();
 
-                    b.HasIndex("DeliveryUnitId", "FiscalYear");
-
-                    b.ToTable("PPMPs", "planning");
+                    b.ToTable("PPMPActivities", "planning");
                 });
 
-            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.PPMPItem", b =>
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.PPMPExpenditureItem", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid?>("CSEItemId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAt")
@@ -3436,46 +3674,16 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text");
 
-                    b.Property<string>("Description")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
-
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
-                    b.Property<bool>("IsNonCSE")
+                    b.Property<bool>("IsProcurable")
                         .HasColumnType("boolean");
 
-                    b.Property<Guid>("LineItemBudgetDetailId")
+                    b.Property<Guid>("PPMPActivityId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("Name")
-                        .IsRequired()
-                        .HasMaxLength(500)
-                        .HasColumnType("character varying(500)");
-
-                    b.Property<Guid?>("NonCSEItemId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("PAPCode")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<Guid>("PPMPId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("ProcurementModeId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("ProcurementModelId")
-                        .HasColumnType("uuid");
-
-                    b.Property<string>("Unit")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
-                    b.Property<decimal>("UnitCost")
+                    b.Property<decimal>("TotalCost")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
 
@@ -3487,25 +3695,24 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("CSEItemId");
+                    b.HasIndex("PPMPActivityId");
 
-                    b.HasIndex("IsNonCSE");
-
-                    b.HasIndex("LineItemBudgetDetailId");
-
-                    b.HasIndex("NonCSEItemId");
-
-                    b.HasIndex("PPMPId");
-
-                    b.HasIndex("ProcurementModeId");
-
-                    b.ToTable("PPMPItems", "planning");
+                    b.ToTable("PPMPExpenditureItems", "planning", t =>
+                        {
+                            t.HasCheckConstraint("CK_PPMPExpenditureItem_TotalCost", "\"TotalCost\" >= 0");
+                        });
                 });
 
-            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.PPMPItemAllocation", b =>
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.PPMPItem", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("CSEItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("CSEItemId1")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAt")
@@ -3521,8 +3728,110 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text");
 
-                    b.Property<DateTime>("EndDate")
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsNonCSE")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid?>("LineItemBudgetDetailId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("MOPJustification")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("MOPOverride")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid?>("NonCSEItemId")
+                        .HasColumnType("uuid");
+
+                    b.PrimitiveCollection<List<string>>("PAPCode")
+                        .IsRequired()
+                        .HasColumnType("text[]");
+
+                    b.Property<Guid>("PPMPExpenditureItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("PPMPId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ProcurementModeId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("ProcurementModeId1")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Unit")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<decimal>("UnitPrice")
+                        .HasPrecision(18, 4)
+                        .HasColumnType("numeric(18,4)");
+
+                    b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CSEItemId");
+
+                    b.HasIndex("CSEItemId1");
+
+                    b.HasIndex("LineItemBudgetDetailId");
+
+                    b.HasIndex("NonCSEItemId");
+
+                    b.HasIndex("PPMPExpenditureItemId");
+
+                    b.HasIndex("PPMPId");
+
+                    b.HasIndex("ProcurementModeId");
+
+                    b.HasIndex("ProcurementModeId1");
+
+                    b.ToTable("PPMPItems", "planning");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.PPMPItemAllocation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AllocationMonth")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<decimal>("Amount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
@@ -3533,9 +3842,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<int>("Quantity")
                         .HasColumnType("integer");
 
-                    b.Property<DateTime>("StartDate")
-                        .HasColumnType("timestamp with time zone");
-
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -3544,11 +3850,13 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("PPMPItemId");
+                    b.HasIndex("PPMPItemId", "AllocationMonth")
+                        .IsUnique();
 
-                    b.HasIndex("StartDate", "EndDate");
-
-                    b.ToTable("PPMPItemAllocations", "planning");
+                    b.ToTable("PPMPItemAllocations", "planning", t =>
+                        {
+                            t.HasCheckConstraint("CK_PPMPItemAllocation_Amount", "\"Amount\" >= 0");
+                        });
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.PerformanceMeasure", b =>
@@ -6208,6 +6516,17 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("FundSource");
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.ApprovalEvent", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.PPMP", "PPMP")
+                        .WithMany("ApprovalEvents")
+                        .HasForeignKey("PPMPId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("PPMP");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.Attribute", b =>
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Planning.Attribute", "ParentAttribute")
@@ -6410,6 +6729,31 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("FiscalYear");
 
                     b.Navigation("ProcurementItem");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.ItemRequest", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.Office", "Office")
+                        .WithMany()
+                        .HasForeignKey("OfficeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.ProcurementCategory", "ProcurementCategory")
+                        .WithMany()
+                        .HasForeignKey("ProcurementCategoryId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.UOM", "UOM")
+                        .WithMany()
+                        .HasForeignKey("UOMId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("Office");
+
+                    b.Navigation("ProcurementCategory");
+
+                    b.Navigation("UOM");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.KPI", b =>
@@ -6673,6 +7017,23 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("FiscalYear");
 
                     b.Navigation("ParentMFOPAP");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.NonCSEItem", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.ItemRequest", "ItemRequest")
+                        .WithMany("NonCSEItems")
+                        .HasForeignKey("ItemRequestId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.UOM", "UOM")
+                        .WithMany()
+                        .HasForeignKey("UOMId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("ItemRequest");
+
+                    b.Navigation("UOM");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OPCR", b =>
@@ -7019,30 +7380,108 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.PPMP", b =>
                 {
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.DeliveryUnit", "DeliveryUnit")
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.PPMP", "ConsolidatedInto")
                         .WithMany()
-                        .HasForeignKey("DeliveryUnitId")
+                        .HasForeignKey("ConsolidatedIntoId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.FiscalYear", "FiscalYear")
+                        .WithMany()
+                        .HasForeignKey("FiscalYearId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.FundSource", "FundSource")
+                        .WithMany()
+                        .HasForeignKey("FundSourceId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.LineItemBudget", "LineItemBudget")
+                        .WithMany()
+                        .HasForeignKey("LIBId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.Office", "Office")
+                        .WithMany()
+                        .HasForeignKey("OfficeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.PPMP", "ParentPPMP")
+                        .WithMany("ChildPPMPs")
+                        .HasForeignKey("ParentId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("ConsolidatedInto");
+
+                    b.Navigation("FiscalYear");
+
+                    b.Navigation("FundSource");
+
+                    b.Navigation("LineItemBudget");
+
+                    b.Navigation("Office");
+
+                    b.Navigation("ParentPPMP");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.PPMPActivity", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.LineItemBudgetActivity", "LIBActivity")
+                        .WithMany()
+                        .HasForeignKey("LIBActivityId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.PPMP", "PPMP")
+                        .WithMany("PPMPActivities")
+                        .HasForeignKey("PPMPId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("DeliveryUnit");
+                    b.Navigation("LIBActivity");
+
+                    b.Navigation("PPMP");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.PPMPExpenditureItem", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.PPMPActivity", "PPMPActivity")
+                        .WithMany("PPMPExpenditureItems")
+                        .HasForeignKey("PPMPActivityId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("PPMPActivity");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.PPMPItem", b =>
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Planning.CSEItem", "CSEItem")
-                        .WithMany("PPMPItems")
-                        .HasForeignKey("CSEItemId");
+                        .WithMany()
+                        .HasForeignKey("CSEItemId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.LineItemBudgetDetail", "LineItemBudgetDetail")
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.CSEItem", null)
                         .WithMany("PPMPItems")
-                        .HasForeignKey("LineItemBudgetDetailId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("CSEItemId1");
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.LineItemBudgetDetail", null)
+                        .WithMany("PPMPItems")
+                        .HasForeignKey("LineItemBudgetDetailId");
 
                     b.HasOne("ERPEZ.Domain.Entities.Planning.NonCSEItem", "NonCSEItem")
                         .WithMany("PPMPItems")
-                        .HasForeignKey("NonCSEItemId");
+                        .HasForeignKey("NonCSEItemId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.PPMPExpenditureItem", "PPMPExpenditureItem")
+                        .WithMany("PPMPItems")
+                        .HasForeignKey("PPMPExpenditureItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.HasOne("ERPEZ.Domain.Entities.Planning.PPMP", "PPMP")
                         .WithMany("PPMPItems")
@@ -7051,18 +7490,22 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired();
 
                     b.HasOne("ERPEZ.Domain.Entities.Planning.ProcurementMode", "ProcurementMode")
-                        .WithMany("PPMPItems")
+                        .WithMany()
                         .HasForeignKey("ProcurementModeId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("CSEItem");
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.ProcurementMode", null)
+                        .WithMany("PPMPItems")
+                        .HasForeignKey("ProcurementModeId1");
 
-                    b.Navigation("LineItemBudgetDetail");
+                    b.Navigation("CSEItem");
 
                     b.Navigation("NonCSEItem");
 
                     b.Navigation("PPMP");
+
+                    b.Navigation("PPMPExpenditureItem");
 
                     b.Navigation("ProcurementMode");
                 });
@@ -7734,6 +8177,11 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("Transactions");
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.ItemRequest", b =>
+                {
+                    b.Navigation("NonCSEItems");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.KPI", b =>
                 {
                     b.Navigation("ChildKPIs");
@@ -7891,6 +8339,22 @@ namespace ERPEZ.Infrastructure.Migrations
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.PPMP", b =>
+                {
+                    b.Navigation("ApprovalEvents");
+
+                    b.Navigation("ChildPPMPs");
+
+                    b.Navigation("PPMPActivities");
+
+                    b.Navigation("PPMPItems");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.PPMPActivity", b =>
+                {
+                    b.Navigation("PPMPExpenditureItems");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.PPMPExpenditureItem", b =>
                 {
                     b.Navigation("PPMPItems");
                 });
