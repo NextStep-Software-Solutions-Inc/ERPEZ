@@ -6,7 +6,7 @@ public record UpdatePPMPItemRequest
     public Guid? CSEItemId { get; init; }
     public Guid? NonCSEItemId { get; init; }
     public Guid? ProcurementModeId { get; init; }
-    public List<string>? PAPCode { get; init; }
+    public string? PAPCode { get; init; }
     public string? Name { get; init; }
     public string? Description { get; init; }
     public string? Unit { get; init; }

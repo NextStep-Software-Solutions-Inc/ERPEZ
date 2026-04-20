@@ -27,7 +27,7 @@ public class PPMPItem : BaseEntity
     public Guid ProcurementModeId { get; set; }
     
     [Sieve(CanFilter = true, CanSort = true)]
-    public List<string>? PAPCode { get; set; }
+    public string? PAPCode { get; set; }
     
     [Sieve(CanFilter = true, CanSort = true)]
     public string Name { get; set; } = string.Empty;

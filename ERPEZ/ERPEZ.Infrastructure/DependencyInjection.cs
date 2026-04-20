@@ -12,7 +12,6 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
-using Npgsql;
 using ERPEZ.Shared.Interceptors;
 using AppCurrentUserService = ERPEZ.Application.Interfaces.ICurrentUserService;
 using InfraCurrentUserService = ERPEZ.Infrastructure.Services.CurrentUserService;
@@ -135,15 +134,6 @@ public static class DependencyInjection
 
             try
             {
-                await EnsurePapCodeTextArrayAsync(dbContext);
-                await dbContext.Database.MigrateAsync();
-            }
-            catch (PostgresException ex) when (ex.SqlState == "42804")
-            {
-                // Recover from legacy text -> text[] conversion issues for PPMPItems.PAPCode,
-                // then retry migrations once.
-                logger.LogWarning(ex, "Detected PostgreSQL cast issue for PAPCode. Applying compatibility fix and retrying migrations.");
-                await EnsurePapCodeTextArrayAsync(dbContext);
                 await dbContext.Database.MigrateAsync();
             }
             catch (InvalidOperationException ex)
@@ -162,35 +152,5 @@ public static class DependencyInjection
             }
         }
         return builder;
-    }
-
-    private static async Task EnsurePapCodeTextArrayAsync(ApplicationDbContext dbContext)
-    {
-        const string sql = @"
-DO $$
-BEGIN
-    IF EXISTS (
-        SELECT 1
-        FROM information_schema.columns
-        WHERE table_schema = 'planning'
-          AND table_name = 'PPMPItems'
-          AND column_name = 'PAPCode'
-          AND data_type = 'text'
-    ) THEN
-        EXECUTE 'ALTER TABLE planning.""PPMPItems"" 
-                 ALTER COLUMN ""PAPCode"" TYPE text[]
-                 USING CASE
-                     WHEN ""PAPCode"" IS NULL OR btrim(""PAPCode"") = '''' THEN ARRAY[]::text[]
-                     ELSE ARRAY(
-                         SELECT btrim(value)
-                         FROM unnest(string_to_array(""PAPCode"", '','')) AS value
-                         WHERE btrim(value) <> ''''
-                     )
-                 END';
-    END IF;
-END $$;
-";
-
-        await dbContext.Database.ExecuteSqlRawAsync(sql);
     }
 }
