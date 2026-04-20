@@ -21,6 +21,8 @@ public class GetProcurementModeByIdQueryHandler(IUnitOfWork unitOfWork)
             Id = entity.Id,
             Name = entity.Name,
             Description = entity.Description,
+            MinThreshold = entity.MinThreshold,
+            MaxThreshold = entity.MaxThreshold,
             ProcurementCategory = entity.ProcurementCategory != null ? new ProcurementCategoryDto
             {
                 Id = entity.ProcurementCategory.Id,

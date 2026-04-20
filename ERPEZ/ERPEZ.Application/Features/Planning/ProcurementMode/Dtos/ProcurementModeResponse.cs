@@ -5,6 +5,8 @@ public record ProcurementModeResponse
     public Guid Id { get; init; }
     public string Name { get; init; } = string.Empty;
     public string? Description { get; init; }
+    public decimal MinThreshold { get; init; }
+    public decimal? MaxThreshold { get; init; }
     public bool IsArchived { get; init; }
     public bool IsActive { get; init; }
     public ProcurementCategoryDto? ProcurementCategory { get; init; }

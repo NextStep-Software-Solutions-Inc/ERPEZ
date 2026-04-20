@@ -7,5 +7,7 @@ public record CreateProcurementModeCommand : IRequest<ApiResponse<Guid>>
 {
     public string Name { get; init; } = string.Empty;
     public string? Description { get; init; }
+    public decimal MinThreshold { get; init; }
+    public decimal? MaxThreshold { get; init; }
     public Guid ProcurementCategoryId { get; init; }
 }

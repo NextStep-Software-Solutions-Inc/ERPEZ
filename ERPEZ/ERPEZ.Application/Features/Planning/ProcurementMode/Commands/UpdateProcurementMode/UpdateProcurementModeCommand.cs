@@ -10,6 +10,8 @@ public record UpdateProcurementModeCommand : IRequest<ApiResponse<Unit>>
     public Guid Id { get; init; }
     public string? Name { get; init; }
     public string? Description { get; init; }
+    public decimal? MinThreshold { get; init; }
+    public decimal? MaxThreshold { get; init; }
     public Guid? ProcurementCategoryId { get; init; }
     public bool? IsActive { get; init; }
 }

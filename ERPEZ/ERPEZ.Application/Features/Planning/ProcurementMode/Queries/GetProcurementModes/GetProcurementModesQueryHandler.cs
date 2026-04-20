@@ -18,6 +18,8 @@ public class GetProcurementModesQueryHandler(IUnitOfWork unitOfWork)
             Id = x.Id,
             Name = x.Name,
             Description = x.Description,
+            MinThreshold = x.MinThreshold,
+            MaxThreshold = x.MaxThreshold,
             ProcurementCategory = x.ProcurementCategory != null ? new ProcurementCategoryDto
             {
                 Id = x.ProcurementCategory.Id,

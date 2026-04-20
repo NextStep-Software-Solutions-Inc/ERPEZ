@@ -30,6 +30,12 @@ public class UpdateProcurementModeCommandHandler(IUnitOfWork unitOfWork)
         if (request.Description != null)
             entity.Description = request.Description;
 
+        if (request.MinThreshold.HasValue)
+            entity.MinThreshold = request.MinThreshold.Value;
+
+        if (request.MaxThreshold.HasValue)
+            entity.MaxThreshold = request.MaxThreshold.Value;
+
         if (request.ProcurementCategoryId.HasValue)
         {
             // Validate category exists
@@ -41,6 +47,9 @@ public class UpdateProcurementModeCommandHandler(IUnitOfWork unitOfWork)
 
         if (request.IsActive.HasValue)
             entity.IsActive = request.IsActive.Value;
+
+        if (entity.MaxThreshold.HasValue && entity.MaxThreshold.Value <= entity.MinThreshold)
+            throw new ValidationException("Max threshold must be greater than min threshold.");
 
         unitOfWork.ProcurementModeRepository.Update(entity);
         await unitOfWork.SaveChangesAsync(cancellationToken);
