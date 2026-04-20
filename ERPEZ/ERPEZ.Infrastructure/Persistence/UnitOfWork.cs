@@ -98,6 +98,14 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IKPIAssignmentRepository kpiAssignmentRepository;
     private readonly IRatingScaleTemplateRepository ratingScaleTemplateRepository;
     private readonly IRatingScaleLevelRepository ratingScaleLevelRepository;
+    private readonly IPPMPRepository ppmpRepository;
+    private readonly IApprovalEventRepository approvalEventRepository;
+    private readonly IPPMPActivityRepository ppmpActivityRepository;
+    private readonly IPPMPExpenditureItemRepository ppmpExpenditureItemRepository;
+    private readonly IPPMPItemRepository ppmpItemRepository;
+    private readonly IPPMPItemAllocationRepository ppmpItemAllocationRepository;
+    private readonly IItemRequestRepository itemRequestRepository;
+    private readonly INonCSEItemRepository nonCSEItemRepository;
 
     // Constructor initializes all repositories once
     public UnitOfWork(ApplicationDbContext context, IServiceProvider serviceProvider)
@@ -193,6 +201,14 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         kpiAssignmentRepository = new KPIAssignmentRepository(context, sieveProcessor);
         ratingScaleTemplateRepository = new RatingScaleTemplateRepository(context, sieveProcessor);
         ratingScaleLevelRepository = new RatingScaleLevelRepository(context, sieveProcessor);
+        ppmpRepository = new PPMPRepository(context, sieveProcessor);
+        approvalEventRepository = new ApprovalEventRepository(context, sieveProcessor);
+        ppmpActivityRepository = new PPMPActivityRepository(context, sieveProcessor);
+        ppmpExpenditureItemRepository = new PPMPExpenditureItemRepository(context, sieveProcessor);
+        ppmpItemRepository = new PPMPItemRepository(context, sieveProcessor);
+        ppmpItemAllocationRepository = new PPMPItemAllocationRepository(context, sieveProcessor);
+        itemRequestRepository = new ItemRequestRepository(context, sieveProcessor);
+        nonCSEItemRepository = new NonCSEItemRepository(context, sieveProcessor);
     }
 
     // Public properties return cached instances
@@ -283,6 +299,14 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public ISupplierRepository SupplierRepository => supplierRepository;
     public ISupplierRequirementRepository SupplierRequirementRepository => supplierRequirementRepository;
     public ISupplierCategoryRepository SupplierCategoryRepository => supplierCategoryRepository;
+    public IPPMPRepository PPMPRepository => ppmpRepository;
+    public IApprovalEventRepository ApprovalEventRepository => approvalEventRepository;
+    public IPPMPActivityRepository PPMPActivityRepository => ppmpActivityRepository;
+    public IPPMPExpenditureItemRepository PPMPExpenditureItemRepository => ppmpExpenditureItemRepository;
+    public IPPMPItemRepository PPMPItemRepository => ppmpItemRepository;
+    public IPPMPItemAllocationRepository PPMPItemAllocationRepository => ppmpItemAllocationRepository;
+    public IItemRequestRepository ItemRequestRepository => itemRequestRepository;
+    public INonCSEItemRepository NonCSEItemRepository => nonCSEItemRepository;
 
     public async Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default)
     {
