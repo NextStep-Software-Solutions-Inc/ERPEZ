@@ -444,6 +444,28 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<ProcurementPolicyConfig>()
             .HasIndex(ppc => new { ppc.FiscalYearId, ppc.ProcurementModeId });
 
+        // ProcurementMode
+        modelBuilder.Entity<ProcurementMode>()
+            .Property(pm => pm.Name)
+            .IsRequired()
+            .HasMaxLength(200);
+
+        modelBuilder.Entity<ProcurementMode>()
+            .Property(pm => pm.Description)
+            .HasMaxLength(1000);
+
+        modelBuilder.Entity<ProcurementMode>()
+            .Property(pm => pm.MinThreshold)
+            .HasPrecision(18, 2);
+
+        modelBuilder.Entity<ProcurementMode>()
+            .Property(pm => pm.MaxThreshold)
+            .HasPrecision(18, 2);
+
+        modelBuilder.Entity<ProcurementMode>()
+            .HasIndex(pm => pm.Name)
+            .IsUnique();
+
         //GeneralRatingScale
         modelBuilder.Entity<GeneralRatingScale>()
             .HasOne(grs => grs.FiscalYear)

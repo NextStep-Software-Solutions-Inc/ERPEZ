@@ -16,5 +16,13 @@ public class CreateProcurementModeCommandValidator : AbstractValidator<CreatePro
             .MaximumLength(1000)
             .WithMessage("Description cannot exceed 1000 characters.")
             .When(x => !string.IsNullOrEmpty(x.Description));
+
+        RuleFor(x => x.MinThreshold)
+            .GreaterThanOrEqualTo(0)
+            .WithMessage("Min threshold must be greater than or equal to 0.");
+
+        RuleFor(x => x)
+            .Must(x => !x.MaxThreshold.HasValue || x.MaxThreshold.Value >= x.MinThreshold)
+            .WithMessage("Max threshold must be greater than or equal to min threshold.");
     }
 }

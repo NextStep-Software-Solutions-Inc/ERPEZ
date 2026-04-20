@@ -31,6 +31,8 @@ public class CreateProcurementModeCommandHandler(IUnitOfWork unitOfWork)
             Id = Guid.NewGuid(),
             Name = request.Name,
             Description = request.Description,
+            MinThreshold = request.MinThreshold,
+            MaxThreshold = request.MaxThreshold,
             ProcurementCategoryId = request.ProcurementCategoryId,
             IsActive = true,
             IsArchived = false

@@ -28,6 +28,12 @@ public class ProcurementMode : BaseEntity
     
     [Sieve(CanFilter = true, CanSort = true)]
     public string? Description { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public decimal MinThreshold { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public decimal? MaxThreshold { get; set; }
     
     [Sieve(CanFilter = true, CanSort = true)]
     public bool IsArchived { get; set; } = false;
