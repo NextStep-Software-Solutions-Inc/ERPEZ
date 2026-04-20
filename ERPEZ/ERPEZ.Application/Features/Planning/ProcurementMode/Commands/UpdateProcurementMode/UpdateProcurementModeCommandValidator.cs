@@ -31,7 +31,7 @@ public class UpdateProcurementModeCommandValidator : AbstractValidator<UpdatePro
             .When(x => x.MaxThreshold.HasValue);
 
         RuleFor(x => x)
-            .Must(x => !x.MinThreshold.HasValue || !x.MaxThreshold.HasValue || x.MaxThreshold.Value >= x.MinThreshold.Value)
-            .WithMessage("Max threshold must be greater than or equal to min threshold.");
+            .Must(x => !x.MinThreshold.HasValue || !x.MaxThreshold.HasValue || x.MaxThreshold.Value > x.MinThreshold.Value)
+            .WithMessage("Max threshold must be greater than min threshold.");
     }
 }

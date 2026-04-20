@@ -48,8 +48,8 @@ public class UpdateProcurementModeCommandHandler(IUnitOfWork unitOfWork)
         if (request.IsActive.HasValue)
             entity.IsActive = request.IsActive.Value;
 
-        if (entity.MaxThreshold.HasValue && entity.MaxThreshold.Value < entity.MinThreshold)
-            throw new ValidationException("Max threshold must be greater than or equal to min threshold.");
+        if (entity.MaxThreshold.HasValue && entity.MaxThreshold.Value <= entity.MinThreshold)
+            throw new ValidationException("Max threshold must be greater than min threshold.");
 
         unitOfWork.ProcurementModeRepository.Update(entity);
         await unitOfWork.SaveChangesAsync(cancellationToken);

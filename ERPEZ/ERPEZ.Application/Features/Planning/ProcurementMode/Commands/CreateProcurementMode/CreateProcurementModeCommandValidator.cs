@@ -22,7 +22,7 @@ public class CreateProcurementModeCommandValidator : AbstractValidator<CreatePro
             .WithMessage("Min threshold must be greater than or equal to 0.");
 
         RuleFor(x => x)
-            .Must(x => !x.MaxThreshold.HasValue || x.MaxThreshold.Value >= x.MinThreshold)
-            .WithMessage("Max threshold must be greater than or equal to min threshold.");
+            .Must(x => !x.MaxThreshold.HasValue || x.MaxThreshold.Value > x.MinThreshold)
+            .WithMessage("Max threshold must be greater than min threshold.");
     }
 }
