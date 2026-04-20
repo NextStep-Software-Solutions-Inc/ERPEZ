@@ -1643,10 +1643,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasPrecision(18, 4);
 
         modelBuilder.Entity<PPMPItem>()
-            .Property(pi => pi.PAPCode)
-            .HasColumnType("text[]");
-
-        modelBuilder.Entity<PPMPItem>()
             .Property(pi => pi.Name)
             .IsRequired()
             .HasMaxLength(500);

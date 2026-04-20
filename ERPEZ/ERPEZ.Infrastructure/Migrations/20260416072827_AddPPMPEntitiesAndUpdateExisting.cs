@@ -179,13 +179,7 @@ namespace ERPEZ.Infrastructure.Migrations
                 nullable: false,
                 defaultValue: 0m);
 
-            migrationBuilder.Sql(
-                @"ALTER TABLE planning.""PPMPItems""
-ALTER COLUMN ""PAPCode"" TYPE text[]
-USING CASE
-    WHEN ""PAPCode"" IS NULL OR btrim(""PAPCode"") = '' THEN ARRAY[]::text[]
-    ELSE ARRAY[""PAPCode""]
-END;");
+            // PAPCode stays as plain text — no type conversion needed.
 
             migrationBuilder.AlterColumn<Guid>(
                 name: "LineItemBudgetDetailId",

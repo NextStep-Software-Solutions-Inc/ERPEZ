@@ -18,13 +18,19 @@ public class CreatePPMPCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<
         _ = await unitOfWork.FiscalYearRepository.GetByIdAsync(request.FiscalYearId, cancellationToken: cancellationToken)
             ?? throw new NotFoundException($"Fiscal Year with ID {request.FiscalYearId} not found.");
 
-        // Validate FundSource
-        _ = await unitOfWork.FundSourceRepository.GetByIdAsync(request.FundSourceId, cancellationToken: cancellationToken)
-            ?? throw new NotFoundException($"Fund Source with ID {request.FundSourceId} not found.");
+        // Validate FundSource if provided
+        if (request.FundSourceId.HasValue)
+        {
+            _ = await unitOfWork.FundSourceRepository.GetByIdAsync(request.FundSourceId.Value, cancellationToken: cancellationToken)
+                ?? throw new NotFoundException($"Fund Source with ID {request.FundSourceId.Value} not found.");
+        }
 
-        // Validate LIB
-        _ = await unitOfWork.LineItemBudgetRepository.GetByIdAsync(request.LIBId, cancellationToken: cancellationToken)
-            ?? throw new NotFoundException($"Line Item Budget with ID {request.LIBId} not found.");
+        // Validate LIB if provided
+        if (request.LIBId.HasValue)
+        {
+            _ = await unitOfWork.LineItemBudgetRepository.GetByIdAsync(request.LIBId.Value, cancellationToken: cancellationToken)
+                ?? throw new NotFoundException($"Line Item Budget with ID {request.LIBId.Value} not found.");
+        }
 
         var version = 1;
 

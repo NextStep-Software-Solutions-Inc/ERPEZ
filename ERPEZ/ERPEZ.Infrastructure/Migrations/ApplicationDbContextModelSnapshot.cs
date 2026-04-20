@@ -3544,7 +3544,7 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid>("FiscalYearId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("FundSourceId")
+                    b.Property<Guid?>("FundSourceId")
                         .HasColumnType("uuid");
 
                     b.Property<bool>("IsDeleted")
@@ -3553,7 +3553,7 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<bool>("IsFinal")
                         .HasColumnType("boolean");
 
-                    b.Property<Guid>("LIBId")
+                    b.Property<Guid?>("LIBId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("OfficeId")
@@ -3746,8 +3746,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid?>("NonCSEItemId")
                         .HasColumnType("uuid");
 
-                    b.PrimitiveCollection<List<string>>("PAPCode")
-                        .HasColumnType("text[]");
+                    b.Property<string>("PAPCode")
+                        .HasColumnType("text");
 
                     b.Property<Guid>("PPMPExpenditureItemId")
                         .HasColumnType("uuid");
@@ -7380,14 +7380,12 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasOne("ERPEZ.Domain.Entities.Planning.FundSource", "FundSource")
                         .WithMany()
                         .HasForeignKey("FundSourceId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("ERPEZ.Domain.Entities.Planning.LineItemBudget", "LineItemBudget")
                         .WithMany()
                         .HasForeignKey("LIBId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("ERPEZ.Domain.Entities.Planning.Office", "Office")
                         .WithMany()
