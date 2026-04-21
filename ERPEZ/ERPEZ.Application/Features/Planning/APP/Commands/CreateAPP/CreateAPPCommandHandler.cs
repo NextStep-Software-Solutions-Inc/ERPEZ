@@ -13,11 +13,11 @@ public class CreateAPPCommandHandler(IUnitOfWork unitOfWork)
     public async Task<ApiResponse<Guid>> Handle(CreateAPPCommand request, CancellationToken cancellationToken)
     {
         // Validate FiscalYear exists
-        var fiscalYear = await unitOfWork.FiscalYearRepository.GetByIdAsync(request.FiscalYearId, cancellationToken)
+        _ = await unitOfWork.FiscalYearRepository.GetByIdAsync(request.FiscalYearId, cancellationToken)
             ?? throw new NotFoundException("Fiscal year not found.");
 
         // Validate Office exists
-        var office = await unitOfWork.OfficeRepository.GetByIdAsync(request.OfficeId, cancellationToken)
+        _ = await unitOfWork.OfficeRepository.GetByIdAsync(request.OfficeId, cancellationToken)
             ?? throw new NotFoundException("Office not found.");
 
         // Check for duplicate APPNumber

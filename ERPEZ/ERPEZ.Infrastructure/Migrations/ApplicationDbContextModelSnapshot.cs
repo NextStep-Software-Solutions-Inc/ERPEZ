@@ -158,9 +158,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text");
 
-                    b.Property<Guid>("DeliveryUnitId")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid>("FundSourceId")
                         .HasColumnType("uuid");
 
@@ -184,7 +181,7 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid>("PPMPItemId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("ProcurementModeId")
+                    b.Property<Guid?>("ProcurementModeId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid>("ProcurementModelId")
@@ -208,8 +205,6 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("APPId");
 
-                    b.HasIndex("DeliveryUnitId");
-
                     b.HasIndex("FundSourceId");
 
                     b.HasIndex("OfficeId");
@@ -218,7 +213,53 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("ProcurementModeId");
 
+                    b.HasIndex("ProcurementModelId");
+
                     b.ToTable("APPItems", "planning");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.APPPPMP", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("APPId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("PPMPId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PPMPId");
+
+                    b.HasIndex("APPId", "PPMPId")
+                        .IsUnique();
+
+                    b.ToTable("APP_PPMP_Selections", "planning");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.APPProcurementSchedule", b =>
@@ -267,50 +308,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("ScheduledDate");
 
                     b.ToTable("APPProcurementSchedules", "planning");
-                });
-
-            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.APP_PPMP_Selection", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("APPId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("CreatedBy")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("DeletedBy")
-                        .HasColumnType("text");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
-
-                    b.Property<Guid>("PPMPId")
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("PPMPId");
-
-                    b.HasIndex("APPId", "PPMPId")
-                        .IsUnique();
-
-                    b.ToTable("APP_PPMP_Selections", "planning");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.AdministrativeLevel", b =>
@@ -4776,161 +4773,6 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("SDGs", "planning");
-
-                    b.HasData(
-                        new
-                        {
-                            Id = new Guid("00000000-0000-0000-0000-000000000001"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            CreatedBy = "System",
-                            Description = "End poverty in all its forms everywhere.",
-                            IsDeleted = false,
-                            Name = "Goal 1: No Poverty"
-                        },
-                        new
-                        {
-                            Id = new Guid("00000000-0000-0000-0000-000000000002"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            CreatedBy = "System",
-                            Description = "End hunger, achieve food security, and promote sustainable agriculture.",
-                            IsDeleted = false,
-                            Name = "Goal 2: Zero Hunger"
-                        },
-                        new
-                        {
-                            Id = new Guid("00000000-0000-0000-0000-000000000003"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            CreatedBy = "System",
-                            Description = "Ensure healthy lives and promote well-being for all.",
-                            IsDeleted = false,
-                            Name = "Goal 3: Good Health and Well-being"
-                        },
-                        new
-                        {
-                            Id = new Guid("00000000-0000-0000-0000-000000000004"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            CreatedBy = "System",
-                            Description = "Ensure inclusive and equitable quality education for all.",
-                            IsDeleted = false,
-                            Name = "Goal 4: Quality Education"
-                        },
-                        new
-                        {
-                            Id = new Guid("00000000-0000-0000-0000-000000000005"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            CreatedBy = "System",
-                            Description = "Achieve gender equality and empower all women and girls.",
-                            IsDeleted = false,
-                            Name = "Goal 5: Gender Equality"
-                        },
-                        new
-                        {
-                            Id = new Guid("00000000-0000-0000-0000-000000000006"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            CreatedBy = "System",
-                            Description = "Ensure availability and sustainable management of water.",
-                            IsDeleted = false,
-                            Name = "Goal 6: Clean Water and Sanitation"
-                        },
-                        new
-                        {
-                            Id = new Guid("00000000-0000-0000-0000-000000000007"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            CreatedBy = "System",
-                            Description = "Ensure access to affordable, reliable, and sustainable energy.",
-                            IsDeleted = false,
-                            Name = "Goal 7: Affordable and Clean Energy"
-                        },
-                        new
-                        {
-                            Id = new Guid("00000000-0000-0000-0000-000000000008"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            CreatedBy = "System",
-                            Description = "Promote inclusive economic growth and decent work for all.",
-                            IsDeleted = false,
-                            Name = "Goal 8: Decent Work and Economic Growth"
-                        },
-                        new
-                        {
-                            Id = new Guid("00000000-0000-0000-0000-000000000009"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            CreatedBy = "System",
-                            Description = "Build resilient infrastructure and foster innovation.",
-                            IsDeleted = false,
-                            Name = "Goal 9: Industry, Innovation and Infrastructure"
-                        },
-                        new
-                        {
-                            Id = new Guid("00000000-0000-0000-0000-000000000010"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            CreatedBy = "System",
-                            Description = "Reduce inequality within and among countries.",
-                            IsDeleted = false,
-                            Name = "Goal 10: Reduced Inequalities"
-                        },
-                        new
-                        {
-                            Id = new Guid("00000000-0000-0000-0000-000000000011"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            CreatedBy = "System",
-                            Description = "Make cities safe, resilient, and sustainable.",
-                            IsDeleted = false,
-                            Name = "Goal 11: Sustainable Cities and Communities"
-                        },
-                        new
-                        {
-                            Id = new Guid("00000000-0000-0000-0000-000000000012"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            CreatedBy = "System",
-                            Description = "Ensure sustainable consumption and production patterns.",
-                            IsDeleted = false,
-                            Name = "Goal 12: Responsible Consumption and Production"
-                        },
-                        new
-                        {
-                            Id = new Guid("00000000-0000-0000-0000-000000000013"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            CreatedBy = "System",
-                            Description = "Take urgent action to combat climate change.",
-                            IsDeleted = false,
-                            Name = "Goal 13: Climate Action"
-                        },
-                        new
-                        {
-                            Id = new Guid("00000000-0000-0000-0000-000000000014"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            CreatedBy = "System",
-                            Description = "Conserve and sustainably use oceans, seas, and marine resources.",
-                            IsDeleted = false,
-                            Name = "Goal 14: Life Below Water"
-                        },
-                        new
-                        {
-                            Id = new Guid("00000000-0000-0000-0000-000000000015"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            CreatedBy = "System",
-                            Description = "Protect, restore, and promote sustainable terrestrial ecosystems.",
-                            IsDeleted = false,
-                            Name = "Goal 15: Life on Land"
-                        },
-                        new
-                        {
-                            Id = new Guid("00000000-0000-0000-0000-000000000016"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            CreatedBy = "System",
-                            Description = "Promote peaceful societies and access to justice.",
-                            IsDeleted = false,
-                            Name = "Goal 16: Peace, Justice and Strong Institutions"
-                        },
-                        new
-                        {
-                            Id = new Guid("00000000-0000-0000-0000-000000000017"),
-                            CreatedAt = new DateTime(2026, 1, 1, 0, 0, 0, 0, DateTimeKind.Utc),
-                            CreatedBy = "System",
-                            Description = "Strengthen global partnerships for sustainable development.",
-                            IsDeleted = false,
-                            Name = "Goal 17: Partnerships for the Goals"
-                        });
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.SalaryGrade", b =>
@@ -6506,12 +6348,6 @@ namespace ERPEZ.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.DeliveryUnit", "DeliveryUnit")
-                        .WithMany()
-                        .HasForeignKey("DeliveryUnitId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
                     b.HasOne("ERPEZ.Domain.Entities.Planning.FundSource", "FundSource")
                         .WithMany()
                         .HasForeignKey("FundSourceId")
@@ -6530,15 +6366,17 @@ namespace ERPEZ.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.ProcurementMode", "ProcurementMode")
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.ProcurementMode", null)
                         .WithMany("APPItems")
-                        .HasForeignKey("ProcurementModeId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasForeignKey("ProcurementModeId");
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.ProcurementMode", "ProcurementMode")
+                        .WithMany()
+                        .HasForeignKey("ProcurementModelId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.Navigation("APP");
-
-                    b.Navigation("DeliveryUnit");
 
                     b.Navigation("FundSource");
 
@@ -6547,6 +6385,25 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("PPMPItem");
 
                     b.Navigation("ProcurementMode");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.APPPPMP", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.APP", "APP")
+                        .WithMany("APPPPMPs")
+                        .HasForeignKey("APPId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.PPMP", "PPMP")
+                        .WithMany()
+                        .HasForeignKey("PPMPId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("APP");
+
+                    b.Navigation("PPMP");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.APPProcurementSchedule", b =>
@@ -6566,25 +6423,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("PPMPItem");
 
                     b.Navigation("ProcurementActivityType");
-                });
-
-            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.APP_PPMP_Selection", b =>
-                {
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.APP", "APP")
-                        .WithMany("APP_PPMP_Selections")
-                        .HasForeignKey("APPId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.PPMP", "PPMP")
-                        .WithMany()
-                        .HasForeignKey("PPMPId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
-                    b.Navigation("APP");
-
-                    b.Navigation("PPMP");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.AgencyMasterBudget", b =>
@@ -8173,7 +8011,7 @@ namespace ERPEZ.Infrastructure.Migrations
                 {
                     b.Navigation("APPItems");
 
-                    b.Navigation("APP_PPMP_Selections");
+                    b.Navigation("APPPPMPs");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.AdministrativeLevel", b =>

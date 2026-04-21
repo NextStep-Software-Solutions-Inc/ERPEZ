@@ -930,6 +930,95 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasForeignKey(sr => sr.SupplierId)
             .OnDelete(DeleteBehavior.Cascade);
 
+        // ProcurementMode
+        modelBuilder.Entity<ProcurementMode>()
+            .Property(e => e.Name)
+            .IsRequired()
+            .HasMaxLength(200);
+
+        modelBuilder.Entity<ProcurementMode>()
+            .Property(e => e.Description)
+            .HasMaxLength(1000);
+
+        modelBuilder.Entity<ProcurementMode>()
+            .HasIndex(e => e.Name)
+            .IsUnique();
+
+        // ProcurementActivityType
+        modelBuilder.Entity<ProcurementActivityType>()
+            .Property(e => e.Name)
+            .IsRequired()
+            .HasMaxLength(200);
+
+        modelBuilder.Entity<ProcurementActivityType>()
+            .Property(e => e.Description)
+            .IsRequired()
+            .HasMaxLength(1000);
+
+        modelBuilder.Entity<ProcurementActivityType>()
+            .HasIndex(e => e.Name);
+
+        // CSEItem
+        modelBuilder.Entity<CSEItem>()
+            .Property(e => e.Type)
+            .HasConversion<string>()
+            .IsRequired()
+            .HasMaxLength(50);
+
+        modelBuilder.Entity<CSEItem>()
+            .Property(e => e.Price)
+            .HasPrecision(18, 2)
+            .IsRequired();
+
+        modelBuilder.Entity<CSEItem>()
+            .Property(e => e.Name)
+            .IsRequired()
+            .HasMaxLength(500);
+
+        modelBuilder.Entity<CSEItem>()
+            .Property(e => e.Description)
+            .HasMaxLength(1000);
+
+        modelBuilder.Entity<CSEItem>()
+            .Property(e => e.Unit)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        modelBuilder.Entity<CSEItem>()
+            .Property(e => e.ProductCode)
+            .HasMaxLength(100);
+
+        modelBuilder.Entity<CSEItem>()
+            .Property(e => e.ImageURL)
+            .HasMaxLength(1000);
+
+        modelBuilder.Entity<CSEItem>()
+            .Property(e => e.Remarks)
+            .HasMaxLength(1000);
+
+        modelBuilder.Entity<CSEItem>()
+            .HasIndex(e => e.Type);
+
+        modelBuilder.Entity<CSEItem>()
+            .HasIndex(e => e.ProductCode);
+
+        modelBuilder.Entity<CSEItem>()
+            .HasIndex(e => e.Name);
+
+        // SDG
+        modelBuilder.Entity<SDG>()
+            .Property(e => e.Name)
+            .IsRequired()
+            .HasMaxLength(200);
+
+        modelBuilder.Entity<SDG>()
+            .Property(e => e.Description)
+            .HasMaxLength(1000);
+
+        modelBuilder.Entity<SDG>()
+            .HasIndex(e => e.Name)
+            .IsUnique();
+
         modelBuilder.Entity<SupplierRequirement>()
             .HasIndex(sr => new { sr.SupplierId, sr.RequirementName });
 
@@ -1753,15 +1842,31 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<NonCSEItem>()
             .Property(n => n.BaseCost)
-            .HasPrecision(18, 2);
+            .HasPrecision(18, 2)
+            .IsRequired();
 
         modelBuilder.Entity<NonCSEItem>()
             .Property(n => n.Margin)
-            .HasPrecision(18, 2);
+            .HasPrecision(18, 2)
+            .IsRequired();
 
         modelBuilder.Entity<NonCSEItem>()
             .Property(n => n.SellingPrice)
-            .HasPrecision(18, 2);
+            .HasPrecision(18, 2)
+            .IsRequired();
+
+        modelBuilder.Entity<NonCSEItem>()
+            .Property(n => n.Description)
+            .HasMaxLength(1000);
+
+        modelBuilder.Entity<NonCSEItem>()
+            .HasIndex(n => n.Name);
+
+        modelBuilder.Entity<NonCSEItem>()
+            .HasIndex(n => n.Type);
+
+        modelBuilder.Entity<NonCSEItem>()
+            .HasIndex(n => n.Status);
 
         modelBuilder.Entity<NonCSEItem>()
             .HasIndex(n => n.IsActive);
@@ -1797,6 +1902,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<APPItem>()
+            .HasOne(e => e.ProcurementMode)
+            .WithMany()
+            .HasForeignKey(e => e.ProcurementModelId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<APPItem>()
             .HasIndex(e => e.APPId);
 
         modelBuilder.Entity<APPItem>()
@@ -1817,6 +1928,50 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<APPProcurementSchedule>()
             .HasIndex(e => e.ScheduledDate);
+
+        // OPCRActivityMOV
+        modelBuilder.Entity<OPCRActivityMOV>()
+            .Property(e => e.FileName)
+            .IsRequired()
+            .HasMaxLength(500);
+
+        modelBuilder.Entity<OPCRActivityMOV>()
+            .Property(e => e.Url)
+            .HasMaxLength(1000);
+
+        modelBuilder.Entity<OPCRActivityMOV>()
+            .HasIndex(e => e.OPCRActivityId);
+
+        modelBuilder.Entity<OPCRActivityMOV>()
+            .HasIndex(e => e.UploadedDate);
+
+        // OPCRActivityRating
+        modelBuilder.Entity<OPCRActivityRating>()
+            .Property(e => e.Remarks)
+            .HasMaxLength(1000);
+
+        modelBuilder.Entity<OPCRActivityRating>()
+            .HasIndex(e => new { e.OPCRActivityId, e.PerformanceMeasureId });
+
+        // OPCRActivityEvaluation
+        modelBuilder.Entity<OPCRActivityEvaluation>()
+            .Property(e => e.Status)
+            .HasConversion<string>()
+            .IsRequired()
+            .HasMaxLength(50);
+
+        modelBuilder.Entity<OPCRActivityEvaluation>()
+            .Property(e => e.Remarks)
+            .HasMaxLength(1000);
+
+        modelBuilder.Entity<OPCRActivityEvaluation>()
+            .HasIndex(e => e.OPCRActivityRatingId);
+
+        modelBuilder.Entity<OPCRActivityEvaluation>()
+            .HasIndex(e => e.Status);
+
+        modelBuilder.Entity<OPCRActivityEvaluation>()
+            .HasIndex(e => e.EvaluatedDate);
 
         // APP (Annual Procurement Plan)
         modelBuilder.Entity<APP>()

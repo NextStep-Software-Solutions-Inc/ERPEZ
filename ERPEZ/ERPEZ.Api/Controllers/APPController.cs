@@ -30,10 +30,6 @@ public class APPController(ISender mediator) : ControllerBase
     public async Task<IActionResult> CreateAPP([FromBody] CreateAPPCommand command)
     {
         var result = await mediator.Send(command);
-
-        if (!result.Succeeded)
-            return BadRequest(result);
-
         return CreatedAtAction(nameof(GetAPPById), new { id = result.Data }, result);
     }
 
@@ -79,7 +75,6 @@ public class APPController(ISender mediator) : ControllerBase
     /// </summary>
     [HttpPut("{id}/select-ppmps")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> SelectPPMPs(Guid id, [FromBody] SelectPPMPsRequest request)
@@ -91,14 +86,6 @@ public class APPController(ISender mediator) : ControllerBase
         };
 
         var result = await mediator.Send(command);
-
-        if (!result.Succeeded)
-        {
-            // Return 409 for conflicts, 400 for other failures
-            return result.Message != null && result.Message.Contains("already")
-                ? Conflict(result)
-                : BadRequest(result);
-        }
 
         return Ok(result);
     }

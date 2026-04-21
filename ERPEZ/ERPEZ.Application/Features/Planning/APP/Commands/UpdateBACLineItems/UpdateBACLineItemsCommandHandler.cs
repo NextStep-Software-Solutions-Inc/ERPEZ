@@ -11,7 +11,7 @@ public class UpdateBACLineItemsCommandHandler(IUnitOfWork unitOfWork)
 {
     public async Task<ApiResponse<Unit>> Handle(UpdateBACLineItemsCommand request, CancellationToken cancellationToken)
     {
-        var app = await unitOfWork.APPRepository.GetByIdAsync(request.AppId, cancellationToken)
+        _ = await unitOfWork.APPRepository.GetByIdAsync(request.AppId, cancellationToken)
             ?? throw new NotFoundException("APP not found.");
 
         // Load APPItems with tracking so we can mutate schedule collections

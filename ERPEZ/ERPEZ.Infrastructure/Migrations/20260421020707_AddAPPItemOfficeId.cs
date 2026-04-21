@@ -36,8 +36,7 @@ namespace ERPEZ.Infrastructure.Migrations
                 schema: "planning",
                 table: "APPs",
                 type: "uuid",
-                nullable: false,
-                defaultValue: new Guid("00000000-0000-0000-0000-000000000000"));
+                nullable: true);
 
             migrationBuilder.AddColumn<string>(
                 name: "Name",
@@ -53,16 +52,99 @@ namespace ERPEZ.Infrastructure.Migrations
                 schema: "planning",
                 table: "APPs",
                 type: "uuid",
-                nullable: false,
-                defaultValue: new Guid("00000000-0000-0000-0000-000000000000"));
+                nullable: true);
 
             migrationBuilder.AddColumn<Guid>(
                 name: "OfficeId",
                 schema: "planning",
                 table: "APPItems",
                 type: "uuid",
+                nullable: true);
+
+            migrationBuilder.Sql(@"
+                UPDATE ""planning"".""APPs"" a
+                SET ""FiscalYearId"" = fy.""Id""
+                FROM ""planning"".""FiscalYears"" fy
+                WHERE fy.""Year"" = a.""FiscalYear"";
+
+                UPDATE ""planning"".""APPItems"" ai
+                SET ""OfficeId"" = du.""OfficeId""
+                FROM ""planning"".""DeliveryUnits"" du
+                WHERE ai.""DeliveryUnitId"" = du.""Id"";
+
+                UPDATE ""planning"".""APPs"" a
+                SET ""OfficeId"" = x.""OfficeId""
+                FROM (
+                    SELECT ai.""APPId"", MIN(ai.""OfficeId"") AS ""OfficeId""
+                    FROM ""planning"".""APPItems"" ai
+                    WHERE ai.""OfficeId"" IS NOT NULL
+                    GROUP BY ai.""APPId""
+                ) x
+                WHERE a.""Id"" = x.""APPId"";
+
+                UPDATE ""planning"".""APPs""
+                SET ""Name"" = ""APPNumber""
+                WHERE ""Name"" IS NULL OR ""Name"" = '';
+            ");
+
+            migrationBuilder.Sql(@"
+                DO $$
+                BEGIN
+                    IF EXISTS (
+                        SELECT 1
+                        FROM ""planning"".""APPs""
+                        WHERE ""FiscalYearId"" IS NULL
+                    ) THEN
+                        RAISE EXCEPTION 'Migration AddAPPItemOfficeId failed: some APP rows could not be mapped to FiscalYearId.';
+                    END IF;
+
+                    IF EXISTS (
+                        SELECT 1
+                        FROM ""planning"".""APPs""
+                        WHERE ""OfficeId"" IS NULL
+                    ) THEN
+                        RAISE EXCEPTION 'Migration AddAPPItemOfficeId failed: some APP rows could not be mapped to OfficeId.';
+                    END IF;
+
+                    IF EXISTS (
+                        SELECT 1
+                        FROM ""planning"".""APPItems""
+                        WHERE ""OfficeId"" IS NULL
+                    ) THEN
+                        RAISE EXCEPTION 'Migration AddAPPItemOfficeId failed: some APPItem rows could not be mapped to OfficeId.';
+                    END IF;
+                END$$;
+            ");
+
+            migrationBuilder.AlterColumn<Guid>(
+                name: "FiscalYearId",
+                schema: "planning",
+                table: "APPs",
+                type: "uuid",
                 nullable: false,
-                defaultValue: new Guid("00000000-0000-0000-0000-000000000000"));
+                oldClrType: typeof(Guid),
+                oldType: "uuid",
+                oldNullable: true);
+
+            migrationBuilder.AlterColumn<Guid>(
+                name: "OfficeId",
+                schema: "planning",
+                table: "APPs",
+                type: "uuid",
+                nullable: false,
+                oldClrType: typeof(Guid),
+                oldType: "uuid",
+                oldNullable: true);
+
+            migrationBuilder.AlterColumn<Guid>(
+                name: "OfficeId",
+                schema: "planning",
+                table: "APPItems",
+                type: "uuid",
+                nullable: false,
+                oldClrType: typeof(Guid),
+                oldType: "uuid",
+                oldNullable: true);
 
             migrationBuilder.CreateTable(
                 name: "APP_PPMP_Selections",

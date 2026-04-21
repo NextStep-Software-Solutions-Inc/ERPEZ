@@ -12,7 +12,7 @@ public class SelectPPMPsCommandHandler(IUnitOfWork unitOfWork)
     public async Task<ApiResponse<Unit>> Handle(SelectPPMPsCommand request, CancellationToken cancellationToken)
     {
         // Validate APP exists
-        var app = await unitOfWork.APPRepository.GetByIdAsync(request.APPId, cancellationToken)
+        _ = await unitOfWork.APPRepository.GetByIdAsync(request.APPId, cancellationToken)
             ?? throw new NotFoundException("APP not found.");
 
         // Track APPPPMP links to create after validation

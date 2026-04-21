@@ -11,7 +11,7 @@ public class GetAPPBACQueryHandler(IUnitOfWork unitOfWork)
 {
     public async Task<ApiResponse<BACResponse>> Handle(GetAPPBACQuery request, CancellationToken cancellationToken)
     {
-        var app = await unitOfWork.APPRepository.GetByIdAsync(request.APPId, cancellationToken)
+        _ = await unitOfWork.APPRepository.GetByIdAsync(request.APPId, cancellationToken)
             ?? throw new NotFoundException("APP not found.");
 
         var appItems = await unitOfWork.APPItemRepository.GetAPPItemsWithDetailsAsync(
