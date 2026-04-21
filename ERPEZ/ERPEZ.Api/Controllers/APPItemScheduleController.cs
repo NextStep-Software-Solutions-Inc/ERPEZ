@@ -35,9 +35,9 @@ public class APPItemScheduleController(ISender mediator) : ControllerBase
 
     [HttpGet]
     [ProducesResponseType(typeof(PaginatedApiResponse<APPItemScheduleResponse>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetAPPItemSchedules([FromQuery] SieveModel sieveModel, [FromQuery] Guid? appItemId)
+    public async Task<IActionResult> GetAPPItemSchedules([FromQuery] SieveModel sieveModel)
     {
-        var result = await mediator.Send(new GetAPPItemSchedulesQuery(sieveModel, appItemId));
+        var result = await mediator.Send(new GetAPPItemSchedulesQuery(sieveModel));
         return Ok(result);
     }
 

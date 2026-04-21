@@ -49,7 +49,6 @@ public class APPItem : BaseEntity
     public virtual APP APP { get; set; } = null!;
     public virtual PPMPItem PPMPItem { get; set; } = null!;
     public virtual ProcurementMode ProcurementMode { get; set; } = null!;
-    public virtual DeliveryUnit DeliveryUnit { get; set; } = null!;
     public virtual FundSource FundSource { get; set; } = null!;
     public virtual Office Office { get; set; } = null!;
 }

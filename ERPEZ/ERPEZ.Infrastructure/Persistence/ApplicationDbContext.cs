@@ -130,9 +130,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         // Apply default conventions for all entities
         modelBuilder.ConfigureDefaultEntityConventions();
 
-        // Apply configurations from separate configuration files
-        modelBuilder.ApplyConfigurationsFromAssembly(typeof(ApplicationDbContext).Assembly);
-
         //KPI
         modelBuilder.Entity<KPI>()
         .HasIndex(k => new { k.Name });
@@ -1806,13 +1803,20 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasIndex(e => e.PPMPItemId);
 
         modelBuilder.Entity<APPItem>()
-            .HasIndex(e => e.DeliveryUnitId);
-
-        modelBuilder.Entity<APPItem>()
             .HasIndex(e => e.FundSourceId);
 
         modelBuilder.Entity<APPItem>()
             .HasIndex(e => e.OfficeId);
+
+        // APPProcurementSchedule
+        modelBuilder.Entity<APPProcurementSchedule>()
+            .HasIndex(e => e.PPMPItemId);
+
+        modelBuilder.Entity<APPProcurementSchedule>()
+            .HasIndex(e => e.ProcurementActivityTypeId);
+
+        modelBuilder.Entity<APPProcurementSchedule>()
+            .HasIndex(e => e.ScheduledDate);
 
         // APP (Annual Procurement Plan)
         modelBuilder.Entity<APP>()
@@ -1879,6 +1883,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<APPPPMP>()
             .HasIndex(e => e.PPMPId);
+
+        modelBuilder.Entity<APPPPMP>()
+            .ToTable("APP_PPMP_Selections", "planning");
 
         base.OnModelCreating(modelBuilder);
     }

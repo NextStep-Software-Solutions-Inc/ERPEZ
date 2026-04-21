@@ -34,15 +34,9 @@ public class APPItemRepository : Repository<APPItem>, IAPPItemRepository
 
     public async Task<(IReadOnlyList<APPItem> Entities, int TotalCount)> GetAllWithDetailsAsync(
         SieveModel sieveModel,
-        Guid? appId = null,
         CancellationToken cancellationToken = default)
     {
         var query = context.Set<APPItem>().Where(a => !a.IsDeleted);
-
-        if (appId.HasValue)
-        {
-            query = query.Where(a => a.APPId == appId.Value);
-        }
 
         var detailedQuery = BuildDetailedQuery(query);
         var filteredQuery = sieveProcessor.Apply(sieveModel, detailedQuery, applyPagination: false);
@@ -57,8 +51,6 @@ public class APPItemRepository : Repository<APPItem>, IAPPItemRepository
     {
         return query
             .Include(a => a.ProcurementMode)
-            .Include(a => a.DeliveryUnit)
-                .ThenInclude(du => du.Office)
             .Include(a => a.FundSource)
             .Include(a => a.Office)
             .Include(a => a.PPMPItem)

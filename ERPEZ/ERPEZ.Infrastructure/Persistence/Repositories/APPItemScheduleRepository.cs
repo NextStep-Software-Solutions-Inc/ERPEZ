@@ -30,7 +30,6 @@ public class APPItemScheduleRepository : Repository<APPProcurementSchedule>, IAP
 
     public async Task<(IReadOnlyList<APPProcurementSchedule> Entities, int TotalCount)> GetAllWithDetailsAsync(
         SieveModel sieveModel,
-        Guid? appItemId = null,
         CancellationToken cancellationToken = default)
     {
         var query = context.Set<APPProcurementSchedule>()
@@ -40,11 +39,6 @@ public class APPItemScheduleRepository : Repository<APPProcurementSchedule>, IAP
             .Include(x => x.PPMPItem)
                 .ThenInclude(x => x.APPItems)
             .AsQueryable();
-
-        if (appItemId.HasValue)
-        {
-            query = query.Where(x => x.PPMPItem.APPItems.Any(item => item.Id == appItemId.Value && !item.IsDeleted));
-        }
 
         var filteredQuery = sieveProcessor.Apply(sieveModel, query, applyPagination: false);
         var totalCount = await filteredQuery.CountAsync(cancellationToken);

@@ -9,6 +9,5 @@ public interface IAPPItemScheduleRepository : IRepository<APPProcurementSchedule
 
     Task<(IReadOnlyList<APPProcurementSchedule> Entities, int TotalCount)> GetAllWithDetailsAsync(
         SieveModel sieveModel,
-        Guid? appItemId = null,
         CancellationToken cancellationToken = default);
 }

@@ -26,7 +26,6 @@ public class APPItemController(ISender mediator) : ControllerBase
             APPId = request.APPId,
             PPMPItemId = request.PPMPItemId,
             ProcurementModelId = request.ProcurementModelId,
-            DeliveryUnitId = request.DeliveryUnitId,
             FundSourceId = request.FundSourceId,
             OfficeId = request.OfficeId,
             PAPCode = request.PAPCode,
@@ -43,9 +42,9 @@ public class APPItemController(ISender mediator) : ControllerBase
 
     [HttpGet]
     [ProducesResponseType(typeof(PaginatedApiResponse<APPItemResponse>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetAPPItems([FromQuery] SieveModel sieveModel, [FromQuery] Guid? appId)
+    public async Task<IActionResult> GetAPPItems([FromQuery] SieveModel sieveModel)
     {
-        var result = await mediator.Send(new GetAPPItemsQuery(sieveModel, appId));
+        var result = await mediator.Send(new GetAPPItemsQuery(sieveModel));
         return Ok(result);
     }
 
@@ -70,7 +69,6 @@ public class APPItemController(ISender mediator) : ControllerBase
             APPId = request.APPId,
             PPMPItemId = request.PPMPItemId,
             ProcurementModelId = request.ProcurementModelId,
-            DeliveryUnitId = request.DeliveryUnitId,
             FundSourceId = request.FundSourceId,
             OfficeId = request.OfficeId,
             PAPCode = request.PAPCode,

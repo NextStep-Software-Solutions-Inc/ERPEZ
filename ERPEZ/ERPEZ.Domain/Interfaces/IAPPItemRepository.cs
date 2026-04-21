@@ -8,7 +8,7 @@ public interface IAPPItemRepository : IRepository<APPItem>
     /// <summary>
     /// Returns all APPItems for the given APP with the full include chain required
     /// for BAC aggregation: PPMPItem, allocations, LIB chain (for AllotmentClass),
-    /// ProcurementMode, DeliveryUnit, FundSource, Office, and ProcurementSchedules.
+    /// ProcurementMode, FundSource, Office, and ProcurementSchedules.
     /// </summary>
     Task<List<APPItem>> GetAPPItemsWithDetailsAsync(Guid appId, CancellationToken cancellationToken = default);
 
@@ -16,6 +16,5 @@ public interface IAPPItemRepository : IRepository<APPItem>
 
     Task<(IReadOnlyList<APPItem> Entities, int TotalCount)> GetAllWithDetailsAsync(
         SieveModel sieveModel,
-        Guid? appId = null,
         CancellationToken cancellationToken = default);
 }
