@@ -85,16 +85,23 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
 
-                    b.Property<int>("FiscalYear")
-                        .HasColumnType("integer");
+                    b.Property<Guid>("FiscalYearId")
+                        .HasColumnType("uuid");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
                     b.Property<string>("IsFinal")
                         .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
+                        .HasColumnType("text");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<Guid>("OfficeId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Remarks")
                         .HasMaxLength(1000)
@@ -119,7 +126,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("APPNumber")
                         .IsUnique();
 
-                    b.HasIndex("FiscalYear");
+                    b.HasIndex("FiscalYearId");
+
+                    b.HasIndex("OfficeId");
 
                     b.ToTable("APPs", "planning");
                 });
@@ -164,6 +173,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<bool>("IsOutsourced")
                         .HasColumnType("boolean");
 
+                    b.Property<Guid>("OfficeId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("PAPCode")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -199,6 +211,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("DeliveryUnitId");
 
                     b.HasIndex("FundSourceId");
+
+                    b.HasIndex("OfficeId");
 
                     b.HasIndex("PPMPItemId");
 
@@ -253,6 +267,50 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("ScheduledDate");
 
                     b.ToTable("APPProcurementSchedules", "planning");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.APP_PPMP_Selection", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("APPId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("PPMPId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("PPMPId");
+
+                    b.HasIndex("APPId", "PPMPId")
+                        .IsUnique();
+
+                    b.ToTable("APP_PPMP_Selections", "planning");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.AdministrativeLevel", b =>
@@ -6421,6 +6479,25 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.APP", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.FiscalYear", "FiscalYear")
+                        .WithMany()
+                        .HasForeignKey("FiscalYearId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.Office", "Office")
+                        .WithMany()
+                        .HasForeignKey("OfficeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("FiscalYear");
+
+                    b.Navigation("Office");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.APPItem", b =>
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Planning.APP", "APP")
@@ -6441,6 +6518,12 @@ namespace ERPEZ.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.Office", "Office")
+                        .WithMany()
+                        .HasForeignKey("OfficeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("ERPEZ.Domain.Entities.Planning.PPMPItem", "PPMPItem")
                         .WithMany("APPItems")
                         .HasForeignKey("PPMPItemId")
@@ -6458,6 +6541,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("DeliveryUnit");
 
                     b.Navigation("FundSource");
+
+                    b.Navigation("Office");
 
                     b.Navigation("PPMPItem");
 
@@ -6481,6 +6566,25 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("PPMPItem");
 
                     b.Navigation("ProcurementActivityType");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.APP_PPMP_Selection", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.APP", "APP")
+                        .WithMany("APP_PPMP_Selections")
+                        .HasForeignKey("APPId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.PPMP", "PPMP")
+                        .WithMany()
+                        .HasForeignKey("PPMPId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("APP");
+
+                    b.Navigation("PPMP");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.AgencyMasterBudget", b =>
@@ -8068,6 +8172,8 @@ namespace ERPEZ.Infrastructure.Migrations
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.APP", b =>
                 {
                     b.Navigation("APPItems");
+
+                    b.Navigation("APP_PPMP_Selections");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.AdministrativeLevel", b =>

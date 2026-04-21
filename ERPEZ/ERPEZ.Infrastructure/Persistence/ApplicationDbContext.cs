@@ -90,6 +90,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<LineItemBudget>? LineItemBudgets { get; set; }
     public DbSet<PPMP>? PPMPs { get; set; }
     public DbSet<APP>? APPs { get; set; }
+    public DbSet<APPPPMP>? APPPPMPs { get; set; }
     public DbSet<LineItemBudgetActivity>? LineItemBudgetActivities { get; set; }
     public DbSet<LineItemBudgetDetail>? LineItemBudgetDetails { get; set; }
     public DbSet<LIBAmendmentRequest>? LIBAmendmentRequests { get; set; }
@@ -1770,6 +1771,114 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<NonCSEItem>()
             .HasIndex(n => new { n.Name, n.IsActive });
+
+        // APPItem
+        modelBuilder.Entity<APPItem>()
+            .Property(e => e.PAPCode)
+            .IsRequired()
+            .HasMaxLength(100);
+
+        modelBuilder.Entity<APPItem>()
+            .Property(e => e.Remarks)
+            .HasMaxLength(1000);
+
+        modelBuilder.Entity<APPItem>()
+            .Property(e => e.ProcurementStrategy)
+            .HasMaxLength(1000);
+
+        modelBuilder.Entity<APPItem>()
+            .Property(e => e.BidEvaluationCriteria)
+            .HasConversion(
+                v => v == null ? null : string.Join(',', v),
+                v => v == null ? null : v.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList()
+            );
+
+        modelBuilder.Entity<APPItem>()
+            .HasOne(e => e.Office)
+            .WithMany()
+            .HasForeignKey(e => e.OfficeId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<APPItem>()
+            .HasIndex(e => e.APPId);
+
+        modelBuilder.Entity<APPItem>()
+            .HasIndex(e => e.PPMPItemId);
+
+        modelBuilder.Entity<APPItem>()
+            .HasIndex(e => e.DeliveryUnitId);
+
+        modelBuilder.Entity<APPItem>()
+            .HasIndex(e => e.FundSourceId);
+
+        modelBuilder.Entity<APPItem>()
+            .HasIndex(e => e.OfficeId);
+
+        // APP (Annual Procurement Plan)
+        modelBuilder.Entity<APP>()
+            .Property(e => e.APPNumber)
+            .IsRequired()
+            .HasMaxLength(100);
+
+        modelBuilder.Entity<APP>()
+            .Property(e => e.Name)
+            .IsRequired()
+            .HasMaxLength(500);
+
+        modelBuilder.Entity<APP>()
+            .Property(e => e.Status)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        modelBuilder.Entity<APP>()
+            .Property(e => e.Remarks)
+            .HasMaxLength(1000);
+
+        modelBuilder.Entity<APP>()
+            .Property(e => e.Description)
+            .HasMaxLength(1000);
+
+        modelBuilder.Entity<APP>()
+            .HasOne(e => e.FiscalYear)
+            .WithMany()
+            .HasForeignKey(e => e.FiscalYearId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<APP>()
+            .HasOne(e => e.Office)
+            .WithMany()
+            .HasForeignKey(e => e.OfficeId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<APP>()
+            .HasIndex(e => e.APPNumber)
+            .IsUnique();
+
+        modelBuilder.Entity<APP>()
+            .HasIndex(e => e.FiscalYearId);
+
+        modelBuilder.Entity<APP>()
+            .HasIndex(e => e.OfficeId);
+
+        // APPPPMP
+        modelBuilder.Entity<APPPPMP>()
+            .HasOne(e => e.APP)
+            .WithMany(a => a.APPPPMPs)
+            .HasForeignKey(e => e.APPId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<APPPPMP>()
+            .HasOne(e => e.PPMP)
+            .WithMany()
+            .HasForeignKey(e => e.PPMPId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<APPPPMP>()
+            .HasIndex(e => new { e.APPId, e.PPMPId })
+            .IsUnique();
+
+        modelBuilder.Entity<APPPPMP>()
+            .HasIndex(e => e.PPMPId);
 
         base.OnModelCreating(modelBuilder);
     }

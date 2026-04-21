@@ -12,6 +12,10 @@ public class APPConfiguration : IEntityTypeConfiguration<APP>
             .IsRequired()
             .HasMaxLength(100);
         
+        builder.Property(e => e.Name)
+            .IsRequired()
+            .HasMaxLength(500);
+        
         builder.Property(e => e.Status)
             .IsRequired()
             .HasMaxLength(50);
@@ -26,9 +30,23 @@ public class APPConfiguration : IEntityTypeConfiguration<APP>
         builder.Property(e => e.Description)
             .HasMaxLength(1000);
         
+        // Foreign Key relationships
+        builder.HasOne(e => e.FiscalYear)
+            .WithMany()
+            .HasForeignKey(e => e.FiscalYearId)
+            .OnDelete(DeleteBehavior.Restrict);
+        
+        builder.HasOne(e => e.Office)
+            .WithMany()
+            .HasForeignKey(e => e.OfficeId)
+            .OnDelete(DeleteBehavior.Restrict);
+        
+        // Indexes
         builder.HasIndex(e => e.APPNumber)
             .IsUnique();
         
-        builder.HasIndex(e => e.FiscalYear);
+        builder.HasIndex(e => e.FiscalYearId);
+        
+        builder.HasIndex(e => e.OfficeId);
     }
 }
