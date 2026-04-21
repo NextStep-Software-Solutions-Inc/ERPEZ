@@ -19,7 +19,7 @@ public class GetAPPBACQueryHandler(IUnitOfWork unitOfWork)
 
         // ─── AggregationsByUnit ───────────────────────────────────────────────
         var aggregationsByUnit = appItems
-            .GroupBy(a => a.DeliveryUnit?.Office?.Name ?? string.Empty)
+            .GroupBy(a => a.Office?.Name ?? string.Empty)
             .Select(g => new BACUnitGroupResponse
             {
                 Unit = g.Key,

@@ -32,8 +32,6 @@ public class APPRepository : Repository<APP>, IAPPRepository
             .Include(a => a.APPItems)
                 .ThenInclude(item => item.ProcurementMode)
             .Include(a => a.APPItems)
-                .ThenInclude(item => item.DeliveryUnit)
-            .Include(a => a.APPItems)
                 .ThenInclude(item => item.FundSource)
             .Include(a => a.APPPPMPs)
                 .ThenInclude(s => s.PPMP)
