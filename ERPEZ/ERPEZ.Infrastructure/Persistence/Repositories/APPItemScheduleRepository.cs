@@ -24,7 +24,17 @@ public class APPItemScheduleRepository : Repository<APPProcurementSchedule>, IAP
             .Where(x => x.Id == id && !x.IsDeleted)
             .Include(x => x.ProcurementActivityType)
             .Include(x => x.PPMPItem)
+                .ThenInclude(x => x.APPProcurementSchedules)
+                    .ThenInclude(x => x.ProcurementActivityType)
+            .Include(x => x.PPMPItem)
                 .ThenInclude(x => x.APPItems)
+                    .ThenInclude(x => x.APP)
+            .Include(x => x.PPMPItem)
+                .ThenInclude(x => x.APPItems)
+                    .ThenInclude(x => x.Office)
+            .Include(x => x.PPMPItem)
+                .ThenInclude(x => x.APPItems)
+                    .ThenInclude(x => x.ProcurementMode)
             .FirstOrDefaultAsync(cancellationToken);
     }
 
@@ -37,7 +47,17 @@ public class APPItemScheduleRepository : Repository<APPProcurementSchedule>, IAP
             .Where(x => !x.IsDeleted)
             .Include(x => x.ProcurementActivityType)
             .Include(x => x.PPMPItem)
+                .ThenInclude(x => x.APPProcurementSchedules)
+                    .ThenInclude(x => x.ProcurementActivityType)
+            .Include(x => x.PPMPItem)
                 .ThenInclude(x => x.APPItems)
+                    .ThenInclude(x => x.APP)
+            .Include(x => x.PPMPItem)
+                .ThenInclude(x => x.APPItems)
+                    .ThenInclude(x => x.Office)
+            .Include(x => x.PPMPItem)
+                .ThenInclude(x => x.APPItems)
+                    .ThenInclude(x => x.ProcurementMode)
             .AsQueryable();
 
         var filteredQuery = sieveProcessor.Apply(sieveModel, query, applyPagination: false);

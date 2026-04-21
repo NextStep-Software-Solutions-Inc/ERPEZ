@@ -5,6 +5,10 @@ namespace ERPEZ.Domain.Interfaces;
 
 public interface IAPPRepository : IRepository<APP>
 {
+    Task<(IReadOnlyList<APP> Entities, int TotalCount)> GetAllWithDetailsAsync(
+        Sieve.Models.SieveModel sieveModel,
+        CancellationToken cancellationToken = default);
+
     /// <summary>
     /// Get APP with all related details: FiscalYear, Office, APPItems, PPMP selections.
     /// </summary>

@@ -3,7 +3,6 @@ using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
-using APPItemEntity = ERPEZ.Domain.Entities.Planning.APPItem;
 
 namespace ERPEZ.Application.Features.Planning.APPItem.Commands.CreateAPPItem;
 
@@ -28,7 +27,7 @@ public class CreateAPPItemCommandHandler(IUnitOfWork unitOfWork) : IRequestHandl
         if (existing is not null)
             throw new ConflictException("PPMP item is already attached to this APP.");
 
-        var entity = new APPItemEntity
+        var entity = new ERPEZ.Domain.Entities.Planning.APPItem
         {
             Id = Guid.NewGuid(),
             APPId = request.APPId,

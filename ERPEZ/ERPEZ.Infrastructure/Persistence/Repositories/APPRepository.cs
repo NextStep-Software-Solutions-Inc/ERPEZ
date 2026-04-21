@@ -33,9 +33,37 @@ public class APPRepository : Repository<APP>, IAPPRepository
                 .ThenInclude(item => item.ProcurementMode)
             .Include(a => a.APPItems)
                 .ThenInclude(item => item.FundSource)
+            .Include(a => a.APPItems)
+                .ThenInclude(item => item.Office)
+            .Include(a => a.APPItems)
+                .ThenInclude(item => item.PPMPItem)
+                    .ThenInclude(ppmpItem => ppmpItem.APPProcurementSchedules)
+                        .ThenInclude(schedule => schedule.ProcurementActivityType)
             .Include(a => a.APPPPMPs)
                 .ThenInclude(s => s.PPMP)
+                    .ThenInclude(ppmp => ppmp!.Office)
+            .Include(a => a.APPPPMPs)
+                .ThenInclude(s => s.PPMP)
+                    .ThenInclude(ppmp => ppmp!.FiscalYear)
+            .Include(a => a.APPPPMPs)
+                .ThenInclude(s => s.PPMP)
+                    .ThenInclude(ppmp => ppmp!.FundSource)
             .AsSplitQuery();
+    }
+
+    public async Task<(IReadOnlyList<APP> Entities, int TotalCount)> GetAllWithDetailsAsync(
+        SieveModel sieveModel,
+        CancellationToken cancellationToken = default)
+    {
+        var query = BuildDetailedQuery(context.Set<APP>()
+            .AsNoTracking()
+            .Where(a => !a.IsDeleted));
+
+        var filteredQuery = sieveProcessor.Apply(sieveModel, query, applyPagination: false);
+        var totalCount = await filteredQuery.CountAsync(cancellationToken);
+        var entities = await sieveProcessor.Apply(sieveModel, filteredQuery).ToListAsync(cancellationToken);
+
+        return (entities, totalCount);
     }
 
     public async Task<APP?> GetAPPWithDetailsAsync(Guid id, CancellationToken cancellationToken = default)

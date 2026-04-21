@@ -6,10 +6,6 @@ public class CreateAPPItemScheduleCommandValidator : AbstractValidator<CreateAPP
 {
     public CreateAPPItemScheduleCommandValidator()
     {
-        RuleFor(x => x.APPId)
-            .NotEmpty()
-            .WithMessage("APPId is required.");
-
         RuleFor(x => x.APPItemId)
             .NotEmpty()
             .WithMessage("APPItemId is required.");

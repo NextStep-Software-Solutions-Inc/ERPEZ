@@ -24,7 +24,36 @@ public class GetAPPItemSchedulesQueryHandler(IUnitOfWork unitOfWork) : IRequestH
             CreatedAt = entity.CreatedAt,
             CreatedBy = entity.CreatedBy,
             UpdatedAt = entity.UpdatedAt,
-            UpdatedBy = entity.UpdatedBy
+            UpdatedBy = entity.UpdatedBy,
+            PPMPItem = entity.PPMPItem == null ? null : new APPItemSchedulePPMPItemResponse
+            {
+                Id = entity.PPMPItem.Id,
+                PAPCode = entity.PPMPItem.PAPCode,
+                Name = entity.PPMPItem.Name,
+                Description = entity.PPMPItem.Description,
+                Unit = entity.PPMPItem.Unit,
+                UnitPrice = entity.PPMPItem.UnitPrice
+            },
+            ProcurementActivityType = entity.ProcurementActivityType == null ? null : new APPItemScheduleProcurementActivityTypeResponse
+            {
+                Id = entity.ProcurementActivityType.Id,
+                Name = entity.ProcurementActivityType.Name,
+                Description = entity.ProcurementActivityType.Description
+            },
+            APPItems = entity.PPMPItem?.APPItems
+                .Where(item => !item.IsDeleted)
+                .Select(item => new APPItemScheduleAPPItemResponse
+                {
+                    Id = item.Id,
+                    APPId = item.APPId,
+                    APPNumber = item.APP?.APPNumber ?? string.Empty,
+                    APPName = item.APP?.Name ?? string.Empty,
+                    OfficeId = item.OfficeId,
+                    OfficeName = item.Office?.Name ?? string.Empty,
+                    PAPCode = item.PAPCode,
+                    ProcurementModelId = item.ProcurementModelId,
+                    ProcurementModelName = item.ProcurementMode?.Name ?? string.Empty
+                }).ToList() ?? []
         }).ToList();
 
         return new PaginatedApiResponse<APPItemScheduleResponse>(items, request.SieveModel.Page ?? 1, request.SieveModel.PageSize ?? 10, totalCount);

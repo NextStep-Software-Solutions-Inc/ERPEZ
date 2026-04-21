@@ -9,9 +9,6 @@ public class UpdateAPPItemScheduleCommandValidator : AbstractValidator<UpdateAPP
         RuleFor(x => x.Id)
             .NotEmpty()
             .WithMessage("Id is required.");
-        RuleFor(x => x.APPId)
-            .NotEmpty()
-            .WithMessage("APPId is required.");
         RuleFor(x => x.APPItemId)
             .NotEmpty()
             .WithMessage("APPItemId is required.");

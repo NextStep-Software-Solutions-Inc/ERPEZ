@@ -9,18 +9,12 @@ public class UpdateAPPItemScheduleCommandHandler(IUnitOfWork unitOfWork) : IRequ
 {
     public async Task<ApiResponse<Guid>> Handle(UpdateAPPItemScheduleCommand request, CancellationToken cancellationToken)
     {
-        _ = await unitOfWork.APPRepository.GetByIdAsync(request.APPId, cancellationToken)
-            ?? throw new NotFoundException("APP not found.");
-
         var entity = await unitOfWork.APPItemScheduleRepository.GetWithDetailsAsync(request.Id, cancellationToken)
             ?? throw new NotFoundException("APP item schedule not found.");
         var appItem = await unitOfWork.APPItemRepository.GetByIdAsync(request.APPItemId, cancellationToken)
             ?? throw new NotFoundException("APP item not found.");
 
-        if (appItem.APPId != request.APPId)
-            throw new NotFoundException("APP item not found in this APP.");
-
-        if (entity.PPMPItem?.APPItems.All(x => x.Id != request.APPItemId || x.APPId != request.APPId || x.IsDeleted) != false)
+        if (entity.PPMPItem?.APPItems.All(x => x.Id != request.APPItemId || x.IsDeleted) != false)
             throw new NotFoundException("APP item schedule not found for this APP item.");
 
         var duplicate = await unitOfWork.APPItemScheduleRepository.FindAsync(

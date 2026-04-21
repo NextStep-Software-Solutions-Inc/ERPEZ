@@ -50,6 +50,7 @@ public class APPItemRepository : Repository<APPItem>, IAPPItemRepository
     private IQueryable<APPItem> BuildDetailedQuery(IQueryable<APPItem> query)
     {
         return query
+            .Include(a => a.APP)
             .Include(a => a.ProcurementMode)
             .Include(a => a.FundSource)
             .Include(a => a.Office)

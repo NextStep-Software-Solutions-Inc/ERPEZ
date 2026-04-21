@@ -1,3 +1,5 @@
+using System.Text.Json.Serialization;
+
 namespace ERPEZ.Application.Features.Planning.APPItem.Dtos;
 
 public record APPItemResponse
@@ -22,4 +24,68 @@ public record APPItemResponse
     public string CreatedBy { get; init; } = string.Empty;
     public DateTime? UpdatedAt { get; init; }
     public string? UpdatedBy { get; init; }
+
+    [JsonPropertyName("APP")]
+    public APPItemAPPResponse? APP { get; init; }
+
+    [JsonPropertyName("PPMPItem")]
+    public APPItemPPMPItemResponse? PPMPItem { get; init; }
+
+    [JsonPropertyName("ProcurementMode")]
+    public APPItemProcurementModeResponse? ProcurementMode { get; init; }
+
+    [JsonPropertyName("FundSource")]
+    public APPItemFundSourceResponse? FundSource { get; init; }
+
+    [JsonPropertyName("Office")]
+    public APPItemOfficeResponse? Office { get; init; }
+
+    [JsonPropertyName("Schedules")]
+    public List<APPItemScheduleReferenceResponse> Schedules { get; init; } = [];
+}
+
+public record APPItemAPPResponse
+{
+    public Guid Id { get; init; }
+    public string APPNumber { get; init; } = string.Empty;
+    public string Name { get; init; } = string.Empty;
+}
+
+public record APPItemPPMPItemResponse
+{
+    public Guid Id { get; init; }
+    public string? PAPCode { get; init; }
+    public string Name { get; init; } = string.Empty;
+    public string? Description { get; init; }
+    public string Unit { get; init; } = string.Empty;
+    public decimal UnitPrice { get; init; }
+}
+
+public record APPItemProcurementModeResponse
+{
+    public Guid Id { get; init; }
+    public string Name { get; init; } = string.Empty;
+    public string? Description { get; init; }
+}
+
+public record APPItemFundSourceResponse
+{
+    public Guid Id { get; init; }
+    public string Name { get; init; } = string.Empty;
+    public string Code { get; init; } = string.Empty;
+}
+
+public record APPItemOfficeResponse
+{
+    public Guid Id { get; init; }
+    public string Name { get; init; } = string.Empty;
+    public string Code { get; init; } = string.Empty;
+}
+
+public record APPItemScheduleReferenceResponse
+{
+    public Guid Id { get; init; }
+    public Guid ProcurementActivityTypeId { get; init; }
+    public string ProcurementActivityTypeName { get; init; } = string.Empty;
+    public DateTime ScheduledDate { get; init; }
 }

@@ -4,7 +4,6 @@ using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
-using AppEntity = ERPEZ.Domain.Entities.Planning.APP;
 
 namespace ERPEZ.Application.Features.Planning.APP.Commands.CreateAPP;
 
@@ -27,7 +26,7 @@ public class CreateAPPCommandHandler(IUnitOfWork unitOfWork)
             throw new ConflictException($"APP with number '{request.APPNumber}' already exists.");
 
         // Create new APP entity
-        var entity = new AppEntity
+        var entity = new ERPEZ.Domain.Entities.Planning.APP
         {
             Id = Guid.NewGuid(),
             APPNumber = request.APPNumber,

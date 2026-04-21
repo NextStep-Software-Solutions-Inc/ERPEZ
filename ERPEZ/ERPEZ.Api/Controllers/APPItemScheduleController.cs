@@ -23,7 +23,6 @@ public class APPItemScheduleController(ISender mediator) : ControllerBase
     {
         var command = new CreateAPPItemScheduleCommand
         {
-            APPId = request.APPId,
             APPItemId = request.APPItemId,
             ProcurementActivityTypeId = request.ProcurementActivityTypeId,
             ScheduledDate = request.ScheduledDate
@@ -59,7 +58,6 @@ public class APPItemScheduleController(ISender mediator) : ControllerBase
         var command = new UpdateAPPItemScheduleCommand
         {
             Id = id,
-            APPId = request.APPId,
             APPItemId = request.APPItemId,
             ProcurementActivityTypeId = request.ProcurementActivityTypeId,
             ScheduledDate = request.ScheduledDate
