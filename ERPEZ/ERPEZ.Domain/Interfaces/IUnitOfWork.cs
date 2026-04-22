@@ -95,6 +95,10 @@ public interface IUnitOfWork
     IPPMPExpenditureItemRepository PPMPExpenditureItemRepository { get; }
     IPPMPItemRepository PPMPItemRepository { get; }
     IPPMPItemAllocationRepository PPMPItemAllocationRepository { get; }
+    IAPPRepository APPRepository { get; }
+    IAPPPPMPRepository APPPPMPRepository { get; }
+    IAPPItemRepository APPItemRepository { get; }
+    IAPPItemScheduleRepository APPItemScheduleRepository { get; }
     IItemRequestRepository ItemRequestRepository { get; }
     INonCSEItemRepository NonCSEItemRepository { get; }
     Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default);

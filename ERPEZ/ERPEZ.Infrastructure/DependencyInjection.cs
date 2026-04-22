@@ -108,6 +108,8 @@ public static class DependencyInjection
         services.AddScoped<IPPMPExpenditureItemRepository, PPMPExpenditureItemRepository>();
         services.AddScoped<IPPMPItemRepository, PPMPItemRepository>();
         services.AddScoped<IPPMPItemAllocationRepository, PPMPItemAllocationRepository>();
+        services.AddScoped<IAPPItemRepository, APPItemRepository>();
+        services.AddScoped<IAPPItemScheduleRepository, APPItemScheduleRepository>();
         services.AddScoped<IItemRequestRepository, ItemRequestRepository>();
         services.AddScoped<INonCSEItemRepository, NonCSEItemRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();

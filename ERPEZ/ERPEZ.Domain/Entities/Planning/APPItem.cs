@@ -22,10 +22,10 @@ public class APPItem : BaseEntity
     public Guid ProcurementModelId { get; set; }
     
     [Sieve(CanFilter = true, CanSort = true)]
-    public Guid DeliveryUnitId { get; set; }
+    public Guid FundSourceId { get; set; }
     
     [Sieve(CanFilter = true, CanSort = true)]
-    public Guid FundSourceId { get; set; }
+    public Guid OfficeId { get; set; }
     
     [Sieve(CanFilter = true, CanSort = true)]
     public string PAPCode { get; set; } = string.Empty;
@@ -49,6 +49,6 @@ public class APPItem : BaseEntity
     public virtual APP APP { get; set; } = null!;
     public virtual PPMPItem PPMPItem { get; set; } = null!;
     public virtual ProcurementMode ProcurementMode { get; set; } = null!;
-    public virtual DeliveryUnit DeliveryUnit { get; set; } = null!;
     public virtual FundSource FundSource { get; set; } = null!;
+    public virtual Office Office { get; set; } = null!;
 }

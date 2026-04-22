@@ -104,6 +104,10 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IPPMPExpenditureItemRepository ppmpExpenditureItemRepository;
     private readonly IPPMPItemRepository ppmpItemRepository;
     private readonly IPPMPItemAllocationRepository ppmpItemAllocationRepository;
+    private readonly IAPPRepository appRepository;
+    private readonly IAPPPPMPRepository appPpmpRepository;
+    private readonly IAPPItemRepository appItemRepository;
+    private readonly IAPPItemScheduleRepository appItemScheduleRepository;
     private readonly IItemRequestRepository itemRequestRepository;
     private readonly INonCSEItemRepository nonCSEItemRepository;
 
@@ -207,6 +211,10 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         ppmpExpenditureItemRepository = new PPMPExpenditureItemRepository(context, sieveProcessor);
         ppmpItemRepository = new PPMPItemRepository(context, sieveProcessor);
         ppmpItemAllocationRepository = new PPMPItemAllocationRepository(context, sieveProcessor);
+        appRepository = new APPRepository(context, sieveProcessor);
+        appPpmpRepository = new APPPPMPRepository(context, sieveProcessor);
+        appItemRepository = new APPItemRepository(context, sieveProcessor);
+        appItemScheduleRepository = new APPItemScheduleRepository(context, sieveProcessor);
         itemRequestRepository = new ItemRequestRepository(context, sieveProcessor);
         nonCSEItemRepository = new NonCSEItemRepository(context, sieveProcessor);
     }
@@ -305,6 +313,10 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IPPMPExpenditureItemRepository PPMPExpenditureItemRepository => ppmpExpenditureItemRepository;
     public IPPMPItemRepository PPMPItemRepository => ppmpItemRepository;
     public IPPMPItemAllocationRepository PPMPItemAllocationRepository => ppmpItemAllocationRepository;
+    public IAPPRepository APPRepository => appRepository;
+    public IAPPPPMPRepository APPPPMPRepository => appPpmpRepository;
+    public IAPPItemRepository APPItemRepository => appItemRepository;
+    public IAPPItemScheduleRepository APPItemScheduleRepository => appItemScheduleRepository;
     public IItemRequestRepository ItemRequestRepository => itemRequestRepository;
     public INonCSEItemRepository NonCSEItemRepository => nonCSEItemRepository;
 
