@@ -3,6 +3,7 @@ using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.Application.Features.Planning.APP.Commands.SelectPPMPs;
 
@@ -15,36 +16,45 @@ public class SelectPPMPsCommandHandler(IUnitOfWork unitOfWork)
         _ = await unitOfWork.APPRepository.GetByIdAsync(request.APPId, cancellationToken)
             ?? throw new NotFoundException("APP not found.");
 
-        // Track APPPPMP links to create after validation
-        var linksToAdd = new List<APPPPMP>();
+        // Batch validation: Load all requested PPMPs in one query
+        var ppmpIds = request.PPMPIds;
+        var existingPpmps = await unitOfWork.PPMPRepository.Query()
+            .Where(p => ppmpIds.Contains(p.Id) && !p.IsDeleted)
+            .ToListAsync(cancellationToken);
 
-        // Validate each PPMP and check for duplicates
-        foreach (var ppmpId in request.PPMPIds)
+        // Check for missing PPMPs
+        var foundIds = existingPpmps.Select(p => p.Id).ToHashSet();
+        var missingIds = ppmpIds.Except(foundIds).ToList();
+        if (missingIds.Any())
+            throw new NotFoundException($"PPMPs not found: {string.Join(", ", missingIds)}");
+
+        // Batch validation: Check for duplicates in one query
+        var duplicateIds = await unitOfWork.APPPPMPRepository.Query()
+            .Where(ap => ap.APPId == request.APPId && ppmpIds.Contains(ap.PPMPId) && !ap.IsDeleted)
+            .Select(ap => ap.PPMPId)
+            .ToListAsync(cancellationToken);
+
+        if (duplicateIds.Any())
         {
-            // Validate PPMP exists
-            var ppmp = await unitOfWork.PPMPRepository.GetByIdAsync(ppmpId, cancellationToken)
-                ?? throw new NotFoundException($"PPMP with ID '{ppmpId}' not found.");
+            var duplicateDetails = existingPpmps
+                .Where(p => duplicateIds.Contains(p.Id))
+                .Select(p => p.PPMPNumber)
+                .ToList();
+            throw new ConflictException($"The following PPMPs are already linked to this APP: {string.Join(", ", duplicateDetails)}");
+        }
 
-            // Check if already linked to this APP
-            var existsInApp = await unitOfWork.APPPPMPRepository.ExistsInAPPAsync(
-                request.APPId, ppmpId, cancellationToken);
-
-            if (existsInApp)
-                throw new ConflictException($"PPMP '{ppmp.PPMPNumber}' is already linked to this APP.");
-
-            // Create selection record
-            var selection = new APPPPMP
+        // Create APPPPMP links for all validated PPMPs
+        var linksToAdd = existingPpmps
+            .Select(ppmp => new APPPPMP
             {
                 Id = Guid.NewGuid(),
                 APPId = request.APPId,
-                PPMPId = ppmpId
-            };
+                PPMPId = ppmp.Id
+            })
+            .ToList();
 
-            linksToAdd.Add(selection);
-        }
-
-        // Add all APPPPMP links at once
-        if (linksToAdd.Count > 0)
+        // Add all links at once
+        if (linksToAdd.Any())
         {
             await unitOfWork.APPPPMPRepository.AddRangeAsync(linksToAdd, cancellationToken);
             await unitOfWork.SaveChangesAsync(cancellationToken);

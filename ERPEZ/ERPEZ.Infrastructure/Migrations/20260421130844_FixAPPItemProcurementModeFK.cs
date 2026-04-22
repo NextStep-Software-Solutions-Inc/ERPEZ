@@ -33,14 +33,10 @@ namespace ERPEZ.Infrastructure.Migrations
                 schema: "planning",
                 table: "APPItems");
 
-            migrationBuilder.AlterColumn<Guid>(
+            migrationBuilder.DropColumn(
                 name: "ProcurementModeId",
                 schema: "planning",
-                table: "APPItems",
-                type: "uuid",
-                nullable: true,
-                oldClrType: typeof(Guid),
-                oldType: "uuid");
+                table: "APPItems");
 
             migrationBuilder.CreateIndex(
                 name: "IX_APPItems_ProcurementModelId",
@@ -86,16 +82,13 @@ namespace ERPEZ.Infrastructure.Migrations
                 schema: "planning",
                 table: "APPItems");
 
-            migrationBuilder.AlterColumn<Guid>(
+            migrationBuilder.AddColumn<Guid>(
                 name: "ProcurementModeId",
                 schema: "planning",
                 table: "APPItems",
                 type: "uuid",
                 nullable: false,
-                defaultValue: new Guid("00000000-0000-0000-0000-000000000000"),
-                oldClrType: typeof(Guid),
-                oldType: "uuid",
-                oldNullable: true);
+                defaultValue: new Guid("00000000-0000-0000-0000-000000000000"));
 
             migrationBuilder.AddColumn<Guid>(
                 name: "DeliveryUnitId",
