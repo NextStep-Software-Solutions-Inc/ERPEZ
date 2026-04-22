@@ -45,15 +45,6 @@ namespace ERPEZ.Infrastructure.Migrations
                 column: "ProcurementModelId");
 
             migrationBuilder.AddForeignKey(
-                name: "FK_APPItems_ProcurementModes_ProcurementModeId",
-                schema: "planning",
-                table: "APPItems",
-                column: "ProcurementModeId",
-                principalSchema: "planning",
-                principalTable: "ProcurementModes",
-                principalColumn: "Id");
-
-            migrationBuilder.AddForeignKey(
                 name: "FK_APPItems_ProcurementModes_ProcurementModelId",
                 schema: "planning",
                 table: "APPItems",
@@ -67,11 +58,6 @@ namespace ERPEZ.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Down(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropForeignKey(
-                name: "FK_APPItems_ProcurementModes_ProcurementModeId",
-                schema: "planning",
-                table: "APPItems");
-
             migrationBuilder.DropForeignKey(
                 name: "FK_APPItems_ProcurementModes_ProcurementModelId",
                 schema: "planning",
