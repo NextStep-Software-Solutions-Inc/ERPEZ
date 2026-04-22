@@ -11,16 +11,6 @@ namespace ERPEZ.Infrastructure.Migrations
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {
-            migrationBuilder.DropIndex(
-                name: "IX_APPs_FiscalYear",
-                schema: "planning",
-                table: "APPs");
-
-            migrationBuilder.DropColumn(
-                name: "FiscalYear",
-                schema: "planning",
-                table: "APPs");
-
             migrationBuilder.AlterColumn<string>(
                 name: "IsFinal",
                 schema: "planning",
@@ -62,10 +52,21 @@ namespace ERPEZ.Infrastructure.Migrations
                 nullable: true);
 
             migrationBuilder.Sql(@"
-                UPDATE ""planning"".""APPs"" a
-                SET ""FiscalYearId"" = fy.""Id""
-                FROM ""planning"".""FiscalYears"" fy
-                WHERE fy.""Year"" = a.""FiscalYear"";
+                DO $$
+                BEGIN
+                    IF EXISTS (
+                        SELECT 1
+                        FROM information_schema.columns
+                        WHERE table_schema = 'planning'
+                          AND table_name = 'APPs'
+                          AND column_name = 'FiscalYear'
+                    ) THEN
+                        UPDATE ""planning"".""APPs"" a
+                        SET ""FiscalYearId"" = fy.""Id""
+                        FROM ""planning"".""FiscalYears"" fy
+                        WHERE fy.""Year"" = a.""FiscalYear"";
+                    END IF;
+                END$$;
 
                 UPDATE ""planning"".""APPItems"" ai
                 SET ""OfficeId"" = du.""OfficeId""
@@ -75,10 +76,10 @@ namespace ERPEZ.Infrastructure.Migrations
                 UPDATE ""planning"".""APPs"" a
                 SET ""OfficeId"" = x.""OfficeId""
                 FROM (
-                    SELECT ai.""APPId"", MIN(ai.""OfficeId"") AS ""OfficeId""
+                    SELECT DISTINCT ON (ai.""APPId"") ai.""APPId"", ai.""OfficeId""
                     FROM ""planning"".""APPItems"" ai
                     WHERE ai.""OfficeId"" IS NOT NULL
-                    GROUP BY ai.""APPId""
+                    ORDER BY ai.""APPId"", ai.""CreatedAt"", ai.""Id""
                 ) x
                 WHERE a.""Id"" = x.""APPId"";
 
@@ -145,6 +146,31 @@ namespace ERPEZ.Infrastructure.Migrations
                 oldClrType: typeof(Guid),
                 oldType: "uuid",
                 oldNullable: true);
+
+            migrationBuilder.Sql(@"
+                DO $$
+                BEGIN
+                    IF EXISTS (
+                        SELECT 1
+                        FROM information_schema.columns
+                        WHERE table_schema = 'planning'
+                          AND table_name = 'APPs'
+                          AND column_name = 'FiscalYear'
+                    ) THEN
+                        IF EXISTS (
+                            SELECT 1
+                            FROM pg_indexes
+                            WHERE schemaname = 'planning'
+                              AND tablename = 'APPs'
+                              AND indexname = 'IX_APPs_FiscalYear'
+                        ) THEN
+                            EXECUTE 'DROP INDEX ""planning"".""IX_APPs_FiscalYear""';
+                        END IF;
+
+                        ALTER TABLE ""planning"".""APPs"" DROP COLUMN ""FiscalYear"";
+                    END IF;
+                END$$;
+            ");
 
             migrationBuilder.CreateTable(
                 name: "APP_PPMP_Selections",
