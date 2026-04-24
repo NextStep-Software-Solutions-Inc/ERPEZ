@@ -64,6 +64,7 @@ public interface IUnitOfWork
     ISalaryGradeRepository SalaryGradeRepository { get; }
     IPlantillaTypeRepository PlantillaTypeRepository { get; }
     IStepRepository StepRepository { get; }
+    IProcurementActivityTypeRepository ProcurementActivityTypeRepository { get; }
     IProcurementCategoryRepository ProcurementCategoryRepository { get; }
     IProcurementModeRepository ProcurementModeRepository { get; }
     IProcurementModeThresholdRepository ProcurementModeThresholdRepository { get; }
