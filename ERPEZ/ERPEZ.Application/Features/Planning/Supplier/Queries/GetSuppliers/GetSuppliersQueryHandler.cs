@@ -20,7 +20,7 @@ public class GetSuppliersQueryHandler(IUnitOfWork unitOfWork)
             Email = s.Email,
             TINNumber = s.TINNumber,
             PhilGEPSNumber = s.PhilGEPSNumber,
-            IsBlacklisted = s.IsBlacklisted,
+            IsBlacklisted = s.IsBlocked,
             Status = s.Status,
             SupplierCategoryId = s.SupplierCategoryId,
             SupplierCategoryName = s.SupplierCategory != null ? s.SupplierCategory.Name : string.Empty,

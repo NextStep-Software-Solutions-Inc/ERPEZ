@@ -48,7 +48,7 @@ public class UpdateSupplierCommandHandler(IUnitOfWork unitOfWork)
         entity.Email = updateRequest.Email;
         entity.TINNumber = updateRequest.TINNumber;
         entity.PhilGEPSNumber = updateRequest.PhilGEPSNumber;
-        entity.IsBlacklisted = updateRequest.IsBlacklisted;
+        entity.IsBlocked = updateRequest.IsBlacklisted;
         entity.Status = updateRequest.Status;
         entity.SupplierCategoryId = updateRequest.SupplierCategoryId;
 

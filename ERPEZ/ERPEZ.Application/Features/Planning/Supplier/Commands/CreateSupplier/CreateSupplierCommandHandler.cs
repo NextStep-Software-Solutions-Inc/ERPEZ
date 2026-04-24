@@ -36,7 +36,7 @@ public class CreateSupplierCommandHandler(IUnitOfWork unitOfWork)
             PhilGEPSNumber = request.PhilGEPSNumber,
             SupplierCategoryId = request.SupplierCategoryId,
             Status = nameof(SupplierStatusEnum.Pending),
-            IsBlacklisted = false
+            IsBlocked = false
         };
 
         await unitOfWork.SupplierRepository.AddAsync(entity, cancellationToken);

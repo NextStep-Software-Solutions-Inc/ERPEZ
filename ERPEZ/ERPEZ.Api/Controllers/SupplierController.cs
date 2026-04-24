@@ -1,5 +1,6 @@
 using ERPEZ.Application.Features.Planning.Supplier.Commands.CreateSupplier;
 using ERPEZ.Application.Features.Planning.Supplier.Commands.DeleteSupplier;
+using ERPEZ.Application.Features.Planning.Supplier.Commands.PatchSupplier;
 using ERPEZ.Application.Features.Planning.Supplier.Commands.UpdateSupplier;
 using ERPEZ.Application.Features.Planning.Supplier.Dtos;
 using ERPEZ.Application.Features.Planning.Supplier.Queries.GetSupplierById;
@@ -46,7 +47,7 @@ public class SupplierController(ISender mediator) : ControllerBase
     /// <summary>
     /// Get supplier by ID with full profile including the supplierRequirements array
     /// </summary>
-    [HttpGet("{id:guid}")]
+    [HttpGet("{id}")]
     [ProducesResponseType(typeof(ApiResponse<SupplierDetailedResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<SupplierDetailedResponse>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetSupplierById(Guid id)
@@ -54,6 +55,25 @@ public class SupplierController(ISender mediator) : ControllerBase
         var query = new GetSupplierByIdQuery(id);
         var result = await mediator.Send(query);
         return result.Succeeded ? Ok(result) : NotFound(result);
+    }
+
+    /// <summary>
+    /// Patch supplier status, status note, or blocking state.
+    /// </summary>
+    [HttpPatch("{id}/status")]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> PatchSupplier(Guid id, [FromBody] PatchSupplierRequestDto patchSupplier)
+    {
+        var command = new PatchSupplierCommand
+        {
+            Id = id,
+            PatchSupplier = patchSupplier
+        };
+
+        var result = await mediator.Send(command);
+        return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 
     /// <summary>

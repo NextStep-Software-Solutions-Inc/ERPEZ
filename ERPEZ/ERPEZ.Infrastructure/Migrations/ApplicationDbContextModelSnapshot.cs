@@ -5022,7 +5022,7 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<bool>("IsBlacklisted")
+                    b.Property<bool>("IsBlocked")
                         .HasColumnType("boolean");
 
                     b.Property<bool>("IsDeleted")
@@ -5037,6 +5037,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Property<string>("Status")
                         .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("StatusNote")
                         .HasColumnType("text");
 
                     b.Property<Guid>("SupplierCategoryId")
