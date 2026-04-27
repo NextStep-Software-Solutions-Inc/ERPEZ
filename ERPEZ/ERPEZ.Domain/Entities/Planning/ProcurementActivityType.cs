@@ -21,6 +21,18 @@ public class ProcurementActivityType : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public string Description { get; set; } = string.Empty;
     
+    [Sieve(CanFilter = true, CanSort = true)]
+    public int? MinDays { get; set; }
+    
+    [Sieve(CanFilter = true, CanSort = true)]
+    public int? MaxDays { get; set; }
+    
+    [Sieve(CanFilter = true, CanSort = true)]
+    public bool IsArchived { get; set; } = false;
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public bool IsActive { get; set; } = true;
+    
     // Navigation properties
     public virtual List<APPProcurementSchedule> APPProcurementSchedules { get; set; } = [];
 }
