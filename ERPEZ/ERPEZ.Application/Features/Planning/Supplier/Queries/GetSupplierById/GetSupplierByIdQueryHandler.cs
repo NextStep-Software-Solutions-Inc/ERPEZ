@@ -1,4 +1,5 @@
 using ERPEZ.Application.Features.Planning.Supplier.Dtos;
+using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -14,6 +15,14 @@ public class GetSupplierByIdQueryHandler(IUnitOfWork unitOfWork)
         var entity = await unitOfWork.SupplierRepository.GetByIdWithDetailsAsync(request.Id, cancellationToken)
             ?? throw new NotFoundException("Supplier not found.");
 
+        var documents = await Task.WhenAll(entity.SupplierRequirements
+            .Select(async sr => new SupplierDocumentDto
+            {
+                DocumentId = sr.Id,
+                DocumentName = sr.RequirementName,
+                DownloadUrl = await GenerateSignedUrlAsync(sr, cancellationToken)
+            }));
+
         var response = new SupplierDetailedResponse
         {
             Id = entity.Id,
@@ -25,8 +34,9 @@ public class GetSupplierByIdQueryHandler(IUnitOfWork unitOfWork)
             Email = entity.Email,
             TINNumber = entity.TINNumber,
             PhilGEPSNumber = entity.PhilGEPSNumber,
-            IsBlacklisted = entity.IsBlacklisted,
-            Status = entity.Status,
+            IsBlocked = entity.IsBlocked,
+            Status = entity.Status.ToLowerInvariant(),
+            StatusNote = entity.StatusNote,
             SupplierCategoryId = entity.SupplierCategoryId,
             SupplierCategory = entity.SupplierCategory != null ? new SupplierCategoryInfo
             {
@@ -34,18 +44,20 @@ public class GetSupplierByIdQueryHandler(IUnitOfWork unitOfWork)
                 Name = entity.SupplierCategory.Name,
                 Description = entity.SupplierCategory.Description
             } : null,
-            SupplierRequirements = entity.SupplierRequirements.Select(sr => new SupplierRequirementInfo
-            {
-                Id = sr.Id,
-                RequirementName = sr.RequirementName,
-                URL = sr.URL,
-                IsVerified = sr.IsVerified,
-                CreatedAt = sr.CreatedAt
-            }).ToList(),
+            Documents = documents.ToList(),
             CreatedAt = entity.CreatedAt,
             UpdatedAt = entity.UpdatedAt
         };
 
         return ApiResponse<SupplierDetailedResponse>.Success(response, "Supplier retrieved successfully.");
     }
+
+    private static Task<string> GenerateSignedUrlAsync(ERPEZ.Domain.Entities.Planning.SupplierRequirement requirement, CancellationToken cancellationToken)
+    {
+        // Mock implementation for document download URL generation.
+        // Replace this with your storage provider (Azure Blob, S3, etc.) logic later.
+        var signedUrl = $"https://storage.example.com/suppliers/{requirement.SupplierId}/documents/{requirement.Id}?download=true";
+        return Task.FromResult(signedUrl);
+    }
 }
+

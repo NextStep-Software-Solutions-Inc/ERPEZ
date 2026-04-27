@@ -34,10 +34,10 @@ public class Supplier : BaseEntity
     public string? PhilGEPSNumber { get; set; }
 
     /// <summary>
-    /// Indicates if the supplier is blacklisted and blocked from new procurement activities.
+    /// Indicates if the supplier is blocked from new procurement activities.
     /// </summary>
     [Sieve(CanFilter = true, CanSort = true)]
-    public bool IsBlacklisted { get; set; } = false;
+    public bool IsBlocked { get; set; } = false;
 
     /// <summary>
     /// Current approval status: Pending, Approved, or Declined.
@@ -45,6 +45,8 @@ public class Supplier : BaseEntity
     /// </summary>
     [Sieve(CanFilter = true, CanSort = true)]
     public string Status { get; set; } = nameof(SupplierStatusEnum.Pending);
+
+    public string? StatusNote { get; set; }
 
     // Foreign Keys
     [Sieve(CanFilter = true, CanSort = true)]
