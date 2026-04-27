@@ -16,14 +16,6 @@ public class GetSupplierByIdQueryHandler(IUnitOfWork unitOfWork)
         var entity = await unitOfWork.SupplierRepository.GetByIdWithDetailsAsync(request.Id, cancellationToken)
             ?? throw new NotFoundException("Supplier not found.");
 
-        var documents = await Task.WhenAll(entity.SupplierRequirements
-            .Select(async sr => new SupplierDocumentDto
-            {
-                DocumentId = sr.Id,
-                DocumentName = sr.RequirementName,
-                DownloadUrl = await GenerateSignedUrlAsync(sr, cancellationToken)
-            }));
-
         var response = new SupplierDetailedResponse
         {
             Id = entity.Id,
@@ -54,20 +46,11 @@ public class GetSupplierByIdQueryHandler(IUnitOfWork unitOfWork)
                 CreatedAt = sr.CreatedAt,
                 UpdatedAt = sr.UpdatedAt
             }).ToList(),
-            Documents = documents.ToList(),
             CreatedAt = entity.CreatedAt,
             UpdatedAt = entity.UpdatedAt
         };
 
         return ApiResponse<SupplierDetailedResponse>.Success(response, "Supplier retrieved successfully.");
-    }
-
-    private static Task<string> GenerateSignedUrlAsync(ERPEZ.Domain.Entities.Planning.SupplierRequirement requirement, CancellationToken cancellationToken)
-    {
-        // Mock implementation for document download URL generation.
-        // Replace this with your storage provider (Azure Blob, S3, etc.) logic later.
-        var signedUrl = $"https://storage.example.com/suppliers/{requirement.SupplierId}/documents/{requirement.Id}?download=true";
-        return Task.FromResult(signedUrl);
     }
 }
 

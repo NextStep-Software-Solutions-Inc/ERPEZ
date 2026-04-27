@@ -36,7 +36,7 @@ public record SupplierDetailedResponse
     public Guid SupplierCategoryId { get; init; }
     public SupplierCategoryInfo? SupplierCategory { get; init; }
     public List<SupplierRequirementDto> SupplierRequirements { get; init; } = [];
-    public List<SupplierDocumentDto> Documents { get; init; } = [];
+
     public DateTime CreatedAt { get; init; }
     public DateTime? UpdatedAt { get; init; }
 }
@@ -56,11 +56,4 @@ public record SupplierCategoryInfo
     public Guid Id { get; init; }
     public string Name { get; init; } = string.Empty;
     public string? Description { get; init; }
-}
-
-public record SupplierDocumentDto
-{
-    public Guid DocumentId { get; init; }
-    public string DocumentName { get; init; } = string.Empty;
-    public string DownloadUrl { get; init; } = string.Empty;
 }
