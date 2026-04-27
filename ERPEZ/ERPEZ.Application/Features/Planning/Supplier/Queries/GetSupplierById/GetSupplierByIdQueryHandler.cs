@@ -4,6 +4,7 @@ using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
+using System.Linq;
 
 namespace ERPEZ.Application.Features.Planning.Supplier.Queries.GetSupplierById;
 
@@ -44,6 +45,15 @@ public class GetSupplierByIdQueryHandler(IUnitOfWork unitOfWork)
                 Name = entity.SupplierCategory.Name,
                 Description = entity.SupplierCategory.Description
             } : null,
+            SupplierRequirements = entity.SupplierRequirements.Select(sr => new SupplierRequirementDto
+            {
+                SupplierRequirementId = sr.Id,
+                RequirementName = sr.RequirementName,
+                URL = sr.URL,
+                IsVerified = sr.IsVerified,
+                CreatedAt = sr.CreatedAt,
+                UpdatedAt = sr.UpdatedAt
+            }).ToList(),
             Documents = documents.ToList(),
             CreatedAt = entity.CreatedAt,
             UpdatedAt = entity.UpdatedAt

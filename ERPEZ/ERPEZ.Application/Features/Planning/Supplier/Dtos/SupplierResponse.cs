@@ -14,6 +14,7 @@ public record SupplierResponse
     public string Status { get; init; } = string.Empty;
     public Guid SupplierCategoryId { get; init; }
     public string SupplierCategoryName { get; init; } = string.Empty;
+    public List<SupplierRequirementDto> SupplierRequirements { get; init; } = [];
     public DateTime CreatedAt { get; init; }
     public DateTime? UpdatedAt { get; init; }
 }
@@ -34,7 +35,18 @@ public record SupplierDetailedResponse
     public string? StatusNote { get; init; }
     public Guid SupplierCategoryId { get; init; }
     public SupplierCategoryInfo? SupplierCategory { get; init; }
+    public List<SupplierRequirementDto> SupplierRequirements { get; init; } = [];
     public List<SupplierDocumentDto> Documents { get; init; } = [];
+    public DateTime CreatedAt { get; init; }
+    public DateTime? UpdatedAt { get; init; }
+}
+
+public record SupplierRequirementDto
+{
+    public Guid SupplierRequirementId { get; init; }
+    public string RequirementName { get; init; } = string.Empty;
+    public string URL { get; init; } = string.Empty;
+    public bool IsVerified { get; init; }
     public DateTime CreatedAt { get; init; }
     public DateTime? UpdatedAt { get; init; }
 }

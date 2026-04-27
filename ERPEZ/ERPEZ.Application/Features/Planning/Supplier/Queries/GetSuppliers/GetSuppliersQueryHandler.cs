@@ -2,6 +2,7 @@ using ERPEZ.Application.Features.Planning.Supplier.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
+using System.Linq;
 
 namespace ERPEZ.Application.Features.Planning.Supplier.Queries.GetSuppliers;
 
@@ -24,6 +25,15 @@ public class GetSuppliersQueryHandler(IUnitOfWork unitOfWork)
             Status = s.Status,
             SupplierCategoryId = s.SupplierCategoryId,
             SupplierCategoryName = s.SupplierCategory != null ? s.SupplierCategory.Name : string.Empty,
+            SupplierRequirements = s.SupplierRequirements.Select(r => new SupplierRequirementDto
+            {
+                SupplierRequirementId = r.Id,
+                RequirementName = r.RequirementName,
+                URL = r.URL,
+                IsVerified = r.IsVerified,
+                CreatedAt = r.CreatedAt,
+                UpdatedAt = r.UpdatedAt
+            }).ToList(),
             CreatedAt = s.CreatedAt,
             UpdatedAt = s.UpdatedAt
         };
