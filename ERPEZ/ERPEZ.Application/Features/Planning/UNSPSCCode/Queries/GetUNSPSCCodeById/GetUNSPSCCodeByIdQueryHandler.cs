@@ -33,8 +33,7 @@ public class GetUNSPSCCodeByIdQueryHandler(IUnitOfWork unitOfWork)
                 ParentId = child.ParentId,
                 ParentName = entity.Name,
                 CreatedAt = child.CreatedAt,
-                UpdatedAt = child.UpdatedAt,
-                Children = null // Only show one level down
+                UpdatedAt = child.UpdatedAt
             }).ToList();
         }
 
@@ -48,7 +47,7 @@ public class GetUNSPSCCodeByIdQueryHandler(IUnitOfWork unitOfWork)
             IsActive = entity.IsActive,
             ParentId = entity.ParentId,
             ParentName = entity.Parent?.Name,
-            Children = children,
+            Children = children ?? [],
             CreatedAt = entity.CreatedAt,
             UpdatedAt = entity.UpdatedAt
         };

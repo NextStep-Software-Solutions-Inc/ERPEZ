@@ -53,6 +53,8 @@ public class UpdateUNSPSCCodeCommandHandler(IUnitOfWork unitOfWork)
             if (parent.Level != entity.Level - 1)
                 throw new ValidationException($"Parent must be Level {entity.Level - 1} for a Level {entity.Level} code.");
 
+            await EnsureNoParentCycleAsync(request.Id, request.ParentId.Value, cancellationToken);
+
             entity.ParentId = request.ParentId.Value;
         }
 
@@ -60,5 +62,26 @@ public class UpdateUNSPSCCodeCommandHandler(IUnitOfWork unitOfWork)
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return ApiResponse<Unit>.Success(Unit.Value, "UNSPSC code updated successfully.");
+    }
+
+    private async Task EnsureNoParentCycleAsync(Guid entityId, Guid parentId, CancellationToken cancellationToken)
+    {
+        var visited = new HashSet<Guid> { entityId };
+        var currentParentId = parentId;
+
+        while (currentParentId != Guid.Empty)
+        {
+            if (!visited.Add(currentParentId))
+                throw new ConflictException("UNSPSC code parent assignment would create a cyclic hierarchy.");
+
+            var currentParent = await unitOfWork.UNSPSCCodeRepository.GetByIdAsync(currentParentId, cancellationToken);
+            if (currentParent == null)
+                break;
+
+            if (!currentParent.ParentId.HasValue)
+                break;
+
+            currentParentId = currentParent.ParentId.Value;
+        }
     }
 }
