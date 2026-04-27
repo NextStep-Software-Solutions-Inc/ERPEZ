@@ -10,7 +10,7 @@ public record UNSPSCCodeResponse
     public bool IsActive { get; init; }
     public Guid? ParentId { get; init; }
     public string? ParentName { get; init; }
-    public List<UNSPSCCodeResponse>? Children { get; init; }
+    public List<UNSPSCCodeResponse> Children { get; init; } = [];
     public DateTime CreatedAt { get; init; }
     public DateTime? UpdatedAt { get; init; }
 }
