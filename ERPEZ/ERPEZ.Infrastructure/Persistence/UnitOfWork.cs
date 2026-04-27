@@ -73,6 +73,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly ISalaryGradeRepository salaryGradeRepository;
     private readonly IPlantillaTypeRepository plantillaTypeRepository;
     private readonly IStepRepository stepRepository;
+    private readonly IProcurementActivityTypeRepository procurementActivityTypeRepository;
     private readonly IProcurementCategoryRepository procurementCategoryRepository;
     private readonly IProcurementModeRepository procurementModeRepository;
     private readonly IProcurementModeThresholdRepository procurementModeThresholdRepository;
@@ -180,6 +181,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         salaryGradeRepository = new SalaryGradeRepository(context, sieveProcessor);
         plantillaTypeRepository = new PlantillaTypeRepository(context, sieveProcessor);
         stepRepository = new StepRepository(context, sieveProcessor);
+        procurementActivityTypeRepository = new ProcurementActivityTypeRepository(context, sieveProcessor);
         procurementCategoryRepository = new ProcurementCategoryRepository(context, sieveProcessor);
         procurementModeRepository = new ProcurementModeRepository(context, sieveProcessor);
         procurementModeThresholdRepository = new ProcurementModeThresholdRepository(context, sieveProcessor);
@@ -282,6 +284,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public ISalaryGradeRepository SalaryGradeRepository => salaryGradeRepository;
     public IPlantillaTypeRepository PlantillaTypeRepository => plantillaTypeRepository;
     public IStepRepository StepRepository => stepRepository;
+    public IProcurementActivityTypeRepository ProcurementActivityTypeRepository => procurementActivityTypeRepository;
     public IProcurementCategoryRepository ProcurementCategoryRepository => procurementCategoryRepository;
     public IProcurementModeRepository ProcurementModeRepository => procurementModeRepository;
     public IProcurementModeThresholdRepository ProcurementModeThresholdRepository => procurementModeThresholdRepository;
