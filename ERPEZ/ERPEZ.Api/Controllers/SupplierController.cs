@@ -1,7 +1,9 @@
 using ERPEZ.Application.Features.Planning.Supplier.Commands.CreateSupplier;
+using ERPEZ.Application.Features.Planning.Supplier.Commands.CreateSupplierWithRequirements;
 using ERPEZ.Application.Features.Planning.Supplier.Commands.DeleteSupplier;
 using ERPEZ.Application.Features.Planning.Supplier.Commands.PatchSupplier;
 using ERPEZ.Application.Features.Planning.Supplier.Commands.UpdateSupplier;
+using ERPEZ.Application.Features.Planning.Supplier.Commands.VerifySupplierRequirements;
 using ERPEZ.Application.Features.Planning.Supplier.Dtos;
 using ERPEZ.Application.Features.Planning.Supplier.Queries.GetSupplierById;
 using ERPEZ.Application.Features.Planning.Supplier.Queries.GetSuppliers;
@@ -90,6 +92,46 @@ public class SupplierController(ISender mediator) : ControllerBase
             Id = id,
             UpdateSupplier = updateSupplier
         };
+        var result = await mediator.Send(command);
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    /// <summary>
+    /// Create a new supplier with compliance requirements/documents
+    /// </summary>
+    [HttpPost("with-requirements")]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> CreateSupplierWithRequirements([FromBody] CreateSupplierWithRequirementsRequest request)
+    {
+        var command = new CreateSupplierWithRequirementsCommand
+        {
+            CreateSupplierRequest = request
+        };
+        var result = await mediator.Send(command);
+
+        if (!result.Succeeded)
+            return BadRequest(result);
+
+        return CreatedAtAction(nameof(GetSupplierById), new { id = result.Data }, result);
+    }
+
+    /// <summary>
+    /// <summary>
+    /// Verify or update verification state for supplier requirements by supplier ID.
+    /// </summary>
+    [HttpPatch("{id}/requirements")]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> VerifySupplierRequirements(Guid id, [FromBody] VerifySupplierRequirementsRequest request)
+    {
+        var command = new VerifySupplierRequirementsCommand
+        {
+            SupplierId = id,
+            Requirements = request.Requirements
+        };
+
         var result = await mediator.Send(command);
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
