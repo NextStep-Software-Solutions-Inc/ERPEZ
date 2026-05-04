@@ -4,7 +4,7 @@ public record CreateAPPItemRequest
 {
     public Guid APPId { get; init; }
     public Guid PPMPItemId { get; init; }
-    public Guid ProcurementModelId { get; init; }
+    public Guid ProcurementModeId { get; init; }
     public Guid FundSourceId { get; init; }
     public Guid OfficeId { get; init; }
     public string PAPCode { get; init; } = string.Empty;

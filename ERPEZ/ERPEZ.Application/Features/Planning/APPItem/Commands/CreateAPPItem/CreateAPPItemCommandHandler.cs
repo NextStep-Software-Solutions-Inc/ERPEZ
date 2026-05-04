@@ -14,7 +14,7 @@ public class CreateAPPItemCommandHandler(IUnitOfWork unitOfWork) : IRequestHandl
             ?? throw new NotFoundException("APP not found.");
         _ = await unitOfWork.PPMPItemRepository.GetByIdAsync(request.PPMPItemId, cancellationToken)
             ?? throw new NotFoundException("PPMP item not found.");
-        _ = await unitOfWork.ProcurementModeRepository.GetByIdAsync(request.ProcurementModelId, cancellationToken)
+        _ = await unitOfWork.ProcurementModeRepository.GetByIdAsync(request.ProcurementModeId, cancellationToken)
             ?? throw new NotFoundException("Procurement mode not found.");
         _ = await unitOfWork.FundSourceRepository.GetByIdAsync(request.FundSourceId, cancellationToken)
             ?? throw new NotFoundException("Fund source not found.");
@@ -32,7 +32,7 @@ public class CreateAPPItemCommandHandler(IUnitOfWork unitOfWork) : IRequestHandl
             Id = Guid.NewGuid(),
             APPId = request.APPId,
             PPMPItemId = request.PPMPItemId,
-            ProcurementModelId = request.ProcurementModelId,
+            ProcurementModeId = request.ProcurementModeId,
             FundSourceId = request.FundSourceId,
             OfficeId = request.OfficeId,
             PAPCode = request.PAPCode,

@@ -7,7 +7,7 @@ public class CreateAPPItemCommand : IRequest<ApiResponse<Guid>>
 {
     public Guid APPId { get; set; }
     public Guid PPMPItemId { get; set; }
-    public Guid ProcurementModelId { get; set; }
+    public Guid ProcurementModeId { get; set; }
     public Guid FundSourceId { get; set; }
     public Guid OfficeId { get; set; }
     public string PAPCode { get; set; } = string.Empty;

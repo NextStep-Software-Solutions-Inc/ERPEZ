@@ -181,10 +181,7 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid>("PPMPItemId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("ProcurementModeId")
-                        .HasColumnType("uuid");
-
-                    b.Property<Guid>("ProcurementModelId")
+                    b.Property<Guid>("ProcurementModeId")
                         .HasColumnType("uuid");
 
                     b.Property<string>("ProcurementStrategy")
@@ -212,8 +209,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("PPMPItemId");
 
                     b.HasIndex("ProcurementModeId");
-
-                    b.HasIndex("ProcurementModelId");
 
                     b.ToTable("APPItems", "planning");
                 });
@@ -6389,13 +6384,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.ProcurementMode", null)
-                        .WithMany("APPItems")
-                        .HasForeignKey("ProcurementModeId");
-
                     b.HasOne("ERPEZ.Domain.Entities.Planning.ProcurementMode", "ProcurementMode")
-                        .WithMany()
-                        .HasForeignKey("ProcurementModelId")
+                        .WithMany("APPItems")
+                        .HasForeignKey("ProcurementModeId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 

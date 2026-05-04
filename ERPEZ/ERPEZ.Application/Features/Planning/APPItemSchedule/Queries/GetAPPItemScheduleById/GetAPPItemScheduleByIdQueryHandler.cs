@@ -51,8 +51,8 @@ public class GetAPPItemScheduleByIdQueryHandler(IUnitOfWork unitOfWork) : IReque
                     OfficeId = item.OfficeId,
                     OfficeName = item.Office?.Name ?? string.Empty,
                     PAPCode = item.PAPCode,
-                    ProcurementModelId = item.ProcurementModelId,
-                    ProcurementModelName = item.ProcurementMode?.Name ?? string.Empty
+                    ProcurementModeId = item.ProcurementModeId,
+                    ProcurementModeName = item.ProcurementMode?.Name ?? string.Empty
                 }).ToList() ?? []
         });
     }

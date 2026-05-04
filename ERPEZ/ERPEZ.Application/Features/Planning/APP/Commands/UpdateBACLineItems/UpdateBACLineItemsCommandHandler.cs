@@ -24,7 +24,7 @@ public class UpdateBACLineItemsCommandHandler(IUnitOfWork unitOfWork)
                 ?? throw new NotFoundException($"APP line item '{entry.BACItemCode}' not found in this APP.");
 
             // Update procurement strategy fields
-            appItem.ProcurementModelId = entry.ModeOfProcurementId;
+            appItem.ProcurementModeId = entry.ModeOfProcurementId;
             appItem.Remarks = entry.Remarks;
             appItem.IsEarlyProcurementActivity = entry.EPAEligible;
 

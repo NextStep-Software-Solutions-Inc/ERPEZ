@@ -1925,8 +1925,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<APPItem>()
             .HasOne(e => e.ProcurementMode)
-            .WithMany()
-            .HasForeignKey(e => e.ProcurementModelId)
+            .WithMany(p => p.APPItems)
+            .HasForeignKey(e => e.ProcurementModeId)
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<APPItem>()
