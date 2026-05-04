@@ -19,7 +19,7 @@ public class APPItem : BaseEntity
     public Guid PPMPItemId { get; set; }
     
     [Sieve(CanFilter = true, CanSort = true)]
-    public Guid ProcurementModelId { get; set; }
+    public Guid ProcurementModeId { get; set; }
     
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid FundSourceId { get; set; }

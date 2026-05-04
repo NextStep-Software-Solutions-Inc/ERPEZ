@@ -18,9 +18,9 @@ public class UpdateAPPItemCommandValidator : AbstractValidator<UpdateAPPItemComm
             .NotEmpty()
             .WithMessage("PPMPItemId is required.");
 
-        RuleFor(x => x.ProcurementModelId)
+        RuleFor(x => x.ProcurementModeId)
             .NotEmpty()
-            .WithMessage("ProcurementModelId is required.");
+            .WithMessage("ProcurementModeId is required.");
 
         RuleFor(x => x.FundSourceId)
             .NotEmpty()

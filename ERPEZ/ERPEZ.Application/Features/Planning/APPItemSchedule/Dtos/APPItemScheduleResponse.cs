@@ -51,6 +51,6 @@ public record APPItemScheduleAPPItemResponse
     public Guid OfficeId { get; init; }
     public string OfficeName { get; init; } = string.Empty;
     public string PAPCode { get; init; } = string.Empty;
-    public Guid ProcurementModelId { get; init; }
-    public string ProcurementModelName { get; init; } = string.Empty;
+    public Guid ProcurementModeId { get; init; }
+    public string ProcurementModeName { get; init; } = string.Empty;
 }

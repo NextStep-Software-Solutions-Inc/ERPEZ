@@ -25,7 +25,7 @@ public class APPItemController(ISender mediator) : ControllerBase
         {
             APPId = request.APPId,
             PPMPItemId = request.PPMPItemId,
-            ProcurementModelId = request.ProcurementModelId,
+            ProcurementModeId = request.ProcurementModeId,
             FundSourceId = request.FundSourceId,
             OfficeId = request.OfficeId,
             PAPCode = request.PAPCode,
@@ -68,7 +68,7 @@ public class APPItemController(ISender mediator) : ControllerBase
             Id = id,
             APPId = request.APPId,
             PPMPItemId = request.PPMPItemId,
-            ProcurementModelId = request.ProcurementModelId,
+            ProcurementModeId = request.ProcurementModeId,
             FundSourceId = request.FundSourceId,
             OfficeId = request.OfficeId,
             PAPCode = request.PAPCode,

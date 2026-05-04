@@ -20,7 +20,7 @@ public class UpdateAPPItemCommandHandler(IUnitOfWork unitOfWork) : IRequestHandl
 
         _ = await unitOfWork.PPMPItemRepository.GetByIdAsync(request.PPMPItemId, cancellationToken)
             ?? throw new NotFoundException("PPMP item not found.");
-        _ = await unitOfWork.ProcurementModeRepository.GetByIdAsync(request.ProcurementModelId, cancellationToken)
+        _ = await unitOfWork.ProcurementModeRepository.GetByIdAsync(request.ProcurementModeId, cancellationToken)
             ?? throw new NotFoundException("Procurement mode not found.");
         _ = await unitOfWork.FundSourceRepository.GetByIdAsync(request.FundSourceId, cancellationToken)
             ?? throw new NotFoundException("Fund source not found.");
@@ -34,7 +34,7 @@ public class UpdateAPPItemCommandHandler(IUnitOfWork unitOfWork) : IRequestHandl
             throw new ConflictException("PPMP item is already attached to this APP.");
 
         entity.PPMPItemId = request.PPMPItemId;
-        entity.ProcurementModelId = request.ProcurementModelId;
+        entity.ProcurementModeId = request.ProcurementModeId;
         entity.FundSourceId = request.FundSourceId;
         entity.OfficeId = request.OfficeId;
         entity.PAPCode = request.PAPCode;
