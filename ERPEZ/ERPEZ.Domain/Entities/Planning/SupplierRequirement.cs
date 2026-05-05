@@ -15,7 +15,7 @@ public class SupplierRequirement : BaseEntity
     /// <summary>
     /// File URL or link to the uploaded requirement document.
     /// </summary>
-    public string URL { get; set; } = string.Empty;
+    public string? Url { get; set; }
 
     /// <summary>
     /// Indicates if the requirement has been verified by a reviewer.

@@ -1,4 +1,5 @@
 using ERPEZ.Domain.Enums;
+using ERPEZ.Application.Interfaces;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -6,7 +7,7 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Supplier.Commands.CreateSupplierWithRequirements;
 
-public class CreateSupplierWithRequirementsCommandHandler(IUnitOfWork unitOfWork)
+public class CreateSupplierWithRequirementsCommandHandler(IUnitOfWork unitOfWork, IFileStorageService fileStorageService)
     : IRequestHandler<CreateSupplierWithRequirementsCommand, ApiResponse<Guid>>
 {
     public async Task<ApiResponse<Guid>> Handle(CreateSupplierWithRequirementsCommand request, CancellationToken cancellationToken)
@@ -44,15 +45,25 @@ public class CreateSupplierWithRequirementsCommandHandler(IUnitOfWork unitOfWork
         // Create supplier requirements
         if (createRequest.Requirements.Count > 0)
         {
-            var requirements = createRequest.Requirements.Select(req => new Domain.Entities.Planning.SupplierRequirement
-            {
-                Id = Guid.NewGuid(),
-                SupplierId = supplier.Id,
-                RequirementName = req.RequirementName,
-                URL = req.URL,
-                IsVerified = false
-            }).ToList();
+            var requirements = new List<Domain.Entities.Planning.SupplierRequirement>();
 
+            foreach (var req in createRequest.Requirements)
+            {
+                string? promotedUrl = null;
+                if (req.FileId.HasValue)
+                {
+                    promotedUrl = await fileStorageService.PromoteFileAsync(req.FileId.Value);
+                }
+
+                requirements.Add(new Domain.Entities.Planning.SupplierRequirement
+                {
+                    Id = Guid.NewGuid(),
+                    SupplierId = supplier.Id,
+                    RequirementName = req.RequirementName,
+                    Url = promotedUrl,
+                    IsVerified = false
+                });
+            }
             supplier.SupplierRequirements = requirements;
         }
 
