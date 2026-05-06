@@ -1,6 +1,7 @@
 using ERPEZ.Shared.Middlewares;
 using ERPEZ.Api.Extensions;
 using ERPEZ.Api.Configuration;
+using ERPEZ.Infrastructure.Services;
 
 namespace ERPEZ.Api;
 
@@ -11,6 +12,15 @@ public static class DependencyInjection
         var services = builder.Services;
         var configuration = builder.Configuration;
         
+        // 1. Bind the JSON section to the Options class
+        // This looks for "ConnectionStrings:BlobStorage" and puts it in AzureBlobStorageOptions.ConnectionString
+        services.Configure<AzureBlobStorageOptions>(options => 
+        {
+            options.ConnectionString = configuration.GetConnectionString("BlobStorage") ?? string.Empty;
+        });
+
+        // 2. Register the service itself if not already registered elsewhere
+        // services.AddScoped<IFileStorageService, AzureBlobStorageService>();
         services.AddControllers();
         services.AddEndpointsApiExplorer();
         services.AddJwtAuthentication(configuration);

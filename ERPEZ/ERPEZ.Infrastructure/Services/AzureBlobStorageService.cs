@@ -2,7 +2,7 @@ using Azure.Storage.Blobs;
 using ERPEZ.Application.Interfaces;
 using ERPEZ.Domain.Enums;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Configuration;
 
 namespace ERPEZ.Infrastructure.Services;
 
@@ -13,12 +13,19 @@ public class AzureBlobStorageService : IFileStorageService
     private readonly string permanentContainer = "permanent";
     private readonly ILogger<AzureBlobStorageService> logger;
 
-    public AzureBlobStorageService(IOptions<AzureBlobStorageOptions> options, ILogger<AzureBlobStorageService> logger)
+    public AzureBlobStorageService(IConfiguration configuration, ILogger<AzureBlobStorageService> logger)
     {
-        var connectionString = options.Value.ConnectionString;
+        // Grab it directly from the appsettings.json
+        var connectionString = configuration.GetConnectionString("BlobStorage");
+
+        // Add a "Fail-Fast" check so we know exactly if it fails
+        if (string.IsNullOrEmpty(connectionString))
+        {
+            throw new Exception("CRITICAL: The BlobStorage connection string is missing from appsettings.json!");
+        }
+
         blobServiceClient = new BlobServiceClient(connectionString);
         this.logger = logger;
-        // Note: Containers should be created manually or via code if needed
     }
 
     public async Task<Guid> UploadTempAsync(Stream stream, string fileName)
