@@ -19,10 +19,10 @@ public class RatingScaleLevel : BaseEntity
     public string? Description { get; set; }
 
     [Sieve(CanFilter = true, CanSort = true)]
-    public decimal MinValue { get; set; }
+    public decimal? MinValue { get; set; }
 
     [Sieve(CanFilter = true, CanSort = true)]
-    public decimal MaxValue { get; set; }
+    public decimal? MaxValue { get; set; }
 
     // Navigation Properties
     public virtual RatingScaleTemplate? RatingScaleTemplate { get; set; }
