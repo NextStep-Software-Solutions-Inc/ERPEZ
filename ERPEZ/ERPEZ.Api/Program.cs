@@ -6,6 +6,8 @@ using ERPEZ.Infrastructure;
 var builder = WebApplication.CreateBuilder(args);
 builder.ConfigureAppConfiguration();
 
+builder.Services.AddHttpClient();
+
 builder
     .AddApiServices()
     .AddApplicationServices();
