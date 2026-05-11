@@ -6,7 +6,14 @@ using ERPEZ.Infrastructure;
 var builder = WebApplication.CreateBuilder(args);
 builder.ConfigureAppConfiguration();
 
-builder.Services.AddHttpClient();
+// Last verified depot list: May 2026
+// TODO: Consider adding IMemoryCache for categories and depots (low-churn endpoints)
+//       if PhilGEPS response times become a performance concern.
+builder.Services.AddHttpClient("psdbm", c =>
+{
+    c.Timeout = TimeSpan.FromSeconds(20);
+    c.DefaultRequestHeaders.UserAgent.ParseAdd("ERPEZ/1.0"); // ✅ fix #2
+});
 
 builder
     .AddApiServices()

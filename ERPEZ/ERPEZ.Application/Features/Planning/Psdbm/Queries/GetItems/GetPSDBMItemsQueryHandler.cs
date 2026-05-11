@@ -12,7 +12,7 @@ public class GetPsdbmItemsQueryHandler(IHttpClientFactory httpClientFactory)
     public async Task<ApiResponse<GetPsdbmItemsResponse>> Handle(
         GetPsdbmItemsQuery request, CancellationToken cancellationToken)
     {
-        var client = httpClientFactory.CreateClient();
+        var client = httpClientFactory.CreateClient("psdbm");
 
         string baseUrl;
         switch (request.Mode.ToLower())

@@ -11,7 +11,7 @@ public class GetPsdbmCategoriesQueryHandler(IHttpClientFactory httpClientFactory
     public async Task<ApiResponse<List<PsdbmCategoryDto>>> Handle(
         GetPsdbmCategoriesQuery request, CancellationToken cancellationToken)
     {
-        var client = httpClientFactory.CreateClient();
+        var client = httpClientFactory.CreateClient("psdbm");
 
         // catalogue/index.php requires login — scrape from depot/lgu index instead
         // Both depot and lgu index pages have the same category list
