@@ -12,8 +12,10 @@ public class UpdateSupplierRequirementCommandValidator : AbstractValidator<Updat
             .MaximumLength(250)
             .WithMessage("Requirement Name cannot exceed 250 characters.");
 
+        // ✅ FileId is optional — only validated when provided
         RuleFor(x => x.UpdateSupplierRequirement.FileId)
             .NotEmpty()
-            .WithMessage("File ID is required.");
+            .WithMessage("File ID cannot be empty when provided.")
+            .When(x => x.UpdateSupplierRequirement.FileId.HasValue);
     }
 }
