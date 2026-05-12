@@ -1,3 +1,4 @@
+using ERPEZ.Application.Features.Planning.APP.Commands.ChangeAPPStatus;
 using ERPEZ.Application.Features.Planning.APP.Commands.CreateAPP;
 using ERPEZ.Application.Features.Planning.APP.Commands.DeleteAPP;
 using ERPEZ.Application.Features.Planning.APP.Commands.SelectPPMPs;
@@ -116,6 +117,25 @@ public class APPController(ISender mediator) : ControllerBase
         {
             AppId = id,
             LineItems = lineItems
+        };
+
+        var result = await mediator.Send(command);
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+    
+    [HttpPatch("{id}/status")]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ChangeStatus(
+        [FromRoute] Guid id,
+        [FromBody] ChangeAPPStatusRequest request)  // ✅ body uses request DTO
+    {
+        var command = new ChangeAPPStatusCommand
+        {
+            Id = id,                    // ✅ from route
+            Status = request.Status,    // ✅ from body
+            Remarks = request.Remarks   // ✅ from body
         };
 
         var result = await mediator.Send(command);
