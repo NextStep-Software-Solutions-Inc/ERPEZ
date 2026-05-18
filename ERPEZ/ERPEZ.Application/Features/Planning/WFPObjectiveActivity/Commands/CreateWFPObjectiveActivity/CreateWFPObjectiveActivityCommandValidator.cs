@@ -10,12 +10,10 @@ public class CreateWFPObjectiveActivityCommandValidator : AbstractValidator<Crea
 {
     public CreateWFPObjectiveActivityCommandValidator()
     {
-        // WFPId (Always required)
         RuleFor(x => x.WFPId)
             .NotEmpty()
-            .WithMessage("WFP ID is required.")
-            .Must(id => id != Guid.Empty)
-            .WithMessage("WFP ID must be a valid, non-empty GUID.");
+            .WithMessage("WFP ID is required when no WFP Objective is specified.")
+            .When(x => !x.WFPObjectiveId.HasValue);
 
         // WFPObjectiveId (Required for External path when OPCRActivityId is not provided)
         RuleFor(x => x.WFPObjectiveId)
