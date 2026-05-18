@@ -124,7 +124,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ItemRequest>? ItemRequests { get; set; }
     public DbSet<APPItem>? APPItems { get; set; }
     public DbSet<APPProcurementSchedule>? APPProcurementSchedules { get; set; }
-
+    public DbSet<OPCRItemRating>? OPCRItemRatings { get; set; }
+    public DbSet<OPCRItemMOV>? OPCRItemMOVs { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // Apply default conventions for all entities
@@ -2063,6 +2064,68 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<APPPPMP>()
             .ToTable("APP_PPMP_Selections", "planning");
+
+        // OPCRItemRating
+        modelBuilder.Entity<OPCRItemRating>()
+            .HasOne(oir => oir.OPCRItem)
+            .WithMany(i => i.OPCRItemRatings)
+            .HasForeignKey(oir => oir.OPCRItemId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<OPCRItemRating>()
+            .HasOne(oir => oir.KPIMeasurement)
+            .WithMany()
+            .HasForeignKey(oir => oir.KPIMeasurementId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<OPCRItemRating>()
+            .Property(oir => oir.Dimension)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        modelBuilder.Entity<OPCRItemRating>()
+            .Property(oir => oir.SelfRating)
+            .HasPrecision(5, 2);
+
+        modelBuilder.Entity<OPCRItemRating>()
+            .Property(oir => oir.PMTRating)
+            .HasPrecision(5, 2);
+
+        modelBuilder.Entity<OPCRItemRating>()
+            .Property(oir => oir.PMTRemark)
+            .HasMaxLength(1000);
+
+        modelBuilder.Entity<OPCRItemRating>()
+            .HasIndex(oir => oir.OPCRItemId);
+
+        modelBuilder.Entity<OPCRItemRating>()
+            .HasIndex(oir => new { oir.OPCRItemId, oir.KPIMeasurementId, oir.Dimension })
+            .IsUnique();
+
+        // OPCRItemMOV
+        modelBuilder.Entity<OPCRItemMOV>()
+            .HasOne(oim => oim.OPCRItem)
+            .WithMany(i => i.OPCRItemMOVs)
+            .HasForeignKey(oim => oim.OPCRItemId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<OPCRItemMOV>()
+            .Property(oim => oim.RequirementName)
+            .IsRequired()
+            .HasMaxLength(500);
+
+        modelBuilder.Entity<OPCRItemMOV>()
+            .Property(oim => oim.AttachedUrl)
+            .HasMaxLength(2048);
+
+        modelBuilder.Entity<OPCRItemMOV>()
+            .HasIndex(oim => oim.OPCRItemId);
+
+        modelBuilder.Entity<OPCRItemMOV>()
+            .HasIndex(oim => new { oim.OPCRItemId, oim.RequirementName })
+            .IsUnique();
+
+        base.OnModelCreating(modelBuilder);
 
         base.OnModelCreating(modelBuilder);
     }
