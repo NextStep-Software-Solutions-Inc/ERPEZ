@@ -118,6 +118,8 @@ public static class DependencyInjection
         services.AddScoped<IUACSCsvImporter, UACSImportService>();
         services.AddScoped<IUACSValidationEngine, UACSValidationEngine>();
         services.AddScoped<IPositionImportService, PositionImportService>();
+        services.AddScoped<IOPCRItemRatingRepository, OPCRItemRatingRepository>();
+        services.AddScoped<IOPCRItemMOVRepository, OPCRItemMOVRepository>();
         services.AddHostedService<TempFileCleanupService>();
 
         // Add Hangfire
