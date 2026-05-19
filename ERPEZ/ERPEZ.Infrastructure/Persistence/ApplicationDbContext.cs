@@ -2079,11 +2079,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<OPCRItemRating>()
-            .Property(oir => oir.Dimension)
-            .IsRequired()
-            .HasMaxLength(50);
-
-        modelBuilder.Entity<OPCRItemRating>()
             .Property(oir => oir.SelfRating)
             .HasPrecision(5, 2);
 
@@ -2099,7 +2094,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasIndex(oir => oir.OPCRItemId);
 
         modelBuilder.Entity<OPCRItemRating>()
-            .HasIndex(oir => new { oir.OPCRItemId, oir.KPIMeasurementId, oir.Dimension })
+            .HasIndex(oir => new { oir.OPCRItemId, oir.KPIMeasurementId })
             .IsUnique();
 
         // OPCRItemMOV

@@ -9,8 +9,8 @@ public record OPCRsResponse
     public int FiscalYear { get; init; }
     public required decimal TotalBudget { get; init; }
     public DateOnly CreatedDate { get; init; }
-    public required string Status { get; init; }
-    public required string RatingStatus { get; init; }
+    public required string CommitmentStatus { get; init; }
+    public required string ReviewStatus { get; init; }
     public DateOnly? SubmittedDate { get; init; }
     public DateOnly? ReturnedDate { get; init; }
     public int EvaluationCount { get; init; } = 0;

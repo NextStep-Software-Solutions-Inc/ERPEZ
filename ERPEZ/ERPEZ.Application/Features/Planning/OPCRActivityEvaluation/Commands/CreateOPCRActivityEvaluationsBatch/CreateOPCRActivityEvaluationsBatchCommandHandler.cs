@@ -41,7 +41,7 @@ public class CreateOPCRActivityEvaluationsBatchCommandHandler(IUnitOfWork unitOf
                 ?? throw new NotFoundException($"OPCR not found for rating ID '{evaluationRequest.OPCRActivityRatingId}'.");
 
             // Verify the OPCR rating is submitted (cannot evaluate if not submitted)
-            if (opcr.RatingStatus != Domain.Enums.OPCRRatingStatus.Submitted)
+            if (opcr.ReviewStatus != nameof(Domain.Enums.OPCRRatingStatus.Submitted))
             {
                 throw new ValidationException($"Cannot evaluate rating '{evaluationRequest.OPCRActivityRatingId}' - OPCR rating status is not submitted.");
             }
