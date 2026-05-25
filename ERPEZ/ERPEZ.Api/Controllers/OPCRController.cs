@@ -132,32 +132,29 @@ namespace ERPEZ.Api.Controllers
             return result.Succeeded ? NoContent() : NotFound();
         }
 
-        // =====================
+                // =====================
         // OPCRItem Ratings
         // =====================
 
-        [HttpPost("{opcrId}/items/{itemId}/ratings")]
+        [HttpPost("items/{itemId}/ratings")]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> CreateOPCRItemRating(
-            Guid opcrId,
             Guid itemId,
             [FromBody] CreateOPCRItemRatingCommand command)
         {
             var result = await mediator.Send(command with { OPCRItemId = itemId });
             return result.Succeeded
-                ? CreatedAtAction(nameof(GetOPCRById), new { id = opcrId }, result)
+                ? CreatedAtAction(nameof(GetOPCRById), new { id = itemId }, result)
                 : BadRequest(result);
         }
 
-        [HttpPut("{opcrId}/items/{itemId}/ratings/{ratingId}")]
+        [HttpPut("items/ratings/{ratingId}")]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateOPCRItemRating(
-            Guid opcrId,
-            Guid itemId,
             Guid ratingId,
             [FromBody] UpdateOPCRItemRatingRequest request)
         {
@@ -171,11 +168,10 @@ namespace ERPEZ.Api.Controllers
             return result.Succeeded ? Ok(result) : BadRequest(result);
         }
 
-        [HttpDelete("{opcrId}/items/{itemId}/ratings/{ratingId}")]
+        [HttpDelete("items/ratings/{ratingId}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> DeleteOPCRItemRating(
-            Guid opcrId, Guid itemId, Guid ratingId)
+        public async Task<IActionResult> DeleteOPCRItemRating(Guid ratingId)
         {
             var result = await mediator.Send(new DeleteOPCRItemRatingCommand(ratingId));
             return result.Succeeded ? NoContent() : NotFound();
@@ -185,28 +181,25 @@ namespace ERPEZ.Api.Controllers
         // OPCRItem MOVs
         // =====================
 
-        [HttpPost("{opcrId}/items/{itemId}/movs")]
+        [HttpPost("items/{itemId}/movs")]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> CreateOPCRItemMOV(
-            Guid opcrId,
             Guid itemId,
             [FromBody] CreateOPCRItemMOVCommand command)
         {
             var result = await mediator.Send(command with { OPCRItemId = itemId });
             return result.Succeeded
-                ? CreatedAtAction(nameof(GetOPCRById), new { id = opcrId }, result)
+                ? CreatedAtAction(nameof(GetOPCRById), new { id = itemId }, result)
                 : BadRequest(result);
         }
 
-        [HttpPut("{opcrId}/items/{itemId}/movs/{movId}")]
+        [HttpPut("items/movs/{movId}")]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateOPCRItemMOV(
-            Guid opcrId,
-            Guid itemId,
             Guid movId,
             [FromBody] UpdateOPCRItemMOVRequest request)
         {
@@ -220,11 +213,10 @@ namespace ERPEZ.Api.Controllers
             return result.Succeeded ? Ok(result) : BadRequest(result);
         }
 
-        [HttpDelete("{opcrId}/items/{itemId}/movs/{movId}")]
+        [HttpDelete("items/movs/{movId}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> DeleteOPCRItemMOV(
-            Guid opcrId, Guid itemId, Guid movId)
+        public async Task<IActionResult> DeleteOPCRItemMOV(Guid movId)
         {
             var result = await mediator.Send(new DeleteOPCRItemMOVCommand(movId));
             return result.Succeeded ? NoContent() : NotFound();
