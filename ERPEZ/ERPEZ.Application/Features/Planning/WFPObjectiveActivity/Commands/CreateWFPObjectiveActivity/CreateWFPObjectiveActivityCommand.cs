@@ -6,7 +6,7 @@ namespace ERPEZ.Application.Features.Planning.WFPObjectiveActivity.Commands.Crea
 
 public class CreateWFPObjectiveActivityCommand : IRequest<ApiResponse<Guid>>
 {
-    public Guid WFPId { get; set; }
+    public Guid? WFPId { get; set; }
     public Guid? WFPObjectiveId { get; set; }
     public Guid? OPCRActivityId { get; set; }
     public string? ActivityName { get; set; }

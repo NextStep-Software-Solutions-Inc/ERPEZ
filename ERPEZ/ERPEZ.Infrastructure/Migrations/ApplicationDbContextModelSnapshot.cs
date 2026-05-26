@@ -5071,11 +5071,11 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
-                    b.Property<decimal>("MaxValue")
+                    b.Property<decimal?>("MaxValue")
                         .HasPrecision(18, 4)
                         .HasColumnType("numeric(18,4)");
 
-                    b.Property<decimal>("MinValue")
+                    b.Property<decimal?>("MinValue")
                         .HasPrecision(18, 4)
                         .HasColumnType("numeric(18,4)");
 

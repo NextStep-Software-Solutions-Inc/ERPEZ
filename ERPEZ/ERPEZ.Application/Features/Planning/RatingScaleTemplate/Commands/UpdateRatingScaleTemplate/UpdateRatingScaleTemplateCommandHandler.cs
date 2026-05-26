@@ -10,7 +10,7 @@ public class UpdateRatingScaleTemplateCommandHandler(IUnitOfWork unitOfWork)
 {
     public async Task<ApiResponse<Unit>> Handle(UpdateRatingScaleTemplateCommand request, CancellationToken cancellationToken)
     {
-        var template = await unitOfWork.RatingScaleTemplateRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken)
+        var template = await unitOfWork.RatingScaleTemplateRepository.GetTemplateWithLevelsAsync(request.Id, cancellationToken: cancellationToken)
             ?? throw new NotFoundException("Rating Scale Template not found.");
 
         var updateData = request.UpdateRatingScaleTemplate;
@@ -56,7 +56,32 @@ public class UpdateRatingScaleTemplateCommandHandler(IUnitOfWork unitOfWork)
             template.IsDefault = updateData.IsDefault.Value;
         }
 
-        unitOfWork.RatingScaleTemplateRepository.Update(template);
+        if (updateData.RatingScaleLevels != null && updateData.RatingScaleLevels.Any())
+        {
+            foreach (var incomingLevel in updateData.RatingScaleLevels)
+            {
+                var existingLevel = template.RatingScaleLevels?.FirstOrDefault(l => l.RatingValue == incomingLevel.RatingValue);
+                if (existingLevel != null)
+                {
+                    // Update descriptions
+                    if (incomingLevel.Description != null)
+                        existingLevel.Description = incomingLevel.Description;
+
+                    // Enforce the Business Rule: If fixed, force Min/Max to null.
+                    if (template.IsFixed)
+                    {
+                        existingLevel.MinValue = null;
+                        existingLevel.MaxValue = null;
+                    }
+                    else
+                    {
+                        // Only accept payload values if it's NOT fixed
+                        existingLevel.MinValue = incomingLevel.MinValue;
+                        existingLevel.MaxValue = incomingLevel.MaxValue;
+                    }
+                }
+            }
+        }
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return ApiResponse<Unit>.Success(Unit.Value, "Rating Scale Template updated successfully.");
