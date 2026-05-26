@@ -94,6 +94,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<LineItemBudgetActivity>? LineItemBudgetActivities { get; set; }
     public DbSet<LineItemBudgetDetail>? LineItemBudgetDetails { get; set; }
     public DbSet<LIBAmendmentRequest>? LIBAmendmentRequests { get; set; }
+    public DbSet<MarketScoping>? MarketScopings { get; set; }
+    public DbSet<MarketScopingActivity>? MarketScopingActivities { get; set; }
+    public DbSet<MarketScopingActivityAttachment>? MarketScopingActivityAttachments { get; set; }
+    public DbSet<MarketScopingParameter>? MarketScopingParameters { get; set; }
+    public DbSet<MarketScopingParameterAttachment>? MarketScopingParameterAttachments { get; set; }
+    public DbSet<MarketScopingHistory>? MarketScopingHistories { get; set; }
 
     //Procurement
     public DbSet<ProcurementCategory>? ProcurementCategories { get; set; }

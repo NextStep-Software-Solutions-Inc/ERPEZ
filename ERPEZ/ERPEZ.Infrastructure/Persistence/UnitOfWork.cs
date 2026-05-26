@@ -47,6 +47,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly ILineItemBudgetActivityRepository lineItemBudgetActivityRepository;
     private readonly ILineItemBudgetDetailRepository lineItemBudgetDetailRepository;
     private readonly ILIBAmendmentRequestRepository libAmendmentRequestRepository;
+    private readonly IMarketScopingRepository marketScopingRepository;
     private readonly IClusterRepository clusterRepository;
     private readonly IWFPObjectiveActivityRepository wfpObjectiveActivityRepository;
     private readonly IWFPObjectiveTimelineRepository wfpObjectiveTimelineRepository;
@@ -155,6 +156,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         lineItemBudgetActivityRepository = new LineItemBudgetActivityRepository(context, sieveProcessor);
         lineItemBudgetDetailRepository = new LineItemBudgetDetailRepository(context, sieveProcessor);
         libAmendmentRequestRepository = new LIBAmendmentRequestRepository(context, sieveProcessor);
+        marketScopingRepository = new MarketScopingRepository(context, sieveProcessor);
         clusterRepository = new ClusterRepository(context, sieveProcessor);
         wfpObjectiveActivityRepository = new WFPObjectiveActivityRepository(context, sieveProcessor);
         wfpObjectiveTimelineRepository = new WFPObjectiveTimelineRepository(context, sieveProcessor);
@@ -258,6 +260,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public ILineItemBudgetActivityRepository LineItemBudgetActivityRepository => lineItemBudgetActivityRepository;
     public ILineItemBudgetDetailRepository LineItemBudgetDetailRepository => lineItemBudgetDetailRepository;
     public ILIBAmendmentRequestRepository LIBAmendmentRequestRepository => libAmendmentRequestRepository;
+    public IMarketScopingRepository MarketScopingRepository => marketScopingRepository;
     public IClusterRepository ClusterRepository => clusterRepository;
     public IWFPObjectiveActivityRepository WFPObjectiveActivityRepository => wfpObjectiveActivityRepository;
     public IWFPObjectiveTimelineRepository WFPObjectiveTimelineRepository => wfpObjectiveTimelineRepository;
