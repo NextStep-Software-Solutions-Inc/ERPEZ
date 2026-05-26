@@ -100,6 +100,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<MarketScopingParameter>? MarketScopingParameters { get; set; }
     public DbSet<MarketScopingParameterAttachment>? MarketScopingParameterAttachments { get; set; }
     public DbSet<MarketScopingHistory>? MarketScopingHistories { get; set; }
+    public DbSet<MarketScopingParameterSettings>? MarketScopingParameterSettings { get; set; }
+    public DbSet<MarketScopingActivitySettings>? MarketScopingActivitySettings { get; set; }
 
     //Procurement
     public DbSet<ProcurementCategory>? ProcurementCategories { get; set; }
@@ -2069,6 +2071,20 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<APPPPMP>()
             .ToTable("APP_PPMP_Selections", "planning");
+
+        // MarketScopingParameter -> MarketScopingParameterSettings
+        modelBuilder.Entity<MarketScopingParameter>()
+            .HasOne(msp => msp.ParameterSettings)
+            .WithMany(msps => msps.MarketScopingParameters)
+            .HasForeignKey(msp => msp.ParameterSettingsId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // MarketScopingActivity -> MarketScopingActivitySettings
+        modelBuilder.Entity<MarketScopingActivity>()
+            .HasOne(msa => msa.ActivitySettings)
+            .WithMany(msas => msas.MarketScopingActivities)
+            .HasForeignKey(msa => msa.ActivitySettingsId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         base.OnModelCreating(modelBuilder);
     }

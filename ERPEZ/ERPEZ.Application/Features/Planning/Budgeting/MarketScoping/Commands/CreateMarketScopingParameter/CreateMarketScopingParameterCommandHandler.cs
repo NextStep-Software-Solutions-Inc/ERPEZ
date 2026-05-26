@@ -17,7 +17,7 @@ public class CreateMarketScopingParameterCommandHandler(IUnitOfWork unitOfWork)
         var marketScoping = await unitOfWork.MarketScopingRepository.GetByIdAsync(request.MarketScopingId, cancellationToken)
             ?? throw new NotFoundException($"Market Scoping with ID {request.MarketScopingId} not found.");
 
-        var parameter = new MarketScopingParameter
+        var parameter = new ERPEZ.Domain.Entities.Planning.MarketScopingParameter
         {
             Id = Guid.NewGuid(),
             MarketScopingId = request.MarketScopingId,

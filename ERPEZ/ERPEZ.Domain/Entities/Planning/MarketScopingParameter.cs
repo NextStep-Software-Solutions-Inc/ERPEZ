@@ -15,6 +15,9 @@ public class MarketScopingParameter : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid ParameterId { get; set; }
 
+    [Sieve(CanFilter = true, CanSort = true)]
+    public Guid ParameterSettingsId { get; set; }
+
     /// <summary>
     /// Nullable boolean indicating if the parameter was considered in the evaluation.
     /// </summary>
@@ -26,5 +29,7 @@ public class MarketScopingParameter : BaseEntity
 
     // Navigation properties
     public virtual MarketScoping MarketScoping { get; set; } = null!;
+    public virtual MarketScopingParameterSettings ParameterSettings { get; set; } = null!;
     public virtual List<MarketScopingParameterAttachment> Attachments { get; set; } = [];
 }
+

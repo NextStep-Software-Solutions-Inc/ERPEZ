@@ -17,7 +17,7 @@ public class CreateMarketScopingActivityCommandHandler(IUnitOfWork unitOfWork)
         var marketScoping = await unitOfWork.MarketScopingRepository.GetByIdAsync(request.MarketScopingId, cancellationToken)
             ?? throw new NotFoundException($"Market Scoping with ID {request.MarketScopingId} not found.");
 
-        var activity = new MarketScopingActivity
+        var activity = new ERPEZ.Domain.Entities.Planning.MarketScopingActivity
         {
             Id = Guid.NewGuid(),
             MarketScopingId = request.MarketScopingId,

@@ -32,7 +32,7 @@ public class UpdateMarketScopingCommandHandler(IUnitOfWork unitOfWork)
         marketScoping.ActivitiesConducted.Clear();
         foreach (var activityDto in request.ActivitiesConducted)
         {
-            var activity = new MarketScopingActivity
+            var activity = new ERPEZ.Domain.Entities.Planning.MarketScopingActivity
             {
                 Id = Guid.NewGuid(),
                 MarketScopingId = marketScoping.Id,
@@ -59,7 +59,7 @@ public class UpdateMarketScopingCommandHandler(IUnitOfWork unitOfWork)
         marketScoping.ParameterEvaluations.Clear();
         foreach (var parameterDto in request.ParameterEvaluations)
         {
-            var parameter = new MarketScopingParameter
+            var parameter = new ERPEZ.Domain.Entities.Planning.MarketScopingParameter
             {
                 Id = Guid.NewGuid(),
                 MarketScopingId = marketScoping.Id,
