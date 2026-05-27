@@ -29,7 +29,7 @@ public class GetWFPByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
             .Include(w => w.OPCR!)
                 .ThenInclude(o => o.Office)
             .Include(w => w.OPCR!)
-                .ThenInclude(o => o.FiscalYear)
+                .ThenInclude(o => o.FiscalYear!)
                     .ThenInclude(fy => fy.FunctionAllocations)
             .Include(w => w.OPCR!)
                 .ThenInclude(o => o.OPCREvaluations)
