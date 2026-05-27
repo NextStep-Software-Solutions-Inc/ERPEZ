@@ -33,30 +33,28 @@ public class MarketScopingActivitySettingsController(ISender mediator) : Control
 
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(ApiResponse<MarketScopingActivitySettingsResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetMarketScopingActivitySettingsById(Guid id)
     {
         var result = await mediator.Send(new GetMarketScopingActivitySettingsByIdQuery(id));
-        return result.Succeeded ? Ok(result) : NotFound(result);
+        return Ok(result);
     }
 
     [HttpPut("{id}")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> UpdateMarketScopingActivitySettings(Guid id, [FromBody] UpdateMarketScopingActivitySettingsRequest dto)
     {
         var command = new UpdateMarketScopingActivitySettingsCommand { Id = id, UpdateData = dto };
         var result = await mediator.Send(command);
-        return result.Succeeded ? Ok(result) : BadRequest(result);
+        return !result.Succeeded ? BadRequest(result) : Ok(result);
     }
 
     [HttpDelete("{id}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> DeleteMarketScopingActivitySettings(Guid id)
     {
         var result = await mediator.Send(new DeleteMarketScopingActivitySettingsCommand(id));
-        return result.Succeeded ? Ok(result) : NotFound(result);
+        return !result.Succeeded ? BadRequest(result) : Ok(result);
     }
 }

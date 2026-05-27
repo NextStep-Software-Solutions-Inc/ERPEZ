@@ -24,149 +24,95 @@ public class MarketScopingController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateMarketScoping([FromBody] CreateMarketScopingRequest request)
     {
-        var result = await mediator.Send(new CreateMarketScopingCommand(request));
-        return result.Succeeded
-            ? CreatedAtAction(nameof(GetMarketScopingById), new { id = result.Data }, result)
-            : BadRequest(result);
+        var command = new CreateMarketScopingCommand(request);
+        var result = await mediator.Send(command);
+        return !result.Succeeded ? BadRequest(result) : CreatedAtAction(nameof(GetMarketScopingById), new { id = result.Data }, result);
     }
 
     [HttpPost("{id}/activities")]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> CreateMarketScopingActivity(Guid id, [FromBody] CreateMarketScopingActivityRequest request)
     {
-        if (id != request.MarketScopingId)
-        {
-            return BadRequest(new ApiResponse<Guid>
-            {
-                Succeeded = false,
-                Message = "Market Scoping ID in route and request body do not match."
-            });
-        }
-
-        var result = await mediator.Send(new CreateMarketScopingActivityCommand(request));
-        return result.Succeeded
-            ? CreatedAtAction(nameof(GetMarketScopingById), new { id }, result)
-            : (result.Message?.Contains("not found") ?? false ? NotFound(result) : BadRequest(result));
-    }
-
-    [HttpGet("{id}/activities")]
-    [ProducesResponseType(typeof(PaginatedApiResponse<MarketScopingActivityResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetMarketScopingActivities(
-        Guid id,
-        [FromQuery] int pageNumber = 1,
-        [FromQuery] int pageSize = 10,
-        [FromQuery] string? filters = null,
-        [FromQuery] string? sorts = null)
-    {
-        var result = await mediator.Send(new GetMarketScopingActivitiesQuery(id, pageNumber, pageSize, filters, sorts));
-        return result.Succeeded ? Ok(result) : NotFound(result);
-    }
-
-    [HttpPost("{id}/parameters")]
-    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> CreateMarketScopingParameter(Guid id, [FromBody] CreateMarketScopingParameterRequest request)
-    {
-        if (id != request.MarketScopingId)
-        {
-            return BadRequest(new ApiResponse<Guid>
-            {
-                Succeeded = false,
-                Message = "Market Scoping ID in route and request body do not match."
-            });
-        }
-
-        var result = await mediator.Send(new CreateMarketScopingParameterCommand(request));
-        return result.Succeeded
-            ? CreatedAtAction(nameof(GetMarketScopingById), new { id = id }, result)
-            : (result.Message?.Contains("not found") ?? false ? NotFound(result) : BadRequest(result));
-    }
-
-    [HttpPost("{id}/status")]
-    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> ChangeMarketScopingStatus(Guid id, [FromBody] ChangeMarketScopingStatusRequest request)
-    {
-        if (id != request.MarketScopingId)
-        {
-            return BadRequest(new ApiResponse<Unit>
-            {
-                Succeeded = false,
-                Message = "Market Scoping ID in route and request body do not match."
-            });
-        }
-
-        var result = await mediator.Send(new ChangeMarketScopingStatusCommand(request));
-        return result.Succeeded
-            ? Ok(result)
-            : (result.Message?.Contains("not found") ?? false ? NotFound(result) : BadRequest(result));
+        request.MarketScopingId = id;
+        var command = new CreateMarketScopingActivityCommand(request);
+        var result = await mediator.Send(command);
+        return !result.Succeeded ? BadRequest(result) : CreatedAtAction(nameof(GetMarketScopingActivities), new { id }, result);
     }
 
     [HttpGet]
     [ProducesResponseType(typeof(PaginatedApiResponse<MarketScopingResponse>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetMarketScopings(
-        [FromQuery] int pageNumber = 1,
-        [FromQuery] int pageSize = 10,
-        [FromQuery] string? filters = null,
-        [FromQuery] string? sorts = null)
+    public async Task<IActionResult> GetMarketScopings([FromQuery] GetMarketScopingsQuery query)
     {
-        var result = await mediator.Send(new GetMarketScopingsQuery(pageNumber, pageSize, filters, sorts));
+        var result = await mediator.Send(query);
+        return Ok(result);
+    }
+
+    [HttpGet("{id}/activities")]
+    [ProducesResponseType(typeof(PaginatedApiResponse<MarketScopingActivityResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetMarketScopingActivities(Guid id, int pageNumber = 1, int pageSize = 10, string? filters = null, string? sorts = null)
+    {
+        var query = new GetMarketScopingActivitiesQuery(id, pageNumber, pageSize, filters, sorts);
+        var result = await mediator.Send(query);
         return Ok(result);
     }
 
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(ApiResponse<MarketScopingResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetMarketScopingById(Guid id)
     {
         var result = await mediator.Send(new GetMarketScopingByIdQuery(id));
-        return result.Succeeded ? Ok(result) : NotFound(result);
+        return Ok(result);
     }
 
     [HttpGet("{id}/parameters")]
     [ProducesResponseType(typeof(PaginatedApiResponse<MarketScopingParameterResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetMarketScopingParameters(
-        Guid id,
-        [FromQuery] int pageNumber = 1,
-        [FromQuery] int pageSize = 10,
-        [FromQuery] string? filters = null,
-        [FromQuery] string? sorts = null)
+    public async Task<IActionResult> GetMarketScopingParameters(Guid id, int pageNumber = 1, int pageSize = 10, string? filters = null, string? sorts = null)
     {
-        var result = await mediator.Send(new GetMarketScopingParametersQuery(id, pageNumber, pageSize, filters, sorts));
-        return result.Succeeded ? Ok(result) : NotFound(result);
+        var query = new GetMarketScopingParametersQuery(id, pageNumber, pageSize, filters, sorts);
+        var result = await mediator.Send(query);
+        return Ok(result);
+    }
+
+    [HttpPost("{id}/parameters")]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> CreateMarketScopingParameter(Guid id, [FromBody] CreateMarketScopingParameterRequest request)
+    {
+        request.MarketScopingId = id;
+        var command = new CreateMarketScopingParameterCommand(request);
+        var result = await mediator.Send(command);
+        return !result.Succeeded ? BadRequest(result) : CreatedAtAction(nameof(GetMarketScopingParameters), new { id }, result);
+    }
+
+    [HttpPut("{id}/status")]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ChangeMarketScopingStatus(Guid id, [FromBody] ChangeMarketScopingStatusRequest request)
+    {
+        request.MarketScopingId = id;
+        var command = new ChangeMarketScopingStatusCommand(request);
+        var result = await mediator.Send(command);
+        return !result.Succeeded ? BadRequest(result) : Ok(result);
     }
 
     [HttpPut("{id}")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateMarketScoping(Guid id, [FromBody] UpdateMarketScopingRequest request)
     {
-        if (id != request.Id)
-        {
-            return BadRequest(new ApiResponse<Unit>
-            {
-                Succeeded = false,
-                Message = "ID in route and request body do not match."
-            });
-        }
-
-        var result = await mediator.Send(new UpdateMarketScopingCommand(request));
-        return result.Succeeded ? Ok(result) : (result.Message?.Contains("not found") ?? false ? NotFound(result) : BadRequest(result));
+        request.Id = id;
+        var command = new UpdateMarketScopingCommand(request);
+        var result = await mediator.Send(command);
+        return !result.Succeeded ? BadRequest(result) : Ok(result);
     }
 
     [HttpDelete("{id}")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
-    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> DeleteMarketScoping(Guid id)
     {
         var result = await mediator.Send(new DeleteMarketScopingCommand(id));
-        return result.Succeeded ? Ok(result) : NotFound(result);
+        return !result.Succeeded ? BadRequest(result) : Ok(result);
     }
 }
