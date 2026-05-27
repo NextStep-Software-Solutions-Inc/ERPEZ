@@ -125,10 +125,17 @@ public class GetWFPByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
                     RatingStatus = w.OPCR.RatingStatus.ToString(),
                     SubmittedDate = w.OPCR.RatingSubmittedDate.HasValue ? DateOnly.FromDateTime(w.OPCR.RatingSubmittedDate.Value) : null,
                     ReturnedDate = w.OPCR.RatingReturnedDate.HasValue ? DateOnly.FromDateTime(w.OPCR.RatingReturnedDate.Value) : null,
-                    TotalBudget = 0m,
+                    TotalBudget = w.OPCR.OPCRItems
+                        .SelectMany(i => i.OPCRActivities)
+                        .Sum(a => a.TotalBudget),
                     EvaluationCount = w.OPCR.OPCREvaluations.Count,
-                    KPIAssignmentCount = w.OPCR.OPCRItems.Count,
-                    ActivityCount = w.OPCR.OPCRItems.Count,
+                    KPIAssignmentCount = w.OPCR.OPCRItems
+                        .Select(i => i.KPIAssignmentId)
+                        .Distinct()
+                        .Count(),
+                    ActivityCount = w.OPCR.OPCRItems
+                        .SelectMany(i => i.OPCRActivities)
+                        .Count(),
                     OPCREvaluations = w.OPCR.OPCREvaluations.Select(oe => new OPCREvaluationResponse
                     {
                         Id = oe.Id,
