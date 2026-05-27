@@ -14,10 +14,10 @@ public class CreateMarketScopingCommandHandler(IUnitOfWork unitOfWork)
     {
         var request = command.Request;
 
-        var user = await unitOfWork.UserRepository.GetByIdAsync(request.UserId, cancellationToken)
+        _ = await unitOfWork.UserRepository.GetByIdAsync(request.UserId, cancellationToken)
             ?? throw new NotFoundException($"User with ID {request.UserId} not found.");
 
-        var targetLineItemBudgetActivity = await unitOfWork.LineItemBudgetActivityRepository.GetByIdAsync(request.TargetLineItemBudgetActivityId, cancellationToken)
+        _ = await unitOfWork.LineItemBudgetActivityRepository.GetByIdAsync(request.TargetLineItemBudgetActivityId, cancellationToken)
             ?? throw new NotFoundException($"Line Item Budget Activity with ID {request.TargetLineItemBudgetActivityId} not found.");
 
         var marketScoping = new Domain.Entities.Planning.MarketScoping
@@ -36,12 +36,18 @@ public class CreateMarketScopingCommandHandler(IUnitOfWork unitOfWork)
         // Add activities conducted
         foreach (var activityDto in request.ActivitiesConducted)
         {
+            if (activityDto.ActivitySettingsId == Guid.Empty)
+            {
+                throw new ArgumentException("ActivitySettingsId is required for each activity conducted.", nameof(command));
+            }
+
             var activity = new ERPEZ.Domain.Entities.Planning.MarketScopingActivity
             {
                 Id = Guid.NewGuid(),
                 MarketScopingId = marketScoping.Id,
                 ActivitySettingsId = activityDto.ActivitySettingsId,
                 ActivityId = activityDto.ActivityId,
+                ActivitySettingsId = activityDto.ActivitySettingsId,
                 CreatedAt = DateTime.UtcNow,
             };
 

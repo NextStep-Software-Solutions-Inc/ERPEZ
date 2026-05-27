@@ -47,7 +47,7 @@ public class MarketScopingController(ISender mediator) : ControllerBase
 
         var result = await mediator.Send(new CreateMarketScopingActivityCommand(request));
         return result.Succeeded
-            ? CreatedAtAction(nameof(GetMarketScopingById), new { id = result.Data }, result)
+            ? CreatedAtAction(nameof(GetMarketScopingById), new { id }, result)
             : (result.Message?.Contains("not found") ?? false ? NotFound(result) : BadRequest(result));
     }
 
@@ -82,7 +82,7 @@ public class MarketScopingController(ISender mediator) : ControllerBase
 
         var result = await mediator.Send(new CreateMarketScopingParameterCommand(request));
         return result.Succeeded
-            ? CreatedAtAction(nameof(GetMarketScopingById), new { id = result.Data }, result)
+            ? CreatedAtAction(nameof(GetMarketScopingById), new { id = id }, result)
             : (result.Message?.Contains("not found") ?? false ? NotFound(result) : BadRequest(result));
     }
 
