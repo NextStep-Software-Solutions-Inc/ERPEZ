@@ -40,6 +40,7 @@ public class CreateMarketScopingCommandHandler(IUnitOfWork unitOfWork)
             {
                 Id = Guid.NewGuid(),
                 MarketScopingId = marketScoping.Id,
+                ActivitySettingsId = activityDto.ActivitySettingsId,
                 ActivityId = activityDto.ActivityId,
                 CreatedAt = DateTime.UtcNow,
             };
@@ -67,6 +68,7 @@ public class CreateMarketScopingCommandHandler(IUnitOfWork unitOfWork)
             {
                 Id = Guid.NewGuid(),
                 MarketScopingId = marketScoping.Id,
+                ParameterSettingsId = parameterDto.ParameterSettingsId,
                 ParameterId = parameterDto.ParameterId,
                 IsConsidered = parameterDto.IsConsidered,
                 Remarks = parameterDto.Remarks,

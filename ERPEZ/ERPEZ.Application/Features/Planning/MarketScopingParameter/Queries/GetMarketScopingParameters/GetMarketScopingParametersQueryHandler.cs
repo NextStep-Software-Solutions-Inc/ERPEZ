@@ -3,7 +3,6 @@ using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
 using Sieve.Models;
-using System.Linq.Expressions;
 
 namespace ERPEZ.Application.Features.Planning.MarketScopingParameter.Queries.GetMarketScopingParameters;
 
@@ -21,8 +20,8 @@ public class GetMarketScopingParametersQueryHandler(IUnitOfWork unitOfWork)
             Sorts = query.Sorts
         };
 
-        var parameters = await unitOfWork.MarketScopingParameterRepository.GetByMarketScopingIdAsync(
-            query.MarketScopingId, cancellationToken);
+        var (parameters, totalCount) = await unitOfWork.MarketScopingParameterRepository.GetByMarketScopingIdAsync(
+            query.MarketScopingId, sieveModel, cancellationToken);
 
         var responses = parameters.Select(x => new MarketScopingParameterResponse
         {
@@ -35,14 +34,8 @@ public class GetMarketScopingParametersQueryHandler(IUnitOfWork unitOfWork)
             Remarks = x.Remarks
         }).ToList();
 
-        var totalCount = responses.Count;
-        var paginatedResult = responses
-            .Skip((query.PageNumber - 1) * query.PageSize)
-            .Take(query.PageSize)
-            .ToList();
-
         return new PaginatedApiResponse<MarketScopingParameterResponse>(
-            paginatedResult,
+            responses,
             query.PageNumber,
             query.PageSize,
             totalCount);

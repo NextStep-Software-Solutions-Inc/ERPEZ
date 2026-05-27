@@ -12,8 +12,16 @@ public class GetMarketScopingActivitiesQueryHandler(IUnitOfWork unitOfWork)
     public async Task<PaginatedApiResponse<MarketScopingActivityResponse>> Handle(
         GetMarketScopingActivitiesQuery query, CancellationToken cancellationToken)
     {
-        var activities = await unitOfWork.MarketScopingActivityRepository.GetByMarketScopingIdAsync(
-            query.MarketScopingId, cancellationToken);
+        var sieveModel = new SieveModel
+        {
+            PageSize = query.PageSize,
+            Page = query.PageNumber,
+            Filters = query.Filters,
+            Sorts = query.Sorts
+        };
+
+        var (activities, totalCount) = await unitOfWork.MarketScopingActivityRepository.GetByMarketScopingIdAsync(
+            query.MarketScopingId, sieveModel, cancellationToken);
 
         var responses = activities.Select(x => new MarketScopingActivityResponse
         {
@@ -25,14 +33,8 @@ public class GetMarketScopingActivitiesQueryHandler(IUnitOfWork unitOfWork)
             ActivityDescription = x.ActivitySettings?.Description
         }).ToList();
 
-        var totalCount = responses.Count;
-        var paginatedResult = responses
-            .Skip((query.PageNumber - 1) * query.PageSize)
-            .Take(query.PageSize)
-            .ToList();
-
         return new PaginatedApiResponse<MarketScopingActivityResponse>(
-            paginatedResult,
+            responses,
             query.PageNumber,
             query.PageSize,
             totalCount);

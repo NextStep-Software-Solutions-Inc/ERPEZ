@@ -2,7 +2,6 @@ using ERPEZ.Application.Features.Planning.MarketScopingParameterSettings.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
-using System.Linq.Expressions;
 
 namespace ERPEZ.Application.Features.Planning.MarketScopingParameterSettings.Queries.GetMarketScopingParameterSettingsById;
 
@@ -13,16 +12,6 @@ public class GetMarketScopingParameterSettingsByIdQueryHandler(IUnitOfWork unitO
 {
     public async Task<ApiResponse<MarketScopingParameterSettingsResponse>> Handle(GetMarketScopingParameterSettingsByIdQuery query, CancellationToken cancellationToken)
     {
-        Expression<Func<Domain.Entities.Planning.MarketScopingParameterSettings, MarketScopingParameterSettingsResponse>> projection = x => new MarketScopingParameterSettingsResponse
-        {
-            Id = x.Id,
-            Name = x.Name,
-            GuidedQuestion = x.GuidedQuestion,
-            Description = x.Description,
-            SortOrder = x.SortOrder,
-            IsActive = x.IsActive
-        };
-
         var parameterSettings = await unitOfWork.MarketScopingParameterSettingsRepository.GetByIdAsync(query.Id, cancellationToken);
 
         if (parameterSettings == null)

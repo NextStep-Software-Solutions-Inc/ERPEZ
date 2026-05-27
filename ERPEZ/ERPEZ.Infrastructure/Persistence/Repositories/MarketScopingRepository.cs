@@ -42,12 +42,13 @@ public class MarketScopingRepository : Repository<MarketScoping>, IMarketScoping
             .Include(x => x.ParameterEvaluations)
                 .ThenInclude(p => p.Attachments)
             .Include(x => x.StatusHistory)
+            .Where(x => !x.IsDeleted)
             .AsSplitQuery()
             .AsNoTracking();
 
-        var totalCount = query.Count();
-        query = sieveProcessor.Apply(sieveModel, query);
-        var result = await query.ToListAsync(cancellationToken);
+        var filteredQuery = sieveProcessor.Apply(sieveModel, query, applyPagination: false);
+        var totalCount = await filteredQuery.CountAsync(cancellationToken);
+        var result = await sieveProcessor.Apply(sieveModel, filteredQuery).ToListAsync(cancellationToken);
 
         return ((IEnumerable<MarketScoping>)result, totalCount);
     }

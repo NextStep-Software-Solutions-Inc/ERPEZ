@@ -5,6 +5,7 @@ namespace ERPEZ.Application.Features.Planning.Budgeting.MarketScoping.Dtos;
 /// </summary>
 public record MarketScopingParameterDto
 {
+    public Guid ParameterSettingsId { get; set; }
     public Guid ParameterId { get; set; }
     public bool? IsConsidered { get; set; }
     public string? Remarks { get; set; }

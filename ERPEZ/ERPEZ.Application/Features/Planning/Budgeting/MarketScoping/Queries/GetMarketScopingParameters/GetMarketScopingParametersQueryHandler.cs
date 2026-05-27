@@ -3,7 +3,6 @@ using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
-using Sieve.Models;
 
 namespace ERPEZ.Application.Features.Planning.Budgeting.MarketScoping.Queries.GetMarketScopingParameters;
 
@@ -14,7 +13,7 @@ public class GetMarketScopingParametersQueryHandler(IUnitOfWork unitOfWork)
         GetMarketScopingParametersQuery request,
         CancellationToken cancellationToken)
     {
-        var marketScoping = await unitOfWork.MarketScopingRepository.GetByIdAsync(request.MarketScopingId, cancellationToken)
+        _ = await unitOfWork.MarketScopingRepository.GetByIdAsync(request.MarketScopingId, cancellationToken)
             ?? throw new NotFoundException($"Market Scoping with ID {request.MarketScopingId} not found.");
 
         var query = unitOfWork.MarketScopingRepository.Query()

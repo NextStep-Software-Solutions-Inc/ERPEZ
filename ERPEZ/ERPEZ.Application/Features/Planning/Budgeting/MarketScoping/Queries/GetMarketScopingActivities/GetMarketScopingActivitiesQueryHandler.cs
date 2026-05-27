@@ -13,7 +13,7 @@ public class GetMarketScopingActivitiesQueryHandler(IUnitOfWork unitOfWork)
         GetMarketScopingActivitiesQuery request,
         CancellationToken cancellationToken)
     {
-        var marketScoping = await unitOfWork.MarketScopingRepository.GetByIdAsync(request.MarketScopingId, cancellationToken)
+        _ = await unitOfWork.MarketScopingRepository.GetByIdAsync(request.MarketScopingId, cancellationToken)
             ?? throw new NotFoundException($"Market Scoping with ID {request.MarketScopingId} not found.");
 
         var query = unitOfWork.MarketScopingRepository.Query()

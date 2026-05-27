@@ -53,8 +53,32 @@ public class CreateMarketScopingCommandValidator : AbstractValidator<CreateMarke
             .NotNull()
             .WithMessage("Activities conducted list cannot be null.");
 
+        RuleForEach(x => x.Request.ActivitiesConducted)
+            .ChildRules(activity =>
+            {
+                activity.RuleFor(a => a.ActivitySettingsId)
+                    .NotEmpty()
+                    .WithMessage("Activity Settings ID is required for each activity.");
+
+                activity.RuleFor(a => a.ActivityId)
+                    .NotEmpty()
+                    .WithMessage("Activity ID is required for each activity.");
+            });
+
         RuleFor(x => x.Request.ParameterEvaluations)
             .NotNull()
             .WithMessage("Parameter evaluations list cannot be null.");
+
+        RuleForEach(x => x.Request.ParameterEvaluations)
+            .ChildRules(parameter =>
+            {
+                parameter.RuleFor(p => p.ParameterSettingsId)
+                    .NotEmpty()
+                    .WithMessage("Parameter Settings ID is required for each parameter.");
+
+                parameter.RuleFor(p => p.ParameterId)
+                    .NotEmpty()
+                    .WithMessage("Parameter ID is required for each parameter.");
+            });
     }
 }
