@@ -66,7 +66,6 @@ public static class DependencyInjection
                 errorMessages.AppendLine($"Types successfully loaded: {ex.Types.Length}");
             }
 
-            System.Diagnostics.Debug.WriteLine(errorMessages.ToString());
             throw new InvalidOperationException(errorMessages.ToString(), ex);
         }
 
