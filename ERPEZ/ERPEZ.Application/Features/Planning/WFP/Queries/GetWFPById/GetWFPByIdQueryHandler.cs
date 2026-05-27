@@ -14,7 +14,6 @@ using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.Application.Features.Planning.WFP.Queries.GetWFPById;
 
@@ -25,42 +24,6 @@ public class GetWFPByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
 
         var wfpQuery = unitOfWork.WFPRepository
             .Query(w => w.Id == request.Id)
-            .Include(w => w.Office)
-            .Include(w => w.OPCR!)
-                .ThenInclude(o => o.Office)
-            .Include(w => w.OPCR!)
-                .ThenInclude(o => o.FiscalYear!)
-                    .ThenInclude(fy => fy.FunctionAllocations)
-            .Include(w => w.OPCR!)
-                .ThenInclude(o => o.OPCREvaluations)
-            .Include(w => w.OPCR!)
-                .ThenInclude(o => o.OPCRItems)
-            .Include(w => w.FundSource!)
-                .ThenInclude(fs => fs.ParentSource)
-            .Include(w => w.FundSource!)
-               .ThenInclude(fs => fs.FiscalYear!)
-                   .ThenInclude(fy => fy.FunctionAllocations)
-            .Include(w => w.WFPObjectives!)
-                .ThenInclude(o => o.WFPObjectiveActivities!)
-                    .ThenInclude(a => a.WFPObjectiveTimelines!)
-            .Include(w => w.WFPObjectives!)
-                .ThenInclude(o => o.WFPObjectiveActivities!)
-                    .ThenInclude(a => a.WFPObjectiveActivityExpenditures!)
-                        .ThenInclude(ab => ab.Object!)
-                            .ThenInclude(obj => obj.ParentObject)
-            .Include(w => w.WFPObjectives!)
-                .ThenInclude(o => o.WFPObjectiveActivities!)
-                    .ThenInclude(a => a.WFPObjectiveActivityExpenditures!)
-                        .ThenInclude(ab => ab.Object!)
-                            .ThenInclude(obj => obj.ParentObject!)
-                                .ThenInclude(po => po.ParentObject)
-            .Include(w => w.WFPObjectives!)
-                .ThenInclude(o => o.WFPObjectiveActivities!)
-                    .ThenInclude(a => a.WFPObjectiveActivityExpenditures!)
-                        .ThenInclude(ab => ab.Object!)
-                            .ThenInclude(obj => obj.ParentObject!)
-                                .ThenInclude(po => po.ParentObject!)
-                                    .ThenInclude(ppo => ppo.ParentObject)
             .Select(w => new WFPResponse
             {
                 Id = w.Id,
@@ -105,7 +68,7 @@ public class GetWFPByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
                         ProcurementWorkflowId = w.OPCR.Office.ProcurementWorkflowId,
                         ParentId = w.OPCR.Office.ParentId,
                     },
-                    FiscalYear = w.OPCR.FiscalYear != null ? new FiscalYearResponse
+                    FiscalYear = new FiscalYearResponse
                     {
                         Id = w.OPCR.FiscalYear.Id,
                         Year = w.OPCR.FiscalYear.Year,
@@ -120,7 +83,7 @@ public class GetWFPByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
                             FunctionType = fa.FunctionType.ToString(),
                             Percentage = fa.Percentage,
                         }).ToList(),
-                    } : null!,
+                    },
                     Status = w.OPCR.Status.ToString(),
                     RatingStatus = w.OPCR.RatingStatus.ToString(),
                     SubmittedDate = w.OPCR.RatingSubmittedDate.HasValue ? DateOnly.FromDateTime(w.OPCR.RatingSubmittedDate.Value) : null,
