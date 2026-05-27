@@ -90,7 +90,7 @@ public class GetWFPByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
                     ReturnedDate = w.OPCR.RatingReturnedDate.HasValue ? DateOnly.FromDateTime(w.OPCR.RatingReturnedDate.Value) : null,
                     TotalBudget = w.OPCR.OPCRItems
                         .SelectMany(i => i.OPCRActivities)
-                        .Sum(a => a.TotalBudget),
+                        .Sum(a => a.Budget),
                     EvaluationCount = w.OPCR.OPCREvaluations.Count,
                     KPIAssignmentCount = w.OPCR.OPCRItems
                         .Select(i => i.KPIAssignmentId)
