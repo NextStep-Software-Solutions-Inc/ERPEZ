@@ -17,7 +17,7 @@ public class UpdateMarketScopingCommandHandler(IUnitOfWork unitOfWork)
         var marketScoping = await unitOfWork.MarketScopingRepository.GetByIdAsync(request.Id, cancellationToken)
             ?? throw new NotFoundException($"Market scoping with ID {request.Id} not found.");
 
-        var targetLineItemBudgetActivity = await unitOfWork.LineItemBudgetActivityRepository.GetByIdAsync(request.TargetLineItemBudgetActivityId, cancellationToken)
+        _ = await unitOfWork.LineItemBudgetActivityRepository.GetByIdAsync(request.TargetLineItemBudgetActivityId, cancellationToken)
             ?? throw new NotFoundException($"Line Item Budget Activity with ID {request.TargetLineItemBudgetActivityId} not found.");
 
         marketScoping.ProjectName = request.ProjectName;
