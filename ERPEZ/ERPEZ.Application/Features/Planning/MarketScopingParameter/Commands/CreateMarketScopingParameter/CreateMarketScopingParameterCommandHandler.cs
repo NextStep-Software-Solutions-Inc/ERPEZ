@@ -23,7 +23,7 @@ public class CreateMarketScopingParameterCommandHandler(IUnitOfWork unitOfWork)
         {
             MarketScopingId = request.MarketScopingId,
             ParameterSettingsId = request.ParameterSettingsId,
-            ParameterId = request.ParameterSettingsId,
+            ParameterId = request.ParameterId,
             IsConsidered = request.IsConsidered,
             Remarks = request.Remarks
         };

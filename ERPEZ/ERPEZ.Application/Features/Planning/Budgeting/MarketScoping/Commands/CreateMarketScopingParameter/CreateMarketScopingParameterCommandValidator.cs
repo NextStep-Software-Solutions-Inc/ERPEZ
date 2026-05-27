@@ -17,6 +17,10 @@ public class CreateMarketScopingParameterCommandValidator : AbstractValidator<Cr
             .NotEmpty()
             .WithMessage("Market Scoping ID is required.");
 
+        RuleFor(x => x.Request.ParameterSettingsId)
+            .NotEmpty()
+            .WithMessage("Parameter Settings ID is required.");
+
         RuleFor(x => x.Request.ParameterId)
             .NotEmpty()
             .WithMessage("Parameter ID is required.");

@@ -21,6 +21,7 @@ public class CreateMarketScopingParameterCommandHandler(IUnitOfWork unitOfWork)
         {
             Id = Guid.NewGuid(),
             MarketScopingId = request.MarketScopingId,
+            ParameterSettingsId = request.ParameterSettingsId,
             ParameterId = request.ParameterId,
             IsConsidered = request.IsConsidered,
             Remarks = request.Remarks,

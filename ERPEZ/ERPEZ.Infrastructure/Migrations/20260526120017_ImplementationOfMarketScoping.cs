@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -8,6 +8,20 @@ namespace ERPEZ.Infrastructure.Migrations
     /// <inheritdoc />
     public partial class ImplementationOfMarketScoping : Migration
     {
+        /// <summary>
+        /// BREAKING CHANGE: This migration renames TargetLIBId to TargetLineItemBudgetActivityId and changes
+        /// the foreign key target from LineItemBudgets to LineItemBudgetActivities.
+        /// 
+        /// PRECONDITION: This migration assumes one of the following:
+        /// 1. This is a fresh database with no existing MarketScoping records, OR
+        /// 2. All existing MarketScoping.TargetLIBId values have been migrated to valid LineItemBudgetActivities IDs
+        /// 
+        /// If upgrading from an existing database with MarketScoping records, manual data migration is required:
+        /// - First migrate existing LineItemBudget IDs to their corresponding LineItemBudgetActivity IDs
+        /// - Then apply this migration
+        /// 
+        /// Otherwise, the FK constraint creation will fail with referential integrity violations.
+        /// </summary>
         /// <inheritdoc />
         protected override void Up(MigrationBuilder migrationBuilder)
         {

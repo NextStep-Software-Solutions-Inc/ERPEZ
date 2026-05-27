@@ -14,6 +14,10 @@ public class CreateMarketScopingParameterCommandValidator : AbstractValidator<Cr
             .NotEmpty()
             .WithMessage("Parameter Settings ID is required.");
 
+        RuleFor(x => x.ParameterId)
+            .NotEmpty()
+            .WithMessage("Parameter ID is required.");
+
         RuleFor(x => x.Remarks)
             .MaximumLength(1000)
             .WithMessage("Remarks cannot exceed 1000 characters.")

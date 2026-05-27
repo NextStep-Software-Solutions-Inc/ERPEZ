@@ -23,7 +23,7 @@ public class CreateMarketScopingActivityCommandHandler(IUnitOfWork unitOfWork)
         {
             MarketScopingId = request.MarketScopingId,
             ActivitySettingsId = request.ActivitySettingsId,
-            ActivityId = request.ActivitySettingsId
+            ActivityId = request.ActivityId
         };
 
         await unitOfWork.MarketScopingActivityRepository.AddAsync(activity, cancellationToken);

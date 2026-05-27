@@ -21,6 +21,7 @@ public class CreateMarketScopingActivityCommandHandler(IUnitOfWork unitOfWork)
         {
             Id = Guid.NewGuid(),
             MarketScopingId = request.MarketScopingId,
+            ActivitySettingsId = request.ActivitySettingsId,
             ActivityId = request.ActivityId,
             CreatedAt = DateTime.UtcNow,
         };

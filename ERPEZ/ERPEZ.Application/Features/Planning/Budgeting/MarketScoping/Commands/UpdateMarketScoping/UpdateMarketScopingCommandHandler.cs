@@ -64,6 +64,7 @@ public class UpdateMarketScopingCommandHandler(IUnitOfWork unitOfWork)
             {
                 Id = Guid.NewGuid(),
                 MarketScopingId = marketScoping.Id,
+                ParameterSettingsId = parameterDto.ParameterSettingsId,
                 ParameterId = parameterDto.ParameterId,
                 IsConsidered = parameterDto.IsConsidered,
                 Remarks = parameterDto.Remarks,

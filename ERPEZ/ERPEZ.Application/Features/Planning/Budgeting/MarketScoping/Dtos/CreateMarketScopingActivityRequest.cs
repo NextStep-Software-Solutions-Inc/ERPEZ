@@ -6,6 +6,7 @@ namespace ERPEZ.Application.Features.Planning.Budgeting.MarketScoping.Dtos;
 public record CreateMarketScopingActivityRequest
 {
     public required Guid MarketScopingId { get; set; }
+    public required Guid ActivitySettingsId { get; set; }
     public required Guid ActivityId { get; set; }
     public List<MarketScopingActivityAttachmentDto> Attachments { get; set; } = [];
 }

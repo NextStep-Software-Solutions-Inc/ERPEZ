@@ -13,5 +13,9 @@ public class CreateMarketScopingActivityCommandValidator : AbstractValidator<Cre
         RuleFor(x => x.ActivitySettingsId)
             .NotEmpty()
             .WithMessage("Activity Settings ID is required.");
+
+        RuleFor(x => x.ActivityId)
+            .NotEmpty()
+            .WithMessage("Activity ID is required.");
     }
 }
