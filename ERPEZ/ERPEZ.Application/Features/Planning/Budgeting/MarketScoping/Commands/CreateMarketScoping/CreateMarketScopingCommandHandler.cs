@@ -36,11 +36,17 @@ public class CreateMarketScopingCommandHandler(IUnitOfWork unitOfWork)
         // Add activities conducted
         foreach (var activityDto in request.ActivitiesConducted)
         {
+            if (activityDto.ActivitySettingsId == Guid.Empty)
+            {
+                throw new ArgumentException("ActivitySettingsId is required for each activity conducted.", nameof(command));
+            }
+
             var activity = new ERPEZ.Domain.Entities.Planning.MarketScopingActivity
             {
                 Id = Guid.NewGuid(),
                 MarketScopingId = marketScoping.Id,
                 ActivityId = activityDto.ActivityId,
+                ActivitySettingsId = activityDto.ActivitySettingsId,
                 CreatedAt = DateTime.UtcNow,
             };
 
