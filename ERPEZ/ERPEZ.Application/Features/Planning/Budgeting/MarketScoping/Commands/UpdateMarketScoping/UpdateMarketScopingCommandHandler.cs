@@ -37,6 +37,7 @@ public class UpdateMarketScopingCommandHandler(IUnitOfWork unitOfWork)
                 Id = Guid.NewGuid(),
                 MarketScopingId = marketScoping.Id,
                 ActivityId = activityDto.ActivityId,
+                ActivitySettingsId = activityDto.ActivitySettingsId,
                 CreatedAt = DateTime.UtcNow,
             };
 
