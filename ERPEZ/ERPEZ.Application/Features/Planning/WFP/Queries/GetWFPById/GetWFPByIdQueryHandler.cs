@@ -5,10 +5,16 @@ using ERPEZ.Application.Features.Planning.WFP.Dtos;
 using ERPEZ.Application.Features.Planning.WFPObjective.Dtos;
 using ERPEZ.Application.Features.Planning.WFPObjectiveActivity.Dtos;
 using ERPEZ.Application.Features.Planning.WFPObjectiveTimeline.Dtos;
+using ERPEZ.Application.Features.Planning.OPCR.Dtos;
+using ERPEZ.Application.Features.Planning.OPCREvaluation.Dtos;
+using ERPEZ.Application.Features.Planning.OPCRActivity.Dtos;
+using ERPEZ.Application.Features.Planning.FundSource.Dtos;
+using ERPEZ.Application.Features.Planning.FiscalYear.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.Application.Features.Planning.WFP.Queries.GetWFPById;
 
@@ -19,6 +25,42 @@ public class GetWFPByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
 
         var wfpQuery = unitOfWork.WFPRepository
             .Query(w => w.Id == request.Id)
+            .Include(w => w.Office)
+            .Include(w => w.OPCR!)
+                .ThenInclude(o => o.Office)
+            .Include(w => w.OPCR!)
+                .ThenInclude(o => o.FiscalYear)
+                    .ThenInclude(fy => fy.FunctionAllocations)
+            .Include(w => w.OPCR!)
+                .ThenInclude(o => o.OPCREvaluations)
+            .Include(w => w.OPCR!)
+                .ThenInclude(o => o.OPCRItems)
+            .Include(w => w.FundSource!)
+                .ThenInclude(fs => fs.ParentSource)
+            .Include(w => w.FundSource!)
+                .ThenInclude(fs => fs.FiscalYear)
+                    .ThenInclude(fy => fy.FunctionAllocations)
+            .Include(w => w.WFPObjectives!)
+                .ThenInclude(o => o.WFPObjectiveActivities!)
+                    .ThenInclude(a => a.WFPObjectiveTimelines!)
+            .Include(w => w.WFPObjectives!)
+                .ThenInclude(o => o.WFPObjectiveActivities!)
+                    .ThenInclude(a => a.WFPObjectiveActivityExpenditures!)
+                        .ThenInclude(ab => ab.Object!)
+                            .ThenInclude(obj => obj.ParentObject)
+            .Include(w => w.WFPObjectives!)
+                .ThenInclude(o => o.WFPObjectiveActivities!)
+                    .ThenInclude(a => a.WFPObjectiveActivityExpenditures!)
+                        .ThenInclude(ab => ab.Object!)
+                            .ThenInclude(obj => obj.ParentObject!)
+                                .ThenInclude(po => po.ParentObject)
+            .Include(w => w.WFPObjectives!)
+                .ThenInclude(o => o.WFPObjectiveActivities!)
+                    .ThenInclude(a => a.WFPObjectiveActivityExpenditures!)
+                        .ThenInclude(ab => ab.Object!)
+                            .ThenInclude(obj => obj.ParentObject!)
+                                .ThenInclude(po => po.ParentObject!)
+                                    .ThenInclude(ppo => ppo.ParentObject)
             .Select(w => new WFPResponse
             {
                 Id = w.Id,
@@ -41,7 +83,130 @@ public class GetWFPByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
                 },
                 ProjectTitle = w.ProjectTitle,
                 OPCRId = w.OPCRId,
+                OPCR = w.OPCR != null ? new OPCRDetailedResponse
+                {
+                    Id = w.OPCR.Id,
+                    Name = w.OPCR.Name,
+                    Code = w.OPCR.Code,
+                    Office = new()
+                    {
+                        Id = w.OPCR.Office.Id,
+                        Name = w.OPCR.Office.Name,
+                        Code = w.OPCR.Office.Code,
+                        Address = w.OPCR.Office.Address,
+                        Description = w.OPCR.Office.Description,
+                        ResponsibilityCenterCode = w.OPCR.Office.ResponsibilityCenterCode,
+                        BudgetCostCenter = w.OPCR.Office.BudgetCostCenter,
+                        OfficeTypeId = w.OPCR.Office.OfficeTypeId,
+                        OrganizationId = w.OPCR.Office.OrganizationId,
+                        CategoryId = w.OPCR.Office.CategoryId,
+                        AdministrativeLevelId = w.OPCR.Office.AdministrativeLevelId,
+                        ClusterId = w.OPCR.Office.ClusterId,
+                        ProcurementWorkflowId = w.OPCR.Office.ProcurementWorkflowId,
+                        ParentId = w.OPCR.Office.ParentId,
+                    },
+                    FiscalYear = w.OPCR.FiscalYear != null ? new FiscalYearResponse
+                    {
+                        Id = w.OPCR.FiscalYear.Id,
+                        Year = w.OPCR.FiscalYear.Year,
+                        Description = w.OPCR.FiscalYear.Description,
+                        Status = w.OPCR.FiscalYear.Status,
+                        IsLocked = w.OPCR.FiscalYear.IsLocked,
+                        StartDate = w.OPCR.FiscalYear.StartDate,
+                        EndDate = w.OPCR.FiscalYear.EndDate,
+                        FunctionAllocations = w.OPCR.FiscalYear.FunctionAllocations.Select(fa => new FunctionAllocationResponse
+                        {
+                            Id = fa.Id,
+                            FunctionType = fa.FunctionType.ToString(),
+                            Percentage = fa.Percentage,
+                        }).ToList(),
+                    } : null!,
+                    Status = w.OPCR.Status.ToString(),
+                    RatingStatus = w.OPCR.RatingStatus.ToString(),
+                    SubmittedDate = w.OPCR.RatingSubmittedDate.HasValue ? DateOnly.FromDateTime(w.OPCR.RatingSubmittedDate.Value) : null,
+                    ReturnedDate = w.OPCR.RatingReturnedDate.HasValue ? DateOnly.FromDateTime(w.OPCR.RatingReturnedDate.Value) : null,
+                    TotalBudget = 0m,
+                    EvaluationCount = w.OPCR.OPCREvaluations.Count,
+                    KPIAssignmentCount = w.OPCR.OPCRItems.Count,
+                    ActivityCount = w.OPCR.OPCRItems.Count,
+                    OPCREvaluations = w.OPCR.OPCREvaluations.Select(oe => new OPCREvaluationResponse
+                    {
+                        Id = oe.Id,
+                        OPCRId = oe.OPCRId,
+                        EvaluatorId = oe.EvaluatorId,
+                        EvaluationDate = oe.EvaluationDate,
+                        Comments = oe.Comments,
+                        Status = oe.Status,
+                        CreatedAt = oe.CreatedAt,
+                        CreatedBy = oe.CreatedBy,
+                    }).ToList(),
+                    OPCRItems = w.OPCR.OPCRItems.Select(oi => new OPCRItemResponse
+                    {
+                        Id = oi.Id,
+                        OPCRId = oi.OPCRId,
+                        KPIAssignmentId = oi.KPIAssignmentId,
+                        Q1Target = oi.Q1Target,
+                        Q2Target = oi.Q2Target,
+                        Q3Target = oi.Q3Target,
+                        Q4Target = oi.Q4Target,
+                        IsShopped = oi.IsShopped,
+                        KPIAssignment = null,
+                        OPCRActivities = new List<OPCRActivityResponse>(),
+                        CreatedAt = oi.CreatedAt,
+                        CreatedBy = oi.CreatedBy,
+                    }).ToList(),
+                    CreatedAt = w.OPCR.CreatedAt,
+                    CreatedBy = w.OPCR.CreatedBy,
+                    UpdatedAt = w.OPCR.UpdatedAt,
+                    UpdatedBy = w.OPCR.UpdatedBy,
+                } : null,
                 FundSourceId = w.FundSourceId,
+                FundSource = w.FundSource != null ? new FundSourceResponse
+                {
+                    Id = w.FundSource.Id,
+                    ParentId = w.FundSource.ParentId,
+                    Parent = w.FundSource.ParentSource != null ? new FundSourceResponse
+                    {
+                        Id = w.FundSource.ParentSource.Id,
+                        ParentId = w.FundSource.ParentSource.ParentId,
+                        Parent = null,
+                        Name = w.FundSource.ParentSource.Name,
+                        Code = w.FundSource.ParentSource.Code,
+                        Type = w.FundSource.ParentSource.Type.ToString(),
+                        IsActive = w.FundSource.ParentSource.IsActive,
+                        FiscalYearId = w.FundSource.ParentSource.FiscalYearId,
+                        FiscalYear = null,
+                        TotalReceivedFunds = 0m,
+                        TotalDUAllocatedFunds = 0m,
+                        CreatedAt = w.FundSource.ParentSource.CreatedAt,
+                        CreatedBy = w.FundSource.ParentSource.CreatedBy,
+                    } : null,
+                    Name = w.FundSource.Name,
+                    Code = w.FundSource.Code,
+                    Type = w.FundSource.Type.ToString(),
+                    IsActive = w.FundSource.IsActive,
+                    FiscalYearId = w.FundSource.FiscalYearId,
+                    FiscalYear = w.FundSource.FiscalYear != null ? new FiscalYearResponse
+                    {
+                        Id = w.FundSource.FiscalYear.Id,
+                        Year = w.FundSource.FiscalYear.Year,
+                        Description = w.FundSource.FiscalYear.Description,
+                        Status = w.FundSource.FiscalYear.Status,
+                        IsLocked = w.FundSource.FiscalYear.IsLocked,
+                        StartDate = w.FundSource.FiscalYear.StartDate,
+                        EndDate = w.FundSource.FiscalYear.EndDate,
+                        FunctionAllocations = w.FundSource.FiscalYear.FunctionAllocations.Select(fa => new FunctionAllocationResponse
+                        {
+                            Id = fa.Id,
+                            FunctionType = fa.FunctionType.ToString(),
+                            Percentage = fa.Percentage,
+                        }).ToList(),
+                    } : null,
+                    TotalReceivedFunds = 0m,
+                    TotalDUAllocatedFunds = 0m,
+                    CreatedAt = w.FundSource.CreatedAt,
+                    CreatedBy = w.FundSource.CreatedBy,
+                } : null,
                 GeneralObjective = w.GeneralObjective,
                 Mode = w.Mode.ToString(),
                 Status = w.Status.ToString(),

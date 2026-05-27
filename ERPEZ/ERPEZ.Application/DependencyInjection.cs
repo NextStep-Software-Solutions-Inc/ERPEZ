@@ -40,7 +40,35 @@ public static class DependencyInjection
             config.AddOpenBehavior(typeof(ValidationBehavior<,>));
         });
 
-        builder.Services.AddValidatorsFromAssembly(assembly);
+        try
+        {
+            builder.Services.AddValidatorsFromAssembly(assembly);
+        }
+        catch (System.Reflection.ReflectionTypeLoadException ex)
+        {
+            var loaderExceptions = ex.LoaderExceptions ?? Array.Empty<Exception>();
+            var errorMessages = new System.Text.StringBuilder();
+            errorMessages.AppendLine("=== REFLECTION TYPE LOAD EXCEPTION ===");
+            errorMessages.AppendLine($"Number of loader exceptions: {loaderExceptions.Length}");
+            errorMessages.AppendLine();
+
+            foreach (var loaderException in loaderExceptions)
+            {
+                errorMessages.AppendLine($"Exception Type: {loaderException?.GetType().Name}");
+                errorMessages.AppendLine($"Message: {loaderException?.Message}");
+                errorMessages.AppendLine($"Stack Trace: {loaderException?.StackTrace}");
+                errorMessages.AppendLine("---");
+            }
+
+            // Also try to get the Types that were loaded
+            if (ex.Types != null)
+            {
+                errorMessages.AppendLine($"Types successfully loaded: {ex.Types.Length}");
+            }
+
+            System.Diagnostics.Debug.WriteLine(errorMessages.ToString());
+            throw new InvalidOperationException(errorMessages.ToString(), ex);
+        }
 
         return builder;
     }
