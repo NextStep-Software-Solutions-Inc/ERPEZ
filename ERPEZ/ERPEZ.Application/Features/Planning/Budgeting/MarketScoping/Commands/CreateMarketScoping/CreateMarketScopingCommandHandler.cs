@@ -14,7 +14,7 @@ public class CreateMarketScopingCommandHandler(IUnitOfWork unitOfWork)
     {
         var request = command.Request;
 
-        var user = await unitOfWork.UserRepository.GetByIdAsync(request.UserId, cancellationToken)
+        _ = await unitOfWork.UserRepository.GetByIdAsync(request.UserId, cancellationToken)
             ?? throw new NotFoundException($"User with ID {request.UserId} not found.");
 
         var targetLineItemBudgetActivity = await unitOfWork.LineItemBudgetActivityRepository.GetByIdAsync(request.TargetLineItemBudgetActivityId, cancellationToken)
