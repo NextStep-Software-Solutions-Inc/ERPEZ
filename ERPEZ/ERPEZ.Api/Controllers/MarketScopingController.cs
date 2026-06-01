@@ -1,0 +1,118 @@
+using ERPEZ.Application.Features.Planning.Budgeting.MarketScoping.Commands.ChangeMarketScopingStatus;
+using ERPEZ.Application.Features.Planning.Budgeting.MarketScoping.Commands.CreateMarketScoping;
+using ERPEZ.Application.Features.Planning.Budgeting.MarketScoping.Commands.CreateMarketScopingActivity;
+using ERPEZ.Application.Features.Planning.Budgeting.MarketScoping.Commands.CreateMarketScopingParameter;
+using ERPEZ.Application.Features.Planning.Budgeting.MarketScoping.Commands.DeleteMarketScoping;
+using ERPEZ.Application.Features.Planning.Budgeting.MarketScoping.Commands.UpdateMarketScoping;
+using ERPEZ.Application.Features.Planning.Budgeting.MarketScoping.Dtos;
+using ERPEZ.Application.Features.Planning.Budgeting.MarketScoping.Queries.GetMarketScopingActivities;
+using ERPEZ.Application.Features.Planning.Budgeting.MarketScoping.Queries.GetMarketScopingById;
+using ERPEZ.Application.Features.Planning.Budgeting.MarketScoping.Queries.GetMarketScopingParameters;
+using ERPEZ.Application.Features.Planning.Budgeting.MarketScoping.Queries.GetMarketScopings;
+using ERPEZ.Shared.Common;
+using MediatR;
+using Microsoft.AspNetCore.Mvc;
+
+namespace ERPEZ.Api.Controllers;
+
+[Route("market-scopings")]
+[ApiController]
+public class MarketScopingController(ISender mediator) : ControllerBase
+{
+    [HttpPost]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> CreateMarketScoping([FromBody] CreateMarketScopingRequest request)
+    {
+        var command = new CreateMarketScopingCommand(request);
+        var result = await mediator.Send(command);
+        return !result.Succeeded ? BadRequest(result) : CreatedAtAction(nameof(GetMarketScopingById), new { id = result.Data }, result);
+    }
+
+    [HttpPost("{id}/activities")]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> CreateMarketScopingActivity(Guid id, [FromBody] CreateMarketScopingActivityRequest request)
+    {
+        request.MarketScopingId = id;
+        var command = new CreateMarketScopingActivityCommand(request);
+        var result = await mediator.Send(command);
+        return !result.Succeeded ? BadRequest(result) : CreatedAtAction(nameof(GetMarketScopingActivities), new { id }, result);
+    }
+
+    [HttpGet]
+    [ProducesResponseType(typeof(PaginatedApiResponse<MarketScopingResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetMarketScopings([FromQuery] GetMarketScopingsQuery query)
+    {
+        var result = await mediator.Send(query);
+        return Ok(result);
+    }
+
+    [HttpGet("{id}/activities")]
+    [ProducesResponseType(typeof(PaginatedApiResponse<MarketScopingActivityResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetMarketScopingActivities(Guid id, int pageNumber = 1, int pageSize = 10, string? filters = null, string? sorts = null)
+    {
+        var query = new GetMarketScopingActivitiesQuery(id, pageNumber, pageSize, filters, sorts);
+        var result = await mediator.Send(query);
+        return Ok(result);
+    }
+
+    [HttpGet("{id}")]
+    [ProducesResponseType(typeof(ApiResponse<MarketScopingResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetMarketScopingById(Guid id)
+    {
+        var result = await mediator.Send(new GetMarketScopingByIdQuery(id));
+        return Ok(result);
+    }
+
+    [HttpGet("{id}/parameters")]
+    [ProducesResponseType(typeof(PaginatedApiResponse<MarketScopingParameterResponse>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetMarketScopingParameters(Guid id, int pageNumber = 1, int pageSize = 10, string? filters = null, string? sorts = null)
+    {
+        var query = new GetMarketScopingParametersQuery(id, pageNumber, pageSize, filters, sorts);
+        var result = await mediator.Send(query);
+        return Ok(result);
+    }
+
+    [HttpPost("{id}/parameters")]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> CreateMarketScopingParameter(Guid id, [FromBody] CreateMarketScopingParameterRequest request)
+    {
+        request.MarketScopingId = id;
+        var command = new CreateMarketScopingParameterCommand(request);
+        var result = await mediator.Send(command);
+        return !result.Succeeded ? BadRequest(result) : CreatedAtAction(nameof(GetMarketScopingParameters), new { id }, result);
+    }
+
+    [HttpPut("{id}/status")]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ChangeMarketScopingStatus(Guid id, [FromBody] ChangeMarketScopingStatusRequest request)
+    {
+        request.MarketScopingId = id;
+        var command = new ChangeMarketScopingStatusCommand(request);
+        var result = await mediator.Send(command);
+        return !result.Succeeded ? BadRequest(result) : Ok(result);
+    }
+
+    [HttpPut("{id}")]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> UpdateMarketScoping(Guid id, [FromBody] UpdateMarketScopingRequest request)
+    {
+        request.Id = id;
+        var command = new UpdateMarketScopingCommand(request);
+        var result = await mediator.Send(command);
+        return !result.Succeeded ? BadRequest(result) : Ok(result);
+    }
+
+    [HttpDelete("{id}")]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> DeleteMarketScoping(Guid id)
+    {
+        var result = await mediator.Send(new DeleteMarketScopingCommand(id));
+        return !result.Succeeded ? BadRequest(result) : Ok(result);
+    }
+}
