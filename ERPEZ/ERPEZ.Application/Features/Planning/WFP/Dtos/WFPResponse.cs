@@ -1,6 +1,8 @@
 
 using ERPEZ.Application.Features.Planning.Office.Dtos;
 using ERPEZ.Application.Features.Planning.WFPObjective.Dtos;
+using ERPEZ.Application.Features.Planning.OPCR.Dtos;
+using ERPEZ.Application.Features.Planning.FundSource.Dtos;
 
 namespace ERPEZ.Application.Features.Planning.WFP.Dtos;
 
@@ -10,7 +12,9 @@ public record WFPResponse
     public required OfficeResponse Office { get; init; }
     public string ProjectTitle { get; init; } = string.Empty;
     public Guid? OPCRId { get; init; }
+    public OPCRDetailedResponse? OPCR { get; init; }
     public Guid? FundSourceId { get; init; }
+    public FundSourceResponse? FundSource { get; init; }
     public DateOnly ProjectStartDate { get; init; }
     public DateOnly ProjectEndDate { get; init; }
     public decimal? ProposedBudget { get; init; }
