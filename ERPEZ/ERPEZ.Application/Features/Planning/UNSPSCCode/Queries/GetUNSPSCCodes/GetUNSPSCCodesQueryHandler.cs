@@ -13,29 +13,26 @@ public class GetUNSPSCCodesQueryHandler(IUnitOfWork unitOfWork)
         GetUNSPSCCodesQuery request,
         CancellationToken cancellationToken)
     {
-        Expression<Func<Domain.Entities.Planning.UNSPSCCode, UNSPSCCodeResponse>> projection = x => new UNSPSCCodeResponse
-        {
-            Id = x.Id,
-            Code = x.Code,
-            Name = x.Name,
-            Description = x.Description,
-            Level = x.Level,
-            IsActive = x.IsActive,
-            ParentId = x.ParentId,
-            ParentName = x.Parent != null ? x.Parent.Name : null,
-            CreatedAt = x.CreatedAt,
-            UpdatedAt = x.UpdatedAt
-        };
-
-        var (codes, totalCount) = await unitOfWork.UNSPSCCodeRepository.GetAllAsync(
-            request.SieveModel,
-            projection,
-            cancellationToken: cancellationToken);
+        // Get codes with parent names using a join query to avoid navigation property serialization issues
+        var codesWithParents = await unitOfWork.UNSPSCCodeRepository.GetAllWithParentNamesAsync(request.SieveModel, cancellationToken);
 
         return new PaginatedApiResponse<UNSPSCCodeResponse>(
-            [.. codes],
+            [.. codesWithParents.Entities.Select(x => new UNSPSCCodeResponse
+            {
+                Id = x.Id,
+                Code = x.Code,
+                Name = x.Name,
+                Description = x.Description,
+                Level = x.Level,
+                IsActive = x.IsActive,
+                ParentId = x.ParentId,
+                ParentName = x.ParentName,
+                Children = [], // Explicitly empty for flat list
+                CreatedAt = x.CreatedAt,
+                UpdatedAt = x.UpdatedAt
+            })],
             request.SieveModel.Page ?? 1,
             request.SieveModel.PageSize ?? 10,
-            totalCount);
+            codesWithParents.TotalCount);
     }
 }
