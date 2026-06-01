@@ -38,6 +38,11 @@ public interface IUnitOfWork
     ILineItemBudgetActivityRepository LineItemBudgetActivityRepository { get; }
     ILineItemBudgetDetailRepository LineItemBudgetDetailRepository { get; }
     ILIBAmendmentRequestRepository LIBAmendmentRequestRepository { get; }
+    IMarketScopingRepository MarketScopingRepository { get; }
+    IMarketScopingParameterRepository MarketScopingParameterRepository { get; }
+    IMarketScopingActivityRepository MarketScopingActivityRepository { get; }
+    IMarketScopingParameterSettingsRepository MarketScopingParameterSettingsRepository { get; }
+    IMarketScopingActivitySettingsRepository MarketScopingActivitySettingsRepository { get; }
     IClusterRepository ClusterRepository { get; }
     IWFPObjectiveActivityRepository WFPObjectiveActivityRepository { get; }
     IWFPObjectiveTimelineRepository WFPObjectiveTimelineRepository { get; }
@@ -102,6 +107,8 @@ public interface IUnitOfWork
     IAPPItemScheduleRepository APPItemScheduleRepository { get; }
     IItemRequestRepository ItemRequestRepository { get; }
     INonCSEItemRepository NonCSEItemRepository { get; }
+    IOPCRItemRatingRepository OPCRItemRatingRepository { get; }
+    IOPCRItemMOVRepository OPCRItemMOVRepository { get; }
     Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default);
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

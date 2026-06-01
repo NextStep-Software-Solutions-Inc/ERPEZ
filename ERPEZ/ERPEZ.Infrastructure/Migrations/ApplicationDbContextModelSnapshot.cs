@@ -2406,6 +2406,415 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.ToTable("MFOPAPs", "planning");
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.MarketScoping", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("DeliveryDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal>("EstimatedBudget")
+                        .HasColumnType("numeric");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime>("PeriodFrom")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime>("PeriodTo")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ProjectName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("TargetLineItemBudgetActivityId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("TargetLineItemBudgetActivityId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("MarketScopings", "planning");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.MarketScopingActivity", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ActivityId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ActivitySettingsId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("MarketScopingId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ActivitySettingsId");
+
+                    b.HasIndex("MarketScopingId");
+
+                    b.ToTable("MarketScopingActivities", "planning");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.MarketScopingActivityAttachment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("FileUrl")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("MarketScopingActivityId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MarketScopingActivityId");
+
+                    b.ToTable("MarketScopingActivityAttachments", "planning");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.MarketScopingActivitySettings", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ActivityType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Label")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("MarketScopingActivitySettings", "planning");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.MarketScopingHistory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ChangeReason")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("ChangedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("ChangedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("MarketScopingId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("NewStatus")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("PreviousStatus")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MarketScopingId");
+
+                    b.ToTable("MarketScopingHistories", "planning");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.MarketScopingParameter", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<bool?>("IsConsidered")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("MarketScopingId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ParameterId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ParameterSettingsId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Remarks")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MarketScopingId");
+
+                    b.HasIndex("ParameterSettingsId");
+
+                    b.ToTable("MarketScopingParameters", "planning");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.MarketScopingParameterAttachment", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("FileUrl")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("MarketScopingParameterId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("MarketScopingParameterId");
+
+                    b.ToTable("MarketScopingParameterAttachments", "planning");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.MarketScopingParameterSettings", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<string>("GuidedQuestion")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("SortOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("MarketScopingParameterSettings", "planning");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.NonCSEItem", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2512,7 +2921,14 @@ namespace ERPEZ.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime?>("ApprovedDate")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<string>("Code")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("CommitmentStatus")
                         .IsRequired()
                         .HasColumnType("text");
 
@@ -2542,19 +2958,16 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid>("OfficeId")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime?>("RatingReturnedDate")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("RatingStatus")
+                    b.Property<string>("ReviewStatus")
                         .IsRequired()
                         .HasColumnType("text");
-
-                    b.Property<DateTime?>("RatingSubmittedDate")
-                        .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("text");
+
+                    b.Property<DateTime?>("SubmittedDate")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -2845,6 +3258,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<string>("ActualAccomplishment")
+                        .HasColumnType("text");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -2863,6 +3279,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Property<bool>("IsShopped")
                         .HasColumnType("boolean");
+
+                    b.Property<string>("Justification")
+                        .HasColumnType("text");
 
                     b.Property<Guid>("KPIAssignmentId")
                         .HasColumnType("uuid");
@@ -2896,6 +3315,117 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("OPCRItems", "planning");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OPCRItemMOV", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AttachedUrl")
+                        .HasMaxLength(2048)
+                        .HasColumnType("character varying(2048)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("OPCRItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("RequirementName")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UploadedDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("OPCRItemId");
+
+                    b.HasIndex("OPCRItemId", "RequirementName")
+                        .IsUnique();
+
+                    b.ToTable("OPCRItemMOVs", "planning");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OPCRItemRating", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("KPIMeasurementId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("OPCRItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal?>("PMTRating")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)");
+
+                    b.Property<string>("PMTRemark")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<decimal?>("SelfRating")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("numeric(5,2)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("KPIMeasurementId");
+
+                    b.HasIndex("OPCRItemId");
+
+                    b.HasIndex("OPCRItemId", "KPIMeasurementId")
+                        .IsUnique();
+
+                    b.ToTable("OPCRItemRatings", "planning");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OPCRPAPDepartment", b =>
@@ -6960,6 +7490,96 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("ParentMFOPAP");
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.MarketScoping", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.LineItemBudgetActivity", "TargetLineItemBudgetActivity")
+                        .WithMany()
+                        .HasForeignKey("TargetLineItemBudgetActivityId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("TargetLineItemBudgetActivity");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.MarketScopingActivity", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.MarketScopingActivitySettings", "ActivitySettings")
+                        .WithMany("MarketScopingActivities")
+                        .HasForeignKey("ActivitySettingsId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.MarketScoping", "MarketScoping")
+                        .WithMany("ActivitiesConducted")
+                        .HasForeignKey("MarketScopingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ActivitySettings");
+
+                    b.Navigation("MarketScoping");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.MarketScopingActivityAttachment", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.MarketScopingActivity", "MarketScopingActivity")
+                        .WithMany("Attachments")
+                        .HasForeignKey("MarketScopingActivityId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("MarketScopingActivity");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.MarketScopingHistory", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.MarketScoping", "MarketScoping")
+                        .WithMany("StatusHistory")
+                        .HasForeignKey("MarketScopingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("MarketScoping");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.MarketScopingParameter", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.MarketScoping", "MarketScoping")
+                        .WithMany("ParameterEvaluations")
+                        .HasForeignKey("MarketScopingId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.MarketScopingParameterSettings", "ParameterSettings")
+                        .WithMany("MarketScopingParameters")
+                        .HasForeignKey("ParameterSettingsId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("MarketScoping");
+
+                    b.Navigation("ParameterSettings");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.MarketScopingParameterAttachment", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.MarketScopingParameter", "MarketScopingParameter")
+                        .WithMany("Attachments")
+                        .HasForeignKey("MarketScopingParameterId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("MarketScopingParameter");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.NonCSEItem", b =>
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Planning.ItemRequest", "ItemRequest")
@@ -7080,6 +7700,36 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("KPIAssignment");
 
                     b.Navigation("OPCR");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OPCRItemMOV", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.OPCRItem", "OPCRItem")
+                        .WithMany("OPCRItemMOVs")
+                        .HasForeignKey("OPCRItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("OPCRItem");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OPCRItemRating", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.KPIMeasurement", "KPIMeasurement")
+                        .WithMany()
+                        .HasForeignKey("KPIMeasurementId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.OPCRItem", "OPCRItem")
+                        .WithMany("OPCRItemRatings")
+                        .HasForeignKey("OPCRItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("KPIMeasurement");
+
+                    b.Navigation("OPCRItem");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OPCRPAPDepartment", b =>
@@ -8189,6 +8839,35 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("Transactions");
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.MarketScoping", b =>
+                {
+                    b.Navigation("ActivitiesConducted");
+
+                    b.Navigation("ParameterEvaluations");
+
+                    b.Navigation("StatusHistory");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.MarketScopingActivity", b =>
+                {
+                    b.Navigation("Attachments");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.MarketScopingActivitySettings", b =>
+                {
+                    b.Navigation("MarketScopingActivities");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.MarketScopingParameter", b =>
+                {
+                    b.Navigation("Attachments");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.MarketScopingParameterSettings", b =>
+                {
+                    b.Navigation("MarketScopingParameters");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.NonCSEItem", b =>
                 {
                     b.Navigation("PPMPItems");
@@ -8219,6 +8898,10 @@ namespace ERPEZ.Infrastructure.Migrations
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OPCRItem", b =>
                 {
                     b.Navigation("OPCRActivities");
+
+                    b.Navigation("OPCRItemMOVs");
+
+                    b.Navigation("OPCRItemRatings");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.Object", b =>

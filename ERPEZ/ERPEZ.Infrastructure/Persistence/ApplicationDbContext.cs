@@ -94,6 +94,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<LineItemBudgetActivity>? LineItemBudgetActivities { get; set; }
     public DbSet<LineItemBudgetDetail>? LineItemBudgetDetails { get; set; }
     public DbSet<LIBAmendmentRequest>? LIBAmendmentRequests { get; set; }
+    public DbSet<MarketScoping>? MarketScopings { get; set; }
+    public DbSet<MarketScopingActivity>? MarketScopingActivities { get; set; }
+    public DbSet<MarketScopingActivityAttachment>? MarketScopingActivityAttachments { get; set; }
+    public DbSet<MarketScopingParameter>? MarketScopingParameters { get; set; }
+    public DbSet<MarketScopingParameterAttachment>? MarketScopingParameterAttachments { get; set; }
+    public DbSet<MarketScopingHistory>? MarketScopingHistories { get; set; }
+    public DbSet<MarketScopingParameterSettings>? MarketScopingParameterSettings { get; set; }
+    public DbSet<MarketScopingActivitySettings>? MarketScopingActivitySettings { get; set; }
 
     //Procurement
     public DbSet<ProcurementCategory>? ProcurementCategories { get; set; }
@@ -124,7 +132,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ItemRequest>? ItemRequests { get; set; }
     public DbSet<APPItem>? APPItems { get; set; }
     public DbSet<APPProcurementSchedule>? APPProcurementSchedules { get; set; }
-
+    public DbSet<OPCRItemRating>? OPCRItemRatings { get; set; }
+    public DbSet<OPCRItemMOV>? OPCRItemMOVs { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // Apply default conventions for all entities
@@ -2063,6 +2072,75 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<APPPPMP>()
             .ToTable("APP_PPMP_Selections", "planning");
+
+        // OPCRItemRating
+        modelBuilder.Entity<OPCRItemRating>()
+            .HasOne(oir => oir.OPCRItem)
+            .WithMany(i => i.OPCRItemRatings)
+            .HasForeignKey(oir => oir.OPCRItemId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<OPCRItemRating>()
+            .HasOne(oir => oir.KPIMeasurement)
+            .WithMany()
+            .HasForeignKey(oir => oir.KPIMeasurementId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<OPCRItemRating>()
+            .Property(oir => oir.SelfRating)
+            .HasPrecision(5, 2);
+
+        modelBuilder.Entity<OPCRItemRating>()
+            .Property(oir => oir.PMTRating)
+            .HasPrecision(5, 2);
+
+        modelBuilder.Entity<OPCRItemRating>()
+            .Property(oir => oir.PMTRemark)
+            .HasMaxLength(1000);
+
+        modelBuilder.Entity<OPCRItemRating>()
+            .HasIndex(oir => oir.OPCRItemId);
+
+        modelBuilder.Entity<OPCRItemRating>()
+            .HasIndex(oir => new { oir.OPCRItemId, oir.KPIMeasurementId })
+            .IsUnique();
+
+        // OPCRItemMOV
+        modelBuilder.Entity<OPCRItemMOV>()
+            .HasOne(oim => oim.OPCRItem)
+            .WithMany(i => i.OPCRItemMOVs)
+            .HasForeignKey(oim => oim.OPCRItemId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<OPCRItemMOV>()
+            .Property(oim => oim.RequirementName)
+            .IsRequired()
+            .HasMaxLength(500);
+
+        modelBuilder.Entity<OPCRItemMOV>()
+            .Property(oim => oim.AttachedUrl)
+            .HasMaxLength(2048);
+
+        modelBuilder.Entity<OPCRItemMOV>()
+            .HasIndex(oim => oim.OPCRItemId);
+
+        modelBuilder.Entity<OPCRItemMOV>()
+            .HasIndex(oim => new { oim.OPCRItemId, oim.RequirementName })
+            .IsUnique();
+
+        // MarketScopingParameter -> MarketScopingParameterSettings
+        modelBuilder.Entity<MarketScopingParameter>()
+            .HasOne(msp => msp.ParameterSettings)
+            .WithMany(msps => msps.MarketScopingParameters)
+            .HasForeignKey(msp => msp.ParameterSettingsId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // MarketScopingActivity -> MarketScopingActivitySettings
+        modelBuilder.Entity<MarketScopingActivity>()
+            .HasOne(msa => msa.ActivitySettings)
+            .WithMany(msas => msas.MarketScopingActivities)
+            .HasForeignKey(msa => msa.ActivitySettingsId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         base.OnModelCreating(modelBuilder);
     }

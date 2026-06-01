@@ -114,9 +114,12 @@ public static class DependencyInjection
         services.AddScoped<INonCSEItemRepository, NonCSEItemRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
         services.AddScoped<IFileStorageService, AzureBlobStorageService>();
+        services.AddScoped<IPhilGepsService, PhilGepsService>();
         services.AddScoped<IUACSCsvImporter, UACSImportService>();
         services.AddScoped<IUACSValidationEngine, UACSValidationEngine>();
         services.AddScoped<IPositionImportService, PositionImportService>();
+        services.AddScoped<IOPCRItemRatingRepository, OPCRItemRatingRepository>();
+        services.AddScoped<IOPCRItemMOVRepository, OPCRItemMOVRepository>();
         services.AddHostedService<TempFileCleanupService>();
 
         // Add Hangfire

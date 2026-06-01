@@ -1,5 +1,7 @@
 using ERPEZ.Application.Features.Planning.KPIAssignment.Dtos;
 using ERPEZ.Application.Features.Planning.OPCRActivity.Dtos;
+using ERPEZ.Application.Features.Planning.OPCRItemRating.Dtos; 
+using ERPEZ.Application.Features.Planning.OPCRItemMOV.Dtos; 
 
 namespace ERPEZ.Application.Features.Planning.OPCR.Dtos;
 
@@ -13,8 +15,12 @@ public record OPCRItemResponse
     public int Q3Target { get; init; }
     public int Q4Target { get; init; }
     public bool IsShopped { get; init; }
+    public string? ActualAccomplishment { get; init; }
+    public string? Justification { get; init; }
     public KPIAssignmentResponse? KPIAssignment { get; init; }
     public List<OPCRActivityResponse> OPCRActivities { get; init; } = [];
+    public List<OPCRItemRatingResponse> OPCRItemRatings { get; init; } = [];
+    public List<OPCRItemMOVResponse> OPCRItemMOVs { get; init; } = [];  
     public DateTime CreatedAt { get; init; }
     public string CreatedBy { get; init; } = string.Empty;
 }
