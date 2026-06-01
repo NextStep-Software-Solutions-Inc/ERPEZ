@@ -10,6 +10,8 @@ using ERPEZ.Application.Features.Planning.OPCREvaluation.Dtos;
 using ERPEZ.Application.Features.Planning.OPCRActivity.Dtos;
 using ERPEZ.Application.Features.Planning.FundSource.Dtos;
 using ERPEZ.Application.Features.Planning.FiscalYear.Dtos;
+using ERPEZ.Application.Features.Planning.OPCRItemRating.Dtos;
+using ERPEZ.Application.Features.Planning.OPCRItemMOV.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -84,10 +86,10 @@ public class GetWFPByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
                             Percentage = fa.Percentage,
                         }).ToList(),
                     },
-                    Status = w.OPCR.Status.ToString(),
-                    RatingStatus = w.OPCR.RatingStatus.ToString(),
-                    SubmittedDate = w.OPCR.RatingSubmittedDate.HasValue ? DateOnly.FromDateTime(w.OPCR.RatingSubmittedDate.Value) : null,
-                    ReturnedDate = w.OPCR.RatingReturnedDate.HasValue ? DateOnly.FromDateTime(w.OPCR.RatingReturnedDate.Value) : null,
+                    CommitmentStatus = w.OPCR.CommitmentStatus,
+                    ReviewStatus = w.OPCR.ReviewStatus,
+                    SubmittedDate = w.OPCR.SubmittedDate.HasValue ? DateOnly.FromDateTime(w.OPCR.SubmittedDate.Value) : null,
+                    ReturnedDate = null,
                     TotalBudget = w.OPCR.OPCRItems
                         .SelectMany(i => i.OPCRActivities)
                         .Sum(a => a.Budget),
