@@ -47,6 +47,11 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly ILineItemBudgetActivityRepository lineItemBudgetActivityRepository;
     private readonly ILineItemBudgetDetailRepository lineItemBudgetDetailRepository;
     private readonly ILIBAmendmentRequestRepository libAmendmentRequestRepository;
+    private readonly IMarketScopingRepository marketScopingRepository;
+    private readonly IMarketScopingParameterRepository marketScopingParameterRepository;
+    private readonly IMarketScopingActivityRepository marketScopingActivityRepository;
+    private readonly IMarketScopingParameterSettingsRepository marketScopingParameterSettingsRepository;
+    private readonly IMarketScopingActivitySettingsRepository marketScopingActivitySettingsRepository;
     private readonly IClusterRepository clusterRepository;
     private readonly IWFPObjectiveActivityRepository wfpObjectiveActivityRepository;
     private readonly IWFPObjectiveTimelineRepository wfpObjectiveTimelineRepository;
@@ -155,6 +160,11 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         lineItemBudgetActivityRepository = new LineItemBudgetActivityRepository(context, sieveProcessor);
         lineItemBudgetDetailRepository = new LineItemBudgetDetailRepository(context, sieveProcessor);
         libAmendmentRequestRepository = new LIBAmendmentRequestRepository(context, sieveProcessor);
+        marketScopingRepository = new MarketScopingRepository(context, sieveProcessor);
+        marketScopingParameterRepository = new MarketScopingParameterRepository(context, sieveProcessor);
+        marketScopingActivityRepository = new MarketScopingActivityRepository(context, sieveProcessor);
+        marketScopingParameterSettingsRepository = new MarketScopingParameterSettingsRepository(context, sieveProcessor);
+        marketScopingActivitySettingsRepository = new MarketScopingActivitySettingsRepository(context, sieveProcessor);
         clusterRepository = new ClusterRepository(context, sieveProcessor);
         wfpObjectiveActivityRepository = new WFPObjectiveActivityRepository(context, sieveProcessor);
         wfpObjectiveTimelineRepository = new WFPObjectiveTimelineRepository(context, sieveProcessor);
@@ -258,6 +268,11 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public ILineItemBudgetActivityRepository LineItemBudgetActivityRepository => lineItemBudgetActivityRepository;
     public ILineItemBudgetDetailRepository LineItemBudgetDetailRepository => lineItemBudgetDetailRepository;
     public ILIBAmendmentRequestRepository LIBAmendmentRequestRepository => libAmendmentRequestRepository;
+    public IMarketScopingRepository MarketScopingRepository => marketScopingRepository;
+    public IMarketScopingParameterRepository MarketScopingParameterRepository => marketScopingParameterRepository;
+    public IMarketScopingActivityRepository MarketScopingActivityRepository => marketScopingActivityRepository;
+    public IMarketScopingParameterSettingsRepository MarketScopingParameterSettingsRepository => marketScopingParameterSettingsRepository;
+    public IMarketScopingActivitySettingsRepository MarketScopingActivitySettingsRepository => marketScopingActivitySettingsRepository;
     public IClusterRepository ClusterRepository => clusterRepository;
     public IWFPObjectiveActivityRepository WFPObjectiveActivityRepository => wfpObjectiveActivityRepository;
     public IWFPObjectiveTimelineRepository WFPObjectiveTimelineRepository => wfpObjectiveTimelineRepository;
