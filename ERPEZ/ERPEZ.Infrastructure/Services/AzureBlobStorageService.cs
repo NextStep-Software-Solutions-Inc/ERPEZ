@@ -16,12 +16,6 @@ public class AzureBlobStorageService : IFileStorageService
     public AzureBlobStorageService(IOptions<AzureBlobStorageOptions> options, ILogger<AzureBlobStorageService> logger)
     {
         var connectionString = options.Value.ConnectionString;
-
-        if (string.IsNullOrEmpty(connectionString))
-        {
-            throw new Exception("CRITICAL: The BlobStorage connection string is missing from configuration.");
-        }
-
         blobServiceClient = new BlobServiceClient(connectionString);
         this.logger = logger;
     }

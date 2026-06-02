@@ -12,11 +12,10 @@ public static class DependencyInjection
         var services = builder.Services;
         var configuration = builder.Configuration;
         
-        // 1. Bind the JSON section to the Options class
-        // This looks for "ConnectionStrings:BlobStorage" and puts it in AzureBlobStorageOptions.ConnectionString
+        // 1. Bind the AzureBlobStorage section to the Options class
         services.Configure<AzureBlobStorageOptions>(options => 
         {
-            options.ConnectionString = configuration.GetConnectionString("BlobStorage") ?? string.Empty;
+            configuration.GetSection("AzureBlobStorage").Bind(options);
         });
 
         // 2. Register the service itself if not already registered elsewhere
