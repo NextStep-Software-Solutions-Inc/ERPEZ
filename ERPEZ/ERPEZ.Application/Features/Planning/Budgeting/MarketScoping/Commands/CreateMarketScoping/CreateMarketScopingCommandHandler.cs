@@ -17,8 +17,11 @@ public class CreateMarketScopingCommandHandler(IUnitOfWork unitOfWork)
         _ = await unitOfWork.UserRepository.GetByIdAsync(request.UserId, cancellationToken)
             ?? throw new NotFoundException($"User with ID {request.UserId} not found.");
 
-        _ = await unitOfWork.LineItemBudgetActivityRepository.GetByIdAsync(request.TargetLineItemBudgetActivityId, cancellationToken)
-            ?? throw new NotFoundException($"Line Item Budget Activity with ID {request.TargetLineItemBudgetActivityId} not found.");
+        if (request.TargetLineItemBudgetActivityId.HasValue)
+        {
+            _ = await unitOfWork.LineItemBudgetActivityRepository.GetByIdAsync(request.TargetLineItemBudgetActivityId.Value, cancellationToken)
+                ?? throw new NotFoundException($"Line Item Budget Activity with ID {request.TargetLineItemBudgetActivityId.Value} not found.");
+        }
 
         var marketScoping = new Domain.Entities.Planning.MarketScoping
         {

@@ -11,7 +11,7 @@ public class GetMarketScopingByIdQueryHandler(IUnitOfWork unitOfWork)
 {
     public async Task<ApiResponse<MarketScopingResponse>> Handle(GetMarketScopingByIdQuery query, CancellationToken cancellationToken)
     {
-        var marketScoping = await unitOfWork.MarketScopingRepository.GetByIdAsync(query.Id, cancellationToken)
+        var marketScoping = await unitOfWork.MarketScopingRepository.GetByIdWithDetailsAsync(query.Id, cancellationToken)
             ?? throw new NotFoundException($"Market scoping with ID {query.Id} not found.");
 
         var response = new MarketScopingResponse
