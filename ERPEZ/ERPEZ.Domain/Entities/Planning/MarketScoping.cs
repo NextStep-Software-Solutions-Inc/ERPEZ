@@ -30,14 +30,14 @@ public class MarketScoping : BaseEntity
     public DateTime DeliveryDate { get; set; }
 
     [Sieve(CanFilter = true, CanSort = true)]
-    public Guid TargetLineItemBudgetActivityId { get; set; }
+    public Guid? TargetLineItemBudgetActivityId { get; set; }
 
     [Sieve(CanFilter = true, CanSort = true)]
     public StatusEnum Status { get; set; } = StatusEnum.Draft;
 
     // Navigation properties
     public virtual User User { get; set; } = null!;
-    public virtual LineItemBudgetActivity TargetLineItemBudgetActivity { get; set; } = null!;
+    public virtual LineItemBudgetActivity? TargetLineItemBudgetActivity { get; set; }
     public virtual List<MarketScopingActivity> ActivitiesConducted { get; set; } = [];
     public virtual List<MarketScopingParameter> ParameterEvaluations { get; set; } = [];
     public virtual List<MarketScopingHistory> StatusHistory { get; set; } = [];

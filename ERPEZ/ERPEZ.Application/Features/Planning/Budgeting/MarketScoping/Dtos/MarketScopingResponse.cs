@@ -12,7 +12,7 @@ public record MarketScopingResponse
     public DateTime PeriodFrom { get; set; }
     public DateTime PeriodTo { get; set; }
     public DateTime DeliveryDate { get; set; }
-    public Guid TargetLineItemBudgetActivityId { get; set; }
+    public Guid? TargetLineItemBudgetActivityId { get; set; }
     public string Status { get; set; } = string.Empty;
     public List<MarketScopingActivityResponse> ActivitiesConducted { get; set; } = [];
     public List<MarketScopingParameterResponse> ParameterEvaluations { get; set; } = [];

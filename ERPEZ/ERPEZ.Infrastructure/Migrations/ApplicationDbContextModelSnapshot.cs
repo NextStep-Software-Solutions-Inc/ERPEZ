@@ -2448,7 +2448,7 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<Guid>("TargetLineItemBudgetActivityId")
+                    b.Property<Guid?>("TargetLineItemBudgetActivityId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
@@ -7374,9 +7374,7 @@ namespace ERPEZ.Infrastructure.Migrations
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Planning.LineItemBudgetActivity", "TargetLineItemBudgetActivity")
                         .WithMany()
-                        .HasForeignKey("TargetLineItemBudgetActivityId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("TargetLineItemBudgetActivityId");
 
                     b.HasOne("ERPEZ.Domain.Entities.Planning.User", "User")
                         .WithMany()
