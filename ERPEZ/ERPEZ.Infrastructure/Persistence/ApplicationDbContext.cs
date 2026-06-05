@@ -134,6 +134,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<APPProcurementSchedule>? APPProcurementSchedules { get; set; }
     public DbSet<OPCRItemRating>? OPCRItemRatings { get; set; }
     public DbSet<OPCRItemMOV>? OPCRItemMOVs { get; set; }
+    public DbSet<GeneratedDocument>? GeneratedDocuments { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // Apply default conventions for all entities
@@ -2141,6 +2142,24 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .WithMany(msas => msas.MarketScopingActivities)
             .HasForeignKey(msa => msa.ActivitySettingsId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<Agency>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.Name).HasMaxLength(500).IsRequired();
+            e.Property(x => x.Address).HasMaxLength(1000);
+            e.Property(x => x.LogoImage).HasColumnType("varbinary(max)");
+        });
+
+        modelBuilder.Entity<GeneratedDocument>(e =>
+        {
+            e.HasKey(x => x.Id);
+            e.Property(x => x.StoragePath).HasMaxLength(1000);
+            e.Property(x => x.FileName).HasMaxLength(500);
+            e.Property(x => x.FiscalYear).HasMaxLength(10);
+            e.Property(x => x.GeneratedBy).HasMaxLength(200);
+            e.HasOne(x => x.Agency).WithMany().HasForeignKey(x => x.AgencyId);
+        });
 
         base.OnModelCreating(modelBuilder);
     }
