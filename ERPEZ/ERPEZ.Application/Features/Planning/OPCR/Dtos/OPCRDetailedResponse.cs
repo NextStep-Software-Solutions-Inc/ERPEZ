@@ -11,8 +11,8 @@ public record OPCRDetailedResponse
     public required string Code { get; init; } = string.Empty;
     public required OfficeResponse Office { get; init; }
     public required FiscalYearResponse FiscalYear { get; init; }
-    public required string Status { get; init; } = string.Empty;
-    public required string RatingStatus { get; init; } = string.Empty;
+    public required string CommitmentStatus { get; init; } = string.Empty;
+    public required string ReviewStatus { get; init; } = string.Empty;
     public DateOnly? SubmittedDate { get; init; }
     public DateOnly? ReturnedDate { get; init; }
     public decimal TotalBudget { get; init; }

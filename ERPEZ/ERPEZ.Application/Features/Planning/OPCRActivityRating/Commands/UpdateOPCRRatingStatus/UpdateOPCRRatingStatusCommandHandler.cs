@@ -9,81 +9,63 @@ namespace ERPEZ.Application.Features.Planning.OPCRActivityRating.Commands.Update
 public class UpdateOPCRRatingStatusCommandHandler(IUnitOfWork unitOfWork)
     : IRequestHandler<UpdateOPCRRatingStatusCommand, ApiResponse<Unit>>
 {
-    public async Task<ApiResponse<Unit>> Handle(UpdateOPCRRatingStatusCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<Unit>> Handle(
+        UpdateOPCRRatingStatusCommand request, CancellationToken cancellationToken)
     {
-        // Get OPCR entity (not OPCRActivityRating)
-        var opcr = await unitOfWork.OPCRRepository.GetByIdAsync(request.Id, cancellationToken: cancellationToken)
+        var opcr = await unitOfWork.OPCRRepository.GetByIdAsync(
+            request.Id, cancellationToken: cancellationToken)
             ?? throw new NotFoundException("OPCR not found.");
 
-        var currentStatus = opcr.RatingStatus;
-        var newStatus = request.UpdateStatus.Status;
+        var currentStatus = opcr.ReviewStatus;   // ✅ was RatingStatus
+        var newStatus = request.UpdateStatus.Status.ToString();
 
-        // Validate status transition
         ValidateStatusTransition(currentStatus, newStatus);
 
-        // Process status change based on target status
-        switch (newStatus)
+        switch (request.UpdateStatus.Status)
         {
             case OPCRRatingStatus.Submitted:
-                HandleSubmit(opcr);
+                opcr.ReviewStatus  = nameof(OPCRRatingStatus.Submitted);  // ✅
+                opcr.SubmittedDate = DateTime.UtcNow;                      // ✅ was RatingSubmittedDate
                 break;
 
             case OPCRRatingStatus.Returned:
-                HandleReturn(opcr);
+                opcr.ReviewStatus = nameof(OPCRRatingStatus.Returned);    // ✅
+                // ✅ RatingReturnedDate removed — store in Remarks or omit
                 break;
 
             case OPCRRatingStatus.Draft:
-                HandleDraft(opcr);
+                opcr.ReviewStatus  = nameof(OPCRRatingStatus.Draft);      // ✅
+                opcr.SubmittedDate = null;                                  // ✅
+                opcr.ApprovedDate  = null;
                 break;
 
             default:
-                throw new ValidationException($"Unsupported status: {newStatus}");
+                throw new ValidationException($"Unsupported status: {request.UpdateStatus.Status}");
         }
 
         unitOfWork.OPCRRepository.Update(opcr);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return ApiResponse<Unit>.Success(Unit.Value, $"OPCR rating status updated to {newStatus} successfully.");
+        return ApiResponse<Unit>.Success(
+            Unit.Value,
+            $"OPCR review status updated to {newStatus} successfully.");
     }
 
-    private static void HandleSubmit(Domain.Entities.Planning.OPCR opcr)
+    private static void ValidateStatusTransition(string currentStatus, string newStatus)
     {
-        opcr.RatingStatus = OPCRRatingStatus.Submitted;
-        opcr.RatingSubmittedDate = DateTime.UtcNow;
-        opcr.RatingReturnedDate = null;
-    }
-
-    private static void HandleReturn(Domain.Entities.Planning.OPCR opcr)
-    {
-        opcr.RatingStatus = OPCRRatingStatus.Returned;
-        opcr.RatingReturnedDate = DateTime.UtcNow;
-    }
-
-    private static void HandleDraft(Domain.Entities.Planning.OPCR opcr)
-    {
-        opcr.RatingStatus = OPCRRatingStatus.Draft;
-        opcr.RatingSubmittedDate = null;
-        opcr.RatingReturnedDate = null;
-    }
-
-    private static void ValidateStatusTransition(OPCRRatingStatus currentStatus, OPCRRatingStatus newStatus)
-    {
-        // Define valid status transitions
-        var validTransitions = new Dictionary<OPCRRatingStatus, OPCRRatingStatus[]>
+        var validTransitions = new Dictionary<string, string[]>
         {
-            { OPCRRatingStatus.Draft, [OPCRRatingStatus.Submitted] },
-            { OPCRRatingStatus.Submitted, [OPCRRatingStatus.Returned] },
-            { OPCRRatingStatus.Returned, [OPCRRatingStatus.Draft, OPCRRatingStatus.Submitted] }
+            { nameof(OPCRRatingStatus.Draft),      [nameof(OPCRRatingStatus.Submitted)] },
+            { nameof(OPCRRatingStatus.Submitted),  [nameof(OPCRRatingStatus.Returned)] },
+            { nameof(OPCRRatingStatus.Returned),   [nameof(OPCRRatingStatus.Draft), nameof(OPCRRatingStatus.Submitted)] }
         };
 
-        if (!validTransitions.TryGetValue(currentStatus, out OPCRRatingStatus[]? value))
-        {
+        if (!validTransitions.TryGetValue(currentStatus, out var validNext))
             throw new ValidationException($"Invalid current status: {currentStatus}");
-        }
 
-        if (!value.Contains(newStatus))
-        {
-            throw new ValidationException($"Cannot transition from {currentStatus} to {newStatus}. Valid transitions from {currentStatus} are: {string.Join(", ", value)}");
-        }
+        if (!validNext.Contains(newStatus))
+            throw new ValidationException(
+                $"Cannot transition from {currentStatus} to {newStatus}. " +
+                $"Valid transitions: {string.Join(", ", validNext)}");
     }
 }

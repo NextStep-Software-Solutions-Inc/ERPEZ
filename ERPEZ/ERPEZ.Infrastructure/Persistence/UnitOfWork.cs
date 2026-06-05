@@ -116,6 +116,8 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IAPPItemScheduleRepository appItemScheduleRepository;
     private readonly IItemRequestRepository itemRequestRepository;
     private readonly INonCSEItemRepository nonCSEItemRepository;
+    private readonly IOPCRItemRatingRepository opcrItemRatingRepository;
+    private readonly IOPCRItemMOVRepository opcrItemMOVRepository;
 
     // Constructor initializes all repositories once
     public UnitOfWork(ApplicationDbContext context, IServiceProvider serviceProvider)
@@ -229,6 +231,8 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         appItemScheduleRepository = new APPItemScheduleRepository(context, sieveProcessor);
         itemRequestRepository = new ItemRequestRepository(context, sieveProcessor);
         nonCSEItemRepository = new NonCSEItemRepository(context, sieveProcessor);
+        opcrItemRatingRepository = new OPCRItemRatingRepository(context, sieveProcessor);
+        opcrItemMOVRepository = new OPCRItemMOVRepository(context, sieveProcessor);
     }
 
     // Public properties return cached instances
@@ -337,6 +341,8 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IAPPItemScheduleRepository APPItemScheduleRepository => appItemScheduleRepository;
     public IItemRequestRepository ItemRequestRepository => itemRequestRepository;
     public INonCSEItemRepository NonCSEItemRepository => nonCSEItemRepository;
+    public IOPCRItemRatingRepository OPCRItemRatingRepository => opcrItemRatingRepository;
+    public IOPCRItemMOVRepository OPCRItemMOVRepository => opcrItemMOVRepository;
 
     public async Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default)
     {

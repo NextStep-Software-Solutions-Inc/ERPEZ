@@ -27,7 +27,7 @@ public class CreateOPCRActivityEvaluationCommandHandler(IUnitOfWork unitOfWork)
             ?? throw new NotFoundException("OPCR not found.");
 
         // Verify the OPCR rating is submitted (cannot evaluate if not submitted)
-        if (opcr.RatingStatus != Domain.Enums.OPCRRatingStatus.Submitted)
+        if (opcr.ReviewStatus != nameof(Domain.Enums.OPCRRatingStatus.Submitted))
         {
             throw new ValidationException("Cannot evaluate a rating that has not been submitted.");
         }

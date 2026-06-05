@@ -107,6 +107,8 @@ public interface IUnitOfWork
     IAPPItemScheduleRepository APPItemScheduleRepository { get; }
     IItemRequestRepository ItemRequestRepository { get; }
     INonCSEItemRepository NonCSEItemRepository { get; }
+    IOPCRItemRatingRepository OPCRItemRatingRepository { get; }
+    IOPCRItemMOVRepository OPCRItemMOVRepository { get; }
     Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default);
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
