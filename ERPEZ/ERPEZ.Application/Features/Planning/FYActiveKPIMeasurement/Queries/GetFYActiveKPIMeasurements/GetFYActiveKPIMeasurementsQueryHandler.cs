@@ -3,7 +3,6 @@ using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
 using Sieve.Models;
-using ERPEZ.Application.Features.Planning.FYActiveKPIMeasurement.Dtos;
 using System.Linq.Expressions;
 
 namespace ERPEZ.Application.Features.Planning.FYActiveKPIMeasurement.Queries.GetFYActiveKPIMeasurements;
