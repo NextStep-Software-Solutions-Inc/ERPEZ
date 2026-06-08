@@ -3,6 +3,7 @@ using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
 using Sieve.Models;
+using ERPEZ.Application.Features.Planning.FYActiveKPIMeasurement.Dtos;
 using System.Linq.Expressions;
 
 namespace ERPEZ.Application.Features.Planning.FYActiveKPIMeasurement.Queries.GetFYActiveKPIMeasurements;
@@ -24,7 +25,9 @@ public class GetFYActiveKPIMeasurementsQueryHandler(IUnitOfWork unitOfWork)
         {
             Id = measurement.Id,
             FYActiveKPIId = measurement.FYActiveKPIId,
-            Dimension = measurement.Dimension,
+            Name = measurement.Name,
+            Statement = measurement.Statement,
+            Dimensions = measurement.Dimensions,
             RatingScaleTemplateId = measurement.RatingScaleTemplateId,
             MOVs = measurement.MOVs,
             IsMOVEditable = measurement.IsMOVEditable,

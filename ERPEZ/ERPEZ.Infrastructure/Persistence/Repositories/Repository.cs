@@ -132,4 +132,14 @@ public class Repository<T>(ApplicationDbContext context, ISieveProcessor sievePr
         var filteredQuery = sieveProcessor.Apply(sieveModel, query, applyPagination: false);
         return await filteredQuery.SumAsync(selector, cancellationToken);
     }
+
+    public async Task<List<T>> FindAllAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default)
+    {
+        return await context.Set<T>().Where(e => !e.IsDeleted).Where(predicate).ToListAsync(cancellationToken);
+    }
+
+    public void RemoveRange(IEnumerable<T> entities)
+    {
+        context.Set<T>().RemoveRange(entities);
+    }
 }

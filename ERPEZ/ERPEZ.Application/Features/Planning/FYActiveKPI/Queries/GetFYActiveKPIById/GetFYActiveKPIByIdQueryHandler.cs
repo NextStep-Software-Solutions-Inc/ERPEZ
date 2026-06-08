@@ -45,7 +45,9 @@ public class GetFYActiveKPIByIdQueryHandler(IUnitOfWork unitOfWork)
             Measurements = fyActiveKPI.FYActiveKPIMeasurements?.Select(m => new FYActiveKPIMeasurementResponse
             {
                 Id = m.Id,
-                Dimension = m.Dimension,
+                Name = m.Name,
+                Statement = m.Statement,
+                Dimensions = m.Dimensions,
                 RatingScaleTemplateId = m.RatingScaleTemplateId,
                 MOVs = m.MOVs,
                 IsMOVEditable = m.IsMOVEditable,

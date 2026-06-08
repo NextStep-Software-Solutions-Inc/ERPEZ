@@ -18,7 +18,7 @@ public class CreateKPIMeasurementCommandHandler(IUnitOfWork unitOfWork)
         // 2. Validate all RatingScaleTemplateIds up front
         var templateIds = request.Measurements
             .Where(m => m.RatingScaleTemplateId.HasValue)
-            .Select(m => m.RatingScaleTemplateId.Value)
+            .Select(m => m.RatingScaleTemplateId!.Value)
             .Distinct();
         
         foreach (var templateId in templateIds)
