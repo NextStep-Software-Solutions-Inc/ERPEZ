@@ -1,6 +1,7 @@
 using ERPEZ.Application.Features.Planning.Attribute.Dtos;
 using ERPEZ.Application.Features.Planning.MFOPAP.Dtos;
 using ERPEZ.Application.Features.Planning.SDG.Dtos;
+using ERPEZ.Application.Features.Planning.FYActiveKPIMeasurement.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
