@@ -1,4 +1,3 @@
-using ERPEZ.Domain.Enums;
 using FluentValidation;
 
 namespace ERPEZ.Application.Features.Planning.KPIMeasurement.Commands.CreateKPIMeasurement;
@@ -11,19 +10,25 @@ public class CreateKPIMeasurementCommandValidator : AbstractValidator<CreateKPIM
             .NotEmpty()
             .WithMessage("KPIId is required.");
 
-        RuleFor(x => x.Dimension)
-            .NotEmpty()
-            .WithMessage("Dimension is required.")
-            .Must(BeValidDimension)
-            .WithMessage("Dimension must be one of: Quantity, Quality, Timeliness");
-
-        RuleFor(x => x.MOVs)
+        RuleFor(x => x.Measurements)
             .NotNull()
-            .WithMessage("MOVs cannot be null.");
-    }
+            .WithMessage("Measurements cannot be null.");
 
-    private bool BeValidDimension(string dimension)
-    {
-        return Enum.TryParse<DimensionEnum>(dimension, true, out _);
+        RuleForEach(x => x.Measurements).ChildRules(m =>
+        {
+            m.RuleFor(x => x.Name)
+                .NotEmpty()
+                .WithMessage("Measurement name is required.");
+
+            m.RuleFor(x => x.Dimensions)
+                .NotNull()
+                .WithMessage("Dimensions cannot be null.")
+                .Must(d => d.Count > 0)
+                .WithMessage("At least one dimension is required.");
+
+            m.RuleFor(x => x.MOVs)
+                .NotNull()
+                .WithMessage("MOVs cannot be null.");
+        });
     }
 }
