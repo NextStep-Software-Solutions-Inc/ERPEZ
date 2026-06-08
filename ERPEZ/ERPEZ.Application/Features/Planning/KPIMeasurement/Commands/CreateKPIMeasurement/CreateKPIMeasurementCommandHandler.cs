@@ -7,48 +7,51 @@ using MediatR;
 namespace ERPEZ.Application.Features.Planning.KPIMeasurement.Commands.CreateKPIMeasurement;
 
 public class CreateKPIMeasurementCommandHandler(IUnitOfWork unitOfWork) 
-    : IRequestHandler<CreateKPIMeasurementCommand, ApiResponse<Guid>>
+    : IRequestHandler<CreateKPIMeasurementCommand, ApiResponse<List<Guid>>>
 {
-    public async Task<ApiResponse<Guid>> Handle(CreateKPIMeasurementCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<List<Guid>>> Handle(CreateKPIMeasurementCommand request, CancellationToken cancellationToken)
     {
         // Validate KPI exists
-        var kpi = await unitOfWork.KPIRepository.GetByIdAsync(request.KPIId, cancellationToken: cancellationToken)
+        _ = await unitOfWork.KPIRepository.GetByIdAsync(request.KPIId, cancellationToken: cancellationToken)
             ?? throw new NotFoundException($"KPI with ID {request.KPIId} not found.");
 
-        // Validate Dimension enum
-        if (!Enum.TryParse<DimensionEnum>(request.Dimension, true, out var dimensionEnum))
-            throw new ValidationException($"Invalid Dimension: {request.Dimension}");
-
-        // Validate uniqueness: A KPI can have only one measurement per unique Dimension
-        var existingMeasurement = await unitOfWork.KPIMeasurementRepository.FindAsync(
-            m => m.KPIId == request.KPIId && m.Dimension == request.Dimension,
-            cancellationToken);
-
-        if (existingMeasurement != null)
-            throw new ConflictException($"A measurement with Dimension '{request.Dimension}' already exists for this KPI.");
-
-        // Validate RatingScaleTemplate if provided
-        if (request.RatingScaleTemplateId.HasValue)
+        // 2. Validate all RatingScaleTemplateIds up front
+        var templateIds = request.Measurements
+            .Where(m => m.RatingScaleTemplateId.HasValue)
+            .Select(m => m.RatingScaleTemplateId.Value)
+            .Distinct();
+        
+        foreach (var templateId in templateIds)
         {
-            _ = await unitOfWork.RatingScaleTemplateRepository.GetByIdAsync(
-                request.RatingScaleTemplateId.Value, cancellationToken: cancellationToken)
-                ?? throw new NotFoundException($"RatingScaleTemplate with ID {request.RatingScaleTemplateId.Value} not found.");
+            _= await unitOfWork.RatingScaleTemplateRepository.GetByIdAsync(templateId, cancellationToken: cancellationToken)
+                ?? throw new NotFoundException($"RatingScaleTemplate with ID {templateId} not found.");
         }
 
-        var measurement = new Domain.Entities.Planning.KPIMeasurement
+        // Delete existing measurements for this KPI
+        var existing = await unitOfWork.KPIMeasurementRepository.FindAllAsync(
+            m => m.KPIId == request.KPIId, cancellationToken);
+
+        unitOfWork.KPIMeasurementRepository.RemoveRange(existing);
+
+        // 4. Insert the new set
+        var newMeasurements = request.Measurements.Select(m => new Domain.Entities.Planning.KPIMeasurement
         {
             Id = Guid.NewGuid(),
             KPIId = request.KPIId,
-            Dimension = request.Dimension,
-            RatingScaleTemplateId = request.RatingScaleTemplateId,
-            MOVs = request.MOVs,
-            IsMOVEditable = request.IsMOVEditable,
-            IsScaleEditable = request.IsScaleEditable,
-        };
-
-        await unitOfWork.KPIMeasurementRepository.AddAsync(measurement, cancellationToken);
+            Name = m.Name,
+            Statement = m.Statement,
+            Dimensions = m.Dimensions,
+            RatingScaleTemplateId = m.RatingScaleTemplateId,
+            MOVs = m.MOVs,
+            IsMOVEditable = m.IsMOVEditable,
+            IsScaleEditable = m.IsScaleEditable,
+        }).ToList();
+    
+        await unitOfWork.KPIMeasurementRepository.AddRangeAsync(newMeasurements, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return ApiResponse<Guid>.Success(measurement.Id, "KPI Measurement created successfully.");
+        return ApiResponse<List<Guid>>.Success(
+            newMeasurements.Select(m => m.Id).ToList(),
+            "KPI Measurements created successfully.");
     }
 }
