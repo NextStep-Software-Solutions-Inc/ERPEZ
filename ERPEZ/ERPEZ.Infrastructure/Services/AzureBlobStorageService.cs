@@ -18,7 +18,6 @@ public class AzureBlobStorageService : IFileStorageService
         var connectionString = options.Value.ConnectionString;
         blobServiceClient = new BlobServiceClient(connectionString);
         this.logger = logger;
-        // Note: Containers should be created manually or via code if needed
     }
 
     public async Task<Guid> UploadTempAsync(Stream stream, string fileName)

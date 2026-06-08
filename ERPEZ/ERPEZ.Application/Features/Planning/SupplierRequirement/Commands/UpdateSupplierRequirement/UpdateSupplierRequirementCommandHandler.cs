@@ -1,11 +1,12 @@
 using ERPEZ.Domain.Interfaces;
+using ERPEZ.Application.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.SupplierRequirement.Commands.UpdateSupplierRequirement;
 
-public class UpdateSupplierRequirementCommandHandler(IUnitOfWork unitOfWork)
+public class UpdateSupplierRequirementCommandHandler(IUnitOfWork unitOfWork, IFileStorageService fileStorageService)
     : IRequestHandler<UpdateSupplierRequirementCommand, ApiResponse<Unit>>
 {
     public async Task<ApiResponse<Unit>> Handle(UpdateSupplierRequirementCommand request, CancellationToken cancellationToken)
@@ -16,8 +17,15 @@ public class UpdateSupplierRequirementCommandHandler(IUnitOfWork unitOfWork)
             ?? throw new NotFoundException("Supplier requirement not found.");
 
         entity.RequirementName = updateRequest.RequirementName;
-        entity.URL = updateRequest.URL;
         entity.IsVerified = updateRequest.IsVerified;
+
+        if (updateRequest.FileId.HasValue)
+        {
+            var promotedUrl = await fileStorageService.PromoteFileAsync(updateRequest.FileId.Value);
+            
+            // Fix the casing here and apply the new file path!
+            entity.Url = promotedUrl; 
+        }
 
         unitOfWork.SupplierRequirementRepository.Update(entity);
         await unitOfWork.SaveChangesAsync(cancellationToken);

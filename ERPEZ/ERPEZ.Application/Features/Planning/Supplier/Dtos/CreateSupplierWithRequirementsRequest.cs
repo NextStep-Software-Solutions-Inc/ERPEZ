@@ -27,5 +27,5 @@ public record CreateSupplierWithRequirementsRequest
 public record SupplierRequirementRequestDto
 {
     public string RequirementName { get; init; } = string.Empty;
-    public string URL { get; init; } = string.Empty;
+    public Guid? FileId { get; init; }
 }
