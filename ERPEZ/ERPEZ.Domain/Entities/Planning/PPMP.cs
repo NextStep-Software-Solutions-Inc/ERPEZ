@@ -38,6 +38,9 @@ public class PPMP : ApprovableEntity
     
     [Sieve(CanFilter = true, CanSort = true)]
     public bool IsFinal { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public bool IsMaster { get; set; }
     
     [Sieve(CanFilter = true, CanSort = true)]
     public int Version { get; set; } = 1;

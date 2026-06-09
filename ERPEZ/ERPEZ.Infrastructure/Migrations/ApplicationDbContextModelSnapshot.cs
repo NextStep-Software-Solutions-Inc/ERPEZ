@@ -4133,6 +4133,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<bool>("IsFinal")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("IsMaster")
+                        .HasColumnType("boolean");
+
                     b.Property<Guid?>("LIBId")
                         .HasColumnType("uuid");
 

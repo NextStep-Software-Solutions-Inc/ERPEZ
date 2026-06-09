@@ -10,6 +10,10 @@ public class CreatePPMPCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<
 {
     public async Task<ApiResponse<Guid>> Handle(CreatePPMPCommand request, CancellationToken cancellationToken)
     {
+        // Guard: master PPMPs cannot be linked to another master
+        if (request.IsMaster && request.ConsolidatedIntoId.HasValue)
+            throw new ValidationException("A master PPMP cannot be consolidated into another PPMP.");
+
         // Validate Office
         _ = await unitOfWork.OfficeRepository.GetByIdAsync(request.OfficeId, cancellationToken: cancellationToken)
             ?? throw new NotFoundException($"Office with ID {request.OfficeId} not found.");
@@ -32,9 +36,22 @@ public class CreatePPMPCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<
                 ?? throw new NotFoundException($"Line Item Budget with ID {request.LIBId.Value} not found.");
         }
 
+        // Validate the target master PPMP if this is a department PPMP being linked
+        if (request.ConsolidatedIntoId.HasValue)
+        {
+            var masterPpmp = await unitOfWork.PPMPRepository.GetByIdAsync(request.ConsolidatedIntoId.Value, cancellationToken: cancellationToken)
+                ?? throw new NotFoundException($"Master PPMP with ID {request.ConsolidatedIntoId.Value} not found.");
+
+            if (!masterPpmp.IsMaster)
+                throw new ValidationException("The target PPMP is not a master PPMP.");
+
+            if (masterPpmp.FiscalYearId != request.FiscalYearId)
+                throw new ValidationException("The department PPMP must belong to the same fiscal year as the master PPMP.");
+        }
+
         var version = 1;
 
-        // Validate Parent PPMP if provided. Creating with a parent means amendment.
+        // A ParentId means this is an amendment of an approved PPMP
         if (request.ParentId.HasValue)
         {
             var parentPpmp = await unitOfWork.PPMPRepository.GetByIdAsync(request.ParentId.Value, cancellationToken: cancellationToken)
@@ -52,15 +69,18 @@ public class CreatePPMPCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<
         );
 
         if (existingPPMP != null)
-            throw new ConflictException("PPMP with the same number, fiscal year, and version already exists.");
+            throw new ConflictException("A PPMP with the same number, fiscal year, and version already exists.");
 
         var ppmp = new Domain.Entities.Planning.PPMP
         {
             PPMPNumber = request.PPMPNumber,
+            Description = request.Description,
             OfficeId = request.OfficeId,
             FiscalYearId = request.FiscalYearId,
             FundSourceId = request.FundSourceId,
             LIBId = request.LIBId,
+            IsMaster = request.IsMaster,
+            ConsolidatedIntoId = request.ConsolidatedIntoId,
             ParentId = request.ParentId,
             Version = version,
             TotalEstimatedBudget = 0,
