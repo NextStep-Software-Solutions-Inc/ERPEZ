@@ -1,6 +1,7 @@
 using ERPEZ.Application.Features.Planning.Attribute.Dtos;
 using ERPEZ.Application.Features.Planning.MFOPAP.Dtos;
 using ERPEZ.Application.Features.Planning.SDG.Dtos;
+using ERPEZ.Application.Features.Planning.FYActiveKPIMeasurement.Dtos;
 
 namespace ERPEZ.Application.Features.Planning.FYActiveKPI.Queries.GetFYActiveKPIById;
 
@@ -34,16 +35,6 @@ public record FYActiveKPIDetailedResponse
     public List<AttributeResponse> Attributes { get; init; } = [];
     public List<SDGResponse> SDGs { get; init; } = [];
     public DateTime CreatedAt { get; init; }
-}
-
-public record FYActiveKPIMeasurementResponse
-{
-    public Guid Id { get; init; }
-    public string Dimension { get; init; } = string.Empty;
-    public Guid? RatingScaleTemplateId { get; init; }
-    public List<string> MOVs { get; init; } = [];
-    public bool IsMOVEditable { get; init; }
-    public bool IsScaleEditable { get; init; }
 }
 
 public record KPIAssignmentResponse

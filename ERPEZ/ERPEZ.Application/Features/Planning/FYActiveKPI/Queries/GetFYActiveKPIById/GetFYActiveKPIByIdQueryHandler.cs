@@ -1,6 +1,7 @@
 using ERPEZ.Application.Features.Planning.Attribute.Dtos;
 using ERPEZ.Application.Features.Planning.MFOPAP.Dtos;
 using ERPEZ.Application.Features.Planning.SDG.Dtos;
+using ERPEZ.Application.Features.Planning.FYActiveKPIMeasurement.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -45,7 +46,9 @@ public class GetFYActiveKPIByIdQueryHandler(IUnitOfWork unitOfWork)
             Measurements = fyActiveKPI.FYActiveKPIMeasurements?.Select(m => new FYActiveKPIMeasurementResponse
             {
                 Id = m.Id,
-                Dimension = m.Dimension,
+                Name = m.Name,
+                Statement = m.Statement,
+                Dimensions = m.Dimensions,
                 RatingScaleTemplateId = m.RatingScaleTemplateId,
                 MOVs = m.MOVs,
                 IsMOVEditable = m.IsMOVEditable,

@@ -68,7 +68,9 @@ public class GetKPIAssignmentByIdQueryHandler(IUnitOfWork unitOfWork)
                 {
                     Id = m.Id,
                     FYActiveKPIId = m.FYActiveKPIId,
-                    Dimension = m.Dimension,
+                    Name = m.Name,
+                    Statement = m.Statement,
+                    Dimensions = m.Dimensions,
                     MOVs = m.MOVs,
                     RatingScaleTemplateId = m.RatingScaleTemplateId,
                     IsMOVEditable = m.IsMOVEditable,
