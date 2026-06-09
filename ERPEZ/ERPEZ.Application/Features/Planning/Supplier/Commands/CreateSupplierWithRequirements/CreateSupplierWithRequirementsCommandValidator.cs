@@ -78,11 +78,9 @@ public class CreateSupplierWithRequirementsCommandValidator : AbstractValidator<
                     .MaximumLength(250)
                     .WithMessage("Requirement Name cannot exceed 250 characters.");
 
-                requirement.RuleFor(r => r.URL)
+                requirement.RuleFor(r => r.FileId)
                     .NotEmpty()
-                    .WithMessage("Requirement URL is required.")
-                    .MaximumLength(500)
-                    .WithMessage("Requirement URL cannot exceed 500 characters.");
+                    .WithMessage("FileId is required for each requirement and must be a valid GUID.");
             });
     }
 }
