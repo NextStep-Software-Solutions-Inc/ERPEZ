@@ -52,7 +52,8 @@ namespace ERPEZ.Infrastructure.Migrations
                 schema: "planning",
                 table: "KPIMeasurements",
                 type: "text[]",
-                nullable: false);
+                nullable: false,
+                defaultValueSql: "ARRAY[]::text[]");
 
             migrationBuilder.AddColumn<string>(
                 name: "Name",
@@ -75,7 +76,8 @@ namespace ERPEZ.Infrastructure.Migrations
                 schema: "planning",
                 table: "FYActiveKPIMeasurements",
                 type: "text[]",
-                nullable: false);
+                nullable: false,
+                defaultValueSql: "ARRAY[]::text[]");
 
             migrationBuilder.CreateIndex(
                 name: "IX_KPIMeasurements_Name",
