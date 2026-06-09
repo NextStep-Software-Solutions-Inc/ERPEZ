@@ -115,7 +115,9 @@ public class ActivateFYActiveKPICommandHandler(IUnitOfWork unitOfWork)
                         {
                             Id = Guid.NewGuid(),
                             FYActiveKPIId = fyActiveKPIId,
-                            Dimension = measurement.Dimension,
+                            Name = measurement.Name,
+                            Statement = measurement.Statement,
+                            Dimensions = measurement.Dimensions,
                             RatingScaleTemplateId = measurement.RatingScaleTemplateId,
                             MOVs = new List<string>(measurement.MOVs), // Deep copy array
                             IsMOVEditable = measurement.IsMOVEditable,
@@ -128,7 +130,9 @@ public class ActivateFYActiveKPICommandHandler(IUnitOfWork unitOfWork)
                         {
                             Id = fyActiveMeasurement.Id,
                             FYActiveKPIId = fyActiveMeasurement.FYActiveKPIId,
-                            Dimension = fyActiveMeasurement.Dimension,
+                            Name = fyActiveMeasurement.Name,
+                            Statement = fyActiveMeasurement.Statement,
+                            Dimensions = fyActiveMeasurement.Dimensions,
                             MOVs = fyActiveMeasurement.MOVs,
                             RatingScaleTemplateId = fyActiveMeasurement.RatingScaleTemplateId,
                             IsMOVEditable = fyActiveMeasurement.IsMOVEditable,

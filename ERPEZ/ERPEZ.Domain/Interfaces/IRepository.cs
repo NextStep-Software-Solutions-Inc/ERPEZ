@@ -41,4 +41,7 @@ public interface IRepository<T> where T : BaseEntity
 
     // Sieve-filtered aggregate operations
     Task<decimal> SumAsync(SieveModel sieveModel, Expression<Func<T, decimal>> selector, CancellationToken cancellationToken = default);
+    Task<List<T>> FindAllAsync(Expression<Func<T, bool>> predicate, CancellationToken cancellationToken = default);
+
+    void RemoveRange(IEnumerable<T> entities);
 }

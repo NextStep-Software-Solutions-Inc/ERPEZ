@@ -24,7 +24,9 @@ public class GetKPIMeasurementsQueryHandler(IUnitOfWork unitOfWork)
         {
             Id = measurement.Id,
             KPIId = measurement.KPIId,
-            Dimension = measurement.Dimension,
+            Name = measurement.Name,
+            Statement = measurement.Statement,
+            Dimensions = measurement.Dimensions,
             RatingScaleTemplateId = measurement.RatingScaleTemplateId,
             MOVs = measurement.MOVs,
             IsMOVEditable = measurement.IsMOVEditable,
