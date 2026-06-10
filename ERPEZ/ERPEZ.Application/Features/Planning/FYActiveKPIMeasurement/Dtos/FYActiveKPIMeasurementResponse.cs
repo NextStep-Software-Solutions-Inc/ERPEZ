@@ -4,7 +4,9 @@ public record FYActiveKPIMeasurementResponse
 {
     public Guid Id { get; init; }
     public Guid FYActiveKPIId { get; init; }
-    public string Dimension { get; init; } = string.Empty;
+    public string Name { get; init; } = string.Empty;
+    public string Statement { get; init; } = string.Empty;
+    public List<string> Dimensions { get; init; } = [];
     public List<string> MOVs { get; init; } = [];
     public Guid? RatingScaleTemplateId { get; init; }
     public bool IsMOVEditable { get; init; }

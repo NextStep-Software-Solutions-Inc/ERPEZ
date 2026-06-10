@@ -1071,10 +1071,15 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasIndex(km => km.KPIId);
 
         modelBuilder.Entity<KPIMeasurement>()
-            .HasIndex(km => km.Dimension);
+            .Property(km => km.MOVs)
+            .HasColumnType("text[]");
 
         modelBuilder.Entity<KPIMeasurement>()
-            .Property(km => km.MOVs)
+            .Property(km => km.Dimensions)
+            .HasColumnType("text[]");
+
+        modelBuilder.Entity<FYActiveKPIMeasurement>()
+            .Property(fm => fm.Dimensions)
             .HasColumnType("text[]");
 
         // KPI Version 2 - FYActiveKPI
@@ -1187,9 +1192,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<FYActiveKPIMeasurement>()
             .HasIndex(fm => fm.FYActiveKPIId);
-
-        modelBuilder.Entity<FYActiveKPIMeasurement>()
-            .HasIndex(fm => fm.Dimension);
 
         modelBuilder.Entity<FYActiveKPIMeasurement>()
             .Property(fm => fm.MOVs)

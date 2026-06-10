@@ -7,6 +7,7 @@ using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
 using Sieve.Models;
+using System.Data;
 using System.Linq.Expressions;
 
 namespace ERPEZ.Application.Features.Planning.FYActiveKPI.Queries.GetFYActiveKPIs;
@@ -56,7 +57,9 @@ public class GetFYActiveKPIsQueryHandler(IUnitOfWork unitOfWork)
             {
                 Id = m.Id,
                 FYActiveKPIId = m.FYActiveKPIId,
-                Dimension = m.Dimension,
+                Name = m.Name,
+                Statement = m.Statement,
+                Dimensions = m.Dimensions,
                 MOVs = m.MOVs,
                 RatingScaleTemplateId = m.RatingScaleTemplateId,
                 IsMOVEditable = m.IsMOVEditable,

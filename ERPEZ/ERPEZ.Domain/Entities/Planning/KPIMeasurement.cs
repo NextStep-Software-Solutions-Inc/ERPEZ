@@ -9,11 +9,18 @@ public class KPIMeasurement : BaseEntity
     public Guid KPIId { get; set; }
 
     [Sieve(CanFilter = true, CanSort = true)]
-    public string Dimension { get; set; } = string.Empty; // Enum: Quantity, Quality, Timeliness
+    public string Name { get; set; } = string.Empty;
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public string Statement { get; set; } = string.Empty;
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public List<string> Dimensions { get; set; } = []; // Enum: Quantity, Quality, Timeliness
 
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid? RatingScaleTemplateId { get; set; }
 
+    [Sieve(CanFilter = true, CanSort = true)]
     public List<string> MOVs { get; set; } = []; // Array of strings
 
     [Sieve(CanFilter = true, CanSort = true)]

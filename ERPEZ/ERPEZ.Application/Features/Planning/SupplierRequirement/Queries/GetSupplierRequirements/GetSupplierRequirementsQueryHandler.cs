@@ -16,7 +16,7 @@ public class GetSupplierRequirementsQueryHandler(IUnitOfWork unitOfWork)
             Id = sr.Id,
             SupplierId = sr.SupplierId,
             RequirementName = sr.RequirementName,
-            URL = sr.URL,
+            Url = sr.Url,
             IsVerified = sr.IsVerified,
             CreatedAt = sr.CreatedAt,
             UpdatedAt = sr.UpdatedAt

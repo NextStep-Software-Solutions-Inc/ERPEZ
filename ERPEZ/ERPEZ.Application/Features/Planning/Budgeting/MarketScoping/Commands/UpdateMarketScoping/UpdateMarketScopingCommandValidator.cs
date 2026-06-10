@@ -47,7 +47,8 @@ public class UpdateMarketScopingCommandValidator : AbstractValidator<UpdateMarke
 
         RuleFor(x => x.Request.TargetLineItemBudgetActivityId)
             .NotEmpty()
-            .WithMessage("Target Line Item Budget Activity ID is required.");
+            .When(x => x.Request.TargetLineItemBudgetActivityId.HasValue)
+            .WithMessage("Target Line Item Budget Activity ID cannot be empty when provided.");
 
         RuleFor(x => x.Request.ActivitiesConducted)
             .NotNull()

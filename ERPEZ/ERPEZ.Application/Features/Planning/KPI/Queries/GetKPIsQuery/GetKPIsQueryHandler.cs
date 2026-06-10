@@ -56,7 +56,9 @@ public class GetKPIsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetKP
             {
                 Id = m.Id,
                 KPIId = m.KPIId,
-                Dimension = m.Dimension,
+                Name = m.Name,
+                Statement = m.Statement,
+                Dimensions = m.Dimensions,
                 MOVs = m.MOVs,
                 RatingScaleTemplateId = m.RatingScaleTemplateId,
                 IsMOVEditable = m.IsMOVEditable,

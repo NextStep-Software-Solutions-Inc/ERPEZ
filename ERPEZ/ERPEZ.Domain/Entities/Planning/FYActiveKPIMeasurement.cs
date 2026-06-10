@@ -14,7 +14,11 @@ public class FYActiveKPIMeasurement : BaseEntity
 
     // Snapshotted Dimension Data from Master KPIMeasurement
     [Sieve(CanFilter = true, CanSort = true)]
-    public string Dimension { get; set; } = string.Empty; // Enum: Quantity, Quality, Timeliness
+    public string Name { get; set; } = string.Empty;
+
+    public string Statement { get; set; } = string.Empty;
+
+    public List<string> Dimensions { get; set; } = [];
 
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid? RatingScaleTemplateId { get; set; }

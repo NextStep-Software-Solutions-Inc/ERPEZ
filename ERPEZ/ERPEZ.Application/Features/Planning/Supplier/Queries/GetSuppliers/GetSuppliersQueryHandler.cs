@@ -29,7 +29,7 @@ public class GetSuppliersQueryHandler(IUnitOfWork unitOfWork)
             {
                 SupplierRequirementId = r.Id,
                 RequirementName = r.RequirementName,
-                URL = r.URL,
+                Url = r.Url,
                 IsVerified = r.IsVerified,
                 CreatedAt = r.CreatedAt,
                 UpdatedAt = r.UpdatedAt

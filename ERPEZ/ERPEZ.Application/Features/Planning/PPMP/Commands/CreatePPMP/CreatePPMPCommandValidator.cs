@@ -34,5 +34,15 @@ public class CreatePPMPCommandValidator : AbstractValidator<CreatePPMPCommand>
             .Must(id => !id.HasValue || id.Value != Guid.Empty)
             .WithMessage("If provided, the Parent ID must be a valid, non-empty GUID.")
             .When(x => x.ParentId.HasValue);
+
+        RuleFor(x => x.ConsolidatedIntoId)
+            .Must(id => !id.HasValue || id.Value != Guid.Empty)
+            .WithMessage("If provided, the Consolidated Into ID must be a valid, non-empty GUID.")
+            .When(x => x.ConsolidatedIntoId.HasValue);
+
+        RuleFor(x => x.ConsolidatedIntoId)
+            .Null()
+            .WithMessage("A master PPMP cannot be consolidated into another PPMP.")
+            .When(x => x.IsMaster);
     }
 }

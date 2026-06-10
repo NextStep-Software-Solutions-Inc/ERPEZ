@@ -1101,9 +1101,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text");
 
-                    b.Property<string>("Dimension")
+                    b.PrimitiveCollection<List<string>>("Dimensions")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text[]");
 
                     b.Property<Guid>("FYActiveKPIId")
                         .HasColumnType("uuid");
@@ -1121,8 +1121,16 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text[]");
 
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<Guid?>("RatingScaleTemplateId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("Statement")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -1131,8 +1139,6 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("Dimension");
 
                     b.HasIndex("FYActiveKPIId");
 
@@ -1768,9 +1774,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text");
 
-                    b.Property<string>("Dimension")
+                    b.PrimitiveCollection<List<string>>("Dimensions")
                         .IsRequired()
-                        .HasColumnType("text");
+                        .HasColumnType("text[]");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
@@ -1788,8 +1794,16 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text[]");
 
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<Guid?>("RatingScaleTemplateId")
                         .HasColumnType("uuid");
+
+                    b.Property<string>("Statement")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -1798,8 +1812,6 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("Dimension");
 
                     b.HasIndex("KPIId");
 
@@ -2448,7 +2460,7 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<Guid>("TargetLineItemBudgetActivityId")
+                    b.Property<Guid?>("TargetLineItemBudgetActivityId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime?>("UpdatedAt")
@@ -4133,6 +4145,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<bool>("IsFinal")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("IsMaster")
+                        .HasColumnType("boolean");
+
                     b.Property<Guid?>("LIBId")
                         .HasColumnType("uuid");
 
@@ -5684,14 +5699,13 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid>("SupplierId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("URL")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Url")
                         .HasColumnType("text");
 
                     b.HasKey("Id");
@@ -7495,9 +7509,7 @@ namespace ERPEZ.Infrastructure.Migrations
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Planning.LineItemBudgetActivity", "TargetLineItemBudgetActivity")
                         .WithMany()
-                        .HasForeignKey("TargetLineItemBudgetActivityId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("TargetLineItemBudgetActivityId");
 
                     b.HasOne("ERPEZ.Domain.Entities.Planning.User", "User")
                         .WithMany()
