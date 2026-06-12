@@ -13,6 +13,4 @@ public class Agency : BaseEntity
     /// <summary>PNG or JPEG logo, max 512 KB. Null = use default embedded logo.</summary>
     [Sieve(CanFilter = true, CanSort = true)]
     public byte[]? LogoImage { get; set; }
-    public virtual List<GeneratedDocument> GeneratedDocuments { get; set; } = [];
-
 }

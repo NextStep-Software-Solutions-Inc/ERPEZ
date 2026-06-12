@@ -4,7 +4,7 @@ namespace ERPEZ.Domain.Interfaces;
 
 public interface IGeneratedDocumentRepository : IRepository<GeneratedDocument>
 {
-    Task<List<GeneratedDocument>> GetByAgencyAsync(
-        Guid agencyId,
+    Task<List<GeneratedDocument>> GetByOfficeAsync(
+        Guid officeId,
         CancellationToken cancellationToken = default);
 }

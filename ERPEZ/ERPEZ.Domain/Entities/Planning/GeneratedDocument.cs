@@ -10,11 +10,11 @@ public class GeneratedDocument : BaseEntity
     public DocumentType DocumentType { get; set; }
     [Sieve(CanFilter = true, CanSort = true)]
     public ExportFormat Format { get; set; }
+
     [Sieve(CanFilter = true, CanSort = true)]
-    public Guid AgencyId { get; set; }
-    [Sieve(CanFilter = true, CanSort = true)]
-    public Agency Agency { get; set; } = null!;
-    /// <summary>Relative path from the storage root.</summary>
+    public Guid OfficeId { get; set; }
+    public virtual Office Office { get; set; } = null!;
+
     [Sieve(CanFilter = true, CanSort = true)]
     public string StoragePath { get; set; } = string.Empty;
     [Sieve(CanFilter = true, CanSort = true)]
