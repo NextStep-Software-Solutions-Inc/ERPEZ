@@ -6,9 +6,9 @@ public class GenerateLibDocumentCommandValidator : AbstractValidator<GenerateLib
 {
     public GenerateLibDocumentCommandValidator()
     {
-        RuleFor(x => x.AgencyId)
+        RuleFor(x => x.OfficeId)
             .NotEmpty()
-            .WithMessage("Agency is required.");
+            .WithMessage("Office is required.");
 
         RuleFor(x => x.FiscalYear)
             .NotEmpty()
@@ -30,7 +30,7 @@ public class GenerateLibDocumentCommandValidator : AbstractValidator<GenerateLib
         RuleFor(x => x.LineItems)
             .NotEmpty()
             .WithMessage("LIB must have at least one line item.");
-            
+
         RuleFor(x => x.Signatories)
             .Must(s => s.Count >= 2)
             .WithMessage("LIB requires at least 2 signatories.");

@@ -40,10 +40,11 @@ public class CreateLIBCommandHandler(IUnitOfWork unitOfWork)
         }
 
         var sourceType = request.SourceType;
+        // FIXED
         if (sourceType.Equals("OPCR", StringComparison.OrdinalIgnoreCase) &&
-            !request.Scope.Equals("ActivityLevel", StringComparison.OrdinalIgnoreCase))
+            !request.Scope.Equals("Activity", StringComparison.OrdinalIgnoreCase))
         {
-            throw new ERPEZ.Shared.Exceptions.ValidationException("OPCR LIBs must use ActivityLevel scope.");
+            throw new ERPEZ.Shared.Exceptions.ValidationException("OPCR LIBs must use Activity scope.");
         }
 
         if (sourceType.Equals("OPCR", StringComparison.OrdinalIgnoreCase))

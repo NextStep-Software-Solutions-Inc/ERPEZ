@@ -6,9 +6,9 @@ public class GenerateOpcrRatingDocumentCommandValidator : AbstractValidator<Gene
 {
     public GenerateOpcrRatingDocumentCommandValidator()
     {
-        RuleFor(x => x.AgencyId)
+        RuleFor(x => x.OfficeId)
             .NotEmpty()
-            .WithMessage("Agency is required.");
+            .WithMessage("Office is required.");
 
         RuleFor(x => x.FiscalYear)
             .NotEmpty().Matches(@"^\d{4}$").WithMessage("Fiscal Year must be a 4-digit year.");
@@ -24,7 +24,7 @@ public class GenerateOpcrRatingDocumentCommandValidator : AbstractValidator<Gene
         RuleFor(x => x.Items)
             .NotEmpty()
             .WithMessage("OPCR Rating must have at least one item.");
-            
+
         RuleFor(x => x.Signatories)
             .Must(s => s.Count >= 2)
             .WithMessage("At least 2 signatories required.");

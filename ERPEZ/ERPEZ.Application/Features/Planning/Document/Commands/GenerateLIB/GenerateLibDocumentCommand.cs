@@ -8,7 +8,7 @@ namespace ERPEZ.Application.Features.Planning.Document.Commands.GenerateLIB;
 
 public record GenerateLibDocumentCommand : IRequest<ApiResponse<Guid>>
 {
-    public required Guid AgencyId { get; init; }
+    public required Guid OfficeId { get; init; }
     public required string FiscalYear { get; init; }
     public required ExportFormat Format { get; init; }
     public required string LibNumber { get; init; }

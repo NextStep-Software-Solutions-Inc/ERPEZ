@@ -1,57 +1,53 @@
-using ERPEZ.Application.Interfaces.Services;
+using ERPEZ.Application.Features.Planning.Document.Commands.GeneratePPMP;
+using ERPEZ.Application.Interfaces.Services;   // IDocumentStorageService
 using ERPEZ.Domain.Enums;
-using ERPEZ.Domain.Interfaces;
+using ERPEZ.Domain.Interfaces;                 // IUnitOfWork
 using ERPEZ.Shared.Common;
-using Microsoft.AspNetCore.Authorization;
+using ERPEZ.Shared.Exceptions;                 // NotFoundException
+using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
-namespace ERPEZ.Api.Controllers;
+namespace ERPEZ.API.Controllers.Planning;
 
-[Route("planning/generated-documents")]
 [ApiController]
-[Authorize]
-public class GeneratedDocumentsController(
-    IUnitOfWork             unitOfWork,
-    IDocumentStorageService storageService) : ControllerBase
+[Route("api/planning/documents")]
+public class DocumentController(IMediator mediator,
+    IUnitOfWork unitOfWork,
+    IDocumentStorageService storageService
+    ) : ControllerBase
 {
-    [HttpGet("agency/{agencyId:guid}")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetByAgency(Guid agencyId, CancellationToken cancellationToken)
+    [HttpPost("ppmp/{ppmpId}/generate")]
+    public async Task<ActionResult<ApiResponse<Guid>>> GeneratePpmp(
+        Guid         ppmpId,
+        [FromQuery]  ExportFormat format = ExportFormat.Pdf,
+        CancellationToken cancellationToken = default)
     {
-        var docs = await unitOfWork.GeneratedDocumentRepository
-            .GetByAgencyAsync(agencyId, cancellationToken);
-
-        var response = docs.Select(d => new
+        var command = new GeneratePpmpDocumentCommand
         {
-            d.Id,
-            DocumentType  = d.DocumentType.ToString(),
-            Format        = d.Format.ToString(),
-            d.FileName,
-            d.FiscalYear,
-            d.GeneratedBy,
-            d.CreatedAt,
-            d.FileSizeBytes
-        });
+            PpmpId      = ppmpId,
+            Format      = format,
+            GeneratedBy = User.Identity?.Name ?? "system"
+        };
 
-        return Ok(ApiResponse<object>.Success(response, "Documents retrieved successfully."));
+        var result = await mediator.Send(command, cancellationToken);
+        return Ok(result);
     }
 
-    [HttpGet("{id:guid}/download")]
-    [ProducesResponseType(StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> Download(Guid id, CancellationToken cancellationToken)
+    [HttpGet("{documentId:guid}/download")]
+    public async Task<IActionResult> Download(
+        Guid documentId,
+        CancellationToken cancellationToken = default)
     {
-        var record = await unitOfWork.GeneratedDocumentRepository
-            .FindAsync(d => d.Id == id, cancellationToken);
+        var document = await unitOfWork.GeneratedDocumentRepository
+            .FindAsync(d => d.Id == documentId, cancellationToken)
+            ?? throw new NotFoundException("Generated document not found.");
 
-        if (record is null)
-            return NotFound(ApiResponse<object>.Failure("Document not found."));
+        var bytes = await storageService.GetAsync(document.StoragePath, cancellationToken);
 
-        var bytes       = await storageService.GetAsync(record.StoragePath, cancellationToken);
-        var contentType = record.Format == ExportFormat.Pdf
-            ? "application/pdf"
-            : "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet";
+        var contentType = document.Format == ExportFormat.Excel
+            ? "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            : "application/pdf";
 
-        return File(bytes, contentType, record.FileName);
+        return File(bytes, contentType, document.FileName);
     }
 }

@@ -12,12 +12,10 @@ public class CreateOPCRActivityCommandHandler(
 {
     public async Task<ApiResponse<Guid>> Handle(CreateOPCRActivityCommand request, CancellationToken cancellationToken)
     {
-        _ = await unitOfWork.OPCRRepository.GetSingleAsync(
-            unitOfWork.OPCRRepository.Query(o => o.OPCRItems.Any(i => i.Id == request.OPCRItemId))
-                .Select(o => (Guid?)o.Id),
+        var opcrItem = await unitOfWork.OPCRItemRepository.FindAsync(
+            i => i.Id == request.OPCRItemId,
             cancellationToken) ?? throw new NotFoundException("OPCR Item not found.");
 
-        // do not allow duplicate OPCRActivity names under the same OPCR Item
         var existingActivity = await unitOfWork.OPCRActivityRepository.FindAsync(
             a => a.OPCRItemId == request.OPCRItemId && a.Name.ToLower() == request.Name.ToLower(),
             cancellationToken);

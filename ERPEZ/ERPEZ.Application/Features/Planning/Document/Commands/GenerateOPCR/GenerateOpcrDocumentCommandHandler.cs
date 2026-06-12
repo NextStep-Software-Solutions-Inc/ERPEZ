@@ -26,7 +26,7 @@ public class GenerateOpcrDocumentCommandHandler(
         {
             DocumentType  = DocumentType.Opcr,
             Format        = request.Format,
-            AgencyId      = request.AgencyId,
+            OfficeId      = request.OfficeId,
             StoragePath   = path,
             FileName      = fileName,
             FileSizeBytes = bytes.Length,

@@ -6,9 +6,9 @@ public class GenerateWfpDocumentCommandValidator : AbstractValidator<GenerateWfp
 {
     public GenerateWfpDocumentCommandValidator()
     {
-        RuleFor(x => x.AgencyId)
+        RuleFor(x => x.OfficeId)
             .NotEmpty()
-            .WithMessage("Agency is required.");
+            .WithMessage("Office is required.");
 
         RuleFor(x => x.FiscalYear)
             .NotEmpty()
@@ -36,7 +36,7 @@ public class GenerateWfpDocumentCommandValidator : AbstractValidator<GenerateWfp
             obj.RuleFor(o => o.ObjectiveText).NotEmpty().WithMessage("Objective text is required.");
             obj.RuleFor(o => o.Activities).NotEmpty().WithMessage("Each objective must have at least one activity.");
         });
-        
+
         RuleFor(x => x.Signatories)
             .Must(s => s.Count >= 3)
             .WithMessage("WFP requires 3 signatories: Prepared by, Funds Available, Approved.");

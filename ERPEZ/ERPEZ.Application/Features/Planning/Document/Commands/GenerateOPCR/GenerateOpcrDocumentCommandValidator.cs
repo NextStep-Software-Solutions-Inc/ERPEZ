@@ -6,9 +6,9 @@ public class GenerateOpcrDocumentCommandValidator : AbstractValidator<GenerateOp
 {
     public GenerateOpcrDocumentCommandValidator()
     {
-        RuleFor(x => x.AgencyId)
+        RuleFor(x => x.OfficeId)
             .NotEmpty()
-            .WithMessage("Agency is required.");
+            .WithMessage("Office is required.");
 
         RuleFor(x => x.FiscalYear)
             .NotEmpty()
@@ -22,7 +22,7 @@ public class GenerateOpcrDocumentCommandValidator : AbstractValidator<GenerateOp
         RuleFor(x => x.Functions)
             .NotEmpty()
             .WithMessage("OPCR must have at least one function.");
-            
+
         RuleFor(x => x.Signatories)
             .Must(s => s.Count >= 2)
             .WithMessage("At least 2 signatories required.");

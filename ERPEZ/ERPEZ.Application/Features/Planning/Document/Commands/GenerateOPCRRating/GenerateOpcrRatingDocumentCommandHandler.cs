@@ -26,7 +26,7 @@ public class GenerateOpcrRatingDocumentCommandHandler(
         {
             DocumentType  = DocumentType.OpcrRating,
             Format        = request.Format,
-            AgencyId      = request.AgencyId,
+            OfficeId      = request.OfficeId,
             StoragePath   = path,
             FileName      = fileName,
             FileSizeBytes = bytes.Length,

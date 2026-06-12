@@ -6,7 +6,9 @@ public class GenerateAppDocumentCommandValidator : AbstractValidator<GenerateApp
 {
     public GenerateAppDocumentCommandValidator()
     {
-        RuleFor(x => x.AgencyId).NotEmpty().WithMessage("Agency is required.");
+        RuleFor(x => x.OfficeId)
+            .NotEmpty()
+            .WithMessage("Office is required.");
 
         RuleFor(x => x.FiscalYear)
             .NotEmpty()
