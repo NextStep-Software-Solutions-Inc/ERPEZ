@@ -18,12 +18,12 @@ public class GeneratedDocumentRepository
         dbContext = context;
     }
 
-    public async Task<List<GeneratedDocument>> GetByAgencyAsync(
-        Guid agencyId,
+    public async Task<List<GeneratedDocument>> GetByOfficeAsync(
+        Guid officeId,
         CancellationToken cancellationToken = default)
     {
         return await dbContext.Set<GeneratedDocument>()
-            .Where(d => d.AgencyId == agencyId && !d.IsDeleted)
+            .Where(d => d.OfficeId == officeId && !d.IsDeleted)
             .OrderByDescending(d => d.CreatedAt)
             .ToListAsync(cancellationToken);
     }

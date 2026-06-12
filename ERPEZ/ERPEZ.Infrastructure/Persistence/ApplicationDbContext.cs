@@ -135,6 +135,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<OPCRItemRating>? OPCRItemRatings { get; set; }
     public DbSet<OPCRItemMOV>? OPCRItemMOVs { get; set; }
     public DbSet<GeneratedDocument>? GeneratedDocuments { get; set; }
+    public DbSet<Agency>? Agencies { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // Apply default conventions for all entities
@@ -1927,6 +1928,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasConversion(
                 v => v == null ? null : string.Join(',', v),
                 v => v == null ? null : v.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList()
+            )
+            .Metadata.SetValueComparer(
+                new Microsoft.EntityFrameworkCore.ChangeTracking.ValueComparer<List<string>?>(
+                    (c1, c2) => c1 != null && c2 != null && c1.SequenceEqual(c2),
+                    c => c == null ? 0 : c.Aggregate(0, (a, v) => HashCode.Combine(a, v.GetHashCode())),
+                    c => c == null ? null : c.ToList()
+                )
             );
 
         modelBuilder.Entity<APPItem>()
@@ -2150,7 +2158,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             e.HasKey(x => x.Id);
             e.Property(x => x.Name).HasMaxLength(500).IsRequired();
             e.Property(x => x.Address).HasMaxLength(1000);
-            e.Property(x => x.LogoImage).HasColumnType("varbinary(max)");
+            e.Property(x => x.LogoImage).HasColumnType("bytea");
         });
 
         modelBuilder.Entity<GeneratedDocument>(e =>
@@ -2160,7 +2168,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             e.Property(x => x.FileName).HasMaxLength(500);
             e.Property(x => x.FiscalYear).HasMaxLength(10);
             e.Property(x => x.GeneratedBy).HasMaxLength(200);
-            e.HasOne(x => x.Agency).WithMany().HasForeignKey(x => x.AgencyId);
+            e.HasOne(x => x.Office).WithMany().HasForeignKey(x => x.OfficeId).OnDelete(DeleteBehavior.Restrict);
         });
 
         base.OnModelCreating(modelBuilder);

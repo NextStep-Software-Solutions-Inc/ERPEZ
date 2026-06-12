@@ -1,5 +1,6 @@
 using ERPEZ.Application.Common.Dtos;
 using QuestPDF.Fluent;
+using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 
 namespace ERPEZ.Infrastructure.Services.Renderers.Pdf.Base;

@@ -3,6 +3,7 @@ using ERPEZ.Domain.Enums;
 using ERPEZ.Infrastructure.Services.Renderers.Pdf.Base;
 using QuestPDF.Fluent;
 using QuestPDF.Infrastructure;
+using QuestPDF.Helpers;
 using ERPEZ.Infrastructure.Services.DocumentGeneration;
 
 namespace ERPEZ.Infrastructure.Services.Renderers.Pdf;
@@ -56,9 +57,9 @@ internal sealed class WfpPdfRenderer
 
                         table.Header(h =>
                         {
-                            h.Cell().RowSpan(2).Element(TableHeaderCell).AlignMiddle().Text("OBJECTIVES").Bold();
-                            h.Cell().RowSpan(2).Element(TableHeaderCell).AlignMiddle().Text("TARGET ACTIVITIES").Bold();
-                            h.Cell().RowSpan(2).Element(TableHeaderCell).AlignMiddle()
+                            h.Cell().RowSpan(2u).Element(TableHeaderCell).AlignMiddle().Text("OBJECTIVES").Bold();
+                            h.Cell().RowSpan(2u).Element(TableHeaderCell).AlignMiddle().Text("TARGET ACTIVITIES").Bold();
+                            h.Cell().RowSpan(2u).Element(TableHeaderCell).AlignMiddle()
                                 .Text("TARGET ACCOMPLISHMENTS\n(with % weight and objectively verifiable indicators)").Bold();
                             h.Cell().ColumnSpan(6).Element(TableHeaderCell).AlignCenter()
                                 .Text("ANNUAL TARGET- 100% (with % weight per quarter)").Bold();
@@ -81,7 +82,7 @@ internal sealed class WfpPdfRenderer
                             {
                                 if (!objWritten)
                                 {
-                                    table.Cell().RowSpan(totalRowSpan).Element(TableDataCell)
+                                    table.Cell().RowSpan((uint)totalRowSpan).Element(TableDataCell)
                                         .Text(objective.ObjectiveText);
                                     objWritten = true;
                                 }
