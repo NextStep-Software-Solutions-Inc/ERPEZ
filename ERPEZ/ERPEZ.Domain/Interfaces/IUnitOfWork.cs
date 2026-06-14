@@ -109,6 +109,7 @@ public interface IUnitOfWork
     INonCSEItemRepository NonCSEItemRepository { get; }
     IOPCRItemRatingRepository OPCRItemRatingRepository { get; }
     IOPCRItemMOVRepository OPCRItemMOVRepository { get; }
+    IGeneratedDocumentRepository GeneratedDocumentRepository { get; }
     Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default);
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

@@ -13,9 +13,13 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Microsoft.Extensions.Logging;
 using ERPEZ.Shared.Interceptors;
-using AppCurrentUserService = ERPEZ.Application.Interfaces.ICurrentUserService;
-using InfraCurrentUserService = ERPEZ.Infrastructure.Services.CurrentUserService;
-using SharedCurrentUserService = ERPEZ.Shared.Interfaces.ICurrentUserService;
+using ERPEZ.Application.Common.Dtos;
+using ERPEZ.Application.Interfaces.Services;
+using ERPEZ.Infrastructure.Services.DocumentGeneration;
+using ERPEZ.Infrastructure.Services.Renderers.Pdf;
+using ERPEZ.Infrastructure.Services.Renderers.Excel;
+using ERPEZ.Infrastructure.Services.DocumentGeneration.Storage;
+using SharedCurrentUserService     = ERPEZ.Shared.Interfaces.ICurrentUserService;
 using SharedCurrentUserServiceImpl = ERPEZ.Shared.Services.CurrentUserService;
 
 namespace ERPEZ.Infrastructure;
@@ -27,9 +31,11 @@ public static class DependencyInjection
     {
         var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
         var services = builder.Services;
-        var env = builder.Environment;
+        var env      = builder.Environment;
 
-        services.AddScoped<AppCurrentUserService, InfraCurrentUserService>();
+        // ── Current User ────────────────────────────────────────────────────────────
+        // Fully qualified — avoids the alias collision that caused CS0246/CS0311
+        services.AddScoped<ICurrentUserService, CurrentUserService>();
         services.AddScoped<SharedCurrentUserService, SharedCurrentUserServiceImpl>();
         services.AddScoped<AuditingInterceptor>();
 
@@ -38,17 +44,16 @@ public static class DependencyInjection
             options.UseNpgsql(connectionString);
             options.AddInterceptors(sp.GetRequiredService<AuditingInterceptor>());
 
-            // Only ignore the PendingModelChangesWarning in development so we don't
-            // hide pending model/migration mismatches in non-dev environments.
             if (env != null && env.IsDevelopment())
             {
                 options.ConfigureWarnings(w =>
                     w.Ignore(RelationalEventId.PendingModelChangesWarning));
             }
         });
+
         services.AddHttpContextAccessor();
 
-        // Register repositories and Unit of Work
+        // ── Repositories ────────────────────────────────────────────────────────────
         services.AddScoped<IOPCRRepository, OPCRRepository>();
         services.AddScoped<IOPCRItemRepository, OPCRItemRepository>();
         services.AddScoped<IOPCRActivityRepository, OPCRActivityRepository>();
@@ -59,8 +64,6 @@ public static class DependencyInjection
         services.AddScoped<IWFPRepository, WFPRepository>();
         services.AddScoped<IWFPPAPDepartmentRepository, WFPPAPDepartmentRepository>();
         services.AddScoped<IWFPObjectiveRepository, WFPObjectiveRepository>();
-        services.AddScoped<IOPCRPAPDepartmentRepository, OPCRPAPDepartmentRepository>();
-        services.AddScoped<IOPCREvaluationRepository, OPCREvaluationRepository>();
         services.AddScoped<IRatingRepository, RatingRepository>();
         services.AddScoped<IPerformanceMeasureRepository, PerformanceMeasureRepository>();
         services.AddScoped<IKPITargetRepository, KPITargetRepository>();
@@ -70,7 +73,6 @@ public static class DependencyInjection
         services.AddScoped<IOfficeRepository, OfficeRepository>();
         services.AddScoped<IDeliveryUnitRepository, DeliveryUnitRepository>();
         services.AddScoped<IOrganizationRepository, OrganizationRepository>();
-        services.AddScoped<IObjectRepository, ObjectRepository>();
         services.AddScoped<IFundSourceRepository, FundSourceRepository>();
         services.AddScoped<ILocationRepository, LocationRepository>();
         services.AddScoped<ITransactionRepository, TransactionRepository>();
@@ -102,17 +104,29 @@ public static class DependencyInjection
         services.AddScoped<IAPPItemScheduleRepository, APPItemScheduleRepository>();
         services.AddScoped<IItemRequestRepository, ItemRequestRepository>();
         services.AddScoped<INonCSEItemRepository, NonCSEItemRepository>();
+        services.AddScoped<IOPCRItemRatingRepository, OPCRItemRatingRepository>();
+        services.AddScoped<IOPCRItemMOVRepository, OPCRItemMOVRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+        // ── Other Services ──────────────────────────────────────────────────────────
         services.AddScoped<IFileStorageService, AzureBlobStorageService>();
         services.AddScoped<IPhilGepsService, PhilGepsService>();
         services.AddScoped<IUACSCsvImporter, UACSImportService>();
         services.AddScoped<IUACSValidationEngine, UACSValidationEngine>();
         services.AddScoped<IPositionImportService, PositionImportService>();
-        services.AddScoped<IOPCRItemRatingRepository, OPCRItemRatingRepository>();
-        services.AddScoped<IOPCRItemMOVRepository, OPCRItemMOVRepository>();
         services.AddHostedService<TempFileCleanupService>();
 
-        // Add Hangfire
+        // ── Document Generation ─────────────────────────────────────────────────────
+        QuestPDF.Settings.License = QuestPDF.Infrastructure.LicenseType.Community;
+
+        services.AddScoped<IDocumentRendererService, DocumentRendererService>();
+        services.AddScoped<IDocumentStorageService, LocalFileDocumentStorage>();
+
+        // PPMP — PDF and Excel
+        services.AddScoped<IDocumentRenderer<PpmpDataDto>, PpmpPdfRenderer>();
+        services.AddScoped<IDocumentRenderer<PpmpDataDto>, PpmpExcelRenderer>();
+
+        // ── Hangfire ────────────────────────────────────────────────────────────────
         services.AddHangfire(config => config
             .UseSimpleAssemblyNameTypeSerializer()
             .UseRecommendedSerializerSettings()
@@ -120,12 +134,13 @@ public static class DependencyInjection
 
         services.AddHangfireServer();
 
+        // ── Migrations (dev only) ───────────────────────────────────────────────────
         if (env != null && env.IsDevelopment())
         {
-            using var scope = services.BuildServiceProvider().CreateScope();
-            var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            var loggerFactory = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
-            var logger = loggerFactory.CreateLogger(nameof(DependencyInjection));
+            using var scope      = services.BuildServiceProvider().CreateScope();
+            var dbContext        = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
+            var loggerFactory    = scope.ServiceProvider.GetRequiredService<ILoggerFactory>();
+            var logger           = loggerFactory.CreateLogger(nameof(DependencyInjection));
 
             try
             {
@@ -133,19 +148,17 @@ public static class DependencyInjection
             }
             catch (InvalidOperationException ex)
             {
-                // EF Core throws when there are pending model changes (no matching migration).
-                // Rather than crashing the app, log the issue and continue. This keeps
-                // development workflows working while alerting the developer to add a
-                // migration (run `dotnet ef migrations add <name>`).
-                logger.LogError(ex, "Database migration failed; pending model changes detected. Add a migration before updating the database.");
+                logger.LogError(ex,
+                    "Database migration failed; pending model changes detected. " +
+                    "Add a migration before updating the database.");
             }
             catch (Exception ex)
             {
-                // Log any unexpected exceptions and rethrow - migrations may be in an unrecoverable state
                 logger.LogCritical(ex, "Unexpected error while applying migrations.");
                 throw;
             }
         }
+
         return builder;
     }
 }

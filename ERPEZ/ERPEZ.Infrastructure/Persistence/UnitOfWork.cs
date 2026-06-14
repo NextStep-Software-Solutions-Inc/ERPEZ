@@ -118,6 +118,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly INonCSEItemRepository nonCSEItemRepository;
     private readonly IOPCRItemRatingRepository opcrItemRatingRepository;
     private readonly IOPCRItemMOVRepository opcrItemMOVRepository;
+    private readonly IGeneratedDocumentRepository gneratedDocumentRepository;
 
     // Constructor initializes all repositories once
     public UnitOfWork(ApplicationDbContext context, IServiceProvider serviceProvider)
@@ -233,6 +234,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         nonCSEItemRepository = new NonCSEItemRepository(context, sieveProcessor);
         opcrItemRatingRepository = new OPCRItemRatingRepository(context, sieveProcessor);
         opcrItemMOVRepository = new OPCRItemMOVRepository(context, sieveProcessor);
+        gneratedDocumentRepository = new GeneratedDocumentRepository(context, sieveProcessor);
     }
 
     // Public properties return cached instances
@@ -343,6 +345,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public INonCSEItemRepository NonCSEItemRepository => nonCSEItemRepository;
     public IOPCRItemRatingRepository OPCRItemRatingRepository => opcrItemRatingRepository;
     public IOPCRItemMOVRepository OPCRItemMOVRepository => opcrItemMOVRepository;
+    public IGeneratedDocumentRepository GeneratedDocumentRepository => gneratedDocumentRepository;
 
     public async Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default)
     {

@@ -1,4 +1,5 @@
 using ERPEZ.Domain.Common;
+using ERPEZ.Domain.Enums;
 using Sieve.Attributes;
 
 namespace ERPEZ.Domain.Entities.Planning;
@@ -25,6 +26,24 @@ public class PPMPItem : BaseEntity
     
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid ProcurementModeId { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public bool? PreProcurementConference { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public DateOnly? ProcurementStartDate { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public DateOnly? ProcurementEndDate { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public DateOnly? ExpectedDeliveryStart { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public DateOnly? ExpectedDeliveryEnd { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public string? Remarks { get; set; }
     
     [Sieve(CanFilter = true, CanSort = true)]
     public string? PAPCode { get; set; }
@@ -46,6 +65,9 @@ public class PPMPItem : BaseEntity
     
     [Sieve(CanFilter = true, CanSort = true)]
     public string? MOPJustification { get; set; }
+    
+    [Sieve(CanFilter = true, CanSort = true)]
+    public ProcurementProjectType ProjectType { get; set; } = ProcurementProjectType.Goods;
     
     // Navigation properties
     public virtual PPMPExpenditureItem PPMPExpenditureItem { get; set; } = null!;

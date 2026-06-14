@@ -69,8 +69,10 @@ public class PPMPRepository : Repository<PPMP>, IPPMPRepository
 
     public async Task<PPMP?> GetPPMPWithDetailsAsync(Guid id, CancellationToken cancellationToken = default)
     {
+    // Reuse the existing BuildDetailedQuery instead of duplicating includes
         return await BuildDetailedQuery()
-            .FirstOrDefaultAsync(p => p.Id == id && !p.IsDeleted, cancellationToken);
+            .Where(p => p.Id == id && !p.IsDeleted)
+            .FirstOrDefaultAsync(cancellationToken);
     }
 
     public async Task<(IReadOnlyList<PPMP> Entities, int TotalCount)> GetDetailedPagedAsync(SieveModel sieveModel, CancellationToken cancellationToken = default)
