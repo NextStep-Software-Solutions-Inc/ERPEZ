@@ -17,6 +17,8 @@ using ERPEZ.Application.Features.Planning.OPCRItemRating.Commands.DeleteOPCRItem
 using ERPEZ.Application.Features.Planning.OPCRItemMOV.Commands.CreateOPCRItemMOV;
 using ERPEZ.Application.Features.Planning.OPCRItemMOV.Commands.UpdateOPCRItemMOV;
 using ERPEZ.Application.Features.Planning.OPCRItemMOV.Commands.DeleteOPCRItemMOV;
+using ERPEZ.Application.Features.Planning.OPCR.Commands.UpdateOPCRCommitmentStatus;
+using ERPEZ.Application.Features.Planning.OPCR.Commands.UpdateOPCRReviewStatus;
 
 namespace ERPEZ.Api.Controllers
 {
@@ -69,19 +71,41 @@ namespace ERPEZ.Api.Controllers
             return result.Succeeded ? Ok(ApiResponse<Unit>.Success(Unit.Value)) : BadRequest(result);
         }
 
-        [HttpPut("{id}/status")]
+        [HttpPatch("{id}/commitment-status")]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(StatusCodes.Status404NotFound)]
-        public async Task<IActionResult> UpdateOPCRStatus(Guid id, [FromBody] UpdateOPCRStatusRequest dto)
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> UpdateCommitmentStatus(
+            Guid id,
+            [FromBody] UpdateOPCRCommitmentStatusRequest request,
+            CancellationToken cancellationToken)
         {
-            var command = new UpdateOPCRStatusCommand
+            var command = new UpdateOPCRCommitmentStatusCommand
             {
                 Id = id,
-                UpdateOPCRStatus = dto
+                Request = request
             };
 
-            var result = await mediator.Send(command);
+            var result = await mediator.Send(command, cancellationToken);
+            return result.Succeeded ? Ok(result) : BadRequest(result);
+        }
+
+        [HttpPatch("{id}/review-status")]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> UpdateReviewStatus(
+            Guid id,
+            [FromBody] UpdateOPCRReviewStatusRequest request,
+            CancellationToken cancellationToken)
+        {
+            var command = new UpdateOPCRReviewStatusCommand
+            {
+                Id = id,
+                Request = request
+            };
+
+            var result = await mediator.Send(command, cancellationToken);
             return result.Succeeded ? Ok(result) : BadRequest(result);
         }
 
