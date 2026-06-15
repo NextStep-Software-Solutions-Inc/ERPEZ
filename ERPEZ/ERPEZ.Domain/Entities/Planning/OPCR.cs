@@ -37,9 +37,6 @@ public class OPCR : BaseEntity
 
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid FiscalYearId { get; set; }
-
-    [Sieve(CanFilter = true, CanSort = true)]
-    public StatusEnum Status { get; set; } = StatusEnum.Draft;
     public virtual Office Office { get; set; } = null!;
     public virtual FiscalYear FiscalYear { get; set; } = null!;
     public virtual List<OPCREvaluation> OPCREvaluations { get; set; } = [];
