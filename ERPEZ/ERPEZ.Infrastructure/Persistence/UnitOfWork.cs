@@ -71,6 +71,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IObjectChildCodeRepository objectChildCodeRepository;
     private readonly IOfficeTypeRepository officeTypeRepository;
     private readonly ICategoryRepository categoryRepository;
+    private readonly IBACResolutionWhereasClauseRepository bacResolutionWhereasClauseRepository;
     private readonly IAdministrativeLevelRepository administrativeLevelRepository;
     private readonly IProcurementWorkflowRepository procurementWorkflowRepository;
     private readonly IPositionRepository positionRepository;
@@ -188,6 +189,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         objectChildCodeRepository = new ObjectChildCodeRepository(context, sieveProcessor);
         officeTypeRepository = new OfficeTypeRepository(context, sieveProcessor);
         categoryRepository = new CategoryRepository(context, sieveProcessor);
+        bacResolutionWhereasClauseRepository = new BACResolutionWhereasClauseRepository(context, sieveProcessor);
         administrativeLevelRepository = new AdministrativeLevelRepository(context, sieveProcessor);
         procurementWorkflowRepository = new ProcurementWorkflowRepository(context, sieveProcessor);
         positionRepository = new PositionRepository(context, sieveProcessor);
@@ -300,6 +302,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IObjectChildCodeRepository ObjectChildCodeRepository => objectChildCodeRepository;
     public IOfficeTypeRepository OfficeTypeRepository => officeTypeRepository;
     public ICategoryRepository CategoryRepository => categoryRepository;
+    public IBACResolutionWhereasClauseRepository BACResolutionWhereasClauseRepository => bacResolutionWhereasClauseRepository;
     public IAdministrativeLevelRepository AdministrativeLevelRepository => administrativeLevelRepository;
     public IProcurementWorkflowRepository ProcurementWorkflowRepository => procurementWorkflowRepository;
     public IPositionRepository PositionRepository => positionRepository;

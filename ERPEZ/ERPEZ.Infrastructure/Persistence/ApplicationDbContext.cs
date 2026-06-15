@@ -102,6 +102,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<MarketScopingHistory>? MarketScopingHistories { get; set; }
     public DbSet<MarketScopingParameterSettings>? MarketScopingParameterSettings { get; set; }
     public DbSet<MarketScopingActivitySettings>? MarketScopingActivitySettings { get; set; }
+    public DbSet<BACResolutionWhereasClause>? BACResolutionWhereasClauses { get; set; }
 
     //Procurement
     public DbSet<ProcurementCategory>? ProcurementCategories { get; set; }
