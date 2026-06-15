@@ -1,3 +1,4 @@
+using ERPEZ.Application.Features.Planning.Document.Commands.GenerateLIB;
 using ERPEZ.Application.Features.Planning.Document.Commands.GeneratePPMP;
 using ERPEZ.Application.Interfaces.Services;   // IDocumentStorageService
 using ERPEZ.Domain.Enums;
@@ -25,6 +26,23 @@ public class DocumentController(IMediator mediator,
         var command = new GeneratePpmpDocumentCommand
         {
             PpmpId      = ppmpId,
+            Format      = format,
+            GeneratedBy = User.Identity?.Name ?? "system"
+        };
+
+        var result = await mediator.Send(command, cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpPost("lib/{libId:guid}/generate")]
+    public async Task<ActionResult<ApiResponse<Guid>>> GenerateLib(
+        Guid              libId,
+        [FromQuery]       ExportFormat format = ExportFormat.Pdf,
+        CancellationToken cancellationToken   = default)
+    {
+        var command = new GenerateLibDocumentCommand
+        {
+            LibId       = libId,
             Format      = format,
             GeneratedBy = User.Identity?.Name ?? "system"
         };

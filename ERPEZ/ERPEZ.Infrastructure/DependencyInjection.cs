@@ -126,6 +126,9 @@ public static class DependencyInjection
         services.AddScoped<IDocumentRenderer<PpmpDataDto>, PpmpPdfRenderer>();
         services.AddScoped<IDocumentRenderer<PpmpDataDto>, PpmpExcelRenderer>();
 
+        // LIB — PDF
+        services.AddScoped<IDocumentRenderer<LibDataDto>, LibPdfRenderer>();
+
         // ── Hangfire ────────────────────────────────────────────────────────────────
         services.AddHangfire(config => config
             .UseSimpleAssemblyNameTypeSerializer()
