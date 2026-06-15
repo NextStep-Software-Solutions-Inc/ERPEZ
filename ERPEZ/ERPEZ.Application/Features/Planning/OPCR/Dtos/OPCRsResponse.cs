@@ -11,6 +11,8 @@ public record OPCRsResponse
     public DateOnly CreatedDate { get; init; }
     public required string CommitmentStatus { get; init; }
     public required string ReviewStatus { get; init; }
+    public bool IsAlreadyConsolidated { get; init; }
+    public Guid? OPCRConsolidationId { get; init; }
     public DateOnly? SubmittedDate { get; init; }
     public DateOnly? ReturnedDate { get; init; }
     public int EvaluationCount { get; init; } = 0;
