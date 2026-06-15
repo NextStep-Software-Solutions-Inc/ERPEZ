@@ -10,6 +10,9 @@ public record OPCRItemResponse
     public Guid Id { get; init; }
     public Guid OPCRId { get; init; }
     public Guid KPIAssignmentId { get; init; }
+
+    // ✅ Add this — denormalized shortcut so FE can group without drilling
+    public string? FunctionCategory { get; init; }
     public int Q1Target { get; init; }
     public int Q2Target { get; init; }
     public int Q3Target { get; init; }
