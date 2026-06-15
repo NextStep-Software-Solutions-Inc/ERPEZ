@@ -136,6 +136,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<OPCRItemMOV>? OPCRItemMOVs { get; set; }
     public DbSet<GeneratedDocument>? GeneratedDocuments { get; set; }
     public DbSet<Agency>? Agencies { get; set; }
+    public DbSet<OPCRConsolidation>? OPCRConsolidations { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // Apply default conventions for all entities
@@ -2170,6 +2171,18 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             e.Property(x => x.GeneratedBy).HasMaxLength(200);
             e.HasOne(x => x.Office).WithMany().HasForeignKey(x => x.OfficeId).OnDelete(DeleteBehavior.Restrict);
         });
+
+        modelBuilder.Entity<OPCRConsolidation>()
+            .HasOne(c => c.FiscalYear)
+            .WithMany()
+            .HasForeignKey(c => c.FiscalYearId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<OPCR>()
+            .HasOne(o => o.OPCRConsolidation)
+            .WithMany(c => c.OPCRs)
+            .HasForeignKey(o => o.OPCRConsolidationId)
+            .OnDelete(DeleteBehavior.SetNull);
 
         base.OnModelCreating(modelBuilder);
     }
