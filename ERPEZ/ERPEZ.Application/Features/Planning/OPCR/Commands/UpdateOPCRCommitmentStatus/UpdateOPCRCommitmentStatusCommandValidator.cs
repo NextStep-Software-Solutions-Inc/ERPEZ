@@ -2,7 +2,7 @@
 
 using FluentValidation;
 
-namespace ERPEZ.Application.Features.Planning.OPCR.Commands.UpdateOPCRStatus;
+namespace ERPEZ.Application.Features.Planning.OPCR.Commands.UpdateOPCRCommitmentStatus;
 
 public class UpdateOPCRCommitmentStatusCommandValidator
     : AbstractValidator<UpdateOPCRCommitmentStatusCommand>

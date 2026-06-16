@@ -10,8 +10,6 @@ namespace ERPEZ.Application.Features.Planning.OPCR.Commands.UpdateOPCRReviewStat
 public class UpdateOPCRReviewStatusCommandHandler(IUnitOfWork unitOfWork)
     : IRequestHandler<UpdateOPCRReviewStatusCommand, ApiResponse<Unit>>
 {
-    private static readonly string[] validValues = ["Pending", "Draft", "Submitted", "Returned", "Finalized"];
-
     public async Task<ApiResponse<Unit>> Handle(
         UpdateOPCRReviewStatusCommand request, CancellationToken cancellationToken)
     {

@@ -3136,6 +3136,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<DateTime?>("ReviewedDate")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<DateTime?>("SubmittedDate")
                         .HasColumnType("timestamp with time zone");
 

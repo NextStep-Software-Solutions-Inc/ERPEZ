@@ -3,7 +3,7 @@ using ERPEZ.Application.Features.Planning.OPCR.Dtos;
 using ERPEZ.Shared.Common;
 using MediatR;
 
-namespace ERPEZ.Application.Features.Planning.OPCR.Commands.UpdateOPCRStatus;
+namespace ERPEZ.Application.Features.Planning.OPCR.Commands.UpdateOPCRCommitmentStatus;
 
 public record UpdateOPCRCommitmentStatusCommand : IRequest<ApiResponse<Unit>>
 {

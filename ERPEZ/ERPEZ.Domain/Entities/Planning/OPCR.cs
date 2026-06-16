@@ -36,6 +36,9 @@ public class OPCR : BaseEntity
     public DateTime? ApprovedDate { get; set; }
 
     [Sieve(CanFilter = true, CanSort = true)]
+    public DateTime? ReviewedDate { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
     public Guid FiscalYearId { get; set; }
     
     [Sieve(CanFilter = true, CanSort = true)]

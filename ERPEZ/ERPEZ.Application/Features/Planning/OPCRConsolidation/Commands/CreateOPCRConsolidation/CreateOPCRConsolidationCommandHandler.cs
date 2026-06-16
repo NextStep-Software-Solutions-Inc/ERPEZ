@@ -34,7 +34,9 @@ public class CreateOPCRConsolidationCommandHandler(IUnitOfWork unitOfWork)
         {
             Id           = Guid.NewGuid(),
             FiscalYearId = distinctFiscalYears[0],
-            Name         = $"Consolidation-{DateTime.UtcNow:yyyyMMddHHmmss}",
+            Name         = !string.IsNullOrWhiteSpace(request.Request.Name)
+                            ? request.Request.Name
+                            : $"Consolidation-{DateTime.UtcNow:yyyyMMddHHmmss}",  // ✅ fallback,
             CreatedAt    = DateTime.UtcNow
         };
 

@@ -2,15 +2,13 @@ using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
-using ERPEZ.Application.Features.Planning.OPCR.Commands.UpdateOPCRStatus;
+using ERPEZ.Application.Features.Planning.OPCR.Commands.UpdateOPCRCommitmentStatus;
 
 namespace ERPEZ.Application.Features.Planning.OPCR.Commands.UpdateOPCRCommitmentStatus;
 
 public class UpdateOPCRCommitmentStatusCommandHandler(IUnitOfWork unitOfWork)
     : IRequestHandler<UpdateOPCRCommitmentStatusCommand, ApiResponse<Unit>>
 {
-    private static readonly string[] validValues = ["Draft", "Submitted", "Returned", "Approved"];
-
     public async Task<ApiResponse<Unit>> Handle(
         UpdateOPCRCommitmentStatusCommand request, CancellationToken cancellationToken)
     {
