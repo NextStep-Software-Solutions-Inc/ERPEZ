@@ -20,7 +20,7 @@ public class UpdateLIBCommandHandler(IUnitOfWork unitOfWork)
             ?? throw new NotFoundException($"Fiscal Year with ID {request.FiscalYearId} not found.");
 
         _ = await unitOfWork.FundSourceRepository.GetByIdAsync(request.FundSourceId!.Value, cancellationToken)
-            ?? throw new NotFoundException($"Fund Cluster with ID {request.FundSourceId} not found.");
+            ?? throw new NotFoundException($"Fund Source with ID {request.FundSourceId} not found.");
 
         _ = await unitOfWork.OfficeRepository.GetByIdAsync(request.OfficeId!.Value, cancellationToken)
             ?? throw new NotFoundException($"Office with ID {request.OfficeId} not found.");
@@ -62,7 +62,7 @@ public class UpdateLIBCommandHandler(IUnitOfWork unitOfWork)
         }
 
         entity.FiscalYearId = request.FiscalYearId;
-        entity.FundClusterId = request.FundSourceId;
+        entity.FundSourceId = request.FundSourceId;
         entity.OfficeId = request.OfficeId;
         entity.ParentLIBId = request.ParentLIBId;
         entity.Scope = request.Scope;

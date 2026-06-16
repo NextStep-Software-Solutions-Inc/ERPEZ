@@ -26,6 +26,8 @@ public class GetOPCRsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetO
             FiscalYear = opcr.FiscalYear.Year,
             CommitmentStatus = opcr.CommitmentStatus.ToString(),
             ReviewStatus = opcr.ReviewStatus.ToString(),
+            IsAlreadyConsolidated = opcr.OPCRConsolidationId.HasValue,
+            OPCRConsolidationId   = opcr.OPCRConsolidationId,
             SubmittedDate     = opcr.SubmittedDate.HasValue
                                         ? DateOnly.FromDateTime(opcr.SubmittedDate.Value) : null,
             ReturnedDate      = null,

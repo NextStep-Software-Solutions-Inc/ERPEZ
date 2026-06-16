@@ -17,7 +17,7 @@ public class CreateLIBCommandHandler(IUnitOfWork unitOfWork)
             ?? throw new NotFoundException($"Fiscal Year with ID {request.FiscalYearId} not found.");
 
         _ = await unitOfWork.FundSourceRepository.GetByIdAsync(request.FundSourceId!.Value, cancellationToken)
-            ?? throw new NotFoundException($"Fund Cluster with ID {request.FundSourceId} not found.");
+            ?? throw new NotFoundException($"Fund Source with ID {request.FundSourceId} not found.");
 
         var office = await unitOfWork.OfficeRepository.GetByIdAsync(request.OfficeId!.Value, cancellationToken)
             ?? throw new NotFoundException($"Office with ID {request.OfficeId} not found.");
@@ -69,7 +69,7 @@ public class CreateLIBCommandHandler(IUnitOfWork unitOfWork)
         var entity = new Domain.Entities.Planning.LineItemBudget
         {
             FiscalYearId = request.FiscalYearId,
-            FundClusterId = request.FundSourceId,
+            FundSourceId = request.FundSourceId,
             OfficeId = request.OfficeId,
             ParentLIBId = request.ParentLIBId,
             Scope = request.Scope,

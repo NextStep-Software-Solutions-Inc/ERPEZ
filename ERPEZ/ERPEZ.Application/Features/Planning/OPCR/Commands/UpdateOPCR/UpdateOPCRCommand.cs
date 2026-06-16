@@ -9,4 +9,3 @@ public record UpdateOPCRCommand : IRequest<ApiResponse<Unit>>
     public Guid Id { get; set; }
     public required UpdateOPCRRequest UpdateOPCR { get; set; }
 }
-
