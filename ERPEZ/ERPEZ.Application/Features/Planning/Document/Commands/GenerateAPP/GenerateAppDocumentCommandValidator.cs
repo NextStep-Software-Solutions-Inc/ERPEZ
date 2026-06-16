@@ -6,16 +6,8 @@ public class GenerateAppDocumentCommandValidator : AbstractValidator<GenerateApp
 {
     public GenerateAppDocumentCommandValidator()
     {
-        RuleFor(x => x.OfficeId)
+        RuleFor(x => x.AppId)
             .NotEmpty()
-            .WithMessage("Office is required.");
-
-        RuleFor(x => x.FiscalYear)
-            .NotEmpty()
-            .WithMessage("Fiscal Year is required.");
-
-        RuleFor(x => x.Signatories)
-            .Must(s => s.Count >= 3)
-            .WithMessage("APP requires 3 signatories: Prepared by, Recommended by, Approved by.");
+            .WithMessage("AppId is required.");
     }
 }
