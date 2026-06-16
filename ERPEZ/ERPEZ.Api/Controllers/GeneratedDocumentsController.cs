@@ -17,16 +17,36 @@ public class DocumentController(IMediator mediator,
     IDocumentStorageService storageService
     ) : ControllerBase
 {
+    private static bool TryParseExportFormat(string? format, out ExportFormat exportFormat)
+    {
+        if (string.IsNullOrWhiteSpace(format))
+        {
+            exportFormat = ExportFormat.Pdf;
+            return true;
+        }
+
+        if (int.TryParse(format, out _))
+        {
+            exportFormat = default;
+            return false;
+        }
+
+        return Enum.TryParse(format, ignoreCase: true, out exportFormat);
+    }
+
     [HttpPost("ppmp/{ppmpId}/generate")]
     public async Task<ActionResult<ApiResponse<Guid>>> GeneratePpmp(
         Guid         ppmpId,
-        [FromQuery]  ExportFormat format = ExportFormat.Pdf,
+        [FromQuery]  string? format,
         CancellationToken cancellationToken = default)
     {
+        if (!TryParseExportFormat(format, out var exportFormat))
+            return BadRequest("Invalid format. Use enum name values such as 'Pdf' or 'Excel'. Numeric values are not supported.");
+
         var command = new GeneratePpmpDocumentCommand
         {
             PpmpId      = ppmpId,
-            Format      = format,
+            Format      = exportFormat,
             GeneratedBy = User.Identity?.Name ?? "system"
         };
 
@@ -37,13 +57,16 @@ public class DocumentController(IMediator mediator,
     [HttpPost("lib/{libId:guid}/generate")]
     public async Task<ActionResult<ApiResponse<Guid>>> GenerateLib(
         Guid              libId,
-        [FromQuery]       ExportFormat format = ExportFormat.Pdf,
+        [FromQuery]       string? format,
         CancellationToken cancellationToken   = default)
     {
+        if (!TryParseExportFormat(format, out var exportFormat))
+            return BadRequest("Invalid format. Use enum name values such as 'Pdf' or 'Excel'. Numeric values are not supported.");
+
         var command = new GenerateLibDocumentCommand
         {
             LibId       = libId,
-            Format      = format,
+            Format      = exportFormat,
             GeneratedBy = User.Identity?.Name ?? "system"
         };
 

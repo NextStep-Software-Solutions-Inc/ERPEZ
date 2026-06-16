@@ -13,12 +13,11 @@ internal sealed class LibPdfRenderer : BasePdfRenderer, IDocumentRenderer<LibDat
     public DocumentType DocumentType => DocumentType.Lib;
     public ExportFormat Format       => ExportFormat.Pdf;
 
-    // Legal Landscape: 355.6 mm × 215.9 mm
     private static readonly PageSize legalLandscape =
         new(355.6f, 215.9f, Unit.Millimetre);
 
     public Task<byte[]> RenderAsync(
-        LibDataDto        request,
+        LibDataDto request,
         CancellationToken cancellationToken = default)
     {
         var pdf = Document.Create(doc =>
@@ -31,7 +30,6 @@ internal sealed class LibPdfRenderer : BasePdfRenderer, IDocumentRenderer<LibDat
 
                 page.Header().Column(h =>
                 {
-                    // ── Title row with Document Code box ───────────────────────────
                     h.Item().Row(titleRow =>
                     {
                         titleRow.RelativeItem(3)
@@ -92,31 +90,38 @@ internal sealed class LibPdfRenderer : BasePdfRenderer, IDocumentRenderer<LibDat
                             });
                     });
 
-                    // ── Agency block ────────────────────────────────────────────────
                     h.Item().PaddingTop(4).Column(agency =>
                     {
                         agency.Item().Text("AGENCY:").Bold().FontSize(8);
                         agency.Item().Text(request.OfficeName).Bold().FontSize(8);
                     });
-
-                    // ── Indicative / Final status ───────────────────────────────────
-                    var indicativeBox = !request.IsFinal ? "☑" : "☐";
-                    var finalBox      =  request.IsFinal ? "☑" : "☐";
-                    h.Item().PaddingTop(2)
-                        .Text($"{indicativeBox} INDICATIVE     {finalBox} FINAL")
-                        .FontSize(8);
                 });
 
                 page.Content().PaddingTop(6).Column(col =>
                 {
-                    RenderSectionI(col, request);
-                    col.Item().PageBreak();
-                    RenderSectionII(col, request);
-                    col.Item().PageBreak();
-                    RenderSectionIII(col, request);
-                    RenderSectionV(col, request);
-                    RenderChart(col, request);
-                    RenderSignatories(col, request.Signatories);
+                    if (IsActivityScope(request))
+                    {
+                        RenderActivitySectionI(col, request);
+                        col.Item().PageBreak();
+                        RenderActivitySectionII(col, request);
+                        col.Item().PageBreak();
+                        RenderSectionIII(col, request);
+                        RenderSectionIV(col, request);
+                        RenderSectionV(col, request);
+                        RenderChart(col, request);
+                        RenderSignatories(col, request.Signatories);
+                    }
+                    else
+                    {
+                        RenderLegacySectionI(col, request);
+                        col.Item().PageBreak();
+                        RenderLegacySectionII(col, request);
+                        col.Item().PageBreak();
+                        RenderSectionIII(col, request);
+                        RenderSectionV(col, request);
+                        RenderChart(col, request);
+                        RenderSignatories(col, request.Signatories);
+                    }
                 });
 
                 page.Footer().AlignRight()
@@ -133,11 +138,94 @@ internal sealed class LibPdfRenderer : BasePdfRenderer, IDocumentRenderer<LibDat
         return Task.FromResult(pdf);
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Section I — LINE ITEM BUDGET BY API (quarterly columns)
-    // ─────────────────────────────────────────────────────────────────────────
+    private static bool IsActivityScope(LibDataDto request) =>
+        string.Equals(request.Scope, "ActivityLevel", StringComparison.OrdinalIgnoreCase);
 
-    private static void RenderSectionI(ColumnDescriptor col, LibDataDto request)
+    private static void RenderActivitySectionI(ColumnDescriptor col, LibDataDto request)
+    {
+        col.Item().Text($"I. LINE ITEM BUDGET BY API {request.FiscalYear}")
+            .Bold().FontSize(9);
+
+        col.Item().PaddingTop(2).Text($"FUNDSOURCE: {request.FundCluster}")
+            .Bold().FontSize(8);
+
+        foreach (var apiGroup in request.ApiGroups)
+        {
+            col.Item().PaddingTop(4).Column(section =>
+            {
+                RenderMetaRow(section, "NEP/GAA:", apiGroup.NepGaaLabel);
+                RenderMetaRow(section, "PREXC/DYNAMIC/KRA:", apiGroup.PrexcDynamicKra);
+                RenderMetaRow(section, "GOALS/OUTCOME:", apiGroup.GoalsOutcome);
+                RenderMetaRow(section, "API:", apiGroup.ApiLabel);
+
+                section.Item().PaddingTop(2).Table(table =>
+                {
+                    table.ColumnsDefinition(c =>
+                    {
+                        c.RelativeColumn(4.5f);
+                        c.RelativeColumn(1.0f);
+                        c.RelativeColumn(1.0f);
+                        c.RelativeColumn(1.0f);
+                        c.RelativeColumn(1.0f);
+                        c.RelativeColumn(1.0f);
+                        c.RelativeColumn(1.3f);
+                    });
+
+                    table.Header(h =>
+                    {
+                        SectionIHeader(h, "ITEM OF EXPENDITURE");
+                        SectionIHeader(h, "UACS");
+                        SectionIHeader(h, "1");
+                        SectionIHeader(h, "2");
+                        SectionIHeader(h, "3");
+                        SectionIHeader(h, "4");
+                        SectionIHeader(h, "TOTAL");
+                    });
+
+                    foreach (var expenseGroup in apiGroup.ExpenseGroups)
+                    {
+                        table.Cell().ColumnSpan(7).Element(ExpenseClassHeaderCell)
+                            .Text(expenseGroup.ExpenseClassName).Bold().FontSize(7);
+
+                        foreach (var row in expenseGroup.Rows)
+                        {
+                            table.Cell().Element(TableDataCell).Text(row.ObjectName);
+                            table.Cell().Element(TableDataCell).Text(row.UACSCode);
+                            table.Cell().Element(TableDataCell).AlignRight().Text(FormatAmount(row.Q1Budget));
+                            table.Cell().Element(TableDataCell).AlignRight().Text(FormatAmount(row.Q2Budget));
+                            table.Cell().Element(TableDataCell).AlignRight().Text(FormatAmount(row.Q3Budget));
+                            table.Cell().Element(TableDataCell).AlignRight().Text(FormatAmount(row.Q4Budget));
+                            table.Cell().Element(TableDataCell).AlignRight().Text(FormatAmount(row.TotalBudget));
+                        }
+
+                        table.Cell().ColumnSpan(6).Element(SubtotalCell)
+                            .AlignRight().Text($"Sub-total, {expenseGroup.ExpenseClassType}").Bold();
+                        table.Cell().Element(SubtotalCell)
+                            .AlignRight().Text(FormatAmount(expenseGroup.SubTotal)).Bold();
+                    }
+
+                    table.Cell().ColumnSpan(6).Element(SubtotalCell)
+                        .AlignRight().Text("Sub-total, API").Bold();
+                    table.Cell().Element(SubtotalCell)
+                        .AlignRight().Text(FormatAmount(apiGroup.SubTotal)).Bold();
+                });
+            });
+        }
+
+        col.Item().PaddingTop(2).Table(table =>
+        {
+            table.ColumnsDefinition(c =>
+            {
+                c.RelativeColumn(9.5f);
+                c.RelativeColumn(1.3f);
+            });
+
+            table.Cell().Element(GrandTotalCell).AlignCenter().Text("GRAND TOTAL").Bold();
+            table.Cell().Element(GrandTotalCell).AlignRight().Text(FormatAmount(request.TotalBudget)).Bold();
+        });
+    }
+
+    private static void RenderLegacySectionI(ColumnDescriptor col, LibDataDto request)
     {
         col.Item().Text($"I. LINE ITEM BUDGET BY API {request.FiscalYear}")
             .Bold().FontSize(9);
@@ -147,17 +235,16 @@ internal sealed class LibPdfRenderer : BasePdfRenderer, IDocumentRenderer<LibDat
 
         col.Item().PaddingTop(4).Table(table =>
         {
-            // UACS Code | Particulars | Description | Q1 | Q2 | Q3 | Q4 | Total
             table.ColumnsDefinition(c =>
             {
-                c.RelativeColumn(1.5f); // UACS Code
-                c.RelativeColumn(3.5f); // Item of Expenditure
-                c.RelativeColumn(3.0f); // Description
-                c.RelativeColumn(1.5f); // Q1
-                c.RelativeColumn(1.5f); // Q2
-                c.RelativeColumn(1.5f); // Q3
-                c.RelativeColumn(1.5f); // Q4
-                c.RelativeColumn(2.0f); // Total
+                c.RelativeColumn(1.5f);
+                c.RelativeColumn(3.5f);
+                c.RelativeColumn(3.0f);
+                c.RelativeColumn(1.5f);
+                c.RelativeColumn(1.5f);
+                c.RelativeColumn(1.5f);
+                c.RelativeColumn(1.5f);
+                c.RelativeColumn(2.0f);
             });
 
             table.Header(h =>
@@ -174,17 +261,14 @@ internal sealed class LibPdfRenderer : BasePdfRenderer, IDocumentRenderer<LibDat
 
             foreach (var apiGroup in request.ApiGroups)
             {
-                // API / activity header row
                 table.Cell().ColumnSpan(8).Element(ActivityHeaderCell)
                     .Text(apiGroup.ActivityName).Bold().FontSize(7);
 
                 foreach (var expenseGroup in apiGroup.ExpenseGroups)
                 {
-                    // Expense class header row
                     table.Cell().ColumnSpan(8).Element(ExpenseClassHeaderCell)
                         .Text(expenseGroup.ExpenseClassName).Bold().FontSize(7);
 
-                    // Detail rows
                     foreach (var row in expenseGroup.Rows)
                     {
                         table.Cell().Element(TableDataCell).Text(row.UACSCode);
@@ -197,21 +281,18 @@ internal sealed class LibPdfRenderer : BasePdfRenderer, IDocumentRenderer<LibDat
                         table.Cell().Element(TableDataCell).AlignRight().Text($"{row.TotalBudget:N2}");
                     }
 
-                    // Sub-total row
                     table.Cell().ColumnSpan(7).Element(SubtotalCell)
                         .AlignRight().Text($"Sub-total, {expenseGroup.ExpenseClassType}").Bold();
                     table.Cell().Element(SubtotalCell)
                         .AlignRight().Text($"{expenseGroup.SubTotal:N2}").Bold();
                 }
 
-                // Activity sub-total
                 table.Cell().ColumnSpan(7).Element(SubtotalCell)
                     .AlignRight().Text($"Sub-total, {apiGroup.ActivityName}").Bold();
                 table.Cell().Element(SubtotalCell)
                     .AlignRight().Text($"{apiGroup.SubTotal:N2}").Bold();
             }
 
-            // Grand Total
             table.Cell().ColumnSpan(7).Element(GrandTotalCell)
                 .AlignRight().Text("GRAND TOTAL").Bold();
             table.Cell().Element(GrandTotalCell)
@@ -219,50 +300,143 @@ internal sealed class LibPdfRenderer : BasePdfRenderer, IDocumentRenderer<LibDat
         });
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Section II — LINE ITEM BUDGET BY TARGET (monthly columns)
-    // ─────────────────────────────────────────────────────────────────────────
-
-    private static void RenderSectionII(ColumnDescriptor col, LibDataDto request)
+    private static void RenderActivitySectionII(ColumnDescriptor col, LibDataDto request)
     {
-        col.Item().Text($"II. LINE ITEM BUDGET BY TARGET")
+        col.Item().Text("II. LINE ITEM BUDGET BY TARGET")
+            .Bold().FontSize(9);
+
+        col.Item().PaddingTop(2).Text($"FUNDSOURCE: {request.FundCluster}")
+            .Bold().FontSize(8);
+
+        foreach (var targetGroup in request.TargetGroups)
+        {
+            col.Item().PaddingTop(4).Column(section =>
+            {
+                RenderMetaRow(section, "NEP/GAA:", targetGroup.NepGaaLabel);
+                RenderMetaRow(section, "PREXC/DYNAMIC/KRA:", targetGroup.PrexcDynamicKra);
+                RenderMetaRow(section, "GOALS/OUTCOME:", targetGroup.GoalsOutcome);
+                RenderMetaRow(section, "KPI:", targetGroup.KpiLabel);
+
+                if (targetGroup.Targets.Count > 0)
+                {
+                    section.Item().PaddingTop(1).Text("TARGETS").Bold().FontSize(7);
+                    foreach (var target in targetGroup.Targets)
+                    {
+                        section.Item().Text(target).FontSize(7);
+                    }
+                }
+
+                section.Item().PaddingTop(2).Table(table =>
+                {
+                    table.ColumnsDefinition(c =>
+                    {
+                        c.RelativeColumn(3.4f);
+                        c.RelativeColumn(0.9f);
+                        for (var i = 0; i < 12; i++) c.RelativeColumn(0.9f);
+                        c.RelativeColumn(1.3f);
+                    });
+
+                    table.Header(h =>
+                    {
+                        SectionIHeader(h, "OBJECTS OF EXPENDITURE");
+                        SectionIHeader(h, "UACS");
+                        SectionIHeader(h, "JANUARY");
+                        SectionIHeader(h, "FEBRUARY");
+                        SectionIHeader(h, "MARCH");
+                        SectionIHeader(h, "APRIL");
+                        SectionIHeader(h, "MAY");
+                        SectionIHeader(h, "JUNE");
+                        SectionIHeader(h, "JULY");
+                        SectionIHeader(h, "AUGUST");
+                        SectionIHeader(h, "SEPTEMBER");
+                        SectionIHeader(h, "OCTOBER");
+                        SectionIHeader(h, "NOVEMBER");
+                        SectionIHeader(h, "DECEMBER");
+                        SectionIHeader(h, "TOTAL");
+                    });
+
+                    foreach (var expenseGroup in targetGroup.ExpenseGroups)
+                    {
+                        table.Cell().ColumnSpan(15).Element(ExpenseClassHeaderCell)
+                            .Text($"{expenseGroup.ExpenseClassName} - {expenseGroup.ExpenseClassType}")
+                            .Bold().FontSize(7);
+
+                        foreach (var row in expenseGroup.Rows)
+                        {
+                            table.Cell().Element(TableDataCell).Text(row.ObjectName);
+                            table.Cell().Element(TableDataCell).Text(row.UACSCode);
+                            table.Cell().Element(TableDataCell).AlignRight().Text(FormatAmount(row.JanBudget));
+                            table.Cell().Element(TableDataCell).AlignRight().Text(FormatAmount(row.FebBudget));
+                            table.Cell().Element(TableDataCell).AlignRight().Text(FormatAmount(row.MarBudget));
+                            table.Cell().Element(TableDataCell).AlignRight().Text(FormatAmount(row.AprBudget));
+                            table.Cell().Element(TableDataCell).AlignRight().Text(FormatAmount(row.MayBudget));
+                            table.Cell().Element(TableDataCell).AlignRight().Text(FormatAmount(row.JunBudget));
+                            table.Cell().Element(TableDataCell).AlignRight().Text(FormatAmount(row.JulBudget));
+                            table.Cell().Element(TableDataCell).AlignRight().Text(FormatAmount(row.AugBudget));
+                            table.Cell().Element(TableDataCell).AlignRight().Text(FormatAmount(row.SepBudget));
+                            table.Cell().Element(TableDataCell).AlignRight().Text(FormatAmount(row.OctBudget));
+                            table.Cell().Element(TableDataCell).AlignRight().Text(FormatAmount(row.NovBudget));
+                            table.Cell().Element(TableDataCell).AlignRight().Text(FormatAmount(row.DecBudget));
+                            table.Cell().Element(TableDataCell).AlignRight().Text(FormatAmount(row.TotalBudget));
+                        }
+                    }
+
+                    table.Cell().ColumnSpan(14).Element(SubtotalCell).AlignCenter().Text("TOTAL").Bold();
+                    table.Cell().Element(SubtotalCell).AlignRight().Text(FormatAmount(targetGroup.SubTotal)).Bold();
+                });
+            });
+        }
+
+        col.Item().PaddingTop(2).Table(table =>
+        {
+            table.ColumnsDefinition(c =>
+            {
+                c.RelativeColumn(14.2f);
+                c.RelativeColumn(1.3f);
+            });
+
+            table.Cell().Element(GrandTotalCell).AlignCenter().Text("GRAND TOTAL").Bold();
+            table.Cell().Element(GrandTotalCell).AlignRight().Text(FormatAmount(request.TotalBudget)).Bold();
+        });
+    }
+
+    private static void RenderLegacySectionII(ColumnDescriptor col, LibDataDto request)
+    {
+        col.Item().Text("II. LINE ITEM BUDGET BY TARGET")
             .Bold().FontSize(9);
 
         col.Item().PaddingTop(4).Table(table =>
         {
-            // UACS Code | Item | Jan-Dec | Total
             table.ColumnsDefinition(c =>
             {
-                c.RelativeColumn(1.5f); // UACS Code
-                c.RelativeColumn(3.0f); // Item of Expenditure
-                c.RelativeColumn(1.0f); // Jan
-                c.RelativeColumn(1.0f); // Feb
-                c.RelativeColumn(1.0f); // Mar
-                c.RelativeColumn(1.0f); // Apr
-                c.RelativeColumn(1.0f); // May
-                c.RelativeColumn(1.0f); // Jun
-                c.RelativeColumn(1.0f); // Jul
-                c.RelativeColumn(1.0f); // Aug
-                c.RelativeColumn(1.0f); // Sep
-                c.RelativeColumn(1.0f); // Oct
-                c.RelativeColumn(1.0f); // Nov
-                c.RelativeColumn(1.0f); // Dec
-                c.RelativeColumn(1.5f); // Total
+                c.RelativeColumn(1.5f);
+                c.RelativeColumn(3.0f);
+                c.RelativeColumn(1.0f);
+                c.RelativeColumn(1.0f);
+                c.RelativeColumn(1.0f);
+                c.RelativeColumn(1.0f);
+                c.RelativeColumn(1.0f);
+                c.RelativeColumn(1.0f);
+                c.RelativeColumn(1.0f);
+                c.RelativeColumn(1.0f);
+                c.RelativeColumn(1.0f);
+                c.RelativeColumn(1.0f);
+                c.RelativeColumn(1.0f);
+                c.RelativeColumn(1.0f);
+                c.RelativeColumn(1.5f);
             });
 
             table.Header(h =>
             {
                 SectionIHeader(h, "UACS Code");
                 SectionIHeader(h, "Item of Expenditure");
-                foreach (var month in new[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun",
-                                              "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" })
+                foreach (var month in new[] { "Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec" })
                     SectionIHeader(h, month);
                 SectionIHeader(h, "TOTAL");
             });
 
             foreach (var expenseGroup in request.MonthlyExpenseGroups)
             {
-                // Expense class header row
                 table.Cell().ColumnSpan(15).Element(ExpenseClassHeaderCell)
                     .Text(expenseGroup.ExpenseClassName).Bold().FontSize(7);
 
@@ -285,14 +459,12 @@ internal sealed class LibPdfRenderer : BasePdfRenderer, IDocumentRenderer<LibDat
                     table.Cell().Element(TableDataCell).AlignRight().Text($"{row.TotalBudget:N2}");
                 }
 
-                // Sub-total row
                 table.Cell().ColumnSpan(14).Element(SubtotalCell)
                     .AlignRight().Text($"Sub-total, {expenseGroup.ExpenseClassType}").Bold();
                 table.Cell().Element(SubtotalCell)
                     .AlignRight().Text($"{expenseGroup.SubTotal:N2}").Bold();
             }
 
-            // Grand Total
             table.Cell().ColumnSpan(14).Element(GrandTotalCell)
                 .AlignRight().Text("GRAND TOTAL").Bold();
             table.Cell().Element(GrandTotalCell)
@@ -300,26 +472,21 @@ internal sealed class LibPdfRenderer : BasePdfRenderer, IDocumentRenderer<LibDat
         });
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Section III — SUMMARY BY ACCOUNT GROUP AND BY QUARTER
-    // ─────────────────────────────────────────────────────────────────────────
-
     private static void RenderSectionIII(ColumnDescriptor col, LibDataDto request)
     {
-        col.Item().PaddingTop(8).Text(
-            "III. SUMMARY BY ACCOUNT GROUP AND BY QUARTER / IV. SUMMARY BY QUARTER")
+        col.Item().PaddingTop(8).Text("III. SUMMARY BY ACCOUNT GROUP AND BY QUARTER")
             .Bold().FontSize(9);
 
         col.Item().PaddingTop(4).Table(table =>
         {
             table.ColumnsDefinition(c =>
             {
-                c.RelativeColumn(5f); // Account Group
-                c.RelativeColumn(2f); // Q1
-                c.RelativeColumn(2f); // Q2
-                c.RelativeColumn(2f); // Q3
-                c.RelativeColumn(2f); // Q4
-                c.RelativeColumn(2f); // Total
+                c.RelativeColumn(5f);
+                c.RelativeColumn(2f);
+                c.RelativeColumn(2f);
+                c.RelativeColumn(2f);
+                c.RelativeColumn(2f);
+                c.RelativeColumn(2f);
             });
 
             table.Header(h =>
@@ -334,32 +501,86 @@ internal sealed class LibPdfRenderer : BasePdfRenderer, IDocumentRenderer<LibDat
 
             foreach (var summary in request.AccountGroupSummaries)
             {
-                table.Cell().Element(TableDataCell).Text(summary.ExpenseClassName);
-                table.Cell().Element(TableDataCell).AlignRight().Text($"{summary.Q1Budget:N2}");
-                table.Cell().Element(TableDataCell).AlignRight().Text($"{summary.Q2Budget:N2}");
-                table.Cell().Element(TableDataCell).AlignRight().Text($"{summary.Q3Budget:N2}");
-                table.Cell().Element(TableDataCell).AlignRight().Text($"{summary.Q4Budget:N2}");
-                table.Cell().Element(TableDataCell).AlignRight().Text($"{summary.TotalBudget:N2}");
+                table.Cell().ColumnSpan(6).Element(ExpenseClassHeaderCell)
+                    .Text(summary.ExpenseClassType).Bold().FontSize(7);
+
+                foreach (var row in summary.Rows)
+                {
+                    table.Cell().Element(TableDataCell).Text(row.AccountGroupName);
+                    table.Cell().Element(TableDataCell).AlignRight().Text(FormatAmount(row.Q1Budget));
+                    table.Cell().Element(TableDataCell).AlignRight().Text(FormatAmount(row.Q2Budget));
+                    table.Cell().Element(TableDataCell).AlignRight().Text(FormatAmount(row.Q3Budget));
+                    table.Cell().Element(TableDataCell).AlignRight().Text(FormatAmount(row.Q4Budget));
+                    table.Cell().Element(TableDataCell).AlignRight().Text(FormatAmount(row.TotalBudget));
+                }
+
+                table.Cell().Element(SubtotalCell).AlignRight().Text($"Sub-total, {summary.ExpenseClassName}").Bold();
+                table.Cell().Element(SubtotalCell).AlignRight().Text(FormatAmount(summary.Q1Budget)).Bold();
+                table.Cell().Element(SubtotalCell).AlignRight().Text(FormatAmount(summary.Q2Budget)).Bold();
+                table.Cell().Element(SubtotalCell).AlignRight().Text(FormatAmount(summary.Q3Budget)).Bold();
+                table.Cell().Element(SubtotalCell).AlignRight().Text(FormatAmount(summary.Q4Budget)).Bold();
+                table.Cell().Element(SubtotalCell).AlignRight().Text(FormatAmount(summary.TotalBudget)).Bold();
             }
 
-            // Summary by quarter (Section IV) — grand total row
             var totalQ1 = request.AccountGroupSummaries.Sum(s => s.Q1Budget);
             var totalQ2 = request.AccountGroupSummaries.Sum(s => s.Q2Budget);
             var totalQ3 = request.AccountGroupSummaries.Sum(s => s.Q3Budget);
             var totalQ4 = request.AccountGroupSummaries.Sum(s => s.Q4Budget);
 
             table.Cell().Element(GrandTotalCell).Text("TOTAL").Bold();
-            table.Cell().Element(GrandTotalCell).AlignRight().Text($"{totalQ1:N2}").Bold();
-            table.Cell().Element(GrandTotalCell).AlignRight().Text($"{totalQ2:N2}").Bold();
-            table.Cell().Element(GrandTotalCell).AlignRight().Text($"{totalQ3:N2}").Bold();
-            table.Cell().Element(GrandTotalCell).AlignRight().Text($"{totalQ4:N2}").Bold();
-            table.Cell().Element(GrandTotalCell).AlignRight().Text($"{request.TotalBudget:N2}").Bold();
+            table.Cell().Element(GrandTotalCell).AlignRight().Text(FormatAmount(totalQ1)).Bold();
+            table.Cell().Element(GrandTotalCell).AlignRight().Text(FormatAmount(totalQ2)).Bold();
+            table.Cell().Element(GrandTotalCell).AlignRight().Text(FormatAmount(totalQ3)).Bold();
+            table.Cell().Element(GrandTotalCell).AlignRight().Text(FormatAmount(totalQ4)).Bold();
+            table.Cell().Element(GrandTotalCell).AlignRight().Text(FormatAmount(request.TotalBudget)).Bold();
         });
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Section V — SUMMARY BY FUNDSOURCE
-    // ─────────────────────────────────────────────────────────────────────────
+    private static void RenderSectionIV(ColumnDescriptor col, LibDataDto request)
+    {
+        col.Item().PaddingTop(6).Text("IV. SUMMARY BY QUARTER")
+            .Bold().FontSize(9);
+
+        col.Item().PaddingTop(2).Table(table =>
+        {
+            table.ColumnsDefinition(c =>
+            {
+                c.RelativeColumn(4f);
+                c.RelativeColumn(2f);
+                c.RelativeColumn(2f);
+                c.RelativeColumn(2f);
+                c.RelativeColumn(2f);
+                c.RelativeColumn(2f);
+            });
+
+            table.Header(h =>
+            {
+                SectionIHeader(h, "ALLOTMENT CLASS");
+                SectionIHeader(h, "1");
+                SectionIHeader(h, "2");
+                SectionIHeader(h, "3");
+                SectionIHeader(h, "4");
+                SectionIHeader(h, "TOTAL");
+            });
+
+            foreach (var summary in request.QuarterSummaries)
+            {
+                table.Cell().Element(TableDataCell).Text(summary.AllotmentClass);
+                table.Cell().Element(TableDataCell).AlignRight().Text(FormatAmount(summary.Q1Budget));
+                table.Cell().Element(TableDataCell).AlignRight().Text(FormatAmount(summary.Q2Budget));
+                table.Cell().Element(TableDataCell).AlignRight().Text(FormatAmount(summary.Q3Budget));
+                table.Cell().Element(TableDataCell).AlignRight().Text(FormatAmount(summary.Q4Budget));
+                table.Cell().Element(TableDataCell).AlignRight().Text(FormatAmount(summary.TotalBudget));
+            }
+
+            table.Cell().Element(GrandTotalCell).AlignRight().Text("TOTAL").Bold();
+            table.Cell().Element(GrandTotalCell).AlignRight().Text(FormatAmount(request.QuarterSummaries.Sum(s => s.Q1Budget))).Bold();
+            table.Cell().Element(GrandTotalCell).AlignRight().Text(FormatAmount(request.QuarterSummaries.Sum(s => s.Q2Budget))).Bold();
+            table.Cell().Element(GrandTotalCell).AlignRight().Text(FormatAmount(request.QuarterSummaries.Sum(s => s.Q3Budget))).Bold();
+            table.Cell().Element(GrandTotalCell).AlignRight().Text(FormatAmount(request.QuarterSummaries.Sum(s => s.Q4Budget))).Bold();
+            table.Cell().Element(GrandTotalCell).AlignRight().Text(FormatAmount(request.TotalBudget)).Bold();
+        });
+    }
 
     private static void RenderSectionV(ColumnDescriptor col, LibDataDto request)
     {
@@ -372,41 +593,53 @@ internal sealed class LibPdfRenderer : BasePdfRenderer, IDocumentRenderer<LibDat
         {
             table.ColumnsDefinition(c =>
             {
-                c.RelativeColumn(5f); // Fund Source
-                c.RelativeColumn(2f); // Q1
-                c.RelativeColumn(2f); // Q2
-                c.RelativeColumn(2f); // Q3
-                c.RelativeColumn(2f); // Q4
-                c.RelativeColumn(2f); // Total
+                c.RelativeColumn(2.5f);
+                c.RelativeColumn(4.5f);
+                c.RelativeColumn(2.5f);
+                c.RelativeColumn(2.5f);
             });
 
             table.Header(h =>
             {
-                SectionIHeader(h, "Fund Source");
-                SectionIHeader(h, "1st Quarter");
-                SectionIHeader(h, "2nd Quarter");
-                SectionIHeader(h, "3rd Quarter");
-                SectionIHeader(h, "4th Quarter");
+                SectionIHeader(h, "ALLOTMENT CLASS");
+                SectionIHeader(h, "ACCOUNT GROUP");
+                SectionIHeader(h, request.FundSourceSummary.FundSource.ToUpperInvariant());
                 SectionIHeader(h, "TOTAL");
             });
 
             var fundSource = request.FundSourceSummary;
-            table.Cell().Element(TableDataCell).Text(fundSource.FundSource);
-            table.Cell().Element(TableDataCell).AlignRight().Text($"{fundSource.Q1Budget:N2}");
-            table.Cell().Element(TableDataCell).AlignRight().Text($"{fundSource.Q2Budget:N2}");
-            table.Cell().Element(TableDataCell).AlignRight().Text($"{fundSource.Q3Budget:N2}");
-            table.Cell().Element(TableDataCell).AlignRight().Text($"{fundSource.Q4Budget:N2}");
-            table.Cell().Element(GrandTotalCell).AlignRight().Text($"{fundSource.TotalBudget:N2}").Bold();
+            var groupedByClass = fundSource.AccountGroups
+                .GroupBy(group => group.AllotmentClass)
+                .OrderBy(group => group.Key);
+
+            foreach (var allotmentGroup in groupedByClass)
+            {
+                var isFirstInClass = true;
+                foreach (var accountGroup in allotmentGroup.OrderBy(item => item.AccountGroupName))
+                {
+                    table.Cell().Element(TableDataCell)
+                        .Text(isFirstInClass ? allotmentGroup.Key : string.Empty);
+                    table.Cell().Element(TableDataCell).Text(accountGroup.AccountGroupName);
+                    table.Cell().Element(TableDataCell).AlignRight().Text(FormatAmount(accountGroup.Amount));
+                    table.Cell().Element(TableDataCell).AlignRight().Text(FormatAmount(accountGroup.Amount));
+                    isFirstInClass = false;
+                }
+
+                var classTotal = allotmentGroup.Sum(item => item.Amount);
+                table.Cell().ColumnSpan(2).Element(SubtotalCell).AlignRight().Text("Sub-total").Bold();
+                table.Cell().Element(SubtotalCell).AlignRight().Text(FormatAmount(classTotal)).Bold();
+                table.Cell().Element(SubtotalCell).AlignRight().Text(FormatAmount(classTotal)).Bold();
+            }
+
+            table.Cell().ColumnSpan(2).Element(GrandTotalCell).AlignRight().Text("Total").Bold();
+            table.Cell().Element(GrandTotalCell).AlignRight().Text(FormatAmount(fundSource.TotalBudget)).Bold();
+            table.Cell().Element(GrandTotalCell).AlignRight().Text(FormatAmount(fundSource.TotalBudget)).Bold();
         });
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Chart — Allotment by Objects of Expenditure (horizontal bar chart)
-    // ─────────────────────────────────────────────────────────────────────────
-
     private static void RenderChart(ColumnDescriptor col, LibDataDto request)
     {
-        if (request.AccountGroupSummaries.Count == 0) return;
+        if (request.FundSourceSummary?.AccountGroups.Count is not > 0) return;
 
         col.Item().PaddingTop(12).Column(chartCol =>
         {
@@ -415,36 +648,39 @@ internal sealed class LibPdfRenderer : BasePdfRenderer, IDocumentRenderer<LibDat
                 .Text("Allotment by Objects of Expenditure")
                 .Bold().FontSize(9);
 
-            var maxBudget = request.AccountGroupSummaries
-                .Select(s => s.TotalBudget)
+            var chartRows = request.FundSourceSummary.AccountGroups
+                .OrderByDescending(group => group.Amount)
+                .Take(10)
+                .ToList();
+
+            var maxBudget = chartRows
+                .Select(group => group.Amount)
                 .DefaultIfEmpty(1m)
                 .Max();
 
             if (maxBudget <= 0m) maxBudget = 1m;
 
-            const float labelWidth    = 140f;
-            const float amountWidth   = 90f;
-            const float barMaxWidth   = 250f;
-            const float rowHeight     = 18f;
-            const float barPadding    = 3f;
+            const float labelWidth  = 140f;
+            const float amountWidth = 90f;
+            const float barMaxWidth = 250f;
+            const float rowHeight   = 18f;
+            const float barPadding  = 3f;
 
-            foreach (var summary in request.AccountGroupSummaries)
+            foreach (var row in chartRows)
             {
-                var proportion = (float)(summary.TotalBudget / maxBudget);
-                var barWidth   = proportion * barMaxWidth;
+                var proportion = (float)(row.Amount / maxBudget);
+                var barWidth = proportion * barMaxWidth;
 
                 chartCol.Item().PaddingTop(4).Row(barRow =>
                 {
-                    // Label
                     barRow.ConstantItem(labelWidth)
                         .Height(rowHeight)
                         .AlignMiddle()
                         .AlignRight()
                         .PaddingRight(4)
-                        .Text(summary.ExpenseClassType)
+                        .Text(row.AccountGroupName)
                         .FontSize(7);
 
-                    // Bar track
                     barRow.ConstantItem(barMaxWidth).Height(rowHeight).Column(track =>
                     {
                         track.Item().PaddingTop(barPadding).Row(inner =>
@@ -458,21 +694,27 @@ internal sealed class LibPdfRenderer : BasePdfRenderer, IDocumentRenderer<LibDat
                         });
                     });
 
-                    // Amount
                     barRow.ConstantItem(amountWidth)
                         .Height(rowHeight)
                         .AlignMiddle()
                         .PaddingLeft(4)
-                        .Text($"₱{summary.TotalBudget:N2}")
+                        .Text(FormatAmount(row.Amount))
                         .FontSize(7);
                 });
             }
         });
     }
 
-    // ─────────────────────────────────────────────────────────────────────────
-    //  Cell style helpers
-    // ─────────────────────────────────────────────────────────────────────────
+    private static string FormatAmount(decimal amount) => $"{amount:N2}";
+
+    private static void RenderMetaRow(ColumnDescriptor section, string label, string value)
+    {
+        section.Item().Row(row =>
+        {
+            row.ConstantItem(85).Text(label).Bold().FontSize(7);
+            row.RelativeItem().Text(string.IsNullOrWhiteSpace(value) ? "-" : value).FontSize(7);
+        });
+    }
 
     private static void SectionIHeader(TableCellDescriptor h, string text) =>
         h.Cell().Element(TableHeaderCell).AlignCenter().AlignMiddle().Text(text).Bold().FontSize(7);

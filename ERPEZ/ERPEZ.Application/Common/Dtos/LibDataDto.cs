@@ -11,7 +11,8 @@ public record LibDataDto
     public string  OfficeName  { get; init; } = string.Empty;
     public string  FiscalYear  { get; init; } = string.Empty;
     public string  FundCluster { get; init; } = string.Empty;
-    public bool    IsFinal     { get; init; }
+    public string  Scope       { get; init; } = string.Empty;
+    public string  SourceType  { get; init; } = string.Empty;
     public decimal TotalBudget { get; init; }
 
     /// <summary>Section I — LINE ITEM BUDGET BY API (grouped by activity → expense class).</summary>
@@ -20,8 +21,14 @@ public record LibDataDto
     /// <summary>Section II — LINE ITEM BUDGET BY TARGET (expense class → object, monthly columns).</summary>
     public List<LibExpenseGroupDto>        MonthlyExpenseGroups { get; init; } = [];
 
+    /// <summary>Section II — activity-level target groups with metadata and monthly rows.</summary>
+    public List<LibTargetGroupDto>         TargetGroups         { get; init; } = [];
+
     /// <summary>Section III — SUMMARY BY ACCOUNT GROUP AND BY QUARTER.</summary>
     public List<LibAccountGroupSummaryDto> AccountGroupSummaries { get; init; } = [];
+
+    /// <summary>Section IV — SUMMARY BY QUARTER (allotment class totals).</summary>
+    public List<LibQuarterSummaryDto>      QuarterSummaries      { get; init; } = [];
 
     /// <summary>Section V — SUMMARY BY FUNDSOURCE.</summary>
     public LibFundSourceSummaryDto?        FundSourceSummary    { get; init; }
@@ -32,9 +39,25 @@ public record LibDataDto
 /// <summary>Section I activity grouping (one per API / program / activity).</summary>
 public record LibApiGroupDto
 {
-    public string                  ActivityName  { get; init; } = string.Empty;
+    public string                   ActivityName     { get; init; } = string.Empty;
+    public string                   PrexcDynamicKra  { get; init; } = string.Empty;
+    public string                   GoalsOutcome     { get; init; } = string.Empty;
+    public string                   ApiLabel         { get; init; } = string.Empty;
+    public string                   NepGaaLabel      { get; init; } = string.Empty;
     public List<LibExpenseGroupDto> ExpenseGroups { get; init; } = [];
-    public decimal                 SubTotal      { get; init; }
+    public decimal                  SubTotal         { get; init; }
+}
+
+public record LibTargetGroupDto
+{
+    public string                   ActivityName    { get; init; } = string.Empty;
+    public string                   PrexcDynamicKra { get; init; } = string.Empty;
+    public string                   GoalsOutcome    { get; init; } = string.Empty;
+    public string                   KpiLabel        { get; init; } = string.Empty;
+    public string                   NepGaaLabel     { get; init; } = string.Empty;
+    public List<string>             Targets         { get; init; } = [];
+    public List<LibExpenseGroupDto> ExpenseGroups   { get; init; } = [];
+    public decimal                  SubTotal        { get; init; }
 }
 
 /// <summary>
@@ -88,6 +111,7 @@ public record LibAccountGroupSummaryDto
 {
     public string  ExpenseClassType { get; init; } = string.Empty;
     public string  ExpenseClassName { get; init; } = string.Empty;
+    public List<LibAccountGroupRowDto> Rows { get; init; } = [];
     public decimal Q1Budget         { get; init; }
     public decimal Q2Budget         { get; init; }
     public decimal Q3Budget         { get; init; }
@@ -95,13 +119,41 @@ public record LibAccountGroupSummaryDto
     public decimal TotalBudget      { get; init; }
 }
 
+public record LibAccountGroupRowDto
+{
+    public string  AccountGroupName { get; init; } = string.Empty;
+    public decimal Q1Budget         { get; init; }
+    public decimal Q2Budget         { get; init; }
+    public decimal Q3Budget         { get; init; }
+    public decimal Q4Budget         { get; init; }
+    public decimal TotalBudget      { get; init; }
+}
+
+public record LibQuarterSummaryDto
+{
+    public string  AllotmentClass { get; init; } = string.Empty;
+    public decimal Q1Budget       { get; init; }
+    public decimal Q2Budget       { get; init; }
+    public decimal Q3Budget       { get; init; }
+    public decimal Q4Budget       { get; init; }
+    public decimal TotalBudget    { get; init; }
+}
+
 /// <summary>Section V — fund source totals.</summary>
 public record LibFundSourceSummaryDto
 {
     public string  FundSource  { get; init; } = string.Empty;
+    public List<LibFundSourceAccountGroupDto> AccountGroups { get; init; } = [];
     public decimal Q1Budget    { get; init; }
     public decimal Q2Budget    { get; init; }
     public decimal Q3Budget    { get; init; }
     public decimal Q4Budget    { get; init; }
     public decimal TotalBudget { get; init; }
+}
+
+public record LibFundSourceAccountGroupDto
+{
+    public string  AllotmentClass  { get; init; } = string.Empty;
+    public string  AccountGroupName { get; init; } = string.Empty;
+    public decimal Amount           { get; init; }
 }
