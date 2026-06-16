@@ -152,9 +152,7 @@ public class GenerateAppDocumentCommandHandler(
         var mode         = item.ProcurementMode?.Name ?? string.Empty;
         var coveredByEpa = item.IsEarlyProcurementActivity;
 
-        var criteria = item.BidEvaluationCriteria != null
-            ? item.BidEvaluationCriteria.ToString()
-            : "Domestic Preference";
+        var criteria = item.BidEvaluationCriteria?.ToString() ?? "Domestic Preference";
 
         var startProc = item.PPMPItem?.ProcurementStartDate?.ToString("MM/yyyy") ?? string.Empty;
         var endProc   = item.PPMPItem?.ProcurementEndDate?.ToString("MM/yyyy")   ?? string.Empty;

@@ -16,6 +16,6 @@ public class UpdateAPPItemCommand : IRequest<ApiResponse<Guid>>
     public string? Remarks { get; set; }
     public bool IsEarlyProcurementActivity { get; set; }
     public bool IsOutsourced { get; set; }
-    public BidEvaluationCriteria? BidEvaluationCriteria { get; set; }
-    public List<ProcurementStrategy>? ProcurementStrategies { get; set; }
+    public string? BidEvaluationCriteria { get; set; }
+    public List<string>? ProcurementStrategies { get; set; }
 }
