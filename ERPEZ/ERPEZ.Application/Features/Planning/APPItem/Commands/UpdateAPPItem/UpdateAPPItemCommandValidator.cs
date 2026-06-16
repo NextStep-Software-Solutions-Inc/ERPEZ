@@ -39,9 +39,5 @@ public class UpdateAPPItemCommandValidator : AbstractValidator<UpdateAPPItemComm
         RuleFor(x => x.Remarks)
             .MaximumLength(1000)
             .WithMessage("Remarks must not exceed 1000 characters.");
-            
-        RuleFor(x => x.ProcurementStrategy)
-            .MaximumLength(1000)
-            .WithMessage("ProcurementStrategy must not exceed 1000 characters.");
     }
 }

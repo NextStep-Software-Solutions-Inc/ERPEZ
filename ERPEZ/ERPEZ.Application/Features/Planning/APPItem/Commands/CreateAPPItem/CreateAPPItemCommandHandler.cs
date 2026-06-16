@@ -40,7 +40,7 @@ public class CreateAPPItemCommandHandler(IUnitOfWork unitOfWork) : IRequestHandl
             IsEarlyProcurementActivity = request.IsEarlyProcurementActivity,
             IsOutsourced = request.IsOutsourced,
             BidEvaluationCriteria = request.BidEvaluationCriteria,
-            ProcurementStrategy = request.ProcurementStrategy
+            ProcurementStrategies = request.ProcurementStrategies
         };
 
         await unitOfWork.APPItemRepository.AddAsync(entity, cancellationToken);

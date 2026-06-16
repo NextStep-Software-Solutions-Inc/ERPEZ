@@ -32,8 +32,5 @@ public class CreateAPPItemCommandValidator : AbstractValidator<CreateAPPItemComm
 
         RuleFor(x => x.Remarks)
             .MaximumLength(1000);
-            
-        RuleFor(x => x.ProcurementStrategy)
-            .MaximumLength(1000);
     }
 }

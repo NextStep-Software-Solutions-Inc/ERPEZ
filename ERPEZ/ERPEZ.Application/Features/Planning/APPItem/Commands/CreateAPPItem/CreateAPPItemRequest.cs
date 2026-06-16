@@ -1,3 +1,5 @@
+using ERPEZ.Domain.Enums;
+
 namespace ERPEZ.Application.Features.Planning.APPItem.Commands.CreateAPPItem;
 
 public record CreateAPPItemRequest
@@ -11,6 +13,6 @@ public record CreateAPPItemRequest
     public string? Remarks { get; init; }
     public bool IsEarlyProcurementActivity { get; init; }
     public bool IsOutsourced { get; init; }
-    public List<string>? BidEvaluationCriteria { get; init; }
-    public string? ProcurementStrategy { get; init; }
+    public BidEvaluationCriteria? BidEvaluationCriteria { get; init; }
+    public List<ProcurementStrategy>? ProcurementStrategies { get; init; }
 }

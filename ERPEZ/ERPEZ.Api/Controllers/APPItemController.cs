@@ -33,7 +33,7 @@ public class APPItemController(ISender mediator) : ControllerBase
             IsEarlyProcurementActivity = request.IsEarlyProcurementActivity,
             IsOutsourced = request.IsOutsourced,
             BidEvaluationCriteria = request.BidEvaluationCriteria,
-            ProcurementStrategy = request.ProcurementStrategy
+            ProcurementStrategies = request.ProcurementStrategies
         };
 
         var result = await mediator.Send(command);
@@ -76,7 +76,7 @@ public class APPItemController(ISender mediator) : ControllerBase
             IsEarlyProcurementActivity = request.IsEarlyProcurementActivity,
             IsOutsourced = request.IsOutsourced,
             BidEvaluationCriteria = request.BidEvaluationCriteria,
-            ProcurementStrategy = request.ProcurementStrategy
+            ProcurementStrategies = request.ProcurementStrategies
         };
 
         var result = await mediator.Send(command);

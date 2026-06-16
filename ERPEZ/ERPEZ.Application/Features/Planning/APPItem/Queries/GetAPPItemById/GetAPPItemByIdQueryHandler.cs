@@ -30,7 +30,7 @@ public class GetAPPItemByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandle
             IsEarlyProcurementActivity = entity.IsEarlyProcurementActivity,
             IsOutsourced = entity.IsOutsourced,
             BidEvaluationCriteria = entity.BidEvaluationCriteria,
-            ProcurementStrategy = entity.ProcurementStrategy,
+            ProcurementStrategies = entity.ProcurementStrategies,
             CreatedAt = entity.CreatedAt,
             CreatedBy = entity.CreatedBy,
             UpdatedAt = entity.UpdatedAt,

@@ -152,15 +152,17 @@ public class GenerateAppDocumentCommandHandler(
         var mode         = item.ProcurementMode?.Name ?? string.Empty;
         var coveredByEpa = item.IsEarlyProcurementActivity;
 
-        var criteria = item.BidEvaluationCriteria != null && item.BidEvaluationCriteria.Any()
-            ? string.Join(", ", item.BidEvaluationCriteria)
+        var criteria = item.BidEvaluationCriteria != null
+            ? item.BidEvaluationCriteria.ToString()
             : "Domestic Preference";
 
         var startProc = item.PPMPItem?.ProcurementStartDate?.ToString("MM/yyyy") ?? string.Empty;
         var endProc   = item.PPMPItem?.ProcurementEndDate?.ToString("MM/yyyy")   ?? string.Empty;
         var source    = item.FundSource?.Name ?? string.Empty;
         var budget    = CalculateItemBudget(item);
-        var strategy  = item.ProcurementStrategy ?? string.Empty;
+        var strategy  = item.ProcurementStrategies != null && item.ProcurementStrategies.Any()
+            ? string.Join(", ", item.ProcurementStrategies)
+            : string.Empty;
         var remarks   = item.Remarks ?? string.Empty;
 
         return new AppItemRowDto

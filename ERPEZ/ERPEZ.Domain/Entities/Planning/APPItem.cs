@@ -2,6 +2,8 @@ using ERPEZ.Domain.Common;
 using ERPEZ.Domain.Entities.Planning;
 using Sieve.Attributes;
 
+using ERPEZ.Domain.Enums;
+
 namespace ERPEZ.Domain.Entities.Planning;
 
 /// <summary>
@@ -40,10 +42,10 @@ public class APPItem : BaseEntity
     public bool IsOutsourced { get; set; }
     
     [Sieve(CanFilter = true, CanSort = true)]
-    public List<string>? BidEvaluationCriteria { get; set; }
+    public BidEvaluationCriteria? BidEvaluationCriteria { get; set; }
     
     [Sieve(CanFilter = true, CanSort = true)]
-    public string? ProcurementStrategy { get; set; }
+    public List<ProcurementStrategy>? ProcurementStrategies { get; set; }
     
     // Navigation properties
     public virtual APP APP { get; set; } = null!;

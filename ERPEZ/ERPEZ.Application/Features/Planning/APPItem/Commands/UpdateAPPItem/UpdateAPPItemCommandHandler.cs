@@ -42,7 +42,7 @@ public class UpdateAPPItemCommandHandler(IUnitOfWork unitOfWork) : IRequestHandl
         entity.IsEarlyProcurementActivity = request.IsEarlyProcurementActivity;
         entity.IsOutsourced = request.IsOutsourced;
         entity.BidEvaluationCriteria = request.BidEvaluationCriteria;
-        entity.ProcurementStrategy = request.ProcurementStrategy;
+        entity.ProcurementStrategies = request.ProcurementStrategies;
 
         unitOfWork.APPItemRepository.Update(entity);
         await unitOfWork.SaveChangesAsync(cancellationToken);
