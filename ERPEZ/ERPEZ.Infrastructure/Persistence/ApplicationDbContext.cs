@@ -1487,9 +1487,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<LineItemBudget>()
-            .HasOne(e => e.FundCluster)
+            .HasOne(e => e.FundSource)
             .WithMany()
-            .HasForeignKey(e => e.FundClusterId)
+            .HasForeignKey(e => e.FundSourceId)
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<LineItemBudget>()
@@ -1524,13 +1524,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasIndex(e => e.FiscalYearId);
 
         modelBuilder.Entity<LineItemBudget>()
-            .HasIndex(e => e.FundClusterId);
+            .HasIndex(e => e.FundSourceId);
 
         modelBuilder.Entity<LineItemBudget>()
             .HasIndex(e => e.OfficeId);
-
-        modelBuilder.Entity<LineItemBudget>()
-            .HasIndex(e => e.DeliveryUnitId);
 
         modelBuilder.Entity<LineItemBudget>()
             .HasIndex(e => e.Status);

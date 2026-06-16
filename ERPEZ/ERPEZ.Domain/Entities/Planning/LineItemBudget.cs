@@ -19,16 +19,13 @@ public class LineItemBudget : ApprovableEntity
     public Guid? FiscalYearId { get; set; }
 
     [Sieve(CanFilter = true, CanSort = true)]
-    public Guid? FundClusterId { get; set; }
+    public Guid? FundSourceId { get; set; }
 
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid? OfficeId { get; set; }
 
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid? ParentLIBId { get; set; }
-    
-    [Sieve(CanFilter = true, CanSort = true)]
-    public Guid? DeliveryUnitId { get; set; }
     
     /// <summary>
     /// Values: OPCR, WFP, Independent
@@ -77,12 +74,11 @@ public class LineItemBudget : ApprovableEntity
     
     // Navigation properties
     public virtual FiscalYear? FiscalYearEntity { get; set; }
-    public virtual FundSource? FundCluster { get; set; }
+    public virtual FundSource? FundSource { get; set; }
     public virtual Office? Office { get; set; }
     public virtual LineItemBudget? ParentLIB { get; set; }
     public virtual LineItemBudget? ConsolidatedIntoLIB { get; set; }
     public virtual LineItemBudget? PreviousVersion { get; set; }
-    public virtual DeliveryUnit DeliveryUnit { get; set; } = null!;
     public virtual List<LineItemBudgetActivity> LineItemBudgetActivities { get; set; } = [];
     public virtual List<LineItemBudgetDetail> LineItemBudgetDetails { get; set; } = [];
     public virtual List<LineItemBudget> ChildLIBs { get; set; } = [];

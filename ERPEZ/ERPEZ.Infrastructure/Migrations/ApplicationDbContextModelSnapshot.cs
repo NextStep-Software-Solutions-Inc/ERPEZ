@@ -2212,13 +2212,10 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text");
 
-                    b.Property<Guid?>("DeliveryUnitId")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid?>("FiscalYearId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("FundClusterId")
+                    b.Property<Guid?>("FundSourceId")
                         .HasColumnType("uuid");
 
                     b.Property<bool>("IsDeleted")
@@ -2287,11 +2284,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("ConsolidatedIntoLIBId");
 
-                    b.HasIndex("DeliveryUnitId");
-
                     b.HasIndex("FiscalYearId");
 
-                    b.HasIndex("FundClusterId");
+                    b.HasIndex("FundSourceId");
 
                     b.HasIndex("LIBNumber")
                         .IsUnique();
@@ -7603,18 +7598,14 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasForeignKey("ConsolidatedIntoLIBId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.DeliveryUnit", "DeliveryUnit")
-                        .WithMany()
-                        .HasForeignKey("DeliveryUnitId");
-
                     b.HasOne("ERPEZ.Domain.Entities.Planning.FiscalYear", "FiscalYearEntity")
                         .WithMany()
                         .HasForeignKey("FiscalYearId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.FundSource", "FundCluster")
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.FundSource", "FundSource")
                         .WithMany()
-                        .HasForeignKey("FundClusterId")
+                        .HasForeignKey("FundSourceId")
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("ERPEZ.Domain.Entities.Planning.Office", "Office")
@@ -7634,11 +7625,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Navigation("ConsolidatedIntoLIB");
 
-                    b.Navigation("DeliveryUnit");
-
                     b.Navigation("FiscalYearEntity");
 
-                    b.Navigation("FundCluster");
+                    b.Navigation("FundSource");
 
                     b.Navigation("Office");
 
