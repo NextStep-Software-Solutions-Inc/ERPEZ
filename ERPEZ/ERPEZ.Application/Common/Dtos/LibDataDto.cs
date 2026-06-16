@@ -10,7 +10,7 @@ public record LibDataDto
     public string  LIBNumber   { get; init; } = string.Empty;
     public string  OfficeName  { get; init; } = string.Empty;
     public string  FiscalYear  { get; init; } = string.Empty;
-    public string  FundCluster { get; init; } = string.Empty;
+    public string  FundSource { get; init; } = string.Empty;
     public string  Scope       { get; init; } = string.Empty;
     public string  SourceType  { get; init; } = string.Empty;
     public decimal TotalBudget { get; init; }

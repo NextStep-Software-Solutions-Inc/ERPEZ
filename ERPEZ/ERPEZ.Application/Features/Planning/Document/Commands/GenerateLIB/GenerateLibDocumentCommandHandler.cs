@@ -123,7 +123,7 @@ public class GenerateLibDocumentCommandHandler(
 
         var fundSourceSummary = new LibFundSourceSummaryDto
         {
-            FundSource    = lib.FundCluster?.Name ?? string.Empty,
+            FundSource    = lib.FundSource?.Name ?? string.Empty,
             AccountGroups = fundSourceAccountGroups,
             Q1Budget      = allDetails.Sum(d => GetQuarterBudget(d, 1)),
             Q2Budget      = allDetails.Sum(d => GetQuarterBudget(d, 2)),
@@ -137,7 +137,7 @@ public class GenerateLibDocumentCommandHandler(
             LIBNumber             = lib.LIBNumber,
             OfficeName            = lib.Office?.Name ?? string.Empty,
             FiscalYear            = lib.FiscalYearEntity?.Year.ToString() ?? string.Empty,
-            FundCluster           = lib.FundCluster?.Name ?? string.Empty,
+            FundSource           = lib.FundSource?.Name ?? string.Empty,
             Scope                 = lib.Scope,
             SourceType            = lib.SourceType,
             TotalBudget           = totalBudget,

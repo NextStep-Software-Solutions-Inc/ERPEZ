@@ -73,7 +73,7 @@ internal sealed class LibExcelRenderer : BaseExcelRenderer, IDocumentRenderer<Li
 		sheet.Cell(row, 1).Value = $"I. LINE ITEM BUDGET BY API {request.FiscalYear}";
 		sheet.Cell(row, 1).Style.Font.Bold = true;
 		row++;
-		sheet.Cell(row, 1).Value = $"FUNDSOURCE: {request.FundCluster}";
+		sheet.Cell(row, 1).Value = $"FUNDSOURCE: {request.FundSource}";
 		sheet.Cell(row, 1).Style.Font.Bold = true;
 		row += 2;
 
@@ -151,7 +151,7 @@ internal sealed class LibExcelRenderer : BaseExcelRenderer, IDocumentRenderer<Li
 		sheet.Cell(row, 1).Value = $"I. LINE ITEM BUDGET BY API {request.FiscalYear}";
 		sheet.Cell(row, 1).Style.Font.Bold = true;
 		row++;
-		sheet.Cell(row, 1).Value = $"FUNDSOURCE: {request.FundCluster}";
+		sheet.Cell(row, 1).Value = $"FUNDSOURCE: {request.FundSource}";
 		row += 2;
 
 		WriteRow(sheet, row++, true, "UACS Code", "Item of Expenditure", "Description", "Q1", "Q2", "Q3", "Q4", "TOTAL");
@@ -205,7 +205,7 @@ internal sealed class LibExcelRenderer : BaseExcelRenderer, IDocumentRenderer<Li
 		sheet.Cell(row, 1).Value = "II. LINE ITEM BUDGET BY TARGET";
 		sheet.Cell(row, 1).Style.Font.Bold = true;
 		row++;
-		sheet.Cell(row, 1).Value = $"FUNDSOURCE: {request.FundCluster}";
+		sheet.Cell(row, 1).Value = $"FUNDSOURCE: {request.FundSource}";
 		row += 2;
 
 		foreach (var target in request.TargetGroups)

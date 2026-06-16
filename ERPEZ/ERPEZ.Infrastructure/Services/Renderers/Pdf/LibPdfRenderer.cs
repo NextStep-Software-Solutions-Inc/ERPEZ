@@ -146,7 +146,7 @@ internal sealed class LibPdfRenderer : BasePdfRenderer, IDocumentRenderer<LibDat
         col.Item().Text($"I. LINE ITEM BUDGET BY API {request.FiscalYear}")
             .Bold().FontSize(9);
 
-        col.Item().PaddingTop(2).Text($"FUNDSOURCE: {request.FundCluster}")
+        col.Item().PaddingTop(2).Text($"FUNDSOURCE: {request.FundSource}")
             .Bold().FontSize(8);
 
         foreach (var apiGroup in request.ApiGroups)
@@ -230,7 +230,7 @@ internal sealed class LibPdfRenderer : BasePdfRenderer, IDocumentRenderer<LibDat
         col.Item().Text($"I. LINE ITEM BUDGET BY API {request.FiscalYear}")
             .Bold().FontSize(9);
 
-        col.Item().PaddingTop(2).Text($"FUNDSOURCE: {request.FundCluster}")
+        col.Item().PaddingTop(2).Text($"FUNDSOURCE: {request.FundSource}")
             .FontSize(8);
 
         col.Item().PaddingTop(4).Table(table =>
@@ -305,7 +305,7 @@ internal sealed class LibPdfRenderer : BasePdfRenderer, IDocumentRenderer<LibDat
         col.Item().Text("II. LINE ITEM BUDGET BY TARGET")
             .Bold().FontSize(9);
 
-        col.Item().PaddingTop(2).Text($"FUNDSOURCE: {request.FundCluster}")
+        col.Item().PaddingTop(2).Text($"FUNDSOURCE: {request.FundSource}")
             .Bold().FontSize(8);
 
         foreach (var targetGroup in request.TargetGroups)
