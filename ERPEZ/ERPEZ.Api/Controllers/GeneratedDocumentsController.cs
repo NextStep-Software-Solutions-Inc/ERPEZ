@@ -1,4 +1,5 @@
 using ERPEZ.Application.Features.Planning.Document.Commands.GeneratePPMP;
+using ERPEZ.Application.Features.Planning.Document.Commands.GenerateAPP;
 using ERPEZ.Application.Interfaces.Services;   // IDocumentStorageService
 using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;                 // IUnitOfWork
@@ -25,6 +26,23 @@ public class DocumentController(IMediator mediator,
         var command = new GeneratePpmpDocumentCommand
         {
             PpmpId      = ppmpId,
+            Format      = format,
+            GeneratedBy = User.Identity?.Name ?? "system"
+        };
+
+        var result = await mediator.Send(command, cancellationToken);
+        return Ok(result);
+    }
+
+    [HttpPost("app/{appId}/generate")]
+    public async Task<ActionResult<ApiResponse<Guid>>> GenerateApp(
+        Guid         appId,
+        [FromQuery]  ExportFormat format = ExportFormat.Pdf,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new GenerateAppDocumentCommand
+        {
+            AppId       = appId,
             Format      = format,
             GeneratedBy = User.Identity?.Name ?? "system"
         };
