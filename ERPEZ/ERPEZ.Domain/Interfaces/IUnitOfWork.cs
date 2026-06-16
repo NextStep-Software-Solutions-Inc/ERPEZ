@@ -62,6 +62,7 @@ public interface IUnitOfWork
     IObjectChildCodeRepository ObjectChildCodeRepository { get; }
     IOfficeTypeRepository OfficeTypeRepository { get; }
     ICategoryRepository CategoryRepository { get; }
+    IBACResolutionWhereasClauseRepository BACResolutionWhereasClauseRepository { get; }
     IAdministrativeLevelRepository AdministrativeLevelRepository { get; }
     IProcurementWorkflowRepository ProcurementWorkflowRepository { get; }
     IPositionRepository PositionRepository { get; }
@@ -110,6 +111,7 @@ public interface IUnitOfWork
     IOPCRItemRatingRepository OPCRItemRatingRepository { get; }
     IOPCRItemMOVRepository OPCRItemMOVRepository { get; }
     IGeneratedDocumentRepository GeneratedDocumentRepository { get; }
+    IOPCRConsolidationRepository OPCRConsolidationRepository { get; }
     Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default);
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

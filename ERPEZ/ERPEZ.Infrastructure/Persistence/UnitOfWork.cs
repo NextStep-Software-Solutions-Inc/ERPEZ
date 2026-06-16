@@ -71,6 +71,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IObjectChildCodeRepository objectChildCodeRepository;
     private readonly IOfficeTypeRepository officeTypeRepository;
     private readonly ICategoryRepository categoryRepository;
+    private readonly IBACResolutionWhereasClauseRepository bacResolutionWhereasClauseRepository;
     private readonly IAdministrativeLevelRepository administrativeLevelRepository;
     private readonly IProcurementWorkflowRepository procurementWorkflowRepository;
     private readonly IPositionRepository positionRepository;
@@ -119,6 +120,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IOPCRItemRatingRepository opcrItemRatingRepository;
     private readonly IOPCRItemMOVRepository opcrItemMOVRepository;
     private readonly IGeneratedDocumentRepository gneratedDocumentRepository;
+    private readonly IOPCRConsolidationRepository opcrConsolidationRepository;
 
     // Constructor initializes all repositories once
     public UnitOfWork(ApplicationDbContext context, IServiceProvider serviceProvider)
@@ -187,6 +189,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         objectChildCodeRepository = new ObjectChildCodeRepository(context, sieveProcessor);
         officeTypeRepository = new OfficeTypeRepository(context, sieveProcessor);
         categoryRepository = new CategoryRepository(context, sieveProcessor);
+        bacResolutionWhereasClauseRepository = new BACResolutionWhereasClauseRepository(context, sieveProcessor);
         administrativeLevelRepository = new AdministrativeLevelRepository(context, sieveProcessor);
         procurementWorkflowRepository = new ProcurementWorkflowRepository(context, sieveProcessor);
         positionRepository = new PositionRepository(context, sieveProcessor);
@@ -235,6 +238,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         opcrItemRatingRepository = new OPCRItemRatingRepository(context, sieveProcessor);
         opcrItemMOVRepository = new OPCRItemMOVRepository(context, sieveProcessor);
         gneratedDocumentRepository = new GeneratedDocumentRepository(context, sieveProcessor);
+        opcrConsolidationRepository = new OPCRConsolidationRepository(context, sieveProcessor);
     }
 
     // Public properties return cached instances
@@ -298,6 +302,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IObjectChildCodeRepository ObjectChildCodeRepository => objectChildCodeRepository;
     public IOfficeTypeRepository OfficeTypeRepository => officeTypeRepository;
     public ICategoryRepository CategoryRepository => categoryRepository;
+    public IBACResolutionWhereasClauseRepository BACResolutionWhereasClauseRepository => bacResolutionWhereasClauseRepository;
     public IAdministrativeLevelRepository AdministrativeLevelRepository => administrativeLevelRepository;
     public IProcurementWorkflowRepository ProcurementWorkflowRepository => procurementWorkflowRepository;
     public IPositionRepository PositionRepository => positionRepository;
@@ -346,6 +351,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IOPCRItemRatingRepository OPCRItemRatingRepository => opcrItemRatingRepository;
     public IOPCRItemMOVRepository OPCRItemMOVRepository => opcrItemMOVRepository;
     public IGeneratedDocumentRepository GeneratedDocumentRepository => gneratedDocumentRepository;
+    public IOPCRConsolidationRepository OPCRConsolidationRepository => opcrConsolidationRepository;
 
     public async Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default)
     {

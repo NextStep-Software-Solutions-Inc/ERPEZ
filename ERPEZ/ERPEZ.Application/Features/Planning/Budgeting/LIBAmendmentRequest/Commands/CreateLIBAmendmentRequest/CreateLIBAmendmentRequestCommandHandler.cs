@@ -28,10 +28,9 @@ public class CreateLIBAmendmentRequestCommandHandler(IUnitOfWork unitOfWork)
         {
             Id = newLIBId,
             FiscalYearId = originalLIB.FiscalYearId,
-            FundClusterId = originalLIB.FundClusterId,
+            FundSourceId = originalLIB.FundSourceId,
             OfficeId = originalLIB.OfficeId,
             ParentLIBId = originalLIB.ParentLIBId,
-            DeliveryUnitId = originalLIB.DeliveryUnitId,
             Scope = originalLIB.Scope,
             Name = originalLIB.Name,
             LIBNumber = newLIBNumber,

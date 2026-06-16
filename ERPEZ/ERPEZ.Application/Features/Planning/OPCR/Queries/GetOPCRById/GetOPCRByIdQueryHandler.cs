@@ -156,6 +156,9 @@ public class GetOPCRByIdQueryHandler(IUnitOfWork unitOfWork)
                     IsShopped            = item.IsShopped,
                     ActualAccomplishment = item.ActualAccomplishment,  // ✅
                     Justification        = item.Justification,          // ✅
+                    FunctionCategory = item.KPIAssignment.FYActiveKPI != null
+                        ? item.KPIAssignment.FYActiveKPI.FunctionCategory
+                        : null,
                     KPIAssignment = item.KPIAssignment == null ? null : new()
                     {
                         Id                  = item.KPIAssignment.Id,

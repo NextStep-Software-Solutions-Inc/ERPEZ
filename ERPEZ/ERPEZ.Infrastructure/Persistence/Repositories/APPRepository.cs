@@ -29,6 +29,7 @@ public class APPRepository : Repository<APP>, IAPPRepository
             .Include(a => a.APPItems
                 .Where(item => !item.IsDeleted))
                 .ThenInclude(item => item.PPMPItem)
+                    .ThenInclude(ppmpItem => ppmpItem.PPMPItemAllocations)
             .Include(a => a.APPItems
                 .Where(item => !item.IsDeleted))
                 .ThenInclude(item => item.ProcurementMode)

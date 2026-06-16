@@ -126,6 +126,10 @@ public static class DependencyInjection
         services.AddScoped<IDocumentRenderer<PpmpDataDto>, PpmpPdfRenderer>();
         services.AddScoped<IDocumentRenderer<PpmpDataDto>, PpmpExcelRenderer>();
 
+        // APP — PDF and Excel
+        services.AddScoped<IDocumentRenderer<AppDataDto>, AppPdfRenderer>();
+        services.AddScoped<IDocumentRenderer<AppDataDto>, AppExcelRenderer>();
+
         // LIB — PDF
         services.AddScoped<IDocumentRenderer<LibDataDto>, LibPdfRenderer>();
         services.AddScoped<IDocumentRenderer<LibDataDto>, LibExcelRenderer>();

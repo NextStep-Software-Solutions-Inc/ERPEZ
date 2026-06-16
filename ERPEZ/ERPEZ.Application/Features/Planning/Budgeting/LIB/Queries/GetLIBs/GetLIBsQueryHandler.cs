@@ -28,7 +28,7 @@ public class GetLIBsQueryHandler(IUnitOfWork unitOfWork)
                 {
                     Id = entity.Id,
                     FiscalYearId = entity.FiscalYearId,
-                    FundClusterId = entity.FundClusterId,
+                    FundSourceId = entity.FundSourceId,
                     OfficeId = entity.OfficeId,
                     ParentLIBId = entity.ParentLIBId,
                     Name = entity.Name ?? string.Empty,
@@ -46,12 +46,11 @@ public class GetLIBsQueryHandler(IUnitOfWork unitOfWork)
                         Year = entity.FiscalYearEntity.Year,
                         Description = entity.FiscalYearEntity.Description
                     },
-                    FundCluster = entity.FundCluster == null ? null : new LIBFundClusterResponse
+                    FundSource = entity.FundSource == null ? null : new LIBFundSourceResponse
                     {
-                        Id = entity.FundCluster.Id,
-                        Name = entity.FundCluster.Name,
-                        Code = entity.FundCluster.Code,
-                        Type = entity.FundCluster.Type.ToString()
+                        Id = entity.FundSource.Id,
+                        Name = entity.FundSource.Name,
+                        Code = entity.FundSource.Code
                     },
                     Office = entity.Office == null ? null : new LIBOfficeResponse
                     {

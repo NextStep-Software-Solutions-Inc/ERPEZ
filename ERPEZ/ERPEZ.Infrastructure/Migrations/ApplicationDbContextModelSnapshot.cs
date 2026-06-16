@@ -576,6 +576,47 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.ToTable("Attributes", "planning");
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.BACResolutionWhereasClause", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Body")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("BACResolutionWhereasClauses", "planning");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.BudgetCall", b =>
                 {
                     b.Property<Guid>("Id")
@@ -2171,13 +2212,10 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text");
 
-                    b.Property<Guid?>("DeliveryUnitId")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid?>("FiscalYearId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid?>("FundClusterId")
+                    b.Property<Guid?>("FundSourceId")
                         .HasColumnType("uuid");
 
                     b.Property<bool>("IsDeleted")
@@ -2246,11 +2284,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("ConsolidatedIntoLIBId");
 
-                    b.HasIndex("DeliveryUnitId");
-
                     b.HasIndex("FiscalYearId");
 
-                    b.HasIndex("FundClusterId");
+                    b.HasIndex("FundSourceId");
 
                     b.HasIndex("LIBNumber")
                         .IsUnique();
@@ -3085,6 +3121,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<Guid?>("OPCRConsolidationId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid>("OfficeId")
                         .HasColumnType("uuid");
 
@@ -3092,9 +3131,8 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasColumnType("text");
+                    b.Property<DateTime?>("ReviewedDate")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime?>("SubmittedDate")
                         .HasColumnType("timestamp with time zone");
@@ -3108,6 +3146,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("FiscalYearId");
+
+                    b.HasIndex("OPCRConsolidationId");
 
                     b.HasIndex("OfficeId", "FiscalYearId")
                         .IsUnique();
@@ -3329,6 +3369,48 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("OPCRActivityId", "PerformanceMeasureId");
 
                     b.ToTable("OPCRActivityRatings", "planning");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OPCRConsolidation", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("FiscalYearId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FiscalYearId");
+
+                    b.ToTable("OPCRConsolidations", "planning");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OPCREvaluation", b =>
@@ -7516,18 +7598,14 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasForeignKey("ConsolidatedIntoLIBId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.DeliveryUnit", "DeliveryUnit")
-                        .WithMany()
-                        .HasForeignKey("DeliveryUnitId");
-
                     b.HasOne("ERPEZ.Domain.Entities.Planning.FiscalYear", "FiscalYearEntity")
                         .WithMany()
                         .HasForeignKey("FiscalYearId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.FundSource", "FundCluster")
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.FundSource", "FundSource")
                         .WithMany()
-                        .HasForeignKey("FundClusterId")
+                        .HasForeignKey("FundSourceId")
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("ERPEZ.Domain.Entities.Planning.Office", "Office")
@@ -7547,11 +7625,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Navigation("ConsolidatedIntoLIB");
 
-                    b.Navigation("DeliveryUnit");
-
                     b.Navigation("FiscalYearEntity");
 
-                    b.Navigation("FundCluster");
+                    b.Navigation("FundSource");
 
                     b.Navigation("Office");
 
@@ -7769,6 +7845,11 @@ namespace ERPEZ.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.OPCRConsolidation", "OPCRConsolidation")
+                        .WithMany("OPCRs")
+                        .HasForeignKey("OPCRConsolidationId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("ERPEZ.Domain.Entities.Planning.Office", "Office")
                         .WithMany("OPCRs")
                         .HasForeignKey("OfficeId")
@@ -7776,6 +7857,8 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("FiscalYear");
+
+                    b.Navigation("OPCRConsolidation");
 
                     b.Navigation("Office");
                 });
@@ -7834,6 +7917,17 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("OPCRActivity");
 
                     b.Navigation("PerformanceMeasure");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OPCRConsolidation", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.FiscalYear", "FiscalYear")
+                        .WithMany()
+                        .HasForeignKey("FiscalYearId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("FiscalYear");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OPCREvaluation", b =>
@@ -9052,6 +9146,11 @@ namespace ERPEZ.Infrastructure.Migrations
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OPCRActivityRating", b =>
                 {
                     b.Navigation("OPCRActivityEvaluations");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OPCRConsolidation", b =>
+                {
+                    b.Navigation("OPCRs");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OPCREvaluation", b =>

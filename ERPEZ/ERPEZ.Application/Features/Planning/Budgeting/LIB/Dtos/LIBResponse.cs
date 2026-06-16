@@ -6,7 +6,7 @@ public record LIBResponse
 {
     public Guid Id { get; init; }
     public Guid? FiscalYearId { get; init; }
-    public Guid? FundClusterId { get; init; }
+    public Guid? FundSourceId { get; init; }
     public Guid? OfficeId { get; init; }
     public Guid? ParentLIBId { get; init; }
     public string Name { get; init; } = string.Empty;
@@ -19,7 +19,7 @@ public record LIBResponse
     public int Version { get; init; }
     public Guid? PreviousVersionId { get; init; }
     public LIBFiscalYearResponse? FiscalYear { get; init; }
-    public LIBFundClusterResponse? FundCluster { get; init; }
+    public LIBFundSourceResponse? FundSource { get; init; }
     public LIBOfficeResponse? Office { get; init; }
     public LIBSummaryResponse? ParentLIB { get; init; }
     public LIBSummaryResponse? ConsolidatedIntoLIB { get; init; }
@@ -35,7 +35,7 @@ public record LIBFiscalYearResponse
     public string? Description { get; init; }
 }
 
-public record LIBFundClusterResponse
+public record LIBFundSourceResponse
 {
     public Guid Id { get; init; }
     public string Name { get; init; } = string.Empty;

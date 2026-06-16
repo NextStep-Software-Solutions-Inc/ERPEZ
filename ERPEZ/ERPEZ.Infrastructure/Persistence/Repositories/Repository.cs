@@ -138,6 +138,12 @@ public class Repository<T>(ApplicationDbContext context, ISieveProcessor sievePr
         return await context.Set<T>().Where(e => !e.IsDeleted).Where(predicate).ToListAsync(cancellationToken);
     }
 
+    public async Task<List<TDto>> GetListAsync<TDto>(
+    IQueryable<TDto> query, CancellationToken cancellationToken = default)
+    {
+        return await query.ToListAsync(cancellationToken);
+    }
+
     public void RemoveRange(IEnumerable<T> entities)
     {
         context.Set<T>().RemoveRange(entities);
