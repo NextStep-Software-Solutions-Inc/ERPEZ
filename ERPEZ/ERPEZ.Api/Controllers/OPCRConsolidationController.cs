@@ -1,5 +1,6 @@
 using ERPEZ.Application.Features.Planning.OPCRConsolidation.Commands.CreateOPCRConsolidation;
 using ERPEZ.Application.Features.Planning.OPCRConsolidation.Commands.DeleteOPCRConsolidation;
+using ERPEZ.Application.Features.Planning.OPCRConsolidation.Commands.UpdateOPCRConsolidation;
 using ERPEZ.Application.Features.Planning.OPCRConsolidation.Queries;
 using ERPEZ.Application.Features.Planning.OPCRConsolidation.Dtos;
 using ERPEZ.Shared.Common;
@@ -47,6 +48,19 @@ namespace ERPEZ.Api.Controllers
             var result = await mediator.Send(new GetOPCRConsolidationByIdQuery(id));
             return result.Succeeded ? Ok(result) : NotFound(result);
         }
+
+        [HttpPatch("{id}/name")]
+        public async Task<IActionResult> UpdateName(
+            Guid id,
+            [FromBody] UpdateOPCRConsolidationNameRequest request,
+            CancellationToken cancellationToken)
+        {
+            var result = await mediator.Send(
+                new UpdateOPCRConsolidationNameCommand { Id = id, Request = request },
+                cancellationToken);
+
+            return Ok(result);
+}
 
         [HttpDelete("{id}")]
         [ProducesResponseType(StatusCodes.Status204NoContent)]

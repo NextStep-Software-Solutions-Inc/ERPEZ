@@ -24,7 +24,8 @@ public class CreateOPCRConsolidationCommandHandler(IUnitOfWork unitOfWork)
         var alreadyConsolidated = opcrs.Where(o => o.OPCRConsolidationId.HasValue).ToList();
         if (alreadyConsolidated.Count > 0)
             throw new BadRequestException(
-                $"OPCR(s) already consolidated: {string.Join(", ", alreadyConsolidated.Select(o => o.Id))}");
+                $"The following OPCR(s) are already part of a consolidation: " +
+                $"{string.Join(", ", alreadyConsolidated.Select(o => $"{o.Code} ({o.Name})"))}");
 
         var distinctFiscalYears = opcrs.Select(o => o.FiscalYearId).Distinct().ToList();
         if (distinctFiscalYears.Count > 1)
