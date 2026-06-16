@@ -13,6 +13,9 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
+using AppEntity     = ERPEZ.Domain.Entities.Planning.APP;
+using AppItemEntity = ERPEZ.Domain.Entities.Planning.APPItem;
+
 namespace ERPEZ.Application.Features.Planning.Document.Commands.GenerateAPP;
 
 public class GenerateAppDocumentCommandHandler(
@@ -60,7 +63,7 @@ public class GenerateAppDocumentCommandHandler(
         return ApiResponse<Guid>.Success(record.Id, "APP document generated successfully.");
     }
 
-    private async Task<AppDataDto> MapToDataDtoAsync(APP app, CancellationToken cancellationToken)
+    private async Task<AppDataDto> MapToDataDtoAsync(AppEntity app, CancellationToken cancellationToken)
     {
         var generalRequirements = new List<AppItemRowDto>();
         var commonUseSupplies    = new List<AppItemRowDto>();
@@ -141,7 +144,7 @@ public class GenerateAppDocumentCommandHandler(
         };
     }
 
-    private static AppItemRowDto MapToRow(APPItem item)
+    private static AppItemRowDto MapToRow(AppItemEntity item)
     {
         var projectTitle = item.PPMPItem?.Name ?? string.Empty;
         var endUser      = item.Office?.Name ?? string.Empty;
@@ -177,7 +180,7 @@ public class GenerateAppDocumentCommandHandler(
         };
     }
 
-    private static decimal CalculateItemBudget(APPItem item)
+    private static decimal CalculateItemBudget(AppItemEntity item)
     {
         return item.PPMPItem?.PPMPItemAllocations
             .Where(a => !a.IsDeleted)
