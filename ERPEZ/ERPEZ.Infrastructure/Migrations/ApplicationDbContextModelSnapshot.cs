@@ -143,7 +143,8 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<string>("BidEvaluationCriteria")
-                        .HasColumnType("text");
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -184,9 +185,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid>("ProcurementModeId")
                         .HasColumnType("uuid");
 
-                    b.Property<string>("ProcurementStrategy")
-                        .HasMaxLength(1000)
-                        .HasColumnType("character varying(1000)");
+                    b.Property<string>("ProcurementStrategies")
+                        .HasColumnType("text");
 
                     b.Property<string>("Remarks")
                         .HasMaxLength(1000)
