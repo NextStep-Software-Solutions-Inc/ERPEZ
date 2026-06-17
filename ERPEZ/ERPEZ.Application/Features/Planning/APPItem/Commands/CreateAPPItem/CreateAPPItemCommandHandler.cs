@@ -1,5 +1,6 @@
 using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Domain.Interfaces;
+using ERPEZ.Domain.Enums;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
@@ -39,8 +40,8 @@ public class CreateAPPItemCommandHandler(IUnitOfWork unitOfWork) : IRequestHandl
             Remarks = request.Remarks,
             IsEarlyProcurementActivity = request.IsEarlyProcurementActivity,
             IsOutsourced = request.IsOutsourced,
-            BidEvaluationCriteria = request.BidEvaluationCriteria,
-            ProcurementStrategy = request.ProcurementStrategy
+            BidEvaluationCriteria = request.BidEvaluationCriteria != null ? Enum.Parse<BidEvaluationCriteria>(request.BidEvaluationCriteria, true) : null,
+            ProcurementStrategies = request.ProcurementStrategies?.Select(x => Enum.Parse<ProcurementStrategy>(x, true)).ToList()
         };
 
         await unitOfWork.APPItemRepository.AddAsync(entity, cancellationToken);

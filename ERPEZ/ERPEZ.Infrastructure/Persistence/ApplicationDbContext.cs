@@ -3,6 +3,7 @@ using ERPEZ.Shared.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Object = ERPEZ.Domain.Entities.Planning.Object;
 using Attribute = ERPEZ.Domain.Entities.Planning.Attribute;
+using ERPEZ.Domain.Enums;
 
 namespace ERPEZ.Infrastructure.Persistence;
 
@@ -1919,17 +1920,18 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasMaxLength(1000);
 
         modelBuilder.Entity<APPItem>()
-            .Property(e => e.ProcurementStrategy)
-            .HasMaxLength(1000);
+            .Property(e => e.BidEvaluationCriteria)
+            .HasConversion<string>()
+            .HasMaxLength(50);
 
         modelBuilder.Entity<APPItem>()
-            .Property(e => e.BidEvaluationCriteria)
+            .Property(e => e.ProcurementStrategies)
             .HasConversion(
-                v => v == null ? null : string.Join(',', v),
-                v => v == null ? null : v.Split(',', StringSplitOptions.RemoveEmptyEntries).ToList()
+                v => v == null ? null : string.Join(',', v.Select(x => x.ToString())),
+                v => v == null ? null : v.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(x => (ProcurementStrategy)Enum.Parse(typeof(ProcurementStrategy), x)).ToList()
             )
             .Metadata.SetValueComparer(
-                new Microsoft.EntityFrameworkCore.ChangeTracking.ValueComparer<List<string>?>(
+                new Microsoft.EntityFrameworkCore.ChangeTracking.ValueComparer<List<ProcurementStrategy>?>(
                     (c1, c2) => c1 != null && c2 != null && c1.SequenceEqual(c2),
                     c => c == null ? 0 : c.Aggregate(0, (a, v) => HashCode.Combine(a, v.GetHashCode())),
                     c => c == null ? null : c.ToList()
