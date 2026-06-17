@@ -56,7 +56,7 @@ internal sealed class LibPdfRenderer : BasePdfRenderer, IDocumentRenderer<LibDat
 
                                 docBox.Item()
                                     .Padding(2).AlignCenter()
-                                    .Text("FM-USTP-FDP-01")
+                                    .Text(string.IsNullOrWhiteSpace(request.LIBNumber) ? "-" : request.LIBNumber)
                                     .Bold().FontSize(7);
 
                                 docBox.Item().Row(metaRow =>
@@ -78,7 +78,9 @@ internal sealed class LibPdfRenderer : BasePdfRenderer, IDocumentRenderer<LibDat
                                 docBox.Item().Row(metaRow =>
                                 {
                                     metaRow.RelativeItem().Padding(2).AlignCenter().Text("00").FontSize(7);
-                                    metaRow.RelativeItem().Padding(2).AlignCenter().Text("10/01/21").FontSize(7);
+                                    metaRow.RelativeItem().Padding(2).AlignCenter()
+                                        .Text(request.EffectiveDate.HasValue ? request.EffectiveDate.Value.ToString("MM/dd/yy") : "-")
+                                        .FontSize(7);
                                     metaRow.RelativeItem().Padding(2).AlignCenter()
                                         .Text(t =>
                                         {
@@ -153,7 +155,7 @@ internal sealed class LibPdfRenderer : BasePdfRenderer, IDocumentRenderer<LibDat
         {
             col.Item().PaddingTop(4).Column(section =>
             {
-                RenderMetaRow(section, "NEP/GAA:", apiGroup.NepGaaLabel);
+                // RenderMetaRow(section, "NEP/GAA:", apiGroup.NepGaaLabel);
                 RenderMetaRow(section, "PREXC/DYNAMIC/KRA:", apiGroup.PrexcDynamicKra);
                 RenderMetaRow(section, "GOALS/OUTCOME:", apiGroup.GoalsOutcome);
                 RenderMetaRow(section, "API:", apiGroup.ApiLabel);
@@ -312,7 +314,7 @@ internal sealed class LibPdfRenderer : BasePdfRenderer, IDocumentRenderer<LibDat
         {
             col.Item().PaddingTop(4).Column(section =>
             {
-                RenderMetaRow(section, "NEP/GAA:", targetGroup.NepGaaLabel);
+                // RenderMetaRow(section, "NEP/GAA:", targetGroup.NepGaaLabel);
                 RenderMetaRow(section, "PREXC/DYNAMIC/KRA:", targetGroup.PrexcDynamicKra);
                 RenderMetaRow(section, "GOALS/OUTCOME:", targetGroup.GoalsOutcome);
                 RenderMetaRow(section, "KPI:", targetGroup.KpiLabel);

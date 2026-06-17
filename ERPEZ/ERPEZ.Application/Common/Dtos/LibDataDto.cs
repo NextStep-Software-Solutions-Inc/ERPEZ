@@ -14,6 +14,8 @@ public record LibDataDto
     public string  Scope       { get; init; } = string.Empty;
     public string  SourceType  { get; init; } = string.Empty;
     public decimal TotalBudget { get; init; }
+    public DateTime? EffectiveDate { get; init; }
+
 
     /// <summary>Section I — LINE ITEM BUDGET BY API (grouped by activity → expense class).</summary>
     public List<LibApiGroupDto>            ApiGroups            { get; init; } = [];
@@ -43,7 +45,7 @@ public record LibApiGroupDto
     public string                   PrexcDynamicKra  { get; init; } = string.Empty;
     public string                   GoalsOutcome     { get; init; } = string.Empty;
     public string                   ApiLabel         { get; init; } = string.Empty;
-    public string                   NepGaaLabel      { get; init; } = string.Empty;
+    // public string                   NepGaaLabel      { get; init; } = string.Empty;
     public List<LibExpenseGroupDto> ExpenseGroups { get; init; } = [];
     public decimal                  SubTotal         { get; init; }
 }
@@ -54,7 +56,7 @@ public record LibTargetGroupDto
     public string                   PrexcDynamicKra { get; init; } = string.Empty;
     public string                   GoalsOutcome    { get; init; } = string.Empty;
     public string                   KpiLabel        { get; init; } = string.Empty;
-    public string                   NepGaaLabel     { get; init; } = string.Empty;
+    // public string                   NepGaaLabel     { get; init; } = string.Empty;
     public List<string>             Targets         { get; init; } = [];
     public List<LibExpenseGroupDto> ExpenseGroups   { get; init; } = [];
     public decimal                  SubTotal        { get; init; }

@@ -81,7 +81,7 @@ public class GenerateLibDocumentCommandHandler(
                     PrexcDynamicKra = context.PrexcDynamicKra,
                     GoalsOutcome    = context.GoalsOutcome,
                     ApiLabel        = context.ApiLabel,
-                    NepGaaLabel     = context.NepGaaLabel,
+                    // NepGaaLabel     = context.NepGaaLabel,
                     ExpenseGroups   = expenseGroups,
                     SubTotal        = expenseGroups.Sum(eg => eg.SubTotal)
                 };
@@ -97,7 +97,7 @@ public class GenerateLibDocumentCommandHandler(
                 PrexcDynamicKra = string.Empty,
                 GoalsOutcome    = string.Empty,
                 ApiLabel        = "General",
-                NepGaaLabel     = "NEP/GAA",
+                // NepGaaLabel     = "NEP/GAA",
                 ExpenseGroups   = standaloneGroups,
                 SubTotal        = standaloneGroups.Sum(eg => eg.SubTotal)
             });
@@ -135,12 +135,13 @@ public class GenerateLibDocumentCommandHandler(
         return new LibDataDto
         {
             LIBNumber             = lib.LIBNumber,
-            OfficeName            = lib.Office?.Name ?? string.Empty,
+            OfficeName            = BuildAgencyName(lib),
             FiscalYear            = lib.FiscalYearEntity?.Year.ToString() ?? string.Empty,
-            FundSource           = lib.FundSource?.Name ?? string.Empty,
+            FundSource            = lib.FundSource?.Name ?? string.Empty,
             Scope                 = lib.Scope,
             SourceType            = lib.SourceType,
             TotalBudget           = totalBudget,
+            EffectiveDate         = lib.ApprovedDate,
             ApiGroups             = apiGroups,
             MonthlyExpenseGroups  = monthlyExpenseGroups,
             TargetGroups          = targetGroups,
@@ -185,7 +186,7 @@ public class GenerateLibDocumentCommandHandler(
                     PrexcDynamicKra = context.PrexcDynamicKra,
                     GoalsOutcome    = context.GoalsOutcome,
                     KpiLabel        = context.KpiLabel,
-                    NepGaaLabel     = context.NepGaaLabel,
+                    // NepGaaLabel     = context.NepGaaLabel,
                     Targets         = ResolveTargets(activity),
                     ExpenseGroups   = expenseGroups,
                     SubTotal        = expenseGroups.Sum(group => group.SubTotal)
@@ -203,7 +204,7 @@ public class GenerateLibDocumentCommandHandler(
                 PrexcDynamicKra = string.Empty,
                 GoalsOutcome    = string.Empty,
                 KpiLabel        = string.Empty,
-                NepGaaLabel     = "NEP/GAA",
+                // NepGaaLabel     = "NEP/GAA",
                 Targets         = [],
                 ExpenseGroups   = expenseGroups,
                 SubTotal        = expenseGroups.Sum(group => group.SubTotal)
@@ -342,7 +343,7 @@ public class GenerateLibDocumentCommandHandler(
             .ToList();
     }
 
-    private static (string PrexcDynamicKra, string GoalsOutcome, string ApiLabel, string KpiLabel, string NepGaaLabel)
+    private static (string PrexcDynamicKra, string GoalsOutcome, string ApiLabel, string KpiLabel)
         ResolveActivityContext(ActivityEntity activity)
     {
         var opcrItem = activity.OPCRActivity?.OPCRItem;
@@ -369,8 +370,8 @@ public class GenerateLibDocumentCommandHandler(
             PrexcDynamicKra: prexcDynamicKra,
             GoalsOutcome: goalsOutcome,
             ApiLabel: activity.Name,
-            KpiLabel: kpiLabel,
-            NepGaaLabel: "NEP/GAA"
+            KpiLabel: kpiLabel
+            // NepGaaLabel: "NEP/GAA"
         );
     }
 
@@ -430,5 +431,17 @@ public class GenerateLibDocumentCommandHandler(
         }
 
         return detail.StartDate.Value.Month == month ? detail.Budget : 0m;
+    }
+
+    private static string BuildAgencyName(LibEntity lib)
+    {
+        var parts = new[]
+        {
+            lib.Office?.Name,
+            lib.Office?.Cluster?.Name,
+            lib.Office?.Organization?.Name
+        };
+
+        return string.Join(", ", parts.Where(part => !string.IsNullOrWhiteSpace(part)));
     }
 }

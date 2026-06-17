@@ -79,7 +79,7 @@ internal sealed class LibExcelRenderer : BaseExcelRenderer, IDocumentRenderer<Li
 
 		foreach (var group in request.ApiGroups)
 		{
-			WriteMeta(sheet, ref row, "NEP/GAA:", group.NepGaaLabel);
+			// WriteMeta(sheet, ref row, "NEP/GAA:", group.NepGaaLabel);
 			WriteMeta(sheet, ref row, "PREXC/DYNAMIC/KRA:", group.PrexcDynamicKra);
 			WriteMeta(sheet, ref row, "GOALS/OUTCOME:", group.GoalsOutcome);
 			WriteMeta(sheet, ref row, "API:", group.ApiLabel);
@@ -210,7 +210,7 @@ internal sealed class LibExcelRenderer : BaseExcelRenderer, IDocumentRenderer<Li
 
 		foreach (var target in request.TargetGroups)
 		{
-			WriteMeta(sheet, ref row, "NEP/GAA:", target.NepGaaLabel);
+			// WriteMeta(sheet, ref row, "NEP/GAA:", target.NepGaaLabel);
 			WriteMeta(sheet, ref row, "PREXC/DYNAMIC/KRA:", target.PrexcDynamicKra);
 			WriteMeta(sheet, ref row, "GOALS/OUTCOME:", target.GoalsOutcome);
 			WriteMeta(sheet, ref row, "KPI:", target.KpiLabel);
