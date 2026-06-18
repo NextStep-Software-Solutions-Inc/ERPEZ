@@ -1,5 +1,4 @@
 using ERPEZ.Application.Features.Planning.Budgeting.Common;
-using ERPEZ.Application.Features.Planning.Budgeting.Common.Enums;
 using ERPEZ.Application.Features.Planning.Budgeting.LIB.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
@@ -35,7 +34,9 @@ public class GetLIBsQueryHandler(IUnitOfWork unitOfWork)
                     LIBNumber = entity.LIBNumber,
                     SourceType = entity.SourceType,
                     SourceId = entity.SourceId,
-                    Status = Enum.Parse<LIBStatusEnum>(entity.Status, true),
+                    Status = entity.Status,
+                    CreatedAt = entity.CreatedAt,
+                    ApprovedDate = entity.ApprovedDate,
                     ConsolidatedIntoLIBId = entity.ConsolidatedIntoLIBId,
                     TotalAmount = entity.TotalAmount,
                     Version = entity.Version,
