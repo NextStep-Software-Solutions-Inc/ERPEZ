@@ -1,5 +1,7 @@
 using ERPEZ.Application.Features.Planning.Document.Commands.GeneratePPMP;
 using ERPEZ.Application.Features.Planning.Document.Commands.GenerateAPP;
+using ERPEZ.Application.Features.Planning.Document.Commands.GenerateOPCRRating;
+using ERPEZ.Application.Features.Planning.Document.Commands.GenerateOPCR;
 using ERPEZ.Application.Interfaces.Services;   // IDocumentStorageService
 using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;                 // IUnitOfWork
@@ -45,6 +47,53 @@ public class DocumentController(IMediator mediator,
             AppId       = appId,
             Format      = format,
             GeneratedBy = User.Identity?.Name ?? "system"
+        };
+
+        var result = await mediator.Send(command, cancellationToken);
+        return Ok(result);
+    }
+    // ── OPCR — Proposed ───────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Generates the Proposed OPCR PDF — performance targets only, no ratings.
+    /// </summary>
+    [HttpPost("opcr/{opcrId:guid}/generate")]
+    public async Task<ActionResult<ApiResponse<Guid>>> GenerateProposedOpcr(
+        Guid              opcrId,
+        [FromQuery] ExportFormat format = ExportFormat.Pdf,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new GenerateProposedOpcrDocumentCommand
+        {
+            OPCRId      = opcrId,
+            Format      = format,
+            GeneratedBy = User.Identity?.Name ?? "system"
+        };
+
+        var result = await mediator.Send(command, cancellationToken);
+        return Ok(result);
+    }
+
+    // ── OPCR — With Ratings ───────────────────────────────────────────────────
+
+    /// <summary>
+    /// Generates the OPCR with Ratings PDF — targets + actual accomplishments +
+    /// Q/E/T/Ave PMT ratings + adjectival ratings + overall summary.
+    /// Pass evaluationId to scope to a specific evaluation; omit to use the most recent.
+    /// </summary>
+    [HttpPost("opcr/{opcrId:guid}/generate-rating")]
+    public async Task<ActionResult<ApiResponse<Guid>>> GenerateOpcrRating(
+        Guid              opcrId,
+        [FromQuery] Guid? evaluationId     = null,
+        [FromQuery] ExportFormat format    = ExportFormat.Pdf,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new GenerateOpcrRatingDocumentCommand
+        {
+            OPCRId       = opcrId,
+            EvaluationId = evaluationId,
+            Format       = format,
+            GeneratedBy  = User.Identity?.Name ?? "system"
         };
 
         var result = await mediator.Send(command, cancellationToken);

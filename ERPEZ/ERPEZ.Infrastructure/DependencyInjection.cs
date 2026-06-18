@@ -21,6 +21,7 @@ using ERPEZ.Infrastructure.Services.Renderers.Excel;
 using ERPEZ.Infrastructure.Services.DocumentGeneration.Storage;
 using SharedCurrentUserService     = ERPEZ.Shared.Interfaces.ICurrentUserService;
 using SharedCurrentUserServiceImpl = ERPEZ.Shared.Services.CurrentUserService;
+using ERPEZ.Application.Features.Planning.Document.Dtos;
 
 namespace ERPEZ.Infrastructure;
 
@@ -129,6 +130,9 @@ public static class DependencyInjection
         // APP — PDF and Excel
         services.AddScoped<IDocumentRenderer<AppDataDto>, AppPdfRenderer>();
         services.AddScoped<IDocumentRenderer<AppDataDto>, AppExcelRenderer>();
+
+        services.AddScoped<IDocumentRenderer<OpcrDataDto>,  OpcrPdfRenderer>();        // ✅ Proposed
+        services.AddScoped<IDocumentRenderer<OpcrDataDto>,  OpcrRatingPdfRenderer>();  // ✅ With Ratings
 
         // ── Hangfire ────────────────────────────────────────────────────────────────
         services.AddHangfire(config => config
