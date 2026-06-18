@@ -22,11 +22,11 @@ public record OPCRItemResponse
     public decimal? AssignedTargetQ4 { get; init; }
     public bool IsLocked { get; init; }
     public bool IsShopped { get; init; }
-    public int Q1Target { get; init; }
-    public int Q2Target { get; init; }
-    public int Q3Target { get; init; }
-    public int Q4Target { get; init; }
-    public int ProposedAnnualTarget { get; init; }
+    public decimal Q1Target { get; init; }
+    public decimal Q2Target { get; init; }
+    public decimal Q3Target { get; init; }
+    public decimal Q4Target { get; init; }
+    public decimal ProposedAnnualTarget { get; init; }
     public DateTime CreatedAt { get; init; }
     public string CreatedBy { get; init; } = string.Empty;
 

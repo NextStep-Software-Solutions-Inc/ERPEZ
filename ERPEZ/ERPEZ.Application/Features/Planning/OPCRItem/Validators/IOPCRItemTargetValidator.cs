@@ -14,8 +14,8 @@ public interface IOPCRItemTargetValidator
         decimal? assignedQ2,
         decimal? assignedQ3,
         decimal? assignedQ4,
-        int q1,
-        int q2,
-        int q3,
-        int q4);
+        decimal q1,
+        decimal q2,
+        decimal q3,
+        decimal q4);
 }

@@ -47,8 +47,8 @@ internal static class OpcrMapper
             OfficeName               = opcr.Office?.Name                   ?? string.Empty,
             OfficeCode               = opcr.Office?.Code                   ?? string.Empty,
             AgencyName               = opcr.Office?.Organization?.Name     ?? string.Empty,
-            CommitmentPersonName     = opcr.CommitmentPersonName,
-            CommitmentPersonPosition = opcr.CommitmentPersonPosition,
+            CommitmentPersonName     = opcr.CommitmentPersonName ?? string.Empty,
+            CommitmentPersonPosition = opcr.CommitmentPersonPosition ?? string.Empty,
             FiscalYear               = fiscalYear,
             PeriodCovered            = periodCovered,
             RatingPeriod             = opcr.FiscalYear?.Year.ToString()    ?? string.Empty,
@@ -248,8 +248,8 @@ internal static class OpcrMapper
         new SignatoryDto
         {
             Label       = "Submitted by:",
-            PrintedName = opcr.CommitmentPersonName,
-            Position    = opcr.CommitmentPersonPosition,
+            PrintedName = opcr.CommitmentPersonName ?? string.Empty,
+            Position    = opcr.CommitmentPersonPosition ?? string.Empty,
             Designation = opcr.Office?.Name ?? string.Empty,
             Date        = opcr.SubmittedDate
         },

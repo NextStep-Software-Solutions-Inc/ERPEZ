@@ -40,6 +40,9 @@ public class KPI : BaseEntity
 
     [Sieve(CanFilter = true, CanSort = true)]
     public string Status { get; set; } = "Active"; // Active or Inactive
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public string? GadMeasure { get; set; }
     
     // Navigation Properties
     public virtual KPI? ParentKPI { get; set; }
