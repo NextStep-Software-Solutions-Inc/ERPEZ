@@ -55,6 +55,14 @@ public class CreatePPMPItemCommandHandler(IUnitOfWork unitOfWork)
             UnitPrice = request.UnitPrice,
             MOPOverride = request.MOPOverride,
             MOPJustification = request.MOPJustification,
+            // ── New fields ───────────────────────────────────────────────────
+            ProjectType               = request.ProjectType,
+            PreProcurementConference  = request.PreProcurementConference,
+            ProcurementStartDate      = request.ProcurementStartDate,
+            ProcurementEndDate        = request.ProcurementEndDate,
+            ExpectedDeliveryStart     = request.ExpectedDeliveryStart,
+            ExpectedDeliveryEnd       = request.ExpectedDeliveryEnd,
+            Remarks                   = request.Remarks,
             CreatedAt = DateTime.UtcNow
         };
 

@@ -1,3 +1,4 @@
+using ERPEZ.Domain.Enums;
 using FluentValidation;
 
 namespace ERPEZ.Application.Features.Planning.PPMPItem.Commands.CreatePPMPItem;
@@ -45,5 +46,36 @@ public class CreatePPMPItemCommandValidator : AbstractValidator<CreatePPMPItemCo
             .MaximumLength(500)
             .When(x => !string.IsNullOrEmpty(x.Description))
             .WithMessage("Description cannot exceed 500 characters.");
+
+        RuleFor(x => x.ProjectType)
+            .IsInEnum()
+            .WithMessage("Invalid Project Type value.");
+
+        // ── Date range validations ────────────────────────────────────────────
+        RuleFor(x => x.ProcurementEndDate)
+            .Must((cmd, endDate) =>
+                !endDate.HasValue ||
+                !cmd.ProcurementStartDate.HasValue ||
+                endDate.Value >= cmd.ProcurementStartDate.Value)
+            .WithMessage("Procurement End Date must be on or after Procurement Start Date.");
+
+        RuleFor(x => x.ExpectedDeliveryEnd)
+            .Must((cmd, endDate) =>
+                !endDate.HasValue ||
+                !cmd.ExpectedDeliveryStart.HasValue ||
+                endDate.Value >= cmd.ExpectedDeliveryStart.Value)
+            .WithMessage("Expected Delivery End must be on or after Expected Delivery Start.");
+
+        RuleFor(x => x.ExpectedDeliveryStart)
+            .Must((cmd, deliveryStart) =>
+                !deliveryStart.HasValue ||
+                !cmd.ProcurementEndDate.HasValue ||
+                deliveryStart.Value >= cmd.ProcurementEndDate.Value)
+            .WithMessage("Expected Delivery Start must be on or after Procurement End Date.");
+
+        RuleFor(x => x.Remarks)
+            .MaximumLength(1000)
+            .When(x => !string.IsNullOrEmpty(x.Remarks))
+            .WithMessage("Remarks cannot exceed 1000 characters.");
     }
 }

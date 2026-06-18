@@ -1,4 +1,5 @@
 using ERPEZ.Shared.Common;
+using ERPEZ.Domain.Enums;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.APPItem.Commands.UpdateAPPItem;
@@ -15,6 +16,6 @@ public class UpdateAPPItemCommand : IRequest<ApiResponse<Guid>>
     public string? Remarks { get; set; }
     public bool IsEarlyProcurementActivity { get; set; }
     public bool IsOutsourced { get; set; }
-    public List<string>? BidEvaluationCriteria { get; set; }
-    public string? ProcurementStrategy { get; set; }
+    public string? BidEvaluationCriteria { get; set; }
+    public List<string>? ProcurementStrategies { get; set; }
 }

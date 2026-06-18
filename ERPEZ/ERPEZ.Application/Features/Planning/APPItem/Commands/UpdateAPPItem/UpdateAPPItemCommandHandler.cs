@@ -1,4 +1,5 @@
 using ERPEZ.Domain.Interfaces;
+using ERPEZ.Domain.Enums;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
@@ -41,8 +42,8 @@ public class UpdateAPPItemCommandHandler(IUnitOfWork unitOfWork) : IRequestHandl
         entity.Remarks = request.Remarks;
         entity.IsEarlyProcurementActivity = request.IsEarlyProcurementActivity;
         entity.IsOutsourced = request.IsOutsourced;
-        entity.BidEvaluationCriteria = request.BidEvaluationCriteria;
-        entity.ProcurementStrategy = request.ProcurementStrategy;
+        entity.BidEvaluationCriteria = request.BidEvaluationCriteria != null ? Enum.Parse<BidEvaluationCriteria>(request.BidEvaluationCriteria, true) : null;
+        entity.ProcurementStrategies = request.ProcurementStrategies?.Select(x => Enum.Parse<ProcurementStrategy>(x, true)).ToList();
 
         unitOfWork.APPItemRepository.Update(entity);
         await unitOfWork.SaveChangesAsync(cancellationToken);

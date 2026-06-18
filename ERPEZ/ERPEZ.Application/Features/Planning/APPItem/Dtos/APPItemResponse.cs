@@ -1,4 +1,5 @@
 using System.Text.Json.Serialization;
+using ERPEZ.Domain.Enums;
 
 namespace ERPEZ.Application.Features.Planning.APPItem.Dtos;
 
@@ -18,8 +19,8 @@ public record APPItemResponse
     public string? Remarks { get; init; }
     public bool IsEarlyProcurementActivity { get; init; }
     public bool IsOutsourced { get; init; }
-    public List<string>? BidEvaluationCriteria { get; init; }
-    public string? ProcurementStrategy { get; init; }
+    public BidEvaluationCriteria? BidEvaluationCriteria { get; init; }
+    public List<ProcurementStrategy>? ProcurementStrategies { get; init; }
     public DateTime CreatedAt { get; init; }
     public string CreatedBy { get; init; } = string.Empty;
     public DateTime? UpdatedAt { get; init; }
