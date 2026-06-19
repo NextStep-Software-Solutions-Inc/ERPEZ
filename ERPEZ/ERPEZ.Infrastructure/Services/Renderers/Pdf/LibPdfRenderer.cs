@@ -111,7 +111,7 @@ internal sealed class LibPdfRenderer : BasePdfRenderer, IDocumentRenderer<LibDat
                         RenderSectionIV(col, request);
                         RenderSectionV(col, request);
                         RenderChart(col, request);
-                        RenderSignatories(col, request.Signatories);
+                        RenderLibSignatories(col);
                     }
                     else
                     {
@@ -120,9 +120,10 @@ internal sealed class LibPdfRenderer : BasePdfRenderer, IDocumentRenderer<LibDat
                         RenderLegacySectionII(col, request);
                         col.Item().PageBreak();
                         RenderSectionIII(col, request);
+                        RenderSectionIV(col, request);
                         RenderSectionV(col, request);
                         RenderChart(col, request);
-                        RenderSignatories(col, request.Signatories);
+                        RenderLibSignatories(col);
                     }
                 });
 
@@ -235,36 +236,41 @@ internal sealed class LibPdfRenderer : BasePdfRenderer, IDocumentRenderer<LibDat
         col.Item().PaddingTop(2).Text($"FUNDSOURCE: {request.FundSource}")
             .FontSize(8);
 
-        col.Item().PaddingTop(4).Table(table =>
+        // Each activity group gets its own label (outside the table) + its own table.
+        foreach (var apiGroup in request.ApiGroups)
         {
-            table.ColumnsDefinition(c =>
-            {
-                c.RelativeColumn(1.5f);
-                c.RelativeColumn(3.5f);
-                c.RelativeColumn(3.0f);
-                c.RelativeColumn(1.5f);
-                c.RelativeColumn(1.5f);
-                c.RelativeColumn(1.5f);
-                c.RelativeColumn(1.5f);
-                c.RelativeColumn(2.0f);
-            });
+            // Activity name rendered as a standalone label above the table
+            col.Item().PaddingTop(6)
+                .Background(Colors.Blue.Lighten3)
+                .Border(1).BorderColor(Colors.Grey.Medium)
+                .Padding(3)
+                .Text(apiGroup.ActivityName).Bold().FontSize(7);
 
-            table.Header(h =>
+            col.Item().Table(table =>
             {
-                SectionIHeader(h, "UACS Code");
-                SectionIHeader(h, "Item of Expenditure");
-                SectionIHeader(h, "Description");
-                SectionIHeader(h, "1st Quarter");
-                SectionIHeader(h, "2nd Quarter");
-                SectionIHeader(h, "3rd Quarter");
-                SectionIHeader(h, "4th Quarter");
-                SectionIHeader(h, "TOTAL");
-            });
+                table.ColumnsDefinition(c =>
+                {
+                    c.RelativeColumn(1.5f);
+                    c.RelativeColumn(3.5f);
+                    c.RelativeColumn(3.0f);
+                    c.RelativeColumn(1.5f);
+                    c.RelativeColumn(1.5f);
+                    c.RelativeColumn(1.5f);
+                    c.RelativeColumn(1.5f);
+                    c.RelativeColumn(2.0f);
+                });
 
-            foreach (var apiGroup in request.ApiGroups)
-            {
-                table.Cell().ColumnSpan(8).Element(ActivityHeaderCell)
-                    .Text(apiGroup.ActivityName).Bold().FontSize(7);
+                table.Header(h =>
+                {
+                    SectionIHeader(h, "UACS Code");
+                    SectionIHeader(h, "Item of Expenditure");
+                    SectionIHeader(h, "Description");
+                    SectionIHeader(h, "1st Quarter");
+                    SectionIHeader(h, "2nd Quarter");
+                    SectionIHeader(h, "3rd Quarter");
+                    SectionIHeader(h, "4th Quarter");
+                    SectionIHeader(h, "TOTAL");
+                });
 
                 foreach (var expenseGroup in apiGroup.ExpenseGroups)
                 {
@@ -293,12 +299,19 @@ internal sealed class LibPdfRenderer : BasePdfRenderer, IDocumentRenderer<LibDat
                     .AlignRight().Text($"Sub-total, {apiGroup.ActivityName}").Bold();
                 table.Cell().Element(SubtotalCell)
                     .AlignRight().Text($"{apiGroup.SubTotal:N2}").Bold();
-            }
+            });
+        }
 
-            table.Cell().ColumnSpan(7).Element(GrandTotalCell)
-                .AlignRight().Text("GRAND TOTAL").Bold();
-            table.Cell().Element(GrandTotalCell)
-                .AlignRight().Text($"{request.TotalBudget:N2}").Bold();
+        col.Item().PaddingTop(2).Table(table =>
+        {
+            table.ColumnsDefinition(c =>
+            {
+                c.RelativeColumn(14.5f);
+                c.RelativeColumn(2.0f);
+            });
+
+            table.Cell().Element(GrandTotalCell).AlignRight().Text("GRAND TOTAL").Bold();
+            table.Cell().Element(GrandTotalCell).AlignRight().Text($"{request.TotalBudget:N2}").Bold();
         });
     }
 
@@ -538,8 +551,12 @@ internal sealed class LibPdfRenderer : BasePdfRenderer, IDocumentRenderer<LibDat
         });
     }
 
+    // ── FIX 1: Two-row header with "QUARTER" spanning cols 1-4; allotment class
+    //           rendered as a group-label row; added to BOTH scope branches.
     private static void RenderSectionIV(ColumnDescriptor col, LibDataDto request)
     {
+        if (request.QuarterSummaries.Count == 0) return;
+
         col.Item().PaddingTop(6).Text("IV. SUMMARY BY QUARTER")
             .Bold().FontSize(9);
 
@@ -555,32 +572,71 @@ internal sealed class LibPdfRenderer : BasePdfRenderer, IDocumentRenderer<LibDat
                 c.RelativeColumn(2f);
             });
 
+            // Two-row header: ALLOTMENT CLASS | QUARTER (span 4) | TOTAL
+            //                                 |  1  |  2  |  3  |  4  |
             table.Header(h =>
             {
-                SectionIHeader(h, "ALLOTMENT CLASS");
-                SectionIHeader(h, "1");
-                SectionIHeader(h, "2");
-                SectionIHeader(h, "3");
-                SectionIHeader(h, "4");
-                SectionIHeader(h, "TOTAL");
+                h.Cell().RowSpan(2).Element(TableHeaderCell).AlignCenter().AlignMiddle()
+                    .Text("ALLOTMENT CLASS").Bold().FontSize(7);
+                h.Cell().ColumnSpan(4).Element(TableHeaderCell).AlignCenter()
+                    .Text("QUARTER").Bold().FontSize(7);
+                h.Cell().RowSpan(2).Element(TableHeaderCell).AlignCenter().AlignMiddle()
+                    .Text("TOTAL").Bold().FontSize(7);
+                h.Cell().Element(TableHeaderCell).AlignCenter().Text("1").Bold().FontSize(7);
+                h.Cell().Element(TableHeaderCell).AlignCenter().Text("2").Bold().FontSize(7);
+                h.Cell().Element(TableHeaderCell).AlignCenter().Text("3").Bold().FontSize(7);
+                h.Cell().Element(TableHeaderCell).AlignCenter().Text("4").Bold().FontSize(7);
             });
 
             foreach (var summary in request.QuarterSummaries)
             {
-                table.Cell().Element(TableDataCell).Text(summary.AllotmentClass);
-                table.Cell().Element(TableDataCell).AlignRight().Text(FormatAmount(summary.Q1Budget));
-                table.Cell().Element(TableDataCell).AlignRight().Text(FormatAmount(summary.Q2Budget));
-                table.Cell().Element(TableDataCell).AlignRight().Text(FormatAmount(summary.Q3Budget));
-                table.Cell().Element(TableDataCell).AlignRight().Text(FormatAmount(summary.Q4Budget));
-                table.Cell().Element(TableDataCell).AlignRight().Text(FormatAmount(summary.TotalBudget));
+                // Group label row (e.g. "Internally-Generated Fund 2023" / "MOOE")
+                table.Cell().ColumnSpan(6).Element(ActivityHeaderCell)
+                    .Text(summary.AllotmentClass).Bold().FontSize(7);
+
+                // Detail rows — expense class entries under this allotment class
+                var matchingSummaries = request.AccountGroupSummaries
+                    .Where(a => string.Equals(a.ExpenseClassType, summary.AllotmentClass,
+                        StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+
+                foreach (var acctSummary in matchingSummaries)
+                {
+                    table.Cell().Element(TableDataCell).PaddingLeft(8)
+                        .Text(acctSummary.ExpenseClassType).FontSize(7);
+                    table.Cell().Element(TableDataCell).AlignRight()
+                        .Text(FormatAmount(acctSummary.Q1Budget)).FontSize(7);
+                    table.Cell().Element(TableDataCell).AlignRight()
+                        .Text(FormatAmount(acctSummary.Q2Budget)).FontSize(7);
+                    table.Cell().Element(TableDataCell).AlignRight()
+                        .Text(FormatAmount(acctSummary.Q3Budget)).FontSize(7);
+                    table.Cell().Element(TableDataCell).AlignRight()
+                        .Text(FormatAmount(acctSummary.Q4Budget)).FontSize(7);
+                    table.Cell().Element(TableDataCell).AlignRight()
+                        .Text(FormatAmount(acctSummary.TotalBudget)).FontSize(7);
+                }
+
+                // Subtotal row for this allotment class
+                table.Cell().Element(SubtotalCell).AlignRight().Text("TOTAL").Bold().FontSize(7);
+                table.Cell().Element(SubtotalCell).AlignRight().Text(FormatAmount(summary.Q1Budget)).Bold().FontSize(7);
+                table.Cell().Element(SubtotalCell).AlignRight().Text(FormatAmount(summary.Q2Budget)).Bold().FontSize(7);
+                table.Cell().Element(SubtotalCell).AlignRight().Text(FormatAmount(summary.Q3Budget)).Bold().FontSize(7);
+                table.Cell().Element(SubtotalCell).AlignRight().Text(FormatAmount(summary.Q4Budget)).Bold().FontSize(7);
+                table.Cell().Element(SubtotalCell).AlignRight().Text(FormatAmount(summary.TotalBudget)).Bold().FontSize(7);
             }
 
+            // Grand total row
             table.Cell().Element(GrandTotalCell).AlignRight().Text("TOTAL").Bold();
-            table.Cell().Element(GrandTotalCell).AlignRight().Text(FormatAmount(request.QuarterSummaries.Sum(s => s.Q1Budget))).Bold();
-            table.Cell().Element(GrandTotalCell).AlignRight().Text(FormatAmount(request.QuarterSummaries.Sum(s => s.Q2Budget))).Bold();
-            table.Cell().Element(GrandTotalCell).AlignRight().Text(FormatAmount(request.QuarterSummaries.Sum(s => s.Q3Budget))).Bold();
-            table.Cell().Element(GrandTotalCell).AlignRight().Text(FormatAmount(request.QuarterSummaries.Sum(s => s.Q4Budget))).Bold();
-            table.Cell().Element(GrandTotalCell).AlignRight().Text(FormatAmount(request.TotalBudget)).Bold();
+            table.Cell().Element(GrandTotalCell).AlignRight()
+                .Text(FormatAmount(request.QuarterSummaries.Sum(s => s.Q1Budget))).Bold();
+            table.Cell().Element(GrandTotalCell).AlignRight()
+                .Text(FormatAmount(request.QuarterSummaries.Sum(s => s.Q2Budget))).Bold();
+            table.Cell().Element(GrandTotalCell).AlignRight()
+                .Text(FormatAmount(request.QuarterSummaries.Sum(s => s.Q3Budget))).Bold();
+            table.Cell().Element(GrandTotalCell).AlignRight()
+                .Text(FormatAmount(request.QuarterSummaries.Sum(s => s.Q4Budget))).Bold();
+            table.Cell().Element(GrandTotalCell).AlignRight()
+                .Text(FormatAmount(request.TotalBudget)).Bold();
         });
     }
 
@@ -704,6 +760,61 @@ internal sealed class LibPdfRenderer : BasePdfRenderer, IDocumentRenderer<LibDat
                         .FontSize(7);
                 });
             }
+        });
+    }
+
+    // ── FIX 2: Static 4-signatory footer matching the standard LIB form layout.
+    //           Replaces the dynamic RenderSignatories(col, request.Signatories)
+    //           call which rendered nothing because Signatories is always [].
+    private static void RenderLibSignatories(ColumnDescriptor col)
+    {
+        col.Item().PaddingTop(24).Row(row =>
+        {
+            // 1. Submitted by
+            row.RelativeItem().Column(sc =>
+            {
+                sc.Item().Text("Submitted by:").Bold().FontSize(8);
+                sc.Item().PaddingTop(32).BorderBottom(1).BorderColor(Colors.Black).Text(string.Empty);
+                sc.Item().Text("Signature over Printed Name").FontSize(7).Italic();
+                sc.Item().PaddingTop(2).Text(string.Empty).FontSize(8);
+                sc.Item().Text("Budget Officer / Head of Office").FontSize(7);
+            });
+
+            row.ConstantItem(10);
+
+            // 2. Recommending Approval
+            row.RelativeItem().Column(sc =>
+            {
+                sc.Item().Text("Recommending Approval:").Bold().FontSize(8);
+                sc.Item().PaddingTop(32).BorderBottom(1).BorderColor(Colors.Black).Text(string.Empty);
+                sc.Item().Text("Signature over Printed Name").FontSize(7).Italic();
+                sc.Item().PaddingTop(2).Text(string.Empty).FontSize(8);
+                sc.Item().Text("Vice Chancellor / Director").FontSize(7);
+            });
+
+            row.ConstantItem(10);
+
+            // 3. Funds Available
+            row.RelativeItem().Column(sc =>
+            {
+                sc.Item().Text("Funds Available:").Bold().FontSize(8);
+                sc.Item().PaddingTop(32).BorderBottom(1).BorderColor(Colors.Black).Text(string.Empty);
+                sc.Item().Text("Signature over Printed Name").FontSize(7).Italic();
+                sc.Item().PaddingTop(2).Text(string.Empty).FontSize(8);
+                sc.Item().Text("Director, Financial Management Services").FontSize(7);
+            });
+
+            row.ConstantItem(10);
+
+            // 4. Approved by
+            row.RelativeItem().Column(sc =>
+            {
+                sc.Item().Text("Approved by:").Bold().FontSize(8);
+                sc.Item().PaddingTop(32).BorderBottom(1).BorderColor(Colors.Black).Text(string.Empty);
+                sc.Item().Text("Signature over Printed Name").FontSize(7).Italic();
+                sc.Item().PaddingTop(2).Text(string.Empty).FontSize(8);
+                sc.Item().Text("President, USTP System").FontSize(7);
+            });
         });
     }
 
