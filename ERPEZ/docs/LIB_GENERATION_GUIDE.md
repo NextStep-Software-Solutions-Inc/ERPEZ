@@ -134,12 +134,9 @@ These branches are selected when Scope != ActivityLevel.
 
 ## Format Selection (Post-Refactor)
 
-Controller parsing now accepts enum names only:
-
+Controller parsing now accepts enum names:
 - Pdf
 - Excel
-
-Numeric values (0/1) are intentionally rejected with a 400 response.
 
 The parsed value is still stored in GeneratedDocument.Format as ExportFormat.
 
