@@ -142,11 +142,11 @@ public record UpdateLIBRequest
     public Guid? FundSourceId { get; init; }
     public Guid? OfficeId { get; init; }
     public Guid? ParentLIBId { get; init; }
-    public string Scope { get; init; } = string.Empty;
-    public string Level { get; init; } = string.Empty;
-    public string Name { get; init; } = string.Empty;
-    public string LIBNumber { get; init; } = string.Empty;
-    public string SourceType { get; init; } = string.Empty;
+    public string? Scope { get; init; }
+    public string? Level { get; init; }
+    public string? Name { get; init; }
+    public string? LIBNumber { get; init; }
+    public string? SourceType { get; init; }
     public Guid? SourceId { get; init; }
     public Guid? ConsolidatedIntoLIBId { get; init; }
     public decimal? TotalAmount { get; init; }

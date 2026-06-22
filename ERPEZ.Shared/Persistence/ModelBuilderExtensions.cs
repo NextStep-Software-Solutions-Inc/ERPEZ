@@ -63,6 +63,7 @@ public static class ModelBuilderExtensions
                 var lambda = Expression.Lambda(notDeleted, parameter);
                 entity.SetQueryFilter(lambda);
             }
+            
         }
 
         return modelBuilder;
