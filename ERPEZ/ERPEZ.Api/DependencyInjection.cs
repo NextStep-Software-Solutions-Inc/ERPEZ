@@ -2,6 +2,7 @@ using ERPEZ.Shared.Middlewares;
 using ERPEZ.Api.Extensions;
 using ERPEZ.Api.Configuration;
 using ERPEZ.Infrastructure.Services;
+using System.Text.Json.Serialization;
 
 namespace ERPEZ.Api;
 
@@ -20,7 +21,11 @@ public static class DependencyInjection
 
         // 2. Register the service itself if not already registered elsewhere
         // services.AddScoped<IFileStorageService, AzureBlobStorageService>();
-        services.AddControllers();
+        services.AddControllers()
+        .AddJsonOptions(options =>
+            {
+                options.JsonSerializerOptions.Converters.Add(new JsonStringEnumConverter());
+            });
         services.AddEndpointsApiExplorer();
         services.AddJwtAuthentication(configuration);
         services.AddAuthorization();
