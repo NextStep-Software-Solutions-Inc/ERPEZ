@@ -59,15 +59,18 @@ internal sealed class OpcrRatingPdfRenderer : BasePdfRenderer, IDocumentRenderer
 
                         r.RelativeItem().Column(legend =>
                         {
-                            legend.Item().Text("5 - Outstanding").FontSize(7);
-                            legend.Item().Text("4 - Very Satisfactory").FontSize(7);
-                            legend.Item().Text("3 - Satisfactory").FontSize(7);
-                            legend.Item().Text("2 - Unsatisfactory").FontSize(7);
-                            legend.Item().Text("1 - Poor").FontSize(7);
+                            // legend.Item().Text("5 - Outstanding").FontSize(7);
+                            // legend.Item().Text("4 - Very Satisfactory").FontSize(7);
+                            // legend.Item().Text("3 - Satisfactory").FontSize(7);
+                            // legend.Item().Text("2 - Unsatisfactory").FontSize(7);
+                            // legend.Item().Text("1 - Poor").FontSize(7);
+
+                            foreach (var entry in request.RatingScaleLegend)
+                                legend.Item().Text(entry).FontSize(7);
                         });
                     });
                 });
-
+    
                 // ── Content ───────────────────────────────────────────────
                 page.Content().PaddingTop(8).Column(col =>
                 {

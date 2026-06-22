@@ -3613,11 +3613,11 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text");
 
+                    b.Property<Guid>("FYActiveKPIMeasurementId")
+                        .HasColumnType("uuid");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
-
-                    b.Property<Guid>("KPIMeasurementId")
-                        .HasColumnType("uuid");
 
                     b.Property<Guid>("OPCRItemId")
                         .HasColumnType("uuid");
@@ -3642,11 +3642,11 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("KPIMeasurementId");
+                    b.HasIndex("FYActiveKPIMeasurementId");
 
                     b.HasIndex("OPCRItemId");
 
-                    b.HasIndex("OPCRItemId", "KPIMeasurementId")
+                    b.HasIndex("OPCRItemId", "FYActiveKPIMeasurementId")
                         .IsUnique();
 
                     b.ToTable("OPCRItemRatings", "planning");
@@ -7985,9 +7985,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OPCRItemRating", b =>
                 {
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.KPIMeasurement", "KPIMeasurement")
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.FYActiveKPIMeasurement", "FYActiveKPIMeasurement")
                         .WithMany()
-                        .HasForeignKey("KPIMeasurementId")
+                        .HasForeignKey("FYActiveKPIMeasurementId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -7997,7 +7997,7 @@ namespace ERPEZ.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("KPIMeasurement");
+                    b.Navigation("FYActiveKPIMeasurement");
 
                     b.Navigation("OPCRItem");
                 });

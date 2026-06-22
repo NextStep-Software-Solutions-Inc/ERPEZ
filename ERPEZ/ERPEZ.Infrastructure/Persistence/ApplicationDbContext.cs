@@ -2093,9 +2093,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<OPCRItemRating>()
-            .HasOne(oir => oir.KPIMeasurement)
+            .HasOne(oir => oir.FYActiveKPIMeasurement)
             .WithMany()
-            .HasForeignKey(oir => oir.KPIMeasurementId)
+            .HasForeignKey(oir => oir.FYActiveKPIMeasurementId)
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<OPCRItemRating>()
@@ -2114,7 +2114,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasIndex(oir => oir.OPCRItemId);
 
         modelBuilder.Entity<OPCRItemRating>()
-            .HasIndex(oir => new { oir.OPCRItemId, oir.KPIMeasurementId })
+            .HasIndex(oir => new { oir.OPCRItemId, oir.FYActiveKPIMeasurementId })
             .IsUnique();
 
         // OPCRItemMOV

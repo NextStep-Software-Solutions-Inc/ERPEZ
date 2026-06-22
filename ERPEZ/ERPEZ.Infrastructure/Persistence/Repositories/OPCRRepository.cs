@@ -66,7 +66,7 @@ public class OPCRRepository : Repository<OPCR>, IOPCRRepository
             // Included in both variants; empty collection when no ratings exist
             .Include(o => o.OPCRItems.Where(i => !i.IsDeleted))
                 .ThenInclude(i => i.OPCRItemRatings.Where(r => !r.IsDeleted))
-                    .ThenInclude(r => r.KPIMeasurement)
+                    .ThenInclude(r => r.FYActiveKPIMeasurement)
                         .ThenInclude(m => m.RatingScaleTemplate)
                             .ThenInclude(t => t!.RatingScaleLevels)
 
