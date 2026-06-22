@@ -13,6 +13,7 @@
         public string PeriodCovered            { get; set; } = string.Empty;
         public string RatingPeriod             { get; set; } = string.Empty;
         public bool   IncludeRatings           { get; set; }
+        public List<string> RatingScaleLegend { get; set; } = [];
         public List<OpcrFunctionCategoryDto> FunctionCategories { get; set; } = [];
         public decimal            TotalBudget  { get; set; }
         public List<SignatoryDto> Signatories  { get; set; } = [];

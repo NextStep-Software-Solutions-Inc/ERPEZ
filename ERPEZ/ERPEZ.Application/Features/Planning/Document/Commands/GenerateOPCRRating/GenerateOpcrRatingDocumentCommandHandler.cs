@@ -1,8 +1,7 @@
-// GenerateOpcrRatingDocumentCommandHandler.cs
 using ERPEZ.Application.Interfaces.Services;
 using ERPEZ.Application.Features.Planning.Document.Dtos;
-using OPCREntity = ERPEZ.Domain.Entities.Planning.OPCR;
 using ERPEZ.Application.Features.Planning.Document.Mappers;
+using OPCREntity = ERPEZ.Domain.Entities.Planning.OPCR;
 using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
@@ -22,31 +21,34 @@ public class GenerateOpcrRatingDocumentCommandHandler(
         GenerateOpcrRatingDocumentCommand request,
         CancellationToken                 cancellationToken)
     {
-        // ── 1. Fetch OPCR with ratings ────────────────────────────────────────
-        // The repository must eager-load:
-        //   OPCRItems → OPCRItemRatings → KPIMeasurement → RatingScaleTemplate → RatingScaleLevels
-        //   OPCRItems → OPCRActivities  → OPCRPAPDepartments
-        //   OPCRItems → KPIAssignment   → FYActiveKPI → MFOPAP
+        // ── 1. Fetch ────────────────────────────────────────────────────────
         var opcr = await unitOfWork.OPCRRepository
             .GetOPCRWithRatingsAsync(request.OPCRId, cancellationToken)
             ?? throw new NotFoundException("OPCR not found.");
 
-        // ── 2. Optionally scope to a specific evaluation ──────────────────────
-        // If your OPCREvaluation entity gates which OPCRItemRatings are "active",
-        // filter them here. For now we use all non-deleted ratings on each OPCRItem.
-        // TODO: if EvaluationId is provided, filter OPCRItemRatings by evaluation scope.
-
-        // ── 3. Map ───────────────────────────────────────────────────────────
+        // ── 2. Map ──────────────────────────────────────────────────────────
         var dataDto = OpcrMapper.MapToBaseDto(opcr, includeRatings: true);
 
-        // ── 4. Compute overall summary row ────────────────────────────────────
+        // ── 3. Populate legend from GeneralRatingScale for this fiscal year ───
+        var generalScales = await unitOfWork.GeneralRatingScaleRepository.GetListAsync(
+            unitOfWork.GeneralRatingScaleRepository
+                .Query(g => g.FiscalYearId == opcr.FiscalYearId)
+                .OrderByDescending(g => g.MinScore)
+                .Select(g => new { g.AdjectivalRatingName, g.MinScore, g.MaxScore }),
+            cancellationToken);
+
+        dataDto.RatingScaleLegend = generalScales
+            .Select(g => $"{g.MinScore:N2}–{g.MaxScore:N2} — {g.AdjectivalRatingName}")
+            .ToList();
+
+        // ── 4. Compute overall summary row ─────────────────────────────────
         AppendOverallSummary(dataDto);
 
-        // ── 5. Render ────────────────────────────────────────────────────────
+        // ── 5. Render ───────────────────────────────────────────────────────
         var bytes = await rendererService.RenderAsync(
             dataDto, DocumentType.OpcrRating, request.Format, cancellationToken);
 
-        // ── 6. Persist ───────────────────────────────────────────────────────
+        // ── 6. Persist ──────────────────────────────────────────────────────
         var fileName = BuildFileName("OPCR_RATING", opcr, request.Format);
         var path     = await storageService.SaveAsync(bytes, fileName, cancellationToken);
 
@@ -68,11 +70,6 @@ public class GenerateOpcrRatingDocumentCommandHandler(
         return ApiResponse<Guid>.Success(record.Id, "OPCR Rating document generated successfully.");
     }
 
-    /// <summary>
-    /// Appends a synthetic summary row at the end of each function category section
-    /// showing the weighted/average PMT rating and overall adjectival rating.
-    /// The summary row reuses a sentinel MFO group with an empty code.
-    /// </summary>
     private static void AppendOverallSummary(OpcrDataDto dto)
     {
         foreach (var category in dto.FunctionCategories)
@@ -86,8 +83,6 @@ public class GenerateOpcrRatingDocumentCommandHandler(
 
             var categoryAverage = Math.Round(allRows.Average(r => r.AveRating!.Value), 2);
 
-            // Derive overall adjectival from first available scale template
-            // (all KPIs in an office should share the same template)
             var adjectival = allRows
                 .Select(r => r.AdjectivalRating)
                 .FirstOrDefault(a => !string.IsNullOrWhiteSpace(a))
@@ -100,12 +95,11 @@ public class GenerateOpcrRatingDocumentCommandHandler(
                 AdjectivalRating     = adjectival
             };
 
-            // Insert as its own sentinel group so the renderer can style it differently
             category.MFOGroups.Add(new OpcrMFOGroupDto
             {
-                MFOCode  = "__SUMMARY__",
-                MFOName  = string.Empty,
-                KpiRows  = [summaryRow]
+                MFOCode = "__SUMMARY__",
+                MFOName = string.Empty,
+                KpiRows = [summaryRow]
             });
         }
     }

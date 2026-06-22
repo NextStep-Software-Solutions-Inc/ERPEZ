@@ -193,8 +193,8 @@ internal static class OpcrMapper
         if (row.AveRating.HasValue)
         {
             var template = ratings
-                .FirstOrDefault(r => r.KPIMeasurement?.RatingScaleTemplate != null)
-                ?.KPIMeasurement?.RatingScaleTemplate;
+                .FirstOrDefault(r => r.FYActiveKPIMeasurement?.RatingScaleTemplate != null)
+                ?.FYActiveKPIMeasurement?.RatingScaleTemplate;
 
             if (template?.RatingScaleLevels is { } levels)
                 row.AdjectivalRating = DeriveAdjectival(row.AveRating.Value, levels);
@@ -226,7 +226,7 @@ internal static class OpcrMapper
         List<OPCRItemRatingEntity> ratings, string dimensionName)
     {
         var match = ratings.FirstOrDefault(r =>
-            r.KPIMeasurement?.Dimensions.Contains(dimensionName) == true);
+            r.FYActiveKPIMeasurement?.Dimensions.Contains(dimensionName) == true);
         return match?.PMTRating;
     }
 

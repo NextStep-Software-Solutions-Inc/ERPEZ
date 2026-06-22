@@ -16,14 +16,14 @@ public class CreateOPCRItemRatingCommandHandler(IUnitOfWork unitOfWork)
         _ = await unitOfWork.OPCRItemRepository.GetByIdAsync(request.OPCRItemId, cancellationToken)
             ?? throw new NotFoundException("OPCR Item not found.");
 
-        // Validate KPIMeasurement exists
-        _ = await unitOfWork.KPIMeasurementRepository.GetByIdAsync(request.KPIMeasurementId, cancellationToken)
-            ?? throw new NotFoundException("KPI Measurement not found.");
+        // Validate against FYActiveKPIMeasurement, the FY-locked snapshot
+        _ = await unitOfWork.FYActiveKPIMeasurementRepository.GetByIdAsync(request.FYActiveKPIMeasurementId, cancellationToken)
+            ?? throw new NotFoundException("FY Active KPI Measurement not found.");
 
-        // Check for duplicate per OPCRItem + KPIMeasurement + Dimension
+        // Check for duplicate per OPCRItem + FYActiveKPIMeasurement + Dimension
         var duplicate = await unitOfWork.OPCRItemRatingRepository.FindAsync(
             r => r.OPCRItemId == request.OPCRItemId
-              && r.KPIMeasurementId == request.KPIMeasurementId,
+              && r.FYActiveKPIMeasurementId == request.FYActiveKPIMeasurementId,
             cancellationToken);
 
         if (duplicate != null)
@@ -34,7 +34,7 @@ public class CreateOPCRItemRatingCommandHandler(IUnitOfWork unitOfWork)
         {
             Id                = Guid.NewGuid(),
             OPCRItemId        = request.OPCRItemId,
-            KPIMeasurementId  = request.KPIMeasurementId,
+            FYActiveKPIMeasurementId   = request.FYActiveKPIMeasurementId,
             SelfRating        = request.SelfRating,
         };
 
