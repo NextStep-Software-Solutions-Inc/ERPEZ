@@ -36,6 +36,14 @@ public class GenerateLibDocumentCommandHandler(
             dataDto, DocumentType.Lib, request.Format, cancellationToken);
 
         // ── 4. Persist ───────────────────────────────────────────────────────
+        if (lib.OfficeId is null)
+            throw new InvalidOperationException(
+                $"Line Item Budget '{lib.LIBNumber}' has no associated office. Cannot persist generated document.");
+
+        if (lib.FiscalYearEntity is null)
+            throw new InvalidOperationException(
+                $"Line Item Budget '{lib.LIBNumber}' has no fiscal year assigned. Cannot persist generated document.");  
+
         var extension  = request.Format == ExportFormat.Excel ? "xlsx" : "pdf";
         var fiscalYear = lib.FiscalYearEntity?.Year.ToString() ?? string.Empty;
         var fileName   = $"LIB_{lib.LIBNumber}_{DateTime.UtcNow:yyyyMMddHHmmss}.{extension}";
@@ -45,7 +53,7 @@ public class GenerateLibDocumentCommandHandler(
         {
             DocumentType  = DocumentType.Lib,
             Format        = request.Format,
-            OfficeId      = lib.OfficeId ?? Guid.Empty,
+            OfficeId      = lib.OfficeId.Value,
             StoragePath   = path,
             FileName      = fileName,
             FileSizeBytes = bytes.Length,
