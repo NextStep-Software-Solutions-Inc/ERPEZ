@@ -6,9 +6,9 @@ using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
 
-using LibEntity    = ERPEZ.Domain.Entities.Planning.LineItemBudget;
-using DetailEntity = ERPEZ.Domain.Entities.Planning.LineItemBudgetDetail;
-using ActivityEntity = ERPEZ.Domain.Entities.Planning.LineItemBudgetActivity;
+using LibEntity              = ERPEZ.Domain.Entities.Planning.LineItemBudget;
+using DetailEntity           = ERPEZ.Domain.Entities.Planning.LineItemBudgetDetail;
+using ActivityEntity         = ERPEZ.Domain.Entities.Planning.LineItemBudgetActivity;
 using GeneratedDocumentEntity = ERPEZ.Domain.Entities.Planning.GeneratedDocument;
 
 namespace ERPEZ.Application.Features.Planning.Document.Commands.GenerateLIB;
@@ -36,7 +36,7 @@ public class GenerateLibDocumentCommandHandler(
             dataDto, DocumentType.Lib, request.Format, cancellationToken);
 
         // ── 4. Persist ───────────────────────────────────────────────────────
-        var extension = request.Format == ExportFormat.Excel ? "xlsx" : "pdf";
+        var extension  = request.Format == ExportFormat.Excel ? "xlsx" : "pdf";
         var fiscalYear = lib.FiscalYearEntity?.Year.ToString() ?? string.Empty;
         var fileName   = $"LIB_{lib.LIBNumber}_{DateTime.UtcNow:yyyyMMddHHmmss}.{extension}";
         var path       = await storageService.SaveAsync(bytes, fileName, cancellationToken);
@@ -59,7 +59,9 @@ public class GenerateLibDocumentCommandHandler(
         return ApiResponse<Guid>.Success(record.Id, "LIB document generated successfully.");
     }
 
-    // ── Mapping ──────────────────────────────────────────────────────────────
+    // ═════════════════════════════════════════════════════════════════════════
+    // Mapping
+    // ═════════════════════════════════════════════════════════════════════════
 
     private static LibDataDto MapToLibDataDto(LibEntity lib)
     {
@@ -69,21 +71,20 @@ public class GenerateLibDocumentCommandHandler(
             .Where(d => d.LineItemBudgetActivityId is null)
             .ToList();
 
-        // Section I: group by Activity → ExpenseClass → Object (quarterly)
+        // Section I — group by Activity → AllotmentClass → AccountGroup → [SubGroup] → Object (quarterly)
         var apiGroups = lib.LineItemBudgetActivities
             .Select(activity =>
             {
-                var context = ResolveActivityContext(activity);
-                var expenseGroups = BuildExpenseGroupsQuarterly(activity.LineItemBudgetDetails);
+                var context       = ResolveActivityContext(activity);
+                var expGroups = BuildExpenseGroupsQuarterly(activity.LineItemBudgetDetails);
                 return new LibApiGroupDto
                 {
                     ActivityName    = activity.Name,
                     PrexcDynamicKra = context.PrexcDynamicKra,
                     GoalsOutcome    = context.GoalsOutcome,
                     ApiLabel        = context.ApiLabel,
-                    // NepGaaLabel     = context.NepGaaLabel,
-                    ExpenseGroups   = expenseGroups,
-                    SubTotal        = expenseGroups.Sum(eg => eg.SubTotal)
+                    ExpenseGroups   = expGroups,
+                    SubTotal        = expGroups.Sum(eg => eg.SubTotal)
                 };
             })
             .ToList();
@@ -97,7 +98,6 @@ public class GenerateLibDocumentCommandHandler(
                 PrexcDynamicKra = string.Empty,
                 GoalsOutcome    = string.Empty,
                 ApiLabel        = "General",
-                // NepGaaLabel     = "NEP/GAA",
                 ExpenseGroups   = standaloneGroups,
                 SubTotal        = standaloneGroups.Sum(eg => eg.SubTotal)
             });
@@ -117,8 +117,8 @@ public class GenerateLibDocumentCommandHandler(
                 AccountGroupName = row.AccountGroupName,
                 Amount           = row.TotalBudget
             }))
-            .OrderBy(group => group.AllotmentClass)
-            .ThenBy(group => group.AccountGroupName)
+            .OrderBy(g => g.AllotmentClass)
+            .ThenBy(g => g.AccountGroupName)
             .ToList();
 
         var fundSourceSummary = new LibFundSourceSummaryDto
@@ -152,202 +152,241 @@ public class GenerateLibDocumentCommandHandler(
         };
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // Detail collection
+    // ─────────────────────────────────────────────────────────────────────────
+
     private static List<DetailEntity> CollectAllDetails(LibEntity lib)
     {
         var details = lib.LineItemBudgetActivities
-            .SelectMany(activity => activity.LineItemBudgetDetails)
-            .Concat(lib.LineItemBudgetDetails.Where(detail => detail.LineItemBudgetActivityId is null))
-            .DistinctBy(detail => detail.Id)
+            .SelectMany(a => a.LineItemBudgetDetails)
+            .Concat(lib.LineItemBudgetDetails.Where(d => d.LineItemBudgetActivityId is null))
+            .DistinctBy(d => d.Id)
             .ToList();
 
         if (details.Count == 0)
-        {
-            details = lib.LineItemBudgetDetails
-                .DistinctBy(detail => detail.Id)
-                .ToList();
-        }
+            details = lib.LineItemBudgetDetails.DistinctBy(d => d.Id).ToList();
 
         return details;
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // Section II (target groups — monthly)
+    // ─────────────────────────────────────────────────────────────────────────
+
     private static List<LibTargetGroupDto> BuildTargetGroups(
-        LibEntity lib,
+        LibEntity                 lib,
         IEnumerable<DetailEntity> standaloneDetails)
     {
         var targetGroups = lib.LineItemBudgetActivities
             .Select(activity =>
             {
-                var context = ResolveActivityContext(activity);
+                var context       = ResolveActivityContext(activity);
                 var expenseGroups = BuildExpenseGroupsMonthly(activity.LineItemBudgetDetails);
-
                 return new LibTargetGroupDto
                 {
                     ActivityName    = activity.Name,
                     PrexcDynamicKra = context.PrexcDynamicKra,
                     GoalsOutcome    = context.GoalsOutcome,
                     KpiLabel        = context.KpiLabel,
-                    // NepGaaLabel     = context.NepGaaLabel,
                     Targets         = ResolveTargets(activity),
                     ExpenseGroups   = expenseGroups,
-                    SubTotal        = expenseGroups.Sum(group => group.SubTotal)
+                    SubTotal        = expenseGroups.Sum(g => g.SubTotal)
                 };
             })
             .ToList();
 
-        var standaloneGroupDetails = standaloneDetails.ToList();
-        if (standaloneGroupDetails.Count > 0)
+        var standaloneList = standaloneDetails.ToList();
+        if (standaloneList.Count > 0)
         {
-            var expenseGroups = BuildExpenseGroupsMonthly(standaloneGroupDetails);
+            var expenseGroups = BuildExpenseGroupsMonthly(standaloneList);
             targetGroups.Add(new LibTargetGroupDto
             {
                 ActivityName    = "General",
                 PrexcDynamicKra = string.Empty,
                 GoalsOutcome    = string.Empty,
                 KpiLabel        = string.Empty,
-                // NepGaaLabel     = "NEP/GAA",
                 Targets         = [],
                 ExpenseGroups   = expenseGroups,
-                SubTotal        = expenseGroups.Sum(group => group.SubTotal)
+                SubTotal        = expenseGroups.Sum(g => g.SubTotal)
             });
         }
 
         return targetGroups;
     }
 
-    private static List<LibExpenseGroupDto> BuildExpenseGroupsQuarterly(
+    // ─────────────────────────────────────────────────────────────────────────
+    // Expense group builders  (both return List<LibAllotmentGroupDto>)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private static List<LibAllotmentGroupDto> BuildExpenseGroupsQuarterly(
         IEnumerable<DetailEntity> details)
     {
         return details
-            .GroupBy(GetExpenseClassKey)
-            .Select(ecGroup =>
+            .Select(d => (Detail: d, Hier: ResolveHierarchy(d)))
+            .GroupBy(x => x.Hier.AllotmentClass)
+            .Select(allotmentGrp => new LibAllotmentGroupDto
             {
-                var rows = ecGroup
-                    .GroupBy(d => new { d.ObjectId, d.Object.Code, d.Object.Name })
-                    .Select(objGroup => new LibRowDto
+                AllotmentClass = allotmentGrp.Key,
+                AccountGroups  = allotmentGrp
+                    .GroupBy(x => x.Hier.AccountGroup)
+                    .Select(acctGrp => new LibAccountGroupDto
                     {
-                        UACSCode    = objGroup.Key.Code,
-                        ObjectName  = objGroup.Key.Name,
-                        Description = objGroup.FirstOrDefault()?.Description,
-                        Q1Budget    = objGroup.Sum(d => GetQuarterBudget(d, 1)),
-                        Q2Budget    = objGroup.Sum(d => GetQuarterBudget(d, 2)),
-                        Q3Budget    = objGroup.Sum(d => GetQuarterBudget(d, 3)),
-                        Q4Budget    = objGroup.Sum(d => GetQuarterBudget(d, 4)),
-                        TotalBudget = objGroup.Sum(d => d.Budget)
+                        AccountGroupName = acctGrp.Key,
+                        SubGroups        = acctGrp
+                            .GroupBy(x => x.Hier.SubAccountGroup)
+                            .Select(subGrp => new LibSubAccountGroupDto
+                            {
+                                SubGroupName = subGrp.Key,
+                                Rows         = subGrp
+                                    .GroupBy(x => new { x.Hier.UACSCode, x.Hier.ObjectName })
+                                    .Select(objGrp => new LibRowDto
+                                    {
+                                        UACSCode    = objGrp.Key.UACSCode,
+                                        ObjectName  = objGrp.Key.ObjectName,
+                                        Description = objGrp.First().Detail.Description,
+                                        Q1Budget    = objGrp.Sum(x => GetQuarterBudget(x.Detail, 1)),
+                                        Q2Budget    = objGrp.Sum(x => GetQuarterBudget(x.Detail, 2)),
+                                        Q3Budget    = objGrp.Sum(x => GetQuarterBudget(x.Detail, 3)),
+                                        Q4Budget    = objGrp.Sum(x => GetQuarterBudget(x.Detail, 4)),
+                                        TotalBudget = objGrp.Sum(x => x.Detail.Budget)
+                                    })
+                                    .ToList(),
+                                SubTotal = subGrp.Sum(x => x.Detail.Budget)
+                            })
+                            .ToList(),
+                        SubTotal = acctGrp.Sum(x => x.Detail.Budget)
                     })
-                    .ToList();
-
-                return new LibExpenseGroupDto
-                {
-                    ExpenseClassName = ecGroup.Key.Name,
-                    ExpenseClassType = ecGroup.Key.TypeCode,
-                    Rows             = rows,
-                    SubTotal         = rows.Sum(r => r.TotalBudget)
-                };
+                    .ToList(),
+                SubTotal = allotmentGrp.Sum(x => x.Detail.Budget)
             })
             .ToList();
     }
 
-    private static List<LibExpenseGroupDto> BuildExpenseGroupsMonthly(
-        ICollection<DetailEntity> details)
+    private static List<LibAllotmentGroupDto> BuildExpenseGroupsMonthly(
+        IEnumerable<DetailEntity> details)
     {
         return details
-            .GroupBy(GetExpenseClassKey)
-            .Select(ecGroup =>
+            .Select(d => (Detail: d, Hier: ResolveHierarchy(d)))
+            .GroupBy(x => x.Hier.AllotmentClass)
+            .Select(allotmentGrp => new LibAllotmentGroupDto
             {
-                var rows = ecGroup
-                    .GroupBy(d => new { d.ObjectId, d.Object.Code, d.Object.Name })
-                    .Select(objGroup => new LibRowDto
+                AllotmentClass = allotmentGrp.Key,
+                AccountGroups  = allotmentGrp
+                    .GroupBy(x => x.Hier.AccountGroup)
+                    .Select(acctGrp => new LibAccountGroupDto
                     {
-                        UACSCode    = objGroup.Key.Code,
-                        ObjectName  = objGroup.Key.Name,
-                        JanBudget   = objGroup.Sum(d => GetMonthBudget(d,  1)),
-                        FebBudget   = objGroup.Sum(d => GetMonthBudget(d,  2)),
-                        MarBudget   = objGroup.Sum(d => GetMonthBudget(d,  3)),
-                        AprBudget   = objGroup.Sum(d => GetMonthBudget(d,  4)),
-                        MayBudget   = objGroup.Sum(d => GetMonthBudget(d,  5)),
-                        JunBudget   = objGroup.Sum(d => GetMonthBudget(d,  6)),
-                        JulBudget   = objGroup.Sum(d => GetMonthBudget(d,  7)),
-                        AugBudget   = objGroup.Sum(d => GetMonthBudget(d,  8)),
-                        SepBudget   = objGroup.Sum(d => GetMonthBudget(d,  9)),
-                        OctBudget   = objGroup.Sum(d => GetMonthBudget(d, 10)),
-                        NovBudget   = objGroup.Sum(d => GetMonthBudget(d, 11)),
-                        DecBudget   = objGroup.Sum(d => GetMonthBudget(d, 12)),
-                        TotalBudget = objGroup.Sum(d => d.Budget)
+                        AccountGroupName = acctGrp.Key,
+                        SubGroups        = acctGrp
+                            .GroupBy(x => x.Hier.SubAccountGroup)
+                            .Select(subGrp => new LibSubAccountGroupDto
+                            {
+                                SubGroupName = subGrp.Key,
+                                Rows         = subGrp
+                                    .GroupBy(x => new { x.Hier.UACSCode, x.Hier.ObjectName })
+                                    .Select(objGrp => new LibRowDto
+                                    {
+                                        UACSCode    = objGrp.Key.UACSCode,
+                                        ObjectName  = objGrp.Key.ObjectName,
+                                        JanBudget   = objGrp.Sum(x => GetMonthBudget(x.Detail,  1)),
+                                        FebBudget   = objGrp.Sum(x => GetMonthBudget(x.Detail,  2)),
+                                        MarBudget   = objGrp.Sum(x => GetMonthBudget(x.Detail,  3)),
+                                        AprBudget   = objGrp.Sum(x => GetMonthBudget(x.Detail,  4)),
+                                        MayBudget   = objGrp.Sum(x => GetMonthBudget(x.Detail,  5)),
+                                        JunBudget   = objGrp.Sum(x => GetMonthBudget(x.Detail,  6)),
+                                        JulBudget   = objGrp.Sum(x => GetMonthBudget(x.Detail,  7)),
+                                        AugBudget   = objGrp.Sum(x => GetMonthBudget(x.Detail,  8)),
+                                        SepBudget   = objGrp.Sum(x => GetMonthBudget(x.Detail,  9)),
+                                        OctBudget   = objGrp.Sum(x => GetMonthBudget(x.Detail, 10)),
+                                        NovBudget   = objGrp.Sum(x => GetMonthBudget(x.Detail, 11)),
+                                        DecBudget   = objGrp.Sum(x => GetMonthBudget(x.Detail, 12)),
+                                        TotalBudget = objGrp.Sum(x => x.Detail.Budget)
+                                    })
+                                    .ToList(),
+                                SubTotal = subGrp.Sum(x => x.Detail.Budget)
+                            })
+                            .ToList(),
+                        SubTotal = acctGrp.Sum(x => x.Detail.Budget)
                     })
-                    .ToList();
-
-                return new LibExpenseGroupDto
-                {
-                    ExpenseClassName = ecGroup.Key.Name,
-                    ExpenseClassType = ecGroup.Key.TypeCode,
-                    Rows             = rows,
-                    SubTotal         = rows.Sum(r => r.TotalBudget)
-                };
+                    .ToList(),
+                SubTotal = allotmentGrp.Sum(x => x.Detail.Budget)
             })
             .ToList();
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Section III — account group summaries (uses hierarchy, not ExpenseClass)
+    // ─────────────────────────────────────────────────────────────────────────
 
     private static List<LibAccountGroupSummaryDto> BuildAccountGroupSummaries(
         ICollection<DetailEntity> details)
     {
         return details
-            .GroupBy(GetExpenseClassKey)
-            .Select(ecGroup =>
+            .Select(d => (Detail: d, Hier: ResolveHierarchy(d)))
+            .GroupBy(x => x.Hier.AllotmentClass)
+            .Select(allotmentGrp =>
             {
-                var rows = ecGroup
-                    .GroupBy(detail => detail.Object.Name)
-                    .Select(group => new LibAccountGroupRowDto
+                var rows = allotmentGrp
+                    .GroupBy(x => x.Hier.AccountGroup)
+                    .Select(acctGrp => new LibAccountGroupRowDto
                     {
-                        AccountGroupName = group.Key,
-                        Q1Budget         = group.Sum(detail => GetQuarterBudget(detail, 1)),
-                        Q2Budget         = group.Sum(detail => GetQuarterBudget(detail, 2)),
-                        Q3Budget         = group.Sum(detail => GetQuarterBudget(detail, 3)),
-                        Q4Budget         = group.Sum(detail => GetQuarterBudget(detail, 4)),
-                        TotalBudget      = group.Sum(detail => detail.Budget)
+                        AccountGroupName = acctGrp.Key,
+                        Q1Budget         = acctGrp.Sum(x => GetQuarterBudget(x.Detail, 1)),
+                        Q2Budget         = acctGrp.Sum(x => GetQuarterBudget(x.Detail, 2)),
+                        Q3Budget         = acctGrp.Sum(x => GetQuarterBudget(x.Detail, 3)),
+                        Q4Budget         = acctGrp.Sum(x => GetQuarterBudget(x.Detail, 4)),
+                        TotalBudget      = acctGrp.Sum(x => x.Detail.Budget)
                     })
-                    .OrderBy(row => row.AccountGroupName)
+                    .OrderBy(r => r.AccountGroupName)
                     .ToList();
 
                 return new LibAccountGroupSummaryDto
                 {
-                    ExpenseClassType = ecGroup.Key.TypeCode,
-                    ExpenseClassName = ecGroup.Key.Name,
+                    ExpenseClassType = allotmentGrp.Key,
+                    ExpenseClassName = allotmentGrp.Key,
                     Rows             = rows,
-                    Q1Budget         = rows.Sum(row => row.Q1Budget),
-                    Q2Budget         = rows.Sum(row => row.Q2Budget),
-                    Q3Budget         = rows.Sum(row => row.Q3Budget),
-                    Q4Budget         = rows.Sum(row => row.Q4Budget),
-                    TotalBudget      = rows.Sum(row => row.TotalBudget)
+                    Q1Budget         = rows.Sum(r => r.Q1Budget),
+                    Q2Budget         = rows.Sum(r => r.Q2Budget),
+                    Q3Budget         = rows.Sum(r => r.Q3Budget),
+                    Q4Budget         = rows.Sum(r => r.Q4Budget),
+                    TotalBudget      = rows.Sum(r => r.TotalBudget)
                 };
             })
-            .OrderBy(summary => summary.ExpenseClassType)
-            .ThenBy(summary => summary.ExpenseClassName)
+            .OrderBy(s => s.ExpenseClassType)
             .ToList();
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Section IV — quarter summaries (derived from Section III)
+    // ─────────────────────────────────────────────────────────────────────────
 
     private static List<LibQuarterSummaryDto> BuildQuarterSummaries(
         IEnumerable<LibAccountGroupSummaryDto> accountGroupSummaries)
     {
         return accountGroupSummaries
-            .GroupBy(summary => summary.ExpenseClassType)
-            .Select(group => new LibQuarterSummaryDto
+            .GroupBy(s => s.ExpenseClassType)
+            .Select(g => new LibQuarterSummaryDto
             {
-                AllotmentClass = group.Key,
-                Q1Budget       = group.Sum(item => item.Q1Budget),
-                Q2Budget       = group.Sum(item => item.Q2Budget),
-                Q3Budget       = group.Sum(item => item.Q3Budget),
-                Q4Budget       = group.Sum(item => item.Q4Budget),
-                TotalBudget    = group.Sum(item => item.TotalBudget)
+                AllotmentClass = g.Key,
+                Q1Budget       = g.Sum(s => s.Q1Budget),
+                Q2Budget       = g.Sum(s => s.Q2Budget),
+                Q3Budget       = g.Sum(s => s.Q3Budget),
+                Q4Budget       = g.Sum(s => s.Q4Budget),
+                TotalBudget    = g.Sum(s => s.TotalBudget)
             })
-            .OrderBy(summary => summary.AllotmentClass)
+            .OrderBy(s => s.AllotmentClass)
             .ToList();
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Activity context helpers
+    // ─────────────────────────────────────────────────────────────────────────
 
     private static (string PrexcDynamicKra, string GoalsOutcome, string ApiLabel, string KpiLabel)
         ResolveActivityContext(ActivityEntity activity)
     {
-        var opcrItem = activity.OPCRActivity?.OPCRItem;
-        var fyActiveKpi = opcrItem?.KPIAssignment?.FYActiveKPI;
+        var opcrItem     = activity.OPCRActivity?.OPCRItem;
+        var fyActiveKpi  = opcrItem?.KPIAssignment?.FYActiveKPI;
         var wfpObjective = activity.WFPObjectiveActivity?.WFPObjective;
 
         var prexcDynamicKra =
@@ -368,10 +407,9 @@ public class GenerateLibDocumentCommandHandler(
 
         return (
             PrexcDynamicKra: prexcDynamicKra,
-            GoalsOutcome: goalsOutcome,
-            ApiLabel: activity.Name,
-            KpiLabel: kpiLabel
-            // NepGaaLabel: "NEP/GAA"
+            GoalsOutcome:    goalsOutcome,
+            ApiLabel:        activity.Name,
+            KpiLabel:        kpiLabel
         );
     }
 
@@ -391,14 +429,72 @@ public class GenerateLibDocumentCommandHandler(
         return targets.Distinct(StringComparer.OrdinalIgnoreCase).ToList();
     }
 
-    private static (string Name, string TypeCode) GetExpenseClassKey(DetailEntity detail)
+    // ─────────────────────────────────────────────────────────────────────────
+    // Object hierarchy resolution
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private record ObjectHierarchy(
+        string  AllotmentClass,    // root         e.g. "MOOE"
+        string  AccountGroup,      // root+1       e.g. "Communication Expenses"
+        string? SubAccountGroup,   // root+2       e.g. "Office Supplies Expenses" (null if absent)
+        string  ObjectName,        // leaf         e.g. "Postage and Courier Expenses"
+        string  UACSCode);         // leaf code    e.g. "5 02 05 010"
+
+    private static ObjectHierarchy ResolveHierarchy(DetailEntity detail)
     {
-        var expenseClass = detail.Object?.ObjectExpenseClasses.FirstOrDefault()?.ExpenseClass;
-        return (
-            Name:     expenseClass?.Name ?? "Other",
-            TypeCode: expenseClass?.Type.ToString() ?? "Other"
-        );
+        // Walk from the leaf up to the root, then reverse so chain[0] = root.
+        var chain = new List<(string Name, string Code)>();
+        var node  = detail.Object;
+
+        while (node is not null)
+        {
+            chain.Add((node.Name, node.Code));
+            node = node.ParentObject;
+        }
+
+        chain.Reverse();
+
+        var leafCode = detail.Object?.Code ?? string.Empty;
+
+        return chain.Count switch
+        {
+            // Depth 1: bare leaf with no parent — treat it as its own allotment class.
+            1 => new ObjectHierarchy(
+                    AllotmentClass:  chain[0].Name,
+                    AccountGroup:    chain[0].Name,
+                    SubAccountGroup: null,
+                    ObjectName:      chain[0].Name,
+                    UACSCode:        leafCode),
+
+            // Depth 2: root → leaf  (e.g. PS > Salaries)
+            2 => new ObjectHierarchy(
+                    AllotmentClass:  chain[0].Name,
+                    AccountGroup:    chain[0].Name,
+                    SubAccountGroup: null,
+                    ObjectName:      chain[1].Name,
+                    UACSCode:        leafCode),
+
+            // Depth 3: root → account group → leaf  (most common)
+            3 => new ObjectHierarchy(
+                    AllotmentClass:  chain[0].Name,
+                    AccountGroup:    chain[1].Name,
+                    SubAccountGroup: null,
+                    ObjectName:      chain[2].Name,
+                    UACSCode:        leafCode),
+
+            // Depth 4+: root → account group → sub-account group → … → leaf
+            _ => new ObjectHierarchy(
+                    AllotmentClass:  chain[0].Name,
+                    AccountGroup:    chain[1].Name,
+                    SubAccountGroup: chain[2].Name,
+                    ObjectName:      chain[^1].Name,
+                    UACSCode:        leafCode),
+        };
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Budget distribution helpers
+    // ─────────────────────────────────────────────────────────────────────────
 
     private static decimal GetQuarterBudget(DetailEntity detail, int quarter)
     {
@@ -433,6 +529,10 @@ public class GenerateLibDocumentCommandHandler(
         return detail.StartDate.Value.Month == month ? detail.Budget : 0m;
     }
 
+    // ─────────────────────────────────────────────────────────────────────────
+    // Misc helpers
+    // ─────────────────────────────────────────────────────────────────────────
+
     private static string BuildAgencyName(LibEntity lib)
     {
         var parts = new[]
@@ -442,6 +542,6 @@ public class GenerateLibDocumentCommandHandler(
             lib.Office?.Organization?.Name
         };
 
-        return string.Join(", ", parts.Where(part => !string.IsNullOrWhiteSpace(part)));
+        return string.Join(", ", parts.Where(p => !string.IsNullOrWhiteSpace(p)));
     }
 }
