@@ -1,4 +1,5 @@
 using ERPEZ.Domain.Entities.Planning;
+using ERPEZ.Domain.Entities.Procurement;
 using ERPEZ.Shared.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Object = ERPEZ.Domain.Entities.Planning.Object;
@@ -109,6 +110,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ProcurementCategory>? ProcurementCategories { get; set; }
     public DbSet<ProcurementMode>? ProcurementModes { get; set; }
     public DbSet<ProcurementModeThreshold>? ProcurementModeThresholds { get; set; }
+    public DbSet<ProcurementProject>? ProcurementProjects { get; set; }
+    public DbSet<BACResolution>? BACResolutions { get; set; }
+    public DbSet<BiddingActivitySchedule>? BiddingActivitySchedules { get; set; }
     public DbSet<UOM>? UOMs { get; set; }
     public DbSet<UNSPSCCode>? UNSPSCCodes { get; set; }
     public DbSet<ProcurementItem>? ProcurementItems { get; set; }
@@ -2183,6 +2187,31 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .WithMany(c => c.OPCRs)
             .HasForeignKey(o => o.OPCRConsolidationId)
             .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<ProcurementProject>(e =>
+        {
+            e.Property(p => p.ABC).HasPrecision(18, 2);
+            e.HasOne(p => p.ModeOfProcurement)
+                .WithMany()
+                .HasForeignKey(p => p.ModeOfProcurementId)
+                .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<BACResolution>(e =>
+        {
+            e.HasOne(r => r.ProcurementProject)
+                .WithMany(p => p.BACResolutions)
+                .HasForeignKey(r => r.ProcurementProjectId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<BiddingActivitySchedule>(e =>
+        {
+            e.HasOne(s => s.ProcurementProject)
+                .WithMany(p => p.BiddingActivitySchedules)
+                .HasForeignKey(s => s.ProcurementProjectId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
 
         base.OnModelCreating(modelBuilder);
     }
