@@ -728,18 +728,21 @@ internal sealed class LibPdfRenderer : BasePdfRenderer, IDocumentRenderer<LibDat
 
                 foreach (var acctSummary in matchingSummaries)
                 {
-                    table.Cell().Element(TableDataCell).PaddingLeft(8)
-                        .Text(acctSummary.ExpenseClassType).FontSize(7);
-                    table.Cell().Element(TableDataCell).AlignRight()
-                        .Text(FormatAmount(acctSummary.Q1Budget)).FontSize(7);
-                    table.Cell().Element(TableDataCell).AlignRight()
-                        .Text(FormatAmount(acctSummary.Q2Budget)).FontSize(7);
-                    table.Cell().Element(TableDataCell).AlignRight()
-                        .Text(FormatAmount(acctSummary.Q3Budget)).FontSize(7);
-                    table.Cell().Element(TableDataCell).AlignRight()
-                        .Text(FormatAmount(acctSummary.Q4Budget)).FontSize(7);
-                    table.Cell().Element(TableDataCell).AlignRight()
-                        .Text(FormatAmount(acctSummary.TotalBudget)).FontSize(7);
+                    foreach (var row in acctSummary.Rows)
+                    {
+                        table.Cell().Element(TableDataCell).PaddingLeft(8)
+                            .Text(row.AccountGroupName).FontSize(7);
+                        table.Cell().Element(TableDataCell).AlignRight()
+                            .Text(FormatAmount(row.Q1Budget)).FontSize(7);
+                        table.Cell().Element(TableDataCell).AlignRight()
+                            .Text(FormatAmount(row.Q2Budget)).FontSize(7);
+                        table.Cell().Element(TableDataCell).AlignRight()
+                            .Text(FormatAmount(row.Q3Budget)).FontSize(7);
+                        table.Cell().Element(TableDataCell).AlignRight()
+                            .Text(FormatAmount(row.Q4Budget)).FontSize(7);
+                        table.Cell().Element(TableDataCell).AlignRight()
+                            .Text(FormatAmount(row.TotalBudget)).FontSize(7);
+                    }
                 }
 
                 // Subtotal for this allotment class

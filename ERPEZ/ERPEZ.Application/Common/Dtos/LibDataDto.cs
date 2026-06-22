@@ -2,7 +2,7 @@
 namespace ERPEZ.Application.Common.Dtos;
 
 /// <summary>
-/// Top-level DTO passed to LibPdfRenderer for generating the FM-USTP-FDP-01 form.
+/// Top-level DTO used by the LIB document renderers (PDF and Excel).
 /// Covers all five sections of the Line Item Budget document.
 /// </summary>
 public record LibDataDto
