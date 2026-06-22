@@ -450,7 +450,6 @@ public class GenerateLibDocumentCommandHandler(
 
     private static ObjectHierarchy ResolveHierarchy(DetailEntity detail)
     {
-        // Walk from the leaf up to the root, then reverse so chain[0] = root.
         var chain = new List<(string Name, string Code)>();
         var node  = detail.Object;
 
@@ -462,43 +461,40 @@ public class GenerateLibDocumentCommandHandler(
 
         chain.Reverse();
 
-        var leafCode = detail.Object?.Code ?? string.Empty;
+        var uacsCode = BuildUacsCode(detail);   // ← replaces leafCode
 
         return chain.Count switch
         {
-            // Depth 1: bare leaf with no parent — treat it as its own allotment class.
             1 => new ObjectHierarchy(
                     AllotmentClass:  chain[0].Name,
                     AccountGroup:    chain[0].Name,
                     SubAccountGroup: null,
                     ObjectName:      chain[0].Name,
-                    UACSCode:        leafCode),
+                    UACSCode:        uacsCode),
 
-            // Depth 2: root → leaf  (e.g. PS > Salaries)
             2 => new ObjectHierarchy(
                     AllotmentClass:  chain[0].Name,
                     AccountGroup:    chain[0].Name,
                     SubAccountGroup: null,
                     ObjectName:      chain[1].Name,
-                    UACSCode:        leafCode),
+                    UACSCode:        uacsCode),
 
-            // Depth 3: root → account group → leaf  (most common)
             3 => new ObjectHierarchy(
                     AllotmentClass:  chain[0].Name,
                     AccountGroup:    chain[1].Name,
                     SubAccountGroup: null,
                     ObjectName:      chain[2].Name,
-                    UACSCode:        leafCode),
+                    UACSCode:        uacsCode),
 
-            // Depth 4+: root → account group → sub-account group → … → leaf
             _ => new ObjectHierarchy(
                     AllotmentClass:  chain[0].Name,
                     AccountGroup:    chain[1].Name,
                     SubAccountGroup: chain[2].Name,
                     ObjectName:      chain[^1].Name,
-                    UACSCode:        leafCode),
+                    UACSCode:        uacsCode),
         };
     }
+
 
     // ─────────────────────────────────────────────────────────────────────────
     // Budget distribution helpers
@@ -551,5 +547,25 @@ public class GenerateLibDocumentCommandHandler(
         };
 
         return string.Join(", ", parts.Where(p => !string.IsNullOrWhiteSpace(p)));
+    }
+
+    /// <summary>
+    /// Concatenates Object codes from root → leaf, separated by spaces.
+    /// e.g. "5" + "02" + "05" + "010" → "5 02 05 010"
+    /// </summary>
+    private static string BuildUacsCode(DetailEntity detail)
+    {
+        if (detail.Object is null) return string.Empty;
+
+        var codes = new List<string>();
+        var node  = detail.Object;
+        while (node is not null)
+        {
+            if (!string.IsNullOrWhiteSpace(node.Code))
+                codes.Add(node.Code);
+            node = node.ParentObject;
+        }
+        codes.Reverse();
+        return string.Join(" ", codes);
     }
 }
