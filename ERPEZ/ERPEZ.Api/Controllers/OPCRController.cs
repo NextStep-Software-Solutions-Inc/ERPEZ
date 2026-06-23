@@ -21,6 +21,8 @@ using ERPEZ.Application.Features.Planning.OPCR.Commands.UpdateOPCRReviewStatus;
 using ERPEZ.Application.Features.Planning.OPCRItem.Commands.EvaluateOPCRItem;
 using ERPEZ.Application.Features.Planning.OPCRItemMOV.Dtos;
 using ERPEZ.Application.Features.Planning.OPCRItem.Dtos;
+using ERPEZ.Application.Features.Planning.OPCRItemRating.Queries;
+using ERPEZ.Application.Features.Planning.OPCRItemRating.Dtos;
 
 namespace ERPEZ.Api.Controllers
 {
@@ -197,6 +199,22 @@ namespace ERPEZ.Api.Controllers
             return result.Succeeded
                 ? CreatedAtAction(nameof(GetOPCRById), new { id = itemId }, result)
                 : BadRequest(result);
+        }
+
+        /// <summary>
+        /// Returns all dimension ratings for a specific OPCR Item.
+        /// Used by PMT to review ratings without loading the full OPCR.
+        /// </summary>
+        [HttpGet("items/{itemId}/ratings")]
+        [ProducesResponseType(typeof(ApiResponse<List<OPCRItemRatingResponse>>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetOPCRItemRatings(
+            Guid itemId,
+            CancellationToken cancellationToken)
+        {
+            var result = await mediator.Send(
+                new GetOPCRItemRatingsQuery(itemId), cancellationToken);
+            return result.Succeeded ? Ok(result) : NotFound(result);
         }
 
         [HttpPut("items/ratings/{ratingId}/pmt-review")]
