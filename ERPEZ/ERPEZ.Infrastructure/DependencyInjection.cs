@@ -134,6 +134,10 @@ public static class DependencyInjection
         services.AddScoped<IDocumentRenderer<OpcrDataDto>,  OpcrPdfRenderer>();        // ✅ Proposed
         services.AddScoped<IDocumentRenderer<OpcrDataDto>,  OpcrRatingPdfRenderer>();  // ✅ With Ratings
 
+        // LIB — PDF and Excel
+        services.AddScoped<IDocumentRenderer<LibDataDto>, LibPdfRenderer>();
+        services.AddScoped<IDocumentRenderer<LibDataDto>, LibExcelRenderer>();
+
         // ── Hangfire ────────────────────────────────────────────────────────────────
         services.AddHangfire(config => config
             .UseSimpleAssemblyNameTypeSerializer()

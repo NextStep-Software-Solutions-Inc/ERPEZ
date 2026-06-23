@@ -16,63 +16,88 @@ public class UpdateLIBCommandHandler(IUnitOfWork unitOfWork)
         var entity = await unitOfWork.LineItemBudgetRepository.GetByIdAsync(command.Id, cancellationToken)
             ?? throw new NotFoundException($"LIB with ID {command.Id} not found.");
 
-        _ = await unitOfWork.FiscalYearRepository.GetByIdAsync(request.FiscalYearId!.Value, cancellationToken)
-            ?? throw new NotFoundException($"Fiscal Year with ID {request.FiscalYearId} not found.");
+        // ── Validate referenced entities only when the field is provided ─────
 
-        _ = await unitOfWork.FundSourceRepository.GetByIdAsync(request.FundSourceId!.Value, cancellationToken)
-            ?? throw new NotFoundException($"Fund Source with ID {request.FundSourceId} not found.");
+        if (request.FiscalYearId.HasValue)
+        {
+            if (await unitOfWork.FiscalYearRepository.GetByIdAsync(request.FiscalYearId.Value, cancellationToken) is null)
+                throw new NotFoundException($"Fiscal Year with ID {request.FiscalYearId} not found.");
+        }
 
-        _ = await unitOfWork.OfficeRepository.GetByIdAsync(request.OfficeId!.Value, cancellationToken)
-            ?? throw new NotFoundException($"Office with ID {request.OfficeId} not found.");
+        if (request.FundSourceId.HasValue)
+        {
+            if (await unitOfWork.FundSourceRepository.GetByIdAsync(request.FundSourceId.Value, cancellationToken) is null)
+                throw new NotFoundException($"Fund Source with ID {request.FundSourceId} not found.");
+        }
+
+        if (request.OfficeId.HasValue)
+        {
+            if (await unitOfWork.OfficeRepository.GetByIdAsync(request.OfficeId.Value, cancellationToken) is null)
+                throw new NotFoundException($"Office with ID {request.OfficeId} not found.");
+        }
 
         if (request.ParentLIBId.HasValue)
         {
-            _ = await unitOfWork.LineItemBudgetRepository.GetByIdAsync(request.ParentLIBId.Value, cancellationToken)
-                ?? throw new NotFoundException($"Parent LIB with ID {request.ParentLIBId} not found.");
+            if (await unitOfWork.LineItemBudgetRepository.GetByIdAsync(request.ParentLIBId.Value, cancellationToken) is null)
+                throw new NotFoundException($"Parent LIB with ID {request.ParentLIBId} not found.");
         }
 
         if (request.ConsolidatedIntoLIBId.HasValue)
         {
-            _ = await unitOfWork.LineItemBudgetRepository.GetByIdAsync(request.ConsolidatedIntoLIBId.Value, cancellationToken)
-                ?? throw new NotFoundException($"Consolidated-Into LIB with ID {request.ConsolidatedIntoLIBId} not found.");
+            if (await unitOfWork.LineItemBudgetRepository.GetByIdAsync(request.ConsolidatedIntoLIBId.Value, cancellationToken) is null)
+                throw new NotFoundException($"Consolidated-Into LIB with ID {request.ConsolidatedIntoLIBId} not found.");
         }
 
-        if (!request.SourceId.HasValue)
+        // ── SourceType + SourceId: validate together only when either is provided
+
+        var effectiveSourceType = request.SourceType ?? entity.SourceType;
+        var effectiveSourceId   = request.SourceId   ?? entity.SourceId;
+
+        if (request.SourceType is not null || request.SourceId.HasValue)
         {
-            throw new ERPEZ.Shared.Exceptions.ValidationException("SourceId is required.");
+            if (effectiveSourceId is null)
+                throw new ValidationException("SourceId is required when updating SourceType.");
+
+            var sourceId = effectiveSourceId.Value;
+
+            if (effectiveSourceType?.Equals("OPCR", StringComparison.OrdinalIgnoreCase) == true)
+            {
+                if (await unitOfWork.OPCRRepository.GetByIdAsync(sourceId, cancellationToken) is null)
+                    throw new NotFoundException($"OPCR source with ID {sourceId} not found.");
+            }
+            else
+            {
+                if (await unitOfWork.WFPRepository.GetByIdAsync(sourceId, cancellationToken) is null)
+                    throw new NotFoundException($"WFP source with ID {sourceId} not found.");
+            }
         }
 
-        if (request.SourceType.Equals("OPCR", StringComparison.OrdinalIgnoreCase))
+        // ── LIBNumber uniqueness check only when it is being changed ─────────
+
+        if (request.LIBNumber is not null)
         {
-            _ = await unitOfWork.OPCRRepository.GetByIdAsync(request.SourceId.Value, cancellationToken)
-                ?? throw new NotFoundException($"OPCR source with ID {request.SourceId} not found.");
-        }
-        else
-        {
-            _ = await unitOfWork.WFPRepository.GetByIdAsync(request.SourceId.Value, cancellationToken)
-                ?? throw new NotFoundException($"WFP source with ID {request.SourceId} not found.");
+            var existing = await unitOfWork.LineItemBudgetRepository.FindAsync(
+                x => x.Id != command.Id && x.LIBNumber == request.LIBNumber,
+                cancellationToken);
+
+            if (existing is not null)
+                throw new ConflictException($"LIB number '{request.LIBNumber}' already exists.");
         }
 
-        var existing = await unitOfWork.LineItemBudgetRepository.FindAsync(
-            x => x.Id != command.Id && x.LIBNumber == request.LIBNumber,
-            cancellationToken);
-        if (existing != null)
-        {
-            throw new ConflictException($"LIB number '{request.LIBNumber}' already exists.");
-        }
+        // ── Apply only the fields that were provided ──────────────────────────
 
-        entity.FiscalYearId = request.FiscalYearId;
-        entity.FundSourceId = request.FundSourceId;
-        entity.OfficeId = request.OfficeId;
-        entity.ParentLIBId = request.ParentLIBId;
-        entity.Scope = request.Scope;
-        entity.Name = request.Name;
-        entity.LIBNumber = request.LIBNumber;
-        entity.Level = request.Level;
-        entity.SourceType = request.SourceType;
-        entity.SourceId = request.SourceId;
-        entity.ConsolidatedIntoLIBId = request.ConsolidatedIntoLIBId;
-        entity.TotalAmount = request.TotalAmount;
+        if (request.FiscalYearId.HasValue)        entity.FiscalYearId        = request.FiscalYearId;
+        if (request.FundSourceId.HasValue)        entity.FundSourceId        = request.FundSourceId;
+        if (request.OfficeId.HasValue)            entity.OfficeId            = request.OfficeId;
+        if (request.ParentLIBId.HasValue)         entity.ParentLIBId         = request.ParentLIBId;
+        if (request.ConsolidatedIntoLIBId.HasValue) entity.ConsolidatedIntoLIBId = request.ConsolidatedIntoLIBId;
+        if (request.SourceId.HasValue)            entity.SourceId            = request.SourceId;
+        if (request.TotalAmount.HasValue)         entity.TotalAmount         = request.TotalAmount;
+        if (request.LIBNumber  is not null)       entity.LIBNumber           = request.LIBNumber;
+        if (request.Name       is not null)       entity.Name                = request.Name;
+        if (request.Scope      is not null)       entity.Scope               = request.Scope;
+        if (request.Level      is not null)       entity.Level               = request.Level;
+        if (request.SourceType is not null)       entity.SourceType          = request.SourceType;
 
         unitOfWork.LineItemBudgetRepository.Update(entity);
         await unitOfWork.SaveChangesAsync(cancellationToken);
@@ -80,4 +105,3 @@ public class UpdateLIBCommandHandler(IUnitOfWork unitOfWork)
         return ApiResponse<Unit>.Success(Unit.Value, "LIB updated successfully.");
     }
 }
-
