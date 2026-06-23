@@ -17,9 +17,6 @@ public class UpdateOPCRItemRatingCommandHandler(IUnitOfWork unitOfWork)
 
         var dto = request.UpdateOPCRItemRating;
 
-        if (dto.SelfRating.HasValue)
-            entity.SelfRating = dto.SelfRating;
-
         if (dto.PMTRating.HasValue)
             entity.PMTRating = dto.PMTRating;
 
