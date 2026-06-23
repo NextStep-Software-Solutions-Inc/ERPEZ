@@ -147,4 +147,15 @@ public class OPCRRepository : Repository<OPCR>, IOPCRRepository
 
         return (entities, totalCount);
     }
+
+    public async Task<List<OPCR>> GetApprovedByFiscalYearAsync(
+        Guid fiscalYearId, CancellationToken cancellationToken = default)
+    {
+        return await BuildDetailedQuery(
+                context.Set<OPCR>().Where(o =>
+                    !o.IsDeleted
+                    && o.FiscalYearId == fiscalYearId
+                    && o.CommitmentStatus == "Approved"))
+            .ToListAsync(cancellationToken);
+    }
 }

@@ -11,7 +11,8 @@ public interface IOPCRRepository : IRepository<OPCR>
     Task<(IReadOnlyList<OPCR> Entities, int TotalCount)> GetDetailedPagedAsync(SieveModel sieveModel, CancellationToken cancellationToken = default);
     Task<List<OPCR>> GetDetailedByOfficeAsync(Guid officeId, CancellationToken cancellationToken = default);
     Task<List<OPCR>> GetDetailedByFiscalYearAsync(Guid fiscalYearId, CancellationToken cancellationToken = default);
-
+    Task<List<OPCR>> GetApprovedByFiscalYearAsync(
+    Guid fiscalYearId, CancellationToken cancellationToken = default);
     Task<(IReadOnlyList<TDto> Entities, int TotalCount)> GetOPCRsWithDetailsAsync<TDto>(
         SieveModel sieveModel,
         Expression<Func<OPCR, TDto>> projection,
