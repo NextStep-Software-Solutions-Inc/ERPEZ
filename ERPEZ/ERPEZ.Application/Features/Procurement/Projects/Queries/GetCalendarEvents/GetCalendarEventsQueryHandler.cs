@@ -15,7 +15,29 @@ public class GetCalendarEventsQueryHandler(IUnitOfWork unitOfWork)
 {
     public async Task<ApiResponse<List<CalendarEventResponse>>> Handle(GetCalendarEventsQuery request, CancellationToken cancellationToken)
     {
-        var events = await unitOfWork.BiddingActivityScheduleRepository.Query()
+        var query = unitOfWork.BiddingActivityScheduleRepository.Query();
+
+        if (!string.IsNullOrWhiteSpace(request.Search))
+        {
+            var searchLower = request.Search.ToLower();
+            query = query.Where(s =>
+                (s.ProcurementProject != null && s.ProcurementProject.Title.ToLower().Contains(searchLower)) ||
+                (s.ProcurementActivityType != null && s.ProcurementActivityType.Name.ToLower().Contains(searchLower)) ||
+                s.Venue.ToLower().Contains(searchLower) ||
+                s.Status.ToLower().Contains(searchLower));
+        }
+
+        if (!string.IsNullOrWhiteSpace(request.Filter))
+        {
+            var filterLower = request.Filter.ToLower();
+            query = query.Where(s =>
+                (s.ProcurementProject != null && s.ProcurementProject.Title.ToLower().Contains(filterLower)) ||
+                (s.ProcurementActivityType != null && s.ProcurementActivityType.Name.ToLower().Contains(filterLower)) ||
+                s.Venue.ToLower().Contains(filterLower) ||
+                s.Status.ToLower().Contains(filterLower));
+        }
+
+        var events = await query
             .Select(s => new CalendarEventResponse
             {
                 Id = s.Id,
@@ -25,7 +47,9 @@ public class GetCalendarEventsQueryHandler(IUnitOfWork unitOfWork)
                 ProcurementActivityTypeName = s.ProcurementActivityType != null ? s.ProcurementActivityType.Name : string.Empty,
                 StartDate = s.StartDate,
                 EndDate = s.EndDate,
-                Venue = s.Venue
+                Venue = s.Venue,
+                Status = s.Status,
+                Remarks = s.Remarks
             })
             .ToListAsync(cancellationToken);
 

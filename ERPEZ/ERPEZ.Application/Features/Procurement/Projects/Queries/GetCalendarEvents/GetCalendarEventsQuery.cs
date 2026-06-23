@@ -5,4 +5,8 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Procurement.Projects.Queries.GetCalendarEvents;
 
-public record GetCalendarEventsQuery : IRequest<ApiResponse<List<CalendarEventResponse>>>;
+public record GetCalendarEventsQuery : IRequest<ApiResponse<List<CalendarEventResponse>>>
+{
+    public string? Filter { get; init; }
+    public string? Search { get; init; }
+}

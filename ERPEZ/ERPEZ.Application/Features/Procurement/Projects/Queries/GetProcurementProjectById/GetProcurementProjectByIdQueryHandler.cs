@@ -18,6 +18,7 @@ public class GetProcurementProjectByIdQueryHandler(IUnitOfWork unitOfWork)
                 Id = c.Id,
                 Title = c.Title,
                 ConsolidatedPRId = c.ConsolidatedPRId,
+                ModeOfProcurementName = c.ModeOfProcurement != null ? c.ModeOfProcurement.Name : string.Empty,
                 ABC = c.ABC,
                 Status = c.Status,
                 BACResolutions = c.BACResolutions.Select(r => new BACResolutionResponse
@@ -39,7 +40,8 @@ public class GetProcurementProjectByIdQueryHandler(IUnitOfWork unitOfWork)
                     StartDate = s.StartDate,
                     EndDate = s.EndDate,
                     Venue = s.Venue,
-                    Status = s.Status
+                    Status = s.Status,
+                    Remarks = s.Remarks
                 }).ToList()
             })
             .FirstOrDefaultAsync(cancellationToken);

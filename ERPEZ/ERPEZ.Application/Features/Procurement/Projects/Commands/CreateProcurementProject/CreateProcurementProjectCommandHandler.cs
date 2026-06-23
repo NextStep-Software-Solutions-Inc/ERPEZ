@@ -13,6 +13,7 @@ public class CreateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
         var project = new ProcurementProject
         {
             Title = request.Title,
+            ModeOfProcurementId = request.ModeOfProcurementId,
             ABC = request.ABC,
             Status = request.Status
         };

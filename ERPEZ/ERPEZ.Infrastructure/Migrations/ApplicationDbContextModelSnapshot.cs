@@ -7122,10 +7122,6 @@ namespace ERPEZ.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<string>("ActivityType")
-                        .IsRequired()
-                        .HasColumnType("text");
-
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -7145,11 +7141,21 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
+                    b.Property<Guid>("ProcurementActivityTypeId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid>("ProcurementProjectId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("Remarks")
+                        .HasColumnType("text");
+
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -7163,6 +7169,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ProcurementActivityTypeId");
+
                     b.HasIndex("ProcurementProjectId");
 
                     b.ToTable("BiddingActivitySchedules", "procurement");
@@ -7175,10 +7183,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("uuid");
 
                     b.Property<decimal>("ABC")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)");
+                        .HasColumnType("numeric");
 
-                    b.Property<Guid>("ConsolidatedPRId")
+                    b.Property<Guid?>("ConsolidatedPRId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAt")
@@ -9087,11 +9094,19 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.BiddingActivitySchedule", b =>
                 {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.ProcurementActivityType", "ProcurementActivityType")
+                        .WithMany()
+                        .HasForeignKey("ProcurementActivityTypeId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("ERPEZ.Domain.Entities.Procurement.ProcurementProject", "ProcurementProject")
                         .WithMany("BiddingActivitySchedules")
                         .HasForeignKey("ProcurementProjectId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("ProcurementActivityType");
 
                     b.Navigation("ProcurementProject");
                 });
@@ -9101,7 +9116,7 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasOne("ERPEZ.Domain.Entities.Planning.ProcurementMode", "ModeOfProcurement")
                         .WithMany()
                         .HasForeignKey("ModeOfProcurementId")
-                        .OnDelete(DeleteBehavior.Restrict)
+                        .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("ModeOfProcurement");

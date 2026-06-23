@@ -9,6 +9,8 @@ using ERPEZ.Application.Features.Procurement.Projects.Dtos;
 using ERPEZ.Application.Features.Procurement.Projects.Queries.GetCalendarEvents;
 using ERPEZ.Application.Features.Procurement.Projects.Queries.GetProcurementProjectById;
 using ERPEZ.Application.Features.Procurement.Projects.Queries.GetProcurementProjects;
+using ERPEZ.Application.Features.Procurement.Projects.Commands.UpdateProcurementProjectStatus;
+using ERPEZ.Application.Features.Procurement.BiddingActivitySchedules.Commands.UpdateBiddingActivityScheduleStatus;
 using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -103,11 +105,31 @@ public class BACProjectController(ISender mediator) : ControllerBase
         return result.Succeeded ? Ok(result) : NotFound(result);
     }
 
+    [HttpPut("projects/{projectId}/schedule/{scheduleId}/status")]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateScheduleStatus(Guid projectId, Guid scheduleId, [FromBody] UpdateBiddingActivityScheduleStatusRequest request)
+    {
+        var result = await mediator.Send(new UpdateBiddingActivityScheduleStatusCommand { ProjectId = projectId, ScheduleId = scheduleId, StatusRequest = request });
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    [HttpPut("projects/{id}/status")]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateProjectStatus(Guid id, [FromBody] UpdateProcurementProjectStatusRequest request)
+    {
+        var result = await mediator.Send(new UpdateProcurementProjectStatusCommand { Id = id, StatusRequest = request });
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
     [HttpGet("calendar-events")]
     [ProducesResponseType(typeof(ApiResponse<List<CalendarEventResponse>>), StatusCodes.Status200OK)]
-    public async Task<IActionResult> GetCalendarEvents()
+    public async Task<IActionResult> GetCalendarEvents([FromQuery] GetCalendarEventsQuery query)
     {
-        var result = await mediator.Send(new GetCalendarEventsQuery());
+        var result = await mediator.Send(query);
         return Ok(result);
     }
 }

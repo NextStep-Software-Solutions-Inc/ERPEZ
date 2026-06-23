@@ -3,14 +3,32 @@ using ERPEZ.Application.Features.Procurement.Projects.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
+using Sieve.Services;
+using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.Application.Features.Procurement.Projects.Queries.GetProcurementProjects;
 
-public class GetProcurementProjectsQueryHandler(IUnitOfWork unitOfWork)
+public class GetProcurementProjectsQueryHandler(IUnitOfWork unitOfWork, ISieveProcessor sieveProcessor)
     : IRequestHandler<GetProcurementProjectsQuery, PaginatedApiResponse<ProcurementProjectResponse>>
 {
     public async Task<PaginatedApiResponse<ProcurementProjectResponse>> Handle(GetProcurementProjectsQuery query, CancellationToken cancellationToken)
     {
+        var dbQuery = unitOfWork.ProcurementProjectRepository.Query()
+            .Where(p => !p.IsDeleted)
+            .AsQueryable();
+
+        // Apply custom filters for ModeOfProcurement
+        if (query.ModeOfProcurementId.HasValue && query.ModeOfProcurementId.Value != Guid.Empty)
+        {
+            dbQuery = dbQuery.Where(p => p.ModeOfProcurementId == query.ModeOfProcurementId.Value);
+        }
+
+        if (!string.IsNullOrWhiteSpace(query.ModeOfProcurement))
+        {
+            var mopLower = query.ModeOfProcurement.ToLower();
+            dbQuery = dbQuery.Where(p => p.ModeOfProcurement != null && p.ModeOfProcurement.Name.ToLower().Contains(mopLower));
+        }
+
         var sieveModel = new Sieve.Models.SieveModel
         {
             PageSize = query.PageSize,
@@ -24,6 +42,7 @@ public class GetProcurementProjectsQueryHandler(IUnitOfWork unitOfWork)
             Id = c.Id,
             Title = c.Title,
             ConsolidatedPRId = c.ConsolidatedPRId,
+            ModeOfProcurementName = c.ModeOfProcurement != null ? c.ModeOfProcurement.Name : string.Empty,
             ABC = c.ABC,
             Status = c.Status,
             BACResolutions = c.BACResolutions.Select(r => new BACResolutionResponse
@@ -45,14 +64,16 @@ public class GetProcurementProjectsQueryHandler(IUnitOfWork unitOfWork)
                 StartDate = s.StartDate,
                 EndDate = s.EndDate,
                 Venue = s.Venue,
-                Status = s.Status
+                Status = s.Status,
+                Remarks = s.Remarks
             }).ToList()
         };
 
-        var (entities, totalCount) = await unitOfWork.ProcurementProjectRepository.GetAllAsync(
-            sieveModel,
-            projection,
-            cancellationToken: cancellationToken);
+        var filteredQuery = sieveProcessor.Apply(sieveModel, dbQuery, applyPagination: false);
+        var totalCount = await filteredQuery.CountAsync(cancellationToken);
+
+        var paginatedQuery = sieveProcessor.Apply(sieveModel, filteredQuery, applyFiltering: false, applySorting: false);
+        var entities = await paginatedQuery.Select(projection).ToListAsync(cancellationToken);
 
         return new PaginatedApiResponse<ProcurementProjectResponse>(
             [.. entities],

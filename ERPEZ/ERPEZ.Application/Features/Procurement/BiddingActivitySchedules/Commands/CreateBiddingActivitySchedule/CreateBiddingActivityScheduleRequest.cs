@@ -9,4 +9,5 @@ public record CreateBiddingActivityScheduleRequest
     public required DateTime EndDate { get; init; }
     public required string Venue { get; init; }
     public string Status { get; init; } = "Pending";
+    public string? Remarks { get; init; }
 }

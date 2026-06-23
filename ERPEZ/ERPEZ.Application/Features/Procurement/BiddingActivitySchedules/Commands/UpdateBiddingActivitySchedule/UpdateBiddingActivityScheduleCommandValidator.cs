@@ -22,14 +22,9 @@ public class UpdateBiddingActivityScheduleCommandValidator : AbstractValidator<U
             .NotEmpty()
             .WithMessage("Status is required.");
 
-        RuleFor(x => x.ScheduleRequest.StartDate)
-            .NotEmpty()
-            .WithMessage("Start date is required.");
-
         RuleFor(x => x.ScheduleRequest.EndDate)
-            .NotEmpty()
-            .WithMessage("End date is required.")
-            .GreaterThan(x => x.ScheduleRequest.StartDate)
+            .GreaterThan(x => x.ScheduleRequest.StartDate!.Value)
+            .When(x => x.ScheduleRequest.StartDate.HasValue && x.ScheduleRequest.EndDate.HasValue)
             .WithMessage("End date must be after start date.");
 
         RuleFor(x => x.ScheduleRequest.Venue)

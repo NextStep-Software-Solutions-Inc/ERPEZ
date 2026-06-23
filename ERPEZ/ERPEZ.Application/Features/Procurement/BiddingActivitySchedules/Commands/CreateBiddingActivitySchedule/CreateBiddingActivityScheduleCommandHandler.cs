@@ -31,7 +31,8 @@ public class CreateBiddingActivityScheduleCommandHandler(IUnitOfWork unitOfWork)
             StartDate = request.ScheduleRequest.StartDate,
             EndDate = request.ScheduleRequest.EndDate,
             Venue = request.ScheduleRequest.Venue,
-            Status = request.ScheduleRequest.Status
+            Status = request.ScheduleRequest.Status,
+            Remarks = request.ScheduleRequest.Remarks
         };
 
         await unitOfWork.BiddingActivityScheduleRepository.AddAsync(schedule, cancellationToken);

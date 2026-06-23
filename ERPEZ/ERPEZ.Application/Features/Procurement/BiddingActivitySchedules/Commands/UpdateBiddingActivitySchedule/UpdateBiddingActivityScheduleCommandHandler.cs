@@ -34,10 +34,17 @@ public class UpdateBiddingActivityScheduleCommandHandler(IUnitOfWork unitOfWork)
 
         // Update current schedule
         currentSchedule.ProcurementActivityTypeId = request.ScheduleRequest.ProcurementActivityTypeId;
-        currentSchedule.StartDate = request.ScheduleRequest.StartDate;
-        currentSchedule.EndDate = request.ScheduleRequest.EndDate;
+        if (request.ScheduleRequest.StartDate.HasValue)
+        {
+            currentSchedule.StartDate = request.ScheduleRequest.StartDate.Value;
+        }
+        if (request.ScheduleRequest.EndDate.HasValue)
+        {
+            currentSchedule.EndDate = request.ScheduleRequest.EndDate.Value;
+        }
         currentSchedule.Venue = request.ScheduleRequest.Venue;
         currentSchedule.Status = request.ScheduleRequest.Status;
+        currentSchedule.Remarks = request.ScheduleRequest.Remarks;
 
         // Cascade update subsequent schedules
         // Sort all schedules by their starting date to process chronologically
