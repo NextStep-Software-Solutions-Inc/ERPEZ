@@ -16,16 +16,12 @@ public class ProcurementProject : BaseEntity
     public Guid? ConsolidatedPRId { get; set; }
 
     [Sieve(CanFilter = true, CanSort = true)]
-    public Guid ModeOfProcurementId { get; set; }
-
-    [Sieve(CanFilter = true, CanSort = true)]
     public decimal ABC { get; set; }
 
     [Sieve(CanFilter = true, CanSort = true)]
     public string Status { get; set; } = string.Empty;
 
     // Navigation properties
-    public virtual ProcurementMode ModeOfProcurement { get; set; } = null!;
     public virtual List<BACResolution> BACResolutions { get; set; } = [];
     public virtual List<BiddingActivitySchedule> BiddingActivitySchedules { get; set; } = [];
 }

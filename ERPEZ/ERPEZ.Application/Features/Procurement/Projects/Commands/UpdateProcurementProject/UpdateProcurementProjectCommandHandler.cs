@@ -19,7 +19,6 @@ public class UpdateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
 
         project.Title = request.UpdateRequest.Title;
         project.ABC = request.UpdateRequest.ABC;
-        project.Status = request.UpdateRequest.Status;
 
         unitOfWork.ProcurementProjectRepository.Update(project);
         await unitOfWork.SaveChangesAsync(cancellationToken);

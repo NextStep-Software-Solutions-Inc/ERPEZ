@@ -17,17 +17,7 @@ public class GetProcurementProjectsQueryHandler(IUnitOfWork unitOfWork, ISievePr
             .Where(p => !p.IsDeleted)
             .AsQueryable();
 
-        // Apply custom filters for ModeOfProcurement
-        if (query.ModeOfProcurementId.HasValue && query.ModeOfProcurementId.Value != Guid.Empty)
-        {
-            dbQuery = dbQuery.Where(p => p.ModeOfProcurementId == query.ModeOfProcurementId.Value);
-        }
-
-        if (!string.IsNullOrWhiteSpace(query.ModeOfProcurement))
-        {
-            var mopLower = query.ModeOfProcurement.ToLower();
-            dbQuery = dbQuery.Where(p => p.ModeOfProcurement != null && p.ModeOfProcurement.Name.ToLower().Contains(mopLower));
-        }
+        // Apply custom filters for ModeOfProcurement - REMOVED
 
         var sieveModel = new Sieve.Models.SieveModel
         {
@@ -42,7 +32,7 @@ public class GetProcurementProjectsQueryHandler(IUnitOfWork unitOfWork, ISievePr
             Id = c.Id,
             Title = c.Title,
             ConsolidatedPRId = c.ConsolidatedPRId,
-            ModeOfProcurementName = c.ModeOfProcurement != null ? c.ModeOfProcurement.Name : string.Empty,
+            ModeOfProcurementName = string.Empty,
             ABC = c.ABC,
             Status = c.Status,
             BACResolutions = c.BACResolutions.Select(r => new BACResolutionResponse

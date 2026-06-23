@@ -20,9 +20,5 @@ public class UpdateProcurementProjectCommandValidator : AbstractValidator<Update
         RuleFor(x => x.UpdateRequest.ABC)
             .GreaterThan(0)
             .WithMessage("Approved Budget for the Contract (ABC) must be greater than zero.");
-
-        RuleFor(x => x.UpdateRequest.Status)
-            .NotEmpty()
-            .WithMessage("Status is required.");
     }
 }

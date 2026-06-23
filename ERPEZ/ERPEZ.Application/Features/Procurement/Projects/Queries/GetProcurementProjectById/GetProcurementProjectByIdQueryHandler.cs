@@ -18,7 +18,7 @@ public class GetProcurementProjectByIdQueryHandler(IUnitOfWork unitOfWork)
                 Id = c.Id,
                 Title = c.Title,
                 ConsolidatedPRId = c.ConsolidatedPRId,
-                ModeOfProcurementName = c.ModeOfProcurement != null ? c.ModeOfProcurement.Name : string.Empty,
+                ModeOfProcurementName = string.Empty,
                 ABC = c.ABC,
                 Status = c.Status,
                 BACResolutions = c.BACResolutions.Select(r => new BACResolutionResponse

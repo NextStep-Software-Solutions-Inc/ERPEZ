@@ -6,6 +6,4 @@ namespace ERPEZ.Application.Features.Procurement.Projects.Queries.GetProcurement
 
 public record GetProcurementProjectsQuery : PaginatedQuery<PaginatedApiResponse<ProcurementProjectResponse>>
 {
-    public Guid? ModeOfProcurementId { get; init; }
-    public string? ModeOfProcurement { get; init; }
 }
