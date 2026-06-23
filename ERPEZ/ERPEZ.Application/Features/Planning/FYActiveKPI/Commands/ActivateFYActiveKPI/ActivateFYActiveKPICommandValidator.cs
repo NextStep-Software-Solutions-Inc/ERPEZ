@@ -11,6 +11,19 @@ public class ActivateFYActiveKPICommandValidator : AbstractValidator<ActivateFYA
             .NotEmpty()
             .WithMessage("FiscalYearId is required.");
 
+        RuleFor(x => x.CloneMode)
+            .NotEmpty()
+            .WithMessage("CloneMode is required.")
+            .Must(mode =>
+                string.Equals(mode, ActivationCloneModes.master, StringComparison.OrdinalIgnoreCase)
+                || string.Equals(mode, ActivationCloneModes.sourceFiscalYear, StringComparison.OrdinalIgnoreCase))
+            .WithMessage("CloneMode must be 'Master' or 'SourceFY'.");
+
+        RuleFor(x => x.SourceFiscalYearId)
+            .NotEmpty()
+            .When(x => string.Equals(x.CloneMode, ActivationCloneModes.sourceFiscalYear, StringComparison.OrdinalIgnoreCase))
+            .WithMessage("SourceFiscalYearId is required when CloneMode is 'SourceFY'.");
+
         RuleFor(x => x.KPIs)
             .NotEmpty()
             .WithMessage("At least one KPI must be provided for activation.")

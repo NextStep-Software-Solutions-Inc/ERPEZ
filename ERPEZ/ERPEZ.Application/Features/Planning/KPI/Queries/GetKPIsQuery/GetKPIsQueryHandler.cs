@@ -101,6 +101,67 @@ public class GetKPIsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetKP
 
         var (kpiDtos, totalCount) = await unitOfWork.KPIRepository.GetAllAsync(sieveModel, projection, cancellationToken);
 
-        return new PaginatedApiResponse<KPIResponse>([.. kpiDtos], query.PageNumber, query.PageSize, totalCount);
+        var responseItems = kpiDtos.ToList();
+
+        // Optional activation context for activation screens.
+        if (responseItems.Count > 0 && (query.TargetFiscalYearId.HasValue || query.SourceFiscalYearId.HasValue))
+        {
+            var masterKpiIds = responseItems.Select(x => x.Id).ToList();
+            var fiscalYearIds = new List<Guid>();
+
+            if (query.TargetFiscalYearId.HasValue)
+                fiscalYearIds.Add(query.TargetFiscalYearId.Value);
+
+            if (query.SourceFiscalYearId.HasValue && !fiscalYearIds.Contains(query.SourceFiscalYearId.Value))
+                fiscalYearIds.Add(query.SourceFiscalYearId.Value);
+
+            var activationRows = await unitOfWork.FYActiveKPIRepository.ToListAsync(
+                unitOfWork.FYActiveKPIRepository
+                    .Query(f => fiscalYearIds.Contains(f.FiscalYearId) && masterKpiIds.Contains(f.MasterKPIId))
+                    .Select(f => new { f.MasterKPIId, f.FiscalYearId, f.Id }),
+                cancellationToken);
+
+            var targetActivationMap = query.TargetFiscalYearId.HasValue
+                ? activationRows
+                    .Where(x => x.FiscalYearId == query.TargetFiscalYearId.Value)
+                    .GroupBy(x => x.MasterKPIId)
+                    .ToDictionary(
+                        group => group.Key,
+                        group => group
+                            .OrderByDescending(row => row.Id)
+                            .First()
+                            .Id)
+                : new Dictionary<Guid, Guid>();
+
+            var sourceActivationMap = query.SourceFiscalYearId.HasValue
+                ? activationRows
+                    .Where(x => x.FiscalYearId == query.SourceFiscalYearId.Value)
+                    .GroupBy(x => x.MasterKPIId)
+                    .ToDictionary(
+                        group => group.Key,
+                        group => group
+                            .OrderByDescending(row => row.Id)
+                            .First()
+                            .Id)
+                : new Dictionary<Guid, Guid>();
+
+            responseItems = responseItems
+                .Select(kpi =>
+                {
+                    var hasTargetActivation = targetActivationMap.TryGetValue(kpi.Id, out var targetFYActiveKPIId);
+                    var hasSourceActivation = sourceActivationMap.TryGetValue(kpi.Id, out var sourceFYActiveKPIId);
+
+                    return kpi with
+                    {
+                        IsActivatedForTargetFY = query.TargetFiscalYearId.HasValue ? hasTargetActivation : null,
+                        TargetFYActiveKPIId = hasTargetActivation ? targetFYActiveKPIId : null,
+                        IsActivatedForSourceFY = query.SourceFiscalYearId.HasValue ? hasSourceActivation : null,
+                        SourceFYActiveKPIId = hasSourceActivation ? sourceFYActiveKPIId : null
+                    };
+                })
+                .ToList();
+        }
+
+        return new PaginatedApiResponse<KPIResponse>([.. responseItems], query.PageNumber, query.PageSize, totalCount);
     }
 }

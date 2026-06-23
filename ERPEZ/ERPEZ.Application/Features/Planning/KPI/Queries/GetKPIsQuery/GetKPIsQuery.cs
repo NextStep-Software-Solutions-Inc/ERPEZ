@@ -6,4 +6,6 @@ namespace ERPEZ.Application.Features.Planning.KPI.Queries.GetKPIsQuery;
 
 public record GetKPIsQuery : PaginatedQuery<PaginatedApiResponse<KPIResponse>>
 {
+	public Guid? TargetFiscalYearId { get; init; }
+	public Guid? SourceFiscalYearId { get; init; }
 }

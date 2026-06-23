@@ -27,6 +27,10 @@ public record KPIResponse
     public bool IsOptInAvailable { get; init; }
     public bool IsGAD { get; init; }
     public string Status { get; init; } = string.Empty;
+    public bool? IsActivatedForTargetFY { get; init; }
+    public Guid? TargetFYActiveKPIId { get; init; }
+    public bool? IsActivatedForSourceFY { get; init; }
+    public Guid? SourceFYActiveKPIId { get; init; }
     public DateTime CreatedAt { get; init; }
     public string CreatedBy { get; init; } = string.Empty;
     

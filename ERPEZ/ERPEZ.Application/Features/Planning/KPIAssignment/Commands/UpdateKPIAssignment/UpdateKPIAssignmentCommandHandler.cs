@@ -41,7 +41,7 @@ public class UpdateKPIAssignmentCommandHandler(IUnitOfWork unitOfWork, IKPIAssig
         {
             behaviorValidator.ValidatePercentageMeasurement(
                 fyActiveKpi.Name,
-                request.AssignedTargetAnnual,
+                request.AssignedTargetAnnual ?? 0m,
                 request.AssignedTargetQ1,
                 request.AssignedTargetQ2,
                 request.AssignedTargetQ3,
@@ -54,8 +54,8 @@ public class UpdateKPIAssignmentCommandHandler(IUnitOfWork unitOfWork, IKPIAssig
                 a => a.FYActiveKPIId == assignment.FYActiveKPIId && a.Id != request.Id),
             cancellationToken);
 
-        var otherTotalAnnual = otherAssignments.Sum(a => a.AssignedTargetAnnual);
-        var cumulativeTotalAnnual = otherTotalAnnual + request.AssignedTargetAnnual;
+        var otherTotalAnnual = otherAssignments.Sum(a => a.AssignedTargetAnnual ?? 0m);
+        var cumulativeTotalAnnual = otherTotalAnnual + (request.AssignedTargetAnnual ?? 0m);
 
         try
         {
@@ -67,14 +67,14 @@ public class UpdateKPIAssignmentCommandHandler(IUnitOfWork unitOfWork, IKPIAssig
                         fyActiveKpi.AgencyTargetAnnual,
                         cumulativeTotalAnnual,
                         otherTotalAnnual,
-                        request.AssignedTargetAnnual);
+                        request.AssignedTargetAnnual ?? 0m);
                     break;
 
                 case DistributionBehaviorEnum.Uniform:
-                    behaviorValidator.ValidateUniform(fyActiveKpi.Name, fyActiveKpi.AgencyTargetAnnual, request.AssignedTargetAnnual);
+                    behaviorValidator.ValidateUniform(fyActiveKpi.Name, fyActiveKpi.AgencyTargetAnnual, request.AssignedTargetAnnual ?? 0m);
                     behaviorValidator.ValidateUniformQuarterly(
                         fyActiveKpi.Name,
-                        request.AssignedTargetAnnual,
+                        request.AssignedTargetAnnual ?? 0m,
                         request.AssignedTargetQ1,
                         request.AssignedTargetQ2,
                         request.AssignedTargetQ3,
@@ -82,11 +82,11 @@ public class UpdateKPIAssignmentCommandHandler(IUnitOfWork unitOfWork, IKPIAssig
                     break;
 
                 case DistributionBehaviorEnum.Maximum:
-                    behaviorValidator.ValidateMaximum(fyActiveKpi.Name, fyActiveKpi.AgencyTargetAnnual, request.AssignedTargetAnnual);
+                    behaviorValidator.ValidateMaximum(fyActiveKpi.Name, fyActiveKpi.AgencyTargetAnnual, request.AssignedTargetAnnual ?? 0m);
                     break;
 
                 case DistributionBehaviorEnum.Minimum:
-                    behaviorValidator.ValidateMinimum(fyActiveKpi.Name, fyActiveKpi.AgencyTargetAnnual, request.AssignedTargetAnnual);
+                    behaviorValidator.ValidateMinimum(fyActiveKpi.Name, fyActiveKpi.AgencyTargetAnnual, request.AssignedTargetAnnual ?? 0m);
                     break;
 
                 case DistributionBehaviorEnum.Milestone:

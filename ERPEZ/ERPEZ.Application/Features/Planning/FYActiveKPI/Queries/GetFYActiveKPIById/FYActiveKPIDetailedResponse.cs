@@ -42,7 +42,8 @@ public record KPIAssignmentResponse
     public Guid Id { get; init; }
     public Guid OfficeId { get; init; }
     public string OfficeName { get; init; } = string.Empty;
-    public decimal AssignedTargetAnnual { get; init; }
+    public string Source { get; init; } = "Assigned";
+    public decimal? AssignedTargetAnnual { get; init; }
     public decimal? AssignedTargetQ1 { get; init; }
     public decimal? AssignedTargetQ2 { get; init; }
     public decimal? AssignedTargetQ3 { get; init; }

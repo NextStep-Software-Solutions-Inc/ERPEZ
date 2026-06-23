@@ -96,10 +96,24 @@ public class GetFYActiveKPIsQueryHandler(IUnitOfWork unitOfWork)
             }).ToList() : new List<SDGResponse>()
         };
 
-        var (items, totalCount) = await unitOfWork.FYActiveKPIRepository.GetAllAsync(
-            sieveModel,
-            projection,
-            cancellationToken: cancellationToken);
+        IReadOnlyList<FYActiveKPIResponse> items;
+        int totalCount;
+
+        if (request.AvailableForOfficeId.HasValue)
+        {
+            (items, totalCount) = await unitOfWork.FYActiveKPIRepository.GetAvailableForOfficeAsync(
+                sieveModel,
+                request.AvailableForOfficeId.Value,
+                projection,
+                cancellationToken);
+        }
+        else
+        {
+            (items, totalCount) = await unitOfWork.FYActiveKPIRepository.GetAllAsync(
+                sieveModel,
+                projection,
+                cancellationToken: cancellationToken);
+        }
 
         return new PaginatedApiResponse<FYActiveKPIResponse>([.. items], request.PageNumber, request.PageSize, totalCount);
     }

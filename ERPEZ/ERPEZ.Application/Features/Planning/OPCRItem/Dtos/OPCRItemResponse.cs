@@ -15,7 +15,7 @@ public record OPCRItemResponse
     public string KPIName { get; init; } = string.Empty;
     public string DistributionBehavior { get; init; } = string.Empty;
     public string MeasurementUnit { get; init; } = string.Empty;
-    public decimal AssignedTargetAnnual { get; init; }
+    public decimal? AssignedTargetAnnual { get; init; }
     public decimal? AssignedTargetQ1 { get; init; }
     public decimal? AssignedTargetQ2 { get; init; }
     public decimal? AssignedTargetQ3 { get; init; }

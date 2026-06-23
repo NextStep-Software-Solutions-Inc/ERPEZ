@@ -46,6 +46,7 @@ public class GetKPIAssignmentsQueryHandler(IUnitOfWork unitOfWork)
             FYActiveKPIId = assignment.FYActiveKPIId,
             OfficeId = assignment.OfficeId,
             OfficeName = assignment.Office?.Name ?? string.Empty,
+            Source = assignment.Source,
             AssignedTargetAnnual = assignment.AssignedTargetAnnual,
             AssignedTargetQ1 = assignment.AssignedTargetQ1,
             AssignedTargetQ2 = assignment.AssignedTargetQ2,

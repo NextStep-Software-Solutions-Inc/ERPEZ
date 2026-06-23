@@ -1,4 +1,5 @@
 using ERPEZ.Application.Features.Planning.Attribute.Dtos;
+using ERPEZ.Application.Features.Planning.KPIAssignment.Dtos;
 using ERPEZ.Application.Features.Planning.MFOPAP.Dtos;
 using ERPEZ.Application.Features.Planning.SDG.Dtos;
 using ERPEZ.Application.Features.Planning.FYActiveKPIMeasurement.Dtos;
@@ -59,6 +60,7 @@ public class GetFYActiveKPIByIdQueryHandler(IUnitOfWork unitOfWork)
                 Id = a.Id,
                 OfficeId = a.OfficeId,
                 OfficeName = a.Office?.Name ?? string.Empty,
+                Source = a.Source,
                 AssignedTargetAnnual = a.AssignedTargetAnnual,
                 AssignedTargetQ1 = a.AssignedTargetQ1,
                 AssignedTargetQ2 = a.AssignedTargetQ2,

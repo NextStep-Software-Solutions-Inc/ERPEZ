@@ -20,9 +20,26 @@ public class ActivateFYActiveKPICommandHandler(IUnitOfWork unitOfWork)
 {
     public async Task<ApiResponse<List<FYActiveKPIResponse>>> Handle(ActivateFYActiveKPICommand request, CancellationToken cancellationToken)
     {
+        bool cloneFromSourceFiscalYear = string.Equals(
+            request.CloneMode,
+            ActivationCloneModes.sourceFiscalYear,
+            StringComparison.OrdinalIgnoreCase);
+
         // Validate Fiscal Year exists
         var fiscalYear = await unitOfWork.FiscalYearRepository.GetByIdAsync(request.FiscalYearId, cancellationToken: cancellationToken)
             ?? throw new NotFoundException($"Fiscal Year with ID {request.FiscalYearId} not found.");
+
+        if (cloneFromSourceFiscalYear)
+        {
+            if (!request.SourceFiscalYearId.HasValue)
+                throw new ValidationException("SourceFiscalYearId is required when CloneMode is 'SourceFY'.");
+
+            if (request.SourceFiscalYearId.Value == request.FiscalYearId)
+                throw new ValidationException("SourceFiscalYearId must be different from FiscalYearId when CloneMode is 'SourceFY'.");
+
+            _ = await unitOfWork.FiscalYearRepository.GetByIdAsync(request.SourceFiscalYearId.Value, cancellationToken: cancellationToken)
+                ?? throw new NotFoundException($"Source Fiscal Year with ID {request.SourceFiscalYearId.Value} not found.");
+        }
 
         if (request.KPIs == null || request.KPIs.Count == 0)
             throw new ValidationException("At least one KPI must be provided for activation.");
@@ -35,11 +52,30 @@ public class ActivateFYActiveKPICommandHandler(IUnitOfWork unitOfWork)
             // Track activated KPIs in this batch for parent-child resolution
             var activatedKPIMap = new Dictionary<Guid, Guid>(); // MasterKPIId -> FYActiveKPIId
 
+            // Preload source snapshots and measurements once for efficient source-FY cloning.
+            Dictionary<Guid, Domain.Entities.Planning.FYActiveKPI> sourceSnapshotsByMasterKPIId = [];
+            if (cloneFromSourceFiscalYear)
+            {
+                var requestedMasterKPIIds = request.KPIs.Select(x => x.MasterKPIId).Distinct().ToList();
+
+                sourceSnapshotsByMasterKPIId = new Dictionary<Guid, Domain.Entities.Planning.FYActiveKPI>(
+                    await unitOfWork.FYActiveKPIRepository.GetLatestSnapshotsByMasterKPIIdsAsync(
+                        request.SourceFiscalYearId!.Value,
+                        requestedMasterKPIIds,
+                        cancellationToken));
+            }
+
             foreach (var kpiRequest in request.KPIs)
             {
                 // Validate Master KPI exists
                 var masterKPI = await unitOfWork.KPIRepository.GetKPIWithDetailsAsync(kpiRequest.MasterKPIId, cancellationToken)
                     ?? throw new NotFoundException($"Master KPI with ID {kpiRequest.MasterKPIId} not found.");
+
+                Domain.Entities.Planning.FYActiveKPI? sourceSnapshot = null;
+                if (cloneFromSourceFiscalYear)
+                {
+                    sourceSnapshotsByMasterKPIId.TryGetValue(kpiRequest.MasterKPIId, out sourceSnapshot);
+                }
 
                 // Check if this KPI is already activated for this fiscal year
                 var existingActivation = await unitOfWork.FYActiveKPIRepository.FindAsync(
@@ -78,18 +114,18 @@ public class ActivateFYActiveKPICommandHandler(IUnitOfWork unitOfWork)
                     FiscalYearId = request.FiscalYearId,
                     MasterKPIId = kpiRequest.MasterKPIId,
                     
-                    // Copy metadata from Master KPI
+                    // Copy metadata from selected clone source (Master or SourceFY snapshot)
                     ParentKPIId = fyActiveParentKPIId, // Use resolved FYActiveKPI parent ID
-                    MFOPAPId = masterKPI.MFOPAPId,
-                    Name = masterKPI.Name,
-                    Code = masterKPI.Code,
-                    Description = masterKPI.Description,
-                    MeasurementUnit = masterKPI.MeasurementUnit,
-                    DistributionBehavior = masterKPI.DistributionBehavior,
-                    FunctionCategory = masterKPI.FunctionCategory,
-                    MonitoringFrequency = masterKPI.MonitoringFrequency,
-                    IsOptInAvailable = masterKPI.IsOptInAvailable,
-                    IsGAD = masterKPI.IsGAD,
+                    MFOPAPId = sourceSnapshot?.MFOPAPId ?? masterKPI.MFOPAPId,
+                    Name = sourceSnapshot?.Name ?? masterKPI.Name,
+                    Code = sourceSnapshot?.Code ?? masterKPI.Code,
+                    Description = sourceSnapshot?.Description ?? masterKPI.Description,
+                    MeasurementUnit = sourceSnapshot?.MeasurementUnit ?? masterKPI.MeasurementUnit,
+                    DistributionBehavior = sourceSnapshot?.DistributionBehavior ?? masterKPI.DistributionBehavior,
+                    FunctionCategory = sourceSnapshot?.FunctionCategory ?? masterKPI.FunctionCategory,
+                    MonitoringFrequency = sourceSnapshot?.MonitoringFrequency ?? masterKPI.MonitoringFrequency,
+                    IsOptInAvailable = sourceSnapshot?.IsOptInAvailable ?? masterKPI.IsOptInAvailable,
+                    IsGAD = sourceSnapshot?.IsGAD ?? masterKPI.IsGAD,
                     Status = "Draft", // Targets set separately via SetFYActiveKPITargetsCommand
                     
                     // Agency targets initialized to defaults, set later via SetFYActiveKPITargetsCommand
@@ -107,7 +143,42 @@ public class ActivateFYActiveKPICommandHandler(IUnitOfWork unitOfWork)
 
                 // Clone all KPIMeasurements to FYActiveKPIMeasurements
                 var fyActiveMeasurements = new List<FYActiveKPIMeasurementResponse>();
-                if (masterKPI.KPIMeasurements?.Count > 0)
+                var sourceMeasurements = cloneFromSourceFiscalYear
+                    ? sourceSnapshot?.FYActiveKPIMeasurements
+                    : null;
+
+                if (sourceMeasurements?.Count > 0)
+                {
+                    foreach (var measurement in sourceMeasurements)
+                    {
+                        var fyActiveMeasurement = new Domain.Entities.Planning.FYActiveKPIMeasurement
+                        {
+                            Id = Guid.NewGuid(),
+                            FYActiveKPIId = fyActiveKPIId,
+                            Dimension = measurement.Dimension,
+                            RatingScaleTemplateId = measurement.RatingScaleTemplateId,
+                            MOVs = [.. measurement.MOVs],
+                            IsMOVEditable = measurement.IsMOVEditable,
+                            IsScaleEditable = measurement.IsScaleEditable,
+                        };
+
+                        await unitOfWork.FYActiveKPIMeasurementRepository.AddAsync(fyActiveMeasurement, cancellationToken);
+
+                        fyActiveMeasurements.Add(new FYActiveKPIMeasurementResponse
+                        {
+                            Id = fyActiveMeasurement.Id,
+                            FYActiveKPIId = fyActiveMeasurement.FYActiveKPIId,
+                            Dimension = fyActiveMeasurement.Dimension,
+                            MOVs = fyActiveMeasurement.MOVs,
+                            RatingScaleTemplateId = fyActiveMeasurement.RatingScaleTemplateId,
+                            IsMOVEditable = fyActiveMeasurement.IsMOVEditable,
+                            IsScaleEditable = fyActiveMeasurement.IsScaleEditable,
+                            CreatedAt = fyActiveMeasurement.CreatedAt,
+                            CreatedBy = fyActiveMeasurement.CreatedBy
+                        });
+                    }
+                }
+                else if (masterKPI.KPIMeasurements?.Count > 0)
                 {
                     foreach (var measurement in masterKPI.KPIMeasurements)
                     {

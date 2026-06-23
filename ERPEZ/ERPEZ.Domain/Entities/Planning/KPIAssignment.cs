@@ -15,9 +15,21 @@ public class KPIAssignment : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid OfficeId { get; set; }
 
-    // Office-Level Targets (Level 2)
+    /// <summary>
+    /// Source of the assignment: Assigned (by Planning) or Shopped (by Office).
+    /// Determines whether AssignedTargetAnnual is inherited (Assigned) or NULL (Shopped).
+    /// </summary>
     [Sieve(CanFilter = true, CanSort = true)]
-    public decimal AssignedTargetAnnual { get; set; }
+    public string Source { get; set; } = "Assigned"; // Enum: "Assigned" or "Shopped"
+
+    // Office-Level Targets (Level 2)
+    /// <summary>
+    /// Annual target assigned to the Office.
+    /// For Assigned source: inherited from Planning.
+    /// For Shopped source: NULL (Office proposes their own target).
+    /// </summary>
+    [Sieve(CanFilter = true, CanSort = true)]
+    public decimal? AssignedTargetAnnual { get; set; }
 
     [Sieve(CanFilter = true, CanSort = true)]
     public decimal? AssignedTargetQ1 { get; set; }
