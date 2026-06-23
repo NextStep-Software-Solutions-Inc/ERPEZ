@@ -18,13 +18,20 @@ public class CreateBiddingActivityScheduleCommandHandler(IUnitOfWork unitOfWork)
             return ApiResponse<Guid>.Fail("Procurement project not found.");
         }
 
+        var activityType = await unitOfWork.ProcurementActivityTypeRepository.GetByIdAsync(request.ScheduleRequest.ProcurementActivityTypeId, cancellationToken);
+        if (activityType == null)
+        {
+            return ApiResponse<Guid>.Fail("Procurement activity type not found.");
+        }
+
         var schedule = new BiddingActivitySchedule
         {
             ProcurementProjectId = request.ProjectId,
-            ActivityType = request.ScheduleRequest.ActivityType,
+            ProcurementActivityTypeId = request.ScheduleRequest.ProcurementActivityTypeId,
             StartDate = request.ScheduleRequest.StartDate,
             EndDate = request.ScheduleRequest.EndDate,
-            Venue = request.ScheduleRequest.Venue
+            Venue = request.ScheduleRequest.Venue,
+            Status = request.ScheduleRequest.Status
         };
 
         await unitOfWork.BiddingActivityScheduleRepository.AddAsync(schedule, cancellationToken);

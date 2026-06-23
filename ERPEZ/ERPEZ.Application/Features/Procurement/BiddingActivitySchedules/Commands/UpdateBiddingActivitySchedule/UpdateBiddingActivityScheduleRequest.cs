@@ -4,8 +4,9 @@ namespace ERPEZ.Application.Features.Procurement.BiddingActivitySchedules.Comman
 
 public record UpdateBiddingActivityScheduleRequest
 {
-    public required string ActivityType { get; init; }
+    public required Guid ProcurementActivityTypeId { get; init; }
     public required DateTime StartDate { get; init; }
     public required DateTime EndDate { get; init; }
     public required string Venue { get; init; }
+    public string Status { get; init; } = "Pending";
 }

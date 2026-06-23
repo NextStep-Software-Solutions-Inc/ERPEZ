@@ -21,7 +21,8 @@ public class GetCalendarEventsQueryHandler(IUnitOfWork unitOfWork)
                 Id = s.Id,
                 ProjectId = s.ProcurementProjectId,
                 ProjectTitle = s.ProcurementProject != null ? s.ProcurementProject.Title : string.Empty,
-                ActivityType = s.ActivityType,
+                ProcurementActivityTypeId = s.ProcurementActivityTypeId,
+                ProcurementActivityTypeName = s.ProcurementActivityType != null ? s.ProcurementActivityType.Name : string.Empty,
                 StartDate = s.StartDate,
                 EndDate = s.EndDate,
                 Venue = s.Venue

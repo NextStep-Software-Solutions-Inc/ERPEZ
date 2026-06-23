@@ -2202,6 +2202,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .WithMany(p => p.BiddingActivitySchedules)
                 .HasForeignKey(s => s.ProcurementProjectId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasOne(s => s.ProcurementActivityType)
+                .WithMany()
+                .HasForeignKey(s => s.ProcurementActivityTypeId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         base.OnModelCreating(modelBuilder);

@@ -40,10 +40,12 @@ public class GetProcurementProjectsQueryHandler(IUnitOfWork unitOfWork)
             {
                 Id = s.Id,
                 ProcurementProjectId = s.ProcurementProjectId,
-                ActivityType = s.ActivityType,
+                ProcurementActivityTypeId = s.ProcurementActivityTypeId,
+                ProcurementActivityTypeName = s.ProcurementActivityType != null ? s.ProcurementActivityType.Name : string.Empty,
                 StartDate = s.StartDate,
                 EndDate = s.EndDate,
-                Venue = s.Venue
+                Venue = s.Venue,
+                Status = s.Status
             }).ToList()
         };
 

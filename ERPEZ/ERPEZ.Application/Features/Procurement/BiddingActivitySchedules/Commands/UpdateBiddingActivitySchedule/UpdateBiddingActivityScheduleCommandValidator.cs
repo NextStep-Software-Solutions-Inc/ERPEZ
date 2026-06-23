@@ -14,10 +14,13 @@ public class UpdateBiddingActivityScheduleCommandValidator : AbstractValidator<U
             .NotEmpty()
             .WithMessage("Schedule Id is required.");
 
-        RuleFor(x => x.ScheduleRequest.ActivityType)
+        RuleFor(x => x.ScheduleRequest.ProcurementActivityTypeId)
             .NotEmpty()
-            .MaximumLength(200)
-            .WithMessage("Activity type is required.");
+            .WithMessage("Procurement activity type ID is required.");
+
+        RuleFor(x => x.ScheduleRequest.Status)
+            .NotEmpty()
+            .WithMessage("Status is required.");
 
         RuleFor(x => x.ScheduleRequest.StartDate)
             .NotEmpty()
