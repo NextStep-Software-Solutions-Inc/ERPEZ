@@ -4,6 +4,7 @@ using ERPEZ.Application.Features.Procurement.BiddingActivitySchedules.Commands.U
 using ERPEZ.Application.Features.Procurement.Projects.Commands.CreateProcurementProject;
 using ERPEZ.Application.Features.Procurement.Projects.Commands.DeleteProcurementProject;
 using ERPEZ.Application.Features.Procurement.Projects.Commands.UpdateProcurementProject;
+using ERPEZ.Application.Features.Procurement.Projects.Commands.AddConsolidatedPR;
 using ERPEZ.Application.Features.Procurement.Projects.Dtos;
 using ERPEZ.Application.Features.Procurement.Projects.Queries.GetCalendarEvents;
 using ERPEZ.Application.Features.Procurement.Projects.Queries.GetProcurementProjectById;
@@ -61,6 +62,16 @@ public class BACProjectController(ISender mediator) : ControllerBase
     {
         var result = await mediator.Send(new DeleteProcurementProjectCommand(id));
         return result.Succeeded ? Ok(result) : NotFound(result);
+    }
+
+    [HttpPost("projects/{id}/consolidated-pr")]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> AddConsolidatedPR(Guid id, [FromBody] AddConsolidatedPRRequest request)
+    {
+        var result = await mediator.Send(new AddConsolidatedPRCommand { ProjectId = id, Request = request });
+        return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 
     [HttpPost("projects/{id}/schedule")]

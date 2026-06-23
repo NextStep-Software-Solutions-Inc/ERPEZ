@@ -15,9 +15,7 @@ public class UpdateProcurementProjectCommandValidator : AbstractValidator<Update
             .MaximumLength(500)
             .WithMessage("Project title is required and cannot exceed 500 characters.");
 
-        RuleFor(x => x.UpdateRequest.ModeOfProcurementId)
-            .NotEmpty()
-            .WithMessage("Mode of procurement is required.");
+
 
         RuleFor(x => x.UpdateRequest.ABC)
             .GreaterThan(0)

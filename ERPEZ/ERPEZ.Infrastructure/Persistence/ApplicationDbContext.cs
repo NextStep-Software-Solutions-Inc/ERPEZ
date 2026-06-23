@@ -2188,15 +2188,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasForeignKey(o => o.OPCRConsolidationId)
             .OnDelete(DeleteBehavior.SetNull);
 
-        modelBuilder.Entity<ProcurementProject>(e =>
-        {
-            e.Property(p => p.ABC).HasPrecision(18, 2);
-            e.HasOne(p => p.ModeOfProcurement)
-                .WithMany()
-                .HasForeignKey(p => p.ModeOfProcurementId)
-                .OnDelete(DeleteBehavior.Restrict);
-        });
-
         modelBuilder.Entity<BACResolution>(e =>
         {
             e.HasOne(r => r.ProcurementProject)

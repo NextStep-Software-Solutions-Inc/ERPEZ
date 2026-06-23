@@ -17,14 +17,7 @@ public class UpdateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
             return ApiResponse<Unit>.Fail("Procurement project not found.");
         }
 
-        var mode = await unitOfWork.ProcurementModeRepository.GetByIdAsync(request.UpdateRequest.ModeOfProcurementId, cancellationToken);
-        if (mode == null)
-        {
-            return ApiResponse<Unit>.Fail("Procurement mode not found.");
-        }
-
         project.Title = request.UpdateRequest.Title;
-        project.ModeOfProcurementId = request.UpdateRequest.ModeOfProcurementId;
         project.ABC = request.UpdateRequest.ABC;
         project.Status = request.UpdateRequest.Status;
 

@@ -13,10 +13,7 @@ public class ProcurementProject : BaseEntity
     public string Title { get; set; } = string.Empty;
 
     [Sieve(CanFilter = true, CanSort = true)]
-    public Guid ConsolidatedPRId { get; set; }
-
-    [Sieve(CanFilter = true, CanSort = true)]
-    public Guid ModeOfProcurementId { get; set; }
+    public Guid? ConsolidatedPRId { get; set; }
 
     [Sieve(CanFilter = true, CanSort = true)]
     public decimal ABC { get; set; }
@@ -25,7 +22,6 @@ public class ProcurementProject : BaseEntity
     public string Status { get; set; } = string.Empty;
 
     // Navigation properties
-    public virtual ProcurementMode ModeOfProcurement { get; set; } = null!;
     public virtual List<BACResolution> BACResolutions { get; set; } = [];
     public virtual List<BiddingActivitySchedule> BiddingActivitySchedules { get; set; } = [];
 }

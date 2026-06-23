@@ -1,6 +1,3 @@
-using System;
-using System.Threading;
-using System.Threading.Tasks;
 using ERPEZ.Domain.Entities.Procurement;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
@@ -13,17 +10,9 @@ public class CreateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
 {
     public async Task<ApiResponse<Guid>> Handle(CreateProcurementProjectCommand request, CancellationToken cancellationToken)
     {
-        var mode = await unitOfWork.ProcurementModeRepository.GetByIdAsync(request.ModeOfProcurementId, cancellationToken);
-        if (mode == null)
-        {
-            return ApiResponse<Guid>.Fail("Procurement mode not found.");
-        }
-
         var project = new ProcurementProject
         {
             Title = request.Title,
-            ConsolidatedPRId = request.ConsolidatedPRId,
-            ModeOfProcurementId = request.ModeOfProcurementId,
             ABC = request.ABC,
             Status = request.Status
         };
@@ -33,7 +22,6 @@ public class CreateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
             ResolutionType = request.ResolutionType,
             ResolutionNumber = request.ResolutionNumber,
             DateResolved = request.DateResolved,
-            Status = request.BACResolutionStatus,
             WhereasClause = request.WhereasClause
         };
 

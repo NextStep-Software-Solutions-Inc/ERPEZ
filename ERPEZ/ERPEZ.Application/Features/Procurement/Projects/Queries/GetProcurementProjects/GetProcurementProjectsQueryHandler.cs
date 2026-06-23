@@ -1,8 +1,4 @@
-using System;
-using System.Linq;
 using System.Linq.Expressions;
-using System.Threading;
-using System.Threading.Tasks;
 using ERPEZ.Application.Features.Procurement.Projects.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
@@ -28,8 +24,6 @@ public class GetProcurementProjectsQueryHandler(IUnitOfWork unitOfWork)
             Id = c.Id,
             Title = c.Title,
             ConsolidatedPRId = c.ConsolidatedPRId,
-            ModeOfProcurementId = c.ModeOfProcurementId,
-            ModeOfProcurementName = c.ModeOfProcurement != null ? c.ModeOfProcurement.Name : string.Empty,
             ABC = c.ABC,
             Status = c.Status,
             BACResolutions = c.BACResolutions.Select(r => new BACResolutionResponse
