@@ -1,3 +1,4 @@
+// CreateOPCRItemMOVCommandValidator.cs
 using FluentValidation;
 
 namespace ERPEZ.Application.Features.Planning.OPCRItemMOV.Commands.CreateOPCRItemMOV;
@@ -16,9 +17,8 @@ public class CreateOPCRItemMOVCommandValidator : AbstractValidator<CreateOPCRIte
             .MaximumLength(500)
             .WithMessage("Requirement Name cannot exceed 500 characters.");
 
-        RuleFor(x => x.AttachedUrl)
-            .MaximumLength(2048)
-            .WithMessage("Attached URL cannot exceed 2048 characters.")
-            .When(x => !string.IsNullOrEmpty(x.AttachedUrl));
+        RuleFor(x => x.FileId)
+            .NotEmpty()
+            .WithMessage("File ID is required. Upload a file first via POST /files/upload.");
     }
 }
