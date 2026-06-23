@@ -7204,9 +7204,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
-                    b.Property<Guid>("ModeOfProcurementId")
-                        .HasColumnType("uuid");
-
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("text");
@@ -7222,8 +7219,6 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
-
-                    b.HasIndex("ModeOfProcurementId");
 
                     b.ToTable("ProcurementProjects", "procurement");
                 });
@@ -9109,17 +9104,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("ProcurementActivityType");
 
                     b.Navigation("ProcurementProject");
-                });
-
-            modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.ProcurementProject", b =>
-                {
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.ProcurementMode", "ModeOfProcurement")
-                        .WithMany()
-                        .HasForeignKey("ModeOfProcurementId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("ModeOfProcurement");
                 });
 
             modelBuilder.Entity("KPISDG", b =>
