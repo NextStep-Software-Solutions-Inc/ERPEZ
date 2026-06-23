@@ -39,31 +39,28 @@ public class CreateKPIAssignmentCommandValidator : AbstractValidator<CreateKPIAs
             .WithMessage("AssignedTargetQ4 must be greater than or equal to 0.");
 
         // Validate quarterly alignment if provided
-        RuleFor(x => x)
-            .Must(command => ValidateQuarterlyAlignment(command))
-            .When(x => x.AssignedTargetQ1.HasValue || x.AssignedTargetQ2.HasValue || 
-                       x.AssignedTargetQ3.HasValue || x.AssignedTargetQ4.HasValue)
-            .WithMessage("If quarterly targets are provided, all quarters must be specified and sum to the annual target.");
+        // RuleFor(x => x)
+        //     .Must(command => ValidateQuarterlyAlignment(command))
+        //     .When(x => x.AssignedTargetQ1.HasValue || x.AssignedTargetQ2.HasValue || 
+        //             x.AssignedTargetQ3.HasValue || x.AssignedTargetQ4.HasValue)
+        //     .WithMessage("If quarterly targets are provided, all quarters must be specified.");
     }
 
-    private bool ValidateQuarterlyAlignment(CreateKPIAssignmentCommand command)
-    {
-        // If any quarterly target is provided, all must be provided
-        if (command.AssignedTargetQ1.HasValue || command.AssignedTargetQ2.HasValue || 
-            command.AssignedTargetQ3.HasValue || command.AssignedTargetQ4.HasValue)
-        {
-            if (!command.AssignedTargetQ1.HasValue || !command.AssignedTargetQ2.HasValue || 
-                !command.AssignedTargetQ3.HasValue || !command.AssignedTargetQ4.HasValue)
-            {
-                return false;
-            }
+    // private bool ValidateQuarterlyAlignment(CreateKPIAssignmentCommand command)
+    // {
+    //     // Only enforce that if ANY quarter is provided, ALL must be provided.
+    //     // Do NOT check sum here — behavior-specific rules (Uniform, Summation, etc.)
+    //     // are enforced by KPIAssignmentBehaviorValidator in the handler,
+    //     // which has access to DistributionBehavior from FYActiveKPI.
+    //     if (command.AssignedTargetQ1.HasValue || command.AssignedTargetQ2.HasValue ||
+    //         command.AssignedTargetQ3.HasValue || command.AssignedTargetQ4.HasValue)
+    //     {
+    //         return command.AssignedTargetQ1.HasValue &&
+    //             command.AssignedTargetQ2.HasValue &&
+    //             command.AssignedTargetQ3.HasValue &&
+    //             command.AssignedTargetQ4.HasValue;
+    //     }
 
-            var sum = command.AssignedTargetQ1.Value + command.AssignedTargetQ2.Value + 
-                      command.AssignedTargetQ3.Value + command.AssignedTargetQ4.Value;
-
-            return Math.Abs(sum - command.AssignedTargetAnnual) < 0.0001m;
-        }
-
-        return true;
-    }
+    //     return true;
+    // }
 }

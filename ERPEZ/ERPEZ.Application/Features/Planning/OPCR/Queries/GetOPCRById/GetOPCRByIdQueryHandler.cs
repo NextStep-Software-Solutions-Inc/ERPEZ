@@ -423,8 +423,8 @@ public class GetOPCRByIdQueryHandler(IUnitOfWork unitOfWork)
                     {
                         Id               = r.Id,
                         OPCRItemId       = r.OPCRItemId,
-                        KPIMeasurementId = r.KPIMeasurementId,
-                        Dimension        = string.Join(", ", r.KPIMeasurement.Dimensions),
+                        FYActiveKPIMeasurementId = r.FYActiveKPIMeasurementId,
+                        Dimension        = string.Join(", ", r.FYActiveKPIMeasurement.Dimensions),
                         SelfRating       = r.SelfRating,
                         PMTRating        = r.PMTRating,
                         PMTRemark        = r.PMTRemark,

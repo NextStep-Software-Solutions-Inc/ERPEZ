@@ -70,6 +70,9 @@ public class FYActiveKPI : BaseEntity
 
     [Sieve(CanFilter = true, CanSort = true)]
     public decimal? AgencyTargetQ4 { get; set; }
+    
+    [Sieve(CanFilter = true, CanSort = true)]
+    public string? GadMeasure { get; set; }
 
     // Navigation Properties
     public virtual FiscalYear? FiscalYear { get; set; }

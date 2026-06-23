@@ -43,6 +43,12 @@ public class OPCR : BaseEntity
     
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid? OPCRConsolidationId { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public string? CommitmentPersonName { get; set; } = string.Empty;
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public string? CommitmentPersonPosition { get; set; } = string.Empty;
     public virtual OPCRConsolidation? OPCRConsolidation { get; set; }
     public virtual Office Office { get; set; } = null!;
     public virtual FiscalYear FiscalYear { get; set; } = null!;

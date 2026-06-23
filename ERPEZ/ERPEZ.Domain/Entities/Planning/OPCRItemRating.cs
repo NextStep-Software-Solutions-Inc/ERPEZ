@@ -9,7 +9,7 @@ public class OPCRItemRating : BaseEntity
     public Guid OPCRItemId { get; set; }
 
     [Sieve(CanFilter = true, CanSort = true)]
-    public Guid KPIMeasurementId { get; set; }
+    public Guid FYActiveKPIMeasurementId  { get; set; }
 
     /// <summary>
     /// Office self-rating score per dimension.
@@ -30,5 +30,5 @@ public class OPCRItemRating : BaseEntity
 
     // Navigation properties
     public virtual OPCRItem OPCRItem { get; set; } = null!;
-    public virtual KPIMeasurement KPIMeasurement { get; set; } = null!;
+    public virtual FYActiveKPIMeasurement FYActiveKPIMeasurement { get; set; } = null!;
 }

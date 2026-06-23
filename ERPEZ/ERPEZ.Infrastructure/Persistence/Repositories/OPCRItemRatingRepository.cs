@@ -21,7 +21,7 @@ public class OPCRItemRatingRepository : Repository<OPCRItemRating>, IOPCRItemRat
     {
         return await context.Set<OPCRItemRating>()
             .Where(x => x.OPCRItemId == opcrItemId && !x.IsDeleted)
-            .Include(x => x.KPIMeasurement)
+            .Include(x => x.FYActiveKPIMeasurement)
             .ToListAsync(cancellationToken);
     }
 }

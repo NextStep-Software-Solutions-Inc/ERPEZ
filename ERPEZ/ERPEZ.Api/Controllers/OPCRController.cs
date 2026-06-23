@@ -18,6 +18,11 @@ using ERPEZ.Application.Features.Planning.OPCRItemMOV.Commands.UpdateOPCRItemMOV
 using ERPEZ.Application.Features.Planning.OPCRItemMOV.Commands.DeleteOPCRItemMOV;
 using ERPEZ.Application.Features.Planning.OPCR.Commands.UpdateOPCRCommitmentStatus;
 using ERPEZ.Application.Features.Planning.OPCR.Commands.UpdateOPCRReviewStatus;
+using ERPEZ.Application.Features.Planning.OPCRItem.Commands.EvaluateOPCRItem;
+using ERPEZ.Application.Features.Planning.OPCRItemMOV.Dtos;
+using ERPEZ.Application.Features.Planning.OPCRItem.Dtos;
+using ERPEZ.Application.Features.Planning.OPCRItemRating.Queries;
+using ERPEZ.Application.Features.Planning.OPCRItemRating.Dtos;
 
 namespace ERPEZ.Api.Controllers
 {
@@ -159,6 +164,29 @@ namespace ERPEZ.Api.Controllers
         // OPCRItem Ratings
         // =====================
 
+        /// <summary>
+        /// Office self-evaluation per KPI: sets actual accomplishment, justification,
+        /// and self-ratings per dimension in a single transaction.
+        /// MOV uploads are handled separately via POST /opcrs/items/{itemId}/movs.
+        /// </summary>
+        [HttpPatch("items/{itemId}/self-evaluate")]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> EvaluateOPCRItem(
+            Guid itemId,
+            [FromBody] EvaluateOPCRItemRequest request,
+            CancellationToken cancellationToken)
+        {
+            var result = await mediator.Send(new EvaluateOPCRItemCommand
+            {
+                OPCRItemId = itemId,
+                Request    = request
+            }, cancellationToken);
+
+            return result.Succeeded ? Ok(result) : BadRequest(result);
+        }
+
         [HttpPost("items/{itemId}/ratings")]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
@@ -173,7 +201,23 @@ namespace ERPEZ.Api.Controllers
                 : BadRequest(result);
         }
 
-        [HttpPut("items/ratings/{ratingId}")]
+        /// <summary>
+        /// Returns all dimension ratings for a specific OPCR Item.
+        /// Used by PMT to review ratings without loading the full OPCR.
+        /// </summary>
+        [HttpGet("items/{itemId}/ratings")]
+        [ProducesResponseType(typeof(ApiResponse<List<OPCRItemRatingResponse>>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
+        public async Task<IActionResult> GetOPCRItemRatings(
+            Guid itemId,
+            CancellationToken cancellationToken)
+        {
+            var result = await mediator.Send(
+                new GetOPCRItemRatingsQuery(itemId), cancellationToken);
+            return result.Succeeded ? Ok(result) : NotFound(result);
+        }
+
+        [HttpPut("items/ratings/{ratingId}/pmt-review")]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
@@ -207,12 +251,20 @@ namespace ERPEZ.Api.Controllers
         [HttpPost("items/{itemId}/movs")]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> CreateOPCRItemMOV(
             Guid itemId,
-            [FromBody] CreateOPCRItemMOVCommand command)
+            [FromBody] CreateOPCRItemMOVRequest request,   // ← body DTO, no OPCRItemId
+            CancellationToken cancellationToken)
         {
-            var result = await mediator.Send(command with { OPCRItemId = itemId });
+            var command = new CreateOPCRItemMOVCommand
+            {
+                OPCRItemId      = itemId,                  // ← from route only
+                RequirementName = request.RequirementName,
+                FileId          = request.FileId
+            };
+
+            var result = await mediator.Send(command, cancellationToken);
             return result.Succeeded
                 ? CreatedAtAction(nameof(GetOPCRById), new { id = itemId }, result)
                 : BadRequest(result);
@@ -221,18 +273,18 @@ namespace ERPEZ.Api.Controllers
         [HttpPut("items/movs/{movId}")]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
-        [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> UpdateOPCRItemMOV(
             Guid movId,
-            [FromBody] UpdateOPCRItemMOVRequest request)
+            [FromBody] UpdateOPCRItemMOVRequest request,
+            CancellationToken cancellationToken)
         {
-            var command = new UpdateOPCRItemMOVCommand
+            var result = await mediator.Send(new UpdateOPCRItemMOVCommand
             {
-                Id = movId,
-                UpdateOPCRItemMOV = request
-            };
+                Id      = movId,
+                Request = request
+            }, cancellationToken);
 
-            var result = await mediator.Send(command);
             return result.Succeeded ? Ok(result) : BadRequest(result);
         }
 

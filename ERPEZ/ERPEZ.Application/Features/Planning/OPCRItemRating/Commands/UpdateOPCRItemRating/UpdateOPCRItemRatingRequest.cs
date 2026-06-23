@@ -2,7 +2,6 @@ namespace ERPEZ.Application.Features.Planning.OPCRItemRating.Commands.UpdateOPCR
 
 public class UpdateOPCRItemRatingRequest
 {
-    public decimal? SelfRating { get; init; }
     public decimal? PMTRating { get; init; }
     public string? PMTRemark { get; init; }
 }

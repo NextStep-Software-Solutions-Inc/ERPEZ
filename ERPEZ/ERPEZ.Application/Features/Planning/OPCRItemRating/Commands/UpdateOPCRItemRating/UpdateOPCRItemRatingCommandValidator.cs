@@ -10,11 +10,6 @@ public class UpdateOPCRItemRatingCommandValidator : AbstractValidator<UpdateOPCR
             .NotEmpty()
             .WithMessage("OPCR Item Rating ID is required.");
 
-        RuleFor(x => x.UpdateOPCRItemRating.SelfRating)
-            .InclusiveBetween(0, 5)
-            .WithMessage("Self Rating must be between 0 and 5.")
-            .When(x => x.UpdateOPCRItemRating.SelfRating.HasValue);
-
         RuleFor(x => x.UpdateOPCRItemRating.PMTRating)
             .InclusiveBetween(0, 5)
             .WithMessage("PMT Rating must be between 0 and 5.")

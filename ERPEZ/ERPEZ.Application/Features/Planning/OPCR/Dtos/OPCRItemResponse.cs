@@ -13,10 +13,10 @@ public record OPCRItemResponse
 
     // ✅ Add this — denormalized shortcut so FE can group without drilling
     public string? FunctionCategory { get; init; }
-    public int Q1Target { get; init; }
-    public int Q2Target { get; init; }
-    public int Q3Target { get; init; }
-    public int Q4Target { get; init; }
+    public decimal Q1Target { get; init; }
+    public decimal Q2Target { get; init; }
+    public decimal Q3Target { get; init; }
+    public decimal Q4Target { get; init; }
     public bool IsShopped { get; init; }
     public string? ActualAccomplishment { get; init; }
     public string? Justification { get; init; }
