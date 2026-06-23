@@ -70,6 +70,10 @@ public class OPCRRepository : Repository<OPCR>, IOPCRRepository
                         .ThenInclude(m => m.RatingScaleTemplate)
                             .ThenInclude(t => t!.RatingScaleLevels)
 
+            // ✅ Add — load MOVs for the Mode of Verification column
+            .Include(o => o.OPCRItems.Where(i => !i.IsDeleted))
+                .ThenInclude(i => i.OPCRItemMOVs.Where(m => !m.IsDeleted))
+
             .AsSplitQuery();
     }
 

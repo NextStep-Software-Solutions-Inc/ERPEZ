@@ -179,8 +179,19 @@ internal sealed class OpcrRatingPdfRenderer : BasePdfRenderer, IDocumentRenderer
                         .Text(kpi.TRating?.ToString("N2") ?? string.Empty).FontSize(7);
                     table.Cell().Element(TableDataCell).AlignCenter()
                         .Text(kpi.AveRating?.ToString("N2") ?? string.Empty).FontSize(7);
-                    // MOV — blank in table; attached separately per CSC form convention
-                    table.Cell().Element(TableDataCell).Text(string.Empty).FontSize(7);
+                    // MOV — render requirement names, one per line
+                    table.Cell().Element(TableDataCell).Column(c =>
+                    {
+                        if (kpi.MOVRequirements.Count == 0)
+                        {
+                            c.Item().Text(string.Empty).FontSize(7);
+                        }
+                        else
+                        {
+                            foreach (var mov in kpi.MOVRequirements)
+                                c.Item().Text($"• {mov}").FontSize(7);
+                        }
+                    });
                     table.Cell().Element(TableDataCell).Text(kpi.PMTRemark ?? string.Empty).FontSize(7);
                 }
             }

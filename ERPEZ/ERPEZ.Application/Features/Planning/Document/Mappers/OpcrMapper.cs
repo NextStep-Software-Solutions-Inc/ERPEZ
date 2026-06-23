@@ -167,7 +167,11 @@ internal static class OpcrMapper
             Activities           = item.OPCRActivities
                                        .Where(a => !a.IsDeleted)
                                        .Select(MapActivity)
-                                       .ToList()
+                                       .ToList(),
+            MOVRequirements      = item.OPCRItemMOVs
+                                   .Where(m => !m.IsDeleted)
+                                   .Select(m => m.RequirementName)
+                                   .ToList()
         };
 
         if (!includeRatings) return row;

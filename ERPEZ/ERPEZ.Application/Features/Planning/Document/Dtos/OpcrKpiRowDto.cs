@@ -59,6 +59,9 @@
         public decimal? AveRating            { get; set; } // Average of Q/E/T
         public string?  AdjectivalRating     { get; set; } // Derived from RatingScaleTemplate
         public string?  PMTRemark            { get; set; }
+        
+        // ✅ Add — MOV requirement names for the Mode of Verification column
+        public List<string> MOVRequirements  { get; set; } = [];
     }
 
     public class OpcrActivityRowDto
