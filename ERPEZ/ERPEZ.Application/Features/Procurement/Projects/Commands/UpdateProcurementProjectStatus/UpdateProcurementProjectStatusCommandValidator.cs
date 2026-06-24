@@ -1,4 +1,6 @@
 using FluentValidation;
+using ERPEZ.Domain.Enums;
+using System;
 
 namespace ERPEZ.Application.Features.Procurement.Projects.Commands.UpdateProcurementProjectStatus;
 
@@ -12,6 +14,10 @@ public class UpdateProcurementProjectStatusCommandValidator : AbstractValidator<
 
         RuleFor(x => x.StatusRequest.Status)
             .NotEmpty()
-            .WithMessage("Status is required.");
+            .WithMessage("Status is required.")
+            .Must(status => Enum.TryParse<StatusEnum>(status, true, out var parsed) && 
+                            parsed is StatusEnum.Draft or StatusEnum.Submitted or StatusEnum.Returned or StatusEnum.Approved)
+            .WithMessage("Status must be one of: Draft, Submitted, Returned, Approved.");
     }
 }
+
