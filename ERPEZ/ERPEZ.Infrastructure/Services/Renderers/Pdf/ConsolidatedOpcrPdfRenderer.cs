@@ -61,6 +61,7 @@ internal sealed class ConsolidatedOpcrPdfRenderer
                             c.RelativeColumn(1f);   // Q4
                             c.RelativeColumn(1f);   // Total
                             c.RelativeColumn(1.8f); // Budget
+                            c.RelativeColumn(2f);   // Remarks ✅ Add
                         });
 
                         RenderTableBody(table, request);
@@ -91,7 +92,7 @@ internal sealed class ConsolidatedOpcrPdfRenderer
     private static void RenderTableBody(
         TableDescriptor table, ConsolidatedOpcrDataDto dto)
     {
-        const uint colCount = 8;
+        const uint colCount = 9;  // 8 columns + 1 for Remarks
 
         string? currentCategory = null;
 
@@ -162,6 +163,7 @@ internal sealed class ConsolidatedOpcrPdfRenderer
             HCell("Q4");
             HCell("Total");
             HCell("Allotted\nBudget (₱)");
+            HCell("Remarks");  // ✅ Add
 
             // ── Office contribution rows ──────────────────────────────────
             foreach (var office in kpi.OfficeContributions)
@@ -196,6 +198,8 @@ internal sealed class ConsolidatedOpcrPdfRenderer
                 table.Cell().Element(TableDataCell)
                     .AlignRight()
                     .Text($"₱{office.AllottedBudget:N2}").FontSize(7);
+                table.Cell().Element(TableDataCell)
+                    .Text(office.Remarks ?? string.Empty).FontSize(7);
             }
 
             // ── KPI subtotal row ─────────────────────────────────────────

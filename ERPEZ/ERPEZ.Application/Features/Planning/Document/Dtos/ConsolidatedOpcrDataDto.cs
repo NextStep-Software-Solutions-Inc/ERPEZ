@@ -39,4 +39,6 @@ public class OfficeContributionDto
     public string         Q4Target      { get; set; } = string.Empty;
     public string         TotalTarget   { get; set; } = string.Empty;
     public decimal        AllottedBudget { get; set; }
+    public string?      Remarks        { get; set; }  // ✅ Add — optional
+
 }

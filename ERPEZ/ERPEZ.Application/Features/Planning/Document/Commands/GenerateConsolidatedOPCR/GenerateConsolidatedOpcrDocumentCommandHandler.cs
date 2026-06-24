@@ -148,7 +148,8 @@ public class GenerateConsolidatedOpcrDocumentCommandHandler(
             TotalTarget    = Fmt(item.Q1Target + item.Q2Target + item.Q3Target + item.Q4Target),
             AllottedBudget = item.OPCRActivities
                                  .Where(a => !a.IsDeleted)
-                                 .Sum(a => a.Budget)
+                                 .Sum(a => a.Budget),
+            Remarks        = item.Justification  // ✅ from OPCRItem.Justification
         };
     }
 
