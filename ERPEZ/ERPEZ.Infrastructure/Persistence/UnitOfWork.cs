@@ -121,6 +121,9 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IOPCRItemMOVRepository opcrItemMOVRepository;
     private readonly IGeneratedDocumentRepository gneratedDocumentRepository;
     private readonly IOPCRConsolidationRepository opcrConsolidationRepository;
+    private readonly IProcurementProjectRepository procurementProjectRepository;
+    private readonly IBACResolutionRepository bacResolutionRepository;
+    private readonly IBiddingActivityScheduleRepository biddingActivityScheduleRepository;
 
     // Constructor initializes all repositories once
     public UnitOfWork(ApplicationDbContext context, IServiceProvider serviceProvider)
@@ -239,6 +242,9 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         opcrItemMOVRepository = new OPCRItemMOVRepository(context, sieveProcessor);
         gneratedDocumentRepository = new GeneratedDocumentRepository(context, sieveProcessor);
         opcrConsolidationRepository = new OPCRConsolidationRepository(context, sieveProcessor);
+        procurementProjectRepository = new ProcurementProjectRepository(context, sieveProcessor);
+        bacResolutionRepository = new BACResolutionRepository(context, sieveProcessor);
+        biddingActivityScheduleRepository = new BiddingActivityScheduleRepository(context, sieveProcessor);
     }
 
     // Public properties return cached instances
@@ -352,6 +358,9 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IOPCRItemMOVRepository OPCRItemMOVRepository => opcrItemMOVRepository;
     public IGeneratedDocumentRepository GeneratedDocumentRepository => gneratedDocumentRepository;
     public IOPCRConsolidationRepository OPCRConsolidationRepository => opcrConsolidationRepository;
+    public IProcurementProjectRepository ProcurementProjectRepository => procurementProjectRepository;
+    public IBACResolutionRepository BACResolutionRepository => bacResolutionRepository;
+    public IBiddingActivityScheduleRepository BiddingActivityScheduleRepository => biddingActivityScheduleRepository;
 
     public async Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default)
     {
