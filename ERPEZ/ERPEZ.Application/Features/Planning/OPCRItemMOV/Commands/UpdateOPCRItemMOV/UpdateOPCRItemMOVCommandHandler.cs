@@ -1,3 +1,5 @@
+// UpdateOPCRItemMOVCommandHandler.cs
+using ERPEZ.Application.Interfaces;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -5,35 +7,34 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.OPCRItemMOV.Commands.UpdateOPCRItemMOV;
 
-public class UpdateOPCRItemMOVCommandHandler(IUnitOfWork unitOfWork)
+public class UpdateOPCRItemMOVCommandHandler(
+    IUnitOfWork unitOfWork,
+    IFileStorageService fileStorageService)
     : IRequestHandler<UpdateOPCRItemMOVCommand, ApiResponse<Unit>>
 {
     public async Task<ApiResponse<Unit>> Handle(
         UpdateOPCRItemMOVCommand request, CancellationToken cancellationToken)
     {
-        var entity = await unitOfWork.OPCRItemMOVRepository.GetByIdAsync(
-            request.Id, cancellationToken)
+        var entity = await unitOfWork.OPCRItemMOVRepository.GetByIdAsync(request.Id, cancellationToken)
             ?? throw new NotFoundException("OPCR Item MOV not found.");
 
-        var dto = request.UpdateOPCRItemMOV;
+        var dto = request.Request;
 
-        // Check for duplicate RequirementName if changed
-        if (entity.RequirementName != dto.RequirementName)
+        if (dto.RequirementName != null)
+            entity.RequirementName = dto.RequirementName;
+
+        // If a new file is provided — promote it and replace the existing attachment
+        if (dto.FileId.HasValue)
         {
-            var duplicate = await unitOfWork.OPCRItemMOVRepository.FindAsync(
-                m => m.OPCRItemId == entity.OPCRItemId
-                  && m.RequirementName == dto.RequirementName
-                  && m.Id != entity.Id,
-                cancellationToken);
+            // Delete old permanent file if one exists
+            if (entity.FileId.HasValue)
+                await fileStorageService.DeletePermanentAsync(entity.FileId.Value);
 
-            if (duplicate != null)
-                throw new ConflictException(
-                    $"A MOV with requirement name '{dto.RequirementName}' already exists for this OPCR Item.");
+            var permanentUrl   = await fileStorageService.PromoteFileAsync(dto.FileId.Value);
+            entity.FileId      = dto.FileId.Value;
+            entity.AttachedUrl = permanentUrl;
+            entity.UploadedDate = DateTime.UtcNow;
         }
-
-        entity.RequirementName = dto.RequirementName;
-        entity.AttachedUrl     = dto.AttachedUrl;
-        entity.UploadedDate    = dto.AttachedUrl != null ? dto.UploadedDate ?? DateTime.UtcNow : null;
 
         unitOfWork.OPCRItemMOVRepository.Update(entity);
         await unitOfWork.SaveChangesAsync(cancellationToken);

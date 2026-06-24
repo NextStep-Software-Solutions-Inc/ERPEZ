@@ -12,16 +12,16 @@ public class OPCRItem : BaseEntity
     public Guid KPIAssignmentId { get; set; }
 
     [Sieve(CanFilter = true, CanSort = true)]
-    public int Q1Target { get; set; }
+    public decimal Q1Target { get; set; }
 
     [Sieve(CanFilter = true, CanSort = true)]
-    public int Q2Target { get; set; }
+    public decimal Q2Target { get; set; }
 
     [Sieve(CanFilter = true, CanSort = true)]
-    public int Q3Target { get; set; }
+    public decimal Q3Target { get; set; }
 
     [Sieve(CanFilter = true, CanSort = true)]
-    public int Q4Target { get; set; }
+    public decimal Q4Target { get; set; }
 
     [Sieve(CanFilter = true, CanSort = true)]
     public bool IsShopped { get; set; }

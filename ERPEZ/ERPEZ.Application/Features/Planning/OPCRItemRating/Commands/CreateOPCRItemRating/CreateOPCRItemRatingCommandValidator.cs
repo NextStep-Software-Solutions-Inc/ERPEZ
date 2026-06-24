@@ -11,9 +11,9 @@ public class CreateOPCRItemRatingCommandValidator : AbstractValidator<CreateOPCR
             .NotEmpty()
             .WithMessage("OPCR Item ID is required.");
 
-        RuleFor(x => x.KPIMeasurementId)
+        RuleFor(x => x.FYActiveKPIMeasurementId)
             .NotEmpty()
-            .WithMessage("KPI Measurement ID is required.");
+            .WithMessage("FY Active KPI Measurement ID is required.");
 
         RuleFor(x => x.SelfRating)
             .InclusiveBetween(0, 5)

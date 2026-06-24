@@ -1,10 +1,12 @@
+// UpdateOPCRItemMOVCommand.cs
+using ERPEZ.Application.Features.Planning.OPCRItemMOV.Dtos;
 using ERPEZ.Shared.Common;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.OPCRItemMOV.Commands.UpdateOPCRItemMOV;
 
-public class UpdateOPCRItemMOVCommand : IRequest<ApiResponse<Unit>>
+public record UpdateOPCRItemMOVCommand : IRequest<ApiResponse<Unit>>
 {
-    public Guid Id { get; set; }
-    public UpdateOPCRItemMOVRequest UpdateOPCRItemMOV { get; set; } = null!;
+    public Guid                   Id      { get; init; }
+    public UpdateOPCRItemMOVRequest Request { get; init; } = null!;
 }

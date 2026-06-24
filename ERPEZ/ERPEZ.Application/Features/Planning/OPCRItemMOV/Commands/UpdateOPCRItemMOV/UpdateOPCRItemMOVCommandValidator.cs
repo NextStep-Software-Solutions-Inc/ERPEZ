@@ -1,3 +1,4 @@
+// UpdateOPCRItemMOVCommandValidator.cs
 using FluentValidation;
 
 namespace ERPEZ.Application.Features.Planning.OPCRItemMOV.Commands.UpdateOPCRItemMOV;
@@ -10,15 +11,16 @@ public class UpdateOPCRItemMOVCommandValidator : AbstractValidator<UpdateOPCRIte
             .NotEmpty()
             .WithMessage("OPCR Item MOV ID is required.");
 
-        RuleFor(x => x.UpdateOPCRItemMOV.RequirementName)
-            .NotEmpty()
-            .WithMessage("Requirement Name is required.")
+        // RequirementName is optional on update — only validate if provided
+        RuleFor(x => x.Request.RequirementName)
             .MaximumLength(500)
-            .WithMessage("Requirement Name cannot exceed 500 characters.");
+            .WithMessage("Requirement Name cannot exceed 500 characters.")
+            .When(x => x.Request.RequirementName != null);
 
-        RuleFor(x => x.UpdateOPCRItemMOV.AttachedUrl)
-            .MaximumLength(2048)
-            .WithMessage("Attached URL cannot exceed 2048 characters.")
-            .When(x => !string.IsNullOrEmpty(x.UpdateOPCRItemMOV.AttachedUrl));
+        // FileId is optional on update — only validate if provided
+        RuleFor(x => x.Request.FileId)
+            .NotEmpty()
+            .WithMessage("File ID must be a valid non-empty GUID when provided.")
+            .When(x => x.Request.FileId.HasValue);
     }
 }

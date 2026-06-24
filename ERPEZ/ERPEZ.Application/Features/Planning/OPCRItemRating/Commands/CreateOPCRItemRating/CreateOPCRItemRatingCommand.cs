@@ -6,6 +6,6 @@ namespace ERPEZ.Application.Features.Planning.OPCRItemRating.Commands.CreateOPCR
 public record CreateOPCRItemRatingCommand : IRequest<ApiResponse<Guid>>
 {
     public Guid OPCRItemId { get; init; }
-    public Guid KPIMeasurementId { get; init; }
+    public Guid FYActiveKPIMeasurementId  { get; init; }
     public decimal? SelfRating { get; init; }
 }

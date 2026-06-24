@@ -1104,6 +1104,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasMaxLength(50)
                         .HasColumnType("character varying(50)");
 
+                    b.Property<string>("GadMeasure")
+                        .HasColumnType("text");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
@@ -1797,6 +1800,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Property<string>("FunctionCategory")
                         .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("GadMeasure")
                         .HasColumnType("text");
 
                     b.Property<bool>("IsDeleted")
@@ -3094,6 +3100,12 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("CommitmentPersonName")
+                        .HasColumnType("text");
+
+                    b.Property<string>("CommitmentPersonPosition")
+                        .HasColumnType("text");
+
                     b.Property<string>("CommitmentStatus")
                         .IsRequired()
                         .HasColumnType("text");
@@ -3501,17 +3513,17 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid>("OPCRId")
                         .HasColumnType("uuid");
 
-                    b.Property<int>("Q1Target")
-                        .HasColumnType("integer");
+                    b.Property<decimal>("Q1Target")
+                        .HasColumnType("numeric");
 
-                    b.Property<int>("Q2Target")
-                        .HasColumnType("integer");
+                    b.Property<decimal>("Q2Target")
+                        .HasColumnType("numeric");
 
-                    b.Property<int>("Q3Target")
-                        .HasColumnType("integer");
+                    b.Property<decimal>("Q3Target")
+                        .HasColumnType("numeric");
 
-                    b.Property<int>("Q4Target")
-                        .HasColumnType("integer");
+                    b.Property<decimal>("Q4Target")
+                        .HasColumnType("numeric");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -3551,6 +3563,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text");
+
+                    b.Property<Guid?>("FileId")
+                        .HasColumnType("uuid");
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
@@ -3601,11 +3616,11 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text");
 
+                    b.Property<Guid>("FYActiveKPIMeasurementId")
+                        .HasColumnType("uuid");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
-
-                    b.Property<Guid>("KPIMeasurementId")
-                        .HasColumnType("uuid");
 
                     b.Property<Guid>("OPCRItemId")
                         .HasColumnType("uuid");
@@ -3630,11 +3645,11 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("KPIMeasurementId");
+                    b.HasIndex("FYActiveKPIMeasurementId");
 
                     b.HasIndex("OPCRItemId");
 
-                    b.HasIndex("OPCRItemId", "KPIMeasurementId")
+                    b.HasIndex("OPCRItemId", "FYActiveKPIMeasurementId")
                         .IsUnique();
 
                     b.ToTable("OPCRItemRatings", "planning");
@@ -8136,9 +8151,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OPCRItemRating", b =>
                 {
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.KPIMeasurement", "KPIMeasurement")
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.FYActiveKPIMeasurement", "FYActiveKPIMeasurement")
                         .WithMany()
-                        .HasForeignKey("KPIMeasurementId")
+                        .HasForeignKey("FYActiveKPIMeasurementId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -8148,7 +8163,7 @@ namespace ERPEZ.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
-                    b.Navigation("KPIMeasurement");
+                    b.Navigation("FYActiveKPIMeasurement");
 
                     b.Navigation("OPCRItem");
                 });
