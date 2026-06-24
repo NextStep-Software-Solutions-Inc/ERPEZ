@@ -203,7 +203,9 @@ internal sealed class ConsolidatedOpcrPdfRenderer
             }
 
             // ── KPI subtotal row ─────────────────────────────────────────
-            table.Cell().ColumnSpan(colCount - 1)
+            
+            // 1. Label spans 7 columns (Office through Total)
+            table.Cell().ColumnSpan(colCount - 2)
                 .Element(c => c
                     .Border(1)
                     .BorderColor(Colors.Grey.Medium)
@@ -212,6 +214,7 @@ internal sealed class ConsolidatedOpcrPdfRenderer
                 .AlignRight()
                 .Text($"KPI Total:").Bold().FontSize(7);
 
+            // 2. Budget value goes into the 8th column
             table.Cell()
                 .Element(c => c
                     .Border(1)
@@ -220,6 +223,14 @@ internal sealed class ConsolidatedOpcrPdfRenderer
                     .Padding(3))
                 .AlignRight()
                 .Text($"₱{kpi.KpiTotalBudget:N2}").Bold().FontSize(7);
+
+            // 3. Add an empty cell for the 9th column (Remarks) to maintain the layout
+            table.Cell()
+                .Element(c => c
+                    .Border(1)
+                    .BorderColor(Colors.Grey.Medium)
+                    .Background(Colors.Grey.Lighten4)
+                    .Padding(3));
         }
     }
 }
