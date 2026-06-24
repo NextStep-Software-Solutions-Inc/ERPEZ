@@ -112,6 +112,9 @@ public interface IUnitOfWork
     IOPCRItemMOVRepository OPCRItemMOVRepository { get; }
     IGeneratedDocumentRepository GeneratedDocumentRepository { get; }
     IOPCRConsolidationRepository OPCRConsolidationRepository { get; }
+    IProcurementProjectRepository ProcurementProjectRepository { get; }
+    IBACResolutionRepository BACResolutionRepository { get; }
+    IBiddingActivityScheduleRepository BiddingActivityScheduleRepository { get; }
     Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default);
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
