@@ -1,5 +1,6 @@
 using ClosedXML.Excel;
 using ERPEZ.Application.Common.Dtos;
+using ERPEZ.Application.Features.Planning.Budgeting.Common.Enums;
 using ERPEZ.Domain.Enums;
 using ERPEZ.Infrastructure.Services.DocumentGeneration;
 using ERPEZ.Infrastructure.Services.Renderers.Excel.Base;
@@ -48,7 +49,7 @@ internal sealed class LibExcelRenderer : BaseExcelRenderer, IDocumentRenderer<Li
     }
 
     private static bool IsActivityScope(LibDataDto request) =>
-        string.Equals(request.Scope, "ActivityLevel", StringComparison.OrdinalIgnoreCase);
+        string.Equals(request.Scope, nameof(LIBScopeEnum.Activity), StringComparison.OrdinalIgnoreCase);
 
     // =========================================================================
     // Header
@@ -244,7 +245,7 @@ internal sealed class LibExcelRenderer : BaseExcelRenderer, IDocumentRenderer<Li
 
     private static void RenderActivitySectionII(IXLWorksheet sheet, LibDataDto request, ref int row)
     {
-        sheet.Cell(row, 1).Value          = "II. LINE ITEM BUDGET BY TARGET";
+        sheet.Cell(row, 1).Value           = "II. LINE ITEM BUDGET BY TARGET";
         sheet.Cell(row, 1).Style.Font.Bold = true;
         row++;
         sheet.Cell(row, 1).Value = $"FUNDSOURCE: {request.FundSource}";
@@ -252,25 +253,32 @@ internal sealed class LibExcelRenderer : BaseExcelRenderer, IDocumentRenderer<Li
 
         foreach (var targetGroup in request.TargetGroups)
         {
-            WriteMeta(sheet, ref row, "PREXC/DYNAMIC/KRA:", targetGroup.PrexcDynamicKra);
-            WriteMeta(sheet, ref row, "GOALS/OUTCOME:",     targetGroup.GoalsOutcome);
-            WriteMeta(sheet, ref row, "KPI:",               targetGroup.KpiLabel);
+            // ── Meta block (mirrors RenderActivityMetaBlock in PDF renderer) ──
+            if (!string.IsNullOrWhiteSpace(targetGroup.PrexcDynamicKra))
+                WriteMeta(sheet, ref row, "PREXC/DYNAMIC/KRA:", targetGroup.PrexcDynamicKra);
 
+            if (!string.IsNullOrWhiteSpace(targetGroup.GoalsOutcome))
+                WriteMeta(sheet, ref row, "GOALS/OUTCOME:", targetGroup.GoalsOutcome);
+
+            WriteMeta(sheet, ref row, "KPI:", targetGroup.KpiLabel);
+
+            // Targets inside the meta block — mirrors PDF behaviour
             if (targetGroup.Targets.Count > 0)
             {
-                sheet.Cell(row, 1).Value          = "TARGETS";
+                sheet.Cell(row, 1).Value           = "TARGETS";
                 sheet.Cell(row, 1).Style.Font.Bold = true;
                 row++;
 
                 foreach (var targetLine in targetGroup.Targets)
                 {
-                    sheet.Cell(row, 1).Value = targetLine;
+                    sheet.Cell(row, 2).Value = targetLine;   // col 2 — indented under label
                     row++;
                 }
             }
 
+            // ── Table header ──────────────────────────────────────────────────
             WriteRow(
-                sheet, row++,
+                sheet, row++, true,
                 "OBJECTS OF EXPENDITURE", "UACS",
                 "JAN", "FEB", "MAR", "APR", "MAY", "JUN",
                 "JUL", "AUG", "SEP", "OCT", "NOV", "DEC",
@@ -278,12 +286,10 @@ internal sealed class LibExcelRenderer : BaseExcelRenderer, IDocumentRenderer<Li
 
             foreach (var allotmentGroup in targetGroup.ExpenseGroups)
             {
-                // Allotment class header
                 WriteIndentedHeader(sheet, row++, 0, allotmentGroup.AllotmentClass);
 
                 foreach (var accountGroup in allotmentGroup.AccountGroups)
                 {
-                    // Account group header
                     WriteIndentedHeader(sheet, row++, 1, accountGroup.AccountGroupName);
 
                     foreach (var subGroup in accountGroup.SubGroups)
@@ -313,7 +319,6 @@ internal sealed class LibExcelRenderer : BaseExcelRenderer, IDocumentRenderer<Li
                         }
                     }
 
-                    // Account group subtotal
                     WriteRow(
                         sheet, row++,
                         $"Sub-total, {accountGroup.AccountGroupName}",
@@ -323,7 +328,6 @@ internal sealed class LibExcelRenderer : BaseExcelRenderer, IDocumentRenderer<Li
                         FormatAmount(accountGroup.SubTotal));
                 }
 
-                // Allotment class subtotal
                 WriteRow(
                     sheet, row++,
                     $"Sub-total, {allotmentGroup.AllotmentClass}",
@@ -333,7 +337,6 @@ internal sealed class LibExcelRenderer : BaseExcelRenderer, IDocumentRenderer<Li
                     FormatAmount(allotmentGroup.SubTotal));
             }
 
-            // Target group total
             WriteRow(
                 sheet, row++, true,
                 "TOTAL",
@@ -568,6 +571,7 @@ internal sealed class LibExcelRenderer : BaseExcelRenderer, IDocumentRenderer<Li
         row++;
     }
 
+    
     /// <summary>
     /// Writes a bold group-label row indented by <paramref name="level"/> spaces
     /// (0 = allotment class, 1 = account group, 2 = sub-account group, 3 = activity).

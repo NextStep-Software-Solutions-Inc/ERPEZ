@@ -1,4 +1,5 @@
 using ERPEZ.Application.Common.Dtos;
+using ERPEZ.Application.Features.Planning.Budgeting.Common.Enums;
 using ERPEZ.Domain.Enums;
 using ERPEZ.Infrastructure.Services.DocumentGeneration;
 using ERPEZ.Infrastructure.Services.Renderers.Pdf.Base;
@@ -144,7 +145,7 @@ internal sealed class LibPdfRenderer : BasePdfRenderer, IDocumentRenderer<LibDat
     }
 
     private static bool IsActivityScope(LibDataDto request) =>
-        string.Equals(request.Scope, "ActivityLevel", StringComparison.OrdinalIgnoreCase);
+        string.Equals(request.Scope, nameof(LIBScopeEnum.Activity), StringComparison.OrdinalIgnoreCase);
 
     // =========================================================================
     // Section I — Activity scope  (quarterly)
@@ -427,14 +428,8 @@ internal sealed class LibPdfRenderer : BasePdfRenderer, IDocumentRenderer<LibDat
                     primaryLabel:    "KPI:",
                     primaryValue:    targetGroup.KpiLabel,
                     prexcDynamicKra: targetGroup.PrexcDynamicKra,
-                    goalsOutcome:    targetGroup.GoalsOutcome);
-
-                if (targetGroup.Targets.Count > 0)
-                {
-                    section.Item().PaddingTop(1).Text("TARGETS").Bold().FontSize(7);
-                    foreach (var target in targetGroup.Targets)
-                        section.Item().Text(target).FontSize(7);
-                }
+                    goalsOutcome:    targetGroup.GoalsOutcome,
+                    targets:      targetGroup.Targets.Count > 0 ? targetGroup.Targets : null);
 
                 section.Item().PaddingTop(2).Table(table =>
                 {
@@ -1012,10 +1007,11 @@ internal sealed class LibPdfRenderer : BasePdfRenderer, IDocumentRenderer<LibDat
     /// </summary>
     private static void RenderActivityMetaBlock(
         ColumnDescriptor section,
-        string           primaryLabel,      // "API:" or "KPI:"
+        string           primaryLabel,
         string           primaryValue,
         string           prexcDynamicKra,
-        string           goalsOutcome)
+        string           goalsOutcome,
+        List<string>?    targets = null)   // ← add this
     {
         section.Item().PaddingTop(4)
             .Background("#FFF3CD")
@@ -1046,6 +1042,14 @@ internal sealed class LibPdfRenderer : BasePdfRenderer, IDocumentRenderer<LibDat
                     r.ConstantItem(120).Text(primaryLabel).Bold().FontSize(7);
                     r.RelativeItem().Text(string.IsNullOrWhiteSpace(primaryValue) ? "-" : primaryValue).FontSize(7);
                 });
+
+                // ← Targets inside the amber box
+                if (targets is { Count: > 0 })
+                {
+                    meta.Item().PaddingTop(3).Text("TARGETS").Bold().FontSize(7);
+                    foreach (var target in targets)
+                        meta.Item().PaddingLeft(8).Text(target).FontSize(7);
+                }
             });
     }
 
