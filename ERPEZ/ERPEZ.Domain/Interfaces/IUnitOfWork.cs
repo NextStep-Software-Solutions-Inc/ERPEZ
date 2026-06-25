@@ -115,6 +115,10 @@ public interface IUnitOfWork
     IProcurementProjectRepository ProcurementProjectRepository { get; }
     IBACResolutionRepository BACResolutionRepository { get; }
     IBiddingActivityScheduleRepository BiddingActivityScheduleRepository { get; }
+    IPurchaseRequestRepository PurchaseRequestRepository { get; }
+    IPRItemRepository PRItemRepository { get; }
+    IConsolidatedPRItemRepository ConsolidatedPRItemRepository { get; }
+    IConsolidatedPRRepository ConsolidatedPRRepository { get; }
     Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default);
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }

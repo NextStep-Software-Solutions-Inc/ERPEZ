@@ -124,6 +124,10 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IProcurementProjectRepository procurementProjectRepository;
     private readonly IBACResolutionRepository bacResolutionRepository;
     private readonly IBiddingActivityScheduleRepository biddingActivityScheduleRepository;
+    private readonly IPurchaseRequestRepository purchaseRequestRepository;
+    private readonly IPRItemRepository prItemRepository;
+    private readonly IConsolidatedPRItemRepository consolidatedPRItemRepository;
+    private readonly IConsolidatedPRRepository consolidatedPRRepository;
 
     // Constructor initializes all repositories once
     public UnitOfWork(ApplicationDbContext context, IServiceProvider serviceProvider)
@@ -245,6 +249,10 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         procurementProjectRepository = new ProcurementProjectRepository(context, sieveProcessor);
         bacResolutionRepository = new BACResolutionRepository(context, sieveProcessor);
         biddingActivityScheduleRepository = new BiddingActivityScheduleRepository(context, sieveProcessor);
+        purchaseRequestRepository = new PurchaseRequestRepository(context, sieveProcessor);
+        prItemRepository = new PRItemRepository(context, sieveProcessor);
+        consolidatedPRItemRepository = new ConsolidatedPRItemRepository(context, sieveProcessor);
+        consolidatedPRRepository = new ConsolidatedPRRepository(context, sieveProcessor);
     }
 
     // Public properties return cached instances
@@ -361,6 +369,10 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IProcurementProjectRepository ProcurementProjectRepository => procurementProjectRepository;
     public IBACResolutionRepository BACResolutionRepository => bacResolutionRepository;
     public IBiddingActivityScheduleRepository BiddingActivityScheduleRepository => biddingActivityScheduleRepository;
+    public IPurchaseRequestRepository PurchaseRequestRepository => purchaseRequestRepository;
+    public IPRItemRepository PRItemRepository => prItemRepository;
+    public IConsolidatedPRItemRepository ConsolidatedPRItemRepository => consolidatedPRItemRepository;
+    public IConsolidatedPRRepository ConsolidatedPRRepository => consolidatedPRRepository;
 
     public async Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default)
     {
