@@ -1,11 +1,12 @@
 using ERPEZ.Application.Features.Procurement.PurchaseRequests.Commands.CreatePR;
+using ERPEZ.Application.Features.Procurement.PurchaseRequests.Commands.DeletePR;
+using ERPEZ.Application.Features.Procurement.PurchaseRequests.Commands.UpdatePR;
+using ERPEZ.Application.Features.Procurement.PurchaseRequests.Commands.UpdatePRStatus;
 using ERPEZ.Application.Features.Procurement.PurchaseRequests.Dtos;
 using ERPEZ.Application.Features.Procurement.PurchaseRequests.Queries.GetPRById;
+using ERPEZ.Application.Features.Procurement.PurchaseRequests.Queries.GetPRs;
 using ERPEZ.Application.Features.Procurement.PurchaseRequests.Queries.GetEligiblePPMPs;
-using ERPEZ.Application.Features.Procurement.PurchaseRequests.Commands.DeletePR;
 using ERPEZ.Application.Features.Procurement.PurchaseRequests.Queries.GetPRSummaryStats;
-using ERPEZ.Application.Features.Procurement.PurchaseRequests.Commands.UpdatePRStatus;
-using ERPEZ.Application.Features.Procurement.PurchaseRequests.Commands.UpdatePR;
 using ERPEZ.Domain.Enums;
 using ERPEZ.Shared.Common;
 using MediatR;
@@ -17,8 +18,6 @@ namespace ERPEZ.Api.Controllers;
 [ApiController]
 public class PurchaseRequestController(ISender mediator) : ControllerBase
 {
-    // ── CRUD ─────────────────────────────────────────────────────────────────
-
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
@@ -74,7 +73,7 @@ public class PurchaseRequestController(ISender mediator) : ControllerBase
         CancellationToken cancellationToken)
     {
         var result = await mediator.Send(
-            new UpdatePRCommand { Id = id, Request = dto }, cancellationToken);
+            new UpdatePRCommand(id, dto), cancellationToken);   // ← positional
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 
@@ -87,8 +86,6 @@ public class PurchaseRequestController(ISender mediator) : ControllerBase
         return result.Succeeded ? NoContent() : NotFound(result);
     }
 
-    // ── Status ────────────────────────────────────────────────────────────────
-
     [HttpPatch("{id}/status")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
@@ -99,11 +96,9 @@ public class PurchaseRequestController(ISender mediator) : ControllerBase
         CancellationToken cancellationToken)
     {
         var result = await mediator.Send(
-            new UpdatePRStatusCommand { Id = id, Request = dto }, cancellationToken);
+            new UpdatePRStatusCommand(id, dto.NewStatus.ToString()), cancellationToken);
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
-
-    // ── Eligible items for modal selectors ───────────────────────────────────
 
     [HttpGet("{id}/eligible-ppmps")]
     [ProducesResponseType(typeof(ApiResponse<List<EligiblePPMPResponse>>), StatusCodes.Status200OK)]
@@ -113,13 +108,4 @@ public class PurchaseRequestController(ISender mediator) : ControllerBase
         var result = await mediator.Send(new GetEligiblePPMPsQuery(id), cancellationToken);
         return result.Succeeded ? Ok(result) : NotFound(result);
     }
-
-    // [HttpGet("{id}/eligible-aprs")]
-    // [ProducesResponseType(typeof(ApiResponse<List<EligibleAPRResponse>>), StatusCodes.Status200OK)]
-    // [ProducesResponseType(StatusCodes.Status404NotFound)]
-    // public async Task<IActionResult> GetEligibleAPRs(Guid id, CancellationToken cancellationToken)
-    // {
-    //     var result = await mediator.Send(new GetEligibleAPRsQuery(id), cancellationToken);
-    //     return result.Succeeded ? Ok(result) : NotFound(result);
-    // }
 }
