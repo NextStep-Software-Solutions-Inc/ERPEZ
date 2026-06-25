@@ -1,4 +1,5 @@
 using ERPEZ.Application.Common.Dtos;
+using ERPEZ.Application.Features.Planning.Budgeting.Common.Enums;
 using ERPEZ.Domain.Enums;
 using ERPEZ.Infrastructure.Services.DocumentGeneration;
 using ERPEZ.Infrastructure.Services.Renderers.Pdf.Base;
@@ -144,7 +145,7 @@ internal sealed class LibPdfRenderer : BasePdfRenderer, IDocumentRenderer<LibDat
     }
 
     private static bool IsActivityScope(LibDataDto request) =>
-        string.Equals(request.Scope, "ActivityLevel", StringComparison.OrdinalIgnoreCase);
+        string.Equals(request.Scope, nameof(LIBScopeEnum.Activity), StringComparison.OrdinalIgnoreCase);
 
     // =========================================================================
     // Section I — Activity scope  (quarterly)
@@ -162,9 +163,13 @@ internal sealed class LibPdfRenderer : BasePdfRenderer, IDocumentRenderer<LibDat
         {
             col.Item().PaddingTop(4).Column(section =>
             {
-                RenderMetaRow(section, "PREXC/DYNAMIC/KRA:", apiGroup.PrexcDynamicKra);
-                RenderMetaRow(section, "GOALS/OUTCOME:",     apiGroup.GoalsOutcome);
-                RenderMetaRow(section, "API:",               apiGroup.ApiLabel);
+                // Section I: "API:"
+                RenderActivityMetaBlock(
+                    section,
+                    primaryLabel:    "API:",
+                    primaryValue:    apiGroup.ApiLabel,
+                    prexcDynamicKra: apiGroup.PrexcDynamicKra,
+                    goalsOutcome:    apiGroup.GoalsOutcome);
 
                 section.Item().PaddingTop(2).Table(table =>
                 {
@@ -274,12 +279,37 @@ internal sealed class LibPdfRenderer : BasePdfRenderer, IDocumentRenderer<LibDat
 
         foreach (var apiGroup in request.ApiGroups)
         {
-            // Activity name as a standalone label above the table
+            // Legacy Section I: "API:"
             col.Item().PaddingTop(6)
-                .Background(Colors.Blue.Lighten3)
-                .Border(1).BorderColor(Colors.Grey.Medium)
-                .Padding(3)
-                .Text(apiGroup.ActivityName).Bold().FontSize(7);
+                .Background("#FFF3CD")
+                .Border(1).BorderColor("#E6AC00")
+                .Padding(4)
+                .Column(meta =>
+                {
+                    if (!string.IsNullOrWhiteSpace(apiGroup.PrexcDynamicKra))
+                    {
+                        meta.Item().Row(r =>
+                        {
+                            r.ConstantItem(120).Text("PREXC/DYNAMIC/KRA:").Bold().FontSize(7);
+                            r.RelativeItem().Text(apiGroup.PrexcDynamicKra).FontSize(7);
+                        });
+                    }
+
+                    if (!string.IsNullOrWhiteSpace(apiGroup.GoalsOutcome))
+                    {
+                        meta.Item().Row(r =>
+                        {
+                            r.ConstantItem(120).Text("GOALS/OUTCOME:").Bold().FontSize(7);
+                            r.RelativeItem().Text(apiGroup.GoalsOutcome).FontSize(7);
+                        });
+                    }
+
+                    meta.Item().Row(r =>
+                    {
+                        r.ConstantItem(120).Text("API:").Bold().FontSize(7);
+                        r.RelativeItem().Text(string.IsNullOrWhiteSpace(apiGroup.ActivityName) ? "-" : apiGroup.ActivityName).FontSize(7);
+                    });
+                });
 
             col.Item().Table(table =>
             {
@@ -392,16 +422,14 @@ internal sealed class LibPdfRenderer : BasePdfRenderer, IDocumentRenderer<LibDat
         {
             col.Item().PaddingTop(4).Column(section =>
             {
-                RenderMetaRow(section, "PREXC/DYNAMIC/KRA:", targetGroup.PrexcDynamicKra);
-                RenderMetaRow(section, "GOALS/OUTCOME:",     targetGroup.GoalsOutcome);
-                RenderMetaRow(section, "KPI:",               targetGroup.KpiLabel);
-
-                if (targetGroup.Targets.Count > 0)
-                {
-                    section.Item().PaddingTop(1).Text("TARGETS").Bold().FontSize(7);
-                    foreach (var target in targetGroup.Targets)
-                        section.Item().Text(target).FontSize(7);
-                }
+                // Section II: "KPI:" — traces LIBActivity → OPCRActivity → OPCRItem → KPIAssignment → FYActiveKPI → Name
+                RenderActivityMetaBlock(
+                    section,
+                    primaryLabel:    "KPI:",
+                    primaryValue:    targetGroup.KpiLabel,
+                    prexcDynamicKra: targetGroup.PrexcDynamicKra,
+                    goalsOutcome:    targetGroup.GoalsOutcome,
+                    targets:      targetGroup.Targets.Count > 0 ? targetGroup.Targets : null);
 
                 section.Item().PaddingTop(2).Table(table =>
                 {
@@ -969,6 +997,60 @@ internal sealed class LibPdfRenderer : BasePdfRenderer, IDocumentRenderer<LibDat
             row.ConstantItem(85).Text(label).Bold().FontSize(7);
             row.RelativeItem().Text(string.IsNullOrWhiteSpace(value) ? "-" : value).FontSize(7);
         });
+    }
+
+    /// <summary>
+    /// Renders the activity metadata block above each section table.
+    /// PREXC and GOALS/OUTCOME are only rendered when non-empty.
+    /// The third row uses <paramref name="primaryLabel"/> / <paramref name="primaryValue"/>
+    /// and is always rendered (Section I uses "API:", Section II uses "KPI:").
+    /// </summary>
+    private static void RenderActivityMetaBlock(
+        ColumnDescriptor section,
+        string           primaryLabel,
+        string           primaryValue,
+        string           prexcDynamicKra,
+        string           goalsOutcome,
+        List<string>?    targets = null)   // ← add this
+    {
+        section.Item().PaddingTop(4)
+            .Background("#FFF3CD")
+            .Border(1).BorderColor("#E6AC00")
+            .Padding(4)
+            .Column(meta =>
+            {
+                if (!string.IsNullOrWhiteSpace(prexcDynamicKra))
+                {
+                    meta.Item().Row(r =>
+                    {
+                        r.ConstantItem(120).Text("PREXC/DYNAMIC/KRA:").Bold().FontSize(7);
+                        r.RelativeItem().Text(prexcDynamicKra).FontSize(7);
+                    });
+                }
+
+                if (!string.IsNullOrWhiteSpace(goalsOutcome))
+                {
+                    meta.Item().Row(r =>
+                    {
+                        r.ConstantItem(120).Text("GOALS/OUTCOME:").Bold().FontSize(7);
+                        r.RelativeItem().Text(goalsOutcome).FontSize(7);
+                    });
+                }
+
+                meta.Item().Row(r =>
+                {
+                    r.ConstantItem(120).Text(primaryLabel).Bold().FontSize(7);
+                    r.RelativeItem().Text(string.IsNullOrWhiteSpace(primaryValue) ? "-" : primaryValue).FontSize(7);
+                });
+
+                // ← Targets inside the amber box
+                if (targets is { Count: > 0 })
+                {
+                    meta.Item().PaddingTop(3).Text("TARGETS").Bold().FontSize(7);
+                    foreach (var target in targets)
+                        meta.Item().PaddingLeft(8).Text(target).FontSize(7);
+                }
+            });
     }
 
     private static void SectionIHeader(TableCellDescriptor h, string text) =>
