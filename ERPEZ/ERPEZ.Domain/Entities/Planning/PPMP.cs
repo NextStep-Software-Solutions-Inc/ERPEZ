@@ -1,5 +1,6 @@
 using ERPEZ.Domain.Common;
 using ERPEZ.Domain.Entities.Planning;
+using ERPEZ.Domain.Entities.Procurement;
 using Sieve.Attributes;
 
 namespace ERPEZ.Domain.Entities.Planning;
@@ -61,6 +62,7 @@ public class PPMP : ApprovableEntity
     public virtual List<PPMP> ChildPPMPs { get; set; } = [];
     public virtual List<PPMPActivity> PPMPActivities { get; set; } = [];
     public virtual List<ApprovalEvent> ApprovalEvents { get; set; } = [];
+    public virtual List<PurchaseRequest> PurchaseRequests { get; set; } = [];
     
     // Inherited from ApprovableEntity:  
     // public StatusEnum Status { get; set; }
