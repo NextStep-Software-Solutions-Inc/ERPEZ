@@ -90,7 +90,8 @@ public class GetKPIsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetKP
             {
                 Id = s.Id,
                 Name = s.Name,
-                Description = s.Description
+                Description = s.Description,
+                SdgCode = s.SdgCode   // ← add
             }).ToList(),
             
             // Legacy collections - empty in Version 2

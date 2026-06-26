@@ -13,6 +13,8 @@ public record LIBResponse
     public string LIBNumber { get; init; } = string.Empty;
     public string SourceType { get; init; } = string.Empty;
     public Guid? SourceId { get; init; }
+    public string Scope { get; init; } = string.Empty;   // ← add
+    public string Level { get; init; } = string.Empty;   // ← add
     public LIBStatusEnum Status { get; init; }
     public Guid? ConsolidatedIntoLIBId { get; init; }
     public decimal? TotalAmount { get; init; }

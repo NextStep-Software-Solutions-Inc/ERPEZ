@@ -99,7 +99,8 @@ public class GetKPIAssignmentByIdQueryHandler(IUnitOfWork unitOfWork)
                 {
                     Id = s.Id,
                     Name = s.Name,
-                    Description = s.Description
+                    Description = s.Description,
+                    SdgCode = s.SdgCode   // ← add
                 }).ToList() ?? []
             },
             Office = assignment.Office == null ? null : new OfficeResponse

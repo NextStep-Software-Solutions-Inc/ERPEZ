@@ -92,7 +92,8 @@ public class GetFYActiveKPIsQueryHandler(IUnitOfWork unitOfWork)
             {
                 Id = s.Id,
                 Name = s.Name,
-                Description = s.Description
+                Description = s.Description,
+                SdgCode = s.SdgCode   // ← add
             }).ToList() : new List<SDGResponse>()
         };
 
