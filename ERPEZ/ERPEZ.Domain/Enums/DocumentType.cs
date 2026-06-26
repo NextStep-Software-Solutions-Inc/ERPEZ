@@ -8,5 +8,6 @@ public enum DocumentType
     BudgetModification,
     Wfp,
     Opcr,
-    OpcrRating
+    OpcrRating,
+    ConsolidatedOpcr
 }
