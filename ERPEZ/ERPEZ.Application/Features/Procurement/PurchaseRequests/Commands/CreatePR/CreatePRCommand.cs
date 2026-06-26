@@ -17,5 +17,5 @@ public record CreatePRCommand : IRequest<ApiResponse<Guid>>
     public Guid? FundClusterId { get; init; }
     public Guid? UACSCodeCombinationId { get; init; }
     public PRType PRType { get; init; } = PRType.NonCSE;
-    public List<PRItemRequest> Items { get; init; } = [];
+    // public List<PRItemRequest> Items { get; init; } = [];
 }

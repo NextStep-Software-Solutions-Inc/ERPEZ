@@ -29,17 +29,17 @@ public class CreatePRCommandValidator : AbstractValidator<CreatePRCommand>
         RuleFor(x => x.PRType)
             .IsInEnum().WithMessage("Invalid PR Type.");
 
-        RuleForEach(x => x.Items).SetValidator(new PRItemRequestValidator());
+        // RuleForEach(x => x.Items).SetValidator(new PRItemRequestValidator());
 
-        RuleForEach(x => x.Items)
-            .Must(item => !item.APRItemId.HasValue && item.IsNonCSE)
-            .WithMessage("NonCSE items must have IsNonCSE = true and no APRItemId.")
-            .When(x => x.PRType == PRType.NonCSE);
+        // RuleForEach(x => x.Items)
+        //     .Must(item => !item.APRItemId.HasValue && item.IsNonCSE)
+        //     .WithMessage("NonCSE items must have IsNonCSE = true and no APRItemId.")
+        //     .When(x => x.PRType == PRType.NonCSE);
 
-        RuleForEach(x => x.Items)
-            .Must(item => item.APRItemId.HasValue && !item.IsNonCSE)
-            .WithMessage("Out-of-Stock CSE items must have APRItemId set and IsNonCSE = false.")
-            .When(x => x.PRType == PRType.OutOfStockCSE);
+        // RuleForEach(x => x.Items)
+        //     .Must(item => item.APRItemId.HasValue && !item.IsNonCSE)
+        //     .WithMessage("Out-of-Stock CSE items must have APRItemId set and IsNonCSE = false.")
+        //     .When(x => x.PRType == PRType.OutOfStockCSE);
     }
 }
 

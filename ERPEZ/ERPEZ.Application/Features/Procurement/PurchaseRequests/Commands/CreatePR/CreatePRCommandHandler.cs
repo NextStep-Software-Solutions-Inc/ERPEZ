@@ -33,23 +33,23 @@
             if (existing is not null)
                 throw new ConflictException($"A Purchase Request with number '{request.PRNumber}' already exists.");
 
-            var prItems = new List<PRItem>();
-            decimal totalAmount = 0;
+            // var prItems = new List<PRItem>();
+            // decimal totalAmount = 0;
 
-            foreach (var itemRequest in request.Items)
-            {
-                var ppmpItem = await unitOfWork.PPMPItemRepository.GetByIdAsync(
-                    itemRequest.PPMPItemId!.Value, cancellationToken)
-                    ?? throw new NotFoundException($"PPMP Item with ID {itemRequest.PPMPItemId} not found.");
+            // foreach (var itemRequest in request.Items)
+            // {
+            //     var ppmpItem = await unitOfWork.PPMPItemRepository.GetByIdAsync(
+            //         itemRequest.PPMPItemId!.Value, cancellationToken)
+            //         ?? throw new NotFoundException($"PPMP Item with ID {itemRequest.PPMPItemId} not found.");
 
-                if (request.PRType == PRType.NonCSE && ppmpItem.CSEItemId.HasValue)
-                    throw new ValidationException($"Item '{ppmpItem.Name}' is a CSE item and cannot be added to a Non-CSE PR.");
+            //     if (request.PRType == PRType.NonCSE && ppmpItem.CSEItemId.HasValue)
+            //         throw new ValidationException($"Item '{ppmpItem.Name}' is a CSE item and cannot be added to a Non-CSE PR.");
 
-                await ValidatePPMPItemBudget(ppmpItem.Id, itemRequest.RequestedQuantity, ppmpItem.UnitPrice, ppmpItem, cancellationToken);
+            //     await ValidatePPMPItemBudget(ppmpItem.Id, itemRequest.RequestedQuantity, ppmpItem.UnitPrice, ppmpItem, cancellationToken);
 
-                prItems.Add(BuildPRItem(itemRequest));
-                totalAmount += itemRequest.RequestedQuantity * itemRequest.UnitCost;
-            }
+            //     prItems.Add(BuildPRItem(itemRequest));
+            //     totalAmount += itemRequest.RequestedQuantity * itemRequest.UnitCost;
+            // }
 
             var pr = new PurchaseRequest
             {
@@ -63,9 +63,9 @@
                 UACSCodeCombinationId = request.UACSCodeCombinationId,
                 ProcurementCategoryId = request.ProcurementCategoryId,
                 RequestedDate         = request.RequestedDate,
-                TotalAmount           = totalAmount,
+                TotalAmount           = 0,
                 Status                = StatusEnum.Draft,
-                PRItems               = prItems
+                //PRItems               = prItems
             };
 
             await unitOfWork.PurchaseRequestRepository.AddAsync(pr, cancellationToken);
