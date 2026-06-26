@@ -5,6 +5,7 @@ using Microsoft.EntityFrameworkCore;
 using Object = ERPEZ.Domain.Entities.Planning.Object;
 using Attribute = ERPEZ.Domain.Entities.Planning.Attribute;
 using ERPEZ.Domain.Enums;
+using ERPEZ.Domain.Common;
 
 namespace ERPEZ.Infrastructure.Persistence;
 
@@ -143,6 +144,22 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<GeneratedDocument>? GeneratedDocuments { get; set; }
     public DbSet<Agency>? Agencies { get; set; }
     public DbSet<OPCRConsolidation>? OPCRConsolidations { get; set; }
+
+    public override async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+{
+    var now = DateTime.UtcNow;
+
+    foreach (var entry in ChangeTracker.Entries<BaseEntity>())
+    {
+        if (entry.State == EntityState.Added)
+            entry.Entity.CreatedAt = now;
+
+        if (entry.State == EntityState.Modified)
+            entry.Entity.UpdatedAt = now;
+    }
+
+    return await base.SaveChangesAsync(cancellationToken);
+}
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // Apply default conventions for all entities

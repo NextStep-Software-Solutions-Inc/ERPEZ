@@ -13,7 +13,9 @@ public record LIBResponse
     public string LIBNumber { get; init; } = string.Empty;
     public string SourceType { get; init; } = string.Empty;
     public Guid? SourceId { get; init; }
-    public LIBStatusEnum Status { get; init; }
+    public string Status { get; init; } = string.Empty;
+    public DateTime CreatedAt { get; init; }
+    public DateTime? ApprovedDate { get; init; }
     public Guid? ConsolidatedIntoLIBId { get; init; }
     public decimal? TotalAmount { get; init; }
     public int Version { get; init; }
@@ -134,6 +136,8 @@ public record CreateLIBRequest
     public Guid? SourceId { get; init; }
     public Guid? ConsolidatedIntoLIBId { get; init; }
     public decimal? TotalAmount { get; init; }
+    public string? LIBNumber { get; init; } // optional — falls back to auto-generated
+
 }
 
 public record UpdateLIBRequest

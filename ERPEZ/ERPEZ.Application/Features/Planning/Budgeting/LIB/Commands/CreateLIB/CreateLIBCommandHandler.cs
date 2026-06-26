@@ -5,7 +5,6 @@ using ERPEZ.Shared.Exceptions;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Budgeting.LIB.Commands.CreateLIB;
-
 public class CreateLIBCommandHandler(IUnitOfWork unitOfWork)
     : IRequestHandler<CreateLIBCommand, ApiResponse<Guid>>
 {
@@ -74,7 +73,9 @@ public class CreateLIBCommandHandler(IUnitOfWork unitOfWork)
             ParentLIBId = request.ParentLIBId,
             Scope = request.Scope,
             Name = request.Name,
-            LIBNumber = $"LIB-{office.Code}-{fiscalYear.Year}",
+            LIBNumber = !string.IsNullOrWhiteSpace(request.LIBNumber)
+                ? request.LIBNumber
+                : $"LIB-{office.Code}-{fiscalYear.Year}",
             Level = request.Level,
             SourceType = sourceType,
             SourceId = request.SourceId,
