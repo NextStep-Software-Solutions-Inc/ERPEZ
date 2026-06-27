@@ -23,7 +23,8 @@ public class GetSDGsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetSD
         {
             Id = sdg.Id,
             Name = sdg.Name,
-            Description = sdg.Description
+            Description = sdg.Description,
+            SdgCode = sdg.SdgCode,
         };
 
         var (sdgs, totalCount) = await unitOfWork.SDGRepository.GetAllAsync(sieveModel, projection, cancellationToken);

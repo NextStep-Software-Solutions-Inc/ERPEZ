@@ -249,7 +249,8 @@ public class GetOPCRByIdQueryHandler(IUnitOfWork unitOfWork)
                                     {
                                         Id          = s.Id,
                                         Name        = s.Name,
-                                        Description = s.Description
+                                        Description = s.Description,
+                                        SdgCode = s.SdgCode
                                     }).ToList()
                                 : new List<SDGResponse>()
                         },

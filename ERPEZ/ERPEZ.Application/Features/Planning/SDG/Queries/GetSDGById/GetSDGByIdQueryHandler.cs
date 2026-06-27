@@ -17,7 +17,8 @@ public class GetSDGByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
         {
             Id = sdg.Id,
             Name = sdg.Name,
-            Description = sdg.Description
+            Description = sdg.Description,
+            SdgCode = sdg.SdgCode   // ← add
         };
 
         return ApiResponse<SDGResponse>.Success(response);
