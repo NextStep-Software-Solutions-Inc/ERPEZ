@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using ERPEZ.Application.Features.Procurement.Projects.Dtos;
 using ERPEZ.Shared.Common;
@@ -9,4 +10,7 @@ public record GetCalendarEventsQuery : IRequest<ApiResponse<List<CalendarEventRe
 {
     public string? Filter { get; init; }
     public string? Search { get; init; }
+    public DateTime? From { get; init; }
+    public DateTime? To { get; init; }
 }
+
