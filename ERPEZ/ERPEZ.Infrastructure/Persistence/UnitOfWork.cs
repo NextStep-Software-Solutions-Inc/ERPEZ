@@ -124,6 +124,10 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IProcurementProjectRepository procurementProjectRepository;
     private readonly IBACResolutionRepository bacResolutionRepository;
     private readonly IBiddingActivityScheduleRepository biddingActivityScheduleRepository;
+    private readonly IMasterDocumentTypeRepository masterDocumentTypeRepository;
+    private readonly IDocumentProfileRepository documentProfileRepository;
+    private readonly IDocumentProfileItemRepository documentProfileItemRepository;
+    private readonly IProjectDocumentChecklistRepository projectDocumentChecklistRepository;
 
     // Constructor initializes all repositories once
     public UnitOfWork(ApplicationDbContext context, IServiceProvider serviceProvider)
@@ -245,6 +249,10 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         procurementProjectRepository = new ProcurementProjectRepository(context, sieveProcessor);
         bacResolutionRepository = new BACResolutionRepository(context, sieveProcessor);
         biddingActivityScheduleRepository = new BiddingActivityScheduleRepository(context, sieveProcessor);
+        masterDocumentTypeRepository = new MasterDocumentTypeRepository (context, sieveProcessor);
+        documentProfileRepository = new DocumentProfileRepository (context, sieveProcessor);
+        documentProfileItemRepository = new DocumentProfileItemRepository (context, sieveProcessor);
+        projectDocumentChecklistRepository = new ProjectDocumentChecklistRepository (context, sieveProcessor);
     }
 
     // Public properties return cached instances
@@ -361,6 +369,10 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IProcurementProjectRepository ProcurementProjectRepository => procurementProjectRepository;
     public IBACResolutionRepository BACResolutionRepository => bacResolutionRepository;
     public IBiddingActivityScheduleRepository BiddingActivityScheduleRepository => biddingActivityScheduleRepository;
+    public IMasterDocumentTypeRepository MasterDocumentTypeRepository => masterDocumentTypeRepository;
+    public IDocumentProfileRepository DocumentProfileRepository => documentProfileRepository;
+    public IDocumentProfileItemRepository DocumentProfileItemRepository => documentProfileItemRepository;
+    public IProjectDocumentChecklistRepository ProjectDocumentChecklistRepository => projectDocumentChecklistRepository;
 
     public async Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default)
     {
