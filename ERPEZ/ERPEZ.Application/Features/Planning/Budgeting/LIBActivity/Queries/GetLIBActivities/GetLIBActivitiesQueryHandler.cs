@@ -43,7 +43,12 @@ public class GetLIBActivitiesQueryHandler(IUnitOfWork unitOfWork)
                     OPCRActivity = entity.OPCRActivity == null ? null : new LIBActivityOPCRResponse
                     {
                         Id = entity.OPCRActivity.Id,
-                        Name = entity.OPCRActivity.Name
+                        Name = entity.OPCRActivity.Name,
+                        Description = entity.OPCRActivity.Description,
+                        Budget = entity.OPCRActivity.Budget,
+                        PAPDepartments = entity.OPCRActivity.OPCRPAPDepartments
+                            .Select(p => p.OfficeId)
+                            .ToList()
                     }
                 })
             .ToList();

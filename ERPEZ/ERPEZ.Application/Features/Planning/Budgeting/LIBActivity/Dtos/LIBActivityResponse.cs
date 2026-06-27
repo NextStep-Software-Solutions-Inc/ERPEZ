@@ -48,6 +48,9 @@ public record LIBActivityOPCRResponse
 {
     public Guid Id { get; init; }
     public string Name { get; init; } = string.Empty;
+    public string? Description { get; init; }       // ← add
+    public decimal Budget { get; init; }             // ← add
+    public List<Guid> PAPDepartments { get; init; } = []; // ← add (OfficeIds)
 }
 
 public record CreateLIBActivityRequest
