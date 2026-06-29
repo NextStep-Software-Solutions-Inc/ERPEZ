@@ -62,13 +62,20 @@ public class GenerateLIBAmendmentDocumentCommandHandler(
     {
         return new LibAmendmentDataDto
         {
+            LIBNumber = proposedLib.LIBNumber ?? string.Empty,
             OfficeName = originalLib.Office?.Name ?? string.Empty,
             FiscalYear = originalLib.FiscalYearEntity?.Year.ToString() ?? string.Empty,
             ReasonCode = amendment.Reason,
             Justification = amendment.Justification,
             ApprovedBudget = MapBudgetSection(originalLib),
             ProposedBudget = MapBudgetSection(proposedLib),
-            Signatories = [] // Populated by caller if necessary, or DB logic
+            Signatories = 
+            [
+                new ERPEZ.Application.Common.Dtos.SignatoryDto { PrintedName = "Engr. Alex L. Maureal", Position = "Head, Innovation and Technology Solutions Division" },
+                new ERPEZ.Application.Common.Dtos.SignatoryDto { PrintedName = "Cherry Ann S. Villarte, CPA", Position = "Director, Finance Division" },
+                new ERPEZ.Application.Common.Dtos.SignatoryDto { PrintedName = "Atty. Dionel O. Albina", Position = "Chancellor, USTP CDO" },
+                new ERPEZ.Application.Common.Dtos.SignatoryDto { PrintedName = "Dr. Ambrosio B. Cultura II", Position = "System President" }
+            ]
         };
     }
 
@@ -105,7 +112,9 @@ public class GenerateLIBAmendmentDocumentCommandHandler(
     private static ApiGroupDto MapApiGroup(string name, IEnumerable<DetailEntity> details)
     {
         var expenses = details
-            .GroupBy(d => d.Object?.Name ?? "Unknown")
+            .GroupBy(d => !string.IsNullOrWhiteSpace(d.WFPObjectiveActivityExpenditure?.ItemDescription) 
+                ? d.WFPObjectiveActivityExpenditure!.ItemDescription 
+                : d.Object?.Name ?? "Unknown")
             .Select(g => new ExpenseRowDto
             {
                 ExpenseItemName = g.Key,

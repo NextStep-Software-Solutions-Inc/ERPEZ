@@ -14,6 +14,7 @@ public record GenerateLIBAmendmentDocumentCommand : IRequest<ApiResponse<Guid>>
 
 public class LibAmendmentDataDto
 {    
+    public string LIBNumber     { get; set; } = string.Empty;
     public string OfficeName    { get; set; } = string.Empty;    
     public string FiscalYear    { get; set; } = string.Empty;    
     
