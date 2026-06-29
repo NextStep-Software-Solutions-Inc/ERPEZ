@@ -22,6 +22,7 @@ using ERPEZ.Infrastructure.Services.DocumentGeneration.Storage;
 using SharedCurrentUserService     = ERPEZ.Shared.Interfaces.ICurrentUserService;
 using SharedCurrentUserServiceImpl = ERPEZ.Shared.Services.CurrentUserService;
 using ERPEZ.Application.Features.Planning.Document.Dtos;
+using ERPEZ.Application.Features.Planning.Document.Commands.GenerateLIBAmendment;
 
 namespace ERPEZ.Infrastructure;
 
@@ -139,6 +140,9 @@ public static class DependencyInjection
         services.AddScoped<IDocumentRenderer<LibDataDto>, LibExcelRenderer>();
 
         services.AddScoped<IDocumentRenderer<ConsolidatedOpcrDataDto>,  ConsolidatedOpcrPdfRenderer>(); // ✅ Add
+
+        // Budget Modification — PDF
+        services.AddScoped<IDocumentRenderer<ERPEZ.Application.Features.Planning.Document.Commands.GenerateLIBAmendment.LibAmendmentDataDto>, LibAmendmentPdfRenderer>();
 
         // ── Hangfire ────────────────────────────────────────────────────────────────
         services.AddHangfire(config => config
