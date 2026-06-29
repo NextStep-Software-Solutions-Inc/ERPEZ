@@ -197,23 +197,23 @@ internal sealed class LibAmendmentPdfRenderer : BasePdfRenderer, IDocumentRender
 
     private static void RenderSignatories(ColumnDescriptor col, LibAmendmentDataDto request)
     {
-        var sigCount = request.Signatories?.Count ?? 0;
-        if (sigCount == 0) return;
+        var signatories = request.Signatories;
+        if (signatories is null || signatories.Count == 0) return;
 
         col.Item().PaddingTop(20).Column(c =>
         {
             c.Item().Row(r =>
             {
-                r.RelativeItem().PaddingRight(10).Element(e => RenderSignatoryBox(e, request.Signatories.ElementAtOrDefault(0), "Submitted by:"));
-                r.RelativeItem().PaddingLeft(10).Element(e => RenderSignatoryBox(e, request.Signatories.ElementAtOrDefault(1), "Certified as to availability of budget:"));
+                r.RelativeItem().PaddingRight(10).Element(e => RenderSignatoryBox(e, signatories.ElementAtOrDefault(0), "Submitted by:"));
+                r.RelativeItem().PaddingLeft(10).Element(e => RenderSignatoryBox(e, signatories.ElementAtOrDefault(1), "Certified as to availability of budget:"));
             });
 
             c.Item().Height(30);
 
             c.Item().Row(r =>
             {
-                r.RelativeItem().PaddingRight(10).Element(e => RenderSignatoryBox(e, request.Signatories.ElementAtOrDefault(2), "Recommending Approval:"));
-                r.RelativeItem().PaddingLeft(10).Element(e => RenderSignatoryBox(e, request.Signatories.ElementAtOrDefault(3), "Approved:"));
+                r.RelativeItem().PaddingRight(10).Element(e => RenderSignatoryBox(e, signatories.ElementAtOrDefault(2), "Recommending Approval:"));
+                r.RelativeItem().PaddingLeft(10).Element(e => RenderSignatoryBox(e, signatories.ElementAtOrDefault(3), "Approved:"));
             });
         });
     }
@@ -231,6 +231,6 @@ internal sealed class LibAmendmentPdfRenderer : BasePdfRenderer, IDocumentRender
     private static IContainer TableGroupCell(IContainer container) =>
         container.Border(1).BorderColor(Colors.Black).Background(Colors.Grey.Lighten3).Padding(2);
         
-    private static IContainer TableDataCell(IContainer container) =>
+    private static new IContainer TableDataCell(IContainer container) =>
         container.Border(1).BorderColor(Colors.Black).Padding(2).AlignMiddle();
 }
