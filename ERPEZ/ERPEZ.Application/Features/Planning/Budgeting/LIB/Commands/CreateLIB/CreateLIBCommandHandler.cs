@@ -80,7 +80,6 @@ public class CreateLIBCommandHandler(IUnitOfWork unitOfWork)
             SourceId = request.SourceId,
             Status = "Draft",
             ConsolidatedIntoLIBId = request.ConsolidatedIntoLIBId,
-            TotalAmount = request.TotalAmount,
             Version = 1
         };
 

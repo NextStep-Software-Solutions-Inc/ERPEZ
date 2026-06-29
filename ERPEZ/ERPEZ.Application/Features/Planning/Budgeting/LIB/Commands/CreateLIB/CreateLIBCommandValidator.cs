@@ -36,10 +36,6 @@ public class CreateLIBCommandValidator : AbstractValidator<CreateLIBCommand>
             .WithMessage("{PropertyName} is required.")
             .Must(v => Enum.TryParse<LIBSourceTypeEnum>(v, true, out _))
             .WithMessage("{PropertyName} must be a valid value (OPCR or WFP).");
-        RuleFor(x => x.Request.TotalAmount)
-            .GreaterThanOrEqualTo(0)
-            .WithMessage("{PropertyName} must be greater than or equal to 0.")
-            .When(x => x.Request.TotalAmount.HasValue);
     }
 }
 
