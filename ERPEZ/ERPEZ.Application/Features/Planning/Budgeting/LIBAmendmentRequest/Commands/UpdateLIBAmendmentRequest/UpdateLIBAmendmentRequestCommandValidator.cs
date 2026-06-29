@@ -14,7 +14,7 @@ public class UpdateLIBAmendmentRequestCommandValidator : AbstractValidator<Updat
             .NotEmpty()
             .WithMessage("{PropertyName} is required.")
             .Must(v => Enum.TryParse<LIBAmendmentReasonEnum>(v, true, out _))
-                .WithMessage("{PropertyName} must be a valid LIBAmendmentReasonEnum value. Valid values are: UnforeseenModification, Reassessment, AdditionalRequirements.");
+            .WithMessage("{PropertyName} must be a valid LIBAmendmentReasonEnum value. Valid values are: UnforeseenModification, Reassessment, AdditionalRequirements.");
         RuleFor(x => x.Request.Justification)
             .NotEmpty()
             .WithMessage("{PropertyName} is required.")
