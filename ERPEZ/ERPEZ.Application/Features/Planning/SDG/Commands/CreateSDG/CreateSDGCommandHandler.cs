@@ -18,7 +18,8 @@ public class CreateSDGCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<C
         var sdg = new Domain.Entities.Planning.SDG
         {
             Name = request.Name,
-            Description = request.Description
+            Description = request.Description,
+            SdgCode = request.SdgCode
         };
 
         await unitOfWork.SDGRepository.AddAsync(sdg, cancellationToken);

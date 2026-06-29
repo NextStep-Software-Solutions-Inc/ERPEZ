@@ -3,6 +3,7 @@ using ERPEZ.Application.Features.Planning.Document.Commands.GeneratePPMP;
 using ERPEZ.Application.Features.Planning.Document.Commands.GenerateAPP;
 using ERPEZ.Application.Features.Planning.Document.Commands.GenerateOPCRRating;
 using ERPEZ.Application.Features.Planning.Document.Commands.GenerateOPCR;
+using ERPEZ.Application.Features.Planning.Document.Commands.GenerateConsolidatedOPCR;
 using ERPEZ.Application.Interfaces.Services;   // IDocumentStorageService
 using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;                 // IUnitOfWork
@@ -11,7 +12,7 @@ using ERPEZ.Shared.Exceptions;                 // NotFoundException
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
-namespace ERPEZ.API.Controllers.Planning;
+namespace ERPEZ.API.Controllers;
 
 [ApiController]
 [Route("api/planning/documents")]
@@ -133,6 +134,25 @@ public class DocumentController(IMediator mediator,
         };
 
         var result = await mediator.Send(command, cancellationToken);
+        return Ok(result);
+    }
+    
+    // Replace the previous consolidated endpoint in DocumentController
+    [HttpPost("opcr/consolidations/{consolidationId:guid}/generate")]
+    public async Task<ActionResult<ApiResponse<Guid>>> GenerateConsolidatedOpcr(
+        Guid              consolidationId,
+        [FromQuery] ExportFormat format       = ExportFormat.Pdf,
+        [FromQuery] string       ratingPeriod = "",
+        CancellationToken        cancellationToken = default)
+    {
+        var result = await mediator.Send(new GenerateConsolidatedOpcrDocumentCommand
+        {
+            ConsolidationId = consolidationId,
+            Format          = format,
+            RatingPeriod    = ratingPeriod,
+            GeneratedBy     = User.Identity?.Name ?? "system"
+        }, cancellationToken);
+
         return Ok(result);
     }
 

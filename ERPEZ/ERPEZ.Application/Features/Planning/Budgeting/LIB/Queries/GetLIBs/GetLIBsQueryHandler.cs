@@ -35,6 +35,8 @@ public class GetLIBsQueryHandler(IUnitOfWork unitOfWork)
                     LIBNumber = entity.LIBNumber,
                     SourceType = entity.SourceType,
                     SourceId = entity.SourceId,
+                    Scope = entity.Scope,
+                    Level = entity.Level,
                     Status = Enum.Parse<LIBStatusEnum>(entity.Status, true),
                     ConsolidatedIntoLIBId = entity.ConsolidatedIntoLIBId,
                     TotalAmount = entity.TotalAmount,
