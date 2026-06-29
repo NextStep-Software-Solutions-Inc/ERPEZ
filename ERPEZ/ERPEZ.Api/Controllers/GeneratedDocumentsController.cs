@@ -57,6 +57,22 @@ public class DocumentController(IMediator mediator,
         return Ok(result);
     }
 
+    [HttpPost("lib-amendment/{amendmentRequestId:guid}/generate")]
+    public async Task<ActionResult<ApiResponse<Guid>>> GenerateLibAmendment(
+        Guid amendmentRequestId,
+        [FromQuery] ExportFormat format = ExportFormat.Pdf,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new ERPEZ.Application.Features.Planning.Document.Commands.GenerateLIBAmendment.GenerateLIBAmendmentDocumentCommand
+        {
+            AmendmentRequestId = amendmentRequestId,
+            Format = format,
+            GeneratedBy = User.Identity?.Name ?? "system"
+        };
+        var result = await mediator.Send(command, cancellationToken);
+        return Ok(result);
+    }
+
     [HttpPost("app/{appId}/generate")]
     public async Task<ActionResult<ApiResponse<Guid>>> GenerateApp(
         Guid         appId,
