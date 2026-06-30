@@ -119,6 +119,10 @@ public interface IUnitOfWork
     IDocumentProfileRepository       DocumentProfileRepository       { get; }
     IDocumentProfileItemRepository   DocumentProfileItemRepository   { get; }
     IProjectDocumentChecklistRepository ProjectDocumentChecklistRepository { get; }
+    IPurchaseRequestRepository PurchaseRequestRepository { get; }
+    IPRItemRepository PRItemRepository { get; }
+    IConsolidatedPRItemRepository ConsolidatedPRItemRepository { get; }
+    IConsolidatedPRRepository ConsolidatedPRRepository { get; }
     Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default);
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
