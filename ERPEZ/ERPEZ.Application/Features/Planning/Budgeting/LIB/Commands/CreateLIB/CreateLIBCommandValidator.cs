@@ -20,7 +20,7 @@ public class CreateLIBCommandValidator : AbstractValidator<CreateLIBCommand>
             .NotEmpty()
             .WithMessage("{PropertyName} is required.")
             .MaximumLength(500)
-            .WithMessage("{PropertyName} must not exceed 500c characters.");
+            .WithMessage("{PropertyName} must not exceed 500 characters.");
         RuleFor(x => x.Request.Scope)
             .NotEmpty()
             .WithMessage("{PropertyName} is required.")
