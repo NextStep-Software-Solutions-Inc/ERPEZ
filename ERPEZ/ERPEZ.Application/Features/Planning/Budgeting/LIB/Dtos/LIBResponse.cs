@@ -10,6 +10,8 @@ public record LIBResponse
     public Guid? OfficeId { get; init; }
     public Guid? ParentLIBId { get; init; }
     public string Name { get; init; } = string.Empty;
+    public string Scope { get; init; } = string.Empty;
+    public string Level { get; init; } = string.Empty;
     public string LIBNumber { get; init; } = string.Empty;
     public string SourceType { get; init; } = string.Empty;
     public Guid? SourceId { get; init; }
