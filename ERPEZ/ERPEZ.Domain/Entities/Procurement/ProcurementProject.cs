@@ -21,6 +21,13 @@ public class ProcurementProject : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public string Status { get; set; } = string.Empty;
 
+    /// <summary>
+    /// Set to true when BAC Secretariat clicks "Confirm & Lock Checklist".
+    /// Prevents further edits to the project document checklist.
+    /// Reset to false by the Reset endpoint (only before project is Posted).
+    /// </summary>
+    public bool ChecklistConfirmed { get; set; } = false;
+
     // Navigation properties
     public virtual List<BACResolution> BACResolutions { get; set; } = [];
     public virtual List<BiddingActivitySchedule> BiddingActivitySchedules { get; set; } = [];

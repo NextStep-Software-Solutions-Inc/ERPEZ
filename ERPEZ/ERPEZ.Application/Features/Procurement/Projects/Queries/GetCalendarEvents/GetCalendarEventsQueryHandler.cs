@@ -37,6 +37,16 @@ public class GetCalendarEventsQueryHandler(IUnitOfWork unitOfWork)
                 s.Status.ToLower().Contains(filterLower));
         }
 
+        if (request.From.HasValue)
+        {
+            query = query.Where(s => s.EndDate >= request.From.Value);
+        }
+
+        if (request.To.HasValue)
+        {
+            query = query.Where(s => s.StartDate <= request.To.Value);
+        }
+
         var events = await query
             .Select(s => new CalendarEventResponse
             {
@@ -52,6 +62,7 @@ public class GetCalendarEventsQueryHandler(IUnitOfWork unitOfWork)
                 Remarks = s.Remarks
             })
             .ToListAsync(cancellationToken);
+
 
         return ApiResponse<List<CalendarEventResponse>>.Success(events);
     }
