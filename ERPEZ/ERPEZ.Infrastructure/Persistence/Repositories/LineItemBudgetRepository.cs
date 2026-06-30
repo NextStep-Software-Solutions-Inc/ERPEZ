@@ -53,6 +53,13 @@ public class LineItemBudgetRepository : Repository<LineItemBudget>, ILineItemBud
             .Include(x => x.LineItemBudgetActivities)
                 .ThenInclude(a => a.LineItemBudgetDetails)
                     .ThenInclude(d => d.WFPObjectiveActivityExpenditure)
+            .Include(x => x.LineItemBudgetActivities)
+                .ThenInclude(a => a.WFPObjectiveActivity)
+                    .ThenInclude(wa => wa!.WFPObjectiveTimelines)
+            .Include(x => x.LineItemBudgetActivities)
+                .ThenInclude(a => a.WFPObjectiveActivity)
+                    .ThenInclude(wa => wa!.WFPObjective!)
+                        .ThenInclude(wo => wo!.WFP!)
             // ── Standalone details: Object tree (4 levels deep) ───────────
             .Include(x => x.LineItemBudgetDetails)
                 .ThenInclude(d => d.Object)
