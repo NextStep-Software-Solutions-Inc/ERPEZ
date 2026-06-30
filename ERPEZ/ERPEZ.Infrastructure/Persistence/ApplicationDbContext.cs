@@ -150,6 +150,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<PRItemMonthlyQuantity>? PRItemMonthlyQuantities { get; set; }
     public DbSet<ConsolidatedPR>? ConsolidatedPRs { get; set; }
     public DbSet<ConsolidatedPRItem>? ConsolidatedPRItems { get; set; }
+    
+    // Bidding Document Library
+    public DbSet<MasterDocumentType>?        MasterDocumentTypes        { get; set; }
+    public DbSet<DocumentProfile>?           DocumentProfiles           { get; set; }
+    public DbSet<DocumentProfileItem>?       DocumentProfileItems       { get; set; }
+    public DbSet<ProjectDocumentChecklist>?  ProjectDocumentChecklists  { get; set; }
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // Apply default conventions for all entities
@@ -2376,6 +2382,88 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<ConsolidatedPRItem>()
             .HasIndex(ci => new { ci.ConsolidatedPRId, ci.PRItemId })
             .IsUnique();
+        // ── Bidding Document Library ──────────────────────────────────────────────
+
+        modelBuilder.Entity<MasterDocumentType>(e =>
+        {
+            e.HasQueryFilter(x => !x.IsDeleted);
+
+            e.Property(x => x.Name)
+                .IsRequired()
+                .HasMaxLength(256);
+
+            e.Property(x => x.Description)
+                .HasMaxLength(1000);
+
+            e.Property(x => x.TemplateFileUrl)
+                .HasMaxLength(2048);
+
+            e.HasIndex(x => x.Name)
+                .IsUnique();
+
+            e.HasIndex(x => x.EnvelopeType);
+        });
+
+        modelBuilder.Entity<DocumentProfile>(e =>
+        {
+            e.HasQueryFilter(x => !x.IsDeleted);
+
+            e.Property(x => x.Name)
+                .IsRequired()
+                .HasMaxLength(256);
+
+            e.Property(x => x.Description)
+                .HasMaxLength(1000);
+
+            e.Property(x => x.ProcurementCategory)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            e.HasIndex(x => x.Name)
+                .IsUnique();
+
+            e.HasMany(p => p.DocumentProfileItems)
+                .WithOne(i => i.DocumentProfile)
+                .HasForeignKey(i => i.DocumentProfileId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<DocumentProfileItem>(e =>
+        {
+            e.HasQueryFilter(x => !x.IsDeleted);
+
+            e.HasOne(i => i.MasterDocumentType)
+                .WithMany(d => d.DocumentProfileItems)
+                .HasForeignKey(i => i.MasterDocumentTypeId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasIndex(x => new { x.DocumentProfileId, x.MasterDocumentTypeId })
+                .IsUnique();
+        });
+
+        modelBuilder.Entity<ProjectDocumentChecklist>(e =>
+        {
+            e.HasQueryFilter(x => !x.IsDeleted);
+
+            e.Property(x => x.CustomDocumentName)
+                .HasMaxLength(256);
+
+            e.Property(x => x.CustomTemplateFileUrl)
+                .HasMaxLength(2048);
+
+            e.HasOne(c => c.ProcurementProject)
+                .WithMany()
+                .HasForeignKey(c => c.ProcurementProjectId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasOne(c => c.MasterDocumentType)
+                .WithMany(d => d.ProjectDocumentChecklists)
+                .HasForeignKey(c => c.MasterDocumentTypeId)
+                .IsRequired(false)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasIndex(x => new { x.ProcurementProjectId, x.EnvelopeType });
+        });
 
         base.OnModelCreating(modelBuilder);
     }

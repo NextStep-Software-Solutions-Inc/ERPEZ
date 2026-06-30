@@ -124,6 +124,10 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IProcurementProjectRepository procurementProjectRepository;
     private readonly IBACResolutionRepository bacResolutionRepository;
     private readonly IBiddingActivityScheduleRepository biddingActivityScheduleRepository;
+    private readonly IMasterDocumentTypeRepository masterDocumentTypeRepository;
+    private readonly IDocumentProfileRepository documentProfileRepository;
+    private readonly IDocumentProfileItemRepository documentProfileItemRepository;
+    private readonly IProjectDocumentChecklistRepository projectDocumentChecklistRepository;
     private readonly IPurchaseRequestRepository purchaseRequestRepository;
     private readonly IPRItemRepository prItemRepository;
     private readonly IConsolidatedPRItemRepository consolidatedPRItemRepository;
@@ -249,6 +253,10 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         procurementProjectRepository = new ProcurementProjectRepository(context, sieveProcessor);
         bacResolutionRepository = new BACResolutionRepository(context, sieveProcessor);
         biddingActivityScheduleRepository = new BiddingActivityScheduleRepository(context, sieveProcessor);
+        masterDocumentTypeRepository = new MasterDocumentTypeRepository (context, sieveProcessor);
+        documentProfileRepository = new DocumentProfileRepository (context, sieveProcessor);
+        documentProfileItemRepository = new DocumentProfileItemRepository (context, sieveProcessor);
+        projectDocumentChecklistRepository = new ProjectDocumentChecklistRepository (context, sieveProcessor);
         purchaseRequestRepository = new PurchaseRequestRepository(context, sieveProcessor);
         prItemRepository = new PRItemRepository(context, sieveProcessor);
         consolidatedPRItemRepository = new ConsolidatedPRItemRepository(context, sieveProcessor);
@@ -369,6 +377,10 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IProcurementProjectRepository ProcurementProjectRepository => procurementProjectRepository;
     public IBACResolutionRepository BACResolutionRepository => bacResolutionRepository;
     public IBiddingActivityScheduleRepository BiddingActivityScheduleRepository => biddingActivityScheduleRepository;
+    public IMasterDocumentTypeRepository MasterDocumentTypeRepository => masterDocumentTypeRepository;
+    public IDocumentProfileRepository DocumentProfileRepository => documentProfileRepository;
+    public IDocumentProfileItemRepository DocumentProfileItemRepository => documentProfileItemRepository;
+    public IProjectDocumentChecklistRepository ProjectDocumentChecklistRepository => projectDocumentChecklistRepository;
     public IPurchaseRequestRepository PurchaseRequestRepository => purchaseRequestRepository;
     public IPRItemRepository PRItemRepository => prItemRepository;
     public IConsolidatedPRItemRepository ConsolidatedPRItemRepository => consolidatedPRItemRepository;

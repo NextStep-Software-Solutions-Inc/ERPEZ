@@ -70,7 +70,8 @@ public class GetKPIByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
         {
             Id = m.Id,
             Name = m.Name,
-            Description = m.Description
+            Description = m.Description,
+            SdgCode = m.SdgCode   // ← add
         }).ToList();
 
         ParentKPIResponse? parentKpi = null;
