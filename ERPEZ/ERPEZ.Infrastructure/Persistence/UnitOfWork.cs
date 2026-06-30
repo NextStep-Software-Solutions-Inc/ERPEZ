@@ -128,6 +128,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IDocumentProfileRepository documentProfileRepository;
     private readonly IDocumentProfileItemRepository documentProfileItemRepository;
     private readonly IProjectDocumentChecklistRepository projectDocumentChecklistRepository;
+    private readonly IPublicSupplierApplicationRepository publicSupplierApplicationRepository;
 
     // Constructor initializes all repositories once
     public UnitOfWork(ApplicationDbContext context, IServiceProvider serviceProvider)
@@ -253,6 +254,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         documentProfileRepository = new DocumentProfileRepository (context, sieveProcessor);
         documentProfileItemRepository = new DocumentProfileItemRepository (context, sieveProcessor);
         projectDocumentChecklistRepository = new ProjectDocumentChecklistRepository (context, sieveProcessor);
+        publicSupplierApplicationRepository = new PublicSupplierApplicationRepository (context, sieveProcessor);
     }
 
     // Public properties return cached instances
@@ -373,7 +375,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IDocumentProfileRepository DocumentProfileRepository => documentProfileRepository;
     public IDocumentProfileItemRepository DocumentProfileItemRepository => documentProfileItemRepository;
     public IProjectDocumentChecklistRepository ProjectDocumentChecklistRepository => projectDocumentChecklistRepository;
-
+    public IPublicSupplierApplicationRepository PublicSupplierApplicationRepository => publicSupplierApplicationRepository;
     public async Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default)
     {
         await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);

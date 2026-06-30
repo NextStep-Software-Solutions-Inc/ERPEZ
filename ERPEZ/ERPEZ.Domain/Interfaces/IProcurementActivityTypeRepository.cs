@@ -1,8 +1,10 @@
 using ERPEZ.Domain.Entities.Planning;
+using ERPEZ.Domain.Enums;
 
 namespace ERPEZ.Domain.Interfaces;
 
 public interface IProcurementActivityTypeRepository : IRepository<ProcurementActivityType>
 {
-    // Base repository is sufficient as ProcurementActivityType doesn't have complex navigation dependencies
+    Task<bool> ExistsWithSystemRoleAsync(
+        ProcurementActivitySystemRole role, CancellationToken cancellationToken = default);
 }

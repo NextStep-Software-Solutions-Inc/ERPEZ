@@ -119,6 +119,7 @@ public interface IUnitOfWork
     IDocumentProfileRepository       DocumentProfileRepository       { get; }
     IDocumentProfileItemRepository   DocumentProfileItemRepository   { get; }
     IProjectDocumentChecklistRepository ProjectDocumentChecklistRepository { get; }
+    IPublicSupplierApplicationRepository PublicSupplierApplicationRepository { get; }
     Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default);
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
 }
