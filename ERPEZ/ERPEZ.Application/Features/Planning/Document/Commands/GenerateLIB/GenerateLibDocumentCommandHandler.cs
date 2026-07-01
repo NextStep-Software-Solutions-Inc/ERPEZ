@@ -10,6 +10,7 @@ using LibEntity              = ERPEZ.Domain.Entities.Planning.LineItemBudget;
 using DetailEntity           = ERPEZ.Domain.Entities.Planning.LineItemBudgetDetail;
 using ActivityEntity         = ERPEZ.Domain.Entities.Planning.LineItemBudgetActivity;
 using GeneratedDocumentEntity = ERPEZ.Domain.Entities.Planning.GeneratedDocument;
+using ERPEZ.Application.Features.Planning.Budgeting.Common.Enums;
 
 namespace ERPEZ.Application.Features.Planning.Document.Commands.GenerateLIB;
 
@@ -28,8 +29,21 @@ public class GenerateLibDocumentCommandHandler(
             .GetByIdWithDetailsAsync(request.LibId, cancellationToken)
             ?? throw new NotFoundException("Line Item Budget not found.");
 
+        // ── Validate scope (LIB-specific) ────────────────────────────────
+        if (string.IsNullOrWhiteSpace(lib.Scope))
+            throw new InvalidOperationException(
+                $"Line Item Budget '{lib.LIBNumber}' has no scope defined.");
+
+        // ── Validate scope consistency ────────────────────────────────────
+        ValidateLibScope(lib.Scope);
+
         // ── 2. Map ───────────────────────────────────────────────────────────
         var dataDto = MapToLibDataDto(lib);
+
+        if (string.Equals(lib.Scope, nameof(LIBScopeEnum.Project), StringComparison.OrdinalIgnoreCase))
+        {
+            dataDto = dataDto with { ProjectScope = BuildProjectScope(lib) };
+        }
 
         // ── 3. Render ────────────────────────────────────────────────────────
         var bytes = await rendererService.RenderAsync(
@@ -54,17 +68,19 @@ public class GenerateLibDocumentCommandHandler(
             DocumentType  = DocumentType.Lib,
             Format        = request.Format,
             OfficeId      = lib.OfficeId.Value,
+            Scope         = lib.Scope,
             StoragePath   = path,
             FileName      = fileName,
             FileSizeBytes = bytes.Length,
             FiscalYear    = fiscalYear,
-            GeneratedBy   = request.GeneratedBy
+            GeneratedBy   = request.GeneratedBy,
+            CreatedAt     = DateTime.UtcNow
         };
 
         await unitOfWork.GeneratedDocumentRepository.AddAsync(record, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return ApiResponse<Guid>.Success(record.Id, "LIB document generated successfully.");
+        return ApiResponse<Guid>.Success(record.Id, $"LIB document (scope: {lib.Scope}) generated successfully.");
     }
 
     // ═════════════════════════════════════════════════════════════════════════
@@ -533,6 +549,18 @@ public class GenerateLibDocumentCommandHandler(
         return detail.StartDate.Value.Month == month ? detail.Budget : 0m;
     }
 
+    // ─────────────────────────────────────────────────────────────────────
+    // Scope validation
+    // ─────────────────────────────────────────────────────────────────────
+
+    private static void ValidateLibScope(string scope)
+    {
+        var validScopes = Enum.GetNames(typeof(LIBScopeEnum));
+        if (!validScopes.Contains(scope, StringComparer.OrdinalIgnoreCase))
+            throw new InvalidOperationException(
+                $"Unknown LIB scope '{scope}'. Valid scopes: {string.Join(", ", validScopes)}");
+    }
+
     // ─────────────────────────────────────────────────────────────────────────
     // Misc helpers
     // ─────────────────────────────────────────────────────────────────────────
@@ -567,5 +595,142 @@ public class GenerateLibDocumentCommandHandler(
         }
         codes.Reverse();
         return string.Join(" ", codes);
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Project scope (WFP-sourced, dynamic cross-year quarterly columns)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private static LibProjectScopeDto BuildProjectScope(LibEntity lib)
+    {
+        var wfp = lib.LineItemBudgetActivities
+            .Select(a => a.WFPObjectiveActivity?.WFPObjective?.WFP)
+            .FirstOrDefault(w => w is not null);
+
+        var allDetails = CollectAllDetails(lib);
+
+        // ── Columns: derived from the ACTUAL detail date range, not the WFP timeline ──
+        // (WFP timeline may represent only a target window; budget execution can extend beyond it.)
+        var datedDetails = allDetails.Where(d => d.StartDate is not null).ToList();
+
+        if (datedDetails.Count == 0)
+            throw new InvalidOperationException(
+                $"Line Item Budget '{lib.LIBNumber}' is Project scope but no budget details have a StartDate. Cannot build quarter columns.");
+
+        var minDate = DateOnly.FromDateTime(datedDetails.Min(d => d.StartDate!.Value));
+        var maxDate = DateOnly.FromDateTime(datedDetails.Max(d => d.EndDate ?? d.StartDate!.Value));
+
+        var columns = new List<LibProjectQuarterColumnDto>();
+        var cursor  = new DateOnly(minDate.Year, ((minDate.Month - 1) / 3) * 3 + 1, 1);
+        var labels  = new[] { "1st Quarter", "2nd Quarter", "3rd Quarter", "4th Quarter" };
+
+        while (cursor <= maxDate)
+        {
+            var quarterNumber = (cursor.Month - 1) / 3 + 1;
+            columns.Add(new LibProjectQuarterColumnDto
+            {
+                Year          = cursor.Year,
+                QuarterNumber = quarterNumber,
+                Label         = labels[quarterNumber - 1]
+            });
+            cursor = cursor.AddMonths(3);
+        }
+
+        // ── Allotment groups: one row per detail (smallest unit), not merged ──
+        var allotmentGroups = allDetails
+            .Select(d => (Detail: d, Hier: ResolveHierarchy(d)))
+            .GroupBy(x => x.Hier.AllotmentClass)
+            .OrderBy(g => GetAllotmentClassSortOrder(g.Key))
+            .Select(allotmentGrp => new LibAllotmentGroupDto
+            {
+                AllotmentClass = allotmentGrp.Key,
+                AccountGroups  = allotmentGrp
+                    .GroupBy(x => x.Hier.AccountGroup)
+                    .Select(acctGrp => new LibAccountGroupDto
+                    {
+                        AccountGroupName = acctGrp.Key,
+                        SubGroups        = acctGrp
+                            .GroupBy(x => x.Hier.SubAccountGroup)
+                            .Select(subGrp => new LibSubAccountGroupDto
+                            {
+                                SubGroupName = subGrp.Key,
+                                Rows = subGrp
+                                    .GroupBy(x => x.Detail.Description)
+                                    .Select(descGrp => new LibRowDto
+                                    {
+                                        UACSCode       = descGrp.First().Hier.UACSCode,
+                                        ObjectName     = descGrp.First().Hier.ObjectName,
+                                        Description    = descGrp.Key,
+                                        QuarterAmounts = DistributeAcrossColumns(descGrp.Select(x => x.Detail), columns),
+                                        TotalBudget    = descGrp.Sum(x => x.Detail.Budget)
+                                    })
+                                    .ToList(),
+                                SubTotal = subGrp.Sum(x => x.Detail.Budget)
+                            })
+                            .ToList(),
+                        SubTotal = acctGrp.Sum(x => x.Detail.Budget)
+                    })
+                    .ToList(),
+                SubTotal = allotmentGrp.Sum(x => x.Detail.Budget)
+            })
+            .ToList();
+
+        var duration = $"{minDate:MMMM d, yyyy} – {maxDate:MMMM d, yyyy}";
+
+        return new LibProjectScopeDto
+        {
+            ProjectTitle     = wfp?.ProjectTitle ?? lib.Name ?? string.Empty,
+            ProjectOwner     = lib.Office?.Name ?? string.Empty, // placeholder until WFP.ProjectOwner exists
+            ProjectAmount    = wfp?.ProposedBudget ?? lib.TotalAmount,
+            Duration         = duration,
+            ProjectStartDate = wfp?.ProjectStartDate ?? minDate,
+            ProjectEndDate   = wfp?.ProjectEndDate ?? maxDate,
+            Columns          = columns,
+            AllotmentGroups  = allotmentGroups
+        };
+    }
+
+    private static int GetAllotmentClassSortOrder(string allotmentClass) =>
+        allotmentClass switch
+        {
+            var n when n.Contains("Personnel", StringComparison.OrdinalIgnoreCase) => 0,
+            var n when n.Contains("Maintenance", StringComparison.OrdinalIgnoreCase) => 1,
+            var n when n.Contains("Capital Outlay", StringComparison.OrdinalIgnoreCase) => 2,
+            _ => 99
+        };
+    /// <summary>
+    /// Distributes each detail's budget across the matching quarter column(s).
+    /// A detail lands fully in the column whose [Year, Quarter] matches its StartDate,
+    /// or — if StartDate is null and TimelineType is Quarterly/Annual — is split evenly
+    /// across all columns spanning its activity's timeline window.
+    /// </summary>
+    private static List<decimal> DistributeAcrossColumns(
+        IEnumerable<DetailEntity> details,
+        List<LibProjectQuarterColumnDto> columns)
+    {
+        var amounts = new decimal[columns.Count];
+
+        foreach (var detail in details)
+        {
+            if (detail.StartDate is not null)
+            {
+                var detailYear    = detail.StartDate.Value.Year;
+                var detailQuarter = (detail.StartDate.Value.Month - 1) / 3 + 1;
+
+                var idx = columns.FindIndex(c => c.Year == detailYear && c.QuarterNumber == detailQuarter);
+                if (idx >= 0)
+                {
+                    amounts[idx] += detail.Budget;
+                    continue;
+                }
+            }
+
+            // Fallback: no resolvable single quarter — spread evenly across all columns.
+            var share = detail.Budget / columns.Count;
+            for (var i = 0; i < columns.Count; i++)
+                amounts[i] += share;
+        }
+
+        return amounts.ToList();
     }
 }

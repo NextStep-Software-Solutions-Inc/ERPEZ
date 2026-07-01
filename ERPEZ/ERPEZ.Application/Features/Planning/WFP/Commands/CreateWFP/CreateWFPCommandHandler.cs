@@ -1,4 +1,3 @@
-using ERPEZ.Application.Features.Planning.WFP.Dtos;
 using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
@@ -28,6 +27,7 @@ public class CreateWFPCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<C
         {
             OfficeId = request.OfficeId,
             ProjectTitle = request.ProjectTitle,
+            ProjectOwner = request.ProjectOwner,
             OPCRId = request.OPCRId,
             FundSourceId = request.FundSourceId,
             ProjectStartDate = request.ProjectStartDate,
