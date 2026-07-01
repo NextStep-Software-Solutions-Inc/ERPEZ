@@ -22,7 +22,7 @@ using ERPEZ.Infrastructure.Services.DocumentGeneration.Storage;
 using SharedCurrentUserService     = ERPEZ.Shared.Interfaces.ICurrentUserService;
 using SharedCurrentUserServiceImpl = ERPEZ.Shared.Services.CurrentUserService;
 using ERPEZ.Application.Features.Planning.Document.Dtos;
-using ERPEZ.Application.Features.Planning.Document.Commands.GenerateLIBAmendment;
+using ERPEZ.Infrastructure.Services.DocumentGeneration.Renderers.Excel;
 
 namespace ERPEZ.Infrastructure;
 
@@ -138,6 +138,10 @@ public static class DependencyInjection
         // LIB — PDF and Excel
         services.AddScoped<IDocumentRenderer<LibDataDto>, LibPdfRenderer>();
         services.AddScoped<IDocumentRenderer<LibDataDto>, LibExcelRenderer>();
+        
+        // WFP — PDF and Excel
+        services.AddScoped<IDocumentRenderer<WfpDataDto>, WfpPdfRenderer>();
+        services.AddScoped<IDocumentRenderer<WfpDataDto>, WfpExcelRenderer>();
 
         services.AddScoped<IDocumentRenderer<ConsolidatedOpcrDataDto>,  ConsolidatedOpcrPdfRenderer>(); // ✅ Add
 
