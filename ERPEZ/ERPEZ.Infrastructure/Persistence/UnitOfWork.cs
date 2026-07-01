@@ -129,6 +129,14 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IAOBRepository aobRepository;
     private readonly IAOBAwardedItemRepository aobAwardedItemRepository;
     private readonly IAOBProcurementProjectMappingRepository aobProcurementProjectMappingRepository;
+    private readonly IMasterDocumentTypeRepository masterDocumentTypeRepository;
+    private readonly IDocumentProfileRepository documentProfileRepository;
+    private readonly IDocumentProfileItemRepository documentProfileItemRepository;
+    private readonly IProjectDocumentChecklistRepository projectDocumentChecklistRepository;
+    private readonly IPurchaseRequestRepository purchaseRequestRepository;
+    private readonly IPRItemRepository prItemRepository;
+    private readonly IConsolidatedPRItemRepository consolidatedPRItemRepository;
+    private readonly IConsolidatedPRRepository consolidatedPRRepository;
 
     // Constructor initializes all repositories once
     public UnitOfWork(ApplicationDbContext context, IServiceProvider serviceProvider)
@@ -255,6 +263,14 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         aobRepository = new AOBRepository(context, sieveProcessor);
         aobAwardedItemRepository = new AOBAwardedItemRepository(context, sieveProcessor);
         aobProcurementProjectMappingRepository = new AOBProcurementProjectMappingRepository(context, sieveProcessor);
+        masterDocumentTypeRepository = new MasterDocumentTypeRepository (context, sieveProcessor);
+        documentProfileRepository = new DocumentProfileRepository (context, sieveProcessor);
+        documentProfileItemRepository = new DocumentProfileItemRepository (context, sieveProcessor);
+        projectDocumentChecklistRepository = new ProjectDocumentChecklistRepository (context, sieveProcessor);
+        purchaseRequestRepository = new PurchaseRequestRepository(context, sieveProcessor);
+        prItemRepository = new PRItemRepository(context, sieveProcessor);
+        consolidatedPRItemRepository = new ConsolidatedPRItemRepository(context, sieveProcessor);
+        consolidatedPRRepository = new ConsolidatedPRRepository(context, sieveProcessor);
     }
 
     // Public properties return cached instances
@@ -376,6 +392,14 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IAOBRepository AOBRepository => aobRepository;
     public IAOBAwardedItemRepository AOBAwardedItemRepository => aobAwardedItemRepository;
     public IAOBProcurementProjectMappingRepository AOBProcurementProjectMappingRepository => aobProcurementProjectMappingRepository;
+    public IMasterDocumentTypeRepository MasterDocumentTypeRepository => masterDocumentTypeRepository;
+    public IDocumentProfileRepository DocumentProfileRepository => documentProfileRepository;
+    public IDocumentProfileItemRepository DocumentProfileItemRepository => documentProfileItemRepository;
+    public IProjectDocumentChecklistRepository ProjectDocumentChecklistRepository => projectDocumentChecklistRepository;
+    public IPurchaseRequestRepository PurchaseRequestRepository => purchaseRequestRepository;
+    public IPRItemRepository PRItemRepository => prItemRepository;
+    public IConsolidatedPRItemRepository ConsolidatedPRItemRepository => consolidatedPRItemRepository;
+    public IConsolidatedPRRepository ConsolidatedPRRepository => consolidatedPRRepository;
 
     public async Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default)
     {

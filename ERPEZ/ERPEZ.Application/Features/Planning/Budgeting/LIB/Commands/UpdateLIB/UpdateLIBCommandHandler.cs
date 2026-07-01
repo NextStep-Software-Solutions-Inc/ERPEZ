@@ -92,7 +92,6 @@ public class UpdateLIBCommandHandler(IUnitOfWork unitOfWork)
         if (request.ParentLIBId.HasValue)         entity.ParentLIBId         = request.ParentLIBId;
         if (request.ConsolidatedIntoLIBId.HasValue) entity.ConsolidatedIntoLIBId = request.ConsolidatedIntoLIBId;
         if (request.SourceId.HasValue)            entity.SourceId            = request.SourceId;
-        if (request.TotalAmount.HasValue)         entity.TotalAmount         = request.TotalAmount;
         if (request.LIBNumber  is not null)       entity.LIBNumber           = request.LIBNumber;
         if (request.Name       is not null)       entity.Name                = request.Name;
         if (request.Scope      is not null)       entity.Scope               = request.Scope;

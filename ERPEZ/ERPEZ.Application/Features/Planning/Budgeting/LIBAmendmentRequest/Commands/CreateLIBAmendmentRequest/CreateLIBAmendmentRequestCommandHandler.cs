@@ -39,7 +39,6 @@ public class CreateLIBAmendmentRequestCommandHandler(IUnitOfWork unitOfWork)
             SourceId = originalLIB.SourceId,
             Status = "Draft",
             ConsolidatedIntoLIBId = originalLIB.ConsolidatedIntoLIBId,
-            TotalAmount = originalLIB.TotalAmount,
             Version = newVersion,
             PreviousVersionId = originalLIB.Id
         };
