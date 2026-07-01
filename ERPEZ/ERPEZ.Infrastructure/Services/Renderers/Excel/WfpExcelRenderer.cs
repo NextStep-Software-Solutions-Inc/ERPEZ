@@ -1,19 +1,19 @@
 using ClosedXML.Excel;
-using ERPEZ.Application.Features.Planning.Document.Commands.GenerateWFP;
+using ERPEZ.Application.Common.Dtos;
 using ERPEZ.Domain.Enums;
 using ERPEZ.Infrastructure.Services.Renderers.Excel.Base;
 
 namespace ERPEZ.Infrastructure.Services.DocumentGeneration.Renderers.Excel;
 
 internal sealed class WfpExcelRenderer
-    : BaseExcelRenderer, IDocumentRenderer<GenerateWfpDocumentCommand>
+    : BaseExcelRenderer, IDocumentRenderer<WfpDataDto>
 {
     public DocumentType DocumentType => DocumentType.Wfp;
     public ExportFormat Format       => ExportFormat.Excel;
 
     public async Task<byte[]> RenderAsync(
-        GenerateWfpDocumentCommand request,
-        CancellationToken          cancellationToken = default)
+        WfpDataDto         request,
+        CancellationToken  cancellationToken = default)
     {
         using var wb = LoadTemplate("wfp_template.xlsx");
         var ws = wb.Worksheet(1);
@@ -23,12 +23,20 @@ internal sealed class WfpExcelRenderer
         ws.Cell("A5").Value = $"Project Duration (no. of months): {request.DurationMonths}";
         ws.Cell("D5").Value = $"Project Start Date: {request.ProjectStartDate:MMMM dd, yyyy}";
         ws.Cell("G5").Value = $"Project End Date: {request.ProjectEndDate:MMM dd, yyyy}";
+        ws.Cell("A6").Value = request.OfficeName;
 
         var currentRow = 9;
 
         foreach (var objective in request.Objectives)
         {
             var objectiveStartRow = currentRow;
+
+            if (objective.Activities.Count == 0)
+            {
+                StyleData(ws.Cell(currentRow, 1), objective.ObjectiveText);
+                currentRow++;
+                continue;
+            }
 
             foreach (var activity in objective.Activities)
             {
