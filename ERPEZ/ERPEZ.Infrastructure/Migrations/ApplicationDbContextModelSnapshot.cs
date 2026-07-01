@@ -1619,6 +1619,12 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid>("OfficeId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("Scope")
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("SourceDocumentId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("StoragePath")
                         .IsRequired()
                         .HasMaxLength(1000)
@@ -2420,8 +2426,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<decimal?>("UnitCost")
                         .HasColumnType("numeric");
 
-                    b.Property<decimal?>("UnitQuantity")
-                        .HasColumnType("numeric");
+                    b.Property<int?>("UnitQuantity")
+                        .HasColumnType("integer");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
