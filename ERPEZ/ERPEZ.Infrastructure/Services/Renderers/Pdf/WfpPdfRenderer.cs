@@ -1,3 +1,7 @@
+// ERPEZ.Infrastructure/Services/Renderers/Pdf/WfpPdfRenderer.cs
+// CHANGED: implements IDocumentRenderer<WfpDataDto> instead of
+// IDocumentRenderer<GenerateWfpDocumentCommand>, since the command no longer
+// carries the pre-built payload — see GenerateWfpDocumentCommandHandler.
 using ERPEZ.Application.Common.Dtos;
 using ERPEZ.Domain.Enums;
 using ERPEZ.Infrastructure.Services.Renderers.Pdf.Base;
@@ -28,7 +32,7 @@ internal sealed class WfpPdfRenderer
 
                 page.Header().Column(h =>
                 {
-                    h.Item().AlignCenter().Text("WORK PLAN-").Bold().FontSize(12);
+                    h.Item().AlignCenter().Text("WORK PLAN").Bold().FontSize(12);
                     // Funding body label — matches sample ("National Telecommunications Commission Funded Special Project")
                     // Currently not a WFP entity field; render FundSource name if available, else omit.
 
@@ -104,19 +108,25 @@ internal sealed class WfpPdfRenderer
                             h.Cell().Element(TableHeaderCell).AlignCenter().Text("Weighted %\nTotal").Bold();
                         });
 
+                        var objectiveNum = 1;
                         foreach (var objective in request.Objectives)
                         {
-                            var regularCount = objective.Activities.Count(a => string.IsNullOrEmpty(a.GroupHeader));
-                            var groupCount   = objective.Activities.Count(a => !string.IsNullOrEmpty(a.GroupHeader));
-                            var totalRowSpan = Math.Max(regularCount + groupCount, 1);
-                            var objWritten   = false;
+                            var regularCount  = objective.Activities.Count(a => string.IsNullOrEmpty(a.GroupHeader));
+                            var groupCount    = objective.Activities.Count(a => !string.IsNullOrEmpty(a.GroupHeader));
+                            var totalRowSpan  = Math.Max(regularCount + groupCount, 1);
+                            var objWritten    = false;
+
+                            var objectiveLabel = string.IsNullOrWhiteSpace(objective.ObjectiveText)
+                                ? string.Empty
+                                : $"{objectiveNum}. {objective.ObjectiveText}";
 
                             if (objective.Activities.Count == 0)
                             {
                                 // Defensive: an objective with zero activities still needs a row
                                 // so it isn't silently dropped from the document.
-                                table.Cell().Element(TableDataCell).Text(objective.ObjectiveText);
+                                table.Cell().Element(TableDataCell).Text(objectiveLabel);
                                 table.Cell().ColumnSpan(8).Element(TableDataCell).Text(string.Empty);
+                                objectiveNum++;
                                 continue;
                             }
 
@@ -125,7 +135,7 @@ internal sealed class WfpPdfRenderer
                                 if (!objWritten)
                                 {
                                     table.Cell().RowSpan((uint)totalRowSpan).Element(TableDataCell)
-                                        .Text(objective.ObjectiveText);
+                                        .Text(objectiveLabel);
                                     objWritten = true;
                                 }
 
@@ -145,6 +155,8 @@ internal sealed class WfpPdfRenderer
                                 table.Cell().Element(TableDataCell).AlignCenter().Text(activity.Total);
                                 table.Cell().Element(TableDataCell).AlignCenter().Text(activity.WeightedPctTotal);
                             }
+
+                            objectiveNum++;
                         }
                     });
 
