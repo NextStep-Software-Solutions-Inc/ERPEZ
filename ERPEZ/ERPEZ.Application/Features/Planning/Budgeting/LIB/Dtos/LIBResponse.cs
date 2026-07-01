@@ -135,7 +135,6 @@ public record CreateLIBRequest
     public string SourceType { get; init; } = string.Empty;
     public Guid? SourceId { get; init; }
     public Guid? ConsolidatedIntoLIBId { get; init; }
-    public decimal? TotalAmount { get; init; }
 }
 
 public record UpdateLIBRequest

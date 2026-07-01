@@ -2281,10 +2281,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<DateTime?>("SubmittedDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<decimal?>("TotalAmount")
-                        .HasPrecision(18, 2)
-                        .HasColumnType("numeric(18,2)");
-
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 

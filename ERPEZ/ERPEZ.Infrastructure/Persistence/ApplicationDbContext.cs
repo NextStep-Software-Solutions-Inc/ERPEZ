@@ -2465,6 +2465,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             e.HasIndex(x => new { x.ProcurementProjectId, x.EnvelopeType });
         });
 
+        modelBuilder.Entity<LineItemBudget>()
+            .Ignore(e => e.TotalAmount);
+
         base.OnModelCreating(modelBuilder);
     }
 }
