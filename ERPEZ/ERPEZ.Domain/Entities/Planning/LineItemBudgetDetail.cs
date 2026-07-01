@@ -33,7 +33,7 @@ public class LineItemBudgetDetail : BaseEntity
     /// WFP ActivityLevel only: quantity of items.
     /// </summary>
     [Sieve(CanFilter = true, CanSort = true)]
-    public decimal? UnitQuantity { get; set; }
+    public int? UnitQuantity { get; set; }
 
     /// <summary>
     /// WFP ActivityLevel only: cost per unit.

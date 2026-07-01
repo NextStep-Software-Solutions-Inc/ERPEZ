@@ -22,7 +22,12 @@ public class CreateFundSourceCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
         }
 
         var fundSourceType = Enum.Parse<FundSourceTypeEnum>(request.Type, ignoreCase: true);
-        var fundSourceExist = await unitOfWork.FundSourceRepository.FindAsync(t => t.Name == request.Name && t.Type == fundSourceType && t.FiscalYearId == request.FiscalYearId, cancellationToken: cancellationToken);
+        var fundSourceExist = await unitOfWork.FundSourceRepository.FindAsync(
+            t => t.Name == request.Name
+            && t.Type == fundSourceType
+            && t.FiscalYearId == request.FiscalYearId
+            && t.ParentId == request.ParentId,
+            cancellationToken: cancellationToken);
         if (fundSourceExist != null) throw new ConflictException("Fund Source already exists.");
         var fundSource = new Domain.Entities.Planning.FundSource
         {

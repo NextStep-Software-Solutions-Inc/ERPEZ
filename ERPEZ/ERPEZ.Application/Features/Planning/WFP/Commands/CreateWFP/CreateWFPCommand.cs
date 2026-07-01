@@ -8,6 +8,7 @@ public class CreateWFPCommand : IRequest<ApiResponse<Guid>>
 {
     public Guid OfficeId { get; set; }
     public string ProjectTitle { get; set; } = string.Empty;
+    public string ProjectOwner { get; set; } = string.Empty;
     public Guid? OPCRId { get; set; }
     public Guid? FundSourceId { get; set; }
     public DateOnly ProjectStartDate { get; set; }

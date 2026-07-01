@@ -22,11 +22,16 @@ internal sealed class LibExcelRenderer : BaseExcelRenderer, IDocumentRenderer<Li
         var currentRow = 1;
         RenderHeader(sheet, request, ref currentRow);
 
+        // ── Branch by scope ───────────────────────────────────────────────────
         if (IsActivityScope(request))
         {
             RenderActivitySectionI(sheet, request, ref currentRow);
             currentRow += 2;
             RenderActivitySectionII(sheet, request, ref currentRow);
+        }
+        else if (IsProjectScope(request))
+        {
+            RenderProjectSectionI(sheet, request.ProjectScope!, ref currentRow);
         }
         else
         {
@@ -35,12 +40,16 @@ internal sealed class LibExcelRenderer : BaseExcelRenderer, IDocumentRenderer<Li
             RenderLegacySectionII(sheet, request, ref currentRow);
         }
 
-        currentRow += 2;
-        RenderSectionIII(sheet, request, ref currentRow);
-        currentRow += 2;
-        RenderSectionIV(sheet, request, ref currentRow);
-        currentRow += 2;
-        RenderSectionV(sheet, request, ref currentRow);
+        // ── Common sections (Activity + Legacy only) ────────────────────────────
+        if (!IsProjectScope(request))
+        {
+            currentRow += 2;
+            RenderSectionIII(sheet, request, ref currentRow);
+            currentRow += 2;
+            RenderSectionIV(sheet, request, ref currentRow);
+            currentRow += 2;
+            RenderSectionV(sheet, request, ref currentRow);
+        }
 
         sheet.Columns().AdjustToContents();
         using var ms = new MemoryStream();
@@ -48,8 +57,19 @@ internal sealed class LibExcelRenderer : BaseExcelRenderer, IDocumentRenderer<Li
         return Task.FromResult(ms.ToArray());
     }
 
+    // ═════════════════════════════════════════════════════════════════════════
+    // Scope Detection Methods
+    // ═════════════════════════════════════════════════════════════════════════
+
     private static bool IsActivityScope(LibDataDto request) =>
         string.Equals(request.Scope, nameof(LIBScopeEnum.Activity), StringComparison.OrdinalIgnoreCase);
+
+    private static bool IsProjectScope(LibDataDto request) =>
+        string.Equals(request.Scope, nameof(LIBScopeEnum.Project), StringComparison.OrdinalIgnoreCase)
+        && request.ProjectScope is not null;
+
+    private static bool IsLegacyScope(LibDataDto request) =>
+        !IsActivityScope(request) && !IsProjectScope(request);
 
     // =========================================================================
     // Header
@@ -74,7 +94,223 @@ internal sealed class LibExcelRenderer : BaseExcelRenderer, IDocumentRenderer<Li
     }
 
     // =========================================================================
-    // Section I — Activity scope  (quarterly)
+    // Section I — Project Scope (NEW)
+    // =========================================================================
+
+    /// <summary>
+    /// Renders the project-scope "LINE ITEM BUDGET" section (Section I variant).
+    /// Produces: project header block + dynamic quarter table.
+    /// </summary>
+    private static void RenderProjectSectionI(IXLWorksheet sheet, LibProjectScopeDto scope, ref int row)
+    {
+        sheet.Cell(row, 1).Value          = "I. LINE ITEM BUDGET BY PROJECT";
+        sheet.Cell(row, 1).Style.Font.Bold = true;
+        row++;
+
+        // ── Project header block ──────────────────────────────────────────────
+        WriteMeta(sheet, ref row, "PROJECT NAME:",    scope.ProjectTitle);
+        WriteMeta(sheet, ref row, "Project Owner:",   scope.ProjectOwner);
+        WriteMeta(sheet, ref row, "Project Amount:",  scope.ProjectAmount.ToString("N2"));
+        WriteMeta(sheet, ref row, "Project Duration:", scope.Duration);
+
+        if (scope.ProjectStartDate.HasValue)
+            WriteMeta(sheet, ref row, "Project Start:", scope.ProjectStartDate.Value.ToString("MMMM dd, yyyy"));
+
+        if (scope.ProjectEndDate.HasValue)
+            WriteMeta(sheet, ref row, "Project End:",   scope.ProjectEndDate.Value.ToString("MMMM dd, yyyy"));
+
+        row++;
+
+        // ── Table header (two rows: year span + quarter labels) ───────────────
+        int headerRow = row;
+        int dataRow = row + 1;
+
+        // Row 1: Fixed labels (UACS, ObjectName, Description) + year spans
+        sheet.Cell(headerRow, 1).Value = "UACS Code";
+        sheet.Cell(headerRow, 1).Style.Font.Bold = true;
+        sheet.Cell(headerRow, 2).Value = "Expenditure Item";
+        sheet.Cell(headerRow, 2).Style.Font.Bold = true;
+        sheet.Cell(headerRow, 3).Value = "Description";
+        sheet.Cell(headerRow, 3).Style.Font.Bold = true;
+
+        int colStart = 4;
+        var yearGroups = scope.Columns
+            .GroupBy(c => c.Year)
+            .OrderBy(g => g.Key)
+            .ToList();
+
+        foreach (var yearGroup in yearGroups)
+        {
+            var yearCell = sheet.Cell(headerRow, colStart);
+            yearCell.Value = yearGroup.Key.ToString();
+            yearCell.Style.Font.Bold = true;
+            yearCell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+
+            // Merge cells for year span (if multiple quarters)
+            if (yearGroup.Count() > 1)
+            {
+                sheet.Range(headerRow, colStart, headerRow, colStart + yearGroup.Count() - 1)
+                    .Merge();
+            }
+
+            colStart += yearGroup.Count();
+        }
+
+        // TOTAL column header (Row 1)
+        var totalHeaderCell = sheet.Cell(headerRow, colStart);
+        totalHeaderCell.Value = "TOTAL";
+        totalHeaderCell.Style.Font.Bold = true;
+        totalHeaderCell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+
+        // Row 2: Individual quarter labels
+        colStart = 4;
+        foreach (var col in scope.Columns)
+        {
+            var quarterCell = sheet.Cell(dataRow, colStart);
+            quarterCell.Value = col.Label;
+            quarterCell.Style.Font.Bold = true;
+            quarterCell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+            colStart++;
+        }
+
+        // TOTAL column (Row 2)
+        var totalDataCell = sheet.Cell(dataRow, colStart);
+        totalDataCell.Value = "TOTAL";
+        totalDataCell.Style.Font.Bold = true;
+        totalDataCell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+
+        row = dataRow + 1;
+
+        // ── Table body ────────────────────────────────────────────────────────
+        int colCount = scope.Columns.Count;
+
+        foreach (var allotmentGroup in scope.AllotmentGroups)
+        {
+            // Allotment class header row
+            WriteProjectSectionHeader(sheet, row++, allotmentGroup.AllotmentClass, colCount);
+
+            foreach (var accountGroup in allotmentGroup.AccountGroups)
+            {
+                if (!string.IsNullOrWhiteSpace(accountGroup.AccountGroupName))
+                    WriteProjectGroupLabel(sheet, row++, accountGroup.AccountGroupName, 1, colCount);
+
+                foreach (var subGroup in accountGroup.SubGroups)
+                {
+                    if (!string.IsNullOrWhiteSpace(subGroup.SubGroupName))
+                        WriteProjectGroupLabel(sheet, row++, $"  {subGroup.SubGroupName}", 2, colCount);
+
+                    foreach (var item in subGroup.Rows)
+                        WriteProjectRow(sheet, row++, item, colCount);
+
+                    if (subGroup.SubGroupName is not null)
+                        WriteProjectSubtotalRow(sheet, row++, subGroup.SubTotal, colCount);
+                }
+
+                if (accountGroup.SubGroups.Any(s => s.SubGroupName is not null))
+                    WriteProjectSubtotalRow(sheet, row++, accountGroup.SubTotal, colCount);
+            }
+
+            // Allotment class subtotal
+            WriteProjectSubtotalRow(sheet, row++, allotmentGroup.SubTotal, colCount, bold: true);
+        }
+
+        // Grand total row
+        decimal grandTotal = scope.AllotmentGroups.Sum(g => g.SubTotal);
+        WriteProjectGrandTotalRow(sheet, row++, grandTotal, colCount);
+
+        row++;
+    }
+
+    private static void WriteProjectSectionHeader(IXLWorksheet sheet, int row, string label, int colCount)
+    {
+        var cell = sheet.Cell(row, 1);
+        cell.Value = label;
+        cell.Style.Font.Bold = true;
+        cell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+
+        // Span across all columns (3 fixed + colCount quarter cols + 1 total)
+        int totalCols = 3 + colCount + 1;
+        sheet.Range(row, 1, row, totalCols).Merge();
+    }
+
+    private static void WriteProjectGroupLabel(IXLWorksheet sheet, int row, string label, int indentLevel, int colCount)
+    {
+        var cell = sheet.Cell(row, 1);
+        cell.Value = new string(' ', indentLevel * 2) + label;
+        cell.Style.Font.Italic = true;
+        cell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+
+        int totalCols = 3 + colCount + 1;
+        sheet.Range(row, 1, row, totalCols).Merge();
+    }
+
+    private static void WriteProjectRow(IXLWorksheet sheet, int row, LibRowDto item, int colCount)
+    {
+        // UACS code
+        sheet.Cell(row, 1).Value = item.UACSCode;
+        sheet.Cell(row, 1).Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+
+        // Object name
+        sheet.Cell(row, 2).Value = item.ObjectName;
+        sheet.Cell(row, 2).Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+
+        // Description
+        sheet.Cell(row, 3).Value = item.Description ?? string.Empty;
+        sheet.Cell(row, 3).Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+
+        // Quarterly amounts — positionally aligned to Columns
+        for (int i = 0; i < colCount; i++)
+        {
+            decimal amount = i < item.QuarterAmounts.Count ? item.QuarterAmounts[i] : 0m;
+            var cell = sheet.Cell(row, 4 + i);
+            cell.Value = amount > 0 ? amount.ToString("N2") : string.Empty;
+            cell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+            cell.Style.NumberFormat.Format = "#,##0.00";
+        }
+
+        // Total
+        var totalCell = sheet.Cell(row, 4 + colCount);
+        totalCell.Value = item.TotalBudget.ToString("N2");
+        totalCell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+        totalCell.Style.NumberFormat.Format = "#,##0.00";
+    }
+
+    private static void WriteProjectSubtotalRow(IXLWorksheet sheet, int row, decimal total, int colCount, bool bold = false)
+    {
+        var cell = sheet.Cell(row, 1);
+        cell.Value = "Sub-total";
+        cell.Style.Font.Bold = bold;
+        cell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+
+        // Span label across fixed + quarter columns
+        sheet.Range(row, 1, row, 3 + colCount).Merge();
+
+        // Total amount
+        var totalCell = sheet.Cell(row, 4 + colCount);
+        totalCell.Value = total.ToString("N2");
+        totalCell.Style.Font.Bold = bold;
+        totalCell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+        totalCell.Style.NumberFormat.Format = "#,##0.00";
+    }
+
+    private static void WriteProjectGrandTotalRow(IXLWorksheet sheet, int row, decimal total, int colCount)
+    {
+        var cell = sheet.Cell(row, 1);
+        cell.Value = "GRAND TOTAL";
+        cell.Style.Font.Bold = true;
+        cell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+
+        sheet.Range(row, 1, row, 3 + colCount).Merge();
+
+        var totalCell = sheet.Cell(row, 4 + colCount);
+        totalCell.Value = total.ToString("N2");
+        totalCell.Style.Font.Bold = true;
+        totalCell.Style.Border.OutsideBorder = XLBorderStyleValues.Thin;
+        totalCell.Style.NumberFormat.Format = "#,##0.00";
+    }
+
+    // =========================================================================
+    // Section I — Activity scope  (quarterly) — UNCHANGED
     // =========================================================================
 
     private static void RenderActivitySectionI(IXLWorksheet sheet, LibDataDto request, ref int row)
@@ -96,17 +332,14 @@ internal sealed class LibExcelRenderer : BaseExcelRenderer, IDocumentRenderer<Li
 
             foreach (var allotmentGroup in apiGroup.ExpenseGroups)
             {
-                // Allotment class header (e.g. "MOOE", "PS")
                 WriteIndentedHeader(sheet, row++, 0, allotmentGroup.AllotmentClass);
 
                 foreach (var accountGroup in allotmentGroup.AccountGroups)
                 {
-                    // Account group header (e.g. "Communication Expenses")
                     WriteIndentedHeader(sheet, row++, 1, accountGroup.AccountGroupName);
 
                     foreach (var subGroup in accountGroup.SubGroups)
                     {
-                        // Sub-account group header — only when a name exists
                         if (!string.IsNullOrWhiteSpace(subGroup.SubGroupName))
                             WriteIndentedHeader(sheet, row++, 2, subGroup.SubGroupName);
 
@@ -124,7 +357,6 @@ internal sealed class LibExcelRenderer : BaseExcelRenderer, IDocumentRenderer<Li
                         }
                     }
 
-                    // Account group subtotal
                     WriteRow(
                         sheet, row++,
                         $"Sub-total, {accountGroup.AccountGroupName}",
@@ -132,7 +364,6 @@ internal sealed class LibExcelRenderer : BaseExcelRenderer, IDocumentRenderer<Li
                         FormatAmount(accountGroup.SubTotal));
                 }
 
-                // Allotment class subtotal
                 WriteRow(
                     sheet, row++,
                     $"Sub-total, {allotmentGroup.AllotmentClass}",
@@ -140,7 +371,6 @@ internal sealed class LibExcelRenderer : BaseExcelRenderer, IDocumentRenderer<Li
                     FormatAmount(allotmentGroup.SubTotal));
             }
 
-            // API subtotal
             WriteRow(
                 sheet, row++, true,
                 "Sub-total, API",
@@ -158,7 +388,7 @@ internal sealed class LibExcelRenderer : BaseExcelRenderer, IDocumentRenderer<Li
     }
 
     // =========================================================================
-    // Section I — Legacy scope  (quarterly)
+    // Section I — Legacy scope  (quarterly) — UNCHANGED
     // =========================================================================
 
     private static void RenderLegacySectionI(IXLWorksheet sheet, LibDataDto request, ref int row)
@@ -173,17 +403,14 @@ internal sealed class LibExcelRenderer : BaseExcelRenderer, IDocumentRenderer<Li
 
         foreach (var apiGroup in request.ApiGroups)
         {
-            // Activity name as group label
             WriteIndentedHeader(sheet, row++, 0, apiGroup.ActivityName);
 
             foreach (var allotmentGroup in apiGroup.ExpenseGroups)
             {
-                // Allotment class header
                 WriteIndentedHeader(sheet, row++, 1, allotmentGroup.AllotmentClass);
 
                 foreach (var accountGroup in allotmentGroup.AccountGroups)
                 {
-                    // Account group header
                     WriteIndentedHeader(sheet, row++, 2, accountGroup.AccountGroupName);
 
                     foreach (var subGroup in accountGroup.SubGroups)
@@ -206,7 +433,6 @@ internal sealed class LibExcelRenderer : BaseExcelRenderer, IDocumentRenderer<Li
                         }
                     }
 
-                    // Account group subtotal
                     WriteRow(
                         sheet, row++,
                         $"Sub-total, {accountGroup.AccountGroupName}",
@@ -214,7 +440,6 @@ internal sealed class LibExcelRenderer : BaseExcelRenderer, IDocumentRenderer<Li
                         FormatAmount(accountGroup.SubTotal));
                 }
 
-                // Allotment class subtotal
                 WriteRow(
                     sheet, row++,
                     $"Sub-total, {allotmentGroup.AllotmentClass}",
@@ -222,7 +447,6 @@ internal sealed class LibExcelRenderer : BaseExcelRenderer, IDocumentRenderer<Li
                     FormatAmount(allotmentGroup.SubTotal));
             }
 
-            // Activity subtotal
             WriteRow(
                 sheet, row++, true,
                 $"Sub-total, {apiGroup.ActivityName}",
@@ -240,7 +464,7 @@ internal sealed class LibExcelRenderer : BaseExcelRenderer, IDocumentRenderer<Li
     }
 
     // =========================================================================
-    // Section II — Activity scope  (monthly)
+    // Section II — Activity scope  (monthly) — UNCHANGED
     // =========================================================================
 
     private static void RenderActivitySectionII(IXLWorksheet sheet, LibDataDto request, ref int row)
@@ -253,7 +477,6 @@ internal sealed class LibExcelRenderer : BaseExcelRenderer, IDocumentRenderer<Li
 
         foreach (var targetGroup in request.TargetGroups)
         {
-            // ── Meta block (mirrors RenderActivityMetaBlock in PDF renderer) ──
             if (!string.IsNullOrWhiteSpace(targetGroup.PrexcDynamicKra))
                 WriteMeta(sheet, ref row, "PREXC/DYNAMIC/KRA:", targetGroup.PrexcDynamicKra);
 
@@ -262,7 +485,6 @@ internal sealed class LibExcelRenderer : BaseExcelRenderer, IDocumentRenderer<Li
 
             WriteMeta(sheet, ref row, "KPI:", targetGroup.KpiLabel);
 
-            // Targets inside the meta block — mirrors PDF behaviour
             if (targetGroup.Targets.Count > 0)
             {
                 sheet.Cell(row, 1).Value           = "TARGETS";
@@ -271,12 +493,11 @@ internal sealed class LibExcelRenderer : BaseExcelRenderer, IDocumentRenderer<Li
 
                 foreach (var targetLine in targetGroup.Targets)
                 {
-                    sheet.Cell(row, 2).Value = targetLine;   // col 2 — indented under label
+                    sheet.Cell(row, 2).Value = targetLine;
                     row++;
                 }
             }
 
-            // ── Table header ──────────────────────────────────────────────────
             WriteRow(
                 sheet, row++, true,
                 "OBJECTS OF EXPENDITURE", "UACS",
@@ -358,7 +579,7 @@ internal sealed class LibExcelRenderer : BaseExcelRenderer, IDocumentRenderer<Li
     }
 
     // =========================================================================
-    // Section II — Legacy scope  (monthly, flat across all activities)
+    // Section II — Legacy scope  (monthly) — UNCHANGED
     // =========================================================================
 
     private static void RenderLegacySectionII(IXLWorksheet sheet, LibDataDto request, ref int row)
@@ -376,12 +597,10 @@ internal sealed class LibExcelRenderer : BaseExcelRenderer, IDocumentRenderer<Li
 
         foreach (var allotmentGroup in request.MonthlyExpenseGroups)
         {
-            // Allotment class header
             WriteIndentedHeader(sheet, row++, 0, allotmentGroup.AllotmentClass);
 
             foreach (var accountGroup in allotmentGroup.AccountGroups)
             {
-                // Account group header
                 WriteIndentedHeader(sheet, row++, 1, accountGroup.AccountGroupName);
 
                 foreach (var subGroup in accountGroup.SubGroups)
@@ -411,7 +630,6 @@ internal sealed class LibExcelRenderer : BaseExcelRenderer, IDocumentRenderer<Li
                     }
                 }
 
-                // Account group subtotal
                 WriteRow(
                     sheet, row++,
                     $"Sub-total, {accountGroup.AccountGroupName}",
@@ -421,7 +639,6 @@ internal sealed class LibExcelRenderer : BaseExcelRenderer, IDocumentRenderer<Li
                     FormatAmount(accountGroup.SubTotal));
             }
 
-            // Allotment class subtotal
             WriteRow(
                 sheet, row++,
                 $"Sub-total, {allotmentGroup.AllotmentClass}",
@@ -441,7 +658,7 @@ internal sealed class LibExcelRenderer : BaseExcelRenderer, IDocumentRenderer<Li
     }
 
     // =========================================================================
-    // Section III — Summary by Account Group and by Quarter  (unchanged logic)
+    // Section III — Summary by Account Group and by Quarter (UNCHANGED)
     // =========================================================================
 
     private static void RenderSectionIII(IXLWorksheet sheet, LibDataDto request, ref int row)
@@ -490,7 +707,7 @@ internal sealed class LibExcelRenderer : BaseExcelRenderer, IDocumentRenderer<Li
     }
 
     // =========================================================================
-    // Section IV — Summary by Quarter  (unchanged logic)
+    // Section IV — Summary by Quarter (UNCHANGED)
     // =========================================================================
 
     private static void RenderSectionIV(IXLWorksheet sheet, LibDataDto request, ref int row)
@@ -523,7 +740,7 @@ internal sealed class LibExcelRenderer : BaseExcelRenderer, IDocumentRenderer<Li
     }
 
     // =========================================================================
-    // Section V — Summary by Fund Source  (unchanged logic)
+    // Section V — Summary by Fund Source (UNCHANGED)
     // =========================================================================
 
     private static void RenderSectionV(IXLWorksheet sheet, LibDataDto request, ref int row)
@@ -571,7 +788,6 @@ internal sealed class LibExcelRenderer : BaseExcelRenderer, IDocumentRenderer<Li
         row++;
     }
 
-    
     /// <summary>
     /// Writes a bold group-label row indented by <paramref name="level"/> spaces
     /// (0 = allotment class, 1 = account group, 2 = sub-account group, 3 = activity).
