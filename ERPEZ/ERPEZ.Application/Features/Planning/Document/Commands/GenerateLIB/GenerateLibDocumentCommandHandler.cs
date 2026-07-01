@@ -132,7 +132,7 @@ public class GenerateLibDocumentCommandHandler(
         var quarterSummaries      = BuildQuarterSummaries(accountGroupSummaries);
         var targetGroups          = BuildTargetGroups(lib, standaloneDetails);
 
-    var totalBudget = lib.TotalAmount;
+        var totalBudget = lib.TotalAmount;
 
         var fundSourceAccountGroups = accountGroupSummaries
             .SelectMany(summary => summary.Rows.Select(row => new LibFundSourceAccountGroupDto
