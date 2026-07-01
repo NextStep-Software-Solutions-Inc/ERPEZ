@@ -6671,6 +6671,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<DateOnly>("ProjectEndDate")
                         .HasColumnType("date");
 
+                    b.Property<string>("ProjectOwner")
+                        .HasColumnType("text");
+
                     b.Property<DateOnly>("ProjectStartDate")
                         .HasColumnType("date");
 
