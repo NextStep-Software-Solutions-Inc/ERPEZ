@@ -132,7 +132,7 @@
             var quarterSummaries      = BuildQuarterSummaries(accountGroupSummaries);
             var targetGroups          = BuildTargetGroups(lib, standaloneDetails);
 
-            var totalBudget = lib.TotalAmount ?? allDetails.Sum(d => d.Budget);
+        var totalBudget = lib.TotalAmount;
 
             var fundSourceAccountGroups = accountGroupSummaries
                 .SelectMany(summary => summary.Rows.Select(row => new LibFundSourceAccountGroupDto
@@ -681,7 +681,7 @@
             {
                 ProjectTitle     = wfp?.ProjectTitle ?? lib.Name ?? string.Empty,
                 ProjectOwner     = lib.Office?.Name ?? string.Empty, // placeholder until WFP.ProjectOwner exists
-                ProjectAmount    = wfp?.ProposedBudget ?? lib.TotalAmount ?? allDetails.Sum(d => d.Budget),
+                ProjectAmount    = wfp?.ProposedBudget ?? lib.TotalAmount,
                 Duration         = duration,
                 ProjectStartDate = wfp?.ProjectStartDate ?? minDate,
                 ProjectEndDate   = wfp?.ProjectEndDate ?? maxDate,
