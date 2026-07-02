@@ -123,6 +123,11 @@ public interface IUnitOfWork
     IPRItemRepository PRItemRepository { get; }
     IConsolidatedPRItemRepository ConsolidatedPRItemRepository { get; }
     IConsolidatedPRRepository ConsolidatedPRRepository { get; }
+    ISupplierBidRepository SupplierBidRepository { get; }
+    ISupplierBidItemRepository SupplierBidItemRepository { get; }
+    IAOBRepository AOBRepository { get; }
+    IAOBAwardedItemRepository AOBAwardedItemRepository { get; }
+    IAOBProcurementProjectMappingRepository AOBProcurementProjectMappingRepository { get; }
     IDirectContractingRepository DirectContractingRepository { get; }
     IDirectContractingProposalRepository DirectContractingProposalRepository { get; }
     IDirectContractingProposalItemRepository DirectContractingProposalItemRepository { get; }

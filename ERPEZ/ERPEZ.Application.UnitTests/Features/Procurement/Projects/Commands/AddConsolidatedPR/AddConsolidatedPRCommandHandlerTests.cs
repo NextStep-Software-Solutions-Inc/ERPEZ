@@ -283,6 +283,11 @@ public class AddConsolidatedPRCommandHandlerTests
         public IPurchaseRequestRepository PurchaseRequestRepository => throw new NotImplementedException();
         public IPRItemRepository PRItemRepository => throw new NotImplementedException();
         public IConsolidatedPRItemRepository ConsolidatedPRItemRepository => throw new NotImplementedException();
+        public ISupplierBidRepository SupplierBidRepository => throw new NotImplementedException();
+        public ISupplierBidItemRepository SupplierBidItemRepository => throw new NotImplementedException();
+        public IAOBRepository AOBRepository => throw new NotImplementedException();
+        public IAOBAwardedItemRepository AOBAwardedItemRepository => throw new NotImplementedException();
+        public IAOBProcurementProjectMappingRepository AOBProcurementProjectMappingRepository => throw new NotImplementedException();
         public IDirectContractingRepository DirectContractingRepository => throw new NotImplementedException();
         public IDirectContractingProposalRepository DirectContractingProposalRepository => throw new NotImplementedException();
         public IDirectContractingProposalItemRepository DirectContractingProposalItemRepository => throw new NotImplementedException();
