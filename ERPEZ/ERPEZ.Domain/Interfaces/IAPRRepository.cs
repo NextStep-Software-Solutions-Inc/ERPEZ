@@ -1,4 +1,4 @@
-using ERPEZ.Domain.Entities.Planning;
+using ERPEZ.Domain.Entities.Procurement;
 using Sieve.Models;
 using System.Linq.Expressions;
 

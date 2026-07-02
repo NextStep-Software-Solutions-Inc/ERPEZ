@@ -1,6 +1,6 @@
 using System.Linq.Expressions;
 using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Dtos;
-using ERPEZ.Domain.Entities.Planning;
+using ERPEZ.Domain.Entities.Procurement;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;

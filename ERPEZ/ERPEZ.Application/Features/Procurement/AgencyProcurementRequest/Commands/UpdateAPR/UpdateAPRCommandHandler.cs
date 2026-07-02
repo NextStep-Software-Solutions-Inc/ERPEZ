@@ -1,4 +1,5 @@
 using ERPEZ.Application.Common.Exceptions;
+using ERPEZ.Domain.Entities.Procurement;
 using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;

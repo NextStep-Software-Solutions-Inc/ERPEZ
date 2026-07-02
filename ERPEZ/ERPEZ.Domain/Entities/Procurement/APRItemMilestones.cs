@@ -1,7 +1,8 @@
 using ERPEZ.Domain.Common;
+using ERPEZ.Domain.Entities.Planning;
 using Sieve.Attributes;
 
-namespace ERPEZ.Domain.Entities.Planning;
+namespace ERPEZ.Domain.Entities.Procurement;
 
 /// <summary>
 /// BAC (Bids and Awards Committee) milestone for an APR line item.

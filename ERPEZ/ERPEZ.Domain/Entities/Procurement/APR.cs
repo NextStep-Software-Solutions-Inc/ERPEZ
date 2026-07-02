@@ -1,8 +1,9 @@
 using ERPEZ.Domain.Common;
 using ERPEZ.Domain.Enums;
+using ERPEZ.Domain.Entities.Planning;
 using Sieve.Attributes;
 
-namespace ERPEZ.Domain.Entities.Planning;
+namespace ERPEZ.Domain.Entities.Procurement;
 
 /// <summary>
 /// Agency Procurement Request (APR)

@@ -1,4 +1,4 @@
-using ERPEZ.Domain.Entities.Planning;
+using ERPEZ.Domain.Entities.Procurement;
 
 namespace ERPEZ.Domain.Interfaces;
 

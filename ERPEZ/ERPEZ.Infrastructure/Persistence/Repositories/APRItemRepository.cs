@@ -1,4 +1,4 @@
-using ERPEZ.Domain.Entities.Planning;
+using ERPEZ.Domain.Entities.Procurement;
 using ERPEZ.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
 using Sieve.Services;
