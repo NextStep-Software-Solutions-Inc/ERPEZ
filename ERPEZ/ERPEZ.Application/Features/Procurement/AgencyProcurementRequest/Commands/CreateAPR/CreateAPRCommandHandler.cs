@@ -1,13 +1,14 @@
 using ERPEZ.Application.Common.Exceptions;
 using ERPEZ.Application.Interfaces;
-using ERPEZ.Domain.Entities.Procurement;
+using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
+using ERPEZ.Shared.Common;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Commands.CreateAPR;
 
-public class CreateAPRCommandHandler : IRequestHandler<CreateAPRCommand, Guid>
+public class CreateAPRCommandHandler : IRequestHandler<CreateAPRCommand, ApiResponse<Guid>>
 {
     private readonly IUnitOfWork unitOfWork;
     private readonly ICurrentUserService currentUser;
@@ -20,7 +21,7 @@ public class CreateAPRCommandHandler : IRequestHandler<CreateAPRCommand, Guid>
         this.currentUser = currentUser;
     }
 
-    public async Task<Guid> Handle(CreateAPRCommand request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<Guid>> Handle(CreateAPRCommand request, CancellationToken cancellationToken)
     {
         // 1. Load the source APP with full details and validate it's approved
         var app = await unitOfWork.APPRepository.GetAPPWithDetailsAsync(request.APPId, cancellationToken)
@@ -127,7 +128,7 @@ public class CreateAPRCommandHandler : IRequestHandler<CreateAPRCommand, Guid>
             {
                 await unitOfWork.APRRepository.AddAsync(apr);
                 await unitOfWork.SaveChangesAsync(cancellationToken);
-                return apr.Id;
+                return ApiResponse<Guid>.Success(apr.Id, "APR created successfully.");
             }
             catch (ConcurrencyConflictException) when (attempt < maxNumberGenerationRetries)
             {

@@ -1,11 +1,12 @@
 using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Dtos;
-using ERPEZ.Application.Planning.APRs.Queries.GetAPRById;
+using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Queries.GetAPRById;
 using ERPEZ.Domain.Interfaces;
+using ERPEZ.Shared.Common;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Queries.GetAPRById;
 
-public class GetAPRByIdQueryHandler : IRequestHandler<GetAPRByIdQuery, APRDetailDto>
+public class GetAPRByIdQueryHandler : IRequestHandler<GetAPRByIdQuery, ApiResponse<APRDetailDto>>
 {
     private readonly IUnitOfWork unitOfWork;
 
@@ -14,12 +15,12 @@ public class GetAPRByIdQueryHandler : IRequestHandler<GetAPRByIdQuery, APRDetail
         this.unitOfWork = unitOfWork;
     }
 
-    public async Task<APRDetailDto> Handle(GetAPRByIdQuery request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<APRDetailDto>> Handle(GetAPRByIdQuery request, CancellationToken cancellationToken)
     {
         var apr = await unitOfWork.APRRepository.GetAPRWithDetailsAsync(request.Id, cancellationToken)
             ?? throw new InvalidOperationException("APR not found.");
 
-        return new APRDetailDto
+        return ApiResponse<APRDetailDto>.Success(new APRDetailDto
         {
             Id = apr.Id,
             APRNumber = apr.APRNumber,
@@ -62,6 +63,6 @@ public class GetAPRByIdQueryHandler : IRequestHandler<GetAPRByIdQuery, APRDetail
                     Remarks = m.Remarks
                 }).ToList()
             }).ToList()
-        };
+        }, "APR retrieved successfully.");
     }
 }

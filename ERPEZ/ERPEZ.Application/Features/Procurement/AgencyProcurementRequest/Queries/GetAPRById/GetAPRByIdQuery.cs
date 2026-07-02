@@ -1,9 +1,7 @@
 using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Dtos;
+using ERPEZ.Shared.Common;
 using MediatR;
 
-namespace ERPEZ.Application.Planning.APRs.Queries.GetAPRById;
+namespace ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Queries.GetAPRById;
 
-public class GetAPRByIdQuery : IRequest<APRDetailDto>
-{
-    public Guid Id { get; set; }
-}
+public record GetAPRByIdQuery(Guid Id) : IRequest<ApiResponse<APRDetailDto>>;

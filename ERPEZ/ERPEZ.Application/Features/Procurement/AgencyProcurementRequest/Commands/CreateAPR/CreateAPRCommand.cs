@@ -1,10 +1,12 @@
 using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Dtos;
 using ERPEZ.Domain.Enums;
+using ERPEZ.Shared.Common;
+using System;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Commands.CreateAPR;
 
-public class CreateAPRCommand : IRequest<Guid>
+public class CreateAPRCommand : IRequest<ApiResponse<Guid>>
 {
     public Guid APPId { get; set; }
     public Guid OfficeId { get; set; }

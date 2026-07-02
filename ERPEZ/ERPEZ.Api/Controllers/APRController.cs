@@ -14,7 +14,7 @@ namespace ERPEZ.Api.Controllers;
 /// <summary>
 /// Manages Agency Purchase Request (APR) operations
 /// </summary>
-[Route("apr")]
+[Route("aprs")]
 [ApiController]
 public class APRsController(ISender mediator) : ControllerBase
 {
@@ -27,11 +27,9 @@ public class APRsController(ISender mediator) : ControllerBase
     public async Task<IActionResult> CreateAPR([FromBody] CreateAPRCommand command)
     {
         var result = await mediator.Send(command);
-
-        if (!result.Succeeded)
-            return BadRequest(result);
-
-        return CreatedAtAction(nameof(GetAPRById), new { id = result.Data }, result);
+        return result.Succeeded
+            ? CreatedAtAction(nameof(GetAPRById), new { id = result.Data }, result)
+            : BadRequest(result);
     }
 
     /// <summary>
