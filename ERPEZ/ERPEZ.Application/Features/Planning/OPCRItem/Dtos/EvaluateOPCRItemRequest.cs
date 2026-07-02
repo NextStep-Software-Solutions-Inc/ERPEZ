@@ -1,4 +1,6 @@
 // EvaluateOPCRItemRequest.cs
+using ERPEZ.Domain.Enums;
+
 namespace ERPEZ.Application.Features.Planning.OPCRItem.Dtos;
 
 public record EvaluateOPCRItemRequest
@@ -15,14 +17,27 @@ public record EvaluateOPCRItemRequest
     public string? Justification { get; init; }
 
     /// <summary>
-    /// Self-ratings per dimension — one entry per FYActiveKPIMeasurement.
-    /// Upserts: creates if not exists, updates if already rated.
+    /// Self-ratings per measurement dimension.
     /// </summary>
-    public List<DimensionSelfRatingRequest> Ratings { get; init; } = [];
+    public List<DimensionRateRequest> DimensionRate { get; init; } = [];
+
+    /// <summary>
+    /// Means of verification attachments submitted alongside the evaluation.
+    /// Backend upserts by OPCR item plus MOV name.
+    /// </summary>
+    public List<EvaluateOPCRItemMovRequest> Mov { get; init; } = [];
 }
 
-public record DimensionSelfRatingRequest
+public record DimensionRateRequest
+{
+    public Guid FYActiveKPIMeasurementId { get; init; }
+    public DimensionEnum Dimension { get; init; }
+    public decimal SelfRating { get; init; }
+}
+
+public record EvaluateOPCRItemMovRequest
 {
     public Guid    FYActiveKPIMeasurementId { get; init; }
-    public decimal SelfRating               { get; init; }
+    public string Mov { get; init; } = string.Empty;
+    public Guid FileId { get; init; }
 }
