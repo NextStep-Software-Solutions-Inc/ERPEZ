@@ -15,6 +15,10 @@ public class CreateOPCRItemRatingCommandValidator : AbstractValidator<CreateOPCR
             .NotEmpty()
             .WithMessage("FY Active KPI Measurement ID is required.");
 
+        RuleFor(x => x.Dimension)
+            .IsInEnum()
+            .WithMessage("Dimension must be one of: Efficiency, Quality, Timeliness.");
+
         RuleFor(x => x.SelfRating)
             .InclusiveBetween(0, 5)
             .WithMessage("Self Rating must be between 0 and 5.")

@@ -5,6 +5,7 @@ public class OPCRItemMOVResponse
 {
     public Guid Id { get; init; }
     public Guid OPCRItemId { get; init; }
+    public Guid FYActiveKPIMeasurementId { get; init; }
     public string RequirementName { get; init; } = string.Empty;
     public string? AttachedUrl { get; init; }
     public DateTime? UploadedDate { get; init; }
