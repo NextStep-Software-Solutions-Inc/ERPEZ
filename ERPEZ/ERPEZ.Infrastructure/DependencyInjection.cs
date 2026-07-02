@@ -104,6 +104,7 @@ public static class DependencyInjection
         services.AddScoped<IPPMPItemAllocationRepository, PPMPItemAllocationRepository>();
         services.AddScoped<IAPPItemRepository, APPItemRepository>();
         services.AddScoped<IAPPItemScheduleRepository, APPItemScheduleRepository>();
+        services.AddScoped<IAPRRepository, APRRepository>();
         services.AddScoped<IItemRequestRepository, ItemRequestRepository>();
         services.AddScoped<INonCSEItemRepository, NonCSEItemRepository>();
         services.AddScoped<IOPCRItemRatingRepository, OPCRItemRatingRepository>();
