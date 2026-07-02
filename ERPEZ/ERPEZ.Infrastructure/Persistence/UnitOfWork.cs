@@ -124,6 +124,9 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IProcurementProjectRepository procurementProjectRepository;
     private readonly IBACResolutionRepository bacResolutionRepository;
     private readonly IBiddingActivityScheduleRepository biddingActivityScheduleRepository;
+    private readonly IDirectContractingRepository directContractingRepository;
+    private readonly IDirectContractingProposalRepository directContractingProposalRepository;
+    private readonly IDirectContractingProposalItemRepository directContractingProposalItemRepository;
 
     // Constructor initializes all repositories once
     public UnitOfWork(ApplicationDbContext context, IServiceProvider serviceProvider)
@@ -245,6 +248,9 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         procurementProjectRepository = new ProcurementProjectRepository(context, sieveProcessor);
         bacResolutionRepository = new BACResolutionRepository(context, sieveProcessor);
         biddingActivityScheduleRepository = new BiddingActivityScheduleRepository(context, sieveProcessor);
+        directContractingRepository = new DirectContractingRepository(context, sieveProcessor);
+        directContractingProposalRepository = new DirectContractingProposalRepository(context, sieveProcessor);
+        directContractingProposalItemRepository = new DirectContractingProposalItemRepository(context, sieveProcessor);
     }
 
     // Public properties return cached instances
@@ -361,6 +367,9 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IProcurementProjectRepository ProcurementProjectRepository => procurementProjectRepository;
     public IBACResolutionRepository BACResolutionRepository => bacResolutionRepository;
     public IBiddingActivityScheduleRepository BiddingActivityScheduleRepository => biddingActivityScheduleRepository;
+    public IDirectContractingRepository DirectContractingRepository => directContractingRepository;
+    public IDirectContractingProposalRepository DirectContractingProposalRepository => directContractingProposalRepository;
+    public IDirectContractingProposalItemRepository DirectContractingProposalItemRepository => directContractingProposalItemRepository;
 
     public async Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default)
     {

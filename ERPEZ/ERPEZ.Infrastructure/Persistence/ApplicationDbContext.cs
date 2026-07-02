@@ -142,7 +142,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<OPCRItemMOV>? OPCRItemMOVs { get; set; }
     public DbSet<GeneratedDocument>? GeneratedDocuments { get; set; }
     public DbSet<Agency>? Agencies { get; set; }
-    public DbSet<OPCRConsolidation>? OPCRConsolidations { get; set; }
+    public DbSet<DirectContracting>? DirectContractings { get; set; }
+    public DbSet<DirectContractingProposal>? DirectContractingProposals { get; set; }
+    public DbSet<DirectContractingProposalItem>? DirectContractingProposalItems { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // Apply default conventions for all entities
@@ -2207,6 +2210,60 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .WithMany()
                 .HasForeignKey(s => s.ProcurementActivityTypeId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<DirectContracting>(e =>
+        {
+            e.HasOne(dc => dc.BACResolution)
+                .WithMany()
+                .HasForeignKey(dc => dc.BACResolutionId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasOne(dc => dc.ExclusiveSupplier)
+                .WithMany()
+                .HasForeignKey(dc => dc.ExclusiveSupplierId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.Property(dc => dc.TotalABC)
+                .HasPrecision(18, 2);
+
+            e.Property(dc => dc.Status)
+                .HasMaxLength(50);
+        });
+
+        modelBuilder.Entity<DirectContractingProposal>(e =>
+        {
+            e.HasOne(dcp => dcp.DirectContracting)
+                .WithOne(dc => dc.Proposal)
+                .HasForeignKey<DirectContractingProposal>(dcp => dcp.DirectContractingId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasOne(dcp => dcp.Supplier)
+                .WithMany()
+                .HasForeignKey(dcp => dcp.SupplierId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.Property(dcp => dcp.TotalProposalAmount)
+                .HasPrecision(18, 2);
+        });
+
+        modelBuilder.Entity<DirectContractingProposalItem>(e =>
+        {
+            e.HasOne(dcpi => dcpi.Proposal)
+                .WithMany(dcp => dcp.ProposalItems)
+                .HasForeignKey(dcpi => dcpi.ProposalId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasOne(dcpi => dcpi.CPRItem)
+                .WithMany()
+                .HasForeignKey(dcpi => dcpi.CPRItemId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.Property(dcpi => dcpi.UnitBid)
+                .HasPrecision(18, 2);
+
+            e.Property(dcpi => dcpi.TotalBid)
+                .HasPrecision(18, 2);
         });
 
         base.OnModelCreating(modelBuilder);
