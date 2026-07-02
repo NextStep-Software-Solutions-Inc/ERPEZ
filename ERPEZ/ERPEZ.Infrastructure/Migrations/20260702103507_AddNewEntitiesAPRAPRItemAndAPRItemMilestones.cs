@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -13,7 +13,7 @@ namespace ERPEZ.Infrastructure.Migrations
         {
             migrationBuilder.CreateTable(
                 name: "APRs",
-                schema: "planning",
+                schema: "procurement",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -71,7 +71,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
             migrationBuilder.CreateTable(
                 name: "APRItems",
-                schema: "planning",
+                schema: "procurement",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -103,7 +103,7 @@ namespace ERPEZ.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "FK_APRItems_APRs_APRId",
                         column: x => x.APRId,
-                        principalSchema: "planning",
+                        principalSchema: "procurement",
                         principalTable: "APRs",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -118,7 +118,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
             migrationBuilder.CreateTable(
                 name: "APRItemMilestones",
-                schema: "planning",
+                schema: "procurement",
                 columns: table => new
                 {
                     Id = table.Column<Guid>(type: "uuid", nullable: false),
@@ -140,7 +140,7 @@ namespace ERPEZ.Infrastructure.Migrations
                     table.ForeignKey(
                         name: "FK_APRItemMilestones_APRItems_APRItemId",
                         column: x => x.APRItemId,
-                        principalSchema: "planning",
+                        principalSchema: "procurement",
                         principalTable: "APRItems",
                         principalColumn: "Id",
                         onDelete: ReferentialAction.Cascade);
@@ -153,70 +153,122 @@ namespace ERPEZ.Infrastructure.Migrations
                         onDelete: ReferentialAction.Restrict);
                 });
 
+            migrationBuilder.CreateTable(
+                name: "ConsolidatedPRItems",
+                schema: "procurement",
+                columns: table => new
+                {
+                    Id = table.Column<Guid>(type: "uuid", nullable: false),
+                    ConsolidatedPRId = table.Column<Guid>(type: "uuid", nullable: false),
+                    PurchaseRequestId = table.Column<Guid>(type: "uuid", nullable: false),
+                    PRItemId = table.Column<Guid>(type: "uuid", nullable: false),
+                    ProcurementModeId = table.Column<Guid>(type: "uuid", nullable: true),
+                    AllowPartial = table.Column<bool>(type: "boolean", nullable: false),
+                    CreatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: false),
+                    CreatedBy = table.Column<string>(type: "text", nullable: false),
+                    UpdatedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    UpdatedBy = table.Column<string>(type: "text", nullable: true),
+                    IsDeleted = table.Column<bool>(type: "boolean", nullable: false),
+                    DeletedAt = table.Column<DateTime>(type: "timestamp with time zone", nullable: true),
+                    DeletedBy = table.Column<string>(type: "text", nullable: true)
+                },
+                constraints: table =>
+                {
+                    table.PrimaryKey("PK_ConsolidatedPRItems", x => x.Id);
+                    table.ForeignKey(
+                        name: "FK_ConsolidatedPRItems_ConsolidatedPRs_ConsolidatedPRId",
+                        column: x => x.ConsolidatedPRId,
+                        principalSchema: "procurement",
+                        principalTable: "ConsolidatedPRs",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Cascade);
+                    table.ForeignKey(
+                        name: "FK_ConsolidatedPRItems_PRItems_PRItemId",
+                        column: x => x.PRItemId,
+                        principalSchema: "procurement",
+                        principalTable: "PRItems",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_ConsolidatedPRItems_ProcurementModes_ProcurementModeId",
+                        column: x => x.ProcurementModeId,
+                        principalSchema: "planning",
+                        principalTable: "ProcurementModes",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                    table.ForeignKey(
+                        name: "FK_ConsolidatedPRItems_PurchaseRequests_PurchaseRequestId",
+                        column: x => x.PurchaseRequestId,
+                        principalSchema: "procurement",
+                        principalTable: "PurchaseRequests",
+                        principalColumn: "Id",
+                        onDelete: ReferentialAction.Restrict);
+                });
+
             migrationBuilder.CreateIndex(
                 name: "IX_APRItemMilestones_APRItemId",
-                schema: "planning",
+                schema: "procurement",
                 table: "APRItemMilestones",
                 column: "APRItemId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_APRItemMilestones_ProcurementActivityTypeId",
-                schema: "planning",
+                schema: "procurement",
                 table: "APRItemMilestones",
                 column: "ProcurementActivityTypeId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_APRItemMilestones_ScheduledDate",
-                schema: "planning",
+                schema: "procurement",
                 table: "APRItemMilestones",
                 column: "ScheduledDate");
 
             migrationBuilder.CreateIndex(
                 name: "IX_APRItems_APPItemId",
-                schema: "planning",
+                schema: "procurement",
                 table: "APRItems",
                 column: "APPItemId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_APRItems_APRId",
-                schema: "planning",
+                schema: "procurement",
                 table: "APRItems",
                 column: "APRId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_APRItems_PPMPItemId",
-                schema: "planning",
+                schema: "procurement",
                 table: "APRItems",
                 column: "PPMPItemId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_APRs_APPId",
-                schema: "planning",
+                schema: "procurement",
                 table: "APRs",
                 column: "APPId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_APRs_APRNumber",
-                schema: "planning",
+                schema: "procurement",
                 table: "APRs",
                 column: "APRNumber",
                 unique: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_APRs_FiscalYearId",
-                schema: "planning",
+                schema: "procurement",
                 table: "APRs",
                 column: "FiscalYearId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_APRs_OfficeId",
-                schema: "planning",
+                schema: "procurement",
                 table: "APRs",
                 column: "OfficeId");
 
             migrationBuilder.CreateIndex(
                 name: "IX_APRs_Status",
-                schema: "planning",
+                schema: "procurement",
                 table: "APRs",
                 column: "Status");
         }
@@ -226,15 +278,15 @@ namespace ERPEZ.Infrastructure.Migrations
         {
             migrationBuilder.DropTable(
                 name: "APRItemMilestones",
-                schema: "planning");
+                schema: "procurement");
 
             migrationBuilder.DropTable(
                 name: "APRItems",
-                schema: "planning");
+                schema: "procurement");
 
             migrationBuilder.DropTable(
                 name: "APRs",
-                schema: "planning");
+                schema: "procurement");
         }
     }
 }
