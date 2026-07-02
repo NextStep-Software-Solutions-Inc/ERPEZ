@@ -1,6 +1,6 @@
 using FluentValidation;
 
-namespace ERPEZ.Application.Planning.APRs.Commands.SubmitAPR;
+namespace ERPEZ.Application.Features.Procurement.APRs.Commands.SubmitAPR;
 
 public class SubmitAPRCommandValidator : AbstractValidator<SubmitAPRCommand>
 {

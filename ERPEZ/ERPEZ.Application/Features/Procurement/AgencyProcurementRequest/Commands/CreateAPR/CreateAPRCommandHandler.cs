@@ -5,7 +5,7 @@ using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using MediatR;
 
-namespace ERPEZ.Application.Planning.APRs.Commands.CreateAPR;
+namespace ERPEZ.Application.Features.Procurement.APRs.Commands.CreateAPR;
 
 public class CreateAPRCommandHandler : IRequestHandler<CreateAPRCommand, Guid>
 {
