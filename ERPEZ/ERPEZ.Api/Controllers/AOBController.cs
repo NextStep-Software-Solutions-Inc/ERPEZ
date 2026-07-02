@@ -10,12 +10,14 @@ using ERPEZ.Application.Features.Procurement.AOBs.Queries.GetAOBMatrix;
 using ERPEZ.Application.Features.Procurement.AOBs.Queries.GetAOBs;
 using ERPEZ.Shared.Common;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ERPEZ.Api.Controllers;
 
 [Route("aobs")]
 [ApiController]
+[Authorize]
 public class AOBController(ISender mediator) : ControllerBase
 {
     [HttpGet]
@@ -42,7 +44,15 @@ public class AOBController(ISender mediator) : ControllerBase
     public async Task<IActionResult> FinalizeRFQ(Guid id)
     {
         var result = await mediator.Send(new FinalizeRFQCommand(id));
-        return result.Succeeded ? Ok(result) : BadRequest(result);
+        if (!result.Succeeded)
+        {
+            if (result.Message != null && result.Message.Contains("not found", StringComparison.OrdinalIgnoreCase))
+            {
+                return NotFound(result);
+            }
+            return BadRequest(result);
+        }
+        return Ok(result);
     }
 
     [HttpPost("bids/submit")]
@@ -60,7 +70,7 @@ public class AOBController(ISender mediator) : ControllerBase
     public async Task<IActionResult> CreateAOB([FromBody] CreateAOBCommand command)
     {
         var result = await mediator.Send(command);
-        return result.Succeeded ? CreatedAtAction(nameof(GetAOBMatrix), new { id = result.Data }, result) : BadRequest(result);
+        return result.Succeeded ? CreatedAtAction(nameof(GetAOBById), new { id = result.Data }, result) : BadRequest(result);
     }
 
     [HttpPut("{id}")]

@@ -11,7 +11,7 @@ public record AOBResponse
     public string AwardCriterion { get; init; } = string.Empty;
     public DateOnly AOBDate { get; init; }
     public DateTime OpeningDate { get; init; }
-    public string Status { get; set; } = string.Empty;
+    public string Status { get; init; } = string.Empty;
     public List<Guid> ProcurementProjectIds { get; init; } = [];
     public List<AOBAwardedItemResponse> AwardedItems { get; init; } = [];
 }
@@ -24,7 +24,7 @@ public record AOBDetailResponse
     public string AwardCriterion { get; init; } = string.Empty;
     public DateOnly AOBDate { get; init; }
     public DateTime OpeningDate { get; init; }
-    public string Status { get; set; } = string.Empty;
+    public string Status { get; init; } = string.Empty;
     public List<AOBProjectDetailResponse> ProcurementProjects { get; init; } = [];
     public List<AOBAwardedItemResponse> AwardedItems { get; init; } = [];
 }

@@ -21,6 +21,12 @@ public class AwardAOBCommandHandler(IUnitOfWork unitOfWork)
             return ApiResponse<Unit>.Fail("Abstract of Bids (AOB) not found.");
         }
 
+        // Status guard before awarding
+        if (string.Equals(aob.Status, "APPROVED", StringComparison.OrdinalIgnoreCase))
+        {
+            return ApiResponse<Unit>.Fail("This Abstract of Bids (AOB) has already been approved and awarded.");
+        }
+
         // 2. Validate suppliers exist
         var supplierIds = request.AwardedItems.Select(x => x.WinningSupplierId).Distinct().ToList();
         var existingSuppliersCount = await unitOfWork.SupplierRepository.Query()

@@ -13,7 +13,7 @@ public class GetAOBMatrixQueryHandler(IUnitOfWork unitOfWork)
     {
         var aob = await unitOfWork.AOBRepository.Query()
             .Include(a => a.AOBProcurementProjectMappings)
-            .FirstOrDefaultAsync(a => a.Id == request.AOBId, cancellationToken);
+            .FirstOrDefaultAsync(a => a.Id == request.AOBId && !a.IsDeleted, cancellationToken);
 
         if (aob == null)
         {
