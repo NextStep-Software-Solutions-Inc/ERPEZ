@@ -2,6 +2,7 @@ using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Commands.C
 using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Commands.DeleteAPR;
 using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Commands.SubmitAPR;
 using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Commands.UpdateAPR;
+using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Commands.ChangeAPRStatus;
 using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Dtos;
 using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Queries.GetAPRById;
 using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Queries.GetAPRs;
@@ -93,6 +94,28 @@ public class APRController(ISender mediator) : ControllerBase
     public async Task<IActionResult> SubmitAPR(Guid id)
     {
         var result = await mediator.Send(new SubmitAPRCommand(id));
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    /// <summary>
+    /// Change APR status (e.g. ForApproval -> Approved/Returned, Returned -> Draft)
+    /// </summary>
+    [HttpPatch("{id}/status")]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ChangeStatus(
+        [FromRoute] Guid id,
+        [FromBody] ChangeAPRStatusRequest request)
+    {
+        var command = new ChangeAPRStatusCommand
+        {
+            Id = id,
+            Status = request.Status,
+            Remarks = request.Remarks
+        };
+
+        var result = await mediator.Send(command);
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 }
