@@ -16,7 +16,7 @@ namespace ERPEZ.Api.Controllers;
 /// </summary>
 [Route("aprs")]
 [ApiController]
-public class APRsController(ISender mediator) : ControllerBase
+public class APRController(ISender mediator) : ControllerBase
 {
     /// <summary>
     /// Create a new Agency Purchase Request (APR) from an approved APP
