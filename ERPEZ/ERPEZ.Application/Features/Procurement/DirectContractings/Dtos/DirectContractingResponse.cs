@@ -10,8 +10,17 @@ public record DirectContractingResponse
     public string Name { get; init; } = string.Empty;
     public Guid BACResolutionId { get; init; }
     public string ResolutionNumber { get; init; } = string.Empty;
+    public string ResolutionType { get; init; } = string.Empty;
+    public DateTime DateResolved { get; init; }
+    public string BACResolutionStatus { get; init; } = string.Empty;
+    public string? WhereasClause { get; init; }
+    
     public Guid ExclusiveSupplierId { get; init; }
     public string ExclusiveSupplierName { get; init; } = string.Empty;
+    public string ExclusiveSupplierEmail { get; init; } = string.Empty;
+    public string ExclusiveSupplierContact { get; init; } = string.Empty;
+    public string ExclusiveSupplierPhilGEPS { get; init; } = string.Empty;
+    
     public DateTime SubmissionDeadline { get; init; }
     public string Status { get; init; } = string.Empty;
     public decimal TotalABC { get; init; }

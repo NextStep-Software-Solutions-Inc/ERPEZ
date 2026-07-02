@@ -5,6 +5,7 @@ using ERPEZ.Application.Features.Procurement.DirectContractings.Commands.SubmitD
 using ERPEZ.Application.Features.Procurement.DirectContractings.Commands.UpdateDirectContracting;
 using ERPEZ.Application.Features.Procurement.DirectContractings.Dtos;
 using ERPEZ.Application.Features.Procurement.DirectContractings.Queries.GetDirectContractingById;
+using ERPEZ.Application.Features.Procurement.DirectContractings.Queries.GetDirectContractingProposal;
 using ERPEZ.Application.Features.Procurement.DirectContractings.Queries.GetDirectContractings;
 using ERPEZ.Shared.Common;
 using MediatR;
@@ -58,6 +59,15 @@ public class DirectContractingController(ISender mediator) : ControllerBase
     {
         var result = await mediator.Send(new DeleteDirectContractingCommand(id));
         return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    [HttpGet("{id}/proposal")]
+    [ProducesResponseType(typeof(ApiResponse<DirectContractingProposalResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetProposal(Guid id)
+    {
+        var result = await mediator.Send(new GetDirectContractingProposalQuery(id));
+        return result.Succeeded ? Ok(result) : NotFound(result);
     }
 
     [HttpPost("{id}/proposal")]
