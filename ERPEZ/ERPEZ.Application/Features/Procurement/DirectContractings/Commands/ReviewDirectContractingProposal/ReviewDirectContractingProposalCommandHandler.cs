@@ -27,11 +27,11 @@ public class ReviewDirectContractingProposalCommandHandler(IUnitOfWork unitOfWor
             return ApiResponse<Unit>.Fail($"Direct Contracting request must be PENDING_FOR_APPROVAL status for review. Current status is {dc.Status}.");
         }
 
-        if (command.Action == "APPROVED")
+        if (command.Action == ReviewAction.Approved)
         {
             dc.Status = nameof(ERPEZ.Domain.Enums.DirectContractingStatusEnum.APPROVED);
         }
-        else if (command.Action == "RETURNED")
+        else if (command.Action == ReviewAction.Returned)
         {
             dc.Status = nameof(ERPEZ.Domain.Enums.DirectContractingStatusEnum.RETURNED);
         }
@@ -39,6 +39,6 @@ public class ReviewDirectContractingProposalCommandHandler(IUnitOfWork unitOfWor
         unitOfWork.DirectContractingRepository.Update(dc);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return ApiResponse<Unit>.Success(Unit.Value, $"Direct Contracting proposal has been {command.Action.ToLower()} successfully.");
+        return ApiResponse<Unit>.Success(Unit.Value, $"Direct Contracting proposal has been {command.Action.ToString().ToLower()} successfully.");
     }
 }

@@ -46,10 +46,14 @@ public class CreateDirectContractingCommandHandler(IUnitOfWork unitOfWork)
         }
 
         // 4. Calculate Total ABC derived from the project (linked via CPR, represented by the ProcurementProject ABC here)
-        decimal totalAbc = bacResolution.ProcurementProject?.ABC ?? 0;
+        if (bacResolution.ProcurementProject == null || bacResolution.ProcurementProject.ABC <= 0)
+        {
+            return ApiResponse<Guid>.Fail("Cannot create Direct Contracting: Procurement Project ABC is missing or zero.");
+        }
+        decimal totalAbc = bacResolution.ProcurementProject.ABC;
 
         // 5. Generate DC Number
-        string dcNumber = $"DC-{DateTime.UtcNow:yyyyMMdd}-{new Random().Next(1000, 9999)}";
+        string dcNumber = $"DC-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..6].ToUpper()}";
 
         // 6. Create Direct Contracting request
         var directContracting = new DirectContracting

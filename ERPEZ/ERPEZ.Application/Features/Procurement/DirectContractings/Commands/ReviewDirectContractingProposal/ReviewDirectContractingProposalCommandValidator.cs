@@ -10,8 +10,6 @@ public class ReviewDirectContractingProposalCommandValidator : AbstractValidator
             .NotEmpty().WithMessage("Direct Contracting ID is required.");
 
         RuleFor(x => x.Action)
-            .NotEmpty().WithMessage("Review Action is required.")
-            .Must(a => a == "APPROVED" || a == "RETURNED")
-            .WithMessage("Review Action must be either 'APPROVED' or 'RETURNED'.");
+            .IsInEnum().WithMessage("Review Action must be either 'Approved' or 'Returned'.");
     }
 }

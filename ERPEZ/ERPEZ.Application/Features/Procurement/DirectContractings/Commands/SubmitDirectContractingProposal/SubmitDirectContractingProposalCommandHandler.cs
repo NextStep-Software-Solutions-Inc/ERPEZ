@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using ERPEZ.Domain.Entities.Procurement;
+using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
@@ -12,7 +13,7 @@ using Microsoft.EntityFrameworkCore;
 namespace ERPEZ.Application.Features.Procurement.DirectContractings.Commands.SubmitDirectContractingProposal;
 
 public class SubmitDirectContractingProposalCommandHandler(IUnitOfWork unitOfWork)
-    : IRequestHandler<SubmitDirectContractingProposalCommand, ApiResponse<Guid>>
+: IRequestHandler<SubmitDirectContractingProposalCommand, ApiResponse<Guid>>
 {
     public async Task<ApiResponse<Guid>> Handle(SubmitDirectContractingProposalCommand command, CancellationToken cancellationToken)
     {
@@ -25,6 +26,12 @@ public class SubmitDirectContractingProposalCommandHandler(IUnitOfWork unitOfWor
         if (directContracting == null)
         {
             return ApiResponse<Guid>.Fail("Direct Contracting request not found.");
+        }
+
+        if (directContracting.Status != nameof(DirectContractingStatusEnum.FOR_REVIEW) &&
+            directContracting.Status != nameof(DirectContractingStatusEnum.SUBMITTED_TO_SUPPLIER))
+        {
+            return ApiResponse<Guid>.Fail($"Cannot submit a proposal for a DC request with status '{directContracting.Status}'.");
         }
 
         // 2. Validate Supplier is the assigned exclusive supplier
