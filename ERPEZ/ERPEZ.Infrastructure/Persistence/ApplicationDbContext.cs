@@ -2541,6 +2541,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<LineItemBudget>()
             .Ignore(e => e.TotalAmount);
 
+        modelBuilder.Entity<ProcurementProject>(e =>
+        {
+            e.HasIndex(p => p.ConsolidatedPRId)
+                .IsUnique();
+        });
+
         base.OnModelCreating(modelBuilder);
     }
 }
