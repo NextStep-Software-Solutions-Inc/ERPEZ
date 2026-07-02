@@ -113,6 +113,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ProcurementProject>? ProcurementProjects { get; set; }
     public DbSet<BACResolution>? BACResolutions { get; set; }
     public DbSet<BiddingActivitySchedule>? BiddingActivitySchedules { get; set; }
+    public DbSet<SupplierBid>? SupplierBids { get; set; }
+    public DbSet<SupplierBidItem>? SupplierBidItems { get; set; }
+    public DbSet<AOB>? AOBs { get; set; }
+    public DbSet<AOBProcurementProjectMapping>? AOBProcurementProjectMappings { get; set; }
+    public DbSet<AOBAwardedItem>? AOBAwardedItems { get; set; }
     public DbSet<UOM>? UOMs { get; set; }
     public DbSet<UNSPSCCode>? UNSPSCCodes { get; set; }
     public DbSet<ProcurementItem>? ProcurementItems { get; set; }
@@ -2220,6 +2225,74 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .WithMany()
                 .HasForeignKey(s => s.ProcurementActivityTypeId)
                 .OnDelete(DeleteBehavior.Restrict);
+        });
+
+        modelBuilder.Entity<SupplierBid>(e =>
+        {
+            e.HasOne(sb => sb.ProcurementProject)
+                .WithMany()
+                .HasForeignKey(sb => sb.ProcurementProjectId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasOne(sb => sb.Supplier)
+                .WithMany()
+                .HasForeignKey(sb => sb.SupplierId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<SupplierBidItem>(e =>
+        {
+            e.HasOne(sbi => sbi.SupplierBid)
+                .WithMany(sb => sb.SupplierBidItems)
+                .HasForeignKey(sbi => sbi.SupplierBidId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasOne(sbi => sbi.APPItem)
+                .WithMany()
+                .HasForeignKey(sbi => sbi.APPItemId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.Property(sbi => sbi.UnitPrice)
+                .HasPrecision(18, 2);
+        });
+
+        modelBuilder.Entity<AOBProcurementProjectMapping>(e =>
+        {
+            e.HasKey(m => m.Id);
+
+            e.HasOne(m => m.AOB)
+                .WithMany(a => a.AOBProcurementProjectMappings)
+                .HasForeignKey(m => m.AOBId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasOne(m => m.ProcurementProject)
+                .WithMany()
+                .HasForeignKey(m => m.ProcurementProjectId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<AOBAwardedItem>(e =>
+        {
+            e.HasOne(ai => ai.AOB)
+                .WithMany(a => a.AOBAwardedItems)
+                .HasForeignKey(ai => ai.AOBId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasOne(ai => ai.APPItem)
+                .WithMany()
+                .HasForeignKey(ai => ai.APPItemId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasOne(ai => ai.WinningSupplier)
+                .WithMany()
+                .HasForeignKey(ai => ai.WinningSupplierId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.Property(ai => ai.AwardedUnitPrice)
+                .HasPrecision(18, 2);
+
+            e.Property(ai => ai.Score)
+                .HasPrecision(18, 4);
         });
 
         // PurchaseRequest
