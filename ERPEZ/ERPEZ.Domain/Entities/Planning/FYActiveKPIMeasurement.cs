@@ -34,4 +34,6 @@ public class FYActiveKPIMeasurement : BaseEntity
     // Navigation Properties
     public virtual FYActiveKPI? FYActiveKPI { get; set; }
     public virtual RatingScaleTemplate? RatingScaleTemplate { get; set; }
+    public virtual List<OPCRItemRating> OPCRItemRatings { get; set; } = [];
+    public virtual List<OPCRItemMOV> OPCRItemMOVs { get; set; } = [];
 }

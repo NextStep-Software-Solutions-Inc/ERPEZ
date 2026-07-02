@@ -1,4 +1,5 @@
 using ERPEZ.Domain.Common;
+using ERPEZ.Domain.Enums;
 using Sieve.Attributes;
 
 namespace ERPEZ.Domain.Entities.Planning;
@@ -10,6 +11,12 @@ public class OPCRItemRating : BaseEntity
 
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid FYActiveKPIMeasurementId  { get; set; }
+
+    /// <summary>
+    /// Dimension key (e.g. Efficiency, Quality, Timeliness) for this score.
+    /// </summary>
+    [Sieve(CanFilter = true, CanSort = true)]
+    public DimensionEnum? Dimension { get; set; }
 
     /// <summary>
     /// Office self-rating score per dimension.
