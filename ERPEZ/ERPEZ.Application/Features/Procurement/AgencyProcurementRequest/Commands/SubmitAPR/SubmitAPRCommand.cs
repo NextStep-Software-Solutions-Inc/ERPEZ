@@ -1,6 +1,6 @@
 using MediatR;
 
-namespace ERPEZ.Application.Features.Procurement.APRs.Commands.SubmitAPR;
+namespace ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Commands.SubmitAPR;
 
 public class SubmitAPRCommand : IRequest<string>
 {
