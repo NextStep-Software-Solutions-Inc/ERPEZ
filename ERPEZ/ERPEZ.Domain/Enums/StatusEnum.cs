@@ -10,5 +10,6 @@ public enum StatusEnum
     Archived,
     Completed,
     Failed,
-    Pending
+    Pending,
+    ForApproval,
 }
