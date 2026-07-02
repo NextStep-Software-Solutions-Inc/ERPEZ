@@ -23,6 +23,8 @@ public class GetLIBByIdQueryHandler(IUnitOfWork unitOfWork)
             OfficeId = entity.OfficeId,
             ParentLIBId = entity.ParentLIBId,
             Name = entity.Name ?? string.Empty,
+            Scope = entity.Scope ?? string.Empty,
+            Level = entity.Level ?? string.Empty,
             LIBNumber = entity.LIBNumber,
             SourceType = entity.SourceType,
             SourceId = entity.SourceId,

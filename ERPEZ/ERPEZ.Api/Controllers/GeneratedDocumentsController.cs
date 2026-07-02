@@ -4,11 +4,12 @@ using ERPEZ.Application.Features.Planning.Document.Commands.GenerateAPP;
 using ERPEZ.Application.Features.Planning.Document.Commands.GenerateOPCRRating;
 using ERPEZ.Application.Features.Planning.Document.Commands.GenerateOPCR;
 using ERPEZ.Application.Features.Planning.Document.Commands.GenerateConsolidatedOPCR;
-using ERPEZ.Application.Interfaces.Services;   // IDocumentStorageService
+using ERPEZ.Application.Features.Planning.Document.Commands.GenerateWFP;
+using ERPEZ.Application.Interfaces.Services;
 using ERPEZ.Domain.Enums;
-using ERPEZ.Domain.Interfaces;                 // IUnitOfWork
+using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
-using ERPEZ.Shared.Exceptions;                 // NotFoundException
+using ERPEZ.Shared.Exceptions;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -28,7 +29,6 @@ public class DocumentController(IMediator mediator,
         [FromQuery]  ExportFormat format = ExportFormat.Pdf,
         CancellationToken cancellationToken = default)
     {
-
         var command = new GeneratePpmpDocumentCommand
         {
             PpmpId      = ppmpId,
@@ -89,6 +89,31 @@ public class DocumentController(IMediator mediator,
         var result = await mediator.Send(command, cancellationToken);
         return Ok(result);
     }
+
+    // ── WFP — Work Plan ───────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Generates the Work Plan (WFP) document.
+    /// Produces the quarterly % target table grouped by Objective → Activity,
+    /// with Weighted % Total column. Supports both External and OPCR-mode WFPs.
+    /// </summary>
+    [HttpPost("wfp/{wfpId:guid}/generate")]
+    public async Task<ActionResult<ApiResponse<Guid>>> GenerateWfp(
+        Guid              wfpId,
+        [FromQuery] ExportFormat format = ExportFormat.Pdf,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new GenerateWfpDocumentCommand
+        {
+            WfpId       = wfpId,
+            Format      = format,
+            GeneratedBy = User.Identity?.Name ?? "system"
+        };
+
+        var result = await mediator.Send(command, cancellationToken);
+        return Ok(result);
+    }
+
     // ── OPCR — Proposed ───────────────────────────────────────────────────────
 
     /// <summary>
@@ -136,8 +161,7 @@ public class DocumentController(IMediator mediator,
         var result = await mediator.Send(command, cancellationToken);
         return Ok(result);
     }
-    
-    // Replace the previous consolidated endpoint in DocumentController
+
     [HttpPost("opcr/consolidations/{consolidationId:guid}/generate")]
     public async Task<ActionResult<ApiResponse<Guid>>> GenerateConsolidatedOpcr(
         Guid              consolidationId,

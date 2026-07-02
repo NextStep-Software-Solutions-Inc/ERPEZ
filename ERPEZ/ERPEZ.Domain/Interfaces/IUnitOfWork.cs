@@ -115,6 +115,14 @@ public interface IUnitOfWork
     IProcurementProjectRepository ProcurementProjectRepository { get; }
     IBACResolutionRepository BACResolutionRepository { get; }
     IBiddingActivityScheduleRepository BiddingActivityScheduleRepository { get; }
+    IMasterDocumentTypeRepository    MasterDocumentTypeRepository    { get; }
+    IDocumentProfileRepository       DocumentProfileRepository       { get; }
+    IDocumentProfileItemRepository   DocumentProfileItemRepository   { get; }
+    IProjectDocumentChecklistRepository ProjectDocumentChecklistRepository { get; }
+    IPurchaseRequestRepository PurchaseRequestRepository { get; }
+    IPRItemRepository PRItemRepository { get; }
+    IConsolidatedPRItemRepository ConsolidatedPRItemRepository { get; }
+    IConsolidatedPRRepository ConsolidatedPRRepository { get; }
     IDirectContractingRepository DirectContractingRepository { get; }
     IDirectContractingProposalRepository DirectContractingProposalRepository { get; }
     IDirectContractingProposalItemRepository DirectContractingProposalItemRepository { get; }
