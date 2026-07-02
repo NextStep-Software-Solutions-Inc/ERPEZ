@@ -2,7 +2,7 @@ using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Dtos;
 using ERPEZ.Domain.Enums;
 using MediatR;
 
-namespace ERPEZ.Application.Features.Procurement.APRs.Commands.CreateAPR;
+namespace ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Commands.CreateAPR;
 
 public class CreateAPRCommand : IRequest<Guid>
 {

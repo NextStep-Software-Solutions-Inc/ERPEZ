@@ -1,11 +1,11 @@
 using ERPEZ.Application.Common.Exceptions;
 using ERPEZ.Application.Interfaces;
-using ERPEZ.Domain.Entities.Planning;
+using ERPEZ.Domain.Entities.Procurement;
 using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using MediatR;
 
-namespace ERPEZ.Application.Features.Procurement.APRs.Commands.CreateAPR;
+namespace ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Commands.CreateAPR;
 
 public class CreateAPRCommandHandler : IRequestHandler<CreateAPRCommand, Guid>
 {

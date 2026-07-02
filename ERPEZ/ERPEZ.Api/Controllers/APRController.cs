@@ -1,85 +1,100 @@
+using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Commands.CreateAPR;
 using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Commands.DeleteAPR;
 using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Commands.SubmitAPR;
 using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Commands.UpdateAPR;
+using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Dtos;
+using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Queries.GetAPRById;
 using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Queries.GetAPRs;
-using ERPEZ.Application.Features.Procurement.APRs.Commands.CreateAPR;
-using ERPEZ.Application.Planning.APRs.Queries.GetAPRById;
+using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
-namespace ERPEZ.API.Controllers.Procurement;
+namespace ERPEZ.Api.Controllers;
 
+/// <summary>
+/// Manages Agency Purchase Request (APR) operations
+/// </summary>
+[Route("apr")]
 [ApiController]
-[Route("api/planning/aprs")]
 public class APRsController(ISender mediator) : ControllerBase
 {
     /// <summary>
-    /// GET api/planning/aprs
-    /// Paginated + filterable list (Image 1's table; filter by Status/FY via Sieve query params
-    /// e.g. ?Filters=Status==Draft,FiscalYear.Year==2026&PageNumber=1&PageSize=25)
-    /// </summary>
-    [HttpGet]
-    public async Task<IActionResult> GetAll([FromQuery] GetAPRsQuery query, CancellationToken cancellationToken)
-    {
-        var result = await mediator.Send(query, cancellationToken);
-        return Ok(result);
-    }
-
-    /// <summary>
-    /// GET api/planning/aprs/{id}
-    /// Full detail view including items and milestones.
-    /// </summary>
-    [HttpGet("{id:guid}")]
-    public async Task<IActionResult> GetById(Guid id, CancellationToken cancellationToken)
-    {
-        var result = await mediator.Send(new GetAPRByIdQuery { Id = id }, cancellationToken);
-        return Ok(result);
-    }
-
-    /// <summary>
-    /// POST api/planning/aprs
-    /// Create APR from an approved APP (wizard Steps 1-3, Images 4-12).
+    /// Create a new Agency Purchase Request (APR) from an approved APP
     /// </summary>
     [HttpPost]
-    public async Task<IActionResult> Create([FromBody] CreateAPRCommand command, CancellationToken cancellationToken)
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> CreateAPR([FromBody] CreateAPRCommand command)
     {
-        var id = await mediator.Send(command, cancellationToken);
-        return CreatedAtAction(nameof(GetById), new { id }, id);
+        var result = await mediator.Send(command);
+
+        if (!result.Succeeded)
+            return BadRequest(result);
+
+        return CreatedAtAction(nameof(GetAPRById), new { id = result.Data }, result);
     }
 
     /// <summary>
-    /// PUT api/planning/aprs/{id}
-    /// Edit a Draft APR's header and line items.
+    /// Get all APRs with filtering, sorting, and pagination
     /// </summary>
-    [HttpPut("{id:guid}")]
-    public async Task<IActionResult> Update(Guid id, [FromBody] UpdateAPRCommand command, CancellationToken cancellationToken)
+    [HttpGet]
+    [ProducesResponseType(typeof(PaginatedApiResponse<APRListItemDto>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAPRs([FromQuery] GetAPRsQuery query)
+    {
+        var result = await mediator.Send(query);
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Get APR by ID with all related data (items, milestones, source APP)
+    /// </summary>
+    [HttpGet("{id}")]
+    [ProducesResponseType(typeof(ApiResponse<APRDetailDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<APRDetailDto>), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetAPRById(Guid id)
+    {
+        var result = await mediator.Send(new GetAPRByIdQuery(id));
+        return result.Succeeded ? Ok(result) : NotFound(result);
+    }
+
+    /// <summary>
+    /// Update a Draft APR's header and line items
+    /// </summary>
+    [HttpPut("{id}")]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateAPR(Guid id, [FromBody] UpdateAPRCommand command)
     {
         if (id != command.Id)
-            return BadRequest("Route Id and payload Id do not match.");
+            return BadRequest(ApiResponse<Guid>.Fail("Route Id and payload Id do not match."));
 
-        await mediator.Send(command, cancellationToken);
-        return NoContent();
+        var result = await mediator.Send(command);
+        return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 
     /// <summary>
-    /// DELETE api/planning/aprs/{id}
-    /// Soft delete a Draft APR (cascades to APRItems and APRItemMilestones).
+    /// Delete a Draft APR by ID
     /// </summary>
-    [HttpDelete("{id:guid}")]
-    public async Task<IActionResult> Delete(Guid id, CancellationToken cancellationToken)
+    [HttpDelete("{id}")]
+    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> DeleteAPR(Guid id)
     {
-        await mediator.Send(new DeleteAPRCommand { Id = id }, cancellationToken);
-        return NoContent();
+        var result = await mediator.Send(new DeleteAPRCommand(id));
+        return result.Succeeded ? NoContent() : NotFound();
     }
 
     /// <summary>
-    /// POST api/planning/aprs/{id}/submit
-    /// Draft -> For Approval, with flat-FY renumbering (Image 1/2).
+    /// Submit a Draft APR for approval (renumbers Draft -> flat FY sequence)
     /// </summary>
-    [HttpPost("{id:guid}/submit")]
-    public async Task<IActionResult> Submit(Guid id, CancellationToken cancellationToken)
+    [HttpPost("{id}/submit")]
+    [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<string>), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> SubmitAPR(Guid id)
     {
-        var aprNumber = await mediator.Send(new SubmitAPRCommand { Id = id }, cancellationToken);
-        return Ok(new { APRNumber = aprNumber });
+        var result = await mediator.Send(new SubmitAPRCommand(id));
+        return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 }
