@@ -125,4 +125,7 @@ public interface IUnitOfWork
     IConsolidatedPRRepository ConsolidatedPRRepository { get; }
     Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default);
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
+    IAPRRepository APRRepository { get; }
+    IAPRItemRepository APRItemRepository { get; }
+    IAPRItemMilestoneRepository APRItemMilestoneRepository { get; }
 }

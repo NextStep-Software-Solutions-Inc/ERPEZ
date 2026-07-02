@@ -1,5 +1,7 @@
+using ERPEZ.Application.Common.Exceptions;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Infrastructure.Persistence.Repositories;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.DependencyInjection;
 using Sieve.Services;
 
@@ -132,6 +134,9 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IPRItemRepository prItemRepository;
     private readonly IConsolidatedPRItemRepository consolidatedPRItemRepository;
     private readonly IConsolidatedPRRepository consolidatedPRRepository;
+    private readonly IAPRRepository aprRepository;
+    private readonly IAPRItemRepository aprItemRepository;
+    private readonly IAPRItemMilestoneRepository aprItemMilestoneRepository;
 
     // Constructor initializes all repositories once
     public UnitOfWork(ApplicationDbContext context, IServiceProvider serviceProvider)
@@ -261,6 +266,9 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         prItemRepository = new PRItemRepository(context, sieveProcessor);
         consolidatedPRItemRepository = new ConsolidatedPRItemRepository(context, sieveProcessor);
         consolidatedPRRepository = new ConsolidatedPRRepository(context, sieveProcessor);
+        aprRepository = new APRRepository(context, sieveProcessor);
+        aprItemRepository = new APRItemRepository(context, sieveProcessor);
+        aprItemMilestoneRepository = new APRItemMilestoneRepository(context, sieveProcessor);
     }
 
     // Public properties return cached instances
@@ -385,6 +393,9 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IPRItemRepository PRItemRepository => prItemRepository;
     public IConsolidatedPRItemRepository ConsolidatedPRItemRepository => consolidatedPRItemRepository;
     public IConsolidatedPRRepository ConsolidatedPRRepository => consolidatedPRRepository;
+    public IAPRRepository APRRepository => aprRepository;
+    public IAPRItemRepository APRItemRepository => aprItemRepository;
+    public IAPRItemMilestoneRepository APRItemMilestoneRepository => aprItemMilestoneRepository;
 
     public async Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default)
     {
@@ -401,9 +412,16 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         }
     }
 
-    public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    public async Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
     {
-        return context.SaveChangesAsync(cancellationToken);
+        try
+        {
+            return await context.SaveChangesAsync(cancellationToken);
+        }
+        catch (DbUpdateException ex)
+        {
+            throw new ConcurrencyConflictException("A save conflict occurred.", ex);
+        }
     }
 
     public void Dispose() => context.Dispose();
