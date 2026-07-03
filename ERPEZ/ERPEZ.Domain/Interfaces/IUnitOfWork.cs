@@ -123,6 +123,11 @@ public interface IUnitOfWork
     IPRItemRepository PRItemRepository { get; }
     IConsolidatedPRItemRepository ConsolidatedPRItemRepository { get; }
     IConsolidatedPRRepository ConsolidatedPRRepository { get; }
+    ISupplierBidRepository SupplierBidRepository { get; }
+    ISupplierBidItemRepository SupplierBidItemRepository { get; }
+    IAOBRepository AOBRepository { get; }
+    IAOBAwardedItemRepository AOBAwardedItemRepository { get; }
+    IAOBProcurementProjectMappingRepository AOBProcurementProjectMappingRepository { get; }
     Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default);
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     IAPRRepository APRRepository { get; }

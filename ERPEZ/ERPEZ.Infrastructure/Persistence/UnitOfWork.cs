@@ -126,6 +126,11 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IProcurementProjectRepository procurementProjectRepository;
     private readonly IBACResolutionRepository bacResolutionRepository;
     private readonly IBiddingActivityScheduleRepository biddingActivityScheduleRepository;
+    private readonly ISupplierBidRepository supplierBidRepository;
+    private readonly ISupplierBidItemRepository supplierBidItemRepository;
+    private readonly IAOBRepository aobRepository;
+    private readonly IAOBAwardedItemRepository aobAwardedItemRepository;
+    private readonly IAOBProcurementProjectMappingRepository aobProcurementProjectMappingRepository;
     private readonly IMasterDocumentTypeRepository masterDocumentTypeRepository;
     private readonly IDocumentProfileRepository documentProfileRepository;
     private readonly IDocumentProfileItemRepository documentProfileItemRepository;
@@ -258,6 +263,11 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         procurementProjectRepository = new ProcurementProjectRepository(context, sieveProcessor);
         bacResolutionRepository = new BACResolutionRepository(context, sieveProcessor);
         biddingActivityScheduleRepository = new BiddingActivityScheduleRepository(context, sieveProcessor);
+        supplierBidRepository = new SupplierBidRepository(context, sieveProcessor);
+        supplierBidItemRepository = new SupplierBidItemRepository(context, sieveProcessor);
+        aobRepository = new AOBRepository(context, sieveProcessor);
+        aobAwardedItemRepository = new AOBAwardedItemRepository(context, sieveProcessor);
+        aobProcurementProjectMappingRepository = new AOBProcurementProjectMappingRepository(context, sieveProcessor);
         masterDocumentTypeRepository = new MasterDocumentTypeRepository (context, sieveProcessor);
         documentProfileRepository = new DocumentProfileRepository (context, sieveProcessor);
         documentProfileItemRepository = new DocumentProfileItemRepository (context, sieveProcessor);
@@ -385,6 +395,11 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IProcurementProjectRepository ProcurementProjectRepository => procurementProjectRepository;
     public IBACResolutionRepository BACResolutionRepository => bacResolutionRepository;
     public IBiddingActivityScheduleRepository BiddingActivityScheduleRepository => biddingActivityScheduleRepository;
+    public ISupplierBidRepository SupplierBidRepository => supplierBidRepository;
+    public ISupplierBidItemRepository SupplierBidItemRepository => supplierBidItemRepository;
+    public IAOBRepository AOBRepository => aobRepository;
+    public IAOBAwardedItemRepository AOBAwardedItemRepository => aobAwardedItemRepository;
+    public IAOBProcurementProjectMappingRepository AOBProcurementProjectMappingRepository => aobProcurementProjectMappingRepository;
     public IMasterDocumentTypeRepository MasterDocumentTypeRepository => masterDocumentTypeRepository;
     public IDocumentProfileRepository DocumentProfileRepository => documentProfileRepository;
     public IDocumentProfileItemRepository DocumentProfileItemRepository => documentProfileItemRepository;
