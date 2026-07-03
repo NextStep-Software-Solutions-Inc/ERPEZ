@@ -42,7 +42,7 @@ public class GetProcurementProjectsQueryHandler(IUnitOfWork unitOfWork, ISievePr
                     .FirstOrDefault(),
                 ModeOfProcurementName = c.ConsolidatedPR.ConsolidatedPRItems
                     .Where(ci => ci.ProcurementMode != null)
-                    .Select(ci => ci.ProcurementMode.Name)
+                    .Select(ci => ci.ProcurementMode!.Name)
                     .FirstOrDefault() ?? string.Empty
             } : null,
             ABC = c.ABC,
