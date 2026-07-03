@@ -31,8 +31,20 @@ public class GetProcurementProjectsQueryHandler(IUnitOfWork unitOfWork, ISievePr
         {
             Id = c.Id,
             Title = c.Title,
-            ConsolidatedPRId = c.ConsolidatedPRId,
-            ModeOfProcurementName = string.Empty,
+            ConsolidatedPR = c.ConsolidatedPR != null ? new ConsolidatedPRSummaryResponse
+            {
+                Id = c.ConsolidatedPR.Id,
+                CPRNumber = c.ConsolidatedPR.CPRNumber,
+                Description = c.ConsolidatedPR.Description ?? string.Empty,
+                ModeOfProcurementId = c.ConsolidatedPR.ConsolidatedPRItems
+                    .Where(ci => ci.ProcurementModeId != null)
+                    .Select(ci => ci.ProcurementModeId)
+                    .FirstOrDefault(),
+                ModeOfProcurementName = c.ConsolidatedPR.ConsolidatedPRItems
+                    .Where(ci => ci.ProcurementMode != null)
+                    .Select(ci => ci.ProcurementMode.Name)
+                    .FirstOrDefault() ?? string.Empty
+            } : null,
             ABC = c.ABC,
             Status = c.Status,
             BACResolutions = c.BACResolutions.Select(r => new BACResolutionResponse
