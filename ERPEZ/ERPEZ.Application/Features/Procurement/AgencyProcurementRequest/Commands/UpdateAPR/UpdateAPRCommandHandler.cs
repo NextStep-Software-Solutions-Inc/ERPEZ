@@ -4,6 +4,7 @@ using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Exceptions;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Commands.UpdateAPR;
@@ -15,7 +16,7 @@ public class UpdateAPRCommandHandler(IUnitOfWork unitOfWork)
     {
         var apr = await unitOfWork.APRRepository.GetAPRWithDetailsAsync(request.Id, cancellationToken);
         if (apr is null)
-            return ApiResponse<Guid>.Fail("APR not found.");
+            throw new NotFoundException("APR not found.");
 
         if (apr.Status != StatusEnum.Draft)
             return ApiResponse<Guid>.Fail(
@@ -23,7 +24,7 @@ public class UpdateAPRCommandHandler(IUnitOfWork unitOfWork)
 
         var app = await unitOfWork.APPRepository.GetAPPWithDetailsAsync(apr.APPId, cancellationToken);
         if (app is null)
-            return ApiResponse<Guid>.Fail("Source APP not found.");
+            throw new NotFoundException("Source APP not found.");
 
         var allAppItemsForApp = app.APPItems;
         var appItemIds = request.Items.Select(i => i.APPItemId).ToList();

@@ -1,3 +1,5 @@
+using ERPEZ.Shared.Exceptions;
+
 namespace ERPEZ.Application.Common.Exceptions;
 
 /// <summary>
@@ -5,9 +7,9 @@ namespace ERPEZ.Application.Common.Exceptions;
 /// (e.g. duplicate APRNumber under near-simultaneous submissions). Infrastructure
 /// translates EF Core's DbUpdateException into this before it crosses into Application.
 /// </summary>
-public class ConcurrencyConflictException : Exception
+public class ConcurrencyConflictException : ConflictException
 {
-    public ConcurrencyConflictException() { }
+    public ConcurrencyConflictException() : base("A save conflict occurred.") { }
     public ConcurrencyConflictException(string message) : base(message) { }
     public ConcurrencyConflictException(string message, Exception inner) : base(message, inner) { }
 }

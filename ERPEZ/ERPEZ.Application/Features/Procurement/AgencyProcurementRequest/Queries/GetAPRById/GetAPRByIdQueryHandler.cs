@@ -2,6 +2,7 @@ using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Dtos;
 using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Queries.GetAPRById;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Exceptions;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Queries.GetAPRById;
@@ -18,7 +19,7 @@ public class GetAPRByIdQueryHandler : IRequestHandler<GetAPRByIdQuery, ApiRespon
     public async Task<ApiResponse<APRDetailDto>> Handle(GetAPRByIdQuery request, CancellationToken cancellationToken)
     {
         var apr = await unitOfWork.APRRepository.GetAPRWithDetailsAsync(request.Id, cancellationToken)
-            ?? throw new InvalidOperationException("APR not found.");
+            ?? throw new NotFoundException("APR not found.");
 
         return ApiResponse<APRDetailDto>.Success(new APRDetailDto
         {

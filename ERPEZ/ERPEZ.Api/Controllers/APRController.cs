@@ -25,6 +25,8 @@ public class APRController(ISender mediator) : ControllerBase
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(typeof(ApiResponse<object>), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> CreateAPR([FromBody] CreateAPRCommand command)
     {
         var result = await mediator.Send(command);
