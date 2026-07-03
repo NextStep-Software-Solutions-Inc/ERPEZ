@@ -128,9 +128,14 @@ public interface IUnitOfWork
     IAOBRepository AOBRepository { get; }
     IAOBAwardedItemRepository AOBAwardedItemRepository { get; }
     IAOBProcurementProjectMappingRepository AOBProcurementProjectMappingRepository { get; }
+    IDirectContractingRepository DirectContractingRepository { get; }
+    IDirectContractingProposalRepository DirectContractingProposalRepository { get; }
+    IDirectContractingProposalItemRepository DirectContractingProposalItemRepository { get; }
+
     Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default);
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     IAPRRepository APRRepository { get; }
     IAPRItemRepository APRItemRepository { get; }
     IAPRItemMilestoneRepository APRItemMilestoneRepository { get; }
 }
+
