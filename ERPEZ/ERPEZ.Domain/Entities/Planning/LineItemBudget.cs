@@ -63,8 +63,7 @@ public class LineItemBudget : ApprovableEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid? ConsolidatedIntoLIBId { get; set; }
 
-    [Sieve(CanFilter = true, CanSort = true)]
-    public decimal? TotalAmount { get; set; }
+    public decimal TotalAmount => LineItemBudgetDetails?.Sum(d => d.Budget) ?? 0;
 
     [Sieve(CanFilter = true, CanSort = true)]
     public int Version { get; set; } = 1;

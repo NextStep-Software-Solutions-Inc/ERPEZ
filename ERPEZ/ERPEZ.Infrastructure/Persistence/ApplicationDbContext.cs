@@ -113,6 +113,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ProcurementProject>? ProcurementProjects { get; set; }
     public DbSet<BACResolution>? BACResolutions { get; set; }
     public DbSet<BiddingActivitySchedule>? BiddingActivitySchedules { get; set; }
+    public DbSet<SupplierBid>? SupplierBids { get; set; }
+    public DbSet<SupplierBidItem>? SupplierBidItems { get; set; }
+    public DbSet<AOB>? AOBs { get; set; }
+    public DbSet<AOBProcurementProjectMapping>? AOBProcurementProjectMappings { get; set; }
+    public DbSet<AOBAwardedItem>? AOBAwardedItems { get; set; }
     public DbSet<UOM>? UOMs { get; set; }
     public DbSet<UNSPSCCode>? UNSPSCCodes { get; set; }
     public DbSet<ProcurementItem>? ProcurementItems { get; set; }
@@ -143,6 +148,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<GeneratedDocument>? GeneratedDocuments { get; set; }
     public DbSet<Agency>? Agencies { get; set; }
     public DbSet<OPCRConsolidation>? OPCRConsolidations { get; set; }
+
+    //Procurement entities
+    public DbSet<PurchaseRequest>? PurchaseRequests { get; set; }
+    public DbSet<PRItem>? PRItems { get; set; }
+    public DbSet<PRItemMonthlyQuantity>? PRItemMonthlyQuantities { get; set; }
+    public DbSet<ConsolidatedPR>? ConsolidatedPRs { get; set; }
+    public DbSet<ConsolidatedPRItem>? ConsolidatedPRItems { get; set; }
     
     // Bidding Document Library
     public DbSet<MasterDocumentType>?        MasterDocumentTypes        { get; set; }
@@ -2219,6 +2231,234 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .OnDelete(DeleteBehavior.Restrict);
         });
 
+        modelBuilder.Entity<SupplierBid>(e =>
+        {
+            e.HasOne(sb => sb.ProcurementProject)
+                .WithMany()
+                .HasForeignKey(sb => sb.ProcurementProjectId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasOne(sb => sb.Supplier)
+                .WithMany()
+                .HasForeignKey(sb => sb.SupplierId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<SupplierBidItem>(e =>
+        {
+            e.HasOne(sbi => sbi.SupplierBid)
+                .WithMany(sb => sb.SupplierBidItems)
+                .HasForeignKey(sbi => sbi.SupplierBidId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasOne(sbi => sbi.APPItem)
+                .WithMany()
+                .HasForeignKey(sbi => sbi.APPItemId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.Property(sbi => sbi.UnitPrice)
+                .HasPrecision(18, 2);
+        });
+
+        modelBuilder.Entity<AOBProcurementProjectMapping>(e =>
+        {
+            e.HasKey(m => m.Id);
+
+            e.HasOne(m => m.AOB)
+                .WithMany(a => a.AOBProcurementProjectMappings)
+                .HasForeignKey(m => m.AOBId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasOne(m => m.ProcurementProject)
+                .WithMany()
+                .HasForeignKey(m => m.ProcurementProjectId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<AOBAwardedItem>(e =>
+        {
+            e.HasOne(ai => ai.AOB)
+                .WithMany(a => a.AOBAwardedItems)
+                .HasForeignKey(ai => ai.AOBId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasOne(ai => ai.APPItem)
+                .WithMany()
+                .HasForeignKey(ai => ai.APPItemId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasOne(ai => ai.WinningSupplier)
+                .WithMany()
+                .HasForeignKey(ai => ai.WinningSupplierId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.Property(ai => ai.AwardedUnitPrice)
+                .HasPrecision(18, 2);
+
+            e.Property(ai => ai.Score)
+                .HasPrecision(18, 4);
+        });
+
+        // PurchaseRequest
+        modelBuilder.Entity<PurchaseRequest>()
+            .HasOne(pr => pr.Office)
+            .WithMany()
+            .HasForeignKey(pr => pr.OfficeId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<PurchaseRequest>()
+            .HasOne(pr => pr.FundCluster)
+            .WithMany()
+            .HasForeignKey(pr => pr.FundClusterId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .IsRequired(false);
+
+        modelBuilder.Entity<PurchaseRequest>()
+            .HasOne(pr => pr.PPMP)
+            .WithMany()
+            .HasForeignKey(pr => pr.PPMPId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .IsRequired(false);
+
+        modelBuilder.Entity<PurchaseRequest>()
+            .HasOne(pr => pr.UACSCodeCombination)
+            .WithMany()
+            .HasForeignKey(pr => pr.UACSCodeCombinationId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .IsRequired(false);
+
+        modelBuilder.Entity<PurchaseRequest>()
+            .HasOne(pr => pr.ProcurementCategory)
+            .WithMany()
+            .HasForeignKey(pr => pr.ProcurementCategoryId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .IsRequired(false);
+
+        modelBuilder.Entity<PurchaseRequest>()
+            .HasMany(pr => pr.PRItems)
+            .WithOne(i => i.PurchaseRequest)
+            .HasForeignKey(i => i.PurchaseRequestId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<PurchaseRequest>()
+            .HasMany(pr => pr.ApprovalEvents)
+            .WithOne()
+            .HasForeignKey("PurchaseRequestId")
+            .OnDelete(DeleteBehavior.Cascade)
+            .IsRequired(false);
+
+        modelBuilder.Entity<PurchaseRequest>()
+            .HasIndex(pr => pr.PRNumber)
+            .IsUnique();
+
+        modelBuilder.Entity<PurchaseRequest>()
+            .HasIndex(pr => pr.OfficeId);
+
+        modelBuilder.Entity<PurchaseRequest>()
+            .Property(pr => pr.TotalAmount)
+            .HasPrecision(18, 2);
+
+        // PRItem
+        modelBuilder.Entity<PRItem>()
+            .HasOne(i => i.PurchaseRequest)
+            .WithMany(pr => pr.PRItems)
+            .HasForeignKey(i => i.PurchaseRequestId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<PRItem>()
+            .HasOne(i => i.PPMPItem)
+            .WithMany()
+            .HasForeignKey(i => i.PPMPItemId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<PRItem>()
+            .HasMany(i => i.MonthlyQuantities)
+            .WithOne(m => m.PRItem)
+            .HasForeignKey(m => m.PRItemId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<PRItem>()
+            .Property(i => i.UnitCost)
+            .HasPrecision(18, 2);
+
+        modelBuilder.Entity<PRItem>()
+            .Property(i => i.Amount)
+            .HasPrecision(18, 2);
+
+        modelBuilder.Entity<PRItem>()
+            .HasIndex(i => i.PurchaseRequestId);
+
+        modelBuilder.Entity<PRItem>()
+            .HasIndex(i => i.PPMPItemId);
+
+        // PRItemMonthlyQuantity
+        modelBuilder.Entity<PRItemMonthlyQuantity>()
+            .HasOne(m => m.PRItem)
+            .WithMany(i => i.MonthlyQuantities)
+            .HasForeignKey(m => m.PRItemId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<PRItemMonthlyQuantity>()
+            .HasIndex(m => new { m.PRItemId, m.Month })
+            .IsUnique();
+
+        // ConsolidatedPR
+        modelBuilder.Entity<ConsolidatedPR>()
+            .HasMany(cpr => cpr.ConsolidatedPRItems)
+            .WithOne(ci => ci.ConsolidatedPR)
+            .HasForeignKey(ci => ci.ConsolidatedPRId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ConsolidatedPR>()
+            .HasMany(cpr => cpr.ApprovalEvents)
+            .WithOne()
+            .HasForeignKey("ConsolidatedPRId")
+            .OnDelete(DeleteBehavior.Cascade)
+            .IsRequired(false);
+
+        modelBuilder.Entity<ConsolidatedPR>()
+            .HasIndex(cpr => cpr.CPRNumber)
+            .IsUnique();
+
+        modelBuilder.Entity<ConsolidatedPR>()
+            .Property(cpr => cpr.TotalAmount)
+            .HasPrecision(18, 2);
+
+        // ConsolidatedPRItem
+        modelBuilder.Entity<ConsolidatedPRItem>()
+            .HasOne(ci => ci.ConsolidatedPR)
+            .WithMany(cpr => cpr.ConsolidatedPRItems)
+            .HasForeignKey(ci => ci.ConsolidatedPRId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<ConsolidatedPRItem>()
+            .HasOne(ci => ci.PurchaseRequest)
+            .WithMany()
+            .HasForeignKey(ci => ci.PurchaseRequestId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<ConsolidatedPRItem>()
+            .HasOne(ci => ci.PRItem)
+            .WithMany()
+            .HasForeignKey(ci => ci.PRItemId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<ConsolidatedPRItem>()
+            .HasOne(ci => ci.ProcurementMode)
+            .WithMany()
+            .HasForeignKey(ci => ci.ProcurementModeId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .IsRequired(false);
+
+        modelBuilder.Entity<ConsolidatedPRItem>()
+            .HasIndex(ci => ci.ConsolidatedPRId);
+
+        modelBuilder.Entity<ConsolidatedPRItem>()
+            .HasIndex(ci => ci.PurchaseRequestId);
+
+        modelBuilder.Entity<ConsolidatedPRItem>()
+            .HasIndex(ci => new { ci.ConsolidatedPRId, ci.PRItemId })
+            .IsUnique();
         // ── Bidding Document Library ──────────────────────────────────────────────
 
         modelBuilder.Entity<MasterDocumentType>(e =>
@@ -2300,6 +2540,15 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .OnDelete(DeleteBehavior.Restrict);
 
             e.HasIndex(x => new { x.ProcurementProjectId, x.EnvelopeType });
+        });
+
+        modelBuilder.Entity<LineItemBudget>()
+            .Ignore(e => e.TotalAmount);
+
+        modelBuilder.Entity<ProcurementProject>(e =>
+        {
+            e.HasIndex(p => p.ConsolidatedPRId)
+                .IsUnique();
         });
 
         base.OnModelCreating(modelBuilder);
