@@ -2116,9 +2116,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<OPCRItemRating>()
             .HasOne(oir => oir.FYActiveKPIMeasurement)
-            .WithMany()
+            .WithMany(m => m.OPCRItemRatings)
             .HasForeignKey(oir => oir.FYActiveKPIMeasurementId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<OPCRItemRating>()
+            .Property(oir => oir.Dimension)
+            .HasConversion<string>()
+            .HasMaxLength(100);
 
         modelBuilder.Entity<OPCRItemRating>()
             .Property(oir => oir.SelfRating)
@@ -2136,7 +2141,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasIndex(oir => oir.OPCRItemId);
 
         modelBuilder.Entity<OPCRItemRating>()
-            .HasIndex(oir => new { oir.OPCRItemId, oir.FYActiveKPIMeasurementId })
+            .HasIndex(oir => new { oir.OPCRItemId, oir.FYActiveKPIMeasurementId, oir.Dimension })
             .IsUnique();
 
         // OPCRItemMOV
@@ -2145,6 +2150,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .WithMany(i => i.OPCRItemMOVs)
             .HasForeignKey(oim => oim.OPCRItemId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<OPCRItemMOV>()
+            .HasOne(oim => oim.FYActiveKPIMeasurement)
+            .WithMany(m => m.OPCRItemMOVs)
+            .HasForeignKey(oim => oim.FYActiveKPIMeasurementId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<OPCRItemMOV>()
             .Property(oim => oim.RequirementName)
@@ -2159,7 +2170,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasIndex(oim => oim.OPCRItemId);
 
         modelBuilder.Entity<OPCRItemMOV>()
-            .HasIndex(oim => new { oim.OPCRItemId, oim.RequirementName })
+            .HasIndex(oim => new { oim.OPCRItemId, oim.FYActiveKPIMeasurementId, oim.RequirementName })
             .IsUnique();
 
         // MarketScopingParameter -> MarketScopingParameterSettings

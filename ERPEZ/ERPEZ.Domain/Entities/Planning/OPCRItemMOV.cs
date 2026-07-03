@@ -9,6 +9,9 @@ public class OPCRItemMOV : BaseEntity
     public Guid OPCRItemId { get; set; }
 
     [Sieve(CanFilter = true, CanSort = true)]
+    public Guid FYActiveKPIMeasurementId { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
     public string RequirementName { get; set; } = string.Empty;
 
     [Sieve(CanFilter = true, CanSort = true)]
@@ -26,4 +29,5 @@ public class OPCRItemMOV : BaseEntity
 
     // Navigation properties
     public virtual OPCRItem OPCRItem { get; set; } = null!;
+    public virtual FYActiveKPIMeasurement FYActiveKPIMeasurement { get; set; } = null!;
 }

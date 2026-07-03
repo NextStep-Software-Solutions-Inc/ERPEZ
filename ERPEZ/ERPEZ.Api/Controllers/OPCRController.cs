@@ -166,8 +166,7 @@ namespace ERPEZ.Api.Controllers
 
         /// <summary>
         /// Office self-evaluation per KPI: sets actual accomplishment, justification,
-        /// and self-ratings per dimension in a single transaction.
-        /// MOV uploads are handled separately via POST /opcrs/items/{itemId}/movs.
+        /// self-ratings, and MOV attachments in a single transaction.
         /// </summary>
         [HttpPatch("items/{itemId}/self-evaluate")]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
@@ -260,6 +259,7 @@ namespace ERPEZ.Api.Controllers
             var command = new CreateOPCRItemMOVCommand
             {
                 OPCRItemId      = itemId,                  // ← from route only
+                FYActiveKPIMeasurementId = request.FYActiveKPIMeasurementId,
                 RequirementName = request.RequirementName,
                 FileId          = request.FileId
             };
