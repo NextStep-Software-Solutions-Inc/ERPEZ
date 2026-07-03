@@ -1,3 +1,4 @@
+using ERPEZ.Application.Features.Procurement.DirectContractings.Commands.ChangeDirectContractingStatus;
 using ERPEZ.Application.Features.Procurement.DirectContractings.Commands.CreateDirectContracting;
 using ERPEZ.Application.Features.Procurement.DirectContractings.Commands.DeleteDirectContracting;
 using ERPEZ.Application.Features.Procurement.DirectContractings.Commands.ReviewDirectContractingProposal;
@@ -16,11 +17,10 @@ namespace ERPEZ.Api.Controllers;
 
 [Route("direct-contracting")]
 [ApiController]
-[Authorize]
 public class DirectContractingController(ISender mediator) : ControllerBase
 {
     [HttpPost]
-    [Authorize(Roles = "BAC_Officer")]
+    //[Authorize(Roles = "BAC_Officer")]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateDirectContracting([FromBody] CreateDirectContractingCommand command)
@@ -47,7 +47,7 @@ public class DirectContractingController(ISender mediator) : ControllerBase
     }
 
     [HttpPut("{id}")]
-    [Authorize(Roles = "BAC_Officer")]
+    //[Authorize(Roles = "BAC_Officer")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> UpdateDirectContracting(Guid id, [FromBody] UpdateDirectContractingRequest request)
@@ -56,8 +56,18 @@ public class DirectContractingController(ISender mediator) : ControllerBase
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 
+    [HttpPut("{id}/status")]
+    //[Authorize(Roles = "BAC_Officer")]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> ChangeStatus(Guid id, [FromBody] ChangeDirectContractingStatusRequest request)
+    {
+        var result = await mediator.Send(new ChangeDirectContractingStatusCommand { Id = id, Status = request.Status });
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
     [HttpDelete("{id}")]
-    [Authorize(Roles = "BAC_Officer")]
+    //[Authorize(Roles = "BAC_Officer")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> DeleteDirectContracting(Guid id)
@@ -76,7 +86,7 @@ public class DirectContractingController(ISender mediator) : ControllerBase
     }
 
     [HttpPost("{id}/proposal")]
-    [Authorize(Roles = "Supplier")]
+    //[Authorize(Roles = "Supplier")]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> SubmitProposal(Guid id, [FromBody] SubmitDirectContractingProposalRequest request)
@@ -86,17 +96,17 @@ public class DirectContractingController(ISender mediator) : ControllerBase
     }
 
     [HttpPost("{id}/review")]
-    [Authorize(Roles = "BAC_Officer")]
+    //[Authorize(Roles = "BAC_Officer")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> ReviewProposal(Guid id, [FromBody] ReviewDirectContractingProposalCommand command)
+    public async Task<IActionResult> ReviewProposal(Guid id, [FromBody] ReviewDirectContractingProposalRequest request)
     {
-        if (id != command.DirectContractingId)
+        var result = await mediator.Send(new ReviewDirectContractingProposalCommand
         {
-            return BadRequest(ApiResponse<Unit>.Fail("Mismatched Direct Contracting ID in route and body."));
-        }
-
-        var result = await mediator.Send(command);
+            DirectContractingId = id,
+            Action = request.Action,
+            Remarks = request.Remarks
+        });
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 }
