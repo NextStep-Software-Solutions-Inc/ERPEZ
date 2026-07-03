@@ -4,7 +4,6 @@ using ERPEZ.Application.Features.Procurement.SupplierPortal.Queries.GetBidNotice
 using ERPEZ.Application.Features.Procurement.SupplierPortal.Queries.GetPublicProjectDetail;
 using ERPEZ.Application.Features.Procurement.SupplierPortal.Queries.GetPublicProjectStats;
 using ERPEZ.Application.Features.Procurement.SupplierPortal.Queries.GetPublicProjects;
-using ERPEZ.Application.Features.Procurement.SupplierPortal.Queries.GetPublicApplicationStatus;
 using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Authorization;
@@ -101,22 +100,4 @@ public class SupplierPortalController(ISender mediator) : ControllerBase
             ? CreatedAtAction(nameof(GetProjectById), new { id }, result)
             : BadRequest(result);
     }
-
-    [HttpGet("/api/public/applications/{id:guid}")]
-    [ProducesResponseType(typeof(ApiResponse<PublicApplicationStatusDto>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> GetApplicationStatus(Guid id)
-    {
-        var result = await mediator.Send(new GetPublicApplicationStatusQuery(id));
-        return result.Succeeded ? Ok(result) : NotFound(result);
-    }
 }
-
-public record SubmitPublicApplicationRequest(
-    string CompanyName,
-    string ContactPerson,
-    string EmailAddress,
-    string ContactNumber,
-    string TinNumber,
-    string BusinessAddress,
-    List<ApplicationDocumentUploadItem> Documents);
