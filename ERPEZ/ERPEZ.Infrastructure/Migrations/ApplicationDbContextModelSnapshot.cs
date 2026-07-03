@@ -8217,7 +8217,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Property<Guid>("ProcurementProjectId")
                         .HasColumnType("uuid");
-
+                        
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("text");
@@ -10967,7 +10967,7 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("WFPPAPDepartments");
                 });
 
-            modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.DocumentProfile", b =>
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.APR", b =>
                 {
                     b.Navigation("APRItems");
                 });
