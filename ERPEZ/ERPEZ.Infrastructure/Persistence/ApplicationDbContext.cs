@@ -2306,9 +2306,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<PurchaseRequest>()
-            .HasOne(pr => pr.FundCluster)
+            .HasOne(pr => pr.FundSource)
             .WithMany()
-            .HasForeignKey(pr => pr.FundClusterId)
+            .HasForeignKey(pr => pr.FundSourceId)
             .OnDelete(DeleteBehavior.Restrict)
             .IsRequired(false);
 

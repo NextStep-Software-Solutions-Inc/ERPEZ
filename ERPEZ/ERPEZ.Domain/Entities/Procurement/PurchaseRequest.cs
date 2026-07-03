@@ -28,7 +28,7 @@ public class PurchaseRequest : ApprovableEntity
     public Guid OfficeId { get; set; }
 
     [Sieve(CanFilter = true, CanSort = true)]
-    public Guid? FundClusterId { get; set; }
+    public Guid? FundSourceId { get; set; }
 
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid? UACSCodeCombinationId { get; set; }
@@ -43,7 +43,7 @@ public class PurchaseRequest : ApprovableEntity
     public decimal TotalAmount { get; set; }
 
     public virtual Office Office { get; set; } = null!;
-    public virtual FundSource? FundCluster { get; set; }
+    public virtual FundSource? FundSource { get; set; }
     public virtual PPMP? PPMP { get; set; }
     public virtual UACSCodeCombination? UACSCodeCombination { get; set; }
     public virtual ProcurementCategory? ProcurementCategory { get; set; }

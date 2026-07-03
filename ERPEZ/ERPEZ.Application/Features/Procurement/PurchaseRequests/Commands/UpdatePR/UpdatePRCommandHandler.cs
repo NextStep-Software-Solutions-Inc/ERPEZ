@@ -24,7 +24,7 @@ public class UpdatePRCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<Up
 
             if (dto.Description is not null)           pr.Description           = dto.Description;
             if (dto.Purpose is not null)               pr.Purpose               = dto.Purpose;
-            if (dto.FundClusterId is not null)         pr.FundClusterId         = dto.FundClusterId;
+            if (dto.FundSourceId is not null)         pr.FundSourceId         = dto.FundSourceId;
             if (dto.UACSCodeCombinationId is not null) pr.UACSCodeCombinationId = dto.UACSCodeCombinationId;
             if (dto.ProcurementCategoryId is not null) pr.ProcurementCategoryId = dto.ProcurementCategoryId;
             if (dto.RequestedDate is not null)         pr.RequestedDate         = dto.RequestedDate.Value;
