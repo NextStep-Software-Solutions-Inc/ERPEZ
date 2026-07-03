@@ -20,7 +20,7 @@ public class DeleteDirectContractingCommandHandler(IUnitOfWork unitOfWork)
         }
 
         // Validate that requests can only be deleted when in DRAFT status
-        if (dc.Status != nameof(DirectContractingStatusEnum.DRAFT))
+        if (dc.Status != DirectContractingStatusEnum.DRAFT)
         {
             return ApiResponse<Unit>.Fail($"Direct Contracting requests can only be deleted when in DRAFT status. Current status is {dc.Status}.");
         }

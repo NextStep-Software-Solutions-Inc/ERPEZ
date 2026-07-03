@@ -9,15 +9,18 @@ using ERPEZ.Application.Features.Procurement.DirectContractings.Queries.GetDirec
 using ERPEZ.Application.Features.Procurement.DirectContractings.Queries.GetDirectContractings;
 using ERPEZ.Shared.Common;
 using MediatR;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 
 namespace ERPEZ.Api.Controllers;
 
 [Route("direct-contracting")]
 [ApiController]
+[Authorize]
 public class DirectContractingController(ISender mediator) : ControllerBase
 {
     [HttpPost]
+    [Authorize(Roles = "BAC_Officer")]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateDirectContracting([FromBody] CreateDirectContractingCommand command)
@@ -44,6 +47,7 @@ public class DirectContractingController(ISender mediator) : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [Authorize(Roles = "BAC_Officer")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> UpdateDirectContracting(Guid id, [FromBody] UpdateDirectContractingRequest request)
@@ -53,6 +57,7 @@ public class DirectContractingController(ISender mediator) : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [Authorize(Roles = "BAC_Officer")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> DeleteDirectContracting(Guid id)
@@ -71,6 +76,7 @@ public class DirectContractingController(ISender mediator) : ControllerBase
     }
 
     [HttpPost("{id}/proposal")]
+    [Authorize(Roles = "Supplier")]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> SubmitProposal(Guid id, [FromBody] SubmitDirectContractingProposalRequest request)
@@ -80,6 +86,7 @@ public class DirectContractingController(ISender mediator) : ControllerBase
     }
 
     [HttpPost("{id}/review")]
+    [Authorize(Roles = "BAC_Officer")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ReviewProposal(Guid id, [FromBody] ReviewDirectContractingProposalCommand command)

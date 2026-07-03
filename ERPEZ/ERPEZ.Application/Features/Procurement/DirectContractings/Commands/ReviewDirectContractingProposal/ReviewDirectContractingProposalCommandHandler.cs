@@ -7,9 +7,11 @@ using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
+using ERPEZ.Application.Interfaces;
+
 namespace ERPEZ.Application.Features.Procurement.DirectContractings.Commands.ReviewDirectContractingProposal;
 
-public class ReviewDirectContractingProposalCommandHandler(IUnitOfWork unitOfWork)
+public class ReviewDirectContractingProposalCommandHandler(IUnitOfWork unitOfWork, ICurrentUserService currentUserService)
     : IRequestHandler<ReviewDirectContractingProposalCommand, ApiResponse<Unit>>
 {
     public async Task<ApiResponse<Unit>> Handle(ReviewDirectContractingProposalCommand command, CancellationToken cancellationToken)
@@ -22,18 +24,27 @@ public class ReviewDirectContractingProposalCommandHandler(IUnitOfWork unitOfWor
             return ApiResponse<Unit>.Fail("Direct Contracting request not found.");
         }
 
-        if (dc.Status != nameof(ERPEZ.Domain.Enums.DirectContractingStatusEnum.PENDING_FOR_APPROVAL))
+        if (dc.Status != ERPEZ.Domain.Enums.DirectContractingStatusEnum.PENDING_FOR_APPROVAL)
         {
             return ApiResponse<Unit>.Fail($"Direct Contracting request must be PENDING_FOR_APPROVAL status for review. Current status is {dc.Status}.");
         }
 
+        Guid? reviewedByUserId = null;
+        if (Guid.TryParse(currentUserService.UserId, out var actorId))
+        {
+            reviewedByUserId = actorId;
+        }
+
+        dc.ReviewedByUserId = reviewedByUserId;
+        dc.ReviewRemarks = command.Remarks;
+
         if (command.Action == ReviewAction.Approved)
         {
-            dc.Status = nameof(ERPEZ.Domain.Enums.DirectContractingStatusEnum.APPROVED);
+            dc.Status = ERPEZ.Domain.Enums.DirectContractingStatusEnum.APPROVED;
         }
         else if (command.Action == ReviewAction.Returned)
         {
-            dc.Status = nameof(ERPEZ.Domain.Enums.DirectContractingStatusEnum.RETURNED);
+            dc.Status = ERPEZ.Domain.Enums.DirectContractingStatusEnum.RETURNED;
         }
 
         unitOfWork.DirectContractingRepository.Update(dc);

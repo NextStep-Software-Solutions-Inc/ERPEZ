@@ -52,8 +52,11 @@ public class GetDirectContractingsQueryHandler(IUnitOfWork unitOfWork, ISievePro
             ExclusiveSupplierContact = c.ExclusiveSupplier != null ? c.ExclusiveSupplier.ContactNumber : string.Empty,
             ExclusiveSupplierPhilGEPS = c.ExclusiveSupplier != null ? (c.ExclusiveSupplier.PhilGEPSNumber ?? string.Empty) : string.Empty,
             SubmissionDeadline = c.SubmissionDeadline,
-            Status = c.Status,
+            Status = c.Status.ToString(),
             TotalABC = c.TotalABC,
+            ReviewRemarks = c.ReviewRemarks,
+            CreatedByUserId = c.CreatedByUserId,
+            ReviewedByUserId = c.ReviewedByUserId,
             CreatedAt = c.CreatedAt,
             CreatedBy = c.CreatedBy,
             Proposal = c.Proposal != null ? new DirectContractingProposalResponse

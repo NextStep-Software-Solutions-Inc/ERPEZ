@@ -28,8 +28,8 @@ public class SubmitDirectContractingProposalCommandHandler(IUnitOfWork unitOfWor
             return ApiResponse<Guid>.Fail("Direct Contracting request not found.");
         }
 
-        if (directContracting.Status != nameof(DirectContractingStatusEnum.FOR_REVIEW) &&
-            directContracting.Status != nameof(DirectContractingStatusEnum.SUBMITTED_TO_SUPPLIER))
+        if (directContracting.Status != DirectContractingStatusEnum.FOR_REVIEW &&
+            directContracting.Status != DirectContractingStatusEnum.SUBMITTED_TO_SUPPLIER)
         {
             return ApiResponse<Guid>.Fail($"Cannot submit a proposal for a DC request with status '{directContracting.Status}'.");
         }
@@ -77,8 +77,7 @@ public class SubmitDirectContractingProposalCommandHandler(IUnitOfWork unitOfWor
             int quantity = allocations.Sum(a => a.Quantity);
             if (quantity <= 0)
             {
-                // Default to 1 if no allocations mapped yet
-                quantity = 1;
+                return ApiResponse<Guid>.Fail($"CPR item '{cprItem.Name}' has no quantity allocations. Please ensure PPMP allocations are complete before submitting.");
             }
 
             decimal totalBid = itemRequest.UnitBid * quantity;
@@ -114,7 +113,7 @@ public class SubmitDirectContractingProposalCommandHandler(IUnitOfWork unitOfWor
         }
 
         // 6. Update Direct Contracting header status
-        directContracting.Status = nameof(ERPEZ.Domain.Enums.DirectContractingStatusEnum.PENDING_FOR_APPROVAL);
+        directContracting.Status = ERPEZ.Domain.Enums.DirectContractingStatusEnum.PENDING_FOR_APPROVAL;
 
         await unitOfWork.DirectContractingProposalRepository.AddAsync(proposal, cancellationToken);
         unitOfWork.DirectContractingRepository.Update(directContracting);

@@ -2247,7 +2247,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .HasPrecision(18, 2);
 
             e.Property(dc => dc.Status)
+                .HasConversion<string>()
                 .HasMaxLength(50);
+
+            e.Property(dc => dc.ReviewRemarks)
+                .HasMaxLength(1000);
         });
 
         modelBuilder.Entity<DirectContractingProposal>(e =>

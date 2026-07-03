@@ -11,5 +11,15 @@ public class ReviewDirectContractingProposalCommandValidator : AbstractValidator
 
         RuleFor(x => x.Action)
             .IsInEnum().WithMessage("Review Action must be either 'Approved' or 'Returned'.");
+
+        RuleFor(x => x.Remarks)
+            .NotEmpty()
+            .WithMessage("Remarks are required when returning a proposal.")
+            .When(x => x.Action == ReviewAction.Returned);
+
+        RuleFor(x => x.Remarks)
+            .MaximumLength(1000)
+            .WithMessage("Remarks cannot exceed 1000 characters.")
+            .When(x => !string.IsNullOrEmpty(x.Remarks));
     }
 }

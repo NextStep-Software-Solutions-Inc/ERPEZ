@@ -47,8 +47,11 @@ public class GetDirectContractingByIdQueryHandler(IUnitOfWork unitOfWork)
             ExclusiveSupplierContact = dc.ExclusiveSupplier != null ? dc.ExclusiveSupplier.ContactNumber : string.Empty,
             ExclusiveSupplierPhilGEPS = dc.ExclusiveSupplier != null ? (dc.ExclusiveSupplier.PhilGEPSNumber ?? string.Empty) : string.Empty,
             SubmissionDeadline = dc.SubmissionDeadline,
-            Status = dc.Status,
+            Status = dc.Status.ToString(),
             TotalABC = dc.TotalABC,
+            ReviewRemarks = dc.ReviewRemarks,
+            CreatedByUserId = dc.CreatedByUserId,
+            ReviewedByUserId = dc.ReviewedByUserId,
             CreatedAt = dc.CreatedAt,
             CreatedBy = dc.CreatedBy,
             Proposal = dc.Proposal != null ? new DirectContractingProposalResponse

@@ -21,7 +21,7 @@ public class UpdateDirectContractingCommandHandler(IUnitOfWork unitOfWork)
         }
 
         // Only allow edits when in Draft status
-        if (dc.Status != nameof(DirectContractingStatusEnum.DRAFT))
+        if (dc.Status != DirectContractingStatusEnum.DRAFT)
         {
             return ApiResponse<Unit>.Fail($"Direct Contracting requests can only be updated when in DRAFT status. Current status is {dc.Status}.");
         }

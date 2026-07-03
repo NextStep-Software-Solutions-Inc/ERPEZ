@@ -23,10 +23,19 @@ public class DirectContracting : BaseEntity
     public DateTime SubmissionDeadline { get; set; }
 
     [Sieve(CanFilter = true, CanSort = true)]
-    public string Status { get; set; } = nameof(DirectContractingStatusEnum.DRAFT);
+    public DirectContractingStatusEnum Status { get; set; } = DirectContractingStatusEnum.DRAFT;
 
     [Sieve(CanFilter = true, CanSort = true)]
     public decimal TotalABC { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public string? ReviewRemarks { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public Guid? CreatedByUserId { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public Guid? ReviewedByUserId { get; set; }
 
     // Navigation properties
     public virtual BACResolution BACResolution { get; set; } = null!;

@@ -24,6 +24,9 @@ public record DirectContractingResponse
     public DateTime SubmissionDeadline { get; init; }
     public string Status { get; init; } = string.Empty;
     public decimal TotalABC { get; init; }
+    public string? ReviewRemarks { get; init; }
+    public Guid? CreatedByUserId { get; init; }
+    public Guid? ReviewedByUserId { get; init; }
     public DateTime CreatedAt { get; init; }
     public string CreatedBy { get; init; } = string.Empty;
     public DirectContractingProposalResponse? Proposal { get; init; }

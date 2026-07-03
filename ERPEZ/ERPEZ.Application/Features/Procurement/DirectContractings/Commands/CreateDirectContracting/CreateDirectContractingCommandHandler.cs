@@ -8,9 +8,11 @@ using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 
+using ERPEZ.Application.Interfaces;
+
 namespace ERPEZ.Application.Features.Procurement.DirectContractings.Commands.CreateDirectContracting;
 
-public class CreateDirectContractingCommandHandler(IUnitOfWork unitOfWork)
+public class CreateDirectContractingCommandHandler(IUnitOfWork unitOfWork, ICurrentUserService currentUserService)
     : IRequestHandler<CreateDirectContractingCommand, ApiResponse<Guid>>
 {
     public async Task<ApiResponse<Guid>> Handle(CreateDirectContractingCommand request, CancellationToken cancellationToken)
@@ -55,6 +57,12 @@ public class CreateDirectContractingCommandHandler(IUnitOfWork unitOfWork)
         // 5. Generate DC Number
         string dcNumber = $"DC-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..6].ToUpper()}";
 
+        Guid? createdByUserId = null;
+        if (Guid.TryParse(currentUserService.UserId, out var actorId))
+        {
+            createdByUserId = actorId;
+        }
+
         // 6. Create Direct Contracting request
         var directContracting = new DirectContracting
         {
@@ -63,8 +71,9 @@ public class CreateDirectContractingCommandHandler(IUnitOfWork unitOfWork)
             BACResolutionId = request.BACResolutionId,
             ExclusiveSupplierId = request.ExclusiveSupplierId,
             SubmissionDeadline = request.SubmissionDeadline,
-            Status = nameof(ERPEZ.Domain.Enums.DirectContractingStatusEnum.DRAFT),
-            TotalABC = totalAbc
+            Status = ERPEZ.Domain.Enums.DirectContractingStatusEnum.DRAFT,
+            TotalABC = totalAbc,
+            CreatedByUserId = createdByUserId
         };
 
         await unitOfWork.DirectContractingRepository.AddAsync(directContracting, cancellationToken);
