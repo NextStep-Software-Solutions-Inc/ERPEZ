@@ -20,8 +20,28 @@ public class UpdateOPCRItemMOVCommandHandler(
 
         var dto = request.Request;
 
+        if (dto.FYActiveKPIMeasurementId.HasValue)
+        {
+            _ = await unitOfWork.FYActiveKPIMeasurementRepository
+                .GetByIdAsync(dto.FYActiveKPIMeasurementId.Value, cancellationToken)
+                ?? throw new NotFoundException("FY Active KPI Measurement not found.");
+
+            entity.FYActiveKPIMeasurementId = dto.FYActiveKPIMeasurementId.Value;
+        }
+
         if (dto.RequirementName != null)
             entity.RequirementName = dto.RequirementName;
+
+        var duplicate = await unitOfWork.OPCRItemMOVRepository.FindAsync(
+            m => m.Id != entity.Id
+              && m.OPCRItemId == entity.OPCRItemId
+              && m.FYActiveKPIMeasurementId == entity.FYActiveKPIMeasurementId
+              && m.RequirementName == entity.RequirementName,
+            cancellationToken);
+
+        if (duplicate != null)
+            throw new ConflictException(
+                $"A MOV with requirement name '{entity.RequirementName}' already exists for this measurement.");
 
         // If a new file is provided — promote it and replace the existing attachment
         if (dto.FileId.HasValue)

@@ -143,6 +143,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ItemRequest>? ItemRequests { get; set; }
     public DbSet<APPItem>? APPItems { get; set; }
     public DbSet<APPProcurementSchedule>? APPProcurementSchedules { get; set; }
+    public DbSet<APR>? APRs { get; set; }
+    public DbSet<APRItem>? APRItems { get; set; }
+    public DbSet<APRItemMilestone>? APRItemMilestones { get; set; }
     public DbSet<OPCRItemRating>? OPCRItemRatings { get; set; }
     public DbSet<OPCRItemMOV>? OPCRItemMOVs { get; set; }
     public DbSet<GeneratedDocument>? GeneratedDocuments { get; set; }
@@ -2120,9 +2123,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<OPCRItemRating>()
             .HasOne(oir => oir.FYActiveKPIMeasurement)
-            .WithMany()
+            .WithMany(m => m.OPCRItemRatings)
             .HasForeignKey(oir => oir.FYActiveKPIMeasurementId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<OPCRItemRating>()
+            .Property(oir => oir.Dimension)
+            .HasConversion<string>()
+            .HasMaxLength(100);
 
         modelBuilder.Entity<OPCRItemRating>()
             .Property(oir => oir.SelfRating)
@@ -2140,7 +2148,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasIndex(oir => oir.OPCRItemId);
 
         modelBuilder.Entity<OPCRItemRating>()
-            .HasIndex(oir => new { oir.OPCRItemId, oir.FYActiveKPIMeasurementId })
+            .HasIndex(oir => new { oir.OPCRItemId, oir.FYActiveKPIMeasurementId, oir.Dimension })
             .IsUnique();
 
         // OPCRItemMOV
@@ -2149,6 +2157,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .WithMany(i => i.OPCRItemMOVs)
             .HasForeignKey(oim => oim.OPCRItemId)
             .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<OPCRItemMOV>()
+            .HasOne(oim => oim.FYActiveKPIMeasurement)
+            .WithMany(m => m.OPCRItemMOVs)
+            .HasForeignKey(oim => oim.FYActiveKPIMeasurementId)
+            .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<OPCRItemMOV>()
             .Property(oim => oim.RequirementName)
@@ -2163,7 +2177,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasIndex(oim => oim.OPCRItemId);
 
         modelBuilder.Entity<OPCRItemMOV>()
-            .HasIndex(oim => new { oim.OPCRItemId, oim.RequirementName })
+            .HasIndex(oim => new { oim.OPCRItemId, oim.FYActiveKPIMeasurementId, oim.RequirementName })
             .IsUnique();
 
         // MarketScopingParameter -> MarketScopingParameterSettings
@@ -2552,5 +2566,152 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         });
 
         base.OnModelCreating(modelBuilder);
+
+        // APR (Agency Purchase Request)
+        modelBuilder.Entity<APR>()
+            .Property(e => e.APRNumber)
+            .IsRequired()
+            .HasMaxLength(100);
+
+        modelBuilder.Entity<APR>()
+            .Property(e => e.Status)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        modelBuilder.Entity<APR>()
+            .Property(e => e.AgencyControlNumber)
+            .HasMaxLength(100);
+
+        modelBuilder.Entity<APR>()
+            .Property(e => e.AgencyAccountCode)
+            .HasMaxLength(100);
+
+        modelBuilder.Entity<APR>()
+            .Property(e => e.Description)
+            .HasMaxLength(1000);
+
+        modelBuilder.Entity<APR>()
+            .Property(e => e.AdditionalRemarks)
+            .HasMaxLength(1000);
+
+        modelBuilder.Entity<APR>()
+            .Property(e => e.TotalAmount)
+            .HasPrecision(18, 2);
+
+        modelBuilder.Entity<APR>()
+            .Property(e => e.ModeOfDelivery)
+            .HasConversion<string>()
+            .HasMaxLength(50);
+
+        modelBuilder.Entity<APR>()
+            .Property(e => e.InsufficientFundsAction)
+            .HasConversion<string>()
+            .HasMaxLength(50);
+
+        modelBuilder.Entity<APR>()
+            .HasOne(e => e.APP)
+            .WithMany()
+            .HasForeignKey(e => e.APPId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<APR>()
+            .HasOne(e => e.Office)
+            .WithMany()
+            .HasForeignKey(e => e.OfficeId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<APR>()
+            .HasOne(e => e.FiscalYear)
+            .WithMany()
+            .HasForeignKey(e => e.FiscalYearId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // Safety net: DB-level uniqueness is the final guard against duplicate APRNumbers
+        // under concurrent submissions (mirrors APP.APPNumber / PurchaseRequest.PRNumber /
+        // ConsolidatedPR.CPRNumber convention — no sequence/lock table exists in this codebase).
+        modelBuilder.Entity<APR>()
+            .HasIndex(e => e.APRNumber)
+            .IsUnique();
+
+        modelBuilder.Entity<APR>()
+            .HasIndex(e => e.APPId);
+
+        modelBuilder.Entity<APR>()
+            .HasIndex(e => e.OfficeId);
+
+        modelBuilder.Entity<APR>()
+            .HasIndex(e => e.FiscalYearId);
+
+        modelBuilder.Entity<APR>()
+            .HasIndex(e => e.Status);
+
+        // APRItem
+        modelBuilder.Entity<APRItem>()
+            .Property(e => e.QuantityRequested)
+            .HasPrecision(18, 4);
+
+        modelBuilder.Entity<APRItem>()
+            .Property(e => e.UnitCost)
+            .HasPrecision(18, 4);
+
+        modelBuilder.Entity<APRItem>()
+            .Property(e => e.TotalCost)
+            .HasPrecision(18, 2);
+
+        modelBuilder.Entity<APRItem>()
+            .HasOne(e => e.APR)
+            .WithMany(a => a.APRItems)
+            .HasForeignKey(e => e.APRId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<APRItem>()
+            .HasOne(e => e.APPItem)
+            .WithMany()
+            .HasForeignKey(e => e.APPItemId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<APRItem>()
+            .HasOne(e => e.PPMPItem)
+            .WithMany()
+            .HasForeignKey(e => e.PPMPItemId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<APRItem>()
+            .ToTable(t => t.HasCheckConstraint("CK_APRItem_TotalCost", "\"TotalCost\" >= 0"));
+
+        modelBuilder.Entity<APRItem>()
+            .HasIndex(e => e.APRId);
+
+        modelBuilder.Entity<APRItem>()
+            .HasIndex(e => e.APPItemId);
+
+        modelBuilder.Entity<APRItem>()
+            .HasIndex(e => e.PPMPItemId);
+
+        // APRItemMilestone
+        modelBuilder.Entity<APRItemMilestone>()
+            .Property(e => e.Remarks)
+            .HasMaxLength(1000);
+
+        modelBuilder.Entity<APRItemMilestone>()
+            .HasOne(e => e.APRItem)
+            .WithMany(i => i.APRItemMilestones)
+            .HasForeignKey(e => e.APRItemId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<APRItemMilestone>()
+            .HasOne(e => e.ProcurementActivityType)
+            .WithMany()
+            .HasForeignKey(e => e.ProcurementActivityTypeId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<APRItemMilestone>()
+            .HasIndex(e => e.APRItemId);
+
+        modelBuilder.Entity<APRItemMilestone>()
+            .HasIndex(e => e.ProcurementActivityTypeId);
+
+        modelBuilder.Entity<APRItemMilestone>()
+            .HasIndex(e => e.ScheduledDate);
     }
 }

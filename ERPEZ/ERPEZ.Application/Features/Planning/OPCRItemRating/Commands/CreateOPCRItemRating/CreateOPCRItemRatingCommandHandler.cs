@@ -1,4 +1,3 @@
-using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -17,13 +16,21 @@ public class CreateOPCRItemRatingCommandHandler(IUnitOfWork unitOfWork)
             ?? throw new NotFoundException("OPCR Item not found.");
 
         // Validate against FYActiveKPIMeasurement, the FY-locked snapshot
-        _ = await unitOfWork.FYActiveKPIMeasurementRepository.GetByIdAsync(request.FYActiveKPIMeasurementId, cancellationToken)
+        var measurement = await unitOfWork.FYActiveKPIMeasurementRepository
+            .GetByIdAsync(request.FYActiveKPIMeasurementId, cancellationToken)
             ?? throw new NotFoundException("FY Active KPI Measurement not found.");
 
-        // Check for duplicate per OPCRItem + FYActiveKPIMeasurement + Dimension
+        var requestedDimension = request.Dimension.ToString();
+
+        if (!measurement.Dimensions.Contains(requestedDimension, StringComparer.OrdinalIgnoreCase))
+            throw new ValidationException(
+                $"Dimension '{requestedDimension}' is not configured for measurement '{measurement.Name}'.");
+
+                // Check for duplicate per OPCRItem + FYActiveKPIMeasurement + Dimension
         var duplicate = await unitOfWork.OPCRItemRatingRepository.FindAsync(
             r => r.OPCRItemId == request.OPCRItemId
-              && r.FYActiveKPIMeasurementId == request.FYActiveKPIMeasurementId,
+                            && r.FYActiveKPIMeasurementId == request.FYActiveKPIMeasurementId
+                            && r.Dimension == request.Dimension,
             cancellationToken);
 
         if (duplicate != null)
@@ -35,6 +42,7 @@ public class CreateOPCRItemRatingCommandHandler(IUnitOfWork unitOfWork)
             Id                = Guid.NewGuid(),
             OPCRItemId        = request.OPCRItemId,
             FYActiveKPIMeasurementId   = request.FYActiveKPIMeasurementId,
+            Dimension         = request.Dimension,
             SelfRating        = request.SelfRating,
         };
 

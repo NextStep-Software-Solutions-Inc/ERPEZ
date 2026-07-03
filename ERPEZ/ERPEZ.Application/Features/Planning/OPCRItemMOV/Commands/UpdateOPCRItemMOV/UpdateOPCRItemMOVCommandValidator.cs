@@ -17,6 +17,11 @@ public class UpdateOPCRItemMOVCommandValidator : AbstractValidator<UpdateOPCRIte
             .WithMessage("Requirement Name cannot exceed 500 characters.")
             .When(x => x.Request.RequirementName != null);
 
+        RuleFor(x => x.Request.FYActiveKPIMeasurementId)
+            .NotEmpty()
+            .WithMessage("FY Active KPI Measurement ID must be a valid non-empty GUID when provided.")
+            .When(x => x.Request.FYActiveKPIMeasurementId.HasValue);
+
         // FileId is optional on update — only validate if provided
         RuleFor(x => x.Request.FileId)
             .NotEmpty()
