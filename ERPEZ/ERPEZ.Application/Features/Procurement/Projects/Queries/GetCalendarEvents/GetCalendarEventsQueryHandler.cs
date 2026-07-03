@@ -11,9 +11,9 @@ using Microsoft.EntityFrameworkCore;
 namespace ERPEZ.Application.Features.Procurement.Projects.Queries.GetCalendarEvents;
 
 public class GetCalendarEventsQueryHandler(IUnitOfWork unitOfWork)
-    : IRequestHandler<GetCalendarEventsQuery, ApiResponse<List<CalendarEventResponse>>>
+    : IRequestHandler<GetCalendarEventsQuery, ApiResponse<CalendarEventsWithSummaryResponse>>
 {
-    public async Task<ApiResponse<List<CalendarEventResponse>>> Handle(GetCalendarEventsQuery request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<CalendarEventsWithSummaryResponse>> Handle(GetCalendarEventsQuery request, CancellationToken cancellationToken)
     {
         var query = unitOfWork.BiddingActivityScheduleRepository.Query();
 
@@ -63,7 +63,51 @@ public class GetCalendarEventsQueryHandler(IUnitOfWork unitOfWork)
             })
             .ToListAsync(cancellationToken);
 
+        var now = DateTime.UtcNow;
+        var activeEvents = events.Where(e => !e.Status.Equals("Completed", StringComparison.OrdinalIgnoreCase) && !e.Status.Equals("Cancelled", StringComparison.OrdinalIgnoreCase)).ToList();
 
-        return ApiResponse<List<CalendarEventResponse>>.Success(events);
+        int activeSchedules = activeEvents.Count;
+        int visibleMilestones = events.Count;
+
+        // Calculate daily load for conflict and overloaded days
+        var dailyLoad = new Dictionary<DateTime, int>();
+        foreach (var ev in activeEvents)
+        {
+            var startDay = ev.StartDate.Date;
+            var endDay = ev.EndDate.Date;
+            for (var day = startDay; day <= endDay; day = day.AddDays(1))
+            {
+                if (dailyLoad.ContainsKey(day))
+                {
+                    dailyLoad[day]++;
+                }
+                else
+                {
+                    dailyLoad[day] = 1;
+                }
+            }
+        }
+
+        int conflictDays = dailyLoad.Values.Count(v => v > 1);
+        int overloadedDays = dailyLoad.Values.Count(v => v > 2); // 3 or more concurrent activities
+
+        int dueSoon = activeEvents.Count(e => e.EndDate > now && e.EndDate <= now.AddDays(3));
+        int overdue = activeEvents.Count(e => e.EndDate < now);
+
+        var result = new CalendarEventsWithSummaryResponse
+        {
+            Events = events,
+            Summary = new CalendarSummaryResponse
+            {
+                ActiveSchedules = activeSchedules,
+                VisibleMilestones = visibleMilestones,
+                ConflictDays = conflictDays,
+                OverloadedDays = overloadedDays,
+                DueSoon = dueSoon,
+                Overdue = overdue
+            }
+        };
+
+        return ApiResponse<CalendarEventsWithSummaryResponse>.Success(result);
     }
 }
