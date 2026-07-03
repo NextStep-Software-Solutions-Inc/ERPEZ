@@ -288,6 +288,9 @@ public class AddConsolidatedPRCommandHandlerTests
         public IAOBRepository AOBRepository => throw new NotImplementedException();
         public IAOBAwardedItemRepository AOBAwardedItemRepository => throw new NotImplementedException();
         public IAOBProcurementProjectMappingRepository AOBProcurementProjectMappingRepository => throw new NotImplementedException();
+        public IAPRRepository APRRepository => throw new NotImplementedException();
+        public IAPRItemRepository APRItemRepository => throw new NotImplementedException();
+        public IAPRItemMilestoneRepository APRItemMilestoneRepository => throw new NotImplementedException();
     }
 
     private class StubProcurementProjectRepository : StubRepository<ProcurementProject>, IProcurementProjectRepository
