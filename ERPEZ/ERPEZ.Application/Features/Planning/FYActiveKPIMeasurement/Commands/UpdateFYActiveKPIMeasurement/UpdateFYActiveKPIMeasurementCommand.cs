@@ -1,3 +1,4 @@
+using ERPEZ.Domain.Enums;
 using ERPEZ.Shared.Common;
 using MediatR;
 
@@ -11,6 +12,7 @@ public record UpdateFYActiveKPIMeasurementCommand : IRequest<ApiResponse<Unit>>
 
 public record UpdateFYActiveKPIMeasurementRequest
 {
+    public List<DimensionEnum>? Dimensions { get; init; }
     public List<string>? MOVs { get; init; }
     public Guid? RatingScaleTemplateId { get; init; }
     public bool? IsMOVEditable { get; init; }

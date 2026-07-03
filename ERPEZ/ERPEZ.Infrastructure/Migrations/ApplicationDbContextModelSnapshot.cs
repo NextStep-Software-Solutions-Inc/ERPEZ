@@ -3576,6 +3576,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text");
 
+                    b.Property<Guid>("FYActiveKPIMeasurementId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid?>("FileId")
                         .HasColumnType("uuid");
 
@@ -3601,9 +3604,11 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("FYActiveKPIMeasurementId");
+
                     b.HasIndex("OPCRItemId");
 
-                    b.HasIndex("OPCRItemId", "RequirementName")
+                    b.HasIndex("OPCRItemId", "FYActiveKPIMeasurementId", "RequirementName")
                         .IsUnique();
 
                     b.ToTable("OPCRItemMOVs", "planning");
@@ -3627,6 +3632,10 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text");
+
+                    b.Property<string>("Dimension")
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
 
                     b.Property<Guid>("FYActiveKPIMeasurementId")
                         .HasColumnType("uuid");
@@ -3661,7 +3670,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("OPCRItemId");
 
-                    b.HasIndex("OPCRItemId", "FYActiveKPIMeasurementId")
+                    b.HasIndex("OPCRItemId", "FYActiveKPIMeasurementId", "Dimension")
                         .IsUnique();
 
                     b.ToTable("OPCRItemRatings", "planning");
@@ -8025,6 +8034,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ConsolidatedPRId")
+                        .IsUnique();
+
                     b.ToTable("ProcurementProjects", "procurement");
                 });
 
@@ -9205,11 +9217,19 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OPCRItemMOV", b =>
                 {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.FYActiveKPIMeasurement", "FYActiveKPIMeasurement")
+                        .WithMany("OPCRItemMOVs")
+                        .HasForeignKey("FYActiveKPIMeasurementId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("ERPEZ.Domain.Entities.Planning.OPCRItem", "OPCRItem")
                         .WithMany("OPCRItemMOVs")
                         .HasForeignKey("OPCRItemId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("FYActiveKPIMeasurement");
 
                     b.Navigation("OPCRItem");
                 });
@@ -9217,7 +9237,7 @@ namespace ERPEZ.Infrastructure.Migrations
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OPCRItemRating", b =>
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Planning.FYActiveKPIMeasurement", "FYActiveKPIMeasurement")
-                        .WithMany()
+                        .WithMany("OPCRItemRatings")
                         .HasForeignKey("FYActiveKPIMeasurementId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
@@ -10512,6 +10532,13 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("KPIAssignments");
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.FYActiveKPIMeasurement", b =>
+                {
+                    b.Navigation("OPCRItemMOVs");
+
+                    b.Navigation("OPCRItemRatings");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.FiscalYear", b =>
                 {
                     b.Navigation("BudgetCalls");
@@ -10894,7 +10921,7 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("WFPPAPDepartments");
                 });
 
-            modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.DocumentProfile", b =>
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.APR", b =>
                 {
                     b.Navigation("APRItems");
                 });

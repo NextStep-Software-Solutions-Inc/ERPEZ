@@ -1,3 +1,4 @@
+using ERPEZ.Domain.Enums;
 using ERPEZ.Shared.Common;
 using MediatR;
 
@@ -7,7 +8,7 @@ public record MeasurementInput
 {
     public string Name { get; init; } = string.Empty;
     public string Statement { get; init; } = string.Empty;
-    public List<string> Dimensions { get; init; } = [];
+    public List<DimensionEnum> Dimensions { get; init; } = [];
     public Guid? RatingScaleTemplateId { get; init; }
     public List<string> MOVs { get; init; } = [];
     public bool IsMOVEditable { get; init; } = true;

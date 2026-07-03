@@ -24,7 +24,7 @@ public class GetOPCRItemRatingsQueryHandler(IUnitOfWork unitOfWork)
                     Id                       = r.Id,
                     OPCRItemId               = r.OPCRItemId,
                     FYActiveKPIMeasurementId = r.FYActiveKPIMeasurementId,
-                    Dimension                = string.Join(", ", r.FYActiveKPIMeasurement.Dimensions),
+                    Dimension                = r.Dimension.HasValue ? r.Dimension.Value.ToString() : null,
                     SelfRating               = r.SelfRating,
                     PMTRating                = r.PMTRating,
                     PMTRemark                = r.PMTRemark,
