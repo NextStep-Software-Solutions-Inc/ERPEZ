@@ -291,6 +291,9 @@ public class AddConsolidatedPRCommandHandlerTests
         public IDirectContractingRepository DirectContractingRepository => throw new NotImplementedException();
         public IDirectContractingProposalRepository DirectContractingProposalRepository => throw new NotImplementedException();
         public IDirectContractingProposalItemRepository DirectContractingProposalItemRepository => throw new NotImplementedException();
+        public IAPRRepository APRRepository => throw new NotImplementedException();
+        public IAPRItemRepository APRItemRepository => throw new NotImplementedException();
+        public IAPRItemMilestoneRepository APRItemMilestoneRepository => throw new NotImplementedException();
     }
 
     private class StubProcurementProjectRepository : StubRepository<ProcurementProject>, IProcurementProjectRepository

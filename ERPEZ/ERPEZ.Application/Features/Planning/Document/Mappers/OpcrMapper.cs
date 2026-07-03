@@ -230,7 +230,7 @@ internal static class OpcrMapper
         List<OPCRItemRatingEntity> ratings, string dimensionName)
     {
         var match = ratings.FirstOrDefault(r =>
-            r.FYActiveKPIMeasurement?.Dimensions.Contains(dimensionName) == true);
+            string.Equals(r.Dimension?.ToString(), dimensionName, StringComparison.OrdinalIgnoreCase));
         return match?.PMTRating;
     }
 

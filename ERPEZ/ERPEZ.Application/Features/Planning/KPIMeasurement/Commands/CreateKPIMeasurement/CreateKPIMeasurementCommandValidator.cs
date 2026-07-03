@@ -1,3 +1,4 @@
+using ERPEZ.Domain.Enums;
 using FluentValidation;
 
 namespace ERPEZ.Application.Features.Planning.KPIMeasurement.Commands.CreateKPIMeasurement;
@@ -25,6 +26,10 @@ public class CreateKPIMeasurementCommandValidator : AbstractValidator<CreateKPIM
                 .WithMessage("Dimensions cannot be null.")
                 .Must(d => d.Count > 0)
                 .WithMessage("At least one dimension is required.");
+
+            m.RuleForEach(x => x.Dimensions)
+                .IsInEnum()
+                .WithMessage("Dimension must be one of: Efficiency, Quality, Timeliness.");
 
             m.RuleFor(x => x.MOVs)
                 .NotNull()
