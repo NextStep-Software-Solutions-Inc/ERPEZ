@@ -131,7 +131,7 @@ public class APRRepository : Repository<APR>, IAPRRepository
     {
         return await context.Set<APR>()
             .Where(a => a.FiscalYearId == fiscalYearId
-                && a.Status == StatusEnum.Submitted
+                && a.Status != StatusEnum.Draft
                 && !a.IsDeleted)
             .CountAsync(cancellationToken);
     }

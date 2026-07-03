@@ -1,3 +1,4 @@
+using ERPEZ.Domain.Enums;
 using ERPEZ.Shared.Common;
 using MediatR;
 
@@ -7,5 +8,6 @@ public record CreateOPCRItemRatingCommand : IRequest<ApiResponse<Guid>>
 {
     public Guid OPCRItemId { get; init; }
     public Guid FYActiveKPIMeasurementId  { get; init; }
+    public DimensionEnum Dimension { get; init; }
     public decimal? SelfRating { get; init; }
 }

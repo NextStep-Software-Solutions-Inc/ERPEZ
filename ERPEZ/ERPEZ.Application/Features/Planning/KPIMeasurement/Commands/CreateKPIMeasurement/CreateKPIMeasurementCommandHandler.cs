@@ -1,8 +1,8 @@
-using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
+using System.Linq;
 
 namespace ERPEZ.Application.Features.Planning.KPIMeasurement.Commands.CreateKPIMeasurement;
 
@@ -40,7 +40,7 @@ public class CreateKPIMeasurementCommandHandler(IUnitOfWork unitOfWork)
             KPIId = request.KPIId,
             Name = m.Name,
             Statement = m.Statement,
-            Dimensions = m.Dimensions,
+            Dimensions = m.Dimensions.Select(dimension => dimension.ToString()).ToList(),
             RatingScaleTemplateId = m.RatingScaleTemplateId,
             MOVs = m.MOVs,
             IsMOVEditable = m.IsMOVEditable,

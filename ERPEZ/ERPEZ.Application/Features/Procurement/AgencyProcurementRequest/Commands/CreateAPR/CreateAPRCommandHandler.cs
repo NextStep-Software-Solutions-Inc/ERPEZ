@@ -1,10 +1,10 @@
 using ERPEZ.Application.Common.Exceptions;
-using ERPEZ.Application.Interfaces;
 using ERPEZ.Domain.Entities.Procurement;
 using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Exceptions;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Commands.CreateAPR;
@@ -12,31 +12,29 @@ namespace ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Comman
 public class CreateAPRCommandHandler : IRequestHandler<CreateAPRCommand, ApiResponse<Guid>>
 {
     private readonly IUnitOfWork unitOfWork;
-    private readonly ICurrentUserService currentUser;
 
     private const int maxNumberGenerationRetries = 1;
 
-    public CreateAPRCommandHandler(IUnitOfWork unitOfWork, ICurrentUserService currentUser)
+    public CreateAPRCommandHandler(IUnitOfWork unitOfWork)
     {
         this.unitOfWork = unitOfWork;
-        this.currentUser = currentUser;
     }
 
     public async Task<ApiResponse<Guid>> Handle(CreateAPRCommand request, CancellationToken cancellationToken)
     {
         // 1. Load the source APP with full details and validate it's approved
         var app = await unitOfWork.APPRepository.GetAPPWithDetailsAsync(request.APPId, cancellationToken)
-            ?? throw new InvalidOperationException("Selected APP not found. Please select a valid APP.");
+            ?? throw new NotFoundException("Selected APP not found. Please select a valid APP.");
 
         if (app.Status != StatusEnum.Approved)
-            throw new InvalidOperationException("Selected APP is not approved.");
+            return ApiResponse<Guid>.Fail("Selected APP is not approved.");
 
         var allAppItemsForApp = app.APPItems;
         var appItemIds = request.Items.Select(i => i.APPItemId).ToList();
         var selectedAppItems = allAppItemsForApp.Where(ai => appItemIds.Contains(ai.Id)).ToList();
 
         if (selectedAppItems.Count != appItemIds.Count)
-            throw new InvalidOperationException("One or more selected line items do not belong to the selected APP.");
+            return ApiResponse<Guid>.Fail("One or more selected line items do not belong to the selected APP.");
 
         static (decimal qty, decimal amount) GetTotals(APPItem appItem)
         {
@@ -52,10 +50,10 @@ public class CreateAPRCommandHandler : IRequestHandler<CreateAPRCommand, ApiResp
 
         // 3. Generate APRNumber — draft-prefixed & office-scoped
         var office = await unitOfWork.OfficeRepository.GetByIdAsync(request.OfficeId, cancellationToken)
-            ?? throw new InvalidOperationException("Office not found.");
+            ?? throw new NotFoundException("Office not found.");
 
         var fiscalYear = await unitOfWork.FiscalYearRepository.GetByIdAsync(request.FiscalYearId, cancellationToken)
-            ?? throw new InvalidOperationException("Fiscal year not found.");
+            ?? throw new NotFoundException("Fiscal year not found.");
 
         var draftCount = await unitOfWork.APRRepository.CountDraftsForOfficeAsync(
             request.FiscalYearId, request.OfficeId, cancellationToken);
@@ -89,14 +87,14 @@ public class CreateAPRCommandHandler : IRequestHandler<CreateAPRCommand, ApiResp
             var appItem = selectedAppItems.First(ai => ai.Id == dto.APPItemId);
 
             if (appItem.PPMPItem is null)
-                throw new InvalidOperationException($"Source PPMP item not found for APP item {appItem.Id}.");
+                return ApiResponse<Guid>.Fail($"Source PPMP item not found for APP item {appItem.Id}.");
 
             var (allocatedQty, _) = GetTotals(appItem);
             var qty = dto.QuantityRequested ?? allocatedQty;
             var unitCost = dto.UnitCost ?? appItem.PPMPItem.UnitPrice;
 
             if (qty <= 0)
-                throw new InvalidOperationException(
+                return ApiResponse<Guid>.Fail(
                     $"No quantity found for line item {appItem.Id}. PPMPItem has no allocations and no override was supplied.");
 
             var totalCost = unitCost * qty;
@@ -117,12 +115,14 @@ public class CreateAPRCommandHandler : IRequestHandler<CreateAPRCommand, ApiResp
         // 5. Budget ceiling validation
         if (totalAmount > appApprovedBudget)
         {
-            throw new InvalidOperationException(
+            return ApiResponse<Guid>.Fail(
                 $"APR budget (₱{totalAmount:N0}) exceeds APP approved budget (₱{appApprovedBudget:N0}).");
         }
 
         // 6. Save with a single retry on APRNumber collision (safety net behind the unique index;
-        //    system is single-instance so a second collision is not expected in practice).
+        //    system is currently deployed as a single-instance service, so a second collision is
+        //    not expected in practice. If it still happens, the shared exception handler will
+        //    surface the conflict as HTTP 409 via ConcurrencyConflictException.
         for (var attempt = 0; ; attempt++)
         {
             try

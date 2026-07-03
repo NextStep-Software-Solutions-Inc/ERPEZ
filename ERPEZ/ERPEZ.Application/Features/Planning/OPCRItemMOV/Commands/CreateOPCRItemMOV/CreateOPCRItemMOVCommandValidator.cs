@@ -11,6 +11,10 @@ public class CreateOPCRItemMOVCommandValidator : AbstractValidator<CreateOPCRIte
             .NotEmpty()
             .WithMessage("OPCR Item ID is required.");
 
+        RuleFor(x => x.FYActiveKPIMeasurementId)
+            .NotEmpty()
+            .WithMessage("FY Active KPI Measurement ID is required.");
+
         RuleFor(x => x.RequirementName)
             .NotEmpty()
             .WithMessage("Requirement Name is required.")

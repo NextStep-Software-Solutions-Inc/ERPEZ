@@ -18,8 +18,13 @@ public class CreateOPCRItemMOVCommandHandler(
         _ = await unitOfWork.OPCRItemRepository.GetByIdAsync(request.OPCRItemId, cancellationToken)
             ?? throw new NotFoundException("OPCR Item not found.");
 
+        _ = await unitOfWork.FYActiveKPIMeasurementRepository
+            .GetByIdAsync(request.FYActiveKPIMeasurementId, cancellationToken)
+            ?? throw new NotFoundException("FY Active KPI Measurement not found.");
+
         var duplicate = await unitOfWork.OPCRItemMOVRepository.FindAsync(
             m => m.OPCRItemId      == request.OPCRItemId
+              && m.FYActiveKPIMeasurementId == request.FYActiveKPIMeasurementId
               && m.RequirementName == request.RequirementName,
             cancellationToken);
 
@@ -34,6 +39,7 @@ public class CreateOPCRItemMOVCommandHandler(
         {
             Id              = Guid.NewGuid(),
             OPCRItemId      = request.OPCRItemId,
+            FYActiveKPIMeasurementId = request.FYActiveKPIMeasurementId,
             RequirementName = request.RequirementName,
             FileId          = request.FileId,
             AttachedUrl     = permanentUrl,

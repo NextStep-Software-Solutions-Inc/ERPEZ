@@ -2,6 +2,7 @@ using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
+using System.Linq;
 
 namespace ERPEZ.Application.Features.Planning.FYActiveKPIMeasurement.Commands.UpdateFYActiveKPIMeasurement;
 
@@ -25,6 +26,11 @@ public class UpdateFYActiveKPIMeasurementCommandHandler(IUnitOfWork unitOfWork)
 
         if (updateData.MOVs != null)
             measurement.MOVs = updateData.MOVs;
+
+        if (updateData.Dimensions != null)
+            measurement.Dimensions = updateData.Dimensions
+                .Select(dimension => dimension.ToString())
+                .ToList();
 
         if (updateData.RatingScaleTemplateId.HasValue)
             measurement.RatingScaleTemplateId = updateData.RatingScaleTemplateId;

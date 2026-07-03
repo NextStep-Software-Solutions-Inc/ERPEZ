@@ -3,6 +3,8 @@ namespace ERPEZ.Application.Features.Planning.OPCRItemMOV.Dtos;
 
 public record UpdateOPCRItemMOVRequest
 {
+    public Guid? FYActiveKPIMeasurementId { get; init; }
+
     public string? RequirementName { get; init; }
 
     /// <summary>
