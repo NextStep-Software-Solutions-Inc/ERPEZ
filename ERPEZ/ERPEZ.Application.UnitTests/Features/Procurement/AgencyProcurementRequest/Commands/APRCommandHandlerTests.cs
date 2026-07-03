@@ -314,6 +314,9 @@ public class APRCommandHandlerTests
         public IAOBProcurementProjectMappingRepository AOBProcurementProjectMappingRepository => throw new NotImplementedException();
         public IAPRItemRepository APRItemRepository => throw new NotImplementedException();
         public IAPRItemMilestoneRepository APRItemMilestoneRepository => throw new NotImplementedException();
+        public IDirectContractingRepository DirectContractingRepository => throw new NotImplementedException();
+        public IDirectContractingProposalRepository DirectContractingProposalRepository => throw new NotImplementedException();
+        public IDirectContractingProposalItemRepository DirectContractingProposalItemRepository => throw new NotImplementedException();
     }
 
     private class StubAPPRepository : StubRepository<APP>, IAPPRepository
