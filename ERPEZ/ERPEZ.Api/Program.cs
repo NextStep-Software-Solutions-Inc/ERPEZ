@@ -2,6 +2,8 @@ using ERPEZ.Api;
 using ERPEZ.Api.Extensions;
 using ERPEZ.Application;
 using ERPEZ.Infrastructure;
+using ERPEZ.Domain.Interfaces;
+using ERPEZ.Infrastructure.Persistence.Seeders;
 
 var builder = WebApplication.CreateBuilder(args);
 builder.ConfigureAppConfiguration();
@@ -22,6 +24,12 @@ builder
 await builder.AddInfrastructureServices();
 
 var app = builder.Build();
+// Seed GPPB-standard procurement activity types (idempotent)
+using (var scope = app.Services.CreateScope())
+{
+    var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+    await ProcurementActivityTypeSeeder.SeedAsync(unitOfWork);
+}
 
 app.UseApiMiddlewares();
 

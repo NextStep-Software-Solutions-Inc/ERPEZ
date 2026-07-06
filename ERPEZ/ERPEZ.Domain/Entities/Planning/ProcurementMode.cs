@@ -1,4 +1,5 @@
 using ERPEZ.Domain.Common;
+using ERPEZ.Domain.Entities.Procurement;
 using Sieve.Attributes;
 
 namespace ERPEZ.Domain.Entities.Planning;
@@ -50,4 +51,6 @@ public class ProcurementMode : BaseEntity
     public virtual List<ProcurementModeThreshold> ProcurementModeThresholds { get; set; } = [];
     public virtual List<PPMPItem> PPMPItems { get; set; } = [];
     public virtual List<APPItem> APPItems { get; set; } = [];
+    public virtual List<ProcurementProject> ProcurementProjects { get; set; } = [];
+
 }

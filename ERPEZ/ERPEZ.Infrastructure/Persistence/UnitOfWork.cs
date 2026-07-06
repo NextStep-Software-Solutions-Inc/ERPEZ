@@ -145,6 +145,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IDirectContractingRepository directContractingRepository;
     private readonly IDirectContractingProposalRepository directContractingProposalRepository;
     private readonly IDirectContractingProposalItemRepository directContractingProposalItemRepository;
+    private readonly IPublicSupplierApplicationRepository publicSupplierApplicationRepository;
 
     // Constructor initializes all repositories once
     public UnitOfWork(ApplicationDbContext context, IServiceProvider serviceProvider)
@@ -285,6 +286,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         directContractingRepository = new DirectContractingRepository(context, sieveProcessor);
         directContractingProposalRepository = new DirectContractingProposalRepository(context, sieveProcessor);
         directContractingProposalItemRepository = new DirectContractingProposalItemRepository(context, sieveProcessor);
+        publicSupplierApplicationRepository = new PublicSupplierApplicationRepository (context, sieveProcessor);
     }
 
     // Public properties return cached instances
@@ -420,7 +422,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IDirectContractingRepository DirectContractingRepository => directContractingRepository;
     public IDirectContractingProposalRepository DirectContractingProposalRepository => directContractingProposalRepository;
     public IDirectContractingProposalItemRepository DirectContractingProposalItemRepository => directContractingProposalItemRepository;
-
+    public IPublicSupplierApplicationRepository PublicSupplierApplicationRepository => publicSupplierApplicationRepository;
     public async Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default)
     {
         await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);
