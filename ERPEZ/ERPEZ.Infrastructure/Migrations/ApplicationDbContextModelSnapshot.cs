@@ -5213,6 +5213,11 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
 
+                    b.Property<int>("MinSupplierCount")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("integer")
+                        .HasDefaultValue(1);
+
                     b.Property<decimal>("MinThreshold")
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
@@ -8387,6 +8392,211 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.ToTable("PurchaseRequests", "procurement");
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.RFQ", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateOnly>("Date")
+                        .HasColumnType("date");
+
+                    b.Property<DateOnly?>("Deadline")
+                        .HasColumnType("date");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("DeliveryPeriod")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("Description")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid?>("ModeOfProcurementId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Purpose")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<string>("RFQNumber")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
+                    b.Property<decimal>("TotalAmount")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<string>("TracingNumber")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("character varying(100)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ModeOfProcurementId");
+
+                    b.HasIndex("RFQNumber")
+                        .IsUnique();
+
+                    b.HasIndex("Status");
+
+                    b.HasIndex("TracingNumber")
+                        .IsUnique();
+
+                    b.ToTable("RFQs", "procurement");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.RFQItem", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("CPRItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("CategorySnapshot")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("FundSnapshot")
+                        .HasMaxLength(200)
+                        .HasColumnType("character varying(200)");
+
+                    b.Property<string>("GreenSpecification")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
+                    b.Property<bool>("IsBrochureRequired")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("ItemNameSnapshot")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("character varying(500)");
+
+                    b.Property<int>("Quantity")
+                        .HasColumnType("integer");
+
+                    b.Property<Guid>("RFQId")
+                        .HasColumnType("uuid");
+
+                    b.Property<decimal>("UnitPriceSnapshot")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("numeric(18,2)");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("CPRItemId");
+
+                    b.HasIndex("RFQId");
+
+                    b.HasIndex("RFQId", "CPRItemId")
+                        .IsUnique();
+
+                    b.ToTable("RFQItems", "procurement");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.RFQSupplier", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("InvitedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("RFQId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("SupplierId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RFQId");
+
+                    b.HasIndex("SupplierId");
+
+                    b.HasIndex("RFQId", "SupplierId")
+                        .IsUnique();
+
+                    b.ToTable("RFQSuppliers", "procurement");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.SupplierBid", b =>
                 {
                     b.Property<Guid>("Id")
@@ -8411,7 +8621,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Property<Guid>("ProcurementProjectId")
                         .HasColumnType("uuid");
-                        
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("text");
@@ -10726,6 +10936,54 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("UACSCodeCombination");
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.RFQ", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.ProcurementMode", "ModeOfProcurement")
+                        .WithMany("RFQs")
+                        .HasForeignKey("ModeOfProcurementId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("ModeOfProcurement");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.RFQItem", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Procurement.ConsolidatedPRItem", "CPRItem")
+                        .WithMany()
+                        .HasForeignKey("CPRItemId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("ERPEZ.Domain.Entities.Procurement.RFQ", "RFQ")
+                        .WithMany("RFQItems")
+                        .HasForeignKey("RFQId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("CPRItem");
+
+                    b.Navigation("RFQ");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.RFQSupplier", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Procurement.RFQ", "RFQ")
+                        .WithMany("RFQSuppliers")
+                        .HasForeignKey("RFQId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.Supplier", "Supplier")
+                        .WithMany()
+                        .HasForeignKey("SupplierId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("RFQ");
+
+                    b.Navigation("Supplier");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.SupplierBid", b =>
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Procurement.ProcurementProject", "ProcurementProject")
@@ -11137,6 +11395,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("PPMPItems");
 
                     b.Navigation("ProcurementModeThresholds");
+
+                    b.Navigation("RFQs");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.ProcurementWorkflow", b =>
@@ -11228,6 +11488,13 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("WFPPAPDepartments");
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.AOB", b =>
+                {
+                    b.Navigation("AOBAwardedItems");
+
+                    b.Navigation("AOBProcurementProjectMappings");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.APR", b =>
                 {
                     b.Navigation("APRItems");
@@ -11284,6 +11551,13 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("ApprovalEvents");
 
                     b.Navigation("PRItems");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.RFQ", b =>
+                {
+                    b.Navigation("RFQItems");
+
+                    b.Navigation("RFQSuppliers");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.SupplierBid", b =>
