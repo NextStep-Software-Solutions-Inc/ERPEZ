@@ -3,7 +3,7 @@ using ERPEZ.Domain.Enums;
 namespace ERPEZ.Application.Features.Procurement.RequestForQuotation.Dtos;
 
 /// <summary>Row shape for the "Add Consolidated PR" modal — CPR -> Items, Jan-Dec breakdown.</summary>
-public class ConsolidatedPrItemForRfqDto
+public class ConsolidatedPrItemForRFQDto
 {
     public Guid CPRItemId { get; set; }
     public Guid ConsolidatedPRId { get; set; }

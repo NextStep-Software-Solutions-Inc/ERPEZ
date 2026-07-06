@@ -3,6 +3,6 @@ using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
 
-namespace ERPEZ.Application.Features.Procurement.RequestForQuotation.Queries.GetConsolidatedPrItemsForRfq;
+namespace ERPEZ.Application.Features.Procurement.RequestForQuotation.Queries.GetConsolidatedPrItemsForRFQ;
 
-public record GetConsolidatedPrItemsForRfqQuery : IRequest<ApiResponse<List<ConsolidatedPrItemForRfqDto>>>;
+public record GetConsolidatedPrItemsForRFQQuery : IRequest<ApiResponse<List<ConsolidatedPrItemForRFQDto>>>;

@@ -3,19 +3,19 @@ using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
 
-namespace ERPEZ.Application.Features.Procurement.RequestForQuotation.Queries.GetConsolidatedPrItemsForRfq;
+namespace ERPEZ.Application.Features.Procurement.RequestForQuotation.Queries.GetConsolidatedPrItemsForRFQ;
 
-public class GetConsolidatedPrItemsForRfqQueryHandler(IUnitOfWork unitOfWork)
-    : IRequestHandler<GetConsolidatedPrItemsForRfqQuery, ApiResponse<List<ConsolidatedPrItemForRfqDto>>>
+public class GetConsolidatedPrItemsForRFQQueryHandler(IUnitOfWork unitOfWork)
+    : IRequestHandler<GetConsolidatedPrItemsForRFQQuery, ApiResponse<List<ConsolidatedPrItemForRFQDto>>>
 {
-    public async Task<ApiResponse<List<ConsolidatedPrItemForRfqDto>>> Handle(
-        GetConsolidatedPrItemsForRfqQuery request, CancellationToken cancellationToken)
+    public async Task<ApiResponse<List<ConsolidatedPrItemForRFQDto>>> Handle(
+        GetConsolidatedPrItemsForRFQQuery request, CancellationToken cancellationToken)
     {
         // Only CPRs that are Approved are eligible to be sourced into an RFQ.
         // Requires ConsolidatedPRRepository.GetAllApprovedWithDetailsAsync() from the earlier patch.
         var approvedCprs = await unitOfWork.ConsolidatedPRRepository.GetAllApprovedWithDetailsAsync(cancellationToken);
 
-        var result = new List<ConsolidatedPrItemForRfqDto>();
+        var result = new List<ConsolidatedPrItemForRFQDto>();
 
         foreach (var cpr in approvedCprs)
         {
@@ -38,7 +38,7 @@ public class GetConsolidatedPrItemsForRfqQueryHandler(IUnitOfWork unitOfWork)
                 // Jan-Dec breakdown: one row per monthly quantity, per UI spec.
                 foreach (var monthlyQty in prItem.MonthlyQuantities.Where(m => !m.IsDeleted))
                 {
-                    result.Add(new ConsolidatedPrItemForRfqDto
+                    result.Add(new ConsolidatedPrItemForRFQDto
                     {
                         CPRItemId = cprItem.Id,
                         ConsolidatedPRId = cpr.Id,
@@ -57,6 +57,6 @@ public class GetConsolidatedPrItemsForRfqQueryHandler(IUnitOfWork unitOfWork)
             }
         }
 
-        return ApiResponse<List<ConsolidatedPrItemForRfqDto>>.Success(result);
+        return ApiResponse<List<ConsolidatedPrItemForRFQDto>>.Success(result);
     }
 }
