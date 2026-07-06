@@ -69,22 +69,40 @@ public class GetCalendarEventsQueryHandler(IUnitOfWork unitOfWork)
         int activeSchedules = activeEvents.Count;
         int visibleMilestones = events.Count;
 
+        // Clamp the date range for daily load calculation to prevent performance issues with long schedules
+        var rangeStart = request.From?.Date ?? now.AddYears(-1).Date;
+        var rangeEnd = request.To?.Date ?? now.AddYears(1).Date;
+
+        if ((rangeEnd - rangeStart).TotalDays > 366)
+        {
+            if (request.From.HasValue)
+            {
+                rangeEnd = rangeStart.AddDays(366);
+            }
+            else if (request.To.HasValue)
+            {
+                rangeStart = rangeEnd.AddDays(-366);
+            }
+            else
+            {
+                rangeStart = now.AddDays(-180).Date;
+                rangeEnd = now.AddDays(180).Date;
+            }
+        }
+
         // Calculate daily load for conflict and overloaded days
         var dailyLoad = new Dictionary<DateTime, int>();
         foreach (var ev in activeEvents)
         {
             var startDay = ev.StartDate.Date;
+            if (startDay < rangeStart) startDay = rangeStart;
+
             var endDay = ev.EndDate.Date;
+            if (endDay > rangeEnd) endDay = rangeEnd;
+
             for (var day = startDay; day <= endDay; day = day.AddDays(1))
             {
-                if (dailyLoad.ContainsKey(day))
-                {
-                    dailyLoad[day]++;
-                }
-                else
-                {
-                    dailyLoad[day] = 1;
-                }
+                dailyLoad[day] = dailyLoad.GetValueOrDefault(day) + 1;
             }
         }
 
