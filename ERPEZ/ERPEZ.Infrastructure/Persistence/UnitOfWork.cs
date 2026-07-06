@@ -142,6 +142,9 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IAPRRepository aprRepository;
     private readonly IAPRItemRepository aprItemRepository;
     private readonly IAPRItemMilestoneRepository aprItemMilestoneRepository;
+    private readonly IDirectContractingRepository directContractingRepository;
+    private readonly IDirectContractingProposalRepository directContractingProposalRepository;
+    private readonly IDirectContractingProposalItemRepository directContractingProposalItemRepository;
     private readonly IPublicSupplierApplicationRepository publicSupplierApplicationRepository;
 
     // Constructor initializes all repositories once
@@ -280,6 +283,9 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         aprRepository = new APRRepository(context, sieveProcessor);
         aprItemRepository = new APRItemRepository(context, sieveProcessor);
         aprItemMilestoneRepository = new APRItemMilestoneRepository(context, sieveProcessor);
+        directContractingRepository = new DirectContractingRepository(context, sieveProcessor);
+        directContractingProposalRepository = new DirectContractingProposalRepository(context, sieveProcessor);
+        directContractingProposalItemRepository = new DirectContractingProposalItemRepository(context, sieveProcessor);
         publicSupplierApplicationRepository = new PublicSupplierApplicationRepository (context, sieveProcessor);
     }
 
@@ -413,6 +419,9 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IAPRRepository APRRepository => aprRepository;
     public IAPRItemRepository APRItemRepository => aprItemRepository;
     public IAPRItemMilestoneRepository APRItemMilestoneRepository => aprItemMilestoneRepository;
+    public IDirectContractingRepository DirectContractingRepository => directContractingRepository;
+    public IDirectContractingProposalRepository DirectContractingProposalRepository => directContractingProposalRepository;
+    public IDirectContractingProposalItemRepository DirectContractingProposalItemRepository => directContractingProposalItemRepository;
     public IPublicSupplierApplicationRepository PublicSupplierApplicationRepository => publicSupplierApplicationRepository;
     public async Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default)
     {
