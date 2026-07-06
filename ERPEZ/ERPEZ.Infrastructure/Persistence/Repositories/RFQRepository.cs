@@ -107,12 +107,6 @@ public class RFQRepository : Repository<RFQ>, IRFQRepository
         return (total, draft, submitted, approved, returned);
     }
 
-    public async Task<RFQ?> GetByIdAsync(Guid id, CancellationToken cancellationToken = default)
-    {
-        return await context.Set<RFQ>()
-            .FirstOrDefaultAsync(r => r.Id == id && !r.IsDeleted, cancellationToken);
-    }
-
     public void RemoveItem(RFQItem item)
     {
         context.Set<RFQItem>().Remove(item);
