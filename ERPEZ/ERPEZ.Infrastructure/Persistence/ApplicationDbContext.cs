@@ -2625,6 +2625,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         {
             e.HasIndex(p => p.ConsolidatedPRId)
                 .IsUnique();
+
+            e.HasOne(p => p.ConsolidatedPR)
+                .WithOne()
+                .HasForeignKey<ProcurementProject>(p => p.ConsolidatedPRId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         base.OnModelCreating(modelBuilder);

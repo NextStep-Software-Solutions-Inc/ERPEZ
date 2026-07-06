@@ -43,6 +43,7 @@ public class ProcurementProject : BaseEntity
     public int?      DeliveryPeriodDays     { get; set; }
 
     // Navigation properties
+    public virtual ConsolidatedPR? ConsolidatedPR { get; set; }
     public virtual List<BACResolution> BACResolutions { get; set; } = [];
     public virtual List<BiddingActivitySchedule> BiddingActivitySchedules { get; set; } = [];
     public virtual ProcurementMode? ProcurementMode { get; set; }
