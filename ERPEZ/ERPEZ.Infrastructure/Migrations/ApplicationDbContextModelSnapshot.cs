@@ -10659,6 +10659,16 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("PRItem");
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.ProcurementProject", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Procurement.ConsolidatedPR", "ConsolidatedPR")
+                        .WithOne()
+                        .HasForeignKey("ERPEZ.Domain.Entities.Procurement.ProcurementProject", "ConsolidatedPRId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("ConsolidatedPR");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.ProjectDocumentChecklist", b =>
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Procurement.MasterDocumentType", "MasterDocumentType")

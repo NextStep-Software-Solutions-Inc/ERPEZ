@@ -7,6 +7,7 @@ using ERPEZ.Application.Features.Procurement.Projects.Commands.UpdateProcurement
 using ERPEZ.Application.Features.Procurement.Projects.Commands.AddConsolidatedPR;
 using ERPEZ.Application.Features.Procurement.Projects.Dtos;
 using ERPEZ.Application.Features.Procurement.Projects.Queries.GetCalendarEvents;
+using ERPEZ.Application.Features.Procurement.Projects.Queries.GetCalendarEventById;
 using ERPEZ.Application.Features.Procurement.Projects.Queries.GetProcurementProjectById;
 using ERPEZ.Application.Features.Procurement.Projects.Queries.GetProcurementProjects;
 using ERPEZ.Application.Features.Procurement.Projects.Commands.UpdateProcurementProjectStatus;
@@ -126,10 +127,19 @@ public class BACProjectController(ISender mediator) : ControllerBase
     }
 
     [HttpGet("calendar-events")]
-    [ProducesResponseType(typeof(ApiResponse<List<CalendarEventResponse>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<CalendarEventsWithSummaryResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetCalendarEvents([FromQuery] GetCalendarEventsQuery query)
     {
         var result = await mediator.Send(query);
         return Ok(result);
+    }
+
+    [HttpGet("calendar-events/{id}")]
+    [ProducesResponseType(typeof(ApiResponse<CalendarEventResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetCalendarEventById(Guid id)
+    {
+        var result = await mediator.Send(new GetCalendarEventByIdQuery(id));
+        return result.Succeeded ? Ok(result) : NotFound(result);
     }
 }

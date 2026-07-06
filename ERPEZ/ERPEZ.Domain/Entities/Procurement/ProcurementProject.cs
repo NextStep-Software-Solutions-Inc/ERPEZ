@@ -1,5 +1,4 @@
 using ERPEZ.Domain.Common;
-using ERPEZ.Domain.Entities.Planning;
 using Sieve.Attributes;
 
 namespace ERPEZ.Domain.Entities.Procurement;
@@ -29,6 +28,7 @@ public class ProcurementProject : BaseEntity
     public bool ChecklistConfirmed { get; set; } = false;
 
     // Navigation properties
+    public virtual ConsolidatedPR? ConsolidatedPR { get; set; }
     public virtual List<BACResolution> BACResolutions { get; set; } = [];
     public virtual List<BiddingActivitySchedule> BiddingActivitySchedules { get; set; } = [];
 }
