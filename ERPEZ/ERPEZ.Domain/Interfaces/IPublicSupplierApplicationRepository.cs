@@ -6,4 +6,5 @@ public interface IPublicSupplierApplicationRepository : IRepository<PublicSuppli
 {
     Task<PublicSupplierApplication?> GetWithDocumentsByIdAsync(
         Guid id, CancellationToken cancellationToken = default);
+    Task<bool> ExistsAsync(Guid projectId, string tinNumber, CancellationToken cancellationToken);
 }

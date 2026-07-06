@@ -28,4 +28,8 @@ public class PublicSupplierApplicationRepository
                     .ThenInclude(c => c.MasterDocumentType)
             .FirstOrDefaultAsync(a => a.Id == id && !a.IsDeleted, cancellationToken);
     }
+    public async Task<bool> ExistsAsync(Guid projectId, string tinNumber, CancellationToken cancellationToken)
+    => await context.Set<PublicSupplierApplication>()
+        .AnyAsync(a => a.ProcurementProjectId == projectId 
+                    && a.TinNumber == tinNumber, cancellationToken);
 }

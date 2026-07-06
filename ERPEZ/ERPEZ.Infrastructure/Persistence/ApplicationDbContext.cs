@@ -2780,5 +2780,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<APRItemMilestone>()
             .HasIndex(e => e.ScheduledDate);
+
+        modelBuilder.Entity<PublicSupplierApplication>()
+            .HasIndex(a => new { a.ProcurementProjectId, a.TinNumber })
+            .IsUnique()
+            .HasDatabaseName("IX_PublicSupplierApplications_ProjectId_TinNumber");
     }
 }

@@ -56,6 +56,14 @@ public class SubmitPublicApplicationCommandHandler(
             throw new FluentValidation.ValidationException(
                 "Missing required documents. Please upload all required checklist items.");
 
+        // ── 3b. DUPLICATE SUBMISSION GUARD ───────────────────────────────────────
+        var isDuplicate = await unitOfWork.PublicSupplierApplicationRepository
+            .ExistsAsync(request.ProjectId, request.TinNumber, cancellationToken);
+
+        if (isDuplicate)
+            throw new FluentValidation.ValidationException(
+                "An application with this TIN number has already been submitted for this project.");
+
         // ── 4. BUILD APPLICATION HEADER ───────────────────────────────────────────
         var application = new PublicSupplierApplication
         {
