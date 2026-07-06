@@ -1,5 +1,6 @@
 using ERPEZ.Domain.Entities.Procurement;
 using ERPEZ.Domain.Interfaces;
+using ERPEZ.Domain.Enums;
 using Microsoft.EntityFrameworkCore;
 using Sieve.Models;
 using Sieve.Services;
@@ -28,8 +29,19 @@ public class ConsolidatedPRRepository : Repository<ConsolidatedPR>, IConsolidate
                 .ThenInclude(ci => ci.PurchaseRequest)
                     .ThenInclude(pr => pr.Office)
             .Include(cpr => cpr.ConsolidatedPRItems)
+                .ThenInclude(ci => ci.PurchaseRequest)
+                    .ThenInclude(pr => pr.ProcurementCategory)
+            .Include(cpr => cpr.ConsolidatedPRItems)
+                .ThenInclude(ci => ci.PurchaseRequest)
+                    .ThenInclude(pr => pr.FundSource)
+            .Include(cpr => cpr.ConsolidatedPRItems)
                 .ThenInclude(ci => ci.PRItem)
                     .ThenInclude(i => i.MonthlyQuantities)
+            .Include(cpr => cpr.ConsolidatedPRItems)
+                .ThenInclude(ci => ci.PRItem)
+                    .ThenInclude(i => i.PPMPItem)
+                        .ThenInclude(pi => pi!.ProcurementMode)
+                            .ThenInclude(pm => pm!.ProcurementCategory)
             .Include(cpr => cpr.ConsolidatedPRItems)
                 .ThenInclude(ci => ci.ProcurementMode)
             .AsSplitQuery();
@@ -41,6 +53,19 @@ public class ConsolidatedPRRepository : Repository<ConsolidatedPR>, IConsolidate
         return await BuildDetailedQuery()
             .Where(cpr => cpr.Id == id && !cpr.IsDeleted)
             .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    /// <summary>
+    /// Approved CPRs only, with full item details — feeds the "Add Consolidated PR" modal
+    /// on the RFQ create/edit screen (only Approved CPRs are eligible to source RFQ items).
+    /// </summary>
+    public async Task<IReadOnlyList<ConsolidatedPR>> GetAllApprovedWithDetailsAsync(
+        CancellationToken cancellationToken = default)
+    {
+        return await BuildDetailedQuery(
+                context.Set<ConsolidatedPR>().AsNoTracking().Where(cpr => !cpr.IsDeleted))
+            .Where(cpr => cpr.Status == StatusEnum.Approved)
+            .ToListAsync(cancellationToken);
     }
 
     public async Task<(IReadOnlyList<ConsolidatedPR> Entities, int TotalCount)> GetDetailedPagedAsync(

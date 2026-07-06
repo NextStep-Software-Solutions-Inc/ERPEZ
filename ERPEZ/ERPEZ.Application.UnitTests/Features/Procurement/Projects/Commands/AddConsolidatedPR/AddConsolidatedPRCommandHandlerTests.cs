@@ -324,6 +324,11 @@ public class AddConsolidatedPRCommandHandlerTests
         {
             throw new NotImplementedException();
         }
+
+        public Task<IReadOnlyList<ConsolidatedPR>> GetAllApprovedWithDetailsAsync(CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult<IReadOnlyList<ConsolidatedPR>>(items.AsReadOnly());
+        }
     }
 
     private class StubRepository<T> : IRepository<T> where T : BaseEntity

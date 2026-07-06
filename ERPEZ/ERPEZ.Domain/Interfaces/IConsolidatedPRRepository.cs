@@ -6,6 +6,7 @@ namespace ERPEZ.Domain.Interfaces;
 
 public interface IConsolidatedPRRepository : IRepository<ConsolidatedPR>
 {
+    Task<IReadOnlyList<ConsolidatedPR>> GetAllApprovedWithDetailsAsync(CancellationToken cancellationToken = default);
     Task<ConsolidatedPR?> GetCPRWithDetailsAsync(Guid id, CancellationToken cancellationToken = default);
     Task<(IReadOnlyList<ConsolidatedPR> Entities, int TotalCount)> GetDetailedPagedAsync(SieveModel sieveModel, CancellationToken cancellationToken = default);
 
