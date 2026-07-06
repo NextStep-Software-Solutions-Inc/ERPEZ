@@ -1,11 +1,7 @@
 using ERPEZ.Shared.Common;
-using ERPEZ.Domain.Entities.Procurement;
-using ERPEZ.Domain.Enums;
-using ERPEZ.Domain.Interfaces;
-using FluentValidation;
 using MediatR;
  
-namespace ERPEZ.Application.RFQ.Commands.CreateRFQ;
+namespace ERPEZ.Application.Features.Procurement.RequestForQuotation.Commands.CreateRFQ;
  
 public record CreateRFQCommand(
     string RFQNumber,

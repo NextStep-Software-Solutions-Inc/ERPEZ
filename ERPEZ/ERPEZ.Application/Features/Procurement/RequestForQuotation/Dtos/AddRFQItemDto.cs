@@ -1,4 +1,4 @@
-namespace ERPEZ.Application.RFQ.Dtos;
+namespace ERPEZ.Application.Features.Procurement.RequestForQuotation.Dtos;
 
 public record AddRFQItemDto(
     Guid CPRItemId,

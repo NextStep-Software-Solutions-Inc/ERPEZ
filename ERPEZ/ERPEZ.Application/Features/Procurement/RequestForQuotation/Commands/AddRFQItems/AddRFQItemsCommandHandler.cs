@@ -4,7 +4,7 @@ using ERPEZ.Domain.Interfaces;
 using FluentValidation;
 using MediatR;
  
-namespace ERPEZ.Application.RFQ.Commands.AddRFQItems;
+namespace ERPEZ.Application.Features.Procurement.RequestForQuotation.Commands.AddRFQItems;
 
 public class AddRFQItemsCommandHandler(IUnitOfWork unitOfWork)
     : IRequestHandler<AddRFQItemsCommand, ApiResponse<bool>>

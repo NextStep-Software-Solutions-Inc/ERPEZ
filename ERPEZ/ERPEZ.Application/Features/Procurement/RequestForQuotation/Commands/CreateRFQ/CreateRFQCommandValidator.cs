@@ -1,12 +1,7 @@
-using ERPEZ.Shared.Common;
-using ERPEZ.Domain.Entities.Procurement;
-using ERPEZ.Domain.Enums;
-using ERPEZ.Domain.Interfaces;
 using FluentValidation;
-using MediatR;
  
-namespace ERPEZ.Application.RFQ.Commands.CreateRFQ;
-
+namespace ERPEZ.Application.Features.Procurement.RequestForQuotation.Commands.CreateRFQ;
+ 
 /// <summary>
 /// Shape validation only, matching this codebase's convention (see CreateAPRCommandValidator) —
 /// no repository/DB checks here. Uniqueness and supplier-eligibility business rules are

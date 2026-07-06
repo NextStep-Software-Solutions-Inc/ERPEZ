@@ -287,6 +287,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         directContractingRepository = new DirectContractingRepository(context, sieveProcessor);
         directContractingProposalRepository = new DirectContractingProposalRepository(context, sieveProcessor);
         directContractingProposalItemRepository = new DirectContractingProposalItemRepository(context, sieveProcessor);
+        rfqRepository = new RFQRepository(context, sieveProcessor);
     }
 
     // Public properties return cached instances
@@ -422,7 +423,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IDirectContractingRepository DirectContractingRepository => directContractingRepository;
     public IDirectContractingProposalRepository DirectContractingProposalRepository => directContractingProposalRepository;
     public IDirectContractingProposalItemRepository DirectContractingProposalItemRepository => directContractingProposalItemRepository;
-    public IRFQRepository RFQRepository => _rfqRepository ??= new RFQRepository(_context);
+    public IRFQRepository RFQRepository => rfqRepository;
 
     public async Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default)
     {

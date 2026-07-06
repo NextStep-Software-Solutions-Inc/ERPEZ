@@ -294,6 +294,7 @@ public class AddConsolidatedPRCommandHandlerTests
         public IAPRRepository APRRepository => throw new NotImplementedException();
         public IAPRItemRepository APRItemRepository => throw new NotImplementedException();
         public IAPRItemMilestoneRepository APRItemMilestoneRepository => throw new NotImplementedException();
+        public IRFQRepository RFQRepository => throw new NotImplementedException();
     }
 
     private class StubProcurementProjectRepository : StubRepository<ProcurementProject>, IProcurementProjectRepository

@@ -1,30 +1,22 @@
 using ERPEZ.Domain.Entities.Procurement;
+using Sieve.Models;
 
-namespace ERPEZ.Application.Interfaces;
+namespace ERPEZ.Domain.Interfaces;
 
 /// <summary>
 /// Repository for RFQ aggregate root. Exposed as a named property on IUnitOfWork
 /// (unitOfWork.RFQRepository), per this codebase's convention — no generic Repository&lt;T&gt; factory.
 /// </summary>
-public interface IRFQRepository
+public interface IRFQRepository : IRepository<RFQ>
 {
-    Task<RFQ?> GetByIdAsync(Guid id, bool includeDetails = false, CancellationToken cancellationToken = default);
+    Task<(IReadOnlyList<RFQ> Entities, int TotalCount)> GetAllWithDetailsAsync(
+        SieveModel sieveModel,
+        CancellationToken cancellationToken = default);
 
-    Task<RFQ?> GetByRFQNumberAsync(string rfqNumber, CancellationToken cancellationToken = default);
-
-    Task<bool> RFQNumberExistsAsync(string rfqNumber, CancellationToken cancellationToken = default);
-
-    Task<bool> TracingNumberExistsAsync(string tracingNumber, CancellationToken cancellationToken = default);
-
-    Task AddAsync(RFQ rfq, CancellationToken cancellationToken = default);
-
-    void Update(RFQ rfq);
-
-    void Remove(RFQ rfq);
-
+    Task<RFQ?> GetRFQWithDetailsAsync(Guid rfqId, CancellationToken cancellationToken = default);
+    Task<bool> HasRFQNumberAsync(string rfqNumber, CancellationToken cancellationToken = default);
+    Task<bool> HasTracingNumberAsync(string tracingNumber, CancellationToken cancellationToken = default);
     Task<RFQItem?> GetItemByIdAsync(Guid rfqItemId, CancellationToken cancellationToken = default);
-
-    void RemoveItem(RFQItem item);
 
     /// <summary>
     /// Sum of RFQItem.Quantity already sourced from the given ConsolidatedPRItem across
@@ -43,4 +35,6 @@ public interface IRFQRepository
     /// </summary>
     Task<(int Total, int Draft, int Submitted, int Approved, int Returned)> GetSummaryAsync(
         CancellationToken cancellationToken = default);
+
+    void RemoveItem(RFQItem item);
 }

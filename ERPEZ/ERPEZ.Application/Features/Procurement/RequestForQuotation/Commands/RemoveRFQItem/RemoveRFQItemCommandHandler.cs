@@ -1,9 +1,8 @@
 using ERPEZ.Shared.Common;
 using ERPEZ.Domain.Interfaces;
-using FluentValidation;
 using MediatR;
  
-namespace ERPEZ.Application.RFQ.Commands.RemoveRFQItem;
+namespace ERPEZ.Application.Features.Procurement.RequestForQuotation.Commands.RemoveRFQItem;
  
 public class RemoveRFQItemCommandHandler(IUnitOfWork unitOfWork)
     : IRequestHandler<RemoveRFQItemCommand, ApiResponse<bool>>

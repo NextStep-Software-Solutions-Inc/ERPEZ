@@ -1,10 +1,10 @@
 using ERPEZ.Shared.Common;
-using ERPEZ.Application.RFQ.DTOs;
+using ERPEZ.Application.Features.Procurement.RequestForQuotation.Dtos;
 using ERPEZ.Domain.Interfaces;
 using MediatR;
 using Sieve.Models;
 
-namespace ERPEZ.Application.RFQ.Queries.GetRFQs;
+namespace ERPEZ.Application.Features.Procurement.RequestForQuotation.Queries.GetRFQs;
 
 public class GetRFQsQueryHandler(IUnitOfWork unitOfWork)
     : IRequestHandler<GetRFQsQuery, PaginatedApiResponse<RFQListItemDto>>

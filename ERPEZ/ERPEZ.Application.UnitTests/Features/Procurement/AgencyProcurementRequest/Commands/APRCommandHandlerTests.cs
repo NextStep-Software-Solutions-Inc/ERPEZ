@@ -317,6 +317,7 @@ public class APRCommandHandlerTests
         public IDirectContractingRepository DirectContractingRepository => throw new NotImplementedException();
         public IDirectContractingProposalRepository DirectContractingProposalRepository => throw new NotImplementedException();
         public IDirectContractingProposalItemRepository DirectContractingProposalItemRepository => throw new NotImplementedException();
+        public IRFQRepository RFQRepository => throw new NotImplementedException();
     }
 
     private class StubAPPRepository : StubRepository<APP>, IAPPRepository
