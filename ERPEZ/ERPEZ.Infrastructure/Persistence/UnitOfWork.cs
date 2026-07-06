@@ -142,6 +142,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IAPRRepository aprRepository;
     private readonly IAPRItemRepository aprItemRepository;
     private readonly IAPRItemMilestoneRepository aprItemMilestoneRepository;
+    private readonly IRFQRepository rfqRepository;
 
     // Constructor initializes all repositories once
     public UnitOfWork(ApplicationDbContext context, IServiceProvider serviceProvider)
@@ -411,6 +412,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IAPRRepository APRRepository => aprRepository;
     public IAPRItemRepository APRItemRepository => aprItemRepository;
     public IAPRItemMilestoneRepository APRItemMilestoneRepository => aprItemMilestoneRepository;
+    public IRFQRepository RFQRepository => _rfqRepository ??= new RFQRepository(_context);
 
     public async Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default)
     {

@@ -133,4 +133,5 @@ public interface IUnitOfWork
     IAPRRepository APRRepository { get; }
     IAPRItemRepository APRItemRepository { get; }
     IAPRItemMilestoneRepository APRItemMilestoneRepository { get; }
+    IRFQRepository RFQRepository { get; }
 }
