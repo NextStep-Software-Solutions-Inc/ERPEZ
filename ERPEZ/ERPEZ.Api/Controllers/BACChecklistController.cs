@@ -28,11 +28,15 @@ public class BACChecklistController(ISender mediator) : ControllerBase
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> LoadProfile(
         Guid projectId,
-        [FromBody] LoadProfileCommand command,
+        [FromBody] LoadProfileRequest request,     // ← was LoadProfileCommand
         CancellationToken cancellationToken)
     {
         var result = await mediator.Send(
-            command with { ProcurementProjectId = projectId }, cancellationToken);
+            new LoadProfileCommand
+            {
+                ProcurementProjectId = projectId,
+                DocumentProfileId    = request.DocumentProfileId
+            }, cancellationToken);
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 
@@ -61,11 +65,18 @@ public class BACChecklistController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status409Conflict)]
     public async Task<IActionResult> AddCustomRequirement(
         Guid projectId,
-        [FromBody] AddCustomRequirementCommand command,
+        [FromBody] AddCustomRequirementRequest request,     // ← was AddCustomRequirementCommand
         CancellationToken cancellationToken)
     {
         var result = await mediator.Send(
-            command with { ProcurementProjectId = projectId }, cancellationToken);
+            new AddCustomRequirementCommand
+            {
+                ProcurementProjectId = projectId,
+                CustomDocumentName   = request.CustomDocumentName,
+                EnvelopeType         = request.EnvelopeType,
+                OrderIndex           = request.OrderIndex,
+                FileId               = request.FileId
+            }, cancellationToken);
         return result.Succeeded
             ? CreatedAtAction(nameof(GetProjectChecklist), new { projectId }, result)
             : BadRequest(result);
@@ -82,14 +93,16 @@ public class BACChecklistController(ISender mediator) : ControllerBase
     public async Task<IActionResult> UpdateChecklistItem(
         Guid projectId,
         Guid checklistItemId,
-        [FromBody] UpdateChecklistItemCommand command,
+        [FromBody] UpdateChecklistItemRequest request,     // ← was UpdateChecklistItemCommand
         CancellationToken cancellationToken)
     {
         var result = await mediator.Send(
-            command with
+            new UpdateChecklistItemCommand
             {
                 ProcurementProjectId = projectId,
-                ChecklistItemId      = checklistItemId
+                ChecklistItemId      = checklistItemId,
+                IsRequired           = request.IsRequired,
+                OrderIndex           = request.OrderIndex
             }, cancellationToken);
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }

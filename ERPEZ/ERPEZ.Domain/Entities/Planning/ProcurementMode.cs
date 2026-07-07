@@ -60,4 +60,5 @@ public class ProcurementMode : BaseEntity
     public virtual List<PPMPItem> PPMPItems { get; set; } = [];
     public virtual List<APPItem> APPItems { get; set; } = [];
     public virtual List<RFQ> RFQs { get; set; } = [];
+    public virtual List<ProcurementProject> ProcurementProjects { get; set; } = [];
 }

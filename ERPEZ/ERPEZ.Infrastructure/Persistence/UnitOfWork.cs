@@ -147,6 +147,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IDirectContractingProposalRepository directContractingProposalRepository;
     private readonly IDirectContractingProposalItemRepository directContractingProposalItemRepository;
     private readonly IRFQRepository rfqRepository;
+    private readonly IPublicSupplierApplicationRepository publicSupplierApplicationRepository;
 
     // Constructor initializes all repositories once
     public UnitOfWork(ApplicationDbContext context, IServiceProvider serviceProvider)
@@ -288,6 +289,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         directContractingProposalRepository = new DirectContractingProposalRepository(context, sieveProcessor);
         directContractingProposalItemRepository = new DirectContractingProposalItemRepository(context, sieveProcessor);
         rfqRepository = new RFQRepository(context, sieveProcessor);
+        publicSupplierApplicationRepository = new PublicSupplierApplicationRepository (context, sieveProcessor);
     }
 
     // Public properties return cached instances
@@ -399,7 +401,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public INonCSEItemRepository NonCSEItemRepository => nonCSEItemRepository;
     public IOPCRItemRatingRepository OPCRItemRatingRepository => opcrItemRatingRepository;
     public IOPCRItemMOVRepository OPCRItemMOVRepository => opcrItemMOVRepository;
-    public IGeneratedDocumentRepository GeneratedDocumentRepository => gneratedDocumentRepository;
+    public IGeneratedDocumentRepository GeneratedDocumentRepository => generatedDocumentRepository;
     public IOPCRConsolidationRepository OPCRConsolidationRepository => opcrConsolidationRepository;
     public IProcurementProjectRepository ProcurementProjectRepository => procurementProjectRepository;
     public IBACResolutionRepository BACResolutionRepository => bacResolutionRepository;
@@ -424,6 +426,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IDirectContractingProposalRepository DirectContractingProposalRepository => directContractingProposalRepository;
     public IDirectContractingProposalItemRepository DirectContractingProposalItemRepository => directContractingProposalItemRepository;
     public IRFQRepository RFQRepository => rfqRepository;
+    public IPublicSupplierApplicationRepository PublicSupplierApplicationRepository => publicSupplierApplicationRepository;
 
     public async Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default)
     {

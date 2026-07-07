@@ -1,4 +1,5 @@
 using ERPEZ.Domain.Common;
+using ERPEZ.Domain.Enums;
 using Sieve.Attributes;
 
 namespace ERPEZ.Domain.Entities.Planning;
@@ -26,6 +27,13 @@ public class ProcurementActivityType : BaseEntity
     
     [Sieve(CanFilter = true, CanSort = true)]
     public int? MaxDays { get; set; }
+
+    /// <summary>
+    /// Null for user-defined custom types.
+    /// Set only for seeded GPPB-standard types so the system can reliably
+    /// identify key schedule dates without string-name matching.
+    /// </summary>
+    public ProcurementActivitySystemRole? SystemRole { get; set; }
     
     [Sieve(CanFilter = true, CanSort = true)]
     public bool IsArchived { get; set; } = false;

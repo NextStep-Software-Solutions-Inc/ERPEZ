@@ -5050,6 +5050,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasMaxLength(200)
                         .HasColumnType("character varying(200)");
 
+                    b.Property<int?>("SystemRole")
+                        .HasColumnType("integer");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -7487,6 +7490,60 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.ToTable("APRItemMilestones", "procurement");
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.ApplicationUploadedDocument", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ApplicationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("BlobStorageUrl")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("ChecklistItemId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("OriginalFileName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("UploadedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ApplicationId");
+
+                    b.HasIndex("ChecklistItemId");
+
+                    b.ToTable("ApplicationUploadedDocuments", "procurement");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.BACResolution", b =>
                 {
                     b.Property<Guid>("Id")
@@ -7549,6 +7606,18 @@ namespace ERPEZ.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<DateTime?>("AdjustedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("AdjustedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("AdjustmentReason")
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("BACResolutionId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -7567,6 +7636,15 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
+
+                    b.Property<bool>("IsLocked")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("OriginalEndDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("OriginalStartDate")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<Guid>("ProcurementActivityTypeId")
                         .HasColumnType("uuid");
@@ -7601,6 +7679,60 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("ProcurementProjectId");
 
                     b.ToTable("BiddingActivitySchedules", "procurement");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.BiddingDocument", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<DateTime?>("PostedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<Guid?>("PostedByUserId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ProcurementCategoryId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("ProcurementProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProcurementCategoryId");
+
+                    b.HasIndex("ProcurementProjectId")
+                        .IsUnique();
+
+                    b.ToTable("BiddingDocument", "procurement");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.ConsolidatedPR", b =>
@@ -8201,6 +8333,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid?>("ConsolidatedPRId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("ContractNo")
+                        .HasColumnType("text");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -8214,8 +8349,20 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text");
 
+                    b.Property<int?>("DeliveryPeriodDays")
+                        .HasColumnType("integer");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
+
+                    b.Property<decimal?>("NonRefundableBidderFee")
+                        .HasColumnType("numeric");
+
+                    b.Property<Guid?>("ProcurementModeId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("ScopeOfWork")
+                        .HasColumnType("text");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -8235,6 +8382,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("ConsolidatedPRId")
                         .IsUnique();
+
+                    b.HasIndex("ProcurementModeId");
 
                     b.ToTable("ProcurementProjects", "procurement");
                 });
@@ -8297,6 +8446,77 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("ProcurementProjectId", "EnvelopeType");
 
                     b.ToTable("ProjectDocumentChecklists", "procurement");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.PublicSupplierApplication", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("BusinessAddress")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("CompanyName")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ContactNumber")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("ContactPerson")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("EmailAddress")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("ProcurementProjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime>("SubmittedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("TinNumber")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("ProcurementProjectId", "TinNumber")
+                        .IsUnique()
+                        .HasDatabaseName("IX_PublicSupplierApplications_ProjectId_TinNumber");
+
+                    b.ToTable("PublicSupplierApplications", "procurement");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.PurchaseRequest", b =>
@@ -10699,6 +10919,25 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("ProcurementActivityType");
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.ApplicationUploadedDocument", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Procurement.PublicSupplierApplication", "Application")
+                        .WithMany("UploadedDocuments")
+                        .HasForeignKey("ApplicationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERPEZ.Domain.Entities.Procurement.ProjectDocumentChecklist", "ChecklistItem")
+                        .WithMany()
+                        .HasForeignKey("ChecklistItemId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Application");
+
+                    b.Navigation("ChecklistItem");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.BACResolution", b =>
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Procurement.ProcurementProject", "ProcurementProject")
@@ -10725,6 +10964,25 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("ProcurementActivityType");
+
+                    b.Navigation("ProcurementProject");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.BiddingDocument", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.ProcurementCategory", "ProcurementCategory")
+                        .WithMany()
+                        .HasForeignKey("ProcurementCategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERPEZ.Domain.Entities.Procurement.ProcurementProject", "ProcurementProject")
+                        .WithOne("BiddingDocument")
+                        .HasForeignKey("ERPEZ.Domain.Entities.Procurement.BiddingDocument", "ProcurementProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("ProcurementCategory");
 
                     b.Navigation("ProcurementProject");
                 });
@@ -10876,7 +11134,13 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasForeignKey("ERPEZ.Domain.Entities.Procurement.ProcurementProject", "ConsolidatedPRId")
                         .OnDelete(DeleteBehavior.Restrict);
 
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.ProcurementMode", "ProcurementMode")
+                        .WithMany("ProcurementProjects")
+                        .HasForeignKey("ProcurementModeId");
+
                     b.Navigation("ConsolidatedPR");
+
+                    b.Navigation("ProcurementMode");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.ProjectDocumentChecklist", b =>
@@ -10887,12 +11151,23 @@ namespace ERPEZ.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("ERPEZ.Domain.Entities.Procurement.ProcurementProject", "ProcurementProject")
-                        .WithMany()
+                        .WithMany("ProjectDocumentChecklists")
                         .HasForeignKey("ProcurementProjectId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 
                     b.Navigation("MasterDocumentType");
+
+                    b.Navigation("ProcurementProject");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.PublicSupplierApplication", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Procurement.ProcurementProject", "ProcurementProject")
+                        .WithMany()
+                        .HasForeignKey("ProcurementProjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
 
                     b.Navigation("ProcurementProject");
                 });
@@ -11397,6 +11672,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("ProcurementModeThresholds");
 
                     b.Navigation("RFQs");
+                    
+                    b.Navigation("ProcurementProjects");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.ProcurementWorkflow", b =>
@@ -11544,6 +11821,15 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("BACResolutions");
 
                     b.Navigation("BiddingActivitySchedules");
+
+                    b.Navigation("BiddingDocument");
+
+                    b.Navigation("ProjectDocumentChecklists");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.PublicSupplierApplication", b =>
+                {
+                    b.Navigation("UploadedDocuments");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.PurchaseRequest", b =>

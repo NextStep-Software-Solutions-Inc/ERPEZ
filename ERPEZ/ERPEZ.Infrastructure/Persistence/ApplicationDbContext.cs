@@ -171,6 +171,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<DocumentProfile>?           DocumentProfiles           { get; set; }
     public DbSet<DocumentProfileItem>?       DocumentProfileItems       { get; set; }
     public DbSet<ProjectDocumentChecklist>?  ProjectDocumentChecklists  { get; set; }
+
+    public DbSet<PublicSupplierApplication>?   PublicSupplierApplications { get; set; }
+    public DbSet<ApplicationUploadedDocument>? ApplicationUploadedDocuments { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // Apply default conventions for all entities
@@ -2748,7 +2752,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .HasMaxLength(2048);
 
             e.HasOne(c => c.ProcurementProject)
-                .WithMany()
+                .WithMany(p => p.ProjectDocumentChecklists)   // ← FIXED: now points to the named collection
                 .HasForeignKey(c => c.ProcurementProjectId)
                 .OnDelete(DeleteBehavior.Cascade);
 
@@ -2923,5 +2927,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<APRItemMilestone>()
             .HasIndex(e => e.ScheduledDate);
+
+        modelBuilder.Entity<PublicSupplierApplication>()
+            .HasIndex(a => new { a.ProcurementProjectId, a.TinNumber })
+            .IsUnique()
+            .HasDatabaseName("IX_PublicSupplierApplications_ProjectId_TinNumber");
     }
 }
