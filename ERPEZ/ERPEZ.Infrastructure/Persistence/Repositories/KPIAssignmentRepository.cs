@@ -64,12 +64,87 @@ public class KPIAssignmentRepository : Repository<Domain.Entities.Planning.KPIAs
             .AsNoTracking()
             .AsQueryable();
 
-        var filteredQuery = sieveProcessor.Apply(sieveModel, query, applyPagination: false);
+        // ✅ Manually handle nested filters Sieve can't resolve
+        query = ApplyCustomFilters(query, sieveModel.Filters);
+
+        // ✅ Strip custom keys so Sieve doesn't choke on them
+        var sieveFilters = StripCustomFilters(sieveModel.Filters);
+        var sieveModelForProcessor = new SieveModel
+        {
+            Page = sieveModel.Page,
+            PageSize = sieveModel.PageSize,
+            Sorts = sieveModel.Sorts,
+            Filters = sieveFilters  // cleaned filter string
+        };
+
+        // ✅ Use the cleaned model
+        var filteredQuery = sieveProcessor.Apply(sieveModelForProcessor, query, applyPagination: false);
         var filteredCount = await filteredQuery.CountAsync(cancellationToken);
-        var paginatedQuery = sieveProcessor.Apply(sieveModel, filteredQuery, applyFiltering: false, applySorting: false);
-        var results = await paginatedQuery.ToListAsync(cancellationToken);
+        var paginatedQuery = sieveProcessor.Apply(sieveModelForProcessor, filteredQuery, applyFiltering: false, applySorting: false);
+        var results = await paginatedQuery.ToListAsync(cancellationToken); // ✅ add this
 
         return (results, filteredCount);
+    }
+
+    private static string? StripCustomFilters(string? filters)
+    {
+        if (string.IsNullOrWhiteSpace(filters))
+            return filters;
+
+        var terms = filters.Split([',', ';'], StringSplitOptions.RemoveEmptyEntries);
+        var remaining = terms.Where(t =>
+            !CustomFilterKeys.Any(key =>
+                t.IndexOf(key, StringComparison.OrdinalIgnoreCase) >= 0));
+
+        var result = string.Join(",", remaining);
+        return string.IsNullOrWhiteSpace(result) ? null : result;
+    }
+
+    private static readonly string[] CustomFilterKeys =
+    [
+        "fyActiveKPI.fiscalYearId",
+        "fyActiveKPI.functionCategory"
+    ];
+
+    private static IQueryable<Domain.Entities.Planning.KPIAssignment> ApplyCustomFilters(
+        IQueryable<Domain.Entities.Planning.KPIAssignment> query, string? filters)
+    {
+        if (string.IsNullOrWhiteSpace(filters))
+            return query;
+
+        var terms = filters.Split([',', ';'], StringSplitOptions.RemoveEmptyEntries);
+
+        foreach (var term in terms)
+        {
+            if (TryExtractGuid(term, "fyActiveKPI.fiscalYearId", out var fiscalYearId))
+                query = query.Where(a => a.FYActiveKPI != null && a.FYActiveKPI.FiscalYearId == fiscalYearId);
+
+            else if (TryExtractString(term, "fyActiveKPI.functionCategory", out var functionCategory))
+                query = query.Where(a => a.FYActiveKPI != null && a.FYActiveKPI.FunctionCategory == functionCategory);
+        }
+
+        return query;
+    }
+
+    private static bool TryExtractGuid(string term, string key, out Guid value)
+    {
+        value = Guid.Empty;
+        // Sieve operators: ==, !=, etc. We only need equality here.
+        var prefix = key + "==";
+        var idx = term.IndexOf(prefix, StringComparison.OrdinalIgnoreCase);
+        if (idx < 0) return false;
+        var raw = term[(idx + prefix.Length)..].Trim();
+        return Guid.TryParse(raw, out value);
+    }
+
+    private static bool TryExtractString(string term, string key, out string value)
+    {
+        value = string.Empty;
+        var prefix = key + "==";
+        var idx = term.IndexOf(prefix, StringComparison.OrdinalIgnoreCase);
+        if (idx < 0) return false;
+        value = term[(idx + prefix.Length)..].Trim();
+        return !string.IsNullOrEmpty(value);
     }
 
     public async Task<Domain.Entities.Planning.KPIAssignment?> GetByIdWithDetailsAsync(Guid id, CancellationToken cancellationToken = default)

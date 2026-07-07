@@ -55,7 +55,10 @@ public class GetKPIAssignmentsQueryHandler(IUnitOfWork unitOfWork)
             FYActiveKPI = MapFYActiveKPI(assignment.FYActiveKPI),
             Office = MapOffice(assignment.Office),
             CreatedAt = assignment.CreatedAt,
-            CreatedBy = assignment.CreatedBy
+            CreatedBy = assignment.CreatedBy,
+            FiscalYearId = assignment.FYActiveKPI?.FiscalYearId,
+            Year = assignment.FYActiveKPI?.FiscalYear?.Year,         // needs FiscalYear nav prop
+            FunctionCategory = assignment.FYActiveKPI?.FunctionCategory,
         };
     }
 

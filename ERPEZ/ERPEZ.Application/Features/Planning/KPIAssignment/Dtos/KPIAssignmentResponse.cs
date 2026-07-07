@@ -9,6 +9,12 @@ public record KPIAssignmentResponse
     public Guid FYActiveKPIId { get; init; }
     public Guid OfficeId { get; init; }
     public string OfficeName { get; init; } = string.Empty;
+
+    // ✅ New flat fields
+    public Guid? FiscalYearId { get; init; }
+    public int? Year { get; init; }
+    public string? FunctionCategory { get; init; }
+
     public decimal AssignedTargetAnnual { get; init; }
     public decimal? AssignedTargetQ1 { get; init; }
     public decimal? AssignedTargetQ2 { get; init; }
