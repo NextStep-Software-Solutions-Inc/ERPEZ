@@ -1,10 +1,10 @@
 namespace ERPEZ.Application.Features.Procurement.RequestForQuotation.Dtos;
 
-public class RFQSummaryDto
+public record RFQSummaryDto
 {
-    public int Total { get; set; }
-    public int Draft { get; set; }
-    public int Submitted { get; set; }
-    public int Approved { get; set; }
-    public int Returned { get; set; }
+    public int Total { get; init; }
+    public int Draft { get; init; }
+    public int Submitted { get; init; }
+    public int Approved { get; init; }
+    public int Returned { get; init; }
 }
