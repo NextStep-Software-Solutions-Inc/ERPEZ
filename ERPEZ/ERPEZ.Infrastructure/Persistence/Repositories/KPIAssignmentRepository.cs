@@ -93,14 +93,14 @@ public class KPIAssignmentRepository : Repository<Domain.Entities.Planning.KPIAs
 
         var terms = filters.Split([',', ';'], StringSplitOptions.RemoveEmptyEntries);
         var remaining = terms.Where(t =>
-            !CustomFilterKeys.Any(key =>
+            !customFilterKeys.Any(key =>
                 t.IndexOf(key, StringComparison.OrdinalIgnoreCase) >= 0));
 
         var result = string.Join(",", remaining);
         return string.IsNullOrWhiteSpace(result) ? null : result;
     }
 
-    private static readonly string[] CustomFilterKeys =
+    private static readonly string[] customFilterKeys =
     [
         "fyActiveKPI.fiscalYearId",
         "fyActiveKPI.functionCategory"
