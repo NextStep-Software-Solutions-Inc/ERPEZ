@@ -82,6 +82,7 @@ public class RFQRepository : Repository<RFQ>, IRFQRepository
         var query = context.Set<RFQItem>()
             .Include(i => i.RFQ)
             .Where(i => !i.IsDeleted
+                        && !i.RFQ.IsDeleted
                         && i.CPRItemId == cprItemId
                         && i.RFQ.Status != StatusEnum.Returned);
 
