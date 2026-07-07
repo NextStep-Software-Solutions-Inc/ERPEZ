@@ -2247,9 +2247,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<DirectContracting>(e =>
         {
-            e.HasOne(dc => dc.BACResolution)
-                .WithMany()
-                .HasForeignKey(dc => dc.BACResolutionId)
+            e.HasOne(dc => dc.BACProject)
+                .WithMany(p => p.DirectContractings)
+                .HasForeignKey(dc => dc.BACProjectId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             e.HasOne(dc => dc.ExclusiveSupplier)

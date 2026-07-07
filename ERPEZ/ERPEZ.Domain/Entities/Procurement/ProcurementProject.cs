@@ -1,5 +1,4 @@
 using ERPEZ.Domain.Common;
-using ERPEZ.Domain.Entities.Planning;
 using Sieve.Attributes;
 
 namespace ERPEZ.Domain.Entities.Procurement;
@@ -31,4 +30,5 @@ public class ProcurementProject : BaseEntity
     // Navigation properties
     public virtual List<BACResolution> BACResolutions { get; set; } = [];
     public virtual List<BiddingActivitySchedule> BiddingActivitySchedules { get; set; } = [];
+    public virtual List<DirectContracting> DirectContractings { get; set; } = [];
 }
