@@ -8660,6 +8660,10 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<string>("Remarks")
+                        .HasMaxLength(1000)
+                        .HasColumnType("character varying(1000)");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -11671,9 +11675,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Navigation("ProcurementModeThresholds");
 
-                    b.Navigation("RFQs");
-                    
                     b.Navigation("ProcurementProjects");
+
+                    b.Navigation("RFQs");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.ProcurementWorkflow", b =>
