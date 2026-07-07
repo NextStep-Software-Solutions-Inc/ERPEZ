@@ -48,8 +48,6 @@ public class AddRFQItemsCommandHandler(IUnitOfWork unitOfWork)
                 itemDto.CPRItemId, excludingRfqId: rfq.Id, cancellationToken);
  
             var existingItem = rfq.RFQItems.FirstOrDefault(i => i.CPRItemId == itemDto.CPRItemId);
-            var previousQuantityOnThisRfq = existingItem?.Quantity ?? 0;
- 
             if (alreadySourced + itemDto.Quantity > prItem.RequestedQuantity)
             {
                 return ApiResponse<bool>.Fail(
