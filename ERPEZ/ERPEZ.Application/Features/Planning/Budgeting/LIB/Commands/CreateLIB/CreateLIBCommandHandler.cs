@@ -89,11 +89,11 @@ public class CreateLIBCommandHandler(IUnitOfWork unitOfWork)
                     "The Agency Master Budget's Fiscal Year does not match the LIB's Fiscal Year.");
             }
 
-            var hasOfficeCeiling = await unitOfWork.OfficeCeilingRepository.ExistsAsync(
+            var officeCeiling = await unitOfWork.OfficeCeilingRepository.FindAsync(
                 oc => oc.OfficeId == request.OfficeId && oc.AgencyMasterBudgetId == agencyMasterBudget.Id,
                 cancellationToken);
 
-            if (!hasOfficeCeiling)
+            if (officeCeiling is null)
             {
                 throw new NotFoundException(
                     $"No Office Ceiling exists for Office {request.OfficeId} under this Agency Master Budget.");
@@ -160,7 +160,7 @@ public class CreateLIBCommandHandler(IUnitOfWork unitOfWork)
         // -----------------------------------------------------------------------
         var sourceIdFragment = request.SourceId.Value.ToString("N")[..8];
         var libNumber = sourceType.Equals("OPCR", StringComparison.OrdinalIgnoreCase)
-            ? $"LIB-{office.Code}-{fiscalYear!.Year}"
+            ? $"LIB-{office.Code}-{fiscalYear!.Year}-{sourceIdFragment}"
             : isMultiYearWfp
                 ? $"LIB-{office.Code}-WFP-{wfp!.ProjectStartDate.Year}-{wfp.ProjectEndDate.Year}-{sourceIdFragment}"
                 : $"LIB-{office.Code}-WFP-{fiscalYear!.Year}-{sourceIdFragment}";
