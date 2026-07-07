@@ -121,7 +121,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly INonCSEItemRepository nonCSEItemRepository;
     private readonly IOPCRItemRatingRepository opcrItemRatingRepository;
     private readonly IOPCRItemMOVRepository opcrItemMOVRepository;
-    private readonly IGeneratedDocumentRepository gneratedDocumentRepository;
+    private readonly IGeneratedDocumentRepository generatedDocumentRepository;
     private readonly IOPCRConsolidationRepository opcrConsolidationRepository;
     private readonly IProcurementProjectRepository procurementProjectRepository;
     private readonly IBACResolutionRepository bacResolutionRepository;
@@ -142,9 +142,11 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IAPRRepository aprRepository;
     private readonly IAPRItemRepository aprItemRepository;
     private readonly IAPRItemMilestoneRepository aprItemMilestoneRepository;
+
     private readonly IDirectContractingRepository directContractingRepository;
     private readonly IDirectContractingProposalRepository directContractingProposalRepository;
     private readonly IDirectContractingProposalItemRepository directContractingProposalItemRepository;
+    private readonly IRFQRepository rfqRepository;
     private readonly IPublicSupplierApplicationRepository publicSupplierApplicationRepository;
 
     // Constructor initializes all repositories once
@@ -262,7 +264,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         nonCSEItemRepository = new NonCSEItemRepository(context, sieveProcessor);
         opcrItemRatingRepository = new OPCRItemRatingRepository(context, sieveProcessor);
         opcrItemMOVRepository = new OPCRItemMOVRepository(context, sieveProcessor);
-        gneratedDocumentRepository = new GeneratedDocumentRepository(context, sieveProcessor);
+        generatedDocumentRepository = new GeneratedDocumentRepository(context, sieveProcessor);
         opcrConsolidationRepository = new OPCRConsolidationRepository(context, sieveProcessor);
         procurementProjectRepository = new ProcurementProjectRepository(context, sieveProcessor);
         bacResolutionRepository = new BACResolutionRepository(context, sieveProcessor);
@@ -286,6 +288,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         directContractingRepository = new DirectContractingRepository(context, sieveProcessor);
         directContractingProposalRepository = new DirectContractingProposalRepository(context, sieveProcessor);
         directContractingProposalItemRepository = new DirectContractingProposalItemRepository(context, sieveProcessor);
+        rfqRepository = new RFQRepository(context, sieveProcessor);
         publicSupplierApplicationRepository = new PublicSupplierApplicationRepository (context, sieveProcessor);
     }
 
@@ -398,7 +401,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public INonCSEItemRepository NonCSEItemRepository => nonCSEItemRepository;
     public IOPCRItemRatingRepository OPCRItemRatingRepository => opcrItemRatingRepository;
     public IOPCRItemMOVRepository OPCRItemMOVRepository => opcrItemMOVRepository;
-    public IGeneratedDocumentRepository GeneratedDocumentRepository => gneratedDocumentRepository;
+    public IGeneratedDocumentRepository GeneratedDocumentRepository => generatedDocumentRepository;
     public IOPCRConsolidationRepository OPCRConsolidationRepository => opcrConsolidationRepository;
     public IProcurementProjectRepository ProcurementProjectRepository => procurementProjectRepository;
     public IBACResolutionRepository BACResolutionRepository => bacResolutionRepository;
@@ -422,7 +425,9 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IDirectContractingRepository DirectContractingRepository => directContractingRepository;
     public IDirectContractingProposalRepository DirectContractingProposalRepository => directContractingProposalRepository;
     public IDirectContractingProposalItemRepository DirectContractingProposalItemRepository => directContractingProposalItemRepository;
+    public IRFQRepository RFQRepository => rfqRepository;
     public IPublicSupplierApplicationRepository PublicSupplierApplicationRepository => publicSupplierApplicationRepository;
+
     public async Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default)
     {
         await using var transaction = await context.Database.BeginTransactionAsync(cancellationToken);

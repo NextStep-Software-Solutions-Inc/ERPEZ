@@ -294,6 +294,7 @@ public class AddConsolidatedPRCommandHandlerTests
         public IAPRRepository APRRepository => throw new NotImplementedException();
         public IAPRItemRepository APRItemRepository => throw new NotImplementedException();
         public IAPRItemMilestoneRepository APRItemMilestoneRepository => throw new NotImplementedException();
+        public IRFQRepository RFQRepository => throw new NotImplementedException();
         public IPublicSupplierApplicationRepository PublicSupplierApplicationRepository => throw new NotImplementedException();
     }
 
@@ -329,6 +330,11 @@ public class AddConsolidatedPRCommandHandlerTests
             CancellationToken cancellationToken = default) where TDto : class
         {
             throw new NotImplementedException();
+        }
+
+        public Task<IReadOnlyList<ConsolidatedPR>> GetAllApprovedWithDetailsAsync(CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult<IReadOnlyList<ConsolidatedPR>>(items.AsReadOnly());
         }
     }
 

@@ -162,6 +162,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<PRItemMonthlyQuantity>? PRItemMonthlyQuantities { get; set; }
     public DbSet<ConsolidatedPR>? ConsolidatedPRs { get; set; }
     public DbSet<ConsolidatedPRItem>? ConsolidatedPRItems { get; set; }
+    public DbSet<RFQ>? RFQs { get; set; }
+    public DbSet<RFQItem>? RFQItems { get; set; }
+    public DbSet<RFQSupplier>? RFQSuppliers { get; set; }
     
     // Bidding Document Library
     public DbSet<MasterDocumentType>?        MasterDocumentTypes        { get; set; }
@@ -510,6 +513,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<ProcurementMode>()
             .HasIndex(pm => pm.Name)
             .IsUnique();
+
+        modelBuilder.Entity<ProcurementMode>()
+            .Property(pm => pm.MinSupplierCount)
+            .IsRequired()
+            .HasDefaultValue(1);
 
         //GeneralRatingScale
         modelBuilder.Entity<GeneralRatingScale>()
@@ -2383,9 +2391,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<PurchaseRequest>()
-            .HasOne(pr => pr.FundCluster)
+            .HasOne(pr => pr.FundSource)
             .WithMany()
-            .HasForeignKey(pr => pr.FundClusterId)
+            .HasForeignKey(pr => pr.FundSourceId)
             .OnDelete(DeleteBehavior.Restrict)
             .IsRequired(false);
 
@@ -2535,6 +2543,149 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<ConsolidatedPRItem>()
             .HasIndex(ci => new { ci.ConsolidatedPRId, ci.PRItemId })
             .IsUnique();
+
+        // RFQ
+        modelBuilder.Entity<RFQ>()
+            .Property(r => r.RFQNumber)
+            .IsRequired()
+            .HasMaxLength(100);
+        
+        modelBuilder.Entity<RFQ>()
+            .Property(r => r.TracingNumber)
+            .IsRequired()
+            .HasMaxLength(100);
+        
+        modelBuilder.Entity<RFQ>()
+            .Property(r => r.Description)
+            .HasMaxLength(1000);
+        
+        modelBuilder.Entity<RFQ>()
+            .Property(r => r.DeliveryPeriod)
+            .HasMaxLength(200);
+        
+        modelBuilder.Entity<RFQ>()
+            .Property(r => r.Purpose)
+            .HasMaxLength(1000);
+
+        modelBuilder.Entity<RFQ>()
+            .Property(r => r.Remarks)
+            .HasMaxLength(1000);
+        
+        modelBuilder.Entity<RFQ>()
+            .Property(r => r.Status)
+            .HasConversion<string>()
+            .IsRequired()
+            .HasMaxLength(50);
+        
+        modelBuilder.Entity<RFQ>()
+            .Property(r => r.TotalAmount)
+            .HasPrecision(18, 2);
+        
+        modelBuilder.Entity<RFQ>()
+            .HasOne(r => r.ModeOfProcurement)
+            .WithMany(pm => pm.RFQs)
+            .HasForeignKey(r => r.ModeOfProcurementId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .IsRequired(false);
+        
+        modelBuilder.Entity<RFQ>()
+            .HasMany(r => r.RFQItems)
+            .WithOne(i => i.RFQ)
+            .HasForeignKey(i => i.RFQId)
+            .OnDelete(DeleteBehavior.Cascade);
+        
+        modelBuilder.Entity<RFQ>()
+            .HasMany(r => r.RFQSuppliers)
+            .WithOne(s => s.RFQ)
+            .HasForeignKey(s => s.RFQId)
+            .OnDelete(DeleteBehavior.Cascade);
+        
+        modelBuilder.Entity<RFQ>()
+            .HasIndex(r => r.RFQNumber)
+            .IsUnique();
+        
+        modelBuilder.Entity<RFQ>()
+            .HasIndex(r => r.TracingNumber)
+            .IsUnique();
+        
+        modelBuilder.Entity<RFQ>()
+            .HasIndex(r => r.ModeOfProcurementId);
+        
+        modelBuilder.Entity<RFQ>()
+            .HasIndex(r => r.Status);
+        
+        // RFQItem
+        modelBuilder.Entity<RFQItem>()
+            .Property(i => i.UnitPriceSnapshot)
+            .HasPrecision(18, 2);
+        
+        modelBuilder.Entity<RFQItem>()
+            .Property(i => i.ItemNameSnapshot)
+            .IsRequired()
+            .HasMaxLength(500);
+        
+        modelBuilder.Entity<RFQItem>()
+            .Property(i => i.CategorySnapshot)
+            .HasMaxLength(200);
+        
+        modelBuilder.Entity<RFQItem>()
+            .Property(i => i.FundSnapshot)
+            .HasMaxLength(200);
+        
+        modelBuilder.Entity<RFQItem>()
+            .Property(i => i.GreenSpecification)
+            .HasMaxLength(1000);
+        
+        modelBuilder.Entity<RFQItem>()
+            .HasOne(i => i.RFQ)
+            .WithMany(r => r.RFQItems)
+            .HasForeignKey(i => i.RFQId)
+            .OnDelete(DeleteBehavior.Cascade);
+        
+        modelBuilder.Entity<RFQItem>()
+            .HasOne(i => i.CPRItem)
+            .WithMany()
+            .HasForeignKey(i => i.CPRItemId)
+            .OnDelete(DeleteBehavior.Restrict);
+        
+        modelBuilder.Entity<RFQItem>()
+            .HasIndex(i => i.RFQId);
+        
+        modelBuilder.Entity<RFQItem>()
+            .HasIndex(i => i.CPRItemId);
+
+        // Prevents the same ConsolidatedPRItem from being sourced twice into the SAME RFQ.
+        // (Cross-RFQ double-sourcing across DIFFERENT RFQs is a separate handler-level
+        // quantity check against PRItem.RequestedQuantity — not enforceable via a DB constraint
+        // alone, since partial quantities are allowed.)
+        modelBuilder.Entity<RFQItem>()
+            .HasIndex(i => new { i.RFQId, i.CPRItemId })
+            .IsUnique();
+        
+        // RFQSupplier
+        modelBuilder.Entity<RFQSupplier>()
+            .HasOne(s => s.RFQ)
+            .WithMany(r => r.RFQSuppliers)
+            .HasForeignKey(s => s.RFQId)
+            .OnDelete(DeleteBehavior.Cascade);
+        
+        modelBuilder.Entity<RFQSupplier>()
+            .HasOne(s => s.Supplier)
+            .WithMany()
+            .HasForeignKey(s => s.SupplierId)
+            .OnDelete(DeleteBehavior.Restrict);
+        
+        modelBuilder.Entity<RFQSupplier>()
+            .HasIndex(s => s.RFQId);
+        
+        modelBuilder.Entity<RFQSupplier>()
+            .HasIndex(s => s.SupplierId);
+        
+        // Prevents inviting the same supplier twice to the same RFQ.
+        modelBuilder.Entity<RFQSupplier>()
+            .HasIndex(s => new { s.RFQId, s.SupplierId })
+            .IsUnique();
+
         // ── Bidding Document Library ──────────────────────────────────────────────
 
         modelBuilder.Entity<MasterDocumentType>(e =>

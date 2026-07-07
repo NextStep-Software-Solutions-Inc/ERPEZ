@@ -28,7 +28,7 @@ public class PurchaseRequestRepository : Repository<PurchaseRequest>, IPurchaseR
 
         return q
             .Include(pr => pr.Office)
-            .Include(pr => pr.FundCluster)
+            .Include(pr => pr.FundSource)
             .Include(pr => pr.UACSCodeCombination)
             .Include(pr => pr.ProcurementCategory)
             .Include(pr => pr.PRItems.Where(i => !i.IsDeleted))

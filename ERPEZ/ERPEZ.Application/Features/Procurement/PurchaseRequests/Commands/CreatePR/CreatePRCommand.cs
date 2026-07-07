@@ -14,7 +14,7 @@ public record CreatePRCommand : IRequest<ApiResponse<Guid>>
     public string Purpose { get; init; } = string.Empty;
     public Guid OfficeId { get; init; }
     public Guid? PPMPId { get; init; }
-    public Guid? FundClusterId { get; init; }
+    public Guid? FundSourceId { get; init; }
     public Guid? UACSCodeCombinationId { get; init; }
     public PRType PRType { get; init; } = PRType.NonCSE;
     // public List<PRItemRequest> Items { get; init; } = [];

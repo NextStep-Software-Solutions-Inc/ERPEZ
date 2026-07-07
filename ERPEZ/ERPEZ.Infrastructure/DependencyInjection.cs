@@ -112,6 +112,7 @@ public static class DependencyInjection
         services.AddScoped<IOPCRItemRatingRepository, OPCRItemRatingRepository>();
         services.AddScoped<IOPCRItemMOVRepository, OPCRItemMOVRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
+        services.AddScoped<IRFQRepository, RFQRepository>();
 
         // ── Other Services ──────────────────────────────────────────────────────────
         services.AddScoped<IFileStorageService, AzureBlobStorageService>();
