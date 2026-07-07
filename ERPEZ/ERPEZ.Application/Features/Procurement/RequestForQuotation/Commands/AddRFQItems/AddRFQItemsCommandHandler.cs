@@ -26,11 +26,16 @@ public class AddRFQItemsCommandHandler(IUnitOfWork unitOfWork)
             }
  
             // Lock (or validate) the RFQ's procurement mode from the first item added.
+            if (!cprItem.ProcurementModeId.HasValue)
+            {
+                return ApiResponse<bool>.Fail("Consolidated PR item has no procurement mode assigned.");
+            }
+
             if (rfq.ModeOfProcurementId is null)
             {
-                rfq.ModeOfProcurementId = cprItem.ProcurementModeId;
+                rfq.ModeOfProcurementId = cprItem.ProcurementModeId.Value;
             }
-            else if (cprItem.ProcurementModeId.HasValue && rfq.ModeOfProcurementId != cprItem.ProcurementModeId)
+            else if (rfq.ModeOfProcurementId != cprItem.ProcurementModeId.Value)
             {
                 return ApiResponse<bool>.Fail(
                     "All items in an RFQ must be sourced from Consolidated PR items assigned the same procurement mode.");
