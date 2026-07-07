@@ -2,54 +2,54 @@ using ERPEZ.Domain.Enums;
 
 namespace ERPEZ.Application.Features.Procurement.RequestForQuotation.Dtos;
 
-public class RFQListItemDto
+public record RFQListItemDto
 {
-    public Guid Id { get; set; }
-    public string RFQNumber { get; set; } = string.Empty;
-    public string? Description { get; set; }
-    public string TracingNumber { get; set; } = string.Empty;
-    public string? ModeOfProcurementName { get; set; }
-    public DateOnly? Deadline { get; set; }
-    public string? DeliveryPeriod { get; set; }
-    public StatusEnum Status { get; set; }
+    public Guid Id { get; init; }
+    public string RFQNumber { get; init; } = string.Empty;
+    public string? Description { get; init; }
+    public string TracingNumber { get; init; } = string.Empty;
+    public string? ModeOfProcurementName { get; init; }
+    public DateOnly? Deadline { get; init; }
+    public string? DeliveryPeriod { get; init; }
+    public StatusEnum Status { get; init; }
 }
 
-public class RFQDetailDto
+public record RFQDetailDto
 {
-    public Guid Id { get; set; }
-    public string RFQNumber { get; set; } = string.Empty;
-    public string TracingNumber { get; set; } = string.Empty;
-    public string? Description { get; set; }
-    public Guid? ModeOfProcurementId { get; set; }
-    public string? ModeOfProcurementName { get; set; }
-    public DateOnly Date { get; set; }
-    public DateOnly? Deadline { get; set; }
-    public string? DeliveryPeriod { get; set; }
-    public string? Purpose { get; set; }
-    public string? Remarks { get; set; }
-    public StatusEnum Status { get; set; }
-    public decimal TotalAmount { get; set; }
-    public List<RFQItemDto> Items { get; set; } = [];
-    public List<RFQSupplierDto> Suppliers { get; set; } = [];
+    public Guid Id { get; init; }
+    public string RFQNumber { get; init; } = string.Empty;
+    public string TracingNumber { get; init; } = string.Empty;
+    public string? Description { get; init; }
+    public Guid? ModeOfProcurementId { get; init; }
+    public string? ModeOfProcurementName { get; init; }
+    public DateOnly Date { get; init; }
+    public DateOnly? Deadline { get; init; }
+    public string? DeliveryPeriod { get; init; }
+    public string? Purpose { get; init; }
+    public string? Remarks { get; init; }
+    public StatusEnum Status { get; init; }
+    public decimal TotalAmount { get; init; }
+    public List<RFQItemDto> Items { get; init; } = [];
+    public List<RFQSupplierDto> Suppliers { get; init; } = [];
 }
 
-public class RFQItemDto
+public record RFQItemDto
 {
-    public Guid Id { get; set; }
-    public Guid CPRItemId { get; set; }
-    public string ItemNameSnapshot { get; set; } = string.Empty;
-    public int Quantity { get; set; }
-    public decimal UnitPriceSnapshot { get; set; }
+    public Guid Id { get; init; }
+    public Guid CPRItemId { get; init; }
+    public string ItemNameSnapshot { get; init; } = string.Empty;
+    public int Quantity { get; init; }
+    public decimal UnitPriceSnapshot { get; init; }
     public decimal TotalPrice => Quantity * UnitPriceSnapshot;
-    public bool IsBrochureRequired { get; set; }
-    public string? GreenSpecification { get; set; }
-    public string? CategorySnapshot { get; set; }
-    public string? FundSnapshot { get; set; }
+    public bool IsBrochureRequired { get; init; }
+    public string? GreenSpecification { get; init; }
+    public string? CategorySnapshot { get; init; }
+    public string? FundSnapshot { get; init; }
 }
 
-public class RFQSupplierDto
+public record RFQSupplierDto
 {
-    public Guid SupplierId { get; set; }
-    public string SupplierName { get; set; } = string.Empty;
-    public DateTime InvitedAt { get; set; }
+    public Guid SupplierId { get; init; }
+    public string SupplierName { get; init; } = string.Empty;
+    public DateTime InvitedAt { get; init; }
 }
