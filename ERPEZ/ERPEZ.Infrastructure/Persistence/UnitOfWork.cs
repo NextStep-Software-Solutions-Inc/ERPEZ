@@ -121,7 +121,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly INonCSEItemRepository nonCSEItemRepository;
     private readonly IOPCRItemRatingRepository opcrItemRatingRepository;
     private readonly IOPCRItemMOVRepository opcrItemMOVRepository;
-    private readonly IGeneratedDocumentRepository gneratedDocumentRepository;
+    private readonly IGeneratedDocumentRepository generatedDocumentRepository;
     private readonly IOPCRConsolidationRepository opcrConsolidationRepository;
     private readonly IProcurementProjectRepository procurementProjectRepository;
     private readonly IBACResolutionRepository bacResolutionRepository;
@@ -264,7 +264,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         nonCSEItemRepository = new NonCSEItemRepository(context, sieveProcessor);
         opcrItemRatingRepository = new OPCRItemRatingRepository(context, sieveProcessor);
         opcrItemMOVRepository = new OPCRItemMOVRepository(context, sieveProcessor);
-        gneratedDocumentRepository = new GeneratedDocumentRepository(context, sieveProcessor);
+        generatedDocumentRepository = new GeneratedDocumentRepository(context, sieveProcessor);
         opcrConsolidationRepository = new OPCRConsolidationRepository(context, sieveProcessor);
         procurementProjectRepository = new ProcurementProjectRepository(context, sieveProcessor);
         bacResolutionRepository = new BACResolutionRepository(context, sieveProcessor);
