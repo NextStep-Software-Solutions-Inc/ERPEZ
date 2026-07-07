@@ -1,6 +1,7 @@
 using ERPEZ.Shared.Common;
 using ERPEZ.Domain.Entities.Procurement;
 using ERPEZ.Domain.Interfaces;
+using ERPEZ.Domain.Enums;
 using FluentValidation;
 using MediatR;
  
@@ -16,7 +17,16 @@ public class AddRFQItemsCommandHandler(IUnitOfWork unitOfWork)
         {
             return ApiResponse<bool>.Fail("RFQ not found.");
         }
+
+        if (rfq.Status != StatusEnum.Draft && rfq.Status != StatusEnum.Returned)
+        {
+            return ApiResponse<bool>.Fail("Items can only be modified on Draft or Returned RFQs.");
+        }
  
+        var cprItemIds = request.Items.Select(x => x.CPRItemId).Distinct().ToList();
+        var sourcedQuantities = await unitOfWork.RFQRepository.GetSourcedQuantitiesForCprItemsAsync(
+            cprItemIds, excludingRfqId: rfq.Id, cancellationToken);
+
         foreach (var itemDto in request.Items)
         {
             var cprItem = await unitOfWork.ConsolidatedPRItemRepository.GetByIdWithDetailsAsync(itemDto.CPRItemId, cancellationToken);
@@ -49,8 +59,7 @@ public class AddRFQItemsCommandHandler(IUnitOfWork unitOfWork)
  
             // GPPB double-sourcing guard: total sourced quantity across non-Returned RFQs
             // (excluding this RFQ's own existing rows for this CPR item, since we may be updating) must not exceed RequestedQuantity.
-            var alreadySourced = await unitOfWork.RFQRepository.GetSourcedQuantityForCprItemAsync(
-                itemDto.CPRItemId, excludingRfqId: rfq.Id, cancellationToken);
+            sourcedQuantities.TryGetValue(itemDto.CPRItemId, out var alreadySourced);
  
             var existingItem = rfq.RFQItems.FirstOrDefault(i => i.CPRItemId == itemDto.CPRItemId);
             if (alreadySourced + itemDto.Quantity > prItem.RequestedQuantity)

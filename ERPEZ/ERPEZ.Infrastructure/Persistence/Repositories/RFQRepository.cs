@@ -112,4 +112,28 @@ public class RFQRepository : Repository<RFQ>, IRFQRepository
     {
         context.Set<RFQItem>().Remove(item);
     }
+
+    public async Task<Dictionary<Guid, int>> GetSourcedQuantitiesForCprItemsAsync(
+        List<Guid> cprItemIds,
+        Guid? excludingRfqId = null,
+        CancellationToken cancellationToken = default)
+    {
+        var query = context.Set<RFQItem>()
+            .Include(i => i.RFQ)
+            .Where(i => !i.IsDeleted
+                        && cprItemIds.Contains(i.CPRItemId)
+                        && i.RFQ.Status != StatusEnum.Returned);
+
+        if (excludingRfqId.HasValue)
+        {
+            query = query.Where(i => i.RFQId != excludingRfqId.Value);
+        }
+
+        var results = await query
+            .GroupBy(i => i.CPRItemId)
+            .Select(g => new { CPRItemId = g.Key, TotalQuantity = g.Sum(i => i.Quantity) })
+            .ToListAsync(cancellationToken);
+
+        return results.ToDictionary(r => r.CPRItemId, r => r.TotalQuantity);
+    }
 }

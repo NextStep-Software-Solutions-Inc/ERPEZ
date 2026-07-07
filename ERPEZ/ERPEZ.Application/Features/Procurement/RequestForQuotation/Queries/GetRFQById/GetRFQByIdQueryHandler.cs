@@ -26,6 +26,7 @@ public class GetRFQByIdQueryHandler(IUnitOfWork unitOfWork)
             Deadline = rfq.Deadline,
             DeliveryPeriod = rfq.DeliveryPeriod,
             Purpose = rfq.Purpose,
+            Remarks = rfq.Remarks,
             Status = rfq.Status,
             TotalAmount = rfq.TotalAmount,
             Items = rfq.RFQItems.Select(item => new RFQItemDto

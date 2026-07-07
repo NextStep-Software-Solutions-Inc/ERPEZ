@@ -23,6 +23,10 @@ public class ChangeRFQStatusCommandHandler(IUnitOfWork unitOfWork)
         }
 
         rfq.Status = request.Status;
+        if (!string.IsNullOrWhiteSpace(request.Remarks))
+        {
+            rfq.Remarks = request.Remarks;
+        }
 
         unitOfWork.RFQRepository.Update(rfq);
         await unitOfWork.SaveChangesAsync(cancellationToken);

@@ -2566,6 +2566,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<RFQ>()
             .Property(r => r.Purpose)
             .HasMaxLength(1000);
+
+        modelBuilder.Entity<RFQ>()
+            .Property(r => r.Remarks)
+            .HasMaxLength(1000);
         
         modelBuilder.Entity<RFQ>()
             .Property(r => r.Status)

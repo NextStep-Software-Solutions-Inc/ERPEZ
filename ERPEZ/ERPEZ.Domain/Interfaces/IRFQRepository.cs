@@ -37,4 +37,9 @@ public interface IRFQRepository : IRepository<RFQ>
         CancellationToken cancellationToken = default);
 
     void RemoveItem(RFQItem item);
+
+    Task<Dictionary<Guid, int>> GetSourcedQuantitiesForCprItemsAsync(
+        List<Guid> cprItemIds,
+        Guid? excludingRfqId = null,
+        CancellationToken cancellationToken = default);
 }

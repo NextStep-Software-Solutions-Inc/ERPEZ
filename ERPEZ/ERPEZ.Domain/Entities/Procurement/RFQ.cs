@@ -51,6 +51,9 @@ public class RFQ : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public decimal TotalAmount { get; set; }
 
+    [Sieve(CanFilter = true, CanSort = true)]
+    public string? Remarks { get; set; }
+
     // Navigation
     public virtual ProcurementMode? ModeOfProcurement { get; set; }
     public virtual List<RFQItem> RFQItems { get; set; } = [];

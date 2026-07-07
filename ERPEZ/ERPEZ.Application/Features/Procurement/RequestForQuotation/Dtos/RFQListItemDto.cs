@@ -26,6 +26,7 @@ public class RFQDetailDto
     public DateOnly? Deadline { get; set; }
     public string? DeliveryPeriod { get; set; }
     public string? Purpose { get; set; }
+    public string? Remarks { get; set; }
     public StatusEnum Status { get; set; }
     public decimal TotalAmount { get; set; }
     public List<RFQItemDto> Items { get; set; } = [];

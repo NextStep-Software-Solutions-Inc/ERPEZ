@@ -1,5 +1,6 @@
 using ERPEZ.Shared.Common;
 using ERPEZ.Domain.Interfaces;
+using ERPEZ.Domain.Enums;
 using MediatR;
  
 namespace ERPEZ.Application.Features.Procurement.RequestForQuotation.Commands.RemoveRFQItem;
@@ -14,7 +15,12 @@ public class RemoveRFQItemCommandHandler(IUnitOfWork unitOfWork)
         {
             return ApiResponse<bool>.Fail("RFQ not found.");
         }
- 
+
+        if (rfq.Status != StatusEnum.Draft && rfq.Status != StatusEnum.Returned)
+        {
+            return ApiResponse<bool>.Fail("Items can only be modified on Draft or Returned RFQs.");
+        }
+
         var item = rfq.RFQItems.FirstOrDefault(i => i.Id == request.RFQItemId);
         if (item is null)
         {
