@@ -143,9 +143,76 @@ public class PurchaseRequestRepository : Repository<PurchaseRequest>, IPurchaseR
 
     public async Task<List<EligibleAPRItemResult>> GetEligibleOutOfStockItemsAsync(Guid officeId, CancellationToken cancellationToken = default)
     {
-        // Stub — will be implemented once Dev B delivers the APR module.
-        await Task.CompletedTask;
-        return [];
+        var reservedQty = await context.Set<PRItem>()
+            .Where(i =>
+                i.APRItemId != null &&
+                i.PurchaseRequest.OfficeId == officeId &&
+                !i.PurchaseRequest.IsDeleted &&
+                i.PurchaseRequest.Status != StatusEnum.Returned &&
+                i.PurchaseRequest.PRType == PRType.OutOfStockCSE)
+            .GroupBy(i => i.APRItemId!.Value)
+            .Select(g => new { APRItemId = g.Key, ReservedQty = g.Sum(i => i.RequestedQuantity) })
+            .ToDictionaryAsync(x => x.APRItemId, x => x.ReservedQty, cancellationToken);
+
+        var aprItems = await context.Set<APRItem>()
+            .Include(ai => ai.APR)
+                .ThenInclude(a => a.Office)
+            .Include(ai => ai.APR)
+                .ThenInclude(a => a.FiscalYear)
+            .Include(ai => ai.PPMPItem)
+                .ThenInclude(pi => pi.CSEItem)
+                    .ThenInclude(c => c!.UOM)
+            .Include(ai => ai.PPMPItem)
+                .ThenInclude(pi => pi.PPMPExpenditureItem)
+                    .ThenInclude(pei => pei.PPMPActivity)
+                        .ThenInclude(pa => pa.LIBActivity)
+            .Include(ai => ai.PPMPItem)
+                .ThenInclude(pi => pi.PPMPExpenditureItem)
+                    .ThenInclude(pei => pei.PPMPActivity)
+                        .ThenInclude(pa => pa.PPMP)
+                            .ThenInclude(p => p.FundSource)
+            .Where(ai =>
+                !ai.IsDeleted &&
+                ai.APR.OfficeId == officeId &&
+                ai.APR.Status == StatusEnum.Approved &&
+                !ai.APR.IsDeleted)
+            .AsSplitQuery()
+            .ToListAsync(cancellationToken);
+
+        return aprItems
+            .Select(ai =>
+            {
+                var apr = ai.APR;
+                var totalReq = (int)ai.QuantityRequested;
+                var reserved = reservedQty.GetValueOrDefault(ai.Id, 0);
+                var deficit = totalReq - reserved;
+
+                if (deficit <= 0) return null;
+
+                // For APR Items we don't have monthly allocations on the APR item itself,
+                // but the FE requires MonthlyAllocations for UI consistency.
+                var allocations = new Dictionary<AllocationMonthEnum, int>();
+
+                return new EligibleAPRItemResult(
+                    APRId:              apr.Id,
+                    APRNumber:          apr.APRNumber,
+                    OfficeId:           apr.OfficeId,
+                    OfficeName:         apr.Office?.Name ?? string.Empty,
+                    APRItemId:          ai.Id,
+                    ItemName:           ai.PPMPItem?.Name ?? string.Empty,
+                    Category:           ai.PPMPItem?.PPMPExpenditureItem?.PPMPActivity?.LIBActivity?.Name ?? string.Empty,
+                    Fund:               ai.PPMPItem?.PPMPExpenditureItem?.PPMPActivity?.PPMP?.FundSource?.Name ?? string.Empty,
+                    Unit:               ai.PPMPItem?.Unit ?? string.Empty,
+                    UnitPrice:          ai.UnitCost,
+                    MonthlyAllocations: allocations,
+                    TotalRequired:      totalReq,
+                    CurrentFulfilled:   reserved,
+                    Deficit:            deficit
+                );
+            })
+            .Where(r => r is not null)
+            .Cast<EligibleAPRItemResult>()
+            .ToList();
     }
 
     public async Task<(IReadOnlyList<TDto> Entities, int TotalCount)> GetPRsWithDetailsAsync<TDto>(
