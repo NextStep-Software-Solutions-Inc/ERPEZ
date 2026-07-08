@@ -22,6 +22,8 @@ public class GetRFQByIdQueryHandler(IUnitOfWork unitOfWork)
             Description = rfq.Description,
             ModeOfProcurementId = rfq.ModeOfProcurementId,
             ModeOfProcurementName = rfq.ModeOfProcurement?.Name,
+            ConsolidatedPRId = rfq.ConsolidatedPRId,
+            ConsolidatedPRNumber = rfq.ConsolidatedPR?.CPRNumber,
             Date = rfq.Date,
             Deadline = rfq.Deadline,
             DeliveryPeriod = rfq.DeliveryPeriod,

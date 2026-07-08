@@ -45,6 +45,20 @@ public class AddRFQItemsCommandHandler(IUnitOfWork unitOfWork)
                 return ApiResponse<bool>.Fail($"Consolidated PR item {itemDto.CPRItemId} not found.");
             }
 
+            // Lock (or validate) the RFQ's Consolidated PR from the first item added.
+            // All items in an RFQ must trace back to the same Consolidated PR; Purpose
+            // is inherited from it.
+            if (rfq.ConsolidatedPRId is null)
+            {
+                rfq.ConsolidatedPRId = cprItem.ConsolidatedPRId;
+                rfq.Purpose = cprItem.ConsolidatedPR?.Purpose;
+            }
+            else if (rfq.ConsolidatedPRId != cprItem.ConsolidatedPRId)
+            {
+                return ApiResponse<bool>.Fail(
+                    "All items in an RFQ must be sourced from the same Consolidated PR.");
+            }
+
             // Lock (or validate) the RFQ's procurement mode from the first item added.
             if (!cprItem.ProcurementModeId.HasValue)
             {

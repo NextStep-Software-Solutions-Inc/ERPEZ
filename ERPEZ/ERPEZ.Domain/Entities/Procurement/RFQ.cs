@@ -33,6 +33,14 @@ public class RFQ : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid? ModeOfProcurementId { get; set; }
 
+    /// <summary>
+    /// Locked from the first RFQItem's ConsolidatedPRItem.ConsolidatedPRId on first add.
+    /// All items added to a single RFQ must trace back to the same Consolidated PR.
+    /// Purpose is inherited from this CPR when first set.
+    /// </summary>
+    [Sieve(CanFilter = true, CanSort = true)]
+    public Guid? ConsolidatedPRId { get; set; }
+
     [Sieve(CanFilter = true, CanSort = true)]
     public DateOnly Date { get; set; }
 
@@ -56,6 +64,7 @@ public class RFQ : BaseEntity
 
     // Navigation
     public virtual ProcurementMode? ModeOfProcurement { get; set; }
+    public virtual ConsolidatedPR? ConsolidatedPR { get; set; }
     public virtual List<RFQItem> RFQItems { get; set; } = [];
     public virtual List<RFQSupplier> RFQSuppliers { get; set; } = [];
 }
