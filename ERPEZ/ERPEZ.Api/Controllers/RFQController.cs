@@ -4,6 +4,7 @@ using ERPEZ.Application.Features.Procurement.RequestForQuotation.Commands.AddRFQ
 using ERPEZ.Application.Features.Procurement.RequestForQuotation.Commands.RemoveRFQItem;
 using ERPEZ.Application.Features.Procurement.RequestForQuotation.Commands.ReopenRFQ;
 using ERPEZ.Application.Features.Procurement.RequestForQuotation.Commands.ChangeRFQStatus;
+using ERPEZ.Application.Features.Procurement.RequestForQuotation.Commands.UpdateRFQ;
 using ERPEZ.Application.Features.Procurement.RequestForQuotation.Dtos;
 using ERPEZ.Application.Features.Procurement.RequestForQuotation.Queries.GetRFQById;
 using ERPEZ.Application.Features.Procurement.RequestForQuotation.Queries.GetRFQs;
@@ -118,6 +119,20 @@ public class RFQController(ISender mediator) : ControllerBase
     {
         if (id != command.RFQId)
             return BadRequest(ApiResponse<bool>.Fail("Route Id and payload Id do not match."));
+
+        var result = await mediator.Send(command);
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    /// <summary>
+    /// Edit an RFQ's header fields and invited suppliers. Only allowed while Status == Draft.
+    /// </summary>
+    [HttpPut("{id}")]
+    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> UpdateRFQ(Guid id, [FromBody] UpdateRFQCommand command)
+    {
+        command.RFQId = id; // RFQId is [JsonIgnore] — always set from the route, never trust the body
 
         var result = await mediator.Send(command);
         return result.Succeeded ? Ok(result) : BadRequest(result);

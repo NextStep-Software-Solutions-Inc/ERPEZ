@@ -266,6 +266,8 @@ public class RFQCommandHandlerTests
 
     private class StubSupplierRepository(List<Supplier> items) : StubRepository<Supplier>(items), ISupplierRepository
     {
+        public Task<List<Supplier>> GetByIdsAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken = default)
+            => Task.FromResult(items.Where(x => ids.Contains(x.Id)).ToList());
         public Task<Supplier?> GetByIdWithDetailsAsync(Guid id, CancellationToken cancellationToken = default)
             => Task.FromResult(items.FirstOrDefault(x => x.Id == id));
         public Task<List<Supplier>> GetAllWithDetailsAsync(CancellationToken cancellationToken = default)
