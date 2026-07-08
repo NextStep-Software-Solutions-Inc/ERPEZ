@@ -38,13 +38,24 @@ public class UpdateRFQCommandHandler(IUnitOfWork unitOfWork)
         }
 
         // Supplier eligibility, same rule as CreateRFQCommand.
+        // Batched fetch instead of GetByIdAsync-per-supplier to avoid N+1 queries.
+        // NOTE: requires ISupplierRepository.GetByIdsAsync(IEnumerable<Guid>, CancellationToken).
+        // If that method doesn't exist yet on your SupplierRepository, add it — it's a simple
+        // `Where(s => ids.Contains(s.Id))` query — or fall back to the per-id loop temporarily.
         var distinctSupplierIds = request.SupplierIds.Distinct().ToList();
+        var suppliers = await unitOfWork.SupplierRepository.GetByIdsAsync(distinctSupplierIds, cancellationToken);
+        var suppliersById = suppliers.ToDictionary(s => s.Id);
+
         foreach (var supplierId in distinctSupplierIds)
         {
-            var supplier = await unitOfWork.SupplierRepository.GetByIdAsync(supplierId, cancellationToken);
-            if (supplier is null || supplier.IsBlocked || supplier.Status != nameof(SupplierStatusEnum.Approved))
+            if (!suppliersById.TryGetValue(supplierId, out var supplier))
             {
-                return ApiResponse<bool>.Fail("One or more selected suppliers are blocked or not approved.");
+                return ApiResponse<bool>.Fail($"Supplier {supplierId} was not found.");
+            }
+
+            if (supplier.IsBlocked || supplier.Status != nameof(SupplierStatusEnum.Approved))
+            {
+                return ApiResponse<bool>.Fail($"Supplier {supplierId} is blocked or not approved.");
             }
         }
 

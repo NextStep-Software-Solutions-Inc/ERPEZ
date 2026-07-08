@@ -132,8 +132,7 @@ public class RFQController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> UpdateRFQ(Guid id, [FromBody] UpdateRFQCommand command)
     {
-        if (id != command.RFQId)
-            return BadRequest(ApiResponse<bool>.Fail("Route Id and payload Id do not match."));
+        command.RFQId = id; // RFQId is [JsonIgnore] — always set from the route, never trust the body
 
         var result = await mediator.Send(command);
         return result.Succeeded ? Ok(result) : BadRequest(result);
