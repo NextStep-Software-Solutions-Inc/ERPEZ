@@ -4,6 +4,8 @@ namespace ERPEZ.Domain.Interfaces;
 
 public interface ISupplierRepository : IRepository<Supplier>
 {
+    Task<List<Supplier>> GetByIdsAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken = default);
+    
     /// <summary>
     /// Get supplier with all related entities loaded (ProcurementCategory, SupplierRequirements).
     /// </summary>
