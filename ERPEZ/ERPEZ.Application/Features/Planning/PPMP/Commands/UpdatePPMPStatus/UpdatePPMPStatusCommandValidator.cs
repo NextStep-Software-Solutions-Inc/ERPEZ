@@ -1,4 +1,5 @@
 using FluentValidation;
+using ERPEZ.Domain.Enums;
 
 namespace ERPEZ.Application.Features.Planning.PPMP.Commands.UpdatePPMPStatus;
 
@@ -12,25 +13,7 @@ public class UpdatePPMPStatusCommandValidator : AbstractValidator<UpdatePPMPStat
 
         RuleFor(x => x.Action)
             .NotEmpty()
-            .Must(x =>
-            {
-                var action = x.Trim().ToLowerInvariant();
-                return action is "submit" or "approve" or "reject";
-            })
-            .WithMessage("Action must be submit, approve, or reject.");
-
-        RuleFor(x => x.Role)
-            .NotEmpty()
-            .When(x =>
-            {
-                var action = x.Action.Trim().ToLowerInvariant();
-                return action is "approve" or "reject";
-            })
-            .WithMessage("Role is required for approve or reject actions.");
-
-        RuleFor(x => x.Notes)
-            .NotEmpty()
-            .When(x => x.Action.Trim().ToLowerInvariant() == "reject")
-            .WithMessage("Notes are required for reject action.");
+            .Must(x => Enum.TryParse<StatusEnum>(x.Trim(), ignoreCase: true, out _))
+            .WithMessage($"Action must be a valid status: {string.Join(", ", Enum.GetNames<StatusEnum>())}");
     }
 }
