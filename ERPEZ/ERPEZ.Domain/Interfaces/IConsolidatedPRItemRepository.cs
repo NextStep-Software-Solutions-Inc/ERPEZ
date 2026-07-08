@@ -4,6 +4,6 @@ namespace ERPEZ.Domain.Interfaces;
 
 public interface IConsolidatedPRItemRepository : IRepository<ConsolidatedPRItem>
 {
-    Task<ConsolidatedPRItem?> GetByIdWithDetailsAsync(
-        Guid id, CancellationToken cancellationToken = default);
+    Task<List<ConsolidatedPRItem>> GetByIdsWithDetailsAsync(
+    IEnumerable<Guid> ids, CancellationToken cancellationToken = default);
 }

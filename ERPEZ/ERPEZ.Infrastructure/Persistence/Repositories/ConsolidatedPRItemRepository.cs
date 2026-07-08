@@ -16,12 +16,12 @@ public class ConsolidatedPRItemRepository : Repository<ConsolidatedPRItem>, ICon
     }
 
     /// <summary>
-    /// Fetches a single ConsolidatedPRItem with the full navigation chain needed to resolve
-    /// RFQItem snapshot fields (UnitPriceSnapshot, ItemNameSnapshot, CategorySnapshot, FundSnapshot)
-    /// and the RFQ mode-lock / GPPB threshold checks (ProcurementMode).
+    /// Batched version of <see cref="GetByIdWithDetailsAsync"/> — same navigation chain,
+    /// used to avoid N+1 queries when resolving multiple ConsolidatedPRItems at once
+    /// (e.g. AddRFQItemsCommandHandler).
     /// </summary>
-    public async Task<ConsolidatedPRItem?> GetByIdWithDetailsAsync(
-        Guid id, CancellationToken cancellationToken = default)
+    public async Task<List<ConsolidatedPRItem>> GetByIdsWithDetailsAsync(
+        IEnumerable<Guid> ids, CancellationToken cancellationToken = default)
     {
         return await context.Set<ConsolidatedPRItem>()
             .Include(ci => ci.PRItem)
@@ -36,7 +36,7 @@ public class ConsolidatedPRItemRepository : Repository<ConsolidatedPRItem>, ICon
                         .ThenInclude(pm => pm!.ProcurementCategory)
             .Include(ci => ci.ProcurementMode)
             .AsSplitQuery()
-            .Where(ci => !ci.IsDeleted)
-            .FirstOrDefaultAsync(ci => ci.Id == id, cancellationToken);
+            .Where(ci => !ci.IsDeleted && ids.Contains(ci.Id))
+            .ToListAsync(cancellationToken);
     }
 }
