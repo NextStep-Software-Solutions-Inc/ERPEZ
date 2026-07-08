@@ -20,6 +20,7 @@ public class GetLIBByIdQueryHandler(IUnitOfWork unitOfWork)
             Id = entity.Id,
             FiscalYearId = entity.FiscalYearId,
             FundSourceId = entity.FundSourceId,
+            AgencyMasterBudgetId = entity.AgencyMasterBudgetId,
             OfficeId = entity.OfficeId,
             ParentLIBId = entity.ParentLIBId,
             Name = entity.Name ?? string.Empty,

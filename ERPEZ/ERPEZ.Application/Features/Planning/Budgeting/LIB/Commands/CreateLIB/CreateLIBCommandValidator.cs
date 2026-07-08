@@ -7,12 +7,20 @@ public class CreateLIBCommandValidator : AbstractValidator<CreateLIBCommand>
 {
     public CreateLIBCommandValidator()
     {
+        // FiscalYearId is only required up-front for OPCR-sourced LIBs (OPCR is
+        // always single-year). For WFP-sourced LIBs, FiscalYearId is derived by
+        // the handler from the WFP's own ProjectStartDate/ProjectEndDate
+        // (left null for multi-year projects) — so it's not required here.
         RuleFor(x => x.Request.FiscalYearId)
             .NotEmpty()
-            .WithMessage("{PropertyName} is required.");
-        RuleFor(x => x.Request.FundSourceId)
-            .NotEmpty()
-            .WithMessage("{PropertyName} is required.");
+            .WithMessage("FiscalYearId is required for OPCR-sourced LIBs.")
+            .When(x => x.Request.SourceType.Equals("OPCR", StringComparison.OrdinalIgnoreCase));
+
+        // At least one of AgencyMasterBudgetId (top-down) or FundSourceId (bottom-up) must be provided.
+        RuleFor(x => x.Request)
+            .Must(r => r.AgencyMasterBudgetId.HasValue || r.FundSourceId.HasValue)
+            .WithMessage("Either AgencyMasterBudgetId or FundSourceId must be provided.");
+
         RuleFor(x => x.Request.OfficeId)
             .NotEmpty()
             .WithMessage("{PropertyName} is required.");
@@ -38,6 +46,7 @@ public class CreateLIBCommandValidator : AbstractValidator<CreateLIBCommand>
             .WithMessage("{PropertyName} must be a valid value (OPCR or WFP).");
     }
 }
+
 
 
 
