@@ -1583,6 +1583,15 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<LineItemBudget>()
             .HasIndex(e => e.PreviousVersionId);
 
+        modelBuilder.Entity<LineItemBudget>()
+            .HasOne(e => e.AgencyMasterBudget)
+            .WithMany()
+            .HasForeignKey(e => e.AgencyMasterBudgetId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<LineItemBudget>()
+            .HasIndex(e => e.AgencyMasterBudgetId);
+
         // Budget - LineItemBudgetActivity
         modelBuilder.Entity<LineItemBudgetActivity>()
             .Property(e => e.Name)

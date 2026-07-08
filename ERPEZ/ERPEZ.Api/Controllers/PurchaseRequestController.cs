@@ -108,4 +108,13 @@ public class PurchaseRequestController(ISender mediator) : ControllerBase
         var result = await mediator.Send(new GetEligiblePPMPsQuery(id), cancellationToken);
         return result.Succeeded ? Ok(result) : NotFound(result);
     }
+
+    [HttpGet("{id}/eligible-aprs")]
+    [ProducesResponseType(typeof(ApiResponse<List<EligibleAPRResponse>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetEligibleAPRs(Guid id, CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(new ERPEZ.Application.Features.Procurement.PurchaseRequests.Queries.GetEligibleAPRs.GetEligibleAPRsQuery(id), cancellationToken);
+        return result.Succeeded ? Ok(result) : NotFound(result);
+    }
 }

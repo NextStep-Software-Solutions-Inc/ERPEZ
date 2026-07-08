@@ -47,5 +47,5 @@ public class PRItem : BaseEntity
     public virtual List<PRItemMonthlyQuantity> MonthlyQuantities { get; set; } = [];
     public virtual PurchaseRequest PurchaseRequest { get; set; } = null!;
     public virtual PPMPItem PPMPItem { get; set; } = null!;
-    // public virtual APRItem? APRItem { get; set; }  — wire up once Dev B delivers APR module
+    public virtual APRItem? APRItem { get; set; }
 }

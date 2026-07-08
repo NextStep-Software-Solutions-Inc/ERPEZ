@@ -46,7 +46,9 @@ public enum LIBStatusEnum
     Submitted,
     Approved,
     Returned,
-    Consolidated
+    Consolidated,
+    Proposed,
+    PendingCeilingApproval
 }
 
 public enum LIBTimelineTypeEnum

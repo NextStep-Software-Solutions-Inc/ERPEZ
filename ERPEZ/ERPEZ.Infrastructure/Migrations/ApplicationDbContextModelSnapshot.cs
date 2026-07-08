@@ -2215,6 +2215,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("AgencyMasterBudgetId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("ApprovedDate")
                         .HasColumnType("timestamp with time zone");
 
@@ -2299,6 +2302,8 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasDefaultValue(1);
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AgencyMasterBudgetId");
 
                     b.HasIndex("ConsolidatedIntoLIBId");
 
@@ -9481,6 +9486,11 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.LineItemBudget", b =>
                 {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.AgencyMasterBudget", "AgencyMasterBudget")
+                        .WithMany()
+                        .HasForeignKey("AgencyMasterBudgetId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("ERPEZ.Domain.Entities.Planning.LineItemBudget", "ConsolidatedIntoLIB")
                         .WithMany("ConsolidatedChildLIBs")
                         .HasForeignKey("ConsolidatedIntoLIBId")
@@ -9510,6 +9520,8 @@ namespace ERPEZ.Infrastructure.Migrations
                         .WithMany("VersionHistory")
                         .HasForeignKey("PreviousVersionId")
                         .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("AgencyMasterBudget");
 
                     b.Navigation("ConsolidatedIntoLIB");
 

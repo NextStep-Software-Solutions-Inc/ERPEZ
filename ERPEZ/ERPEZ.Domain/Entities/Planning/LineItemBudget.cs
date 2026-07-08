@@ -61,6 +61,9 @@ public class LineItemBudget : ApprovableEntity
     public new string Status { get; set; } = "Draft";
 
     [Sieve(CanFilter = true, CanSort = true)]
+    public Guid? AgencyMasterBudgetId { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
     public Guid? ConsolidatedIntoLIBId { get; set; }
 
     public decimal TotalAmount => LineItemBudgetDetails?.Sum(d => d.Budget) ?? 0;
@@ -74,6 +77,7 @@ public class LineItemBudget : ApprovableEntity
     // Navigation properties
     public virtual FiscalYear? FiscalYearEntity { get; set; }
     public virtual FundSource? FundSource { get; set; }
+    public virtual AgencyMasterBudget? AgencyMasterBudget { get; set; }
     public virtual Office? Office { get; set; }
     public virtual LineItemBudget? ParentLIB { get; set; }
     public virtual LineItemBudget? ConsolidatedIntoLIB { get; set; }
