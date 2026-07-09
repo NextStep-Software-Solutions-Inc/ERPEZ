@@ -28,6 +28,8 @@ public class UpdateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
         project.Title = request.UpdateRequest.Title;
         project.ABC = request.UpdateRequest.ABC;
         project.Status = request.UpdateRequest.Status;
+        project.EndUserRepresentativeId = request.UpdateRequest.EndUserRepresentativeId;
+        project.TechRepresentativeId = request.UpdateRequest.TechRepresentativeId;
 
         var resolution = project.BACResolutions.FirstOrDefault();
         if (resolution == null)

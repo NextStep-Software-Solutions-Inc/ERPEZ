@@ -12,6 +12,11 @@ public record ProcurementProjectResponse
     public string Status { get; init; } = string.Empty;
     public List<BACResolutionResponse> BACResolutions { get; init; } = [];
     public List<BiddingActivityScheduleResponse> BiddingActivitySchedules { get; init; } = [];
+    public Guid? EndUserRepresentativeId { get; init; }
+    public ProjectUserResponse? EndUserRepresentative { get; init; }
+    public Guid? TechRepresentativeId { get; init; }
+    public ProjectUserResponse? TechRepresentative { get; init; }
+    public Guid? ApprovalAttachmentFileId { get; init; }
 }
 
 public record ConsolidatedPRSummaryResponse
@@ -21,4 +26,12 @@ public record ConsolidatedPRSummaryResponse
     public string Description { get; init; } = string.Empty;
     public Guid? ModeOfProcurementId { get; init; }
     public string ModeOfProcurementName { get; init; } = string.Empty;
+}
+
+public record ProjectUserResponse
+{
+    public Guid Id { get; init; }
+    public string FirstName { get; init; } = string.Empty;
+    public string LastName { get; init; } = string.Empty;
+    public string Email { get; init; } = string.Empty;
 }

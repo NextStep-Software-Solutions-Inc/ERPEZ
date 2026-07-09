@@ -8270,6 +8270,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("APRItemId");
+
                     b.HasIndex("PPMPItemId");
 
                     b.HasIndex("PurchaseRequestId");
@@ -8332,6 +8334,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<decimal>("ABC")
                         .HasColumnType("numeric");
 
+                    b.Property<Guid?>("ApprovalAttachmentFileId")
+                        .HasColumnType("uuid");
+
                     b.Property<bool>("ChecklistConfirmed")
                         .HasColumnType("boolean");
 
@@ -8357,6 +8362,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<int?>("DeliveryPeriodDays")
                         .HasColumnType("integer");
 
+                    b.Property<Guid?>("EndUserRepresentativeId")
+                        .HasColumnType("uuid");
+
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
@@ -8373,6 +8381,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<Guid?>("TechRepresentativeId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasColumnType("text");
@@ -8388,7 +8399,11 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("ConsolidatedPRId")
                         .IsUnique();
 
+                    b.HasIndex("EndUserRepresentativeId");
+
                     b.HasIndex("ProcurementModeId");
+
+                    b.HasIndex("TechRepresentativeId");
 
                     b.ToTable("ProcurementProjects", "procurement");
                 });
@@ -11120,6 +11135,10 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.PRItem", b =>
                 {
+                    b.HasOne("ERPEZ.Domain.Entities.Procurement.APRItem", "APRItem")
+                        .WithMany()
+                        .HasForeignKey("APRItemId");
+
                     b.HasOne("ERPEZ.Domain.Entities.Planning.PPMPItem", "PPMPItem")
                         .WithMany()
                         .HasForeignKey("PPMPItemId")
@@ -11131,6 +11150,8 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasForeignKey("PurchaseRequestId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("APRItem");
 
                     b.Navigation("PPMPItem");
 
@@ -11155,13 +11176,27 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasForeignKey("ERPEZ.Domain.Entities.Procurement.ProcurementProject", "ConsolidatedPRId")
                         .OnDelete(DeleteBehavior.Restrict);
 
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.User", "EndUserRepresentative")
+                        .WithMany()
+                        .HasForeignKey("EndUserRepresentativeId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("ERPEZ.Domain.Entities.Planning.ProcurementMode", "ProcurementMode")
                         .WithMany("ProcurementProjects")
                         .HasForeignKey("ProcurementModeId");
 
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.User", "TechRepresentative")
+                        .WithMany()
+                        .HasForeignKey("TechRepresentativeId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.Navigation("ConsolidatedPR");
 
+                    b.Navigation("EndUserRepresentative");
+
                     b.Navigation("ProcurementMode");
+
+                    b.Navigation("TechRepresentative");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.ProjectDocumentChecklist", b =>

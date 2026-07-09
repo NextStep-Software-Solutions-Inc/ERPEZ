@@ -2800,6 +2800,16 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .WithOne()
                 .HasForeignKey<ProcurementProject>(p => p.ConsolidatedPRId)
                 .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasOne(p => p.EndUserRepresentative)
+                .WithMany()
+                .HasForeignKey(p => p.EndUserRepresentativeId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            e.HasOne(p => p.TechRepresentative)
+                .WithMany()
+                .HasForeignKey(p => p.TechRepresentativeId)
+                .OnDelete(DeleteBehavior.SetNull);
         });
 
         base.OnModelCreating(modelBuilder);

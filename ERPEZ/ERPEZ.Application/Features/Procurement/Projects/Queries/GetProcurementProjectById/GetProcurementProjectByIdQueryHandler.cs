@@ -33,6 +33,23 @@ public class GetProcurementProjectByIdQueryHandler(IUnitOfWork unitOfWork)
                 } : null,
                 ABC = c.ABC,
                 Status = c.Status,
+                EndUserRepresentativeId = c.EndUserRepresentativeId,
+                EndUserRepresentative = c.EndUserRepresentative != null ? new ProjectUserResponse
+                {
+                    Id = c.EndUserRepresentative.Id,
+                    FirstName = c.EndUserRepresentative.FirstName,
+                    LastName = c.EndUserRepresentative.LastName,
+                    Email = c.EndUserRepresentative.Email
+                } : null,
+                TechRepresentativeId = c.TechRepresentativeId,
+                TechRepresentative = c.TechRepresentative != null ? new ProjectUserResponse
+                {
+                    Id = c.TechRepresentative.Id,
+                    FirstName = c.TechRepresentative.FirstName,
+                    LastName = c.TechRepresentative.LastName,
+                    Email = c.TechRepresentative.Email
+                } : null,
+                ApprovalAttachmentFileId = c.ApprovalAttachmentFileId,
                 BACResolutions = c.BACResolutions.Select(r => new BACResolutionResponse
                 {
                     Id = r.Id,
