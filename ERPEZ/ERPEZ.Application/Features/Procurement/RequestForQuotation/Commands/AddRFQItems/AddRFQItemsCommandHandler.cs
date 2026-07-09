@@ -22,19 +22,43 @@ public class AddRFQItemsCommandHandler(IUnitOfWork unitOfWork)
         {
             return ApiResponse<bool>.Fail("Items can only be modified on Draft or Returned RFQs.");
         }
- 
+
         var cprItemIds = request.Items.Select(x => x.CPRItemId).Distinct().ToList();
+
+        if (cprItemIds.Count != request.Items.Count)
+        {
+            return ApiResponse<bool>.Fail("Duplicate items in request.");
+        }
+
         var sourcedQuantities = await unitOfWork.RFQRepository.GetSourcedQuantitiesForCprItemsAsync(
             cprItemIds, excludingRfqId: rfq.Id, cancellationToken);
 
+        // Batched fetch replaces the per-item GetByIdWithDetailsAsync call in the loop.
+        var cprItems = await unitOfWork.ConsolidatedPRItemRepository
+            .GetByIdsWithDetailsAsync(cprItemIds, cancellationToken);
+        var cprItemsById = cprItems.ToDictionary(x => x.Id);
+
         foreach (var itemDto in request.Items)
         {
-            var cprItem = await unitOfWork.ConsolidatedPRItemRepository.GetByIdWithDetailsAsync(itemDto.CPRItemId, cancellationToken);
-            if (cprItem is null)
+            if (!cprItemsById.TryGetValue(itemDto.CPRItemId, out var cprItem))
             {
                 return ApiResponse<bool>.Fail($"Consolidated PR item {itemDto.CPRItemId} not found.");
             }
- 
+
+            // Lock (or validate) the RFQ's Consolidated PR from the first item added.
+            // All items in an RFQ must trace back to the same Consolidated PR; Purpose
+            // is inherited from it.
+            if (rfq.ConsolidatedPRId is null)
+            {
+                rfq.ConsolidatedPRId = cprItem.ConsolidatedPRId;
+                rfq.Purpose = cprItem.ConsolidatedPR?.Purpose;
+            }
+            else if (rfq.ConsolidatedPRId != cprItem.ConsolidatedPRId)
+            {
+                return ApiResponse<bool>.Fail(
+                    "All items in an RFQ must be sourced from the same Consolidated PR.");
+            }
+
             // Lock (or validate) the RFQ's procurement mode from the first item added.
             if (!cprItem.ProcurementModeId.HasValue)
             {
@@ -50,17 +74,17 @@ public class AddRFQItemsCommandHandler(IUnitOfWork unitOfWork)
                 return ApiResponse<bool>.Fail(
                     "All items in an RFQ must be sourced from Consolidated PR items assigned the same procurement mode.");
             }
- 
+
             var prItem = cprItem.PRItem;
             if (prItem is null)
             {
                 return ApiResponse<bool>.Fail("Consolidated PR item is missing its source PR item.");
             }
- 
+
             // GPPB double-sourcing guard: total sourced quantity across non-Returned RFQs
             // (excluding this RFQ's own existing rows for this CPR item, since we may be updating) must not exceed RequestedQuantity.
             sourcedQuantities.TryGetValue(itemDto.CPRItemId, out var alreadySourced);
- 
+
             var existingItem = rfq.RFQItems.FirstOrDefault(i => i.CPRItemId == itemDto.CPRItemId);
             if (alreadySourced + itemDto.Quantity > prItem.RequestedQuantity)
             {
@@ -68,16 +92,15 @@ public class AddRFQItemsCommandHandler(IUnitOfWork unitOfWork)
                     $"Requested quantity for '{prItem.Name}' exceeds the remaining unsourced quantity " +
                     $"({prItem.RequestedQuantity - alreadySourced} remaining).");
             }
- 
+
             // Resolve snapshot fields.
             var purchaseRequest = prItem.PurchaseRequest;
             var categorySnapshot = purchaseRequest?.ProcurementCategory?.Name
                 ?? prItem.PPMPItem?.ProcurementMode?.ProcurementCategory?.Name;
             var fundSnapshot = purchaseRequest?.FundSource?.Name;
- 
+
             if (existingItem is not null)
             {
-                // Upsert: update existing row rather than duplicating (unique index on RFQId+CPRItemId enforces this anyway).
                 existingItem.Quantity = itemDto.Quantity;
                 existingItem.IsBrochureRequired = itemDto.IsBrochureRequired;
                 existingItem.GreenSpecification = itemDto.GreenSpecification;
@@ -102,12 +125,12 @@ public class AddRFQItemsCommandHandler(IUnitOfWork unitOfWork)
                 });
             }
         }
- 
+
         rfq.TotalAmount = rfq.RFQItems.Sum(i => i.Quantity * i.UnitPriceSnapshot);
- 
+
         unitOfWork.RFQRepository.Update(rfq);
         await unitOfWork.SaveChangesAsync(cancellationToken);
- 
+
         return ApiResponse<bool>.Success(true);
     }
 }

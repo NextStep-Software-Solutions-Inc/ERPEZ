@@ -8623,6 +8623,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("ConsolidatedPRId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -8690,6 +8693,8 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ConsolidatedPRId");
 
                     b.HasIndex("ModeOfProcurementId");
 
@@ -11229,10 +11234,17 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.RFQ", b =>
                 {
+                    b.HasOne("ERPEZ.Domain.Entities.Procurement.ConsolidatedPR", "ConsolidatedPR")
+                        .WithMany("RFQs")
+                        .HasForeignKey("ConsolidatedPRId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("ERPEZ.Domain.Entities.Planning.ProcurementMode", "ModeOfProcurement")
                         .WithMany("RFQs")
                         .HasForeignKey("ModeOfProcurementId")
                         .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("ConsolidatedPR");
 
                     b.Navigation("ModeOfProcurement");
                 });
@@ -11803,6 +11815,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("ApprovalEvents");
 
                     b.Navigation("ConsolidatedPRItems");
+
+                    b.Navigation("RFQs");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.DirectContracting", b =>

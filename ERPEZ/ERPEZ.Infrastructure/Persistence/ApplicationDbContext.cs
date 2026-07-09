@@ -2598,6 +2598,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .IsRequired(false);
         
         modelBuilder.Entity<RFQ>()
+            .HasOne(r => r.ConsolidatedPR)
+            .WithMany(cpr => cpr.RFQs)
+            .HasForeignKey(r => r.ConsolidatedPRId)
+            .OnDelete(DeleteBehavior.Restrict)
+            .IsRequired(false);
+    
+        modelBuilder.Entity<RFQ>()
             .HasMany(r => r.RFQItems)
             .WithOne(i => i.RFQ)
             .HasForeignKey(i => i.RFQId)
@@ -2619,6 +2626,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         
         modelBuilder.Entity<RFQ>()
             .HasIndex(r => r.ModeOfProcurementId);
+
+        modelBuilder.Entity<RFQ>()
+            .HasIndex(r => r.ConsolidatedPRId);
         
         modelBuilder.Entity<RFQ>()
             .HasIndex(r => r.Status);
