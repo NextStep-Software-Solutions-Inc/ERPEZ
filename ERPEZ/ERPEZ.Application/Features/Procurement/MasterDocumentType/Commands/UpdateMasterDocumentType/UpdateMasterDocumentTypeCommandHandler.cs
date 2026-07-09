@@ -28,7 +28,10 @@ public class UpdateMasterDocumentTypeCommandHandler(
         entity.UpdatedAt    = DateTime.UtcNow;
 
         if (request.FileId.HasValue)
-            entity.TemplateFileUrl = await fileStorageService.PromoteFileAsync(request.FileId.Value);
+        {
+            var (promotedUrl, _) = await fileStorageService.PromoteFileAsync(request.FileId.Value, cancellationToken);
+            entity.TemplateFileUrl = promotedUrl;
+        }
 
         unitOfWork.MasterDocumentTypeRepository.Update(entity);
         await unitOfWork.SaveChangesAsync(cancellationToken);

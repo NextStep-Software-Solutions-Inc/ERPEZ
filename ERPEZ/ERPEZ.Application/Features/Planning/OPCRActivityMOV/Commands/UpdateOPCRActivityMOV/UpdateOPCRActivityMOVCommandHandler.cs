@@ -20,7 +20,7 @@ public class UpdateOPCRActivityMOVCommandHandler(IUnitOfWork unitOfWork, IFileSt
         // Update file if FileId is provided
         if (dto.FileId.HasValue)
         {
-            var url = await fileStorageService.PromoteFileAsync(dto.FileId.Value);
+            var (url, _) = await fileStorageService.PromoteFileAsync(dto.FileId.Value, cancellationToken);
 
             // Extract filename from the URL (blob name format: {fileId}_{filename})
             var blobName = url.Split('/').Last();

@@ -81,10 +81,10 @@ public class SubmitPublicApplicationCommandHandler(
         // ── 5. PROMOTE EACH FILE: temp → permanent ────────────────────────────────
         foreach (var doc in request.Documents)
         {
-            string permanentUrl;
+            (string Url, string OriginalFileName) promoted;
             try
             {
-                permanentUrl = await fileStorageService.PromoteFileAsync(doc.FileId);
+                promoted = await fileStorageService.PromoteFileAsync(doc.FileId, cancellationToken);
             }
             catch (FileNotFoundException)
             {
@@ -95,8 +95,8 @@ public class SubmitPublicApplicationCommandHandler(
             application.UploadedDocuments.Add(new ApplicationUploadedDocument
             {
                 ChecklistItemId  = doc.ChecklistItemId,
-                BlobStorageUrl   = permanentUrl,
-                OriginalFileName = doc.FileId.ToString(),
+                BlobStorageUrl   = promoted.Url,
+                OriginalFileName = promoted.OriginalFileName,
                 UploadedAt       = DateTime.UtcNow
             });
         }

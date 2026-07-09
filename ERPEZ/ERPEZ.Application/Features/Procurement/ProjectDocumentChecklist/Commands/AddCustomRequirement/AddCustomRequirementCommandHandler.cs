@@ -22,7 +22,10 @@ public class AddCustomRequirementCommandHandler(
 
         string? url = null;
         if (request.FileId.HasValue)
-            url = await fileStorageService.PromoteFileAsync(request.FileId.Value);
+        {
+            var (promotedUrl, _) = await fileStorageService.PromoteFileAsync(request.FileId.Value, cancellationToken);
+            url = promotedUrl;
+        }
 
         var item = new Domain.Entities.Procurement.ProjectDocumentChecklist
         {

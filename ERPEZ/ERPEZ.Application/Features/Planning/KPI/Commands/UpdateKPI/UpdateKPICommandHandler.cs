@@ -279,7 +279,8 @@ public class UpdateKPICommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<U
                     string? url = null;
                     if (movRequest.FileId.HasValue)
                     {
-                        url = await fileStorageService.PromoteFileAsync(movRequest.FileId.Value);
+                        var (promotedUrl, _) = await fileStorageService.PromoteFileAsync(movRequest.FileId.Value, cancellationToken);
+                        url = promotedUrl;
                     }
 
                     if (movRequest.Id.HasValue)
