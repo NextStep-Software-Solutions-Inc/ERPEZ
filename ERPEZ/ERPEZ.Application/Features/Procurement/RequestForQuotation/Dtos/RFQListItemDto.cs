@@ -22,6 +22,8 @@ public record RFQDetailDto
     public string? Description { get; init; }
     public Guid? ModeOfProcurementId { get; init; }
     public string? ModeOfProcurementName { get; init; }
+    public Guid? ConsolidatedPRId { get; init; }
+    public string? ConsolidatedPRNumber { get; init; }
     public DateOnly Date { get; init; }
     public DateOnly? Deadline { get; init; }
     public string? DeliveryPeriod { get; init; }

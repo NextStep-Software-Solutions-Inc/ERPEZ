@@ -2,6 +2,7 @@ using ERPEZ.Domain.Common;
 using ERPEZ.Domain.Enums;
 using Sieve.Attributes;
 using ERPEZ.Domain.Entities.Planning;
+using ERPEZ.Domain.Entities.Procurement;
 
 namespace ERPEZ.Domain.Entities.Procurement;
 
@@ -44,4 +45,5 @@ public class ConsolidatedPR : ApprovableEntity
 
     public virtual List<ConsolidatedPRItem> ConsolidatedPRItems { get; set; } = [];
     public virtual List<ApprovalEvent> ApprovalEvents { get; set; } = [];
+    public virtual List<RFQ> RFQs { get; set; } = [];
 }
