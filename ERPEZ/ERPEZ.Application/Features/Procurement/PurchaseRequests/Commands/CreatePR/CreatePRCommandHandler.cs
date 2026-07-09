@@ -15,9 +15,9 @@
             _ = await unitOfWork.OfficeRepository.GetByIdAsync(request.OfficeId, cancellationToken)
                 ?? throw new NotFoundException($"Office with ID {request.OfficeId} not found.");
 
-            if (request.FundClusterId.HasValue)
-                _ = await unitOfWork.FundSourceRepository.GetByIdAsync(request.FundClusterId.Value, cancellationToken)
-                    ?? throw new NotFoundException($"Fund Cluster with ID {request.FundClusterId.Value} not found.");
+            if (request.FundSourceId.HasValue)
+                _ = await unitOfWork.FundSourceRepository.GetByIdAsync(request.FundSourceId.Value, cancellationToken)
+                    ?? throw new NotFoundException($"Fund Source with ID {request.FundSourceId.Value} not found.");
 
             if (request.ProcurementCategoryId.HasValue)
                 _ = await unitOfWork.ProcurementCategoryRepository.GetByIdAsync(request.ProcurementCategoryId.Value, cancellationToken)
@@ -59,7 +59,7 @@
                 PRType                = request.PRType,
                 OfficeId              = request.OfficeId,
                 PPMPId                = request.PPMPId,
-                FundClusterId         = request.FundClusterId,
+                FundSourceId         = request.FundSourceId,
                 UACSCodeCombinationId = request.UACSCodeCombinationId,
                 ProcurementCategoryId = request.ProcurementCategoryId,
                 RequestedDate         = request.RequestedDate,

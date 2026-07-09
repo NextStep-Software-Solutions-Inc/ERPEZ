@@ -14,6 +14,14 @@ public class ProcurementProject : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid? ConsolidatedPRId { get; set; }
 
+    /// <summary>
+    /// Snapshot of the MoP shared by all ConsolidatedPRItems included in this project.
+    /// Set automatically at project creation — NOT user-editable.
+    /// Validated at creation time: all selected items must share the same ProcurementModeId.
+    /// </summary>
+    [Sieve(CanFilter = true, CanSort = true)]
+    public Guid? ProcurementModeId { get; set; }
+
     [Sieve(CanFilter = true, CanSort = true)]
     public decimal ABC { get; set; }
 
@@ -27,8 +35,20 @@ public class ProcurementProject : BaseEntity
     /// </summary>
     public bool ChecklistConfirmed { get; set; } = false;
 
+    [Sieve(CanFilter = true, CanSort = true)]
+    public string? ContractNo { get; set; }
+    public string?  ScopeOfWork            { get; set; }
+    public decimal?  NonRefundableBidderFee { get; set; }
+    public int?      DeliveryPeriodDays     { get; set; }
+
     // Navigation properties
+    public virtual ConsolidatedPR? ConsolidatedPR { get; set; }
     public virtual List<BACResolution> BACResolutions { get; set; } = [];
     public virtual List<BiddingActivitySchedule> BiddingActivitySchedules { get; set; } = [];
     public virtual List<DirectContracting> DirectContractings { get; set; } = [];
+    public virtual ProcurementMode? ProcurementMode { get; set; }
+
+    // Add to ProcurementProject navigation properties
+    public virtual BiddingDocument? BiddingDocument { get; set; }
+    public virtual List<ProjectDocumentChecklist> ProjectDocumentChecklists { get; set; } = [];
 }

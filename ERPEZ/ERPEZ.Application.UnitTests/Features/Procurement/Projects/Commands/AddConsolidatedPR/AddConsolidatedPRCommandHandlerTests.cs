@@ -294,11 +294,19 @@ public class AddConsolidatedPRCommandHandlerTests
         public IAPRRepository APRRepository => throw new NotImplementedException();
         public IAPRItemRepository APRItemRepository => throw new NotImplementedException();
         public IAPRItemMilestoneRepository APRItemMilestoneRepository => throw new NotImplementedException();
+        public IRFQRepository RFQRepository => throw new NotImplementedException();
+        public IPublicSupplierApplicationRepository PublicSupplierApplicationRepository => throw new NotImplementedException();
     }
 
     private class StubProcurementProjectRepository : StubRepository<ProcurementProject>, IProcurementProjectRepository
     {
         public StubProcurementProjectRepository(List<ProcurementProject> items) : base(items) { }
+        // ADD THESE:
+        public Task<ProcurementProject?> GetPublicDetailByIdAsync(Guid id, CancellationToken cancellationToken = default) =>
+            throw new NotImplementedException();
+
+        public Task<ProcurementProject?> GetForApplicationSubmissionAsync(Guid id, CancellationToken cancellationToken = default) =>
+            throw new NotImplementedException();
     }
 
     private class StubConsolidatedPRRepository : StubRepository<ConsolidatedPR>, IConsolidatedPRRepository
@@ -322,6 +330,11 @@ public class AddConsolidatedPRCommandHandlerTests
             CancellationToken cancellationToken = default) where TDto : class
         {
             throw new NotImplementedException();
+        }
+
+        public Task<IReadOnlyList<ConsolidatedPR>> GetAllApprovedWithDetailsAsync(CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult<IReadOnlyList<ConsolidatedPR>>(items.AsReadOnly());
         }
     }
 

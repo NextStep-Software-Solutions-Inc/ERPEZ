@@ -13,8 +13,8 @@ using Npgsql.EntityFrameworkCore.PostgreSQL.Metadata;
 namespace ERPEZ.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    [Migration("20260703061226_AddUnidentifiedPendingChanges")]
-    partial class AddUnidentifiedPendingChanges
+    [Migration("20260703042412_UpdateFundClusterToFundSourceInPurchaseRequestEntity")]
+    partial class UpdateFundClusterToFundSourceInPurchaseRequestEntity
     {
         /// <inheritdoc />
         protected override void BuildTargetModel(ModelBuilder modelBuilder)
@@ -3579,9 +3579,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text");
 
-                    b.Property<Guid>("FYActiveKPIMeasurementId")
-                        .HasColumnType("uuid");
-
                     b.Property<Guid?>("FileId")
                         .HasColumnType("uuid");
 
@@ -3607,11 +3604,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("FYActiveKPIMeasurementId");
-
                     b.HasIndex("OPCRItemId");
 
-                    b.HasIndex("OPCRItemId", "FYActiveKPIMeasurementId", "RequirementName")
+                    b.HasIndex("OPCRItemId", "RequirementName")
                         .IsUnique();
 
                     b.ToTable("OPCRItemMOVs", "planning");
@@ -3635,10 +3630,6 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text");
-
-                    b.Property<string>("Dimension")
-                        .HasMaxLength(100)
-                        .HasColumnType("character varying(100)");
 
                     b.Property<Guid>("FYActiveKPIMeasurementId")
                         .HasColumnType("uuid");
@@ -3673,7 +3664,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("OPCRItemId");
 
-                    b.HasIndex("OPCRItemId", "FYActiveKPIMeasurementId", "Dimension")
+                    b.HasIndex("OPCRItemId", "FYActiveKPIMeasurementId")
                         .IsUnique();
 
                     b.ToTable("OPCRItemRatings", "planning");
@@ -8128,7 +8119,7 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("Description")
                         .HasColumnType("text");
 
-                    b.Property<Guid?>("FundClusterId")
+                    b.Property<Guid?>("FundSourceId")
                         .HasColumnType("uuid");
 
                     b.Property<bool>("IsDeleted")
@@ -8180,7 +8171,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("FundClusterId");
+                    b.HasIndex("FundSourceId");
 
                     b.HasIndex("OfficeId");
 
@@ -9220,19 +9211,11 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OPCRItemMOV", b =>
                 {
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.FYActiveKPIMeasurement", "FYActiveKPIMeasurement")
-                        .WithMany("OPCRItemMOVs")
-                        .HasForeignKey("FYActiveKPIMeasurementId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
-
                     b.HasOne("ERPEZ.Domain.Entities.Planning.OPCRItem", "OPCRItem")
                         .WithMany("OPCRItemMOVs")
                         .HasForeignKey("OPCRItemId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("FYActiveKPIMeasurement");
 
                     b.Navigation("OPCRItem");
                 });
@@ -9240,7 +9223,7 @@ namespace ERPEZ.Infrastructure.Migrations
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OPCRItemRating", b =>
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Planning.FYActiveKPIMeasurement", "FYActiveKPIMeasurement")
-                        .WithMany("OPCRItemRatings")
+                        .WithMany()
                         .HasForeignKey("FYActiveKPIMeasurementId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
@@ -10431,9 +10414,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.PurchaseRequest", b =>
                 {
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.FundSource", "FundCluster")
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.FundSource", "FundSource")
                         .WithMany()
-                        .HasForeignKey("FundClusterId")
+                        .HasForeignKey("FundSourceId")
                         .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("ERPEZ.Domain.Entities.Planning.Office", "Office")
@@ -10457,7 +10440,7 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasForeignKey("UACSCodeCombinationId")
                         .OnDelete(DeleteBehavior.Restrict);
 
-                    b.Navigation("FundCluster");
+                    b.Navigation("FundSource");
 
                     b.Navigation("Office");
 
@@ -10579,13 +10562,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("FYActiveKPIMeasurements");
 
                     b.Navigation("KPIAssignments");
-                });
-
-            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.FYActiveKPIMeasurement", b =>
-                {
-                    b.Navigation("OPCRItemMOVs");
-
-                    b.Navigation("OPCRItemRatings");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.FiscalYear", b =>

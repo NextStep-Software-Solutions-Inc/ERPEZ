@@ -29,7 +29,7 @@ public class GetPRByIdQueryHandler(IUnitOfWork unitOfWork)
             OfficeId            = pr.OfficeId,
             OfficeName          = pr.Office.Name,
             UACSCode            = pr.UACSCodeCombination?.CombinationCode,   // ← fix: use correct property
-            FundCluster         = pr.FundCluster?.Name,
+            FundSource          = pr.FundSource?.Name,
             ProcurementCategory = pr.ProcurementCategory?.Name,
             Items = pr.PRItems
                 .Where(i => !i.IsDeleted)

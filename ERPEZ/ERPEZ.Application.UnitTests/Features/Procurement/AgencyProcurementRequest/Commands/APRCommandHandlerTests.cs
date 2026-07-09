@@ -181,6 +181,7 @@ public class APRCommandHandlerTests
         public IOfficeRepository OfficeRepository => new StubOfficeRepository(Offices);
         public IFiscalYearRepository FiscalYearRepository => new StubFiscalYearRepository(FiscalYears);
         public IProcurementProjectRepository ProcurementProjectRepository => throw new NotImplementedException();
+        public IPublicSupplierApplicationRepository PublicSupplierApplicationRepository => throw new NotImplementedException();
 
         public Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
         {
@@ -317,6 +318,7 @@ public class APRCommandHandlerTests
         public IDirectContractingRepository DirectContractingRepository => throw new NotImplementedException();
         public IDirectContractingProposalRepository DirectContractingProposalRepository => throw new NotImplementedException();
         public IDirectContractingProposalItemRepository DirectContractingProposalItemRepository => throw new NotImplementedException();
+        public IRFQRepository RFQRepository => throw new NotImplementedException();
     }
 
     private class StubAPPRepository : StubRepository<APP>, IAPPRepository

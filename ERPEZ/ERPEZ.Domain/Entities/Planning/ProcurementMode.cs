@@ -1,4 +1,5 @@
 using ERPEZ.Domain.Common;
+using ERPEZ.Domain.Entities.Procurement;
 using Sieve.Attributes;
 
 namespace ERPEZ.Domain.Entities.Planning;
@@ -34,7 +35,15 @@ public class ProcurementMode : BaseEntity
 
     [Sieve(CanFilter = true, CanSort = true)]
     public decimal? MaxThreshold { get; set; }
-    
+
+    /// <summary>
+    /// GPPB-mandated minimum number of suppliers that must be canvassed/invited
+    /// under this procurement mode (e.g. Shopping/SVP typically require >= 3).
+    /// Enforced on RFQ Submit, not on RFQ Create (drafts may be incomplete).
+    /// </summary>
+    [Sieve(CanFilter = true, CanSort = true)]
+    public int MinSupplierCount { get; set; } = 1;
+        
     [Sieve(CanFilter = true, CanSort = true)]
     public bool IsArchived { get; set; } = false;
 
@@ -50,4 +59,6 @@ public class ProcurementMode : BaseEntity
     public virtual List<ProcurementModeThreshold> ProcurementModeThresholds { get; set; } = [];
     public virtual List<PPMPItem> PPMPItems { get; set; } = [];
     public virtual List<APPItem> APPItems { get; set; } = [];
+    public virtual List<RFQ> RFQs { get; set; } = [];
+    public virtual List<ProcurementProject> ProcurementProjects { get; set; } = [];
 }

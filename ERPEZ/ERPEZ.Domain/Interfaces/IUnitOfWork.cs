@@ -132,10 +132,12 @@ public interface IUnitOfWork
     IDirectContractingProposalRepository DirectContractingProposalRepository { get; }
     IDirectContractingProposalItemRepository DirectContractingProposalItemRepository { get; }
 
+    IPublicSupplierApplicationRepository PublicSupplierApplicationRepository { get; }
     Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default);
     Task<int> SaveChangesAsync(CancellationToken cancellationToken = default);
     IAPRRepository APRRepository { get; }
     IAPRItemRepository APRItemRepository { get; }
     IAPRItemMilestoneRepository APRItemMilestoneRepository { get; }
+    IRFQRepository RFQRepository { get; }
 }
 

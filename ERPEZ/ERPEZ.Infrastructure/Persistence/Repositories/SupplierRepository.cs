@@ -16,6 +16,16 @@ public class SupplierRepository : Repository<Supplier>, ISupplierRepository
         this.context = context;
         this.sieveProcessor = sieveProcessor;
     }
+    public async Task<List<Supplier>> GetByIdsAsync(IEnumerable<Guid> ids, CancellationToken cancellationToken = default)
+    {
+        var idList = ids.ToList();
+        if (idList.Count == 0)
+            return [];
+
+        return await context.Set<Supplier>()
+            .Where(s => idList.Contains(s.Id) && !s.IsDeleted)
+            .ToListAsync(cancellationToken);
+    }
 
     public async Task<Supplier?> GetByIdWithDetailsAsync(Guid id, CancellationToken cancellationToken = default)
     {

@@ -27,7 +27,7 @@ public record PurchaseRequestDetailResponse
     public Guid     OfficeId            { get; init; }
     public string   OfficeName          { get; init; } = string.Empty;
     public string?  UACSCode            { get; init; }
-    public string?  FundCluster         { get; init; }
+    public string?  FundSource         { get; init; }
     public string?  ProcurementCategory { get; init; }
     public List<PRItemDetailResponse> Items { get; init; } = [];
 }

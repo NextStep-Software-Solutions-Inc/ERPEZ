@@ -12,15 +12,37 @@ public class GetEligibleAPRsQueryHandler(IUnitOfWork unitOfWork)
     public async Task<ApiResponse<List<EligibleAPRResponse>>> Handle(
         GetEligibleAPRsQuery query, CancellationToken cancellationToken)
     {
-        _ = await unitOfWork.PurchaseRequestRepository.GetByIdAsync(
+        var pr = await unitOfWork.PurchaseRequestRepository.GetByIdAsync(
             query.PurchaseRequestId, cancellationToken)
             ?? throw new NotFoundException(
                 $"Purchase Request with ID {query.PurchaseRequestId} not found.");
 
-        // Stub — pending Dev B's APR module
-        var result = await unitOfWork.PurchaseRequestRepository
-            .GetEligibleOutOfStockItemsAsync(query.PurchaseRequestId, cancellationToken);
+        var flatItems = await unitOfWork.PurchaseRequestRepository
+            .GetEligibleOutOfStockItemsAsync(pr.OfficeId, cancellationToken);
 
-        return ApiResponse<List<EligibleAPRResponse>>.Success([]);
+        var result = flatItems
+            .GroupBy(i => new { i.APRId, i.APRNumber, i.OfficeId, i.OfficeName })
+            .Select(g => new EligibleAPRResponse(
+                APRId:       g.Key.APRId,
+                APRNumber:   g.Key.APRNumber,
+                OfficeId:    g.Key.OfficeId,
+                OfficeName:  g.Key.OfficeName,
+                TotalAmount: g.Sum(i => i.TotalRequired * i.UnitPrice),
+                Items: g.Select(i => new EligibleAPRItemResponse(
+                    APRItemId:          i.APRItemId,
+                    ItemName:           i.ItemName,
+                    Category:           i.Category,
+                    Fund:               i.Fund,
+                    Unit:               i.Unit,
+                    UnitPrice:          i.UnitPrice,
+                    MonthlyAllocations: i.MonthlyAllocations,
+                    TotalRequired:      i.TotalRequired,
+                    CurrentFulfilled:   i.CurrentFulfilled,
+                    Deficit:            i.Deficit
+                )).ToList()
+            ))
+            .ToList();
+
+        return ApiResponse<List<EligibleAPRResponse>>.Success(result);
     }
 }

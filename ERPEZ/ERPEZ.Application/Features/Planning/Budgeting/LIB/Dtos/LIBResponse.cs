@@ -7,6 +7,7 @@ public record LIBResponse
     public Guid Id { get; init; }
     public Guid? FiscalYearId { get; init; }
     public Guid? FundSourceId { get; init; }
+    public Guid? AgencyMasterBudgetId { get; init; }
     public Guid? OfficeId { get; init; }
     public Guid? ParentLIBId { get; init; }
     public string Name { get; init; } = string.Empty;
@@ -126,6 +127,7 @@ public record LIBNestedWFPExpenditureResponse
 public record CreateLIBRequest
 {
     public Guid? FiscalYearId { get; init; }
+    public Guid? AgencyMasterBudgetId { get; init; }
     public Guid? FundSourceId { get; init; }
     public Guid? OfficeId { get; init; }
     public Guid? ParentLIBId { get; init; }
@@ -135,6 +137,11 @@ public record CreateLIBRequest
     public string SourceType { get; init; } = string.Empty;
     public Guid? SourceId { get; init; }
     public Guid? ConsolidatedIntoLIBId { get; init; }
+}
+
+public record LinkCeilingToLIBRequest
+{
+    public Guid AgencyMasterBudgetId { get; init; }
 }
 
 public record UpdateLIBRequest

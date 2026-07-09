@@ -4,7 +4,10 @@ using ERPEZ.Application.Features.Procurement.PurchaseRequests.Dtos;
 using ERPEZ.Application.Features.Procurement.PurchaseRequests.Queries.GetConsolidatedPRById;
 using ERPEZ.Application.Features.Procurement.PurchaseRequests.Queries.GetConsolidatedPRs;
 using ERPEZ.Application.Features.Procurement.PurchaseRequests.Queries.GetEligiblePRsForCPR;
+using ERPEZ.Application.Features.Procurement.RequestForQuotation.Queries.GetConsolidatedPrItemsForRFQ;
+
 using ERPEZ.Shared.Common;
+using ERPEZ.Application.Features.Procurement.RequestForQuotation.Dtos;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -126,5 +129,16 @@ public class ConsolidatedPRController(ISender mediator) : ControllerBase
         var result = await mediator.Send(
             new GetEligiblePRsForCPRQuery(id), cancellationToken);
         return result.Succeeded ? Ok(result) : NotFound(result);
+    }
+
+    /// <summary>
+    /// Get Consolidated PR items eligible to be sourced into an RFQ (Approved CPRs, remaining quantity > 0)
+    /// </summary>
+    [HttpGet("for-rfq")]
+    [ProducesResponseType(typeof(ApiResponse<List<ConsolidatedPrItemForRFQDto>>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetForRfq()
+    {
+        var result = await mediator.Send(new GetConsolidatedPrItemsForRFQQuery());
+        return Ok(result);
     }
 }

@@ -1,5 +1,6 @@
 using ERPEZ.Application.Features.Planning.Budgeting.LIB.Commands.CreateLIB;
 using ERPEZ.Application.Features.Planning.Budgeting.LIB.Commands.DeleteLIB;
+using ERPEZ.Application.Features.Planning.Budgeting.LIB.Commands.LinkCeilingToLIB;
 using ERPEZ.Application.Features.Planning.Budgeting.LIB.Commands.UpdateLIB;
 using ERPEZ.Application.Features.Planning.Budgeting.LIB.Commands.UpdateLIBStatus;
 using ERPEZ.Application.Features.Planning.Budgeting.LIB.Dtos;
@@ -72,6 +73,16 @@ public class LIBController(ISender mediator) : ControllerBase
     {
         var result = await mediator.Send(new GetLIBSummaryQuery(id));
         return result.Succeeded ? Ok(result) : NotFound(result);
+    }
+
+    [HttpPatch("{id}/link-ceiling")]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> LinkCeilingToLIB(Guid id, [FromBody] LinkCeilingToLIBRequest request)
+    {
+        var result = await mediator.Send(new LinkCeilingToLIBCommand(id, request.AgencyMasterBudgetId));
+        return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 
     [HttpDelete("{id}")]

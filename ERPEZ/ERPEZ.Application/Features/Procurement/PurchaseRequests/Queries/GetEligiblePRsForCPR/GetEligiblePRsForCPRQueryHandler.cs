@@ -44,7 +44,7 @@ public class GetEligiblePRsForCPRQueryHandler(IUnitOfWork unitOfWork)
                         Category:          i.PPMPItem?.NonCSEItem?.Name
                                         ?? i.PPMPItem?.CSEItem?.Name
                                         ?? string.Empty,
-                        Fund:              pr.FundCluster?.Name ?? string.Empty,
+                        Fund:              pr.FundSource?.Name ?? string.Empty,
                         Unit:              i.PPMPItem?.Unit ?? string.Empty,
                         UnitPrice:         i.UnitCost,
                         TotalQuantity:     i.RequestedQuantity,
