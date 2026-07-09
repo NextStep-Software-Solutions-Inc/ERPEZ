@@ -11,6 +11,9 @@ namespace ERPEZ.Infrastructure.Persistence;
 public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : DbContext(options)
 {
     //Planning
+    public DbSet<PurchaseOrder>? PurchaseOrders { get; set; }
+    public DbSet<PurchaseOrderItem>? PurchaseOrderItems { get; set; }
+
     public DbSet<WFPObjectiveActivity>? WFPObjectiveActivities { get; set; }
     public DbSet<WFPObjectiveActivityExpenditure>? WFPObjectiveActivityExpenditures { get; set; }
     public DbSet<FunctionAllocation>? FunctionAllocations { get; set; }
@@ -607,6 +610,21 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasMany(o => o.WFPObjectiveActivities)
             .WithOne(woa => woa.WFPObjective)
             .HasForeignKey(woa => woa.WFPObjectiveId);
+
+        modelBuilder.Entity<PurchaseOrder>(entity =>
+        {
+            entity.Property(e => e.TotalAmount).HasColumnType("decimal(18,2)");
+            entity.HasMany(e => e.PurchaseOrderItems)
+                  .WithOne(e => e.PurchaseOrder)
+                  .HasForeignKey(e => e.PurchaseOrderId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<PurchaseOrderItem>(entity =>
+        {
+            entity.Property(e => e.UnitPrice).HasColumnType("decimal(18,2)");
+            entity.Property(e => e.Amount).HasColumnType("decimal(18,2)");
+        });
 
         modelBuilder.Entity<WFPObjective>()
             .Property(o => o.Weight)
