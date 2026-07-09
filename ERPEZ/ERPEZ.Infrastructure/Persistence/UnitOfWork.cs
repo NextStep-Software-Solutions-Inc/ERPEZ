@@ -148,6 +148,8 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IDirectContractingProposalItemRepository directContractingProposalItemRepository;
     private readonly IRFQRepository rfqRepository;
     private readonly IPublicSupplierApplicationRepository publicSupplierApplicationRepository;
+    private readonly IPurchaseOrderRepository purchaseOrderRepository;
+    private readonly IPurchaseOrderItemRepository purchaseOrderItemRepository;
 
     // Constructor initializes all repositories once
     public UnitOfWork(ApplicationDbContext context, IServiceProvider serviceProvider)
@@ -290,6 +292,8 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         directContractingProposalItemRepository = new DirectContractingProposalItemRepository(context, sieveProcessor);
         rfqRepository = new RFQRepository(context, sieveProcessor);
         publicSupplierApplicationRepository = new PublicSupplierApplicationRepository (context, sieveProcessor);
+        purchaseOrderRepository = new PurchaseOrderRepository(context, sieveProcessor);
+        purchaseOrderItemRepository = new PurchaseOrderItemRepository(context, sieveProcessor);
     }
 
     // Public properties return cached instances
@@ -427,6 +431,8 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IDirectContractingProposalItemRepository DirectContractingProposalItemRepository => directContractingProposalItemRepository;
     public IRFQRepository RFQRepository => rfqRepository;
     public IPublicSupplierApplicationRepository PublicSupplierApplicationRepository => publicSupplierApplicationRepository;
+    public IPurchaseOrderRepository PurchaseOrderRepository => purchaseOrderRepository;
+    public IPurchaseOrderItemRepository PurchaseOrderItemRepository => purchaseOrderItemRepository;
 
     public async Task ExecuteInTransactionAsync(Func<Task> operation, CancellationToken cancellationToken = default)
     {
