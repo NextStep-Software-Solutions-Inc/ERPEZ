@@ -37,6 +37,9 @@ public class DirectContracting : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid? ReviewedByUserId { get; set; }
 
+    [Sieve(CanFilter = true, CanSort = true)]
+    public Guid? ApprovedFileId { get; set; }
+
     // Navigation properties
     public virtual ProcurementProject BACProject { get; set; } = null!;
     public virtual Supplier ExclusiveSupplier { get; set; } = null!;

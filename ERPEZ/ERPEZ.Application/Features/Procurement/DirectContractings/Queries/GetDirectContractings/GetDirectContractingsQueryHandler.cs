@@ -57,6 +57,10 @@ public class GetDirectContractingsQueryHandler(IUnitOfWork unitOfWork, ISievePro
             ReviewedByUserId = c.ReviewedByUserId,
             CreatedAt = c.CreatedAt,
             CreatedBy = c.CreatedBy,
+            ApprovedAttachment = c.ApprovedFileId.HasValue ? new ApprovedAttachmentResponse
+            {
+                FileId = c.ApprovedFileId.Value
+            } : null,
             Proposal = c.Proposal != null ? new DirectContractingProposalResponse
             {
                 Id = c.Proposal.Id,

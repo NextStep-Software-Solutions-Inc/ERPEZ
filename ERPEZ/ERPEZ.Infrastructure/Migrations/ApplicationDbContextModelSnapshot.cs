@@ -7726,6 +7726,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("ApprovedFileId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid>("BACProjectId")
                         .HasColumnType("uuid");
 

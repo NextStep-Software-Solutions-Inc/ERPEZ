@@ -27,7 +27,13 @@ public record DirectContractingResponse
     public Guid? ReviewedByUserId { get; init; }
     public DateTime CreatedAt { get; init; }
     public string CreatedBy { get; init; } = string.Empty;
+    public ApprovedAttachmentResponse? ApprovedAttachment { get; init; }
     public DirectContractingProposalResponse? Proposal { get; init; }
+}
+
+public record ApprovedAttachmentResponse
+{
+    public Guid FileId { get; init; }
 }
 
 public record DirectContractingProposalResponse
