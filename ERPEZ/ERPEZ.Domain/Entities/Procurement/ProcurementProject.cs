@@ -42,6 +42,9 @@ public class ProcurementProject : BaseEntity
     public decimal?  NonRefundableBidderFee { get; set; }
     public int?      DeliveryPeriodDays     { get; set; }
 
+    public Guid? EndUserRepresentativeId { get; set; }
+    public Guid? TechRepresentativeId { get; set; }
+    public Guid? ApprovalAttachmentFileId { get; set; }
     // Navigation properties
     public virtual ConsolidatedPR? ConsolidatedPR { get; set; }
     public virtual List<BACResolution> BACResolutions { get; set; } = [];
@@ -52,4 +55,6 @@ public class ProcurementProject : BaseEntity
     // Add to ProcurementProject navigation properties
     public virtual BiddingDocument? BiddingDocument { get; set; }
     public virtual List<ProjectDocumentChecklist> ProjectDocumentChecklists { get; set; } = [];
+    public virtual ERPEZ.Domain.Entities.Planning.User? EndUserRepresentative { get; set; }
+    public virtual ERPEZ.Domain.Entities.Planning.User? TechRepresentative { get; set; }
 }

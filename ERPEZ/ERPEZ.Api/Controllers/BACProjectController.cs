@@ -22,6 +22,7 @@ namespace ERPEZ.Api.Controllers;
 [ApiController]
 public class BACProjectController(ISender mediator) : ControllerBase
 {
+    //[Authorize(Roles = "BAC_Officer")]
     [HttpPost("projects")]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
@@ -31,6 +32,7 @@ public class BACProjectController(ISender mediator) : ControllerBase
         return !result.Succeeded ? BadRequest(result) : CreatedAtAction(nameof(GetProjectById), new { id = result.Data }, result);
     }
 
+    //[Authorize(Roles = "BAC_Officer")]
     [HttpGet("projects")]
     [ProducesResponseType(typeof(PaginatedApiResponse<ProcurementProjectResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetProjects([FromQuery] GetProcurementProjectsQuery query)
@@ -39,6 +41,7 @@ public class BACProjectController(ISender mediator) : ControllerBase
         return Ok(result);
     }
 
+    //[Authorize(Roles = "BAC_Officer")]
     [HttpGet("projects/{id}")]
     [ProducesResponseType(typeof(ApiResponse<ProcurementProjectResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -48,6 +51,7 @@ public class BACProjectController(ISender mediator) : ControllerBase
         return result.Succeeded ? Ok(result) : NotFound(result);
     }
 
+    //[Authorize(Roles = "BAC_Officer")]
     [HttpPut("projects/{id}")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -58,6 +62,7 @@ public class BACProjectController(ISender mediator) : ControllerBase
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 
+    //[Authorize(Roles = "BAC_Officer")]
     [HttpDelete("projects/{id}")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -67,6 +72,7 @@ public class BACProjectController(ISender mediator) : ControllerBase
         return result.Succeeded ? Ok(result) : NotFound(result);
     }
 
+    //[Authorize(Roles = "BAC_Officer")]
     [HttpPost("projects/{id}/consolidated-pr")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -77,6 +83,7 @@ public class BACProjectController(ISender mediator) : ControllerBase
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 
+    //[Authorize(Roles = "BAC_Officer")]
     [HttpPost("projects/{id}/schedule")]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
@@ -87,6 +94,7 @@ public class BACProjectController(ISender mediator) : ControllerBase
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 
+    //[Authorize(Roles = "BAC_Officer")]
     [HttpPut("projects/{projectId}/schedule/{scheduleId}")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -97,6 +105,7 @@ public class BACProjectController(ISender mediator) : ControllerBase
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 
+    //[Authorize(Roles = "BAC_Officer")]
     [HttpDelete("projects/{projectId}/schedule/{scheduleId}")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -106,6 +115,7 @@ public class BACProjectController(ISender mediator) : ControllerBase
         return result.Succeeded ? Ok(result) : NotFound(result);
     }
 
+    //[Authorize(Roles = "BAC_Officer")]
     [HttpPut("projects/{projectId}/schedule/{scheduleId}/status")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -116,7 +126,8 @@ public class BACProjectController(ISender mediator) : ControllerBase
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 
-    [HttpPut("projects/{id}/status")]
+    //[Authorize(Roles = "BAC_Officer")]
+    [HttpPatch("projects/{id}/status")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -141,5 +152,20 @@ public class BACProjectController(ISender mediator) : ControllerBase
     {
         var result = await mediator.Send(new GetCalendarEventByIdQuery(id));
         return result.Succeeded ? Ok(result) : NotFound(result);
+    }
+
+    //[Authorize(Roles = "BAC_Officer")]
+    [HttpPatch("projects/{id}/approve")]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ApproveProject(Guid id, [FromBody] ERPEZ.Application.Features.Procurement.Projects.Commands.ApproveProcurementProject.ApproveProcurementProjectRequest request)
+    {
+        var result = await mediator.Send(new ERPEZ.Application.Features.Procurement.Projects.Commands.ApproveProcurementProject.ApproveProcurementProjectCommand 
+        { 
+            ProjectId = id, 
+            Request = request 
+        });
+        return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 }
