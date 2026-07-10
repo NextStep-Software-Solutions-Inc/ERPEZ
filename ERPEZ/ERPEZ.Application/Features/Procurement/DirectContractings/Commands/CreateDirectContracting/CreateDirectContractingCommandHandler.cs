@@ -17,14 +17,13 @@ public class CreateDirectContractingCommandHandler(IUnitOfWork unitOfWork, ICurr
 {
     public async Task<ApiResponse<Guid>> Handle(CreateDirectContractingCommand request, CancellationToken cancellationToken)
     {
-        // 1. Validate BAC Resolution exists
-        var bacResolution = await unitOfWork.BACResolutionRepository.Query()
-            .Include(r => r.ProcurementProject)
-            .FirstOrDefaultAsync(r => r.Id == request.BACResolutionId && !r.IsDeleted, cancellationToken);
+        // 1. Validate BAC Project exists
+        var bacProject = await unitOfWork.ProcurementProjectRepository.Query()
+            .FirstOrDefaultAsync(p => p.Id == request.BACProjectId && !p.IsDeleted, cancellationToken);
 
-        if (bacResolution == null)
+        if (bacProject == null)
         {
-            return ApiResponse<Guid>.Fail("BAC Resolution not found.");
+            return ApiResponse<Guid>.Fail("BAC Project not found.");
         }
 
         // 2. Validate Supplier exists and is not blocked
@@ -38,24 +37,29 @@ public class CreateDirectContractingCommandHandler(IUnitOfWork unitOfWork, ICurr
             return ApiResponse<Guid>.Fail("Selected supplier is blocked from new procurement activities.");
         }
 
-        // 3. Single Supplier Rule validation: Ensure no other Direct Contracting is linked to this BAC Resolution
+        // 3. Single Supplier Rule validation: Ensure no other Direct Contracting is linked to this BAC Project
         var existingDC = await unitOfWork.DirectContractingRepository.Query()
-            .FirstOrDefaultAsync(dc => dc.BACResolutionId == request.BACResolutionId && !dc.IsDeleted, cancellationToken);
+            .FirstOrDefaultAsync(dc => dc.BACProjectId == request.BACProjectId && !dc.IsDeleted, cancellationToken);
 
         if (existingDC != null)
         {
-            return ApiResponse<Guid>.Fail($"A Direct Contracting request ({existingDC.DCNumber}) has already been linked to this BAC Resolution.");
+            return ApiResponse<Guid>.Fail($"A Direct Contracting request ({existingDC.DCNumber}) has already been linked to this BAC Project.");
         }
 
-        // 4. Calculate Total ABC derived from the project (linked via CPR, represented by the ProcurementProject ABC here)
-        if (bacResolution.ProcurementProject == null || bacResolution.ProcurementProject.ABC <= 0)
+        // 4. Calculate Total ABC derived from the project
+        if (bacProject.ABC <= 0)
         {
             return ApiResponse<Guid>.Fail("Cannot create Direct Contracting: Procurement Project ABC is missing or zero.");
         }
-        decimal totalAbc = bacResolution.ProcurementProject.ABC;
+        decimal totalAbc = bacProject.ABC;
 
-        // 5. Generate DC Number
-        string dcNumber = $"DC-{DateTime.UtcNow:yyyyMMdd}-{Guid.NewGuid().ToString("N")[..6].ToUpper()}";
+        // 5. Validate DC Number is unique
+        var duplicateDcNumber = await unitOfWork.DirectContractingRepository.Query()
+            .AnyAsync(dc => dc.DCNumber == request.DCNumber && !dc.IsDeleted, cancellationToken);
+        if (duplicateDcNumber)
+        {
+            return ApiResponse<Guid>.Fail($"A Direct Contracting request with DC Number '{request.DCNumber}' already exists.");
+        }
 
         Guid? createdByUserId = null;
         if (Guid.TryParse(currentUserService.UserId, out var actorId))
@@ -66,9 +70,9 @@ public class CreateDirectContractingCommandHandler(IUnitOfWork unitOfWork, ICurr
         // 6. Create Direct Contracting request
         var directContracting = new DirectContracting
         {
-            DCNumber = dcNumber,
+            DCNumber = request.DCNumber,
             Name = request.Name,
-            BACResolutionId = request.BACResolutionId,
+            BACProjectId = request.BACProjectId,
             ExclusiveSupplierId = request.ExclusiveSupplierId,
             SubmissionDeadline = request.SubmissionDeadline,
             Status = ERPEZ.Domain.Enums.DirectContractingStatusEnum.DRAFT,

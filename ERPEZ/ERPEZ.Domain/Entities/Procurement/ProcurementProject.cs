@@ -46,6 +46,7 @@ public class ProcurementProject : BaseEntity
     public virtual ConsolidatedPR? ConsolidatedPR { get; set; }
     public virtual List<BACResolution> BACResolutions { get; set; } = [];
     public virtual List<BiddingActivitySchedule> BiddingActivitySchedules { get; set; } = [];
+    public virtual List<DirectContracting> DirectContractings { get; set; } = [];
     public virtual ProcurementMode? ProcurementMode { get; set; }
 
     // Add to ProcurementProject navigation properties
