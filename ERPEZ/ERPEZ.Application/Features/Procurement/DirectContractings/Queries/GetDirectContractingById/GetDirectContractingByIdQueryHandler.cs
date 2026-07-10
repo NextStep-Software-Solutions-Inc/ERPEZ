@@ -16,7 +16,7 @@ public class GetDirectContractingByIdQueryHandler(IUnitOfWork unitOfWork)
     public async Task<ApiResponse<DirectContractingResponse>> Handle(GetDirectContractingByIdQuery request, CancellationToken cancellationToken)
     {
         var dc = await unitOfWork.DirectContractingRepository.Query()
-            .Include(dc => dc.BACResolution)
+            .Include(dc => dc.BACProject)
             .Include(dc => dc.ExclusiveSupplier)
             .Include(dc => dc.Proposal)
                 .ThenInclude(p => p!.ProposalItems)
@@ -35,12 +35,10 @@ public class GetDirectContractingByIdQueryHandler(IUnitOfWork unitOfWork)
             Id = dc.Id,
             DCNumber = dc.DCNumber,
             Name = dc.Name,
-            BACResolutionId = dc.BACResolutionId,
-            ResolutionNumber = dc.BACResolution != null ? dc.BACResolution.ResolutionNumber : string.Empty,
-            ResolutionType = dc.BACResolution != null ? dc.BACResolution.ResolutionType : string.Empty,
-            DateResolved = dc.BACResolution != null ? dc.BACResolution.DateResolved : DateTime.MinValue,
-            BACResolutionStatus = dc.BACResolution != null ? dc.BACResolution.Status : string.Empty,
-            WhereasClause = dc.BACResolution != null ? dc.BACResolution.WhereasClause : string.Empty,
+            BACProjectId = dc.BACProjectId,
+            BACProjectTitle = dc.BACProject != null ? dc.BACProject.Title : string.Empty,
+            BACProjectABC = dc.BACProject != null ? dc.BACProject.ABC : 0,
+            BACProjectStatus = dc.BACProject != null ? dc.BACProject.Status : string.Empty,
             ExclusiveSupplierId = dc.ExclusiveSupplierId,
             ExclusiveSupplierName = dc.ExclusiveSupplier != null ? dc.ExclusiveSupplier.Name : string.Empty,
             ExclusiveSupplierEmail = dc.ExclusiveSupplier != null ? dc.ExclusiveSupplier.Email : string.Empty,
@@ -54,6 +52,10 @@ public class GetDirectContractingByIdQueryHandler(IUnitOfWork unitOfWork)
             ReviewedByUserId = dc.ReviewedByUserId,
             CreatedAt = dc.CreatedAt,
             CreatedBy = dc.CreatedBy,
+            ApprovedAttachment = dc.ApprovedFileId.HasValue ? new ApprovedAttachmentResponse
+            {
+                FileId = dc.ApprovedFileId.Value
+            } : null,
             Proposal = dc.Proposal != null ? new DirectContractingProposalResponse
             {
                 Id = dc.Proposal.Id,

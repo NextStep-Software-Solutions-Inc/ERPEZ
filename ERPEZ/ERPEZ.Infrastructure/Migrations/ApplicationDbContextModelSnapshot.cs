@@ -7868,7 +7868,10 @@ namespace ERPEZ.Infrastructure.Migrations
                         .ValueGeneratedOnAdd()
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("BACResolutionId")
+                    b.Property<Guid?>("ApprovedFileId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("BACProjectId")
                         .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAt")
@@ -7928,7 +7931,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("BACResolutionId");
+                    b.HasIndex("BACProjectId");
 
                     b.HasIndex("ExclusiveSupplierId");
 
@@ -11059,9 +11062,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.DirectContracting", b =>
                 {
-                    b.HasOne("ERPEZ.Domain.Entities.Procurement.BACResolution", "BACResolution")
-                        .WithMany()
-                        .HasForeignKey("BACResolutionId")
+                    b.HasOne("ERPEZ.Domain.Entities.Procurement.ProcurementProject", "BACProject")
+                        .WithMany("DirectContractings")
+                        .HasForeignKey("BACProjectId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
@@ -11071,7 +11074,7 @@ namespace ERPEZ.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("BACResolution");
+                    b.Navigation("BACProject");
 
                     b.Navigation("ExclusiveSupplier");
                 });
@@ -11895,6 +11898,8 @@ namespace ERPEZ.Infrastructure.Migrations
             modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.PublicSupplierApplication", b =>
                 {
                     b.Navigation("UploadedDocuments");
+
+                    b.Navigation("DirectContractings");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.PurchaseRequest", b =>
