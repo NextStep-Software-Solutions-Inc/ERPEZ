@@ -38,6 +38,8 @@ public record PRDetailResponse(
 public record PRItemDetailResponse
 {
     public Guid     Id                { get; init; }
+    public Guid     PPMPItemId        { get; init; }
+    public Guid?    APRItemId         { get; init; }
     public string   Name              { get; init; } = string.Empty;
     public string?  Description       { get; init; }
     public string?  StockNo           { get; init; }

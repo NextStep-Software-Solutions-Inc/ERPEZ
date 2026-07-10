@@ -6,7 +6,7 @@ public class UpdateConsolidatedPRItemCommandValidator : AbstractValidator<Update
 {
     public UpdateConsolidatedPRItemCommandValidator()
     {
-        RuleFor(x => x.Dto.ConsolidatedPRItemId)
+        RuleFor(x => x.ConsolidatedPRItemId)
             .NotEmpty().WithMessage("Consolidated PR Item ID is required.");
 
         RuleFor(x => x.Dto.ProcurementModeId)
