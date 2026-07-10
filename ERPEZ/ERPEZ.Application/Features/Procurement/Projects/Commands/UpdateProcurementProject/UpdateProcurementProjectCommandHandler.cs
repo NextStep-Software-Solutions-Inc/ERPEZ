@@ -1,4 +1,5 @@
 using ERPEZ.Domain.Entities.Procurement;
+using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
@@ -20,7 +21,7 @@ public class UpdateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
             return ApiResponse<Unit>.Fail("Procurement project not found.");
         }
 
-        if (!string.Equals(project.Status, "Draft", System.StringComparison.OrdinalIgnoreCase))
+        if (!string.Equals(project.Status, nameof(StatusEnum.Draft), System.StringComparison.OrdinalIgnoreCase))
         {
             return ApiResponse<Unit>.Fail("Only procurement projects in 'Draft' status can be updated.");
         }

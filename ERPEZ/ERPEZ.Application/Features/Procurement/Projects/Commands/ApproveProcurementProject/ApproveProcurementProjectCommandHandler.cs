@@ -1,4 +1,5 @@
 using ERPEZ.Application.Interfaces;
+using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
@@ -22,7 +23,7 @@ public class ApproveProcurementProjectCommandHandler(
         if (project == null)
             return ApiResponse<Unit>.Fail("Procurement project not found.");
 
-        if (project.Status == "Approved")
+        if (project.Status == nameof(StatusEnum.Approved))
             return ApiResponse<Unit>.Fail("Procurement project is already approved.");
 
         // Promote the temp file to permanent storage
@@ -36,7 +37,7 @@ public class ApproveProcurementProjectCommandHandler(
         }
 
         // Update project
-        project.Status = "Approved";
+        project.Status = nameof(StatusEnum.Approved);
         project.ApprovalAttachmentFileId = request.Request.AttachmentFileId;
 
         unitOfWork.ProcurementProjectRepository.Update(project);
