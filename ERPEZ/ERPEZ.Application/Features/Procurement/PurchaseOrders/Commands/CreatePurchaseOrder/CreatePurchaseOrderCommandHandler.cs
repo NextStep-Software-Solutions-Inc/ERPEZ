@@ -17,6 +17,16 @@ public class CreatePurchaseOrderCommandHandler(IUnitOfWork unitOfWork)
     {
         try
         {
+            var purchaseOrderItems = request.Items.Select(i => new PurchaseOrderItem
+            {
+                SourceItemId = i.SourceItemId,
+                Description = i.Description,
+                Quantity = i.Quantity,
+                Unit = i.Unit,
+                UnitPrice = i.UnitPrice,
+                Amount = i.Quantity * i.UnitPrice
+            }).ToList();
+
             var purchaseOrder = new PurchaseOrder
             {
                 PONumber = request.PONumber,
@@ -31,16 +41,8 @@ public class CreatePurchaseOrderCommandHandler(IUnitOfWork unitOfWork)
                 DeliveryTerm = request.DeliveryTerm,
                 PaymentTerm = request.PaymentTerm,
                 SupportingDocumentUrl = request.SupportingDocumentUrl,
-                TotalAmount = request.Items.Sum(i => i.Amount),
-                PurchaseOrderItems = request.Items.Select(i => new PurchaseOrderItem
-                {
-                    SourceItemId = i.SourceItemId,
-                    Description = i.Description,
-                    Quantity = i.Quantity,
-                    Unit = i.Unit,
-                    UnitPrice = i.UnitPrice,
-                    Amount = i.Amount
-                }).ToList()
+                TotalAmount = purchaseOrderItems.Sum(i => i.Amount),
+                PurchaseOrderItems = purchaseOrderItems
             };
 
             await unitOfWork.PurchaseOrderRepository.AddAsync(purchaseOrder, cancellationToken);
