@@ -1,8 +1,6 @@
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
-using System.Threading;
-using System.Threading.Tasks;
 using ERPEZ.Domain.Enums;
 
 namespace ERPEZ.Application.Features.Procurement.PurchaseOrders.Commands.UpdatePurchaseOrder;
@@ -10,6 +8,7 @@ namespace ERPEZ.Application.Features.Procurement.PurchaseOrders.Commands.UpdateP
 public class UpdatePurchaseOrderCommandHandler(IUnitOfWork unitOfWork) 
     : IRequestHandler<UpdatePurchaseOrderCommand, ApiResponse<bool>>
 {
+    // Note: Currently, purchase order items can only be managed on creation (or a separate items update endpoint/feature can be added in a follow-up ticket).
     public async Task<ApiResponse<bool>> Handle(UpdatePurchaseOrderCommand request, CancellationToken cancellationToken)
     {
         var purchaseOrder = await unitOfWork.PurchaseOrderRepository.GetByIdAsync(request.Id, cancellationToken);
