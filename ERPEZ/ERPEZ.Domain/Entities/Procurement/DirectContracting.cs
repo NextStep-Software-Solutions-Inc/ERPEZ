@@ -14,7 +14,7 @@ public class DirectContracting : BaseEntity
     public string Name { get; set; } = string.Empty;
 
     [Sieve(CanFilter = true, CanSort = true)]
-    public Guid BACResolutionId { get; set; }
+    public Guid BACProjectId { get; set; }
 
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid ExclusiveSupplierId { get; set; }
@@ -37,8 +37,11 @@ public class DirectContracting : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid? ReviewedByUserId { get; set; }
 
+    [Sieve(CanFilter = true, CanSort = true)]
+    public Guid? ApprovedFileId { get; set; }
+
     // Navigation properties
-    public virtual BACResolution BACResolution { get; set; } = null!;
+    public virtual ProcurementProject BACProject { get; set; } = null!;
     public virtual Supplier ExclusiveSupplier { get; set; } = null!;
     public virtual DirectContractingProposal? Proposal { get; set; }
 }
