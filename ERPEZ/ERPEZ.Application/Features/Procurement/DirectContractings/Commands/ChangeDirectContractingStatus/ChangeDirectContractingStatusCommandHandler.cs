@@ -22,6 +22,11 @@ public class ChangeDirectContractingStatusCommandHandler(IUnitOfWork unitOfWork)
 
         var oldStatus = dc.Status;
 
+        if (oldStatus == command.Status)
+        {
+            return ApiResponse<Unit>.Success(Unit.Value, $"Direct Contracting status is already '{command.Status}'.");
+        }
+
         if (!IsValidTransition(oldStatus, command.Status))
         {
             return ApiResponse<Unit>.Fail($"Cannot transition Direct Contracting request from status '{oldStatus}' to '{command.Status}'.");
@@ -34,12 +39,16 @@ public class ChangeDirectContractingStatusCommandHandler(IUnitOfWork unitOfWork)
 
         return ApiResponse<Unit>.Success(Unit.Value, $"Direct Contracting status updated from {oldStatus} to {command.Status} successfully.");
     }
-        // •  DRAFT  ➔  FOR_REVIEW                                                                                                                                                      
-        // •  FOR_REVIEW  ➔  SUBMITTED_TO_SUPPLIER  or  RETURNED                                                                                                                        
-        // •  SUBMITTED_TO_SUPPLIER  ➔  PENDING_FOR_APPROVAL                                                                                                                            
-        // •  PENDING_FOR_APPROVAL  ➔  APPROVED  or  RETURNED                                                                                                                           
-        // •  RETURNED  ➔  DRAFT  or  FOR_REVIEW    
 
+    // State Transitions:
+    // •  DRAFT  ➔  FOR_REVIEW                                                                                                                                                      
+    // •  FOR_REVIEW  ➔  SUBMITTED_TO_SUPPLIER  or  RETURNED                                                                                                                        
+    // •  SUBMITTED_TO_SUPPLIER  ➔  PENDING_FOR_APPROVAL                                                                                                                            
+    // •  PENDING_FOR_APPROVAL  ➔  APPROVED  or  RETURNED                                                                                                                           
+    // •  RETURNED  ➔  DRAFT  or  FOR_REVIEW    
+    // Note: While APPROVED is a valid transition target from PENDING_FOR_APPROVAL,
+    // it should only be reached via the dedicated /approve endpoint (which handles approvals with distinct payloads),
+    // and not via the general /status endpoint.
     private static bool IsValidTransition(DirectContractingStatusEnum currentStatus, DirectContractingStatusEnum newStatus)
     {
         if (currentStatus == newStatus)
