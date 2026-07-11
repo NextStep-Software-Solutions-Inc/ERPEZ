@@ -10,8 +10,8 @@ public class UpdateConsolidatedPRItemCommandHandler(IUnitOfWork unitOfWork) : IR
     public async Task<ApiResponse<Unit>> Handle(UpdateConsolidatedPRItemCommand request, CancellationToken cancellationToken)
     {
         var cprItem = await unitOfWork.ConsolidatedPRItemRepository.GetByIdAsync(
-            request.Dto.ConsolidatedPRItemId, cancellationToken)
-            ?? throw new NotFoundException($"Consolidated PR Item with ID {request.Dto.ConsolidatedPRItemId} not found.");
+            request.ConsolidatedPRItemId, cancellationToken)
+            ?? throw new NotFoundException($"Consolidated PR Item with ID {request.ConsolidatedPRItemId} not found.");
 
         if (request.Dto.ProcurementModeId.HasValue)
             _ = await unitOfWork.ProcurementModeRepository.GetByIdAsync(

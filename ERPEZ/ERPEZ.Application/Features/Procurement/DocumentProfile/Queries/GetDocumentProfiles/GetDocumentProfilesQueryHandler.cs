@@ -29,6 +29,8 @@ public class GetDocumentProfilesQueryHandler(IUnitOfWork unitOfWork)
                 Description         = p.Description,
                 ProcurementCategory = p.ProcurementCategory,
                 ItemCount           = p.DocumentProfileItems.Count(i => !i.IsDeleted),
+                TechCount           = p.DocumentProfileItems.Count(i => !i.IsDeleted && i.MasterDocumentType.EnvelopeType == 1),
+                FinCount            = p.DocumentProfileItems.Count(i => !i.IsDeleted && i.MasterDocumentType.EnvelopeType == 2),
                 CreatedAt           = p.CreatedAt
                 // Items list is omitted from the list response for performance;
                 // use GetById for the full items breakdown
