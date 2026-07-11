@@ -4,13 +4,13 @@ namespace ERPEZ.Application.Features.Planning.Budgeting.Common.Rules;
 
 public static class LIBRules
 {
-    public static readonly string[] EditableStatuses =
+    public static readonly string[] editableStatuses =
     [
         nameof(LIBStatus.Draft),
         nameof(LIBStatus.Proposed),
         nameof(LIBStatus.Returned)
-    ];
+    ];  
 
     public static bool IsEditable(string status) =>
-        EditableStatuses.Any(s => status.Equals(s, StringComparison.OrdinalIgnoreCase));
+        editableStatuses.Any(s => status.Equals(s, StringComparison.OrdinalIgnoreCase));
 }
