@@ -118,6 +118,32 @@ public class ConsolidatedPRController(ISender mediator) : ControllerBase
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 
+    [HttpPost("{id}/approve")]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ApproveConsolidatedPR(
+        Guid id, CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(
+            new ApproveConsolidatedPRCommand(id), cancellationToken);
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    [HttpPost("{id}/return")]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ReturnConsolidatedPR(
+        Guid id,
+        [FromBody] ReturnConsolidatedPRRequest dto,
+        CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(
+            new ReturnConsolidatedPRCommand(id, dto), cancellationToken);
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
     // ── Eligible PRs selector (Image 12 modal) ───────────────────────────────
 
     [HttpGet("{id}/eligible-prs")]
