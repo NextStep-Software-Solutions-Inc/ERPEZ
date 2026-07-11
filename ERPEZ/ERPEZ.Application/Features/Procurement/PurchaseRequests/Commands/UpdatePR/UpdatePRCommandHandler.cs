@@ -22,6 +22,7 @@ public class UpdatePRCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<Up
 
             var dto = request.Dto;
 
+            if (dto.PRNumber is not null)              pr.PRNumber              = dto.PRNumber;
             if (dto.Description is not null)           pr.Description           = dto.Description;
             if (dto.Purpose is not null)               pr.Purpose               = dto.Purpose;
             if (dto.FundSourceId is not null)         pr.FundSourceId         = dto.FundSourceId;
@@ -31,14 +32,36 @@ public class UpdatePRCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<Up
 
             if (dto.Items is not null)
             {
+                unitOfWork.PRItemRepository.RemoveRange(pr.PRItems.ToList());
                 pr.PRItems.Clear();
                 decimal total = 0;
 
                 foreach (var itemReq in dto.Items)
                 {
+                    // Resolve PPMPItemId: for APR items (out-of-stock), the FE may only
+                    // send APRItemId. In that case look up the APRItem to get its PPMPItemId.
+                    Guid resolvedPpmpItemId;
+                    if (itemReq.PPMPItemId.HasValue)
+                    {
+                        resolvedPpmpItemId = itemReq.PPMPItemId.Value;
+                    }
+                    else if (itemReq.APRItemId.HasValue)
+                    {
+                        var aprItem = await unitOfWork.APRItemRepository.GetByIdAsync(
+                            itemReq.APRItemId.Value, cancellationToken)
+                            ?? throw new NotFoundException(
+                                $"APR Item with ID {itemReq.APRItemId} not found.");
+                        resolvedPpmpItemId = aprItem.PPMPItemId;
+                    }
+                    else
+                    {
+                        throw new ValidationException(
+                            "Each item must have either a PPMPItemId or an APRItemId.");
+                    }
+
                     var item = new PRItem
                     {
-                        PPMPItemId        = itemReq.PPMPItemId!.Value,
+                        PPMPItemId        = resolvedPpmpItemId,
                         APRItemId         = itemReq.APRItemId,
                         Name              = itemReq.Name,
                         Description       = itemReq.Description,
@@ -59,7 +82,8 @@ public class UpdatePRCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<Up
                 pr.TotalAmount = total;
             }
 
-            unitOfWork.PurchaseRequestRepository.Update(pr);
+            // The entity is already tracked by EF Core, so we don't need to call Update() 
+            // which would mark all navigation properties as modified.
             await unitOfWork.SaveChangesAsync(cancellationToken);
         }, cancellationToken);
 

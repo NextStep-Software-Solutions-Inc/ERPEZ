@@ -34,10 +34,15 @@ public class FilesController(IFileStorageService fileStorageService) : Controlle
 
         var (fileName, stream) = fileInfo.Value;
         
-        // Determine content type based on file extension
+        var underscoreIndex = fileName.IndexOf('_');
+        var displayName = underscoreIndex >= 0
+            ? fileName[(underscoreIndex + 1)..]
+            : fileName;
+
         var contentType = GetContentType(fileName);
-        
-        return File(stream, contentType, fileName);
+        Response.Headers["Content-Disposition"] = 
+            $"inline; filename=\"{displayName}\"";
+        return File(stream, contentType, displayName);
     }
 
     private static string GetContentType(string fileName)

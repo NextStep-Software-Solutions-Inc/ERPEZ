@@ -22,8 +22,10 @@ public class GetDocumentProfileByIdQueryHandler(IUnitOfWork unitOfWork)
             Name                = profile.Name,
             Description         = profile.Description,
             ProcurementCategory = profile.ProcurementCategory,
-            ItemCount           = profile.DocumentProfileItems.Count(i => !i.IsDeleted),
             CreatedAt           = profile.CreatedAt,
+            ItemCount           = profile.DocumentProfileItems.Count(i => !i.IsDeleted),
+            TechCount           = profile.DocumentProfileItems.Count(i => !i.IsDeleted && i.MasterDocumentType.EnvelopeType == 1),  // ← add
+            FinCount            = profile.DocumentProfileItems.Count(i => !i.IsDeleted && i.MasterDocumentType.EnvelopeType == 2),
             Items = profile.DocumentProfileItems
                 .Where(i => !i.IsDeleted)
                 .OrderBy(i => i.OrderIndex)
