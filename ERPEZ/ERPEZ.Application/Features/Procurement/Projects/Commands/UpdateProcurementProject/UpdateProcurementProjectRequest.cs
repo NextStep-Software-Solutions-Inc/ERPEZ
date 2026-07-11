@@ -9,4 +9,6 @@ public record UpdateProcurementProjectRequest
     public string ResolutionNumber { get; init; } = string.Empty;
     public DateTime DateResolved { get; init; } = DateTime.UtcNow;
     public string? WhereasClause { get; init; }
+    public Guid? EndUserRepresentativeId { get; init; }
+    public Guid? TechRepresentativeId { get; init; }
 }

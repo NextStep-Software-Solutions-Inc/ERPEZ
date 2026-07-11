@@ -14,6 +14,14 @@ public class GetProcurementProjectsQueryHandler(IUnitOfWork unitOfWork, ISievePr
     public async Task<PaginatedApiResponse<ProcurementProjectResponse>> Handle(GetProcurementProjectsQuery query, CancellationToken cancellationToken)
     {
         var dbQuery = unitOfWork.ProcurementProjectRepository.Query()
+            .Include(p => p.EndUserRepresentative)
+            .Include(p => p.TechRepresentative)
+            .Include(p => p.ConsolidatedPR)
+                .ThenInclude(c => c!.ConsolidatedPRItems)
+                    .ThenInclude(ci => ci.ProcurementMode)
+            .Include(p => p.BACResolutions)
+            .Include(p => p.BiddingActivitySchedules)
+                .ThenInclude(s => s.ProcurementActivityType)
             .Where(p => !p.IsDeleted)
             .AsQueryable();
 
@@ -27,55 +35,11 @@ public class GetProcurementProjectsQueryHandler(IUnitOfWork unitOfWork, ISievePr
             Sorts = query.Sorts
         };
 
-        Expression<Func<Domain.Entities.Procurement.ProcurementProject, ProcurementProjectResponse>> projection = c => new ProcurementProjectResponse
-        {
-            Id = c.Id,
-            Title = c.Title,
-            ConsolidatedPR = c.ConsolidatedPR != null ? new ConsolidatedPRSummaryResponse
-            {
-                Id = c.ConsolidatedPR.Id,
-                CPRNumber = c.ConsolidatedPR.CPRNumber,
-                Description = c.ConsolidatedPR.Description ?? string.Empty,
-                ModeOfProcurementId = c.ConsolidatedPR.ConsolidatedPRItems
-                    .Where(ci => ci.ProcurementModeId != null)
-                    .Select(ci => ci.ProcurementModeId)
-                    .FirstOrDefault(),
-                ModeOfProcurementName = c.ConsolidatedPR.ConsolidatedPRItems
-                    .Where(ci => ci.ProcurementMode != null)
-                    .Select(ci => ci.ProcurementMode!.Name)
-                    .FirstOrDefault() ?? string.Empty
-            } : null,
-            ABC = c.ABC,
-            Status = c.Status,
-            BACResolutions = c.BACResolutions.Select(r => new BACResolutionResponse
-            {
-                Id = r.Id,
-                ProcurementProjectId = r.ProcurementProjectId,
-                ResolutionType = r.ResolutionType,
-                ResolutionNumber = r.ResolutionNumber,
-                DateResolved = r.DateResolved,
-                Status = r.Status,
-                WhereasClause = r.WhereasClause
-            }).ToList(),
-            BiddingActivitySchedules = c.BiddingActivitySchedules.Select(s => new BiddingActivityScheduleResponse
-            {
-                Id = s.Id,
-                ProcurementProjectId = s.ProcurementProjectId,
-                ProcurementActivityTypeId = s.ProcurementActivityTypeId,
-                ProcurementActivityTypeName = s.ProcurementActivityType != null ? s.ProcurementActivityType.Name : string.Empty,
-                StartDate = s.StartDate,
-                EndDate = s.EndDate,
-                Venue = s.Venue,
-                Status = s.Status,
-                Remarks = s.Remarks
-            }).ToList()
-        };
-
         var filteredQuery = sieveProcessor.Apply(sieveModel, dbQuery, applyPagination: false);
         var totalCount = await filteredQuery.CountAsync(cancellationToken);
 
         var paginatedQuery = sieveProcessor.Apply(sieveModel, filteredQuery, applyFiltering: false, applySorting: false);
-        var entities = await paginatedQuery.Select(projection).ToListAsync(cancellationToken);
+        var entities = await paginatedQuery.Select(ProcurementProjectResponse.Projection).ToListAsync(cancellationToken);
 
         return new PaginatedApiResponse<ProcurementProjectResponse>(
             [.. entities],

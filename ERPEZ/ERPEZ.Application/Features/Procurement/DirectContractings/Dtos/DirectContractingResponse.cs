@@ -8,12 +8,10 @@ public record DirectContractingResponse
     public Guid Id { get; init; }
     public string DCNumber { get; init; } = string.Empty;
     public string Name { get; init; } = string.Empty;
-    public Guid BACResolutionId { get; init; }
-    public string ResolutionNumber { get; init; } = string.Empty;
-    public string ResolutionType { get; init; } = string.Empty;
-    public DateTime DateResolved { get; init; }
-    public string BACResolutionStatus { get; init; } = string.Empty;
-    public string? WhereasClause { get; init; }
+    public Guid BACProjectId { get; init; }
+    public string BACProjectTitle { get; init; } = string.Empty;
+    public decimal BACProjectABC { get; init; }
+    public string BACProjectStatus { get; init; } = string.Empty;
     
     public Guid ExclusiveSupplierId { get; init; }
     public string ExclusiveSupplierName { get; init; } = string.Empty;
@@ -29,7 +27,13 @@ public record DirectContractingResponse
     public Guid? ReviewedByUserId { get; init; }
     public DateTime CreatedAt { get; init; }
     public string CreatedBy { get; init; } = string.Empty;
+    public ApprovedAttachmentResponse? ApprovedAttachment { get; init; }
     public DirectContractingProposalResponse? Proposal { get; init; }
+}
+
+public record ApprovedAttachmentResponse
+{
+    public Guid FileId { get; init; }
 }
 
 public record DirectContractingProposalResponse

@@ -56,13 +56,28 @@ public class DirectContractingController(ISender mediator) : ControllerBase
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 
-    [HttpPut("{id}/status")]
+    [HttpPatch("{id}/status")]
     //[Authorize(Roles = "BAC_Officer")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> ChangeStatus(Guid id, [FromBody] ChangeDirectContractingStatusRequest request)
     {
         var result = await mediator.Send(new ChangeDirectContractingStatusCommand { Id = id, Status = request.Status });
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    [HttpPatch("{id}/approve")]
+    //[Authorize(Roles = "BAC_Officer")]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ApproveDirectContracting(Guid id, [FromBody] ERPEZ.Application.Features.Procurement.DirectContractings.Commands.ApproveDirectContracting.ApproveDirectContractingRequest request)
+    {
+        var result = await mediator.Send(new ERPEZ.Application.Features.Procurement.DirectContractings.Commands.ApproveDirectContracting.ApproveDirectContractingCommand 
+        { 
+            Id = id, 
+            Request = request 
+        });
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 
