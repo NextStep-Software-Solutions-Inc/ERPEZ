@@ -7,6 +7,8 @@ public record DocumentProfileDto
     public string? Description         { get; init; }
     public string  ProcurementCategory { get; init; } = string.Empty;
     public int     ItemCount           { get; init; }
+    public int     TechCount           { get; init; }
+    public int     FinCount            { get; init; }
     public List<DocumentProfileItemDto> Items { get; init; } = [];
     public DateTime CreatedAt          { get; init; }
 }
