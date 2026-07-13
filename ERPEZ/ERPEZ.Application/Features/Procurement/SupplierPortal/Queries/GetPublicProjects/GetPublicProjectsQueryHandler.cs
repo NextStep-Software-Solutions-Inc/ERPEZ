@@ -15,7 +15,7 @@ public class GetPublicProjectsQueryHandler(IUnitOfWork unitOfWork)
         GetPublicProjectsQuery query, CancellationToken cancellationToken)
     {
         // Public visibility gate — hardcoded, not reliant on FE-supplied filters.
-        var gateFilter = "BiddingDocument.Status==Posted";
+        var gateFilter = "BiddingDocument.Status==Posted|Status==ROUTED_TO_PORTAL";
         var combinedFilters = string.IsNullOrWhiteSpace(query.Filters)
             ? gateFilter
             : $"{gateFilter},{query.Filters}";

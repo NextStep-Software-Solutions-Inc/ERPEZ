@@ -10,7 +10,7 @@ namespace ERPEZ.Application.Features.Procurement.SupplierPortal.Queries.GetPubli
 public class GetPublicProjectDetailQueryHandler(IUnitOfWork unitOfWork)
     : IRequestHandler<GetPublicProjectDetailQuery, ApiResponse<PublicProjectDetailDto>>
 {
-    private static readonly string[] allowedFallbackStatuses = ["Open", "ClosingSoon", "Published"];
+    private static readonly string[] allowedFallbackStatuses = ["Open", "ClosingSoon", "Published", "ROUTED_TO_PORTAL"];
 
     public async Task<ApiResponse<PublicProjectDetailDto>> Handle(
         GetPublicProjectDetailQuery request, CancellationToken cancellationToken)
