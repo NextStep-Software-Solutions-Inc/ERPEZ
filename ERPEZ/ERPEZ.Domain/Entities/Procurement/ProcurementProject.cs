@@ -50,9 +50,11 @@ public class ProcurementProject : BaseEntity
     public virtual List<BACResolution> BACResolutions { get; set; } = [];
     public virtual List<BiddingActivitySchedule> BiddingActivitySchedules { get; set; } = [];
     public virtual List<DirectContracting> DirectContractings { get; set; } = [];
+    [Sieve(CanFilter = true)]
     public virtual ProcurementMode? ProcurementMode { get; set; }
 
     // Add to ProcurementProject navigation properties
+    [Sieve(CanFilter = true)]
     public virtual BiddingDocument? BiddingDocument { get; set; }
     public virtual List<ProjectDocumentChecklist> ProjectDocumentChecklists { get; set; } = [];
     public virtual ERPEZ.Domain.Entities.Planning.User? EndUserRepresentative { get; set; }
