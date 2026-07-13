@@ -64,6 +64,7 @@ public class GetConsolidatedPRByIdQueryHandler(IUnitOfWork unitOfWork)
             Purpose:           cpr.Purpose,
             Status:            cpr.Status,
             TotalAmount:       activeItems.Sum(ci => ci.PRItem.Amount), // computed, not stale cpr.TotalAmount
+            Remarks:           cpr.Remarks,
             Prs:               prs
         );
 
