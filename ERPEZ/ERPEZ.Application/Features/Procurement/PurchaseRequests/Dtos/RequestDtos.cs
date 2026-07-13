@@ -35,6 +35,7 @@ public record PRItemRequest
 
 public record UpdatePRRequest
 {
+    public string? PRNumber { get; init; }
     public string? Description { get; init; }
     public string? Purpose { get; init; }
     public Guid? FundSourceId { get; init; }

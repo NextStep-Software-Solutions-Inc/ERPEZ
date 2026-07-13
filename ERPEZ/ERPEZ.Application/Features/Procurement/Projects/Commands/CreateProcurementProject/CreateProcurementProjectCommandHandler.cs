@@ -14,7 +14,9 @@ public class CreateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
         {
             Title = request.Title,
             ABC = request.ABC,
-            Status = request.Status
+            Status = request.Status,
+            EndUserRepresentativeId = request.EndUserRepresentativeId,
+            TechRepresentativeId = request.TechRepresentativeId
         };
 
         var resolution = new BACResolution

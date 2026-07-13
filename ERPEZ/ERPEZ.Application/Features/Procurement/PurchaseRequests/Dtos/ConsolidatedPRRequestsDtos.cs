@@ -7,15 +7,15 @@ public record CreateConsolidatedPRRequest
     public string? Purpose { get; init; }
 }
 
+/// <summary>Request body for POST /consolidated-prs/{id}/prs</summary>
 public record AddPRsToConsolidatedRequest
 {
-    public Guid ConsolidatedPRId { get; init; }
-    public List<Guid> PurchaseRequestIds { get; init; } = [];  // ← was PRItemIds
+    public List<Guid> PurchaseRequestIds { get; init; } = [];
 }
 
+/// <summary>Request body for PATCH /consolidated-prs/{id}/items/{itemId}</summary>
 public record UpdateConsolidatedPRItemRequest
 {
-    public Guid ConsolidatedPRItemId { get; init; }
     public Guid? ProcurementModeId { get; init; }
     public bool AllowPartial { get; init; }
 }

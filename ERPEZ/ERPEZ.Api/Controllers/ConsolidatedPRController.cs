@@ -66,7 +66,7 @@ public class ConsolidatedPRController(ISender mediator) : ControllerBase
         CancellationToken cancellationToken)
     {
         var result = await mediator.Send(
-            new AddPRsToConsolidatedCommand(dto with { ConsolidatedPRId = id }),
+            new AddPRsToConsolidatedCommand(id, dto),
             cancellationToken);
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
@@ -99,7 +99,7 @@ public class ConsolidatedPRController(ISender mediator) : ControllerBase
         CancellationToken cancellationToken)
     {
         var result = await mediator.Send(
-            new UpdateConsolidatedPRItemCommand(dto with { ConsolidatedPRItemId = itemId }),
+            new UpdateConsolidatedPRItemCommand(itemId, dto),
             cancellationToken);
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
