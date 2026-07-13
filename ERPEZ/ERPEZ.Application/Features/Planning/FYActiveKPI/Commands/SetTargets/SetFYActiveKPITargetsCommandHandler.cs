@@ -41,11 +41,25 @@ public class SetFYActiveKPITargetsCommandHandler(IUnitOfWork unitOfWork)
                 if (fyActiveKPI.IsLocked)
                     throw new ConflictException($"Cannot update targets for KPI '{fyActiveKPI.Name}' - the fiscal year KPIs are locked.");
 
-                // Prevent updating if already assigned to offices (query directly — nav prop not loaded by GetByIdAsync)
-                var hasAssignment = await unitOfWork.KPIAssignmentRepository.FindAsync(
-                    a => a.FYActiveKPIId == targetRequest.FYActiveKPIId, cancellationToken);
-                if (hasAssignment != null)
-                    throw new ConflictException($"Cannot update targets for KPI '{fyActiveKPI.Name}' - it has already been assigned to offices.");
+                // Prevent updating if already assigned to offices and the OPCR is not in Draft status
+                var assignments = await unitOfWork.KPIAssignmentRepository.GetListAsync(
+                    unitOfWork.KPIAssignmentRepository.Query(a => a.FYActiveKPIId == targetRequest.FYActiveKPIId),
+                    cancellationToken);
+
+                if (assignments.Count > 0)
+                {
+                    foreach (var assignment in assignments)
+                    {
+                        var opcr = await unitOfWork.OPCRRepository.FindAsync(
+                            o => o.OfficeId == assignment.OfficeId && o.FiscalYearId == fyActiveKPI.FiscalYearId,
+                            cancellationToken);
+
+                        if (opcr != null && !opcr.CommitmentStatus.Equals("Draft", StringComparison.OrdinalIgnoreCase))
+                        {
+                            throw new ConflictException($"Cannot update targets for KPI '{fyActiveKPI.Name}' - it has already been assigned to offices and the OPCR commitment status is '{opcr.CommitmentStatus}'.");
+                        }
+                    }
+                }
 
                 // Validate quarterly targets based on Distribution Behavior
                 ValidateQuarterlyTargets(fyActiveKPI, targetRequest);
@@ -56,7 +70,7 @@ public class SetFYActiveKPITargetsCommandHandler(IUnitOfWork unitOfWork)
                 fyActiveKPI.AgencyTargetQ2 = targetRequest.AgencyTargetQ2;
                 fyActiveKPI.AgencyTargetQ3 = targetRequest.AgencyTargetQ3;
                 fyActiveKPI.AgencyTargetQ4 = targetRequest.AgencyTargetQ4;
-                fyActiveKPI.Status = "TargetsSet";
+                fyActiveKPI.Status = nameof(Domain.Enums.FYActiveKPIStatus.TargetsSet);
 
                 unitOfWork.FYActiveKPIRepository.Update(fyActiveKPI);
                 updatedCount++;

@@ -34,6 +34,7 @@ public record FYActiveKPIDetailedResponse
     public MFOPAPResponse? MFOPAP { get; init; }
     public List<AttributeResponse> Attributes { get; init; } = [];
     public List<SDGResponse> SDGs { get; init; } = [];
+    public ERPEZ.Application.Features.Planning.FiscalYear.Dtos.FiscalYearResponse? FiscalYear { get; init; }
     public DateTime CreatedAt { get; init; }
 }
 

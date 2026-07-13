@@ -23,7 +23,7 @@ public class ValidateForAssignmentQueryHandler(IUnitOfWork unitOfWork)
         var allKPIs = await unitOfWork.FYActiveKPIRepository.ToListAsync(query, cancellationToken);
 
         var kpisWithoutTargets = allKPIs
-            .Where(k => k.AgencyTargetAnnual == 0 || k.Status == "Draft")
+            .Where(k => k.AgencyTargetAnnual == 0 || k.Status == nameof(Domain.Enums.FYActiveKPIStatus.Draft))
             .Select(k => new KPIWithoutTarget
             {
                 Id = k.Id,

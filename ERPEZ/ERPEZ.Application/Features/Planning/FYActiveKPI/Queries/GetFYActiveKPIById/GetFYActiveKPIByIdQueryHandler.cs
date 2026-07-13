@@ -90,6 +90,16 @@ public class GetFYActiveKPIByIdQueryHandler(IUnitOfWork unitOfWork)
                 Description = s.Description,
                 SdgCode = s.SdgCode   // ← add
             }).ToList() ?? [],
+            FiscalYear = fyActiveKPI.FiscalYear == null ? null : new ERPEZ.Application.Features.Planning.FiscalYear.Dtos.FiscalYearResponse
+            {
+                Id = fyActiveKPI.FiscalYear.Id,
+                Year = fyActiveKPI.FiscalYear.Year,
+                Description = fyActiveKPI.FiscalYear.Description,
+                Status = fyActiveKPI.FiscalYear.Status,
+                IsLocked = fyActiveKPI.FiscalYear.IsLocked,
+                StartDate = fyActiveKPI.FiscalYear.StartDate,
+                EndDate = fyActiveKPI.FiscalYear.EndDate
+            }
         };
 
         return ApiResponse<FYActiveKPIDetailedResponse>.Success(response);

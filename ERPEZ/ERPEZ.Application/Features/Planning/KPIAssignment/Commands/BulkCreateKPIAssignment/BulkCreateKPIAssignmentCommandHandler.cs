@@ -29,7 +29,7 @@ public class BulkCreateKPIAssignmentCommandHandler(IUnitOfWork unitOfWork, IKPIA
                     cancellationToken: cancellationToken)
                     ?? throw new NotFoundException($"FYActiveKPI with ID {kpiAssignment.FYActiveKPIId} not found.");
 
-                if (fyActiveKPI.Status != "TargetsSet")
+                if (fyActiveKPI.Status != nameof(Domain.Enums.FYActiveKPIStatus.TargetsSet) && fyActiveKPI.Status != nameof(Domain.Enums.FYActiveKPIStatus.Assigned))
                 {
                     throw new ValidationException(
                         $"Cannot assign KPI '{fyActiveKPI.Name}' to offices. " +
@@ -44,18 +44,25 @@ public class BulkCreateKPIAssignmentCommandHandler(IUnitOfWork unitOfWork, IKPIA
                     throw new ValidationException($"KPI '{fyActiveKPI.Name}' has duplicate office assignments.");
                 }
 
-                // Check if any offices are already assigned to this KPI
+                // Query all existing assignments for the offices in the request
                 var existingAssignments = await unitOfWork.KPIAssignmentRepository.ToListAsync(
                     unitOfWork.KPIAssignmentRepository.Query(
                         a => a.FYActiveKPIId == kpiAssignment.FYActiveKPIId && 
                              officeIds.Contains(a.OfficeId)),
                     cancellationToken);
 
-                if (existingAssignments.Any())
+                // If any assignments already exist, verify their OPCR status is Draft
+                foreach (var existing in existingAssignments)
                 {
-                    throw new ConflictException(
-                        $"KPI '{fyActiveKPI.Name}' is already assigned to {existingAssignments.Count} office(s). " +
-                        $"Remove existing assignments first or use PUT to update.");
+                    var opcr = await unitOfWork.OPCRRepository.FindAsync(
+                        o => o.OfficeId == existing.OfficeId && o.FiscalYearId == fyActiveKPI.FiscalYearId,
+                        cancellationToken);
+
+                    if (opcr != null && !opcr.CommitmentStatus.Equals("Draft", StringComparison.OrdinalIgnoreCase))
+                    {
+                        throw new ValidationException(
+                            $"Cannot update assignment for KPI '{fyActiveKPI.Name}' and office '{existing.OfficeId}' - the OPCR commitment status is '{opcr.CommitmentStatus}'.");
+                    }
                 }
 
                 // Validate distribution behavior
@@ -64,33 +71,54 @@ public class BulkCreateKPIAssignmentCommandHandler(IUnitOfWork unitOfWork, IKPIA
                     kpiAssignment.OfficeAssignments.ToList(),
                     cancellationToken);
 
-                // Create assignments for each office
+                // Create or update assignments for each office
                 foreach (var officeAssignment in kpiAssignment.OfficeAssignments)
                 {
-                    // Validate office exists
-                    _ = await unitOfWork.OfficeRepository.GetByIdAsync(
-                        officeAssignment.OfficeId, 
-                        cancellationToken: cancellationToken)
-                        ?? throw new NotFoundException($"Office with ID {officeAssignment.OfficeId} not found.");
-
-                    var assignmentId = Guid.NewGuid();
-                    var assignment = new Domain.Entities.Planning.KPIAssignment
+                    var existingAssignment = existingAssignments.FirstOrDefault(a => a.OfficeId == officeAssignment.OfficeId);
+                    if (existingAssignment != null)
                     {
-                        Id = assignmentId,
-                        FYActiveKPIId = kpiAssignment.FYActiveKPIId,
-                        OfficeId = officeAssignment.OfficeId,
-                        AssignedTargetAnnual = officeAssignment.AssignedTargetAnnual,
-                        AssignedTargetQ1 = officeAssignment.AssignedTargetQ1,
-                        AssignedTargetQ2 = officeAssignment.AssignedTargetQ2,
-                        AssignedTargetQ3 = officeAssignment.AssignedTargetQ3,
-                        AssignedTargetQ4 = officeAssignment.AssignedTargetQ4,
-                        IsLocked = officeAssignment.IsLocked
-                    };
+                        // Update existing assignment
+                        existingAssignment.AssignedTargetAnnual = officeAssignment.AssignedTargetAnnual;
+                        existingAssignment.AssignedTargetQ1 = officeAssignment.AssignedTargetQ1;
+                        existingAssignment.AssignedTargetQ2 = officeAssignment.AssignedTargetQ2;
+                        existingAssignment.AssignedTargetQ3 = officeAssignment.AssignedTargetQ3;
+                        existingAssignment.AssignedTargetQ4 = officeAssignment.AssignedTargetQ4;
+                        existingAssignment.IsLocked = officeAssignment.IsLocked;
 
-                    await unitOfWork.KPIAssignmentRepository.AddAsync(assignment, cancellationToken);
-                    createdAssignmentIds.Add(assignmentId);
-                    totalOfficesAssigned++;
+                        unitOfWork.KPIAssignmentRepository.Update(existingAssignment);
+                        createdAssignmentIds.Add(existingAssignment.Id);
+                        totalOfficesAssigned++;
+                    }
+                    else
+                    {
+                        // Validate office exists
+                        _ = await unitOfWork.OfficeRepository.GetByIdAsync(
+                            officeAssignment.OfficeId, 
+                            cancellationToken: cancellationToken)
+                            ?? throw new NotFoundException($"Office with ID {officeAssignment.OfficeId} not found.");
+
+                        var assignmentId = Guid.NewGuid();
+                        var assignment = new Domain.Entities.Planning.KPIAssignment
+                        {
+                            Id = assignmentId,
+                            FYActiveKPIId = kpiAssignment.FYActiveKPIId,
+                            OfficeId = officeAssignment.OfficeId,
+                            AssignedTargetAnnual = officeAssignment.AssignedTargetAnnual,
+                            AssignedTargetQ1 = officeAssignment.AssignedTargetQ1,
+                            AssignedTargetQ2 = officeAssignment.AssignedTargetQ2,
+                            AssignedTargetQ3 = officeAssignment.AssignedTargetQ3,
+                            AssignedTargetQ4 = officeAssignment.AssignedTargetQ4,
+                            IsLocked = officeAssignment.IsLocked
+                        };
+
+                        await unitOfWork.KPIAssignmentRepository.AddAsync(assignment, cancellationToken);
+                        createdAssignmentIds.Add(assignmentId);
+                        totalOfficesAssigned++;
+                    }
                 }
+
+                fyActiveKPI.Status = nameof(Domain.Enums.FYActiveKPIStatus.Assigned);
+                unitOfWork.FYActiveKPIRepository.Update(fyActiveKPI);
 
                 totalKPIsProcessed++;
             }
@@ -133,8 +161,15 @@ public class BulkCreateKPIAssignmentCommandHandler(IUnitOfWork unitOfWork, IKPIA
             unitOfWork.KPIAssignmentRepository.Query(a => a.FYActiveKPIId == fyActiveKPI.Id),
             cancellationToken);
 
-        var existingTotalAnnual = existingAssignments.Sum(a => a.AssignedTargetAnnual);
-        var cumulativeTotalAnnual = existingTotalAnnual + totalAssignedAnnual;
+        // Build a set of office IDs in the request to check for overlaps
+        var newOfficeIds = officeAssignments.Select(o => o.OfficeId).ToHashSet();
+
+        // Calculate the existing total for offices that are NOT in the current request
+        var existingTotalForOtherOffices = existingAssignments
+            .Where(a => !newOfficeIds.Contains(a.OfficeId))
+            .Sum(a => a.AssignedTargetAnnual);
+
+        var cumulativeTotalAnnual = existingTotalForOtherOffices + totalAssignedAnnual;
 
         // Percentage validation: targets cannot exceed 100%
         if (measurementUnit == MeasurementUnitEnum.Percentage)
@@ -158,7 +193,7 @@ public class BulkCreateKPIAssignmentCommandHandler(IUnitOfWork unitOfWork, IKPIA
                     fyActiveKPI.Name,
                     agencyAnnualTarget,
                     cumulativeTotalAnnual,
-                    existingTotalAnnual,
+                    existingTotalForOtherOffices,
                     totalAssignedAnnual);
                 break;
 
