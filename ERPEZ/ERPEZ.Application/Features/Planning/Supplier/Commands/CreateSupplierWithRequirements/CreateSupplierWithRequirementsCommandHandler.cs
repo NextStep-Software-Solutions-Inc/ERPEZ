@@ -52,7 +52,8 @@ public class CreateSupplierWithRequirementsCommandHandler(IUnitOfWork unitOfWork
                 string? promotedUrl = null;
                 if (req.FileId.HasValue)
                 {
-                    promotedUrl = await fileStorageService.PromoteFileAsync(req.FileId.Value);
+                    var (url, _) = await fileStorageService.PromoteFileAsync(req.FileId.Value, cancellationToken);
+                    promotedUrl = url;
                 }
 
                 requirements.Add(new Domain.Entities.Planning.SupplierRequirement

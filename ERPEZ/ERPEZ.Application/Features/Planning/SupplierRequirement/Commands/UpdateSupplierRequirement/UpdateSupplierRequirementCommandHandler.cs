@@ -21,7 +21,7 @@ public class UpdateSupplierRequirementCommandHandler(IUnitOfWork unitOfWork, IFi
 
         if (updateRequest.FileId.HasValue)
         {
-            var promotedUrl = await fileStorageService.PromoteFileAsync(updateRequest.FileId.Value);
+            var (promotedUrl, _) = await fileStorageService.PromoteFileAsync(updateRequest.FileId.Value, cancellationToken);
             
             // Fix the casing here and apply the new file path!
             entity.Url = promotedUrl; 

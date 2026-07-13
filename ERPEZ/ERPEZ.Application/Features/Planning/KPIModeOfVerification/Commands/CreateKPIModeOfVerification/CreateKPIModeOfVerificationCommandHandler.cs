@@ -36,7 +36,8 @@ public class CreateKPIModeOfVerificationCommandHandler(IUnitOfWork unitOfWork, I
         string? url = null;
         if (request.FileId.HasValue)
         {
-            url = await fileStorageService.PromoteFileAsync(request.FileId.Value);
+            var promoted = await fileStorageService.PromoteFileAsync(request.FileId.Value, cancellationToken: cancellationToken);
+            url = promoted.Url;
         }
 
         var kpiModeOfVerification = new Domain.Entities.Planning.KPIModeOfVerification

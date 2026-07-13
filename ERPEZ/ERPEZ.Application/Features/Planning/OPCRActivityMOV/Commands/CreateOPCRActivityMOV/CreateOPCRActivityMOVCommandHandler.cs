@@ -43,7 +43,7 @@ public class CreateOPCRActivityMOVCommandHandler(IUnitOfWork unitOfWork, IFileSt
         // This enables the Planning Unit to aggregate all MOVs for a KPI across DUs
 
         // Promote the temporary file to permanent storage
-        var url = await fileStorageService.PromoteFileAsync(request.FileId);
+        var (url, _) = await fileStorageService.PromoteFileAsync(request.FileId, cancellationToken);
 
         // Extract filename from the URL (blob name format: {fileId}_{filename})
         var blobName = url.Split('/').Last();
