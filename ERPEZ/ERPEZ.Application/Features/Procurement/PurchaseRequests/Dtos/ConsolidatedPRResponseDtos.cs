@@ -18,6 +18,7 @@ public record ConsolidatedPRDetailResponse(
     string? Purpose,
     StatusEnum Status,
     decimal TotalAmount,
+    string? Remarks,
     List<ConsolidatedPRLinkedPrResponse> Prs
 );
 

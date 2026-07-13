@@ -41,6 +41,8 @@ public class ConsolidatedPR : ApprovableEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public decimal TotalAmount { get; set; }
 
+    /// <summary>Remarks from the approver when returning the CPR for revision.</summary>
+    public string? Remarks { get; set; }
     // ── Navigation ────────────────────────────────────────────────────────────
 
     public virtual List<ConsolidatedPRItem> ConsolidatedPRItems { get; set; } = [];
