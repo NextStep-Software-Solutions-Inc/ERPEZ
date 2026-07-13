@@ -47,7 +47,13 @@ public record RFQItemDto
     public string? GreenSpecification { get; init; }
     public string? CategorySnapshot { get; init; }
     public string? FundSnapshot { get; init; }
+    public List<MonthlyAllocationDto> MonthlyAllocations { get; init; } = [];
 }
+
+public record MonthlyAllocationDto(
+    string Month,
+    int Quantity
+);
 
 public record RFQSupplierDto
 {
