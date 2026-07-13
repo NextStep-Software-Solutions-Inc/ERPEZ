@@ -77,46 +77,26 @@ public class CreateLIBCommandHandler(IUnitOfWork unitOfWork)
         Guid? agencyMasterBudgetId;
         string status;
 
-        if (request.AgencyMasterBudgetId.HasValue)
-        {
-            var agencyMasterBudget = await unitOfWork.AgencyMasterBudgetRepository.GetByIdAsync(
-                    request.AgencyMasterBudgetId.Value, cancellationToken)
-                ?? throw new NotFoundException($"Agency Master Budget with ID {request.AgencyMasterBudgetId} not found.");
+        // Replace the entire if/else branch with:
+        if (!request.AgencyMasterBudgetId.HasValue)
+            throw new ValidationException("AgencyMasterBudgetId is required.");
 
-            if (fiscalYear is null || agencyMasterBudget.FiscalYearId != fiscalYear.Id)
-            {
-                throw new ERPEZ.Shared.Exceptions.ValidationException(
-                    "The Agency Master Budget's Fiscal Year does not match the LIB's Fiscal Year.");
-            }
+        var agencyMasterBudget = await unitOfWork.AgencyMasterBudgetRepository.GetByIdAsync(
+                request.AgencyMasterBudgetId.Value, cancellationToken)
+            ?? throw new NotFoundException($"Agency Master Budget with ID {request.AgencyMasterBudgetId} not found.");
 
-            var officeCeiling = await unitOfWork.OfficeCeilingRepository.FindAsync(
-                oc => oc.OfficeId == request.OfficeId && oc.AgencyMasterBudgetId == agencyMasterBudget.Id,
-                cancellationToken);
+        if (fiscalYear is not null && agencyMasterBudget.FiscalYearId != fiscalYear.Id)
+            throw new ValidationException(
+                "The Agency Master Budget's Fiscal Year does not match the LIB's Fiscal Year.");
 
-            if (officeCeiling is null)
-            {
-                throw new NotFoundException(
-                    $"No Office Ceiling exists for Office {request.OfficeId} under this Agency Master Budget.");
-            }
+        var officeCeiling = await unitOfWork.OfficeCeilingRepository.FindAsync(
+            oc => oc.OfficeId == request.OfficeId && oc.AgencyMasterBudgetId == agencyMasterBudget.Id,
+            cancellationToken);
 
-            fundSourceId = agencyMasterBudget.FundSourceId;
-            agencyMasterBudgetId = agencyMasterBudget.Id;
-            status = "Draft";
-        }
-        else
-        {
-            if (!request.FundSourceId.HasValue)
-            {
-                throw new ERPEZ.Shared.Exceptions.ValidationException("FundSourceId is required when AgencyMasterBudgetId is not provided.");
-            }
-
-            _ = await unitOfWork.FundSourceRepository.GetByIdAsync(request.FundSourceId.Value, cancellationToken)
-                ?? throw new NotFoundException($"Fund Source with ID {request.FundSourceId} not found.");
-
-            fundSourceId = request.FundSourceId.Value;
-            agencyMasterBudgetId = null;
-            status = "Proposed";
-        }
+        // Ceiling exists → Draft, no ceiling → Proposed
+        fundSourceId = agencyMasterBudget.FundSourceId;
+        agencyMasterBudgetId = agencyMasterBudget.Id;
+        status = officeCeiling is not null ? "Draft" : "Proposed";
 
         if (request.ParentLIBId.HasValue)
         {
@@ -131,7 +111,7 @@ public class CreateLIBCommandHandler(IUnitOfWork unitOfWork)
         }
 
         // -----------------------------------------------------------------------
-        // Uniqueness: one active (non-"Proposed") LIB per source document.
+        // Uniqueness: one LIB per source document.
         // SourceId alone already scopes this correctly:
         //   - an OPCR is 1:1 with (Office, FiscalYear), so this still enforces
         //     "one active LIB per Office+FY" for OPCR-sourced LIBs.
@@ -142,7 +122,6 @@ public class CreateLIBCommandHandler(IUnitOfWork unitOfWork)
         var existingActive = await unitOfWork.LineItemBudgetRepository.FindAsync(
             x => x.SourceType == sourceType
                  && x.SourceId == request.SourceId
-                 && x.Status != "Proposed"
                  && !x.IsDeleted,
             cancellationToken);
         if (existingActive != null)
