@@ -5,9 +5,16 @@ using Sieve.Services;
 
 namespace ERPEZ.Infrastructure.Persistence.Repositories;
 
-public class PurchaseOrderRepository(ApplicationDbContext context, ISieveProcessor sieveProcessor)
-    : Repository<PurchaseOrder>(context, sieveProcessor), IPurchaseOrderRepository
+public class PurchaseOrderRepository : Repository<PurchaseOrder>, IPurchaseOrderRepository
 {
+    private readonly ApplicationDbContext context;
+
+    public PurchaseOrderRepository(ApplicationDbContext context, ISieveProcessor sieveProcessor)
+        : base(context, sieveProcessor)
+    {
+        this.context = context;
+    }
+
     public async Task<PurchaseOrder?> GetByIdWithItemsAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await context.Set<PurchaseOrder>()
