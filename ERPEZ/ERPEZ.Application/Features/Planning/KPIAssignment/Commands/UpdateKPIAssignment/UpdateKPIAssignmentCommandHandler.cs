@@ -20,7 +20,7 @@ public class UpdateKPIAssignmentCommandHandler(IUnitOfWork unitOfWork, IKPIAssig
         var fyActiveKpi = await unitOfWork.FYActiveKPIRepository.GetByIdAsync(assignment.FYActiveKPIId, cancellationToken: cancellationToken)
             ?? throw new NotFoundException("FY Active KPI not found.");
 
-        if (fyActiveKpi.Status != "TargetsSet")
+        if (fyActiveKpi.Status != nameof(Domain.Enums.FYActiveKPIStatus.TargetsSet) && fyActiveKpi.Status != nameof(Domain.Enums.FYActiveKPIStatus.Assigned))
         {
             throw new ValidationException(
                 $"Cannot update assignment for KPI '{fyActiveKpi.Name}'. " +

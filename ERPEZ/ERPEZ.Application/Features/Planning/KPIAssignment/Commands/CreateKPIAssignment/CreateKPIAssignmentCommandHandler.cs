@@ -21,7 +21,7 @@ public class CreateKPIAssignmentCommandHandler(IUnitOfWork unitOfWork, IKPIAssig
         var fyActiveKPI = await unitOfWork.FYActiveKPIRepository.GetByIdAsync(request.FYActiveKPIId, cancellationToken: cancellationToken)
             ?? throw new NotFoundException($"FYActiveKPI with ID {request.FYActiveKPIId} not found.");
 
-        if (fyActiveKPI.Status != "TargetsSet")
+        if (fyActiveKPI.Status != nameof(Domain.Enums.FYActiveKPIStatus.TargetsSet) && fyActiveKPI.Status != nameof(Domain.Enums.FYActiveKPIStatus.Assigned))
         {
             throw new ValidationException(
                 $"Cannot assign KPI '{fyActiveKPI.Name}' to offices. " +
@@ -122,6 +122,10 @@ public class CreateKPIAssignmentCommandHandler(IUnitOfWork unitOfWork, IKPIAssig
         };
 
         await unitOfWork.KPIAssignmentRepository.AddAsync(assignment, cancellationToken);
+        
+        fyActiveKPI.Status = nameof(Domain.Enums.FYActiveKPIStatus.Assigned);
+        unitOfWork.FYActiveKPIRepository.Update(fyActiveKPI);
+
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return ApiResponse<Guid>.Success(assignment.Id, "KPI Assignment created successfully.");

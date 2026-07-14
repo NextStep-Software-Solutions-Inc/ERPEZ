@@ -90,7 +90,7 @@ public class ActivateFYActiveKPICommandHandler(IUnitOfWork unitOfWork)
                     MonitoringFrequency = masterKPI.MonitoringFrequency,
                     IsOptInAvailable = masterKPI.IsOptInAvailable,
                     IsGAD = masterKPI.IsGAD,
-                    Status = "Draft", // Targets set separately via SetFYActiveKPITargetsCommand
+                    Status = nameof(Domain.Enums.FYActiveKPIStatus.Draft), // Targets set separately via SetFYActiveKPITargetsCommand
                     
                     // Agency targets initialized to defaults, set later via SetFYActiveKPITargetsCommand
                     AgencyTargetAnnual = 0,

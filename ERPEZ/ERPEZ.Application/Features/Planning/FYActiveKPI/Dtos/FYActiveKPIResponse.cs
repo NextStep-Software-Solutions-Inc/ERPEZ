@@ -43,4 +43,7 @@ public record FYActiveKPIResponse
     
     [JsonPropertyName("SDGs")]
     public List<SDGResponse> SDGs { get; init; } = [];
+
+    [JsonPropertyName("FiscalYear")]
+    public ERPEZ.Application.Features.Planning.FiscalYear.Dtos.FiscalYearResponse? FiscalYear { get; init; }
 }

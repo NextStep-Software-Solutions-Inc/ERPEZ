@@ -57,8 +57,18 @@ public class GetKPIAssignmentsQueryHandler(IUnitOfWork unitOfWork)
             CreatedAt = assignment.CreatedAt,
             CreatedBy = assignment.CreatedBy,
             FiscalYearId = assignment.FYActiveKPI?.FiscalYearId,
-            Year = assignment.FYActiveKPI?.FiscalYear?.Year,         // needs FiscalYear nav prop
+            Year = assignment.FYActiveKPI?.FiscalYear?.Year,
             FunctionCategory = assignment.FYActiveKPI?.FunctionCategory,
+            FiscalYear = assignment.FYActiveKPI?.FiscalYear == null ? null : new ERPEZ.Application.Features.Planning.FiscalYear.Dtos.FiscalYearResponse
+            {
+                Id = assignment.FYActiveKPI.FiscalYear.Id,
+                Year = assignment.FYActiveKPI.FiscalYear.Year,
+                Description = assignment.FYActiveKPI.FiscalYear.Description,
+                Status = assignment.FYActiveKPI.FiscalYear.Status,
+                IsLocked = assignment.FYActiveKPI.FiscalYear.IsLocked,
+                StartDate = assignment.FYActiveKPI.FiscalYear.StartDate,
+                EndDate = assignment.FYActiveKPI.FiscalYear.EndDate
+            }
         };
     }
 
