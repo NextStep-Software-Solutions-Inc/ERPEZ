@@ -15,43 +15,36 @@ public class CreatePurchaseOrderCommandHandler(IUnitOfWork unitOfWork)
 {
     public async Task<ApiResponse<Guid>> Handle(CreatePurchaseOrderCommand request, CancellationToken cancellationToken)
     {
-        try
+        var purchaseOrderItems = request.Items.Select(i => new PurchaseOrderItem
         {
-            var purchaseOrderItems = request.Items.Select(i => new PurchaseOrderItem
-            {
-                SourceItemId = i.SourceItemId,
-                Description = i.Description,
-                Quantity = i.Quantity,
-                Unit = i.Unit,
-                UnitPrice = i.UnitPrice,
-                Amount = i.Quantity * i.UnitPrice
-            }).ToList();
+            SourceItemId = i.SourceItemId,
+            Description = i.Description,
+            Quantity = i.Quantity,
+            Unit = i.Unit,
+            UnitPrice = i.UnitPrice,
+            Amount = i.Quantity * i.UnitPrice
+        }).ToList();
 
-            var purchaseOrder = new PurchaseOrder
-            {
-                PONumber = request.PONumber,
-                ProcurementMode = request.ProcurementMode,
-                SourceDocumentType = request.SourceDocumentType,
-                SourceDocumentId = request.SourceDocumentId,
-                SupplierId = request.SupplierId,
-                Description = request.Description,
-                Date = request.Date,
-                PlaceOfDelivery = request.PlaceOfDelivery,
-                DateOfDelivery = request.DateOfDelivery,
-                DeliveryTerm = request.DeliveryTerm,
-                PaymentTerm = request.PaymentTerm,
-                SupportingDocumentUrl = request.SupportingDocumentUrl,
-                TotalAmount = purchaseOrderItems.Sum(i => i.Amount),
-                PurchaseOrderItems = purchaseOrderItems
-            };
-
-            await unitOfWork.PurchaseOrderRepository.AddAsync(purchaseOrder, cancellationToken);
-            await unitOfWork.SaveChangesAsync(cancellationToken);
-            return ApiResponse<Guid>.Success(purchaseOrder.Id, "Purchase Order created successfully.");
-        }
-        catch (Exception ex)
+        var purchaseOrder = new PurchaseOrder
         {
-            return ApiResponse<Guid>.Fail(ex.Message);
-        }
+            PONumber = request.PONumber,
+            ProcurementMode = request.ProcurementMode,
+            SourceDocumentType = request.SourceDocumentType,
+            SourceDocumentId = request.SourceDocumentId,
+            SupplierId = request.SupplierId,
+            Description = request.Description,
+            Date = request.Date,
+            PlaceOfDelivery = request.PlaceOfDelivery,
+            DateOfDelivery = request.DateOfDelivery,
+            DeliveryTerm = request.DeliveryTerm,
+            PaymentTerm = request.PaymentTerm,
+            SupportingDocumentUrl = request.SupportingDocumentUrl,
+            TotalAmount = purchaseOrderItems.Sum(i => i.Amount),
+            PurchaseOrderItems = purchaseOrderItems
+        };
+
+        await unitOfWork.PurchaseOrderRepository.AddAsync(purchaseOrder, cancellationToken);
+        await unitOfWork.SaveChangesAsync(cancellationToken);
+        return ApiResponse<Guid>.Success(purchaseOrder.Id, "Purchase Order created successfully.");
     }
 }

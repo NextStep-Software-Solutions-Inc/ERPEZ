@@ -1,4 +1,5 @@
 using ERPEZ.Domain.Common;
+using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Domain.Enums;
 using Sieve.Attributes;
 using System;
@@ -22,6 +23,8 @@ public class PurchaseOrder : BaseEntity
 
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid SupplierId { get; set; }
+    
+    public virtual Supplier? Supplier { get; set; }
 
     public string? Description { get; set; }
 

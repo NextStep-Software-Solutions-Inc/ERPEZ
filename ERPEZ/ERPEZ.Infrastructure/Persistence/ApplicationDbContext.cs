@@ -11,9 +11,6 @@ namespace ERPEZ.Infrastructure.Persistence;
 public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options) : DbContext(options)
 {
     //Planning
-    public DbSet<PurchaseOrder>? PurchaseOrders { get; set; }
-    public DbSet<PurchaseOrderItem>? PurchaseOrderItems { get; set; }
-
     public DbSet<WFPObjectiveActivity>? WFPObjectiveActivities { get; set; }
     public DbSet<WFPObjectiveActivityExpenditure>? WFPObjectiveActivityExpenditures { get; set; }
     public DbSet<FunctionAllocation>? FunctionAllocations { get; set; }
@@ -110,6 +107,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<BACResolutionWhereasClause>? BACResolutionWhereasClauses { get; set; }
 
     //Procurement
+    public DbSet<PurchaseOrder>? PurchaseOrders { get; set; }
+    public DbSet<PurchaseOrderItem>? PurchaseOrderItems { get; set; }
+
     public DbSet<ProcurementCategory>? ProcurementCategories { get; set; }
     public DbSet<ProcurementMode>? ProcurementModes { get; set; }
     public DbSet<ProcurementModeThreshold>? ProcurementModeThresholds { get; set; }
@@ -615,6 +615,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         {
             entity.Property(e => e.TotalAmount).HasColumnType("decimal(18,2)");
             entity.HasIndex(e => e.PONumber).IsUnique();
+            entity.HasOne(e => e.Supplier)
+                  .WithMany()
+                  .HasForeignKey(e => e.SupplierId)
+                  .OnDelete(DeleteBehavior.Restrict);
             entity.HasMany(e => e.PurchaseOrderItems)
                   .WithOne(e => e.PurchaseOrder)
                   .HasForeignKey(e => e.PurchaseOrderId)

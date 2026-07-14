@@ -5,6 +5,11 @@ using ERPEZ.Domain.Enums;
 
 namespace ERPEZ.Application.Features.Procurement.PurchaseOrders.Commands.UpdatePurchaseOrder;
 
+/// <summary>
+/// Handles updating an existing Purchase Order.
+/// This executes a full replace (PUT semantics) where all required fields (validated by UpdatePurchaseOrderCommandValidator)
+/// are replaced, and optional fields can be updated or cleared (passed as null).
+/// </summary>
 public class UpdatePurchaseOrderCommandHandler(IUnitOfWork unitOfWork) 
     : IRequestHandler<UpdatePurchaseOrderCommand, ApiResponse<bool>>
 {
