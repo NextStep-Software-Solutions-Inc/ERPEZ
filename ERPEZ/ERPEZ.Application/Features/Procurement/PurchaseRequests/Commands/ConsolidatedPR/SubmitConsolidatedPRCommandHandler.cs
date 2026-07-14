@@ -29,7 +29,6 @@ public class SubmitConsolidatedPRCommandHandler(IUnitOfWork unitOfWork)
             throw new ValidationException($"Missing Mode of Procurement for: {string.Join(", ", missingMOP)}.");
 
         cpr.Status       = StatusEnum.Approved;
-        cpr.ApprovedDate = DateTime.UtcNow;
 
         unitOfWork.ConsolidatedPRRepository.Update(cpr);
         await unitOfWork.SaveChangesAsync(cancellationToken);

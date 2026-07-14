@@ -1,4 +1,5 @@
 using ERPEZ.Domain.Interfaces;
+using ERPEZ.Application.Features.Planning.Budgeting.Common.Rules;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
@@ -12,6 +13,12 @@ public class DeleteLineItemBudgetDetailCommandHandler(IUnitOfWork unitOfWork)
     {
         var entity = await unitOfWork.LineItemBudgetDetailRepository.GetByIdAsync(command.Id, cancellationToken)
             ?? throw new NotFoundException($"Line Item Budget Detail with ID {command.Id} not found.");
+
+        var lib = await unitOfWork.LineItemBudgetRepository.GetByIdAsync(entity.LineItemBudgetId, cancellationToken)
+            ?? throw new NotFoundException($"LIB with ID {entity.LineItemBudgetId} not found.");
+
+        if (!LIBRules.IsEditable(lib.Status))
+            throw new ValidationException("Line item details can only be deleted from a Draft, Proposed, or Returned LIB.");
 
         unitOfWork.LineItemBudgetDetailRepository.Remove(entity);
         await unitOfWork.SaveChangesAsync(cancellationToken);

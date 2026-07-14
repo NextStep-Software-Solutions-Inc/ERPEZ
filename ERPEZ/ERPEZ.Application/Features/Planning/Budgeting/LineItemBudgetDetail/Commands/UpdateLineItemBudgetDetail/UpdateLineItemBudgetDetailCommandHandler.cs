@@ -1,6 +1,7 @@
 using ERPEZ.Application.Features.Planning.Budgeting.Common;
 using ERPEZ.Application.Features.Planning.Budgeting.Common.Enums;
 using ERPEZ.Application.Features.Planning.Budgeting.LineItemBudgetDetail.Dtos;
+using ERPEZ.Application.Features.Planning.Budgeting.Common.Rules;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -23,8 +24,8 @@ public class UpdateLineItemBudgetDetailCommandHandler(IUnitOfWork unitOfWork)
         var lib = await unitOfWork.LineItemBudgetRepository.GetByIdAsync(effectiveLibId, cancellationToken)
             ?? throw new NotFoundException($"LIB with ID {effectiveLibId} not found.");
 
-        if (!lib.Status.Equals("Draft", StringComparison.OrdinalIgnoreCase))
-            throw new ValidationException("Line item details can only be modified on a Draft LIB.");
+        if (!LIBRules.IsEditable(lib.Status))
+            throw new ValidationException("Line item details can only be modified on a Draft, Proposed, or Returned LIB.");
 
         var isProjectScope  = lib.Scope.Equals(LIBScopeEnum.Project.ToString(),  StringComparison.OrdinalIgnoreCase);
         var isActivityScope = lib.Scope.Equals(LIBScopeEnum.Activity.ToString(), StringComparison.OrdinalIgnoreCase);

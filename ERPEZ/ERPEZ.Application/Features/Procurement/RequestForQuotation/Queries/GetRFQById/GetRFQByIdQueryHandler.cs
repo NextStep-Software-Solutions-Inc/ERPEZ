@@ -2,6 +2,7 @@ using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using ERPEZ.Application.Features.Procurement.RequestForQuotation.Dtos;
 using ERPEZ.Domain.Interfaces;
+using ERPEZ.Domain.Entities.Procurement;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Procurement.RequestForQuotation.Queries.GetRFQById;
@@ -41,7 +42,11 @@ public class GetRFQByIdQueryHandler(IUnitOfWork unitOfWork)
                 IsBrochureRequired = item.IsBrochureRequired,
                 GreenSpecification = item.GreenSpecification,
                 CategorySnapshot = item.CategorySnapshot,
-                FundSnapshot = item.FundSnapshot
+                FundSnapshot = item.FundSnapshot,
+                MonthlyAllocations = (item.CPRItem?.PRItem?.MonthlyQuantities ?? new List<PRItemMonthlyQuantity>())
+                    .Where(m => !m.IsDeleted)
+                    .Select(m => new MonthlyAllocationDto(m.Month.ToString(), m.Quantity))
+                    .ToList()
             }).ToList(),
             Suppliers = rfq.RFQSuppliers.Select(s => new RFQSupplierDto
             {
