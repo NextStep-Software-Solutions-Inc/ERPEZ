@@ -94,7 +94,17 @@ public class GetFYActiveKPIsQueryHandler(IUnitOfWork unitOfWork)
                 Name = s.Name,
                 Description = s.Description,
                 SdgCode = s.SdgCode   // ← add
-            }).ToList() : new List<SDGResponse>()
+            }).ToList() : new List<SDGResponse>(),
+            FiscalYear = fy.FiscalYear == null ? null : new ERPEZ.Application.Features.Planning.FiscalYear.Dtos.FiscalYearResponse
+            {
+                Id = fy.FiscalYear.Id,
+                Year = fy.FiscalYear.Year,
+                Description = fy.FiscalYear.Description,
+                Status = fy.FiscalYear.Status,
+                IsLocked = fy.FiscalYear.IsLocked,
+                StartDate = fy.FiscalYear.StartDate,
+                EndDate = fy.FiscalYear.EndDate
+            }
         };
 
         var (items, totalCount) = await unitOfWork.FYActiveKPIRepository.GetAllAsync(

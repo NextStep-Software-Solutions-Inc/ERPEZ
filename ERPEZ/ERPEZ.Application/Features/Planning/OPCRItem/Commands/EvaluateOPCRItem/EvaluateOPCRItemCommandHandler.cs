@@ -92,7 +92,7 @@ public class EvaluateOPCRItemCommandHandler(
             string permanentUrl;
             try
             {
-                permanentUrl = await fileStorageService.PromoteFileAsync(movRequest.FileId);
+                (permanentUrl, _) = await fileStorageService.PromoteFileAsync(movRequest.FileId, cancellationToken);
             }
             catch (FileNotFoundException)
             {

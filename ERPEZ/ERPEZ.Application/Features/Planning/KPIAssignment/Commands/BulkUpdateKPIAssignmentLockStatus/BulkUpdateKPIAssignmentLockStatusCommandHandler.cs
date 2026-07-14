@@ -23,7 +23,7 @@ public class BulkUpdateKPIAssignmentLockStatusCommandHandler(IUnitOfWork unitOfW
                 var fyActiveKPI = await unitOfWork.FYActiveKPIRepository.GetByIdAsync(item.FYActiveKPIId, cancellationToken: cancellationToken)
                     ?? throw new NotFoundException($"FYActiveKPI with ID {item.FYActiveKPIId} not found.");
 
-                if (fyActiveKPI.Status != "TargetsSet")
+                if (fyActiveKPI.Status != nameof(Domain.Enums.FYActiveKPIStatus.TargetsSet) && fyActiveKPI.Status != nameof(Domain.Enums.FYActiveKPIStatus.Assigned))
                 {
                     throw new ValidationException(
                         $"Cannot update lock status for KPI '{fyActiveKPI.Name}'. " +

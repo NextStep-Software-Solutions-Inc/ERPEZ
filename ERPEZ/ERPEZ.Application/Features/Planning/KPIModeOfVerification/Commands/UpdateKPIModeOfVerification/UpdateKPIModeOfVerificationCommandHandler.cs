@@ -23,7 +23,8 @@ public class UpdateKPIModeOfVerificationCommandHandler(IUnitOfWork unitOfWork, I
         string? url = null;
         if (dto?.FileId.HasValue == true)
         {
-            url = await fileStorageService.PromoteFileAsync(dto.FileId.Value);
+            var (promotedUrl, _) = await fileStorageService.PromoteFileAsync(dto.FileId.Value, cancellationToken);
+            url = promotedUrl;
         }
 
         kPIModeOfVerification.KPIId = dto?.KPIId ?? kPIModeOfVerification.KPIId;

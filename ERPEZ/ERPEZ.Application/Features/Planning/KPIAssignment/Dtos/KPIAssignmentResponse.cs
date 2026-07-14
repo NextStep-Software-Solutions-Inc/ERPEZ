@@ -23,6 +23,7 @@ public record KPIAssignmentResponse
     public bool IsLocked { get; init; }
     public FYActiveKPIResponse? FYActiveKPI { get; init; }
     public OfficeResponse? Office { get; init; }
+    public ERPEZ.Application.Features.Planning.FiscalYear.Dtos.FiscalYearResponse? FiscalYear { get; init; }
     public DateTime CreatedAt { get; init; }
     public string CreatedBy { get; init; } = string.Empty;
 }

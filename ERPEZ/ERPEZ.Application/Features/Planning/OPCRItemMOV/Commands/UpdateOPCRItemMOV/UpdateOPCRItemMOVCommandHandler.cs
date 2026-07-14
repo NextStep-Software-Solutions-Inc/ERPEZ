@@ -50,7 +50,7 @@ public class UpdateOPCRItemMOVCommandHandler(
             if (entity.FileId.HasValue)
                 await fileStorageService.DeletePermanentAsync(entity.FileId.Value);
 
-            var permanentUrl   = await fileStorageService.PromoteFileAsync(dto.FileId.Value);
+            var (permanentUrl, _) = await fileStorageService.PromoteFileAsync(dto.FileId.Value, cancellationToken);
             entity.FileId      = dto.FileId.Value;
             entity.AttachedUrl = permanentUrl;
             entity.UploadedDate = DateTime.UtcNow;

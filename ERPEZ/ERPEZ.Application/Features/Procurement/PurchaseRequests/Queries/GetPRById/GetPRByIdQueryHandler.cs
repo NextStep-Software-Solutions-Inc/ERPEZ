@@ -36,6 +36,8 @@ public class GetPRByIdQueryHandler(IUnitOfWork unitOfWork)
                 .Select(i => new PRItemDetailResponse
                 {
                     Id                = i.Id,
+                    PPMPItemId        = i.PPMPItemId,
+                    APRItemId         = i.APRItemId,
                     Name              = i.Name,
                     Description       = i.Description,
                     StockNo           = i.StockNo,

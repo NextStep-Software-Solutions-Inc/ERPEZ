@@ -33,7 +33,7 @@ public class CreateOPCRItemMOVCommandHandler(
                 $"A MOV with requirement name '{request.RequirementName}' already exists for this OPCR Item.");
 
         // Promote temp file to permanent storage → returns permanent URL
-        var permanentUrl = await fileStorageService.PromoteFileAsync(request.FileId);
+        var (permanentUrl, _) = await fileStorageService.PromoteFileAsync(request.FileId, cancellationToken);
 
         var entity = new Domain.Entities.Planning.OPCRItemMOV
         {

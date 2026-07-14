@@ -7,7 +7,7 @@ public class AddPRsToConsolidatedCommandValidator : AbstractValidator<AddPRsToCo
 {
     public AddPRsToConsolidatedCommandValidator()
     {
-        RuleFor(x => x.Dto.ConsolidatedPRId)
+        RuleFor(x => x.ConsolidatedPRId)
             .NotEmpty().WithMessage("Consolidated PR ID is required.");
 
         RuleFor(x => x.Dto.PurchaseRequestIds)          // ← was PRItemIds

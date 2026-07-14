@@ -66,7 +66,7 @@ public class ConsolidatedPRController(ISender mediator) : ControllerBase
         CancellationToken cancellationToken)
     {
         var result = await mediator.Send(
-            new AddPRsToConsolidatedCommand(dto with { ConsolidatedPRId = id }),
+            new AddPRsToConsolidatedCommand(id, dto),
             cancellationToken);
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
@@ -99,7 +99,7 @@ public class ConsolidatedPRController(ISender mediator) : ControllerBase
         CancellationToken cancellationToken)
     {
         var result = await mediator.Send(
-            new UpdateConsolidatedPRItemCommand(dto with { ConsolidatedPRItemId = itemId }),
+            new UpdateConsolidatedPRItemCommand(itemId, dto),
             cancellationToken);
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
@@ -115,6 +115,32 @@ public class ConsolidatedPRController(ISender mediator) : ControllerBase
     {
         var result = await mediator.Send(
             new SubmitConsolidatedPRCommand(id), cancellationToken);
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    [HttpPost("{id}/approve")]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ApproveConsolidatedPR(
+        Guid id, CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(
+            new ApproveConsolidatedPRCommand(id), cancellationToken);
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    [HttpPost("{id}/return")]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> ReturnConsolidatedPR(
+        Guid id,
+        [FromBody] ReturnConsolidatedPRRequest dto,
+        CancellationToken cancellationToken)
+    {
+        var result = await mediator.Send(
+            new ReturnConsolidatedPRCommand(id, dto), cancellationToken);
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 

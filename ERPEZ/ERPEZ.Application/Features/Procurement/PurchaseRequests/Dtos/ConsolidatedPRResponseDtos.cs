@@ -18,37 +18,41 @@ public record ConsolidatedPRDetailResponse(
     string? Purpose,
     StatusEnum Status,
     decimal TotalAmount,
+    string? Remarks,
+    List<ConsolidatedPRLinkedPrResponse> Prs
+);
+
+public record ConsolidatedPRLinkedPrResponse(
+    Guid PurchaseRequestId,
+    string PRNumber,
+    Guid OfficeId,
+    string OfficeName,
+    string PRType,
+    decimal TotalAmount,
     List<ConsolidatedPRItemResponse> Items
 );
 
 public record ConsolidatedPRItemResponse(
-    Guid Id,
-    Guid PurchaseRequestId,
-    string PRNumber,
-    string OfficeName,
-    string PRType,
     Guid PRItemId,
+    Guid? ConsolidatedPRItemId,
     string Name,
     string? Description,
-    decimal UnitCost,
-    int RequestedQuantity,
-    decimal Amount,
+    string? Category,
+    string? Fund,
+    string Unit,
+    decimal UnitPrice,
+    int TotalQuantity,
+    decimal TotalAmount,
     string? StockNo,
-    bool IsNonCSE,
-    Dictionary<AllocationMonthEnum, int> MonthlyQuantities,
+    Dictionary<string, int> MonthlyQuantities,
     Guid? ProcurementModeId,
-    string? ProcurementModeName,
-    bool AllowPartial
+    bool? AllowPartial
 );
 
 public record PRSummaryStatsResponse(
-    // Image 1 — card 1
-    decimal TotalPPMPAmount,            // Sum of approved PPMP budget for this office
-    // Image 1 — card 2
-    decimal TotalSubmittedPRAmount,     // Sum of PR amounts in Submitted status
-    // Image 1 — card 3
-    decimal AvailableBalance,           // TotalPPMPAmount - TotalSubmittedPRAmount
-    // Image 1 — card 4 (PR Summary breakdown)
+    decimal TotalPPMPAmount,
+    decimal TotalSubmittedPRAmount,
+    decimal AvailableBalance,
     int DraftCount,
     int SubmittedCount,
     int ApprovedCount

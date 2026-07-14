@@ -14,9 +14,9 @@ public class AddPRsToConsolidatedCommandHandler(IUnitOfWork unitOfWork)
         AddPRsToConsolidatedCommand request, CancellationToken cancellationToken)
     {
         var cpr = await unitOfWork.ConsolidatedPRRepository.GetCPRWithDetailsAsync(
-            request.Dto.ConsolidatedPRId, cancellationToken)
+            request.ConsolidatedPRId, cancellationToken)
             ?? throw new NotFoundException(
-                $"Consolidated PR with ID {request.Dto.ConsolidatedPRId} not found.");
+                $"Consolidated PR with ID {request.ConsolidatedPRId} not found.");
 
         if (cpr.Status != StatusEnum.Draft)
             throw new ValidationException("Only Draft Consolidated PRs can be modified.");

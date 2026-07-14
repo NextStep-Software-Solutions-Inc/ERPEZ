@@ -1,4 +1,5 @@
 using ERPEZ.Application.Features.Planning.Budgeting.LIBActivity.Dtos;
+using ERPEZ.Application.Features.Planning.Budgeting.Common.Rules;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -19,8 +20,8 @@ public class UpdateLIBActivityCommandHandler(IUnitOfWork unitOfWork)
         var lib = await unitOfWork.LineItemBudgetRepository.GetByIdAsync(request.LineItemBudgetId, cancellationToken)
             ?? throw new NotFoundException($"LIB with ID {request.LineItemBudgetId} not found.");
 
-        if (!lib.Status.Equals("Draft", StringComparison.OrdinalIgnoreCase))
-            throw new ERPEZ.Shared.Exceptions.ValidationException("Activities can only be modified on a Draft LIB.");
+        if (!LIBRules.IsEditable(lib.Status))
+            throw new ValidationException("Activities can only be modified on a Draft, Proposed, or Returned LIB.");
 
         if (request.WFPObjectiveActivityId.HasValue && request.OPCRActivityId.HasValue)
         {

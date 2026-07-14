@@ -16,6 +16,46 @@ public class GetConsolidatedPRByIdQueryHandler(IUnitOfWork unitOfWork)
             query.Id, cancellationToken)
             ?? throw new NotFoundException($"Consolidated PR with ID {query.Id} not found.");
 
+        var activeItems = cpr.ConsolidatedPRItems
+            .Where(ci => !ci.IsDeleted)
+            .ToList();
+
+        var prs = activeItems
+            .GroupBy(ci => ci.PurchaseRequestId)
+            .Select(g =>
+            {
+                var pr = g.First().PurchaseRequest;
+
+                return new ConsolidatedPRLinkedPrResponse(
+                    PurchaseRequestId: pr.Id,
+                    PRNumber:          pr.PRNumber,
+                    OfficeId:          pr.OfficeId,
+                    OfficeName:        pr.Office.Name,
+                    PRType:            pr.PRType.ToString(),
+                    TotalAmount:       g.Sum(ci => ci.PRItem.Amount),
+                    Items: g.Select(ci => new ConsolidatedPRItemResponse(
+                        PRItemId:             ci.PRItemId,
+                        ConsolidatedPRItemId: ci.Id,
+                        Name:                 ci.PRItem.Name,
+                        Description:          ci.PRItem.Description,
+                        Category:             pr.ProcurementCategory?.Name,
+                        Fund:                 pr.FundSource?.Name,
+                        Unit:                 ci.PRItem.PPMPItem?.Unit ?? string.Empty,
+                        UnitPrice:            ci.PRItem.UnitCost,
+                        TotalQuantity:        ci.PRItem.RequestedQuantity,
+                        TotalAmount:          ci.PRItem.Amount,
+                        StockNo:              ci.PRItem.StockNo,
+                        MonthlyQuantities:    ci.PRItem.MonthlyQuantities
+                            .ToDictionary(
+                                m => ((int)m.Month + 1).ToString("D2"),
+                                m => m.Quantity),
+                        ProcurementModeId:    ci.ProcurementModeId,
+                        AllowPartial:         ci.AllowPartial
+                    )).ToList()
+                );
+            })
+            .ToList();
+
         var response = new ConsolidatedPRDetailResponse(
             Id:                cpr.Id,
             CPRNumber:         cpr.CPRNumber,
@@ -23,29 +63,9 @@ public class GetConsolidatedPRByIdQueryHandler(IUnitOfWork unitOfWork)
             Description:       cpr.Description,
             Purpose:           cpr.Purpose,
             Status:            cpr.Status,
-            TotalAmount:       cpr.TotalAmount,
-            Items: cpr.ConsolidatedPRItems
-                .Where(ci => !ci.IsDeleted)
-                .Select(ci => new ConsolidatedPRItemResponse(
-                    Id:                  ci.Id,
-                    PurchaseRequestId:   ci.PurchaseRequestId,
-                    PRNumber:            ci.PurchaseRequest.PRNumber,
-                    OfficeName:          ci.PurchaseRequest.Office.Name,
-                    PRType:              ci.PurchaseRequest.PRType.ToString(),
-                    PRItemId:            ci.PRItemId,
-                    Name:                ci.PRItem.Name,
-                    Description:         ci.PRItem.Description,
-                    UnitCost:            ci.PRItem.UnitCost,
-                    RequestedQuantity:   ci.PRItem.RequestedQuantity,
-                    Amount:              ci.PRItem.Amount,
-                    StockNo:             ci.PRItem.StockNo,
-                    IsNonCSE:            ci.PRItem.IsNonCSE,
-                    MonthlyQuantities:   ci.PRItem.MonthlyQuantities
-                        .ToDictionary(m => m.Month, m => m.Quantity),
-                    ProcurementModeId:   ci.ProcurementModeId,
-                    ProcurementModeName: ci.ProcurementMode?.Name,
-                    AllowPartial:        ci.AllowPartial
-                )).ToList()
+            TotalAmount:       activeItems.Sum(ci => ci.PRItem.Amount), // computed, not stale cpr.TotalAmount
+            Remarks:           cpr.Remarks,
+            Prs:               prs
         );
 
         return ApiResponse<ConsolidatedPRDetailResponse>.Success(response);

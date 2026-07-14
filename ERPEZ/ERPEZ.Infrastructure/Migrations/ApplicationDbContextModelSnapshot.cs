@@ -7778,6 +7778,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("Purpose")
                         .HasColumnType("text");
 
+                    b.Property<string>("Remarks")
+                        .HasColumnType("text");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("text");
@@ -12038,14 +12041,14 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Navigation("BiddingDocument");
 
+                    b.Navigation("DirectContractings");
+
                     b.Navigation("ProjectDocumentChecklists");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.PublicSupplierApplication", b =>
                 {
                     b.Navigation("UploadedDocuments");
-
-                    b.Navigation("DirectContractings");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.PurchaseOrder", b =>
