@@ -8621,6 +8621,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("PONumber")
+                        .IsUnique();
+
                     b.ToTable("PurchaseOrders", "procurement");
                 });
 
