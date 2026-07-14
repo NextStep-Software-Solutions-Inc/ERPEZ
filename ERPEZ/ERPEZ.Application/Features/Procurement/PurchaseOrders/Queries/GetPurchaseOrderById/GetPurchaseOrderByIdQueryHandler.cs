@@ -14,7 +14,7 @@ public class GetPurchaseOrderByIdQueryHandler(IUnitOfWork unitOfWork)
 {
     public async Task<ApiResponse<PurchaseOrderDto>> Handle(GetPurchaseOrderByIdQuery request, CancellationToken cancellationToken)
     {
-        var purchaseOrder = await unitOfWork.PurchaseOrderRepository.GetByIdAsync(request.Id, cancellationToken);
+        var purchaseOrder = await unitOfWork.PurchaseOrderRepository.GetByIdWithItemsAsync(request.Id, cancellationToken);
         
         if (purchaseOrder == null)
             return ApiResponse<PurchaseOrderDto>.Fail("Purchase Order not found.");

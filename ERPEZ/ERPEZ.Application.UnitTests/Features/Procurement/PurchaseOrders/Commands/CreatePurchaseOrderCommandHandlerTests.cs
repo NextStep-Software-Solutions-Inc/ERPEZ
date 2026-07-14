@@ -240,6 +240,11 @@ public class CreatePurchaseOrderCommandHandlerTests
     private class StubPurchaseOrderRepository : StubRepository<PurchaseOrder>, IPurchaseOrderRepository
     {
         public StubPurchaseOrderRepository(List<PurchaseOrder> items) : base(items) { }
+
+        public Task<PurchaseOrder?> GetByIdWithItemsAsync(Guid id, CancellationToken cancellationToken = default)
+        {
+            return Task.FromResult(items.FirstOrDefault(x => x.Id == id));
+        }
     }
 
     private class StubRepository<T> : IRepository<T> where T : BaseEntity

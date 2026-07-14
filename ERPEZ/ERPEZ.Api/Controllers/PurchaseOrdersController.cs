@@ -74,8 +74,7 @@ public class PurchaseOrdersController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> UpdatePurchaseOrder(Guid id, [FromBody] UpdatePurchaseOrderCommand command)
     {
-        command.Id = id;
-        var result = await mediator.Send(command);
+        var result = await mediator.Send(command with { Id = id });
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 

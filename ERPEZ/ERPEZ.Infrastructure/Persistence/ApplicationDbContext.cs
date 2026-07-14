@@ -614,6 +614,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<PurchaseOrder>(entity =>
         {
             entity.Property(e => e.TotalAmount).HasColumnType("decimal(18,2)");
+            entity.HasIndex(e => e.PONumber).IsUnique();
             entity.HasMany(e => e.PurchaseOrderItems)
                   .WithOne(e => e.PurchaseOrder)
                   .HasForeignKey(e => e.PurchaseOrderId)
