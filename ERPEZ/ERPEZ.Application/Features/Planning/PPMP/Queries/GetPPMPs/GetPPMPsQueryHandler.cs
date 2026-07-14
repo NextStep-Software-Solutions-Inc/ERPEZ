@@ -18,7 +18,7 @@ public class GetPPMPsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetP
             Filters = query.Filters,
             Sorts = query.Sorts
         };
-        var (entities, totalCount) = await unitOfWork.PPMPRepository.GetDetailedPagedAsync(sieveModel, cancellationToken);
+        var (entities, totalCount) = await unitOfWork.PPMPRepository.GetDetailedPagedAsync(sieveModel, query.Search, cancellationToken);
 
         return new PaginatedApiResponse<PPMPDetailedResponse>(
             entities.Select(PPMPQueryProjection.BuildDetailedResponse).ToList(),

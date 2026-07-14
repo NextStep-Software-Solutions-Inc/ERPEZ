@@ -1,10 +1,9 @@
-using ERPEZ.Shared.Common;
-using MediatR;
+using System;
+using System.Collections.Generic;
 
 namespace ERPEZ.Application.Features.Planning.APP.Dtos;
 
-public record SelectPPMPsRequest : IRequest<ApiResponse<Unit>>
+public record SelectPPMPsRequest
 {
-    public Guid APPId { get; init; }
     public List<Guid> PPMPIds { get; init; } = [];
 }

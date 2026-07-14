@@ -7,7 +7,7 @@ namespace ERPEZ.Domain.Interfaces;
 public interface IPPMPRepository : IRepository<PPMP>
 {
     Task<PPMP?> GetPPMPWithDetailsAsync(Guid id, CancellationToken cancellationToken = default);
-    Task<(IReadOnlyList<PPMP> Entities, int TotalCount)> GetDetailedPagedAsync(SieveModel sieveModel, CancellationToken cancellationToken = default);
+    Task<(IReadOnlyList<PPMP> Entities, int TotalCount)> GetDetailedPagedAsync(SieveModel sieveModel, string? search = null, CancellationToken cancellationToken = default);
     Task<List<PPMP>> GetDetailedByOfficeAsync(Guid officeId, CancellationToken cancellationToken = default);
     Task<List<PPMP>> GetDetailedByFiscalYearAsync(Guid fiscalYearId, CancellationToken cancellationToken = default);
     
