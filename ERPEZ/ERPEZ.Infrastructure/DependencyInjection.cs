@@ -105,6 +105,7 @@ public static class DependencyInjection
         services.AddScoped<IAPPItemRepository, APPItemRepository>();
         services.AddScoped<IAPPItemScheduleRepository, APPItemScheduleRepository>();
         services.AddScoped<IAPRRepository, APRRepository>();
+        services.AddScoped<IPurchaseOrderRepository, PurchaseOrderRepository>();
         services.AddScoped<IAPRItemRepository, APRItemRepository>();
         services.AddScoped<IAPRItemMilestoneRepository, APRItemMilestoneRepository>();
         services.AddScoped<IItemRequestRepository, ItemRequestRepository>();

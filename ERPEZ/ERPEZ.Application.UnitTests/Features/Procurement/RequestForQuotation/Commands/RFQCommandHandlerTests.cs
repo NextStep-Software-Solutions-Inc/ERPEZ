@@ -244,6 +244,8 @@ public class RFQCommandHandlerTests
         public IDirectContractingProposalRepository DirectContractingProposalRepository => throw new NotImplementedException();
         public IDirectContractingProposalItemRepository DirectContractingProposalItemRepository => throw new NotImplementedException();
         public IPublicSupplierApplicationRepository PublicSupplierApplicationRepository => throw new NotImplementedException();
+        public IPurchaseOrderRepository PurchaseOrderRepository => throw new NotImplementedException();
+        public IPurchaseOrderItemRepository PurchaseOrderItemRepository => throw new NotImplementedException();
         public IStepRepository StepRepository => throw new NotImplementedException();
         public IProcurementActivityTypeRepository ProcurementActivityTypeRepository => throw new NotImplementedException();
         public IProcurementCategoryRepository ProcurementCategoryRepository => throw new NotImplementedException();
