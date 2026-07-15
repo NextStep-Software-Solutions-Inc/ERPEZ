@@ -139,5 +139,7 @@ public interface IUnitOfWork
     IAPRItemRepository APRItemRepository { get; }
     IAPRItemMilestoneRepository APRItemMilestoneRepository { get; }
     IRFQRepository RFQRepository { get; }
+    IPurchaseOrderRepository PurchaseOrderRepository { get; }
+    IPurchaseOrderItemRepository PurchaseOrderItemRepository { get; }
 }
 

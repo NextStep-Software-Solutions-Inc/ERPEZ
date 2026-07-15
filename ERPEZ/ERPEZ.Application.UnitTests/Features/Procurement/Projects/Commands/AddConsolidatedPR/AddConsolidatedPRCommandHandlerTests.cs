@@ -295,6 +295,8 @@ public class AddConsolidatedPRCommandHandlerTests
         public IAPRItemRepository APRItemRepository => throw new NotImplementedException();
         public IAPRItemMilestoneRepository APRItemMilestoneRepository => throw new NotImplementedException();
         public IRFQRepository RFQRepository => throw new NotImplementedException();
+        public IPurchaseOrderRepository PurchaseOrderRepository => throw new NotImplementedException();
+        public IPurchaseOrderItemRepository PurchaseOrderItemRepository => throw new NotImplementedException();
         public IPublicSupplierApplicationRepository PublicSupplierApplicationRepository => throw new NotImplementedException();
     }
 

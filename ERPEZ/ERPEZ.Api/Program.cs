@@ -1,8 +1,8 @@
 using ERPEZ.Api;
 using ERPEZ.Api.Extensions;
 using ERPEZ.Application;
-using ERPEZ.Infrastructure;
 using ERPEZ.Domain.Interfaces;
+using ERPEZ.Infrastructure;
 using ERPEZ.Infrastructure.Persistence.Seeders;
 
 var builder = WebApplication.CreateBuilder(args);

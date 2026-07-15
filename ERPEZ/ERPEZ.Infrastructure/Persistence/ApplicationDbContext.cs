@@ -107,6 +107,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<BACResolutionWhereasClause>? BACResolutionWhereasClauses { get; set; }
 
     //Procurement
+    public DbSet<PurchaseOrder>? PurchaseOrders { get; set; }
+    public DbSet<PurchaseOrderItem>? PurchaseOrderItems { get; set; }
+
     public DbSet<ProcurementCategory>? ProcurementCategories { get; set; }
     public DbSet<ProcurementMode>? ProcurementModes { get; set; }
     public DbSet<ProcurementModeThreshold>? ProcurementModeThresholds { get; set; }
@@ -607,6 +610,26 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasMany(o => o.WFPObjectiveActivities)
             .WithOne(woa => woa.WFPObjective)
             .HasForeignKey(woa => woa.WFPObjectiveId);
+
+        modelBuilder.Entity<PurchaseOrder>(entity =>
+        {
+            entity.Property(e => e.TotalAmount).HasColumnType("decimal(18,2)");
+            entity.HasIndex(e => e.PONumber).IsUnique();
+            entity.HasOne(e => e.Supplier)
+                  .WithMany()
+                  .HasForeignKey(e => e.SupplierId)
+                  .OnDelete(DeleteBehavior.Restrict);
+            entity.HasMany(e => e.PurchaseOrderItems)
+                  .WithOne(e => e.PurchaseOrder)
+                  .HasForeignKey(e => e.PurchaseOrderId)
+                  .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<PurchaseOrderItem>(entity =>
+        {
+            entity.Property(e => e.UnitPrice).HasColumnType("decimal(18,2)");
+            entity.Property(e => e.Amount).HasColumnType("decimal(18,2)");
+        });
 
         modelBuilder.Entity<WFPObjective>()
             .Property(o => o.Weight)
