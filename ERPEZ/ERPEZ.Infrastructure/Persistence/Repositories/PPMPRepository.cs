@@ -75,9 +75,23 @@ public class PPMPRepository : Repository<PPMP>, IPPMPRepository
             .FirstOrDefaultAsync(cancellationToken);
     }
 
-    public async Task<(IReadOnlyList<PPMP> Entities, int TotalCount)> GetDetailedPagedAsync(SieveModel sieveModel, CancellationToken cancellationToken = default)
+    public async Task<(IReadOnlyList<PPMP> Entities, int TotalCount)> GetDetailedPagedAsync(SieveModel sieveModel, string? search = null, CancellationToken cancellationToken = default)
     {
         var query = BuildDetailedQuery(context.Set<PPMP>().AsNoTracking().Where(p => !p.IsDeleted));
+
+        if (!string.IsNullOrWhiteSpace(search))
+        {
+            var searchLower = search.ToLower();
+            query = query.Where(p => 
+                p.PPMPNumber.ToLower().Contains(searchLower) ||
+                (p.Description != null && p.Description.ToLower().Contains(searchLower)) ||
+                p.Office.Name.ToLower().Contains(searchLower) ||
+                p.FiscalYear.Year.ToString().Contains(searchLower) ||
+                (p.LineItemBudget != null && p.LineItemBudget.Name != null && p.LineItemBudget.Name.ToLower().Contains(searchLower)) ||
+                (p.LineItemBudget != null && p.LineItemBudget.LIBNumber.ToLower().Contains(searchLower))
+            );
+        }
+
         var filteredQuery = sieveProcessor.Apply(sieveModel, query, applyPagination: false);
         var totalCount = await filteredQuery.CountAsync(cancellationToken);
         var pagedQuery = sieveProcessor.Apply(sieveModel, filteredQuery, applyFiltering: false, applySorting: false);
