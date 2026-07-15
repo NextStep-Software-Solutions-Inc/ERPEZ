@@ -270,6 +270,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("text");
 
+                    b.Property<string>("CustomDateText")
+                        .HasColumnType("text");
+
                     b.Property<DateTime?>("DeletedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -285,7 +288,7 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid>("ProcurementActivityTypeId")
                         .HasColumnType("uuid");
 
-                    b.Property<DateTime>("ScheduledDate")
+                    b.Property<DateTime?>("ScheduledDate")
                         .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime?>("UpdatedAt")
@@ -8624,6 +8627,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("PONumber")
                         .IsUnique();
 
+                    b.HasIndex("SupplierId");
+
                     b.ToTable("PurchaseOrders", "procurement");
                 });
 
@@ -11370,6 +11375,17 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("ProcurementProject");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.PurchaseOrder", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.Supplier", "Supplier")
+                        .WithMany()
+                        .HasForeignKey("SupplierId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Supplier");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.PurchaseOrderItem", b =>

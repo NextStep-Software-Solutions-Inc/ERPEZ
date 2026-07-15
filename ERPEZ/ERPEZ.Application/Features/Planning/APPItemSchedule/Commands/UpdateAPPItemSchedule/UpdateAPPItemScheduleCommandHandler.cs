@@ -26,6 +26,7 @@ public class UpdateAPPItemScheduleCommandHandler(IUnitOfWork unitOfWork) : IRequ
         entity.PPMPItemId = appItem.PPMPItemId;
         entity.ProcurementActivityTypeId = request.ProcurementActivityTypeId;
         entity.ScheduledDate = request.ScheduledDate;
+        entity.CustomDateText = request.CustomDateText;
 
         unitOfWork.APPItemScheduleRepository.Update(entity);
         await unitOfWork.SaveChangesAsync(cancellationToken);

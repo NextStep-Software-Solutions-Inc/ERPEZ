@@ -24,7 +24,8 @@ public class CreateAPPItemScheduleCommandHandler(IUnitOfWork unitOfWork) : IRequ
             Id = Guid.NewGuid(),
             PPMPItemId = appItem.PPMPItemId,
             ProcurementActivityTypeId = request.ProcurementActivityTypeId,
-            ScheduledDate = request.ScheduledDate
+            ScheduledDate = request.ScheduledDate,
+            CustomDateText = request.CustomDateText
         };
 
         await unitOfWork.APPItemScheduleRepository.AddAsync(entity, cancellationToken);

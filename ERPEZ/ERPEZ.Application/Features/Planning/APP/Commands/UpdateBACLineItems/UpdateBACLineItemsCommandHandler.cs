@@ -42,6 +42,7 @@ public class UpdateBACLineItemsCommandHandler(IUnitOfWork unitOfWork)
                 if (existing is not null)
                 {
                     existing.ScheduledDate = scheduleEntry.ScheduledDate;
+                    existing.CustomDateText = scheduleEntry.CustomDateText;
                 }
                 else
                 {
@@ -50,7 +51,8 @@ public class UpdateBACLineItemsCommandHandler(IUnitOfWork unitOfWork)
                         Id = Guid.NewGuid(),
                         PPMPItemId = appItem.PPMPItemId,
                         ProcurementActivityTypeId = scheduleEntry.ProcurementActivityTypeId,
-                        ScheduledDate = scheduleEntry.ScheduledDate
+                        ScheduledDate = scheduleEntry.ScheduledDate,
+                        CustomDateText = scheduleEntry.CustomDateText
                     });
                 }
             }

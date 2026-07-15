@@ -108,7 +108,8 @@ public class GetAPPBACQueryHandler(IUnitOfWork unitOfWork)
                 .Select(s => new BACScheduleResponse
                 {
                     MilestoneType = s.ProcurementActivityType.Name,
-                    ScheduledDate = s.ScheduledDate
+                    ScheduledDate = s.ScheduledDate,
+                    CustomDateText = s.CustomDateText
                 }).ToList() ?? [];
 
             return new BACLineItemResponse

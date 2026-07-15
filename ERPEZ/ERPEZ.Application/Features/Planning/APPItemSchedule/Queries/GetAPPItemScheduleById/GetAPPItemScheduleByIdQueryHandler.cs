@@ -20,6 +20,7 @@ public class GetAPPItemScheduleByIdQueryHandler(IUnitOfWork unitOfWork) : IReque
             ProcurementActivityTypeId = entity.ProcurementActivityTypeId,
             ProcurementActivityTypeName = entity.ProcurementActivityType?.Name ?? string.Empty,
             ScheduledDate = entity.ScheduledDate,
+            CustomDateText = entity.CustomDateText,
             APPItemIds = entity.PPMPItem?.APPItems.Where(x => !x.IsDeleted).Select(x => x.Id).ToList() ?? [],
             CreatedAt = entity.CreatedAt,
             CreatedBy = entity.CreatedBy,

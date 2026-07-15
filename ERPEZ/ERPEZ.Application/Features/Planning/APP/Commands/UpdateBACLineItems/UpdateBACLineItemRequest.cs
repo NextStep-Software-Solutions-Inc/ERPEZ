@@ -13,5 +13,6 @@ public record UpdateBACLineItemRequest
 public record BACItemScheduleRequest
 {
     public Guid ProcurementActivityTypeId { get; init; }
-    public DateTime ScheduledDate { get; init; }
+    public DateTime? ScheduledDate { get; init; }
+    public string? CustomDateText { get; init; }
 }

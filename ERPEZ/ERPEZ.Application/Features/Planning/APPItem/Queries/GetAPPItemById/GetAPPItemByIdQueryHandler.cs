@@ -75,7 +75,8 @@ public class GetAPPItemByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandle
                     Id = schedule.Id,
                     ProcurementActivityTypeId = schedule.ProcurementActivityTypeId,
                     ProcurementActivityTypeName = schedule.ProcurementActivityType?.Name ?? string.Empty,
-                    ScheduledDate = schedule.ScheduledDate
+                    ScheduledDate = schedule.ScheduledDate,
+                    CustomDateText = schedule.CustomDateText
                 }).ToList() ?? []
         });
     }
