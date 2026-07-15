@@ -21,7 +21,17 @@ public class UpdateAPPItemScheduleCommandHandler(IUnitOfWork unitOfWork) : IRequ
             x => x.Id != request.Id && x.PPMPItemId == appItem.PPMPItemId && x.ProcurementActivityTypeId == request.ProcurementActivityTypeId,
             cancellationToken);
         if (duplicate is not null)
-            throw new ConflictException("Schedule already exists for this PPMP item and procurement activity type.");
+        {
+            duplicate.ScheduledDate = request.ScheduledDate;
+            duplicate.CustomDateText = request.CustomDateText;
+            unitOfWork.APPItemScheduleRepository.Update(duplicate);
+            
+            // Delete the entity being updated as it's now redundant
+            unitOfWork.APPItemScheduleRepository.Remove(entity);
+            
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+            return ApiResponse<Guid>.Success(duplicate.Id, "APP item schedule updated successfully.");
+        }
 
         entity.PPMPItemId = appItem.PPMPItemId;
         entity.ProcurementActivityTypeId = request.ProcurementActivityTypeId;

@@ -11,8 +11,14 @@ public class UpdateBACLineItemsCommandHandler(IUnitOfWork unitOfWork)
 {
     public async Task<ApiResponse<Unit>> Handle(UpdateBACLineItemsCommand request, CancellationToken cancellationToken)
     {
-        _ = await unitOfWork.APPRepository.GetByIdAsync(request.AppId, cancellationToken)
+        var app = await unitOfWork.APPRepository.GetByIdAsync(request.AppId, cancellationToken)
             ?? throw new NotFoundException("APP not found.");
+
+        var isFinalStr = app.IsFinal?.Trim().ToLowerInvariant();
+        if (isFinalStr == "true" || isFinalStr == "final")
+        {
+            throw new ConflictException("Cannot update BAC line items because the APP is set to final.");
+        }
 
         // Load APPItems with tracking so we can mutate schedule collections
         var appItems = await unitOfWork.APPItemRepository.GetAPPItemsWithDetailsAsync(
@@ -28,11 +34,23 @@ public class UpdateBACLineItemsCommandHandler(IUnitOfWork unitOfWork)
             appItem.Remarks = entry.Remarks;
             appItem.IsEarlyProcurementActivity = entry.EPAEligible;
 
-            if (entry.Schedules.Count == 0)
+            if (entry.Schedules is null)
                 continue;
 
-            // Upsert APPProcurementSchedules on the tracked PPMPItem
+            // Sync APPProcurementSchedules on the tracked PPMPItem
             var schedules = appItem.PPMPItem.APPProcurementSchedules;
+
+            // Remove existing schedules not present in the new list
+            var requestActivityTypeIds = entry.Schedules.Select(s => s.ProcurementActivityTypeId).ToHashSet();
+            var existingNonDeleted = schedules.Where(s => !s.IsDeleted).ToList();
+            var schedulesToRemove = existingNonDeleted
+                .Where(s => !requestActivityTypeIds.Contains(s.ProcurementActivityTypeId))
+                .ToList();
+
+            foreach (var scheduleToRemove in schedulesToRemove)
+            {
+                unitOfWork.APPItemScheduleRepository.Remove(scheduleToRemove);
+            }
 
             foreach (var scheduleEntry in entry.Schedules)
             {
@@ -43,6 +61,9 @@ public class UpdateBACLineItemsCommandHandler(IUnitOfWork unitOfWork)
                 {
                     existing.ScheduledDate = scheduleEntry.ScheduledDate;
                     existing.CustomDateText = scheduleEntry.CustomDateText;
+                    existing.IsDeleted = false;
+                    existing.DeletedAt = null;
+                    existing.DeletedBy = null;
                 }
                 else
                 {
