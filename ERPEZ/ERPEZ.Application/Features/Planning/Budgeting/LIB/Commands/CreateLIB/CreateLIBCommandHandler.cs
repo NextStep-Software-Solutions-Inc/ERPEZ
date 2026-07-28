@@ -77,26 +77,47 @@ public class CreateLIBCommandHandler(IUnitOfWork unitOfWork)
         Guid? agencyMasterBudgetId;
         string status;
 
-        // Replace the entire if/else branch with:
-        if (!request.AgencyMasterBudgetId.HasValue)
-            throw new ValidationException("AgencyMasterBudgetId is required.");
+        // ✅ REPLACEMENT
+        if (request.AgencyMasterBudgetId.HasValue)
+        {
+            // Top-down: ceiling already exists
+            var agencyMasterBudget = await unitOfWork.AgencyMasterBudgetRepository.GetByIdAsync(
+                    request.AgencyMasterBudgetId.Value, cancellationToken)
+                ?? throw new NotFoundException($"Agency Master Budget with ID {request.AgencyMasterBudgetId} not found.");
 
-        var agencyMasterBudget = await unitOfWork.AgencyMasterBudgetRepository.GetByIdAsync(
-                request.AgencyMasterBudgetId.Value, cancellationToken)
-            ?? throw new NotFoundException($"Agency Master Budget with ID {request.AgencyMasterBudgetId} not found.");
+            if (fiscalYear is not null && agencyMasterBudget.FiscalYearId != fiscalYear.Id)
+                throw new ValidationException(
+                    "The Agency Master Budget's Fiscal Year does not match the LIB's Fiscal Year.");
 
-        if (fiscalYear is not null && agencyMasterBudget.FiscalYearId != fiscalYear.Id)
+        // ✅ Add this — ensures this office actually owns this ceiling
+            var officeCeiling = await unitOfWork.OfficeCeilingRepository.FindAsync(
+                oc => oc.OfficeId == request.OfficeId && oc.AgencyMasterBudgetId == agencyMasterBudget.Id,
+                cancellationToken);
+
+            if (officeCeiling is null)
+                throw new ValidationException(
+                    "This Agency Master Budget has not been assigned to your office.");
+
+            fundSourceId = agencyMasterBudget.FundSourceId;
+            agencyMasterBudgetId = agencyMasterBudget.Id;
+            status = "Draft"; // ceiling is confirmed — start as Draft
+        }
+        else if (request.FundSourceId.HasValue)
+        {
+            // Bottom-up: office proposes, no ceiling yet
+            _ = await unitOfWork.FundSourceRepository.GetByIdAsync(
+                    request.FundSourceId.Value, cancellationToken)
+                ?? throw new NotFoundException($"Fund Source with ID {request.FundSourceId} not found.");
+
+            fundSourceId = request.FundSourceId.Value;
+            agencyMasterBudgetId = null;
+            status = "Proposed"; // no ceiling yet — awaiting budget office
+        }
+        else
+        {
             throw new ValidationException(
-                "The Agency Master Budget's Fiscal Year does not match the LIB's Fiscal Year.");
-
-        var officeCeiling = await unitOfWork.OfficeCeilingRepository.FindAsync(
-            oc => oc.OfficeId == request.OfficeId && oc.AgencyMasterBudgetId == agencyMasterBudget.Id,
-            cancellationToken);
-
-        // Ceiling exists → Draft, no ceiling → Proposed
-        fundSourceId = agencyMasterBudget.FundSourceId;
-        agencyMasterBudgetId = agencyMasterBudget.Id;
-        status = officeCeiling is not null ? "Draft" : "Proposed";
+                "Either FundSourceId or AgencyMasterBudgetId must be provided.");
+        }
 
         if (request.ParentLIBId.HasValue)
         {
