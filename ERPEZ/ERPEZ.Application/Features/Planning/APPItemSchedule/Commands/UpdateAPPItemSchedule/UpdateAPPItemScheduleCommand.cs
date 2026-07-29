@@ -8,5 +8,6 @@ public class UpdateAPPItemScheduleCommand : IRequest<ApiResponse<Guid>>
     public Guid Id { get; set; }
     public Guid APPItemId { get; set; }
     public Guid ProcurementActivityTypeId { get; set; }
-    public DateTime ScheduledDate { get; set; }
+    public DateTime? ScheduledDate { get; set; }
+    public string? CustomDateText { get; set; }
 }

@@ -75,7 +75,8 @@ public class GetAPPItemsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<G
                     Id = schedule.Id,
                     ProcurementActivityTypeId = schedule.ProcurementActivityTypeId,
                     ProcurementActivityTypeName = schedule.ProcurementActivityType?.Name ?? string.Empty,
-                    ScheduledDate = schedule.ScheduledDate
+                    ScheduledDate = schedule.ScheduledDate,
+                    CustomDateText = schedule.CustomDateText
                 }).ToList() ?? []
         }).ToList();
 

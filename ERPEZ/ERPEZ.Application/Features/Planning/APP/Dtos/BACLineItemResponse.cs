@@ -52,7 +52,8 @@ public record BACLineItemResponse
 public record BACScheduleResponse
 {
     public string MilestoneType { get; init; } = string.Empty;
-    public DateTime ScheduledDate { get; init; }
+    public DateTime? ScheduledDate { get; init; }
+    public string? CustomDateText { get; init; }
 }
 
 public record BACSignatoriesResponse
