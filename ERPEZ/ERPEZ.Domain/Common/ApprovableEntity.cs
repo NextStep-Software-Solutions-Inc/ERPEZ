@@ -1,3 +1,5 @@
+using Sieve.Attributes;
+
 namespace ERPEZ.Domain.Common;
 
 using ERPEZ.Domain.Enums;
@@ -11,7 +13,12 @@ public abstract class ApprovableEntity : BaseEntity, IApprovable
 {
     protected ApprovableEntity() { }
     
+    [Sieve(CanFilter = true, CanSort = true)]
     public StatusEnum Status { get; set; } = StatusEnum.Draft;
+
+    [Sieve(CanFilter = true, CanSort = true)]
     public DateTime? SubmittedDate { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
     public DateTime? ApprovedDate { get; set; }
 }
