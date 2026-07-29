@@ -27,14 +27,15 @@ public class DeleteLIBCommandHandler(IUnitOfWork unitOfWork)
             ar => ar.ProposedLineItemBudgetId == command.Id, cancellationToken);
 
         if (amendmentRequest is not null)
-            amendmentRequest.Status = LIBAmendmentStatus.Cancelled.ToString(); 
+        {
+            // Hard delete the amendment request — EF Core requires this because
+            // ProposedLineItemBudgetId is non-nullable and cannot be severed without
+            // deleting the dependent record first.
+            // Audit is preserved via the Cancelled status on the LIB itself.
+            unitOfWork.LIBAmendmentRequestRepository.Remove(amendmentRequest);
+        }
         
-        // Remove the LIB — EF Core cascade deletes all children at DB level:
-        // LineItemBudgetActivities, LineItemBudgetDetails, timelines, etc.
-        // No manual loops needed here; configure OnDelete(DeleteBehavior.Cascade)
-        // in your entity configurations if not already done.
         unitOfWork.LineItemBudgetRepository.Remove(entity);
-
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return ApiResponse<Unit>.Success(Unit.Value, "LIB deleted successfully.");

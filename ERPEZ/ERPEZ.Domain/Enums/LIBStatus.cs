@@ -11,5 +11,6 @@ public enum LIBStatus
     Returned,
     Consolidated,
     Proposed,
-    PendingCeilingApproval
+    PendingCeilingApproval,
+    Amended
 }

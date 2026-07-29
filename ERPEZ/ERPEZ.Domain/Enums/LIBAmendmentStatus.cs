@@ -10,5 +10,6 @@ public enum LIBAmendmentStatus
     Submitted,
     Approved,
     Rejected,
-    Cancelled
+    Cancelled,
+    Returned
 }

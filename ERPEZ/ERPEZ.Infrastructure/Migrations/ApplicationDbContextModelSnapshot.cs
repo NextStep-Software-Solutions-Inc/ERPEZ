@@ -2187,6 +2187,9 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasMaxLength(250)
                         .HasColumnType("character varying(250)");
 
+                    b.Property<string>("Remarks")
+                        .HasColumnType("text");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasMaxLength(50)
@@ -8624,6 +8627,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("PONumber")
                         .IsUnique();
 
+                    b.HasIndex("SupplierId");
+
                     b.ToTable("PurchaseOrders", "procurement");
                 });
 
@@ -11370,6 +11375,17 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired();
 
                     b.Navigation("ProcurementProject");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.PurchaseOrder", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.Supplier", "Supplier")
+                        .WithMany()
+                        .HasForeignKey("SupplierId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.Navigation("Supplier");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.PurchaseOrderItem", b =>
