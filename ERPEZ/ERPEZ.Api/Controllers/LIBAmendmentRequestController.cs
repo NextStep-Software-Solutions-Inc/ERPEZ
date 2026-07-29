@@ -16,13 +16,13 @@ namespace ERPEZ.Api.Controllers;
 public class LIBAmendmentRequestController(ISender mediator) : ControllerBase
 {
     [HttpPost]
-    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
-    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<CreateLIBAmendmentRequestResponse>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<CreateLIBAmendmentRequestResponse>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateLIBAmendmentRequest([FromBody] CreateLIBAmendmentRequestRequest request)
     {
         var result = await mediator.Send(new CreateLIBAmendmentRequestCommand(request));
         return result.Succeeded
-            ? CreatedAtAction(nameof(GetLIBAmendmentRequestById), new { id = result.Data }, result)
+            ? CreatedAtAction(nameof(GetLIBAmendmentRequestById), new { id = result.Data!.AmendmentRequestId }, result)
             : BadRequest(result);
     }
 

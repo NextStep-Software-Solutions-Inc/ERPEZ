@@ -1,4 +1,5 @@
 using ERPEZ.Application.Features.Planning.Budgeting.Common.Enums;
+using ERPEZ.Application.Features.Planning.Budgeting.LIBAmendmentRequest.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -7,9 +8,9 @@ using MediatR;
 namespace ERPEZ.Application.Features.Planning.Budgeting.LIBAmendmentRequest.Commands.CreateLIBAmendmentRequest;
 
 public class CreateLIBAmendmentRequestCommandHandler(IUnitOfWork unitOfWork)
-    : IRequestHandler<CreateLIBAmendmentRequestCommand, ApiResponse<Guid>>
+    : IRequestHandler<CreateLIBAmendmentRequestCommand, ApiResponse<CreateLIBAmendmentRequestResponse>>
 {
-    public async Task<ApiResponse<Guid>> Handle(CreateLIBAmendmentRequestCommand command, CancellationToken cancellationToken)
+    public async Task<ApiResponse<CreateLIBAmendmentRequestResponse>> Handle(CreateLIBAmendmentRequestCommand command, CancellationToken cancellationToken)
     {
         var request = command.Request;
 
@@ -29,6 +30,7 @@ public class CreateLIBAmendmentRequestCommandHandler(IUnitOfWork unitOfWork)
             Id = newLIBId,
             FiscalYearId = originalLIB.FiscalYearId,
             FundSourceId = originalLIB.FundSourceId,
+            AgencyMasterBudgetId = originalLIB.AgencyMasterBudgetId,
             OfficeId = originalLIB.OfficeId,
             ParentLIBId = originalLIB.ParentLIBId,
             Scope = originalLIB.Scope,
@@ -96,7 +98,9 @@ public class CreateLIBAmendmentRequestCommandHandler(IUnitOfWork unitOfWork)
         await unitOfWork.LIBAmendmentRequestRepository.AddAsync(entity, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return ApiResponse<Guid>.Success(entity.Id, "LIB Amendment Request created successfully.");
+        return ApiResponse<CreateLIBAmendmentRequestResponse>.Success(
+            new CreateLIBAmendmentRequestResponse(entity.Id, newLIBId),
+            "LIB Amendment Request created successfully.");
     }
 }
 
