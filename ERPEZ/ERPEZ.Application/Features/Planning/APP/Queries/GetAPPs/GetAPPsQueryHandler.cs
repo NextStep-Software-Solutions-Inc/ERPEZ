@@ -80,7 +80,8 @@ public class GetAPPsQueryHandler(IUnitOfWork unitOfWork)
                         Id = schedule.Id,
                         ProcurementActivityTypeId = schedule.ProcurementActivityTypeId,
                         ProcurementActivityTypeName = schedule.ProcurementActivityType?.Name ?? string.Empty,
-                        ScheduledDate = schedule.ScheduledDate
+                        ScheduledDate = schedule.ScheduledDate,
+                        CustomDateText = schedule.CustomDateText
                     }).ToList() ?? []
             }).ToList(),
             APPPPMPs = app.APPPPMPs.Where(link => !link.IsDeleted).Select(link => new APPPPMPLinkResponse

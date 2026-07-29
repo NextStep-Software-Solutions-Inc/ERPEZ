@@ -25,7 +25,8 @@ public class APPItemScheduleController(ISender mediator) : ControllerBase
         {
             APPItemId = request.APPItemId,
             ProcurementActivityTypeId = request.ProcurementActivityTypeId,
-            ScheduledDate = request.ScheduledDate
+            ScheduledDate = request.ScheduledDate,
+            CustomDateText = request.CustomDateText
         };
 
         var result = await mediator.Send(command);
@@ -60,7 +61,8 @@ public class APPItemScheduleController(ISender mediator) : ControllerBase
             Id = id,
             APPItemId = request.APPItemId,
             ProcurementActivityTypeId = request.ProcurementActivityTypeId,
-            ScheduledDate = request.ScheduledDate
+            ScheduledDate = request.ScheduledDate,
+            CustomDateText = request.CustomDateText
         };
 
         var result = await mediator.Send(command);

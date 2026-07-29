@@ -1,6 +1,7 @@
 using ERPEZ.Application.Features.Planning.APP.Commands.ChangeAPPStatus;
 using ERPEZ.Application.Features.Planning.APP.Commands.CreateAPP;
 using ERPEZ.Application.Features.Planning.APP.Commands.DeleteAPP;
+using ERPEZ.Application.Features.Planning.APP.Commands.RemovePPMPs;
 using ERPEZ.Application.Features.Planning.APP.Commands.SelectPPMPs;
 using ERPEZ.Application.Features.Planning.APP.Commands.UpdateBACLineItems;
 using ERPEZ.Application.Features.Planning.APP.Dtos;
@@ -81,6 +82,25 @@ public class APPController(ISender mediator) : ControllerBase
     public async Task<IActionResult> SelectPPMPs(Guid id, [FromBody] SelectPPMPsRequest request)
     {
         var command = new SelectPPMPsCommand
+        {
+            APPId = id,
+            PPMPIds = request.PPMPIds
+        };
+
+        var result = await mediator.Send(command);
+
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Remove PPMPs from an APP (unselect)
+    /// </summary>
+    [HttpPut("{id}/remove-ppmps")]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> RemovePPMPs(Guid id, [FromBody] RemovePPMPsRequest request)
+    {
+        var command = new RemovePPMPsCommand
         {
             APPId = id,
             PPMPIds = request.PPMPIds

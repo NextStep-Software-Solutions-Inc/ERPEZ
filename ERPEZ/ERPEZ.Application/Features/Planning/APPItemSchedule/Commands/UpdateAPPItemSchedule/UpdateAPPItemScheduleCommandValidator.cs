@@ -17,6 +17,12 @@ public class UpdateAPPItemScheduleCommandValidator : AbstractValidator<UpdateAPP
             .WithMessage("ProcurementActivityTypeId is required.");
         RuleFor(x => x.ScheduledDate)
             .NotEmpty()
-            .WithMessage("ScheduledDate is required.");
+            .When(x => string.IsNullOrWhiteSpace(x.CustomDateText))
+            .WithMessage("Either ScheduledDate or CustomDateText must be provided.");
+
+        RuleFor(x => x.CustomDateText)
+            .NotEmpty()
+            .When(x => x.ScheduledDate == null)
+            .WithMessage("Either ScheduledDate or CustomDateText must be provided.");
     }
 }

@@ -18,7 +18,10 @@ public class APPProcurementSchedule : BaseEntity
     public Guid ProcurementActivityTypeId { get; set; }
     
     [Sieve(CanFilter = true, CanSort = true)]
-    public DateTime ScheduledDate { get; set; }
+    public DateTime? ScheduledDate { get; set; }
+    
+    [Sieve(CanFilter = true, CanSort = true)]
+    public string? CustomDateText { get; set; }
     
     // Navigation properties
     public virtual PPMPItem PPMPItem { get; set; } = null!;

@@ -88,5 +88,6 @@ public record APPItemScheduleReferenceResponse
     public Guid Id { get; init; }
     public Guid ProcurementActivityTypeId { get; init; }
     public string ProcurementActivityTypeName { get; init; } = string.Empty;
-    public DateTime ScheduledDate { get; init; }
+    public DateTime? ScheduledDate { get; init; }
+    public string? CustomDateText { get; init; }
 }

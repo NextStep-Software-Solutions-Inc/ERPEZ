@@ -7,11 +7,12 @@ public record UpdateBACLineItemRequest
     public string? Remarks { get; init; }
     public bool EPAEligible { get; init; }
     public string? EPARemarks { get; init; }
-    public List<BACItemScheduleRequest> Schedules { get; init; } = [];
+    public List<BACItemScheduleRequest>? Schedules { get; init; }
 }
 
 public record BACItemScheduleRequest
 {
     public Guid ProcurementActivityTypeId { get; init; }
-    public DateTime ScheduledDate { get; init; }
+    public DateTime? ScheduledDate { get; init; }
+    public string? CustomDateText { get; init; }
 }

@@ -17,14 +17,21 @@ public class CreateAPPItemScheduleCommandHandler(IUnitOfWork unitOfWork) : IRequ
             x => x.PPMPItemId == appItem.PPMPItemId && x.ProcurementActivityTypeId == request.ProcurementActivityTypeId,
             cancellationToken);
         if (existing is not null)
-            throw new ConflictException("Schedule already exists for this PPMP item and procurement activity type.");
+        {
+            existing.ScheduledDate = request.ScheduledDate;
+            existing.CustomDateText = request.CustomDateText;
+            unitOfWork.APPItemScheduleRepository.Update(existing);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+            return ApiResponse<Guid>.Success(existing.Id, "APP item schedule updated successfully.");
+        }
 
         var entity = new APPProcurementSchedule
         {
             Id = Guid.NewGuid(),
             PPMPItemId = appItem.PPMPItemId,
             ProcurementActivityTypeId = request.ProcurementActivityTypeId,
-            ScheduledDate = request.ScheduledDate
+            ScheduledDate = request.ScheduledDate,
+            CustomDateText = request.CustomDateText
         };
 
         await unitOfWork.APPItemScheduleRepository.AddAsync(entity, cancellationToken);

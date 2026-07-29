@@ -7,5 +7,6 @@ public class CreateAPPItemScheduleCommand : IRequest<ApiResponse<Guid>>
 {
     public Guid APPItemId { get; set; }
     public Guid ProcurementActivityTypeId { get; set; }
-    public DateTime ScheduledDate { get; set; }
+    public DateTime? ScheduledDate { get; set; }
+    public string? CustomDateText { get; set; }
 }
