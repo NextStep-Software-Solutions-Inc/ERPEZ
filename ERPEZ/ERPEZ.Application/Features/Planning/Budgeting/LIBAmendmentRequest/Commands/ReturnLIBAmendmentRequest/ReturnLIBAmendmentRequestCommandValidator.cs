@@ -6,6 +6,9 @@ public class ReturnLIBAmendmentRequestCommandValidator : AbstractValidator<Retur
 {
     public ReturnLIBAmendmentRequestCommandValidator()
     {
+        RuleFor(x => x.Id)
+            .NotEmpty().WithMessage("ID is required.");
+
         RuleFor(x => x.Request.Remarks)
             .NotEmpty()
             .WithMessage("Remarks are required when returning an amendment request.");
