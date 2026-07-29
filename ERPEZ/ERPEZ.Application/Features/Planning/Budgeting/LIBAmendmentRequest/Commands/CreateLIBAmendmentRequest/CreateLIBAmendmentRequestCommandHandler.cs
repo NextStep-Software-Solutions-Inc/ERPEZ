@@ -78,6 +78,8 @@ public class CreateLIBAmendmentRequestCommandHandler(IUnitOfWork unitOfWork)
                 WFPObjectiveActivityExpenditureId = detail.WFPObjectiveActivityExpenditureId,
                 ObjectId = detail.ObjectId,
                 Description = detail.Description,
+                UnitQuantity = detail.UnitQuantity,
+                UnitCost = detail.UnitCost,
                 TimelineType = detail.TimelineType,
                 StartDate = detail.StartDate,
                 EndDate = detail.EndDate,
