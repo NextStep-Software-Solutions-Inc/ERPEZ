@@ -13,6 +13,13 @@ public record EligiblePPMPResponse(
     List<EligiblePPMPItemResponse> Items
 );
 
+public record EligiblePPMPItemMonthAllocation(
+    AllocationMonthEnum Month,
+    int TotalAllocated,
+    int AvailableQuantity,
+    decimal TotalAvailableAmount
+);
+
 public record EligiblePPMPItemResponse(
     Guid PPMPItemId,
     string ItemName,
@@ -20,11 +27,8 @@ public record EligiblePPMPItemResponse(
     string Fund,
     string Unit,
     decimal UnitPrice,
-    AllocationMonthEnum Month,
-    int TotalAllocated,
-    int AlreadyRequested,       // sum across non-returned PRs for this PPMPItem for this month
-    int AvailableQuantity,      // TotalAllocated - AlreadyRequested
-    decimal TotalAvailableAmount
+    List<EligiblePPMPItemMonthAllocation> MonthlyAllocations,
+    decimal TotalAvailableAmount // sum across all months
 );
 
 // ── Out-of-Stock CSE: "Add APR Items" modal (Image 9) ────────────────────────
