@@ -48,7 +48,8 @@ public enum LIBStatusEnum
     Returned,
     Consolidated,
     Proposed,
-    PendingCeilingApproval
+    PendingCeilingApproval,
+    Amended
 }
 
 public enum LIBTimelineTypeEnum
