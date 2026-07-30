@@ -7,6 +7,7 @@ using ERPEZ.Application.Features.Planning.Budgeting.LIB.Dtos;
 using ERPEZ.Application.Features.Planning.Budgeting.LIB.Queries.GetLIBById;
 using ERPEZ.Application.Features.Planning.Budgeting.LIB.Queries.GetLIBs;
 using ERPEZ.Application.Features.Planning.Budgeting.LIB.Queries.GetLIBSummary;
+using ERPEZ.Application.Features.Planning.Budgeting.LIB.Queries.GetLIBVersionHistory;
 using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -72,6 +73,15 @@ public class LIBController(ISender mediator) : ControllerBase
     public async Task<IActionResult> GetLIBSummary(Guid id)
     {
         var result = await mediator.Send(new GetLIBSummaryQuery(id));
+        return result.Succeeded ? Ok(result) : NotFound(result);
+    }
+
+    [HttpGet("{id}/history")]
+    [ProducesResponseType(typeof(ApiResponse<List<LIBVersionHistoryResponse>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetLIBVersionHistory(Guid id)
+    {
+        var result = await mediator.Send(new GetLIBVersionHistoryQuery(id));
         return result.Succeeded ? Ok(result) : NotFound(result);
     }
 
