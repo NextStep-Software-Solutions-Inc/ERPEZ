@@ -16,9 +16,5 @@ public class CreateAOBCommandValidator : AbstractValidator<CreateAOBCommand>
             .NotEmpty()
             .Must(c => c == "LCRB" || c == "MEARB" || c == "MARB")
             .WithMessage("Award Criterion must be either LCRB, MEARB, or MARB.");
-
-        RuleFor(x => x.ProcurementProjectIds)
-            .NotEmpty()
-            .WithMessage("At least one Procurement Project ID must be specified.");
     }
 }
