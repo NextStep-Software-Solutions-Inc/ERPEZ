@@ -59,7 +59,7 @@ public class UpdatePRCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<Up
                             "Each item must have either a PPMPItemId or an APRItemId.");
                     }
 
-                    var ppmpItem = await unitOfWork.PPMPItemRepository.GetByIdAsync(
+                    var ppmpItem = await unitOfWork.PPMPItemRepository.GetByIdWithDetailsAsync(
                         resolvedPpmpItemId, cancellationToken)
                         ?? throw new NotFoundException($"PPMP Item with ID {resolvedPpmpItemId} not found.");
 
