@@ -17,7 +17,7 @@ namespace ERPEZ.Api.Controllers;
 
 [Route("aobs")]
 [ApiController]
-[Authorize]
+//[Authorize]
 public class AOBController(ISender mediator) : ControllerBase
 {
     [HttpGet]
