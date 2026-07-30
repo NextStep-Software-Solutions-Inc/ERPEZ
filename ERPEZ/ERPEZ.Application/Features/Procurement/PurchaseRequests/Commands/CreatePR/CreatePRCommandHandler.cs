@@ -38,7 +38,7 @@
 
             foreach (var itemRequest in request.Items)
             {
-                var ppmpItem = await unitOfWork.PPMPItemRepository.GetByIdAsync(
+                var ppmpItem = await unitOfWork.PPMPItemRepository.GetByIdWithDetailsAsync(
                     itemRequest.PPMPItemId!.Value, cancellationToken)
                     ?? throw new NotFoundException($"PPMP Item with ID {itemRequest.PPMPItemId} not found.");
 
