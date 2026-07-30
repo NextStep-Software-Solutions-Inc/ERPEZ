@@ -22,7 +22,14 @@ public class CreateLIBAmendmentRequestCommandHandler(IUnitOfWork unitOfWork)
             throw new ValidationException("Only Approved LIBs can be amended.");
 
         var newVersion = originalLIB.Version + 1;
-        var newLIBNumber = $"{originalLIB.LIBNumber}-v{newVersion}";
+
+        var baseLIBNumber = originalLIB.LIBNumber;
+        var versionSuffixIndex = baseLIBNumber.IndexOf("-v");
+        if (versionSuffixIndex > 0)
+        {
+            baseLIBNumber = baseLIBNumber.Substring(0, versionSuffixIndex);
+        }
+        var newLIBNumber = $"{baseLIBNumber}-v{newVersion}";
 
         var newLIBId = Guid.NewGuid();
         var newLIB = new Domain.Entities.Planning.LineItemBudget
