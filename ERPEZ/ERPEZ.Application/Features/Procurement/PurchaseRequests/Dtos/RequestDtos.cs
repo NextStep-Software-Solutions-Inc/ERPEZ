@@ -30,7 +30,7 @@ public record PRItemRequest
     public int RequestedQuantity { get; init; }
     public string? StockNo { get; init; }
     public bool IsNonCSE { get; init; }
-    public Dictionary<AllocationMonthEnum, int> MonthlyQuantities { get; init; } = [];
+    public AllocationMonthEnum RequestedMonth { get; init; }
 }
 
 public record UpdatePRRequest

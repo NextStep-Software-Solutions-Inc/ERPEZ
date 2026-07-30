@@ -29,7 +29,6 @@ public class RFQRepository : Repository<RFQ>, IRFQRepository
                 .Where(item => !item.IsDeleted))
                 .ThenInclude(item => item.CPRItem)
                     .ThenInclude(ci => ci.PRItem)
-                        .ThenInclude(pi => pi.MonthlyQuantities)
             .Include(r => r.RFQSuppliers
                 .Where(s => !s.IsDeleted))
                 .ThenInclude(s => s.Supplier)

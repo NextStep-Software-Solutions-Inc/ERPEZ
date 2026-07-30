@@ -8264,6 +8264,10 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid>("PurchaseRequestId")
                         .HasColumnType("uuid");
 
+                    b.Property<string>("RequestedMonth")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<int>("RequestedQuantity")
                         .HasColumnType("integer");
 
@@ -8289,52 +8293,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("PurchaseRequestId");
 
                     b.ToTable("PRItems", "procurement");
-                });
-
-            modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.PRItemMonthlyQuantity", b =>
-                {
-                    b.Property<Guid>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("CreatedBy")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<DateTime?>("DeletedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("DeletedBy")
-                        .HasColumnType("text");
-
-                    b.Property<bool>("IsDeleted")
-                        .HasColumnType("boolean");
-
-                    b.Property<string>("Month")
-                        .IsRequired()
-                        .HasColumnType("text");
-
-                    b.Property<Guid>("PRItemId")
-                        .HasColumnType("uuid");
-
-                    b.Property<int>("Quantity")
-                        .HasColumnType("integer");
-
-                    b.Property<DateTime?>("UpdatedAt")
-                        .HasColumnType("timestamp with time zone");
-
-                    b.Property<string>("UpdatedBy")
-                        .HasColumnType("text");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("PRItemId", "Month")
-                        .IsUnique();
-
-                    b.ToTable("PRItemMonthlyQuantities", "procurement");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.ProcurementProject", b =>
@@ -11310,17 +11268,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("PurchaseRequest");
                 });
 
-            modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.PRItemMonthlyQuantity", b =>
-                {
-                    b.HasOne("ERPEZ.Domain.Entities.Procurement.PRItem", "PRItem")
-                        .WithMany("MonthlyQuantities")
-                        .HasForeignKey("PRItemId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("PRItem");
-                });
-
             modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.ProcurementProject", b =>
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Procurement.ConsolidatedPR", "ConsolidatedPR")
@@ -12048,11 +11995,6 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("DocumentProfileItems");
 
                     b.Navigation("ProjectDocumentChecklists");
-                });
-
-            modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.PRItem", b =>
-                {
-                    b.Navigation("MonthlyQuantities");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.ProcurementProject", b =>

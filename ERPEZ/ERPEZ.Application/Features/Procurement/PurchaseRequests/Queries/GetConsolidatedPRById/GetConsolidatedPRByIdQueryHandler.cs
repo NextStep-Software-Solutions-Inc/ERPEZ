@@ -45,10 +45,7 @@ public class GetConsolidatedPRByIdQueryHandler(IUnitOfWork unitOfWork)
                         TotalQuantity:        ci.PRItem.RequestedQuantity,
                         TotalAmount:          ci.PRItem.Amount,
                         StockNo:              ci.PRItem.StockNo,
-                        MonthlyQuantities:    ci.PRItem.MonthlyQuantities
-                            .ToDictionary(
-                                m => ((int)m.Month + 1).ToString("D2"),
-                                m => m.Quantity),
+                        RequestedMonth:       ci.PRItem.RequestedMonth.ToString(),
                         ProcurementModeId:    ci.ProcurementModeId,
                         AllowPartial:         ci.AllowPartial
                     )).ToList()

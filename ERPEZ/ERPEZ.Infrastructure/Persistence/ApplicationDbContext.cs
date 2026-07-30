@@ -162,7 +162,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     //Procurement entities
     public DbSet<PurchaseRequest>? PurchaseRequests { get; set; }
     public DbSet<PRItem>? PRItems { get; set; }
-    public DbSet<PRItemMonthlyQuantity>? PRItemMonthlyQuantities { get; set; }
+    // public DbSet<PRItemMonthlyQuantity>? PRItemMonthlyQuantities { get; set; }
     public DbSet<ConsolidatedPR>? ConsolidatedPRs { get; set; }
     public DbSet<ConsolidatedPRItem>? ConsolidatedPRItems { get; set; }
     public DbSet<RFQ>? RFQs { get; set; }
@@ -2488,12 +2488,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<PRItem>()
-            .HasMany(i => i.MonthlyQuantities)
-            .WithOne(m => m.PRItem)
-            .HasForeignKey(m => m.PRItemId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        modelBuilder.Entity<PRItem>()
             .Property(i => i.UnitCost)
             .HasPrecision(18, 2);
 
@@ -2507,16 +2501,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<PRItem>()
             .HasIndex(i => i.PPMPItemId);
 
-        // PRItemMonthlyQuantity
-        modelBuilder.Entity<PRItemMonthlyQuantity>()
-            .HasOne(m => m.PRItem)
-            .WithMany(i => i.MonthlyQuantities)
-            .HasForeignKey(m => m.PRItemId)
-            .OnDelete(DeleteBehavior.Cascade);
-
-        modelBuilder.Entity<PRItemMonthlyQuantity>()
-            .HasIndex(m => new { m.PRItemId, m.Month })
-            .IsUnique();
+        // (PRItemMonthlyQuantity was removed in favor of RequestedMonth on PRItem)
 
         // ConsolidatedPR
         modelBuilder.Entity<ConsolidatedPR>()
