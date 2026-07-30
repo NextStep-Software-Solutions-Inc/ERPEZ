@@ -48,6 +48,8 @@ public record PRItemDetailResponse
     public int      RequestedQuantity { get; init; }
     public decimal  Amount            { get; init; }
     public AllocationMonthEnum RequestedMonth { get; init; }
+    public string   Category          { get; init; } = string.Empty;
+    public string   Fund              { get; init; } = string.Empty;
 }
 
 public record ApprovalEventResponse(

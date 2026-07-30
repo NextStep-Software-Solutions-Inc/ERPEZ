@@ -40,6 +40,16 @@ public class ConsolidatedPRRepository : Repository<ConsolidatedPR>, IConsolidate
                         .ThenInclude(pi => pi!.ProcurementMode)
                             .ThenInclude(pm => pm!.ProcurementCategory)
             .Include(cpr => cpr.ConsolidatedPRItems)
+                .ThenInclude(ci => ci.PRItem)
+                    .ThenInclude(i => i.PPMPItem)
+                        .ThenInclude(pi => pi!.CSEItem)
+                            .ThenInclude(c => c!.ItemCategory)
+            .Include(cpr => cpr.ConsolidatedPRItems)
+                .ThenInclude(ci => ci.PRItem)
+                    .ThenInclude(i => i.PPMPItem)
+                        .ThenInclude(pi => pi!.NonCSEItem)
+                            .ThenInclude(n => n!.ItemCategory)
+            .Include(cpr => cpr.ConsolidatedPRItems)
                 .ThenInclude(ci => ci.ProcurementMode)
             .AsSplitQuery();
     }

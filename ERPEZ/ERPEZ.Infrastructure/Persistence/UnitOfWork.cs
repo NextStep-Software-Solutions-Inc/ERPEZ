@@ -69,6 +69,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IUACSCodeCombinationFiscalYearRepository uacsCodeCombinationFiscalYearRepository;
     private readonly IExpenseClassRepository expenseClassRepository;
     private readonly IObjectExpenseClassRepository objectExpenseClassRepository;
+    private readonly IItemCategoryRepository itemCategoryRepository;
     private readonly IUACSImportLogRepository uacsImportLogRepository;
     private readonly IObjectChildCodeRepository objectChildCodeRepository;
     private readonly IOfficeTypeRepository officeTypeRepository;
@@ -214,6 +215,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         uacsCodeCombinationFiscalYearRepository = new UACSCodeCombinationFiscalYearRepository(context, sieveProcessor);
         expenseClassRepository = new ExpenseClassRepository(context, sieveProcessor);
         objectExpenseClassRepository = new ObjectExpenseClassRepository(context, sieveProcessor);
+        itemCategoryRepository = new ItemCategoryRepository(context, sieveProcessor);
         uacsImportLogRepository = new UACSImportLogRepository(context, sieveProcessor);
         objectChildCodeRepository = new ObjectChildCodeRepository(context, sieveProcessor);
         officeTypeRepository = new OfficeTypeRepository(context, sieveProcessor);
@@ -353,6 +355,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IUACSCodeCombinationFiscalYearRepository UACSCodeCombinationFiscalYearRepository => uacsCodeCombinationFiscalYearRepository;
     public IExpenseClassRepository ExpenseClassRepository => expenseClassRepository;
     public IObjectExpenseClassRepository ObjectExpenseClassRepository => objectExpenseClassRepository;
+    public IItemCategoryRepository ItemCategoryRepository => itemCategoryRepository;
     public IUACSImportLogRepository UACSImportLogRepository => uacsImportLogRepository;
     public IObjectChildCodeRepository ObjectChildCodeRepository => objectChildCodeRepository;
     public IOfficeTypeRepository OfficeTypeRepository => officeTypeRepository;

@@ -61,6 +61,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<PlantillaType>? PlantillaTypes { get; set; }
     public DbSet<Step>? Steps { get; set; }
     public DbSet<Category>? Categories { get; set; }
+    public DbSet<ItemCategory>? ItemCategories { get; set; }
     public DbSet<AdministrativeLevel>? AdministrativeLevels { get; set; }
     public DbSet<ProcurementWorkflow>? ProcurementWorkflows { get; set; }
     public DbSet<OfficeType>? OfficeTypes { get; set; }

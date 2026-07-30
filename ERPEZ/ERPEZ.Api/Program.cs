@@ -28,7 +28,9 @@ var app = builder.Build();
 using (var scope = app.Services.CreateScope())
 {
     var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+    var dbContext = scope.ServiceProvider.GetRequiredService<ERPEZ.Infrastructure.Persistence.ApplicationDbContext>();
     await ProcurementActivityTypeSeeder.SeedAsync(unitOfWork);
+    await ERPEZ.Infrastructure.Persistence.Seeders.ItemCategorySeeder.SeedAsync(dbContext);
 }
 
 app.UseApiMiddlewares();
