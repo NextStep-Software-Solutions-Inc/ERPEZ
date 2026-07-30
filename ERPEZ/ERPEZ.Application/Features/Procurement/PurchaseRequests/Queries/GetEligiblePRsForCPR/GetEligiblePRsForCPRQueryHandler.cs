@@ -50,8 +50,7 @@ public class GetEligiblePRsForCPRQueryHandler(IUnitOfWork unitOfWork)
                         TotalQuantity:     i.RequestedQuantity,
                         TotalAmount:       i.Amount,
                         StockNo:           i.StockNo,
-                        MonthlyQuantities: i.MonthlyQuantities
-                            .ToDictionary(m => m.Month, m => m.Quantity)
+                        RequestedMonth:    i.RequestedMonth
                     )).ToList()
             ))
             .ToList();

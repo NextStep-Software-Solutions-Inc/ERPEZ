@@ -32,8 +32,6 @@ public class PurchaseRequestRepository : Repository<PurchaseRequest>, IPurchaseR
             .Include(pr => pr.UACSCodeCombination)
             .Include(pr => pr.ProcurementCategory)
             .Include(pr => pr.PRItems.Where(i => !i.IsDeleted))
-                .ThenInclude(i => i.MonthlyQuantities)
-            .Include(pr => pr.PRItems.Where(i => !i.IsDeleted))
                 .ThenInclude(i => i.PPMPItem)
                     .ThenInclude(pi => pi!.NonCSEItem)
                         .ThenInclude(n => n!.UOM)
@@ -80,10 +78,9 @@ public class PurchaseRequestRepository : Repository<PurchaseRequest>, IPurchaseR
                 !i.PurchaseRequest.IsDeleted &&
                 i.PurchaseRequest.Status != StatusEnum.Returned &&
                 i.PurchaseRequest.PRType == PRType.NonCSE)
-            .GroupBy(i => i.PPMPItemId) // Removed .Value
-            // Fixed Quantity to RequestedQuantity
-            .Select(g => new { PPMPItemId = g.Key, ReservedQty = g.Sum(i => i.RequestedQuantity) }) 
-            .ToDictionaryAsync(x => x.PPMPItemId, x => x.ReservedQty, cancellationToken);
+            .GroupBy(i => new { i.PPMPItemId, i.RequestedMonth })
+            .Select(g => new { g.Key.PPMPItemId, g.Key.RequestedMonth, ReservedQty = g.Sum(i => i.RequestedQuantity) }) 
+            .ToListAsync(cancellationToken);
 
         var ppmpItems = await context.Set<PPMPItem>()
             .Include(pi => pi.PPMPExpenditureItem)
@@ -111,30 +108,34 @@ public class PurchaseRequestRepository : Repository<PurchaseRequest>, IPurchaseR
             .ToListAsync(cancellationToken);
 
         return ppmpItems
-            .Select(pi =>
+            .SelectMany(pi =>
             {
-                var ppmp        = pi.PPMPExpenditureItem.PPMPActivity.PPMP;
-                var allocations = pi.PPMPItemAllocations.ToDictionary(a => a.AllocationMonth, a => a.Quantity);
-                var totalAlloc  = allocations.Values.Sum();
-                var reserved    = reservedQty.GetValueOrDefault(pi.Id, 0);
-                var available   = totalAlloc - reserved;
+                var ppmp = pi.PPMPExpenditureItem.PPMPActivity.PPMP;
+                return pi.PPMPItemAllocations.Select(allocation =>
+                {
+                    var allocMonth = allocation.AllocationMonth;
+                    var reserved = reservedQty.FirstOrDefault(r => r.PPMPItemId == pi.Id && r.RequestedMonth == allocMonth)?.ReservedQty ?? 0;
+                    var available = allocation.Quantity - reserved;
 
-                if (available <= 0) return null;
+                    if (available <= 0) return null;
 
-                return new EligiblePPMPItemResult(
-                    PPMPId:                 ppmp.Id,
-                    PPMPNumber:             ppmp.PPMPNumber,
-                    OfficeId:               ppmp.OfficeId,
-                    OfficeName:             ppmp.Office.Name,
-                    PPMPItemId:             pi.Id,
-                    ItemName:               pi.Name,
-                    Category: pi.PPMPExpenditureItem.PPMPActivity.LIBActivity?.Name ?? string.Empty,                    Fund:                   ppmp.FundSource?.Name ?? string.Empty,
-                    Unit:                   pi.Unit,
-                    UnitPrice:              pi.UnitPrice,
-                    MonthlyAllocations:     allocations,
-                    TotalAllocatedQuantity: available,
-                    TotalAllocatedAmount:   available * pi.UnitPrice
-                );
+                    return new EligiblePPMPItemResult(
+                        PPMPId:                 ppmp.Id,
+                        PPMPNumber:             ppmp.PPMPNumber,
+                        OfficeId:               ppmp.OfficeId,
+                        OfficeName:             ppmp.Office.Name,
+                        PPMPItemId:             pi.Id,
+                        ItemName:               pi.Name,
+                        Category:               pi.PPMPExpenditureItem.PPMPActivity.LIBActivity?.Name ?? string.Empty,
+                        Fund:                   ppmp.FundSource?.Name ?? string.Empty,
+                        Unit:                   pi.Unit,
+                        UnitPrice:              pi.UnitPrice,
+                        Month:                  allocMonth,
+                        TotalAllocatedQuantity: allocation.Quantity,
+                        AvailableQuantity:      available,
+                        TotalAvailableAmount:   available * pi.UnitPrice
+                    );
+                });
             })
             .Where(r => r is not null)
             .Cast<EligiblePPMPItemResult>()

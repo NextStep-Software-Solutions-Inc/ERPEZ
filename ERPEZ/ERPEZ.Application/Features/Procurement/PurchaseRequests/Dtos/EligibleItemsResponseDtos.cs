@@ -20,9 +20,9 @@ public record EligiblePPMPItemResponse(
     string Fund,
     string Unit,
     decimal UnitPrice,
-    Dictionary<AllocationMonthEnum, int> MonthlyAllocations,
+    AllocationMonthEnum Month,
     int TotalAllocated,
-    int AlreadyRequested,       // sum across non-returned PRs for this PPMPItem
+    int AlreadyRequested,       // sum across non-returned PRs for this PPMPItem for this month
     int AvailableQuantity,      // TotalAllocated - AlreadyRequested
     decimal TotalAvailableAmount
 );
@@ -74,5 +74,5 @@ public record EligiblePRItemResponse(
     int TotalQuantity,
     decimal TotalAmount,
     string? StockNo,
-    Dictionary<AllocationMonthEnum, int> MonthlyQuantities
+    AllocationMonthEnum RequestedMonth
 );

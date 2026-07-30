@@ -47,7 +47,7 @@ public record PRItemDetailResponse
     public decimal  UnitCost          { get; init; }
     public int      RequestedQuantity { get; init; }
     public decimal  Amount            { get; init; }
-    public Dictionary<AllocationMonthEnum, int> MonthlyQuantities { get; init; } = [];
+    public AllocationMonthEnum RequestedMonth { get; init; }
 }
 
 public record ApprovalEventResponse(

@@ -34,7 +34,7 @@ public class GetEligiblePPMPsQueryHandler(IUnitOfWork unitOfWork)
                 PPMPNumber:  g.Key.PPMPNumber,
                 OfficeId:    g.Key.OfficeId,
                 OfficeName:  g.Key.OfficeName,
-                TotalAmount: g.Sum(i => i.TotalAllocatedAmount),
+                TotalAmount: g.Sum(i => i.TotalAvailableAmount),
                 Items: g.Select(i => new EligiblePPMPItemResponse(
                     PPMPItemId:           i.PPMPItemId,
                     ItemName:             i.ItemName,
@@ -42,14 +42,11 @@ public class GetEligiblePPMPsQueryHandler(IUnitOfWork unitOfWork)
                     Fund:                 i.Fund,
                     Unit:                 i.Unit,
                     UnitPrice:            i.UnitPrice,
-                    MonthlyAllocations:   i.MonthlyAllocations
-                        .ToDictionary(
-                            kvp => (AllocationMonthEnum)kvp.Key,
-                            kvp => kvp.Value),
+                    Month:                i.Month,
                     TotalAllocated:       i.TotalAllocatedQuantity,
                     AlreadyRequested:     0,        // already excluded by repo
-                    AvailableQuantity:    i.TotalAllocatedQuantity,
-                    TotalAvailableAmount: i.TotalAllocatedAmount
+                    AvailableQuantity:    i.AvailableQuantity,
+                    TotalAvailableAmount: i.TotalAvailableAmount
                 )).ToList()
             ))
             .ToList();

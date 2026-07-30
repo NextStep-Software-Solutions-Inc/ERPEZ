@@ -45,8 +45,7 @@ public class GetPRByIdQueryHandler(IUnitOfWork unitOfWork)
                     UnitCost          = i.UnitCost,
                     RequestedQuantity = i.RequestedQuantity,
                     Amount            = i.Amount,
-                    MonthlyQuantities = i.MonthlyQuantities
-                        .ToDictionary(m => m.Month, m => m.Quantity)
+                    RequestedMonth    = i.RequestedMonth
                 }).ToList()
         };
 

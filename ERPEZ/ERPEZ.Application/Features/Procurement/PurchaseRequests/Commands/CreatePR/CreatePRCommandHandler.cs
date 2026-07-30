@@ -33,23 +33,23 @@
             if (existing is not null)
                 throw new ConflictException($"A Purchase Request with number '{request.PRNumber}' already exists.");
 
-            // var prItems = new List<PRItem>();
-            // decimal totalAmount = 0;
+            var prItems = new List<PRItem>();
+            decimal totalAmount = 0;
 
-            // foreach (var itemRequest in request.Items)
-            // {
-            //     var ppmpItem = await unitOfWork.PPMPItemRepository.GetByIdAsync(
-            //         itemRequest.PPMPItemId!.Value, cancellationToken)
-            //         ?? throw new NotFoundException($"PPMP Item with ID {itemRequest.PPMPItemId} not found.");
+            foreach (var itemRequest in request.Items)
+            {
+                var ppmpItem = await unitOfWork.PPMPItemRepository.GetByIdAsync(
+                    itemRequest.PPMPItemId!.Value, cancellationToken)
+                    ?? throw new NotFoundException($"PPMP Item with ID {itemRequest.PPMPItemId} not found.");
 
-            //     if (request.PRType == PRType.NonCSE && ppmpItem.CSEItemId.HasValue)
-            //         throw new ValidationException($"Item '{ppmpItem.Name}' is a CSE item and cannot be added to a Non-CSE PR.");
+                if (request.PRType == PRType.NonCSE && ppmpItem.CSEItemId.HasValue)
+                    throw new ValidationException($"Item '{ppmpItem.Name}' is a CSE item and cannot be added to a Non-CSE PR.");
 
-            //     await ValidatePPMPItemBudget(ppmpItem.Id, itemRequest.RequestedQuantity, ppmpItem.UnitPrice, ppmpItem, cancellationToken);
+                await ValidatePPMPItemBudget(ppmpItem.Id, itemRequest.RequestedMonth, itemRequest.RequestedQuantity, ppmpItem.UnitPrice, ppmpItem, null, cancellationToken);
 
-            //     prItems.Add(BuildPRItem(itemRequest));
-            //     totalAmount += itemRequest.RequestedQuantity * itemRequest.UnitCost;
-            // }
+                prItems.Add(BuildPRItem(itemRequest));
+                totalAmount += itemRequest.RequestedQuantity * itemRequest.UnitCost;
+            }
 
             var pr = new PurchaseRequest
             {
@@ -63,9 +63,9 @@
                 UACSCodeCombinationId = request.UACSCodeCombinationId,
                 ProcurementCategoryId = request.ProcurementCategoryId,
                 RequestedDate         = request.RequestedDate,
-                TotalAmount           = 0,
+                TotalAmount           = totalAmount,
                 Status                = StatusEnum.Draft,
-                //PRItems               = prItems
+                PRItems               = prItems
             };
 
             await unitOfWork.PurchaseRequestRepository.AddAsync(pr, cancellationToken);
@@ -76,18 +76,22 @@
 
         private async Task ValidatePPMPItemBudget(
             Guid ppmpItemId,
+            AllocationMonthEnum requestedMonth,
             int requestedQty,
             decimal unitPrice,
             Domain.Entities.Planning.PPMPItem ppmpItem,
+            Guid? currentPRId,
             CancellationToken cancellationToken)
         {
             var existingItems = await unitOfWork.PRItemRepository.FindAllAsync(
                 i => i.PPMPItemId == ppmpItemId &&
+                    i.RequestedMonth == requestedMonth &&
                     !i.PurchaseRequest.IsDeleted &&
-                    i.PurchaseRequest.Status != StatusEnum.Returned,
+                    i.PurchaseRequest.Status != StatusEnum.Returned &&
+                    (!currentPRId.HasValue || i.PurchaseRequestId != currentPRId.Value),
                 cancellationToken);
 
-            var totalAllocated   = ppmpItem.PPMPItemAllocations.Sum(a => a.Quantity);
+            var totalAllocated   = ppmpItem.PPMPItemAllocations.Where(a => a.AllocationMonth == requestedMonth).Sum(a => a.Quantity);
             var reservedQty      = existingItems.Sum(i => i.RequestedQuantity);
             var reservedCost     = existingItems.Sum(i => i.Amount);
             var ppmpBudget       = unitPrice * totalAllocated;
@@ -95,11 +99,11 @@
 
             if (reservedQty + requestedQty > totalAllocated)
                 throw new ValidationException(
-                    $"Requested quantity for '{ppmpItem.Name}' exceeds PPMP allocation. Available: {totalAllocated - reservedQty}, Requested: {requestedQty}.");
+                    $"Requested quantity for '{ppmpItem.Name}' in month {requestedMonth} exceeds PPMP allocation. Available: {totalAllocated - reservedQty}, Requested: {requestedQty}.");
 
             if (reservedCost + newCost > ppmpBudget)
                 throw new ValidationException(
-                    $"Requested amount for '{ppmpItem.Name}' exceeds PPMP budget. Remaining: ₱{ppmpBudget - reservedCost:N2}, Requested: ₱{newCost:N2}.");
+                    $"Requested amount for '{ppmpItem.Name}' in month {requestedMonth} exceeds PPMP budget. Remaining: ₱{ppmpBudget - reservedCost:N2}, Requested: ₱{newCost:N2}.");
         }
 
         private static PRItem BuildPRItem(PRItemRequest req) => new()
@@ -113,8 +117,6 @@
             Amount            = req.RequestedQuantity * req.UnitCost,
             StockNo           = req.StockNo,
             IsNonCSE          = req.IsNonCSE,
-            MonthlyQuantities = req.MonthlyQuantities
-                .Select(kvp => new PRItemMonthlyQuantity { Month = kvp.Key, Quantity = kvp.Value })
-                .ToList()
+            RequestedMonth    = req.RequestedMonth
         };
     }
