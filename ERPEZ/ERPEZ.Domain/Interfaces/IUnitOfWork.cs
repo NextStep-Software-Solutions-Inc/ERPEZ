@@ -58,6 +58,7 @@ public interface IUnitOfWork
     IUACSCodeCombinationFiscalYearRepository UACSCodeCombinationFiscalYearRepository { get; }
     IExpenseClassRepository ExpenseClassRepository { get; }
     IObjectExpenseClassRepository ObjectExpenseClassRepository { get; }
+    IItemCategoryRepository ItemCategoryRepository { get; }
     IUACSImportLogRepository UACSImportLogRepository { get; }
     IObjectChildCodeRepository ObjectChildCodeRepository { get; }
     IOfficeTypeRepository OfficeTypeRepository { get; }

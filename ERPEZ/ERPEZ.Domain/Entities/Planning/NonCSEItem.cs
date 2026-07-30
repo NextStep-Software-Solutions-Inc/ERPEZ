@@ -1,5 +1,6 @@
 using ERPEZ.Domain.Common;
 using Sieve.Attributes;
+using ERPEZ.Domain.Entities.Procurement;
 
 namespace ERPEZ.Domain.Entities.Planning;
 
@@ -54,8 +55,12 @@ public class NonCSEItem : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public string? Remarks { get; set; }
     
+    [Sieve(CanFilter = true, CanSort = true)]
+    public Guid? ItemCategoryId { get; set; }
+
     // Navigation properties
     public virtual UOM? UOM { get; set; }
     public virtual ItemRequest? ItemRequest { get; set; }
+    public virtual ItemCategory? ItemCategory { get; set; }
     public virtual List<PPMPItem> PPMPItems { get; set; } = [];
 }

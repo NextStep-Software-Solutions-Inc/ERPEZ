@@ -3047,6 +3047,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
+                    b.Property<Guid?>("ItemCategoryId")
+                        .HasColumnType("uuid");
+
                     b.Property<int?>("ItemLife")
                         .HasColumnType("integer");
 
@@ -3094,6 +3097,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("IsActive");
+
+                    b.HasIndex("ItemCategoryId");
 
                     b.HasIndex("ItemRequestId");
 
@@ -5148,6 +5153,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
+                    b.Property<Guid?>("ItemCategoryId")
+                        .HasColumnType("uuid");
+
                     b.Property<int?>("ItemLife")
                         .HasColumnType("integer");
 
@@ -5181,6 +5189,8 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("ItemCategoryId");
 
                     b.HasIndex("ObjectCodeId");
 
@@ -8165,6 +8175,49 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.ToTable("DocumentProfileItems", "procurement");
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.ItemCategory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Description")
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("ItemCategories", "procurement");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.MasterDocumentType", b =>
                 {
                     b.Property<Guid>("Id")
@@ -9847,6 +9900,10 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.NonCSEItem", b =>
                 {
+                    b.HasOne("ERPEZ.Domain.Entities.Procurement.ItemCategory", "ItemCategory")
+                        .WithMany("NonCSEItems")
+                        .HasForeignKey("ItemCategoryId");
+
                     b.HasOne("ERPEZ.Domain.Entities.Planning.ItemRequest", "ItemRequest")
                         .WithMany("NonCSEItems")
                         .HasForeignKey("ItemRequestId")
@@ -9856,6 +9913,8 @@ namespace ERPEZ.Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("UOMId")
                         .OnDelete(DeleteBehavior.Restrict);
+
+                    b.Navigation("ItemCategory");
 
                     b.Navigation("ItemRequest");
 
@@ -10457,6 +10516,10 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.ProcurementItem", b =>
                 {
+                    b.HasOne("ERPEZ.Domain.Entities.Procurement.ItemCategory", "ItemCategory")
+                        .WithMany("ProcurementItems")
+                        .HasForeignKey("ItemCategoryId");
+
                     b.HasOne("ERPEZ.Domain.Entities.Planning.Object", "ObjectCode")
                         .WithMany()
                         .HasForeignKey("ObjectCodeId")
@@ -10472,6 +10535,8 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasForeignKey("UOMId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("ItemCategory");
 
                     b.Navigation("ObjectCode");
 
@@ -11988,6 +12053,13 @@ namespace ERPEZ.Infrastructure.Migrations
             modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.DocumentProfile", b =>
                 {
                     b.Navigation("DocumentProfileItems");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.ItemCategory", b =>
+                {
+                    b.Navigation("NonCSEItems");
+
+                    b.Navigation("ProcurementItems");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.MasterDocumentType", b =>

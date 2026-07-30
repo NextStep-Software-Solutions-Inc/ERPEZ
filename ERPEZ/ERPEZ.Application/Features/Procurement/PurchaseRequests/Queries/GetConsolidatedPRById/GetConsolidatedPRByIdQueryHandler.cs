@@ -38,7 +38,9 @@ public class GetConsolidatedPRByIdQueryHandler(IUnitOfWork unitOfWork)
                         ConsolidatedPRItemId: ci.Id,
                         Name:                 ci.PRItem.Name,
                         Description:          ci.PRItem.Description,
-                        Category:             pr.ProcurementCategory?.Name,
+                        Category:             ci.PRItem.PPMPItem?.CSEItem?.ItemCategory?.Name 
+                                              ?? ci.PRItem.PPMPItem?.NonCSEItem?.ItemCategory?.Name 
+                                              ?? ci.PRItem.PPMPItem?.ProjectType.ToString(),
                         Fund:                 pr.FundSource?.Name,
                         Unit:                 ci.PRItem.PPMPItem?.Unit ?? string.Empty,
                         UnitPrice:            ci.PRItem.UnitCost,
