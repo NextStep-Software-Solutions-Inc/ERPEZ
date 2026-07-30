@@ -44,7 +44,7 @@ public record ConsolidatedPRItemResponse(
     int TotalQuantity,
     decimal TotalAmount,
     string? StockNo,
-    string RequestedMonth,
+    Dictionary<string, int> MonthlyQuantities,
     Guid? ProcurementModeId,
     bool? AllowPartial
 );

@@ -27,7 +27,7 @@ public class GetPRSummaryStatsQueryHandler(IUnitOfWork unitOfWork)
 
         // PPMP budget — sum of all approved PPMPs for this office
         var totalPPMPAmount = await unitOfWork.PurchaseRequestRepository
-            .GetTotalApprovedPPMPBudgetAsync(query.OfficeId, cancellationToken);
+            .GetTotalApprovedPPMPBudgetAsync(query.OfficeId, query.PRType, cancellationToken);
 
         var response = new PRSummaryStatsResponse(
             TotalPPMPAmount:        totalPPMPAmount,

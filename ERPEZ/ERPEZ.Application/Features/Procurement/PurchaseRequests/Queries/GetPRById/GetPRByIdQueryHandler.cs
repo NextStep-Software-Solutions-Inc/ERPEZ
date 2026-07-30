@@ -45,7 +45,9 @@ public class GetPRByIdQueryHandler(IUnitOfWork unitOfWork)
                     UnitCost          = i.UnitCost,
                     RequestedQuantity = i.RequestedQuantity,
                     Amount            = i.Amount,
-                    RequestedMonth    = i.RequestedMonth
+                    RequestedMonth    = i.RequestedMonth,
+                    Category          = pr.ProcurementCategory?.Name ?? string.Empty,
+                    Fund              = pr.FundSource?.Name ?? string.Empty
                 }).ToList()
         };
 
