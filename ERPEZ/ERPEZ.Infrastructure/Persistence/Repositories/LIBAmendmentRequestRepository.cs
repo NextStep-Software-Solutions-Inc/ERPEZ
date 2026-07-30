@@ -22,7 +22,55 @@ public class LIBAmendmentRequestRepository : Repository<LIBAmendmentRequest>, IL
     {
         return await dbContext.LIBAmendmentRequests!
             .Include(x => x.LineItemBudget)
+                .ThenInclude(lib => lib.LineItemBudgetActivities)
+                    .ThenInclude(a => a.WFPObjectiveActivity)
+            .Include(x => x.LineItemBudget)
+                .ThenInclude(lib => lib.LineItemBudgetActivities)
+                    .ThenInclude(a => a.OPCRActivity)
+            .Include(x => x.LineItemBudget)
+                .ThenInclude(lib => lib.LineItemBudgetActivities)
+                    .ThenInclude(a => a.LineItemBudgetDetails)
+                        .ThenInclude(d => d.Object)
+                            .ThenInclude(o => o.ObjectExpenseClasses)
+                                .ThenInclude(oc => oc.ExpenseClass)
+            .Include(x => x.LineItemBudget)
+                .ThenInclude(lib => lib.LineItemBudgetActivities)
+                    .ThenInclude(a => a.LineItemBudgetDetails)
+                        .ThenInclude(d => d.WFPObjectiveActivityExpenditure)
+            .Include(x => x.LineItemBudget)
+                .ThenInclude(lib => lib.LineItemBudgetDetails) // Orphan details
+                    .ThenInclude(d => d.Object)
+                        .ThenInclude(o => o.ObjectExpenseClasses)
+                            .ThenInclude(oc => oc.ExpenseClass)
+            .Include(x => x.LineItemBudget)
+                .ThenInclude(lib => lib.LineItemBudgetDetails) // Orphan details
+                    .ThenInclude(d => d.WFPObjectiveActivityExpenditure)
+                    
             .Include(x => x.ProposedLineItemBudget)
+                .ThenInclude(lib => lib.LineItemBudgetActivities)
+                    .ThenInclude(a => a.WFPObjectiveActivity)
+            .Include(x => x.ProposedLineItemBudget)
+                .ThenInclude(lib => lib.LineItemBudgetActivities)
+                    .ThenInclude(a => a.OPCRActivity)
+            .Include(x => x.ProposedLineItemBudget)
+                .ThenInclude(lib => lib.LineItemBudgetActivities)
+                    .ThenInclude(a => a.LineItemBudgetDetails)
+                        .ThenInclude(d => d.Object)
+                            .ThenInclude(o => o.ObjectExpenseClasses)
+                                .ThenInclude(oc => oc.ExpenseClass)
+            .Include(x => x.ProposedLineItemBudget)
+                .ThenInclude(lib => lib.LineItemBudgetActivities)
+                    .ThenInclude(a => a.LineItemBudgetDetails)
+                        .ThenInclude(d => d.WFPObjectiveActivityExpenditure)
+            .Include(x => x.ProposedLineItemBudget)
+                .ThenInclude(lib => lib.LineItemBudgetDetails) // Orphan details
+                    .ThenInclude(d => d.Object)
+                        .ThenInclude(o => o.ObjectExpenseClasses)
+                            .ThenInclude(oc => oc.ExpenseClass)
+            .Include(x => x.ProposedLineItemBudget)
+                .ThenInclude(lib => lib.LineItemBudgetDetails) // Orphan details
+                    .ThenInclude(d => d.WFPObjectiveActivityExpenditure)
+            .AsSplitQuery()
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
     }
 

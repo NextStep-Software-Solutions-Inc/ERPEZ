@@ -20,6 +20,9 @@ public class LIBAmendmentRequest : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public string Status { get; set; } = string.Empty;
 
+    [Sieve(CanFilter = true, CanSort = true)]
+    public string? Remarks { get; set; }
+
     public virtual LineItemBudget LineItemBudget { get; set; } = null!;
     public virtual LineItemBudget ProposedLineItemBudget { get; set; } = null!;
 }
