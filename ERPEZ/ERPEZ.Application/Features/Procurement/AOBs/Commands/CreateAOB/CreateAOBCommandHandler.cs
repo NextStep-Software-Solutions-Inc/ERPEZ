@@ -2,7 +2,6 @@ using ERPEZ.Domain.Entities.Procurement;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.Application.Features.Procurement.AOBs.Commands.CreateAOB;
 
@@ -14,10 +13,11 @@ public class CreateAOBCommandHandler(IUnitOfWork unitOfWork)
         if (request.ProcurementProjectIds != null && request.ProcurementProjectIds.Count > 0)
         {
             // Verify all referenced procurement projects exist
-            var existingProjectIds = await unitOfWork.ProcurementProjectRepository.Query()
+            var query = unitOfWork.ProcurementProjectRepository.Query()
                 .Where(p => request.ProcurementProjectIds.Contains(p.Id))
-                .Select(p => p.Id)
-                .ToListAsync(cancellationToken);
+                .Select(p => p.Id);
+            
+            var existingProjectIds = await unitOfWork.ProcurementProjectRepository.ToListAsync(query, cancellationToken);
 
             var missingIds = request.ProcurementProjectIds.Except(existingProjectIds).ToList();
             if (missingIds.Count > 0)
@@ -36,12 +36,15 @@ public class CreateAOBCommandHandler(IUnitOfWork unitOfWork)
             Status = "DRAFT"
         };
 
-        foreach (var projectId in request.ProcurementProjectIds)
+        if (request.ProcurementProjectIds != null)
         {
-            aob.AOBProcurementProjectMappings.Add(new AOBProcurementProjectMapping
+            foreach (var projectId in request.ProcurementProjectIds)
             {
-                ProcurementProjectId = projectId
-            });
+                aob.AOBProcurementProjectMappings.Add(new AOBProcurementProjectMapping
+                {
+                    ProcurementProjectId = projectId
+                });
+            }
         }
 
         await unitOfWork.AOBRepository.AddAsync(aob, cancellationToken);
