@@ -54,9 +54,10 @@ public class CreateDirectContractingCommandHandler(IUnitOfWork unitOfWork, ICurr
         decimal totalAbc = bacProject.ABC;
 
         // 5. Validate DC Number is unique
-        var duplicateDcNumber = await unitOfWork.DirectContractingRepository
-            .Query(dc => dc.DCNumber == request.DCNumber && !dc.IsDeleted)
-            .AnyAsync(cancellationToken);
+        var duplicateDcNumber = await EntityFrameworkQueryableExtensions.AnyAsync(
+            unitOfWork.DirectContractingRepository.Query(),
+            dc => dc.DCNumber == request.DCNumber && !dc.IsDeleted,
+            cancellationToken);
         if (duplicateDcNumber)
         {
             return ApiResponse<Guid>.Fail($"A Direct Contracting request with DC Number '{request.DCNumber}' already exists.");
