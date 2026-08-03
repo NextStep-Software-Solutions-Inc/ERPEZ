@@ -44,12 +44,15 @@ public class CreateAOBCommandHandler(IUnitOfWork unitOfWork)
             Status = "DRAFT"
         };
 
-        foreach (var projectId in request.ProcurementProjectIds)
+        if (request.ProcurementProjectIds != null)
         {
-            aob.AOBProcurementProjectMappings.Add(new AOBProcurementProjectMapping
+            foreach (var projectId in request.ProcurementProjectIds)
             {
-                ProcurementProjectId = projectId
-            });
+                aob.AOBProcurementProjectMappings.Add(new AOBProcurementProjectMapping
+                {
+                    ProcurementProjectId = projectId
+                });
+            }
         }
 
         await unitOfWork.AOBRepository.AddAsync(aob, cancellationToken);
