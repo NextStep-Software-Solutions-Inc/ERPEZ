@@ -14,6 +14,10 @@ public record MarketScopingResponse
     public DateTime DeliveryDate { get; set; }
     public Guid? TargetLineItemBudgetActivityId { get; set; }
     public string Status { get; set; } = string.Empty;
+    public string AgencyName { get; set; } = string.Empty;
+    public string DepartmentUnit { get; set; } = string.Empty;
+    public string RepresentativeName { get; set; } = string.Empty;
+    public string RepresentativeDesignation { get; set; } = string.Empty;
     public List<MarketScopingActivityResponse> ActivitiesConducted { get; set; } = [];
     public List<MarketScopingParameterResponse> ParameterEvaluations { get; set; } = [];
     public List<MarketScopingHistoryResponse> StatusHistory { get; set; } = [];

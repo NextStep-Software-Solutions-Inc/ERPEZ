@@ -33,6 +33,10 @@ public class GetMarketScopingsQueryHandler(IUnitOfWork unitOfWork)
             DeliveryDate = ms.DeliveryDate,
             TargetLineItemBudgetActivityId = ms.TargetLineItemBudgetActivityId,
             Status = ms.Status.ToString(),
+            AgencyName = ms.User?.Office?.Organization?.Name ?? string.Empty,
+            DepartmentUnit = ms.User?.Office?.Name ?? string.Empty,
+            RepresentativeName = ms.User != null ? $"{ms.User.FirstName} {ms.User.LastName}" : string.Empty,
+            RepresentativeDesignation = ms.User?.PersonnelPositions?.FirstOrDefault(pp => pp.IsActive)?.Position?.Title ?? string.Empty,
             CreatedAt = ms.CreatedAt,
             CreatedBy = ms.CreatedBy,
             UpdatedAt = ms.UpdatedAt,
@@ -41,6 +45,9 @@ public class GetMarketScopingsQueryHandler(IUnitOfWork unitOfWork)
             {
                 Id = a.Id,
                 ActivityId = a.ActivityId,
+                ActivityType = a.ActivitySettings?.ActivityType ?? string.Empty,
+                Label = a.ActivitySettings?.Label ?? string.Empty,
+                Description = a.ActivitySettings?.Description ?? string.Empty,
                 Attachments = a.Attachments.Select(att => new MarketScopingActivityAttachmentResponse
                 {
                     Id = att.Id,
@@ -52,6 +59,9 @@ public class GetMarketScopingsQueryHandler(IUnitOfWork unitOfWork)
             {
                 Id = p.Id,
                 ParameterId = p.ParameterId,
+                ParameterName = p.ParameterSettings?.Name ?? string.Empty,
+                DisplayName = p.ParameterSettings?.Name ?? string.Empty,
+                GuidedQuestion = p.ParameterSettings?.GuidedQuestion ?? string.Empty,
                 IsConsidered = p.IsConsidered,
                 Remarks = p.Remarks,
                 Attachments = p.Attachments.Select(att => new MarketScopingParameterAttachmentResponse
