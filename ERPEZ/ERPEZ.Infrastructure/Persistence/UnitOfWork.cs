@@ -458,7 +458,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         {
             return await context.SaveChangesAsync(cancellationToken);
         }
-        catch (DbUpdateException ex)
+        catch (DbUpdateConcurrencyException ex)
         {
             throw new ConcurrencyConflictException("A save conflict occurred.", ex);
         }
