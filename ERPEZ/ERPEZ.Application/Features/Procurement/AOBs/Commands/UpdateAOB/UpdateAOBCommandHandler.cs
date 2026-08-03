@@ -20,29 +20,29 @@ public class UpdateAOBCommandHandler(IUnitOfWork unitOfWork)
             return ApiResponse<Unit>.Fail("Abstract of Bids (AOB) not found.");
         }
 
-        if (request.ProcurementProjectIds == null || request.ProcurementProjectIds.Count == 0)
+        if (request.ProcurementProjectIds != null && request.ProcurementProjectIds.Count > 0)
         {
-            return ApiResponse<Unit>.Fail("At least one Procurement Project (RFQ) must be linked to the AOB.");
-        }
+            // Verify all referenced procurement projects exist
+            var existingProjectIds = await unitOfWork.ProcurementProjectRepository.Query()
+                .Where(p => request.ProcurementProjectIds.Contains(p.Id))
+                .Select(p => p.Id)
+                .ToListAsync(cancellationToken);
 
-        // Verify all referenced procurement projects exist
-        var existingProjectIds = await unitOfWork.ProcurementProjectRepository.Query()
-            .Where(p => request.ProcurementProjectIds.Contains(p.Id))
-            .Select(p => p.Id)
-            .ToListAsync(cancellationToken);
-
-        var missingIds = request.ProcurementProjectIds.Except(existingProjectIds).ToList();
-        if (missingIds.Count > 0)
-        {
-            return ApiResponse<Unit>.Fail($"The following Procurement Project ID(s) do not exist: {string.Join(", ", missingIds)}");
+            var missingIds = request.ProcurementProjectIds.Except(existingProjectIds).ToList();
+            if (missingIds.Count > 0)
+            {
+                return ApiResponse<Unit>.Fail($"The following Procurement Project ID(s) do not exist: {string.Join(", ", missingIds)}");
+            }
         }
 
         aob.AOBNumber = request.AOBNumber;
         aob.Description = request.Description;
         aob.AwardCriterion = request.AwardCriterion;
         aob.AOBDate = request.AOBDate;
-        aob.OpeningDate = request.OpeningDate;
+        aob.OpeningDate = DateTime.SpecifyKind(request.OpeningDate, DateTimeKind.Utc);
         aob.Status = request.Status;
+        aob.UpdatedAt = DateTime.UtcNow;
+        aob.UpdatedBy = "System";
 
         // Sync procurement project mappings
         // 1. Remove mappings that are no longer in request

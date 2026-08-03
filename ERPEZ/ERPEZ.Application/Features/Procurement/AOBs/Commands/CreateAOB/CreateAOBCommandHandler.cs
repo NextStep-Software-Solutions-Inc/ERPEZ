@@ -38,8 +38,10 @@ public class CreateAOBCommandHandler(IUnitOfWork unitOfWork)
             Description = request.Description,
             AwardCriterion = request.AwardCriterion,
             AOBDate = request.AOBDate,
-            OpeningDate = request.OpeningDate,
-            Status = "DRAFT"
+            OpeningDate = DateTime.SpecifyKind(request.OpeningDate, DateTimeKind.Utc),
+            Status = "DRAFT",
+            CreatedAt = DateTime.UtcNow,
+            CreatedBy = "System"
         };
 
         if (request.ProcurementProjectIds != null)
