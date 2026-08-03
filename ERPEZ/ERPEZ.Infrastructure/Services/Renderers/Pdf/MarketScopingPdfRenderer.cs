@@ -170,15 +170,15 @@ internal sealed class MarketScopingPdfRenderer : BasePdfRenderer, IDocumentRende
         {
             sc.Item().Text(headerLabel).FontSize(10);
             sc.Item().PaddingTop(30).BorderBottom(1).BorderColor(Colors.Black).Text(string.Empty);
-            sc.Item().Text($"[{sig.PrintedName}]").Bold();
-            sc.Item().Text($"[{sig.Position}]");
+            sc.Item().Text(sig.PrintedName).Bold();
+            sc.Item().Text(sig.Position);
             if (sig.Date.HasValue)
             {
-                sc.Item().Text($"[{sig.Date.Value:MM/dd/yyyy}]");
+                sc.Item().Text(sig.Date.Value.ToString("MM/dd/yyyy"));
             }
             else
             {
-                sc.Item().Text("[Date]");
+                sc.Item().Text("Date");
             }
         });
     }
