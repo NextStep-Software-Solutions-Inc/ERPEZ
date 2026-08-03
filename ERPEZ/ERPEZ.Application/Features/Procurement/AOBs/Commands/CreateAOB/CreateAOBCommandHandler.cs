@@ -10,13 +10,19 @@ public class CreateAOBCommandHandler(IUnitOfWork unitOfWork)
 {
     public async Task<ApiResponse<Guid>> Handle(CreateAOBCommand request, CancellationToken cancellationToken)
     {
+        var existingAOB = await unitOfWork.AOBRepository
+            .FindAsync(a => a.AOBNumber == request.AOBNumber, cancellationToken) != null;
+        if (existingAOB)
+        {
+            return ApiResponse<Guid>.Fail($"An Abstract of Bids (AOB) with number '{request.AOBNumber}' already exists.");
+        }
+
         if (request.ProcurementProjectIds != null && request.ProcurementProjectIds.Count > 0)
         {
             // Verify all referenced procurement projects exist
             var query = unitOfWork.ProcurementProjectRepository.Query()
                 .Where(p => request.ProcurementProjectIds.Contains(p.Id))
                 .Select(p => p.Id);
-            
             var existingProjectIds = await unitOfWork.ProcurementProjectRepository.ToListAsync(query, cancellationToken);
 
             var missingIds = request.ProcurementProjectIds.Except(existingProjectIds).ToList();
@@ -32,8 +38,10 @@ public class CreateAOBCommandHandler(IUnitOfWork unitOfWork)
             Description = request.Description,
             AwardCriterion = request.AwardCriterion,
             AOBDate = request.AOBDate,
-            OpeningDate = request.OpeningDate,
-            Status = "DRAFT"
+            OpeningDate = DateTime.SpecifyKind(request.OpeningDate, DateTimeKind.Utc),
+            Status = "DRAFT",
+            CreatedAt = DateTime.UtcNow,
+            CreatedBy = "System"
         };
 
         if (request.ProcurementProjectIds != null)
