@@ -11,6 +11,13 @@ public class CreateAOBCommandHandler(IUnitOfWork unitOfWork)
 {
     public async Task<ApiResponse<Guid>> Handle(CreateAOBCommand request, CancellationToken cancellationToken)
     {
+        var existingAOB = await unitOfWork.AOBRepository.Query()
+            .AnyAsync(a => a.AOBNumber == request.AOBNumber && !a.IsDeleted, cancellationToken);
+        if (existingAOB)
+        {
+            return ApiResponse<Guid>.Fail($"An Abstract of Bids (AOB) with number '{request.AOBNumber}' already exists.");
+        }
+
         if (request.ProcurementProjectIds != null && request.ProcurementProjectIds.Count > 0)
         {
             // Verify all referenced procurement projects exist
