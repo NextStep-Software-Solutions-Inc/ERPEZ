@@ -59,6 +59,12 @@ public class UpdatePRCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<Up
                             "Each item must have either a PPMPItemId or an APRItemId.");
                     }
 
+                    var ppmpItem = await unitOfWork.PPMPItemRepository.GetByIdWithDetailsAsync(
+                        resolvedPpmpItemId, cancellationToken)
+                        ?? throw new NotFoundException($"PPMP Item with ID {resolvedPpmpItemId} not found.");
+
+                    await ValidatePPMPItemBudget(ppmpItem.Id, itemReq.RequestedMonth, itemReq.RequestedQuantity, ppmpItem.UnitPrice, ppmpItem, request.Id, cancellationToken);
+
                     var item = new PRItem
                     {
                         PPMPItemId        = resolvedPpmpItemId,
@@ -70,9 +76,7 @@ public class UpdatePRCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<Up
                         Amount            = itemReq.RequestedQuantity * itemReq.UnitCost,
                         StockNo           = itemReq.StockNo,
                         IsNonCSE          = itemReq.IsNonCSE,
-                        MonthlyQuantities = itemReq.MonthlyQuantities
-                            .Select(kvp => new PRItemMonthlyQuantity { Month = kvp.Key, Quantity = kvp.Value })
-                            .ToList()
+                        RequestedMonth    = itemReq.RequestedMonth
                     };
 
                     pr.PRItems.Add(item);
@@ -88,5 +92,37 @@ public class UpdatePRCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<Up
         }, cancellationToken);
 
         return ApiResponse<Unit>.Success(Unit.Value, "Purchase Request updated successfully.");
+    }
+
+    private async Task ValidatePPMPItemBudget(
+        Guid ppmpItemId,
+        AllocationMonthEnum requestedMonth,
+        int requestedQty,
+        decimal unitPrice,
+        Domain.Entities.Planning.PPMPItem ppmpItem,
+        Guid? currentPRId,
+        CancellationToken cancellationToken)
+    {
+        var existingItems = await unitOfWork.PRItemRepository.FindAllAsync(
+            i => i.PPMPItemId == ppmpItemId &&
+                i.RequestedMonth == requestedMonth &&
+                !i.PurchaseRequest.IsDeleted &&
+                i.PurchaseRequest.Status != StatusEnum.Returned &&
+                (!currentPRId.HasValue || i.PurchaseRequestId != currentPRId.Value),
+            cancellationToken);
+
+        var totalAllocated   = ppmpItem.PPMPItemAllocations.Where(a => a.AllocationMonth == requestedMonth).Sum(a => a.Quantity);
+        var reservedQty      = existingItems.Sum(i => i.RequestedQuantity);
+        var reservedCost     = existingItems.Sum(i => i.Amount);
+        var ppmpBudget       = unitPrice * totalAllocated;
+        var newCost          = requestedQty * unitPrice;
+
+        if (reservedQty + requestedQty > totalAllocated)
+            throw new ValidationException(
+                $"Requested quantity for '{ppmpItem.Name}' in month {requestedMonth} exceeds PPMP allocation. Available: {totalAllocated - reservedQty}, Requested: {requestedQty}.");
+
+        if (reservedCost + newCost > ppmpBudget)
+            throw new ValidationException(
+                $"Requested amount for '{ppmpItem.Name}' in month {requestedMonth} exceeds PPMP budget. Remaining: ₱{ppmpBudget - reservedCost:N2}, Requested: ₱{newCost:N2}.");
     }
 }

@@ -43,10 +43,9 @@ public class GetRFQByIdQueryHandler(IUnitOfWork unitOfWork)
                 GreenSpecification = item.GreenSpecification,
                 CategorySnapshot = item.CategorySnapshot,
                 FundSnapshot = item.FundSnapshot,
-                MonthlyAllocations = (item.CPRItem?.PRItem?.MonthlyQuantities ?? new List<PRItemMonthlyQuantity>())
-                    .Where(m => !m.IsDeleted)
-                    .Select(m => new MonthlyAllocationDto(m.Month.ToString(), m.Quantity))
-                    .ToList()
+                MonthlyAllocations = item.CPRItem?.PRItem != null
+                    ? new List<MonthlyAllocationDto> { new(item.CPRItem.PRItem.RequestedMonth.ToString(), item.CPRItem.PRItem.RequestedQuantity) }
+                    : new List<MonthlyAllocationDto>()
             }).ToList(),
             Suppliers = rfq.RFQSuppliers.Select(s => new RFQSupplierDto
             {

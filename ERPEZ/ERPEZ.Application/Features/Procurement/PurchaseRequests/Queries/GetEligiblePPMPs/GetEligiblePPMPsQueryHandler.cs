@@ -34,23 +34,30 @@ public class GetEligiblePPMPsQueryHandler(IUnitOfWork unitOfWork)
                 PPMPNumber:  g.Key.PPMPNumber,
                 OfficeId:    g.Key.OfficeId,
                 OfficeName:  g.Key.OfficeName,
-                TotalAmount: g.Sum(i => i.TotalAllocatedAmount),
-                Items: g.Select(i => new EligiblePPMPItemResponse(
-                    PPMPItemId:           i.PPMPItemId,
-                    ItemName:             i.ItemName,
-                    Category:             i.Category,
-                    Fund:                 i.Fund,
-                    Unit:                 i.Unit,
-                    UnitPrice:            i.UnitPrice,
-                    MonthlyAllocations:   i.MonthlyAllocations
-                        .ToDictionary(
-                            kvp => (AllocationMonthEnum)kvp.Key,
-                            kvp => kvp.Value),
-                    TotalAllocated:       i.TotalAllocatedQuantity,
-                    AlreadyRequested:     0,        // already excluded by repo
-                    AvailableQuantity:    i.TotalAllocatedQuantity,
-                    TotalAvailableAmount: i.TotalAllocatedAmount
-                )).ToList()
+                TotalAmount: g.Sum(i => i.TotalAvailableAmount),
+                Items: g.GroupBy(item => new { 
+                        item.PPMPItemId, 
+                        item.ItemName, 
+                        item.Category, 
+                        item.Fund, 
+                        item.Unit, 
+                        item.UnitPrice 
+                    })
+                    .Select(ig => new EligiblePPMPItemResponse(
+                        PPMPItemId:           ig.Key.PPMPItemId,
+                        ItemName:             ig.Key.ItemName,
+                        Category:             ig.Key.Category,
+                        Fund:                 ig.Key.Fund,
+                        Unit:                 ig.Key.Unit,
+                        UnitPrice:            ig.Key.UnitPrice,
+                        MonthlyAllocations:   ig.Select(m => new EligiblePPMPItemMonthAllocation(
+                            Month:                m.Month,
+                            TotalAllocated:       m.TotalAllocatedQuantity,
+                            AvailableQuantity:    m.AvailableQuantity,
+                            TotalAvailableAmount: m.TotalAvailableAmount
+                        )).ToList(),
+                        TotalAvailableAmount: ig.Sum(m => m.TotalAvailableAmount)
+                    )).ToList()
             ))
             .ToList();
 

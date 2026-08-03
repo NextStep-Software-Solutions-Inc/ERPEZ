@@ -44,7 +44,8 @@ public class PRItem : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public bool IsNonCSE { get; set; }
 
-    public virtual List<PRItemMonthlyQuantity> MonthlyQuantities { get; set; } = [];
+    [Sieve(CanFilter = true, CanSort = true)]
+    public AllocationMonthEnum RequestedMonth { get; set; }
     public virtual PurchaseRequest PurchaseRequest { get; set; } = null!;
     public virtual PPMPItem PPMPItem { get; set; } = null!;
     public virtual APRItem? APRItem { get; set; }

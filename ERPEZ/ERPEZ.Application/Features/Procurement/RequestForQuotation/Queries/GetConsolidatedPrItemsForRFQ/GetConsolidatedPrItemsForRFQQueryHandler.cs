@@ -36,24 +36,22 @@ public class GetConsolidatedPrItemsForRFQQueryHandler(IUnitOfWork unitOfWork)
                 var fund = purchaseRequest?.FundSource?.Name;
 
                 // Jan-Dec breakdown: one row per monthly quantity, per UI spec.
-                foreach (var monthlyQty in prItem.MonthlyQuantities.Where(m => !m.IsDeleted))
+                // With the new schema, a PRItem maps 1:1 to a specific month.
+                result.Add(new ConsolidatedPrItemForRFQDto
                 {
-                    result.Add(new ConsolidatedPrItemForRFQDto
-                    {
-                        CPRItemId = cprItem.Id,
-                        ConsolidatedPRId = cpr.Id,
-                        CPRNumber = cpr.CPRNumber,
-                        ItemName = prItem.Name,
-                        Category = category,
-                        Fund = fund,
-                        Month = monthlyQty.Month,
-                        UnitCost = prItem.UnitCost,
-                        RequestedQuantity = prItem.RequestedQuantity,
-                        AlreadySourcedQuantity = alreadySourced,
-                        ProcurementModeId = cprItem.ProcurementModeId ?? Guid.Empty,
-                        ProcurementModeName = cprItem.ProcurementMode?.Name
-                    });
-                }
+                    CPRItemId = cprItem.Id,
+                    ConsolidatedPRId = cpr.Id,
+                    CPRNumber = cpr.CPRNumber,
+                    ItemName = prItem.Name,
+                    Category = category,
+                    Fund = fund,
+                    Month = prItem.RequestedMonth,
+                    UnitCost = prItem.UnitCost,
+                    RequestedQuantity = prItem.RequestedQuantity,
+                    AlreadySourcedQuantity = alreadySourced,
+                    ProcurementModeId = cprItem.ProcurementModeId ?? Guid.Empty,
+                    ProcurementModeName = cprItem.ProcurementMode?.Name
+                });
             }
         }
 

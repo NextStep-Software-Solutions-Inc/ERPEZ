@@ -38,18 +38,17 @@ public class GetConsolidatedPRByIdQueryHandler(IUnitOfWork unitOfWork)
                         ConsolidatedPRItemId: ci.Id,
                         Name:                 ci.PRItem.Name,
                         Description:          ci.PRItem.Description,
-                        Category:             pr.ProcurementCategory?.Name,
+                        Category:             ci.PRItem.PPMPItem?.CSEItem?.ItemCategory?.Name 
+                                              ?? ci.PRItem.PPMPItem?.NonCSEItem?.ItemCategory?.Name 
+                                              ?? ci.PRItem.PPMPItem?.ProjectType.ToString(),
                         Fund:                 pr.FundSource?.Name,
                         Unit:                 ci.PRItem.PPMPItem?.Unit ?? string.Empty,
                         UnitPrice:            ci.PRItem.UnitCost,
                         TotalQuantity:        ci.PRItem.RequestedQuantity,
                         TotalAmount:          ci.PRItem.Amount,
                         StockNo:              ci.PRItem.StockNo,
-                        MonthlyQuantities:    ci.PRItem.MonthlyQuantities
-                            .ToDictionary(
-                                m => ((int)m.Month + 1).ToString("D2"),
-                                m => m.Quantity),
-                        ProcurementModeId:    ci.ProcurementModeId,
+                        MonthlyQuantities:    new Dictionary<string, int> { { ((int)ci.PRItem.RequestedMonth).ToString("D2"), ci.PRItem.RequestedQuantity } },
+                        ProcurementModeId:    ci.ProcurementModeId ?? ci.PRItem.PPMPItem?.ProcurementModeId,
                         AllowPartial:         ci.AllowPartial
                     )).ToList()
                 );

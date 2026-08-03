@@ -20,6 +20,14 @@ public class SubmitConsolidatedPRCommandHandler(IUnitOfWork unitOfWork)
         if (cpr.ConsolidatedPRItems.Count == 0)
             throw new ValidationException("Cannot submit a Consolidated PR with no items.");
 
+        foreach (var ci in cpr.ConsolidatedPRItems)
+        {
+            if (ci.ProcurementModeId is null && ci.PRItem.PPMPItem?.ProcurementModeId is not null)
+            {
+                ci.ProcurementModeId = ci.PRItem.PPMPItem.ProcurementModeId;
+            }
+        }
+
         var missingMOP = cpr.ConsolidatedPRItems
             .Where(ci => ci.ProcurementModeId is null)
             .Select(ci => ci.PRItem.Name)
@@ -28,7 +36,7 @@ public class SubmitConsolidatedPRCommandHandler(IUnitOfWork unitOfWork)
         if (missingMOP.Count > 0)
             throw new ValidationException($"Missing Mode of Procurement for: {string.Join(", ", missingMOP)}.");
 
-        cpr.Status       = StatusEnum.Approved;
+        cpr.Status       = StatusEnum.Submitted;
 
         unitOfWork.ConsolidatedPRRepository.Update(cpr);
         await unitOfWork.SaveChangesAsync(cancellationToken);

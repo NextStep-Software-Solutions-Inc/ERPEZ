@@ -48,7 +48,7 @@ public class AddPRsToConsolidatedCommandHandler(IUnitOfWork unitOfWork)
                     PurchaseRequestId = prId,
                     PRItemId          = prItem.Id,
                     AllowPartial      = false,
-                    ProcurementModeId = null
+                    ProcurementModeId = prItem.PPMPItem?.ProcurementModeId
                 });
 
                 addedAmount += prItem.Amount;

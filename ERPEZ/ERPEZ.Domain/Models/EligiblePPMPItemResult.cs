@@ -13,9 +13,10 @@ public record EligiblePPMPItemResult(
     string  Fund,
     string  Unit,
     decimal UnitPrice,
-    Dictionary<AllocationMonthEnum, int> MonthlyAllocations,  // ← was Dictionary<int, int>
+    AllocationMonthEnum Month,
     int     TotalAllocatedQuantity,
-    decimal TotalAllocatedAmount
+    int     AvailableQuantity,
+    decimal TotalAvailableAmount
 );
 
 public record EligibleAPRItemResult(
