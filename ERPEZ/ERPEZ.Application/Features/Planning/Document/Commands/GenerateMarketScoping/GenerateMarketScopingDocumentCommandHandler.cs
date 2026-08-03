@@ -104,7 +104,7 @@ public class GenerateMarketScopingDocumentCommandHandler(
                         Description = a.ActivitySettings.Label,
                         Documentation = !string.IsNullOrWhiteSpace(attachmentDocList)
                             ? attachmentDocList
-                            : (a.ActivitySettings.Description ?? string.Empty),
+                            : string.Empty,
                         SortOrder = a.ActivitySettings.SortOrder
                     };
                 })
