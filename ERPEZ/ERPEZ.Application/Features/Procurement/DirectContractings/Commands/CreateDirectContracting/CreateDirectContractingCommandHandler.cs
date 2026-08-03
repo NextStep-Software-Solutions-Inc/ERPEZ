@@ -6,7 +6,6 @@ using ERPEZ.Domain.Entities.Procurement;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 using ERPEZ.Application.Interfaces;
 
@@ -18,8 +17,8 @@ public class CreateDirectContractingCommandHandler(IUnitOfWork unitOfWork, ICurr
     public async Task<ApiResponse<Guid>> Handle(CreateDirectContractingCommand request, CancellationToken cancellationToken)
     {
         // 1. Validate BAC Project exists
-        var bacProject = await unitOfWork.ProcurementProjectRepository.Query()
-            .FirstOrDefaultAsync(p => p.Id == request.BACProjectId && !p.IsDeleted, cancellationToken);
+        var bacProject = await unitOfWork.ProcurementProjectRepository
+            .FindAsync(p => p.Id == request.BACProjectId, cancellationToken);
 
         if (bacProject == null)
         {
@@ -38,8 +37,8 @@ public class CreateDirectContractingCommandHandler(IUnitOfWork unitOfWork, ICurr
         }
 
         // 3. Single Supplier Rule validation: Ensure no other Direct Contracting is linked to this BAC Project
-        var existingDC = await unitOfWork.DirectContractingRepository.Query()
-            .FirstOrDefaultAsync(dc => dc.BACProjectId == request.BACProjectId && !dc.IsDeleted, cancellationToken);
+        var existingDC = await unitOfWork.DirectContractingRepository
+            .FindAsync(dc => dc.BACProjectId == request.BACProjectId, cancellationToken);
 
         if (existingDC != null)
         {
@@ -54,8 +53,8 @@ public class CreateDirectContractingCommandHandler(IUnitOfWork unitOfWork, ICurr
         decimal totalAbc = bacProject.ABC;
 
         // 5. Validate DC Number is unique
-        var duplicateDcNumber = await unitOfWork.DirectContractingRepository.Query()
-            .AnyAsync(dc => dc.DCNumber == request.DCNumber && !dc.IsDeleted, cancellationToken);
+        var duplicateDcNumber = await unitOfWork.DirectContractingRepository
+            .FindAsync(dc => dc.DCNumber == request.DCNumber, cancellationToken) != null;
         if (duplicateDcNumber)
         {
             return ApiResponse<Guid>.Fail($"A Direct Contracting request with DC Number '{request.DCNumber}' already exists.");
