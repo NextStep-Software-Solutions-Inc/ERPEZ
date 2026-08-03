@@ -4,6 +4,7 @@ using ERPEZ.Application.Features.Planning.Document.Commands.GenerateAPP;
 using ERPEZ.Application.Features.Planning.Document.Commands.GenerateOPCRRating;
 using ERPEZ.Application.Features.Planning.Document.Commands.GenerateOPCR;
 using ERPEZ.Application.Features.Planning.Document.Commands.GenerateConsolidatedOPCR;
+using ERPEZ.Application.Features.Planning.Document.Commands.GenerateMarketScoping;
 using ERPEZ.Application.Features.Planning.Document.Commands.GenerateWFP;
 using ERPEZ.Application.Interfaces.Services;
 using ERPEZ.Domain.Enums;
@@ -177,6 +178,22 @@ public class DocumentController(IMediator mediator,
             GeneratedBy     = User.Identity?.Name ?? "system"
         }, cancellationToken);
 
+        return Ok(result);
+    }
+
+    [HttpPost("market-scoping/{marketScopingId:guid}/generate")]
+    public async Task<ActionResult<ApiResponse<Guid>>> GenerateMarketScoping(
+        Guid marketScopingId,
+        [FromQuery] ExportFormat format = ExportFormat.Pdf,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new GenerateMarketScopingDocumentCommand
+        {
+            MarketScopingId = marketScopingId,
+            Format = format,
+            GeneratedBy = User.Identity?.Name ?? "system"
+        };
+        var result = await mediator.Send(command, cancellationToken);
         return Ok(result);
     }
 

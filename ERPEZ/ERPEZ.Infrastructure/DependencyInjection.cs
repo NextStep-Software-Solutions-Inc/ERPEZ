@@ -150,6 +150,8 @@ public static class DependencyInjection
 
         services.AddScoped<IDocumentRenderer<ConsolidatedOpcrDataDto>,  ConsolidatedOpcrPdfRenderer>(); // ✅ Add
 
+        services.AddScoped<IDocumentRenderer<MarketScopingDataDto>, MarketScopingPdfRenderer>();
+
         // Budget Modification — PDF
         services.AddScoped<IDocumentRenderer<ERPEZ.Application.Features.Planning.Document.Commands.GenerateLIBAmendment.LibAmendmentDataDto>, LibAmendmentPdfRenderer>();
 
