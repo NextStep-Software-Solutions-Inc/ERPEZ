@@ -123,7 +123,7 @@ internal sealed class MarketScopingPdfRenderer : BasePdfRenderer, IDocumentRende
                             table.Cell().Element(TableDataCell).Text(t =>
                             {
                                 t.Span($"{letters[i]}. {param.ParameterName}").Bold();
-                                t.Span($"\n\n[{param.GuidedQuestion}]").Italic().FontSize(8.5f);
+                                t.Span($"\n\n[{param.GuidedQuestion}]").FontSize(8.5f);
                             });
                             table.Cell().Element(TableDataCell).AlignCenter().AlignMiddle().Text(param.Considered);
                             table.Cell().Element(TableDataCell).Text(param.Recommendations);
