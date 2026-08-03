@@ -2,7 +2,6 @@ using ERPEZ.Domain.Entities.Procurement;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.Application.Features.Procurement.AOBs.Commands.CreateAOB;
 
@@ -11,10 +10,8 @@ public class CreateAOBCommandHandler(IUnitOfWork unitOfWork)
 {
     public async Task<ApiResponse<Guid>> Handle(CreateAOBCommand request, CancellationToken cancellationToken)
     {
-        var existingAOB = await EntityFrameworkQueryableExtensions.AnyAsync(
-            unitOfWork.AOBRepository.Query(),
-            a => a.AOBNumber == request.AOBNumber && !a.IsDeleted,
-            cancellationToken);
+        var existingAOB = await unitOfWork.AOBRepository
+            .FindAsync(a => a.AOBNumber == request.AOBNumber, cancellationToken) != null;
         if (existingAOB)
         {
             return ApiResponse<Guid>.Fail($"An Abstract of Bids (AOB) with number '{request.AOBNumber}' already exists.");
@@ -23,10 +20,10 @@ public class CreateAOBCommandHandler(IUnitOfWork unitOfWork)
         if (request.ProcurementProjectIds != null && request.ProcurementProjectIds.Count > 0)
         {
             // Verify all referenced procurement projects exist
-            var existingProjectIds = await unitOfWork.ProcurementProjectRepository.Query()
+            var query = unitOfWork.ProcurementProjectRepository.Query()
                 .Where(p => request.ProcurementProjectIds.Contains(p.Id))
-                .Select(p => p.Id)
-                .ToListAsync(cancellationToken);
+                .Select(p => p.Id);
+            var existingProjectIds = await unitOfWork.ProcurementProjectRepository.ToListAsync(query, cancellationToken);
 
             var missingIds = request.ProcurementProjectIds.Except(existingProjectIds).ToList();
             if (missingIds.Count > 0)
