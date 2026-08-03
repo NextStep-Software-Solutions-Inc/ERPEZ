@@ -26,7 +26,10 @@ public class GenerateMarketScopingDocumentCommandHandler(
 
         var user = await unitOfWork.UserRepository.GetByIdWithOfficeAsync(form.UserId, cancellationToken);
 
-        var dataDto = MapToDto(form, user);
+        var settingsQuery = unitOfWork.MarketScopingActivitySettingsRepository.Query(x => x.IsActive && !x.IsDeleted);
+        var allSettings = await unitOfWork.MarketScopingActivitySettingsRepository.ToListAsync(settingsQuery, cancellationToken);
+
+        var dataDto = MapToDto(form, user, allSettings);
 
         var bytes = await rendererService.RenderAsync(
             dataDto, DocumentType.MarketScoping, request.Format, cancellationToken);
@@ -63,7 +66,7 @@ public class GenerateMarketScopingDocumentCommandHandler(
         return ApiResponse<Guid>.Success(record.Id, "Market Scoping document generated successfully.");
     }
 
-    private static MarketScopingDataDto MapToDto(MarketScoping form, ERPEZ.Domain.Entities.Planning.User? user)
+    private static MarketScopingDataDto MapToDto(MarketScoping form, ERPEZ.Domain.Entities.Planning.User? user, List<ERPEZ.Domain.Entities.Planning.MarketScopingActivitySettings> allSettings)
     {
         var implementingUnit = user?.Office?.Name ?? string.Empty;
         var procuringEntity = string.IsNullOrWhiteSpace(user?.Office?.Organization?.Name) 
@@ -84,14 +87,17 @@ public class GenerateMarketScopingDocumentCommandHandler(
             PeriodTo = form.PeriodTo,
             ExpectedDeliveryDate = form.DeliveryDate,
             
-            Activities = form.ActivitiesConducted
-                .Where(a => a.ActivitySettings != null)
-                .Select(a =>
+            Activities = allSettings
+                .Select(s =>
                 {
-                    var attachmentDocList = a.Attachments != null && a.Attachments.Count != 0
-                        ? string.Join("\n• ", a.Attachments.Select(att => att.FileName))
+                    var matchingConducted = form.ActivitiesConducted
+                        .FirstOrDefault(ac => ac.ActivitySettingsId == s.Id);
+                    
+                    var isChecked = matchingConducted != null;
+                    var attachmentDocList = matchingConducted?.Attachments != null && matchingConducted.Attachments.Count != 0
+                        ? string.Join("\n• ", matchingConducted.Attachments.Select(att => att.FileName))
                         : string.Empty;
-                        
+
                     if (!string.IsNullOrWhiteSpace(attachmentDocList))
                     {
                         attachmentDocList = "• " + attachmentDocList;
@@ -99,13 +105,13 @@ public class GenerateMarketScopingDocumentCommandHandler(
 
                     return new MarketScopingActivityDto
                     {
-                        IsChecked = true,
-                        ActivityType = a.ActivitySettings.ActivityType,
-                        Description = a.ActivitySettings.Label,
-                        Documentation = !string.IsNullOrWhiteSpace(attachmentDocList)
+                        IsChecked = isChecked,
+                        ActivityType = s.ActivityType,
+                        Description = s.Label,
+                        Documentation = isChecked && !string.IsNullOrWhiteSpace(attachmentDocList)
                             ? attachmentDocList
                             : string.Empty,
-                        SortOrder = a.ActivitySettings.SortOrder
+                        SortOrder = s.SortOrder
                     };
                 })
                 .OrderBy(a => a.SortOrder)

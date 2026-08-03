@@ -88,7 +88,7 @@ internal sealed class MarketScopingPdfRenderer : BasePdfRenderer, IDocumentRende
 
                         foreach (var act in request.Activities)
                         {
-                            table.Cell().Element(TableDataCell).AlignCenter().Text(act.IsChecked ? "✓" : "☐").FontSize(12);
+                            table.Cell().Element(TableDataCell).AlignCenter().AlignMiddle().Width(12).Height(12).Border(0.5f).BorderColor(Colors.Black).AlignCenter().AlignMiddle().Text(act.IsChecked ? "✓" : "").FontSize(9).Bold();
                             table.Cell().Element(TableDataCell).Text(act.Description);
                             table.Cell().Element(TableDataCell).Text(act.Documentation);
                         }
@@ -120,7 +120,11 @@ internal sealed class MarketScopingPdfRenderer : BasePdfRenderer, IDocumentRende
                         var i = 0;
                         foreach (var param in request.Parameters)
                         {
-                            table.Cell().Element(TableDataCell).Text($"{letters[i]}. {param.ParameterName}\n[{param.GuidedQuestion}]");
+                            table.Cell().Element(TableDataCell).Text(t =>
+                            {
+                                t.Span($"{letters[i]}. {param.ParameterName}").Bold();
+                                t.Span($"\n\n[{param.GuidedQuestion}]").Italic().FontSize(8.5f);
+                            });
                             table.Cell().Element(TableDataCell).AlignCenter().AlignMiddle().Text(param.Considered);
                             table.Cell().Element(TableDataCell).Text(param.Recommendations);
                             i++;
