@@ -82,11 +82,7 @@ internal sealed class MarketScopingPdfRenderer : BasePdfRenderer, IDocumentRende
 
                         table.Header(h =>
                         {
-                            h.Cell().Element(TableHeaderCell).AlignCenter().Text(t =>
-                            {
-                                t.Span("Check\n").Bold();
-                                t.Span("(✓)").Bold();
-                            });
+                            h.Cell().Element(TableHeaderCell).AlignCenter().Text("Check").Bold();
                             h.Cell().Element(TableHeaderCell).AlignCenter().Text("Activity/ies Conducted").Bold();
                             h.Cell().Element(TableHeaderCell).AlignCenter().Text("Documentation\n(as may be applicable)").Bold();
                         });
