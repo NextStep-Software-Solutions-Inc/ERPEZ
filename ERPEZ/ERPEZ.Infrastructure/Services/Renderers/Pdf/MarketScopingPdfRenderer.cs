@@ -26,7 +26,7 @@ internal sealed class MarketScopingPdfRenderer : BasePdfRenderer, IDocumentRende
 
                 page.Header().Column(col =>
                 {
-                    col.Item().AlignCenter().Text("Agency Letterhead with Logo").Bold().FontSize(12);
+                    col.Item().AlignCenter().Text("Agency Letterhead with Logo").Bold().FontSize(9.5f);
                     col.Item().PaddingTop(10).AlignCenter().Text("MARKET SCOPING CHECKLIST").Bold().FontSize(12);
                     col.Item().PaddingTop(10).PaddingBottom(10).LineHorizontal(1).LineColor(Colors.Blue.Darken2);
                 });
@@ -82,9 +82,9 @@ internal sealed class MarketScopingPdfRenderer : BasePdfRenderer, IDocumentRende
 
                         table.Header(h =>
                         {
-                            h.Cell().Element(TableHeaderCell).AlignCenter().Text("Check").Bold();
-                            h.Cell().Element(TableHeaderCell).AlignCenter().Text("Activity/ies Conducted").Bold();
-                            h.Cell().Element(TableHeaderCell).AlignCenter().Text("Documentation\n(as may be applicable)").Bold();
+                            h.Cell().Element(TableHeaderCell).AlignCenter().AlignMiddle().Text("Check").Bold();
+                            h.Cell().Element(TableHeaderCell).AlignCenter().AlignMiddle().Text("Activity/ies Conducted").Bold();
+                            h.Cell().Element(TableHeaderCell).AlignCenter().AlignMiddle().Text("Documentation\n(as may be applicable)").Bold();
                         });
 
                         foreach (var act in request.Activities)
@@ -118,9 +118,9 @@ internal sealed class MarketScopingPdfRenderer : BasePdfRenderer, IDocumentRende
 
                         table.Header(h =>
                         {
-                            h.Cell().Element(TableHeaderCell).AlignCenter().Text("Parameters").Bold();
-                            h.Cell().Element(TableHeaderCell).AlignCenter().Text("Considered?\n(Yes/No/ Not\nApplicable)").Bold();
-                            h.Cell().Element(TableHeaderCell).AlignCenter().Text("Recommendations\nbased on the Market Scoping\n(Attach additional documents\nif necessary)").Bold();
+                            h.Cell().Element(TableHeaderCell).AlignCenter().AlignMiddle().Text("Parameters").Bold();
+                            h.Cell().Element(TableHeaderCell).AlignCenter().AlignMiddle().Text("Considered?\n(Yes/No/ Not\nApplicable)").Bold();
+                            h.Cell().Element(TableHeaderCell).AlignCenter().AlignMiddle().Text("Recommendations\nbased on the Market Scoping\n(Attach additional documents\nif necessary)").Bold();
                         });
 
                         var letters = new[] { "a", "b", "c", "d", "e", "f", "g", "h" };
