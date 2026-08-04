@@ -50,6 +50,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly ILineItemBudgetDetailRepository lineItemBudgetDetailRepository;
     private readonly ILIBAmendmentRequestRepository libAmendmentRequestRepository;
     private readonly IMarketScopingRepository marketScopingRepository;
+    private readonly IMarketScopingHistoryRepository marketScopingHistoryRepository;
     private readonly IMarketScopingParameterRepository marketScopingParameterRepository;
     private readonly IMarketScopingActivityRepository marketScopingActivityRepository;
     private readonly IMarketScopingParameterSettingsRepository marketScopingParameterSettingsRepository;
@@ -196,6 +197,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         lineItemBudgetDetailRepository = new LineItemBudgetDetailRepository(context, sieveProcessor);
         libAmendmentRequestRepository = new LIBAmendmentRequestRepository(context, sieveProcessor);
         marketScopingRepository = new MarketScopingRepository(context, sieveProcessor);
+        marketScopingHistoryRepository = new MarketScopingHistoryRepository(context, sieveProcessor);
         marketScopingParameterRepository = new MarketScopingParameterRepository(context, sieveProcessor);
         marketScopingActivityRepository = new MarketScopingActivityRepository(context, sieveProcessor);
         marketScopingParameterSettingsRepository = new MarketScopingParameterSettingsRepository(context, sieveProcessor);
@@ -336,6 +338,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public ILineItemBudgetDetailRepository LineItemBudgetDetailRepository => lineItemBudgetDetailRepository;
     public ILIBAmendmentRequestRepository LIBAmendmentRequestRepository => libAmendmentRequestRepository;
     public IMarketScopingRepository MarketScopingRepository => marketScopingRepository;
+    public IMarketScopingHistoryRepository MarketScopingHistoryRepository => marketScopingHistoryRepository;
     public IMarketScopingParameterRepository MarketScopingParameterRepository => marketScopingParameterRepository;
     public IMarketScopingActivityRepository MarketScopingActivityRepository => marketScopingActivityRepository;
     public IMarketScopingParameterSettingsRepository MarketScopingParameterSettingsRepository => marketScopingParameterSettingsRepository;
