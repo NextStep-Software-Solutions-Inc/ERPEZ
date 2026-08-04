@@ -39,6 +39,7 @@ public interface IUnitOfWork
     ILineItemBudgetDetailRepository LineItemBudgetDetailRepository { get; }
     ILIBAmendmentRequestRepository LIBAmendmentRequestRepository { get; }
     IMarketScopingRepository MarketScopingRepository { get; }
+    IMarketScopingHistoryRepository MarketScopingHistoryRepository { get; }
     IMarketScopingParameterRepository MarketScopingParameterRepository { get; }
     IMarketScopingActivityRepository MarketScopingActivityRepository { get; }
     IMarketScopingParameterSettingsRepository MarketScopingParameterSettingsRepository { get; }

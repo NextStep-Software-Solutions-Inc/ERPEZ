@@ -25,6 +25,7 @@ public class ChangeMarketScopingStatusCommandHandler(IUnitOfWork unitOfWork)
 
         var previousStatus = marketScoping.Status;
         marketScoping.Status = newStatusEnum;
+        unitOfWork.MarketScopingRepository.Update(marketScoping);
 
         // Record status change in history
         var history = new MarketScopingHistory
@@ -39,8 +40,7 @@ public class ChangeMarketScopingStatusCommandHandler(IUnitOfWork unitOfWork)
             CreatedAt = DateTime.UtcNow,
         };
 
-        marketScoping.StatusHistory.Add(history);
-        unitOfWork.MarketScopingRepository.Update(marketScoping);
+        await unitOfWork.MarketScopingHistoryRepository.AddAsync(history, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return ApiResponse<Unit>.Success(Unit.Value, $"Market Scoping status updated to {request.Status} successfully.");
