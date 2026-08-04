@@ -22,9 +22,14 @@ public class MarketScopingRepository : Repository<MarketScoping>, IMarketScoping
     {
         return await dbContext.MarketScopings!
             .Include(x => x.User)
+                .ThenInclude(u => u.Office)
             .Include(x => x.TargetLineItemBudgetActivity)
             .Include(x => x.ActivitiesConducted)
+                .ThenInclude(a => a.ActivitySettings)
+            .Include(x => x.ActivitiesConducted)
                 .ThenInclude(a => a.Attachments)
+            .Include(x => x.ParameterEvaluations)
+                .ThenInclude(p => p.ParameterSettings)
             .Include(x => x.ParameterEvaluations)
                 .ThenInclude(p => p.Attachments)
             .Include(x => x.StatusHistory)

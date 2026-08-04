@@ -25,6 +25,10 @@ public class GetMarketScopingByIdQueryHandler(IUnitOfWork unitOfWork)
             DeliveryDate = marketScoping.DeliveryDate,
             TargetLineItemBudgetActivityId = marketScoping.TargetLineItemBudgetActivityId,
             Status = marketScoping.Status.ToString(),
+            AgencyName = marketScoping.User?.Office?.Organization?.Name ?? string.Empty,
+            DepartmentUnit = marketScoping.User?.Office?.Name ?? string.Empty,
+            RepresentativeName = marketScoping.User != null ? $"{marketScoping.User.FirstName} {marketScoping.User.LastName}" : string.Empty,
+            RepresentativeDesignation = marketScoping.User?.PersonnelPositions?.FirstOrDefault(pp => pp.IsActive)?.Position?.Title ?? string.Empty,
             CreatedAt = marketScoping.CreatedAt,
             CreatedBy = marketScoping.CreatedBy,
             UpdatedAt = marketScoping.UpdatedAt,
@@ -33,6 +37,9 @@ public class GetMarketScopingByIdQueryHandler(IUnitOfWork unitOfWork)
             {
                 Id = a.Id,
                 ActivityId = a.ActivityId,
+                ActivityType = a.ActivitySettings?.ActivityType ?? string.Empty,
+                Label = a.ActivitySettings?.Label ?? string.Empty,
+                Description = a.ActivitySettings?.Description ?? string.Empty,
                 Attachments = a.Attachments.Select(att => new MarketScopingActivityAttachmentResponse
                 {
                     Id = att.Id,
@@ -44,6 +51,9 @@ public class GetMarketScopingByIdQueryHandler(IUnitOfWork unitOfWork)
             {
                 Id = p.Id,
                 ParameterId = p.ParameterId,
+                ParameterName = p.ParameterSettings?.Name ?? string.Empty,
+                DisplayName = p.ParameterSettings?.Name ?? string.Empty,
+                GuidedQuestion = p.ParameterSettings?.GuidedQuestion ?? string.Empty,
                 IsConsidered = p.IsConsidered,
                 Remarks = p.Remarks,
                 Attachments = p.Attachments.Select(att => new MarketScopingParameterAttachmentResponse

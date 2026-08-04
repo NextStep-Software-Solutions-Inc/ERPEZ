@@ -78,6 +78,9 @@ public class UserRepository : Repository<User>, IUserRepository
     {
         return await dbContext.Users!
             .Include(u => u.Office)
+                .ThenInclude(o => o!.Organization)
+            .Include(u => u.PersonnelPositions)
+                .ThenInclude(pp => pp.Position)
             .FirstOrDefaultAsync(u => u.Id == id && !u.IsDeleted, cancellationToken);
     }
 }

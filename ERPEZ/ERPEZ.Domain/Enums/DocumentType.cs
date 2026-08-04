@@ -9,5 +9,6 @@ public enum DocumentType
     Wfp,
     Opcr,
     OpcrRating,
-    ConsolidatedOpcr
+    ConsolidatedOpcr,
+    MarketScoping
 }
