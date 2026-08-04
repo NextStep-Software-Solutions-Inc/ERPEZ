@@ -1,3 +1,4 @@
+using ERPEZ.Application.Interfaces;
 using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
@@ -7,7 +8,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Budgeting.MarketScoping.Commands.ApproveMarketScoping;
 
-public class ApproveMarketScopingCommandHandler(IUnitOfWork unitOfWork)
+public class ApproveMarketScopingCommandHandler(
+    IUnitOfWork unitOfWork,
+    IFileStorageService fileStorageService)
     : IRequestHandler<ApproveMarketScopingCommand, ApiResponse<Unit>>
 {
     public async Task<ApiResponse<Unit>> Handle(ApproveMarketScopingCommand command, CancellationToken cancellationToken)
@@ -18,6 +21,20 @@ public class ApproveMarketScopingCommandHandler(IUnitOfWork unitOfWork)
         if (marketScoping.Status != StatusEnum.Submitted)
         {
             throw new BadRequestException($"Cannot approve Market Scoping with status '{marketScoping.Status}'. Only Submitted forms can be approved.");
+        }
+
+        // Promote the signed document from temp to permanent storage if provided
+        if (command.Request?.SignedDocumentFileId.HasValue == true)
+        {
+            try
+            {
+                await fileStorageService.PromoteFileAsync(command.Request.SignedDocumentFileId.Value);
+                marketScoping.SignedDocumentFileId = command.Request.SignedDocumentFileId.Value;
+            }
+            catch (Exception ex)
+            {
+                return ApiResponse<Unit>.Fail($"Failed to attach signed document: {ex.Message}");
+            }
         }
 
         var previousStatus = marketScoping.Status;

@@ -35,6 +35,8 @@ public class MarketScoping : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public StatusEnum Status { get; set; } = StatusEnum.Draft;
 
+    public Guid? SignedDocumentFileId { get; set; }
+
     // Navigation properties
     public virtual User User { get; set; } = null!;
     public virtual LineItemBudgetActivity? TargetLineItemBudgetActivity { get; set; }

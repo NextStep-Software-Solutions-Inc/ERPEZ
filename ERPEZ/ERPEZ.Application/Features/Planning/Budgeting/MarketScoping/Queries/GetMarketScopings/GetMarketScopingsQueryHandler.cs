@@ -33,6 +33,7 @@ public class GetMarketScopingsQueryHandler(IUnitOfWork unitOfWork)
             DeliveryDate = ms.DeliveryDate,
             TargetLineItemBudgetActivityId = ms.TargetLineItemBudgetActivityId,
             Status = ms.Status.ToString(),
+            SignedDocumentFileId = ms.SignedDocumentFileId,
             AgencyName = ms.User?.Office?.Organization?.Name ?? string.Empty,
             DepartmentUnit = ms.User?.Office?.Name ?? string.Empty,
             RepresentativeName = ms.User != null ? $"{ms.User.FirstName} {ms.User.LastName}" : string.Empty,
