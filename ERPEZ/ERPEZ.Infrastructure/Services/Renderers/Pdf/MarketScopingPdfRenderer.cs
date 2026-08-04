@@ -27,8 +27,7 @@ internal sealed class MarketScopingPdfRenderer : BasePdfRenderer, IDocumentRende
                 page.Header().Column(col =>
                 {
                     col.Item().AlignCenter().Text("Agency Letterhead with Logo").Bold().FontSize(12);
-                    col.Item().PaddingTop(10).PaddingBottom(10).LineHorizontal(1).LineColor(Colors.Blue.Darken2);
-                    col.Item().AlignCenter().Text("MARKET SCOPING CHECKLIST").Bold().FontSize(12);
+                    col.Item().PaddingTop(10).AlignCenter().Text("MARKET SCOPING CHECKLIST").Bold().FontSize(12);
                     col.Item().PaddingTop(10).PaddingBottom(10).LineHorizontal(1).LineColor(Colors.Blue.Darken2);
                 });
 
@@ -79,16 +78,28 @@ internal sealed class MarketScopingPdfRenderer : BasePdfRenderer, IDocumentRende
                             c.RelativeColumn(2);
                         });
 
+                        const string checkmarkSvg = "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"black\" stroke-width=\"4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"20 6 9 17 4 12\"></polyline></svg>";
+
                         table.Header(h =>
                         {
-                            h.Cell().Element(TableHeaderCell).AlignCenter().Text("Check\n(✓)").Bold();
+                            h.Cell().Element(TableHeaderCell).AlignCenter().Text(t =>
+                            {
+                                t.Span("Check\n").Bold();
+                                t.Span("(✓)").Bold();
+                            });
                             h.Cell().Element(TableHeaderCell).AlignCenter().Text("Activity/ies Conducted").Bold();
                             h.Cell().Element(TableHeaderCell).AlignCenter().Text("Documentation\n(as may be applicable)").Bold();
                         });
 
                         foreach (var act in request.Activities)
                         {
-                            table.Cell().Element(TableDataCell).AlignCenter().AlignMiddle().Width(12).Height(12).Border(0.5f).BorderColor(Colors.Black).AlignCenter().AlignMiddle().Text(act.IsChecked ? "✓" : "").FontSize(9).Bold();
+                            table.Cell().Element(TableDataCell).AlignCenter().AlignMiddle().Width(12).Height(12).Border(0.5f).BorderColor(Colors.Black).Padding(1.5f).Element(c =>
+                            {
+                                if (act.IsChecked)
+                                {
+                                    c.Svg(checkmarkSvg);
+                                }
+                            });
                             table.Cell().Element(TableDataCell).Text(act.Description);
                             table.Cell().Element(TableDataCell).Text(act.Documentation);
                         }
