@@ -25,6 +25,7 @@ public class GetMarketScopingByIdQueryHandler(IUnitOfWork unitOfWork)
             DeliveryDate = marketScoping.DeliveryDate,
             TargetLineItemBudgetActivityId = marketScoping.TargetLineItemBudgetActivityId,
             Status = marketScoping.Status.ToString(),
+            SignedDocumentFileId = marketScoping.SignedDocumentFileId,
             AgencyName = marketScoping.User?.Office?.Organization?.Name ?? string.Empty,
             DepartmentUnit = marketScoping.User?.Office?.Name ?? string.Empty,
             RepresentativeName = marketScoping.User != null ? $"{marketScoping.User.FirstName} {marketScoping.User.LastName}" : string.Empty,

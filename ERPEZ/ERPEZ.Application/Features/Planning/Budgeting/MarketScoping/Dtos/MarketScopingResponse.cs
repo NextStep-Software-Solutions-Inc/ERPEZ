@@ -14,6 +14,7 @@ public record MarketScopingResponse
     public DateTime DeliveryDate { get; set; }
     public Guid? TargetLineItemBudgetActivityId { get; set; }
     public string Status { get; set; } = string.Empty;
+    public Guid? SignedDocumentFileId { get; set; }
     public string AgencyName { get; set; } = string.Empty;
     public string DepartmentUnit { get; set; } = string.Empty;
     public string RepresentativeName { get; set; } = string.Empty;

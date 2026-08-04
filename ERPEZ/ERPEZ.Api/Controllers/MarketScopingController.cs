@@ -112,9 +112,9 @@ public class MarketScopingController(ISender mediator) : ControllerBase
     [HttpPost("{id}/approve")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> ApproveMarketScoping(Guid id)
+    public async Task<IActionResult> ApproveMarketScoping(Guid id, [FromBody] ApproveMarketScopingRequest? request)
     {
-        var command = new ApproveMarketScopingCommand(id);
+        var command = new ApproveMarketScopingCommand { Id = id, Request = request };
         var result = await mediator.Send(command);
         return !result.Succeeded ? BadRequest(result) : Ok(result);
     }
