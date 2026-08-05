@@ -34,7 +34,7 @@ internal abstract class BasePdfRenderer
                 row.RelativeItem().Column(sc =>
                 {
                     sc.Item().Text(sig.Label).Bold().FontSize(9);
-                    sc.Item().PaddingTop(24).BorderBottom(1).BorderColor(Colors.Black).Text("");
+                    sc.Item().PaddingTop(24).MaxWidth(160).BorderBottom(1).BorderColor(Colors.Black).Text("");
                     sc.Item().Text("Signature over Printed Name").FontSize(7).Italic();
                     sc.Item().Text(sig.PrintedName).Bold().FontSize(9);
                     sc.Item().Text(sig.Position).FontSize(8);
