@@ -8,6 +8,7 @@ public interface IFileStorageService
     Task<(string Url, string OriginalFileName)> PromoteFileAsync(Guid fileId, CancellationToken cancellationToken = default);
     Task DeleteExpiredTempFilesAsync(TimeSpan retentionPeriod, CancellationToken cancellationToken = default);
     Task<bool> MigrateFileAsync(Guid fileId, StorageProviderEnum fromProvider, StorageProviderEnum toProvider, CancellationToken cancellationToken = default);
+    Task<(string fileName, Stream stream)?> GetFileAsync(Guid fileId, CancellationToken cancellationToken = default);
     Task<(string fileName, Stream stream)?> GetPermanentFileAsync(Guid fileId, CancellationToken cancellationToken = default);
     Task UploadPermanentAsync(string fileName, Stream stream, CancellationToken cancellationToken = default);
     Task DeletePermanentAsync(Guid fileId, CancellationToken cancellationToken = default);
