@@ -40,17 +40,19 @@ internal sealed class PpmpPdfRenderer : BasePdfRenderer, IDocumentRenderer<PpmpD
                     });
 
                     // Indicative / Final checkboxes using Unicode box characters
+                    const string checkmarkSvg = "<svg viewBox=\"0 0 24 24\" fill=\"none\" stroke=\"black\" stroke-width=\"4\" stroke-linecap=\"round\" stroke-linejoin=\"round\"><polyline points=\"20 6 9 17 4 12\"></polyline></svg>";
+
                     h.Item().PaddingTop(3).AlignCenter().Row(r =>
                     {
-                        r.AutoItem().Border(1).Width(10).Height(10)
-                            .AlignCenter().AlignMiddle()
-                            .Text(!request.IsFinal ? "✓" : " ")
-                            .FontSize(7).FontColor(Colors.Black).FontFamily("Arial Unicode MS");
+                        r.AutoItem().Border(1).Width(10).Height(10).Padding(1.5f).Element(c =>
+                        {
+                            if (!request.IsFinal) c.Svg(checkmarkSvg);
+                        });
                         r.AutoItem().PaddingLeft(3).Text("INDICATIVE").FontSize(9);
-                        r.AutoItem().PaddingLeft(10).Border(1).Width(10).Height(10)
-                            .AlignCenter().AlignMiddle()
-                            .Text(request.IsFinal ? "✓" : " ")
-                            .FontSize(7).FontColor(Colors.Black).FontFamily("Arial Unicode MS");
+                        r.AutoItem().PaddingLeft(10).Border(1).Width(10).Height(10).Padding(1.5f).Element(c =>
+                        {
+                            if (request.IsFinal) c.Svg(checkmarkSvg);
+                        });
                         r.AutoItem().PaddingLeft(3).Text("FINAL").FontSize(9);
                     });
 
