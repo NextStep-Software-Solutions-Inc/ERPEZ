@@ -1,3 +1,4 @@
+using ERPEZ.Application.Interfaces;
 using ERPEZ.Application.Features.Planning.Budgeting.MarketScoping.Dtos;
 using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Domain.Interfaces;
@@ -7,7 +8,9 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.Budgeting.MarketScoping.Commands.CreateMarketScoping;
 
-public class CreateMarketScopingCommandHandler(IUnitOfWork unitOfWork)
+public class CreateMarketScopingCommandHandler(
+    IUnitOfWork unitOfWork,
+    IFileStorageService fileStorageService)
     : IRequestHandler<CreateMarketScopingCommand, ApiResponse<Guid>>
 {
     public async Task<ApiResponse<Guid>> Handle(CreateMarketScopingCommand command, CancellationToken cancellationToken)
@@ -48,14 +51,28 @@ public class CreateMarketScopingCommandHandler(IUnitOfWork unitOfWork)
                 CreatedAt = DateTime.UtcNow,
             };
 
-            // Add attachments to activity
+            // Add attachments to activity and promote files from temp storage
             foreach (var attachmentDto in activityDto.Attachments)
             {
+                var fileUrl = attachmentDto.FileUrl;
+                if (Guid.TryParse(attachmentDto.FileUrl, out var fileId))
+                {
+                    try
+                    {
+                        await fileStorageService.PromoteFileAsync(fileId);
+                    }
+                    catch
+                    {
+                        // Ignore if file doesn't exist in temp storage or is already promoted
+                    }
+                    fileUrl = $"/files/download/{fileId}";
+                }
+
                 activity.Attachments.Add(new MarketScopingActivityAttachment
                 {
                     Id = Guid.NewGuid(),
                     MarketScopingActivityId = activity.Id,
-                    FileUrl = attachmentDto.FileUrl,
+                    FileUrl = fileUrl,
                     FileName = attachmentDto.FileName,
                     CreatedAt = DateTime.UtcNow,
                 });
@@ -78,14 +95,28 @@ public class CreateMarketScopingCommandHandler(IUnitOfWork unitOfWork)
                 CreatedAt = DateTime.UtcNow,
             };
 
-            // Add attachments to parameter
+            // Add attachments to parameter and promote files from temp storage
             foreach (var attachmentDto in parameterDto.Attachments)
             {
+                var fileUrl = attachmentDto.FileUrl;
+                if (Guid.TryParse(attachmentDto.FileUrl, out var fileId))
+                {
+                    try
+                    {
+                        await fileStorageService.PromoteFileAsync(fileId);
+                    }
+                    catch
+                    {
+                        // Ignore if file doesn't exist in temp storage or is already promoted
+                    }
+                    fileUrl = $"/files/download/{fileId}";
+                }
+
                 parameter.Attachments.Add(new MarketScopingParameterAttachment
                 {
                     Id = Guid.NewGuid(),
                     MarketScopingParameterId = parameter.Id,
-                    FileUrl = attachmentDto.FileUrl,
+                    FileUrl = fileUrl,
                     FileName = attachmentDto.FileName,
                     CreatedAt = DateTime.UtcNow,
                 });

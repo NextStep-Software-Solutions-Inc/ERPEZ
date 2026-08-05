@@ -61,7 +61,19 @@ public class AzureBlobStorageService : IFileStorageService
                 ? blobName[prefix.Length..]
                 : blobName;
 
-            return ($"{permanentContainerClient.Uri}/{blobName}", originalFileName);
+            return ($"/files/download/{fileId}", originalFileName);
+        }
+
+        // Check if file is already promoted in permanent container
+        var permanentBlobs = permanentContainerClient.GetBlobsAsync(prefix: fileId.ToString(), cancellationToken: cancellationToken);
+        await foreach (var blobItem in permanentBlobs.WithCancellation(cancellationToken))
+        {
+            var prefix = $"{fileId}_";
+            var originalFileName = blobItem.Name.StartsWith(prefix, StringComparison.Ordinal)
+                ? blobItem.Name[prefix.Length..]
+                : blobItem.Name;
+
+            return ($"/files/download/{fileId}", originalFileName);
         }
 
         throw new FileNotFoundException($"Temp blob with ID {fileId} not found.");
@@ -89,6 +101,23 @@ public class AzureBlobStorageService : IFileStorageService
         // Azure storage doesn't support migration to other providers
         // Migration should be handled by FallbackFileStorageService
         return Task.FromResult(false);
+    }
+
+    public async Task<(string fileName, Stream stream)?> GetFileAsync(Guid fileId, CancellationToken cancellationToken = default)
+    {
+        var permanentResult = await GetPermanentFileAsync(fileId, cancellationToken);
+        if (permanentResult != null) return permanentResult;
+
+        var containerClient = blobServiceClient.GetBlobContainerClient(tempContainer);
+        var blobs = containerClient.GetBlobsAsync(prefix: fileId.ToString(), cancellationToken: cancellationToken);
+        await foreach (var blobItem in blobs.WithCancellation(cancellationToken))
+        {
+            var blobClient = containerClient.GetBlobClient(blobItem.Name);
+            var downloadResponse = await blobClient.DownloadAsync(cancellationToken);
+            return (blobItem.Name, downloadResponse.Value.Content);
+        }
+
+        return null;
     }
 
     public async Task<(string fileName, Stream stream)?> GetPermanentFileAsync(Guid fileId, CancellationToken cancellationToken = default)
