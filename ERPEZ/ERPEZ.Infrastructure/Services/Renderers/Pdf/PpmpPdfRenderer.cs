@@ -40,12 +40,19 @@ internal sealed class PpmpPdfRenderer : BasePdfRenderer, IDocumentRenderer<PpmpD
                     });
 
                     // Indicative / Final checkboxes using Unicode box characters
-                    var indicativeBox = !request.IsFinal ? "☑" : "☐";
-                    var finalBox      =  request.IsFinal ? "☑" : "☐";
-
-                    h.Item().PaddingTop(3).AlignCenter()
-                        .Text($"{indicativeBox} INDICATIVE     {finalBox} FINAL")
-                        .FontSize(9);
+                    h.Item().PaddingTop(3).AlignCenter().Row(r =>
+                    {
+                        r.AutoItem().Border(1).Width(10).Height(10)
+                            .AlignCenter().AlignMiddle()
+                            .Text(!request.IsFinal ? "✓" : " ")
+                            .FontSize(7).FontColor(Colors.Black).FontFamily("Arial Unicode MS");
+                        r.AutoItem().PaddingLeft(3).Text("INDICATIVE").FontSize(9);
+                        r.AutoItem().PaddingLeft(10).Border(1).Width(10).Height(10)
+                            .AlignCenter().AlignMiddle()
+                            .Text(request.IsFinal ? "✓" : " ")
+                            .FontSize(7).FontColor(Colors.Black).FontFamily("Arial Unicode MS");
+                        r.AutoItem().PaddingLeft(3).Text("FINAL").FontSize(9);
+                    });
 
                     h.Item().PaddingTop(6).Text($"Fiscal Year: {request.FiscalYear}").Bold().FontSize(8);
                     h.Item().PaddingTop(2).Text($"End-User or Implementing Unit: {request.EndUserUnit}").Bold().FontSize(8);
