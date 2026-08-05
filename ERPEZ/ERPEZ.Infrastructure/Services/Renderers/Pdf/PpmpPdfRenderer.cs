@@ -33,8 +33,11 @@ internal sealed class PpmpPdfRenderer : BasePdfRenderer, IDocumentRenderer<PpmpD
                         .Bold().FontSize(9).Italic();
 
                     h.Item().PaddingTop(4).AlignCenter()
-                        .Text($"PROJECT PROCUREMENT MANAGEMENT PLAN (PPMP) NO. {request.PpmpNumber}")
-                        .Bold().FontSize(11);
+                        .Text(t =>
+                    {
+                        t.Span("PROJECT PROCUREMENT MANAGEMENT PLAN (PPMP) NO. ").Bold().FontSize(11);
+                        t.Span(request.PpmpNumber).Bold().FontSize(11).Underline();
+                    });
 
                     // Indicative / Final checkboxes using Unicode box characters
                     var indicativeBox = !request.IsFinal ? "☑" : "☐";
@@ -44,15 +47,8 @@ internal sealed class PpmpPdfRenderer : BasePdfRenderer, IDocumentRenderer<PpmpD
                         .Text($"{indicativeBox} INDICATIVE     {finalBox} FINAL")
                         .FontSize(9);
 
-                    h.Item().PaddingTop(6).Row(r =>
-                    {
-                        r.RelativeItem()
-                            .Text($"Fiscal Year: {request.FiscalYear}")
-                            .Bold().FontSize(8);
-                        r.RelativeItem()
-                            .Text($"End-User or Implementing Unit: {request.EndUserUnit}")
-                            .Bold().FontSize(8);
-                    });
+                    h.Item().PaddingTop(6).Text($"Fiscal Year: {request.FiscalYear}").Bold().FontSize(8);
+                    h.Item().PaddingTop(2).Text($"End-User or Implementing Unit: {request.EndUserUnit}").Bold().FontSize(8);
                 });
 
                 // ── Content ────────────────────────────────────────────────
@@ -92,11 +88,11 @@ internal sealed class PpmpPdfRenderer : BasePdfRenderer, IDocumentRenderer<PpmpD
                                 .AlignCenter().AlignMiddle()
                                 .Text("FUNDING DETAILS").Bold().FontSize(7);
 
-                            h.Cell().Element(TableHeaderCell)
+                            h.Cell().RowSpan(2).Element(TableHeaderCell)
                                 .AlignCenter().AlignMiddle()
                                 .Text("ATTACHED\nSUPPORTING\nDOCUMENTS").Bold().FontSize(7);
 
-                            h.Cell().Element(TableHeaderCell)
+                            h.Cell().RowSpan(2).Element(TableHeaderCell)
                                 .AlignCenter().AlignMiddle()
                                 .Text("REMARKS").Bold().FontSize(7);
 
@@ -105,16 +101,16 @@ internal sealed class PpmpPdfRenderer : BasePdfRenderer, IDocumentRenderer<PpmpD
                                 .Text("General Description and Objective\nof the Project to be Procured")
                                 .Bold().FontSize(6);
                             h.Cell().Element(TableHeaderCell).AlignCenter()
-                                .Text("Type of the Project\n(Goods / Infrastructure /\nConsulting Services)")
+                                .Text("Type of the Project\n(whether Goods,\nInfrastructure and\nConsulting Services)")
                                 .Bold().FontSize(6);
                             h.Cell().Element(TableHeaderCell).AlignCenter()
-                                .Text("Quantity and Size\nof the Project")
+                                .Text("Quantity and Size of the\nProject to be Procured")
                                 .Bold().FontSize(6);
                             h.Cell().Element(TableHeaderCell).AlignCenter()
                                 .Text("Recommended\nMode of Procurement")
                                 .Bold().FontSize(6);
                             h.Cell().Element(TableHeaderCell).AlignCenter()
-                                .Text("Pre-Procurement\nConference\n(Yes/No)")
+                                .Text("Pre-Procurement\nConference, if\napplicable (Yes/No)")
                                 .Bold().FontSize(6);
                             h.Cell().Element(TableHeaderCell).AlignCenter()
                                 .Text("Start of\nProcurement\nActivity")
@@ -130,12 +126,6 @@ internal sealed class PpmpPdfRenderer : BasePdfRenderer, IDocumentRenderer<PpmpD
                                 .Bold().FontSize(6);
                             h.Cell().Element(TableHeaderCell).AlignCenter()
                                 .Text("Estimated Budget /\nAuthorized Budgetary\nAllocation (PhP)")
-                                .Bold().FontSize(6);
-                            h.Cell().Element(TableHeaderCell).AlignCenter()
-                                .Text("Attached\nSupporting\nDocuments")
-                                .Bold().FontSize(6);
-                            h.Cell().Element(TableHeaderCell).AlignCenter()
-                                .Text("Remarks")
                                 .Bold().FontSize(6);
 
                             // ── Row 3: Column numbers (matches official NGPA form) ────

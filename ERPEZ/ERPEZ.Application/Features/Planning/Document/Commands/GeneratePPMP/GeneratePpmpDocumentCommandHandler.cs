@@ -197,6 +197,14 @@ public class GeneratePpmpDocumentCommandHandler(
                 Position    = ppmp.Office?.Name   ?? string.Empty,
                 Designation = "End-User or Implementing Unit",
                 Date        = preparer?.Timestamp
+                        },
+            new SignatoryDto
+            {
+                Label       = "Funds Available:",
+                PrintedName = string.Empty, // populated from finance approval event if available
+                Position    = string.Empty,
+                Designation = "Director, Financial Management Services",
+                Date        = null
             },
             new SignatoryDto
             {
