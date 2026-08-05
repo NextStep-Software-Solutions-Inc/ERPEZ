@@ -17,6 +17,8 @@ public record PPMPResponse
     public Guid? LIBId { get; init; }
     public string? LIBName { get; init; }
     public Guid? ParentId { get; init; }
+    public bool IsMaster { get; init; }
+    public string? Description { get; init; }
     public int Version { get; init; }
     public decimal TotalEstimatedBudget { get; init; }
     public string Status { get; init; } = string.Empty;

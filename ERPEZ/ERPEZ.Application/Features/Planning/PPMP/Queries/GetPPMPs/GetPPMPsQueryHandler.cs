@@ -22,8 +22,8 @@ public class GetPPMPsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<GetP
 
         return new PaginatedApiResponse<PPMPDetailedResponse>(
             entities.Select(PPMPQueryProjection.BuildDetailedResponse).ToList(),
-            totalCount,
             query.PageNumber,
-            query.PageSize);
+            query.PageSize,
+            totalCount);
     }
 }

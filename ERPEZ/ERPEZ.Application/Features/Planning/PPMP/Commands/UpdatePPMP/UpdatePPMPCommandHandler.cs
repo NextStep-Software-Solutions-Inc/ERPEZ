@@ -62,6 +62,7 @@ public class UpdatePPMPCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<
 
             // Update PPMP properties
             ppmp.PPMPNumber = request.Dto.PPMPNumber ?? ppmp.PPMPNumber;
+            ppmp.Description = request.Dto.Description ?? ppmp.Description;
             ppmp.OfficeId = request.Dto.OfficeId ?? ppmp.OfficeId;
             ppmp.FiscalYearId = request.Dto.FiscalYearId ?? ppmp.FiscalYearId;
             ppmp.FundSourceId = request.Dto.FundSourceId ?? ppmp.FundSourceId;
