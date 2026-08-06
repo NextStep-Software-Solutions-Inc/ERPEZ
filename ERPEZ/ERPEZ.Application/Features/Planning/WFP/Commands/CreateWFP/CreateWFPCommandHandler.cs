@@ -22,6 +22,13 @@ public class CreateWFPCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<C
             x => x.Id == request.OfficeId,
             cancellationToken) ?? throw new NotFoundException("Office not found.");
 
+        if (request.FundSourceId.HasValue)
+        {
+            _ = await unitOfWork.FundSourceRepository.FindAsync(
+                x => x.Id == request.FundSourceId.Value,
+                cancellationToken) ?? throw new NotFoundException("Selected Fund Source not found in database.");
+        }
+
         var duplicate = await unitOfWork.WFPRepository.FindAsync(w => w.ProjectTitle == request.ProjectTitle
             && w.OfficeId == request.OfficeId
             && w.Mode == request.Mode,
@@ -38,7 +45,7 @@ public class CreateWFPCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<C
                 throw new BadRequestException("OPCR ID is required when Mode is set to OPCR.");
 
             sourceOpcr = await unitOfWork.OPCRRepository.GetOPCRWithDetailsAsync(request.OPCRId.Value, cancellationToken)
-                ?? throw new NotFoundException("Source OPCR not found.");
+                ?? throw new NotFoundException("Selected Source OPCR not found in database.");
         }
 
         var wfpId = Guid.Empty;
