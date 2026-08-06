@@ -19,19 +19,24 @@ public class CreateWFPCommandHandler(IUnitOfWork unitOfWork, ICurrentUserService
 {
     public async Task<ApiResponse<Guid>> Handle(CreateWFPCommand request, CancellationToken cancellationToken)
     {
-        _ = await unitOfWork.OfficeRepository.FindAsync(
-            x => x.Id == request.OfficeId,
-            cancellationToken) ?? throw new NotFoundException("Office not found.");
+        // Sanitize Foreign Key GUIDs (convert Guid.Empty to null)
+        var officeId = request.OfficeId;
+        var opcrId = (request.OPCRId.HasValue && request.OPCRId.Value != Guid.Empty) ? request.OPCRId.Value : (Guid?)null;
+        var fundSourceId = (request.FundSourceId.HasValue && request.FundSourceId.Value != Guid.Empty) ? request.FundSourceId.Value : (Guid?)null;
 
-        if (request.FundSourceId.HasValue)
+        _ = await unitOfWork.OfficeRepository.FindAsync(
+            x => x.Id == officeId,
+            cancellationToken) ?? throw new NotFoundException($"Office with ID '{officeId}' not found in database.");
+
+        if (fundSourceId.HasValue)
         {
             _ = await unitOfWork.FundSourceRepository.FindAsync(
-                x => x.Id == request.FundSourceId.Value,
-                cancellationToken) ?? throw new NotFoundException("Selected Fund Source not found in database.");
+                x => x.Id == fundSourceId.Value,
+                cancellationToken) ?? throw new NotFoundException($"Selected Fund Source with ID '{fundSourceId.Value}' not found in database.");
         }
 
         var duplicate = await unitOfWork.WFPRepository.FindAsync(w => w.ProjectTitle == request.ProjectTitle
-            && w.OfficeId == request.OfficeId
+            && w.OfficeId == officeId
             && w.Mode == request.Mode,
             cancellationToken
         );
@@ -42,11 +47,11 @@ public class CreateWFPCommandHandler(IUnitOfWork unitOfWork, ICurrentUserService
         OpcrEntity? sourceOpcr = null;
         if (request.Mode == ModeEnum.OPCR)
         {
-            if (!request.OPCRId.HasValue)
+            if (!opcrId.HasValue)
                 throw new BadRequestException("OPCR ID is required when Mode is set to OPCR.");
 
-            sourceOpcr = await unitOfWork.OPCRRepository.GetOPCRWithDetailsAsync(request.OPCRId.Value, cancellationToken)
-                ?? throw new NotFoundException("Selected Source OPCR not found in database.");
+            sourceOpcr = await unitOfWork.OPCRRepository.GetOPCRWithDetailsAsync(opcrId.Value, cancellationToken)
+                ?? throw new NotFoundException($"Selected Source OPCR with ID '{opcrId.Value}' not found in database.");
         }
 
         var wfpId = Guid.Empty;
@@ -57,11 +62,11 @@ public class CreateWFPCommandHandler(IUnitOfWork unitOfWork, ICurrentUserService
         {
             var wfp = new WfpEntity
             {
-                OfficeId = request.OfficeId,
+                OfficeId = officeId,
                 ProjectTitle = request.ProjectTitle,
                 ProjectOwner = request.ProjectOwner,
-                OPCRId = request.OPCRId,
-                FundSourceId = request.FundSourceId,
+                OPCRId = opcrId,
+                FundSourceId = fundSourceId,
                 ProjectStartDate = request.ProjectStartDate,
                 ProjectEndDate = request.ProjectEndDate,
                 ProposedBudget = request.ProposedBudget ?? 0m,
@@ -110,11 +115,15 @@ public class CreateWFPCommandHandler(IUnitOfWork unitOfWork, ICurrentUserService
                     {
                         foreach (var activity in opcrItem.OPCRActivities)
                         {
+                            // Verify OPCRActivity exists in DB to prevent foreign key violation
+                            var opcrActivityExists = activity.Id != Guid.Empty &&
+                                (await unitOfWork.OPCRActivityRepository.FindAsync(a => a.Id == activity.Id, cancellationToken)) != null;
+
                             var wfpActivity = new WfpObjectiveActivityEntity
                             {
                                 WFPId = wfp.Id,
                                 WFPObjectiveId = wfpObjective.Id,
-                                OPCRActivityId = activity.Id,
+                                OPCRActivityId = opcrActivityExists ? activity.Id : null,
                                 ActivityName = string.IsNullOrWhiteSpace(activity.Name) ? "OPCR Activity" : activity.Name,
                                 Indicator = string.IsNullOrWhiteSpace(activity.Description) ? activity.Name : activity.Description,
                                 Weight = 0m,
