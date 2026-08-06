@@ -68,7 +68,7 @@ public class CreatePPMPExpenditureItemCommandHandler(IUnitOfWork unitOfWork)
             Id = Guid.NewGuid(),
             PPMPId = request.PPMPId,
             PPMPActivityId = request.PPMPActivityId,
-            LineItemBudgetDetailId = request.LineItemBudgetDetailId,
+            LineItemBudgetDetailId = request.LineItemBudgetDetailId.Value,
             IsProcurable = request.IsProcurable,
             TotalCost = 0, // computed from PPMPItemAllocations, not user input
         };

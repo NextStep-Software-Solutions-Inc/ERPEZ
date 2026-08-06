@@ -19,7 +19,7 @@ public class PPMPExpenditureItem : BaseEntity
 
     // ← add this — links to the specific object code budget under this activity
     [Sieve(CanFilter = true, CanSort = true)]
-    public Guid? LineItemBudgetDetailId { get; set; }
+    public Guid LineItemBudgetDetailId { get; set; }
     
     [Sieve(CanFilter = true, CanSort = true)]
     public bool IsProcurable { get; set; }

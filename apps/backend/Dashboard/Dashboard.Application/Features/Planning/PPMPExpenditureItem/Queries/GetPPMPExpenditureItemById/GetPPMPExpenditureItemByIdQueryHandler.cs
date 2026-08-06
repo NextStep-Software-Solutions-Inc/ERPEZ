@@ -21,7 +21,7 @@ public class GetPPMPExpenditureItemByIdQueryHandler(IUnitOfWork unitOfWork)
                     TotalCost = item.TotalCost,
                     CreatedAt = item.CreatedAt,
                     CreatedBy = item.CreatedBy,
-                    PPMPActivityName = item.PPMPActivity.LIBActivity.Name
+                    PPMPActivityName = item.PPMPActivity != null ? item.PPMPActivity.LIBActivity.Name : null // ← fix
                 }),
             cancellationToken);
 

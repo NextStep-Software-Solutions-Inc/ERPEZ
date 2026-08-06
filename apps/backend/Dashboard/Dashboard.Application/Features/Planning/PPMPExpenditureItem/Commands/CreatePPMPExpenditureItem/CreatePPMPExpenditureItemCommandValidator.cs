@@ -6,12 +6,8 @@ public class CreatePPMPExpenditureItemCommandValidator : AbstractValidator<Creat
 {
     public CreatePPMPExpenditureItemCommandValidator()
     {
-        RuleFor(x => x.PPMPActivityId)
+        RuleFor(x => x.PPMPId)
             .NotEmpty()
-            .WithMessage("PPMP Activity ID is required.");
-
-        RuleFor(x => x.TotalCost)
-            .GreaterThanOrEqualTo(0)
-            .WithMessage("Total Cost must be greater than or equal to 0.");
+            .WithMessage("PPMP ID is required.");
     }
 }

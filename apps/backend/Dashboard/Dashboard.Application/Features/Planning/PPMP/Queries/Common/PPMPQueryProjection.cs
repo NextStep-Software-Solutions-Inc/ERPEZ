@@ -116,6 +116,9 @@ internal static class PPMPQueryProjection
 
     internal static PPMPItemAllocationResponse BuildAllocationResponse(PPMPAllocationEntity allocation)
     {
+        var ppmp = allocation.PPMPItem?.PPMPExpenditureItem?.PPMPActivity?.PPMP
+                ?? allocation.PPMPItem?.PPMPExpenditureItem?.PPMP; // ← fallback to direct PPMP
+
         return new PPMPItemAllocationResponse
         {
             Id = allocation.Id,
@@ -125,10 +128,7 @@ internal static class PPMPQueryProjection
             Amount = allocation.Amount,
             CreatedAt = allocation.CreatedAt,
             CreatedBy = allocation.CreatedBy,
-            PPMPItem = BuildItemWithoutAllocations(allocation.PPMPItem),
-            PPMP = allocation.PPMPItem?.PPMPExpenditureItem?.PPMPActivity?.PPMP == null
-                ? null
-                : BuildSummaryResponse(allocation.PPMPItem.PPMPExpenditureItem.PPMPActivity.PPMP, false)
+            PPMPItem = allocation.PPMPItem == null ? null : BuildItemWithoutAllocations(allocation.PPMPItem),            PPMP = ppmp == null ? null : BuildSummaryResponse(ppmp, false)
         };
     }
 
@@ -269,10 +269,19 @@ internal static class PPMPQueryProjection
 
     private static List<PPMPItemEntity> GetPPMPItems(PPMPEntity ppmp)
     {
-        return ppmp.PPMPActivities
+        // Activity-based items
+        var activityItems = ppmp.PPMPActivities
             .Where(activity => !activity.IsDeleted)
-            .SelectMany(activity => activity.PPMPExpenditureItems.Where(expenditureItem => !expenditureItem.IsDeleted))
-            .SelectMany(expenditureItem => expenditureItem.PPMPItems.Where(item => !item.IsDeleted))
+            .SelectMany(activity => activity.PPMPExpenditureItems.Where(ei => !ei.IsDeleted))
+            .SelectMany(ei => ei.PPMPItems.Where(item => !item.IsDeleted))
             .ToList();
+
+        // Project-level items (no activity)
+        var projectItems = ppmp.PPMPExpenditureItems?
+            .Where(ei => !ei.IsDeleted && ei.PPMPActivityId == null)
+            .SelectMany(ei => ei.PPMPItems.Where(item => !item.IsDeleted))
+            .ToList() ?? [];
+
+        return activityItems.Concat(projectItems).ToList();
     }
 }
