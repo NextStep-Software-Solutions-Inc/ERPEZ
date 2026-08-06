@@ -5,7 +5,8 @@ namespace ERPEZ.Application.Features.Planning.PPMPExpenditureItem.Commands.Creat
 
 public record CreatePPMPExpenditureItemCommand : IRequest<ApiResponse<Guid>>
 {
-    public Guid PPMPActivityId { get; init; }
+    public Guid PPMPId { get; init; }
+    public Guid? PPMPActivityId { get; init; }
+    public Guid? LineItemBudgetDetailId { get; init; }
     public bool IsProcurable { get; init; }
-    public decimal TotalCost { get; init; }
 }

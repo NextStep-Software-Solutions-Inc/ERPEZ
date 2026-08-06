@@ -68,4 +68,5 @@ public class LineItemBudgetDetail : BaseEntity
     public virtual WFPObjectiveActivityExpenditure? WFPObjectiveActivityExpenditure { get; set; }
     public virtual PlanningObject Object { get; set; } = null!;
     public virtual List<PPMPItem> PPMPItems { get; set; } = [];
+    public virtual List<PPMPExpenditureItem> PPMPExpenditureItems { get; set; } = [];
 }

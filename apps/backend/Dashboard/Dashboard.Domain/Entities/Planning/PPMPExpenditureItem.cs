@@ -10,9 +10,16 @@ namespace ERPEZ.Domain.Entities.Planning;
 public class PPMPExpenditureItem : BaseEntity
 {
     public PPMPExpenditureItem() { }
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public Guid PPMPId { get; set; } // ← add this
     
     [Sieve(CanFilter = true, CanSort = true)]
-    public Guid PPMPActivityId { get; set; }
+    public Guid? PPMPActivityId { get; set; }
+
+    // ← add this — links to the specific object code budget under this activity
+    [Sieve(CanFilter = true, CanSort = true)]
+    public Guid? LineItemBudgetDetailId { get; set; }
     
     [Sieve(CanFilter = true, CanSort = true)]
     public bool IsProcurable { get; set; }
@@ -21,6 +28,8 @@ public class PPMPExpenditureItem : BaseEntity
     public decimal TotalCost { get; set; }
     
     // Navigation properties
-    public virtual PPMPActivity PPMPActivity { get; set; } = null!;
+    public virtual PPMP PPMP { get; set; } = null!;
+    public virtual PPMPActivity? PPMPActivity { get; set; } = null!;
     public virtual List<PPMPItem> PPMPItems { get; set; } = [];
+    public virtual LineItemBudgetDetail? LineItemBudgetDetail { get; set; } = null!;
 }
