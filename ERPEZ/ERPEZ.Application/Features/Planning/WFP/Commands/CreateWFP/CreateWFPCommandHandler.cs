@@ -3,6 +3,7 @@ using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
+using ERPEZ.Shared.Interfaces;
 using MediatR;
 
 using OpcrEntity = ERPEZ.Domain.Entities.Planning.OPCR;
@@ -14,7 +15,7 @@ using WfpObjectiveActivityExpenditureEntity = ERPEZ.Domain.Entities.Planning.WFP
 
 namespace ERPEZ.Application.Features.Planning.WFP.Commands.CreateWFP;
 
-public class CreateWFPCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<CreateWFPCommand, ApiResponse<Guid>>
+public class CreateWFPCommandHandler(IUnitOfWork unitOfWork, ICurrentUserService currentUserService) : IRequestHandler<CreateWFPCommand, ApiResponse<Guid>>
 {
     public async Task<ApiResponse<Guid>> Handle(CreateWFPCommand request, CancellationToken cancellationToken)
     {
@@ -49,6 +50,8 @@ public class CreateWFPCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<C
         }
 
         var wfpId = Guid.Empty;
+        var currentUserId = string.IsNullOrWhiteSpace(currentUserService.UserId) ? "system" : currentUserService.UserId;
+        var now = DateTime.UtcNow;
 
         await unitOfWork.ExecuteInTransactionAsync(async () =>
         {
@@ -65,6 +68,8 @@ public class CreateWFPCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<C
                 GeneralObjective = request.GeneralObjective,
                 Mode = request.Mode,
                 Status = StatusEnum.Draft,
+                CreatedAt = now,
+                CreatedBy = currentUserId,
             };
 
             await unitOfWork.WFPRepository.AddAsync(wfp, cancellationToken);
@@ -87,7 +92,9 @@ public class CreateWFPCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<C
                     {
                         WFPId = wfp.Id,
                         Description = objectiveName,
-                        Weight = 0m
+                        Weight = 0m,
+                        CreatedAt = now,
+                        CreatedBy = currentUserId,
                     };
 
                     await unitOfWork.WFPObjectiveRepository.AddAsync(wfpObjective, cancellationToken);
@@ -110,7 +117,9 @@ public class CreateWFPCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<C
                                 OPCRActivityId = activity.Id,
                                 ActivityName = string.IsNullOrWhiteSpace(activity.Name) ? "OPCR Activity" : activity.Name,
                                 Indicator = string.IsNullOrWhiteSpace(activity.Description) ? activity.Name : activity.Description,
-                                Weight = 0m
+                                Weight = 0m,
+                                CreatedAt = now,
+                                CreatedBy = currentUserId,
                             };
 
                             await unitOfWork.WFPObjectiveActivityRepository.AddAsync(wfpActivity, cancellationToken);
@@ -119,10 +128,10 @@ public class CreateWFPCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<C
                             // Create quarterly timeline target distributions (Q1-Q4) using KPIAssignment/OPCRItem values
                             var timelines = new List<WfpObjectiveTimelineEntity>
                             {
-                                new() { WFPObjectiveActivityId = wfpActivity.Id, TimelineType = TimelineTypeEnum.Quarterly, StartDate = new DateOnly(year, 1, 1), EndDate = new DateOnly(year, 3, 31), TargetValue = q1Val },
-                                new() { WFPObjectiveActivityId = wfpActivity.Id, TimelineType = TimelineTypeEnum.Quarterly, StartDate = new DateOnly(year, 4, 1), EndDate = new DateOnly(year, 6, 30), TargetValue = q2Val },
-                                new() { WFPObjectiveActivityId = wfpActivity.Id, TimelineType = TimelineTypeEnum.Quarterly, StartDate = new DateOnly(year, 7, 1), EndDate = new DateOnly(year, 9, 30), TargetValue = q3Val },
-                                new() { WFPObjectiveActivityId = wfpActivity.Id, TimelineType = TimelineTypeEnum.Quarterly, StartDate = new DateOnly(year, 10, 1), EndDate = new DateOnly(year, 12, 31), TargetValue = q4Val }
+                                new() { WFPObjectiveActivityId = wfpActivity.Id, TimelineType = TimelineTypeEnum.Quarterly, StartDate = new DateOnly(year, 1, 1), EndDate = new DateOnly(year, 3, 31), TargetValue = q1Val, CreatedAt = now, CreatedBy = currentUserId },
+                                new() { WFPObjectiveActivityId = wfpActivity.Id, TimelineType = TimelineTypeEnum.Quarterly, StartDate = new DateOnly(year, 4, 1), EndDate = new DateOnly(year, 6, 30), TargetValue = q2Val, CreatedAt = now, CreatedBy = currentUserId },
+                                new() { WFPObjectiveActivityId = wfpActivity.Id, TimelineType = TimelineTypeEnum.Quarterly, StartDate = new DateOnly(year, 7, 1), EndDate = new DateOnly(year, 9, 30), TargetValue = q3Val, CreatedAt = now, CreatedBy = currentUserId },
+                                new() { WFPObjectiveActivityId = wfpActivity.Id, TimelineType = TimelineTypeEnum.Quarterly, StartDate = new DateOnly(year, 10, 1), EndDate = new DateOnly(year, 12, 31), TargetValue = q4Val, CreatedAt = now, CreatedBy = currentUserId }
                             };
 
                             foreach (var timeline in timelines)
@@ -138,7 +147,9 @@ public class CreateWFPCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<C
                                     WFPObjectiveActivityId = wfpActivity.Id,
                                     ItemDescription = activity.Name,
                                     Quantity = 1,
-                                    UnitCost = activity.Budget
+                                    UnitCost = activity.Budget,
+                                    CreatedAt = now,
+                                    CreatedBy = currentUserId,
                                 };
                                 await unitOfWork.WFPObjectiveActivityExpenditureRepository.AddAsync(expenditure, cancellationToken);
                                 aggregatedBudget += activity.Budget;

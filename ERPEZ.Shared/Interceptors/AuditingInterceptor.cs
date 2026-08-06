@@ -26,38 +26,76 @@ public class AuditingInterceptor(ICurrentUserService currentUser) : SaveChangesI
     {
         if (context is null) return;
 
-        var userId = currentUser.UserId ?? "system";
+        var userId = string.IsNullOrWhiteSpace(currentUser.UserId) ? "system" : currentUser.UserId;
         var now = DateTime.UtcNow;
 
         foreach (var entry in context.ChangeTracker.Entries())
         {
-            // Check if the entity has audit properties
-            var auditableEntity = entry.Entity as IAuditableEntity;
-            if (auditableEntity == null) continue;
+            var entity = entry.Entity;
+            if (entity == null) continue;
 
-            switch (entry.State)
+            var entityType = entity.GetType();
+
+            if (entry.State == EntityState.Added)
             {
-                case EntityState.Added:
-                    auditableEntity.CreatedAt = now;
-                    auditableEntity.CreatedBy = userId;
-                    break;
-                case EntityState.Modified:
-                    auditableEntity.UpdatedAt = now;
-                    auditableEntity.UpdatedBy = userId;
-                    break;
-                case EntityState.Deleted:
-                    if (auditableEntity is ISoftDeleteEntity softDeleteEntity)
+                var createdAtProp = entityType.GetProperty("CreatedAt");
+                if (createdAtProp != null && createdAtProp.CanWrite)
+                {
+                    var val = (DateTime)createdAtProp.GetValue(entity)!;
+                    if (val == default)
                     {
-                        if (softDeleteEntity.AllowHardDelete)
-                        {
-                            break;
-                        }
-                        entry.State = EntityState.Modified;
-                        softDeleteEntity.IsDeleted = true;
-                        softDeleteEntity.DeletedAt = now;
-                        softDeleteEntity.DeletedBy = userId;
+                        createdAtProp.SetValue(entity, now);
                     }
-                    break;
+                }
+
+                var createdByProp = entityType.GetProperty("CreatedBy");
+                if (createdByProp != null && createdByProp.CanWrite)
+                {
+                    var val = (string?)createdByProp.GetValue(entity);
+                    if (string.IsNullOrWhiteSpace(val))
+                    {
+                        createdByProp.SetValue(entity, userId);
+                    }
+                }
+            }
+            else if (entry.State == EntityState.Modified)
+            {
+                var updatedAtProp = entityType.GetProperty("UpdatedAt");
+                if (updatedAtProp != null && updatedAtProp.CanWrite)
+                {
+                    updatedAtProp.SetValue(entity, now);
+                }
+
+                var updatedByProp = entityType.GetProperty("UpdatedBy");
+                if (updatedByProp != null && updatedByProp.CanWrite)
+                {
+                    updatedByProp.SetValue(entity, userId);
+                }
+            }
+            else if (entry.State == EntityState.Deleted)
+            {
+                var isDeletedProp = entityType.GetProperty("IsDeleted");
+                var allowHardDeleteProp = entityType.GetProperty("AllowHardDelete");
+
+                var allowHardDelete = allowHardDeleteProp != null && (bool)(allowHardDeleteProp.GetValue(entity) ?? false);
+
+                if (isDeletedProp != null && isDeletedProp.CanWrite && !allowHardDelete)
+                {
+                    entry.State = EntityState.Modified;
+                    isDeletedProp.SetValue(entity, true);
+
+                    var deletedAtProp = entityType.GetProperty("DeletedAt");
+                    if (deletedAtProp != null && deletedAtProp.CanWrite)
+                    {
+                        deletedAtProp.SetValue(entity, now);
+                    }
+
+                    var deletedByProp = entityType.GetProperty("DeletedBy");
+                    if (deletedByProp != null && deletedByProp.CanWrite)
+                    {
+                        deletedByProp.SetValue(entity, userId);
+                    }
+                }
             }
         }
     }

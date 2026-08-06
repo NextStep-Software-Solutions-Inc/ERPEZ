@@ -3,6 +3,7 @@ using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
+using ERPEZ.Shared.Interfaces;
 using MediatR;
 
 using WfpObjectiveEntity = ERPEZ.Domain.Entities.Planning.WFPObjective;
@@ -14,7 +15,7 @@ namespace ERPEZ.Application.Features.Planning.WFPObjective.Commands.CreateWFPObj
 /// <summary>
 /// Handler for creating multiple WFP Objectives and nested Activities in a single transaction.
 /// </summary>
-public class CreateWFPObjectivesBatchCommandHandler(IUnitOfWork unitOfWork) 
+public class CreateWFPObjectivesBatchCommandHandler(IUnitOfWork unitOfWork, ICurrentUserService currentUserService) 
     : IRequestHandler<CreateWFPObjectivesBatchCommand, ApiResponse<Unit>>
 {
     public async Task<ApiResponse<Unit>> Handle(
@@ -72,6 +73,8 @@ public class CreateWFPObjectivesBatchCommandHandler(IUnitOfWork unitOfWork)
 
         var year = wfp.ProjectStartDate.Year > 0 ? wfp.ProjectStartDate.Year : DateTime.UtcNow.Year;
         var createdObjectivesCount = 0;
+        var currentUserId = string.IsNullOrWhiteSpace(currentUserService.UserId) ? "system" : currentUserService.UserId;
+        var now = DateTime.UtcNow;
 
         await unitOfWork.ExecuteInTransactionAsync(async () =>
         {
@@ -82,7 +85,9 @@ public class CreateWFPObjectivesBatchCommandHandler(IUnitOfWork unitOfWork)
                     WFPId = request.WFPId,
                     Description = item.Description,
                     Weight = item.Weight,
-                    Outcome = item.Outcome
+                    Outcome = item.Outcome,
+                    CreatedAt = now,
+                    CreatedBy = currentUserId,
                 };
 
                 await unitOfWork.WFPObjectiveRepository.AddAsync(wfpObjective, cancellationToken);
@@ -100,7 +105,9 @@ public class CreateWFPObjectivesBatchCommandHandler(IUnitOfWork unitOfWork)
                             OPCRActivityId = act.OPCRActivityId,
                             ActivityName = string.IsNullOrWhiteSpace(act.ActivityName) ? "Activity" : act.ActivityName,
                             Indicator = string.IsNullOrWhiteSpace(act.Indicator) ? act.ActivityName : act.Indicator,
-                            Weight = act.Weight
+                            Weight = act.Weight,
+                            CreatedAt = now,
+                            CreatedBy = currentUserId,
                         };
 
                         await unitOfWork.WFPObjectiveActivityRepository.AddAsync(wfpActivity, cancellationToken);
@@ -109,10 +116,10 @@ public class CreateWFPObjectivesBatchCommandHandler(IUnitOfWork unitOfWork)
                         // Auto-create Q1-Q4 quarterly timelines for each created activity
                         var timelines = new List<WfpObjectiveTimelineEntity>
                         {
-                            new() { WFPObjectiveActivityId = wfpActivity.Id, TimelineType = TimelineTypeEnum.Quarterly, StartDate = new DateOnly(year, 1, 1), EndDate = new DateOnly(year, 3, 31), TargetValue = 25m },
-                            new() { WFPObjectiveActivityId = wfpActivity.Id, TimelineType = TimelineTypeEnum.Quarterly, StartDate = new DateOnly(year, 4, 1), EndDate = new DateOnly(year, 6, 30), TargetValue = 25m },
-                            new() { WFPObjectiveActivityId = wfpActivity.Id, TimelineType = TimelineTypeEnum.Quarterly, StartDate = new DateOnly(year, 7, 1), EndDate = new DateOnly(year, 9, 30), TargetValue = 25m },
-                            new() { WFPObjectiveActivityId = wfpActivity.Id, TimelineType = TimelineTypeEnum.Quarterly, StartDate = new DateOnly(year, 10, 1), EndDate = new DateOnly(year, 12, 31), TargetValue = 25m }
+                            new() { WFPObjectiveActivityId = wfpActivity.Id, TimelineType = TimelineTypeEnum.Quarterly, StartDate = new DateOnly(year, 1, 1), EndDate = new DateOnly(year, 3, 31), TargetValue = 25m, CreatedAt = now, CreatedBy = currentUserId },
+                            new() { WFPObjectiveActivityId = wfpActivity.Id, TimelineType = TimelineTypeEnum.Quarterly, StartDate = new DateOnly(year, 4, 1), EndDate = new DateOnly(year, 6, 30), TargetValue = 25m, CreatedAt = now, CreatedBy = currentUserId },
+                            new() { WFPObjectiveActivityId = wfpActivity.Id, TimelineType = TimelineTypeEnum.Quarterly, StartDate = new DateOnly(year, 7, 1), EndDate = new DateOnly(year, 9, 30), TargetValue = 25m, CreatedAt = now, CreatedBy = currentUserId },
+                            new() { WFPObjectiveActivityId = wfpActivity.Id, TimelineType = TimelineTypeEnum.Quarterly, StartDate = new DateOnly(year, 10, 1), EndDate = new DateOnly(year, 12, 31), TargetValue = 25m, CreatedAt = now, CreatedBy = currentUserId }
                         };
 
                         foreach (var timeline in timelines)
