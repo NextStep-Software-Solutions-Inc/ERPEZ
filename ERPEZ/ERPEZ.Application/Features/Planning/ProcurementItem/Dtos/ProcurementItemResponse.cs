@@ -17,6 +17,8 @@ public record ProcurementItemResponse
     public string? UNSPSCCodeName { get; init; }
     public Guid UOMId { get; init; }
     public string UOMName { get; init; } = string.Empty;
+    public decimal? UnitPrice { get; init; }
+    public bool HasPrice { get; init; }
     public DateTime CreatedAt { get; init; }
     public DateTime? UpdatedAt { get; init; }
 }

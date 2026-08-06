@@ -58,4 +58,5 @@ public class ProcurementItem : BaseEntity
     public virtual ItemCategory? ItemCategory { get; set; }
     public virtual UNSPSCCode? UNSPSCCode { get; set; }
     public virtual UOM UOM { get; set; } = null!;
+    public virtual List<ItemPrice> ItemPrices { get; set; } = [];
 }
