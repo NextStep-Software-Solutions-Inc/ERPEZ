@@ -1,10 +1,13 @@
 using ERPEZ.Application.Features.Planning.WFPObjective.Dtos;
-using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
+
+using WfpObjectiveEntity = ERPEZ.Domain.Entities.Planning.WFPObjective;
+using WfpObjectiveActivityEntity = ERPEZ.Domain.Entities.Planning.WFPObjectiveActivity;
+using WfpObjectiveTimelineEntity = ERPEZ.Domain.Entities.Planning.WFPObjectiveTimeline;
 
 namespace ERPEZ.Application.Features.Planning.WFPObjective.Commands.CreateWFPObjectivesBatch;
 
@@ -74,7 +77,7 @@ public class CreateWFPObjectivesBatchCommandHandler(IUnitOfWork unitOfWork)
         {
             foreach (var item in request.WFPObjectives)
             {
-                var wfpObjective = new WFPObjective
+                var wfpObjective = new WfpObjectiveEntity
                 {
                     WFPId = request.WFPId,
                     Description = item.Description,
@@ -90,7 +93,7 @@ public class CreateWFPObjectivesBatchCommandHandler(IUnitOfWork unitOfWork)
                 {
                     foreach (var act in item.WFPObjectiveActivities)
                     {
-                        var wfpActivity = new WFPObjectiveActivity
+                        var wfpActivity = new WfpObjectiveActivityEntity
                         {
                             WFPId = request.WFPId,
                             WFPObjectiveId = wfpObjective.Id,
@@ -104,7 +107,7 @@ public class CreateWFPObjectivesBatchCommandHandler(IUnitOfWork unitOfWork)
                         await unitOfWork.SaveChangesAsync(cancellationToken);
 
                         // Auto-create Q1-Q4 quarterly timelines for each created activity
-                        var timelines = new List<WFPObjectiveTimeline>
+                        var timelines = new List<WfpObjectiveTimelineEntity>
                         {
                             new() { WFPObjectiveActivityId = wfpActivity.Id, TimelineType = TimelineTypeEnum.Quarterly, StartDate = new DateOnly(year, 1, 1), EndDate = new DateOnly(year, 3, 31), TargetValue = 25m },
                             new() { WFPObjectiveActivityId = wfpActivity.Id, TimelineType = TimelineTypeEnum.Quarterly, StartDate = new DateOnly(year, 4, 1), EndDate = new DateOnly(year, 6, 30), TargetValue = 25m },
