@@ -66,6 +66,14 @@ internal static class PPMPQueryProjection
         var allocations = item.PPMPItemAllocations.Where(x => !x.IsDeleted).ToList();
         var ppmp = item.PPMPExpenditureItem?.PPMPActivity?.PPMP;
 
+        // ✅ CSE Items: Get price based on the most recent Fiscal Year
+        decimal? csePrice = item.CSEItem?.ItemPrices?
+            .OrderByDescending(p => p.FiscalYear?.Year ?? 0)
+            .FirstOrDefault()?.UnitPrice;
+
+        // ✅ Non-CSE Items: Fetch price directly from CurrentPrice property
+        decimal? nonCsePrice = item.NonCSEItem?.CurrentPrice;
+
         return new PPMPItemResponse
         {
             Id = item.Id,
@@ -77,7 +85,10 @@ internal static class PPMPQueryProjection
             Name = item.Name,
             Description = item.Description,
             Unit = item.Unit,
-            UnitPrice = item.UnitPrice,
+            // Uses CSE FY price, or Non-CSE current price, or fallback calculation
+            UnitPrice = item.UnitPrice > 0 
+                ? item.UnitPrice 
+                : (csePrice ?? nonCsePrice ?? (allocations.Any() && allocations.First().Quantity > 0 ? allocations.First().Amount / allocations.First().Quantity : 0)),
             MOPOverride = item.MOPOverride,
             // ── New fields ───────────────────────────────────────────────────────
             ProjectType              = item.ProjectType,
@@ -236,6 +247,14 @@ internal static class PPMPQueryProjection
 
     private static PPMPItemResponse BuildItemWithoutAllocations(PPMPItemEntity item)
     {
+        // ✅ CSE Items: Get price based on the most recent Fiscal Year
+        decimal? csePrice = item.CSEItem?.ItemPrices?
+            .OrderByDescending(p => p.FiscalYear?.Year ?? 0)
+            .FirstOrDefault()?.UnitPrice;
+
+        // ✅ Non-CSE Items: Fetch price directly from CurrentPrice property
+        decimal? nonCsePrice = item.NonCSEItem?.CurrentPrice;
+
         return new PPMPItemResponse
         {
             Id = item.Id,
@@ -247,7 +266,9 @@ internal static class PPMPQueryProjection
             Name = item.Name,
             Description = item.Description,
             Unit = item.Unit,
-            UnitPrice = item.UnitPrice,
+            UnitPrice = item.UnitPrice > 0 
+                ? item.UnitPrice 
+                : (csePrice ?? nonCsePrice ?? 0),
             MOPOverride = item.MOPOverride,
             MOPJustification = item.MOPJustification,
             // ── New fields ───────────────────────────────────────────────────────

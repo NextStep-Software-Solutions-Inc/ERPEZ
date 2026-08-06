@@ -42,6 +42,8 @@ public class PPMPItemRepository : Repository<PPMPItem>, IPPMPItemRepository
             .Include(item => item.PPMPItemAllocations)
             .Include(item => item.ProcurementMode)
             .Include(item => item.CSEItem)
+                .ThenInclude(cse => cse!.ItemPrices)
+                    .ThenInclude(price => price.FiscalYear)
             .Include(item => item.NonCSEItem)
                 .ThenInclude(n => n!.UOM)
             .AsSplitQuery();
@@ -52,6 +54,8 @@ public class PPMPItemRepository : Repository<PPMPItem>, IPPMPItemRepository
         return await context.Set<PPMPItem>()
             .Include(pi => pi.PPMPItemAllocations)
             .Include(pi => pi.CSEItem)
+                .ThenInclude(cse => cse!.ItemPrices)
+                    .ThenInclude(price => price.FiscalYear)
             .Include(pi => pi.NonCSEItem)
             .Include(pi => pi.ProcurementMode)
             .Where(pi => !pi.IsDeleted
