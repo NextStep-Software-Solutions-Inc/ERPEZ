@@ -10,11 +10,15 @@ public class CreatePPMPActivityCommandHandler(IUnitOfWork unitOfWork)
 {
     public async Task<ApiResponse<Guid>> Handle(CreatePPMPActivityCommand request, CancellationToken cancellationToken)
     {
-        _ = await unitOfWork.PPMPRepository.GetByIdAsync(request.PPMPId, cancellationToken)
+        var ppmp = await unitOfWork.PPMPRepository.GetByIdAsync(request.PPMPId, cancellationToken)
             ?? throw new NotFoundException("PPMP not found.");
 
-        _ = await unitOfWork.LineItemBudgetActivityRepository.GetByIdAsync(request.LIBActivityId, cancellationToken)
+        var libActivity = await unitOfWork.LineItemBudgetActivityRepository.GetByIdAsync(request.LIBActivityId, cancellationToken)
             ?? throw new NotFoundException("LIB Activity not found.");
+
+        // ✅ Validate that the LIBActivity belongs to the LIB linked to this PPMP
+        if (ppmp.LIBId == null || libActivity.LineItemBudgetId != ppmp.LIBId)
+            throw new BadRequestException("The selected LIB Activity does not belong to the LIB linked to this PPMP.");
 
         var existing = await unitOfWork.PPMPActivityRepository.FindAsync(
             x => x.PPMPId == request.PPMPId && x.LIBActivityId == request.LIBActivityId,
