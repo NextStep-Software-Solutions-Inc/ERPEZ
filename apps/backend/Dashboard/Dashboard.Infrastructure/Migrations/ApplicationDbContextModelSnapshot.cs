@@ -4525,7 +4525,7 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<bool>("IsProcurable")
                         .HasColumnType("boolean");
 
-                    b.Property<Guid>("LineItemBudgetDetailId")
+                    b.Property<Guid>("ObjectId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid?>("PPMPActivityId")
@@ -4546,7 +4546,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("LineItemBudgetDetailId");
+                    b.HasIndex("ObjectId");
 
                     b.HasIndex("PPMPActivityId");
 
@@ -10400,10 +10400,10 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.PPMPExpenditureItem", b =>
                 {
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.LineItemBudgetDetail", "LineItemBudgetDetail")
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.Object", "Object")
                         .WithMany("PPMPExpenditureItems")
-                        .HasForeignKey("LineItemBudgetDetailId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .HasForeignKey("ObjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
                     b.HasOne("ERPEZ.Domain.Entities.Planning.PPMPActivity", "PPMPActivity")
@@ -10414,10 +10414,10 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasOne("ERPEZ.Domain.Entities.Planning.PPMP", "PPMP")
                         .WithMany("PPMPExpenditureItems")
                         .HasForeignKey("PPMPId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.Navigation("LineItemBudgetDetail");
+                    b.Navigation("Object");
 
                     b.Navigation("PPMP");
 
@@ -11746,8 +11746,6 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.LineItemBudgetDetail", b =>
                 {
-                    b.Navigation("PPMPExpenditureItems");
-
                     b.Navigation("PPMPItems");
                 });
 
@@ -11842,6 +11840,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("ChildObjects");
 
                     b.Navigation("ObjectExpenseClasses");
+
+                    b.Navigation("PPMPExpenditureItems");
 
                     b.Navigation("Transactions");
 
