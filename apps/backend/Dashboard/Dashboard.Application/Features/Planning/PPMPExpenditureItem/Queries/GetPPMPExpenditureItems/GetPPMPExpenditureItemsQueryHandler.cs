@@ -25,7 +25,7 @@ public class GetPPMPExpenditureItemsQueryHandler(IUnitOfWork unitOfWork)
             Id = item.Id,
             PPMPId = item.PPMPId,
             PPMPActivityId = item.PPMPActivityId,
-            LineItemBudgetDetailId = item.LineItemBudgetDetailId,
+            ObjectId = item.ObjectId,
             IsProcurable = item.IsProcurable,
             TotalCost = item.TotalCost,
             CreatedAt = item.CreatedAt,
