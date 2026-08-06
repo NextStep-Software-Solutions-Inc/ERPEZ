@@ -1,4 +1,4 @@
-using ERPEZ.Domain.Enums;
+using ERPEZ.Application.Interfaces;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -6,7 +6,7 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.ProcurementItem.Commands.CreateProcurementItem;
 
-public class CreateProcurementItemCommandHandler(IUnitOfWork unitOfWork)
+public class CreateProcurementItemCommandHandler(IUnitOfWork unitOfWork, IFileStorageService fileStorageService)
     : IRequestHandler<CreateProcurementItemCommand, ApiResponse<Guid>>
 {
     public async Task<ApiResponse<Guid>> Handle(CreateProcurementItemCommand request, CancellationToken cancellationToken)
@@ -35,6 +35,14 @@ public class CreateProcurementItemCommandHandler(IUnitOfWork unitOfWork)
         if (existing != null)
             throw new ConflictException($"Procurement item with name '{request.Name}' already exists.");
 
+        // Promote image file if provided
+        string? imageUrl = null;
+        if (request.ImageFileId.HasValue)
+        {
+            var (promotedUrl, _) = await fileStorageService.PromoteFileAsync(request.ImageFileId.Value, cancellationToken);
+            imageUrl = promotedUrl;
+        }
+
         var entity = new Domain.Entities.Planning.ProcurementItem
         {
             Id = Guid.NewGuid(),
@@ -44,7 +52,7 @@ public class CreateProcurementItemCommandHandler(IUnitOfWork unitOfWork)
             IsCSE = request.IsCSE,
             ItemLife = request.ItemLife,
             ProductCode = request.ProductCode,
-            ImageURL = request.ImageURL,
+            ImageURL = imageUrl,
             ObjectCodeId = request.ObjectCodeId,
             UNSPSCCodeId = request.UNSPSCCodeId,
             UOMId = request.UOMId,

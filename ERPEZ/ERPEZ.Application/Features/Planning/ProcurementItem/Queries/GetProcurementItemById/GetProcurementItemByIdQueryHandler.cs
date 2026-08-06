@@ -16,6 +16,10 @@ public class GetProcurementItemByIdQueryHandler(IUnitOfWork unitOfWork)
         var entity = await unitOfWork.ProcurementItemRepository.GetByIdWithDetailsAsync(request.Id, cancellationToken)
             ?? throw new NotFoundException("Procurement item not found.");
 
+        var latestPrice = entity.ItemPrices
+            .OrderByDescending(p => p.FiscalYear?.Year ?? 0)
+            .FirstOrDefault();
+
         var response = new ProcurementItemResponse
         {
             Id = entity.Id,
@@ -33,6 +37,8 @@ public class GetProcurementItemByIdQueryHandler(IUnitOfWork unitOfWork)
             UNSPSCCodeName = entity.UNSPSCCode?.Name ?? string.Empty,
             UOMId = entity.UOMId,
             UOMName = entity.UOM?.Name ?? string.Empty,
+            UnitPrice = latestPrice?.UnitPrice,      // ← add
+            HasPrice = latestPrice != null,           // ← add
             CreatedAt = entity.CreatedAt,
             UpdatedAt = entity.UpdatedAt
         };

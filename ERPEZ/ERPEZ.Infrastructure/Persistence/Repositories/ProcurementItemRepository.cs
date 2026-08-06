@@ -19,6 +19,8 @@ public class ProcurementItemRepository : Repository<Domain.Entities.Planning.Pro
             .Include(pi => pi.ObjectCode)
             .Include(pi => pi.UOM)
             .Include(pi => pi.UNSPSCCode)
+            .Include(pi => pi.ItemPrices)
+                .ThenInclude(ip => ip.FiscalYear)
             .FirstOrDefaultAsync(pi => pi.Id == id && !pi.IsDeleted, cancellationToken);
     }
 
@@ -29,6 +31,8 @@ public class ProcurementItemRepository : Repository<Domain.Entities.Planning.Pro
             .Include(pi => pi.ObjectCode)
             .Include(pi => pi.UOM)
             .Include(pi => pi.UNSPSCCode)
+            .Include(pi => pi.ItemPrices)
+                .ThenInclude(ip => ip.FiscalYear)
             .AsQueryable();
 
         if (!includeInactive)
