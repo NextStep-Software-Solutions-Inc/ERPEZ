@@ -1,4 +1,6 @@
 using ERPEZ.Application.Features.Planning.WFPObjective.Dtos;
+using ERPEZ.Domain.Entities.Planning;
+using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -7,7 +9,7 @@ using MediatR;
 namespace ERPEZ.Application.Features.Planning.WFPObjective.Commands.CreateWFPObjectivesBatch;
 
 /// <summary>
-/// Handler for creating multiple WFP Objectives in a single transaction.
+/// Handler for creating multiple WFP Objectives and nested Activities in a single transaction.
 /// </summary>
 public class CreateWFPObjectivesBatchCommandHandler(IUnitOfWork unitOfWork) 
     : IRequestHandler<CreateWFPObjectivesBatchCommand, ApiResponse<Unit>>
@@ -17,7 +19,7 @@ public class CreateWFPObjectivesBatchCommandHandler(IUnitOfWork unitOfWork)
         CancellationToken cancellationToken)
     {
         // Validate WFP exists
-        _ = await unitOfWork.WFPRepository.FindAsync(wo => wo.Id == request.WFPId,
+        var wfp = await unitOfWork.WFPRepository.FindAsync(wo => wo.Id == request.WFPId,
             cancellationToken) ?? throw new NotFoundException("Work and Financial Plan not found.");
 
         // Get all existing objectives for this WFP to calculate total weight
@@ -65,20 +67,62 @@ public class CreateWFPObjectivesBatchCommandHandler(IUnitOfWork unitOfWork)
                 $"Duplicate descriptions found in the batch: {string.Join(", ", batchDuplicates)}");
         }
 
-        // Create all objectives
-        var wfpObjectives = request.WFPObjectives.Select(item => new Domain.Entities.Planning.WFPObjective
-        {
-            WFPId = request.WFPId,
-            Description = item.Description,
-            Weight = item.Weight,
-            Outcome = item.Outcome
-        }).ToList();
+        var year = wfp.ProjectStartDate.Year > 0 ? wfp.ProjectStartDate.Year : DateTime.UtcNow.Year;
+        var createdObjectivesCount = 0;
 
-        await unitOfWork.WFPObjectiveRepository.AddRangeAsync(wfpObjectives, cancellationToken);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        await unitOfWork.ExecuteInTransactionAsync(async () =>
+        {
+            foreach (var item in request.WFPObjectives)
+            {
+                var wfpObjective = new WFPObjective
+                {
+                    WFPId = request.WFPId,
+                    Description = item.Description,
+                    Weight = item.Weight,
+                    Outcome = item.Outcome
+                };
+
+                await unitOfWork.WFPObjectiveRepository.AddAsync(wfpObjective, cancellationToken);
+                await unitOfWork.SaveChangesAsync(cancellationToken);
+                createdObjectivesCount++;
+
+                if (item.WFPObjectiveActivities != null && item.WFPObjectiveActivities.Count > 0)
+                {
+                    foreach (var act in item.WFPObjectiveActivities)
+                    {
+                        var wfpActivity = new WFPObjectiveActivity
+                        {
+                            WFPId = request.WFPId,
+                            WFPObjectiveId = wfpObjective.Id,
+                            OPCRActivityId = act.OPCRActivityId,
+                            ActivityName = string.IsNullOrWhiteSpace(act.ActivityName) ? "Activity" : act.ActivityName,
+                            Indicator = string.IsNullOrWhiteSpace(act.Indicator) ? act.ActivityName : act.Indicator,
+                            Weight = act.Weight
+                        };
+
+                        await unitOfWork.WFPObjectiveActivityRepository.AddAsync(wfpActivity, cancellationToken);
+                        await unitOfWork.SaveChangesAsync(cancellationToken);
+
+                        // Auto-create Q1-Q4 quarterly timelines for each created activity
+                        var timelines = new List<WFPObjectiveTimeline>
+                        {
+                            new() { WFPObjectiveActivityId = wfpActivity.Id, TimelineType = TimelineTypeEnum.Quarterly, StartDate = new DateOnly(year, 1, 1), EndDate = new DateOnly(year, 3, 31), TargetValue = 25m },
+                            new() { WFPObjectiveActivityId = wfpActivity.Id, TimelineType = TimelineTypeEnum.Quarterly, StartDate = new DateOnly(year, 4, 1), EndDate = new DateOnly(year, 6, 30), TargetValue = 25m },
+                            new() { WFPObjectiveActivityId = wfpActivity.Id, TimelineType = TimelineTypeEnum.Quarterly, StartDate = new DateOnly(year, 7, 1), EndDate = new DateOnly(year, 9, 30), TargetValue = 25m },
+                            new() { WFPObjectiveActivityId = wfpActivity.Id, TimelineType = TimelineTypeEnum.Quarterly, StartDate = new DateOnly(year, 10, 1), EndDate = new DateOnly(year, 12, 31), TargetValue = 25m }
+                        };
+
+                        foreach (var timeline in timelines)
+                        {
+                            await unitOfWork.WFPObjectiveTimelineRepository.AddAsync(timeline, cancellationToken);
+                        }
+                    }
+                }
+            }
+        }, cancellationToken);
 
         return ApiResponse<Unit>.Success(
             Unit.Value, 
-            $"{wfpObjectives.Count} Work and Financial Plan Objectives created successfully.");
+            $"{createdObjectivesCount} Work and Financial Plan Objectives & Activities created successfully.");
     }
 }
