@@ -46,6 +46,6 @@ public class UpdateAPPItemCommandValidator : AbstractValidator<UpdateAPPItemComm
 
         RuleForEach(x => x.ProcurementStrategies)
             .IsEnumName(typeof(ProcurementStrategy), caseSensitive: false)
-            .WithMessage("Invalid ProcurementStrategy value.");
+            .WithMessage("Invalid ProcurementStrategy value. Allowed values are: LCA, Subcontracting, MultiYearContracting, DesignAndBuild, ProcurementAgent, FrameworkAgreement, PooledProcurement, RenewalOfServices, WarehousingInventory, NotApplicable.");
     }
 }
