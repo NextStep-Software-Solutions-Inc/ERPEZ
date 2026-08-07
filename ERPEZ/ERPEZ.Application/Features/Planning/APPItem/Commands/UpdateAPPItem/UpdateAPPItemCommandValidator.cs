@@ -32,8 +32,6 @@ public class UpdateAPPItemCommandValidator : AbstractValidator<UpdateAPPItemComm
             .WithMessage("OfficeId is required.");
 
         RuleFor(x => x.PAPCode)
-            .NotEmpty()
-            .WithMessage("PAPCode is required.")
             .MaximumLength(100)
             .WithMessage("PAPCode must not exceed 100 characters.");
 
@@ -48,6 +46,6 @@ public class UpdateAPPItemCommandValidator : AbstractValidator<UpdateAPPItemComm
 
         RuleForEach(x => x.ProcurementStrategies)
             .IsEnumName(typeof(ProcurementStrategy), caseSensitive: false)
-            .WithMessage("Invalid ProcurementStrategy value.");
+            .WithMessage("Invalid ProcurementStrategy value. Allowed values are: LCA, Subcontracting, MultiYearContracting, DesignAndBuild, ProcurementAgent, FrameworkAgreement, PooledProcurement, RenewalOfServices, WarehousingInventory, NotApplicable.");
     }
 }

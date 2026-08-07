@@ -44,7 +44,7 @@ public class GetMarketScopingByIdQueryHandler(IUnitOfWork unitOfWork)
                 Attachments = a.Attachments.Select(att => new MarketScopingActivityAttachmentResponse
                 {
                     Id = att.Id,
-                    FileUrl = att.FileUrl,
+                    FileUrl = FormatRoutableFileUrl(att.FileUrl),
                     FileName = att.FileName,
                 }).ToList(),
             }).ToList(),
@@ -60,7 +60,7 @@ public class GetMarketScopingByIdQueryHandler(IUnitOfWork unitOfWork)
                 Attachments = p.Attachments.Select(att => new MarketScopingParameterAttachmentResponse
                 {
                     Id = att.Id,
-                    FileUrl = att.FileUrl,
+                    FileUrl = FormatRoutableFileUrl(att.FileUrl),
                     FileName = att.FileName,
                 }).ToList(),
             }).ToList(),
@@ -82,5 +82,16 @@ public class GetMarketScopingByIdQueryHandler(IUnitOfWork unitOfWork)
             Data = response,
             Message = "Market scoping retrieved successfully."
         };
+    }
+
+    private static string FormatRoutableFileUrl(string rawFileUrl)
+    {
+        if (string.IsNullOrWhiteSpace(rawFileUrl)) return string.Empty;
+        if (rawFileUrl.StartsWith("/files/download/")) return rawFileUrl;
+        if (Guid.TryParse(rawFileUrl, out var fileId))
+        {
+            return $"/files/download/{fileId}";
+        }
+        return rawFileUrl;
     }
 }

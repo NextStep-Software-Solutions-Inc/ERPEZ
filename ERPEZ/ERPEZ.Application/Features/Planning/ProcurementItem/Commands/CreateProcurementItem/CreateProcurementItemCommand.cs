@@ -11,7 +11,7 @@ public record CreateProcurementItemCommand : IRequest<ApiResponse<Guid>>
     public bool IsCSE { get; init; }
     public int? ItemLife { get; init; }
     public string? ProductCode { get; init; }
-    public string? ImageURL { get; init; }
+    public Guid? ImageFileId { get; init; } // ← was ImageURL
     public Guid ObjectCodeId { get; init; }
     public Guid? UNSPSCCodeId { get; init; }
     public Guid UOMId { get; init; }

@@ -10,5 +10,6 @@ public enum ProcurementStrategy
     FrameworkAgreement,
     PooledProcurement,
     RenewalOfServices,
-    WarehousingInventory
+    WarehousingInventory,
+    NotApplicable
 }

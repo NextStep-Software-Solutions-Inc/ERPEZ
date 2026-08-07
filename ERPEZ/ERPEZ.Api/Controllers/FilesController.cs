@@ -28,7 +28,7 @@ public class FilesController(IFileStorageService fileStorageService) : Controlle
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> Download(Guid fileId)
     {
-        var fileInfo = await fileStorageService.GetPermanentFileAsync(fileId);
+        var fileInfo = await fileStorageService.GetFileAsync(fileId);
         if (fileInfo == null)
             return NotFound(ApiResponse<object>.Fail("File not found."));
 

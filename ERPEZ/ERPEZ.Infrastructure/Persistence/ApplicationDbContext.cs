@@ -984,7 +984,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<ItemPrice>()
             .HasOne(ip => ip.ProcurementItem)
-            .WithMany()
+            .WithMany(p => p.ItemPrices)
             .HasForeignKey(ip => ip.ProcurementItemId)
             .OnDelete(DeleteBehavior.Restrict);
 

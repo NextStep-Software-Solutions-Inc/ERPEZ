@@ -30,6 +30,11 @@ public class GetProcurementItemsQueryHandler(IUnitOfWork unitOfWork)
             UNSPSCCodeName = x.UNSPSCCode != null ? x.UNSPSCCode.Name : string.Empty,
             UOMId = x.UOMId,
             UOMName = x.UOM != null ? x.UOM.Name : string.Empty,
+            UnitPrice = x.ItemPrices
+                .OrderByDescending(p => p.FiscalYear != null ? p.FiscalYear.Year : 0)
+                .Select(p => (decimal?)p.UnitPrice)
+                .FirstOrDefault(),
+            HasPrice = x.ItemPrices.Any(),
             CreatedAt = x.CreatedAt,
             UpdatedAt = x.UpdatedAt
         };

@@ -1,11 +1,12 @@
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
+using ERPEZ.Application.Interfaces;
 using MediatR;
 
 namespace ERPEZ.Application.Features.Planning.ProcurementItem.Commands.UpdateProcurementItem;
 
-public class UpdateProcurementItemCommandHandler(IUnitOfWork unitOfWork)
+public class UpdateProcurementItemCommandHandler(IUnitOfWork unitOfWork, IFileStorageService fileStorageService)
     : IRequestHandler<UpdateProcurementItemCommand, ApiResponse<Unit>>
 {
     public async Task<ApiResponse<Unit>> Handle(UpdateProcurementItemCommand request, CancellationToken cancellationToken)
@@ -15,11 +16,9 @@ public class UpdateProcurementItemCommandHandler(IUnitOfWork unitOfWork)
 
         if (!string.IsNullOrEmpty(request.Name))
         {
-            // Check for duplicates
             var existing = await unitOfWork.ProcurementItemRepository.FindAsync(
                 x => x.Name == request.Name && x.Id != request.Id && !x.IsDeleted,
-                cancellationToken
-            );
+                cancellationToken);
 
             if (existing != null)
                 throw new ConflictException($"Procurement item with name '{request.Name}' already exists.");
@@ -42,15 +41,18 @@ public class UpdateProcurementItemCommandHandler(IUnitOfWork unitOfWork)
         if (request.ProductCode != null)
             entity.ProductCode = request.ProductCode;
 
-        if (request.ImageURL != null)
-            entity.ImageURL = request.ImageURL;
+        // ← promote new image if a new file was uploaded
+        if (request.ImageFileId.HasValue)
+        {
+            var (promotedUrl, _) = await fileStorageService.PromoteFileAsync(request.ImageFileId.Value, cancellationToken);
+            entity.ImageURL = promotedUrl;
+        }
 
         if (request.IsActive.HasValue)
             entity.IsActive = request.IsActive.Value;
 
         if (request.ObjectCodeId.HasValue)
         {
-            // Validate object code exists
             _ = await unitOfWork.ObjectRepository.GetByIdAsync(request.ObjectCodeId.Value, cancellationToken)
                 ?? throw new NotFoundException("Object code not found.");
 
@@ -59,7 +61,6 @@ public class UpdateProcurementItemCommandHandler(IUnitOfWork unitOfWork)
 
         if (request.UNSPSCCodeId.HasValue)
         {
-            // Validate UNSPSC code exists
             _ = await unitOfWork.UNSPSCCodeRepository.GetByIdAsync(request.UNSPSCCodeId.Value, cancellationToken)
                 ?? throw new NotFoundException("UNSPSC code not found.");
 
@@ -68,7 +69,6 @@ public class UpdateProcurementItemCommandHandler(IUnitOfWork unitOfWork)
 
         if (request.UOMId.HasValue)
         {
-            // Validate UOM exists
             _ = await unitOfWork.UOMRepository.GetByIdAsync(request.UOMId.Value, cancellationToken)
                 ?? throw new NotFoundException("Unit of measure not found.");
 
