@@ -1,0 +1,5 @@
+export { getPersonnelReportingTypesRequest } from './getPersonnelReportingTypesRequest'
+export { getPersonnelReportingTypeRequest } from './getPersonnelReportingTypeRequest'
+export { createPersonnelReportingTypeRequest } from './createPersonnelReportingTypeRequest'
+export { updatePersonnelReportingTypeRequest } from './updatePersonnelReportingTypeRequest'
+export { deletePersonnelReportingTypeRequest } from './deletePersonnelReportingTypeRequest'

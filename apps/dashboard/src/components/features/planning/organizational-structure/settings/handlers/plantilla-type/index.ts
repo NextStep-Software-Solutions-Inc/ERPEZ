@@ -1,0 +1,5 @@
+export { getPlantillaTypesRequest } from './getPlantillaTypesRequest'
+export { getPlantillaTypeRequest } from './getPlantillaTypeRequest'
+export { createPlantillaTypeRequest } from './createPlantillaTypeRequest'
+export { updatePlantillaTypeRequest } from './updatePlantillaTypeRequest'
+export { deletePlantillaTypeRequest } from './deletePlantillaTypeRequest'

@@ -1,0 +1,29 @@
+import React from "react";
+
+import Mail from "./components/mail";
+import { cookies } from "next/headers";
+import { getEmails } from "@/config/email.config";
+import { accounts } from "./data";
+import { getContacts } from "../chat/chat-config";
+const EmailPage = async () => {
+  const cookieStore = await cookies();
+  const layout = cookieStore.get("react-resizable-panels:layout");
+  const collapsed = cookieStore.get("react-resizable-panels:collapsed");
+  const defaultLayout = layout ? JSON.parse(layout.value) : undefined;
+  const defaultCollapsed = collapsed ? JSON.parse(collapsed.value) : undefined;
+  const contacts = await getContacts();
+  const mails = await getEmails();
+
+  return (
+    <Mail
+      accounts={accounts}
+      mails={mails?.data}
+      defaultLayout={defaultLayout}
+      defaultCollapsed={defaultCollapsed}
+      navCollapsedSize={6}
+      contacts={contacts}
+    />
+  );
+};
+
+export default EmailPage;

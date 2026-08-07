@@ -1,0 +1,11 @@
+{
+    "buildCommand": "cd ../erpez-shared-lib && pnpm build && cd ../tenant-management && pnpm build",
+    "installCommand": "pnpm install",
+    "outputDirectory": "build/client",
+    "rewrites": [
+        {
+            "source": "/(.*)",
+            "destination": "/index.html"
+        }
+    ]
+}

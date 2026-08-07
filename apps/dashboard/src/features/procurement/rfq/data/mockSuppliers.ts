@@ -1,0 +1,130 @@
+import type { SupplierRegistry } from '@/components/features/planning/procurement-library/types'
+
+/**
+ * @deprecated
+ * This file contains mock supplier data that is no longer used.
+ * Real suppliers are now fetched from the backend via GET /suppliers.
+ * This file can be safely deleted in a future cleanup iteration.
+ */
+export const MOCK_SUPPLIERS: SupplierRegistry[] = [
+  {
+    id: 's-1',
+    supplierCategory: 'Office Supplies',
+    supplierName: 'Acme Supplies',
+    businessPermitNo: 'BP-2024-001',
+    tinNumber: '123-456-789-000',
+    address: '123 Business St, Makati City, Metro Manila',
+    contactPerson: 'John Dela Cruz',
+    contactNumber: '+63 917 123 4567',
+    contactEmail: 'john.delacruz@acmesupplies.com',
+    philGEPSNumber: 'PG-001-2024',
+    mayorPermitExpiry: '2025-12-31',
+    dtiExpiry: '2025-06-30',
+    industryCategories: ['Office Supplies', 'Stationery', 'Paper Products'],
+    isBlacklisted: false,
+    reviewerUserId: 'admin-1',
+    url: 'https://www.acmesupplies.com',
+    isVerified: true,
+    status: 'approved',
+    createdAt: '2024-01-15T08:00:00Z',
+    updatedAt: '2024-03-20T10:30:00Z',
+  },
+  {
+    id: 's-2',
+    supplierCategory: 'IT Equipment',
+    supplierName: 'TechSource Inc.',
+    businessPermitNo: 'BP-2024-002',
+    tinNumber: '987-654-321-000',
+    address: '456 Tech Avenue, Quezon City, Metro Manila',
+    contactPerson: 'Maria Santos',
+    contactNumber: '+63 918 234 5678',
+    contactEmail: 'maria.santos@techsource.ph',
+    philGEPSNumber: 'PG-002-2024',
+    mayorPermitExpiry: '2025-11-30',
+    dtiExpiry: '2025-05-31',
+    industryCategories: ['IT Equipment', 'Computer Hardware', 'Peripherals'],
+    isBlacklisted: false,
+    reviewerUserId: 'admin-1',
+    url: 'https://www.techsource.ph',
+    isVerified: true,
+    status: 'approved',
+    createdAt: '2024-02-10T09:00:00Z',
+    updatedAt: '2024-04-05T14:15:00Z',
+  },
+  {
+    id: 's-3',
+    supplierCategory: 'Laboratory Equipment',
+    supplierName: 'LabChem Co.',
+    businessPermitNo: 'BP-2024-003',
+    tinNumber: '456-789-123-000',
+    address: '789 Science Park, Taguig City, Metro Manila',
+    contactPerson: 'Dr. Roberto Garcia',
+    contactNumber: '+63 919 345 6789',
+    contactEmail: 'roberto.garcia@labchem.com',
+    philGEPSNumber: 'PG-003-2024',
+    mayorPermitExpiry: '2026-01-31',
+    dtiExpiry: '2025-07-31',
+    industryCategories: ['Laboratory Equipment', 'Chemicals', 'Scientific Instruments'],
+    isBlacklisted: false,
+    reviewerUserId: 'admin-2',
+    url: 'https://www.labchem.com',
+    isVerified: true,
+    status: 'approved',
+    createdAt: '2024-01-20T10:30:00Z',
+    updatedAt: '2024-03-25T16:45:00Z',
+  },
+  {
+    id: 's-4',
+    supplierCategory: 'Furniture',
+    supplierName: 'Home Office Furnishings',
+    businessPermitNo: 'BP-2024-004',
+    tinNumber: '321-654-987-000',
+    address: '321 Furniture Blvd, Pasig City, Metro Manila',
+    contactPerson: 'Anna Reyes',
+    contactNumber: '+63 920 456 7890',
+    contactEmail: 'anna.reyes@homeofficefurn.ph',
+    philGEPSNumber: 'PG-004-2024',
+    mayorPermitExpiry: '2025-10-31',
+    dtiExpiry: '2025-08-31',
+    industryCategories: ['Furniture', 'Office Equipment', 'Interior Design'],
+    isBlacklisted: false,
+    reviewerUserId: 'admin-1',
+    url: 'https://www.homeofficefurn.ph',
+    isVerified: true,
+    status: 'approved',
+    createdAt: '2024-02-01T11:00:00Z',
+    updatedAt: '2024-04-10T13:20:00Z',
+  },
+  {
+    id: 's-5',
+    supplierCategory: 'Maintenance Services',
+    supplierName: 'RepairPros Ltd.',
+    businessPermitNo: 'BP-2024-005',
+    tinNumber: '147-258-369-000',
+    address: '147 Service Road, Mandaluyong City, Metro Manila',
+    contactPerson: 'Pedro Martinez',
+    contactNumber: '+63 921 567 8901',
+    contactEmail: 'pedro.martinez@repairpros.com',
+    philGEPSNumber: 'PG-005-2024',
+    mayorPermitExpiry: '2025-09-30',
+    dtiExpiry: '2025-04-30',
+    industryCategories: ['Maintenance Services', 'Repair Services', 'Technical Support'],
+    isBlacklisted: false,
+    reviewerUserId: 'admin-2',
+    url: 'https://www.repairpros.com',
+    isVerified: true,
+    status: 'approved',
+    createdAt: '2024-01-25T12:00:00Z',
+    updatedAt: '2024-03-30T15:30:00Z',
+  },
+]
+
+// Helper function to get supplier by ID
+export function getSupplierById(id: string): SupplierRegistry | undefined {
+  return MOCK_SUPPLIERS.find(s => s.id === id)
+}
+
+// Helper function to get supplier by name
+export function getSupplierByName(name: string): SupplierRegistry | undefined {
+  return MOCK_SUPPLIERS.find(s => s.supplierName.toLowerCase() === name.toLowerCase())
+}

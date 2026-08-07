@@ -1,0 +1,1695 @@
+/**
+ * AddPPMPItemsModal
+ * Premium batch catalog picker dialog for adding standard procurement items (CSE)
+ * and Non-CSE items to a PPMP expenditure item block.
+ * Features tab-scoped side filtering, pagination, selection persistence,
+ * pre-populated inherited pricing, sequential creation, and safety loaders.
+ */
+
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useQueryClient } from '@tanstack/react-query'
+import { toast } from 'sonner'
+import {
+  ChevronLeft,
+  ChevronRight,
+  LucidePackage,
+  LucidePackageOpen,
+  Package,
+  RefreshCcw,
+  Search,
+  SlidersHorizontal,
+  ArrowLeft,
+  Loader2,
+  ChevronDown,
+  ChevronUp,
+} from 'lucide-react'
+import {
+  createQueryHookFromTemplate,
+  createMutationHookFromTemplate,
+} from 'erpez-shared-lib'
+
+import { ResponsiveDialog } from '@/components/ResponsiveDialog'
+import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
+import {
+  Sheet,
+  SheetContent,
+  SheetHeader,
+  SheetTitle,
+} from '@/components/ui/sheet'
+import { Badge } from '@/components/ui/badge'
+import { Button } from '@/components/ui/button'
+import { Checkbox } from '@/components/ui/checkbox'
+import { Input } from '@/components/ui/input'
+import { ScrollArea } from '@/components/ui/scroll-area'
+import { Separator } from '@/components/ui/separator'
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
+import { cn } from '@/lib/utils'
+import DocumentViewer from '@/components/DocumentViewer'
+
+import { getProcurementItemsRequest } from '@/components/features/planning/procurement-item/handlers/getProcurementItemsRequest'
+import { getProcurementItemRequest } from '@/components/features/planning/procurement-item/handlers/getProcurementItemRequest'
+import { getNONCSEItemsRequest } from '@/features/planning/non-cse-item/handlers/getNONCSEItemsRequest'
+import { getNONCSEItemRequest } from '@/features/planning/non-cse-item/handlers/getNONCSEItemRequest'
+import { getProcurementModesRequest } from '@/lib/fiscal-year-and-policies/requests/getProcurementModesRequest'
+import { createPPMPItemRequest } from '../handlers/createPPMPItemRequest'
+import { createPPMPItemAllocationRequest } from '../handlers/createPPMPItemAllocationRequest'
+import type { AllocationMonth, ProcurementProjectType } from '../types'
+
+import type { ProcurementItem } from '@/components/features/planning/procurement-item/types/procurementItem.types'
+import type { NONCSEItem } from '@/features/planning/non-cse-item/types/non-cse.type'
+
+const useProcurementItems = createQueryHookFromTemplate(getProcurementItemsRequest)
+const useProcurementItem = createQueryHookFromTemplate(getProcurementItemRequest)
+const useNONCSEItems = createQueryHookFromTemplate(getNONCSEItemsRequest)
+const useNONCSEItem = createQueryHookFromTemplate(getNONCSEItemRequest)
+const useProcurementModes = createQueryHookFromTemplate(getProcurementModesRequest)
+const useCreatePPMPItem = createMutationHookFromTemplate(createPPMPItemRequest)
+const useCreatePPMPItemAllocation = createMutationHookFromTemplate(createPPMPItemAllocationRequest)
+
+export interface ItemReviewConfig {
+  unitPrice: number
+  procurementModeId: string
+  projectType: 'Goods' | 'Infrastructure' | 'ConsultingServices' | 'GeneralSupportServices'
+  papCode: string
+  preProcurementConference: boolean
+  procurementStartDate: string
+  procurementEndDate: string
+  expectedDeliveryStart: string
+  expectedDeliveryEnd: string
+  remarks: string
+  enableAllocations: boolean
+  monthlyQuantities: Record<AllocationMonth, number>
+}
+
+interface AddPPMPItemsModalProps {
+  isOpen: boolean
+  onOpenChange: (open: boolean) => void
+  ppmpExpenditureItemId: string
+  onSuccess?: () => void
+}
+
+type CatalogTab = 'cse' | 'non-cse'
+
+interface TabFilters {
+  categories: string[]
+  unitOfMeasures: string[]
+  pageIndex: number
+}
+
+const PAGE_SIZE = 8
+const DEFAULT_FILTERS: TabFilters = {
+  categories: [],
+  unitOfMeasures: [],
+  pageIndex: 0,
+}
+
+function cloneFilters(): TabFilters {
+  return { ...DEFAULT_FILTERS }
+}
+
+function initials(value: string): string {
+  const parts = value.trim().split(/\s+/).filter(Boolean)
+  if (parts.length === 0) return 'IT'
+  if (parts.length === 1) return parts[0]!.slice(0, 2).toUpperCase()
+  return `${parts[0]![0] ?? ''}${parts[1]![0] ?? ''}`.toUpperCase()
+}
+
+function hash(value: string): string {
+  let n = 0
+  for (let i = 0; i < value.length; i += 1) {
+    n = (n << 5) - n + value.charCodeAt(i)
+    n |= 0
+  }
+  return Math.abs(n).toString()
+}
+
+function tone(value: string): string {
+  const tones = [
+    'from-sky-500/20 via-cyan-500/15 to-teal-500/20',
+    'from-violet-500/20 via-fuchsia-500/15 to-pink-500/20',
+    'from-amber-500/20 via-orange-500/15 to-rose-500/20',
+    'from-emerald-500/20 via-lime-500/15 to-green-500/20',
+    'from-indigo-500/20 via-blue-500/15 to-sky-500/20',
+    'from-rose-500/20 via-pink-500/15 to-fuchsia-500/20',
+  ]
+  const valHash = Number.parseInt(hash(value)) || 0
+  return tones[valHash % tones.length] ?? tones[0]!
+}
+
+function EmptyState({ message }: { message: string }) {
+  return (
+    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 px-6 py-14 text-center">
+      <Package className="h-10 w-10 text-muted-foreground/40" />
+      <p className="mt-3 text-sm font-medium text-foreground">No items found</p>
+      <p className="mt-1 max-w-sm text-xs text-muted-foreground">{message}</p>
+    </div>
+  )
+}
+
+type SelectedItemWrapper =
+  | { type: 'cse'; item: ProcurementItem }
+  | { type: 'non-cse'; item: NONCSEItem }
+
+export default function AddPPMPItemsModal({
+  isOpen,
+  onOpenChange,
+  ppmpExpenditureItemId,
+  onSuccess,
+}: AddPPMPItemsModalProps) {
+  const queryClient = useQueryClient()
+  const { mutateAsync: createItem } = useCreatePPMPItem()
+  const { mutateAsync: createAllocation } = useCreatePPMPItemAllocation()
+
+  // Steps: 'select' | 'configure'
+  const [step, setStep] = useState<'select' | 'configure'>('select')
+
+  // Search & Tab selections
+  const [activeTab, setActiveTab] = useState<CatalogTab>('cse')
+  const [search, setSearch] = useState('')
+  const [selectedItems, setSelectedItems] = useState<Map<string, SelectedItemWrapper>>(new Map())
+  const [isFiltersCollapsed, setIsFiltersCollapsed] = useState(false)
+
+  // Configure step inputs
+  const [configs, setConfigs] = useState<Record<string, ItemReviewConfig>>({})
+  const [expandedItemId, setExpandedItemId] = useState<string | null>(null)
+  const [confirmCloseOpen, setConfirmCloseOpen] = useState(false)
+  const [detailsItemId, setDetailsItemId] = useState<string | null>(null)
+  const [detailsItemType, setDetailsItemType] = useState<CatalogTab | null>(null)
+
+  // Loading and batch states
+  const [isAdding, setIsAdding] = useState(false)
+  const [progressIndex, setProgressIndex] = useState(0)
+  const [totalProgress, setTotalProgress] = useState(0)
+
+  // Filters by CSE tab vs Non-CSE tab
+  const [filtersByTab, setFiltersByTab] = useState<Record<CatalogTab, TabFilters>>({
+    cse: cloneFilters(),
+    'non-cse': cloneFilters(),
+  })
+
+  // Queries
+  const { data: itemsResponse, isLoading: isItemsLoading } = useProcurementItems({
+    pathParams: {},
+    queryParams: {
+      pageNumber: 1,
+      pageSize: 1000,
+    },
+    enabled: isOpen,
+  })
+
+  const { data: nonCseResponse, isLoading: isNonCseLoading } = useNONCSEItems({
+    pathParams: {},
+    queryParams: {
+      pageNumber: 1,
+      pageSize: 1000,
+    },
+    enabled: isOpen,
+  })
+
+  const { data: modesResponse } = useProcurementModes({
+    pathParams: {},
+    queryParams: {
+      pageSize: 1000,
+    },
+    enabled: isOpen,
+  })
+
+  const { data: cseDetailResponse, isLoading: isCseDetailLoading } = useProcurementItem({
+    pathParams: { id: detailsItemId ?? '' },
+    queryParams: {},
+    enabled: !!detailsItemId && detailsItemType === 'cse',
+  })
+
+  const { data: nonCseDetailResponse, isLoading: isNonCseDetailLoading } = useNONCSEItem({
+    pathParams: { id: detailsItemId ?? '' },
+    queryParams: {},
+    enabled: !!detailsItemId && detailsItemType === 'non-cse',
+  })
+
+  const detailData = detailsItemType === 'cse' ? cseDetailResponse?.data : nonCseDetailResponse?.data
+  const isDetailLoading = detailsItemType === 'cse' ? isCseDetailLoading : isNonCseDetailLoading
+
+  const procurementItems = useMemo(() => itemsResponse?.data ?? [], [itemsResponse])
+  const nonCseItems = useMemo(() => nonCseResponse?.data ?? [], [nonCseResponse])
+  const procurementModes = useMemo(() => modesResponse?.data ?? [], [modesResponse])
+
+  // Partition items into active lists
+  const cseFilteredItems = useMemo(() => {
+    return procurementItems.filter((item) => item.isCSE && item.isActive)
+  }, [procurementItems])
+
+  const nonCseFilteredItems = useMemo(() => {
+    return nonCseItems.filter((item) => item.isActive)
+  }, [nonCseItems])
+
+  const currentItems = activeTab === 'cse' ? cseFilteredItems : nonCseFilteredItems
+  const isCatalogLoading = activeTab === 'cse' ? isItemsLoading : isNonCseLoading
+  const currentFilters = filtersByTab[activeTab]
+  const normalizedSearch = search.trim().toLowerCase()
+
+  // Generate dynamic filters based on active items in tab
+  const filterOptions = useMemo(() => {
+    if (activeTab === 'cse') {
+      const items = currentItems as ProcurementItem[]
+      return {
+        categories: Array.from(
+          new Set(items.map((item) => item.objectCodeName).filter(Boolean))
+        ).sort() as string[],
+        units: Array.from(
+          new Set(items.map((item) => item.uomName).filter(Boolean))
+        ).sort() as string[],
+      }
+    } else {
+      const items = currentItems as NONCSEItem[]
+      return {
+        categories: Array.from(
+          new Set(items.map((item) => item.procurementCategoryName).filter(Boolean))
+        ).sort() as string[],
+        units: Array.from(
+          new Set(items.map((item) => item.uomName).filter(Boolean))
+        ).sort() as string[],
+      }
+    }
+  }, [currentItems, activeTab])
+
+  // Local filtering logic depending on item properties
+  const filteredItems = useMemo(() => {
+    if (activeTab === 'cse') {
+      const items = currentItems as ProcurementItem[]
+      return items.filter((item) => {
+        if (normalizedSearch) {
+          const matchesName = item.name?.toLowerCase().includes(normalizedSearch)
+          const matchesSpecs = item.specifications?.toLowerCase().includes(normalizedSearch)
+          const matchesObjCode = item.objectCodeName?.toLowerCase().includes(normalizedSearch)
+          const matchesUnspsc = item.unspscCodeName?.toLowerCase().includes(normalizedSearch)
+          if (!matchesName && !matchesSpecs && !matchesObjCode && !matchesUnspsc) return false
+        }
+
+        if (
+          currentFilters.categories.length > 0 &&
+          (!item.objectCodeName || !currentFilters.categories.includes(item.objectCodeName))
+        ) {
+          return false
+        }
+
+        if (
+          currentFilters.unitOfMeasures.length > 0 &&
+          (!item.uomName || !currentFilters.unitOfMeasures.includes(item.uomName))
+        ) {
+          return false
+        }
+
+        return true
+      })
+    } else {
+      const items = currentItems as NONCSEItem[]
+      return items.filter((item) => {
+        if (normalizedSearch) {
+          const matchesName = item.name?.toLowerCase().includes(normalizedSearch)
+          const matchesDesc = item.description?.toLowerCase().includes(normalizedSearch)
+          const matchesCategory = item.procurementCategoryName?.toLowerCase().includes(normalizedSearch)
+          if (!matchesName && !matchesDesc && !matchesCategory) return false
+        }
+
+        if (
+          currentFilters.categories.length > 0 &&
+          (!item.procurementCategoryName || !currentFilters.categories.includes(item.procurementCategoryName))
+        ) {
+          return false
+        }
+
+        if (
+          currentFilters.unitOfMeasures.length > 0 &&
+          (!item.uomName || !currentFilters.unitOfMeasures.includes(item.uomName))
+        ) {
+          return false
+        }
+
+        return true
+      })
+    }
+  }, [currentFilters, currentItems, normalizedSearch, activeTab])
+
+  // Pagination details
+  const pageCount = Math.max(1, Math.ceil(filteredItems.length / PAGE_SIZE))
+  const safePageIndex = Math.min(currentFilters.pageIndex, pageCount - 1)
+  const pageItems = filteredItems.slice(
+    safePageIndex * PAGE_SIZE,
+    safePageIndex * PAGE_SIZE + PAGE_SIZE
+  )
+
+  const selectedCount = selectedItems.size
+
+  // Warnings during unload
+  useEffect(() => {
+    if (!isAdding) return
+    const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+      e.preventDefault()
+      e.returnValue = 'Batch creation is in progress. Closing this page will interrupt the process.'
+      return e.returnValue
+    }
+    window.addEventListener('beforeunload', handleBeforeUnload)
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload)
+    }
+  }, [isAdding])
+
+  const updateCurrentFilters = useCallback(
+    (patch: Partial<TabFilters>, resetPage = false) => {
+      setFiltersByTab((prev) => ({
+        ...prev,
+        [activeTab]: {
+          ...prev[activeTab],
+          ...patch,
+          pageIndex: resetPage ? 0 : (patch.pageIndex ?? prev[activeTab].pageIndex),
+        },
+      }))
+    },
+    [activeTab]
+  )
+
+  const resetCurrentFilters = useCallback(() => {
+    setSearch('')
+    setFiltersByTab((prev) => ({ ...prev, [activeTab]: cloneFilters() }))
+  }, [activeTab])
+
+  const toggleFiltersCollapsed = useCallback(() => {
+    setIsFiltersCollapsed((prev) => !prev)
+  }, [])
+
+  const toggleSelected = useCallback((item: ProcurementItem | NONCSEItem, type: CatalogTab) => {
+    setSelectedItems((prev) => {
+      const next = new Map(prev)
+      if (next.has(item.id)) {
+        next.delete(item.id)
+        setConfigs((prevConfigs) => {
+          const nextConfigs = { ...prevConfigs }
+          delete nextConfigs[item.id]
+          return nextConfigs
+        })
+      } else {
+        next.set(item.id, { type, item } as SelectedItemWrapper)
+        const price = type === 'cse'
+          ? ((item as ProcurementItem).hasPrice && typeof (item as ProcurementItem).unitPrice === 'number' && ((item as ProcurementItem).unitPrice ?? 0) > 0
+            ? ((item as ProcurementItem).unitPrice ?? 0)
+            : 0)
+          : ((item as NONCSEItem).currentPrice ?? 0)
+        setConfigs((prevConfigs) => ({
+          ...prevConfigs,
+          [item.id]: {
+            unitPrice: price,
+            procurementModeId: '',
+            projectType: 'Goods',
+            papCode: '',
+            preProcurementConference: false,
+            procurementStartDate: '',
+            procurementEndDate: '',
+            expectedDeliveryStart: '',
+            expectedDeliveryEnd: '',
+            remarks: '',
+            enableAllocations: false,
+            monthlyQuantities: {
+              January: 0, February: 0, March: 0, April: 0, May: 0, June: 0,
+              July: 0, August: 0, September: 0, October: 0, November: 0, December: 0
+            }
+          }
+        }))
+      }
+      return next
+    })
+  }, [])
+
+  const updateConfig = (itemId: string, patch: Partial<ItemReviewConfig>) => {
+    setConfigs((prev) => {
+      const current = prev[itemId]
+      if (!current) return prev
+      return {
+        ...prev,
+        [itemId]: {
+          ...current,
+          ...patch,
+        },
+      }
+    })
+  }
+
+  const handleReset = useCallback(() => {
+    setStep('select')
+    setSelectedItems(new Map())
+    setSearch('')
+    setConfigs({})
+    setExpandedItemId(null)
+    setIsFiltersCollapsed(false)
+    setFiltersByTab({ cse: cloneFilters(), 'non-cse': cloneFilters() })
+    setActiveTab('cse')
+    setIsAdding(false)
+    setDetailsItemId(null)
+    setDetailsItemType(null)
+  }, [])
+
+  const forceClose = () => {
+    setConfirmCloseOpen(false)
+    handleReset()
+    onOpenChange(false)
+  }
+
+  const handleClose = () => {
+    if (isAdding) return
+    if (selectedCount > 0) {
+      setConfirmCloseOpen(true)
+    } else {
+      forceClose()
+    }
+  }
+
+  const handleConfirmAdd = async () => {
+    if (selectedCount === 0) {
+      toast.warning('Please select at least one item.')
+      return
+    }
+
+    const selectedList = Array.from(selectedItems.values())
+    const invalidItems = selectedList.filter(({ item }) => {
+      const config = configs[item.id]
+      if (!config) return true
+      if (!config.procurementModeId) return true
+      if (config.unitPrice < 0.01) return true
+      if (config.enableAllocations) {
+        const totalAllocQty = Object.values(config.monthlyQuantities).reduce((a, b) => a + b, 0)
+        if (totalAllocQty <= 0) return true
+      }
+      return false
+    })
+
+    if (invalidItems.length > 0) {
+      toast.warning('All items must have a selected Procurement Mode, a unit price >= ₱0.01, and monthly quantities if allocations are enabled.')
+      return
+    }
+
+    setIsAdding(true)
+
+    // Calculate total operations to track progress
+    let totalOps = selectedList.length
+    selectedList.forEach(({ item }) => {
+      const config = configs[item.id]
+      if (config?.enableAllocations) {
+        const activeMonths = Object.entries(config.monthlyQuantities).filter(([_, qty]) => qty > 0)
+        totalOps += activeMonths.length
+      }
+    })
+
+    setTotalProgress(totalOps)
+    setProgressIndex(0)
+
+    let successCount = 0
+    let failedCount = 0
+
+    try {
+      for (const { type, item } of selectedList) {
+        const config = configs[item.id]!
+        setProgressIndex((prev) => prev + 1)
+
+        let createdItemId = ''
+        try {
+          const payload = {
+            ppmpExpenditureItemId,
+            name: item.name || '',
+            description: type === 'cse'
+              ? (item as ProcurementItem).specifications || ''
+              : (item as NONCSEItem).description || '',
+            unit: item.id, // Or item.uomId
+            unitPrice: config.unitPrice,
+            procurementModeId: config.procurementModeId,
+            cseItemId: type === 'cse' ? item.id : undefined,
+            nonCseItemId: type === 'non-cse' ? item.id : undefined,
+            projectType: config.projectType,
+            papCode: config.papCode || undefined,
+            preProcurementConference: config.preProcurementConference,
+            procurementStartDate: config.procurementStartDate ? new Date(config.procurementStartDate).toISOString() : undefined,
+            procurementEndDate: config.procurementEndDate ? new Date(config.procurementEndDate).toISOString() : undefined,
+            expectedDeliveryStart: config.expectedDeliveryStart ? new Date(config.expectedDeliveryStart).toISOString() : undefined,
+            expectedDeliveryEnd: config.expectedDeliveryEnd ? new Date(config.expectedDeliveryEnd).toISOString() : undefined,
+            remarks: config.remarks || undefined,
+            mopOverride: false,
+          }
+
+          const response = await createItem({
+            pathParams: {},
+            payload,
+          })
+          createdItemId = response.data.id
+          successCount++
+        } catch (err) {
+          failedCount++
+          console.error(`Failed to add item: ${item.name}`, err)
+          continue // Skip allocations if item creation failed
+        }
+
+        // Add monthly allocations sequentially if enabled
+        if (config.enableAllocations && createdItemId) {
+          const activeMonths = Object.entries(config.monthlyQuantities).filter(([_, qty]) => qty > 0)
+          for (const [month, qty] of activeMonths) {
+            setProgressIndex((prev) => prev + 1)
+            try {
+              await createAllocation({
+                pathParams: {},
+                payload: {
+                  ppmpItemId: createdItemId,
+                  allocationMonth: month as AllocationMonth,
+                  quantity: qty,
+                }
+              })
+            } catch (err) {
+              console.error(`Failed to add allocation for ${month}: ${item.name}`, err)
+            }
+          }
+        }
+      }
+
+      if (successCount > 0) {
+        toast.success(`Successfully added ${successCount} item(s) to expenditure block.`)
+        onSuccess?.()
+      }
+      if (failedCount > 0) {
+        toast.error(`Failed to add ${failedCount} item(s).`)
+      }
+
+      // Invalidate queries to refresh lists
+      void queryClient.invalidateQueries({
+        predicate: (query) =>
+          typeof query.queryKey[0] === 'string' &&
+          (query.queryKey[0].startsWith('/ppmp-items') ||
+            query.queryKey[0].startsWith('/ppmp-expenditure-items') ||
+            query.queryKey[0].startsWith('/ppmp')),
+      })
+      handleClose()
+    } catch (globalErr) {
+      toast.error('An error occurred during batch creation.')
+    } finally {
+      setIsAdding(false)
+    }
+  }
+
+  const selectedList = useMemo(() => Array.from(selectedItems.values()), [selectedItems])
+
+  return (
+    <>
+      <ResponsiveDialog
+        open={isOpen}
+        onOpenChange={(next) => {
+          if (!next) {
+            if (isAdding) return
+            if (selectedCount > 0) {
+              setConfirmCloseOpen(true)
+            } else {
+              handleClose()
+            }
+          }
+        }}
+        title={step === 'select' ? 'Add Items to Workspace' : 'Configure Selected Items'}
+        description={
+          step === 'select'
+            ? 'Browse procurement catalog items, filter quickly, and select items to add to the PPMP.'
+            : 'Define procurement mode and individual unit prices for the selected items.'
+        }
+        size="5xl"
+        showCloseButton={!isAdding}
+        onPointerDownOutside={
+          isAdding
+            ? (e) => e.preventDefault()
+            : selectedCount > 0
+              ? (e) => {
+                e.preventDefault()
+                setConfirmCloseOpen(true)
+              }
+              : undefined
+        }
+        footer={
+          <div className="sticky bottom-0 border-t border-border bg-background/95 px-1 pt-4 backdrop-blur">
+            <div className="flex flex-col gap-3 rounded-lg border border-border bg-muted/20 px-4 py-3 sm:flex-row sm:items-center sm:justify-between">
+              <div className="flex items-center gap-3 text-sm text-muted-foreground">
+                <Badge variant="soft" color={selectedCount > 0 ? 'default' : 'secondary'}>
+                  {selectedCount} selected
+                </Badge>
+                <span>
+                  {step === 'select'
+                    ? selectedCount > 0
+                      ? 'Items ready to be configured.'
+                      : 'Select one or more items to continue.'
+                    : 'Specify unit prices and procurement mode to finalize.'}
+                </span>
+              </div>
+              <div className="flex items-center gap-2">
+                {step === 'select' ? (
+                  <>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setSelectedItems(new Map())}
+                      disabled={selectedCount === 0}
+                    >
+                      Clear selection
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={() => setStep('configure')}
+                      disabled={selectedCount === 0}
+                    >
+                      Review Selected ({selectedCount})
+                    </Button>
+                  </>
+                ) : (
+                  <>
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setStep('select')}
+                      disabled={isAdding}
+                      className="gap-2"
+                    >
+                      <ArrowLeft className="h-4 w-4" />
+                      Back to Catalog
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={handleConfirmAdd}
+                      disabled={isAdding || selectedCount === 0}
+                      className="gap-2 bg-primary hover:bg-primary/95 text-white"
+                    >
+                      {isAdding ? (
+                        <>
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Adding...
+                        </>
+                      ) : (
+                        'Add to Workspace'
+                      )}
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
+        }
+      >
+        {/* 
+        Safety Overlay during Batch Addition
+      */}
+        {isAdding && (
+          <div className="absolute inset-0 z-50 flex flex-col items-center justify-center bg-background/80 backdrop-blur-sm p-6 text-center">
+            <div className="bg-background border border-border shadow-xl rounded-xl p-8 max-w-md w-full flex flex-col items-center space-y-4">
+              <Loader2 className="h-12 w-12 text-primary animate-spin" />
+              <div className="space-y-2">
+                <h3 className="text-lg font-semibold text-foreground">Creating PPMP Items</h3>
+                <p className="text-sm text-muted-foreground">
+                  Adding item <span className="font-semibold text-foreground">{progressIndex}</span> of{' '}
+                  <span className="font-semibold text-foreground">{totalProgress}</span>.
+                </p>
+              </div>
+              <div className="w-full bg-muted h-2 rounded-full overflow-hidden">
+                <div
+                  className="bg-primary h-full transition-all duration-300 rounded-full"
+                  style={{ width: `${(progressIndex / totalProgress) * 100}%` }}
+                />
+              </div>
+              <p className="text-xs text-rose-500 font-medium">
+                Please do not close the modal, refresh the page, or navigate away.
+              </p>
+            </div>
+          </div>
+        )}
+
+        {step === 'select' ? (
+          <div className="space-y-4 pr-1">
+            <Tabs
+              value={activeTab}
+              onValueChange={(value) => setActiveTab(value as CatalogTab)}
+            >
+              <div className="flex flex-col gap-3 rounded-xl border border-border bg-muted/20 p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                    <SlidersHorizontal className="h-4 w-4 text-primary" />
+                    Catalog selection
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Choose between CSE and Non-CSE catalogs, then refine using the side panel.
+                  </p>
+                </div>
+                <TabsList variant="bordered" className="p-2 justify-start gap-1 overflow-x-auto h-fit">
+                  <TabsTrigger value="cse" className="gap-2 flex items-center px-2.5 sm:px-3 p-1">
+                    <LucidePackage className="h-4 w-4" />
+                    CSE / PS-DBM
+                  </TabsTrigger>
+                  <TabsTrigger value="non-cse" className="gap-2 flex items-center px-2.5 sm:px-3 p-1">
+                    <LucidePackageOpen className="h-4 w-4" />
+                    Non-CSE / Agency
+                  </TabsTrigger>
+                </TabsList>
+              </div>
+
+              {(['cse', 'non-cse'] as const).map((tab) => {
+                const tabFilters = filtersByTab[tab]
+                const tabItems = tab === 'cse' ? cseFilteredItems : nonCseFilteredItems
+                const tabFiltered = tab === activeTab ? filteredItems : tabItems
+                const tabPageCount =
+                  tab === activeTab
+                    ? pageCount
+                    : Math.max(1, Math.ceil(tabFiltered.length / PAGE_SIZE))
+                const tabPageIndex = tab === activeTab ? safePageIndex : tabFilters.pageIndex
+                const tabPageItems =
+                  tab === activeTab
+                    ? pageItems
+                    : tabFiltered.slice(tabPageIndex * PAGE_SIZE, tabPageIndex * PAGE_SIZE + PAGE_SIZE)
+
+                return (
+                  <TabsContent key={tab} value={tab} className="mt-4">
+                    <div className="grid gap-4 lg:grid-cols-[minmax(0,auto)_minmax(0,1fr)]">
+                      {/* Filters Sidebar */}
+                      <aside
+                        className={cn(
+                          'lg:sticky lg:top-0 lg:self-start transition-all duration-200',
+                          isFiltersCollapsed ? 'lg:w-16' : 'lg:w-[300px]'
+                        )}
+                      >
+                        <div className="overflow-hidden rounded-xl border border-border bg-background shadow-sm">
+                          <div
+                            className={cn(
+                              'flex items-center gap-2 border-b border-border bg-muted/20',
+                              isFiltersCollapsed
+                                ? 'flex-col justify-center px-2 py-3'
+                                : 'justify-between px-4 py-3'
+                            )}
+                          >
+                            {isFiltersCollapsed ? (
+                              <>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={toggleFiltersCollapsed}
+                                  className="h-9 w-9 p-0"
+                                  title="Expand filters"
+                                  aria-label="Expand filters"
+                                >
+                                  <ChevronRight className="h-4 w-4" />
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="ghost"
+                                  size="sm"
+                                  onClick={resetCurrentFilters}
+                                  className="h-9 w-9 p-0"
+                                  title="Reset filters"
+                                  aria-label="Reset filters"
+                                >
+                                  <RefreshCcw className="h-4 w-4" />
+                                </Button>
+                              </>
+                            ) : (
+                              <>
+                                <div className="min-w-0">
+                                  <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+                                    <Search className="h-4 w-4 text-primary" />
+                                    <span>Search & filters</span>
+                                  </div>
+                                  <p className="mt-0.5 text-xs text-muted-foreground">
+                                    {tabFilters.categories.length} categories,{' '}
+                                    {tabFilters.unitOfMeasures.length} units
+                                  </p>
+                                </div>
+                                <div className="flex items-center gap-1">
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={resetCurrentFilters}
+                                    className="h-8 gap-1 px-2 text-xs"
+                                  >
+                                    <RefreshCcw className="h-3.5 w-3.5" />
+                                    Reset
+                                  </Button>
+                                  <Button
+                                    type="button"
+                                    variant="ghost"
+                                    size="sm"
+                                    onClick={toggleFiltersCollapsed}
+                                    className="h-8 w-8 p-0"
+                                    title="Collapse filters"
+                                    aria-label="Collapse filters"
+                                  >
+                                    <ChevronLeft className="h-4 w-4" />
+                                  </Button>
+                                </div>
+                              </>
+                            )}
+                          </div>
+
+                          {!isFiltersCollapsed ? (
+                            <div className="space-y-4 p-4">
+                              {/* Search Input */}
+                              <div className="space-y-2">
+                                <label className="text-xs font-medium text-muted-foreground">
+                                  Search
+                                </label>
+                                <div className="relative">
+                                  <Search className="pointer-events-none absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                                  <Input
+                                    placeholder="Name, description, category…"
+                                    value={search}
+                                    onChange={(event) => setSearch(event.target.value)}
+                                    className="pl-9 text-xs h-9"
+                                  />
+                                </div>
+                              </div>
+
+                              <Separator />
+
+                              {/* Category Filter */}
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between gap-2">
+                                  <label className="text-xs font-medium text-muted-foreground">
+                                    Category
+                                  </label>
+                                  <span className="text-[11px] text-muted-foreground">
+                                    {tabFilters.categories.length} selected
+                                  </span>
+                                </div>
+                                <ScrollArea className="h-44 rounded-md border border-border bg-muted/10 p-2">
+                                  <div className="space-y-2 pr-2">
+                                    {filterOptions.categories.length === 0 ? (
+                                      <p className="text-xs text-muted-foreground">
+                                        No categories available.
+                                      </p>
+                                    ) : (
+                                      filterOptions.categories.map((category) => (
+                                        <label
+                                          key={category}
+                                          className="flex cursor-pointer items-center gap-2 rounded-md px-2 py-1.5 text-xs hover:bg-muted/50"
+                                        >
+                                          <Checkbox
+                                            checked={tabFilters.categories.includes(category)}
+                                            onCheckedChange={() =>
+                                              updateCurrentFilters(
+                                                {
+                                                  categories: tabFilters.categories.includes(category)
+                                                    ? tabFilters.categories.filter((c) => c !== category)
+                                                    : [...tabFilters.categories, category],
+                                                },
+                                                true
+                                              )
+                                            }
+                                          />
+                                          <span className="min-w-0 flex-1 truncate">
+                                            {category}
+                                          </span>
+                                        </label>
+                                      ))
+                                    )}
+                                  </div>
+                                </ScrollArea>
+                              </div>
+
+                              {/* UOM Filter */}
+                              <div className="space-y-2">
+                                <div className="flex items-center justify-between gap-2">
+                                  <label className="text-xs font-medium text-muted-foreground">
+                                    Unit of measure
+                                  </label>
+                                  <span className="text-[11px] text-muted-foreground">
+                                    {tabFilters.unitOfMeasures.length} selected
+                                  </span>
+                                </div>
+                                <div className="flex flex-wrap gap-2">
+                                  {filterOptions.units.length === 0 ? (
+                                    <p className="text-xs text-muted-foreground">
+                                      No unit options available.
+                                    </p>
+                                  ) : (
+                                    filterOptions.units.map((unit) => {
+                                      const isSelected = tabFilters.unitOfMeasures.includes(unit)
+                                      return (
+                                        <button
+                                          key={unit}
+                                          type="button"
+                                          onClick={() =>
+                                            updateCurrentFilters(
+                                              {
+                                                unitOfMeasures: isSelected
+                                                  ? tabFilters.unitOfMeasures.filter((u) => u !== unit)
+                                                  : [...tabFilters.unitOfMeasures, unit],
+                                              },
+                                              true
+                                            )
+                                          }
+                                          className={cn(
+                                            'rounded-full border px-2.5 py-0.5 text-[11px] transition-colors',
+                                            isSelected
+                                              ? 'border-primary bg-primary/10 text-primary'
+                                              : 'border-border bg-background text-muted-foreground hover:text-foreground'
+                                          )}
+                                        >
+                                          {unit}
+                                        </button>
+                                      )
+                                    })
+                                  )}
+                                </div>
+                              </div>
+                            </div>
+                          ) : (
+                            <div className="flex flex-col items-center gap-3 px-2 py-4 text-center">
+                              <div className="flex h-10 w-10 items-center justify-center rounded-full bg-muted/40 text-primary ring-1 ring-border">
+                                <SlidersHorizontal className="h-4 w-4" />
+                              </div>
+                              <div className="space-y-1">
+                                <p className="text-xs font-medium text-foreground">Filters hidden</p>
+                                <p className="text-[11px] text-muted-foreground">Expand to refine.</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      </aside>
+
+                      {/* Items Grid & Pagination */}
+                      <section className="space-y-4 min-w-0">
+                        {isCatalogLoading ? (
+                          <div className="flex flex-col items-center justify-center py-20 text-muted-foreground space-y-2">
+                            <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                            <p className="text-xs">Loading library items...</p>
+                          </div>
+                        ) : tabFiltered.length === 0 ? (
+                          <EmptyState message="Try clearing filters or checking your search query." />
+                        ) : (
+                          <>
+                            {/* Top result info */}
+                            <div className="flex items-center justify-between border border-border bg-background px-4 py-3 rounded-xl shadow-sm">
+                              <div className="text-xs font-semibold text-foreground">
+                                {tabFiltered.length} matching item(s)
+                              </div>
+                              <div className="text-xs text-muted-foreground">
+                                Page {tabPageIndex + 1} of {tabPageCount}
+                              </div>
+                            </div>
+
+                            {/* Grid layout */}
+                            <div className="grid gap-3 min-[350px]:grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
+                              {tabPageItems.map((item) => {
+                                const isSelected = selectedItems.has(item.id)
+                                const bgTone = tone(item.name || item.id)
+                                const categoryText = tab === 'cse'
+                                  ? (item as ProcurementItem).objectCodeName
+                                  : (item as NONCSEItem).procurementCategoryName
+
+                                return (
+                                  <div
+                                    key={item.id}
+                                    role="button"
+                                    aria-pressed={isSelected}
+                                    tabIndex={0}
+                                    onClick={() => toggleSelected(item, tab)}
+                                    onKeyDown={(e) => {
+                                      if (e.key === ' ' || e.key === 'Enter') {
+                                        e.preventDefault()
+                                        toggleSelected(item, tab)
+                                      }
+                                    }}
+                                    className={cn(
+                                      'group flex flex-col justify-between rounded-2xl border p-3.5 text-left bg-background transition-all duration-300 relative select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
+                                      isSelected
+                                        ? 'border-primary bg-primary/[0.02] ring-1 ring-primary shadow-md scale-[1.01]'
+                                        : 'border-slate-100 hover:border-slate-300 hover:shadow-lg hover:scale-[1.01]'
+                                    )}
+                                  >
+                                    {/* Top Row: Floating Tags / Checkbox */}
+                                    <div className="absolute top-5 left-5 right-5 z-10 flex items-center justify-between pointer-events-none" onClick={(e) => e.stopPropagation()}>
+                                      <Badge
+                                        variant="soft"
+                                        color={tab === 'cse' ? 'success' : 'info'}
+                                        className="text-[9px] px-2 py-0.5 font-bold uppercase tracking-wider backdrop-blur-md bg-white/85 shadow-sm border border-slate-100/50"
+                                      >
+                                        {tab === 'cse' ? 'CSE' : 'Non-CSE'}
+                                      </Badge>
+                                      <div className="pointer-events-auto">
+                                        <Checkbox
+                                          checked={isSelected}
+                                          onCheckedChange={() => toggleSelected(item, tab)}
+                                          className="h-5 w-5 rounded-md border-slate-300 bg-white/95 shadow-sm data-[state=checked]:bg-primary data-[state=checked]:border-primary"
+                                          onClick={(e) => e.stopPropagation()}
+                                        />
+                                      </div>
+                                    </div>
+
+                                    {/* Image Area */}
+                                    <div className="w-full bg-slate-50/50 rounded-xl border border-slate-100 overflow-hidden flex items-center justify-center p-4 relative min-h-[160px]" onClick={(e) => e.stopPropagation()}>
+                                      <DocumentViewer
+                                        src={(item as ProcurementItem).imageURL}
+                                        alt={item.name}
+                                        size="full"
+                                        aspectRatio="square"
+                                        className="max-h-[140px] max-w-[140px] border-none shadow-none bg-transparent hover:shadow-none"
+                                        fallbackInitials={initials(item.name || '')}
+                                        fallbackBgClass={bgTone}
+                                      />
+                                    </div>
+
+                                    {/* Details Area */}
+                                    <div className="mt-3.5 space-y-2 flex-1 flex flex-col justify-between">
+                                      <div className="space-y-1">
+                                        <h4 className="line-clamp-2 text-xs font-bold text-slate-800 leading-snug group-hover:text-primary transition-colors">
+                                          {item.name || 'Unnamed Item'}
+                                        </h4>
+                                        <p className="text-[10px] tracking-wide text-slate-400 font-mono">
+                                          {item.productCode || item.id.slice(0, 12)}
+                                        </p>
+                                      </div>
+
+                                      {/* Row of Badges / Details button */}
+                                      <div className="pt-2 flex flex-col gap-2">
+                                        <div className="flex items-center justify-between text-[11px] gap-2 flex-wrap">
+                                          <span className="inline-flex items-center gap-1 text-[10px] text-slate-500 font-medium bg-slate-100/80 px-2 py-0.5 rounded-full truncate max-w-[140px]" title={categoryText || 'General'}>
+                                            <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
+                                            {categoryText || 'General'}
+                                          </span>
+                                          <span className="inline-flex items-center gap-1 text-[10px] text-slate-500 font-medium bg-slate-100/80 px-2 py-0.5 rounded-full shrink-0">
+                                            UOM: {item.uomName || 'pcs'}
+                                          </span>
+                                        </div>
+
+                                        {tab === 'non-cse' && (item as NONCSEItem).currentPrice !== undefined && (
+                                          <div className="text-xs font-bold text-slate-850 flex items-center justify-between border-t border-slate-100/80 pt-1.5 mt-0.5">
+                                            <span className="text-[10px] text-slate-400 font-normal">Catalog Price</span>
+                                            <span className="text-primary font-extrabold text-[12px]">₱{(item as NONCSEItem).currentPrice?.toFixed(2)}</span>
+                                          </div>
+                                        )}
+
+                                        <div className="flex items-center justify-between border-t border-slate-100/80 pt-2 mt-1">
+                                          <button
+                                            type="button"
+                                            onClick={(e) => {
+                                              e.stopPropagation()
+                                              setDetailsItemId(item.id)
+                                              setDetailsItemType(tab)
+                                            }}
+                                            className="inline-flex items-center gap-1 text-[10px] font-bold text-primary hover:underline transition-all"
+                                          >
+                                            <svg className="h-3 w-3 stroke-[2]" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                            </svg>
+                                            View Details
+                                          </button>
+                                          {isSelected && (
+                                            <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+                                          )}
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </div>
+                                )
+                              })}
+                            </div>
+
+                            {/* Pagination controls */}
+                            {tabPageCount > 1 && (
+                              <div className="flex flex-col sm:flex-row items-center justify-between pt-6 border-t border-slate-100 gap-4 mt-6">
+                                <span className="text-xs text-slate-500 font-medium">
+                                  Showing items <span className="font-semibold text-slate-800">{tabPageIndex * PAGE_SIZE + 1}</span>–
+                                  <span className="font-semibold text-slate-800">{Math.min((tabPageIndex + 1) * PAGE_SIZE, tabFiltered.length)}</span> of{' '}
+                                  <span className="font-semibold text-slate-800">{tabFiltered.length}</span>
+                                </span>
+
+                                <div className="flex items-center gap-1.5 flex-wrap">
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={tabPageIndex === 0}
+                                    onClick={() => updateCurrentFilters({ pageIndex: tabPageIndex - 1 })}
+                                    className="h-8 text-xs font-semibold px-2.5 rounded-lg border-slate-200 hover:bg-slate-50 transition-colors"
+                                  >
+                                    <ChevronLeft className="h-3.5 w-3.5 mr-1" />
+                                    Prev
+                                  </Button>
+
+                                  {/* Page numbers */}
+                                  {Array.from({ length: tabPageCount }).map((_, idx) => {
+                                    const isCurrent = idx === tabPageIndex
+                                    const isNear = Math.abs(idx - tabPageIndex) <= 2
+                                    const isEnds = idx === 0 || idx === tabPageCount - 1
+
+                                    if (!isNear && !isEnds) {
+                                      if (idx === 1 || idx === tabPageCount - 2) {
+                                        return (
+                                          <span key={`ell-${idx}`} className="text-slate-400 px-1 text-xs select-none">
+                                            ...
+                                          </span>
+                                        )
+                                      }
+                                      return null
+                                    }
+
+                                    return (
+                                      <Button
+                                        key={idx}
+                                        type="button"
+                                        variant={isCurrent ? "default" : "outline"}
+                                        size="sm"
+                                        onClick={() => updateCurrentFilters({ pageIndex: idx })}
+                                        className={cn(
+                                          "h-8 w-8 text-xs font-bold rounded-lg transition-all",
+                                          isCurrent
+                                            ? "bg-primary text-white shadow-sm border-primary"
+                                            : "border-slate-200 hover:border-slate-300 hover:bg-slate-50 text-slate-600"
+                                        )}
+                                      >
+                                        {idx + 1}
+                                      </Button>
+                                    )
+                                  })}
+
+                                  <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    disabled={tabPageIndex === tabPageCount - 1}
+                                    onClick={() => updateCurrentFilters({ pageIndex: tabPageIndex + 1 })}
+                                    className="h-8 text-xs font-semibold px-2.5 rounded-lg border-slate-200 hover:bg-slate-50 transition-colors"
+                                  >
+                                    Next
+                                    <ChevronRight className="h-3.5 w-3.5 ml-1" />
+                                  </Button>
+                                </div>
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </section>
+                    </div>
+                  </TabsContent>
+                )
+              })}
+            </Tabs>
+          </div>
+        ) : (
+          /* Step 2: Review and Batch Configuration */
+          <div className="space-y-4">
+            <div className="rounded-xl border border-border bg-muted/20 p-4 shadow-sm flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
+                  <SlidersHorizontal className="h-4 w-4 text-primary" />
+                  Configure Item Details & Allocations
+                </h3>
+                <p className="text-xs text-muted-foreground">
+                  Expand each item below to set its Procurement Mode, Project Type, and optional monthly quantities.
+                </p>
+              </div>
+            </div>
+
+            <div className="border border-border rounded-xl overflow-hidden shadow-sm">
+              <div className="bg-muted/30 px-4 py-3 border-b border-border flex justify-between items-center">
+                <span className="text-xs font-bold text-foreground">Items Preview ({selectedCount})</span>
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wider">Expand to Edit</span>
+              </div>
+
+              <ScrollArea className="max-h-[500px] overflow-y-auto">
+                <div className="divide-y divide-border">
+                  {selectedList.map(({ type, item }, index) => {
+                    const isPriceLocked = type === 'cse'
+                      ? ((item as ProcurementItem).hasPrice && typeof (item as ProcurementItem).unitPrice === 'number' && ((item as ProcurementItem).unitPrice ?? 0) > 0)
+                      : (typeof (item as NONCSEItem).currentPrice === 'number' && ((item as NONCSEItem).currentPrice ?? 0) > 0)
+
+                    const config = configs[item.id] || {
+                      unitPrice: type === 'cse'
+                        ? ((item as ProcurementItem).hasPrice && typeof (item as ProcurementItem).unitPrice === 'number' && ((item as ProcurementItem).unitPrice ?? 0) > 0
+                          ? ((item as ProcurementItem).unitPrice ?? 0)
+                          : 0)
+                        : ((item as NONCSEItem).currentPrice ?? 0),
+                      procurementModeId: '',
+                      projectType: 'Goods',
+                      papCode: '',
+                      preProcurementConference: false,
+                      procurementStartDate: '',
+                      procurementEndDate: '',
+                      expectedDeliveryStart: '',
+                      expectedDeliveryEnd: '',
+                      remarks: '',
+                      enableAllocations: false,
+                      monthlyQuantities: {
+                        January: 0, February: 0, March: 0, April: 0, May: 0, June: 0,
+                        July: 0, August: 0, September: 0, October: 0, November: 0, December: 0
+                      }
+                    }
+
+                    const isExpanded = expandedItemId === item.id
+                    const totalQty = config.enableAllocations
+                      ? Object.values(config.monthlyQuantities).reduce((a, b) => a + b, 0)
+                      : 0
+                    const calculatedTotal = totalQty * config.unitPrice
+
+                    const hasPriceError = !config.unitPrice || config.unitPrice < 0.01
+                    const hasMopError = !config.procurementModeId
+                    const hasAllocError = config.enableAllocations && totalQty <= 0
+                    const hasAnyError = hasPriceError || hasMopError || hasAllocError
+
+                    const specText = type === 'cse'
+                      ? (item as ProcurementItem).specifications
+                      : (item as NONCSEItem).description
+                    const categoryText = type === 'cse'
+                      ? (item as ProcurementItem).objectCodeName
+                      : (item as NONCSEItem).procurementCategoryName
+
+                    const MONTH_NAMES: AllocationMonth[] = [
+                      'January', 'February', 'March', 'April', 'May', 'June',
+                      'July', 'August', 'September', 'October', 'November', 'December'
+                    ]
+
+                    return (
+                      <div key={item.id} className={cn("p-4 bg-background transition-colors flex flex-col gap-4 border-l-4", hasAnyError ? "border-l-red-500 bg-red-500/[0.015]" : "border-l-transparent hover:bg-muted/5")}>
+                        {/* Header Summary Row */}
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                          <div
+                            className="min-w-0 flex-1 flex gap-3 cursor-pointer select-none"
+                            onClick={() => setExpandedItemId(isExpanded ? null : item.id)}
+                          >
+                            {((item as ProcurementItem).imageURL) && (
+                              <DocumentViewer
+                                src={(item as ProcurementItem).imageURL}
+                                alt={item.name}
+                                size="xs"
+                                aspectRatio="square"
+                                enableLightbox={false}
+                              />
+                            )}
+                            <div className="min-w-0 flex-1 space-y-1">
+                              <div className="flex items-center gap-2 flex-wrap">
+                                <span className="text-xs font-semibold text-muted-foreground">#{index + 1}</span>
+                                <span className="text-xs font-bold text-foreground truncate max-w-[200px] sm:max-w-xs">{item.name}</span>
+                                <Badge variant="soft" color={type === 'cse' ? 'success' : 'info'} className="text-[9px] px-1 py-0 font-medium">
+                                  {type === 'cse' ? 'CSE' : 'Non-CSE'}
+                                </Badge>
+                                {hasAnyError && (
+                                  <Badge className="text-[9px] px-1.5 py-0.5 font-bold bg-red-500/10 text-red-500 border-none animate-pulse">
+                                    Config Required
+                                  </Badge>
+                                )}
+                              </div>
+                              {specText && (
+                                <p className="text-[11px] text-muted-foreground truncate pr-4 max-w-lg">
+                                  {specText}
+                                </p>
+                              )}
+                              <div className="flex items-center gap-4 text-[10px] text-muted-foreground">
+                                <span>UOM: <strong className="text-foreground">{item.uomName || 'pcs'}</strong></span>
+                                <span>Category: <strong className="text-foreground">{categoryText || 'N/A'}</strong></span>
+                                {config.enableAllocations && (
+                                  <span>Total Qty: <strong className="text-foreground">{totalQty}</strong></span>
+                                )}
+                              </div>
+                            </div>
+                          </div>
+
+                          <div className="shrink-0 flex items-center gap-3">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={(e) => {
+                                e.stopPropagation()
+                                setDetailsItemId(item.id)
+                                setDetailsItemType(type)
+                              }}
+                              className="h-8 text-[11px] font-semibold text-primary rounded-lg px-2 hover:bg-muted/50"
+                            >
+                              View Details
+                            </Button>
+                            <div className="text-right">
+                              <div className="text-[10px] text-muted-foreground uppercase font-bold">Estimated Cost</div>
+                              <div className="text-xs font-bold text-foreground flex items-center justify-end">
+                                {new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format(calculatedTotal)}
+                              </div>
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => setExpandedItemId(isExpanded ? null : item.id)}
+                              className="h-8 w-8 text-default-550 rounded-lg"
+                            >
+                              {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                            </Button>
+                          </div>
+                        </div>
+
+                        {/* Collapsible Content */}
+                        {isExpanded && (
+                          <div className="grid gap-4 border-t border-border/60 pt-4 mt-2 animate-in fade-in slide-in-from-top-2 duration-200">
+                            <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+                              {/* Unit Price */}
+                              <div className="space-y-1.5">
+                                <label htmlFor={`price-${item.id}`} className="text-xs font-semibold text-muted-foreground select-none">Unit Price *</label>
+                                <div className="relative w-full">
+                                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-semibold">₱</span>
+                                  <Input
+                                    id={`price-${item.id}`}
+                                    type="number"
+                                    step="0.01"
+                                    placeholder="0.00"
+                                    value={config.unitPrice || ''}
+                                    disabled={isPriceLocked}
+                                    onChange={(e) => updateConfig(item.id, { unitPrice: Math.max(0, Number.parseFloat(e.target.value) || 0) })}
+                                    className={cn(
+                                      'pl-6 text-xs h-9 w-full border-default-200 focus-visible:ring-primary/25',
+                                      isPriceLocked && 'bg-default-100/60 cursor-not-allowed font-semibold text-default-600',
+                                      hasPriceError && 'border-red-500 focus-visible:ring-red-500/25 bg-red-50/20'
+                                    )}
+                                  />
+                                </div>
+                                {isPriceLocked && (
+                                  <p className="text-[10px] text-default-450 italic">
+                                    Inherited locked catalog price
+                                  </p>
+                                )}
+                              </div>
+
+                              {/* Procurement Mode */}
+                              <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-muted-foreground">Procurement Mode *</label>
+                                <Select
+                                  value={config.procurementModeId}
+                                  onValueChange={(val) => updateConfig(item.id, { procurementModeId: val })}
+                                >
+                                  <SelectTrigger className={cn("w-full border-default-200 text-xs h-9 focus:ring-primary/25", hasMopError && "border-red-500 bg-red-50/20")}>
+                                    <SelectValue placeholder="Select Mode *" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    {procurementModes.map((m) => (
+                                      <SelectItem key={m.id} value={m.id} className="text-xs">
+                                        {m.name}
+                                      </SelectItem>
+                                    ))}
+                                  </SelectContent>
+                                </Select>
+                              </div>
+
+                              {/* Project Type */}
+                              <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-muted-foreground">Project Type</label>
+                                <Select
+                                  value={config.projectType}
+                                  onValueChange={(val: ProcurementProjectType) => updateConfig(item.id, { projectType: val })}
+                                >
+                                  <SelectTrigger className="w-full border-default-200 text-xs h-9">
+                                    <SelectValue placeholder="Select Project Type" />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="Goods" className="text-xs">Goods</SelectItem>
+                                    <SelectItem value="Infrastructure" className="text-xs">Infrastructure</SelectItem>
+                                    <SelectItem value="ConsultingServices" className="text-xs">Consulting Services</SelectItem>
+                                    <SelectItem value="GeneralSupportServices" className="text-xs">General Support Services</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                            </div>
+
+                            <div className="grid gap-4 sm:grid-cols-2">
+                              {/* Milestone Dates */}
+                              <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-muted-foreground">Procurement Schedule</label>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <Input
+                                    type="date"
+                                    value={config.procurementStartDate || ''}
+                                    onChange={(e) => updateConfig(item.id, { procurementStartDate: e.target.value })}
+                                    className="text-xs h-9 border-default-200"
+                                    placeholder="Start"
+                                  />
+                                  <Input
+                                    type="date"
+                                    value={config.procurementEndDate || ''}
+                                    onChange={(e) => updateConfig(item.id, { procurementEndDate: e.target.value })}
+                                    className="text-xs h-9 border-default-200"
+                                    placeholder="End"
+                                  />
+                                </div>
+                              </div>
+
+                              <div className="space-y-1.5">
+                                <label className="text-xs font-semibold text-muted-foreground">Expected Delivery Window</label>
+                                <div className="grid grid-cols-2 gap-2">
+                                  <Input
+                                    type="date"
+                                    value={config.expectedDeliveryStart || ''}
+                                    onChange={(e) => updateConfig(item.id, { expectedDeliveryStart: e.target.value })}
+                                    className="text-xs h-9 border-default-200"
+                                    placeholder="Start"
+                                  />
+                                  <Input
+                                    type="date"
+                                    value={config.expectedDeliveryEnd || ''}
+                                    onChange={(e) => updateConfig(item.id, { expectedDeliveryEnd: e.target.value })}
+                                    className="text-xs h-9 border-default-200"
+                                    placeholder="End"
+                                  />
+                                </div>
+                              </div>
+                            </div>
+
+                            <div className="grid gap-4 sm:grid-cols-3 sm:items-center">
+                              {/* PAP Code */}
+                              <div className="space-y-1.5 sm:col-span-2">
+                                <label className="text-xs font-semibold text-muted-foreground">PAP Code</label>
+                                <Input
+                                  value={config.papCode || ''}
+                                  placeholder="e.g. 5020301000"
+                                  onChange={(e) => updateConfig(item.id, { papCode: e.target.value })}
+                                  className="text-xs h-9 border-default-200"
+                                />
+                              </div>
+
+                              {/* Pre-procurement Conference */}
+                              <div className="flex items-center gap-2 pt-4 sm:pt-6">
+                                <Checkbox
+                                  id={`conf-${item.id}`}
+                                  checked={config.preProcurementConference}
+                                  onCheckedChange={(checked) => updateConfig(item.id, { preProcurementConference: !!checked })}
+                                />
+                                <label htmlFor={`conf-${item.id}`} className="text-xs text-foreground cursor-pointer select-none font-semibold">
+                                  Pre-procurement Conference
+                                </label>
+                              </div>
+                            </div>
+
+                            {/* Remarks */}
+                            <div className="space-y-1.5">
+                              <label className="text-xs font-semibold text-muted-foreground">Remarks</label>
+                              <Textarea
+                                placeholder="Any specific comments or justifications..."
+                                value={config.remarks || ''}
+                                onChange={(e) => updateConfig(item.id, { remarks: e.target.value })}
+                                className="text-xs min-h-[60px] border-default-200"
+                              />
+                            </div>
+
+                            {/* Allocations Checkbox */}
+                            <div className="flex items-center gap-2 pt-3 border-t border-border/40">
+                              <Checkbox
+                                id={`alloc-${item.id}`}
+                                checked={config.enableAllocations}
+                                onCheckedChange={(checked) => updateConfig(item.id, { enableAllocations: !!checked })}
+                              />
+                              <label htmlFor={`alloc-${item.id}`} className="text-xs font-bold text-foreground cursor-pointer select-none">
+                                Configure Monthly Quantity Distributions (Jan - Dec)
+                              </label>
+                            </div>
+
+                            {/* Allocations Input Grid */}
+                            {config.enableAllocations && (
+                              <div className="p-3 bg-muted/30 border border-border/80 rounded-lg space-y-3">
+                                <div className="text-[10px] text-muted-foreground font-semibold flex justify-between items-center">
+                                  <span>Distribute units across fiscal year months</span>
+                                  <span className={cn(hasAllocError && "text-red-500 font-bold")}>Total Units: {totalQty}</span>
+                                </div>
+                                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                                  {MONTH_NAMES.map((month) => {
+                                    const val = config.monthlyQuantities[month] || ''
+                                    return (
+                                      <div key={month} className="space-y-1">
+                                        <span className="text-[9px] uppercase font-bold text-muted-foreground block text-center">
+                                          {month.substring(0, 3)}
+                                        </span>
+                                        <Input
+                                          type="number"
+                                          min="0"
+                                          placeholder="0"
+                                          value={val}
+                                          onChange={(e) => {
+                                            const qty = Math.max(0, Number.parseInt(e.target.value) || 0)
+                                            const monthlyQuantities = { ...config.monthlyQuantities, [month]: qty }
+                                            updateConfig(item.id, { monthlyQuantities })
+                                          }}
+                                          className="text-xs h-8 text-center border-default-200"
+                                        />
+                                      </div>
+                                    )
+                                  })}
+                                </div>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    )
+                  })}
+                </div>
+              </ScrollArea>
+            </div>
+          </div>
+        )}
+      </ResponsiveDialog>
+
+      <ConfirmAlertDialog
+        open={confirmCloseOpen}
+        onOpenChange={setConfirmCloseOpen}
+        title="Discard Selection?"
+        description="Are you sure you want to close this window? All your selected items and configurations will be lost."
+        onConfirm={forceClose}
+        onCancel={() => setConfirmCloseOpen(false)}
+        confirmLabel="Discard & Close"
+        cancelLabel="Keep Selection"
+      />
+
+      <Sheet
+        open={!!detailsItemId}
+        onOpenChange={(open) => {
+          if (!open) {
+            setDetailsItemId(null)
+            setDetailsItemType(null)
+          }
+        }}
+      >
+        <SheetContent
+          side="right"
+          className="w-full sm:max-w-md bg-background border-l border-border flex flex-col h-full p-6 shadow-2xl animate-in slide-in-from-right duration-200"
+        >
+          {isDetailLoading ? (
+            <div className="flex flex-col items-center justify-center h-full text-muted-foreground space-y-2">
+              <Loader2 className="h-8 w-8 animate-spin text-primary" />
+              <p className="text-xs">Loading item details...</p>
+            </div>
+          ) : detailData ? (
+            <div className="flex-1 overflow-y-auto space-y-6 scrollbar-hide pr-2">
+              <SheetHeader className="border-b border-border pb-4">
+                <Badge variant="soft" color={detailsItemType === 'cse' ? 'success' : 'info'} className="w-fit mb-2">
+                  {detailsItemType === 'cse' ? 'CSE / PS-DBM Item' : 'Non-CSE / Agency Item'}
+                </Badge>
+                <SheetTitle className="text-base font-bold text-foreground">
+                  {detailData.name || 'Unnamed Item'}
+                </SheetTitle>
+                <p className="text-[10px] text-muted-foreground font-mono mt-1">
+                  Product Code: {detailData.productCode || detailData.id}
+                </p>
+              </SheetHeader>
+
+              {/* Image */}
+              {(detailData as ProcurementItem).imageURL && (
+                <div className="flex items-center justify-center w-full bg-slate-50 border border-slate-100 rounded-2xl p-6 relative group shadow-sm transition-all hover:shadow-md">
+                  <DocumentViewer
+                    src={(detailData as ProcurementItem).imageURL}
+                    alt={detailData.name}
+                    size="full"
+                    aspectRatio="square"
+                    className="max-h-[220px] max-w-[220px] border-none shadow-none bg-transparent hover:shadow-none mx-auto"
+                    enableLightbox={true}
+                  />
+                  <div className="absolute bottom-3 right-3 text-[10px] font-bold text-slate-400 bg-white/80 backdrop-blur border border-slate-100 px-2 py-0.5 rounded-md pointer-events-none">
+                    Click to zoom
+                  </div>
+                </div>
+              )}
+
+              {/* Details fields */}
+              <div className="space-y-4 text-xs">
+                <div className="grid grid-cols-2 gap-4 border-b border-border/40 pb-4">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-muted-foreground block">
+                      Unit of Measure
+                    </span>
+                    <span className="font-semibold text-foreground mt-0.5 block">
+                      {detailData.uomName || 'pcs'}
+                    </span>
+                  </div>
+                  <div>
+                    <span className="text-[10px] uppercase font-bold text-muted-foreground block">
+                      Category
+                    </span>
+                    <span className="font-semibold text-foreground mt-0.5 block truncate">
+                      {detailsItemType === 'cse'
+                        ? (detailData as ProcurementItem).objectCodeName || 'N/A' : 'N/A'}
+                    </span>
+                  </div>
+                </div>
+
+                {/* Description/Specifications */}
+                <div>
+                  <span className="text-[10px] uppercase font-bold text-muted-foreground block">
+                    Specifications
+                  </span>
+                  <p className="text-foreground leading-relaxed mt-1 text-xs bg-muted/20 p-3 rounded-lg border border-border/40 whitespace-pre-wrap">
+                    {detailsItemType === 'cse'
+                      ? (detailData as ProcurementItem).specifications || 'No specifications provided.'
+                      : 'No description provided.'}
+                  </p>
+                </div>
+
+                {/* Metadata Fields */}
+                <div className="space-y-3 border-t border-border/40 pt-4">
+                  {detailsItemType === 'cse' && (detailData as ProcurementItem).type && (
+                    <div className="flex justify-between py-1 border-b border-border/20">
+                      <span className="text-muted-foreground">Type:</span>
+                      <span className="font-semibold text-foreground">{(detailData as ProcurementItem).type}</span>
+                    </div>
+                  )}
+                  {detailsItemType === 'cse' && typeof (detailData as ProcurementItem).itemLife === 'number' && (
+                    <div className="flex justify-between py-1 border-b border-border/20">
+                      <span className="text-muted-foreground">Item Life:</span>
+                      <span className="font-semibold text-foreground">{(detailData as ProcurementItem).itemLife} year(s)</span>
+                    </div>
+                  )}
+                  {detailsItemType === 'cse' && typeof (detailData as ProcurementItem).unitPrice === 'number' && (
+                    <div className="flex justify-between py-1 border-b border-border/20">
+                      <span className="text-muted-foreground">Catalog Unit Price:</span>
+                      <span className="font-semibold text-primary">
+                        {new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format((detailData as ProcurementItem).unitPrice ?? 0)}
+                      </span>
+                    </div>
+                  )}
+                  {detailsItemType === 'non-cse' && typeof (detailData as NONCSEItem).currentPrice === 'number' && (
+                    <div className="flex justify-between py-1 border-b border-border/20">
+                      <span className="text-muted-foreground">Catalog Price:</span>
+                      <span className="font-semibold text-primary">
+                        {new Intl.NumberFormat('en-PH', { style: 'currency', currency: 'PHP' }).format((detailData as NONCSEItem).currentPrice ?? 0)}
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : (
+            <div className="flex items-center justify-center h-full text-muted-foreground text-xs">
+              Failed to load product details.
+            </div>
+          )}
+        </SheetContent>
+      </Sheet>
+    </>
+  )
+}

@@ -364,3 +364,14 @@ FodyWeavers.xsd
 .vercel
 .vscode/launch.json
 .vscode/tasks.json
+
+# Node & Monorepo ignores
+node_modules/
+.next/
+.turbo/
+dist/
+build/
+.env.local
+.env.*.local
+.DS_Store
+

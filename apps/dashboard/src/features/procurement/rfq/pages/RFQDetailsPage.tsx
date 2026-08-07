@@ -1,0 +1,1252 @@
+import { useState, useEffect } from 'react'
+import { useRFQStore, RFQItem } from '../store/rfqStore'
+import {
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+} from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import { Badge } from '@/components/ui/badge'
+import {
+  Popover,
+  PopoverTrigger,
+  PopoverContent,
+} from '@/components/ui/popover'
+import {
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+} from '@/components/ui/dropdown-menu'
+import {
+  MoreVertical,
+  ChevronLeft,
+  Search as SearchIcon,
+  Calendar,
+  Hash,
+  Layers,
+  DollarSign,
+  Download,
+  Send,
+  Eye,
+  Trash2,
+  FileText,
+  Info,
+  Building,
+  User,
+  Mail,
+  MapPin,
+  Tag,
+  Shield,
+  Loader2,
+} from 'lucide-react'
+import { useToast } from '@/components/ui/use-toast'
+import {
+  Select,
+  SelectTrigger,
+  SelectValue,
+  SelectContent,
+  SelectItem,
+} from '@/components/ui/select'
+import DebouncedInput from '@/components/DebouncedInput'
+import { AddConsolidatedPRModal } from '../components/AddConsolidatedPRModal'
+import { SetQuotationModal } from '../components/SetQuotationModal'
+import { Alert, AlertDescription } from '@/components/ui/alert'
+import { Input } from '@/components/ui/input'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
+import { ExportComingSoonDialog } from '@/components/ExportComingSoonDialog'
+import api from '@/services/api'
+import type { APIResponse } from 'erpez-shared-lib'
+import type { SupplierDetail } from '../types'
+
+interface RFQDetailsPageProps {
+  rfqId: string
+  onBack?: () => void
+  isSupplierPortal?: boolean
+}
+
+export function RFQDetailsPage({
+  rfqId,
+  onBack,
+  isSupplierPortal = false,
+}: RFQDetailsPageProps) {
+  const { fetchRFQById, submitRFQ, addRFQItems, removeRFQItem } = useRFQStore()
+  const [rfq, setRfq] = useState<any>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [greenSpecs, setGreenSpecs] = useState<Record<string, string>>({})
+  const { toast } = useToast()
+  const [searchTerm, setSearchTerm] = useState('')
+  const [showAddPRModal, setShowAddPRModal] = useState(false)
+  const [showQuotationModal, setShowQuotationModal] = useState(false)
+  const [showExportDialog, setShowExportDialog] = useState(false)
+  const [viewingSupplier, setViewingSupplier] = useState<string | null>(null)
+  const [viewingSupplierDetail, setViewingSupplierDetail] = useState<SupplierDetail | null>(null)
+  const [isLoadingSupplierDetail, setIsLoadingSupplierDetail] = useState(false)
+  const [itemToDelete, setItemToDelete] = useState<string | null>(null)
+  const [selectedMonth, setSelectedMonth] = useState<string>('all')
+  const [selectedCategory, setSelectedCategory] = useState<string>('all')
+  const [selectedFund, setSelectedFund] = useState<string>('all')
+
+  const loadRFQ = async () => {
+    setIsLoading(true)
+    const res = await fetchRFQById(rfqId)
+    setRfq(res)
+    setIsLoading(false)
+  }
+
+  useEffect(() => {
+    loadRFQ()
+  }, [])
+
+  // Fetch the real supplier detail from the API when a supplier is selected for
+  // viewing. This previously used getSupplierById() against a local mock dataset
+  // (../data/mockSuppliers), which never contains real supplier GUIDs from the
+  // backend — every lookup silently returned undefined, showing "Supplier
+  // details are unavailable." regardless of whether the supplier actually exists.
+  useEffect(() => {
+    if (!viewingSupplier) {
+      setViewingSupplierDetail(null)
+      return
+    }
+    setIsLoadingSupplierDetail(true)
+    api
+      .get<APIResponse<SupplierDetail>>(`/suppliers/${viewingSupplier}`)
+      .then((response) => {
+        setViewingSupplierDetail(response.data.data ?? null)
+      })
+      .catch((e) => {
+        console.error('Failed to fetch supplier details', e)
+        setViewingSupplierDetail(null)
+      })
+      .finally(() => setIsLoadingSupplierDetail(false))
+  }, [viewingSupplier])
+
+  // Status badge config (match Purchase Request styling)
+  const STATUS_BADGE_CONFIG: Record<
+    string,
+    { label?: string; color?: any; variant?: any }
+  > = {
+    draft: { label: 'Draft', color: 'secondary' },
+    submitted: { label: 'Submitted', color: 'info', variant: 'outline' },
+    approved: { label: 'Approved', color: 'success', variant: 'outline' },
+    returned: { label: 'Returned', color: 'destructive', variant: 'outline' },
+  }
+
+  const normalizeStatus = (status: string | undefined, remarks?: string) => {
+    if (!status) return status || ''
+
+    if (status === 'draft' && remarks?.trim()) return 'returned'
+    if (status === 'issued') return 'submitted'
+    if (status === 'closed') return 'approved'
+
+    return status
+  }
+
+  const displayStatus = normalizeStatus(rfq?.status, rfq?.remarks)
+
+  if (isLoading) return <div className="p-8 text-center text-muted-foreground">Loading RFQ details...</div>
+  if (!rfq) return <div className="p-8 text-center text-destructive">RFQ not found</div>
+
+  const toggleBrochure = async (itemId: string, v: boolean) => {
+    const item = rfq.items.find((it: any) => it.id === itemId)
+    if (!item) return
+    await addRFQItems(rfqId, [{
+      cprItemId: item.itemId || item.prId || '',
+      quantity: item.quantity,
+      isBrochureRequired: v,
+      greenSpecification: greenSpecs[itemId] !== undefined ? greenSpecs[itemId] : (item.greenSpecification || ''),
+    }])
+    loadRFQ()
+  }
+
+  const handleGreenSpecificationChange = (itemId: string, value: string) => {
+    setGreenSpecs((prev) => ({ ...prev, [itemId]: value }))
+  }
+
+  const handleGreenSpecificationBlur = async (itemId: string, value: string) => {
+    const item = rfq.items.find((it: any) => it.id === itemId)
+    if (!item) return
+    await addRFQItems(rfqId, [{
+      cprItemId: item.itemId || item.prId || '',
+      quantity: item.quantity,
+      isBrochureRequired: !!item.isRequiredBrochure,
+      greenSpecification: value,
+    }])
+    loadRFQ()
+  }
+
+  const handleDeleteClick = (itemId: string) => {
+    setItemToDelete(itemId)
+  }
+
+  const confirmDelete = async () => {
+    if (!itemToDelete) return
+    await removeRFQItem(rfqId, itemToDelete)
+    toast({ title: 'Item removed', description: 'Item removed from RFQ' })
+    setItemToDelete(null)
+    loadRFQ()
+  }
+  const handleAddConsolidatedPR = async (items: RFQItem[]) => {
+    const payload = items.map(it => ({
+      cprItemId: it.itemId || it.id || it.prId || '',
+      quantity: it.quantity,
+      isBrochureRequired: !!it.isRequiredBrochure,
+      greenSpecification: it.greenSpecification || '',
+    }))
+    await addRFQItems(rfqId, payload)
+    toast({
+      title: 'Items added',
+      description: `${items.length} item(s) added to RFQ from consolidated PR(s)`,
+    })
+    loadRFQ()
+  }
+
+  const totalAmount = rfq.items.reduce((s: number, it: any) => s + (it.totalAmount || 0), 0)
+  const canSubmit = rfq?.status === 'draft' && (rfq?.items?.length || 0) > 0
+
+  // Supplier portal quotation state helpers
+  const quotationIsPending =
+    !rfq.quotationStatus || rfq.quotationStatus === 'draft'
+  const quotationIsSubmitted =
+    rfq.quotationStatus === 'submitted' && !rfq.quotationApprovalStatus
+  const quotationIsApproved = rfq.quotationApprovalStatus === 'approved'
+  const quotationIsReturned = rfq.quotationApprovalStatus === 'returned'
+
+  // Precompute rendered table rows for items (keeps JSX cleaner and avoids parser issues)
+  const monthsList = [
+    'Jan',
+    'Feb',
+    'Mar',
+    'Apr',
+    'May',
+    'Jun',
+    'Jul',
+    'Aug',
+    'Sep',
+    'Oct',
+    'Nov',
+    'Dec',
+  ]
+
+  // derive categories and funds from items (include 'all' option)
+  const categoriesList = Array.from(
+    new Set(rfq.items.map((it: any) => (it as any).category || 'Uncategorized')),
+  )
+  const fundsList = Array.from(
+    new Set(rfq.items.map((it: any) => (it as any).fund || 'General Fund')),
+  )
+
+  const getMonthIndexForItem = (it: RFQItem, _idx: number): number | null => {
+    // Prefer explicit month field in format "YYYY-MM" or numeric month index
+    if ((it as any).month) {
+      const monthVal = (it as any).month
+      if (typeof monthVal === 'number') {
+        const mn = monthVal
+        if (!isNaN(mn) && mn >= 1 && mn <= 12) return mn - 1
+      } else {
+        const parts = String(monthVal).split('-')
+        if (parts.length === 2) {
+          const mn = parseInt(parts[1], 10)
+          if (!isNaN(mn) && mn >= 1 && mn <= 12) return mn - 1
+        }
+      }
+    }
+    // Try PR id like CPR-2026-M02
+    if (it.prId) {
+      const m = String(it.prId).match(/-M(\d{2})/)
+      if (m && m[1]) {
+        const mn = parseInt(m[1], 10)
+        if (!isNaN(mn) && mn >= 1 && mn <= 12) return mn - 1
+      }
+    }
+    // Unknown month — return null instead of deriving from row index to avoid misleading UI
+    return null
+  }
+
+  // prepare array with original indices so fallback month is consistent
+  const itemsWithIndex = rfq.items.map((it: RFQItem, idx: number) => ({
+    it,
+    idx,
+  }))
+
+  // Apply search and month filter
+  const filteredItems = itemsWithIndex.filter(({ it, idx }: any) => {
+    const term = searchTerm?.trim().toLowerCase()
+    if (term) {
+      const hay =
+        `${it.itemName || ''} ${(it as any).category || ''} ${it.prId || ''}`.toLowerCase()
+      if (!hay.includes(term)) return false
+    }
+
+    if (selectedMonth && selectedMonth !== 'all') {
+      const sel = parseInt(selectedMonth, 10)
+      if (!isNaN(sel)) {
+        const mi = getMonthIndexForItem(it, idx)
+        // If month is unknown (null), do not match a specific month filter
+        if (mi === null || mi !== sel - 1) return false
+      }
+    }
+
+    // category filter
+    if (selectedCategory && selectedCategory !== 'all') {
+      const cat = (it as any).category || 'Uncategorized'
+      if (cat !== selectedCategory) return false
+    }
+
+    // fund filter
+    if (selectedFund && selectedFund !== 'all') {
+      const f = (it as any).fund || 'General Fund'
+      if (f !== selectedFund) return false
+    }
+
+    return true
+  })
+
+  // Render rows from filtered items (separated from filtering logic)
+  const itemRows = filteredItems.map(({ it, idx }: any) => {
+    const mockMonths = monthsList
+    const monthIndex: number | null = getMonthIndexForItem(it, idx)
+
+    // month label uses resolved month index or 'Unknown' when null
+    const monthLabel = monthIndex !== null ? mockMonths[monthIndex] : 'Unknown'
+
+    // Build a month-by-month quantity array: place quantity only at the resolved month index if known.
+    let monthlyQty = new Array(12)
+      .fill(0)
+      .map((_, i) =>
+        monthIndex !== null && i === monthIndex ? it.quantity || 0 : 0,
+      )
+
+    if (it.monthlyAllocations && it.monthlyAllocations.length > 0) {
+      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+      const newMonthlyQty = new Array(12).fill(0)
+      it.monthlyAllocations.forEach((alloc: any) => {
+        const idx = monthNames.indexOf(alloc.month)
+        if (idx !== -1) {
+          newMonthlyQty[idx] = alloc.quantity
+        }
+      })
+      monthlyQty = newMonthlyQty
+    }
+
+    return (
+      <TableRow key={it.id}>
+        <TableCell>{it.itemName}</TableCell>
+        <TableCell className="text-sm text-muted-foreground">
+          {it.category || '—'}
+        </TableCell>
+        <TableCell className="text-sm text-muted-foreground">
+          {it.fund || '—'}
+        </TableCell>
+        <TableCell className="text-sm text-muted-foreground">
+          <Popover>
+            <PopoverTrigger asChild>
+              <button
+                className="flex items-center gap-2"
+                title={monthLabel}
+                aria-label={`View month breakdown for ${monthLabel}`}
+              >
+                <Badge className="px-2 py-1">View months</Badge>
+              </button>
+            </PopoverTrigger>
+            <PopoverContent
+              align="start"
+              sideOffset={6}
+              className="min-w-[300px] max-w-[420px] p-3"
+            >
+              <div className="text-sm font-medium mb-2">Month breakdown</div>
+              <div className="grid grid-cols-3 gap-2">
+                {mockMonths.map((m, mi) => (
+                  <div
+                    key={m}
+                    className="flex items-center justify-between px-2 py-1 rounded-md hover:bg-slate-50"
+                  >
+                    <div className="text-sm whitespace-nowrap mr-2">{m}</div>
+                    <Badge
+                      className={`ml-2 px-2 py-0.5 text-xs ${monthlyQty[mi] > 0 ? 'bg-primary text-primary-foreground' : 'bg-slate-100 text-muted-foreground'}`}
+                    >
+                      {monthlyQty[mi] > 0 ? monthlyQty[mi] : '—'}
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+              <div className="mt-3 text-xs text-muted-foreground">
+                Total: {monthlyQty.reduce((s, q) => s + q, 0)}
+              </div>
+            </PopoverContent>
+          </Popover>
+        </TableCell>
+        <TableCell>{it.quantity}</TableCell>
+        <TableCell>{it.unitOfMeasure}</TableCell>
+        <TableCell>₱{(it.unitPrice || 0).toLocaleString()}</TableCell>
+        <TableCell>₱{(it.totalAmount || 0).toLocaleString()}</TableCell>
+        <TableCell>
+          <RadioGroup
+            value={it.isRequiredBrochure ? 'yes' : 'no'}
+            onValueChange={(value) => toggleBrochure(it.id, value === 'yes')}
+            disabled={rfq.status !== 'draft'}
+            className="flex gap-4"
+          >
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="yes" id={`yes-${it.id}`} />
+              <label
+                htmlFor={`yes-${it.id}`}
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                Yes
+              </label>
+            </div>
+            <div className="flex items-center space-x-2">
+              <RadioGroupItem value="no" id={`no-${it.id}`} />
+              <label
+                htmlFor={`no-${it.id}`}
+                className="text-sm font-medium leading-none peer-disabled:cursor-not-allowed peer-disabled:opacity-70"
+              >
+                No
+              </label>
+            </div>
+          </RadioGroup>
+        </TableCell>
+        <TableCell>
+          {rfq.status === 'draft' ? (
+            <Input
+              value={greenSpecs[it.id] !== undefined ? greenSpecs[it.id] : (it.greenSpecification || '')}
+              onChange={(e) =>
+                handleGreenSpecificationChange(it.id, e.target.value)
+              }
+              onBlur={(e) =>
+                handleGreenSpecificationBlur(it.id, e.target.value)
+              }
+              placeholder="Enter green/eco-friendly specs (optional)"
+              className="min-w-[250px]"
+            />
+          ) : (
+            <span
+              className={
+                it.greenSpecification
+                  ? 'text-sm'
+                  : 'text-sm text-muted-foreground italic'
+              }
+            >
+              {it.greenSpecification || 'No green specification provided'}
+            </span>
+          )}
+        </TableCell>
+        <TableCell>
+          {rfq.status === 'draft' && (
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => handleDeleteClick(it.id)}
+              className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+            >
+              <Trash2 className="h-4 w-4" />
+            </Button>
+          )}
+        </TableCell>
+      </TableRow>
+    )
+  })
+
+  // If viewing a supplier, show the supplier detail as a full-page view,
+  // sourced from the real GET /suppliers/{id} endpoint (see effect above),
+  // not the previous mock dataset which never matched real supplier GUIDs.
+  if (viewingSupplier) {
+    return (
+      <div className="w-full space-y-6 pb-10">
+        <div className="mb-3">
+          <Button
+            variant="ghost"
+            size="sm"
+            onClick={() => setViewingSupplier(null)}
+            className="px-2 py-1"
+          >
+            <ChevronLeft className="h-4 w-4" /> Back
+          </Button>
+        </div>
+
+        {isLoadingSupplierDetail ? (
+          <div className="p-8 flex items-center justify-center gap-2 text-muted-foreground">
+            <Loader2 className="h-4 w-4 animate-spin" />
+            Loading supplier details...
+          </div>
+        ) : !viewingSupplierDetail ? (
+          <div className="p-4 rounded-md bg-muted text-sm text-muted-foreground">
+            Supplier details are unavailable.
+          </div>
+        ) : (
+          <Card className="bg-white shadow-sm">
+            <CardHeader>
+              <CardTitle className="text-2xl flex items-center gap-3">
+                <Building className="h-6 w-6 text-primary" />
+                {viewingSupplierDetail.name}
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center gap-3 flex-wrap">
+                <Badge
+                  color={
+                    viewingSupplierDetail.status === 'approved' ? 'success' :
+                    viewingSupplierDetail.status === 'declined' ? 'destructive' :
+                    viewingSupplierDetail.status === 'under_review' ? 'info' : 'secondary'
+                  }
+                  variant={viewingSupplierDetail.status === 'approved' ? 'outline' : undefined}
+                >
+                  {viewingSupplierDetail.status.toUpperCase().replace('_', ' ')}
+                </Badge>
+                {viewingSupplierDetail.isBlocked && (
+                  <Badge color="destructive" className="gap-1">
+                    Blocked
+                  </Badge>
+                )}
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="space-y-1">
+                  <div className="text-sm text-muted-foreground flex items-center gap-2">
+                    <Tag className="h-4 w-4" />
+                    Supplier Category
+                  </div>
+                  <div className="font-medium">{viewingSupplierDetail.supplierCategory?.name || '—'}</div>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="text-sm text-muted-foreground flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    PhilGEPS Number
+                  </div>
+                  <div className="font-medium font-mono text-sm">{viewingSupplierDetail.philGEPSNumber || '—'}</div>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="text-sm text-muted-foreground flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    Business Permit No.
+                  </div>
+                  <div className="font-medium">{viewingSupplierDetail.businessPermitNo || '—'}</div>
+                </div>
+
+                <div className="space-y-1">
+                  <div className="text-sm text-muted-foreground flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    TIN Number
+                  </div>
+                  <div className="font-medium font-mono text-sm">{viewingSupplierDetail.tinNumber || '—'}</div>
+                </div>
+              </div>
+
+              <div className="border-t pt-4">
+                <h3 className="font-semibold mb-3 flex items-center gap-2">
+                  <User className="h-5 w-5 text-primary" />
+                  Contact Information
+                </h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="space-y-1">
+                    <div className="text-sm text-muted-foreground flex items-center gap-2">
+                      <User className="h-4 w-4" />
+                      Contact Person
+                    </div>
+                    <div className="font-medium">{viewingSupplierDetail.contactPerson || '—'}</div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="text-sm text-muted-foreground flex items-center gap-2">
+                      <Mail className="h-4 w-4" />
+                      Email
+                    </div>
+                    <div className="font-medium">{viewingSupplierDetail.email || '—'}</div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="text-sm text-muted-foreground flex items-center gap-2">
+                      <FileText className="h-4 w-4" />
+                      Contact Number
+                    </div>
+                    <div className="font-medium">{viewingSupplierDetail.contactNumber || '—'}</div>
+                  </div>
+
+                  <div className="space-y-1">
+                    <div className="text-sm text-muted-foreground flex items-center gap-2">
+                      <MapPin className="h-4 w-4" />
+                      Address
+                    </div>
+                    <div className="font-medium">{viewingSupplierDetail.address || '—'}</div>
+                  </div>
+                </div>
+              </div>
+
+              {viewingSupplierDetail.supplierRequirements && viewingSupplierDetail.supplierRequirements.length > 0 && (
+                <div className="border-t pt-4">
+                  <h3 className="font-semibold mb-3 flex items-center gap-2">
+                    <Shield className="h-5 w-5 text-primary" />
+                    Compliance Requirements
+                  </h3>
+                  <div className="space-y-2">
+                    {viewingSupplierDetail.supplierRequirements.map((req) => (
+                      <div
+                        key={req.supplierRequirementId}
+                        className="flex items-center justify-between gap-3 rounded-md border p-3"
+                      >
+                        <span className="text-sm font-medium">{req.requirementName}</span>
+                        <Badge
+                          color={req.isVerified ? 'success' : 'secondary'}
+                          variant={req.isVerified ? 'outline' : undefined}
+                          className="gap-1"
+                        >
+                          {req.isVerified && <Shield className="h-3 w-3" />}
+                          {req.isVerified ? 'Verified' : 'Unverified'}
+                        </Badge>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {viewingSupplierDetail.statusNote && (
+                <div className="border-t pt-4">
+                  <h3 className="font-semibold mb-2 flex items-center gap-2">
+                    <FileText className="h-5 w-5 text-primary" />
+                    Status Note
+                  </h3>
+                  <div className="text-sm bg-muted/40 border rounded-md p-3">
+                    {viewingSupplierDetail.statusNote}
+                  </div>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        )}
+      </div>
+    )
+  }
+
+  const handleSubmitRFQ = async () => {
+    if (!rfq) return
+    if ((rfq.items || []).length === 0) {
+      toast({
+        title: 'Submission Failed',
+        description: 'Add at least one item before submitting.',
+      })
+      return
+    }
+
+    await submitRFQ(rfqId)
+    toast({
+      title: 'RFQ Submitted',
+      description: `${rfq.rfqNumber} has been submitted.`,
+    })
+    loadRFQ()
+  }
+
+  return (
+    <div className="w-full space-y-6 pb-10">
+      {/* Back above card */}
+      <div className="mb-3">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={onBack}
+          className="px-2 py-1"
+        >
+          <ChevronLeft className="h-4 w-4" /> Back
+        </Button>
+      </div>
+
+      {/* Header card - white with inline badge and export button */}
+      <Card className="bg-white shadow-sm">
+        <CardHeader>
+          <div className="flex items-center justify-between">
+            <div>
+              <div className="flex items-center gap-3">
+                <h1 className="text-3xl font-bold m-0">{rfq.rfqNumber}</h1>
+                {/* In supplier portal show the quotation lifecycle status, not the internal RFQ status */}
+                {isSupplierPortal ? (
+                  <>
+                    {quotationIsPending && (
+                      <Badge
+                        className="bg-amber-100 text-amber-700 border-amber-300 rounded-full px-3 py-1 text-xs font-semibold uppercase"
+                        variant="outline"
+                      >
+                        PENDING
+                      </Badge>
+                    )}
+                    {quotationIsSubmitted && (
+                      <Badge
+                        className="bg-indigo-100 text-indigo-700 border-indigo-300 rounded-full px-3 py-1 text-xs font-semibold uppercase"
+                        variant="outline"
+                      >
+                        SUBMITTED
+                      </Badge>
+                    )}
+                    {quotationIsApproved && (
+                      <Badge
+                        className="bg-green-100 text-green-700 border-green-300 rounded-full px-3 py-1 text-xs font-semibold uppercase"
+                        variant="outline"
+                      >
+                        APPROVED
+                      </Badge>
+                    )}
+                    {quotationIsReturned && (
+                      <Badge
+                        className="bg-orange-100 text-orange-700 border-orange-300 rounded-full px-3 py-1 text-xs font-semibold uppercase"
+                        variant="outline"
+                      >
+                        RETURNED
+                      </Badge>
+                    )}
+                  </>
+                ) : (
+                  <Badge
+                    color={STATUS_BADGE_CONFIG[displayStatus]?.color}
+                    variant={STATUS_BADGE_CONFIG[displayStatus]?.variant}
+                    className="rounded-full px-3 py-1 text-xs font-semibold uppercase"
+                  >
+                    {String(displayStatus).toUpperCase()}
+                  </Badge>
+                )}
+              </div>
+              <div className="text-muted-foreground mt-2">
+                {rfq.description || 'No description'}
+              </div>
+            </div>
+            <div className="flex items-center gap-2">
+              {isSupplierPortal &&
+                (quotationIsPending || quotationIsReturned) && (
+                  <Button
+                    size="sm"
+                    className="gap-2 bg-gradient-to-r from-primary to-indigo-500 text-white hover:opacity-90"
+                    onClick={() => setShowQuotationModal(true)}
+                  >
+                    {quotationIsReturned ? 'Revise Quotation' : 'Set Quotation'}
+                  </Button>
+                )}
+
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setShowExportDialog(true)}
+                className="gap-2"
+              >
+                <Download className="w-4 h-4" />
+                Export
+              </Button>
+
+              {!isSupplierPortal && canSubmit && (
+                <Button
+                  size="sm"
+                  className="gap-2 bg-gradient-to-r from-primary to-indigo-600 text-white hover:opacity-90"
+                  onClick={handleSubmitRFQ}
+                >
+                  <Send className="w-4 h-4" />
+                  Submit RFQ
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardHeader>
+      </Card>
+
+      {/* Details card */}
+      <Card className="shadow-sm mt-6">
+        <CardContent className="pt-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            {/* RFQ Date Card */}
+            <div className="p-5 rounded-lg bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="h-10 w-10 rounded-full bg-blue-200 flex items-center justify-center">
+                  <Calendar className="h-5 w-5 text-blue-700" />
+                </div>
+                <div className="text-xs font-semibold text-blue-600 uppercase tracking-wide">
+                  RFQ Date
+                </div>
+              </div>
+              <div className="text-xl font-bold text-blue-900">
+                {rfq.date
+                  ? new Date(rfq.date).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric',
+                    })
+                  : '—'}
+              </div>
+            </div>
+
+            {/* Tracing Number Card */}
+            <div className="p-5 rounded-lg bg-gradient-to-br from-purple-50 to-purple-100 border border-purple-200 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="h-10 w-10 rounded-full bg-purple-200 flex items-center justify-center">
+                  <Hash className="h-5 w-5 text-purple-700" />
+                </div>
+                <div className="text-xs font-semibold text-purple-600 uppercase tracking-wide">
+                  Tracing Number
+                </div>
+              </div>
+              <div className="text-xl font-bold text-purple-900">
+                {rfq.tracingNumber || '—'}
+              </div>
+            </div>
+
+            {/* Delivery Period Card */}
+            <div className="p-5 rounded-lg bg-gradient-to-br from-cyan-50 to-cyan-100 border border-cyan-200 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="h-10 w-10 rounded-full bg-cyan-200 flex items-center justify-center">
+                  <Layers className="h-5 w-5 text-cyan-700" />
+                </div>
+                <div className="text-xs font-semibold text-cyan-600 uppercase tracking-wide">
+                  Deadline
+                </div>
+              </div>
+              <div className="flex flex-col">
+                <div className="text-xl font-bold text-cyan-900">
+                  {rfq.deadline
+                    ? new Date(rfq.deadline).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric',
+                      })
+                    : '—'}
+                </div>
+                <div className="text-sm text-cyan-700 mt-2">
+                  <span className="font-medium">Delivery Period:</span>
+                  <span className="ml-2">
+                    {rfq.deliveryPeriod ? `${rfq.deliveryPeriod} days` : '—'}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            {/* Total Amount Card */}
+            <div className="p-5 rounded-lg bg-gradient-to-br from-emerald-50 to-emerald-100 border border-emerald-200 shadow-sm hover:shadow-md transition-shadow">
+              <div className="flex items-center gap-3 mb-3">
+                <div className="h-10 w-10 rounded-full bg-emerald-200 flex items-center justify-center">
+                  <DollarSign className="h-5 w-5 text-emerald-700" />
+                </div>
+                <div className="text-xs font-semibold text-emerald-600 uppercase tracking-wide">
+                  Total RFQ Amount
+                </div>
+              </div>
+              <div className="text-xl font-bold text-emerald-900">
+                ₱{totalAmount.toLocaleString()}
+              </div>
+            </div>
+          </div>
+
+          {/* Purpose Card */}
+          <div className="mt-6 p-6 rounded-lg bg-gradient-to-br from-slate-50 to-slate-100 border border-slate-200 shadow-sm">
+            <div className="flex items-center gap-3 mb-3">
+              <div className="h-10 w-10 rounded-full bg-slate-200 flex items-center justify-center">
+                <FileText className="h-5 w-5 text-slate-700" />
+              </div>
+              <div className="text-xs font-semibold text-slate-600 uppercase tracking-wide">
+                Purpose
+              </div>
+            </div>
+            <div className="text-base font-medium text-slate-900 leading-relaxed">
+              {rfq.description || '—'}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Returned notice — shown in supplier portal when quotation was returned */}
+      {isSupplierPortal && quotationIsReturned && (
+        <Card className="border-orange-300 bg-orange-50 shadow-sm">
+          <CardHeader className="pb-2">
+            <div className="flex items-center gap-2">
+              <div className="h-8 w-8 rounded-full bg-orange-200 flex items-center justify-center flex-shrink-0">
+                <Info className="h-4 w-4 text-orange-700" />
+              </div>
+              <CardTitle className="text-orange-800 text-base">
+                Quotation Returned
+              </CardTitle>
+              {rfq.quotationApprovalAt && (
+                <span className="text-xs text-orange-600 ml-auto">
+                  {new Date(rfq.quotationApprovalAt).toLocaleString()}
+                </span>
+              )}
+            </div>
+          </CardHeader>
+          <CardContent>
+            <p className="text-sm text-orange-700 font-medium mb-1">
+              Reason / Remarks:
+            </p>
+            <p className="text-sm text-orange-900 bg-white border border-orange-200 rounded-md px-4 py-3">
+              {rfq.quotationApprovalRemarks || 'No remarks provided.'}
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Suppliers - Hidden in supplier portal */}
+      {!isSupplierPortal && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Suppliers</CardTitle>
+            <CardDescription>Suppliers invited for this RFQ</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-3">
+              {rfq.suppliers.length === 0 ? (
+                <div className="text-muted-foreground">No suppliers added</div>
+              ) : (
+                rfq.suppliers.map((s: any) => (
+                  <div
+                    key={s.id}
+                    className="flex items-center justify-between bg-white border rounded-md px-4 py-3 shadow-xs"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="h-8 w-8 rounded-full bg-primary text-white flex items-center justify-center font-semibold">
+                        {(s.name || '').slice(0, 1)}
+                      </div>
+                      <div>
+                        <div className="font-medium">{s.name}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {s.contact || ''}
+                        </div>
+                      </div>
+                    </div>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => setViewingSupplier(s.id)}
+                      className="gap-2"
+                    >
+                      <Eye className="h-4 w-4" />
+                      View Details
+                    </Button>
+                  </div>
+                ))
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Items / Office PPMPs style section */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Items</CardTitle>
+          <CardDescription>{rfq.items.length} item(s)</CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center gap-3 mb-4">
+            <div className="relative w-72">
+              <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+              <DebouncedInput
+                placeholder="Search by item name, category, or PRMP..."
+                className="pl-10 w-full"
+                onChange={(v: any) => setSearchTerm(String(v))}
+                value={searchTerm}
+              />
+            </div>
+
+            <Select
+              onValueChange={(v) => setSelectedMonth(v)}
+              defaultValue="all"
+            >
+              <SelectTrigger className="w-36">
+                <SelectValue placeholder="All Months" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Months</SelectItem>
+                {monthsList.map((m, mi) => (
+                  <SelectItem key={m} value={`${mi + 1}`}>
+                    {m}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+
+            <Select
+              onValueChange={(v) => setSelectedCategory(v)}
+              defaultValue="all"
+            >
+              <SelectTrigger className="w-36">
+                <SelectValue placeholder="All Categories" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Categories</SelectItem>
+                {(categoriesList as string[]).map((c: string) => {
+                  return <SelectItem key={c} value={c}>{c}</SelectItem>
+                })}
+              </SelectContent>
+            </Select>
+
+            <Select
+              onValueChange={(v) => setSelectedFund(v)}
+              defaultValue="all"
+            >
+              <SelectTrigger className="w-36">
+                <SelectValue placeholder="All Funds" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Funds</SelectItem>
+                {(fundsList as string[]).map((f: string) => {
+                  return <SelectItem key={f} value={f}>{f}</SelectItem>
+                })}
+              </SelectContent>
+            </Select>
+
+            <div className="ml-auto flex items-center gap-2">
+              {rfq.status === 'draft' && (
+                <Button
+                  size="sm"
+                  className="bg-gradient-to-r from-primary to-indigo-500 text-white hover:opacity-95"
+                  onClick={() => setShowAddPRModal(true)}
+                >
+                  Add Consolidated PR
+                </Button>
+              )}
+            </div>
+          </div>
+
+          {/* Green Specification Information Alert */}
+          <Alert className="mb-4 border-blue-200 bg-blue-50">
+            <Info className="h-4 w-4 text-blue-600" />
+            <AlertDescription className="text-sm text-blue-800">
+              <strong>Green Specification:</strong> Optional field to indicate
+              environmental or eco-friendly requirements for items (e.g.,
+              energy-efficient, recyclable materials, sustainable sourcing,
+              eco-certified products).
+            </AlertDescription>
+          </Alert>
+
+          <div className="rounded-md border bg-white">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-slate-50">
+                  <TableHead className="text-sm font-medium text-slate-600">
+                    Item
+                  </TableHead>
+                  <TableHead className="text-sm font-medium text-slate-600">
+                    Category
+                  </TableHead>
+                  <TableHead className="text-sm font-medium text-slate-600">
+                    Fund
+                  </TableHead>
+                  <TableHead className="text-sm font-medium text-slate-600">
+                    Month
+                  </TableHead>
+                  <TableHead className="text-sm font-medium text-slate-600">
+                    Quantity
+                  </TableHead>
+                  <TableHead className="text-sm font-medium text-slate-600">
+                    Unit
+                  </TableHead>
+                  <TableHead className="text-sm font-medium text-slate-600">
+                    Unit Price
+                  </TableHead>
+                  <TableHead className="text-sm font-medium text-slate-600">
+                    Total
+                  </TableHead>
+                  <TableHead className="text-sm font-medium text-slate-600">
+                    Brochure
+                  </TableHead>
+                  <TableHead className="text-sm font-medium text-slate-600">
+                    Green Specification
+                  </TableHead>
+                  <TableHead className="text-sm font-medium text-slate-600"></TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>{itemRows}</TableBody>
+            </Table>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* My Quotation - Show in supplier portal after quotation is submitted */}
+      {isSupplierPortal && rfq.quotationStatus === 'submitted' && (
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>My Quotation</CardTitle>
+                <CardDescription>
+                  Your submitted bid for this RFQ
+                </CardDescription>
+              </div>
+              <Badge className="bg-green-600">SUBMITTED</Badge>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {rfq.quotationSubmittedAt && (
+              <div className="mb-4 p-3 bg-green-50 border border-green-200 rounded-lg text-sm text-green-800">
+                Submitted on{' '}
+                {new Date(rfq.quotationSubmittedAt).toLocaleString()}
+              </div>
+            )}
+
+            <div className="rounded-md border bg-white">
+              <Table>
+                <TableHeader>
+                  <TableRow className="bg-slate-50">
+                    <TableHead className="text-sm font-medium text-slate-600">
+                      Item
+                    </TableHead>
+                    <TableHead className="text-sm font-medium text-slate-600">
+                      Quantity
+                    </TableHead>
+                    <TableHead className="text-sm font-medium text-slate-600">
+                      Unit
+                    </TableHead>
+                    <TableHead className="text-sm font-medium text-slate-600">
+                      Model/Brand/Color
+                    </TableHead>
+                    <TableHead className="text-sm font-medium text-slate-600">
+                      Unit Bid
+                    </TableHead>
+                    <TableHead className="text-sm font-medium text-slate-600">
+                      Total Bid
+                    </TableHead>
+                    <TableHead className="text-sm font-medium text-slate-600">
+                      Brochure
+                    </TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {rfq.items
+                    .filter((item: any) => item.bidUnitPrice)
+                    .map((item: RFQItem) => (
+                      <TableRow key={item.id}>
+                        <TableCell className="font-medium">
+                          {item.itemName}
+                        </TableCell>
+                        <TableCell>{item.quantity}</TableCell>
+                        <TableCell>{item.unitOfMeasure || '—'}</TableCell>
+                        <TableCell>
+                          {item.bidModel && item.bidBrand && item.bidColor ? (
+                            <div className="text-sm">
+                              <div>
+                                <strong>Model:</strong> {item.bidModel}
+                              </div>
+                              <div>
+                                <strong>Brand:</strong> {item.bidBrand}
+                              </div>
+                              <div>
+                                <strong>Color:</strong> {item.bidColor}
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          ₱
+                          {(item.bidUnitPrice || 0).toLocaleString('en-US', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </TableCell>
+                        <TableCell className="font-semibold">
+                          ₱
+                          {(item.bidTotalAmount || 0).toLocaleString('en-US', {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </TableCell>
+                        <TableCell>
+                          {item.bidBrochureFileName ? (
+                            <a
+                              href={item.bidBrochureUrl}
+                              target="_blank"
+                              rel="noopener noreferrer"
+                              className="text-primary hover:underline text-sm flex items-center gap-1"
+                            >
+                              <FileText className="h-4 w-4" />
+                              {item.bidBrochureFileName}
+                            </a>
+                          ) : (
+                            <span className="text-muted-foreground">—</span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            <div className="mt-4 p-4 bg-slate-50 rounded-lg flex items-center justify-between">
+              <div className="text-lg font-semibold">
+                Total Quotation Amount:
+              </div>
+              <div className="text-2xl font-bold text-primary">
+                ₱
+                {rfq.items
+                  .reduce((sum: number, item: any) => sum + (item.bidTotalAmount || 0), 0)
+                  .toLocaleString('en-US', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Add Consolidated PR Modal */}
+      <AddConsolidatedPRModal
+        open={showAddPRModal}
+        onOpenChange={setShowAddPRModal}
+        onAdd={handleAddConsolidatedPR}
+      />
+
+      {/* Set Quotation Modal */}
+      <SetQuotationModal
+        open={showQuotationModal}
+        onOpenChange={setShowQuotationModal}
+        rfqId={rfqId}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog
+        open={!!itemToDelete}
+        onOpenChange={(open) => !open && setItemToDelete(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Remove Item from RFQ?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove this item from the RFQ? This
+              action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Remove
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      <ExportComingSoonDialog
+        open={showExportDialog}
+        onOpenChange={setShowExportDialog}
+        entityLabel="RFQ details"
+      />
+    </div>
+  )
+}

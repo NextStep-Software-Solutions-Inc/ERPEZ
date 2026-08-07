@@ -1,0 +1,10 @@
+{
+    "buildCommand": "cd ../erpez-shared-lib && pnpm build && cd ../dashboard && pnpm build",
+    "installCommand": "pnpm install",
+    "rewrites": [
+        {
+            "source": "/(.*)",
+            "destination": "/api/server"
+        }
+    ]
+}
