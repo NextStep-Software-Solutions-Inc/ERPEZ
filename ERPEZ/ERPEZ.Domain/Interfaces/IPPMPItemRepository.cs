@@ -10,4 +10,5 @@ public interface IPPMPItemRepository : IRepository<PPMPItem>
     Task<PPMPItem?> GetByIdWithDetailsAsync(Guid id, CancellationToken cancellationToken = default);
     
     Task<List<PPMPItem>> GetItemsByExpenditureItemIdAsync(Guid expenditureItemId, CancellationToken cancellationToken = default);
+    Task<List<PPMPItem>> GetItemsByPpmpIdsAsync(List<Guid> ppmpIds, CancellationToken cancellationToken = default);
 }

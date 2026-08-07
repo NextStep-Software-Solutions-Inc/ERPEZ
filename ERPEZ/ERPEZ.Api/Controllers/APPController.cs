@@ -8,6 +8,8 @@ using ERPEZ.Application.Features.Planning.APP.Dtos;
 using ERPEZ.Application.Features.Planning.APP.Queries.GetAPPBAC;
 using ERPEZ.Application.Features.Planning.APP.Queries.GetAPPById;
 using ERPEZ.Application.Features.Planning.APP.Queries.GetAPPs;
+using ERPEZ.Application.Features.Planning.APP.Queries.GetAvailablePPMPItems;
+using ERPEZ.Application.Features.Planning.PPMPItem.Dtos;
 using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -143,6 +145,19 @@ public class APPController(ISender mediator) : ControllerBase
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
     
+    /// <summary>
+    /// Get available PPMP items from PPMPs consolidated into this APP
+    /// </summary>
+    [HttpGet("{id}/available-ppmp-items")]
+    [ProducesResponseType(typeof(ApiResponse<List<PPMPItemResponse>>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<List<PPMPItemResponse>>), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetAvailablePPMPItems(Guid id)
+    {
+        var query = new GetAvailablePPMPItemsQuery(id);
+        var result = await mediator.Send(query);
+        return result.Succeeded ? Ok(result) : NotFound(result);
+    }
+
     [HttpPatch("{id}/status")]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
