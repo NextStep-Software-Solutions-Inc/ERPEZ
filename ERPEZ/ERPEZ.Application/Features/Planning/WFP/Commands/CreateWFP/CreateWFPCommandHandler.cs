@@ -86,12 +86,27 @@ public class CreateWFPCommandHandler(IUnitOfWork unitOfWork, ICurrentUserService
             {
                 decimal aggregatedBudget = 0m;
                 var year = request.ProjectStartDate.Year > 0 ? request.ProjectStartDate.Year : DateTime.UtcNow.Year;
+                var createdObjectiveDescriptions = new HashSet<string>(StringComparer.OrdinalIgnoreCase);
+
+                // Fetch default UACS Object for Expenditure foreign key requirement (if any expenditures exist)
+                var allObjects = await unitOfWork.ObjectRepository.ToListAsync(
+                    unitOfWork.ObjectRepository.Query(o => !o.IsDeleted), cancellationToken);
+                var defaultObject = allObjects.FirstOrDefault();
 
                 foreach (var opcrItem in sourceOpcr.OPCRItems)
                 {
-                    var objectiveName = opcrItem.KPIAssignment?.FYActiveKPI?.MasterKPI?.Name
+                    var baseName = opcrItem.KPIAssignment?.FYActiveKPI?.MasterKPI?.Name
                         ?? opcrItem.KPIAssignment?.FYActiveKPI?.MFOPAP?.Name
                         ?? "OPCR Objective";
+
+                    // Ensure objective description uniqueness per WFP to avoid unique constraint violations
+                    var objectiveName = baseName;
+                    var dupIndex = 1;
+                    while (createdObjectiveDescriptions.Contains(objectiveName))
+                    {
+                        objectiveName = $"{baseName} ({++dupIndex})";
+                    }
+                    createdObjectiveDescriptions.Add(objectiveName);
 
                     var wfpObjective = new WfpObjectiveEntity
                     {
@@ -148,12 +163,13 @@ public class CreateWFPCommandHandler(IUnitOfWork unitOfWork, ICurrentUserService
                                 await unitOfWork.WFPObjectiveTimelineRepository.AddAsync(timeline, cancellationToken);
                             }
 
-                            // Create initial expenditure allocation record if activity has budget
-                            if (activity.Budget > 0m)
+                            // Create initial expenditure allocation record if activity has budget & a valid Object ID is present
+                            if (activity.Budget > 0m && defaultObject != null)
                             {
                                 var expenditure = new WfpObjectiveActivityExpenditureEntity
                                 {
                                     WFPObjectiveActivityId = wfpActivity.Id,
+                                    ObjectId = defaultObject.Id,
                                     ItemDescription = activity.Name,
                                     Quantity = 1,
                                     UnitCost = activity.Budget,
