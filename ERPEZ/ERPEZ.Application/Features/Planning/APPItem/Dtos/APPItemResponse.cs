@@ -60,6 +60,8 @@ public record APPItemPPMPItemResponse
     public string? Description { get; init; }
     public string Unit { get; init; } = string.Empty;
     public decimal UnitPrice { get; init; }
+    public decimal Quantity { get; init; }
+    public decimal TotalAmount { get; init; }
 }
 
 public record APPItemProcurementModeResponse

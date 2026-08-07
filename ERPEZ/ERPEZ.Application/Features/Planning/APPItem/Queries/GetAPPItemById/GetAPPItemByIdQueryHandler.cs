@@ -48,7 +48,13 @@ public class GetAPPItemByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandle
                 Name = entity.PPMPItem.Name,
                 Description = entity.PPMPItem.Description,
                 Unit = entity.PPMPItem.Unit,
-                UnitPrice = entity.PPMPItem.UnitPrice
+                UnitPrice = entity.PPMPItem.UnitPrice,
+                Quantity = entity.PPMPItem.PPMPItemAllocations != null && entity.PPMPItem.PPMPItemAllocations.Any(a => !a.IsDeleted)
+                    ? entity.PPMPItem.PPMPItemAllocations.Where(a => !a.IsDeleted).Sum(a => a.Quantity)
+                    : 1,
+                TotalAmount = entity.PPMPItem.PPMPItemAllocations != null && entity.PPMPItem.PPMPItemAllocations.Any(a => !a.IsDeleted)
+                    ? entity.PPMPItem.PPMPItemAllocations.Where(a => !a.IsDeleted).Sum(a => a.Amount)
+                    : entity.PPMPItem.UnitPrice
             },
             ProcurementMode = entity.ProcurementMode == null ? null : new APPItemProcurementModeResponse
             {
