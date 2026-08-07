@@ -70,6 +70,20 @@ public class PPMPItemRepository : Repository<PPMPItem>, IPPMPItemRepository
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<List<PPMPItem>> GetItemsByPpmpIdsAsync(List<Guid> ppmpIds, CancellationToken cancellationToken = default)
+    {
+        if (ppmpIds == null || ppmpIds.Count == 0)
+            return [];
+
+        var query = BuildDetailedQuery(context.Set<PPMPItem>().AsNoTracking().Where(item =>
+            !item.IsDeleted &&
+            item.PPMPExpenditureItem != null &&
+            item.PPMPExpenditureItem.PPMPActivity != null &&
+            ppmpIds.Contains(item.PPMPExpenditureItem.PPMPActivity.PPMPId)));
+
+        return await query.ToListAsync(cancellationToken);
+    }
+
     public async Task<(IReadOnlyList<PPMPItem> Entities, int TotalCount)> GetDetailedPagedAsync(SieveModel sieveModel, CancellationToken cancellationToken = default)
     {
         var query = BuildDetailedQuery(context.Set<PPMPItem>().AsNoTracking().Where(item => !item.IsDeleted));

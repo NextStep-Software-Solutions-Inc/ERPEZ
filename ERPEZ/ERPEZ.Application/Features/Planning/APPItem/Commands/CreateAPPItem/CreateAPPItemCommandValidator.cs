@@ -28,7 +28,6 @@ public class CreateAPPItemCommandValidator : AbstractValidator<CreateAPPItemComm
             .WithMessage("OfficeId is required.");
 
         RuleFor(x => x.PAPCode)
-            .NotEmpty()
             .MaximumLength(100);
 
         RuleFor(x => x.Remarks)

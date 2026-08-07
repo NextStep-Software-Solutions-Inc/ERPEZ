@@ -13,13 +13,23 @@ public class CreateAPPItemCommandHandler(IUnitOfWork unitOfWork) : IRequestHandl
     {
         _ = await unitOfWork.APPRepository.GetByIdAsync(request.APPId, cancellationToken)
             ?? throw new NotFoundException("APP not found.");
-        _ = await unitOfWork.PPMPItemRepository.GetByIdAsync(request.PPMPItemId, cancellationToken)
+        var ppmpItem = await unitOfWork.PPMPItemRepository.GetByIdWithDetailsAsync(request.PPMPItemId, cancellationToken)
+            ?? await unitOfWork.PPMPItemRepository.GetByIdAsync(request.PPMPItemId, cancellationToken)
             ?? throw new NotFoundException("PPMP item not found.");
+
+        var fundSourceId = request.FundSourceId != Guid.Empty
+            ? request.FundSourceId
+            : (ppmpItem.PPMPExpenditureItem?.PPMPActivity?.PPMP?.FundSourceId ?? Guid.Empty);
+
+        var officeId = request.OfficeId != Guid.Empty
+            ? request.OfficeId
+            : (ppmpItem.PPMPExpenditureItem?.PPMPActivity?.PPMP?.OfficeId ?? Guid.Empty);
+
         _ = await unitOfWork.ProcurementModeRepository.GetByIdAsync(request.ProcurementModeId, cancellationToken)
             ?? throw new NotFoundException("Procurement mode not found.");
-        _ = await unitOfWork.FundSourceRepository.GetByIdAsync(request.FundSourceId, cancellationToken)
+        _ = await unitOfWork.FundSourceRepository.GetByIdAsync(fundSourceId, cancellationToken)
             ?? throw new NotFoundException("Fund source not found.");
-        _ = await unitOfWork.OfficeRepository.GetByIdAsync(request.OfficeId, cancellationToken)
+        _ = await unitOfWork.OfficeRepository.GetByIdAsync(officeId, cancellationToken)
             ?? throw new NotFoundException("Office not found.");
 
         var existing = await unitOfWork.APPItemRepository.FindAsync(
@@ -34,8 +44,8 @@ public class CreateAPPItemCommandHandler(IUnitOfWork unitOfWork) : IRequestHandl
             APPId = request.APPId,
             PPMPItemId = request.PPMPItemId,
             ProcurementModeId = request.ProcurementModeId,
-            FundSourceId = request.FundSourceId,
-            OfficeId = request.OfficeId,
+            FundSourceId = fundSourceId,
+            OfficeId = officeId,
             PAPCode = request.PAPCode,
             Remarks = request.Remarks,
             IsEarlyProcurementActivity = request.IsEarlyProcurementActivity,

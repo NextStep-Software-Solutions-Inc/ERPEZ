@@ -32,8 +32,6 @@ public class UpdateAPPItemCommandValidator : AbstractValidator<UpdateAPPItemComm
             .WithMessage("OfficeId is required.");
 
         RuleFor(x => x.PAPCode)
-            .NotEmpty()
-            .WithMessage("PAPCode is required.")
             .MaximumLength(100)
             .WithMessage("PAPCode must not exceed 100 characters.");
 
