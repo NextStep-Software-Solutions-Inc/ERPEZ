@@ -135,7 +135,6 @@ jobs:
           rm -f /tmp/${{ env.CONTAINER_NAME }}.tar.gz
 
           # Deploy via docker compose
-          export PORT="${{ vars.DASHBOARD_API_PORT || '72' }}"
           export DB_CONNECTION_STRING="${{ secrets.ERPEZ_DB_CONNECTION_STRING }}"
           export BLOB_CONNECTION_STRING="${{ secrets.AZURE_BLOB_STORAGE_CONNECTION_STRING }}"
           cd /opt/docker-stack/dashboard-api

@@ -6,8 +6,12 @@ services:
     restart: unless-stopped
     cpus: 0.3
     mem_limit: 384m
-    ports:
-      - '${PORT}:8080'
+    networks:
+      - web-network
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=${DB_CONNECTION_STRING}
+
+networks:
+  web-network:
+    external: true
