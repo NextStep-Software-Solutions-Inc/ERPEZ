@@ -139,3 +139,15 @@ jobs:
           cd /opt/docker-stack/tenant-management-api
           docker compose down
           docker compose up -d
+
+          # Wait for container to stabilize and check health
+          echo "Waiting 15 seconds for container to initialize..."
+          sleep 15
+          STATUS=$(docker inspect -f '{{.State.Status}}' ${{ env.CONTAINER_NAME }})
+          if [ "$STATUS" != "running" ]; then
+            echo "::error::Container failed to start! Current status: $STATUS"
+            echo "Printing container logs:"
+            docker logs ${{ env.CONTAINER_NAME }}
+            exit 1
+          fi
+          echo "Container is running successfully!"
