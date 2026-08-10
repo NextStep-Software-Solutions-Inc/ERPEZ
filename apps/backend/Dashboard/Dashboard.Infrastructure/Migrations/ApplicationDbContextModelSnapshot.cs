@@ -9514,7 +9514,7 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsRequired();
 
                     b.HasOne("ERPEZ.Domain.Entities.Planning.ProcurementItem", "ProcurementItem")
-                        .WithMany()
+                        .WithMany("ItemPrices")
                         .HasForeignKey("ProcurementItemId")
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
@@ -11913,6 +11913,11 @@ namespace ERPEZ.Infrastructure.Migrations
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.ProcurementCategory", b =>
                 {
                     b.Navigation("ProcurementModes");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.ProcurementItem", b =>
+                {
+                    b.Navigation("ItemPrices");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.ProcurementMode", b =>

@@ -17,7 +17,7 @@ namespace ERP_EZ.Infrastructure.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasDefaultSchema("catalog")
+                .HasDefaultSchema("public")
                 .HasAnnotation("ProductVersion", "9.0.9")
                 .HasAnnotation("Relational:MaxIdentifierLength", 63);
 
@@ -27,8 +27,7 @@ namespace ERP_EZ.Infrastructure.Migrations
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasDefaultValueSql("gen_random_uuid()");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -71,15 +70,14 @@ namespace ERP_EZ.Infrastructure.Migrations
                     b.HasIndex("Name")
                         .IsUnique();
 
-                    b.ToTable("Modules", "catalog");
+                    b.ToTable("Modules", "public");
                 });
 
             modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.Tenant", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasDefaultValueSql("gen_random_uuid()");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -115,15 +113,14 @@ namespace ERP_EZ.Infrastructure.Migrations
                     b.HasIndex("Name")
                         .IsUnique();
 
-                    b.ToTable("Tenants", "catalog");
+                    b.ToTable("Tenants", "public");
                 });
 
             modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.TenantMember", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasDefaultValueSql("gen_random_uuid()");
+                        .HasColumnType("uuid");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -167,15 +164,14 @@ namespace ERP_EZ.Infrastructure.Migrations
                     b.HasIndex("TenantId", "UserId")
                         .IsUnique();
 
-                    b.ToTable("TenantMember", "catalog");
+                    b.ToTable("TenantMember", "public");
                 });
 
             modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.TenantSetting", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasDefaultValueSql("gen_random_uuid()");
+                        .HasColumnType("uuid");
 
                     b.Property<string>("BaseURL")
                         .IsRequired()
@@ -222,15 +218,14 @@ namespace ERP_EZ.Infrastructure.Migrations
                     b.HasIndex("TenantId")
                         .IsUnique();
 
-                    b.ToTable("TenantSettings", "catalog");
+                    b.ToTable("TenantSettings", "public");
                 });
 
             modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.TenantSubscription", b =>
                 {
                     b.Property<Guid>("Id")
                         .ValueGeneratedOnAdd()
-                        .HasColumnType("uuid")
-                        .HasDefaultValueSql("gen_random_uuid()");
+                        .HasColumnType("uuid");
 
                     b.Property<decimal>("Amount")
                         .HasColumnType("numeric");
@@ -238,8 +233,9 @@ namespace ERP_EZ.Infrastructure.Migrations
                     b.Property<bool>("AutoRenew")
                         .HasColumnType("boolean");
 
-                    b.Property<int>("BillingCycle")
-                        .HasColumnType("integer");
+                    b.Property<string>("BillingCycle")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -260,14 +256,16 @@ namespace ERP_EZ.Infrastructure.Migrations
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
-                    b.Property<int>("Plan")
-                        .HasColumnType("integer");
+                    b.Property<string>("Plan")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<DateTime>("StartDate")
                         .HasColumnType("timestamp with time zone");
 
-                    b.Property<int>("Status")
-                        .HasColumnType("integer");
+                    b.Property<string>("Status")
+                        .IsRequired()
+                        .HasColumnType("text");
 
                     b.Property<Guid>("TenantId")
                         .HasColumnType("uuid");
@@ -283,7 +281,7 @@ namespace ERP_EZ.Infrastructure.Migrations
                     b.HasIndex("TenantId", "StartDate", "EndDate")
                         .IsUnique();
 
-                    b.ToTable("TenantSubscriptions", "catalog");
+                    b.ToTable("TenantSubscriptions", "public");
                 });
 
             modelBuilder.Entity("ModuleTenant", b =>
@@ -298,7 +296,7 @@ namespace ERP_EZ.Infrastructure.Migrations
 
                     b.HasIndex("TenantsId");
 
-                    b.ToTable("TenantModule", "catalog");
+                    b.ToTable("TenantModule", "public");
                 });
 
             modelBuilder.Entity("ERPEZ.TenantManagement.Domain.Entities.TenantMember", b =>

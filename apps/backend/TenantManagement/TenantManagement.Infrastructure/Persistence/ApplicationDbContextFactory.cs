@@ -9,14 +9,14 @@ public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<Applicati
 {
     public ApplicationDbContext CreateDbContext(string[] args)
     {
-        var evironment = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production";
+        var environmentName = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT") ?? "Production";
         var basePath = Directory.GetCurrentDirectory();
 
         IConfigurationRoot configuration = new ConfigurationBuilder()
-            .SetBasePath(Path.GetFullPath(Path.Combine(basePath, "../ERPEZ.TenantManagement.Api")))
-            .AddJsonFile("appsettings.json", optional: true, true) // Make appsettings optional
-            .AddJsonFile($"appsettings.{evironment}.json", optional: true, true) // Make environment-specific appsettings optional
-            .AddUserSecrets(Assembly.Load("ERPEZ.TenantManagement.Api"))
+            .SetBasePath(Path.GetFullPath(Path.Combine(basePath, "../TenantManagement.Api")))
+            .AddJsonFile("appsettings.json", optional: false, reloadOnChange: true)
+            .AddJsonFile($"appsettings.{environmentName}.json", optional: true)
+            .AddUserSecrets(Assembly.Load("TenantManagement.Api"))
             .Build();
 
         var connectionString = configuration.GetConnectionString("DefaultConnection");

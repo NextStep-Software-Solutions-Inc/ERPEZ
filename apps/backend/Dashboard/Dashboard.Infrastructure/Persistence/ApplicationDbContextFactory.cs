@@ -13,10 +13,10 @@ public class ApplicationDbContextFactory : IDesignTimeDbContextFactory<Applicati
         var basePath = Directory.GetCurrentDirectory();
 
         IConfigurationRoot configuration = new ConfigurationBuilder()
-            .SetBasePath(Path.GetFullPath(Path.Combine(basePath, "../ERPEZ.Api")))
-            .AddJsonFile("appsettings.json", optional: true, true) // Make appsettings optional
-            .AddJsonFile($"appsettings.{evironment}.json", optional: true, true) // Make environment-specific appsettings optional
-            .AddUserSecrets(Assembly.Load("ERPEZ.Api"))
+            .SetBasePath(Path.GetFullPath(Path.Combine(basePath, "../Dashboard.Api")))
+            .AddJsonFile("appsettings.json", optional: true, true)
+            .AddJsonFile($"appsettings.{evironment}.json", optional: true, true)
+            .AddUserSecrets(Assembly.Load("Dashboard.Api"))
             .Build();
 
         var connectionString = configuration.GetConnectionString("DefaultConnection");
