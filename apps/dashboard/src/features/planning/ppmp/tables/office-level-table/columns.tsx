@@ -1,4 +1,4 @@
-﻿import { ColumnDef } from '@tanstack/react-table'
+import { ColumnDef } from '@tanstack/react-table'
 import {
   ArrowUpDown,
   MoreHorizontal,
@@ -27,6 +27,8 @@ import {
   editPpmpDialogOpenAtom,
 } from '../../atoms/ppmpStateAtoms'
 
+const usePpmpDetail = createQueryHookFromTemplate(getPPMPRequest)
+
 export const columns: ColumnDef<PPMP>[] = [
   {
     id: 'select',
@@ -49,8 +51,8 @@ export const columns: ColumnDef<PPMP>[] = [
     ),
   },
   {
-    accessorKey: 'documentName',
-    header: 'Document Name',
+    accessorKey: 'description',
+    header: 'Description',
   },
   {
     accessorKey: 'ppmpNumber',
@@ -88,27 +90,17 @@ export const columns: ColumnDef<PPMP>[] = [
       const setSelectedForEdit = useSetAtom(selectedPpmpForEditAtom)
       const setEditOpen = useSetAtom(editPpmpDialogOpenAtom)
 
-      const usePpmpDetail = createQueryHookFromTemplate(getPPMPRequest)
       const { refetch } = usePpmpDetail({
         pathParams: { id: ppmp.id },
         queryParams: {},
         enabled: false,
       })
 
-      const handleView = async () => {
-        try {
-          const { data } = await refetch()
-          if (data?.data) {
-            setSelectedForEdit(data.data)
-          }
-        } catch (err) {
-          // ignore
-        } finally {
-          navigate({
-            to: '/v2/ppmp/office-level/$ppmpId',
-            params: { ppmpId: ppmp.id },
-          })
-        }
+      const handleView = () => {
+        navigate({
+          to: '/v2/ppmp/office-level/$ppmpId',
+          params: { ppmpId: ppmp.id },
+        })
       }
 
       const handleEdit = async () => {

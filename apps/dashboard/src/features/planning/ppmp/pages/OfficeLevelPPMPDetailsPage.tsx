@@ -49,6 +49,7 @@ import { deletePPMPItemRequest } from '../handlers/deletePPMPItemRequest'
 import { deletePPMPExpenditureItemRequest } from '../handlers/deletePPMPExpenditureItemRequest'
 import { AddPPMPItemDialog, AddPPMPItemExpenditureDialog, AddPPMPItemsModal, EditPPMPItemAllocationsDialog } from '../dialogs'
 import { ConsolidationWorkspaceSheet } from '../dialogs/ConsolidationWorkspaceSheet'
+import { DeptConsolidationSheet } from '../dialogs/DeptConsolidationSheet'
 import { updatePPMPStatusRequest } from '../handlers/updatePPMPStatusRequest'
 import { useKeycloak } from '@/providers/KeycloakProvider'
 
@@ -1405,7 +1406,14 @@ const THROB_STYLE = `
 }
 `
 
-export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
+export function OfficeLevelPPMPDetailsPage({
+  ppmpId,
+  mode = 'master',
+}: {
+  ppmpId: string
+  mode?: 'master' | 'department'
+}) {
+  const isDeptMode = mode === 'department'
   const { data: ppmpResp, isLoading } = usePPMP({
     pathParams: { id: ppmpId },
     queryParams: {},
@@ -1426,6 +1434,7 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
   const [submitConfirmOpen, setSubmitConfirmOpen] = useState(false)
   const [approveConfirmOpen, setApproveConfirmOpen] = useState(false)
   const [consolidateWorkspaceOpen, setConsolidateWorkspaceOpen] = useState(false)
+  const [deptConsolidateOpen, setDeptConsolidateOpen] = useState(false)
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   // Expose current PPMP to other components so they can read metadata defaults
   const setPpmpForEdit = useSetAtom(selectedPpmpForEditAtom)
@@ -1736,23 +1745,38 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
     <PageContainerDashtail
       title={ppmp.ppmpNumber || 'PPMP Details'}
       badge={
-        ppmp.status && (
-          <span
-            className={cn(
-              'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-bold shadow-sm uppercase tracking-wider transition-all duration-300',
-              ppmp.status.toLowerCase() === 'approved'
-                ? 'border-emerald-200 bg-emerald-50 text-emerald-700 ring-4 ring-emerald-500/5'
-                : ppmp.status.toLowerCase() === 'submitted' || ppmp.status.toLowerCase() === 'pending_review' || ppmp.status.toLowerCase() === 'pending review'
-                  ? 'border-blue-200 bg-blue-50 text-blue-700 ring-4 ring-blue-500/5'
-                  : ppmp.status.toLowerCase() === 'rejected'
-                    ? 'border-rose-200 bg-rose-50 text-rose-700 ring-4 ring-rose-500/5'
-                    : 'border-amber-200 bg-amber-50 text-amber-700 ring-4 ring-amber-500/5' // Draft
-            )}
-          >
-            <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse" />
-            {ppmp.status}
-          </span>
-        )
+        <div className="flex items-center gap-2">
+          {/* Mode badge */}
+          {isDeptMode ? (
+            <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-bold shadow-sm uppercase tracking-wider border-amber-200 bg-amber-50 text-amber-700">
+              <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
+              Department PPMP
+            </span>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-bold shadow-sm uppercase tracking-wider border-primary/20 bg-primary/5 text-primary">
+              <span className="h-1.5 w-1.5 rounded-full bg-primary" />
+              Master PPMP
+            </span>
+          )}
+          {/* Status badge */}
+          {ppmp.status && (
+            <span
+              className={cn(
+                'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-bold shadow-sm uppercase tracking-wider transition-all duration-300',
+                ppmp.status.toLowerCase() === 'approved'
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-700 ring-4 ring-emerald-500/5'
+                  : ppmp.status.toLowerCase() === 'submitted' || ppmp.status.toLowerCase() === 'pending_review' || ppmp.status.toLowerCase() === 'pending review'
+                    ? 'border-blue-200 bg-blue-50 text-blue-700 ring-4 ring-blue-500/5'
+                    : ppmp.status.toLowerCase() === 'rejected'
+                      ? 'border-rose-200 bg-rose-50 text-rose-700 ring-4 ring-rose-500/5'
+                      : 'border-slate-200 bg-slate-50 text-slate-700 ring-4 ring-slate-500/5'
+              )}
+            >
+              <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse" />
+              {ppmp.status}
+            </span>
+          )}
+        </div>
       }
       metadata={
         <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-slate-500 dark:text-slate-400">
@@ -1797,7 +1821,16 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
             </Button>
           )}
 
-          {(ppmp.status?.toLowerCase() === 'approved' || ppmp.status?.toLowerCase() === 'submitted' || ppmp.status?.toLowerCase() === 'pending_review') && ppmp.isMaster && (
+          {/* Master mode: Consolidate button (import dept PPMPs into this master) */}
+          {!isDeptMode && ppmp.isMaster && (
+            [
+              'draft',
+              'submitted',
+              'approved',
+              'pending_review',
+              'pending review',
+            ].includes((ppmp.status ?? '').toLowerCase())
+          ) && (
             <Button
               variant="outline"
               size="sm"
@@ -1806,6 +1839,19 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
             >
               <Layers className="h-4 w-4" />
               <span>Consolidate PPMP</span>
+            </Button>
+          )}
+
+          {/* Department mode: Consolidate into Master button */}
+          {isDeptMode && !ppmp.consolidatedIntoId && (ppmp.status ?? '').toLowerCase() === 'approved' && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setDeptConsolidateOpen(true)}
+              className="flex items-center gap-1.5 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+            >
+              <Layers className="h-4 w-4" />
+              <span>Consolidate into Master</span>
             </Button>
           )}
         </div>
@@ -1967,6 +2013,22 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
           officeName: ppmp.officeName,
         }}
       />
+
+      {isDeptMode && (
+        <DeptConsolidationSheet
+          open={deptConsolidateOpen}
+          onOpenChange={setDeptConsolidateOpen}
+          deptPpmp={{
+            id: ppmp.id,
+            officeId: ppmp.officeId,
+            fiscalYearId: ppmp.fiscalYearId,
+            fiscalYearName: ppmp.fiscalYearName,
+            libId: ppmp.libId,
+            ppmpNumber: ppmp.ppmpNumber,
+            officeName: ppmp.officeName,
+          }}
+        />
+      )}
     </PageContainerDashtail>
   )
 }

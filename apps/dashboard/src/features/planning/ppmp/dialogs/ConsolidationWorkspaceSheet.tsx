@@ -98,13 +98,8 @@ function getConsolidationEligibility(
   if (ppmp.consolidatedIntoId) return 'Already consolidated'
   if (ppmp.fiscalYearId !== master.fiscalYearId) return 'Fiscal year mismatch'
   const status = ppmp.status?.toLowerCase()
-  if (
-    status !== 'submitted' &&
-    status !== 'approved' &&
-    status !== 'pending_review' &&
-    status !== 'draft'
-  ) {
-    return `Ineligible status: ${ppmp.status || 'None'}`
+  if (status !== 'approved') {
+    return `Ineligible status: ${ppmp.status || 'None'} (Must be Approved)`
   }
   if (master.libId && ppmp.libId && ppmp.libId !== master.libId) {
     return `Line Item Budget mismatch (Master LIB ID: ${master.libId || 'none'}, PPMP LIB ID: ${ppmp.libId || 'none'})`
@@ -870,6 +865,7 @@ export function ConsolidationWorkspaceSheet({
             childPPMPIds: Array.from(selectedIds),
             parentOfficeId: masterPpmp.officeId,
             fiscalYearId: masterPpmp.fiscalYearId,
+            consolidatedPPMPNumber: masterPpmp.ppmpNumber ?? `CONSOLIDATED-${Date.now()}`,
           },
         },
         {

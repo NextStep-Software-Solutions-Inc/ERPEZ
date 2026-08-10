@@ -370,6 +370,7 @@ export interface ApprovalEvent {
 export type PPMP = {
   id: string
   documentName?: string
+  description?: string
   ppmpNumber?: string
   officeId: string
   officeName?: string
