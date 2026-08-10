@@ -1,0 +1,12 @@
+packages:
+  - 'apps/*'
+  - 'packages/*'
+allowBuilds:
+  '@clerk/shared': true
+  '@scarf/scarf': false
+  bcrypt: true
+  core-js: true
+  esbuild: true
+  maplibre-gl: true
+  sharp: true
+  unrs-resolver: true
