@@ -190,10 +190,18 @@ export function ProjectOverviewForm({
     fetchRealLibs()
   }, [])
 
-  // Available LIBs filtered by selected Target Fiscal Year
+  // Available LIBs filtered by selected Target Fiscal Year and Selected User's Office Context
   const filteredLibs = useMemo(() => {
-    return realLibs.filter((lib) => lib.fiscalYear === targetFiscalYear)
-  }, [realLibs, targetFiscalYear])
+    if (!selectedUser) return []
+    return realLibs.filter((lib) => {
+      const matchesFy = lib.fiscalYear === targetFiscalYear
+      // Match office if office information is available
+      const matchesOffice = !selectedUser.officeName || !lib.officeName ||
+        lib.officeName.toLowerCase().includes(selectedUser.officeName.toLowerCase()) ||
+        selectedUser.officeName.toLowerCase().includes(lib.officeName.toLowerCase())
+      return matchesFy && matchesOffice
+    })
+  }, [realLibs, targetFiscalYear, selectedUser])
 
   // Real LIB activities state fetched from backend GET /lib-activities API
   const [realLibActivities, setRealLibActivities] = useState<{ id: string; name: string; budget: number; lineItemBudgetId: string }[]>([])
@@ -383,6 +391,8 @@ export function ProjectOverviewForm({
                         setSelectedUser(null)
                         setPersonnelSearchTerm('')
                         form.setFieldValue('userId', '')
+                        setSelectedLibId('')
+                        form.setFieldValue('linkedLibActivityId', undefined)
                       }}
                       className="absolute right-3 top-2.5 h-5 w-5 text-gray-400 hover:text-gray-600"
                     >
@@ -403,6 +413,8 @@ export function ProjectOverviewForm({
                           setPersonnelSearchTerm(user.fullName)
                           setShowPersonnelDropdown(false)
                           form.setFieldValue('userId', user.id)
+                          setSelectedLibId('')
+                          form.setFieldValue('linkedLibActivityId', undefined)
                         }}
                         className={cn(
                           'w-full text-left px-4 py-3 hover:bg-blue-50 border-b last:border-b-0 transition-colors',
@@ -534,9 +546,15 @@ export function ProjectOverviewForm({
                   <div className="flex items-center justify-between border-b border-slate-200/80 pb-3">
                     <div>
                       <span className="text-xs font-semibold text-slate-700 block">Office / Department Context:</span>
-                      <span className="text-xs font-medium text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                        {selectedUser?.officeName || 'VCRI (Office of the Vice Chancellor for Research & Innovation)'}
-                      </span>
+                      {selectedUser ? (
+                        <span className="text-xs font-medium text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 inline-flex items-center gap-1.5 mt-0.5">
+                          {selectedUser.officeName || 'No office assigned'}
+                        </span>
+                      ) : (
+                        <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200/80 inline-flex items-center gap-1.5 mt-0.5">
+                          Select a representative first
+                        </span>
+                      )}
                     </div>
                     <div>
                       <Label htmlFor="fySelect" className="text-xs font-semibold text-slate-700 block mb-1">
@@ -568,18 +586,23 @@ export function ProjectOverviewForm({
                     </Label>
                     <Select
                       value={selectedLibId}
+                      disabled={!selectedUser}
                       onValueChange={(libId) => {
                         setSelectedLibId(libId)
                         form.setFieldValue('linkedLibActivityId', undefined)
                       }}
                     >
                       <SelectTrigger id="libSelect" className="bg-white text-sm">
-                        <SelectValue placeholder={`Select an approved LIB for ${selectedUser?.officeName || 'VCRI'} (${targetFiscalYear})...`} />
+                        <SelectValue placeholder={selectedUser ? `Select an approved LIB for ${selectedUser.officeName || 'office'} (${targetFiscalYear})...` : 'Select a representative first'} />
                       </SelectTrigger>
                       <SelectContent>
-                        {filteredLibs.length === 0 ? (
+                        {!selectedUser ? (
                           <div className="p-3 text-xs text-slate-500 text-center">
-                            No approved LIBs found for FY {targetFiscalYear}
+                            Please select a representative user first to view available LIBs
+                          </div>
+                        ) : filteredLibs.length === 0 ? (
+                          <div className="p-3 text-xs text-slate-500 text-center">
+                            No approved LIBs found for {selectedUser.officeName || 'office'} in FY {targetFiscalYear}
                           </div>
                         ) : (
                           filteredLibs.map((lib) => (
