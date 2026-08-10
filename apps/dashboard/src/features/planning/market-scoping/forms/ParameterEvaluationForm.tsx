@@ -166,6 +166,21 @@ export function ParameterEvaluationForm({ onNext, onPrevious }: ParameterEvaluat
     )
   }
 
+  const renameAttachment = (parameterId: string, attachmentId: string, newName: string) => {
+    setParameters((prev) =>
+      prev.map((param) =>
+        param.parameterId === parameterId
+          ? {
+              ...param,
+              attachments: param.attachments.map((att) =>
+                att.id === attachmentId ? { ...att, fileName: newName } : att
+              ),
+            }
+          : param
+      )
+    )
+  }
+
   const incompleteParameters = parameters.filter(
     (p) => !p.considered || !p.recommendations.trim()
   )
@@ -210,6 +225,7 @@ export function ParameterEvaluationForm({ onNext, onPrevious }: ParameterEvaluat
                 onUpdateParameter={updateParameter}
                 onAddAttachment={addAttachment}
                 onRemoveAttachment={removeAttachment}
+                onRenameAttachment={renameAttachment}
                 index={index + 1}
               />
             ))}
@@ -224,15 +240,9 @@ export function ParameterEvaluationForm({ onNext, onPrevious }: ParameterEvaluat
                     parameters completed
                   </p>
                   {incompleteParameters.length > 0 && (
-                    <ul className="mt-2 space-y-1 text-xs">
-                      {incompleteParameters.map((p) => (
-                        <li key={p.parameterId}>
-                          • {p.displayName}
-                          {!p.considered && ' - select Yes/No/N.A.'}
-                          {p.considered && !p.recommendations.trim() && ' - add recommendations'}
-                        </li>
-                      ))}
-                    </ul>
+                    <p className="text-xs text-blue-700 mt-1">
+                      Please complete all parameter evaluations before proceeding.
+                    </p>
                   )}
                 </div>
               </div>
@@ -267,6 +277,7 @@ function ParameterCard({
   onUpdateParameter,
   onAddAttachment,
   onRemoveAttachment,
+  onRenameAttachment,
   index,
 }: {
   parameter: ParameterEvaluation
@@ -275,6 +286,7 @@ function ParameterCard({
   onUpdateParameter: (id: string, updates: Partial<ParameterEvaluation>) => void
   onAddAttachment: (id: string, files: File[]) => void
   onRemoveAttachment: (id: string, attachmentId: string) => void
+  onRenameAttachment: (id: string, attachmentId: string, newName: string) => void
   index: number
 }) {
   const isAnswered = !!parameter.considered
@@ -283,91 +295,71 @@ function ParameterCard({
   return (
     <div
       className={`border rounded-xl overflow-hidden transition-all duration-200 ${
-        isComplete
-          ? 'border-emerald-300 border-l-4 border-l-emerald-500 bg-gradient-to-r from-emerald-50/30 via-white to-white'
-          : isAnswered
-          ? 'border-emerald-200 border-l-4 border-l-emerald-400 bg-emerald-50/10'
-          : 'border-slate-200 hover:border-slate-300'
+        isExpanded ? 'border-primary ring-1 ring-primary/20 shadow-md' : 'border-gray-200 bg-white'
       }`}
     >
-      <button
-        type="button"
+      <div
+        className="flex items-center justify-between p-4 cursor-pointer hover:bg-slate-50/80"
         onClick={onToggle}
-        className="w-full px-4 py-3 flex items-center justify-between hover:bg-slate-50/60 transition-colors"
       >
-        <div className="flex items-center gap-3.5 text-left flex-1 min-w-0">
-          <div
-            className={`flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold transition-colors ${
-              isAnswered
-                ? 'bg-emerald-500 text-white shadow-2xs'
-                : 'bg-slate-100 text-slate-700'
-            }`}
-          >
-            {index}
-          </div>
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2">
-              <p className="font-semibold text-slate-900 text-base">{parameter.displayName}</p>
-              {isAnswered && (
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                  ✓ Answered ({parameter.considered === 'NotApplicable' ? 'N/A' : parameter.considered})
-                </span>
-              )}
-            </div>
-            <p className="text-xs text-slate-500 mt-0.5 leading-relaxed">{parameter.guidedQuestion}</p>
+        <div className="flex items-center gap-3">
+          <span className="w-7 h-7 rounded-full bg-slate-150 text-slate-700 font-bold text-xs flex items-center justify-center border border-slate-200">
+            P{index}
+          </span>
+          <div>
+            <h4 className="font-semibold text-sm text-slate-900">{parameter.displayName}</h4>
+            <p className="text-xs text-slate-500">{parameter.guidedQuestion}</p>
           </div>
         </div>
-        <ChevronDown
-          className={`w-4 h-4 text-slate-500 transition-transform ml-2 flex-shrink-0 ${
-            isExpanded ? 'transform rotate-180' : ''
-          }`}
-        />
-      </button>
+        <div className="flex items-center gap-3">
+          {isComplete ? (
+            <span className="text-xs px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 border border-emerald-200 font-medium">
+              Completed
+            </span>
+          ) : isAnswered ? (
+            <span className="text-xs px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 border border-amber-200 font-medium">
+              Needs Findings
+            </span>
+          ) : (
+            <span className="text-xs px-2 py-0.5 rounded-full bg-slate-100 text-slate-600 font-medium">
+              Pending
+            </span>
+          )}
+          {isExpanded ? <ChevronUp className="w-4 h-4 text-slate-400" /> : <ChevronDown className="w-4 h-4 text-slate-400" />}
+        </div>
+      </div>
 
       {isExpanded && (
-        <div className="border-t px-4 py-4 space-y-4 bg-gray-50">
-          {/* Considered Radio Buttons */}
+        <div className="p-4 border-t border-slate-200/80 bg-slate-50/50 space-y-4">
+          {/* Considered Radio Group */}
           <div>
-            <Label className="text-sm font-medium mb-2 block">Was this parameter considered? *</Label>
+            <Label className="text-sm font-medium">Is this parameter applicable/considered? *</Label>
             <RadioGroup
               value={parameter.considered}
-              onValueChange={(value) =>
+              onValueChange={(val) =>
                 onUpdateParameter(parameter.parameterId, {
-                  considered: value as 'Yes' | 'No' | 'NotApplicable',
+                  considered: val as 'Yes' | 'No' | 'NotApplicable',
                 })
               }
+              className="flex gap-4 mt-2"
             >
-              <div className="flex items-center gap-4">
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="Yes" id={`considered-yes-${parameter.parameterId}`} />
-                  <Label
-                    htmlFor={`considered-yes-${parameter.parameterId}`}
-                    className="font-normal cursor-pointer"
-                  >
-                    Yes
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem value="No" id={`considered-no-${parameter.parameterId}`} />
-                  <Label
-                    htmlFor={`considered-no-${parameter.parameterId}`}
-                    className="font-normal cursor-pointer"
-                  >
-                    No
-                  </Label>
-                </div>
-                <div className="flex items-center space-x-2">
-                  <RadioGroupItem
-                    value="NotApplicable"
-                    id={`considered-na-${parameter.parameterId}`}
-                  />
-                  <Label
-                    htmlFor={`considered-na-${parameter.parameterId}`}
-                    className="font-normal cursor-pointer"
-                  >
-                    Not Applicable
-                  </Label>
-                </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="Yes" id={`considered-yes-${parameter.parameterId}`} />
+                <Label htmlFor={`considered-yes-${parameter.parameterId}`} className="font-normal cursor-pointer">
+                  Yes
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="No" id={`considered-no-${parameter.parameterId}`} />
+                <Label htmlFor={`considered-no-${parameter.parameterId}`} className="font-normal cursor-pointer">
+                  No
+                </Label>
+              </div>
+              <div className="flex items-center space-x-2">
+                <RadioGroupItem value="NotApplicable" id={`considered-na-${parameter.parameterId}`} />
+                <Label htmlFor={`considered-na-${parameter.parameterId}`} className="font-normal cursor-pointer">
+                  Not Applicable
+                </Label>
               </div>
             </RadioGroup>
           </div>
@@ -399,6 +391,7 @@ function ParameterCard({
               files={parameter.attachments}
               onFilesChange={onAddAttachment}
               onRemoveFile={(fileId) => onRemoveAttachment(parameter.parameterId, fileId)}
+              onRenameFile={(fileId, newName) => onRenameAttachment(parameter.parameterId, fileId, newName)}
             />
           </div>
         </div>
@@ -415,11 +408,13 @@ function FileUploadDropzone({
   files,
   onFilesChange,
   onRemoveFile,
+  onRenameFile,
 }: {
   parameterId: string
   files: FileAttachment[]
   onFilesChange: (parameterId: string, files: File[]) => void
   onRemoveFile: (fileId: string) => void
+  onRenameFile: (fileId: string, newName: string) => void
 }) {
   const [isDragging, setIsDragging] = useState(false)
 
@@ -469,16 +464,24 @@ function FileUploadDropzone({
       </Label>
 
       {files.length > 0 && (
-        <div className="mt-2 space-y-1">
+        <div className="mt-3 space-y-2 text-left">
           {files.map((file) => (
-            <div key={file.id} className="flex items-center justify-between bg-white p-1.5 rounded text-xs">
-              <span className="truncate text-gray-700">{file.fileName}</span>
+            <div key={file.id} className="flex items-center justify-between bg-white p-2 border border-slate-200 rounded text-xs gap-2 shadow-xs">
+              <input
+                type="text"
+                value={file.fileName}
+                onChange={(e) => onRenameFile(file.id, e.target.value)}
+                className="truncate text-slate-800 bg-transparent hover:bg-slate-50 focus:bg-white border-b border-dashed border-slate-300 focus:border-indigo-500 focus:outline-none flex-1 font-medium px-1.5 py-0.5 text-xs"
+                placeholder="Click to rename attachment label..."
+                title="Click to edit document display name"
+              />
               <button
                 type="button"
                 onClick={() => onRemoveFile(file.id)}
-                className="text-gray-400 hover:text-red-600"
+                className="text-slate-400 hover:text-red-600 p-1 transition-colors"
+                title="Remove file"
               >
-                <X className="w-3 h-3" />
+                <X className="w-3.5 h-3.5" />
               </button>
             </div>
           ))}

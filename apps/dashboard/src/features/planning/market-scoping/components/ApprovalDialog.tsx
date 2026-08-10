@@ -104,10 +104,12 @@ export function ApprovalDialog({
                 <div className="flex flex-col items-center justify-center gap-1.5 py-2">
                   <Upload className="w-8 h-8 text-indigo-500" />
                   {signedFile ? (
-                    <div className="flex items-center gap-2 text-indigo-600 font-medium text-sm">
-                      <FileText className="w-4 h-4" />
-                      <span>{signedFile.name}</span>
-                      <span className="text-xs text-muted-foreground">
+                    <div className="flex items-center gap-2 text-indigo-600 font-medium text-sm max-w-full px-2 overflow-hidden">
+                      <FileText className="w-4 h-4 shrink-0 text-indigo-500" />
+                      <span className="truncate max-w-[220px] sm:max-w-[260px]" title={signedFile.name}>
+                        {signedFile.name}
+                      </span>
+                      <span className="text-xs text-muted-foreground shrink-0">
                         ({(signedFile.size / 1024).toFixed(1)} KB)
                       </span>
                     </div>

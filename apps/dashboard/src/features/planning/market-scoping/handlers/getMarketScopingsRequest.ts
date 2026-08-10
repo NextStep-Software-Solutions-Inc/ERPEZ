@@ -17,6 +17,8 @@ interface GetMarketScopingsParams extends QueryParams {
   departmentUnit?: string;
   sortBy?: string;
   sortOrder?: string;
+  filters?: string;
+  searchTerm?: string;
 }
 
 export const getMarketScopingsRequest: QueryBlueprintFromTemplate<

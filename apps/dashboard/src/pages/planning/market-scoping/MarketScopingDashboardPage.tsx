@@ -10,7 +10,7 @@
  * - Create new form button via dialog
  */
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useAtom, useSetAtom, useAtomValue } from 'jotai'
 import { useNavigate } from '@tanstack/react-router'
 import { useQueryClient } from '@tanstack/react-query'
@@ -58,18 +58,21 @@ export default function MarketScopingDashboardPage() {
     pageSize: 10,
   })
 
+  // Reset pagination to page 1 whenever search query or status filter changes
+  useEffect(() => {
+    setPagination((prev) => ({ ...prev, pageIndex: 0 }))
+  }, [filter.searchTerm, filter.statusFilter])
+
   // Fetch market scoping forms from API
   const { data: apiResponse, isLoading, error } = useMarketScopings({
     pathParams: {},
     queryParams: {
-      pageNumber: pagination.pageIndex + 1,
-      pageSize: pagination.pageSize,
+      pageNumber: 1,
+      pageSize: 100,
     },
   })
 
   // Transform API response to component data
-  // The API response is APIResponse<ListMarketScopingResponse>.
-  // Its data property contains ListMarketScopingResponse, which has data (the forms array) and pagination.
   const forms = useMemo(() => {
     if (!apiResponse?.data) return []
     if (Array.isArray(apiResponse.data)) {
@@ -81,35 +84,34 @@ export default function MarketScopingDashboardPage() {
     return []
   }, [apiResponse])
 
-  const pageCount = useMemo(() => {
-    if (!apiResponse) return 0
-    const rawData = (apiResponse as unknown) as Record<string, unknown>
-    if ('pagination' in rawData && rawData.pagination && typeof rawData.pagination === 'object') {
-      const pag = rawData.pagination as Record<string, unknown>
-      if (typeof pag.totalPages === 'number') {
-        return pag.totalPages
-      }
+  // Apply search & status filters instantly across all records
+  const filteredForms = useMemo(() => {
+    let rows = forms
+    if (filter.statusFilter !== 'all') {
+      rows = rows.filter((f) => f.status === filter.statusFilter)
     }
-    if ('totalPages' in rawData && typeof rawData.totalPages === 'number') {
-      return rawData.totalPages
+    if (filter.searchTerm.trim()) {
+      const q = filter.searchTerm.toLowerCase()
+      rows = rows.filter(
+        (f) =>
+          f.projectName?.toLowerCase().includes(q) ||
+          f.departmentUnit?.toLowerCase().includes(q) ||
+          f.representativeName?.toLowerCase().includes(q) ||
+          f.estimatedBudget?.toString().includes(q)
+      )
     }
-    return 1
-  }, [apiResponse])
+    return rows
+  }, [forms, filter])
 
-  const totalCount = useMemo(() => {
-    if (!apiResponse) return 0
-    const rawData = (apiResponse as unknown) as Record<string, unknown>
-    if ('pagination' in rawData && rawData.pagination && typeof rawData.pagination === 'object') {
-      const pag = rawData.pagination as Record<string, unknown>
-      if (typeof pag.total === 'number') {
-        return pag.total
-      }
-    }
-    if ('totalCount' in rawData && typeof rawData.totalCount === 'number') {
-      return rawData.totalCount
-    }
-    return forms.length
-  }, [apiResponse, forms])
+  // Compute pagination bounds based on filtered items
+  const totalCount = filteredForms.length
+  const pageCount = Math.ceil(totalCount / pagination.pageSize) || 1
+
+  // Slice forms for current page view
+  const paginatedForms = useMemo(() => {
+    const start = pagination.pageIndex * pagination.pageSize
+    return filteredForms.slice(start, start + pagination.pageSize)
+  }, [filteredForms, pagination.pageIndex, pagination.pageSize])
 
   const actions: MetaActions = ['write', 'delete']
 
@@ -161,23 +163,6 @@ export default function MarketScopingDashboardPage() {
     }
   }, [forms])
 
-  // Apply filters from atom-managed state
-  const filteredForms = useMemo(() => {
-    let rows = forms
-    if (filter.statusFilter !== 'all') {
-      rows = rows.filter((f) => f.status === filter.statusFilter)
-    }
-    if (filter.searchTerm.trim()) {
-      const q = filter.searchTerm.toLowerCase()
-      rows = rows.filter(
-        (f) =>
-          f.projectName.toLowerCase().includes(q) ||
-          f.departmentUnit.toLowerCase().includes(q),
-      )
-    }
-    return rows
-  }, [forms, filter])
-
   // Create columns using the factory function
   const columns = useMemo(
     () =>
@@ -189,8 +174,8 @@ export default function MarketScopingDashboardPage() {
     [navigate],
   )
 
-  // Show loading state
-  if (isLoading) {
+  // Show initial loading state only when no data has loaded yet
+  if (isLoading && !apiResponse) {
     return (
       <div className="space-y-6">
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden p-8">
@@ -353,7 +338,7 @@ export default function MarketScopingDashboardPage() {
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
           <TemplateTable
             columns={columns}
-            data={filteredForms}
+            data={paginatedForms}
             actions={actions}
             readonly={false}
             toolbar={(table) => <MarketScopingTableToolbar table={table} />}
@@ -377,7 +362,7 @@ export default function MarketScopingDashboardPage() {
             </div>
           ) : (
             <MarketScopingCardView
-              data={filteredForms}
+              data={paginatedForms}
               onViewDetails={handleViewDetails}
               onEdit={handleEdit}
               onDelete={handleDeleteClick}
