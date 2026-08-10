@@ -1,0 +1,14 @@
+version: '3.8'
+services:
+  app:
+    image: dashboard-api:dev
+    container_name: dashboard-api
+    restart: unless-stopped
+    cpus: 0.3
+    mem_limit: 384m
+    ports:
+      - '${PORT}:8080'
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=${DB_CONNECTION_STRING}
+      - AzureBlobStorage__ConnectionString=${BLOB_CONNECTION_STRING}

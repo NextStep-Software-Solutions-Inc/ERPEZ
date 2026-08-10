@@ -1,7 +1,7 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\ERPEZ.TenantManagement.Application\ERPEZ.TenantManagement.Application.csproj" />
+    <ProjectReference Include="..\TenantManagement.Application\TenantManagement.Application.csproj" />
   </ItemGroup>
 
   <ItemGroup>

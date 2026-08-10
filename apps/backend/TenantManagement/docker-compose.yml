@@ -1,0 +1,13 @@
+version: '3.8'
+services:
+  app:
+    image: tenant-management-api:dev
+    container_name: tenant-management-api
+    restart: unless-stopped
+    cpus: 0.3
+    mem_limit: 384m
+    ports:
+      - '${PORT}:8080'
+    environment:
+      - ASPNETCORE_ENVIRONMENT=Development
+      - ConnectionStrings__DefaultConnection=${DB_CONNECTION_STRING}

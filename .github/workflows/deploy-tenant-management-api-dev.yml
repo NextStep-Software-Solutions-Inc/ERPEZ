@@ -1,20 +1,20 @@
-name: Deploy ERPEZ Tenant Management API to DigitalOcean Droplet (Dev)
+name: Deploy Tenant Management API to VPS (Dev)
 
 on:
   push:
     branches:
       - development
     paths:
-      - 'TenantManagement/**'
-      - 'ERPEZ.Shared/**'
-      - .github/workflows/deploy-tenant-api-dev.yml
+      - 'apps/backend/TenantManagement/**'
+      - 'apps/backend/Shared/**'
+      - .github/workflows/deploy-tenant-management-api-dev.yml
   pull_request:
     branches:
       - development
     paths:
-      - 'TenantManagement/**'
-      - 'ERPEZ.Shared/**'
-      - .github/workflows/deploy-tenant-api-dev.yml
+      - 'apps/backend/TenantManagement/**'
+      - 'apps/backend/Shared/**'
+      - .github/workflows/deploy-tenant-management-api-dev.yml
   workflow_dispatch:
     inputs:
       reason:
@@ -24,7 +24,7 @@ on:
         type: string
 
 env:
-    CONTAINER_NAME: erpez-tenant-management-api
+    CONTAINER_NAME: tenant-management-api
     IMAGE_TAG: dev
     ENVIRONMENT: Development
 
@@ -43,10 +43,10 @@ jobs:
         dotnet-version: '9.0.x'
     
     - name: Restore dependencies
-      run: dotnet restore ERPEZ.sln
+      run: dotnet restore apps/backend/ERPEZ.sln
     
     - name: Build solution (treat warnings as errors)
-      run: dotnet build ERPEZ.sln --no-restore --configuration Release /p:TreatWarningsAsErrors=true
+      run: dotnet build apps/backend/ERPEZ.sln --no-restore --configuration Release /p:TreatWarningsAsErrors=true
     
     - name: Check Validation Coverage
       run: |
@@ -63,7 +63,7 @@ jobs:
       continue-on-error: false
     
     - name: Run Tests
-      run: dotnet test ERPEZ.sln --no-build --configuration Release --verbosity normal --nologo
+      run: dotnet test apps/backend/ERPEZ.sln --no-build --configuration Release --verbosity normal --nologo
       continue-on-error: false
 
   build-and-deploy:
@@ -81,46 +81,41 @@ jobs:
       uses: docker/setup-buildx-action@v3
 
     - name: Build Docker image
-      run: docker build -t ${{ env.CONTAINER_NAME }}:${{ env.IMAGE_TAG }} -f TenantManagement/Dockerfile .
+      run: docker build -t ${{ env.CONTAINER_NAME }}:${{ env.IMAGE_TAG }} -f apps/backend/TenantManagement/Dockerfile apps/backend
 
     - name: Save Docker image
       run: docker save ${{ env.CONTAINER_NAME }}:${{ env.IMAGE_TAG }} | gzip > ${{ env.CONTAINER_NAME }}.tar.gz
 
-    - name: Transfer image to droplet via SCP
+    - name: Transfer files to VPS via SCP
       uses: appleboy/scp-action@v0.1.7
       with:
-        host: ${{ secrets.DO_DROPLET_IP }}
-        username: ${{ secrets.DO_DROPLET_USER }}
-        key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
-        passphrase: ${{ secrets.DO_SSH_PASSPHRASE }}
-        source: ${{ env.CONTAINER_NAME }}.tar.gz
-        target: /tmp/
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
+        passphrase: ${{ secrets.SSH_PASSPHRASE }}
+        source: "${{ env.CONTAINER_NAME }}.tar.gz,apps/backend/TenantManagement/docker-compose.yml"
+        target: "/tmp"
 
-    - name: Deploy on DigitalOcean Droplet
+    - name: Deploy on VPS
       uses: appleboy/ssh-action@v1.0.3
       with:
-        host: ${{ secrets.DO_DROPLET_IP }}
-        username: ${{ secrets.DO_DROPLET_USER }}
-        key: ${{ secrets.DO_SSH_PRIVATE_KEY }}
-        passphrase: ${{ secrets.DO_SSH_PASSPHRASE }}
+        host: ${{ secrets.SSH_HOST }}
+        username: ${{ secrets.SSH_USERNAME }}
+        key: ${{ secrets.SSH_KEY }}
+        passphrase: ${{ secrets.SSH_PASSPHRASE }}
         script: |
+          # Move the transferred docker-compose.yml to the correct folder
+          mkdir -p /opt/docker-stack/tenant-management-api
+          mv /tmp/apps/backend/TenantManagement/docker-compose.yml /opt/docker-stack/tenant-management-api/docker-compose.yml
+          rm -rf /tmp/apps
+
           # Load the new image
           docker load -i /tmp/${{ env.CONTAINER_NAME }}.tar.gz
-
-          # Stop and remove existing container if running
-          docker stop ${{ env.CONTAINER_NAME }} || true
-          docker rm ${{ env.CONTAINER_NAME }} || true
-
-          # Run the new container
-          docker run -d \
-            --name ${{ env.CONTAINER_NAME }} \
-            --cpus=0.3 \
-            --memory=384m \
-            -p 71:8080 \
-            -e ASPNETCORE_ENVIRONMENT=${{ env.ENVIRONMENT }} \
-            -e ConnectionStrings__DefaultConnection="${{ secrets.ERPEZ_MANAGEMENT_DB_CONNECTION_STRING }}" \
-            --restart unless-stopped \
-            ${{ env.CONTAINER_NAME }}:${{ env.IMAGE_TAG }}
-
-          # Clean up transferred image
           rm -f /tmp/${{ env.CONTAINER_NAME }}.tar.gz
+
+          # Deploy via docker compose
+          export PORT=71
+          export DB_CONNECTION_STRING="${{ secrets.ERPEZ_MANAGEMENT_DB_CONNECTION_STRING }}"
+          cd /opt/docker-stack/tenant-management-api
+          docker compose down
+          docker compose up -d

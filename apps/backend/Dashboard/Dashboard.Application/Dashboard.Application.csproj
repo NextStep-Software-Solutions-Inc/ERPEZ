@@ -1,7 +1,7 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
   <ItemGroup>
-    <ProjectReference Include="..\ERPEZ.Domain\ERPEZ.Domain.csproj" />
-    <ProjectReference Include="..\..\ERPEZ.Shared\ERPEZ.Shared.csproj" />
+    <ProjectReference Include="..\Dashboard.Domain\Dashboard.Domain.csproj" />
+    <ProjectReference Include="..\..\Shared\Shared.csproj" />
   </ItemGroup>
 
   <ItemGroup>

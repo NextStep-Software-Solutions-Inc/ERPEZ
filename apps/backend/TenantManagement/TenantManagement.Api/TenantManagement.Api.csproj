@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk.Web">
+<Project Sdk="Microsoft.NET.Sdk.Web">
 
   <PropertyGroup>
     <TargetFramework>net9.0</TargetFramework>
@@ -19,9 +19,9 @@
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\ERPEZ.TenantManagement.Application\ERPEZ.TenantManagement.Application.csproj" />
-    <ProjectReference Include="..\ERPEZ.TenantManagement.Infrastructure\ERPEZ.TenantManagement.Infrastructure.csproj" />
-    <ProjectReference Include="..\..\ERPEZ.Shared\ERPEZ.Shared.csproj" />
+    <ProjectReference Include="..\TenantManagement.Application\TenantManagement.Application.csproj" />
+    <ProjectReference Include="..\TenantManagement.Infrastructure\TenantManagement.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\Shared\Shared.csproj" />
   </ItemGroup>
 
   <ItemGroup>

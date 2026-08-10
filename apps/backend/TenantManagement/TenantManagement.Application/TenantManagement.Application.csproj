@@ -1,8 +1,8 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
   <ItemGroup>
-    <ProjectReference Include="..\ERPEZ.TenantManagement.Domain\ERPEZ.TenantManagement.Domain.csproj" />
-    <ProjectReference Include="..\..\ERPEZ.Shared\ERPEZ.Shared.csproj" />
+    <ProjectReference Include="..\TenantManagement.Domain\TenantManagement.Domain.csproj" />
+    <ProjectReference Include="..\..\Shared\Shared.csproj" />
   </ItemGroup>
 
   <ItemGroup>
