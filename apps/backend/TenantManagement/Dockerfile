@@ -29,4 +29,4 @@ EXPOSE 8080
 EXPOSE 443
 
 # Set the entry point
-ENTRYPOINT ["dotnet", "ERPEZ.TenantManagement.Api.dll"]
+ENTRYPOINT ["dotnet", "TenantManagement.Api.dll"]

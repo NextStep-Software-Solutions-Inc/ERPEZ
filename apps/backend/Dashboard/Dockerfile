@@ -29,4 +29,4 @@ EXPOSE 8080
 EXPOSE 443
 
 # Set the entry point
-ENTRYPOINT ["dotnet", "ERPEZ.Api.dll"]
+ENTRYPOINT ["dotnet", "Dashboard.Api.dll"]
