@@ -86,9 +86,9 @@ export const columns: ColumnDef<PPMP>[] = [
       const setSelectedForEdit = useSetAtom(selectedPpmpForEditAtom)
       const setEditOpen = useSetAtom(editPpmpDialogOpenAtom)
 
-      const handleView = () => {
+      const handleView = (e: React.MouseEvent) => {
         navigate({
-          to: '/v2/ppmp/office-level/$ppmpId',
+          to: '/v2/ppmp/$ppmpId',
           params: { ppmpId: ppmp.id },
         })
       }
@@ -111,8 +111,11 @@ export const columns: ColumnDef<PPMP>[] = [
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <DropdownMenuItem onClick={handleView}>
+          <DropdownMenuContent
+            align="end"
+            onCloseAutoFocus={(e) => e.preventDefault()}
+          >
+            <DropdownMenuItem onClick={(e) => handleView(e)}>
               <FolderOpen className="mr-2 h-4 w-4" />
               View Details
             </DropdownMenuItem>

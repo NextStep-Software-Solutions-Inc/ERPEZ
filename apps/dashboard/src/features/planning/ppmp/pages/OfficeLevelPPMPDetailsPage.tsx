@@ -47,7 +47,12 @@ import { getPPMPItemsRequest } from '../handlers/getPPMPItemsRequest'
 import { formatCurrency } from '../lib'
 import { deletePPMPItemRequest } from '../handlers/deletePPMPItemRequest'
 import { deletePPMPExpenditureItemRequest } from '../handlers/deletePPMPExpenditureItemRequest'
-import { AddPPMPItemDialog, AddPPMPItemExpenditureDialog, AddPPMPItemsModal, EditPPMPItemAllocationsDialog } from '../dialogs'
+import {
+  AddPPMPItemDialog,
+  AddPPMPItemExpenditureDialog,
+  AddPPMPItemsModal,
+  EditPPMPItemAllocationsDialog,
+} from '../dialogs'
 import { ConsolidationWorkspaceSheet } from '../dialogs/ConsolidationWorkspaceSheet'
 import { DeptConsolidationSheet } from '../dialogs/DeptConsolidationSheet'
 import { updatePPMPStatusRequest } from '../handlers/updatePPMPStatusRequest'
@@ -99,7 +104,9 @@ const usePPMPExpenditureItems = createQueryHookFromTemplate(
   getPPMPExpenditureItemsRequest,
 )
 const usePPMPItems = createQueryHookFromTemplate(getPPMPItemsRequest)
-const useUpdatePPMPStatus = createMutationHookFromTemplate(updatePPMPStatusRequest)
+const useUpdatePPMPStatus = createMutationHookFromTemplate(
+  updatePPMPStatusRequest,
+)
 // ============================
 // Utility Formatting
 // ============================
@@ -115,8 +122,6 @@ const formatDate = (value: string | null | undefined, withTime = false) => {
     ...(withTime ? { hour: 'numeric', minute: '2-digit' } : {}),
   })
 }
-
-
 
 const PROJECT_TYPE_STYLES: Record<string, string> = {
   Goods: 'bg-sky-50 text-sky-700',
@@ -134,7 +139,6 @@ const FOCUS_RING =
 // ============================
 // UI Components
 // ============================
-
 
 function MetadataGrid({
   ppmp,
@@ -297,7 +301,7 @@ function ActivityCard({
         expanded ? 'w-[480px]' : 'w-80',
         shouldThrob && !selected && 'animate-pulse-unselected',
         dimmed &&
-        'opacity-60 saturate-50 hover:opacity-100 hover:saturate-100 transition-all duration-300',
+          'opacity-60 saturate-50 hover:opacity-100 hover:saturate-100 transition-all duration-300',
       )}
     >
       {/* Left side (regular card content) */}
@@ -431,9 +435,7 @@ function ActivitiesPane({
   }, [activities, query])
 
   return (
-    <div
-      className="flex flex-col border border-default-200 bg-white rounded-xl overflow-hidden p-4 gap-4 shrink-0 shadow-sm transition-all duration-300"
-    >
+    <div className="flex flex-col border border-default-200 bg-white rounded-xl overflow-hidden p-4 gap-4 shrink-0 shadow-sm transition-all duration-300">
       {/* Header with Search and Add inline */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-3">
         <div className="relative flex-1">
@@ -483,13 +485,19 @@ function ActivitiesPane({
                 if (!acc[office]) acc[office] = []
                 acc[office].push(act)
                 return acc
-              }, {})
+              }, {}),
             ).map(([officeName, officeActs]) => (
-              <div key={officeName} className="flex flex-col gap-2.5 border-r border-default-100 last:border-0 pr-6 last:pr-0">
+              <div
+                key={officeName}
+                className="flex flex-col gap-2.5 border-r border-default-100 last:border-0 pr-6 last:pr-0"
+              >
                 {/* Visual Group Header */}
                 <div className="flex items-center gap-2 px-1 py-0.5 select-none">
                   <Building2 className="h-3.5 w-3.5 text-primary/70 shrink-0" />
-                  <span className="text-xs font-bold text-slate-700 tracking-wider truncate max-w-[200px]" title={officeName}>
+                  <span
+                    className="text-xs font-bold text-slate-700 tracking-wider truncate max-w-[200px]"
+                    title={officeName}
+                  >
                     {officeName}
                   </span>
                   <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-600 px-1.5 py-0.5 rounded-full font-bold">
@@ -510,7 +518,11 @@ function ActivitiesPane({
                         expanded={expandedIds.has(act.id)}
                         onSelect={() => onSelect(act.id)}
                         onToggleExpand={() => onToggleExpand(act.id)}
-                        onRequestDelete={onRequestDelete && act.ppmpId === masterPpmpId ? () => onRequestDelete(act.id) : undefined}
+                        onRequestDelete={
+                          onRequestDelete && act.ppmpId === masterPpmpId
+                            ? () => onRequestDelete(act.id)
+                            : undefined
+                        }
                         totalPpmpBudget={totalPpmpBudget}
                         shouldThrob={!anySelected || isSelected}
                         dimmed={anySelected && !isSelected}
@@ -774,7 +786,14 @@ interface ItemRowProps {
   onEditAllocations?: (item: PPMPItem) => void
 }
 
-function ItemRow({ item, expanded, onToggle, onEdit, onDelete, onEditAllocations }: ItemRowProps) {
+function ItemRow({
+  item,
+  expanded,
+  onToggle,
+  onEdit,
+  onDelete,
+  onEditAllocations,
+}: ItemRowProps) {
   const displayName = item.name || 'Unnamed item'
 
   return (
@@ -873,7 +892,11 @@ function ItemRow({ item, expanded, onToggle, onEdit, onDelete, onEditAllocations
       {expanded && (
         <tr className="bg-default-50/20">
           <td colSpan={6} className="px-5 py-4 border-b border-default-200">
-            <ItemDetail item={item} onEdit={onEdit} onEditAllocations={onEditAllocations} />
+            <ItemDetail
+              item={item}
+              onEdit={onEdit}
+              onEditAllocations={onEditAllocations}
+            />
           </td>
         </tr>
       )}
@@ -1395,7 +1418,6 @@ function RightPane({
   )
 }
 
-
 // ============================
 // Main Page Component
 // ============================
@@ -1465,7 +1487,10 @@ function DetailsSkeleton({ isDeptMode }: { isDeptMode: boolean }) {
         {/* Skeleton Grid */}
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
           {[1, 2, 3, 4].map((i) => (
-            <Card key={i} className="border-default-200 bg-white shadow-sm overflow-hidden border-slate-200">
+            <Card
+              key={i}
+              className="border-default-200 bg-white shadow-sm overflow-hidden border-slate-200"
+            >
               <CardContent className="p-5 flex items-center justify-between">
                 <div className="space-y-2 w-full animate-pulse">
                   <div className="h-3 w-24 bg-slate-100 dark:bg-slate-800 rounded" />
@@ -1481,7 +1506,10 @@ function DetailsSkeleton({ isDeptMode }: { isDeptMode: boolean }) {
         <div className="space-y-6">
           <div className="h-32 bg-white border border-slate-200 rounded-xl shadow-sm p-5 flex items-center gap-4 overflow-hidden">
             {[1, 2, 3].map((i) => (
-              <div key={i} className="h-20 w-80 rounded-lg border border-slate-100 p-4 shrink-0 flex flex-col justify-between animate-pulse">
+              <div
+                key={i}
+                className="h-20 w-80 rounded-lg border border-slate-100 p-4 shrink-0 flex flex-col justify-between animate-pulse"
+              >
                 <div className="h-4 w-28 bg-slate-100 rounded" />
                 <div className="h-4 w-40 bg-slate-100 rounded" />
               </div>
@@ -1517,7 +1545,6 @@ export function OfficeLevelPPMPDetailsPage({
     enabled: !!ppmpId,
   })
 
-
   const ppmp: PPMPDetails | null = ppmpResp?.data ?? null
 
   // State management
@@ -1531,16 +1558,21 @@ export function OfficeLevelPPMPDetailsPage({
 
   const [submitConfirmOpen, setSubmitConfirmOpen] = useState(false)
   const [approveConfirmOpen, setApproveConfirmOpen] = useState(false)
-  const [consolidateWorkspaceOpen, setConsolidateWorkspaceOpen] = useState(false)
+  const [consolidateWorkspaceOpen, setConsolidateWorkspaceOpen] =
+    useState(false)
   const [deptConsolidateOpen, setDeptConsolidateOpen] = useState(false)
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   // Expose current PPMP to other components so they can read metadata defaults
   const setPpmpForEdit = useSetAtom(selectedPpmpForEditAtom)
 
   const { userName, firstName, lastName } = useKeycloak()
-  const actorDisplayName = firstName && lastName ? `${firstName} ${lastName}` : (userName || 'System User')
+  const actorDisplayName =
+    firstName && lastName
+      ? `${firstName} ${lastName}`
+      : userName || 'System User'
 
-  const { mutateAsync: updatePPMPStatus, isPending: isUpdatingStatus } = useUpdatePPMPStatus()
+  const { mutateAsync: updatePPMPStatus, isPending: isUpdatingStatus } =
+    useUpdatePPMPStatus()
 
   // Delete activity mutation + confirmation (hooks must run unconditionally)
   const queryClient = useQueryClient()
@@ -1559,7 +1591,9 @@ export function OfficeLevelPPMPDetailsPage({
     null,
   )
   const [allocsDialogOpen, setAllocsDialogOpen] = useState(false)
-  const [allocsDialogItem, setAllocsDialogItem] = useState<PPMPItem | null>(null)
+  const [allocsDialogItem, setAllocsDialogItem] = useState<PPMPItem | null>(
+    null,
+  )
 
   const { mutateAsync: deleteItemMutateAsync, isPending: isItemDeleting } =
     useDeletePPMPItem()
@@ -1593,7 +1627,7 @@ export function OfficeLevelPPMPDetailsPage({
   // Prepare activities for display (merged vs individual child)
   const activities: PPMPActivityForDisplay[] = useMemo(() => {
     if (!ppmp) return []
-    
+
     // Overview (Merged view)
     if (activeTab === 'overview') {
       const masterActs = (ppmp.PPMPActivities || []).map((act) => ({
@@ -1604,11 +1638,11 @@ export function OfficeLevelPPMPDetailsPage({
         (child.PPMPActivities || []).map((act) => ({
           ...act,
           officeName: child.officeName || 'Child Office',
-        }))
+        })),
       )
       return [...masterActs, ...childActs] as PPMPActivityForDisplay[]
     }
-    
+
     // Specific Child PPMP Tab
     if (activeChildPpmp) {
       return (activeChildPpmp.PPMPActivities || []).map((act) => ({
@@ -1616,7 +1650,7 @@ export function OfficeLevelPPMPDetailsPage({
         officeName: activeChildPpmp.officeName || 'Child Office',
       })) as PPMPActivityForDisplay[]
     }
-    
+
     return []
   }, [ppmp, activeTab, activeChildPpmp])
 
@@ -1678,9 +1712,6 @@ export function OfficeLevelPPMPDetailsPage({
     0,
   )
 
-
-
-
   const handleSubmitPPMP = async () => {
     try {
       await updatePPMPStatus(
@@ -1691,8 +1722,8 @@ export function OfficeLevelPPMPDetailsPage({
             action: 'submitted',
             actorName: actorDisplayName,
             role: 'User',
-            notes: 'PPMP submitted for approval'
-          }
+            notes: 'PPMP submitted for approval',
+          },
         },
         {
           onSuccess: () => {
@@ -1703,8 +1734,8 @@ export function OfficeLevelPPMPDetailsPage({
                 (query.queryKey[0].startsWith('/ppmps') ||
                   query.queryKey[0].startsWith('/ppmp')),
             })
-          }
-        }
+          },
+        },
       )
     } catch (err) {
       toast.error(err instanceof Error ? err.message : 'Failed to submit PPMP.')
@@ -1723,8 +1754,8 @@ export function OfficeLevelPPMPDetailsPage({
             action: 'approved',
             actorName: actorDisplayName,
             role: 'Approver',
-            notes: 'PPMP approved via details page'
-          }
+            notes: 'PPMP approved via details page',
+          },
         },
         {
           onSuccess: () => {
@@ -1735,11 +1766,13 @@ export function OfficeLevelPPMPDetailsPage({
                 (query.queryKey[0].startsWith('/ppmps') ||
                   query.queryKey[0].startsWith('/ppmp')),
             })
-          }
-        }
+          },
+        },
       )
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : 'Failed to approve PPMP.')
+      toast.error(
+        err instanceof Error ? err.message : 'Failed to approve PPMP.',
+      )
     } finally {
       setApproveConfirmOpen(false)
     }
@@ -1901,11 +1934,13 @@ export function OfficeLevelPPMPDetailsPage({
                 'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-bold shadow-sm uppercase tracking-wider transition-all duration-300',
                 ppmp.status.toLowerCase() === 'approved'
                   ? 'border-emerald-200 bg-emerald-50 text-emerald-700 ring-4 ring-emerald-500/5'
-                  : ppmp.status.toLowerCase() === 'submitted' || ppmp.status.toLowerCase() === 'pending_review' || ppmp.status.toLowerCase() === 'pending review'
+                  : ppmp.status.toLowerCase() === 'submitted' ||
+                      ppmp.status.toLowerCase() === 'pending_review' ||
+                      ppmp.status.toLowerCase() === 'pending review'
                     ? 'border-blue-200 bg-blue-50 text-blue-700 ring-4 ring-blue-500/5'
                     : ppmp.status.toLowerCase() === 'rejected'
                       ? 'border-rose-200 bg-rose-50 text-rose-700 ring-4 ring-rose-500/5'
-                      : 'border-slate-200 bg-slate-50 text-slate-700 ring-4 ring-slate-500/5'
+                      : 'border-slate-200 bg-slate-50 text-slate-700 ring-4 ring-slate-500/5',
               )}
             >
               <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse" />
@@ -1933,7 +1968,8 @@ export function OfficeLevelPPMPDetailsPage({
 
       actions={
         <div className="flex items-center gap-2">
-          {(ppmp.status?.toLowerCase() === 'draft' || ppmp.status?.toLowerCase() === 'rejected') && (
+          {(ppmp.status?.toLowerCase() === 'draft' ||
+            ppmp.status?.toLowerCase() === 'rejected') && (
             <Button
               variant="default"
               size="sm"
@@ -1945,7 +1981,9 @@ export function OfficeLevelPPMPDetailsPage({
             </Button>
           )}
 
-          {(ppmp.status?.toLowerCase() === 'submitted' || ppmp.status?.toLowerCase() === 'pending_review' || ppmp.status?.toLowerCase() === 'pending review') && (
+          {(ppmp.status?.toLowerCase() === 'submitted' ||
+            ppmp.status?.toLowerCase() === 'pending_review' ||
+            ppmp.status?.toLowerCase() === 'pending review') && (
             <Button
               variant="default"
               size="sm"
@@ -1958,38 +1996,40 @@ export function OfficeLevelPPMPDetailsPage({
           )}
 
           {/* Master mode: Consolidate button (import dept PPMPs into this master) */}
-          {!isDeptMode && ppmp.isMaster && (
+          {!isDeptMode &&
+            ppmp.isMaster &&
             [
               'draft',
               'submitted',
               'approved',
               'pending_review',
               'pending review',
-            ].includes((ppmp.status ?? '').toLowerCase())
-          ) && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setConsolidateWorkspaceOpen(true)}
-              className="flex items-center gap-1.5 border-primary/20 text-primary hover:bg-primary/5"
-            >
-              <Layers className="h-4 w-4" />
-              <span>Consolidate PPMP</span>
-            </Button>
-          )}
+            ].includes((ppmp.status ?? '').toLowerCase()) && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setConsolidateWorkspaceOpen(true)}
+                className="flex items-center gap-1.5 border-primary/20 text-primary hover:bg-primary/5"
+              >
+                <Layers className="h-4 w-4" />
+                <span>Consolidate PPMP</span>
+              </Button>
+            )}
 
           {/* Department mode: Consolidate into Master button */}
-          {isDeptMode && !ppmp.consolidatedIntoId && (ppmp.status ?? '').toLowerCase() === 'approved' && (
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setDeptConsolidateOpen(true)}
-              className="flex items-center gap-1.5 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
-            >
-              <Layers className="h-4 w-4" />
-              <span>Consolidate into Master</span>
-            </Button>
-          )}
+          {isDeptMode &&
+            !ppmp.consolidatedIntoId &&
+            (ppmp.status ?? '').toLowerCase() === 'approved' && (
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => setDeptConsolidateOpen(true)}
+                className="flex items-center gap-1.5 border-indigo-200 text-indigo-700 hover:bg-indigo-50"
+              >
+                <Layers className="h-4 w-4" />
+                <span>Consolidate into Master</span>
+              </Button>
+            )}
         </div>
       }
     >
@@ -2004,48 +2044,54 @@ export function OfficeLevelPPMPDetailsPage({
         />
 
         {/* Consolidated Child PPMP Tabs (Only for Master PPMP with children) */}
-        {!isDeptMode && ppmp.isMaster && ppmp.ChildPPMPs && ppmp.ChildPPMPs.length > 0 && (
-          <div className="border-b border-default-200">
-            <div className="flex gap-4 overflow-x-auto pb-px">
-              <button
-                type="button"
-                onClick={() => {
-                  setActiveTab('overview')
-                  setSelectedActivityId(null)
-                }}
-                className={cn(
-                  'pb-3 text-sm font-semibold border-b-2 transition-all px-1 whitespace-nowrap',
-                  activeTab === 'overview'
-                    ? 'border-primary text-primary'
-                    : 'border-transparent text-default-500 hover:text-default-800'
-                )}
-              >
-                Overview (Consolidated)
-              </button>
-              {ppmp.ChildPPMPs.map((child) => (
+        {!isDeptMode &&
+          ppmp.isMaster &&
+          ppmp.ChildPPMPs &&
+          ppmp.ChildPPMPs.length > 0 && (
+            <div className="border-b border-default-200">
+              <div className="flex gap-4 overflow-x-auto pb-px">
                 <button
-                  key={child.id}
                   type="button"
                   onClick={() => {
-                    setActiveTab(child.id)
+                    setActiveTab('overview')
                     setSelectedActivityId(null)
                   }}
                   className={cn(
-                    'pb-3 text-sm font-semibold border-b-2 transition-all px-1 whitespace-nowrap flex items-center gap-1.5',
-                    activeTab === child.id
+                    'pb-3 text-sm font-semibold border-b-2 transition-all px-1 whitespace-nowrap',
+                    activeTab === 'overview'
                       ? 'border-primary text-primary'
-                      : 'border-transparent text-default-500 hover:text-default-800'
+                      : 'border-transparent text-default-500 hover:text-default-800',
                   )}
                 >
-                  <span>{child.officeName || 'Child PPMP'}</span>
-                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5 font-bold bg-emerald-50 text-emerald-700 border-emerald-200 border">
-                    {child.status}
-                  </Badge>
+                  Overview (Consolidated)
                 </button>
-              ))}
+                {ppmp.ChildPPMPs.map((child) => (
+                  <button
+                    key={child.id}
+                    type="button"
+                    onClick={() => {
+                      setActiveTab(child.id)
+                      setSelectedActivityId(null)
+                    }}
+                    className={cn(
+                      'pb-3 text-sm font-semibold border-b-2 transition-all px-1 whitespace-nowrap flex items-center gap-1.5',
+                      activeTab === child.id
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-default-500 hover:text-default-800',
+                    )}
+                  >
+                    <span>{child.officeName || 'Child PPMP'}</span>
+                    <Badge
+                      variant="soft"
+                      className="text-[10px] px-1.5 py-0.5 font-bold bg-emerald-50 text-emerald-700 border-emerald-200 border"
+                    >
+                      {child.status}
+                    </Badge>
+                  </button>
+                ))}
+              </div>
             </div>
-          </div>
-        )}
+          )}
 
         {/* Single-column workspace layout */}
         <div className="space-y-6">
@@ -2056,7 +2102,13 @@ export function OfficeLevelPPMPDetailsPage({
             onSelect={setSelectedActivityId}
             expandedIds={expandedActivityIds}
             onToggleExpand={toggleExpandActivity}
-            onAdd={activeTab === 'overview' && (ppmp.status?.toLowerCase() === 'draft' || ppmp.status?.toLowerCase() === 'rejected') ? () => setAddDialogOpen(true) : undefined}
+            onAdd={
+              activeTab === 'overview' &&
+              (ppmp.status?.toLowerCase() === 'draft' ||
+                ppmp.status?.toLowerCase() === 'rejected')
+                ? () => setAddDialogOpen(true)
+                : undefined
+            }
             onRequestDelete={requestDeleteActivity}
             totalPpmpBudget={totalPpmpBudget}
             masterPpmpId={ppmp.id}
@@ -2066,13 +2118,39 @@ export function OfficeLevelPPMPDetailsPage({
           <div className="min-w-0">
             <RightPane
               activity={selectedActivity}
-              onAddItem={selectedActivity?.ppmpId === ppmp.id ? handleAddItem : undefined}
-              onEditItem={selectedActivity?.ppmpId === ppmp.id ? handleEditItem : undefined}
-              onDeleteItem={selectedActivity?.ppmpId === ppmp.id ? handleDeleteItem : undefined}
-              onAddGroup={selectedActivity?.ppmpId === ppmp.id ? handleAddGroup : undefined}
-              onEditGroup={selectedActivity?.ppmpId === ppmp.id ? handleEditGroup : undefined}
-              onDeleteGroup={selectedActivity?.ppmpId === ppmp.id ? handleDeleteGroup : undefined}
-              onEditAllocations={selectedActivity?.ppmpId === ppmp.id ? handleEditAllocations : undefined}
+              onAddItem={
+                selectedActivity?.ppmpId === ppmp.id ? handleAddItem : undefined
+              }
+              onEditItem={
+                selectedActivity?.ppmpId === ppmp.id
+                  ? handleEditItem
+                  : undefined
+              }
+              onDeleteItem={
+                selectedActivity?.ppmpId === ppmp.id
+                  ? handleDeleteItem
+                  : undefined
+              }
+              onAddGroup={
+                selectedActivity?.ppmpId === ppmp.id
+                  ? handleAddGroup
+                  : undefined
+              }
+              onEditGroup={
+                selectedActivity?.ppmpId === ppmp.id
+                  ? handleEditGroup
+                  : undefined
+              }
+              onDeleteGroup={
+                selectedActivity?.ppmpId === ppmp.id
+                  ? handleDeleteGroup
+                  : undefined
+              }
+              onEditAllocations={
+                selectedActivity?.ppmpId === ppmp.id
+                  ? handleEditAllocations
+                  : undefined
+              }
             />
           </div>
         </div>
@@ -2093,9 +2171,10 @@ export function OfficeLevelPPMPDetailsPage({
           if (!s) setDeleteDialogOpen(false)
         }}
         title="Delete activity?"
-        description={`${activities.find((a) => a.id === pendingDeleteActivityId)
-          ?.activityName || 'This activity'
-          } and all nested items will be permanently deleted.`}
+        description={`${
+          activities.find((a) => a.id === pendingDeleteActivityId)
+            ?.activityName || 'This activity'
+        } and all nested items will be permanently deleted.`}
         onConfirm={confirmDeleteActivity}
         onCancel={() => setDeleteDialogOpen(false)}
         confirmLabel={isDeleting ? 'Deleting…' : 'Delete'}
@@ -2128,8 +2207,9 @@ export function OfficeLevelPPMPDetailsPage({
           if (!s) setDeleteItemConfirmOpen(false)
         }}
         title="Delete item?"
-        description={`Are you sure you want to permanently delete "${pendingDeleteItem?.name || 'this item'
-          }"?`}
+        description={`Are you sure you want to permanently delete "${
+          pendingDeleteItem?.name || 'this item'
+        }"?`}
         onConfirm={confirmDeleteItem}
         onCancel={() => setDeleteItemConfirmOpen(false)}
         confirmLabel={isItemDeleting ? 'Deleting…' : 'Delete'}

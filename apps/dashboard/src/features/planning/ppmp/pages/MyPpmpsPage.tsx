@@ -14,31 +14,30 @@ interface MyPpmpsPageProps {
 }
 
 export function MyPpmpsPage({ searchParams }: MyPpmpsPageProps) {
-  const navigate = useNavigate({ from: '/v2/ppmp' })
+  const navigate = useNavigate({ from: '/v2/ppmp/' })
   const { view = 'department' } = searchParams
 
-  const handleUpdateSearch = (updater: (prev: PPMPManagementSearch) => Partial<PPMPManagementSearch>) => {
+  const handleUpdateSearch = (
+    updater: (prev: PPMPManagementSearch) => Partial<PPMPManagementSearch>,
+  ) => {
     const next = updater(searchParams)
-    navigate({
-      search: (prev) => {
-        const merged = { ...prev, ...next }
-        const clean: Record<string, unknown> = {}
 
-        clean.view = merged.view ?? 'department'
-        clean.pageNumber = merged.pageNumber ?? 1
-        clean.pageSize = merged.pageSize ?? 10
+    // Merge current search params with the updater result and build a clean search object
+    const merged = { ...searchParams, ...next }
+    const clean: PPMPManagementSearch = {
+      view: (merged.view ?? 'department') as 'department' | 'office',
+      pageNumber: (merged.pageNumber ?? 1) as number,
+      pageSize: (merged.pageSize ?? 10) as number,
+      searchQuery: merged.searchQuery ?? undefined,
+      status: merged.status ?? undefined,
+      fiscalYearId: merged.fiscalYearId ?? undefined,
+      officeId: merged.officeId ?? undefined,
+      lib: merged.lib && merged.lib !== 'all' ? merged.lib : undefined,
+      sortBy: merged.sortBy ?? undefined,
+      sortOrder: merged.sortOrder ?? undefined,
+    }
 
-        if (merged.searchQuery) clean.searchQuery = merged.searchQuery
-        if (merged.status && merged.status !== 'all') clean.status = merged.status
-        if (merged.fiscalYearId) clean.fiscalYearId = merged.fiscalYearId
-        if (merged.officeId) clean.officeId = merged.officeId
-        if (merged.lib && merged.lib !== 'all') clean.lib = merged.lib
-        if (merged.sortBy) clean.sortBy = merged.sortBy
-        if (merged.sortOrder) clean.sortOrder = merged.sortOrder
-
-        return clean
-      },
-    })
+    navigate({ search: clean })
   }
 
   return (
