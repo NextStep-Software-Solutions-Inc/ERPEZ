@@ -1533,12 +1533,9 @@ function DetailsSkeleton({ isDeptMode }: { isDeptMode: boolean }) {
 
 export function OfficeLevelPPMPDetailsPage({
   ppmpId,
-  mode = 'master',
 }: {
   ppmpId: string
-  mode?: 'master' | 'department'
 }) {
-  const isDeptMode = mode === 'department'
   const { data: ppmpResp, isLoading } = usePPMP({
     pathParams: { id: ppmpId },
     queryParams: {},
@@ -1546,6 +1543,7 @@ export function OfficeLevelPPMPDetailsPage({
   })
 
   const ppmp: PPMPDetails | null = ppmpResp?.data ?? null
+  const isDeptMode = ppmp ? !ppmp.isMaster : false
 
   // State management
   const [activeTab, setActiveTab] = useState<string>('overview')
