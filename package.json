@@ -8,5 +8,13 @@
   },
   "devDependencies": {
     "turbo": "^2.0.0"
+  },
+  "pnpm": {
+    "overrides": {
+      "@tanstack/react-router": "1.134.13",
+      "@tanstack/react-start": "1.134.13",
+      "@tanstack/router-plugin": "1.134.13",
+      "@tanstack/start-plugin-core": "1.134.13"
+    }
   }
 }
