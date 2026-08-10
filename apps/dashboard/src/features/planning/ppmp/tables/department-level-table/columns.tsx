@@ -18,16 +18,12 @@ import { PPMP } from '../../types'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useSetAtom } from 'jotai'
 import { useNavigate } from '@tanstack/react-router'
-import { createQueryHookFromTemplate } from 'erpez-shared-lib'
-import { getPPMPRequest } from '../../handlers'
 import {
   selectedPpmpForDeleteAtom,
   deletePpmpDialogOpenAtom,
   selectedPpmpForEditAtom,
   editPpmpDialogOpenAtom,
 } from '../../atoms/ppmpStateAtoms'
-
-const usePpmpDetail = createQueryHookFromTemplate(getPPMPRequest)
 
 export const columns: ColumnDef<PPMP>[] = [
   {
@@ -90,12 +86,6 @@ export const columns: ColumnDef<PPMP>[] = [
       const setSelectedForEdit = useSetAtom(selectedPpmpForEditAtom)
       const setEditOpen = useSetAtom(editPpmpDialogOpenAtom)
 
-      const { refetch } = usePpmpDetail({
-        pathParams: { id: ppmp.id },
-        queryParams: {},
-        enabled: false,
-      })
-
       const handleView = () => {
         navigate({
           to: '/v2/ppmp/department-level/$ppmpId',
@@ -103,16 +93,9 @@ export const columns: ColumnDef<PPMP>[] = [
         })
       }
 
-      const handleEdit = async () => {
-        try {
-          const { data } = await refetch()
-          if (data?.data) {
-            setSelectedForEdit(data.data)
-            setEditOpen(true)
-          }
-        } catch (err) {
-          // swallow — UI elsewhere shows errors
-        }
+      const handleEdit = () => {
+        setSelectedForEdit(ppmp)
+        setEditOpen(true)
       }
 
       const handleDelete = () => {
