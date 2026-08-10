@@ -1,0 +1,25 @@
+/**
+ * Budget Distribution Atoms - Re-export from Root Authority
+ * 
+ * This file provides backward compatibility by re-exporting all budget-distribution-related
+ * atoms from the root atoms.ts file. All atom definitions are now consolidated in
+ * the root atoms.ts (single source of truth).
+ * 
+ * NEW: Import directly from ../atoms instead of this file
+ * DEPRECATED: This file maintained for backward compatibility only
+ */
+
+export {
+  budgetAllocationsAtom,
+  selectedAllocationAtom,
+  budgetDistributionSearchAtom,
+  budgetDistributionOfficeFilterAtom,
+  budgetDistributionStatusFilterAtom,
+  officeAssignmentsAtom,
+  selectedAssignmentAtom,
+  officeAssignmentSearchAtom,
+  officeAssignmentStatusFilterAtom,
+  officeAssignmentEditedFilterAtom,
+  type BudgetAllocation,
+  type OfficeAssignment,
+} from '../atoms'

@@ -1,0 +1,6 @@
+export { default as CreateKpiDialog } from './CreateKpiDialog'
+export { default as DeleteKpiDialog } from './DeleteKpiDialog'
+export { default as EditKpiBasicInfoDialog } from './EditKpiBasicInfoDialog'
+export { default as EditModeOfVerificationDialog } from './EditModeOfVerificationDialog'
+export { default as EditPerformanceMeasuresDialog } from './EditPerformanceMeasuresDialog'
+export { default as EditTargetSectionDialog } from './EditTargetSectionDialog'

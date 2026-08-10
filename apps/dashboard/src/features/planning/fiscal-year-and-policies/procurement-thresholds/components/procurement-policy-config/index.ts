@@ -1,0 +1,1 @@
+export { ProcurementPolicyConfigSection } from './ProcurementPolicyConfigSection';
