@@ -10,7 +10,7 @@ import { ShoppingCart } from 'lucide-react'
 import { MyPpmpsPage } from '@/features/planning/ppmp/pages/MyPpmpsPage'
 import { ppmpManagementSearchSchema } from './constants'
 
-export const Route = createFileRoute('/v2/ppmp/')({
+export const Route = createFileRoute('/v2/(planning)/ppmp/')({
   validateSearch: (search) => ppmpManagementSearchSchema.parse(search),
   component: PPMPManagementPage,
 })

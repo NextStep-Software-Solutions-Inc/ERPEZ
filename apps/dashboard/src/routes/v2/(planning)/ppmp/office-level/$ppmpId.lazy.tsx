@@ -5,7 +5,7 @@
 import { createLazyFileRoute } from '@tanstack/react-router'
 import OfficeLevelPPMPDetailsPage from '@/features/planning/ppmp/pages/OfficeLevelPPMPDetailsPage'
 
-export const Route = createLazyFileRoute('/v2/ppmp/office-level/$ppmpId')({
+export const Route = createLazyFileRoute('/v2/(planning)/ppmp/office-level/$ppmpId')({
   component: OfficeLevelPPMPDetailsRoute,
 })
 

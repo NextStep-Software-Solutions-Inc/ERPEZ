@@ -5,7 +5,7 @@
 
 import { createFileRoute, Outlet } from '@tanstack/react-router'
 
-export const Route = createFileRoute('/v2/ppmp/_ppmp-detail')({
+export const Route = createFileRoute('/v2/(planning)/ppmp/_ppmp-detail')({
   component: PPMPDetailLayout,
 })
 

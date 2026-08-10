@@ -3,7 +3,7 @@ import { useNavigate } from '@tanstack/react-router'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import type { PPMPManagementSearch } from '@/routes/v2/ppmp/constants'
+import type { PPMPManagementSearch } from '@/routes/v2/(planning)/ppmp/constants'
 
 // Lazy load the tab components
 const DepartmentPpmpTab = lazy(() => import('./tabs/DepartmentPpmpTab'))
@@ -23,7 +23,7 @@ export function MyPpmpsPage({ searchParams }: MyPpmpsPageProps) {
       search: (prev) => {
         const merged = { ...prev, ...next }
         const clean: Record<string, unknown> = {}
-        
+
         clean.view = merged.view ?? 'department'
         clean.pageNumber = merged.pageNumber ?? 1
         clean.pageSize = merged.pageSize ?? 10
@@ -35,7 +35,7 @@ export function MyPpmpsPage({ searchParams }: MyPpmpsPageProps) {
         if (merged.lib && merged.lib !== 'all') clean.lib = merged.lib
         if (merged.sortBy) clean.sortBy = merged.sortBy
         if (merged.sortOrder) clean.sortOrder = merged.sortOrder
-        
+
         return clean
       },
     })

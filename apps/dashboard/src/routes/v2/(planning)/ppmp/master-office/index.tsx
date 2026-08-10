@@ -4,7 +4,7 @@ import { Button } from '@/components/ui/button'
 import { ArrowLeft } from 'lucide-react'
 import { MasterOfficePpmpPage } from '@/features/planning/ppmp/pages/MasterOfficePpmpPage'
 
-export const Route = createFileRoute('/v2/ppmp/master-office/')({
+export const Route = createFileRoute('/v2/(planning)/ppmp/master-office/')({
   component: MasterOfficeRoute,
 })
 

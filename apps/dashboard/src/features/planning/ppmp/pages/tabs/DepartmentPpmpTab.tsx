@@ -13,7 +13,7 @@ import { mockLineItemBudgets, mockPpmpDatabase } from '../../data/mockPpmpData'
 import { DataTable } from '../../tables/department-level-table/data-table'
 import { columns } from '../../tables/department-level-table/columns'
 import { usePpmpFormData } from '../../hooks/usePpmpFormData'
-import type { PPMPManagementSearch } from '@/routes/v2/ppmp/constants'
+import type { PPMPManagementSearch } from '@/routes/v2/(planning)/ppmp/constants'
 
 const usePpmps = createQueryHookFromTemplate(getPPMPsRequest)
 
