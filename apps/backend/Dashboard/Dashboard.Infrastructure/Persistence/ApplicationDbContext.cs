@@ -1830,7 +1830,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<PPMPItem>()
             .HasOne(pi => pi.ProcurementMode)
-            .WithMany()
+            .WithMany(pm => pm.PPMPItems)
             .HasForeignKey(pi => pi.ProcurementModeId)
             .OnDelete(DeleteBehavior.Restrict);
 
