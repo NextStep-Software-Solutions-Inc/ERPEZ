@@ -88,6 +88,7 @@ interface PPMPExpenditureItemForDisplay {
 
 interface PPMPActivityForDisplay extends PPMPActivity {
   ppmpExpenditureItems?: PPMPExpenditureItemForDisplay[]
+  officeName?: string
 }
 
 const usePPMP = createQueryHookFromTemplate(getPPMPRequest)
@@ -407,6 +408,7 @@ interface ActivitiesPaneProps {
   onAdd?: () => void
   onRequestDelete?: (id: string) => void
   totalPpmpBudget: number
+  masterPpmpId?: string
 }
 
 function ActivitiesPane({
@@ -418,6 +420,7 @@ function ActivitiesPane({
   onAdd,
   onRequestDelete,
   totalPpmpBudget,
+  masterPpmpId,
 }: ActivitiesPaneProps) {
   const [query, setQuery] = useState('')
 
@@ -473,26 +476,51 @@ function ActivitiesPane({
             No activities found
           </div>
         ) : (
-          <ul className="flex gap-4 min-w-max items-start py-1">
-            {filtered.map((act) => {
-              const isSelected = selectedId === act.id
-              const anySelected = selectedId !== null
-              return (
-                <ActivityCard
-                  key={act.id}
-                  activity={act}
-                  selected={isSelected}
-                  expanded={expandedIds.has(act.id)}
-                  onSelect={() => onSelect(act.id)}
-                  onToggleExpand={() => onToggleExpand(act.id)}
-                  onRequestDelete={() => onRequestDelete?.(act.id)}
-                  totalPpmpBudget={totalPpmpBudget}
-                  shouldThrob={!anySelected || isSelected}
-                  dimmed={anySelected && !isSelected}
-                />
-              )
-            })}
-          </ul>
+          <div className="flex gap-6 items-start py-1 min-w-max">
+            {Object.entries(
+              filtered.reduce<Record<string, typeof filtered>>((acc, act) => {
+                const office = act.officeName || 'Master PPMP'
+                if (!acc[office]) acc[office] = []
+                acc[office].push(act)
+                return acc
+              }, {})
+            ).map(([officeName, officeActs]) => (
+              <div key={officeName} className="flex flex-col gap-2.5 border-r border-default-100 last:border-0 pr-6 last:pr-0">
+                {/* Visual Group Header */}
+                <div className="flex items-center gap-2 px-1 py-0.5 select-none">
+                  <Building2 className="h-3.5 w-3.5 text-primary/70 shrink-0" />
+                  <span className="text-xs font-bold text-slate-700 tracking-wider truncate max-w-[200px]" title={officeName}>
+                    {officeName}
+                  </span>
+                  <span className="text-[10px] bg-slate-100 dark:bg-slate-800 text-slate-600 px-1.5 py-0.5 rounded-full font-bold">
+                    {officeActs.length}
+                  </span>
+                </div>
+
+                {/* Sublist of activity cards */}
+                <ul className="flex gap-4">
+                  {officeActs.map((act) => {
+                    const isSelected = selectedId === act.id
+                    const anySelected = selectedId !== null
+                    return (
+                      <ActivityCard
+                        key={act.id}
+                        activity={act}
+                        selected={isSelected}
+                        expanded={expandedIds.has(act.id)}
+                        onSelect={() => onSelect(act.id)}
+                        onToggleExpand={() => onToggleExpand(act.id)}
+                        onRequestDelete={onRequestDelete && act.ppmpId === masterPpmpId ? () => onRequestDelete(act.id) : undefined}
+                        totalPpmpBudget={totalPpmpBudget}
+                        shouldThrob={!anySelected || isSelected}
+                        dimmed={anySelected && !isSelected}
+                      />
+                    )
+                  })}
+                </ul>
+              </div>
+            ))}
+          </div>
         )}
       </div>
     </div>
@@ -1493,6 +1521,7 @@ export function OfficeLevelPPMPDetailsPage({
   const ppmp: PPMPDetails | null = ppmpResp?.data ?? null
 
   // State management
+  const [activeTab, setActiveTab] = useState<string>('overview')
   const [selectedActivityId, setSelectedActivityId] = useState<string | null>(
     null,
   )
@@ -1550,16 +1579,61 @@ export function OfficeLevelPPMPDetailsPage({
   const [pendingDeleteGroup, setPendingDeleteGroup] =
     useState<PPMPExpenditureItem | null>(null)
 
-  // Prepare activities for display
+  // Reset tab to overview on ppmpId change
+  useEffect(() => {
+    setActiveTab('overview')
+  }, [ppmpId])
+
+  // Get selected child PPMP if tab is a child ID
+  const activeChildPpmp = useMemo(() => {
+    if (activeTab === 'overview') return null
+    return ppmp?.ChildPPMPs?.find((c) => c.id === activeTab) ?? null
+  }, [ppmp, activeTab])
+
+  // Prepare activities for display (merged vs individual child)
   const activities: PPMPActivityForDisplay[] = useMemo(() => {
-    return (ppmp?.PPMPActivities || []) as PPMPActivityForDisplay[]
-  }, [ppmp?.PPMPActivities])
+    if (!ppmp) return []
+    
+    // Overview (Merged view)
+    if (activeTab === 'overview') {
+      const masterActs = (ppmp.PPMPActivities || []).map((act) => ({
+        ...act,
+        officeName: ppmp.officeName || 'Master Office',
+      }))
+      const childActs = (ppmp.ChildPPMPs || []).flatMap((child) =>
+        (child.PPMPActivities || []).map((act) => ({
+          ...act,
+          officeName: child.officeName || 'Child Office',
+        }))
+      )
+      return [...masterActs, ...childActs] as PPMPActivityForDisplay[]
+    }
+    
+    // Specific Child PPMP Tab
+    if (activeChildPpmp) {
+      return (activeChildPpmp.PPMPActivities || []).map((act) => ({
+        ...act,
+        officeName: activeChildPpmp.officeName || 'Child Office',
+      })) as PPMPActivityForDisplay[]
+    }
+    
+    return []
+  }, [ppmp, activeTab, activeChildPpmp])
 
   // Get selected activity
   const selectedActivity = useMemo(
     () => activities.find((a) => a.id === selectedActivityId) ?? null,
     [activities, selectedActivityId],
   )
+
+  // Current PPMP budget context for progress bars
+  const totalPpmpBudget = useMemo(() => {
+    if (!ppmp) return 0
+    if (activeTab === 'overview') {
+      return ppmp.totalEstimatedBudget ?? 0
+    }
+    return activeChildPpmp?.totalEstimatedBudget ?? 0
+  }, [ppmp, activeTab, activeChildPpmp])
 
   // Toggle activity expansion
   const toggleExpandActivity = useCallback((id: string) => {
@@ -1576,7 +1650,7 @@ export function OfficeLevelPPMPDetailsPage({
     return () => setPpmpForEdit(null)
   }, [ppmp, setPpmpForEdit])
 
-  if (isLoading) {
+  if (isLoading || !ppmpId) {
     return <DetailsSkeleton isDeptMode={isDeptMode} />
   }
 
@@ -1924,10 +1998,54 @@ export function OfficeLevelPPMPDetailsPage({
       <div className="space-y-6">
         {/* Metadata Grid */}
         <MetadataGrid
-          ppmp={ppmp}
+          ppmp={activeChildPpmp || ppmp}
           activityCount={activityCount}
           itemCount={itemCount}
         />
+
+        {/* Consolidated Child PPMP Tabs (Only for Master PPMP with children) */}
+        {!isDeptMode && ppmp.isMaster && ppmp.ChildPPMPs && ppmp.ChildPPMPs.length > 0 && (
+          <div className="border-b border-default-200">
+            <div className="flex gap-4 overflow-x-auto pb-px">
+              <button
+                type="button"
+                onClick={() => {
+                  setActiveTab('overview')
+                  setSelectedActivityId(null)
+                }}
+                className={cn(
+                  'pb-3 text-sm font-semibold border-b-2 transition-all px-1 whitespace-nowrap',
+                  activeTab === 'overview'
+                    ? 'border-primary text-primary'
+                    : 'border-transparent text-default-500 hover:text-default-800'
+                )}
+              >
+                Overview (Consolidated)
+              </button>
+              {ppmp.ChildPPMPs.map((child) => (
+                <button
+                  key={child.id}
+                  type="button"
+                  onClick={() => {
+                    setActiveTab(child.id)
+                    setSelectedActivityId(null)
+                  }}
+                  className={cn(
+                    'pb-3 text-sm font-semibold border-b-2 transition-all px-1 whitespace-nowrap flex items-center gap-1.5',
+                    activeTab === child.id
+                      ? 'border-primary text-primary'
+                      : 'border-transparent text-default-500 hover:text-default-800'
+                  )}
+                >
+                  <span>{child.officeName || 'Child PPMP'}</span>
+                  <Badge variant="secondary" className="text-[10px] px-1.5 py-0.5 font-bold bg-emerald-50 text-emerald-700 border-emerald-200 border">
+                    {child.status}
+                  </Badge>
+                </button>
+              ))}
+            </div>
+          </div>
+        )}
 
         {/* Single-column workspace layout */}
         <div className="space-y-6">
@@ -1938,22 +2056,23 @@ export function OfficeLevelPPMPDetailsPage({
             onSelect={setSelectedActivityId}
             expandedIds={expandedActivityIds}
             onToggleExpand={toggleExpandActivity}
-            onAdd={() => setAddDialogOpen(true)}
+            onAdd={activeTab === 'overview' && (ppmp.status?.toLowerCase() === 'draft' || ppmp.status?.toLowerCase() === 'rejected') ? () => setAddDialogOpen(true) : undefined}
             onRequestDelete={requestDeleteActivity}
-            totalPpmpBudget={ppmp.totalEstimatedBudget ?? 0}
+            totalPpmpBudget={totalPpmpBudget}
+            masterPpmpId={ppmp.id}
           />
 
           {/* Bottom detail pane (expanded full width) */}
           <div className="min-w-0">
             <RightPane
               activity={selectedActivity}
-              onAddItem={handleAddItem}
-              onEditItem={handleEditItem}
-              onDeleteItem={handleDeleteItem}
-              onAddGroup={handleAddGroup}
-              onEditGroup={handleEditGroup}
-              onDeleteGroup={handleDeleteGroup}
-              onEditAllocations={handleEditAllocations}
+              onAddItem={selectedActivity?.ppmpId === ppmp.id ? handleAddItem : undefined}
+              onEditItem={selectedActivity?.ppmpId === ppmp.id ? handleEditItem : undefined}
+              onDeleteItem={selectedActivity?.ppmpId === ppmp.id ? handleDeleteItem : undefined}
+              onAddGroup={selectedActivity?.ppmpId === ppmp.id ? handleAddGroup : undefined}
+              onEditGroup={selectedActivity?.ppmpId === ppmp.id ? handleEditGroup : undefined}
+              onDeleteGroup={selectedActivity?.ppmpId === ppmp.id ? handleDeleteGroup : undefined}
+              onEditAllocations={selectedActivity?.ppmpId === ppmp.id ? handleEditAllocations : undefined}
             />
           </div>
         </div>
