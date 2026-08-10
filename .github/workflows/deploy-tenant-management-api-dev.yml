@@ -135,7 +135,7 @@ jobs:
           rm -f /tmp/${{ env.CONTAINER_NAME }}.tar.gz
 
           # Deploy via docker compose
-          export PORT=71
+          export PORT="${{ vars.TENANT_API_PORT || '71' }}"
           export DB_CONNECTION_STRING="${{ secrets.ERPEZ_MANAGEMENT_DB_CONNECTION_STRING }}"
           cd /opt/docker-stack/tenant-management-api
           docker compose down
