@@ -8,6 +8,7 @@ services:
     mem_limit: 384m
     networks:
       - web-network
+      - data-network
     environment:
       - ASPNETCORE_ENVIRONMENT=Development
       - ConnectionStrings__DefaultConnection=${DB_CONNECTION_STRING}
@@ -15,4 +16,6 @@ services:
 
 networks:
   web-network:
+    external: true
+  data-network:
     external: true
