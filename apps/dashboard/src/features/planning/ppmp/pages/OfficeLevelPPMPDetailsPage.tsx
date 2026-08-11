@@ -24,6 +24,9 @@ import {
   ChevronLeft,
   Pencil,
   Send,
+  Lock,
+  GitMerge,
+  FileText,
 } from 'lucide-react'
 import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
 import { useQueryClient } from '@tanstack/react-query'
@@ -53,6 +56,7 @@ import {
   AddPPMPItemExpenditureDialog,
   AddPPMPItemsModal,
   EditPPMPItemAllocationsDialog,
+  MasterPPMPViewerModal,
 } from '../dialogs'
 import { ConsolidationWorkspaceSheet } from '../dialogs/ConsolidationWorkspaceSheet'
 import { DeptConsolidationSheet } from '../dialogs/DeptConsolidationSheet'
@@ -1565,6 +1569,7 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
     useState(false)
   const [deptConsolidateOpen, setDeptConsolidateOpen] = useState(false)
   const [addDialogOpen, setAddDialogOpen] = useState(false)
+  const [consolidatedViewerOpen, setConsolidatedViewerOpen] = useState(false)
   // Expose current PPMP to other components so they can read metadata defaults
   const setPpmpForEdit = useSetAtom(selectedPpmpForEditAtom)
 
@@ -1990,32 +1995,41 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
 
       actions={
         <div className="flex items-center gap-2">
-          {(ppmp.status?.toLowerCase() === 'draft' ||
-            ppmp.status?.toLowerCase() === 'rejected') && (
-            <Button
-              variant="default"
-              size="sm"
-              onClick={() => setSubmitConfirmOpen(true)}
-              className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/10 font-semibold px-4 h-9 rounded-lg flex items-center gap-1.5 transition-all duration-300 hover:shadow-lg hover:shadow-indigo-600/20 active:scale-[0.98]"
-            >
-              <Send className="h-4 w-4" />
-              <span>Submit PPMP</span>
-            </Button>
+          {ppmp.consolidatedIntoId && (
+            <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider shadow-sm">
+              <Lock className="h-3.5 w-3.5 text-slate-400" />
+              Consolidated — Read Only
+            </span>
           )}
 
-          {(ppmp.status?.toLowerCase() === 'submitted' ||
-            ppmp.status?.toLowerCase() === 'pending_review' ||
-            ppmp.status?.toLowerCase() === 'pending review') && (
-            <Button
-              variant="default"
-              size="sm"
-              onClick={() => setApproveConfirmOpen(true)}
-              className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/10 font-semibold px-4 h-9 rounded-lg flex items-center gap-1.5 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-600/20 active:scale-[0.98]"
-            >
-              <TrendingUp className="h-4 w-4" />
-              <span>Approve PPMP</span>
-            </Button>
-          )}
+          {!ppmp.consolidatedIntoId &&
+            (ppmp.status?.toLowerCase() === 'draft' ||
+              ppmp.status?.toLowerCase() === 'rejected') && (
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => setSubmitConfirmOpen(true)}
+                className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/10 font-semibold px-4 h-9 rounded-lg flex items-center gap-1.5 transition-all duration-300 hover:shadow-lg hover:shadow-indigo-600/20 active:scale-[0.98]"
+              >
+                <Send className="h-4 w-4" />
+                <span>Submit PPMP</span>
+              </Button>
+            )}
+
+          {!ppmp.consolidatedIntoId &&
+            (ppmp.status?.toLowerCase() === 'submitted' ||
+              ppmp.status?.toLowerCase() === 'pending_review' ||
+              ppmp.status?.toLowerCase() === 'pending review') && (
+              <Button
+                variant="default"
+                size="sm"
+                onClick={() => setApproveConfirmOpen(true)}
+                className="bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/10 font-semibold px-4 h-9 rounded-lg flex items-center gap-1.5 transition-all duration-300 hover:shadow-lg hover:shadow-emerald-600/20 active:scale-[0.98]"
+              >
+                <TrendingUp className="h-4 w-4" />
+                <span>Approve PPMP</span>
+              </Button>
+            )}
 
           {/* Master mode: Consolidate button (import dept PPMPs into this master) */}
           {!isDeptMode &&
@@ -2058,6 +2072,34 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
       <style dangerouslySetInnerHTML={{ __html: THROB_STYLE }} />
 
       <div className="space-y-6">
+        {isDeptMode && ppmp.consolidatedIntoId && (
+          <div className="rounded-xl border border-indigo-200 bg-gradient-to-r from-indigo-50/90 to-indigo-100/40 p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-300 hover:shadow-md border-l-4 border-l-indigo-600 font-medium text-indigo-900">
+            <div className="flex items-start gap-3.5">
+              <div className="h-10 w-10 shrink-0 rounded-xl bg-indigo-600/10 flex items-center justify-center text-indigo-600">
+                <GitMerge className="h-5 w-5" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="text-sm font-extrabold text-indigo-950 flex items-center gap-1.5">
+                  This Department PPMP has been consolidated
+                </h4>
+                <p className="text-xs text-indigo-900/70 leading-normal max-w-2xl font-semibold">
+                  It has been merged into a Master Procurement Plan. All details are now locked in read-only mode.
+                  You can view the consolidated Master PPMP to trace allocations and approval progress.
+                </p>
+              </div>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setConsolidatedViewerOpen(true)}
+              className="flex items-center gap-1.5 border-indigo-300 text-indigo-705 bg-white hover:bg-indigo-50 hover:border-indigo-400 font-bold shrink-0 self-start sm:self-center shadow-sm h-9 rounded-lg"
+            >
+              <FileText className="h-4 w-4" />
+              <span>View Master PPMP</span>
+            </Button>
+          </div>
+        )}
+
         {/* Metadata Grid */}
         <MetadataGrid
           ppmp={activeChildPpmp || ppmp}
@@ -2126,12 +2168,13 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
             onToggleExpand={toggleExpandActivity}
             onAdd={
               activeTab === 'overview' &&
+              !ppmp.consolidatedIntoId &&
               (ppmp.status?.toLowerCase() === 'draft' ||
                 ppmp.status?.toLowerCase() === 'rejected')
                 ? () => setAddDialogOpen(true)
                 : undefined
             }
-            onRequestDelete={requestDeleteActivity}
+            onRequestDelete={!ppmp.consolidatedIntoId ? requestDeleteActivity : undefined}
             totalPpmpBudget={totalPpmpBudget}
             masterPpmpId={ppmp.id}
             isLoading={isLoadingActivities}
@@ -2142,35 +2185,35 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
             <RightPane
               activity={selectedActivity}
               onAddItem={
-                selectedActivity?.ppmpId === ppmp.id ? handleAddItem : undefined
+                selectedActivity?.ppmpId === ppmp.id && !ppmp.consolidatedIntoId ? handleAddItem : undefined
               }
               onEditItem={
-                selectedActivity?.ppmpId === ppmp.id
+                selectedActivity?.ppmpId === ppmp.id && !ppmp.consolidatedIntoId
                   ? handleEditItem
                   : undefined
               }
               onDeleteItem={
-                selectedActivity?.ppmpId === ppmp.id
+                selectedActivity?.ppmpId === ppmp.id && !ppmp.consolidatedIntoId
                   ? handleDeleteItem
                   : undefined
               }
               onAddGroup={
-                selectedActivity?.ppmpId === ppmp.id
+                selectedActivity?.ppmpId === ppmp.id && !ppmp.consolidatedIntoId
                   ? handleAddGroup
                   : undefined
               }
               onEditGroup={
-                selectedActivity?.ppmpId === ppmp.id
+                selectedActivity?.ppmpId === ppmp.id && !ppmp.consolidatedIntoId
                   ? handleEditGroup
                   : undefined
               }
               onDeleteGroup={
-                selectedActivity?.ppmpId === ppmp.id
+                selectedActivity?.ppmpId === ppmp.id && !ppmp.consolidatedIntoId
                   ? handleDeleteGroup
                   : undefined
               }
               onEditAllocations={
-                selectedActivity?.ppmpId === ppmp.id
+                selectedActivity?.ppmpId === ppmp.id && !ppmp.consolidatedIntoId
                   ? handleEditAllocations
                   : undefined
               }
@@ -2311,6 +2354,13 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
             ppmpNumber: ppmp.ppmpNumber,
             officeName: ppmp.officeName,
           }}
+        />
+      )}
+      {isDeptMode && ppmp.consolidatedIntoId && (
+        <MasterPPMPViewerModal
+          open={consolidatedViewerOpen}
+          onOpenChange={setConsolidatedViewerOpen}
+          masterPpmpId={ppmp.consolidatedIntoId}
         />
       )}
     </PageContainerDashtail>
