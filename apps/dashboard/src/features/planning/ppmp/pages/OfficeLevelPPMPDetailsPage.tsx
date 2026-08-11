@@ -42,6 +42,7 @@ import { PageContainerDashtail } from '@/components/v2'
 import { Card, CardContent } from '@/components/ui/card'
 import { cn } from '@/lib/utils'
 import { getPPMPRequest } from '../handlers'
+import { getPPMPActivitiesRequest } from '../handlers/getPPMPActivitiesRequest'
 import { getPPMPExpenditureItemsRequest } from '../handlers/getPPMPExpenditureItemsRequest'
 import { getPPMPItemsRequest } from '../handlers/getPPMPItemsRequest'
 import { formatCurrency } from '../lib'
@@ -97,6 +98,7 @@ interface PPMPActivityForDisplay extends PPMPActivity {
 }
 
 const usePPMP = createQueryHookFromTemplate(getPPMPRequest)
+const usePPMPActivities = createQueryHookFromTemplate(getPPMPActivitiesRequest)
 const useDeletePPMPActivity = createMutationHookFromTemplate(
   deletePPMPActivityRequest,
 )
@@ -413,6 +415,7 @@ interface ActivitiesPaneProps {
   onRequestDelete?: (id: string) => void
   totalPpmpBudget: number
   masterPpmpId?: string
+  isLoading?: boolean
 }
 
 function ActivitiesPane({
@@ -425,6 +428,7 @@ function ActivitiesPane({
   onRequestDelete,
   totalPpmpBudget,
   masterPpmpId,
+  isLoading,
 }: ActivitiesPaneProps) {
   const [query, setQuery] = useState('')
 
@@ -473,7 +477,12 @@ function ActivitiesPane({
 
       {/* Horizontal Scroller for ActivityCards */}
       <div className="overflow-x-auto pb-1.5 scrollbar-thin">
-        {filtered.length === 0 ? (
+        {isLoading ? (
+          <div className="py-8 flex items-center justify-center gap-3 text-sm text-default-450 italic">
+            <div className="h-4 w-4 animate-spin rounded-full border-2 border-default-300 border-t-primary" />
+            <span>Loading activities...</span>
+          </div>
+        ) : filtered.length === 0 ? (
           <div className="py-6 text-center text-sm text-default-400 italic">
             No activities found
           </div>
@@ -1622,35 +1631,46 @@ export function OfficeLevelPPMPDetailsPage({
     return ppmp?.ChildPPMPs?.find((c) => c.id === activeTab) ?? null
   }, [ppmp, activeTab])
 
+  // Call usePPMPActivities query hook dynamically based on active tab
+  const activePpmpId = activeChildPpmp?.id || ppmpId
+  const activitiesFilter = useMemo(() => {
+    if (!ppmpId) return ''
+    if (activeTab === 'overview') {
+      // Merged view: fetch master's activities and all children's activities
+      const ids = [ppmpId, ...(ppmp?.ChildPPMPs?.map((c) => c.id) || [])]
+      return ids.map((id) => `ppmpId==${id}`).join('|')
+    }
+    return `ppmpId==${activePpmpId}`
+  }, [ppmpId, activeTab, ppmp?.ChildPPMPs, activePpmpId])
+
+  const { data: activitiesResp, isLoading: isLoadingActivities } = usePPMPActivities({
+    pathParams: {},
+    queryParams: {
+      filters: activitiesFilter,
+      pageSize: 1000,
+    },
+    enabled: !!activitiesFilter && !!ppmp,
+  })
+
+  const rawActivities = activitiesResp?.data ?? []
+
   // Prepare activities for display (merged vs individual child)
   const activities: PPMPActivityForDisplay[] = useMemo(() => {
     if (!ppmp) return []
-
-    // Overview (Merged view)
-    if (activeTab === 'overview') {
-      const masterActs = (ppmp.PPMPActivities || []).map((act) => ({
+    return rawActivities.map((act) => {
+      let officeName = ppmp.officeName || 'Master Office'
+      if (act.ppmpId !== ppmpId) {
+        const child = ppmp.ChildPPMPs?.find((c) => c.id === act.ppmpId)
+        if (child) {
+          officeName = child.officeName || 'Child Office'
+        }
+      }
+      return {
         ...act,
-        officeName: ppmp.officeName || 'Master Office',
-      }))
-      const childActs = (ppmp.ChildPPMPs || []).flatMap((child) =>
-        (child.PPMPActivities || []).map((act) => ({
-          ...act,
-          officeName: child.officeName || 'Child Office',
-        })),
-      )
-      return [...masterActs, ...childActs] as PPMPActivityForDisplay[]
-    }
-
-    // Specific Child PPMP Tab
-    if (activeChildPpmp) {
-      return (activeChildPpmp.PPMPActivities || []).map((act) => ({
-        ...act,
-        officeName: activeChildPpmp.officeName || 'Child Office',
-      })) as PPMPActivityForDisplay[]
-    }
-
-    return []
-  }, [ppmp, activeTab, activeChildPpmp])
+        officeName,
+      } as PPMPActivityForDisplay
+    })
+  }, [rawActivities, ppmp, ppmpId])
 
   // Get selected activity
   const selectedActivity = useMemo(
@@ -1700,15 +1720,21 @@ export function OfficeLevelPPMPDetailsPage({
   }
 
   const activityCount = activities.length
-  const itemCount = activities.reduce(
-    (sum, a) =>
-      sum +
-      (a.ppmpExpenditureItems?.reduce(
-        (sum2, ei) => sum2 + (ei.ppmpItems?.length || 0),
-        0,
-      ) || 0),
-    0,
-  )
+  const itemCount = useMemo(() => {
+    if (!ppmp) return 0
+    if (activeTab === 'overview') {
+      const masterCount = ppmp.PPMPItems?.length || 0
+      const childCount =
+        ppmp.ChildPPMPs?.reduce(
+          (sum, child) => sum + (child.PPMPItems?.length || 0),
+          0,
+        ) || 0
+      return masterCount + childCount
+    }
+    return (
+      activeChildPpmp?.PPMPItems?.length || ppmp.PPMPItems?.length || 0
+    )
+  }, [ppmp, activeTab, activeChildPpmp])
 
   const handleSubmitPPMP = async () => {
     try {
@@ -2110,6 +2136,7 @@ export function OfficeLevelPPMPDetailsPage({
             onRequestDelete={requestDeleteActivity}
             totalPpmpBudget={totalPpmpBudget}
             masterPpmpId={ppmp.id}
+            isLoading={isLoadingActivities}
           />
 
           {/* Bottom detail pane (expanded full width) */}
