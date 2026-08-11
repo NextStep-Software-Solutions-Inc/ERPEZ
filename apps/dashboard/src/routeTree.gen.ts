@@ -98,7 +98,6 @@ import { Route as V2planningAppConsolidationIndexRouteImport } from './routes/v2
 import { Route as V2planningAnnualPerformancePlanningIndexRouteImport } from './routes/v2/(planning)/annual-performance-planning/index'
 import { Route as V1PlanningWfpObjectiveIndexRouteImport } from './routes/v1/planning/wfp-objective/index'
 import { Route as V1PlanningWfpExpenditureIndexRouteImport } from './routes/v1/planning/wfp-expenditure/index'
-import { Route as V1PlanningOpcrIndexRouteImport } from './routes/v1/planning/opcr/index'
 import { Route as V1PlanningOfficeIndexRouteImport } from './routes/v1/planning/office/index'
 import { Route as V1PlanningKpiIndexRouteImport } from './routes/v1/planning/kpi/index'
 import { Route as V1PlanningKpiAssignmentForDuIndexRouteImport } from './routes/v1/planning/kpi-assignment-for-du/index'
@@ -726,11 +725,6 @@ const V1PlanningWfpExpenditureIndexRoute =
     path: '/wfp-expenditure/',
     getParentRoute: () => V1PlanningRouteRoute,
   } as any)
-const V1PlanningOpcrIndexRoute = V1PlanningOpcrIndexRouteImport.update({
-  id: '/opcr/',
-  path: '/opcr/',
-  getParentRoute: () => V1PlanningRouteRoute,
-} as any)
 const V1PlanningOfficeIndexRoute = V1PlanningOfficeIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -1369,7 +1363,6 @@ export interface FileRoutesByFullPath {
   '/v1/planning/kpi-assignment-for-du': typeof V1PlanningKpiAssignmentForDuIndexRoute
   '/v1/planning/kpi/': typeof V1PlanningKpiIndexRoute
   '/v1/planning/office/': typeof V1PlanningOfficeIndexRoute
-  '/v1/planning/opcr': typeof V1PlanningOpcrIndexRoute
   '/v1/planning/wfp-expenditure': typeof V1PlanningWfpExpenditureIndexRoute
   '/v1/planning/wfp-objective': typeof V1PlanningWfpObjectiveIndexRoute
   '/v2/annual-performance-planning/': typeof V2planningAnnualPerformancePlanningIndexRoute
@@ -1536,7 +1529,6 @@ export interface FileRoutesByTo {
   '/v1/planning/kpi-assignment-for-du': typeof V1PlanningKpiAssignmentForDuIndexRoute
   '/v1/planning/kpi': typeof V1PlanningKpiIndexRoute
   '/v1/planning/office': typeof V1PlanningOfficeIndexRoute
-  '/v1/planning/opcr': typeof V1PlanningOpcrIndexRoute
   '/v1/planning/wfp-expenditure': typeof V1PlanningWfpExpenditureIndexRoute
   '/v1/planning/wfp-objective': typeof V1PlanningWfpObjectiveIndexRoute
   '/v2/annual-performance-planning': typeof V2planningAnnualPerformancePlanningIndexRoute
@@ -1721,7 +1713,6 @@ export interface FileRoutesById {
   '/v1/planning/kpi-assignment-for-du/': typeof V1PlanningKpiAssignmentForDuIndexRoute
   '/v1/planning/kpi/': typeof V1PlanningKpiIndexRoute
   '/v1/planning/office/': typeof V1PlanningOfficeIndexRoute
-  '/v1/planning/opcr/': typeof V1PlanningOpcrIndexRoute
   '/v1/planning/wfp-expenditure/': typeof V1PlanningWfpExpenditureIndexRoute
   '/v1/planning/wfp-objective/': typeof V1PlanningWfpObjectiveIndexRoute
   '/v2/(planning)/annual-performance-planning/': typeof V2planningAnnualPerformancePlanningIndexRoute
@@ -1907,7 +1898,6 @@ export interface FileRouteTypes {
     | '/v1/planning/kpi-assignment-for-du'
     | '/v1/planning/kpi/'
     | '/v1/planning/office/'
-    | '/v1/planning/opcr'
     | '/v1/planning/wfp-expenditure'
     | '/v1/planning/wfp-objective'
     | '/v2/annual-performance-planning/'
@@ -2074,7 +2064,6 @@ export interface FileRouteTypes {
     | '/v1/planning/kpi-assignment-for-du'
     | '/v1/planning/kpi'
     | '/v1/planning/office'
-    | '/v1/planning/opcr'
     | '/v1/planning/wfp-expenditure'
     | '/v1/planning/wfp-objective'
     | '/v2/annual-performance-planning'
@@ -2258,7 +2247,6 @@ export interface FileRouteTypes {
     | '/v1/planning/kpi-assignment-for-du/'
     | '/v1/planning/kpi/'
     | '/v1/planning/office/'
-    | '/v1/planning/opcr/'
     | '/v1/planning/wfp-expenditure/'
     | '/v1/planning/wfp-objective/'
     | '/v2/(planning)/annual-performance-planning/'
@@ -3014,13 +3002,6 @@ declare module '@tanstack/react-router' {
       path: '/wfp-expenditure'
       fullPath: '/v1/planning/wfp-expenditure'
       preLoaderRoute: typeof V1PlanningWfpExpenditureIndexRouteImport
-      parentRoute: typeof V1PlanningRouteRoute
-    }
-    '/v1/planning/opcr/': {
-      id: '/v1/planning/opcr/'
-      path: '/opcr'
-      fullPath: '/v1/planning/opcr'
-      preLoaderRoute: typeof V1PlanningOpcrIndexRouteImport
       parentRoute: typeof V1PlanningRouteRoute
     }
     '/v1/planning/office/': {
@@ -3852,7 +3833,6 @@ interface V1PlanningRouteRouteChildren {
   V1PlanningFundReceiveIndexRoute: typeof V1PlanningFundReceiveIndexRoute
   V1PlanningFundIndexRoute: typeof V1PlanningFundIndexRoute
   V1PlanningKpiAssignmentForDuIndexRoute: typeof V1PlanningKpiAssignmentForDuIndexRoute
-  V1PlanningOpcrIndexRoute: typeof V1PlanningOpcrIndexRoute
   V1PlanningWfpExpenditureIndexRoute: typeof V1PlanningWfpExpenditureIndexRoute
   V1PlanningWfpObjectiveIndexRoute: typeof V1PlanningWfpObjectiveIndexRoute
   V1PlanningDeliveryUnitIdWfpWfpIdRoute: typeof V1PlanningDeliveryUnitIdWfpWfpIdRouteWithChildren
@@ -3899,7 +3879,6 @@ const V1PlanningRouteRouteChildren: V1PlanningRouteRouteChildren = {
   V1PlanningFundIndexRoute: V1PlanningFundIndexRoute,
   V1PlanningKpiAssignmentForDuIndexRoute:
     V1PlanningKpiAssignmentForDuIndexRoute,
-  V1PlanningOpcrIndexRoute: V1PlanningOpcrIndexRoute,
   V1PlanningWfpExpenditureIndexRoute: V1PlanningWfpExpenditureIndexRoute,
   V1PlanningWfpObjectiveIndexRoute: V1PlanningWfpObjectiveIndexRoute,
   V1PlanningDeliveryUnitIdWfpWfpIdRoute:

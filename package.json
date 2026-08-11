@@ -9,12 +9,18 @@
   "devDependencies": {
     "turbo": "^2.0.0"
   },
-  "pnpm": {
-    "overrides": {
-      "@tanstack/react-router": "1.134.13",
-      "@tanstack/react-start": "1.134.13",
-      "@tanstack/router-plugin": "1.134.13",
-      "@tanstack/start-plugin-core": "1.134.13"
-    }
+  "overrides": {
+    "@tanstack/react-form": "1.23.8",
+    "@tanstack/react-router": "1.134.13",
+    "@tanstack/react-start": "1.134.13",
+    "@tanstack/router-plugin": "1.134.13",
+    "@tanstack/start-plugin-core": "1.134.13",
+    "@types/react": "18.3.18",
+    "@types/react-dom": "18.3.7",
+    "axios": "1.7.9",
+    "framer-motion": "12.27.1",
+    "motion-dom": "12.27.1",
+    "motion-utils": "12.24.10",
+    "recharts": "3.6.0"
   }
 }

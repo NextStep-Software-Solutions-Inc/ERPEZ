@@ -472,6 +472,7 @@ export interface OfficeTypeSetting {
   defaultCategory?: OfficeCategory
   allowedCategories?: OfficeCategory[]
   metadata?: Record<string, any>
+  updatedAt?: string
 }
 
 // Actual API Response Type for Office Types
@@ -483,6 +484,7 @@ export interface OfficeTypeEntity {
   isActive: boolean
   createdAt: string
   createdBy: string
+  updatedAt?: string
 }
 
 // Form values for Office Type (API payload)
@@ -504,6 +506,7 @@ export interface OfficeCategorySetting {
   budgetingApproach?: 'cost-center' | 'responsibility-center'
   requiresCluster?: boolean
   metadata?: Record<string, any>
+  updatedAt?: string
 }
 
 // Actual API Response Type for Office Categories
@@ -515,6 +518,7 @@ export interface OfficeCategoryEntity {
   isActive: boolean
   createdAt: string
   createdBy: string
+  updatedAt?: string
 }
 
 // Form values for Office Category (API payload)
@@ -532,6 +536,7 @@ export interface ProcurementWorkflowSetting {
   isActive: boolean
   createdAt: string
   createdBy?: string
+  updatedAt?: string
 }
 
 // Form values for Procurement Workflow (API payload)
@@ -552,6 +557,7 @@ export interface AdministrativeLevelSetting {
   createdBy: string
   hierarchyOrder: number
   metadata?: Record<string, any>
+  updatedAt?: string
 }
 
 // Actual API Response Type for Administrative Levels
@@ -563,6 +569,7 @@ export interface AdministrativeLevel {
   isActive: boolean
   createdAt: string
   createdBy: string
+  updatedAt?: string
 }
 
 // Form values for Administrative Level (API payload)
@@ -627,16 +634,20 @@ export interface PositionTypeSetting {
   category: string
   isCareerEligibilityRequired: boolean
   canReportDirectly: boolean
-  isActive: boolean
+  isActive?: boolean
+  status?: string
   createdAt: string
   createdBy?: string
+  updatedAt?: string
 }
 
 export interface PositionCategorySetting {
   id: string
   name: string
   code: string
-  isActive: boolean
+  description?: string
+  isActive?: boolean
+  status?: string
   createdAt: string
   createdBy?: string
   positionType: PositionType
@@ -645,31 +656,45 @@ export interface PositionCategorySetting {
   allowedPlantillaTypes?: PlantillaType[]
   requiresSpecialization?: boolean
   metadata?: Record<string, any>
+  updatedAt?: string
 }
 
 export interface SalaryGradeSetting {
   id: string
   name: string
   code: string
-  gradeNumber: number
+  gradeNumber?: number
+  salaryGradeNumber?: number
+  monthlySalaryMin?: number
+  monthlySalaryMax?: number
+  minStep?: number
+  maxStep?: number
   stepIncrementAmount: number
   numberOfSteps: number
   effectiveDate: string
   description: string
-  isActive: boolean
+  isActive?: boolean
+  status?: string
   createdAt: string
+  updatedAt?: string
 }
 
 export interface PlantillaTypeSetting {
   id: string
   name: string
   code: string
-  duration: number | null
-  requiresActingAppointments: boolean
-  allowsContractual: boolean
-  isActive: boolean
-  benefits: string
+  duration?: number | null
+  requiresActingAppointments?: boolean
+  requiresActingAppointment?: boolean
+  allowsContractual?: boolean
+  allowsContractualConversion?: boolean
+  benefitsEligibility?: string[]
+  isActive?: boolean
+  status?: string
+  benefits?: string
+  description?: string
   createdAt: string
+  updatedAt?: string
 }
 
 export interface StepSetting {
@@ -680,8 +705,10 @@ export interface StepSetting {
   minStep: number
   maxStep: number
   description?: string
-  isActive: boolean
+  status?: string
+  isActive?: boolean
   createdAt: string
+  updatedAt?: string
 }
 
 // ======= PERSONNEL REPORTING SETTINGS =======
@@ -690,7 +717,8 @@ export interface PMTMaximumSeatsSetting {
   id: string
   name: string
   code: string
-  isActive: boolean
+  isActive?: boolean
+  status?: string
   createdAt: string
   createdBy?: string
   maxSeats: number
@@ -699,21 +727,26 @@ export interface PMTMaximumSeatsSetting {
   officeId?: string // if not organization-wide
   minimumGradeLevel?: string
   reportingLevel?: 'executive' | 'managerial' | 'supervisory'
+  description?: string
   metadata?: Record<string, any>
+  updatedAt?: string
 }
 
 export interface PersonnelReportingTypeSetting {
   id: string
   name: string
   code: string
-  isActive: boolean
+  isActive?: boolean
+  status?: string
   createdAt: string
   createdBy?: string
   reportingStructureType: 'direct' | 'functional' | 'matrix' | 'dotted'
   requiresApproval: boolean
   escalationPath?: string[]
   maxLevels?: number
+  description?: string
   metadata?: Record<string, any>
+  updatedAt?: string
 }
 
 // ======= COMBINED SETTINGS QUERIES =======
