@@ -913,7 +913,7 @@ export default function AddPPMPItemsModal({
                       <aside
                         className={cn(
                           'lg:sticky lg:top-0 lg:self-start transition-all duration-200',
-                          isFiltersCollapsed ? 'lg:w-16' : 'lg:w-[300px]',
+                          isFiltersCollapsed ? 'lg:w-16' : 'lg:w-75',
                         )}
                       >
                         <div className="overflow-hidden rounded-xl border border-border bg-background shadow-sm">
@@ -1188,7 +1188,7 @@ export default function AddPPMPItemsModal({
                                     className={cn(
                                       'group flex flex-col justify-between rounded-2xl border p-3.5 text-left bg-background transition-all duration-300 relative select-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary',
                                       isSelected
-                                        ? 'border-primary bg-primary/[0.02] ring-1 ring-primary shadow-md scale-[1.01]'
+                                        ? 'border-primary bg-primary/2 ring-1 ring-primary shadow-md scale-[1.01]'
                                         : 'border-slate-100 hover:border-slate-300 hover:shadow-lg hover:scale-[1.01]',
                                     )}
                                   >
@@ -1220,7 +1220,7 @@ export default function AddPPMPItemsModal({
 
                                     {/* Image Area */}
                                     <div
-                                      className="w-full bg-slate-50/50 rounded-xl border border-slate-100 overflow-hidden flex items-center justify-center p-4 relative min-h-[160px]"
+                                      className="w-full bg-slate-50/50 rounded-xl border border-slate-100 overflow-hidden flex items-center justify-center p-4 relative min-h-40"
                                       onClick={(e) => e.stopPropagation()}
                                     >
                                       <DocumentViewer
@@ -1228,7 +1228,7 @@ export default function AddPPMPItemsModal({
                                         alt={item.name}
                                         size="full"
                                         aspectRatio="square"
-                                        className="max-h-[140px] max-w-[140px] border-none shadow-none bg-transparent hover:shadow-none"
+                                        className="max-h-35 max-w-35 border-none shadow-none bg-transparent hover:shadow-none"
                                         fallbackInitials={initials(
                                           item.name || '',
                                         )}
@@ -1252,7 +1252,7 @@ export default function AddPPMPItemsModal({
                                       <div className="pt-2 flex flex-col gap-2">
                                         <div className="flex items-center justify-between text-[11px] gap-2 flex-wrap">
                                           <span
-                                            className="inline-flex items-center gap-1 text-[10px] text-slate-500 font-medium bg-slate-100/80 px-2 py-0.5 rounded-full truncate max-w-[140px]"
+                                            className="inline-flex items-center gap-1 text-[10px] text-slate-500 font-medium bg-slate-100/80 px-2 py-0.5 rounded-full truncate max-w-35"
                                             title={categoryText || 'General'}
                                           >
                                             <span className="h-1.5 w-1.5 rounded-full bg-slate-400" />
@@ -1290,7 +1290,7 @@ export default function AddPPMPItemsModal({
                                             className="inline-flex items-center gap-1 text-[10px] font-bold text-primary hover:underline transition-all"
                                           >
                                             <svg
-                                              className="h-3 w-3 stroke-[2]"
+                                              className="h-3 w-3 stroke-2"
                                               fill="none"
                                               viewBox="0 0 24 24"
                                               stroke="currentColor"
@@ -1457,7 +1457,7 @@ export default function AddPPMPItemsModal({
                 </span>
               </div>
 
-              <ScrollArea className="max-h-[500px] overflow-y-auto">
+              <ScrollArea className="max-h-125 overflow-y-auto">
                 <div className="divide-y divide-border">
                   {selectedList.map(({ type, item }, index) => {
                     const isPriceLocked =
@@ -1553,7 +1553,7 @@ export default function AddPPMPItemsModal({
                         className={cn(
                           'p-4 bg-background transition-colors flex flex-col gap-4 border-l-4',
                           hasAnyError
-                            ? 'border-l-red-500 bg-red-500/[0.015]'
+                            ? 'border-l-red-500 bg-red-500/1.5'
                             : 'border-l-transparent hover:bg-muted/5',
                         )}
                       >
@@ -1579,7 +1579,7 @@ export default function AddPPMPItemsModal({
                                 <span className="text-xs font-semibold text-muted-foreground">
                                   #{index + 1}
                                 </span>
-                                <span className="text-xs font-bold text-foreground truncate max-w-[200px] sm:max-w-xs">
+                                <span className="text-xs font-bold text-foreground truncate max-w-50 sm:max-w-xs">
                                   {item.name}
                                 </span>
                                 <Badge
@@ -1912,7 +1912,7 @@ export default function AddPPMPItemsModal({
                                     remarks: e.target.value,
                                   })
                                 }
-                                className="text-xs min-h-[60px] border-default-200"
+                                className="text-xs min-h-15 border-default-200"
                               />
                             </div>
 
@@ -2056,7 +2056,7 @@ export default function AddPPMPItemsModal({
                     alt={detailData.name}
                     size="full"
                     aspectRatio="square"
-                    className="max-h-[220px] max-w-[220px] border-none shadow-none bg-transparent hover:shadow-none mx-auto"
+                    className="max-h-55 max-w-55 border-none shadow-none bg-transparent hover:shadow-none mx-auto"
                     enableLightbox={true}
                   />
                   <div className="absolute bottom-3 right-3 text-[10px] font-bold text-slate-400 bg-white/80 backdrop-blur border border-slate-100 px-2 py-0.5 rounded-md pointer-events-none">

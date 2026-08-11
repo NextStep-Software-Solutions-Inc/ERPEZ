@@ -1,9 +1,5 @@
 import React, { useEffect, useState } from 'react'
-import {
-  Dialog,
-  DialogContent,
-  DialogTrigger,
-} from '@/components/ui/dialog'
+import { Dialog, DialogContent, DialogTrigger } from '@/components/ui/dialog'
 import { cn } from '@/lib/utils'
 import api from '@/services/api'
 import { LucideImage, Loader2 } from 'lucide-react'
@@ -66,7 +62,12 @@ export default function DocumentViewer({
       return
     }
 
-    if (src.startsWith('data:') || src.startsWith('blob:') || src.startsWith('http://') || src.startsWith('https://')) {
+    if (
+      src.startsWith('data:') ||
+      src.startsWith('blob:') ||
+      src.startsWith('http://') ||
+      src.startsWith('https://')
+    ) {
       setObjectUrl(src)
       setLoading(false)
       setError(false)
@@ -74,7 +75,8 @@ export default function DocumentViewer({
     }
 
     // Extract file ID from path (like /files/download/UUID or download/UUID etc)
-    const uuidRegex = /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/
+    const uuidRegex =
+      /[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}/
     const uuidMatch = src.match(uuidRegex)
     if (!uuidMatch) {
       setObjectUrl(src)
@@ -93,7 +95,7 @@ export default function DocumentViewer({
       .then((response) => {
         if (!isMounted) return
         const contentType = response.headers['content-type'] || 'image/png'
-        const blob = new Blob([response.data], { type: contentType })
+        const blob = new Blob([response.data], { type: contentType as string })
         const url = URL.createObjectURL(blob)
         setObjectUrl(url)
         setLoading(false)
@@ -133,7 +135,7 @@ export default function DocumentViewer({
           className={cn(
             'flex items-center justify-center font-bold text-slate-700 bg-gradient-to-br from-slate-100 to-slate-200 border border-slate-200 rounded-lg select-none uppercase',
             fallbackBgClass,
-            'w-full h-full'
+            'w-full h-full',
           )}
         >
           {fallbackInitials.slice(0, 2)}
@@ -152,19 +154,28 @@ export default function DocumentViewer({
     'relative overflow-hidden rounded-lg border border-slate-100 shadow-sm bg-white group select-none transition-all duration-300 hover:shadow-md',
     sizeClasses[size],
     aspectRatios[aspectRatio],
-    className
+    className,
   )
 
   if (loading) {
     return (
-      <div className={cn(containerClasses, 'flex items-center justify-center bg-slate-50/50')}>
+      <div
+        className={cn(
+          containerClasses,
+          'flex items-center justify-center bg-slate-50/50',
+        )}
+      >
         <Loader2 className="h-5 w-5 animate-spin text-primary" />
       </div>
     )
   }
 
   if (error || !objectUrl) {
-    return <div className={containerClasses} style={customStyle}>{renderFallback()}</div>
+    return (
+      <div className={containerClasses} style={customStyle}>
+        {renderFallback()}
+      </div>
+    )
   }
 
   const imageElement = (
@@ -173,7 +184,7 @@ export default function DocumentViewer({
       alt={alt}
       className={cn(
         'w-full h-full object-cover transition-transform duration-500 group-hover:scale-105',
-        enableLightbox && 'cursor-zoom-in'
+        enableLightbox && 'cursor-zoom-in',
       )}
       onError={() => setError(true)}
     />
@@ -192,7 +203,10 @@ export default function DocumentViewer({
       <DialogTrigger asChild>
         <button
           type="button"
-          className={cn(containerClasses, 'text-left block focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2')}
+          className={cn(
+            containerClasses,
+            'text-left block focus:outline-none focus:ring-2 focus:ring-primary focus:ring-offset-2',
+          )}
           style={customStyle}
         >
           {imageElement}
@@ -203,7 +217,10 @@ export default function DocumentViewer({
           </div>
         </button>
       </DialogTrigger>
-      <DialogContent size="lg" className="p-0 border-none bg-black/95 overflow-hidden flex items-center justify-center max-h-[85vh]">
+      <DialogContent
+        size="lg"
+        className="p-0 border-none bg-black/95 overflow-hidden flex items-center justify-center max-h-[85vh]"
+      >
         <div className="relative w-full h-full flex items-center justify-center p-4">
           <img
             src={objectUrl}

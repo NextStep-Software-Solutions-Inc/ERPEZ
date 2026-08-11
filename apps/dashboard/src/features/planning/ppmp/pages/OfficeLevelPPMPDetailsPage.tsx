@@ -186,7 +186,7 @@ function MetadataGrid({
               Procurement Library
             </span>
             <div
-              className="text-sm font-bold text-default-900 truncate max-w-[170px]"
+              className="text-sm font-bold text-default-900 truncate max-w-42.5"
               title={ppmp.libName || '—'}
             >
               {ppmp.libName || '—'}
@@ -212,7 +212,7 @@ function MetadataGrid({
               Fund Source
             </span>
             <div
-              className="text-sm font-bold text-default-900 truncate max-w-[170px]"
+              className="text-sm font-bold text-default-900 truncate max-w-42.5"
               title={ppmp.fundSourceName || '—'}
             >
               {ppmp.fundSourceName || 'General Fund'}
@@ -300,11 +300,11 @@ function ActivityCard({
   return (
     <li
       className={cn(
-        'rounded-xl border bg-white shadow-sm transition-all duration-200 overflow-hidden relative flex shrink-0 h-[120px]',
+        'rounded-xl border bg-white shadow-sm transition-all duration-200 overflow-hidden relative flex shrink-0 h-30',
         selected
           ? 'ring-1 shadow-md bg-primary/5 scale-[1.015] z-10 animate-pulse-selected border-primary'
           : 'border-default-200 hover:border-default-300 hover:shadow-md',
-        expanded ? 'w-[480px]' : 'w-80',
+        expanded ? 'w-120' : 'w-80',
         shouldThrob && !selected && 'animate-pulse-unselected',
         dimmed &&
           'opacity-60 saturate-50 hover:opacity-100 hover:saturate-100 transition-all duration-300',
@@ -558,11 +558,11 @@ function ActivitiesPane({
 
 interface ItemDetailProps {
   item: PPMPItem
-  onEdit?: (item: PPMPItem) => void
+
   onEditAllocations?: (item: PPMPItem) => void
 }
 
-function ItemDetail({ item, onEdit, onEditAllocations }: ItemDetailProps) {
+function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
   const months = [
     'January',
     'February',
@@ -602,17 +602,6 @@ function ItemDetail({ item, onEdit, onEditAllocations }: ItemDetailProps) {
       <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
         {/* Basic Details */}
         <div className="space-y-3 relative pr-8">
-          {onEdit && (
-            <Button
-              type="button"
-              variant="ghost"
-              size="icon"
-              onClick={() => onEdit(item)}
-              className="absolute right-0 top-0 h-8 w-8 text-default-550 hover:text-primary rounded-lg"
-            >
-              <Pencil className="h-4 w-4" />
-            </Button>
-          )}
           <div>
             <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
               Specifications & Remarks
@@ -752,7 +741,7 @@ function ItemDetail({ item, onEdit, onEditAllocations }: ItemDetailProps) {
                 <div
                   key={m}
                   className={cn(
-                    'rounded-lg border p-2 text-center flex flex-col justify-between min-h-[55px] transition-all',
+                    'rounded-lg border p-2 text-center flex flex-col justify-between min-h-13.75 transition-all',
                     hasVal
                       ? 'bg-primary/2 border-primary/20 shadow-sm'
                       : 'bg-default-100/20 border-default-100 text-default-400',
@@ -828,10 +817,10 @@ function ItemRow({
             )}
           </button>
         </td>
-        <td className="px-5 py-3 text-sm font-medium text-default-900 min-w-[200px]">
+        <td className="px-5 py-3 text-sm font-medium text-default-900 min-w-50">
           <div className="flex items-center gap-1.5 flex-wrap">
             <div
-              className="truncate max-w-[200px] font-semibold text-default-800"
+              className="truncate max-w-50 font-semibold text-default-800"
               title={displayName}
             >
               {displayName}
@@ -847,7 +836,7 @@ function ItemRow({
           </div>
           {item.description && (
             <div
-              className="text-[10px] text-default-400 truncate max-w-[250px]"
+              className="text-[10px] text-default-400 truncate max-w-62.5"
               title={item.description}
             >
               {item.description}
@@ -905,11 +894,7 @@ function ItemRow({
       {expanded && (
         <tr className="bg-default-50/20">
           <td colSpan={6} className="px-5 py-4 border-b border-default-200">
-            <ItemDetail
-              item={item}
-              onEdit={onEdit}
-              onEditAllocations={onEditAllocations}
-            />
+            <ItemDetail item={item} onEditAllocations={onEditAllocations} />
           </td>
         </tr>
       )}
@@ -1168,7 +1153,7 @@ function MonthlyScheduleMatrix({
               <div
                 key={month}
                 className={cn(
-                  'rounded-xl border p-3.5 transition-all duration-205 flex flex-col justify-between min-h-[90px]',
+                  'rounded-xl border p-3.5 transition-all duration-205 flex flex-col justify-between min-h-22.5',
                   isActive
                     ? 'bg-primary/2 border-primary/20 shadow-sm'
                     : 'bg-default-50/50 border-default-200 text-default-450',
@@ -2073,7 +2058,7 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
 
       <div className="space-y-6">
         {isDeptMode && ppmp.consolidatedIntoId && (
-          <div className="rounded-xl border border-indigo-200 bg-gradient-to-r from-indigo-50/90 to-indigo-100/40 p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-300 hover:shadow-md border-l-4 border-l-indigo-600 font-medium text-indigo-900">
+          <div className="rounded-xl border border-indigo-200 bg-linear-to-r from-indigo-50/90 to-indigo-100/40 p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-300 hover:shadow-md border-l-4 border-l-indigo-600 font-medium text-indigo-900">
             <div className="flex items-start gap-3.5">
               <div className="h-10 w-10 shrink-0 rounded-xl bg-indigo-600/10 flex items-center justify-center text-indigo-600">
                 <GitMerge className="h-5 w-5" />
@@ -2083,8 +2068,10 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
                   This Department PPMP has been consolidated
                 </h4>
                 <p className="text-xs text-indigo-900/70 leading-normal max-w-2xl font-semibold">
-                  It has been merged into a Master Procurement Plan. All details are now locked in read-only mode.
-                  You can view the consolidated Master PPMP to trace allocations and approval progress.
+                  It has been merged into a Master Procurement Plan. All details
+                  are now locked in read-only mode. You can view the
+                  consolidated Master PPMP to trace allocations and approval
+                  progress.
                 </p>
               </div>
             </div>
@@ -2182,12 +2169,28 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
                   const statusLower = (child.status ?? '').toLowerCase()
                   const statusStyle =
                     statusLower === 'approved'
-                      ? { badge: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500' }
-                      : statusLower === 'submitted' || statusLower === 'pending_review' || statusLower === 'pending review'
-                        ? { badge: 'bg-blue-50 text-blue-700 border-blue-200', dot: 'bg-blue-500' }
+                      ? {
+                          badge:
+                            'bg-emerald-50 text-emerald-700 border-emerald-200',
+                          dot: 'bg-emerald-500',
+                        }
+                      : statusLower === 'submitted' ||
+                          statusLower === 'pending_review' ||
+                          statusLower === 'pending review'
+                        ? {
+                            badge: 'bg-blue-50 text-blue-700 border-blue-200',
+                            dot: 'bg-blue-500',
+                          }
                         : statusLower === 'rejected'
-                          ? { badge: 'bg-rose-50 text-rose-700 border-rose-200', dot: 'bg-rose-500' }
-                          : { badge: 'bg-slate-50 text-slate-600 border-slate-200', dot: 'bg-slate-400' }
+                          ? {
+                              badge: 'bg-rose-50 text-rose-700 border-rose-200',
+                              dot: 'bg-rose-500',
+                            }
+                          : {
+                              badge:
+                                'bg-slate-50 text-slate-600 border-slate-200',
+                              dot: 'bg-slate-400',
+                            }
                   return (
                     <button
                       key={child.id}
@@ -2293,7 +2296,9 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
                 ? () => setAddDialogOpen(true)
                 : undefined
             }
-            onRequestDelete={!ppmp.consolidatedIntoId ? requestDeleteActivity : undefined}
+            onRequestDelete={
+              !ppmp.consolidatedIntoId ? requestDeleteActivity : undefined
+            }
             totalPpmpBudget={totalPpmpBudget}
             masterPpmpId={ppmp.id}
             isLoading={isLoadingActivities}
@@ -2304,7 +2309,9 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
             <RightPane
               activity={selectedActivity}
               onAddItem={
-                selectedActivity?.ppmpId === ppmp.id && !ppmp.consolidatedIntoId ? handleAddItem : undefined
+                selectedActivity?.ppmpId === ppmp.id && !ppmp.consolidatedIntoId
+                  ? handleAddItem
+                  : undefined
               }
               onEditItem={
                 selectedActivity?.ppmpId === ppmp.id && !ppmp.consolidatedIntoId
