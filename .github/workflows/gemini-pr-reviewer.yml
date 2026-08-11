@@ -39,4 +39,5 @@ jobs:
           PR_BODY: ${{ github.event.pull_request.body }}
           REPO: ${{ github.repository }}
           BASE_REF: ${{ github.event.pull_request.base.ref }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-3.6-flash' }}
         run: python scripts/gemini-pr-review.py
