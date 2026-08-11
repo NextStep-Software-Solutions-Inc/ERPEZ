@@ -13,6 +13,7 @@ def main():
     pr_body = os.getenv("PR_BODY", "N/A")
     repo = os.getenv("REPO")
     base_ref = os.getenv("BASE_REF", "main")
+    gemini_model = os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
 
     if not gemini_api_key:
         print("::error::GEMINI_API_KEY secret is missing. Please add GEMINI_API_KEY to repository secrets.")
@@ -71,10 +72,10 @@ def main():
   ```
   """
 
-    print("Sending PR diff to Gemini API for review...")
+    print(f"Sending PR diff to Gemini API ({gemini_model}) for review...")
     try:
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model=gemini_model,
             contents=prompt,
         )
         review_markdown = response.text
