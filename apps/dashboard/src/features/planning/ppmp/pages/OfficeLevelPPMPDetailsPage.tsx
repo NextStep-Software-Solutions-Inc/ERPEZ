@@ -1634,7 +1634,8 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
     if (activeTab === 'overview') {
       // Merged view: fetch master's activities and all children's activities
       const ids = [ppmpId, ...(ppmp?.ChildPPMPs?.map((c) => c.id) || [])]
-      return ids.map((id) => `ppmpId==${id}`).join('|')
+      // Compact filter: ppmpId==id1|id2|id3 (avoid repeating `ppmpId==` per id)
+      return `ppmpId==${ids.join('|')}`
     }
     return `ppmpId==${activePpmpId}`
   }, [ppmpId, activeTab, ppmp?.ChildPPMPs, activePpmpId])
