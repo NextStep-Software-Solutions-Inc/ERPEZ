@@ -287,11 +287,7 @@ function ActivityCard({
   shouldThrob = false,
   dimmed = false,
 }: ActivityCardProps) {
-  const totalItems =
-    activity.ppmpExpenditureItems?.reduce(
-      (sum, ei) => sum + (ei.ppmpItems?.length || 0),
-      0,
-    ) || 0
+  const totalItems = activity.totalItems
 
   const budgetPct =
     totalPpmpBudget > 0
