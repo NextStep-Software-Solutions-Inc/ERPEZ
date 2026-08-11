@@ -1,9 +1,9 @@
 import { lazy, Suspense } from 'react'
-import { useNavigate } from '@tanstack/react-router'
 import { Card, CardContent } from '@/components/ui/card'
 import { Skeleton } from '@/components/ui/skeleton'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import type { PPMPManagementSearch } from '@/routes/v2/(planning)/ppmp/constants'
+import { Route } from '@/routes/v2/(planning)/ppmp/index'
 
 // Lazy load the tab components
 const DepartmentPpmpTab = lazy(() => import('./tabs/DepartmentPpmpTab'))
@@ -11,10 +11,11 @@ const OfficePpmpTab = lazy(() => import('./tabs/OfficePpmpTab'))
 
 interface MyPpmpsPageProps {
   searchParams: PPMPManagementSearch
+  navigate: ReturnType<typeof Route.useNavigate>
 }
 
-export function MyPpmpsPage({ searchParams }: MyPpmpsPageProps) {
-  const navigate = useNavigate()
+export function MyPpmpsPage({ searchParams, navigate }: MyPpmpsPageProps) {
+  // const navigate = Route.useNavigate()
   const { view = 'department' } = searchParams
 
   const handleUpdateSearch = (
@@ -22,7 +23,6 @@ export function MyPpmpsPage({ searchParams }: MyPpmpsPageProps) {
   ) => {
     const next = updater(searchParams)
     navigate({
-      from: '/v2/ppmp/',
       search: (prev) => {
         const merged = {
           ...(prev as PPMPManagementSearch),

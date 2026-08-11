@@ -18,7 +18,7 @@ import {
 import { PPMP } from '../../types'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useSetAtom } from 'jotai'
-import { Link, useNavigate } from '@tanstack/react-router'
+import { Link } from '@tanstack/react-router'
 import {
   selectedPpmpForDeleteAtom,
   deletePpmpDialogOpenAtom,
@@ -27,22 +27,11 @@ import {
 } from '../../atoms/ppmpStateAtoms'
 
 function PpmpActions({ ppmp }: { ppmp: PPMP }) {
-  const navigate = useNavigate()
-
   const setSelectedForDelete = useSetAtom(selectedPpmpForDeleteAtom)
   const setDeleteOpen = useSetAtom(deletePpmpDialogOpenAtom)
 
   const setSelectedForEdit = useSetAtom(selectedPpmpForEditAtom)
   const setEditOpen = useSetAtom(editPpmpDialogOpenAtom)
-
-  const handleView = () => {
-    navigate({
-      to: '/v2/ppmp/$ppmpId',
-      params: {
-        ppmpId: ppmp.id,
-      },
-    })
-  }
 
   const handleEdit = () => {
     setSelectedForEdit(ppmp)
@@ -64,9 +53,16 @@ function PpmpActions({ ppmp }: { ppmp: PPMP }) {
       </DropdownMenuTrigger>
 
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={handleView}>
-          <FolderOpen className="mr-2 h-4 w-4" />
-          View Details
+        <DropdownMenuItem asChild>
+          <Link
+            to="/v2/ppmp/$ppmpId"
+            params={{
+              ppmpId: ppmp.id,
+            }}
+          >
+            <FolderOpen className="mr-2 h-4 w-4" />
+            View Details
+          </Link>
         </DropdownMenuItem>
 
         <DropdownMenuSeparator />
