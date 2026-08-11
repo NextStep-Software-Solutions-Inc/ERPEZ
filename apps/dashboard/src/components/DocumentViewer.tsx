@@ -133,7 +133,7 @@ export default function DocumentViewer({
       return (
         <div
           className={cn(
-            'flex items-center justify-center font-bold text-slate-700 bg-gradient-to-br from-slate-100 to-slate-200 border border-slate-200 rounded-lg select-none uppercase',
+            'flex items-center justify-center font-bold text-slate-700 bg-linear-to-br from-slate-100 to-slate-200 border border-slate-200 rounded-lg select-none uppercase',
             fallbackBgClass,
             'w-full h-full',
           )}
@@ -145,7 +145,7 @@ export default function DocumentViewer({
 
     return (
       <div className="flex flex-col items-center justify-center bg-slate-50 border border-dashed border-slate-200 text-slate-400 rounded-lg w-full h-full">
-        <LucideImage className="h-1/3 w-1/3 min-h-[16px] min-w-[16px] stroke-[1.5]" />
+        <LucideImage className="h-1/3 w-1/3 min-h-4 min-w-4 stroke-[1.5]" />
       </div>
     )
   }

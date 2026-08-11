@@ -144,7 +144,7 @@ export function DataTable<TData, TValue>({
                 pageNumber: 1,
               }))
             }
-            className="h-9 min-w-[200px] max-w-xs border-primary/20 focus-visible:ring-primary/30"
+            className="h-9 min-w-50 max-w-xs border-primary/20 focus-visible:ring-primary/30"
           />
 
           {/* Status Filter */}
@@ -158,7 +158,7 @@ export function DataTable<TData, TValue>({
               }))
             }
           >
-            <SelectTrigger className="h-9 w-[150px] border-primary/20">
+            <SelectTrigger className="h-9 w-37.5 border-primary/20">
               <SelectValue placeholder="Status" />
             </SelectTrigger>
             <SelectContent>
@@ -183,7 +183,7 @@ export function DataTable<TData, TValue>({
               }))
             }
           >
-            <SelectTrigger className="h-9 w-[150px] border-primary/20">
+            <SelectTrigger className="h-9 w-37.5 border-primary/20">
               <SelectValue placeholder="Fiscal Year" />
             </SelectTrigger>
             <SelectContent>
@@ -207,7 +207,7 @@ export function DataTable<TData, TValue>({
               }))
             }
           >
-            <SelectTrigger className="h-9 w-[150px] border-primary/20">
+            <SelectTrigger className="h-9 w-37.5 border-primary/20">
               <SelectValue placeholder="Office" />
             </SelectTrigger>
             <SelectContent>
@@ -231,7 +231,7 @@ export function DataTable<TData, TValue>({
               }))
             }
           >
-            <SelectTrigger className="h-9 w-[150px] border-primary/20">
+            <SelectTrigger className="h-9 w-37.5 border-primary/20">
               <SelectValue placeholder="Line Item Budget" />
             </SelectTrigger>
             <SelectContent>
@@ -255,7 +255,7 @@ export function DataTable<TData, TValue>({
               }))
             }
           >
-            <SelectTrigger className="h-9 w-[150px] border-primary/20">
+            <SelectTrigger className="h-9 w-37.5 border-primary/20">
               <SelectValue placeholder="Consolidation" />
             </SelectTrigger>
             <SelectContent>
@@ -379,7 +379,7 @@ export function DataTable<TData, TValue>({
                 }))
               }}
             >
-              <SelectTrigger className="h-8 w-[70px]">
+              <SelectTrigger className="h-8 w-17.5">
                 <SelectValue
                   placeholder={String(searchParams.pageSize ?? 10)}
                 />
@@ -393,7 +393,7 @@ export function DataTable<TData, TValue>({
               </SelectContent>
             </Select>
           </div>
-          <div className="flex w-[100px] items-center justify-center text-sm font-medium">
+          <div className="flex w-25 items-center justify-center text-sm font-medium">
             Page {searchParams.pageNumber ?? 1} of {pageCount || 1}
           </div>
           <div className="flex items-center space-x-2">

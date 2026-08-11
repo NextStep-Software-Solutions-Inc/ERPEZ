@@ -44,7 +44,9 @@ import {
 // ─── Hooks ────────────────────────────────────────────────────────────────────
 
 const usePPMPs = createQueryHookFromTemplate(getPPMPsRequest)
-const useConsolidatePPMP = createMutationHookFromTemplate(createPPMPConsolidateRequest)
+const useConsolidatePPMP = createMutationHookFromTemplate(
+  createPPMPConsolidateRequest,
+)
 
 // ─── Eligibility check ────────────────────────────────────────────────────────
 
@@ -52,7 +54,8 @@ function getMasterEligibility(
   master: PPMP,
   deptPpmp: Pick<PPMP, 'id' | 'fiscalYearId' | 'libId'>,
 ): true | string {
-  if (master.fiscalYearId !== deptPpmp.fiscalYearId) return 'Fiscal year mismatch'
+  if (master.fiscalYearId !== deptPpmp.fiscalYearId)
+    return 'Fiscal year mismatch'
   if (deptPpmp.libId && master.libId && deptPpmp.libId !== master.libId)
     return `LIB mismatch (master: ${master.libId}, dept: ${deptPpmp.libId})`
   return true
@@ -67,7 +70,12 @@ interface MasterCardProps {
   onSelect: () => void
 }
 
-function MasterCard({ master, selected, eligibility, onSelect }: MasterCardProps) {
+function MasterCard({
+  master,
+  selected,
+  eligibility,
+  onSelect,
+}: MasterCardProps) {
   const isEligible = eligibility === true
 
   return (
@@ -89,7 +97,9 @@ function MasterCard({ master, selected, eligibility, onSelect }: MasterCardProps
           <div
             className={cn(
               'h-9 w-9 shrink-0 rounded-lg flex items-center justify-center',
-              selected ? 'bg-primary/15 text-primary' : 'bg-default-100 text-default-500',
+              selected
+                ? 'bg-primary/15 text-primary'
+                : 'bg-default-100 text-default-500',
             )}
           >
             <Building2 className="h-4 w-4" />
@@ -154,7 +164,13 @@ export interface DeptConsolidationSheetProps {
   onOpenChange: (open: boolean) => void
   deptPpmp: Pick<
     PPMP,
-    'id' | 'fiscalYearId' | 'fiscalYearName' | 'libId' | 'ppmpNumber' | 'officeName' | 'officeId'
+    | 'id'
+    | 'fiscalYearId'
+    | 'fiscalYearName'
+    | 'libId'
+    | 'ppmpNumber'
+    | 'officeName'
+    | 'officeId'
   >
 }
 
@@ -201,7 +217,8 @@ export function DeptConsolidationSheet({
     [allMasters, selectedMasterId],
   )
 
-  const { mutateAsync: consolidate, isPending: isConsolidating } = useConsolidatePPMP()
+  const { mutateAsync: consolidate, isPending: isConsolidating } =
+    useConsolidatePPMP()
 
   const handleClose = useCallback(() => {
     if (!isConsolidating) {
@@ -242,7 +259,9 @@ export function DeptConsolidationSheet({
       )
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : 'Failed to consolidate PPMP into master.',
+        err instanceof Error
+          ? err.message
+          : 'Failed to consolidate PPMP into master.',
       )
     } finally {
       setConfirmOpen(false)
@@ -257,7 +276,7 @@ export function DeptConsolidationSheet({
           className="h-[88vh] p-0 flex flex-col rounded-t-2xl overflow-hidden border-t border-slate-200 shadow-2xl"
         >
           {/* Header */}
-          <SheetHeader className="px-6 py-4 border-b border-slate-200 bg-white flex-shrink-0">
+          <SheetHeader className="px-6 py-4 border-b border-slate-200 bg-white shrink-0">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="h-9 w-9 rounded-xl bg-indigo-100 flex items-center justify-center">
@@ -268,8 +287,8 @@ export function DeptConsolidationSheet({
                     Consolidate into Master PPMP
                   </SheetTitle>
                   <SheetDescription className="text-xs text-slate-500 mt-0.5">
-                    {deptPpmp.ppmpNumber ?? deptPpmp.officeName} — Select a master PPMP to
-                    consolidate into
+                    {deptPpmp.ppmpNumber ?? deptPpmp.officeName} — Select a
+                    master PPMP to consolidate into
                   </SheetDescription>
                 </div>
               </div>
@@ -289,7 +308,7 @@ export function DeptConsolidationSheet({
           {/* Body */}
           <div className="flex flex-1 min-h-0 overflow-hidden">
             {/* Left: Master PPMP selector */}
-            <div className="w-[460px] shrink-0 border-r border-slate-200 flex flex-col bg-white min-h-0">
+            <div className="w-115 shrink-0 border-r border-slate-200 flex flex-col bg-white min-h-0">
               {/* Search */}
               <div className="px-4 pt-4 pb-3 border-b border-slate-100">
                 <div className="relative">
@@ -355,8 +374,8 @@ export function DeptConsolidationSheet({
                       Select a Master PPMP
                     </p>
                     <p className="text-xs text-default-400 mt-1 max-w-xs">
-                      Choose a master PPMP from the left panel to preview what will happen
-                      when you consolidate.
+                      Choose a master PPMP from the left panel to preview what
+                      will happen when you consolidate.
                     </p>
                   </div>
                 </div>
@@ -380,7 +399,9 @@ export function DeptConsolidationSheet({
                           <div className="text-sm font-semibold text-default-900 mt-0.5">
                             {deptPpmp.ppmpNumber ?? '—'}
                           </div>
-                          <div className="text-xs text-default-500">{deptPpmp.officeName}</div>
+                          <div className="text-xs text-default-500">
+                            {deptPpmp.officeName}
+                          </div>
                         </div>
                       </div>
 
@@ -401,7 +422,9 @@ export function DeptConsolidationSheet({
                             Master PPMP (Target)
                           </div>
                           <div className="text-sm font-semibold text-default-900 mt-0.5">
-                            {selectedMaster.documentName || selectedMaster.ppmpNumber || '—'}
+                            {selectedMaster.documentName ||
+                              selectedMaster.ppmpNumber ||
+                              '—'}
                           </div>
                           <div className="text-xs text-default-500">
                             {selectedMaster.officeName}
@@ -415,10 +438,12 @@ export function DeptConsolidationSheet({
                     <div className="flex items-start gap-2 text-amber-700">
                       <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
                       <div className="text-xs">
-                        <span className="font-bold">This action is irreversible.</span>{' '}
-                        Once consolidated, this department PPMP will be marked as
-                        &ldquo;Consolidated&rdquo; and will be linked to the selected master
-                        plan.
+                        <span className="font-bold">
+                          This action is irreversible.
+                        </span>{' '}
+                        Once consolidated, this department PPMP will be marked
+                        as &ldquo;Consolidated&rdquo; and will be linked to the
+                        selected master plan.
                       </div>
                     </div>
                   </div>
@@ -428,14 +453,18 @@ export function DeptConsolidationSheet({
           </div>
 
           {/* Footer */}
-          <div className="px-6 py-4 border-t border-slate-200 bg-white flex-shrink-0 flex items-center justify-between gap-4">
+          <div className="px-6 py-4 border-t border-slate-200 bg-white shrink-0 flex items-center justify-between gap-4">
             <p className="text-xs text-slate-400">
               This PPMP will be marked as{' '}
-              <span className="font-semibold text-slate-600">Consolidated</span> and linked to
-              the selected master plan.
+              <span className="font-semibold text-slate-600">Consolidated</span>{' '}
+              and linked to the selected master plan.
             </p>
             <div className="flex items-center gap-3">
-              <Button variant="outline" onClick={handleClose} disabled={isConsolidating}>
+              <Button
+                variant="outline"
+                onClick={handleClose}
+                disabled={isConsolidating}
+              >
                 Cancel
               </Button>
               <Button
@@ -475,3 +504,4 @@ export function DeptConsolidationSheet({
     </>
   )
 }
+

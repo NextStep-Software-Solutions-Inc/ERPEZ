@@ -367,7 +367,7 @@ function ActivityCard({
 
       {/* Right side (expanded details - sideward) */}
       {expanded && (
-        <div className="w-[160px] border-l border-default-150 bg-default-50/30 flex flex-col justify-between p-3 shrink-0">
+        <div className="w-40 border-l border-default-150 bg-default-50/30 flex flex-col justify-between p-3 shrink-0">
           <div className="space-y-2 text-[10px] text-default-600 font-medium">
             <div>
               <div className="text-default-400 mb-0.5 uppercase tracking-wider text-[8px] font-bold">
@@ -508,7 +508,7 @@ function ActivitiesPane({
                 <div className="flex items-center gap-2 px-1 py-0.5 select-none">
                   <Building2 className="h-3.5 w-3.5 text-primary/70 shrink-0" />
                   <span
-                    className="text-xs font-bold text-slate-700 tracking-wider truncate max-w-[200px]"
+                    className="text-xs font-bold text-slate-700 tracking-wider truncate max-w-50"
                     title={officeName}
                   >
                     {officeName}

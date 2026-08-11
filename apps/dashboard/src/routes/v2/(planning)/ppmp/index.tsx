@@ -27,7 +27,7 @@ function PPMPManagementPage() {
   return (
     <div className="w-full space-y-6 pb-10">
       {/* Header - match KPI Library styling */}
-      <Card className="bg-gradient-to-r from-primary/10 to-primary/5 border-primary/20">
+      <Card className="bg-linear-to-r from-primary/10 to-primary/5 border-primary/20">
         <CardHeader>
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="space-y-1">
