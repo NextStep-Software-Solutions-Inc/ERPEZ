@@ -1540,11 +1540,7 @@ function DetailsSkeleton({ isDeptMode }: { isDeptMode: boolean }) {
   )
 }
 
-export function OfficeLevelPPMPDetailsPage({
-  ppmpId,
-}: {
-  ppmpId: string
-}) {
+export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
   const { data: ppmpResp, isLoading } = usePPMP({
     pathParams: { id: ppmpId },
     queryParams: {},
@@ -1643,14 +1639,15 @@ export function OfficeLevelPPMPDetailsPage({
     return `ppmpId==${activePpmpId}`
   }, [ppmpId, activeTab, ppmp?.ChildPPMPs, activePpmpId])
 
-  const { data: activitiesResp, isLoading: isLoadingActivities } = usePPMPActivities({
-    pathParams: {},
-    queryParams: {
-      filters: activitiesFilter,
-      pageSize: 1000,
-    },
-    enabled: !!activitiesFilter && !!ppmp,
-  })
+  const { data: activitiesResp, isLoading: isLoadingActivities } =
+    usePPMPActivities({
+      pathParams: {},
+      queryParams: {
+        filters: activitiesFilter,
+        pageSize: 1000,
+      },
+      enabled: !!activitiesFilter && !!ppmp,
+    })
 
   const rawActivities = activitiesResp?.data ?? []
 
@@ -1687,6 +1684,21 @@ export function OfficeLevelPPMPDetailsPage({
     return activeChildPpmp?.totalEstimatedBudget ?? 0
   }, [ppmp, activeTab, activeChildPpmp])
 
+  // Total item count across master/child (must run unconditionally to keep hooks order)
+  const itemCount = useMemo(() => {
+    if (!ppmp) return 0
+    if (activeTab === 'overview') {
+      const masterCount = ppmp.PPMPItems?.length || 0
+      const childCount =
+        ppmp.ChildPPMPs?.reduce(
+          (sum, child) => sum + (child.PPMPItems?.length || 0),
+          0,
+        ) || 0
+      return masterCount + childCount
+    }
+    return activeChildPpmp?.PPMPItems?.length || ppmp.PPMPItems?.length || 0
+  }, [ppmp, activeTab, activeChildPpmp])
+
   // Toggle activity expansion
   const toggleExpandActivity = useCallback((id: string) => {
     setExpandedActivityIds((prev) => {
@@ -1720,21 +1732,6 @@ export function OfficeLevelPPMPDetailsPage({
   }
 
   const activityCount = activities.length
-  const itemCount = useMemo(() => {
-    if (!ppmp) return 0
-    if (activeTab === 'overview') {
-      const masterCount = ppmp.PPMPItems?.length || 0
-      const childCount =
-        ppmp.ChildPPMPs?.reduce(
-          (sum, child) => sum + (child.PPMPItems?.length || 0),
-          0,
-        ) || 0
-      return masterCount + childCount
-    }
-    return (
-      activeChildPpmp?.PPMPItems?.length || ppmp.PPMPItems?.length || 0
-    )
-  }, [ppmp, activeTab, activeChildPpmp])
 
   const handleSubmitPPMP = async () => {
     try {
