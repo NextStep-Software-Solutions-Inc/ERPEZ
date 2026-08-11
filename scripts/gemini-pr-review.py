@@ -109,8 +109,13 @@ def main():
     }
 
     res = requests.post(reviews_url, headers=headers, json=payload)
+    if res.status_code not in (200, 201) and payload["event"] != "COMMENT":
+        print(f"::warning::Submitting PR review with event '{payload['event']}' failed ({res.status_code}): {res.text}. Retrying with 'COMMENT' event...")
+        payload["event"] = "COMMENT"
+        res = requests.post(reviews_url, headers=headers, json=payload)
+
     if res.status_code in (200, 201):
-        print(f"Successfully submitted Gemini PR Review ({event_decision}) to PR #{pr_number}!")
+        print(f"Successfully submitted Gemini PR Review ({payload['event']}) to PR #{pr_number}!")
     else:
         print(f"::error::Failed to submit PR review ({res.status_code}): {res.text}")
         sys.exit(1)
