@@ -14,7 +14,7 @@ interface MyPpmpsPageProps {
 }
 
 export function MyPpmpsPage({ searchParams }: MyPpmpsPageProps) {
-  const navigate = useNavigate({ from: '/v2/ppmp/' })
+  const navigate = useNavigate()
   const { view = 'department' } = searchParams
 
   const handleUpdateSearch = (
@@ -22,6 +22,7 @@ export function MyPpmpsPage({ searchParams }: MyPpmpsPageProps) {
   ) => {
     const next = updater(searchParams)
     navigate({
+      from: '/v2/ppmp/',
       search: (prev) => {
         const merged = {
           ...(prev as PPMPManagementSearch),

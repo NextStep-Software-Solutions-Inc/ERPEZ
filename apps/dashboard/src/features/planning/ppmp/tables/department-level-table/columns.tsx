@@ -18,7 +18,7 @@ import {
 import { PPMP } from '../../types'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useSetAtom } from 'jotai'
-import { Link } from '@tanstack/react-router'
+import { Link, useNavigate } from '@tanstack/react-router'
 import {
   selectedPpmpForDeleteAtom,
   deletePpmpDialogOpenAtom,
@@ -26,6 +26,64 @@ import {
   editPpmpDialogOpenAtom,
 } from '../../atoms/ppmpStateAtoms'
 
+function PpmpActions({ ppmp }: { ppmp: PPMP }) {
+  const navigate = useNavigate()
+
+  const setSelectedForDelete = useSetAtom(selectedPpmpForDeleteAtom)
+  const setDeleteOpen = useSetAtom(deletePpmpDialogOpenAtom)
+
+  const setSelectedForEdit = useSetAtom(selectedPpmpForEditAtom)
+  const setEditOpen = useSetAtom(editPpmpDialogOpenAtom)
+
+  const handleView = () => {
+    navigate({
+      to: '/v2/ppmp/$ppmpId',
+      params: {
+        ppmpId: ppmp.id,
+      },
+    })
+  }
+
+  const handleEdit = () => {
+    setSelectedForEdit(ppmp)
+    setEditOpen(true)
+  }
+
+  const handleDelete = () => {
+    setSelectedForDelete(ppmp)
+    setDeleteOpen(true)
+  }
+
+  return (
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" className="h-8 w-8 p-0">
+          <span className="sr-only">Open menu</span>
+          <MoreHorizontal className="h-4 w-4" />
+        </Button>
+      </DropdownMenuTrigger>
+
+      <DropdownMenuContent align="end">
+        <DropdownMenuItem onClick={handleView}>
+          <FolderOpen className="mr-2 h-4 w-4" />
+          View Details
+        </DropdownMenuItem>
+
+        <DropdownMenuSeparator />
+
+        <DropdownMenuItem onClick={handleEdit}>
+          <FilePen className="mr-2 h-4 w-4" />
+          Edit
+        </DropdownMenuItem>
+
+        <DropdownMenuItem onClick={handleDelete} className="text-destructive">
+          <Trash2 className="mr-2 h-4 w-4" />
+          Delete
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  )
+}
 export const columns: ColumnDef<PPMP>[] = [
   {
     id: 'select',
@@ -101,53 +159,6 @@ export const columns: ColumnDef<PPMP>[] = [
   },
   {
     id: 'actions',
-    cell: ({ row }) => {
-      const ppmp = row.original
-      const setSelectedForDelete = useSetAtom(selectedPpmpForDeleteAtom)
-      const setDeleteOpen = useSetAtom(deletePpmpDialogOpenAtom)
-      const setSelectedForEdit = useSetAtom(selectedPpmpForEditAtom)
-      const setEditOpen = useSetAtom(editPpmpDialogOpenAtom)
-
-      const handleEdit = () => {
-        setSelectedForEdit(ppmp)
-        setEditOpen(true)
-      }
-
-      const handleDelete = () => {
-        setSelectedForDelete(ppmp)
-        setDeleteOpen(true)
-      }
-
-      return (
-        <DropdownMenu>
-          <DropdownMenuTrigger asChild>
-            <Button variant="ghost" className="h-8 w-8 p-0">
-              <span className="sr-only">Open menu</span>
-              <MoreHorizontal className="h-4 w-4" />
-            </Button>
-          </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
-            <Link to="/v2/ppmp/$ppmpId" params={{ ppmpId: ppmp.id }}>
-              <DropdownMenuItem>
-                <FolderOpen className="mr-2 h-4 w-4" />
-                View Details
-              </DropdownMenuItem>
-            </Link>
-            <DropdownMenuSeparator />
-            <DropdownMenuItem onClick={handleEdit}>
-              <FilePen className="mr-2 h-4 w-4" />
-              Edit
-            </DropdownMenuItem>
-            <DropdownMenuItem
-              onClick={handleDelete}
-              className="text-destructive"
-            >
-              <Trash2 className="mr-2 h-4 w-4" />
-              Delete
-            </DropdownMenuItem>
-          </DropdownMenuContent>
-        </DropdownMenu>
-      )
-    },
+    cell: ({ row }) => <PpmpActions ppmp={row.original} />,
   },
 ]
