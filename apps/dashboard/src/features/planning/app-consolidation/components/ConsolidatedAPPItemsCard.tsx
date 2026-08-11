@@ -10,6 +10,7 @@ import type { BACLineItem, AggregatedItem } from '../types'
 import { createColumnHelper } from '@tanstack/react-table'
 import { useSetAtom } from 'jotai'
 import { addAPPItemDialogOpenAtom } from '../atoms'
+import { NGPAColumnHeader, NGPAGuideButton } from './NGPAColumnTooltip'
 
 interface ConsolidatedAPPItemsCardProps {
   APPItems?: APPItemFromAPI[]
@@ -119,7 +120,7 @@ export function ConsolidatedAPPItemsCard({
   const appItemColumnHelper = createColumnHelper<APPItemFromAPI>()
   const appItemColumns = useMemo(() => [
     appItemColumnHelper.accessor('ppmpItemName', {
-      header: 'Item Code/Name',
+      header: () => <NGPAColumnHeader columnNumber={2} label="Item Code/Name" />,
       cell: ({ row }) => (
         <div className="flex flex-col gap-0.5">
           <span className="font-semibold text-gray-900">{row.original.ppmpItemName || '—'}</span>
@@ -131,22 +132,31 @@ export function ConsolidatedAPPItemsCard({
       size: 200,
     }),
     appItemColumnHelper.accessor('officeName', {
-      header: 'PMO / End-User',
+      header: () => <NGPAColumnHeader columnNumber={2} label="PMO / End-User" />,
       cell: ({ getValue }) => <span className="text-sm text-gray-700">{getValue() || '—'}</span>,
       size: 150,
     }),
     appItemColumnHelper.accessor('procurementModeName', {
-      header: 'Procurement Mode',
+      header: () => <NGPAColumnHeader columnNumber={4} label="Procurement Mode" />,
       cell: ({ getValue }) => <span className="text-sm font-medium text-gray-600">{getValue() || '—'}</span>,
       size: 180,
     }),
     appItemColumnHelper.accessor('fundSourceName', {
-      header: 'Fund Source',
+      header: () => <NGPAColumnHeader columnNumber={9} label="Fund Source" />,
       cell: ({ getValue }) => <span className="text-sm text-gray-600">{getValue() || '—'}</span>,
       size: 150,
     }),
+    appItemColumnHelper.accessor('totalAmount', {
+      header: () => <NGPAColumnHeader columnNumber={10} label="Estimated Budget" />,
+      cell: ({ getValue }) => (
+        <span className="text-sm font-semibold text-emerald-700">
+          {getValue() ? `₱${Number(getValue()).toLocaleString('en-PH', { minimumFractionDigits: 2 })}` : '—'}
+        </span>
+      ),
+      size: 150,
+    }),
     appItemColumnHelper.accessor('isEarlyProcurementActivity', {
-      header: 'EPA',
+      header: () => <NGPAColumnHeader columnNumber={5} label="EPA" />,
       cell: ({ getValue }) => (
         <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${
           getValue() ? 'bg-indigo-50 text-indigo-700 border border-indigo-200' : 'bg-gray-50 text-gray-400'
@@ -157,7 +167,7 @@ export function ConsolidatedAPPItemsCard({
       size: 80,
     }),
     appItemColumnHelper.accessor('isOutsourced', {
-      header: 'Outsourced',
+      header: () => <NGPAColumnHeader columnNumber={3} label="Outsourced" />,
       cell: ({ getValue }) => (
         <span className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-semibold ${
           getValue() ? 'bg-orange-50 text-orange-700 border border-orange-200' : 'bg-gray-50 text-gray-400'
@@ -168,7 +178,7 @@ export function ConsolidatedAPPItemsCard({
       size: 95,
     }),
     appItemColumnHelper.accessor('remarks', {
-      header: 'Remarks',
+      header: () => <NGPAColumnHeader columnNumber={12} label="Remarks" />,
       cell: ({ getValue }) => <span className="text-xs text-gray-500 italic max-w-[200px] truncate block">{getValue() || '—'}</span>,
     }),
     appItemColumnHelper.display({
@@ -198,18 +208,21 @@ export function ConsolidatedAPPItemsCard({
           <CardTitle className="text-lg font-bold text-gray-900">Consolidated APP Items</CardTitle>
           <p className="text-xs text-gray-500 mt-0.5">Consolidated procurement schedule and item categorization</p>
         </div>
-        {isCurrentlyDraft && (
-          <Button
-            type="button"
-            onClick={() => setAddAPPItemDialog(true)}
-            variant="outline"
-            size="sm"
-            className="border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 hover:text-emerald-800 font-semibold cursor-pointer transition-all"
-          >
-            <Plus className="w-4 h-4 mr-2" />
-            Add APP Items
-          </Button>
-        )}
+        <div className="flex items-center gap-2">
+          <NGPAGuideButton />
+          {isCurrentlyDraft && (
+            <Button
+              type="button"
+              onClick={() => setAddAPPItemDialog(true)}
+              variant="outline"
+              size="sm"
+              className="border-emerald-200 text-emerald-700 bg-emerald-50 hover:bg-emerald-100 hover:text-emerald-800 font-semibold cursor-pointer transition-all"
+            >
+              <Plus className="w-4 h-4 mr-2" />
+              Add APP Items
+            </Button>
+          )}
+        </div>
       </CardHeader>
       <CardContent className="p-0">
         <TemplateTable

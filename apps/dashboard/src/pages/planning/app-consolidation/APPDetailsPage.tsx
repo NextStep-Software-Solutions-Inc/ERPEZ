@@ -32,6 +32,7 @@ import {
   AppExportDialog,
   CreateSupplementalAPPDialog,
   AddAPPItemDialog,
+  CreateUpdatedAPPDialog,
 } from '@/features/planning/app-consolidation/dialogs'
 import { createQueryHookFromTemplate } from 'erpez-shared-lib'
 import { getAPPDetailRequest } from '@/features/planning/app-consolidation/handlers'
@@ -48,6 +49,7 @@ export function APPDetailsPage() {
   const [, setSignatoriesDialog] = useAtom(signatoriesDialogOpenAtom)
   const [appExportOpen, setAppExportOpen] = useAtom(appExportDialogOpenAtom)
   const [createSupplementalOpen, setCreateSupplementalOpen] = useAtom(createSupplementalAPPDialogOpenAtom)
+  const [createUpdatedOpen, setCreateUpdatedOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('overview')
 
   // Fetch APP detail from API
@@ -208,6 +210,15 @@ export function APPDetailsPage() {
             {app.status === 'Submitted' && (
               <Button onClick={handleApprove} className="gap-2 cursor-pointer pointer-events-auto hover:opacity-90 transition-opacity">
                 Approve
+              </Button>
+            )}
+            {(app.status === 'Approved' || app.status === 'Locked') && (
+              <Button
+                onClick={() => setCreateUpdatedOpen(true)}
+                className="gap-2 cursor-pointer pointer-events-auto bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold shadow-md"
+              >
+                <Plus className="w-4 h-4" />
+                Create Updated APP
               </Button>
             )}
             {(app.status === 'Approved' || app.status === 'Locked') && (
@@ -394,6 +405,10 @@ export function APPDetailsPage() {
         open={createSupplementalOpen}
         onOpenChange={setCreateSupplementalOpen}
         masterApp={app}
+      />
+      <CreateUpdatedAPPDialog
+        open={createUpdatedOpen}
+        onOpenChange={setCreateUpdatedOpen}
       />
       <AddAPPItemDialog />
     </div>

@@ -19,7 +19,7 @@ export interface User {
 // APP STATE MANAGEMENT
 // ============================================================================
 export type AppStatus = 'Draft' | 'Submitted' | 'Approved' | 'Rejected' | 'Locked'
-export type AppType = 'Indicative' | 'Supplemental' | 'Final'
+export type AppType = 'Indicative' | 'Final' | 'Updated'
 
 // ============================================================================
 // BID EVALUATION & PROCUREMENT STRATEGY
@@ -284,7 +284,12 @@ export interface AppMaster {
   appName: string // e.g., "Indicative APP 2024"
   appCode: string // e.g., "APP-2024-001"
   appNumber: string
-  appType: AppType // 'Indicative' | 'Supplemental'
+  appType: AppType // 'Indicative' | 'Final' | 'Updated'
+  batch?: string
+  quarter?: string
+  versionNumber?: number | null
+  versionDate?: string | null
+  sourceAppId?: string | null
   status: AppStatus // 'Draft' | 'Submitted' | 'Approved' | 'Rejected' | 'Locked'
   aggregationResults: APPAggregationResult
   bac: BACWorkspace
@@ -333,13 +338,15 @@ export interface SupplementalAPP extends AppMaster {
 
 // Form Types
 export interface CreateAPPFormValues {
-  ppmpIds: string[] // Multiple PPMPs can be selected
+  ppmpIds?: string[] // Multiple PPMPs can be selected
   fiscalYear: number
   appName: string
   appCode: string
   appType: AppType
-  officeId?: string // Required by API
-  fiscalYearId?: string // Required by API
+  batch?: string
+  quarter?: string
+  fiscalYearId?: string
+  sourceAppId?: string
 }
 
 export interface BACFormValues {
