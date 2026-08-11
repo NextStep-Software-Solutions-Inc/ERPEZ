@@ -32,11 +32,7 @@ export function MyPpmpsPage({ searchParams }: MyPpmpsPageProps) {
           view: (merged.view as 'department' | 'office') ?? 'department',
           pageNumber: (merged.pageNumber as number) ?? 1,
           pageSize: (merged.pageSize as number) ?? 10,
-          consolidated:
-            (merged.consolidated as
-              'all' | 'consolidated' | 'not_consolidated') ?? 'all',
         }
-
         if (merged.searchQuery) clean.searchQuery = merged.searchQuery
         if (merged.status && merged.status !== 'all')
           clean.status = merged.status
@@ -45,6 +41,7 @@ export function MyPpmpsPage({ searchParams }: MyPpmpsPageProps) {
         if (merged.lib && merged.lib !== 'all') clean.lib = merged.lib
         if (merged.sortBy) clean.sortBy = merged.sortBy
         if (merged.sortOrder) clean.sortOrder = merged.sortOrder
+        if (merged.consolidated) clean.consolidated = merged.consolidated
 
         return clean
       },
