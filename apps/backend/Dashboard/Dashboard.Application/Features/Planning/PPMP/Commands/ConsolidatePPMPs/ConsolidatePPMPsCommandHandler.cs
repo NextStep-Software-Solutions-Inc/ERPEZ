@@ -54,8 +54,8 @@ public class ConsolidatePPMPsCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
                 cancellationToken
             );
 
-            // Calculate total budget
-            var totalBudget = childPPMPs.Sum(p => p.TotalEstimatedBudget);
+            // Sum budgets of the child PPMPs in this request
+            var childBudgetSum = childPPMPs.Sum(p => p.TotalEstimatedBudget);
 
             // Child PPMPs are already approved, so consolidated PPMP is marked approved by design.
             var fundSourceId = distinctFundSourceIds[0];
@@ -67,8 +67,18 @@ public class ConsolidatePPMPsCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
                 if (!existingPPMP.IsMaster)
                     throw new ConflictException("PPMP with the same number and fiscal year already exists.");
 
+                // Ensure existing master metadata matches the consolidation request
+                if (existingPPMP.OfficeId != request.ParentOfficeId ||
+                    existingPPMP.FundSourceId != fundSourceId ||
+                    existingPPMP.LIBId != libId)
+                {
+                    throw new ConflictException("Existing master PPMP metadata does not match the consolidation request (OfficeId, FundSourceId, or LIBId mismatch). Please create a new consolidated PPMP number or choose a different master.");
+                }
+
                 consolidatedPPMP = existingPPMP;
-                consolidatedPPMP.TotalEstimatedBudget = totalBudget;
+
+                // Add budgets from the incoming child PPMPs to the existing master's budget
+                consolidatedPPMP.TotalEstimatedBudget = (consolidatedPPMP.TotalEstimatedBudget) + childBudgetSum;
                 consolidatedPPMP.Status = ERPEZ.Domain.Enums.StatusEnum.Approved;
                 consolidatedPPMP.ApprovedDate = DateTime.UtcNow;
 
@@ -76,6 +86,8 @@ public class ConsolidatePPMPsCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
             }
             else
             {
+                var totalBudget = childBudgetSum;
+
                 consolidatedPPMP = new Domain.Entities.Planning.PPMP
                 {
                     PPMPNumber = request.ConsolidatedPPMPNumber,

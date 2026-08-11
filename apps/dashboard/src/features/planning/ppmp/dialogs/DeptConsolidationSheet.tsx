@@ -220,13 +220,20 @@ export function DeptConsolidationSheet({
   const { mutateAsync: consolidate, isPending: isConsolidating } =
     useConsolidatePPMP()
 
-  const handleClose = useCallback(() => {
-    if (!isConsolidating) {
-      onOpenChange(false)
-      setSelectedMasterId(null)
-      setSearch('')
-    }
-  }, [isConsolidating, onOpenChange])
+  const handleClose = useCallback(
+    (nextOpen: boolean) => {
+      // Only run reset logic when the sheet is being closed
+      if (!nextOpen && !isConsolidating) {
+        onOpenChange(false)
+        setSelectedMasterId(null)
+        setSearch('')
+      } else {
+        // Propagate open state for explicit opens
+        onOpenChange(nextOpen)
+      }
+    },
+    [isConsolidating, onOpenChange],
+  )
 
   const handleConfirm = async () => {
     if (!selectedMaster) return
@@ -253,7 +260,7 @@ export function DeptConsolidationSheet({
                 (query.queryKey[0].startsWith('/ppmps') ||
                   query.queryKey[0].startsWith('/ppmp')),
             })
-            handleClose()
+            handleClose(false)
           },
         },
       )
@@ -462,7 +469,7 @@ export function DeptConsolidationSheet({
             <div className="flex items-center gap-3">
               <Button
                 variant="outline"
-                onClick={handleClose}
+                onClick={() => handleClose(false)}
                 disabled={isConsolidating}
               >
                 Cancel
