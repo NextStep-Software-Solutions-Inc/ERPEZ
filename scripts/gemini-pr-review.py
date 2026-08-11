@@ -7,7 +7,7 @@ from google import genai
 
 def main():
     gemini_api_key = os.getenv("GEMINI_API_KEY")
-    github_token = os.getenv("GITHUB_TOKEN")
+    github_token = os.getenv("GH_TOKEN") or os.getenv("GITHUB_TOKEN")
     pr_number = os.getenv("PR_NUMBER")
     pr_title = os.getenv("PR_TITLE", "N/A")
     pr_body = os.getenv("PR_BODY", "N/A")
