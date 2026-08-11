@@ -45,20 +45,25 @@ def main():
     if len(diff_lines) > max_lines:
         diff_output = "\n".join(diff_lines[:max_lines]) + f"\n\n... [diff truncated, total lines: {len(diff_lines)}]"
 
-    # Call Gemini API using Official Google GenAI SDK
+    # Call API using Official Google GenAI SDK
     client = genai.Client(api_key=gemini_api_key)
 
-    prompt = f"""You are Antigravity Gemini AI Code Reviewer. Review the following GitHub Pull Request.
+    prompt = f"""You are a senior software engineer performing a code review. Review the following GitHub Pull Request.
 
   Pull Request Title: {pr_title}
   Pull Request Description: {pr_body}
 
-  Provide a structured, constructive, and actionable review in GitHub Markdown format:
-  ## 🤖 Gemini AI Code Review Summary
-  ### 🎯 Executive Overview
-  ### 🔍 Code Quality & Architecture
-  ### 🛡️ Security, Performance & Scalability
-  ### 💡 Actionable Recommendations
+  Provide a concise, constructive, and actionable review written in a natural human tone:
+  ## PR Review Summary
+  ### Overview
+  ### Code Quality & Architecture
+  ### Security & Performance
+  ### Recommendations
+
+  IMPORTANT INSTRUCTIONS:
+  - Write as a human peer reviewer.
+  - DO NOT include emojis like 🤖, robot icons, or mentions of 'AI', 'Gemini', 'automated', 'bot', or AI generation.
+  - Keep tone professional, direct, and conversational.
 
   At the VERY END of your review, on a new line, output your final decision strictly formatted as one of:
   DECISION: APPROVE
@@ -76,7 +81,7 @@ def main():
   ```
   """
 
-    print(f"Sending PR diff to Gemini API ({gemini_model}) for review...")
+    print("Sending PR diff for review...")
     try:
         response = client.models.generate_content(
             model=gemini_model,
@@ -84,11 +89,11 @@ def main():
         )
         review_markdown = response.text
     except Exception as e:
-        print(f"::error::Gemini API call failed: {e}")
+        print(f"::error::API call failed: {e}")
         sys.exit(1)
 
     if not review_markdown:
-        print("::error::Received empty response payload from Gemini API.")
+        print("::error::Received empty response payload from API.")
         sys.exit(1)
 
     # Parse decision (APPROVE, REQUEST_CHANGES, or COMMENT)
@@ -98,7 +103,7 @@ def main():
         event_decision = decision_match.group(1).upper()
         review_markdown = re.sub(r"DECISION:\s*(APPROVE|REQUEST_CHANGES|COMMENT)", "", review_markdown, flags=re.IGNORECASE).strip()
 
-    print(f"Gemini Review Decision: {event_decision}")
+    print(f"Review Decision: {event_decision}")
 
     # Submit Official PR Review (APPROVE, REQUEST_CHANGES, or COMMENT) via GitHub REST API
     reviews_url = f"https://api.github.com/repos/{repo}/pulls/{pr_number}/reviews"
@@ -119,7 +124,7 @@ def main():
         res = requests.post(reviews_url, headers=headers, json=payload)
 
     if res.status_code in (200, 201):
-        print(f"Successfully submitted Gemini PR Review ({payload['event']}) to PR #{pr_number}!")
+        print(f"Successfully submitted PR Review ({payload['event']}) to PR #{pr_number}!")
     else:
         print(f"::error::Failed to submit PR review ({res.status_code}): {res.text}")
         sys.exit(1)
