@@ -242,6 +242,27 @@ export function DataTable<TData, TValue>({
             </SelectContent>
           </Select>
 
+          {/* Consolidation Filter */}
+          <Select
+            value={searchParams.consolidated || 'all'}
+            onValueChange={(val) =>
+              handleUpdateSearch((prev) => ({
+                ...prev,
+                consolidated: val === 'all' ? undefined : val,
+                pageNumber: 1,
+              }))
+            }
+          >
+            <SelectTrigger className="h-9 w-[150px] border-primary/20">
+              <SelectValue placeholder="Consolidation" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All</SelectItem>
+              <SelectItem value="consolidated">Consolidated</SelectItem>
+              <SelectItem value="not_consolidated">Not Consolidated</SelectItem>
+            </SelectContent>
+          </Select>
+
           <div>
             <DropdownMenu>
               <DropdownMenuTrigger asChild>

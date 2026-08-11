@@ -36,6 +36,8 @@ export function MyPpmpsPage({ searchParams }: MyPpmpsPageProps) {
         if (merged.fiscalYearId) clean.fiscalYearId = merged.fiscalYearId
         if (merged.officeId) clean.officeId = merged.officeId
         if (merged.lib && merged.lib !== 'all') clean.lib = merged.lib
+        if (merged.consolidated && merged.consolidated !== 'all')
+          clean.consolidated = merged.consolidated
         if (merged.sortBy) clean.sortBy = merged.sortBy
         if (merged.sortOrder) clean.sortOrder = merged.sortOrder
 
@@ -59,6 +61,7 @@ export function MyPpmpsPage({ searchParams }: MyPpmpsPageProps) {
                 fiscalYearId: '',
                 officeId: '',
                 lib: 'all',
+                consolidated: 'all',
               }))
             }
             className="w-full"

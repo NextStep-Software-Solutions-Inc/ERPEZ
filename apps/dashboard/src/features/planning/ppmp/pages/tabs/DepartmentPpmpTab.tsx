@@ -42,7 +42,13 @@ export default function DepartmentPpmpTab({
       ? `fiscalYearId==${searchParams.fiscalYearId}`
       : null,
     searchParams.officeId ? `officeId==${searchParams.officeId}` : null,
-    searchParams.lib ? `libId==${searchParams.lib}` : null, `isMaster==false`,
+    searchParams.lib ? `libId==${searchParams.lib}` : null,
+    searchParams.consolidated && searchParams.consolidated !== 'all'
+      ? searchParams.consolidated === 'consolidated'
+        ? `consolidatedIntoId!=null`
+        : `consolidatedIntoId==null`
+      : null,
+    `isMaster==false`,
   ].filter((f): f is string => f !== null)
 
   const sorts =

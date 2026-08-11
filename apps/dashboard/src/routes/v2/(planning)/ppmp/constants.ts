@@ -60,6 +60,10 @@ export const ppmpManagementSearchSchema = z.object({
   fiscalYearId: z.string().optional(),
   officeId: z.string().optional(),
   lib: z.string().optional(),
+  consolidated: z
+    .enum(['all', 'consolidated', 'not_consolidated'])
+    .optional()
+    .default('all'),
   sortBy: z.enum(['date', 'budget', 'code']).optional(),
   sortOrder: z.enum(['asc', 'desc']).optional(),
 })

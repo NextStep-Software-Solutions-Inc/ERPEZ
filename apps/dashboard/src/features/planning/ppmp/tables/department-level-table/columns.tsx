@@ -6,6 +6,7 @@ import {
   FilePen,
   FolderOpen,
 } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -45,6 +46,28 @@ export const columns: ColumnDef<PPMP>[] = [
         aria-label="Select row"
       />
     ),
+  },
+  {
+    accessorKey: 'documentName',
+    header: 'PPMP Name',
+    cell: ({ row }) => (
+      <div className="min-w-0">
+        <div className="flex items-center gap-2 min-w-0">
+          <div className="font-medium text-sm text-foreground leading-tight truncate max-w-xs">
+            {row.getValue('documentName')}
+          </div>
+          {row.original.consolidatedIntoId && (
+            <Badge variant="outline" className="text-[10px] shrink-0">
+              Consolidated
+            </Badge>
+          )}
+        </div>
+        <div className="text-xs text-muted-foreground mt-0.5">
+          {row.original.libName}
+        </div>
+      </div>
+    ),
+    enableSorting: true,
   },
   {
     accessorKey: 'description',
