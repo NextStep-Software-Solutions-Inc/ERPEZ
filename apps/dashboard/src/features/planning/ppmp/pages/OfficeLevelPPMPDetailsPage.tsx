@@ -27,11 +27,18 @@ import {
   Lock,
   GitMerge,
   FileText,
+  Download,
 } from 'lucide-react'
 import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { useSetAtom } from 'jotai'
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/ui/dropdown-menu'
 import { selectedPpmpForEditAtom } from '../atoms'
 import { deletePPMPActivityRequest } from '../handlers/deletePPMPActivityRequest'
 import type {
@@ -61,6 +68,8 @@ import {
 import { ConsolidationWorkspaceSheet } from '../dialogs/ConsolidationWorkspaceSheet'
 import { DeptConsolidationSheet } from '../dialogs/DeptConsolidationSheet'
 import { updatePPMPStatusRequest } from '../handlers/updatePPMPStatusRequest'
+import { generatePPMPDocumentRequest } from '../handlers/generatePPMPDocumentRequest'
+import { downloadLIBDocumentRequest } from '@/features/planning/line-item-budgeting/line-item-budget/handlers/downloadLIBDocumentRequest'
 import { useKeycloak } from '@/providers/KeycloakProvider'
 
 // ============================
@@ -112,6 +121,12 @@ const usePPMPExpenditureItems = createQueryHookFromTemplate(
 const usePPMPItems = createQueryHookFromTemplate(getPPMPItemsRequest)
 const useUpdatePPMPStatus = createMutationHookFromTemplate(
   updatePPMPStatusRequest,
+)
+const useGeneratePPMPDocument = createMutationHookFromTemplate(
+  generatePPMPDocumentRequest,
+)
+const useDownloadDocument = createMutationHookFromTemplate(
+  downloadLIBDocumentRequest,
 )
 // ============================
 // Utility Formatting
@@ -1551,6 +1566,7 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
   const [deptConsolidateOpen, setDeptConsolidateOpen] = useState(false)
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [consolidatedViewerOpen, setConsolidatedViewerOpen] = useState(false)
+  const [isExporting, setIsExporting] = useState(false)
   // Expose current PPMP to other components so they can read metadata defaults
   const setPpmpForEdit = useSetAtom(selectedPpmpForEditAtom)
 
@@ -1562,6 +1578,8 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
 
   const { mutateAsync: updatePPMPStatus, isPending: isUpdatingStatus } =
     useUpdatePPMPStatus()
+  const { mutateAsync: generatePPMPDocument } = useGeneratePPMPDocument()
+  const { mutateAsync: downloadDocument } = useDownloadDocument()
 
   // Delete activity mutation + confirmation (hooks must run unconditionally)
   const queryClient = useQueryClient()
@@ -1786,6 +1804,47 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
     }
   }
 
+  const handleExportPPMP = async (format: 'Pdf' | 'Excel') => {
+    if (!ppmpId) return
+    try {
+      setIsExporting(true)
+
+      const genResponse = await generatePPMPDocument({
+        pathParams: { ppmpId },
+        queryParams: { format },
+      })
+
+      const documentId = genResponse.data
+      if (!documentId) {
+        throw new Error('No document ID returned from generation API')
+      }
+
+      const downloadResponse = await downloadDocument({
+        pathParams: { documentId },
+      })
+      const blob = downloadResponse.blob
+
+      const fileExtension = format === 'Excel' ? 'xlsx' : 'pdf'
+      const filename = ppmp?.ppmpNumber
+        ? `${ppmp.ppmpNumber}.${fileExtension}`
+        : `PPMP_${ppmpId}.${fileExtension}`
+
+      const link = document.createElement('a')
+      link.href = URL.createObjectURL(blob)
+      link.download = filename
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+      URL.revokeObjectURL(link.href)
+
+      toast.success(`${format} document downloaded successfully.`)
+    } catch (err: any) {
+      toast.error(err?.message ?? `Failed to generate ${format} document`)
+    } finally {
+      setIsExporting(false)
+    }
+  }
+
   // Consolidation is now handled by ConsolidationWorkspaceSheet
 
   const requestDeleteActivity = (id: string) => {
@@ -1976,6 +2035,41 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
 
       actions={
         <div className="flex items-center gap-2">
+          {/* Generate Document - Export Section */}
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button
+                variant="outline"
+                size="sm"
+                disabled={isExporting}
+                className="flex items-center gap-1.5 border-slate-200 text-slate-700 hover:bg-slate-50 disabled:opacity-50"
+              >
+                <FileText className="h-4 w-4" />
+                <span>Generate Document</span>
+                <ChevronDown className="h-3.5 w-3.5 ml-0.5 text-slate-500" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-48">
+              <DropdownMenuItem
+                onClick={() => handleExportPPMP('Pdf')}
+                disabled={isExporting}
+              >
+                <Download className="mr-2 h-4 w-4" />
+                <span>Download PDF</span>
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => handleExportPPMP('Excel')}
+                disabled={isExporting}
+              >
+                <Download className="mr-2 h-4 w-4" />
+                <span>Download Excel</span>
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+
+          {/* Visual Separator */}
+          <div className="h-5 w-px bg-slate-200" />
+
           {ppmp.consolidatedIntoId && (
             <span className="inline-flex items-center gap-1.5 rounded-full border border-slate-200 bg-slate-50 px-3 py-1.5 text-[10px] font-bold text-slate-500 uppercase tracking-wider shadow-sm">
               <Lock className="h-3.5 w-3.5 text-slate-400" />

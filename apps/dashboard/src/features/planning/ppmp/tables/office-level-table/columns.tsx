@@ -1,10 +1,12 @@
 import { ColumnDef } from '@tanstack/react-table'
+import { useState } from 'react'
 import {
   ArrowUpDown,
   MoreHorizontal,
   Trash2,
   FilePen,
   FolderOpen,
+  Download,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -18,6 +20,10 @@ import { PPMP } from '../../types'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useSetAtom } from 'jotai'
 import { useNavigate } from '@tanstack/react-router'
+import { createMutationHookFromTemplate } from 'erpez-shared-lib'
+import { generatePPMPDocumentRequest } from '../../handlers/generatePPMPDocumentRequest'
+import { downloadLIBDocumentRequest } from '@/features/planning/line-item-budgeting/line-item-budget/handlers/downloadLIBDocumentRequest'
+import { useToast } from '@/components/ui/use-toast'
 import {
   selectedPpmpForDeleteAtom,
   deletePpmpDialogOpenAtom,
@@ -103,6 +109,65 @@ export const columns: ColumnDef<PPMP>[] = [
         setDeleteOpen(true)
       }
 
+      const { toast } = useToast()
+
+      const useGeneratePPMPDocument = createMutationHookFromTemplate(
+        generatePPMPDocumentRequest,
+      )
+      const useDownloadDocument = createMutationHookFromTemplate(
+        downloadLIBDocumentRequest,
+      )
+
+      const { mutateAsync: generatePPMPDocument } = useGeneratePPMPDocument()
+      const { mutateAsync: downloadDocument } = useDownloadDocument()
+      const [isExporting, setIsExporting] = useState(false)
+
+      const handleGenerate = async (format: 'Pdf' | 'Excel') => {
+        if (!ppmp.id) return
+        try {
+          setIsExporting(true)
+
+          const genResponse = await generatePPMPDocument({
+            pathParams: { ppmpId: ppmp.id },
+            queryParams: { format },
+          })
+
+          const documentId = genResponse.data
+          if (!documentId)
+            throw new Error('No document ID returned from generation API')
+
+          const downloadResponse = await downloadDocument({
+            pathParams: { documentId },
+          })
+          const blob = downloadResponse.blob
+
+          const fileExtension = format === 'Excel' ? 'xlsx' : 'pdf'
+          const filename = ppmp.ppmpNumber
+            ? `${ppmp.ppmpNumber}.${fileExtension}`
+            : `PPMP_${ppmp.id}.${fileExtension}`
+
+          const link = document.createElement('a')
+          link.href = URL.createObjectURL(blob)
+          link.download = filename
+          document.body.appendChild(link)
+          link.click()
+          document.body.removeChild(link)
+          URL.revokeObjectURL(link.href)
+
+          toast({
+            title: 'Export started',
+            description: 'Your document has been downloaded.',
+          })
+        } catch (err: any) {
+          toast({
+            title: 'Export failed',
+            description: err?.message ?? 'Could not generate document',
+          })
+        } finally {
+          setIsExporting(false)
+        }
+      }
+
       return (
         <DropdownMenu>
           <DropdownMenuTrigger asChild>
@@ -119,6 +184,17 @@ export const columns: ColumnDef<PPMP>[] = [
               <FolderOpen className="mr-2 h-4 w-4" />
               View Details
             </DropdownMenuItem>
+
+            <DropdownMenuItem onClick={() => handleGenerate('Pdf')}>
+              <Download className="mr-2 h-4 w-4" />
+              Export as PDF
+            </DropdownMenuItem>
+
+            <DropdownMenuItem onClick={() => handleGenerate('Excel')}>
+              <Download className="mr-2 h-4 w-4" />
+              Export as Excel
+            </DropdownMenuItem>
+
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleEdit}>
               <FilePen className="mr-2 h-4 w-4" />
