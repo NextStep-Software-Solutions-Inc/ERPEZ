@@ -2112,8 +2112,15 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
           ppmp.isMaster &&
           ppmp.ChildPPMPs &&
           ppmp.ChildPPMPs.length > 0 && (
-            <div className="border-b border-default-200">
-              <div className="flex gap-4 overflow-x-auto pb-px">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 px-0.5">
+                <Layers className="h-3.5 w-3.5 text-primary/60" />
+                <span className="text-[10px] font-bold uppercase tracking-widest text-default-400">
+                  Department PPMPs ({ppmp.ChildPPMPs.length})
+                </span>
+              </div>
+              <div className="flex gap-3 overflow-x-auto pb-1 scrollbar-thin">
+                {/* Overview consolidated card */}
                 <button
                   type="button"
                   onClick={() => {
@@ -2121,38 +2128,150 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
                     setSelectedActivityId(null)
                   }}
                   className={cn(
-                    'pb-3 text-sm font-semibold border-b-2 transition-all px-1 whitespace-nowrap',
+                    'group shrink-0 w-52 rounded-xl border p-3.5 text-left transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30',
                     activeTab === 'overview'
-                      ? 'border-primary text-primary'
-                      : 'border-transparent text-default-500 hover:text-default-800',
+                      ? 'border-primary bg-primary/5 shadow-md shadow-primary/10 ring-1 ring-primary/20'
+                      : 'border-default-200 bg-white hover:border-primary/30 hover:shadow-sm hover:bg-default-50/60',
                   )}
                 >
-                  Overview (Consolidated)
-                </button>
-                {ppmp.ChildPPMPs.map((child) => (
-                  <button
-                    key={child.id}
-                    type="button"
-                    onClick={() => {
-                      setActiveTab(child.id)
-                      setSelectedActivityId(null)
-                    }}
-                    className={cn(
-                      'pb-3 text-sm font-semibold border-b-2 transition-all px-1 whitespace-nowrap flex items-center gap-1.5',
-                      activeTab === child.id
-                        ? 'border-primary text-primary'
-                        : 'border-transparent text-default-500 hover:text-default-800',
-                    )}
-                  >
-                    <span>{child.officeName || 'Child PPMP'}</span>
-                    <Badge
-                      variant="soft"
-                      className="text-[10px] px-1.5 py-0.5 font-bold bg-emerald-50 text-emerald-700 border-emerald-200 border"
+                  <div className="flex items-start justify-between gap-2">
+                    <div
+                      className={cn(
+                        'h-7 w-7 rounded-lg flex items-center justify-center shrink-0 transition-colors',
+                        activeTab === 'overview'
+                          ? 'bg-primary/10 text-primary'
+                          : 'bg-default-100 text-default-500 group-hover:bg-primary/10 group-hover:text-primary',
+                      )}
                     >
-                      {child.status}
-                    </Badge>
-                  </button>
-                ))}
+                      <Layers className="h-3.5 w-3.5" />
+                    </div>
+                    <span
+                      className={cn(
+                        'text-[10px] font-bold uppercase tracking-wider px-1.5 py-0.5 rounded-full',
+                        activeTab === 'overview'
+                          ? 'bg-primary/10 text-primary'
+                          : 'bg-default-100 text-default-500',
+                      )}
+                    >
+                      All
+                    </span>
+                  </div>
+                  <div className="mt-2.5 space-y-0.5">
+                    <div
+                      className={cn(
+                        'text-xs font-bold leading-tight',
+                        activeTab === 'overview'
+                          ? 'text-primary'
+                          : 'text-default-800 group-hover:text-default-900',
+                      )}
+                    >
+                      Overview (Consolidated)
+                    </div>
+                    <div className="text-[10px] text-default-400 font-medium">
+                      {ppmp.ChildPPMPs.length} departments merged
+                    </div>
+                  </div>
+                  {activeTab === 'overview' && (
+                    <div className="mt-2 h-0.5 w-full rounded-full bg-primary/30" />
+                  )}
+                </button>
+
+                {/* Individual child PPMP cards */}
+                {ppmp.ChildPPMPs.map((child) => {
+                  const isActive = activeTab === child.id
+                  const statusLower = (child.status ?? '').toLowerCase()
+                  const statusStyle =
+                    statusLower === 'approved'
+                      ? { badge: 'bg-emerald-50 text-emerald-700 border-emerald-200', dot: 'bg-emerald-500' }
+                      : statusLower === 'submitted' || statusLower === 'pending_review' || statusLower === 'pending review'
+                        ? { badge: 'bg-blue-50 text-blue-700 border-blue-200', dot: 'bg-blue-500' }
+                        : statusLower === 'rejected'
+                          ? { badge: 'bg-rose-50 text-rose-700 border-rose-200', dot: 'bg-rose-500' }
+                          : { badge: 'bg-slate-50 text-slate-600 border-slate-200', dot: 'bg-slate-400' }
+                  return (
+                    <button
+                      key={child.id}
+                      type="button"
+                      onClick={() => {
+                        setActiveTab(child.id)
+                        setSelectedActivityId(null)
+                      }}
+                      className={cn(
+                        'group shrink-0 w-52 rounded-xl border text-left transition-all duration-200 overflow-hidden focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary/30',
+                        isActive
+                          ? 'border-primary shadow-md shadow-primary/10 ring-1 ring-primary/20 bg-white'
+                          : 'border-default-200 bg-white hover:border-primary/30 hover:shadow-sm',
+                      )}
+                    >
+                      {/* Colored top accent bar */}
+                      <div
+                        className={cn(
+                          'h-1 w-full transition-all duration-200',
+                          isActive
+                            ? 'bg-primary'
+                            : 'bg-default-100 group-hover:bg-primary/40',
+                        )}
+                      />
+                      <div className="p-3.5 space-y-2.5">
+                        <div className="flex items-start justify-between gap-2">
+                          <div
+                            className={cn(
+                              'h-7 w-7 rounded-lg flex items-center justify-center shrink-0 transition-colors',
+                              isActive
+                                ? 'bg-primary/10 text-primary'
+                                : 'bg-default-100 text-default-500 group-hover:bg-primary/10 group-hover:text-primary',
+                            )}
+                          >
+                            <Building2 className="h-3.5 w-3.5" />
+                          </div>
+                          <span
+                            className={cn(
+                              'inline-flex items-center gap-1 text-[10px] font-bold px-1.5 py-0.5 rounded-full border',
+                              statusStyle.badge,
+                            )}
+                          >
+                            <span
+                              className={cn(
+                                'h-1.5 w-1.5 rounded-full',
+                                statusStyle.dot,
+                              )}
+                            />
+                            {child.status}
+                          </span>
+                        </div>
+
+                        <div className="space-y-0.5">
+                          <div
+                            className={cn(
+                              'text-xs font-bold leading-tight line-clamp-2',
+                              isActive
+                                ? 'text-primary'
+                                : 'text-default-800 group-hover:text-default-900',
+                            )}
+                          >
+                            {child.officeName || 'Child PPMP'}
+                          </div>
+                          {child.ppmpNumber && (
+                            <div className="text-[10px] text-default-400 font-semibold font-mono tracking-tight">
+                              {child.ppmpNumber}
+                            </div>
+                          )}
+                        </div>
+
+                        {child.totalEstimatedBudget != null && (
+                          <div
+                            className={cn(
+                              'text-[11px] font-bold',
+                              isActive ? 'text-primary/80' : 'text-default-600',
+                            )}
+                          >
+                            {formatCurrency(child.totalEstimatedBudget)}
+                          </div>
+                        )}
+                      </div>
+                    </button>
+                  )
+                })}
               </div>
             </div>
           )}
