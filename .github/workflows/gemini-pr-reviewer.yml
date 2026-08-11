@@ -1,4 +1,4 @@
-name: Gemini PR Reviewer
+name: PR Reviewer
 
 on:
   pull_request:
@@ -11,7 +11,7 @@ permissions:
 
 jobs:
   review:
-    name: AI Code Review (Gemini Python)
+    name: Code Review (Python)
     runs-on: ubuntu-latest
 
     steps:
@@ -30,13 +30,14 @@ jobs:
           python -m pip install --upgrade pip
           pip install google-genai requests
 
-      - name: Execute Gemini AI PR Review
+      - name: Execute PR Review
         env:
           GEMINI_API_KEY: ${{ secrets.GEMINI_API_KEY }}
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GH_TOKEN: ${{ secrets.GH_TOKEN }}
           PR_NUMBER: ${{ github.event.pull_request.number }}
           PR_TITLE: ${{ github.event.pull_request.title }}
           PR_BODY: ${{ github.event.pull_request.body }}
           REPO: ${{ github.repository }}
           BASE_REF: ${{ github.event.pull_request.base.ref }}
+          GEMINI_MODEL: ${{ vars.GEMINI_MODEL || 'gemini-3.6-flash' }}
         run: python scripts/gemini-pr-review.py

@@ -7,18 +7,23 @@ from google import genai
 
 def main():
     gemini_api_key = os.getenv("GEMINI_API_KEY")
-    github_token = os.getenv("GITHUB_TOKEN")
+    github_token = os.getenv("GH_TOKEN")
     pr_number = os.getenv("PR_NUMBER")
     pr_title = os.getenv("PR_TITLE", "N/A")
     pr_body = os.getenv("PR_BODY", "N/A")
     repo = os.getenv("REPO")
     base_ref = os.getenv("BASE_REF", "main")
+    gemini_model = os.getenv("GEMINI_MODEL", "gemini-3.6-flash")
 
     if not gemini_api_key:
         print("::error::GEMINI_API_KEY secret is missing. Please add GEMINI_API_KEY to repository secrets.")
         sys.exit(1)
 
-    if not github_token or not pr_number or not repo:
+    if not github_token:
+        print("::error::GH_TOKEN secret is missing. Please add GH_TOKEN to repository secrets.")
+        sys.exit(1)
+
+    if not pr_number or not repo:
         print("::error::Required GitHub environment variables are missing.")
         sys.exit(1)
 
@@ -40,20 +45,25 @@ def main():
     if len(diff_lines) > max_lines:
         diff_output = "\n".join(diff_lines[:max_lines]) + f"\n\n... [diff truncated, total lines: {len(diff_lines)}]"
 
-    # Call Gemini API using Official Google GenAI SDK
+    # Call API using Official Google GenAI SDK
     client = genai.Client(api_key=gemini_api_key)
 
-    prompt = f"""You are Antigravity Gemini AI Code Reviewer. Review the following GitHub Pull Request.
+    prompt = f"""You are a senior software engineer performing a code review. Review the following GitHub Pull Request.
 
   Pull Request Title: {pr_title}
   Pull Request Description: {pr_body}
 
-  Provide a structured, constructive, and actionable review in GitHub Markdown format:
-  ## 🤖 Gemini AI Code Review Summary
-  ### 🎯 Executive Overview
-  ### 🔍 Code Quality & Architecture
-  ### 🛡️ Security, Performance & Scalability
-  ### 💡 Actionable Recommendations
+  Provide a concise, constructive, and actionable review written in a natural human tone:
+  ## PR Review Summary
+  ### Overview
+  ### Code Quality & Architecture
+  ### Security & Performance
+  ### Recommendations
+
+  IMPORTANT INSTRUCTIONS:
+  - Write as a human peer reviewer.
+  - DO NOT include emojis like 🤖, robot icons, or mentions of 'AI', 'Gemini', 'automated', 'bot', or AI generation.
+  - Keep tone professional, direct, and conversational.
 
   At the VERY END of your review, on a new line, output your final decision strictly formatted as one of:
   DECISION: APPROVE
@@ -71,19 +81,19 @@ def main():
   ```
   """
 
-    print("Sending PR diff to Gemini API for review...")
+    print("Sending PR diff for review...")
     try:
         response = client.models.generate_content(
-            model="gemini-2.5-flash",
+            model=gemini_model,
             contents=prompt,
         )
         review_markdown = response.text
     except Exception as e:
-        print(f"::error::Gemini API call failed: {e}")
+        print(f"::error::API call failed: {e}")
         sys.exit(1)
 
     if not review_markdown:
-        print("::error::Received empty response payload from Gemini API.")
+        print("::error::Received empty response payload from API.")
         sys.exit(1)
 
     # Parse decision (APPROVE, REQUEST_CHANGES, or COMMENT)
@@ -93,7 +103,7 @@ def main():
         event_decision = decision_match.group(1).upper()
         review_markdown = re.sub(r"DECISION:\s*(APPROVE|REQUEST_CHANGES|COMMENT)", "", review_markdown, flags=re.IGNORECASE).strip()
 
-    print(f"Gemini Review Decision: {event_decision}")
+    print(f"Review Decision: {event_decision}")
 
     # Submit Official PR Review (APPROVE, REQUEST_CHANGES, or COMMENT) via GitHub REST API
     reviews_url = f"https://api.github.com/repos/{repo}/pulls/{pr_number}/reviews"
@@ -108,8 +118,13 @@ def main():
     }
 
     res = requests.post(reviews_url, headers=headers, json=payload)
+    if res.status_code not in (200, 201) and payload["event"] != "COMMENT":
+        print(f"::warning::Submitting PR review with event '{payload['event']}' failed ({res.status_code}): {res.text}. Retrying with 'COMMENT' event...")
+        payload["event"] = "COMMENT"
+        res = requests.post(reviews_url, headers=headers, json=payload)
+
     if res.status_code in (200, 201):
-        print(f"Successfully submitted Gemini PR Review ({event_decision}) to PR #{pr_number}!")
+        print(f"Successfully submitted PR Review ({payload['event']}) to PR #{pr_number}!")
     else:
         print(f"::error::Failed to submit PR review ({res.status_code}): {res.text}")
         sys.exit(1)
