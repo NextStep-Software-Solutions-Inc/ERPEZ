@@ -14,12 +14,12 @@
             "problemMatcher": "$msCompile"
         },
         {
-            "label": "build ERPEZ.Api",
+            "label": "build Dashboard.Api",
             "command": "dotnet",
             "type": "process",
             "args": [
                 "build",
-                "${workspaceFolder}/apps/backend/ERPEZ/ERPEZ.Api/ERPEZ.Api.csproj",
+                "${workspaceFolder}/apps/backend/Dashboard/Dashboard.Api/Dashboard.Api.csproj",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary;ForceNoAlign"
             ],
@@ -31,7 +31,7 @@
             "type": "process",
             "args": [
                 "build",
-                "${workspaceFolder}/apps/backend/TenantManagement/ERPEZ.TenantManagement.Api/ERPEZ.TenantManagement.Api.csproj",
+                "${workspaceFolder}/apps/backend/TenantManagement/TenantManagement.Api/TenantManagement.Api.csproj",
                 "/property:GenerateFullPaths=true",
                 "/consoleloggerparameters:NoSummary;ForceNoAlign"
             ],
