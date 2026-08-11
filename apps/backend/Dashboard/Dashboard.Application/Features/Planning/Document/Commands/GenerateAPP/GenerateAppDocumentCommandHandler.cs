@@ -6,7 +6,6 @@ using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -45,11 +44,13 @@ public class GenerateAppDocumentCommandHandler(
         var fileName  = $"APP_{app.APPNumber}_{DateTime.UtcNow:yyyyMMddHHmmss}.{extension}";
         var path      = await storageService.SaveAsync(bytes, fileName, cancellationToken);
 
+        var primaryOfficeId = app.APPItems.FirstOrDefault()?.OfficeId ?? Guid.Empty;
+
         var record = new GeneratedDocument
         {
             DocumentType  = DocumentType.App,
             Format        = request.Format,
-            OfficeId      = app.OfficeId,
+            OfficeId      = primaryOfficeId,
             StoragePath   = path,
             FileName      = fileName,
             FileSizeBytes = bytes.Length,
@@ -101,39 +102,25 @@ public class GenerateAppDocumentCommandHandler(
         // Signatories
         var signatories = await BuildSignatoriesAsync(cancellationToken);
 
-        // Map status: Indicative, Final, or Updated
-        bool isIndicative = false;
-        bool isFinal = false;
-        bool isUpdated = false;
+        var typeStr = app.APPType?.Trim() ?? "Indicative";
+        bool isIndicative = string.Equals(typeStr, "Indicative", StringComparison.OrdinalIgnoreCase);
+        bool isFinal = string.Equals(typeStr, "Final", StringComparison.OrdinalIgnoreCase);
+        bool isUpdated = string.Equals(typeStr, "Updated", StringComparison.OrdinalIgnoreCase);
 
-        var isFinalStr = app.IsFinal?.Trim().ToLowerInvariant();
-        if (isFinalStr == "true" || isFinalStr == "final")
-        {
-            isFinal = true;
-        }
-        else if (isFinalStr == "indicative")
-        {
-            isIndicative = true;
-        }
-        else if (isFinalStr == "updated" || isFinalStr == "revised")
-        {
-            isUpdated = true;
-        }
-        else
-        {
-            // Fallback default
-            isIndicative = true;
-        }
+        var versionNum = app.VersionNumber.HasValue ? app.VersionNumber.Value.ToString() : string.Empty;
+        var versionDate = app.VersionDate.HasValue ? app.VersionDate.Value.ToString("MMMM dd, yyyy") : string.Empty;
 
         return new AppDataDto
         {
-            OfficeId             = app.OfficeId,
             APPNumber            = app.APPNumber,
             FiscalYear           = app.FiscalYear?.Year.ToString() ?? string.Empty,
+            Batch                = app.Batch,
+            Quarter              = app.Quarter,
             IsIndicative         = isIndicative,
             IsFinal              = isFinal,
             IsUpdated            = isUpdated,
-            VersionNumber        = app.APPNumber.Contains("-") ? app.APPNumber.Split('-').Last() : "1",
+            VersionNumber        = versionNum,
+            VersionDate          = versionDate,
             GeneralRequirements  = generalRequirements,
             CommonUseSupplies    = commonUseSupplies,
             MiscellaneousItems   = miscellaneousItems,
@@ -147,15 +134,21 @@ public class GenerateAppDocumentCommandHandler(
     private static AppItemRowDto MapToRow(AppItemEntity item)
     {
         var projectTitle = item.PPMPItem?.Name ?? string.Empty;
-        var endUser      = item.Office?.Name ?? string.Empty;
+        var endUser      = item.Office?.Name ?? item.PPMPItem?.PPMPExpenditureItem?.PPMPActivity?.PPMP?.Office?.Name ?? string.Empty;
         var description  = item.PPMPItem?.Description ?? string.Empty;
         var mode         = item.ProcurementMode?.Name ?? string.Empty;
         var coveredByEpa = item.IsEarlyProcurementActivity;
 
         var criteria = item.BidEvaluationCriteria?.ToString() ?? "Domestic Preference";
 
-        var startProc = item.PPMPItem?.ProcurementStartDate?.ToString("MM/yyyy") ?? string.Empty;
-        var endProc   = item.PPMPItem?.ProcurementEndDate?.ToString("MM/yyyy")   ?? string.Empty;
+        var startProc = item.StartOfProcurementOverride?.ToString("MM/yyyy")
+                     ?? item.PPMPItem?.ProcurementStartDate?.ToString("MM/yyyy")
+                     ?? string.Empty;
+
+        var endProc   = item.EndOfProcurementOverride?.ToString("MM/yyyy")
+                     ?? item.PPMPItem?.ProcurementEndDate?.ToString("MM/yyyy")
+                     ?? string.Empty;
+
         var source    = item.FundSource?.Name ?? string.Empty;
         var budget    = CalculateItemBudget(item);
         var strategy  = item.ProcurementStrategies != null && item.ProcurementStrategies.Any()
@@ -176,7 +169,9 @@ public class GenerateAppDocumentCommandHandler(
             SourceOfFund               = source,
             EstimatedBudget            = budget,
             ProcurementStrategyOrTools = strategy,
-            Remarks                    = remarks
+            Remarks                    = remarks,
+            IsNew                      = item.IsNew,
+            IsRevised                  = item.IsRevised
         };
     }
 
@@ -216,14 +211,7 @@ public class GenerateAppDocumentCommandHandler(
 
     private async Task<SignatoryDto> FindSignatoryAsync(string positionTitle, string label, CancellationToken cancellationToken)
     {
-        var query = unitOfWork.PersonnelPositionRepository.Query(pp => pp.IsActive && !pp.IsDeleted)
-            .Include(pp => pp.User)
-            .Include(pp => pp.Position)
-            .Where(pp => pp.Position != null && 
-                        (pp.Position.Title.ToLower().Contains(positionTitle.ToLower()) || 
-                         (pp.Position.FunctionalTitle != null && pp.Position.FunctionalTitle.ToLower().Contains(positionTitle.ToLower()))));
-
-        var assignment = await unitOfWork.PersonnelPositionRepository.GetFirstAsync(query, cancellationToken);
+        var assignment = await unitOfWork.PersonnelPositionRepository.GetActiveByPositionTitleAsync(positionTitle, cancellationToken);
 
         if (assignment?.User != null)
         {

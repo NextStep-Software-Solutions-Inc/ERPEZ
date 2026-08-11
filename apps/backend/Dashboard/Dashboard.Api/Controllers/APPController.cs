@@ -176,4 +176,34 @@ public class APPController(ISender mediator) : ControllerBase
         var result = await mediator.Send(command);
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
+
+    /// <summary>
+    /// Clone an approved Final/Updated APP into a new Updated APP version
+    /// </summary>
+    [HttpPost("{id}/clone-updated")]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> CloneUpdated(
+        [FromRoute] Guid id,
+        [FromBody] ERPEZ.Application.Features.Planning.APP.Commands.CloneUpdatedAPP.CloneUpdatedAPPCommand command)
+    {
+        var result = await mediator.Send(command with { SourceAppId = id });
+        return result.Succeeded
+            ? CreatedAtAction(nameof(GetAPPById), new { id = result.Data }, result)
+            : BadRequest(result);
+    }
+
+    /// <summary>
+    /// Get APP Analytics and Summaries (breakdowns by office, category, fund source, procurement type)
+    /// </summary>
+    [HttpGet("{id}/analytics")]
+    [ProducesResponseType(typeof(ApiResponse<APPAnalyticsResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<APPAnalyticsResponse>), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetAnalytics(Guid id)
+    {
+        var query = new ERPEZ.Application.Features.Planning.APP.Queries.GetAPPAnalytics.GetAPPAnalyticsQuery(id);
+        var result = await mediator.Send(query);
+        return result.Succeeded ? Ok(result) : NotFound(result);
+    }
 }

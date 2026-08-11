@@ -16,30 +16,39 @@ public class CreateAPPCommandHandler(IUnitOfWork unitOfWork)
         _ = await unitOfWork.FiscalYearRepository.GetByIdAsync(request.FiscalYearId, cancellationToken)
             ?? throw new NotFoundException("Fiscal year not found.");
 
-        // Validate Office exists
-        _ = await unitOfWork.OfficeRepository.GetByIdAsync(request.OfficeId, cancellationToken)
-            ?? throw new NotFoundException("Office not found.");
+        // Updated APPs must originate via the CloneUpdatedAPP workflow from an approved source APP.
+        if (string.Equals(request.APPType, "Updated", StringComparison.OrdinalIgnoreCase))
+            throw new ValidationException(
+                "Updated APPs cannot be created directly without a source APP. " +
+                "Use the Create Updated APP workflow from an approved Final or Updated APP.");
 
         // Check for duplicate APPNumber
         var hasAppNumber = await unitOfWork.APPRepository.HasAPPNumberAsync(request.APPNumber, cancellationToken);
         if (hasAppNumber)
             throw new ConflictException($"APP with number '{request.APPNumber}' already exists.");
 
-        // Create new APP entity
+        // IsFinal is a derived/legacy compatibility field:
+        //   - Indicative APPs → always "false"
+        //   - Final APPs start as Draft → "false"; become "true" only when Status transitions to Approved
+        //     (handled by ChangeAPPStatusCommandHandler)
+        //   - Updated APPs → always "false" (set by CloneUpdatedAPPCommandHandler)
+        var isFinal = "false";
+
         var entity = new ERPEZ.Domain.Entities.Planning.APP
         {
-            Id = Guid.NewGuid(),
-            APPNumber = request.APPNumber,
-            Name = request.Name,
+            Id           = Guid.NewGuid(),
+            APPNumber    = request.APPNumber,
+            Name         = request.Name,
             FiscalYearId = request.FiscalYearId,
-            OfficeId = request.OfficeId,
-            IsFinal = request.IsFinal,
-            Remarks = request.Remarks,
-            Description = request.Description,
-            Status = StatusEnum.Draft,
+            APPType      = string.IsNullOrWhiteSpace(request.APPType) ? "Indicative" : request.APPType,
+            Batch        = string.IsNullOrWhiteSpace(request.Batch)   ? "Batch 1"    : request.Batch,
+            Quarter      = string.IsNullOrWhiteSpace(request.Quarter) ? "Q1"         : request.Quarter,
+            IsFinal      = isFinal,
+            Remarks      = request.Remarks,
+            Description  = request.Description,
+            Status       = StatusEnum.Draft,
         };
 
-        // Add to repository and save
         await unitOfWork.APPRepository.AddAsync(entity, cancellationToken);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 

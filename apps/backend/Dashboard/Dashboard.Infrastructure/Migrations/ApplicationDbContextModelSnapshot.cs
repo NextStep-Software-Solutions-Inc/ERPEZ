@@ -65,8 +65,18 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<string>("APPType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
                     b.Property<DateTime?>("ApprovedDate")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Batch")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -100,12 +110,17 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
-                    b.Property<Guid>("OfficeId")
-                        .HasColumnType("uuid");
+                    b.Property<string>("Quarter")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
 
                     b.Property<string>("Remarks")
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
+
+                    b.Property<Guid?>("SourceAPPId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -121,6 +136,12 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("UpdatedBy")
                         .HasColumnType("text");
 
+                    b.Property<DateTime?>("VersionDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("VersionNumber")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
                     b.HasIndex("APPNumber")
@@ -128,7 +149,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("FiscalYearId");
 
-                    b.HasIndex("OfficeId");
+                    b.HasIndex("SourceAPPId");
 
                     b.ToTable("APPs", "planning");
                 });
@@ -159,6 +180,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text");
 
+                    b.Property<DateTime?>("EndOfProcurementOverride")
+                        .HasColumnType("timestamp with time zone");
+
                     b.Property<Guid>("FundSourceId")
                         .HasColumnType("uuid");
 
@@ -168,7 +192,13 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<bool>("IsEarlyProcurementActivity")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("IsNew")
+                        .HasColumnType("boolean");
+
                     b.Property<bool>("IsOutsourced")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsRevised")
                         .HasColumnType("boolean");
 
                     b.Property<Guid>("OfficeId")
@@ -191,6 +221,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("Remarks")
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTime?>("StartOfProcurementOverride")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -9177,15 +9210,14 @@ namespace ERPEZ.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.Office", "Office")
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.APP", "SourceAPP")
                         .WithMany()
-                        .HasForeignKey("OfficeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .HasForeignKey("SourceAPPId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("FiscalYear");
 
-                    b.Navigation("Office");
+                    b.Navigation("SourceAPP");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.APPItem", b =>

@@ -2,7 +2,6 @@ using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
@@ -20,10 +19,8 @@ public class RemovePPMPsCommandHandler(IUnitOfWork unitOfWork)
 
         var ppmpIds = request.PPMPIds;
 
-        // Load existing links for the requested PPMPs and APP
-        var query = unitOfWork.APPPPMPRepository.Query()
-            .Where(ap => ap.APPId == request.APPId && ppmpIds.Contains(ap.PPMPId) && !ap.IsDeleted);
-        var existingLinks = await unitOfWork.APPPPMPRepository.ToListAsync(query, cancellationToken);
+        // Load existing links for the requested PPMPs and APP via repository abstraction
+        var existingLinks = await unitOfWork.APPPPMPRepository.GetLinksByAppAndPpmpIdsAsync(request.APPId, ppmpIds, cancellationToken);
 
         // Check if any requested PPMPIds are not currently linked
         var linkedPPMPIds = existingLinks.Select(ap => ap.PPMPId).ToHashSet();

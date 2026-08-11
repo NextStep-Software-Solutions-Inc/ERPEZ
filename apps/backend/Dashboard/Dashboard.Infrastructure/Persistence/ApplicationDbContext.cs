@@ -2115,15 +2115,30 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasMaxLength(1000);
 
         modelBuilder.Entity<APP>()
+            .Property(e => e.APPType)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        modelBuilder.Entity<APP>()
+            .Property(e => e.Batch)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        modelBuilder.Entity<APP>()
+            .Property(e => e.Quarter)
+            .IsRequired()
+            .HasMaxLength(20);
+
+        modelBuilder.Entity<APP>()
             .HasOne(e => e.FiscalYear)
             .WithMany()
             .HasForeignKey(e => e.FiscalYearId)
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<APP>()
-            .HasOne(e => e.Office)
+            .HasOne(e => e.SourceAPP)
             .WithMany()
-            .HasForeignKey(e => e.OfficeId)
+            .HasForeignKey(e => e.SourceAPPId)
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<APP>()
@@ -2134,7 +2149,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasIndex(e => e.FiscalYearId);
 
         modelBuilder.Entity<APP>()
-            .HasIndex(e => e.OfficeId);
+            .HasIndex(e => e.SourceAPPId);
 
         // APPPPMP
         modelBuilder.Entity<APPPPMP>()

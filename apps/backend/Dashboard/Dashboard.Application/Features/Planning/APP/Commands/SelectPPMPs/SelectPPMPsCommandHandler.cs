@@ -3,7 +3,6 @@ using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.Application.Features.Planning.APP.Commands.SelectPPMPs;
 
@@ -13,14 +12,13 @@ public class SelectPPMPsCommandHandler(IUnitOfWork unitOfWork)
     public async Task<ApiResponse<Unit>> Handle(SelectPPMPsCommand request, CancellationToken cancellationToken)
     {
         // Validate APP exists
-        _ = await unitOfWork.APPRepository.GetByIdAsync(request.APPId, cancellationToken)
+        var app = await unitOfWork.APPRepository.GetByIdAsync(request.APPId, cancellationToken)
             ?? throw new NotFoundException("APP not found.");
 
-        // Batch validation: Load all requested PPMPs in one query
+        // Batch validation: Load all requested PPMPs in one query via repository abstraction
         var ppmpIds = request.PPMPIds;
-        var existingPpmps = await unitOfWork.PPMPRepository.Query()
-            .Where(p => ppmpIds.Contains(p.Id) && !p.IsDeleted)
-            .ToListAsync(cancellationToken);
+        var existingPpmps = await unitOfWork.PPMPRepository.FindAllAsync(
+            p => ppmpIds.Contains(p.Id) && !p.IsDeleted, cancellationToken);
 
         // Check for missing PPMPs
         var foundIds = existingPpmps.Select(p => p.Id).ToHashSet();
@@ -28,11 +26,16 @@ public class SelectPPMPsCommandHandler(IUnitOfWork unitOfWork)
         if (missingIds.Any())
             throw new NotFoundException($"PPMPs not found: {string.Join(", ", missingIds)}");
 
-        // Batch validation: Check for duplicates in one query
-        var duplicateIds = await unitOfWork.APPPPMPRepository.Query()
-            .Where(ap => ap.APPId == request.APPId && ppmpIds.Contains(ap.PPMPId) && !ap.IsDeleted)
-            .Select(ap => ap.PPMPId)
-            .ToListAsync(cancellationToken);
+        // Enforce Fiscal Year matching: PPMP.FiscalYearId == APP.FiscalYearId
+        var invalidFyPpmps = existingPpmps.Where(p => p.FiscalYearId != app.FiscalYearId).ToList();
+        if (invalidFyPpmps.Any())
+        {
+            var invalidNumbers = string.Join(", ", invalidFyPpmps.Select(p => p.PPMPNumber));
+            throw new ValidationException($"PPMP does not belong to the APP Fiscal Year. Invalid PPMPs: {invalidNumbers}");
+        }
+
+        // Batch validation: Check for duplicates via repository abstraction
+        var duplicateIds = await unitOfWork.APPPPMPRepository.GetLinkedPPMPIdsAsync(request.APPId, ppmpIds, cancellationToken);
 
         if (duplicateIds.Any())
         {

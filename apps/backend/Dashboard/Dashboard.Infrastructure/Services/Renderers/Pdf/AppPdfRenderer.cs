@@ -36,16 +36,19 @@ internal sealed class AppPdfRenderer : BasePdfRenderer, IDocumentRenderer<AppDat
                         .Text($"ANNUAL PROCUREMENT PLAN FOR FY {request.FiscalYear}")
                         .Bold().FontSize(11);
 
-                    // Status checkboxes
                     var indicativeBox = request.IsIndicative ? "☑" : "☐";
                     var finalBox      = request.IsFinal ? "☑" : "☐";
                     var updatedBox    = request.IsUpdated ? "☑" : "☐";
                     var versionStr    = request.IsUpdated && !string.IsNullOrWhiteSpace(request.VersionNumber)
-                        ? $" (Ver. {request.VersionNumber})"
+                        ? $" (Ver. {request.VersionNumber}{(string.IsNullOrWhiteSpace(request.VersionDate) ? "" : " - " + request.VersionDate)})"
+                        : string.Empty;
+
+                    var batchQuarterStr = (!string.IsNullOrWhiteSpace(request.Batch) || !string.IsNullOrWhiteSpace(request.Quarter))
+                        ? $" | {request.Batch} ({request.Quarter})"
                         : string.Empty;
 
                     h.Item().PaddingTop(3).AlignCenter()
-                        .Text($"{indicativeBox} INDICATIVE     {finalBox} FINAL     {updatedBox} UPDATED{versionStr}")
+                        .Text($"{indicativeBox} INDICATIVE     {finalBox} FINAL     {updatedBox} UPDATED{versionStr}{batchQuarterStr}")
                         .FontSize(9);
                 });
 
@@ -160,18 +163,28 @@ internal sealed class AppPdfRenderer : BasePdfRenderer, IDocumentRenderer<AppDat
 
         foreach (var item in items)
         {
-            table.Cell().Element(TableDataCell).Text(item.ProjectTitle);
-            table.Cell().Element(TableDataCell).Text(item.EndUserOrImplementingUnit);
-            table.Cell().Element(TableDataCell).Text(item.GeneralDescription);
-            table.Cell().Element(TableDataCell).Text(item.ModeOfProcurement);
-            table.Cell().Element(TableDataCell).AlignCenter().Text(item.CoveredByEpa ? "Yes" : "No");
-            table.Cell().Element(TableDataCell).Text(item.CriteriaForBidEvaluation);
-            table.Cell().Element(TableDataCell).AlignCenter().Text(item.StartOfProcurement);
-            table.Cell().Element(TableDataCell).AlignCenter().Text(item.EndOfProcurement);
-            table.Cell().Element(TableDataCell).Text(item.SourceOfFund);
-            table.Cell().Element(TableDataCell).AlignRight().Text($"₱{item.EstimatedBudget:N2}");
-            table.Cell().Element(TableDataCell).Text(item.ProcurementStrategyOrTools);
-            table.Cell().Element(TableDataCell).Text(item.Remarks);
+            var isHighlight = item.IsNew || item.IsRevised;
+
+            static IContainer CellStyle(IContainer container, bool highlight)
+            {
+                var baseCell = container.BorderBottom(0.5f).BorderColor(Colors.Grey.Lighten2).Padding(3);
+                return highlight ? baseCell.Background(Colors.Amber.Lighten5) : baseCell;
+            }
+
+            var titlePrefix = item.IsNew ? "[NEW] " : (item.IsRevised ? "[REVISED] " : "");
+
+            table.Cell().Element(c => CellStyle(c, isHighlight)).Text(t => { if (isHighlight) t.Span(titlePrefix).Bold().FontSize(7); t.Span(item.ProjectTitle).FontSize(7); });
+            table.Cell().Element(c => CellStyle(c, isHighlight)).Text(item.EndUserOrImplementingUnit);
+            table.Cell().Element(c => CellStyle(c, isHighlight)).Text(item.GeneralDescription);
+            table.Cell().Element(c => CellStyle(c, isHighlight)).Text(t => { if (item.IsRevised) t.Span(item.ModeOfProcurement).Bold(); else t.Span(item.ModeOfProcurement); });
+            table.Cell().Element(c => CellStyle(c, isHighlight)).AlignCenter().Text(item.CoveredByEpa ? "Yes" : "No");
+            table.Cell().Element(c => CellStyle(c, isHighlight)).Text(item.CriteriaForBidEvaluation);
+            table.Cell().Element(c => CellStyle(c, isHighlight)).AlignCenter().Text(t => { if (item.IsRevised) t.Span(item.StartOfProcurement).Bold(); else t.Span(item.StartOfProcurement); });
+            table.Cell().Element(c => CellStyle(c, isHighlight)).AlignCenter().Text(t => { if (item.IsRevised) t.Span(item.EndOfProcurement).Bold(); else t.Span(item.EndOfProcurement); });
+            table.Cell().Element(c => CellStyle(c, isHighlight)).Text(item.SourceOfFund);
+            table.Cell().Element(c => CellStyle(c, isHighlight)).AlignRight().Text(t => { if (item.IsRevised) t.Span($"₱{item.EstimatedBudget:N2}").Bold(); else t.Span($"₱{item.EstimatedBudget:N2}"); });
+            table.Cell().Element(c => CellStyle(c, isHighlight)).Text(item.ProcurementStrategyOrTools);
+            table.Cell().Element(c => CellStyle(c, isHighlight)).Text(item.Remarks);
         }
     }
 }

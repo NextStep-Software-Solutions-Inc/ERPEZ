@@ -9,8 +9,12 @@ public record APPResponse
     public string Name { get; init; } = string.Empty;
     public Guid FiscalYearId { get; init; }
     public string FiscalYearName { get; init; } = string.Empty;
-    public Guid OfficeId { get; init; }
-    public string OfficeName { get; init; } = string.Empty;
+    public string APPType { get; init; } = "Indicative";
+    public string Batch { get; init; } = "Batch 1";
+    public string Quarter { get; init; } = "Q1";
+    public int? VersionNumber { get; init; }
+    public DateTime? VersionDate { get; init; }
+    public Guid? SourceAPPId { get; init; }
     public string IsFinal { get; init; } = string.Empty;
     public string? Remarks { get; init; }
     public string? Description { get; init; }
@@ -24,9 +28,6 @@ public record APPResponse
 
     [JsonPropertyName("FiscalYear")]
     public APPFiscalYearResponse? FiscalYear { get; init; }
-
-    [JsonPropertyName("Office")]
-    public APPOfficeResponse? Office { get; init; }
 
     [JsonPropertyName("APPItems")]
     public List<APPItemSummaryResponse> APPItems { get; init; } = [];
@@ -68,6 +69,10 @@ public record APPItemSummaryResponse
     public string? Remarks { get; init; }
     public bool IsEarlyProcurementActivity { get; init; }
     public bool IsOutsourced { get; init; }
+    public DateTime? StartOfProcurementOverride { get; init; }
+    public DateTime? EndOfProcurementOverride { get; init; }
+    public bool IsNew { get; init; }
+    public bool IsRevised { get; init; }
     public List<APPItemScheduleSummaryResponse> Schedules { get; init; } = [];
 }
 

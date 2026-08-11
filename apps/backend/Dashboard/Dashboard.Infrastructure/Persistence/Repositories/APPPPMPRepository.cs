@@ -81,4 +81,21 @@ public class APPPPMPRepository : Repository<APPPPMP>, IAPPPPMPRepository
             .Distinct()
             .ToListAsync(cancellationToken);
     }
+
+    public async Task<List<Guid>> GetLinkedPPMPIdsAsync(Guid appId, IEnumerable<Guid> ppmpIds, CancellationToken cancellationToken = default)
+    {
+        var idList = ppmpIds.ToList();
+        return await context.Set<APPPPMP>()
+            .Where(ap => ap.APPId == appId && idList.Contains(ap.PPMPId) && !ap.IsDeleted)
+            .Select(ap => ap.PPMPId)
+            .ToListAsync(cancellationToken);
+    }
+
+    public async Task<List<APPPPMP>> GetLinksByAppAndPpmpIdsAsync(Guid appId, IEnumerable<Guid> ppmpIds, CancellationToken cancellationToken = default)
+    {
+        var idList = ppmpIds.ToList();
+        return await context.Set<APPPPMP>()
+            .Where(ap => ap.APPId == appId && idList.Contains(ap.PPMPId) && !ap.IsDeleted)
+            .ToListAsync(cancellationToken);
+    }
 }
