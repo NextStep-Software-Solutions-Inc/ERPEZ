@@ -23,12 +23,19 @@ export function MyPpmpsPage({ searchParams }: MyPpmpsPageProps) {
     const next = updater(searchParams)
     navigate({
       search: (prev) => {
-        const merged = { ...prev, ...next }
-        const clean: Record<string, unknown> = {}
+        const merged = {
+          ...(prev as PPMPManagementSearch),
+          ...next,
+        } as Partial<PPMPManagementSearch>
 
-        clean.view = merged.view ?? 'department'
-        clean.pageNumber = merged.pageNumber ?? 1
-        clean.pageSize = merged.pageSize ?? 10
+        const clean: PPMPManagementSearch = {
+          view: (merged.view as 'department' | 'office') ?? 'department',
+          pageNumber: (merged.pageNumber as number) ?? 1,
+          pageSize: (merged.pageSize as number) ?? 10,
+          consolidated:
+            (merged.consolidated as
+              'all' | 'consolidated' | 'not_consolidated') ?? 'all',
+        }
 
         if (merged.searchQuery) clean.searchQuery = merged.searchQuery
         if (merged.status && merged.status !== 'all')
@@ -36,8 +43,6 @@ export function MyPpmpsPage({ searchParams }: MyPpmpsPageProps) {
         if (merged.fiscalYearId) clean.fiscalYearId = merged.fiscalYearId
         if (merged.officeId) clean.officeId = merged.officeId
         if (merged.lib && merged.lib !== 'all') clean.lib = merged.lib
-        if (merged.consolidated && merged.consolidated !== 'all')
-          clean.consolidated = merged.consolidated
         if (merged.sortBy) clean.sortBy = merged.sortBy
         if (merged.sortOrder) clean.sortOrder = merged.sortOrder
 

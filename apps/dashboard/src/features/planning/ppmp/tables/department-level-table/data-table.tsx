@@ -96,7 +96,9 @@ export function DataTable<TData, TValue>({
       if (lib.status !== 'Approved' && lib.status !== 'Proposed') {
         return false
       }
-      const isSuperseded = libs.some((other) => other.previousVersionId === lib.id)
+      const isSuperseded = libs.some(
+        (other) => other.previousVersionId === lib.id,
+      )
       if (isSuperseded) {
         return false
       }
@@ -316,9 +318,9 @@ export function DataTable<TData, TValue>({
                       {header.isPlaceholder
                         ? null
                         : flexRender(
-                          header.column.columnDef.header,
-                          header.getContext(),
-                        )}
+                            header.column.columnDef.header,
+                            header.getContext(),
+                          )}
                     </TableHead>
                   )
                 })}

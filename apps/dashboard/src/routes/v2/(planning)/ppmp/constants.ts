@@ -7,10 +7,7 @@ import { z } from 'zod'
 import type { PPMPState } from '@/features/planning/ppmp/types'
 
 export type PPMPManagementTab =
-  | 'my-drafts'
-  | 'for-approval'
-  | 'approved'
-  | 'amendments'
+  'my-drafts' | 'for-approval' | 'approved' | 'amendments'
 
 export interface PPMPTabConfig {
   id: PPMPManagementTab

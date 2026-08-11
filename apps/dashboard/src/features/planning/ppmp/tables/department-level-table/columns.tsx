@@ -108,7 +108,6 @@ export const columns: ColumnDef<PPMP>[] = [
       const setSelectedForEdit = useSetAtom(selectedPpmpForEditAtom)
       const setEditOpen = useSetAtom(editPpmpDialogOpenAtom)
 
-
       const handleEdit = () => {
         setSelectedForEdit(ppmp)
         setEditOpen(true)
@@ -128,11 +127,8 @@ export const columns: ColumnDef<PPMP>[] = [
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end">
-            <Link
-              to="/v2/ppmp/$ppmpId"
-              params={{ ppmpId: ppmp.id }}
-            >
-              <DropdownMenuItem >
+            <Link to="/v2/ppmp/$ppmpId" params={{ ppmpId: ppmp.id }}>
+              <DropdownMenuItem>
                 <FolderOpen className="mr-2 h-4 w-4" />
                 View Details
               </DropdownMenuItem>
