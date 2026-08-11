@@ -41,7 +41,8 @@ export function MyPpmpsPage({ searchParams }: MyPpmpsPageProps) {
         if (merged.lib && merged.lib !== 'all') clean.lib = merged.lib
         if (merged.sortBy) clean.sortBy = merged.sortBy
         if (merged.sortOrder) clean.sortOrder = merged.sortOrder
-        if (merged.consolidated) clean.consolidated = merged.consolidated
+        if (merged.consolidated && merged.consolidated !== 'all')
+          clean.consolidated = merged.consolidated
 
         return clean
       },
