@@ -16,6 +16,7 @@ import { createQueryHookFromTemplate } from 'erpez-shared-lib'
 import FieldInfo from '@/components/FieldInfo'
 import { getProcurementModesRequest } from '@/lib/fiscal-year-and-policies/requests/getProcurementModesRequest'
 import { FieldDescriptionTooltip } from '../components/FieldDescriptionTooltip'
+import { cn } from '@/lib/utils'
 
 const useProcurementModes = createQueryHookFromTemplate(
   getProcurementModesRequest,
@@ -37,11 +38,35 @@ export const ppmpItemSchema = z.object({
     ])
     .default('Goods'),
   preProcurementConference: z.boolean().default(false),
-  procurementStartDate: z.string().default(''),
-  procurementEndDate: z.string().default(''),
-  expectedDeliveryStart: z.string().default(''),
-  expectedDeliveryEnd: z.string().default(''),
+  procurementStartDate: z.string().min(1, 'Procurement start date is required'),
+  procurementEndDate: z.string().min(1, 'Procurement end date is required'),
+  expectedDeliveryStart: z.string().min(1, 'Expected delivery start date is required'),
+  expectedDeliveryEnd: z.string().min(1, 'Expected delivery end date is required'),
   remarks: z.string().default(''),
+}).refine(data => {
+  if (data.procurementStartDate && data.procurementEndDate && data.procurementEndDate < data.procurementStartDate) {
+    return false
+  }
+  return true
+}, {
+  message: 'Procurement end date cannot be before start date',
+  path: ['procurementEndDate']
+}).refine(data => {
+  if (data.expectedDeliveryStart && data.procurementStartDate && data.expectedDeliveryStart < data.procurementStartDate) {
+    return false
+  }
+  return true
+}, {
+  message: 'Expected delivery start date cannot be before procurement start date',
+  path: ['expectedDeliveryStart']
+}).refine(data => {
+  if (data.expectedDeliveryStart && data.expectedDeliveryEnd && data.expectedDeliveryEnd < data.expectedDeliveryStart) {
+    return false
+  }
+  return true
+}, {
+  message: 'Expected delivery end date cannot be before start date',
+  path: ['expectedDeliveryEnd']
 })
 
 export type PPMPItemFormValues = z.infer<typeof ppmpItemSchema>
@@ -410,16 +435,22 @@ export function AddPPMPItemForm({
 
       <div className="border-t border-default-150 pt-4 mt-2">
         <h4 className="text-xs font-bold text-default-800 uppercase tracking-wider mb-3">
-          Procurement & Delivery Timeline (Optional)
+          Procurement & Delivery Timeline
         </h4>
 
         <div className="grid gap-4 sm:grid-cols-2">
           <form.Field
             name="procurementStartDate"
+            validators={{
+              onChange: ({ value }) => {
+                if (!value?.trim()) return 'Procurement start date is required'
+                return undefined
+              },
+            }}
             children={(field) => (
               <div className="space-y-1.5">
                 <div className="flex items-center gap-1">
-                  <Label htmlFor={field.name}>Procurement Start Date</Label>
+                  <Label htmlFor={field.name}>Procurement Start Date *</Label>
                   <FieldDescriptionTooltip
                     fieldKey="procurementStartDate"
                     className="h-4 w-4"
@@ -431,18 +462,32 @@ export function AddPPMPItemForm({
                   value={field.state.value}
                   onChange={(e) => field.handleChange(e.target.value)}
                   disabled={isLoading}
-                  className="border-default-250 focus-visible:ring-primary/20 text-xs"
+                  className={cn(
+                    'border-default-250 focus-visible:ring-primary/20 text-xs',
+                    field.state.meta.errors?.[0] && 'border-red-500 bg-red-50/20'
+                  )}
                 />
+                <FieldInfo field={field} />
               </div>
             )}
           />
 
           <form.Field
             name="procurementEndDate"
+            validators={{
+              onChange: ({ value, fieldApi }) => {
+                if (!value?.trim()) return 'Procurement end date is required'
+                const start = fieldApi.form.getFieldValue('procurementStartDate')
+                if (start && value < start) {
+                  return 'Procurement end date cannot be before start date'
+                }
+                return undefined
+              },
+            }}
             children={(field) => (
               <div className="space-y-1.5">
                 <div className="flex items-center gap-1">
-                  <Label htmlFor={field.name}>Procurement End Date</Label>
+                  <Label htmlFor={field.name}>Procurement End Date *</Label>
                   <FieldDescriptionTooltip
                     fieldKey="procurementEndDate"
                     className="h-4 w-4"
@@ -454,8 +499,12 @@ export function AddPPMPItemForm({
                   value={field.state.value}
                   onChange={(e) => field.handleChange(e.target.value)}
                   disabled={isLoading}
-                  className="border-default-250 focus-visible:ring-primary/20 text-xs"
+                  className={cn(
+                    'border-default-250 focus-visible:ring-primary/20 text-xs',
+                    field.state.meta.errors?.[0] && 'border-red-500 bg-red-50/20'
+                  )}
                 />
+                <FieldInfo field={field} />
               </div>
             )}
           />
@@ -464,10 +513,20 @@ export function AddPPMPItemForm({
         <div className="grid gap-4 sm:grid-cols-2 mt-4">
           <form.Field
             name="expectedDeliveryStart"
+            validators={{
+              onChange: ({ value, fieldApi }) => {
+                if (!value?.trim()) return 'Expected delivery start date is required'
+                const procStart = fieldApi.form.getFieldValue('procurementStartDate')
+                if (procStart && value < procStart) {
+                  return 'Delivery start date cannot be before procurement start date'
+                }
+                return undefined
+              },
+            }}
             children={(field) => (
               <div className="space-y-1.5">
                 <div className="flex items-center gap-1">
-                  <Label htmlFor={field.name}>Expected Delivery Start</Label>
+                  <Label htmlFor={field.name}>Expected Delivery Start *</Label>
                   <FieldDescriptionTooltip
                     fieldKey="expectedDeliveryStart"
                     className="h-4 w-4"
@@ -479,18 +538,32 @@ export function AddPPMPItemForm({
                   value={field.state.value}
                   onChange={(e) => field.handleChange(e.target.value)}
                   disabled={isLoading}
-                  className="border-default-250 focus-visible:ring-primary/20 text-xs"
+                  className={cn(
+                    'border-default-250 focus-visible:ring-primary/20 text-xs',
+                    field.state.meta.errors?.[0] && 'border-red-500 bg-red-50/20'
+                  )}
                 />
+                <FieldInfo field={field} />
               </div>
             )}
           />
 
           <form.Field
             name="expectedDeliveryEnd"
+            validators={{
+              onChange: ({ value, fieldApi }) => {
+                if (!value?.trim()) return 'Expected delivery end date is required'
+                const start = fieldApi.form.getFieldValue('expectedDeliveryStart')
+                if (start && value < start) {
+                  return 'Expected delivery end date cannot be before start date'
+                }
+                return undefined
+              },
+            }}
             children={(field) => (
               <div className="space-y-1.5">
                 <div className="flex items-center gap-1">
-                  <Label htmlFor={field.name}>Expected Delivery End</Label>
+                  <Label htmlFor={field.name}>Expected Delivery End *</Label>
                   <FieldDescriptionTooltip
                     fieldKey="expectedDeliveryEnd"
                     className="h-4 w-4"
@@ -502,8 +575,12 @@ export function AddPPMPItemForm({
                   value={field.state.value}
                   onChange={(e) => field.handleChange(e.target.value)}
                   disabled={isLoading}
-                  className="border-default-250 focus-visible:ring-primary/20 text-xs"
+                  className={cn(
+                    'border-default-250 focus-visible:ring-primary/20 text-xs',
+                    field.state.meta.errors?.[0] && 'border-red-500 bg-red-50/20'
+                  )}
                 />
+                <FieldInfo field={field} />
               </div>
             )}
           />
