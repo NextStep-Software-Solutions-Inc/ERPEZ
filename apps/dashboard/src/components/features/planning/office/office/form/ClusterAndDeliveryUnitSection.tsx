@@ -37,7 +37,9 @@ export default function ClusterAndDeliveryUnitSection({ form }: Props) {
         name="clusterId"
         children={(field: any) => (
           <div className="grid gap-2">
-            <Label>Organizational Cluster</Label>
+            <Label>
+              Organizational Cluster <span className="text-muted-foreground text-xs font-normal">(optional)</span>
+            </Label>
             <Select
               value={
                 typeof field.state.value === 'string' && field.state.value !== ''

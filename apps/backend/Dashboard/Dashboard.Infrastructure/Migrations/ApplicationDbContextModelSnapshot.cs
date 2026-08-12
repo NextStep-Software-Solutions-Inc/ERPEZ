@@ -4021,7 +4021,7 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid>("OfficeTypeId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("OrganizationId")
+                    b.Property<Guid?>("OrganizationId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid?>("ParentId")
@@ -10219,9 +10219,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasOne("ERPEZ.Domain.Entities.Planning.Organization", "Organization")
                         .WithMany("Offices")
-                        .HasForeignKey("OrganizationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("OrganizationId");
 
                     b.HasOne("ERPEZ.Domain.Entities.Planning.Office", "Parent")
                         .WithMany("Children")

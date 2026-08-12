@@ -184,9 +184,11 @@ export default function CreateWFPForm({
     if (currentMode === 'opcr' && selectedOpcrId) {
       const targetOpcr = rawOpcrs.find((o: { id: string }) => o.id === selectedOpcrId)
       if (targetOpcr) {
-        // Inherit Fund Source
+        // Inherit Fund Source if valid and exists in DB list
         const inheritedFundSourceId = targetOpcr.fundSourceId || targetOpcr.fundSource?.id || ''
-        if (inheritedFundSourceId && inheritedFundSourceId !== form.state.values.fundSourceId) {
+        const isValidFundSource = inheritedFundSourceId && fundSources.some((fs: any) => fs.id === inheritedFundSourceId)
+
+        if (isValidFundSource && inheritedFundSourceId !== form.state.values.fundSourceId) {
           form.setFieldValue('fundSourceId', inheritedFundSourceId)
           setFormData((prev) => ({ ...prev, fundSourceId: inheritedFundSourceId }))
         }
@@ -206,7 +208,7 @@ export default function CreateWFPForm({
         }
       }
     }
-  }, [currentMode, selectedOpcrId, rawOpcrs, form, setFormData])
+  }, [currentMode, selectedOpcrId, rawOpcrs, fundSources, form, setFormData])
 
   const updateFormData = <K extends keyof CreateWFPFormValues>(
     fieldName: K,
@@ -332,40 +334,60 @@ export default function CreateWFPForm({
         />
       )}
 
-      {/* Fund Source (Auto-inherited for OPCR / Manual for External) */}
+      {/* Fund Source (Auto-inherited for OPCR / Manual Select for External) */}
       <form.Field
         name="fundSourceId"
         children={(field) => {
           const selectedOpcrObj = opcrOptions.find((o) => o.value === selectedOpcrId)?.raw
+          const hasOpcrFundSource = !!(selectedOpcrObj?.fundSourceId || selectedOpcrObj?.fundSource?.id)
           const inheritedFundSourceName =
             selectedOpcrObj?.fundSource?.name ||
             fundSources.find((fs: any) => fs.id === field.state.value)?.name ||
-            'Regular Agency Fund'
+            ''
 
           return (
             <div className="grid gap-1.5 w-full">
               <div className="flex items-center justify-between">
                 <Label htmlFor={field.name} className="text-slate-800 font-bold text-xs">
-                  Fund Source
+                  Fund Source {currentMode === 'external' && <span className="text-rose-500">*</span>}
                 </Label>
                 {currentMode === 'opcr' && (
-                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px] gap-1 py-0.5">
+                  <Badge variant="outline" className={`text-[10px] gap-1 py-0.5 font-normal ${
+                    hasOpcrFundSource 
+                      ? 'bg-blue-50 text-blue-700 border-blue-200' 
+                      : 'bg-amber-50 text-amber-700 border-amber-200'
+                  }`}>
                     <Lock className="w-3 h-3" /> Auto-inherited from OPCR
                   </Badge>
                 )}
               </div>
 
               {currentMode === 'opcr' ? (
-                <div className="p-2.5 rounded-md border border-slate-200 bg-slate-50 flex items-center justify-between text-xs overflow-hidden">
-                  <span className="font-semibold text-slate-700 truncate min-w-0 flex-1">
-                    {field.state.value ? inheritedFundSourceName : 'Select an OPCR above to auto-inherit Fund Source'}
-                  </span>
-                  <span className="text-[10px] text-slate-400 font-bold uppercase shrink-0 ml-2">SOURCE: OPCR</span>
+                <div className="space-y-1">
+                  <div className={`p-2.5 rounded-md border text-xs flex items-center justify-between overflow-hidden ${
+                    hasOpcrFundSource ? 'border-slate-200 bg-slate-50' : 'border-amber-300 bg-amber-50/50'
+                  }`}>
+                    <span className={`font-semibold truncate min-w-0 flex-1 ${
+                      hasOpcrFundSource ? 'text-slate-700' : 'text-amber-800'
+                    }`}>
+                      {field.state.value && inheritedFundSourceName 
+                        ? inheritedFundSourceName 
+                        : selectedOpcrId 
+                          ? 'No Fund Source assigned to this OPCR' 
+                          : 'Select an OPCR above to inherit Fund Source'}
+                    </span>
+                    <span className="text-[10px] text-slate-400 font-bold uppercase shrink-0 ml-2">SOURCE: OPCR</span>
+                  </div>
+                  {selectedOpcrId && !hasOpcrFundSource && (
+                    <p className="text-[11px] text-amber-600 font-medium flex items-center gap-1">
+                      ⚠️ Warning: The selected OPCR has no assigned Fund Source.
+                    </p>
+                  )}
                 </div>
               ) : (
                 <select
                   id={field.name}
-                  value={field.state.value}
+                  value={field.state.value || ''}
                   onBlur={field.handleBlur}
                   onChange={(e) => {
                     field.handleChange(e.target.value)
@@ -377,11 +399,11 @@ export default function CreateWFPForm({
                   } ${fundSourcesLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
                 >
                   <option value="">
-                    {fundSourcesLoading ? 'Loading fund sources...' : '-- Select Fund Source (Fund Cluster) --'}
+                    {fundSourcesLoading ? 'Loading fund sources...' : '-- Select Fund Source --'}
                   </option>
-                  {externalFundSources.map((fs: any) => (
+                  {fundSources.map((fs: any) => (
                     <option key={fs.id} value={fs.id}>
-                      {fs.name} ({fs.code || 'Fund Cluster'})
+                      {fs.name} ({fs.code || 'Fund Source'})
                     </option>
                   ))}
                 </select>

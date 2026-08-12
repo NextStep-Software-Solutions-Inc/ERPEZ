@@ -11,9 +11,9 @@ export const officeFormSchema = z.object({
   name: z.string().min(3, 'Office name must be at least 3 characters'),
   code: z.string().min(1, 'Office code is required').max(50),
   address: z.string().min(5, 'Address is required').max(500),
-  // Required foreign keys
+  // Foreign keys
   officeTypeId: z.string().uuid('OfficeType is required'),
-  organizationId: z.string().uuid('Organization is required'),
+  organizationId: z.string().uuid().nullable().optional(),
   categoryId: z.string().uuid('Category is required'),
   administrativeLevelId: z.string().uuid('Administrative Level is required'),
   // Optional fields

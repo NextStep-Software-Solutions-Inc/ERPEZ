@@ -174,7 +174,7 @@ export default function BasicOfficeSection({
           children={(field: any) => (
             <div className="grid gap-2">
               <Label>
-                Organization <span className="text-destructive">*</span>
+                Organization <span className="text-muted-foreground text-xs font-normal">(optional)</span>
               </Label>
               <Select
                 value={field.state.value || ''}

@@ -345,11 +345,40 @@ public class UACSImportService : IUACSCsvImporter
 
             try
             {
+                var code = csv.TryGetField<string>("Code", out var cVal) && !string.IsNullOrWhiteSpace(cVal)
+                    ? cVal
+                    : (csv.TryGetField<string>("UACS", out var uacsVal) ? uacsVal : string.Empty);
+
+                var name = csv.TryGetField<string>("Name", out var nVal) && !string.IsNullOrWhiteSpace(nVal)
+                    ? nVal
+                    : (csv.TryGetField<string>("Object Code", out var objCodeVal) && !string.IsNullOrWhiteSpace(objCodeVal)
+                        ? objCodeVal
+                        : (csv.TryGetField<string>("Group", out var grpVal) && !string.IsNullOrWhiteSpace(grpVal)
+                            ? grpVal
+                            : (csv.TryGetField<string>("Sub-Class", out var subClassVal) && !string.IsNullOrWhiteSpace(subClassVal)
+                                ? subClassVal
+                                : (csv.TryGetField<string>("Classification", out var classVal) ? classVal : string.Empty))));
+
+                var isActive = true;
+                if (csv.TryGetField<string>("Status", out var statusStr) && !string.IsNullOrWhiteSpace(statusStr))
+                {
+                    isActive = !statusStr.Equals("Inactive", StringComparison.OrdinalIgnoreCase);
+                }
+                else if (csv.TryGetField<bool>("IsActive", out var activeBool))
+                {
+                    isActive = activeBool;
+                }
+
+                if (string.IsNullOrWhiteSpace(code) || string.IsNullOrWhiteSpace(name))
+                {
+                    continue; // Skip header-only or blank code rows
+                }
+
                 var record = new ObjectEntity
                 {
-                    Code = csv.GetField<string>("Code") ?? string.Empty,
-                    Name = csv.GetField<string>("Name") ?? string.Empty,
-                    IsActive = csv.GetField<bool>("IsActive")
+                    Code = code.Trim(),
+                    Name = name.Trim(),
+                    IsActive = isActive
                 };
 
                 var validationErrors = await ValidateRecordAsync(record, cancellationToken);
@@ -516,7 +545,11 @@ public class UACSImportService : IUACSCsvImporter
             {
                 foreach (var obj in objects)
                 {
-                    await unitOfWork.ObjectRepository.AddAsync(obj, cancellationToken);
+                    var existing = await unitOfWork.ObjectRepository.FindAsync(x => x.Code == obj.Code, cancellationToken);
+                    if (existing == null)
+                    {
+                        await unitOfWork.ObjectRepository.AddAsync(obj, cancellationToken);
+                    }
                 }
                 await unitOfWork.SaveChangesAsync(cancellationToken);
             }, cancellationToken);
