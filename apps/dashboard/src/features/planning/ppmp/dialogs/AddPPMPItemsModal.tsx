@@ -638,7 +638,8 @@ export default function AddPPMPItemsModal({
             pathParams: {},
             payload,
           })
-          createdItemId = response.data.toString()
+          // Extract GUID from response - handle both string and object payloads
+          createdItemId = typeof response.data === 'string' ? response.data : (response.data?.id ?? '')
           successCount++
         } catch (err) {
           failedCount++

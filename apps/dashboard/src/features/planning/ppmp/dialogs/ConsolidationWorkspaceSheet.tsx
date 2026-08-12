@@ -278,7 +278,7 @@ function EligiblePPMPList({
               </p>
               <p className="text-xs mt-1">
                 PPMPs must be in the same fiscal year, not yet consolidated, and
-                in Submitted or Approved status.
+                in Approved status.
               </p>
             </div>
           </div>
