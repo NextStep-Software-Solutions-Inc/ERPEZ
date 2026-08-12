@@ -85,11 +85,11 @@ public class UpdatePPMPItemCommandHandler(IUnitOfWork unitOfWork)
 
         // ── New field updates ────────────────────────────────────────────────
         if (request.ProjectType.HasValue)              ppmpItem.ProjectType             = request.ProjectType.Value;
-        if (request.PreProcurementConference.HasValue) ppmpItem.PreProcurementConference = request.PreProcurementConference.Value;
-        if (request.ProcurementStartDate.HasValue)     ppmpItem.ProcurementStartDate    = request.ProcurementStartDate.Value;
-        if (request.ProcurementEndDate.HasValue)       ppmpItem.ProcurementEndDate      = request.ProcurementEndDate.Value;
-        if (request.ExpectedDeliveryStart.HasValue)    ppmpItem.ExpectedDeliveryStart   = request.ExpectedDeliveryStart.Value;
-        if (request.ExpectedDeliveryEnd.HasValue)      ppmpItem.ExpectedDeliveryEnd     = request.ExpectedDeliveryEnd.Value;
+        ppmpItem.PreProcurementConference = request.PreProcurementConference;
+        ppmpItem.ProcurementStartDate    = request.ProcurementStartDate;
+        ppmpItem.ProcurementEndDate      = request.ProcurementEndDate;
+        ppmpItem.ExpectedDeliveryStart   = request.ExpectedDeliveryStart;
+        ppmpItem.ExpectedDeliveryEnd     = request.ExpectedDeliveryEnd;
         if (request.Remarks != null)                   ppmpItem.Remarks                 = request.Remarks;
 
         ppmpItem.UpdatedAt = DateTime.UtcNow;
