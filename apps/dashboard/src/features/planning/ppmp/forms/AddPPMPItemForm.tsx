@@ -15,8 +15,7 @@ import {
 import { createQueryHookFromTemplate } from 'erpez-shared-lib'
 import FieldInfo from '@/components/FieldInfo'
 import { getProcurementModesRequest } from '@/lib/fiscal-year-and-policies/requests/getProcurementModesRequest'
-import { FieldGuidanceHint } from '../components/FieldGuidanceHint'
-import { getColumnGuideline } from '../lib/ngpaGuidelinesReference'
+import { FieldDescriptionTooltip } from '../components/FieldDescriptionTooltip'
 
 const useProcurementModes = createQueryHookFromTemplate(
   getProcurementModesRequest,
@@ -140,19 +139,7 @@ export function AddPPMPItemForm({
             <div className="space-y-1.5">
               <div className="flex items-center gap-1">
                 <Label htmlFor={field.name}>Item Name *</Label>
-                {getColumnGuideline(1) && (
-                  <FieldGuidanceHint
-                    guideline={getColumnGuideline(1)!}
-                    projectType={
-                      form.getFieldValue('projectType') === 'Infrastructure'
-                        ? 'infrastructure'
-                        : form.getFieldValue('projectType') ===
-                            'ConsultingServices'
-                          ? 'consulting'
-                          : 'goods'
-                    }
-                  />
-                )}
+                <FieldDescriptionTooltip fieldKey="name" className="h-4 w-4" />
               </div>
               <Input
                 id={field.name}
@@ -179,19 +166,7 @@ export function AddPPMPItemForm({
             <div className="space-y-1.5">
               <div className="flex items-center gap-1">
                 <Label htmlFor={field.name}>Unit of Measure *</Label>
-                {getColumnGuideline(3) && (
-                  <FieldGuidanceHint
-                    guideline={getColumnGuideline(3)!}
-                    projectType={
-                      form.getFieldValue('projectType') === 'Infrastructure'
-                        ? 'infrastructure'
-                        : form.getFieldValue('projectType') ===
-                            'ConsultingServices'
-                          ? 'consulting'
-                          : 'goods'
-                    }
-                  />
-                )}
+                <FieldDescriptionTooltip fieldKey="unit" className="h-4 w-4" />
               </div>
               <Input
                 id={field.name}
@@ -212,13 +187,20 @@ export function AddPPMPItemForm({
           name="unitPrice"
           validators={{
             onChange: ({ value }) => {
-              if (!value || value <= 0) return 'Unit price must be greater than 0'
+              if (!value || value <= 0)
+                return 'Unit price must be greater than 0'
               return undefined
             },
           }}
           children={(field) => (
             <div className="space-y-1.5">
-              <Label htmlFor={field.name}>Unit Price *</Label>
+              <div className="flex items-center gap-1">
+                <Label htmlFor={field.name}>Unit Price *</Label>
+                <FieldDescriptionTooltip
+                  fieldKey="unitPrice"
+                  className="h-4 w-4"
+                />
+              </div>
               <Input
                 id={field.name}
                 type="number"
@@ -242,18 +224,10 @@ export function AddPPMPItemForm({
             <div className="space-y-1.5">
               <div className="flex items-center gap-1">
                 <Label htmlFor={field.name}>Project Type</Label>
-                {getColumnGuideline(2) && (
-                  <FieldGuidanceHint
-                    guideline={getColumnGuideline(2)!}
-                    projectType={
-                      field.state.value === 'Infrastructure'
-                        ? 'infrastructure'
-                        : field.state.value === 'ConsultingServices'
-                          ? 'consulting'
-                          : 'goods'
-                    }
-                  />
-                )}
+                <FieldDescriptionTooltip
+                  fieldKey="projectType"
+                  className="h-4 w-4"
+                />
               </div>
               <Select
                 value={field.state.value}
@@ -296,19 +270,10 @@ export function AddPPMPItemForm({
             <div className="space-y-1.5">
               <div className="flex items-center gap-1">
                 <Label htmlFor={field.name}>Procurement Mode *</Label>
-                {getColumnGuideline(4) && (
-                  <FieldGuidanceHint
-                    guideline={getColumnGuideline(4)!}
-                    projectType={
-                      form.getFieldValue('projectType') === 'Infrastructure'
-                        ? 'infrastructure'
-                        : form.getFieldValue('projectType') ===
-                            'ConsultingServices'
-                          ? 'consulting'
-                          : 'goods'
-                    }
-                  />
-                )}
+                <FieldDescriptionTooltip
+                  fieldKey="procurementModeId"
+                  className="h-4 w-4"
+                />
               </div>
               <Select
                 value={field.state.value}
@@ -348,7 +313,13 @@ export function AddPPMPItemForm({
           name="papCode"
           children={(field) => (
             <div className="space-y-1.5">
-              <Label htmlFor={field.name}>PAP Code</Label>
+              <div className="flex items-center gap-1">
+                <Label htmlFor={field.name}>PAP Code</Label>
+                <FieldDescriptionTooltip
+                  fieldKey="papCode"
+                  className="h-4 w-4"
+                />
+              </div>
               <Input
                 id={field.name}
                 placeholder="e.g. 5-02-03-010"
@@ -367,7 +338,13 @@ export function AddPPMPItemForm({
         name="description"
         children={(field) => (
           <div className="space-y-1.5">
-            <Label htmlFor={field.name}>Description / Specifications</Label>
+            <div className="flex items-center gap-1">
+              <Label htmlFor={field.name}>Description / Specifications</Label>
+              <FieldDescriptionTooltip
+                fieldKey="description"
+                className="h-4 w-4"
+              />
+            </div>
             <Textarea
               id={field.name}
               placeholder="Detailed specifications of the item..."
@@ -398,19 +375,10 @@ export function AddPPMPItemForm({
               >
                 Pre-Procurement Conference Required
               </Label>
-              {getColumnGuideline(5) && (
-                <FieldGuidanceHint
-                  guideline={getColumnGuideline(5)!}
-                  projectType={
-                    form.getFieldValue('projectType') === 'Infrastructure'
-                      ? 'infrastructure'
-                      : form.getFieldValue('projectType') ===
-                          'ConsultingServices'
-                        ? 'consulting'
-                        : 'goods'
-                  }
-                />
-              )}
+              <FieldDescriptionTooltip
+                fieldKey="preProcurementConference"
+                className="h-4 w-4"
+              />
             </div>
           </div>
         )}
@@ -428,19 +396,10 @@ export function AddPPMPItemForm({
               <div className="space-y-1.5">
                 <div className="flex items-center gap-1">
                   <Label htmlFor={field.name}>Procurement Start Date</Label>
-                  {getColumnGuideline(6) && (
-                    <FieldGuidanceHint
-                      guideline={getColumnGuideline(6)!}
-                      projectType={
-                        form.getFieldValue('projectType') === 'Infrastructure'
-                          ? 'infrastructure'
-                          : form.getFieldValue('projectType') ===
-                              'ConsultingServices'
-                            ? 'consulting'
-                            : 'goods'
-                      }
-                    />
-                  )}
+                  <FieldDescriptionTooltip
+                    fieldKey="procurementStartDate"
+                    className="h-4 w-4"
+                  />
                 </div>
                 <Input
                   id={field.name}
@@ -460,19 +419,10 @@ export function AddPPMPItemForm({
               <div className="space-y-1.5">
                 <div className="flex items-center gap-1">
                   <Label htmlFor={field.name}>Procurement End Date</Label>
-                  {getColumnGuideline(7) && (
-                    <FieldGuidanceHint
-                      guideline={getColumnGuideline(7)!}
-                      projectType={
-                        form.getFieldValue('projectType') === 'Infrastructure'
-                          ? 'infrastructure'
-                          : form.getFieldValue('projectType') ===
-                              'ConsultingServices'
-                            ? 'consulting'
-                            : 'goods'
-                      }
-                    />
-                  )}
+                  <FieldDescriptionTooltip
+                    fieldKey="procurementEndDate"
+                    className="h-4 w-4"
+                  />
                 </div>
                 <Input
                   id={field.name}
@@ -494,19 +444,10 @@ export function AddPPMPItemForm({
               <div className="space-y-1.5">
                 <div className="flex items-center gap-1">
                   <Label htmlFor={field.name}>Expected Delivery Start</Label>
-                  {getColumnGuideline(8) && (
-                    <FieldGuidanceHint
-                      guideline={getColumnGuideline(8)!}
-                      projectType={
-                        form.getFieldValue('projectType') === 'Infrastructure'
-                          ? 'infrastructure'
-                          : form.getFieldValue('projectType') ===
-                              'ConsultingServices'
-                            ? 'consulting'
-                            : 'goods'
-                      }
-                    />
-                  )}
+                  <FieldDescriptionTooltip
+                    fieldKey="expectedDeliveryStart"
+                    className="h-4 w-4"
+                  />
                 </div>
                 <Input
                   id={field.name}
@@ -526,19 +467,10 @@ export function AddPPMPItemForm({
               <div className="space-y-1.5">
                 <div className="flex items-center gap-1">
                   <Label htmlFor={field.name}>Expected Delivery End</Label>
-                  {getColumnGuideline(8) && (
-                    <FieldGuidanceHint
-                      guideline={getColumnGuideline(8)!}
-                      projectType={
-                        form.getFieldValue('projectType') === 'Infrastructure'
-                          ? 'infrastructure'
-                          : form.getFieldValue('projectType') ===
-                              'ConsultingServices'
-                            ? 'consulting'
-                            : 'goods'
-                      }
-                    />
-                  )}
+                  <FieldDescriptionTooltip
+                    fieldKey="expectedDeliveryEnd"
+                    className="h-4 w-4"
+                  />
                 </div>
                 <Input
                   id={field.name}
@@ -558,7 +490,10 @@ export function AddPPMPItemForm({
         name="remarks"
         children={(field) => (
           <div className="space-y-1.5 border-t border-default-150 pt-4 mt-2">
-            <Label htmlFor={field.name}>Remarks</Label>
+            <div className="flex items-center gap-1">
+              <Label htmlFor={field.name}>Remarks / Notes</Label>
+              <FieldDescriptionTooltip fieldKey="remarks" className="h-4 w-4" />
+            </div>
             <Textarea
               id={field.name}
               placeholder="Additional remarks or notes..."

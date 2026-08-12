@@ -191,31 +191,8 @@ export const NGPA_PPMP_GUIDELINES: NGPAGuidelinesReference = {
 }
 
 /**
- * Get guideline for a specific column
- */
-export function getColumnGuideline(
-  columnNumber: number,
-): ColumnGuideline | undefined {
-  return NGPA_PPMP_GUIDELINES.columns.find(
-    (c) => c.columnNumber === columnNumber,
-  )
-}
-
-/**
  * Get all guidelines
  */
 export function getAllColumnGuidelines(): ColumnGuideline[] {
   return NGPA_PPMP_GUIDELINES.columns
-}
-
-/**
- * Get example for a specific column and project type
- */
-export function getColumnExample(
-  columnNumber: number,
-  projectType: 'goods' | 'infrastructure' | 'consulting',
-): string | undefined {
-  const guideline = getColumnGuideline(columnNumber)
-  if (!guideline) return undefined
-  return guideline.examples[projectType]
 }

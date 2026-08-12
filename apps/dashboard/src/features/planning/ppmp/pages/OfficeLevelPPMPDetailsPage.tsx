@@ -77,6 +77,7 @@ import {
   getRowCompletionClasses,
 } from '../hooks/useItemValidationStatus'
 import { RowCompletionIndicator } from '../components/RowCompletionIndicator'
+import { FieldDescriptionTooltip } from '../components/FieldDescriptionTooltip'
 
 // ============================
 // Type Definitions
@@ -614,15 +615,399 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
   const hasAllocations =
     item.PPMPItemAllocations && item.PPMPItemAllocations.length > 0
 
+  // Format date helper
+  const formatDateDisplay = (dateStr: string | null | undefined) => {
+    if (!dateStr) return '—'
+    try {
+      return new Date(dateStr).toLocaleDateString('en-US', {
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+      })
+    } catch {
+      return dateStr
+    }
+  }
+
   return (
     <div className="space-y-5 p-4 bg-default-50/50 rounded-xl border border-default-100">
+      {/* All Item Properties Section */}
+      <div className="border-b border-default-100 pb-4">
+        <h3 className="text-xs font-bold uppercase tracking-widest text-default-600 mb-3 flex items-center gap-2">
+          <Layers className="h-4 w-4" />
+          Complete Item Details
+        </h3>
+        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+          {/* ID */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
+                ID
+              </span>
+              <FieldDescriptionTooltip fieldKey="id" className="h-3.5 w-3.5" />
+            </div>
+            <p className="text-xs font-mono text-default-700 break-all">
+              {item.id || '—'}
+            </p>
+          </div>
+
+          {/* Item Name */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
+                Item Name
+              </span>
+              <FieldDescriptionTooltip
+                fieldKey="name"
+                className="h-3.5 w-3.5"
+              />
+            </div>
+            <p className="text-xs font-semibold text-default-850">
+              {item.name || '—'}
+            </p>
+          </div>
+
+          {/* CSE Item Name */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
+                CSE Item Name
+              </span>
+              <FieldDescriptionTooltip
+                fieldKey="cseItemName"
+                className="h-3.5 w-3.5"
+              />
+            </div>
+            <p className="text-xs text-default-700">
+              {item.cseItemName || '—'}
+            </p>
+          </div>
+
+          {/* Non-CSE Item Name */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
+                Non-CSE Item Name
+              </span>
+              <FieldDescriptionTooltip
+                fieldKey="nonCSEItemName"
+                className="h-3.5 w-3.5"
+              />
+            </div>
+            <p className="text-xs text-default-700">
+              {item.nonCSEItemName || '—'}
+            </p>
+          </div>
+
+          {/* Unit */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
+                Unit
+              </span>
+              <FieldDescriptionTooltip
+                fieldKey="unit"
+                className="h-3.5 w-3.5"
+              />
+            </div>
+            <p className="text-xs font-semibold text-default-700">
+              {item.unit || '—'}
+            </p>
+          </div>
+
+          {/* Unit Price */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
+                Unit Price
+              </span>
+              <FieldDescriptionTooltip
+                fieldKey="unitPrice"
+                className="h-3.5 w-3.5"
+              />
+            </div>
+            <p className="text-xs font-semibold text-default-850">
+              {formatCurrency(item.unitPrice)}
+            </p>
+          </div>
+
+          {/* Project Type */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
+                Project Type
+              </span>
+              <FieldDescriptionTooltip
+                fieldKey="projectType"
+                className="h-3.5 w-3.5"
+              />
+            </div>
+            <p className="text-xs font-semibold text-default-700">
+              {item.projectType || '—'}
+            </p>
+          </div>
+
+          {/* Procurement Mode Name */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
+                Mode of Procurement
+              </span>
+              <FieldDescriptionTooltip
+                fieldKey="procurementModeName"
+                className="h-3.5 w-3.5"
+              />
+            </div>
+            <p className="text-xs font-semibold text-default-700">
+              {item.procurementModeName || '—'}
+            </p>
+          </div>
+
+          {/* MOP Override */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
+                MOP Override
+              </span>
+              <FieldDescriptionTooltip
+                fieldKey="mopOverride"
+                className="h-3.5 w-3.5"
+              />
+            </div>
+            <Badge
+              variant={item.mopOverride ? 'soft' : 'outline'}
+              className="text-[9px] font-semibold w-fit"
+            >
+              {item.mopOverride ? 'Yes' : 'No'}
+            </Badge>
+          </div>
+
+          {/* Pre-Procurement Conference */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
+                Pre-Procurement Conf.
+              </span>
+              <FieldDescriptionTooltip
+                fieldKey="preProcurementConference"
+                className="h-3.5 w-3.5"
+              />
+            </div>
+            <Badge
+              variant={item.preProcurementConference ? 'soft' : 'outline'}
+              className="text-[9px] font-semibold w-fit"
+            >
+              {item.preProcurementConference ? 'Required' : 'Not Required'}
+            </Badge>
+          </div>
+
+          {/* PAP Code */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
+                PAP Code
+              </span>
+              <FieldDescriptionTooltip
+                fieldKey="papCode"
+                className="h-3.5 w-3.5"
+              />
+            </div>
+            <p className="text-xs font-mono text-default-700">
+              {item.papCode || '—'}
+            </p>
+          </div>
+
+          {/* Procurement Start Date */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
+                Procurement Start Date
+              </span>
+              <FieldDescriptionTooltip
+                fieldKey="procurementStartDate"
+                className="h-3.5 w-3.5"
+              />
+            </div>
+            <p className="text-xs text-default-700">
+              {formatDateDisplay(item.procurementStartDate)}
+            </p>
+          </div>
+
+          {/* Procurement End Date */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
+                Procurement End Date
+              </span>
+              <FieldDescriptionTooltip
+                fieldKey="procurementEndDate"
+                className="h-3.5 w-3.5"
+              />
+            </div>
+            <p className="text-xs text-default-700">
+              {formatDateDisplay(item.procurementEndDate)}
+            </p>
+          </div>
+
+          {/* Expected Delivery Start */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
+                Expected Delivery Start
+              </span>
+              <FieldDescriptionTooltip
+                fieldKey="expectedDeliveryStart"
+                className="h-3.5 w-3.5"
+              />
+            </div>
+            <p className="text-xs text-default-700">
+              {formatDateDisplay(item.expectedDeliveryStart)}
+            </p>
+          </div>
+
+          {/* Expected Delivery End */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
+                Expected Delivery End
+              </span>
+              <FieldDescriptionTooltip
+                fieldKey="expectedDeliveryEnd"
+                className="h-3.5 w-3.5"
+              />
+            </div>
+            <p className="text-xs text-default-700">
+              {formatDateDisplay(item.expectedDeliveryEnd)}
+            </p>
+          </div>
+
+          {/* CSE Item ID */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
+                CSE Item ID
+              </span>
+              <FieldDescriptionTooltip
+                fieldKey="cseItemId"
+                className="h-3.5 w-3.5"
+              />
+            </div>
+            <p className="text-xs font-mono text-default-600 break-all text-[9px]">
+              {item.cseItemId || '—'}
+            </p>
+          </div>
+
+          {/* Non-CSE Item ID */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
+                Non-CSE Item ID
+              </span>
+              <FieldDescriptionTooltip
+                fieldKey="nonCSEItemId"
+                className="h-3.5 w-3.5"
+              />
+            </div>
+            <p className="text-xs font-mono text-default-600 break-all text-[9px]">
+              {item.nonCSEItemId || '—'}
+            </p>
+          </div>
+
+          {/* Procurement Mode ID */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
+                Procurement Mode ID
+              </span>
+              <FieldDescriptionTooltip
+                fieldKey="procurementModeId"
+                className="h-3.5 w-3.5"
+              />
+            </div>
+            <p className="text-xs font-mono text-default-600 break-all text-[9px]">
+              {item.procurementModeId || '—'}
+            </p>
+          </div>
+
+          {/* PPMP Expenditure Item ID */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
+                Expenditure Item ID
+              </span>
+              <FieldDescriptionTooltip
+                fieldKey="ppmpExpenditureItemId"
+                className="h-3.5 w-3.5"
+              />
+            </div>
+            <p className="text-xs font-mono text-default-600 break-all text-[9px]">
+              {item.ppmpExpenditureItemId || '—'}
+            </p>
+          </div>
+
+          {/* Total Allocation Amount */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
+                Total Allocation Amount
+              </span>
+              <FieldDescriptionTooltip
+                fieldKey="totalAllocationAmount"
+                className="h-3.5 w-3.5"
+              />
+            </div>
+            <p className="text-xs font-bold text-primary">
+              {formatCurrency(item.PPMPItemAllocationTotalAmount || 0)}
+            </p>
+          </div>
+
+          {/* Created At */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
+                Created At
+              </span>
+              <FieldDescriptionTooltip
+                fieldKey="createdAt"
+                className="h-3.5 w-3.5"
+              />
+            </div>
+            <p className="text-xs text-default-600">
+              {formatDateDisplay(item.createdAt)}
+            </p>
+          </div>
+
+          {/* Created By */}
+          <div className="space-y-1">
+            <div className="flex items-center gap-1">
+              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
+                Created By
+              </span>
+              <FieldDescriptionTooltip
+                fieldKey="createdBy"
+                className="h-3.5 w-3.5"
+              />
+            </div>
+            <p className="text-xs text-default-700 font-mono">
+              {item.createdBy || '—'}
+            </p>
+          </div>
+        </div>
+      </div>
+
       <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-3">
         {/* Basic Details */}
         <div className="space-y-3 relative pr-8">
           <div>
-            <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
-              Specifications & Remarks
-            </span>
+            <div className="flex items-center gap-1 mb-1">
+              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
+                Specifications & Remarks
+              </span>
+              <FieldDescriptionTooltip
+                fieldKey="description"
+                className="h-3.5 w-3.5"
+              />
+            </div>
             <p className="text-xs text-default-600 mt-1 leading-relaxed">
               {item.description || 'No description provided.'}
             </p>
@@ -663,26 +1048,44 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
         {/* Classification */}
         <div className="space-y-3 border-t md:border-t-0 md:border-l border-default-100 md:pl-5">
           <div>
-            <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
-              PAP Code
-            </span>
+            <div className="flex items-center gap-1 mb-1">
+              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
+                PAP Code
+              </span>
+              <FieldDescriptionTooltip
+                fieldKey="papCode"
+                className="h-3.5 w-3.5"
+              />
+            </div>
             <p className="text-xs font-semibold text-default-850 mt-1">
               {item.papCode || '—'}
             </p>
           </div>
           <div>
-            <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
-              Mode of Procurement
-            </span>
+            <div className="flex items-center gap-1 mb-1">
+              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
+                Mode of Procurement
+              </span>
+              <FieldDescriptionTooltip
+                fieldKey="procurementModeName"
+                className="h-3.5 w-3.5"
+              />
+            </div>
             <p className="text-xs font-semibold text-default-850 mt-1">
               {item.procurementModeName || '—'}
             </p>
           </div>
           {item.mopOverride && item.mopJustification && (
             <div>
-              <span className="text-[10px] uppercase tracking-wider text-destructive font-semibold">
-                MOP Override Justification
-              </span>
+              <div className="flex items-center gap-1 mb-1">
+                <span className="text-[10px] uppercase tracking-wider text-destructive font-semibold">
+                  MOP Override Justification
+                </span>
+                <FieldDescriptionTooltip
+                  fieldKey="mopJustification"
+                  className="h-3.5 w-3.5"
+                />
+              </div>
               <p className="text-xs text-default-650 mt-1 bg-destructive/5 border border-destructive/10 p-2 rounded-lg italic">
                 {item.mopJustification}
               </p>
@@ -693,20 +1096,32 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
         {/* Timeline */}
         <div className="space-y-3 border-t lg:border-t-0 lg:border-l border-default-100 lg:pl-5">
           <div>
-            <span className="text-[10px] uppercase font-bold tracking-wider text-default-400 flex items-center gap-1">
+            <div className="flex items-center gap-1 mb-1">
               <CalendarDays className="h-3.5 w-3.5 text-primary" />
-              Procurement Schedule
-            </span>
+              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
+                Procurement Schedule
+              </span>
+              <FieldDescriptionTooltip
+                fieldKey="procurementStartDate"
+                className="h-3.5 w-3.5"
+              />
+            </div>
             <p className="text-xs text-default-700 mt-1">
               {formatDate(item.procurementStartDate)} –{' '}
               {formatDate(item.procurementEndDate)}
             </p>
           </div>
           <div>
-            <span className="text-[10px] uppercase font-bold tracking-wider text-default-400 flex items-center gap-1">
+            <div className="flex items-center gap-1 mb-1">
               <Clock className="h-3.5 w-3.5 text-info" />
-              Expected Delivery Window
-            </span>
+              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
+                Expected Delivery Window
+              </span>
+              <FieldDescriptionTooltip
+                fieldKey="expectedDeliveryStart"
+                className="h-3.5 w-3.5"
+              />
+            </div>
             <p className="text-xs text-default-700 mt-1">
               {formatDate(item.expectedDeliveryStart)} –{' '}
               {formatDate(item.expectedDeliveryEnd)}
@@ -718,9 +1133,15 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
       {/* Mini Allocation Schedule */}
       <div className="border-t border-default-100 pt-4">
         <div className="flex items-center justify-between mb-2.5">
-          <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
-            Item Monthly Distribution Schedule
-          </span>
+          <div className="flex items-center gap-1">
+            <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
+              Item Monthly Distribution Schedule
+            </span>
+            <FieldDescriptionTooltip
+              fieldKey="monthlyAllocations"
+              className="h-3.5 w-3.5"
+            />
+          </div>
           {hasAllocations && onEditAllocations && (
             <Button
               type="button"
