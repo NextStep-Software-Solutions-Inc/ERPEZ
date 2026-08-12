@@ -71,6 +71,20 @@ namespace ERPEZ.Api.Controllers
             return response.Succeeded ? Ok(response) : BadRequest(response);
         }
 
+        [HttpPost("organization/{organizationId}/bulk")]
+        [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> BulkAssignOrganizationFundSource(
+            Guid organizationId, 
+            [FromBody] List<Guid> fundSourceIds)
+        {
+            var command = new ERPEZ.Application.Features.Planning.FundSource.Commands.BulkAssignOrganizationFundSource.BulkAssignOrganizationFundSourceCommand(
+                organizationId, 
+                fundSourceIds);
+            var response = await mediator.Send(command);
+            return response.Succeeded ? Ok(response) : BadRequest(response);
+        }
+
         [HttpPost("import-excel")]
         [Consumes("multipart/form-data")]
         [ProducesResponseType(typeof(ApiResponse<int>), StatusCodes.Status200OK)]

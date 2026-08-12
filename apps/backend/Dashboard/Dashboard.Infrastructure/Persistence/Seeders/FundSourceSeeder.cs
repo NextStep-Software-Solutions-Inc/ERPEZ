@@ -50,6 +50,13 @@ public static class FundSourceSeeder
         var existingSources = await context.FundSources!
             .ToDictionaryAsync(fs => fs.Code, StringComparer.OrdinalIgnoreCase, cancellationToken);
 
+        var existingOrgs = await context.Organizations!
+            .ToDictionaryAsync(o => o.Name, StringComparer.OrdinalIgnoreCase, cancellationToken);
+
+        var existingLinks = await context.OrganizationFundSources!
+            .Select(l => new { l.OrganizationId, l.FundSourceId })
+            .ToHashSetAsync(cancellationToken);
+
         for (int rowNum = 2; rowNum <= lastRow; rowNum++)
         {
             var row = worksheet.Row(rowNum);
@@ -60,6 +67,8 @@ public static class FundSourceSeeder
             var fundCategoryName  = GetCellValue(row, 4, "D"); // Fund Category
             var fundSubCatName    = GetCellValue(row, 5, "E"); // Fund Sub-Category
             var description       = GetCellValue(row, 6, "F"); // Description
+            var departmentName    = GetCellValue(row, 7, "G"); // Department
+            var agencyName        = GetCellValue(row, 8, "H"); // Agency
             var uacsCodeRaw       = GetCellValue(row, 9, "I"); // UACS Code
             var statusRaw         = GetCellValue(row, 10, "J"); // Status
 
@@ -173,6 +182,42 @@ public static class FundSourceSeeder
                 existingSources[uacsCode] = leafSource;
                 importedCount++;
             }
+
+            var targetOrgName = !string.IsNullOrWhiteSpace(agencyName) ? agencyName : departmentName;
+            if (!string.IsNullOrWhiteSpace(targetOrgName))
+            {
+                if (!existingOrgs.TryGetValue(targetOrgName, out var targetOrg))
+                {
+                    var code = Regex.Replace(targetOrgName.ToUpper(), @"[^A-Z0-9]", "");
+                    if (code.Length > 10) code = code.Substring(0, 10);
+
+                    targetOrg = new Organization
+                    {
+                        Id = Guid.NewGuid(),
+                        Name = targetOrgName,
+                        Code = code,
+                        Type = "Department",
+                        IsActive = true
+                    };
+                    context.Organizations!.Add(targetOrg);
+                    existingOrgs[targetOrgName] = targetOrg;
+                }
+
+                var linkKey = new { OrganizationId = targetOrg.Id, FundSourceId = leafSource.Id };
+                if (!existingLinks.Contains(linkKey))
+                {
+                    context.OrganizationFundSources!.Add(new OrganizationFundSource
+                    {
+                        Id = Guid.NewGuid(),
+                        OrganizationId = targetOrg.Id,
+                        FundSourceId = leafSource.Id,
+                        IsActive = true
+                    });
+                    existingLinks.Add(linkKey);
+                }
+            }
+
+            importedCount++;
         }
 
         await context.SaveChangesAsync(cancellationToken);

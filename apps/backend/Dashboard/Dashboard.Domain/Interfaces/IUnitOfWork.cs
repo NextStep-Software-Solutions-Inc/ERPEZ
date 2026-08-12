@@ -14,6 +14,7 @@ public interface IUnitOfWork
     IDeliveryUnitRepository DeliveryUnitRepository { get; }
     IOfficeRepository OfficeRepository { get; }
     IOrganizationRepository OrganizationRepository { get; }
+    IRepository<Domain.Entities.Planning.OrganizationFundSource> OrganizationFundSourceRepository { get; }
     IFundSourceRepository FundSourceRepository { get; }
     ITransactionRepository TransactionRepository { get; }
     IMFOPAPRepository MFOPAPRepository { get; }

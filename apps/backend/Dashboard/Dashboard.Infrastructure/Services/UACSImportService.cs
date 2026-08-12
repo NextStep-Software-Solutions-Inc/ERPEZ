@@ -10,6 +10,8 @@ using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using FluentValidation;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.DependencyInjection;
+using ERPEZ.Infrastructure.Persistence;
 using ObjectEntity = ERPEZ.Domain.Entities.Planning.Object;
 using System.Text;
 
@@ -42,6 +44,7 @@ public class UACSImportService : IUACSCsvImporter
         var validRecords = new List<object>();
 
         int totalRows;
+        bool isAlreadyHandled = false;
         try
         {
             var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
@@ -63,7 +66,19 @@ public class UACSImportService : IUACSCsvImporter
             switch (segmentType)
             {
                 case UACSSegmentTypeEnum.FundSource:
-                    totalRows = await ProcessFundSourcesAsync(csv, validRecords, errors, cancellationToken);
+                    if (isExcel && !isDryRun)
+                    {
+                        var dbContext = serviceProvider.GetRequiredService<ApplicationDbContext>();
+                        using var excelStream = file.OpenReadStream();
+                        var importedCount = await ERPEZ.Infrastructure.Persistence.Seeders.FundSourceSeeder.SeedFromExcelAsync(dbContext, excelStream, cancellationToken);
+                        totalRows = importedCount;
+                        for (int i = 0; i < importedCount; i++) validRecords.Add(new object());
+                        isAlreadyHandled = true;
+                    }
+                    else
+                    {
+                        totalRows = await ProcessFundSourcesAsync(csv, validRecords, errors, cancellationToken);
+                    }
                     break;
                 case UACSSegmentTypeEnum.Organization:
                     totalRows = await ProcessOrganizationsAsync(csv, validRecords, errors, cancellationToken);
@@ -94,7 +109,7 @@ public class UACSImportService : IUACSCsvImporter
         var successfulRows = validRecords.Count;
         var failedRows = totalRows - successfulRows;
 
-        if (!isDryRun && validRecords.Count > 0)
+        if (!isDryRun && !isAlreadyHandled && validRecords.Count > 0)
         {
             await BatchInsertRecordsAsync(validRecords, cancellationToken);
         }
@@ -132,12 +147,45 @@ public class UACSImportService : IUACSCsvImporter
 
             try
             {
+                var code = csv.TryGetField<string>("Code", out var cVal) && !string.IsNullOrWhiteSpace(cVal)
+                    ? cVal
+                    : (csv.TryGetField<string>("UACS Code", out var uacsVal) && !string.IsNullOrWhiteSpace(uacsVal)
+                        ? uacsVal
+                        : (csv.TryGetField<string>("UACS", out var uacsShortVal) ? uacsShortVal : string.Empty));
+
+                var name = csv.TryGetField<string>("Name", out var nVal) && !string.IsNullOrWhiteSpace(nVal)
+                    ? nVal
+                    : (csv.TryGetField<string>("Fund Sub-Category", out var subCatVal) && !string.IsNullOrWhiteSpace(subCatVal)
+                        ? subCatVal
+                        : (csv.TryGetField<string>("Fund Category", out var catVal) && !string.IsNullOrWhiteSpace(catVal)
+                            ? catVal
+                            : (csv.TryGetField<string>("Description", out var descVal) ? descVal : string.Empty)));
+
+                var typeStr = csv.TryGetField<string>("Type", out var tVal) ? tVal : null;
+                FundSourceTypeEnum type = FundSourceTypeEnum.FundSubCategory;
+
+                if (!string.IsNullOrWhiteSpace(typeStr) && Enum.TryParse<FundSourceTypeEnum>(typeStr, true, out var parsedType))
+                {
+                    type = parsedType;
+                }
+                else
+                {
+                    var cleanCode = System.Text.RegularExpressions.Regex.Replace(code ?? string.Empty, @"[^\d]", "");
+                    type = cleanCode.Length switch
+                    {
+                        2 => FundSourceTypeEnum.FundCluster,
+                        3 => FundSourceTypeEnum.FinancingSource,
+                        5 => FundSourceTypeEnum.AuthorizationCode,
+                        _ => FundSourceTypeEnum.FundSubCategory
+                    };
+                }
+
                 var record = new FundSource
                 {
-                    Code = csv.GetField<string>("Code") ?? string.Empty,
-                    Name = csv.GetField<string>("Name") ?? string.Empty,
-                    Type = Enum.Parse<FundSourceTypeEnum>(csv.GetField<string>("Type") ?? "Other"),
-                    IsActive = csv.GetField<bool>("IsActive")
+                    Code = code ?? string.Empty,
+                    Name = name ?? string.Empty,
+                    Type = type,
+                    IsActive = true
                 };
 
                 var validationErrors = await ValidateRecordAsync(record, cancellationToken);

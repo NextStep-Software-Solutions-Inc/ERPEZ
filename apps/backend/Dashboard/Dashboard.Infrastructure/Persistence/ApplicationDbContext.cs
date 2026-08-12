@@ -36,6 +36,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<OPCRRating>? OPCRRatings { get; set; }
     public DbSet<OPCRPAPDepartment>? OPCRPAPDepartments { get; set; }
     public DbSet<Organization>? Organizations { get; set; }
+    public DbSet<OrganizationFundSource>? OrganizationFundSources { get; set; }
     public DbSet<PerformanceMeasure>? PerformanceMeasures { get; set; }
     public DbSet<Transaction>? Transactions { get; set; }
     public DbSet<WFP>? WFPs { get; set; }
@@ -244,6 +245,18 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<DUKPITargetAssignment>()
             .HasIndex(da => new { da.DeliveryUnitId, da.KPIId, da.KPITargetId })
             .IsUnique();
+
+        // OrganizationFundSource
+        modelBuilder.Entity<OrganizationFundSource>(entity =>
+        {
+            entity.ToTable("OrganizationFundSources", "planning");
+            entity.HasOne(ofs => ofs.Organization)
+                .WithMany(o => o.OrganizationFundSources)
+                .HasForeignKey(ofs => ofs.OrganizationId);
+            entity.HasOne(ofs => ofs.FundSource)
+                .WithMany(fs => fs.OrganizationFundSources)
+                .HasForeignKey(ofs => ofs.FundSourceId);
+        });
 
         // KPIModeOfVerification
         modelBuilder.Entity<KPIModeOfVerification>()

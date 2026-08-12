@@ -32,6 +32,23 @@ public class GetFundSourcesQueryHandler(IUnitOfWork unitOfWork) : IRequestHandle
                 : $"{sieveModel.Filters},{fiscalYearFilter}";
         }
 
+        // Add organization filter if provided
+        if (query.OrganizationId.HasValue)
+        {
+            var assignedLinks = await unitOfWork.OrganizationFundSourceRepository.ToListAsync(
+                unitOfWork.OrganizationFundSourceRepository.Query(l => l.OrganizationId == query.OrganizationId.Value && l.IsActive),
+                cancellationToken);
+            var assignedIds = assignedLinks.Select(l => l.FundSourceId).ToList();
+
+            if (assignedIds.Count > 0)
+            {
+                var orgFilter = string.Join("|", assignedIds.Select(id => $"Id=={id}"));
+                sieveModel.Filters = string.IsNullOrEmpty(sieveModel.Filters)
+                    ? orgFilter
+                    : $"{sieveModel.Filters},({orgFilter})";
+            }
+        }
+
         var (fundSources, totalCount) = await unitOfWork.FundSourceRepository.GetPagedWithNavigationAsync(sieveModel, cancellationToken);
 
         var response = fundSources.Select(fundSource => new FundSourceResponse

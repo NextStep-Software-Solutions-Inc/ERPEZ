@@ -102,14 +102,20 @@ export default function CreateWFPForm({
     enabled: opcrModeSelected,
   })
 
-  // 3. Fetch fund sources (pageSize 1000 to load all fund sources)
-  const { data: fundSourcesResponse, isLoading: fundSourcesLoading } = useFundSources({
-    pathParams: {},
-    queryParams: { pageSize: 1000 },
-  })
-
   const offices = officesResponse?.data || []
   const rawOpcrs = opcrsResponse?.data || []
+
+  // Extract selected Office and Organization ID to filter Fund Sources
+  const selectedOfficeIdForQuery = formData.officeId || ''
+  const selectedOfficeObj = offices.find((o: any) => o.id === selectedOfficeIdForQuery)
+  const selectedOrgId = selectedOfficeObj?.organizationId || selectedOfficeObj?.organization?.id
+
+  // 3. Fetch fund sources (filtered by organizationId if office selected, max 1000 items)
+  const { data: fundSourcesResponse, isLoading: fundSourcesLoading } = useFundSources({
+    pathParams: {},
+    queryParams: { pageSize: 1000, ...(selectedOrgId ? { organizationId: selectedOrgId } : {}) },
+  })
+
   const fundSources = fundSourcesResponse?.data || []
 
   const form = useForm({
