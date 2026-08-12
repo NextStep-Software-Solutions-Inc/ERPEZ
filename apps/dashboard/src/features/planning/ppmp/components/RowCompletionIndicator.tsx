@@ -90,12 +90,14 @@ export function RowCompletionIndicator({
                 <p className="text-[11px] font-bold text-default-700 uppercase tracking-wide mb-1">
                   Missing
                 </p>
-                <li className="flex items-center gap-1.5 text-[11px] list-none">
-                  <span className="h-1 w-1 rounded-full bg-amber-500 shrink-0" />
-                  <span className="text-amber-600 font-medium">
-                    Monthly Allocations
-                  </span>
-                </li>
+                <ul className="list-none space-y-0.5">
+                  <li className="flex items-center gap-1.5 text-[11px]">
+                    <span className="h-1 w-1 rounded-full bg-amber-500 shrink-0" />
+                    <span className="text-amber-600 font-medium">
+                      Monthly Allocations
+                    </span>
+                  </li>
+                </ul>
               </div>
             )}
           </div>

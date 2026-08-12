@@ -86,25 +86,35 @@ export function AddPPMPItemForm({
     onSubmit: async ({ value }) => {
       // Validate using Zod schema before submission
       try {
-        await ppmpItemSchema.parseAsync(value)
-        onSubmit(value)
+        const validatedData = await ppmpItemSchema.parseAsync(value)
+        onSubmit(validatedData)
       } catch (error) {
         if (error instanceof z.ZodError) {
-          // Surface Zod validation errors to form fields
+          // Surface Zod validation errors to form fields with proper error display
           error.issues.forEach((issue) => {
             const fieldName = issue.path[0] as string | undefined
             if (fieldName) {
-              form.setFieldMeta(
+              // Mark field as touched and set validation error
+              const field = form.getFieldMeta(
                 fieldName as keyof PPMPItemFormValues,
-                (prev) => ({
-                  ...prev,
-                  errors: [{ message: issue.message }],
-                  isTouched: true,
-                }),
               )
+              if (field) {
+                form.setFieldMeta(
+                  fieldName as keyof PPMPItemFormValues,
+                  (prev) => ({
+                    ...prev,
+                    errors: [issue.message],
+                    isTouched: true,
+                    isValidating: false,
+                  }),
+                )
+              }
             }
           })
-          return // Prevent submission
+          // Throw error to prevent form submission without visible feedback
+          throw new Error(
+            'Form validation failed. Please check all required fields.',
+          )
         }
         throw error
       }

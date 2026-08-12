@@ -874,8 +874,8 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
   })
   const nonCseItem = nonCseItemResp?.data
 
-  // Modal State
-  const [modalOpen, setModalOpen] = useState(false)
+  // Modal State - keyed to prevent both CSE and Non-CSE modals opening simultaneously
+  const [activeModal, setActiveModal] = useState<'cse' | 'non-cse' | null>(null)
 
   return (
     <div className="space-y-5 p-4 bg-default-50/50 rounded-xl border border-default-100">
@@ -1433,15 +1433,15 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
                     type="button"
                     variant="link"
                     size="sm"
-                    onClick={() => setModalOpen(true)}
+                    onClick={() => setActiveModal('cse')}
                     className="h-6 text-[10px] font-semibold text-primary hover:text-primary-active p-0 flex items-center gap-1 mt-1 shrink-0"
                   >
                     <Eye className="h-3 w-3" />
                     View specifications & image
                   </Button>
                   <ReferencedItemModal
-                    isOpen={modalOpen}
-                    onClose={() => setModalOpen(false)}
+                    isOpen={activeModal === 'cse'}
+                    onClose={() => setActiveModal(null)}
                     type="cse"
                     itemDetails={cseItem}
                   />
@@ -1504,15 +1504,15 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
                     type="button"
                     variant="link"
                     size="sm"
-                    onClick={() => setModalOpen(true)}
+                    onClick={() => setActiveModal('non-cse')}
                     className="h-6 text-[10px] font-semibold text-amber-700 hover:text-amber-800 p-0 flex items-center gap-1 mt-1 shrink-0"
                   >
                     <Eye className="h-3 w-3" />
                     View specifications
                   </Button>
                   <ReferencedItemModal
-                    isOpen={modalOpen}
-                    onClose={() => setModalOpen(false)}
+                    isOpen={activeModal === 'non-cse'}
+                    onClose={() => setActiveModal(null)}
                     type="non-cse"
                     itemDetails={nonCseItem}
                   />
