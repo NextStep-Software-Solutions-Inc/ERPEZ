@@ -84,15 +84,29 @@ export function AddPPMPItemForm({
       remarks: initialValues?.remarks ?? '',
     } as PPMPItemFormValues,
     onSubmit: async ({ value }) => {
-      // Validate on submit
+      // Validate using Zod schema before submission
       try {
         await ppmpItemSchema.parseAsync(value)
         onSubmit(value)
       } catch (error) {
         if (error instanceof z.ZodError) {
-          console.error('Validation error:', error.issues)
-          // Form will show field-level errors
+          // Surface Zod validation errors to form fields
+          error.issues.forEach((issue) => {
+            const fieldName = issue.path[0] as string | undefined
+            if (fieldName) {
+              form.setFieldMeta(
+                fieldName as keyof PPMPItemFormValues,
+                (prev) => ({
+                  ...prev,
+                  errors: [{ message: issue.message }],
+                  isTouched: true,
+                }),
+              )
+            }
+          })
+          return // Prevent submission
         }
+        throw error
       }
     },
   })

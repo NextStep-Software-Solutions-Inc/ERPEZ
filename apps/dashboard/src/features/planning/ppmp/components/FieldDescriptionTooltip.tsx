@@ -5,6 +5,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
+import { Button } from '@/components/ui/button'
 import type { PPMPFieldKey } from '../lib/ppmpFieldDescriptions'
 import { getFieldDescription } from '../lib/ppmpFieldDescriptions'
 
@@ -17,6 +18,7 @@ interface FieldDescriptionTooltipProps {
 /**
  * FieldDescriptionTooltip
  * Displays a help icon with tooltip containing field description, examples, and guidance
+ * Keyboard accessible and screen-reader friendly with proper ARIA labeling
  */
 export function FieldDescriptionTooltip({
   fieldKey,
@@ -27,13 +29,24 @@ export function FieldDescriptionTooltip({
 
   if (!fieldDesc || !showIcon) return null
 
+  const ariaLabel = `Help: ${fieldDesc.label}`
+
   return (
     <TooltipProvider>
       <Tooltip delayDuration={300}>
         <TooltipTrigger asChild>
-          <HelpCircle
-            className={`${className} text-default-400 hover:text-primary cursor-help transition-colors`}
-          />
+          <Button
+            variant="ghost"
+            size="sm"
+            className="h-auto w-auto p-0 hover:bg-transparent"
+            aria-label={ariaLabel}
+            tabIndex={0}
+          >
+            <HelpCircle
+              className={`${className} text-default-400 hover:text-primary cursor-help transition-colors`}
+              aria-hidden="true"
+            />
+          </Button>
         </TooltipTrigger>
         <TooltipContent
           side="top"
