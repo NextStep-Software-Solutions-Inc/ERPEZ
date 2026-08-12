@@ -62,7 +62,7 @@ export function RowCompletionIndicator({
             {icon}
           </span>
         </TooltipTrigger>
-        <TooltipContent side="top" className="max-w-55 p-2.5">
+        <TooltipContent side="top" className="max-w-55 p-2.5 bg-accent">
           <div className="space-y-1.5">
             {hasDetailsMissing && (
               <div>
