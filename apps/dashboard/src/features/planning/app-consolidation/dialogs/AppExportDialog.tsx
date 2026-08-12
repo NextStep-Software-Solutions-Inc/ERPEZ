@@ -1,12 +1,18 @@
 /**
- * AppExportDialog - Task 2.1 (Main Export Dialog)
- * Full-screen preview modal with Export to Excel and PDF buttons
- * Integrates all export formatting, calculations, and utilities
+ * AppExportDialog — Export APP as PDF or Excel via the backend DocumentController.
+ *
+ * Flow:
+ *   1. POST /api/planning/documents/app/{appId}/generate?format=Pdf|Excel
+ *      → returns { data: documentId }
+ *   2. GET /api/planning/documents/{documentId}/download
+ *      → streams the binary file
+ *
+ * Both Preview and Download use the canonical backend QuestPDF generator.
  */
 
-import { useState, useCallback } from 'react'
+import { useState, useCallback, useEffect } from 'react'
 import { toast } from 'sonner'
-import { Download, Loader2, FileText, Table2 } from 'lucide-react'
+import { Download, Loader2, FileText, Table2, RefreshCw } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   Dialog,
@@ -16,11 +22,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/components/ui/dialog'
-import { generatePDFContent } from '../utils/pdfExporter'
-import { prepareExcelData } from '../utils/excelExporter'
-import type { AppMaster } from '../types'
-import { AppDocumentTemplate } from '../components'
+import { generateAppDocument, fetchAppPdfBlobUrl } from '../handlers/generateAppDocumentRequest'
 import { generateExportFilename } from '../utils/appExportEngine'
+import type { AppMaster } from '../types'
 
 interface AppExportDialogProps {
   open: boolean
@@ -31,54 +35,76 @@ interface AppExportDialogProps {
 export function AppExportDialog({ open, onOpenChange, app }: AppExportDialogProps) {
   const [isExporting, setIsExporting] = useState(false)
   const [exportType, setExportType] = useState<'preview' | 'excel' | 'pdf'>('preview')
+  const [previewPdfUrl, setPreviewPdfUrl] = useState<string | null>(null)
+  const [isPreviewLoading, setIsPreviewLoading] = useState(false)
+  const [previewError, setPreviewError] = useState<string | null>(null)
 
-  const handleExportToExcel = useCallback(async () => {
-    if (!app) {
-      toast.error('No APP selected')
-      return
+  const loadPdfPreview = useCallback(async () => {
+    if (!app) return
+    setIsPreviewLoading(true)
+    setPreviewError(null)
+
+    try {
+      const { blobUrl } = await fetchAppPdfBlobUrl(app.id)
+      setPreviewPdfUrl((prevUrl) => {
+        if (prevUrl) URL.revokeObjectURL(prevUrl)
+        return blobUrl
+      })
+    } catch (error) {
+      console.error('Failed to generate preview PDF:', error)
+      setPreviewError('Failed to load PDF document preview from backend renderer.')
+    } finally {
+      setIsPreviewLoading(false)
     }
+  }, [app])
+
+  useEffect(() => {
+    if (open && app && exportType === 'preview' && !previewPdfUrl && !isPreviewLoading) {
+      loadPdfPreview()
+    }
+  }, [open, app, exportType, previewPdfUrl, isPreviewLoading, loadPdfPreview])
+
+  // Cleanup object URL when modal closes
+  useEffect(() => {
+    if (!open && previewPdfUrl) {
+      URL.revokeObjectURL(previewPdfUrl)
+      setPreviewPdfUrl(null)
+    }
+  }, [open, previewPdfUrl])
+
+  const handleExportToPDF = useCallback(async () => {
+    if (!app) { toast.error('No APP selected'); return }
 
     setIsExporting(true)
     try {
-      // Mock export - prepare data structure
-      const filename = generateExportFilename(app, 'xlsx')
-      prepareExcelData(app) // Prepare but don't use in mock
-
-      // Simulate export processing
-      await new Promise(resolve => setTimeout(resolve, 1000))
-
-      // Mock success
-      toast.success(`APP export prepared: ${filename}`)
-      toast.info('Ready for API integration: Connect to actual Excel export service')
+      await generateAppDocument({
+        appId: app.id,
+        format: 'Pdf',
+        filename: generateExportFilename(app, 'pdf'),
+      })
+      toast.success('APP PDF downloaded successfully')
     } catch (error) {
-      console.error('Export preparation failed:', error)
-      toast.error('Failed to prepare export')
+      console.error('PDF export failed:', error)
+      toast.error('Failed to generate PDF — please try again')
     } finally {
       setIsExporting(false)
     }
   }, [app])
 
-  const handleExportToPDF = useCallback(async () => {
-    if (!app) {
-      toast.error('No APP selected')
-      return
-    }
+  const handleExportToExcel = useCallback(async () => {
+    if (!app) { toast.error('No APP selected'); return }
 
     setIsExporting(true)
     try {
-      // Mock export - prepare HTML content
-      generatePDFContent(app) // Prepare but don't use in mock
-      const filename = generateExportFilename(app, 'pdf')
-
-      // Simulate export processing
-      await new Promise(resolve => setTimeout(resolve, 1000))
-
-      // Mock success
-      toast.success(`APP PDF export prepared: ${filename}`)
-      toast.info('Ready for API integration: Connect to actual PDF export service')
+      await generateAppDocument({
+        appId: app.id,
+        format: 'Excel',
+        filename: generateExportFilename(app, 'xlsx'),
+      })
+      toast.success('APP Excel file downloaded successfully')
     } catch (error) {
-      console.error('Export preparation failed:', error)
-      toast.error('Failed to prepare PDF export')
+      console.error('Excel export failed:', error)
+      toast.error('Failed to generate Excel file — please try again')
     } finally {
       setIsExporting(false)
     }
@@ -88,23 +114,30 @@ export function AppExportDialog({ open, onOpenChange, app }: AppExportDialogProp
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[90vh] flex flex-col z-[99999]" size='full'>
+      <DialogContent className="max-h-[92vh] flex flex-col z-[99999]" size='full'>
         <DialogHeader>
-          <DialogTitle className="text-2xl">Export Annual Procurement Plan</DialogTitle>
-          <DialogDescription>
-            Preview and export your {app.appType} APP for submission to DBM and posting on PhilGEPS
-          </DialogDescription>
+          <div className="flex items-center justify-between">
+            <div>
+              <DialogTitle className="text-2xl">Export Annual Procurement Plan</DialogTitle>
+              <DialogDescription>
+                Preview and export official NGPA-formatted document ({app.appType} APP — FY {app.fiscalYear})
+              </DialogDescription>
+            </div>
+          </div>
         </DialogHeader>
 
-        {/* Export Options */}
-        <div className="flex gap-2 border-b pb-4">
+        {/* Export Mode Tabs */}
+        <div className="flex gap-2 border-b pb-3">
           <Button
             variant={exportType === 'preview' ? 'default' : 'outline'}
-            onClick={() => setExportType('preview')}
+            onClick={() => {
+              setExportType('preview')
+              if (!previewPdfUrl) loadPdfPreview()
+            }}
             className="flex items-center gap-2"
           >
             <FileText className="h-4 w-4" />
-            Preview
+            PDF Preview
           </Button>
           <Button
             variant={exportType === 'excel' ? 'default' : 'outline'}
@@ -120,62 +153,103 @@ export function AppExportDialog({ open, onOpenChange, app }: AppExportDialogProp
             className="flex items-center gap-2"
           >
             <Download className="h-4 w-4" />
-            PDF Format
+            PDF Download
           </Button>
         </div>
 
-        {/* Content Area */}
-        <div className="flex-1 overflow-y-auto bg-gray-50 p-6 rounded-lg">
-          {exportType === 'preview' && <AppDocumentTemplate app={app} showSignatories={true} />}
+        {/* Main Content Area */}
+        <div className="flex-1 overflow-y-auto bg-slate-100 p-4 rounded-lg flex flex-col min-h-[500px]">
+          {/* PDF Preview Mode */}
+          {exportType === 'preview' && (
+            <div className="flex-1 flex flex-col h-full bg-white rounded-lg p-2 shadow-xs border">
+              <div className="flex items-center justify-between bg-slate-50 px-4 py-2 rounded mb-2 border text-xs">
+                <span className="font-semibold text-slate-700">
+                  Official NGPA APP PDF Document Preview (Backend Generated)
+                </span>
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  onClick={loadPdfPreview}
+                  disabled={isPreviewLoading}
+                  className="h-7 gap-1 text-slate-600 hover:text-slate-900"
+                >
+                  <RefreshCw className={`h-3.5 w-3.5 ${isPreviewLoading ? 'animate-spin' : ''}`} />
+                  Refresh
+                </Button>
+              </div>
 
+              {isPreviewLoading ? (
+                <div className="flex-1 flex flex-col items-center justify-center py-24 text-slate-500 gap-3">
+                  <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
+                  <p className="text-sm font-medium">Generating official NGPA PDF document from backend...</p>
+                </div>
+              ) : previewError ? (
+                <div className="flex-1 flex flex-col items-center justify-center py-20 text-red-600 gap-3">
+                  <p className="text-sm font-medium">{previewError}</p>
+                  <Button size="sm" variant="outline" onClick={loadPdfPreview}>
+                    Retry Preview Generation
+                  </Button>
+                </div>
+              ) : previewPdfUrl ? (
+                <iframe
+                  src={previewPdfUrl}
+                  className="w-full flex-1 min-h-[550px] border-0 rounded"
+                  title="Official NGPA APP PDF Preview"
+                />
+              ) : null}
+            </div>
+          )}
+
+          {/* Excel Export Mode */}
           {exportType === 'excel' && (
-            <div className="bg-white p-8 rounded text-center py-20">
-              <Table2 className="h-16 w-16 mx-auto text-gray-400 mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Export to Excel</h3>
-              <p className="text-gray-600 mb-6">
-                Download the APP in Excel format (XLSX) with all formatting and calculations preserved.
+            <div className="bg-white p-8 rounded-lg text-center py-20 my-auto border shadow-xs">
+              <Table2 className="h-16 w-16 mx-auto text-emerald-500 mb-4" />
+              <h3 className="text-xl font-bold mb-2 text-slate-800">Export to Excel (XLSX)</h3>
+              <p className="text-slate-600 max-w-md mx-auto mb-6 text-sm">
+                Download the official Annual Procurement Plan formatted for Microsoft Excel with all 12 NGPA columns, calculations, and formulas.
               </p>
               <Button
                 onClick={handleExportToExcel}
                 disabled={isExporting}
-                className="flex items-center gap-2 mx-auto"
+                className="flex items-center gap-2 mx-auto bg-emerald-600 hover:bg-emerald-700 text-white font-semibold"
               >
                 {isExporting ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Exporting...
+                    Generating Excel File...
                   </>
                 ) : (
                   <>
                     <Download className="h-4 w-4" />
-                    Download Excel
+                    Download Excel Document
                   </>
                 )}
               </Button>
             </div>
           )}
 
+          {/* PDF Download Mode */}
           {exportType === 'pdf' && (
-            <div className="bg-white p-8 rounded text-center py-20">
-              <FileText className="h-16 w-16 mx-auto text-gray-400 mb-4" />
-              <h3 className="text-lg font-semibold mb-2">Export to PDF</h3>
-              <p className="text-gray-600 mb-6">
-                Generate a PDF document suitable for printing and submission to government agencies.
+            <div className="bg-white p-8 rounded-lg text-center py-20 my-auto border shadow-xs">
+              <FileText className="h-16 w-16 mx-auto text-purple-600 mb-4" />
+              <h3 className="text-xl font-bold mb-2 text-slate-800">Export to PDF</h3>
+              <p className="text-slate-600 max-w-md mx-auto mb-6 text-sm">
+                Generate and download the official NGPA-compliant PDF suitable for printing, agency submission, and PhilGEPS posting.
               </p>
               <Button
                 onClick={handleExportToPDF}
                 disabled={isExporting}
-                className="flex items-center gap-2 mx-auto"
+                className="flex items-center gap-2 mx-auto bg-purple-600 hover:bg-purple-700 text-white font-semibold"
               >
                 {isExporting ? (
                   <>
                     <Loader2 className="h-4 w-4 animate-spin" />
-                    Exporting...
+                    Generating PDF Document...
                   </>
                 ) : (
                   <>
                     <Download className="h-4 w-4" />
-                    Download PDF
+                    Download Official PDF Document
                   </>
                 )}
               </Button>
@@ -183,8 +257,11 @@ export function AppExportDialog({ open, onOpenChange, app }: AppExportDialogProp
           )}
         </div>
 
-        <DialogFooter className="flex gap-2">
-          <Button variant="outline" onClick={() => onOpenChange(false)}>
+        <DialogFooter className="flex gap-2 justify-between items-center border-t pt-3">
+          <div className="text-xs text-slate-500">
+            Official NGPA Form • 12 Columns • QuestPDF Document Engine
+          </div>
+          <Button variant="outline" onClick={() => onOpenChange(false)} disabled={isExporting}>
             Close
           </Button>
         </DialogFooter>

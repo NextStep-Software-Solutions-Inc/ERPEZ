@@ -4,17 +4,19 @@ import { ProgressBadge } from './ProgressBadge'
 import type { AppMaster } from '../types'
 
 const statusColors: Record<string, string> = {
-  draft: 'bg-gray-100 text-gray-800',
-  'pending-review': 'bg-yellow-100 text-yellow-800',
-  approved: 'bg-green-100 text-green-800',
-  published: 'bg-blue-100 text-blue-800',
+  Draft:     'bg-gray-100 text-gray-800',
+  Submitted: 'bg-amber-100 text-amber-800',
+  Approved:  'bg-green-100 text-green-800',
+  Locked:    'bg-blue-100 text-blue-800',
+  Returned:  'bg-red-100 text-red-800',
 }
 
 const statusBgColors: Record<string, string> = {
-  draft: 'bg-gray-50 border-gray-200',
-  'pending-review': 'bg-yellow-50 border-yellow-200',
-  approved: 'bg-green-50 border-green-200',
-  published: 'bg-blue-50 border-blue-200',
+  Draft:     'bg-gray-50 border-gray-200',
+  Submitted: 'bg-amber-50 border-amber-200',
+  Approved:  'bg-green-50 border-green-200',
+  Locked:    'bg-blue-50 border-blue-200',
+  Returned:  'bg-red-50 border-red-200',
 }
 
 interface AppDetailsHeaderProps {
@@ -22,7 +24,14 @@ interface AppDetailsHeaderProps {
 }
 
 export function AppDetailsHeader({ app }: AppDetailsHeaderProps) {
-  const statusLabel = app.status.charAt(0).toUpperCase() + app.status.slice(1).replace('-', ' ')
+  const statusLabels: Record<string, string> = {
+    Draft: 'Draft',
+    Submitted: 'Submitted',
+    Approved: 'Approved',
+    Locked: 'Locked',
+    Returned: 'Returned for Revision',
+  }
+  const statusLabel = statusLabels[app.status] ?? app.status
   
   const itemCount = app.aggregationResults?.items?.reduce((sum, item) => sum + item.items.length, 0) || 0
   const hasSignatories = app.signatories && (

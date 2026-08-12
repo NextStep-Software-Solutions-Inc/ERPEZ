@@ -12,18 +12,26 @@ export function transformAppDetailToAppMaster(apiApp: AppDetailResponse): AppMas
   // Parse fiscal year from fiscalYearName (e.g., "2026" → 2026)
   const fiscalYear = parseInt(apiApp.fiscalYearName, 10)
 
-  // Map API status to AppStatus (must stay capitalized: Draft, Submitted, Approved, Locked)
+  // Map API status to AppStatus (must stay capitalized: Draft, Submitted, Approved, Locked, Returned)
   const statusMap: Record<string, any> = {
-    'Draft': 'Draft',
-    'Submitted': 'Submitted',
-    'Approved': 'Approved',
-    'Locked': 'Locked',
+    'Draft':     'Draft',
+    'Submitted':  'Submitted',
+    'Approved':   'Approved',
+    'Locked':     'Locked',
+    'Returned':   'Returned',
   }
   const status = (statusMap[apiApp.status] || 'Draft') as 'Draft' | 'Submitted' | 'Approved' | 'Locked'
 
-  // Extract appType from description or default to 'Indicative'
-  // Description format: "Indicative APP for FY 2026" or "Supplemental APP for FY 2026"
-  const appType = apiApp.description?.includes('Supplemental') ? 'Supplemental' : 'Indicative'
+  // Derive appType from the API field (Indicative | Final | Updated).
+  // Do NOT infer from description text — that was unreliable.
+  const appTypeMap: Record<string, 'Indicative' | 'Final' | 'Updated'> = {
+    'Indicative': 'Indicative',
+    'Final':      'Final',
+    'Updated':    'Updated',
+    // Legacy / alternate spellings
+    'Supplemental': 'Final',
+  }
+  const appType = appTypeMap[apiApp.appType as string] ?? 'Indicative'
 
   // Parse API APPItems to internal BAC lineItems
   const lineItems: BACLineItem[] = apiApp.APPItems?.map((item: APPItemFromAPI) => {

@@ -89,9 +89,19 @@ export interface AppDetailResponse {
   name: string
   fiscalYearId: string
   fiscalYearName: string
-  officeId: string
-  officeName: string
-  isFinal: string
+  /** Indicative | Final | Updated */
+  appType?: string
+  /** e.g. Batch 1 */
+  batch?: string
+  /** e.g. Q1 */
+  quarter?: string
+  /** Version number for Updated APPs */
+  versionNumber?: number | null
+  /** Version date for Updated APPs (ISO string) */
+  versionDate?: string | null
+  /** Source APP ID for Updated APPs */
+  sourceAppId?: string | null
+  isFinal?: boolean | string
   remarks?: string
   description?: string
   status: string
@@ -107,13 +117,6 @@ export interface AppDetailResponse {
     status: string
     startDate?: string | null
     endDate?: string | null
-  }
-  Office?: {
-    id: string
-    name: string
-    code: string
-    responsibilityCenterCode?: string
-    budgetCostCenter?: string
   }
   APPItems?: APPItemFromAPI[]
   APPPPMPs?: APPPPMPRelationFromAPI[]

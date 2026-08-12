@@ -85,8 +85,30 @@ export function APPOverviewCard({ app }: APPOverviewCardProps) {
           <div className="flex items-start gap-3">
             <Building className="w-5 h-5 text-gray-400 mt-0.5" />
             <div>
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Implementing Office</p>
-              <p className="text-sm font-semibold text-gray-800 mt-1">{app.bac?.lineItems?.[0]?.office || 'VCRI'}</p>
+              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Implementing Units</p>
+              {(() => {
+                const offices = Array.from(
+                  new Set(
+                    (app.bac?.lineItems ?? []).map((i) => i.office).filter(Boolean)
+                  )
+                )
+                if (offices.length === 0) {
+                  return <p className="text-sm text-gray-400 italic mt-1">Not specified</p>
+                }
+                if (offices.length === 1) {
+                  return <p className="text-sm font-semibold text-gray-800 mt-1">{offices[0]}</p>
+                }
+                return (
+                  <div className="mt-1 space-y-0.5">
+                    {offices.slice(0, 3).map((o) => (
+                      <p key={o} className="text-xs text-gray-700">{o}</p>
+                    ))}
+                    {offices.length > 3 && (
+                      <p className="text-xs text-gray-400 italic">+{offices.length - 3} more</p>
+                    )}
+                  </div>
+                )
+              })()}
             </div>
           </div>
 

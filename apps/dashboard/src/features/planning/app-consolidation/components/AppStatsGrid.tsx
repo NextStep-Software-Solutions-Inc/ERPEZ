@@ -8,6 +8,11 @@ interface AppStatsGridProps {
 }
 
 export function AppStatsGrid({ app, itemCount, totalQuantity }: AppStatsGridProps) {
+  const totalBudgetAmount = app.aggregationResults?.totalAmount ?? app.bac?.totalBudget ?? 0
+  const formattedBudget = totalBudgetAmount >= 1000000
+    ? `₱${(totalBudgetAmount / 1000000).toFixed(1)}M`
+    : `₱${totalBudgetAmount.toLocaleString('en-PH', { maximumFractionDigits: 0 })}`
+
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-5">
       <Card className="border-0 shadow-md hover:shadow-lg transition-shadow duration-300 rounded-lg overflow-hidden bg-gradient-to-br from-blue-50 to-blue-100/40">
@@ -51,7 +56,7 @@ export function AppStatsGrid({ app, itemCount, totalQuantity }: AppStatsGridProp
           <div className="flex items-start justify-between">
             <div>
               <p className="text-xs font-semibold text-green-600 uppercase tracking-wide">Total Budget</p>
-              <p className="text-2xl font-bold text-green-900 mt-2">₱{(app.aggregationResults.totalAmount / 1000000).toFixed(1)}M</p>
+              <p className="text-2xl font-bold text-green-900 mt-2">{formattedBudget}</p>
             </div>
             <div className="w-10 h-10 bg-green-200/40 rounded-lg flex items-center justify-center text-lg">💰</div>
           </div>

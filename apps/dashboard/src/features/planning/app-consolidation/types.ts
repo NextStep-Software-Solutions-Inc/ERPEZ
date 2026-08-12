@@ -18,8 +18,9 @@ export interface User {
 // ============================================================================
 // APP STATE MANAGEMENT
 // ============================================================================
-export type AppStatus = 'Draft' | 'Submitted' | 'Approved' | 'Rejected' | 'Locked'
+export type AppStatus = 'Draft' | 'Submitted' | 'Approved' | 'Rejected' | 'Locked' | 'Returned'
 export type AppType = 'Indicative' | 'Final' | 'Updated'
+
 
 // ============================================================================
 // BID EVALUATION & PROCUREMENT STRATEGY
