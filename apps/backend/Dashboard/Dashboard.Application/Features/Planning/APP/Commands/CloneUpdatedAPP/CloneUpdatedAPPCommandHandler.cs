@@ -107,6 +107,25 @@ public class CloneUpdatedAPPCommandHandler(IUnitOfWork unitOfWork)
             await unitOfWork.APPItemRepository.AddAsync(newItem, cancellationToken);
         }
 
+        // 7. Deep clone APPSignatory records so Updated APP inherits independent signatories
+        foreach (var sig in sourceApp.APPSignatories.Where(s => !s.IsDeleted))
+        {
+            var newSig = new APPSignatory
+            {
+                Id = Guid.NewGuid(),
+                APPId = updatedApp.Id,
+                UserId = sig.UserId,
+                PersonnelPositionId = sig.PersonnelPositionId,
+                RoleKey = sig.RoleKey,
+                Name = sig.Name,
+                Position = sig.Position,
+                Department = sig.Department,
+                SignatureDate = sig.SignatureDate,
+                SequenceOrder = sig.SequenceOrder
+            };
+            await unitOfWork.APPSignatoryRepository.AddAsync(newSig, cancellationToken);
+        }
+
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return ApiResponse<Guid>.Success(updatedApp.Id, $"Updated APP Version {nextVersionNumber} created successfully.");

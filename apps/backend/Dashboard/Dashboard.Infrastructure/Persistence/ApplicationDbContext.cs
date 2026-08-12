@@ -94,6 +94,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<PPMP>? PPMPs { get; set; }
     public DbSet<APP>? APPs { get; set; }
     public DbSet<APPPPMP>? APPPPMPs { get; set; }
+    public DbSet<APPSignatory>? APPSignatories { get; set; }
     public DbSet<LineItemBudgetActivity>? LineItemBudgetActivities { get; set; }
     public DbSet<LineItemBudgetDetail>? LineItemBudgetDetails { get; set; }
     public DbSet<LIBAmendmentRequest>? LIBAmendmentRequests { get; set; }

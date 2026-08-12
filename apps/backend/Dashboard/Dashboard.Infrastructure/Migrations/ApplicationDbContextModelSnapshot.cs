@@ -341,6 +341,76 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.ToTable("APPProcurementSchedules", "planning");
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.APPSignatory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("APPId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Department")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("PersonnelPositionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Position")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("RoleKey")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("SequenceOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("SignatureDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("APPId");
+
+                    b.HasIndex("PersonnelPositionId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("APPSignatories", "planning");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.AdministrativeLevel", b =>
                 {
                     b.Property<Guid>("Id")
@@ -4558,7 +4628,13 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<bool>("IsProcurable")
                         .HasColumnType("boolean");
 
+                    b.Property<Guid>("ObjectId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid>("PPMPActivityId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("PPMPId")
                         .HasColumnType("uuid");
 
                     b.Property<decimal>("TotalCost")
@@ -4573,7 +4649,11 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ObjectId");
+
                     b.HasIndex("PPMPActivityId");
+
+                    b.HasIndex("PPMPId");
 
                     b.ToTable("PPMPExpenditureItems", "planning", t =>
                         {
@@ -9301,6 +9381,29 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("ProcurementActivityType");
                 });
 
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.APPSignatory", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.APP", "APP")
+                        .WithMany("APPSignatories")
+                        .HasForeignKey("APPId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.PersonnelPosition", "PersonnelPosition")
+                        .WithMany()
+                        .HasForeignKey("PersonnelPositionId");
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId");
+
+                    b.Navigation("APP");
+
+                    b.Navigation("PersonnelPosition");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.AgencyMasterBudget", b =>
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Planning.FiscalYear", "FiscalYear")
@@ -10422,11 +10525,27 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.PPMPExpenditureItem", b =>
                 {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.Object", "Object")
+                        .WithMany()
+                        .HasForeignKey("ObjectId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
                     b.HasOne("ERPEZ.Domain.Entities.Planning.PPMPActivity", "PPMPActivity")
                         .WithMany("PPMPExpenditureItems")
                         .HasForeignKey("PPMPActivityId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.PPMP", "PPMP")
+                        .WithMany()
+                        .HasForeignKey("PPMPId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Object");
+
+                    b.Navigation("PPMP");
 
                     b.Navigation("PPMPActivity");
                 });
@@ -11601,6 +11720,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("APPItems");
 
                     b.Navigation("APPPPMPs");
+
+                    b.Navigation("APPSignatories");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.AdministrativeLevel", b =>

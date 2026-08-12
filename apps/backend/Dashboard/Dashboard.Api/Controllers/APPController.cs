@@ -5,6 +5,7 @@ using ERPEZ.Application.Features.Planning.APP.Commands.DeleteAPP;
 using ERPEZ.Application.Features.Planning.APP.Commands.RemovePPMPs;
 using ERPEZ.Application.Features.Planning.APP.Commands.SelectPPMPs;
 using ERPEZ.Application.Features.Planning.APP.Commands.UpdateBACLineItems;
+using ERPEZ.Application.Features.Planning.APP.Commands.UpdateAPPSignatories;
 using ERPEZ.Application.Features.Planning.APP.Dtos;
 using ERPEZ.Application.Features.Planning.APP.Queries.GetAPPBAC;
 using ERPEZ.Application.Features.Planning.APP.Queries.GetAPPById;
@@ -107,6 +108,25 @@ public class APPController(ISender mediator) : ControllerBase
         {
             APPId = id,
             PPMPIds = request.PPMPIds
+        };
+
+        var result = await mediator.Send(command);
+
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Update signatories for an APP
+    /// </summary>
+    [HttpPut("{id}/signatories")]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateAPPSignatories(Guid id, [FromBody] UpdateAPPSignatoriesRequest request)
+    {
+        var command = new UpdateAPPSignatoriesCommand
+        {
+            APPId = id,
+            Request = request
         };
 
         var result = await mediator.Send(command);

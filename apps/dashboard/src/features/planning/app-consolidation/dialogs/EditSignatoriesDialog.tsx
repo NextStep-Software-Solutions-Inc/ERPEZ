@@ -12,6 +12,7 @@ import { X, Plus, ChevronDown, ChevronUp } from 'lucide-react'
 import type { AppMaster, Signatory, SignatoryBlock } from '../types'
 import { signatoriesDialogOpenAtom, currentAppAtom, appListAtom } from '../atoms'
 import { useQueryClient } from '@tanstack/react-query'
+import api from '@/services/api'
 
 // Mock signatories database with predefined details
 const MOCK_SIGNATORIES_DATABASE = [
@@ -297,8 +298,42 @@ export function EditSignatoriesDialog({
 
     setIsSaving(true)
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 300))
+      const payload = {
+        preparedBy: (formData.signatories?.preparedBy || []).map((s: any) => ({
+          userId: s.userId || null,
+          personnelPositionId: s.personnelPositionId || null,
+          name: s.name,
+          position: s.position,
+          department: s.department,
+          signatureDate: s.signatureDate || null,
+        })),
+        reviewedBy: (formData.signatories?.reviewedBy || []).map((s: any) => ({
+          userId: s.userId || null,
+          personnelPositionId: s.personnelPositionId || null,
+          name: s.name,
+          position: s.position,
+          department: s.department,
+          signatureDate: s.signatureDate || null,
+        })),
+        approvedBy: (formData.signatories?.approvedBy || []).map((s: any) => ({
+          userId: s.userId || null,
+          personnelPositionId: s.personnelPositionId || null,
+          name: s.name,
+          position: s.position,
+          department: s.department,
+          signatureDate: s.signatureDate || null,
+        })),
+        certifiedBy: (formData.signatories?.certifiedBy || []).map((s: any) => ({
+          userId: s.userId || null,
+          personnelPositionId: s.personnelPositionId || null,
+          name: s.name,
+          position: s.position,
+          department: s.department,
+          signatureDate: s.signatureDate || null,
+        })),
+      }
+
+      await api.put(`/apps/${formData.id}/signatories`, payload)
 
       setCurrentApp(formData)
       setAppList(appList.map((app) => (app.id === formData.id ? formData : app)))

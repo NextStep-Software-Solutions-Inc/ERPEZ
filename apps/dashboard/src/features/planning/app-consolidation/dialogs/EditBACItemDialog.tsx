@@ -41,6 +41,7 @@ export function EditBACItemDialog({
 }: EditBACItemDialogProps) {
   const [currentApp, setCurrentApp] = useAtom(currentAppAtom)
   const [appList, setAppList] = useAtom(appListAtom)
+  const queryClient = useQueryClient()
   const [showUnsavedWarning, setShowUnsavedWarning] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [formData, setFormData] = useState<BACLineItem | null>(lineItem)

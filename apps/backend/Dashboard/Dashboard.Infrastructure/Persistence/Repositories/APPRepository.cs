@@ -53,6 +53,8 @@ public class APPRepository : Repository<APP>, IAPPRepository
             .Include(a => a.APPPPMPs)
                 .ThenInclude(s => s.PPMP)
                     .ThenInclude(ppmp => ppmp!.FundSource)
+            .Include(a => a.APPSignatories
+                .Where(s => !s.IsDeleted))
             .AsSplitQuery();
     }
 

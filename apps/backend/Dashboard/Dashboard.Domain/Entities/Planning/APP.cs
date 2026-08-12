@@ -55,6 +55,7 @@ public class APP : ApprovableEntity
     public virtual APP? SourceAPP { get; set; }
     public virtual List<APPItem> APPItems { get; set; } = [];
     public virtual List<APPPPMP> APPPPMPs { get; set; } = [];
+    public virtual List<APPSignatory> APPSignatories { get; set; } = [];
     
     // Inherited from ApprovableEntity: 
     // public string Status { get; set; }

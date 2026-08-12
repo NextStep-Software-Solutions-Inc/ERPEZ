@@ -31,10 +31,23 @@ public class RemovePPMPsCommandHandler(IUnitOfWork unitOfWork)
             throw new NotFoundException($"The following PPMPs are not linked to this APP: {string.Join(", ", notLinkedIds)}");
         }
 
-        // Remove the links
+        // Remove the links and associated APPItems
         if (existingLinks.Any())
         {
             unitOfWork.APPPPMPRepository.RemoveRange(existingLinks);
+
+            // Also remove any APPItems in this APP that originated from the unselected PPMPs
+            var appItems = await unitOfWork.APPItemRepository.GetAPPItemsWithDetailsAsync(request.APPId, cancellationToken);
+            var itemsToRemove = appItems
+                .Where(item => item.PPMPItem?.PPMPExpenditureItem?.PPMPActivity?.PPMPId != null && 
+                               ppmpIds.Contains(item.PPMPItem.PPMPExpenditureItem.PPMPActivity.PPMPId))
+                .ToList();
+
+            foreach (var item in itemsToRemove)
+            {
+                unitOfWork.APPItemRepository.Remove(item);
+            }
+
             await unitOfWork.SaveChangesAsync(cancellationToken);
         }
 

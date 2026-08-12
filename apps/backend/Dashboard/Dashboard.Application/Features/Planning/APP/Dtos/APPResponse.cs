@@ -34,6 +34,9 @@ public record APPResponse
 
     [JsonPropertyName("APPPPMPs")]
     public List<APPPPMPLinkResponse> APPPPMPs { get; init; } = [];
+
+    [JsonPropertyName("signatories")]
+    public APPSignatoriesResponse Signatories { get; init; } = new();
 }
 
 public record APPFiscalYearResponse
@@ -114,4 +117,23 @@ public record APPPPMPPPMPResponse
     public int Version { get; init; }
     public decimal TotalEstimatedBudget { get; init; }
     public string Status { get; init; } = string.Empty;
+}
+
+public record APPSignatoriesResponse
+{
+    public List<APPSignatoryResponse> PreparedBy { get; init; } = [];
+    public List<APPSignatoryResponse> ReviewedBy { get; init; } = [];
+    public List<APPSignatoryResponse> ApprovedBy { get; init; } = [];
+    public List<APPSignatoryResponse> CertifiedBy { get; init; } = [];
+}
+
+public record APPSignatoryResponse
+{
+    public Guid Id { get; init; }
+    public Guid? UserId { get; init; }
+    public Guid? PersonnelPositionId { get; init; }
+    public string Name { get; init; } = string.Empty;
+    public string Position { get; init; } = string.Empty;
+    public string Department { get; init; } = string.Empty;
+    public DateTime? SignatureDate { get; init; }
 }

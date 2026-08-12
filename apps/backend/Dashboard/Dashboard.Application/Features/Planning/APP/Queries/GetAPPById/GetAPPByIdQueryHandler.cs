@@ -50,7 +50,7 @@ public class GetAPPByIdQueryHandler(IUnitOfWork unitOfWork)
                 var allocQty = item.PPMPItem?.PPMPItemAllocations.Where(a => !a.IsDeleted).Sum(a => a.Quantity) ?? 0;
                 var unitPrice = item.PPMPItem?.UnitPrice ?? 0;
                 var allocTotal = item.PPMPItem?.PPMPItemAllocations.Where(a => !a.IsDeleted).Sum(a => a.Amount) ?? 0;
-                var totalAmount = allocTotal > 0 ? allocTotal : (unitPrice * allocQty);
+                var totalAmount = allocTotal > 0 ? allocTotal : ((allocQty > 0 ? allocQty : 1) * unitPrice);
 
                 return new APPItemSummaryResponse
                 {
@@ -108,7 +108,14 @@ public class GetAPPByIdQueryHandler(IUnitOfWork unitOfWork)
                     TotalEstimatedBudget = link.PPMP.TotalEstimatedBudget,
                     Status = link.PPMP.Status.ToString()
                 }
-            }).ToList()
+            }).ToList(),
+            Signatories = new APPSignatoriesResponse
+            {
+                PreparedBy = app.APPSignatories.Where(s => !s.IsDeleted && string.Equals(s.RoleKey, "preparedBy", StringComparison.OrdinalIgnoreCase)).OrderBy(s => s.SequenceOrder).Select(s => new APPSignatoryResponse { Id = s.Id, UserId = s.UserId, PersonnelPositionId = s.PersonnelPositionId, Name = s.Name, Position = s.Position, Department = s.Department, SignatureDate = s.SignatureDate }).ToList(),
+                ReviewedBy = app.APPSignatories.Where(s => !s.IsDeleted && string.Equals(s.RoleKey, "reviewedBy", StringComparison.OrdinalIgnoreCase)).OrderBy(s => s.SequenceOrder).Select(s => new APPSignatoryResponse { Id = s.Id, UserId = s.UserId, PersonnelPositionId = s.PersonnelPositionId, Name = s.Name, Position = s.Position, Department = s.Department, SignatureDate = s.SignatureDate }).ToList(),
+                ApprovedBy = app.APPSignatories.Where(s => !s.IsDeleted && string.Equals(s.RoleKey, "approvedBy", StringComparison.OrdinalIgnoreCase)).OrderBy(s => s.SequenceOrder).Select(s => new APPSignatoryResponse { Id = s.Id, UserId = s.UserId, PersonnelPositionId = s.PersonnelPositionId, Name = s.Name, Position = s.Position, Department = s.Department, SignatureDate = s.SignatureDate }).ToList(),
+                CertifiedBy = app.APPSignatories.Where(s => !s.IsDeleted && string.Equals(s.RoleKey, "certifiedBy", StringComparison.OrdinalIgnoreCase)).OrderBy(s => s.SequenceOrder).Select(s => new APPSignatoryResponse { Id = s.Id, UserId = s.UserId, PersonnelPositionId = s.PersonnelPositionId, Name = s.Name, Position = s.Position, Department = s.Department, SignatureDate = s.SignatureDate }).ToList(),
+            }
         };
 
         return ApiResponse<APPResponse>.Success(response);

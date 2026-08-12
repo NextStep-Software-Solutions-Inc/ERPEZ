@@ -1,4 +1,5 @@
 using ERPEZ.Application.Common.Exceptions;
+using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -119,6 +120,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IAPPPPMPRepository appPpmpRepository;
     private readonly IAPPItemRepository appItemRepository;
     private readonly IAPPItemScheduleRepository appItemScheduleRepository;
+    private readonly IRepository<APPSignatory> appSignatoryRepository;
     private readonly IItemRequestRepository itemRequestRepository;
     private readonly INonCSEItemRepository nonCSEItemRepository;
     private readonly IOPCRItemRatingRepository opcrItemRatingRepository;
@@ -266,6 +268,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         appPpmpRepository = new APPPPMPRepository(context, sieveProcessor);
         appItemRepository = new APPItemRepository(context, sieveProcessor);
         appItemScheduleRepository = new APPItemScheduleRepository(context, sieveProcessor);
+        appSignatoryRepository = new Repository<APPSignatory>(context, sieveProcessor);
         itemRequestRepository = new ItemRequestRepository(context, sieveProcessor);
         nonCSEItemRepository = new NonCSEItemRepository(context, sieveProcessor);
         opcrItemRatingRepository = new OPCRItemRatingRepository(context, sieveProcessor);
@@ -407,6 +410,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IAPPPPMPRepository APPPPMPRepository => appPpmpRepository;
     public IAPPItemRepository APPItemRepository => appItemRepository;
     public IAPPItemScheduleRepository APPItemScheduleRepository => appItemScheduleRepository;
+    public IRepository<APPSignatory> APPSignatoryRepository => appSignatoryRepository;
     public IItemRequestRepository ItemRequestRepository => itemRequestRepository;
     public INonCSEItemRepository NonCSEItemRepository => nonCSEItemRepository;
     public IOPCRItemRatingRepository OPCRItemRatingRepository => opcrItemRatingRepository;
