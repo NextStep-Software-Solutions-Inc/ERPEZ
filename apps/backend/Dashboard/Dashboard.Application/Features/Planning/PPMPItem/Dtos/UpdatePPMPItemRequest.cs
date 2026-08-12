@@ -1,3 +1,5 @@
+using ERPEZ.Domain.Enums;
+
 namespace ERPEZ.Application.Features.Planning.PPMPItem.Dtos;
 
 public record UpdatePPMPItemRequest
@@ -13,4 +15,13 @@ public record UpdatePPMPItemRequest
     public decimal? UnitPrice { get; init; }
     public bool? MOPOverride { get; init; }
     public string? MOPJustification { get; init; }
+    
+    // ── Scheduling & project type fields ─────────────────────────────────
+    public ProcurementProjectType? ProjectType             { get; init; }
+    public bool?    PreProcurementConference               { get; init; }
+    public DateOnly? ProcurementStartDate                  { get; init; }
+    public DateOnly? ProcurementEndDate                    { get; init; }
+    public DateOnly? ExpectedDeliveryStart                 { get; init; }
+    public DateOnly? ExpectedDeliveryEnd                   { get; init; }
+    public string?  Remarks                                { get; init; }
 }

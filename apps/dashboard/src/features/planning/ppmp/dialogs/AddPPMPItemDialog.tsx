@@ -42,10 +42,10 @@ export default function AddPPMPItemDialog({
       ...values,
       ppmpExpenditureItemId,
       // Format dates back to ISO strings or undefined if empty
-      procurementStartDate: values.procurementStartDate ? new Date(values.procurementStartDate).toISOString() : undefined,
-      procurementEndDate: values.procurementEndDate ? new Date(values.procurementEndDate).toISOString() : undefined,
-      expectedDeliveryStart: values.expectedDeliveryStart ? new Date(values.expectedDeliveryStart).toISOString() : undefined,
-      expectedDeliveryEnd: values.expectedDeliveryEnd ? new Date(values.expectedDeliveryEnd).toISOString() : undefined,
+      procurementStartDate: values.procurementStartDate || undefined,
+      procurementEndDate: values.procurementEndDate || undefined,
+      expectedDeliveryStart: values.expectedDeliveryStart || undefined,
+      expectedDeliveryEnd: values.expectedDeliveryEnd || undefined,
     }
 
     try {
