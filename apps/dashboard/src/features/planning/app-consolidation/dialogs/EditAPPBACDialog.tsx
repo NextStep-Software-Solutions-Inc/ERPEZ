@@ -221,14 +221,38 @@ export function EditAPPBACDialog({
           }
         })
 
+        const toISODateTime = (val?: string | null): string | null => {
+          if (!val || typeof val !== 'string') return null
+          const trimmed = val.trim()
+          if (!trimmed) return null
+          if (/^\d{2}\/\d{4}$/.test(trimmed)) {
+            const [m, y] = trimmed.split('/')
+            return `${y}-${m.padStart(2, '0')}-01T00:00:00.000Z`
+          }
+          if (/^\d{4}-\d{2}$/.test(trimmed)) {
+            return `${trimmed}-01T00:00:00.000Z`
+          }
+          if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+            return `${trimmed}T00:00:00.000Z`
+          }
+          if (trimmed.includes('T')) return trimmed
+          try {
+            const d = new Date(trimmed)
+            if (!isNaN(d.getTime())) return d.toISOString()
+          } catch {
+            // ignore
+          }
+          return null
+        }
+
         return {
           bacItemCode: item.id,
           modeOfProcurementId: mopId || null,
           remarks: item.remarks || '',
           epaEligible: item.eligibleForEPA ?? false,
           epaRemarks: item.epaRemarks || '',
-          startOfProcurementOverride: item.startOfProcurementOverride || null,
-          endOfProcurementOverride: item.endOfProcurementOverride || null,
+          startOfProcurementOverride: toISODateTime(item.startOfProcurementOverride),
+          endOfProcurementOverride: toISODateTime(item.endOfProcurementOverride),
           estimatedBudgetOverride: item.estimatedBudgetOverride !== undefined && item.estimatedBudgetOverride !== null ? item.estimatedBudgetOverride : null,
           bidEvaluationCriteria: item.bidEvaluationCriteria || null,
           procurementStrategies: item.procurementStrategies || null,

@@ -145,9 +145,16 @@ export function EditBACItemDialog({
               remarks: apiData.remarks !== undefined ? apiData.remarks : lineItem.remarks,
               epaRemarks: apiData.epaRemarks !== undefined ? apiData.epaRemarks : lineItem.epaRemarks,
               eligibleForEPA: apiData.isEarlyProcurementActivity !== undefined ? apiData.isEarlyProcurementActivity : lineItem.eligibleForEPA,
-              startOfProcurementOverride: apiData.startOfProcurementOverride || (apiData.effectiveStartOfProcurement ? apiData.effectiveStartOfProcurement.split('T')[0] : lineItem.startOfProcurementOverride || ''),
-              endOfProcurementOverride: apiData.endOfProcurementOverride || (apiData.effectiveEndOfProcurement ? apiData.effectiveEndOfProcurement.split('T')[0] : lineItem.endOfProcurementOverride || ''),
-              estimatedBudgetOverride: apiData.estimatedBudgetOverride !== undefined && apiData.estimatedBudgetOverride !== null ? apiData.estimatedBudgetOverride : lineItem.estimatedBudgetOverride,
+              startOfProcurementOverride: apiData.startOfProcurementOverride || '',
+              endOfProcurementOverride: apiData.endOfProcurementOverride || '',
+              effectiveStartOfProcurement: apiData.effectiveStartOfProcurement || '',
+              effectiveEndOfProcurement: apiData.effectiveEndOfProcurement || '',
+              isStartProcurementOverridden: apiData.isStartProcurementOverridden ?? !!apiData.startOfProcurementOverride,
+              isEndProcurementOverridden: apiData.isEndProcurementOverridden ?? !!apiData.endOfProcurementOverride,
+              isABCOverridden: apiData.isABCOverridden ?? (apiData.estimatedBudgetOverride !== null && apiData.estimatedBudgetOverride !== undefined),
+              originalPPMPBudget: apiData.originalPPMPBudget ?? apiData.totalAmount,
+              effectiveABC: apiData.effectiveABC ?? apiData.totalAmount,
+              estimatedBudgetOverride: apiData.estimatedBudgetOverride !== undefined && apiData.estimatedBudgetOverride !== null ? apiData.estimatedBudgetOverride : null,
               isOutsourced: apiData.isOutsourced !== undefined ? apiData.isOutsourced : lineItem.isOutsourced,
               procurementStrategies: strats,
               milestones: milestones,
@@ -284,14 +291,38 @@ export function EditBACItemDialog({
           }
         })
 
+        const toISODateTime = (val?: string | null): string | null => {
+          if (!val || typeof val !== 'string') return null
+          const trimmed = val.trim()
+          if (!trimmed) return null
+          if (/^\d{2}\/\d{4}$/.test(trimmed)) {
+            const [m, y] = trimmed.split('/')
+            return `${y}-${m.padStart(2, '0')}-01T00:00:00.000Z`
+          }
+          if (/^\d{4}-\d{2}$/.test(trimmed)) {
+            return `${trimmed}-01T00:00:00.000Z`
+          }
+          if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+            return `${trimmed}T00:00:00.000Z`
+          }
+          if (trimmed.includes('T')) return trimmed
+          try {
+            const d = new Date(trimmed)
+            if (!isNaN(d.getTime())) return d.toISOString()
+          } catch {
+            // ignore
+          }
+          return null
+        }
+
         return {
           bacItemCode: item.id,
           modeOfProcurementId: mopId || null,
           remarks: item.remarks || '',
           epaEligible: item.eligibleForEPA ?? false,
           epaRemarks: item.epaRemarks || '',
-          startOfProcurementOverride: item.startOfProcurementOverride || null,
-          endOfProcurementOverride: item.endOfProcurementOverride || null,
+          startOfProcurementOverride: toISODateTime(item.startOfProcurementOverride),
+          endOfProcurementOverride: toISODateTime(item.endOfProcurementOverride),
           estimatedBudgetOverride: item.estimatedBudgetOverride !== undefined && item.estimatedBudgetOverride !== null ? item.estimatedBudgetOverride : null,
           bidEvaluationCriteria: item.bidEvaluationCriteria || null,
           procurementStrategies: item.procurementStrategies || null,
@@ -431,11 +462,7 @@ export function EditBACItemDialog({
                   <div className="space-y-4">
                     {/* Item Basic Info */}
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                      <div className="p-3 bg-white rounded-lg border border-blue-100">
-                        <p className="text-xs font-semibold text-gray-600 uppercase mb-1">Item ID</p>
-                        <p className="font-mono text-sm font-bold text-gray-900">{formData.id}</p>
-                      </div>
-                      <div className="p-3 bg-white rounded-lg border border-blue-100 md:col-span-2">
+                      <div className="p-3 bg-white rounded-lg border border-blue-100 md:col-span-3">
                         <p className="text-xs font-semibold text-gray-600 uppercase mb-1">Description</p>
                         <p className="text-sm font-semibold text-gray-900">{formData.description}</p>
                       </div>

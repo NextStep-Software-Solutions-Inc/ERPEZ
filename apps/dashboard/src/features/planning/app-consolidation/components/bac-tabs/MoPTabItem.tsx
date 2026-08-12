@@ -12,6 +12,39 @@ import { Badge } from '@/components/ui/badge'
 import type { BACLineItem } from '../../types'
 import api from '@/services/api'
 
+const toInputDateFormat = (val?: string | null): string => {
+  if (!val) return ''
+  const trimmed = val.trim()
+  if (!trimmed) return ''
+  if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) return trimmed
+  if (trimmed.includes('T')) {
+    return trimmed.split('T')[0]
+  }
+  if (/^\d{2}\/\d{4}$/.test(trimmed)) {
+    const [m, y] = trimmed.split('/')
+    return `${y}-${m.padStart(2, '0')}-01`
+  }
+  if (/^\d{4}-\d{2}$/.test(trimmed)) {
+    return `${trimmed}-01`
+  }
+  try {
+    const d = new Date(trimmed)
+    if (!isNaN(d.getTime())) {
+      return d.toISOString().split('T')[0]
+    }
+  } catch {
+    // ignore
+  }
+  return ''
+}
+
+const toDisplayMonthYear = (val?: string | null): string => {
+  const dateStr = toInputDateFormat(val)
+  if (!dateStr) return '—'
+  const [y, m] = dateStr.split('-')
+  return `${m}/${y}`
+}
+
 const MOP_OPTIONS = [
   'Direct Contracting',
   'Procurement by Canvassing',
@@ -150,7 +183,11 @@ export function MoPTabItem({ item, onUpdate, readOnly }: MoPTabItemProps) {
                 className="w-full text-xs"
               />
               <p className="text-[11px] text-slate-500">
-                Leave blank to use original PPMP budget ({formatCurrency(item.totalAmount)}).
+                {item.estimatedBudgetOverride != null ? (
+                  <span className="text-amber-700 font-medium">Overridden for APP ({formatCurrency(item.estimatedBudgetOverride)})</span>
+                ) : (
+                  <span className="text-slate-400">Inherited from source PPMP ({formatCurrency(item.totalAmount)})</span>
+                )}
               </p>
             </div>
           </div>
@@ -158,34 +195,82 @@ export function MoPTabItem({ item, onUpdate, readOnly }: MoPTabItemProps) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2 border-t border-slate-100">
             {/* Start of Procurement */}
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-slate-700">Start of Procurement (Date/Month):</label>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-slate-700">Start of Procurement:</label>
+                {!!item.startOfProcurementOverride && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (readOnly) return
+                      onUpdate?.({ ...item, startOfProcurementOverride: '' })
+                    }}
+                    className="text-[10px] text-red-600 hover:text-red-800 hover:underline font-semibold cursor-pointer"
+                  >
+                    Clear Override
+                  </button>
+                )}
+              </div>
               <Input
-                type="text"
-                placeholder="e.g. 01/2026 or 2026-01-15"
-                value={item.startOfProcurementOverride || ''}
+                type="date"
+                value={item.startOfProcurementOverride ? toInputDateFormat(item.startOfProcurementOverride) : toInputDateFormat(item.effectiveStartOfProcurement)}
                 onChange={(e) => {
                   if (readOnly) return
                   onUpdate?.({ ...item, startOfProcurementOverride: e.target.value })
                 }}
                 disabled={readOnly}
-                className="w-full text-xs"
+                className={`w-full text-xs font-medium ${item.startOfProcurementOverride ? 'border-amber-400 bg-amber-50/20 text-amber-900' : 'border-slate-200 text-slate-700'}`}
               />
+              <p className="text-[10px]">
+                {item.startOfProcurementOverride ? (
+                  <span className="text-amber-700 font-semibold">
+                    ★ APP Override (Display: {toDisplayMonthYear(item.startOfProcurementOverride)})
+                  </span>
+                ) : (
+                  <span className="text-slate-500">
+                    Inherited: {toDisplayMonthYear(item.effectiveStartOfProcurement)}
+                  </span>
+                )}
+              </p>
             </div>
 
             {/* End of Procurement */}
             <div className="space-y-1.5">
-              <label className="text-xs font-medium text-slate-700">End of Procurement (Date/Month):</label>
+              <div className="flex items-center justify-between">
+                <label className="text-xs font-semibold text-slate-700">End of Procurement:</label>
+                {!!item.endOfProcurementOverride && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      if (readOnly) return
+                      onUpdate?.({ ...item, endOfProcurementOverride: '' })
+                    }}
+                    className="text-[10px] text-red-600 hover:text-red-800 hover:underline font-semibold cursor-pointer"
+                  >
+                    Clear Override
+                  </button>
+                )}
+              </div>
               <Input
-                type="text"
-                placeholder="e.g. 03/2026 or 2026-03-31"
-                value={item.endOfProcurementOverride || ''}
+                type="date"
+                value={item.endOfProcurementOverride ? toInputDateFormat(item.endOfProcurementOverride) : toInputDateFormat(item.effectiveEndOfProcurement)}
                 onChange={(e) => {
                   if (readOnly) return
                   onUpdate?.({ ...item, endOfProcurementOverride: e.target.value })
                 }}
                 disabled={readOnly}
-                className="w-full text-xs"
+                className={`w-full text-xs font-medium ${item.endOfProcurementOverride ? 'border-amber-400 bg-amber-50/20 text-amber-900' : 'border-slate-200 text-slate-700'}`}
               />
+              <p className="text-[10px]">
+                {item.endOfProcurementOverride ? (
+                  <span className="text-amber-700 font-semibold">
+                    ★ APP Override (Display: {toDisplayMonthYear(item.endOfProcurementOverride)})
+                  </span>
+                ) : (
+                  <span className="text-slate-500">
+                    Inherited: {toDisplayMonthYear(item.effectiveEndOfProcurement)}
+                  </span>
+                )}
+              </p>
             </div>
           </div>
         </CardContent>

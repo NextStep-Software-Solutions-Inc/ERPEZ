@@ -114,11 +114,11 @@ export function AppExportDialog({ open, onOpenChange, app }: AppExportDialogProp
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-h-[92vh] flex flex-col z-[99999]" size='full'>
+      <DialogContent className="max-h-[85vh] flex flex-col z-[99999] max-w-5xl w-full" size='full'>
         <DialogHeader>
           <div className="flex items-center justify-between">
             <div>
-              <DialogTitle className="text-2xl">Export Annual Procurement Plan</DialogTitle>
+              <DialogTitle className="text-xl">Export Annual Procurement Plan</DialogTitle>
               <DialogDescription>
                 Preview and export official NGPA-formatted document ({app.appType} APP — FY {app.fiscalYear})
               </DialogDescription>
@@ -130,6 +130,7 @@ export function AppExportDialog({ open, onOpenChange, app }: AppExportDialogProp
         <div className="flex gap-2 border-b pb-3">
           <Button
             variant={exportType === 'preview' ? 'default' : 'outline'}
+            size="sm"
             onClick={() => {
               setExportType('preview')
               if (!previewPdfUrl) loadPdfPreview()
@@ -141,6 +142,7 @@ export function AppExportDialog({ open, onOpenChange, app }: AppExportDialogProp
           </Button>
           <Button
             variant={exportType === 'excel' ? 'default' : 'outline'}
+            size="sm"
             onClick={() => setExportType('excel')}
             className="flex items-center gap-2"
           >
@@ -149,6 +151,7 @@ export function AppExportDialog({ open, onOpenChange, app }: AppExportDialogProp
           </Button>
           <Button
             variant={exportType === 'pdf' ? 'default' : 'outline'}
+            size="sm"
             onClick={() => setExportType('pdf')}
             className="flex items-center gap-2"
           >
@@ -158,33 +161,33 @@ export function AppExportDialog({ open, onOpenChange, app }: AppExportDialogProp
         </div>
 
         {/* Main Content Area */}
-        <div className="flex-1 overflow-y-auto bg-slate-100 p-4 rounded-lg flex flex-col min-h-[500px]">
+        <div className="flex-1 overflow-y-auto bg-slate-100 p-3 rounded-lg flex flex-col min-h-0">
           {/* PDF Preview Mode */}
           {exportType === 'preview' && (
-            <div className="flex-1 flex flex-col h-full bg-white rounded-lg p-2 shadow-xs border">
-              <div className="flex items-center justify-between bg-slate-50 px-4 py-2 rounded mb-2 border text-xs">
+            <div className="flex-1 flex flex-col bg-white rounded-lg p-2 shadow-xs border min-h-0">
+              <div className="flex items-center justify-between bg-slate-50 px-3 py-1.5 rounded mb-2 border text-xs">
                 <span className="font-semibold text-slate-700">
-                  Official NGPA APP PDF Document Preview (Backend Generated)
+                  Official NGPA APP PDF Document Preview
                 </span>
                 <Button
                   size="sm"
                   variant="ghost"
                   onClick={loadPdfPreview}
                   disabled={isPreviewLoading}
-                  className="h-7 gap-1 text-slate-600 hover:text-slate-900"
+                  className="h-6 gap-1 text-slate-600 hover:text-slate-900 text-xs"
                 >
-                  <RefreshCw className={`h-3.5 w-3.5 ${isPreviewLoading ? 'animate-spin' : ''}`} />
+                  <RefreshCw className={`h-3 w-3 ${isPreviewLoading ? 'animate-spin' : ''}`} />
                   Refresh
                 </Button>
               </div>
 
               {isPreviewLoading ? (
-                <div className="flex-1 flex flex-col items-center justify-center py-24 text-slate-500 gap-3">
+                <div className="flex flex-col items-center justify-center py-16 text-slate-500 gap-3">
                   <Loader2 className="h-8 w-8 animate-spin text-purple-600" />
-                  <p className="text-sm font-medium">Generating official NGPA PDF document from backend...</p>
+                  <p className="text-sm font-medium">Generating official NGPA PDF document...</p>
                 </div>
               ) : previewError ? (
-                <div className="flex-1 flex flex-col items-center justify-center py-20 text-red-600 gap-3">
+                <div className="flex flex-col items-center justify-center py-12 text-red-600 gap-3">
                   <p className="text-sm font-medium">{previewError}</p>
                   <Button size="sm" variant="outline" onClick={loadPdfPreview}>
                     Retry Preview Generation
@@ -193,7 +196,7 @@ export function AppExportDialog({ open, onOpenChange, app }: AppExportDialogProp
               ) : previewPdfUrl ? (
                 <iframe
                   src={previewPdfUrl}
-                  className="w-full flex-1 min-h-[550px] border-0 rounded"
+                  className="w-full h-[480px] border-0 rounded"
                   title="Official NGPA APP PDF Preview"
                 />
               ) : null}

@@ -230,7 +230,7 @@ export async function createPositionInApi(positionData: Partial<PositionApiRespo
   try {
     const response = await api.post<PositionApiResponse>(
       '/positions',
-      payload
+      positionData
     )
 
     if (response.data) {
@@ -254,7 +254,7 @@ export async function updatePositionInApi(
   try {
     const response = await api.put<PositionApiResponse>(
       `/positions/${id}`,
-      payload
+      positionData
     )
 
     if (response.data) {

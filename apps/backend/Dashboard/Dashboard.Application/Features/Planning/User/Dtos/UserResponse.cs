@@ -23,6 +23,10 @@ public record UserResponse
     public string? OfficeName { get; init; }
     public string? OfficeCode { get; init; }
     
+    // Position details
+    public string? PositionTitle { get; init; }
+    public Guid? PersonnelPositionId { get; init; }
+
     // Computed property
     public string FullName { get; init; } = string.Empty;
 }

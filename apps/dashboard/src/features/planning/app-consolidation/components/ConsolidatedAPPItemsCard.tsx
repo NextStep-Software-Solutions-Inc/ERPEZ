@@ -185,20 +185,33 @@ export function ConsolidatedAPPItemsCard({
         const formatDate = (dateStr?: string | null) => {
           if (!dateStr) return null
           try {
+            if (/^\d{2}\/\d{4}$/.test(dateStr)) {
+              const [m, y] = dateStr.split('/')
+              const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+              const idx = parseInt(m, 10) - 1
+              return `${monthNames[idx] || m} ${y}`
+            }
             const d = new Date(dateStr)
             if (isNaN(d.getTime())) return dateStr
-            return d.toLocaleDateString('en-US', { month: '2-digit', year: 'numeric' })
+            return d.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
           } catch {
             return dateStr
           }
         }
         const start = formatDate(row.original.effectiveStartOfProcurement || row.original.startOfProcurementOverride)
         const end = formatDate(row.original.effectiveEndOfProcurement || row.original.endOfProcurementOverride)
+        const isStartOverridden = row.original.isStartProcurementOverridden || !!row.original.startOfProcurementOverride
+        const isEndOverridden = row.original.isEndProcurementOverridden || !!row.original.endOfProcurementOverride
 
         return (
           <div className="text-[11px] space-y-0.5">
             <div><span className="text-slate-500 font-medium">Start:</span> <span className="text-slate-900 font-medium">{start || 'Not set'}</span></div>
             <div><span className="text-slate-500 font-medium">End:</span> <span className="text-slate-900 font-medium">{end || 'Not set'}</span></div>
+            {(isStartOverridden || isEndOverridden) ? (
+              <span className="text-[9px] text-amber-700 font-semibold mt-0.5 block">★ APP Override</span>
+            ) : (
+              <span className="text-[9px] text-slate-400 mt-0.5 block">Inherited</span>
+            )}
           </div>
         )
       },

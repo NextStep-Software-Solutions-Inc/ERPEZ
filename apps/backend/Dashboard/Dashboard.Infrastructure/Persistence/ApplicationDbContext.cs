@@ -2003,7 +2003,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .Property(e => e.ProcurementStrategies)
             .HasConversion(
                 v => v == null ? null : string.Join(',', v.Select(x => x.ToString())),
-                v => v == null ? null : v.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(x => (ProcurementStrategy)Enum.Parse(typeof(ProcurementStrategy), x)).ToList()
+                v => ParseStrategies(v)
             )
             .Metadata.SetValueComparer(
                 new Microsoft.EntityFrameworkCore.ChangeTracking.ValueComparer<List<ProcurementStrategy>?>(
@@ -2990,5 +2990,20 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasIndex(a => new { a.ProcurementProjectId, a.TinNumber })
             .IsUnique()
             .HasDatabaseName("IX_PublicSupplierApplications_ProjectId_TinNumber");
+    }
+
+    private static System.Collections.Generic.List<ERPEZ.Domain.Enums.ProcurementStrategy>? ParseStrategies(string? v)
+    {
+        if (v == null) return null;
+        return v.Split(',', System.StringSplitOptions.RemoveEmptyEntries).Select(x => 
+        {
+            if (System.String.Equals(x, "LCA", System.StringComparison.OrdinalIgnoreCase) || 
+                System.String.Equals(x, "LCCA", System.StringComparison.OrdinalIgnoreCase) || 
+                System.String.Equals(x, "LCA_LCCA", System.StringComparison.OrdinalIgnoreCase))
+            {
+                return ERPEZ.Domain.Enums.ProcurementStrategy.LCA;
+            }
+            return System.Enum.TryParse<ERPEZ.Domain.Enums.ProcurementStrategy>(x, true, out var result) ? result : ERPEZ.Domain.Enums.ProcurementStrategy.NotApplicable;
+        }).ToList();
     }
 }

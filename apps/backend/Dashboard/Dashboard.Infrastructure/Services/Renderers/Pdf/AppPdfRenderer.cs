@@ -155,53 +155,48 @@ internal sealed class AppPdfRenderer : BasePdfRenderer, IDocumentRenderer<AppDat
 
         foreach (var item in items)
         {
-            var isHighlight = item.IsNew || item.IsRevised;
-
-            static IContainer CellStyle(IContainer container, bool highlight, bool center = false, bool right = false)
+            static IContainer CellStyle(IContainer container, bool center = false, bool right = false)
             {
                 var c = container.Border(0.5f).BorderColor(Colors.Grey.Medium).Padding(3);
-                c = highlight ? c.Background(Colors.Amber.Lighten5) : c;
                 if (center) c = c.AlignCenter();
                 if (right) c = c.AlignRight();
                 return c;
             }
 
-            var titlePrefix = item.IsNew ? "[NEW] " : (item.IsRevised ? "[REVISED] " : "");
+            table.Cell().Element(c => CellStyle(c))
+                .Text(item.ProjectTitle).FontSize(7);
 
-            table.Cell().Element(c => CellStyle(c, isHighlight))
-                .Text(t => { if (isHighlight) t.Span(titlePrefix).Bold().FontSize(7); t.Span(item.ProjectTitle).FontSize(7); });
-
-            table.Cell().Element(c => CellStyle(c, isHighlight))
+            table.Cell().Element(c => CellStyle(c))
                 .Text(item.EndUserOrImplementingUnit);
 
-            table.Cell().Element(c => CellStyle(c, isHighlight))
+            table.Cell().Element(c => CellStyle(c))
                 .Text(item.GeneralDescription);
 
-            table.Cell().Element(c => CellStyle(c, isHighlight))
-                .Text(t => { if (item.IsRevised) t.Span(item.ModeOfProcurement).Bold(); else t.Span(item.ModeOfProcurement); });
+            table.Cell().Element(c => CellStyle(c))
+                .Text(item.ModeOfProcurement);
 
-            table.Cell().Element(c => CellStyle(c, isHighlight, center: true))
+            table.Cell().Element(c => CellStyle(c, center: true))
                 .Text(item.CoveredByEpa ? "Yes" : "No");
 
-            table.Cell().Element(c => CellStyle(c, isHighlight))
+            table.Cell().Element(c => CellStyle(c))
                 .Text(item.CriteriaForBidEvaluation);
 
-            table.Cell().Element(c => CellStyle(c, isHighlight, center: true))
-                .Text(t => { if (item.IsRevised) t.Span(item.StartOfProcurement).Bold(); else t.Span(item.StartOfProcurement); });
+            table.Cell().Element(c => CellStyle(c, center: true))
+                .Text(item.StartOfProcurement);
 
-            table.Cell().Element(c => CellStyle(c, isHighlight, center: true))
-                .Text(t => { if (item.IsRevised) t.Span(item.EndOfProcurement).Bold(); else t.Span(item.EndOfProcurement); });
+            table.Cell().Element(c => CellStyle(c, center: true))
+                .Text(item.EndOfProcurement);
 
-            table.Cell().Element(c => CellStyle(c, isHighlight))
+            table.Cell().Element(c => CellStyle(c))
                 .Text(item.SourceOfFund);
 
-            table.Cell().Element(c => CellStyle(c, isHighlight, right: true))
-                .Text(t => { if (item.IsRevised) t.Span($"₱{item.EstimatedBudget:N2}").Bold(); else t.Span($"₱{item.EstimatedBudget:N2}"); });
+            table.Cell().Element(c => CellStyle(c, right: true))
+                .Text($"₱{item.EstimatedBudget:N2}");
 
-            table.Cell().Element(c => CellStyle(c, isHighlight))
+            table.Cell().Element(c => CellStyle(c))
                 .Text(item.ProcurementStrategyOrTools);
 
-            table.Cell().Element(c => CellStyle(c, isHighlight))
+            table.Cell().Element(c => CellStyle(c))
                 .Text(item.Remarks);
         }
     }

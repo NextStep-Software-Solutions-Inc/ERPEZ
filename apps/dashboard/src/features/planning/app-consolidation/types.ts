@@ -210,6 +210,13 @@ export interface BACLineItem {
   startOfProcurementOverride?: string
   endOfProcurementOverride?: string
   estimatedBudgetOverride?: number
+  effectiveStartOfProcurement?: string
+  effectiveEndOfProcurement?: string
+  isStartProcurementOverridden?: boolean
+  isEndProcurementOverridden?: boolean
+  isABCOverridden?: boolean
+  originalPPMPBudget?: number
+  effectiveABC?: number
   isOutsourced?: boolean
   isNew?: boolean
   isRevised?: boolean

@@ -35,6 +35,18 @@ public class GetAPPItemsQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<G
             CreatedBy = entity.CreatedBy,
             UpdatedAt = entity.UpdatedAt,
             UpdatedBy = entity.UpdatedBy,
+            EffectiveStartOfProcurement = entity.StartOfProcurementOverride ?? (entity.PPMPItem?.ProcurementStartDate.HasValue == true ? entity.PPMPItem.ProcurementStartDate.Value.ToDateTime(TimeOnly.MinValue) : null),
+            EffectiveEndOfProcurement = entity.EndOfProcurementOverride ?? (entity.PPMPItem?.ProcurementEndDate.HasValue == true ? entity.PPMPItem.ProcurementEndDate.Value.ToDateTime(TimeOnly.MinValue) : null),
+            StartOfProcurementOverride = entity.StartOfProcurementOverride,
+            EndOfProcurementOverride = entity.EndOfProcurementOverride,
+            EstimatedBudgetOverride = entity.EstimatedBudgetOverride,
+            OriginalPPMPBudget = entity.PPMPItem?.PPMPItemAllocations.Where(a => !a.IsDeleted).Sum(a => a.Amount) ?? 0,
+            EffectiveABC = entity.EstimatedBudgetOverride ?? (entity.PPMPItem?.PPMPItemAllocations.Where(a => !a.IsDeleted).Sum(a => a.Amount) ?? 0),
+            IsABCOverridden = entity.EstimatedBudgetOverride.HasValue,
+            IsStartProcurementOverridden = entity.StartOfProcurementOverride.HasValue,
+            IsEndProcurementOverridden = entity.EndOfProcurementOverride.HasValue,
+            IsNew = entity.IsNew,
+            IsRevised = entity.IsRevised,
             APP = entity.APP == null ? null : new APPItemAPPResponse
             {
                 Id = entity.APP.Id,

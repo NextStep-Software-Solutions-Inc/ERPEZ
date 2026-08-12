@@ -380,20 +380,6 @@ export function APPDetailsPage() {
                   🔒 LOCKED - No edits allowed
                 </span>
               )}
-              {canEdit && itemCount > 0 && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    setCurrentApp(app)
-                    setAppDetailsDialog(true)
-                  }}
-                  className="gap-2 cursor-pointer pointer-events-auto hover:bg-gray-100 transition-colors"
-                >
-                  <Edit2 className="w-4 h-4" />
-                  Edit
-                </Button>
-              )}
             </CardHeader>
             <CardContent>
               <BACDetailsSection

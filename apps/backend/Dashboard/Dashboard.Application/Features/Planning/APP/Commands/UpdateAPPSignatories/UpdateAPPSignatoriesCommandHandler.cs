@@ -14,11 +14,12 @@ public class UpdateAPPSignatoriesCommandHandler(IUnitOfWork unitOfWork)
         var app = await unitOfWork.APPRepository.GetAPPWithDetailsAsync(request.APPId, cancellationToken)
             ?? throw new NotFoundException("APP not found.");
 
-        // Remove existing signatory assignments for this APP version
-        var existingSignatories = app.APPSignatories.Where(s => !s.IsDeleted).ToList();
-        foreach (var sig in existingSignatories)
+        // Load and remove existing signatory assignments for this APP version
+        var existingSignatories = app.APPSignatories.ToList();
+        if (existingSignatories.Any())
         {
-            unitOfWork.APPSignatoryRepository.Remove(sig);
+            unitOfWork.APPSignatoryRepository.RemoveRange(existingSignatories);
+            app.APPSignatories.Clear();
         }
 
         // Add new APP-specific signatory assignments

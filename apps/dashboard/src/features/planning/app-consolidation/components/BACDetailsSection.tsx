@@ -244,7 +244,7 @@ export function BACDetailsSection({ app, isDraft, onEdit, itemCount = 0 }: BACDe
                       <div className="bg-orange-50 p-2 rounded border border-orange-200">
                         <p className="text-orange-600 font-semibold">ABC / APP Budget</p>
                         <p className="font-bold text-orange-900">
-                          ₱{item.totalAmount.toLocaleString('en-PH', { maximumFractionDigits: 0 })}
+                          ₱{((item.effectiveABC ?? item.estimatedBudgetOverride ?? item.totalAmount) || 0).toLocaleString('en-PH', { maximumFractionDigits: 0 })}
                         </p>
                         {item.estimatedBudgetOverride != null && (
                           <span className="text-[9px] text-amber-700 font-medium block">APP Override</span>
@@ -256,11 +256,49 @@ export function BACDetailsSection({ app, isDraft, onEdit, itemCount = 0 }: BACDe
                       </div>
                       <div className="bg-emerald-50 p-2 rounded border border-emerald-200">
                         <p className="text-emerald-700 font-semibold">Start Procurement</p>
-                        <p className="font-bold text-emerald-950 text-xs">{item.startOfProcurementOverride || 'Not set'}</p>
+                        <p className="font-bold text-emerald-950 text-xs">
+                          {(() => {
+                            const dateStr = item.effectiveStartOfProcurement || item.startOfProcurementOverride
+                            if (!dateStr) return 'Not set'
+                            const formatted = (() => {
+                              if (/^\d{2}\/\d{4}$/.test(dateStr)) return dateStr
+                              const trimmed = dateStr.trim().split('T')[0]
+                              if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed) || /^\d{4}-\d{2}$/.test(trimmed)) {
+                                const parts = trimmed.split('-')
+                                return `${parts[1]}/${parts[0]}`
+                              }
+                              try {
+                                const d = new Date(dateStr)
+                                if (!isNaN(d.getTime())) return `${String(d.getUTCMonth() + 1).padStart(2, '0')}/${d.getUTCFullYear()}`
+                              } catch {}
+                              return dateStr
+                            })()
+                            return item.startOfProcurementOverride ? `★ ${formatted} (Override)` : `${formatted} (Inherited)`
+                          })()}
+                        </p>
                       </div>
                       <div className="bg-emerald-50 p-2 rounded border border-emerald-200">
                         <p className="text-emerald-700 font-semibold">End Procurement</p>
-                        <p className="font-bold text-emerald-950 text-xs">{item.endOfProcurementOverride || 'Not set'}</p>
+                        <p className="font-bold text-emerald-950 text-xs">
+                          {(() => {
+                            const dateStr = item.effectiveEndOfProcurement || item.endOfProcurementOverride
+                            if (!dateStr) return 'Not set'
+                            const formatted = (() => {
+                              if (/^\d{2}\/\d{4}$/.test(dateStr)) return dateStr
+                              const trimmed = dateStr.trim().split('T')[0]
+                              if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed) || /^\d{4}-\d{2}$/.test(trimmed)) {
+                                const parts = trimmed.split('-')
+                                return `${parts[1]}/${parts[0]}`
+                              }
+                              try {
+                                const d = new Date(dateStr)
+                                if (!isNaN(d.getTime())) return `${String(d.getUTCMonth() + 1).padStart(2, '0')}/${d.getUTCFullYear()}`
+                              } catch {}
+                              return dateStr
+                            })()
+                            return item.endOfProcurementOverride ? `★ ${formatted} (Override)` : `${formatted} (Inherited)`
+                          })()}
+                        </p>
                       </div>
                       <div className="bg-green-50 p-2 rounded border border-green-200">
                         <p className="text-green-600 font-semibold">Allotment Class</p>

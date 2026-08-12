@@ -154,8 +154,32 @@ public class APPController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> UpdateBACLineItems(Guid id, [FromBody] List<UpdateBACLineItemRequest> lineItems)
+    public async Task<IActionResult> UpdateBACLineItems(Guid id, [FromBody] System.Text.Json.JsonElement body)
     {
+        List<UpdateBACLineItemRequest>? lineItems = null;
+
+        var options = new System.Text.Json.JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        };
+
+        if (body.ValueKind == System.Text.Json.JsonValueKind.Array)
+        {
+            lineItems = System.Text.Json.JsonSerializer.Deserialize<List<UpdateBACLineItemRequest>>(body.GetRawText(), options);
+        }
+        else if (body.ValueKind == System.Text.Json.JsonValueKind.Object)
+        {
+            if (body.TryGetProperty("lineItems", out var lineItemsProp) || body.TryGetProperty("LineItems", out lineItemsProp))
+            {
+                lineItems = System.Text.Json.JsonSerializer.Deserialize<List<UpdateBACLineItemRequest>>(lineItemsProp.GetRawText(), options);
+            }
+        }
+
+        if (lineItems == null)
+        {
+            return BadRequest(ApiResponse<Unit>.Fail("The lineItems field is required."));
+        }
+
         var command = new UpdateBACLineItemsCommand
         {
             AppId = id,

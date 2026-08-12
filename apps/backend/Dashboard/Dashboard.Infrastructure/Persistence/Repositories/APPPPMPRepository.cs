@@ -95,7 +95,7 @@ public class APPPPMPRepository : Repository<APPPPMP>, IAPPPPMPRepository
     {
         var idList = ppmpIds.ToList();
         return await context.Set<APPPPMP>()
-            .Where(ap => ap.APPId == appId && idList.Contains(ap.PPMPId) && !ap.IsDeleted)
+            .Where(ap => ap.APPId == appId && (idList.Contains(ap.PPMPId) || idList.Contains(ap.Id)) && !ap.IsDeleted)
             .ToListAsync(cancellationToken);
     }
 }
