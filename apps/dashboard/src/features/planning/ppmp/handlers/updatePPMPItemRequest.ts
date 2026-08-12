@@ -22,10 +22,10 @@ export type UpdatePPMPItemPayload = {
   mopJustification?: string
   projectType?: ProcurementProjectType
   preProcurementConference?: boolean
-  procurementStartDate?: string
-  procurementEndDate?: string
-  expectedDeliveryStart?: string
-  expectedDeliveryEnd?: string
+  procurementStartDate?: string | null
+  procurementEndDate?: string | null
+  expectedDeliveryStart?: string | null
+  expectedDeliveryEnd?: string | null
   remarks?: string
 }
 

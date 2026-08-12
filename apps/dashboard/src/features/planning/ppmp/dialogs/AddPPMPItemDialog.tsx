@@ -41,11 +41,11 @@ export default function AddPPMPItemDialog({
     const payload = {
       ...values,
       ppmpExpenditureItemId,
-      // Format dates back to ISO strings or undefined if empty
-      procurementStartDate: values.procurementStartDate || undefined,
-      procurementEndDate: values.procurementEndDate || undefined,
-      expectedDeliveryStart: values.expectedDeliveryStart || undefined,
-      expectedDeliveryEnd: values.expectedDeliveryEnd || undefined,
+      // Format dates back to ISO strings or null if empty
+      procurementStartDate: values.procurementStartDate || null,
+      procurementEndDate: values.procurementEndDate || null,
+      expectedDeliveryStart: values.expectedDeliveryStart || null,
+      expectedDeliveryEnd: values.expectedDeliveryEnd || null,
     }
 
     try {
