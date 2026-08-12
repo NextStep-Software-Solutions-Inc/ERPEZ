@@ -50,7 +50,10 @@ public class GetAPPByIdQueryHandler(IUnitOfWork unitOfWork)
                 var allocQty = item.PPMPItem?.PPMPItemAllocations.Where(a => !a.IsDeleted).Sum(a => a.Quantity) ?? 0;
                 var unitPrice = item.PPMPItem?.UnitPrice ?? 0;
                 var allocTotal = item.PPMPItem?.PPMPItemAllocations.Where(a => !a.IsDeleted).Sum(a => a.Amount) ?? 0;
-                var totalAmount = allocTotal > 0 ? allocTotal : ((allocQty > 0 ? allocQty : 1) * unitPrice);
+                var origBudget = allocTotal > 0 ? allocTotal : ((allocQty > 0 ? allocQty : 1) * unitPrice);
+                var totalAmount = item.EstimatedBudgetOverride ?? origBudget;
+                var effectiveStart = item.StartOfProcurementOverride ?? (item.PPMPItem?.ProcurementStartDate.HasValue == true ? item.PPMPItem.ProcurementStartDate.Value.ToDateTime(TimeOnly.MinValue) : null);
+                var effectiveEnd = item.EndOfProcurementOverride ?? (item.PPMPItem?.ProcurementEndDate.HasValue == true ? item.PPMPItem.ProcurementEndDate.Value.ToDateTime(TimeOnly.MinValue) : null);
 
                 return new APPItemSummaryResponse
                 {
@@ -62,6 +65,13 @@ public class GetAPPByIdQueryHandler(IUnitOfWork unitOfWork)
                     Quantity = allocQty,
                     UnitCost = unitPrice,
                     TotalAmount = totalAmount,
+                    OriginalPPMPBudget = origBudget,
+                    EffectiveABC = totalAmount,
+                    EffectiveStartOfProcurement = effectiveStart,
+                    EffectiveEndOfProcurement = effectiveEnd,
+                    IsABCOverridden = item.EstimatedBudgetOverride.HasValue,
+                    IsStartProcurementOverridden = item.StartOfProcurementOverride.HasValue,
+                    IsEndProcurementOverridden = item.EndOfProcurementOverride.HasValue,
                     ProcurementModeId = item.ProcurementModeId,
                     ProcurementModeName = item.ProcurementMode?.Name ?? string.Empty,
                     FundSourceId = item.FundSourceId,
@@ -71,9 +81,13 @@ public class GetAPPByIdQueryHandler(IUnitOfWork unitOfWork)
                     PAPCode = item.PAPCode,
                     Remarks = item.Remarks,
                     IsEarlyProcurementActivity = item.IsEarlyProcurementActivity,
+                    EPARemarks = item.EPARemarks,
                     IsOutsourced = item.IsOutsourced,
                     StartOfProcurementOverride = item.StartOfProcurementOverride,
                     EndOfProcurementOverride = item.EndOfProcurementOverride,
+                    EstimatedBudgetOverride = item.EstimatedBudgetOverride,
+                    BidEvaluationCriteria = item.BidEvaluationCriteria?.ToString(),
+                    ProcurementStrategies = item.ProcurementStrategies?.Select(s => s.ToString()).ToList() ?? [],
                     IsNew = item.IsNew,
                     IsRevised = item.IsRevised,
                     Schedules = item.PPMPItem?.APPProcurementSchedules

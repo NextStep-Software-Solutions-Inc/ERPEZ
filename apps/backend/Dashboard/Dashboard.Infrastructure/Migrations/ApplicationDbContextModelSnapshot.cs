@@ -180,8 +180,14 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text");
 
+                    b.Property<string>("EPARemarks")
+                        .HasColumnType("text");
+
                     b.Property<DateTime?>("EndOfProcurementOverride")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal?>("EstimatedBudgetOverride")
+                        .HasColumnType("numeric");
 
                     b.Property<Guid>("FundSourceId")
                         .HasColumnType("uuid");

@@ -227,6 +227,12 @@ export function EditAPPBACDialog({
           remarks: item.remarks || '',
           epaEligible: item.eligibleForEPA ?? false,
           epaRemarks: item.epaRemarks || '',
+          startOfProcurementOverride: item.startOfProcurementOverride || null,
+          endOfProcurementOverride: item.endOfProcurementOverride || null,
+          estimatedBudgetOverride: item.estimatedBudgetOverride !== undefined && item.estimatedBudgetOverride !== null ? item.estimatedBudgetOverride : null,
+          bidEvaluationCriteria: item.bidEvaluationCriteria || null,
+          procurementStrategies: item.procurementStrategies || null,
+          isOutsourced: item.isOutsourced ?? null,
           schedules: payloadSchedules,
         }
       })

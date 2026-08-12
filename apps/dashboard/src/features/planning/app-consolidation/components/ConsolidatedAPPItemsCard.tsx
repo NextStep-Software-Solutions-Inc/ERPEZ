@@ -123,7 +123,19 @@ export function ConsolidatedAPPItemsCard({
       header: () => <NGPAColumnHeader columnNumber={2} label="Item Code/Name" />,
       cell: ({ row }) => (
         <div className="flex flex-col gap-0.5">
-          <span className="font-semibold text-gray-900">{row.original.ppmpItemName || '—'}</span>
+          <div className="flex items-center gap-1.5">
+            <span className="font-semibold text-gray-900">{row.original.ppmpItemName || '—'}</span>
+            {row.original.isNew && (
+              <span className="inline-flex items-center rounded px-1.5 py-0.2 text-[10px] font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                NEW
+              </span>
+            )}
+            {row.original.isRevised && (
+              <span className="inline-flex items-center rounded px-1.5 py-0.2 text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                REVISED
+              </span>
+            )}
+          </div>
           {row.original.papCode && (
             <span className="text-[10px] text-gray-400 font-mono">PAP Code: {row.original.papCode}</span>
           )}
@@ -147,16 +159,50 @@ export function ConsolidatedAPPItemsCard({
       size: 150,
     }),
     appItemColumnHelper.accessor('totalAmount', {
-      header: () => <NGPAColumnHeader columnNumber={10} label="Estimated Budget" />,
-      cell: ({ getValue, row }) => {
-        const val = getValue() ?? row.original.totalAmount ?? ((row.original.quantity || 1) * (row.original.unitCost || 0))
+      header: () => <NGPAColumnHeader columnNumber={10} label="ABC / Estimated Budget" />,
+      cell: ({ row }) => {
+        const val = row.original.effectiveABC ?? row.original.estimatedBudgetOverride ?? row.original.totalAmount ?? ((row.original.quantity || 1) * (row.original.unitCost || 0))
+        const isOverridden = row.original.isABCOverridden || row.original.estimatedBudgetOverride != null
         return (
-          <span className="text-sm font-semibold text-emerald-700">
-            {val ? `₱${Number(val).toLocaleString('en-PH', { minimumFractionDigits: 2 })}` : '—'}
-          </span>
+          <div className="flex flex-col gap-0.5">
+            <span className="text-sm font-semibold text-emerald-700">
+              {val ? `₱${Number(val).toLocaleString('en-PH', { minimumFractionDigits: 2 })}` : '—'}
+            </span>
+            {isOverridden ? (
+              <span className="text-[10px] text-amber-700 font-medium">APP Override</span>
+            ) : (
+              <span className="text-[10px] text-slate-400">Inherited from PPMP</span>
+            )}
+          </div>
         )
       },
-      size: 150,
+      size: 160,
+    }),
+    appItemColumnHelper.display({
+      id: 'procurementSchedule',
+      header: () => <NGPAColumnHeader columnNumber={6} label="Procurement Schedule" />,
+      cell: ({ row }) => {
+        const formatDate = (dateStr?: string | null) => {
+          if (!dateStr) return null
+          try {
+            const d = new Date(dateStr)
+            if (isNaN(d.getTime())) return dateStr
+            return d.toLocaleDateString('en-US', { month: '2-digit', year: 'numeric' })
+          } catch {
+            return dateStr
+          }
+        }
+        const start = formatDate(row.original.effectiveStartOfProcurement || row.original.startOfProcurementOverride)
+        const end = formatDate(row.original.effectiveEndOfProcurement || row.original.endOfProcurementOverride)
+
+        return (
+          <div className="text-[11px] space-y-0.5">
+            <div><span className="text-slate-500 font-medium">Start:</span> <span className="text-slate-900 font-medium">{start || 'Not set'}</span></div>
+            <div><span className="text-slate-500 font-medium">End:</span> <span className="text-slate-900 font-medium">{end || 'Not set'}</span></div>
+          </div>
+        )
+      },
+      size: 140,
     }),
     appItemColumnHelper.accessor('isEarlyProcurementActivity', {
       header: () => <NGPAColumnHeader columnNumber={5} label="EPA" />,

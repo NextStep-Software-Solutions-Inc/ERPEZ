@@ -101,6 +101,8 @@ public class CloneUpdatedAPPCommandHandler(IUnitOfWork unitOfWork)
                 ProcurementStrategies = item.ProcurementStrategies != null ? new List<ProcurementStrategy>(item.ProcurementStrategies) : null,
                 StartOfProcurementOverride = item.StartOfProcurementOverride,
                 EndOfProcurementOverride = item.EndOfProcurementOverride,
+                EstimatedBudgetOverride = item.EstimatedBudgetOverride,
+                EPARemarks = item.EPARemarks,
                 IsNew = false,
                 IsRevised = false
             };

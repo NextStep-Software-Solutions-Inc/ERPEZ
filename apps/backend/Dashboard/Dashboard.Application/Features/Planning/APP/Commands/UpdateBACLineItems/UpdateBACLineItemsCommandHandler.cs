@@ -29,15 +29,33 @@ public class UpdateBACLineItemsCommandHandler(IUnitOfWork unitOfWork)
             var appItem = appItems.FirstOrDefault(a => a.Id == entry.BACItemCode)
                 ?? throw new NotFoundException($"APP line item '{entry.BACItemCode}' not found in this APP.");
 
+            // Validation rules
+            if (entry.EstimatedBudgetOverride.HasValue && entry.EstimatedBudgetOverride < 0)
+            {
+                throw new ValidationException("Estimated Budget / ABC cannot be negative.");
+            }
+
+            if (entry.StartOfProcurementOverride.HasValue && entry.EndOfProcurementOverride.HasValue &&
+                entry.EndOfProcurementOverride < entry.StartOfProcurementOverride)
+            {
+                throw new ValidationException("End of Procurement cannot be earlier than Start of Procurement.");
+            }
+
             // In an Updated APP, inherited items (IsNew == false) modified during revision are marked as IsRevised
             if (string.Equals(app.APPType, "Updated", StringComparison.OrdinalIgnoreCase) && !appItem.IsNew)
             {
                 var modeChanged = appItem.ProcurementModeId != entry.ModeOfProcurementId;
                 var remarksChanged = appItem.Remarks != entry.Remarks;
                 var epaChanged = appItem.IsEarlyProcurementActivity != entry.EPAEligible;
+                var epaRemarksChanged = appItem.EPARemarks != entry.EPARemarks;
+                var startProcChanged = appItem.StartOfProcurementOverride != entry.StartOfProcurementOverride;
+                var endProcChanged = appItem.EndOfProcurementOverride != entry.EndOfProcurementOverride;
+                var budgetChanged = appItem.EstimatedBudgetOverride != entry.EstimatedBudgetOverride;
+                var criteriaChanged = entry.BidEvaluationCriteria != null && appItem.BidEvaluationCriteria?.ToString() != entry.BidEvaluationCriteria;
+                var outsourcedChanged = entry.IsOutsourced.HasValue && appItem.IsOutsourced != entry.IsOutsourced.Value;
                 var schedulesProvided = entry.Schedules is not null && entry.Schedules.Count > 0;
 
-                if (modeChanged || remarksChanged || epaChanged || schedulesProvided)
+                if (modeChanged || remarksChanged || epaChanged || epaRemarksChanged || startProcChanged || endProcChanged || budgetChanged || criteriaChanged || outsourcedChanged || schedulesProvided)
                 {
                     appItem.IsRevised = true;
                 }
@@ -47,6 +65,19 @@ public class UpdateBACLineItemsCommandHandler(IUnitOfWork unitOfWork)
             appItem.ProcurementModeId = entry.ModeOfProcurementId;
             appItem.Remarks = entry.Remarks;
             appItem.IsEarlyProcurementActivity = entry.EPAEligible;
+            appItem.EPARemarks = entry.EPARemarks;
+            appItem.StartOfProcurementOverride = entry.StartOfProcurementOverride;
+            appItem.EndOfProcurementOverride = entry.EndOfProcurementOverride;
+            appItem.EstimatedBudgetOverride = entry.EstimatedBudgetOverride;
+            if (entry.IsOutsourced.HasValue) appItem.IsOutsourced = entry.IsOutsourced.Value;
+            if (entry.BidEvaluationCriteria != null)
+            {
+                appItem.BidEvaluationCriteria = Enum.Parse<ERPEZ.Domain.Enums.BidEvaluationCriteria>(entry.BidEvaluationCriteria, true);
+            }
+            if (entry.ProcurementStrategies != null)
+            {
+                appItem.ProcurementStrategies = entry.ProcurementStrategies.Select(s => Enum.Parse<ERPEZ.Domain.Enums.ProcurementStrategy>(s, true)).ToList();
+            }
 
             if (entry.Schedules is null)
                 continue;

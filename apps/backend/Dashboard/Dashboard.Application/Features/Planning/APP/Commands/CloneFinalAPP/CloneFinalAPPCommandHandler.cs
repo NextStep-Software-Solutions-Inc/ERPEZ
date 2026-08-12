@@ -126,6 +126,8 @@ public class CloneFinalAPPCommandHandler(IUnitOfWork unitOfWork)
                     : null,
                 StartOfProcurementOverride = item.StartOfProcurementOverride,
                 EndOfProcurementOverride   = item.EndOfProcurementOverride,
+                EstimatedBudgetOverride    = item.EstimatedBudgetOverride,
+                EPARemarks                 = item.EPARemarks,
                 IsNew     = false,
                 IsRevised = false,
             };

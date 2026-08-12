@@ -234,20 +234,33 @@ export function BACDetailsSection({ app, isDraft, onEdit, itemCount = 0 }: BACDe
                     {/* Item Details Grid */}
                     <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-3 text-xs">
                       <div className="bg-gray-50 p-2 rounded">
-                        <p className="text-gray-600 font-semibold">Qty</p>
-                        <p className="font-bold text-gray-900">{item.quantity}</p>
+                        <p className="text-gray-600 font-semibold">Qty & Unit</p>
+                        <p className="font-bold text-gray-900">{item.quantity} {item.unit}</p>
                       </div>
                       <div className="bg-gray-50 p-2 rounded">
                         <p className="text-gray-600 font-semibold">Unit Cost</p>
                         <p className="font-bold text-gray-900">₱{item.unitCost.toLocaleString('en-PH', { maximumFractionDigits: 0 })}</p>
                       </div>
                       <div className="bg-orange-50 p-2 rounded border border-orange-200">
-                        <p className="text-orange-600 font-semibold">Total</p>
-                        <p className="font-bold text-orange-900">₱{item.totalAmount.toLocaleString('en-PH', { maximumFractionDigits: 0 })}</p>
+                        <p className="text-orange-600 font-semibold">ABC / APP Budget</p>
+                        <p className="font-bold text-orange-900">
+                          ₱{item.totalAmount.toLocaleString('en-PH', { maximumFractionDigits: 0 })}
+                        </p>
+                        {item.estimatedBudgetOverride != null && (
+                          <span className="text-[9px] text-amber-700 font-medium block">APP Override</span>
+                        )}
                       </div>
                       <div className="bg-purple-50 p-2 rounded border border-purple-200">
                         <p className="text-purple-600 font-semibold">MoP</p>
                         <p className="font-bold text-purple-900 text-xs">{item.modeOfProcurement || 'N/A'}</p>
+                      </div>
+                      <div className="bg-emerald-50 p-2 rounded border border-emerald-200">
+                        <p className="text-emerald-700 font-semibold">Start Procurement</p>
+                        <p className="font-bold text-emerald-950 text-xs">{item.startOfProcurementOverride || 'Not set'}</p>
+                      </div>
+                      <div className="bg-emerald-50 p-2 rounded border border-emerald-200">
+                        <p className="text-emerald-700 font-semibold">End Procurement</p>
+                        <p className="font-bold text-emerald-950 text-xs">{item.endOfProcurementOverride || 'Not set'}</p>
                       </div>
                       <div className="bg-green-50 p-2 rounded border border-green-200">
                         <p className="text-green-600 font-semibold">Allotment Class</p>

@@ -67,6 +67,13 @@ public record APPItemSummaryResponse
     public int Quantity { get; init; }
     public decimal UnitCost { get; init; }
     public decimal TotalAmount { get; init; }
+    public decimal OriginalPPMPBudget { get; init; }
+    public decimal EffectiveABC { get; init; }
+    public DateTime? EffectiveStartOfProcurement { get; init; }
+    public DateTime? EffectiveEndOfProcurement { get; init; }
+    public bool IsABCOverridden { get; init; }
+    public bool IsStartProcurementOverridden { get; init; }
+    public bool IsEndProcurementOverridden { get; init; }
     public Guid ProcurementModeId { get; init; }
     public string ProcurementModeName { get; init; } = string.Empty;
     public Guid FundSourceId { get; init; }
@@ -76,9 +83,13 @@ public record APPItemSummaryResponse
     public string PAPCode { get; init; } = string.Empty;
     public string? Remarks { get; init; }
     public bool IsEarlyProcurementActivity { get; init; }
+    public string? EPARemarks { get; init; }
     public bool IsOutsourced { get; init; }
     public DateTime? StartOfProcurementOverride { get; init; }
     public DateTime? EndOfProcurementOverride { get; init; }
+    public decimal? EstimatedBudgetOverride { get; init; }
+    public string? BidEvaluationCriteria { get; init; }
+    public List<string> ProcurementStrategies { get; init; } = [];
     public bool IsNew { get; init; }
     public bool IsRevised { get; init; }
     public List<APPItemScheduleSummaryResponse> Schedules { get; init; } = [];

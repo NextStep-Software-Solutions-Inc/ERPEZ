@@ -207,6 +207,12 @@ export interface BACLineItem {
   remarks?: string
   eligibleForEPA: boolean
   epaRemarks?: string
+  startOfProcurementOverride?: string
+  endOfProcurementOverride?: string
+  estimatedBudgetOverride?: number
+  isOutsourced?: boolean
+  isNew?: boolean
+  isRevised?: boolean
 
   // Bid Evaluation & Procurement Strategy (Government Planning Process Enhancement)
   bidEvaluationCriteria?: BidEvaluationCriteria // One of: LCRB, MEARB, MARB/HRRB/SRRB, LCCRB

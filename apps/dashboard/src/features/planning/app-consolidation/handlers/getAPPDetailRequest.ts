@@ -26,6 +26,20 @@ export interface APPItemFromAPI {
   epaRemarks?: string | null
   isEarlyProcurementActivity?: boolean
   isOutsourced?: boolean
+  startOfProcurementOverride?: string | null
+  endOfProcurementOverride?: string | null
+  estimatedBudgetOverride?: number | null
+  originalPPMPBudget?: number | null
+  effectiveABC?: number | null
+  effectiveStartOfProcurement?: string | null
+  effectiveEndOfProcurement?: string | null
+  isABCOverridden?: boolean
+  isStartProcurementOverridden?: boolean
+  isEndProcurementOverridden?: boolean
+  bidEvaluationCriteria?: string | null
+  procurementStrategies?: string[]
+  isNew?: boolean
+  isRevised?: boolean
   schedules?: any[]
   code?: string | null
   description?: string | null

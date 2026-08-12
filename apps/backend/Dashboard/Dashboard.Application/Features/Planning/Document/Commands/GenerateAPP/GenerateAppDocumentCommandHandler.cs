@@ -177,9 +177,9 @@ public class GenerateAppDocumentCommandHandler(
 
     private static decimal CalculateItemBudget(AppItemEntity item)
     {
-        return item.PPMPItem?.PPMPItemAllocations
+        return item.EstimatedBudgetOverride ?? (item.PPMPItem?.PPMPItemAllocations
             .Where(a => !a.IsDeleted)
-            .Sum(a => a.Amount) ?? 0;
+            .Sum(a => a.Amount) ?? 0);
     }
 
     private async Task<List<SignatoryDto>> BuildSignatoriesAsync(CancellationToken cancellationToken)
