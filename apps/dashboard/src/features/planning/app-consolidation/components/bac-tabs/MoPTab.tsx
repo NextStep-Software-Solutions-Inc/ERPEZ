@@ -134,26 +134,42 @@ export function MoPTab({ workspace, onUpdate, readOnly }: MoPTabProps) {
 
                     {/* ABC / Budget Override */}
                     <div className="space-y-1.5">
-                      <label className="text-xs font-semibold text-slate-700">
-                        Approved Budget for the Contract (ABC):
-                      </label>
+                      <div className="flex items-center justify-between">
+                        <label className="text-xs font-semibold text-slate-700">
+                          Approved Budget for the Contract (ABC):
+                        </label>
+                        {(item.estimatedBudgetOverride !== null && item.estimatedBudgetOverride !== undefined) && (
+                          <button
+                            type="button"
+                            onClick={() => {
+                              if (readOnly) return
+                              handleItemUpdate(item.id, { estimatedBudgetOverride: null })
+                            }}
+                            className="text-[10px] text-red-600 hover:text-red-800 hover:underline font-semibold cursor-pointer"
+                          >
+                            Clear Override
+                          </button>
+                        )}
+                      </div>
                       <Input
                         type="number"
                         min="0"
                         step="0.01"
-                        placeholder={`Default: ${formatCurrency(item.originalPPMPBudget || item.totalAmount)}`}
-                        value={item.estimatedBudgetOverride !== undefined && item.estimatedBudgetOverride !== null ? item.estimatedBudgetOverride : ''}
+                        placeholder={`Default: ${item.originalPPMPBudget || item.totalAmount}`}
+                        value={item.estimatedBudgetOverride !== null && item.estimatedBudgetOverride !== undefined ? item.estimatedBudgetOverride : (item.originalPPMPBudget || item.totalAmount || '')}
                         onChange={(e) => {
                           if (readOnly) return
                           const val = e.target.value === '' ? null : parseFloat(e.target.value)
                           handleItemUpdate(item.id, { estimatedBudgetOverride: val })
                         }}
                         disabled={readOnly}
-                        className="w-full text-xs bg-white"
+                        className={`w-full text-xs font-medium ${(item.estimatedBudgetOverride !== null && item.estimatedBudgetOverride !== undefined) ? 'border-amber-400 bg-amber-50/20 text-amber-900' : 'border-slate-200 text-slate-700 bg-white'}`}
                       />
                       <p className="text-[10px]">
                         {item.estimatedBudgetOverride !== null && item.estimatedBudgetOverride !== undefined ? (
-                          <span className="text-amber-700 font-semibold">Overridden for APP</span>
+                          <span className="text-amber-700 font-semibold">
+                            ★ APP Override (Display: {formatCurrency(item.estimatedBudgetOverride)})
+                          </span>
                         ) : (
                           <span className="text-slate-400">Inherited from PPMP ({formatCurrency(item.originalPPMPBudget || item.totalAmount)})</span>
                         )}

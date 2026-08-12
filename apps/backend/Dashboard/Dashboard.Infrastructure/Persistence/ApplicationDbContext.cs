@@ -2175,6 +2175,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<APPPPMP>()
             .ToTable("APP_PPMP_Selections", "planning");
 
+        modelBuilder.Entity<APPPPMP>()
+            .HasQueryFilter(x => !x.IsDeleted);
+
+        modelBuilder.Entity<APPSignatory>()
+            .HasQueryFilter(x => !x.IsDeleted);
+
         // OPCRItemRating
         modelBuilder.Entity<OPCRItemRating>()
             .HasOne(oir => oir.OPCRItem)

@@ -38,6 +38,10 @@ public class RemovePPMPsCommandHandler(IUnitOfWork unitOfWork)
         // Remove the links and associated APPItems
         if (existingLinks.Any())
         {
+            foreach (var link in existingLinks)
+            {
+                link.AllowHardDelete = true;
+            }
             unitOfWork.APPPPMPRepository.RemoveRange(existingLinks);
 
             // Also remove any APPItems in this APP that originated from the unselected PPMPs
@@ -55,10 +59,18 @@ public class RemovePPMPsCommandHandler(IUnitOfWork unitOfWork)
 
             foreach (var item in itemsToRemove)
             {
-                unitOfWork.APPItemRepository.Remove(item);
+                unitOfWork.APPItemRepository.Remove(item, hardDelete: true);
             }
 
-            await unitOfWork.SaveChangesAsync(cancellationToken);
+            try
+            {
+                await unitOfWork.SaveChangesAsync(cancellationToken);
+            }
+            catch (System.Exception ex)
+            {
+                var innerMessage = ex.InnerException?.Message ?? ex.Message;
+                throw new System.InvalidOperationException($"Save failed during PPMP removal: {innerMessage}. Stack: {ex.StackTrace}", ex);
+            }
         }
 
         return ApiResponse<Unit>.Success(Unit.Value, $"{existingLinks.Count} PPMPs unselected successfully.");

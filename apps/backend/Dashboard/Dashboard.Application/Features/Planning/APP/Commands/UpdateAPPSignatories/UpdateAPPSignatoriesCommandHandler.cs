@@ -18,6 +18,10 @@ public class UpdateAPPSignatoriesCommandHandler(IUnitOfWork unitOfWork)
         var existingSignatories = app.APPSignatories.ToList();
         if (existingSignatories.Any())
         {
+            foreach (var s in existingSignatories)
+            {
+                s.AllowHardDelete = true;
+            }
             unitOfWork.APPSignatoryRepository.RemoveRange(existingSignatories);
             app.APPSignatories.Clear();
         }
@@ -53,7 +57,15 @@ public class UpdateAPPSignatoriesCommandHandler(IUnitOfWork unitOfWork)
         AddRoleSignatories(req.ApprovedBy, "approvedBy");
         AddRoleSignatories(req.CertifiedBy, "certifiedBy");
 
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        try
+        {
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+        }
+        catch (System.Exception ex)
+        {
+            var innerMessage = ex.InnerException?.Message ?? ex.Message;
+            throw new System.InvalidOperationException($"Save failed during signatories update: {innerMessage}. Stack: {ex.StackTrace}", ex);
+        }
 
         return ApiResponse<Unit>.Success(Unit.Value, "APP Signatories updated successfully.");
     }
