@@ -32,6 +32,7 @@ import {
   Image as ImageIcon,
   Info,
   Eye,
+  Circle,
 } from 'lucide-react'
 import { getProcurementItemRequest } from '@/components/features/planning/procurement-item/handlers/getProcurementItemRequest'
 import { getUOMRequest } from '@/components/features/planning/procurement-library/unit-of-measurement/handlers/getUOMRequest'
@@ -887,9 +888,7 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
           <div className="relative pl-6 border-l border-default-200 space-y-5 flex-1 py-1">
             {/* Procurement Milestone */}
             <div className="relative">
-              <span className="absolute -left-[31px] top-0 h-4.5 w-4.5 rounded-full bg-indigo-50 flex items-center justify-center border border-indigo-200">
-                <span className="h-2 w-2 rounded-full bg-indigo-600" />
-              </span>
+              <Circle className="h-4 w-4 text-indigo-600 absolute -left-[32px] top-0.5 bg-indigo-50 rounded-full" />
               <div>
                 <span className="text-[10px] uppercase font-bold text-default-400 block">
                   Procurement Schedule
@@ -902,9 +901,7 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
 
             {/* Delivery Milestone */}
             <div className="relative">
-              <span className="absolute -left-[31px] top-0 h-4.5 w-4.5 rounded-full bg-emerald-50 flex items-center justify-center border border-emerald-200">
-                <span className="h-2 w-2 rounded-full bg-emerald-600" />
-              </span>
+              <Circle className="h-4 w-4 text-emerald-600 absolute -left-[32px] top-0.5 bg-emerald-50 rounded-full" />
               <div>
                 <span className="text-[10px] uppercase font-bold text-default-400 block">
                   Expected Delivery Window
