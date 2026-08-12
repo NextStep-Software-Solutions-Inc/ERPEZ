@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import type { BACLineItem } from '../types'
 import { currentAppAtom, appListAtom } from '../atoms'
+import { useQueryClient } from '@tanstack/react-query'
 import { BACWorkspaceItemEditor } from '../components'
 import api from '@/services/api'
 
@@ -303,6 +304,12 @@ export function EditBACItemDialog({
           app.id === updatedApp.id ? updatedApp : app
         )
       )
+
+      void queryClient.invalidateQueries({
+        predicate: (query) =>
+          typeof query.queryKey[0] === 'string' &&
+          (query.queryKey[0].startsWith('/apps') || query.queryKey[0].startsWith('/ppmps')),
+      })
 
       toast.success(`${formData.description} updated successfully!`)
       onOpenChange(false)

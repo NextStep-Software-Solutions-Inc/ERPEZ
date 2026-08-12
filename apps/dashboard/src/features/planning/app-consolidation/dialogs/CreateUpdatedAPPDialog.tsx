@@ -22,6 +22,7 @@ import {
 } from '@/components/ui/select'
 import { Card, CardContent } from '@/components/ui/card'
 import { currentAppAtom } from '../atoms'
+import { useQueryClient } from '@tanstack/react-query'
 import api from '@/services/api'
 import { Sparkles, Calendar, Layers, ShieldCheck } from 'lucide-react'
 
@@ -33,6 +34,7 @@ interface CreateUpdatedAPPDialogProps {
 export function CreateUpdatedAPPDialog({ open, onOpenChange }: CreateUpdatedAPPDialogProps) {
   const [currentApp] = useAtom(currentAppAtom)
   const navigate = useNavigate() as any
+  const queryClient = useQueryClient()
   const [isCloning, setIsCloning] = useState(false)
 
   const nextVersionNumber = (currentApp?.versionNumber || 0) + 1
@@ -65,6 +67,11 @@ export function CreateUpdatedAPPDialog({ open, onOpenChange }: CreateUpdatedAPPD
       if (response.data?.succeeded && response.data?.data) {
         const newAppId = response.data.data
         toast.success(`Updated APP Version ${nextVersionNumber} created successfully!`)
+        await queryClient.invalidateQueries({
+          predicate: (query) =>
+            typeof query.queryKey[0] === 'string' &&
+            (query.queryKey[0].startsWith('/apps') || query.queryKey[0].startsWith('/ppmps')),
+        })
         onOpenChange(false)
         navigate({ to: '/v2/app-consolidation/$appId', params: { appId: newAppId } })
       } else {
@@ -76,7 +83,7 @@ export function CreateUpdatedAPPDialog({ open, onOpenChange }: CreateUpdatedAPPD
     } finally {
       setIsCloning(false)
     }
-  }, [currentApp, formData, nextVersionNumber, onOpenChange, navigate])
+  }, [currentApp, formData, nextVersionNumber, onOpenChange, navigate, queryClient])
 
   if (!currentApp) return null
 

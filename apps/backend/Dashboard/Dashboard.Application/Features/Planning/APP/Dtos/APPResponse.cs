@@ -59,6 +59,11 @@ public record APPItemSummaryResponse
     public Guid Id { get; init; }
     public Guid PPMPItemId { get; init; }
     public string PPMPItemName { get; init; } = string.Empty;
+    public string Description { get; init; } = string.Empty;
+    public string Unit { get; init; } = string.Empty;
+    public int Quantity { get; init; }
+    public decimal UnitCost { get; init; }
+    public decimal TotalAmount { get; init; }
     public Guid ProcurementModeId { get; init; }
     public string ProcurementModeName { get; init; } = string.Empty;
     public Guid FundSourceId { get; init; }

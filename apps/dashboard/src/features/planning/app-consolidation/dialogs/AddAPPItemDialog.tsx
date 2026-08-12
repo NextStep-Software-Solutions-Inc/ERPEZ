@@ -199,14 +199,10 @@ export function AddAPPItemDialog() {
       const response = await api.post('/app-items', payload)
       if (response.data?.succeeded !== false) {
         toast.success('APP Item added successfully')
-        queryClient.invalidateQueries({
-          queryKey: [`/apps/${appId}`]
-        })
-        queryClient.invalidateQueries({
-          queryKey: [`/apps/${appId}/available-ppmp-items`]
-        })
-        queryClient.invalidateQueries({
-          queryKey: [getAPPDetailRequest.endpoint, appId]
+        void queryClient.invalidateQueries({
+          predicate: (query) =>
+            typeof query.queryKey[0] === 'string' &&
+            (query.queryKey[0].startsWith('/apps') || query.queryKey[0].startsWith('/ppmps')),
         })
         setOpen(false)
       } else {

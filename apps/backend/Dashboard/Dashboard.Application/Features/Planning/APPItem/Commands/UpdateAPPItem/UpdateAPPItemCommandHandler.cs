@@ -10,7 +10,7 @@ public class UpdateAPPItemCommandHandler(IUnitOfWork unitOfWork) : IRequestHandl
 {
     public async Task<ApiResponse<Guid>> Handle(UpdateAPPItemCommand request, CancellationToken cancellationToken)
     {
-        _ = await unitOfWork.APPRepository.GetByIdAsync(request.APPId, cancellationToken)
+        var app = await unitOfWork.APPRepository.GetByIdAsync(request.APPId, cancellationToken)
             ?? throw new NotFoundException("APP not found.");
 
         var entity = await unitOfWork.APPItemRepository.GetByIdAsync(request.Id, cancellationToken)
@@ -44,6 +44,11 @@ public class UpdateAPPItemCommandHandler(IUnitOfWork unitOfWork) : IRequestHandl
         entity.IsOutsourced = request.IsOutsourced;
         entity.BidEvaluationCriteria = request.BidEvaluationCriteria != null ? Enum.Parse<BidEvaluationCriteria>(request.BidEvaluationCriteria, true) : null;
         entity.ProcurementStrategies = request.ProcurementStrategies?.Select(x => Enum.Parse<ProcurementStrategy>(x, true)).ToList();
+
+        if (string.Equals(app.APPType, "Updated", StringComparison.OrdinalIgnoreCase) && !entity.IsNew)
+        {
+            entity.IsRevised = true;
+        }
 
         unitOfWork.APPItemRepository.Update(entity);
         await unitOfWork.SaveChangesAsync(cancellationToken);

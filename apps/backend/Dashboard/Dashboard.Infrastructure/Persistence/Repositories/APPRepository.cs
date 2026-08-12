@@ -143,11 +143,9 @@ public class APPRepository : Repository<APP>, IAPPRepository
 
         var maxVersion = await context.Set<APP>()
             .AsNoTracking()
-            .Where(a => !a.IsDeleted && (a.Id == rootAppId || a.SourceAPPId == rootAppId || a.SourceAPPId == sourceAppId))
-            .Where(a => a.VersionNumber.HasValue)
-            .Select(a => a.VersionNumber!.Value)
-            .DefaultIfEmpty(0)
-            .MaxAsync(cancellationToken);
+            .Where(a => !a.IsDeleted && (a.Id == rootAppId || a.SourceAPPId == rootAppId || a.SourceAPPId == sourceAppId) && a.VersionNumber != null)
+            .Select(a => (int?)a.VersionNumber)
+            .MaxAsync(cancellationToken) ?? 0;
 
         return maxVersion + 1;
     }

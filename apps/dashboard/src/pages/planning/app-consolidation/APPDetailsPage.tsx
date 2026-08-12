@@ -1,7 +1,7 @@
 import { useNavigate, useParams } from '@tanstack/react-router'
 import { useAtom, useSetAtom } from 'jotai'
 import { ArrowLeft, Edit2, Download, Plus } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from 'sonner'
@@ -68,7 +68,16 @@ export function APPDetailsPage() {
   const changeStatus = useChangeAPPStatus()
 
   // Use transformed API data or currentApp for real-time updates
-  const apiApp = apiResponse?.data ? transformAppDetailToAppMaster(apiResponse.data) : null
+  const rawApiApp = apiResponse?.data ? transformAppDetailToAppMaster(apiResponse.data) : null
+
+  // Preserve signatories from currentApp if apiApp has none
+  const apiApp = useMemo(() => {
+    if (!rawApiApp) return null
+    if (currentApp?.id === rawApiApp.id && currentApp.signatories && !rawApiApp.signatories?.preparedBy) {
+      return { ...rawApiApp, signatories: currentApp.signatories }
+    }
+    return rawApiApp
+  }, [rawApiApp, currentApp])
 
   useEffect(() => {
     if (apiApp && (!currentApp || currentApp.id !== apiApp.id)) {
@@ -166,8 +175,23 @@ export function APPDetailsPage() {
     setCreateSupplementalOpen(true)
   }
 
-  const handleRemovePPMP = (_ppmpId: string) => {
-    toast.success('PPMP item removed')
+  const handleRemovePPMP = async (ppmpId: string) => {
+    try {
+      const response = await api.put(`/apps/${appId}/remove-ppmps`, { ppmpIds: [ppmpId] })
+      if (response.data?.succeeded !== false) {
+        toast.success('PPMP source removed from APP successfully')
+        void queryClient.invalidateQueries({
+          predicate: (query) =>
+            typeof query.queryKey[0] === 'string' &&
+            (query.queryKey[0].startsWith('/apps') || query.queryKey[0].startsWith('/ppmps')),
+        })
+        await refetch()
+      } else {
+        toast.error(response.data?.message || 'Failed to remove PPMP')
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to remove PPMP from APP')
+    }
   }
 
   // ── Status mutations wired to real backend ────────────────────────────────

@@ -148,11 +148,14 @@ export function ConsolidatedAPPItemsCard({
     }),
     appItemColumnHelper.accessor('totalAmount', {
       header: () => <NGPAColumnHeader columnNumber={10} label="Estimated Budget" />,
-      cell: ({ getValue }) => (
-        <span className="text-sm font-semibold text-emerald-700">
-          {getValue() ? `₱${Number(getValue()).toLocaleString('en-PH', { minimumFractionDigits: 2 })}` : '—'}
-        </span>
-      ),
+      cell: ({ getValue, row }) => {
+        const val = getValue() ?? row.original.totalAmount ?? ((row.original.quantity || 1) * (row.original.unitCost || 0))
+        return (
+          <span className="text-sm font-semibold text-emerald-700">
+            {val ? `₱${Number(val).toLocaleString('en-PH', { minimumFractionDigits: 2 })}` : '—'}
+          </span>
+        )
+      },
       size: 150,
     }),
     appItemColumnHelper.accessor('isEarlyProcurementActivity', {

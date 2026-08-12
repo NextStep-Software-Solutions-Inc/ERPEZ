@@ -29,6 +29,20 @@ public class UpdateBACLineItemsCommandHandler(IUnitOfWork unitOfWork)
             var appItem = appItems.FirstOrDefault(a => a.Id == entry.BACItemCode)
                 ?? throw new NotFoundException($"APP line item '{entry.BACItemCode}' not found in this APP.");
 
+            // In an Updated APP, inherited items (IsNew == false) modified during revision are marked as IsRevised
+            if (string.Equals(app.APPType, "Updated", StringComparison.OrdinalIgnoreCase) && !appItem.IsNew)
+            {
+                var modeChanged = appItem.ProcurementModeId != entry.ModeOfProcurementId;
+                var remarksChanged = appItem.Remarks != entry.Remarks;
+                var epaChanged = appItem.IsEarlyProcurementActivity != entry.EPAEligible;
+                var schedulesProvided = entry.Schedules is not null && entry.Schedules.Count > 0;
+
+                if (modeChanged || remarksChanged || epaChanged || schedulesProvided)
+                {
+                    appItem.IsRevised = true;
+                }
+            }
+
             // Update procurement strategy fields
             appItem.ProcurementModeId = entry.ModeOfProcurementId;
             appItem.Remarks = entry.Remarks;

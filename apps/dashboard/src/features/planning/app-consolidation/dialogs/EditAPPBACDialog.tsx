@@ -242,8 +242,11 @@ export function EditAPPBACDialog({
         )
       )
 
-      queryClient.invalidateQueries({ queryKey: [`/apps/${formData.id}`] })
-      queryClient.invalidateQueries({ queryKey: [getAPPDetailRequest.endpoint, formData.id] })
+      void queryClient.invalidateQueries({
+        predicate: (query) =>
+          typeof query.queryKey[0] === 'string' &&
+          (query.queryKey[0].startsWith('/apps') || query.queryKey[0].startsWith('/ppmps')),
+      })
 
       toast.success('BAC configuration updated successfully!')
       handleOpenChange(false)

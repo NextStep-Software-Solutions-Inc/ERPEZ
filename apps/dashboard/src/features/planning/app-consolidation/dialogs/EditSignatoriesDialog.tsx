@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge'
 import { X, Plus, ChevronDown, ChevronUp } from 'lucide-react'
 import type { AppMaster, Signatory, SignatoryBlock } from '../types'
 import { signatoriesDialogOpenAtom, currentAppAtom, appListAtom } from '../atoms'
+import { useQueryClient } from '@tanstack/react-query'
 
 // Mock signatories database with predefined details
 const MOCK_SIGNATORIES_DATABASE = [
@@ -286,6 +287,8 @@ export function EditSignatoriesDialog({
     [formData, getSignatoriesForRole],
   )
 
+  const queryClient = useQueryClient()
+
   /**
    * Handle saving all changes
    */
@@ -295,10 +298,16 @@ export function EditSignatoriesDialog({
     setIsSaving(true)
     try {
       // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 1000))
+      await new Promise((resolve) => setTimeout(resolve, 300))
 
       setCurrentApp(formData)
       setAppList(appList.map((app) => (app.id === formData.id ? formData : app)))
+
+      void queryClient.invalidateQueries({
+        predicate: (query) =>
+          typeof query.queryKey[0] === 'string' &&
+          (query.queryKey[0].startsWith('/apps') || query.queryKey[0].startsWith('/ppmps')),
+      })
 
       toast.success('Signatories updated successfully!')
       handleOpenChange(false)
@@ -308,7 +317,7 @@ export function EditSignatoriesDialog({
     } finally {
       setIsSaving(false)
     }
-  }, [formData, isSaving, setCurrentApp, setAppList, appList, handleOpenChange])
+  }, [formData, isSaving, setCurrentApp, setAppList, appList, handleOpenChange, queryClient])
 
   /**
    * Handle dialog close with unsaved changes check
