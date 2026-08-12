@@ -60,23 +60,69 @@ import {
 // ─── Hooks ────────────────────────────────────────────────────────────────────
 
 const usePPMPs = createQueryHookFromTemplate(getPPMPsRequest)
-const useConsolidatePPMPs = createMutationHookFromTemplate(createPPMPConsolidateRequest)
+const useConsolidatePPMPs = createMutationHookFromTemplate(
+  createPPMPConsolidateRequest,
+)
 const usePPMPActivities = createQueryHookFromTemplate(getPPMPActivitiesRequest)
-const usePPMPExpenditureItems = createQueryHookFromTemplate(getPPMPExpenditureItemsRequest)
+const usePPMPExpenditureItems = createQueryHookFromTemplate(
+  getPPMPExpenditureItemsRequest,
+)
 const usePPMPItems = createQueryHookFromTemplate(getPPMPItemsRequest)
-const usePPMPItemAllocations = createQueryHookFromTemplate(getPPMPItemAllocationsRequest)
+const usePPMPItemAllocations = createQueryHookFromTemplate(
+  getPPMPItemAllocationsRequest,
+)
 
 // ─── Office color palette (deterministic by office name) ─────────────────────
 
 const OFFICE_COLORS = [
-  { bg: 'bg-blue-100', text: 'text-blue-700', border: 'border-blue-200', dot: 'bg-blue-500' },
-  { bg: 'bg-violet-100', text: 'text-violet-700', border: 'border-violet-200', dot: 'bg-violet-500' },
-  { bg: 'bg-emerald-100', text: 'text-emerald-700', border: 'border-emerald-200', dot: 'bg-emerald-500' },
-  { bg: 'bg-amber-100', text: 'text-amber-700', border: 'border-amber-200', dot: 'bg-amber-500' },
-  { bg: 'bg-rose-100', text: 'text-rose-700', border: 'border-rose-200', dot: 'bg-rose-500' },
-  { bg: 'bg-cyan-100', text: 'text-cyan-700', border: 'border-cyan-200', dot: 'bg-cyan-500' },
-  { bg: 'bg-orange-100', text: 'text-orange-700', border: 'border-orange-200', dot: 'bg-orange-500' },
-  { bg: 'bg-teal-100', text: 'text-teal-700', border: 'border-teal-200', dot: 'bg-teal-500' },
+  {
+    bg: 'bg-blue-100',
+    text: 'text-blue-700',
+    border: 'border-blue-200',
+    dot: 'bg-blue-500',
+  },
+  {
+    bg: 'bg-violet-100',
+    text: 'text-violet-700',
+    border: 'border-violet-200',
+    dot: 'bg-violet-500',
+  },
+  {
+    bg: 'bg-emerald-100',
+    text: 'text-emerald-700',
+    border: 'border-emerald-200',
+    dot: 'bg-emerald-500',
+  },
+  {
+    bg: 'bg-amber-100',
+    text: 'text-amber-700',
+    border: 'border-amber-200',
+    dot: 'bg-amber-500',
+  },
+  {
+    bg: 'bg-rose-100',
+    text: 'text-rose-700',
+    border: 'border-rose-200',
+    dot: 'bg-rose-500',
+  },
+  {
+    bg: 'bg-cyan-100',
+    text: 'text-cyan-700',
+    border: 'border-cyan-200',
+    dot: 'bg-cyan-500',
+  },
+  {
+    bg: 'bg-orange-100',
+    text: 'text-orange-700',
+    border: 'border-orange-200',
+    dot: 'bg-orange-500',
+  },
+  {
+    bg: 'bg-teal-100',
+    text: 'text-teal-700',
+    border: 'border-teal-200',
+    dot: 'bg-teal-500',
+  },
 ]
 
 function getOfficeColor(officeName: string) {
@@ -98,13 +144,8 @@ function getConsolidationEligibility(
   if (ppmp.consolidatedIntoId) return 'Already consolidated'
   if (ppmp.fiscalYearId !== master.fiscalYearId) return 'Fiscal year mismatch'
   const status = ppmp.status?.toLowerCase()
-  if (
-    status !== 'submitted' &&
-    status !== 'approved' &&
-    status !== 'pending_review' &&
-    status !== 'draft'
-  ) {
-    return `Ineligible status: ${ppmp.status || 'None'}`
+  if (status !== 'approved') {
+    return `Ineligible status: ${ppmp.status || 'None'} (Must be Approved)`
   }
   if (master.libId && ppmp.libId && ppmp.libId !== master.libId) {
     return `Line Item Budget mismatch (Master LIB ID: ${master.libId || 'none'}, PPMP LIB ID: ${ppmp.libId || 'none'})`
@@ -169,7 +210,8 @@ function EligiblePPMPList({
   search,
   onSearchChange,
 }: EligibleListProps) {
-  const allSelected = eligible.length > 0 && eligible.every((p) => selectedIds.has(p.id))
+  const allSelected =
+    eligible.length > 0 && eligible.every((p) => selectedIds.has(p.id))
 
   return (
     <div className="flex flex-col h-full">
@@ -231,10 +273,12 @@ function EligiblePPMPList({
           <div className="flex flex-col items-center justify-center py-20 gap-3 text-slate-400 px-6 text-center">
             <AlertCircle className="h-8 w-8 text-slate-300" />
             <div>
-              <p className="text-sm font-medium text-slate-500">No eligible department PPMPs</p>
+              <p className="text-sm font-medium text-slate-500">
+                No eligible department PPMPs
+              </p>
               <p className="text-xs mt-1">
-                PPMPs must be in the same fiscal year, not yet consolidated, and in Submitted or
-                Approved status.
+                PPMPs must be in the same fiscal year, not yet consolidated, and
+                in Submitted or Approved status.
               </p>
             </div>
           </div>
@@ -249,7 +293,9 @@ function EligiblePPMPList({
                   onClick={() => onToggle(ppmp.id)}
                   className={cn(
                     'flex items-start gap-3 px-4 py-4 cursor-pointer transition-colors group',
-                    isSelected ? 'bg-primary/5 hover:bg-primary/8' : 'hover:bg-slate-50',
+                    isSelected
+                      ? 'bg-primary/5 hover:bg-primary/8'
+                      : 'hover:bg-slate-50',
                   )}
                 >
                   <Checkbox
@@ -353,7 +399,13 @@ interface DiffPreviewProps {
   selectedPPMPs: PPMP[]
 }
 
-function PPMPItemAllocationsList({ itemId, unitPrice }: { itemId: string; unitPrice: number }) {
+function PPMPItemAllocationsList({
+  itemId,
+  unitPrice,
+}: {
+  itemId: string
+  unitPrice: number
+}) {
   const { data, isLoading } = usePPMPItemAllocations({
     pathParams: {},
     queryParams: { filters: `ppmpItemId${itemId}`, pageSize: 1000 },
@@ -375,7 +427,14 @@ function PPMPItemAllocationsList({ itemId, unitPrice }: { itemId: string; unitPr
   })
 
   const row1Months = ['January', 'February', 'March', 'April', 'May', 'June']
-  const row2Months = ['July', 'August', 'September', 'October', 'November', 'December']
+  const row2Months = [
+    'July',
+    'August',
+    'September',
+    'October',
+    'November',
+    'December',
+  ]
 
   const renderMonthCell = (month: string) => {
     const alloc = monthMap[month]
@@ -383,12 +442,17 @@ function PPMPItemAllocationsList({ itemId, unitPrice }: { itemId: string; unitPr
     const amt = alloc?.amount ?? qty * unitPrice
 
     return (
-      <div key={month} className="border border-slate-100 rounded-md p-1 text-center bg-white shadow-sm flex flex-col justify-between h-full min-h-[48px]">
+      <div
+        key={month}
+        className="border border-slate-100 rounded-md p-1 text-center bg-white shadow-sm flex flex-col justify-between h-full min-h-12"
+      >
         <span className="text-[8px] uppercase font-bold text-slate-400 tracking-wider">
           {month.substring(0, 3)}
         </span>
         <div className="mt-0.5">
-          <span className="text-[11px] font-bold text-slate-700 block leading-none">{qty}</span>
+          <span className="text-[11px] font-bold text-slate-700 block leading-none">
+            {qty}
+          </span>
           <span className="text-[8px] font-medium text-slate-500 block truncate tabular-nums leading-none mt-0.5">
             {formatCurrency(amt)}
           </span>
@@ -404,11 +468,11 @@ function PPMPItemAllocationsList({ itemId, unitPrice }: { itemId: string; unitPr
         <span>Allocations: {allocations.length} / 12</span>
       </div>
 
-      <div className="grid grid-cols-6 gap-1 min-w-[340px]">
+      <div className="grid grid-cols-6 gap-1 min-w-85">
         {row1Months.map(renderMonthCell)}
       </div>
 
-      <div className="grid grid-cols-6 gap-1 min-w-[340px]">
+      <div className="grid grid-cols-6 gap-1 min-w-85">
         {row2Months.map(renderMonthCell)}
       </div>
     </div>
@@ -427,7 +491,10 @@ function PPMPItemNode({ item }: { item: PPMPItem }) {
       >
         <div className="flex-1 min-w-0">
           <p className="text-xs font-semibold text-slate-800 leading-tight">
-            {item.name || item.cseItemName || item.nonCSEItemName || 'Unnamed Item'}
+            {item.name ||
+              item.cseItemName ||
+              item.nonCSEItemName ||
+              'Unnamed Item'}
           </p>
           <div className="flex items-center gap-2 text-[9px] text-slate-400 mt-0.5">
             {item.unit && <span>Unit: {item.unit}</span>}
@@ -435,11 +502,12 @@ function PPMPItemNode({ item }: { item: PPMPItem }) {
           </div>
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
-          {item.PPMPItemAllocationTotalAmount !== undefined && item.PPMPItemAllocationTotalAmount > 0 && (
-            <span className="text-[11px] font-bold text-slate-700 tabular-nums">
-              {formatCurrency(item.PPMPItemAllocationTotalAmount)}
-            </span>
-          )}
+          {item.PPMPItemAllocationTotalAmount !== undefined &&
+            item.PPMPItemAllocationTotalAmount > 0 && (
+              <span className="text-[11px] font-bold text-slate-700 tabular-nums">
+                {formatCurrency(item.PPMPItemAllocationTotalAmount)}
+              </span>
+            )}
           {isExpanded ? (
             <ChevronDown className="h-3 w-3 text-slate-400" />
           ) : (
@@ -448,7 +516,9 @@ function PPMPItemNode({ item }: { item: PPMPItem }) {
         </div>
       </button>
 
-      {isExpanded && <PPMPItemAllocationsList itemId={item.id} unitPrice={item.unitPrice} />}
+      {isExpanded && (
+        <PPMPItemAllocationsList itemId={item.id} unitPrice={item.unitPrice} />
+      )}
     </div>
   )
 }
@@ -456,7 +526,10 @@ function PPMPItemNode({ item }: { item: PPMPItem }) {
 function PPMPItemsList({ expenditureItemId }: { expenditureItemId: string }) {
   const { data, isLoading } = usePPMPItems({
     pathParams: {},
-    queryParams: { filters: `ppmpExpenditureItemId==${expenditureItemId}`, pageSize: 1000 },
+    queryParams: {
+      filters: `ppmpExpenditureItemId==${expenditureItemId}`,
+      pageSize: 1000,
+    },
   })
 
   if (isLoading) {
@@ -487,7 +560,11 @@ function PPMPItemsList({ expenditureItemId }: { expenditureItemId: string }) {
   )
 }
 
-function PPMPExpenditureItemNode({ expenditureItem }: { expenditureItem: PPMPExpenditureItem }) {
+function PPMPExpenditureItemNode({
+  expenditureItem,
+}: {
+  expenditureItem: PPMPExpenditureItem
+}) {
   const [isExpanded, setIsExpanded] = useState(false)
 
   return (
@@ -498,13 +575,16 @@ function PPMPExpenditureItemNode({ expenditureItem }: { expenditureItem: PPMPExp
         className="w-full flex items-center justify-between py-1 text-left hover:bg-slate-50 rounded px-2"
       >
         <div className="flex items-center gap-2 min-w-0">
-          <div className={cn(
-            "h-1.5 w-1.5 rounded-full shrink-0",
-            expenditureItem.isProcurable ? "bg-emerald-400" : "bg-amber-400"
-          )} />
+          <div
+            className={cn(
+              'h-1.5 w-1.5 rounded-full shrink-0',
+              expenditureItem.isProcurable ? 'bg-emerald-400' : 'bg-amber-400',
+            )}
+          />
           <div className="min-w-0">
             <p className="text-xs font-semibold text-slate-600 truncate">
-              Expenditure Item ({expenditureItem.isProcurable ? 'Procurable' : 'Non-Procurable'})
+              Expenditure Item (
+              {expenditureItem.isProcurable ? 'Procurable' : 'Non-Procurable'})
             </p>
           </div>
         </div>
@@ -654,18 +734,26 @@ function DiffPreview({ selectedPPMPs }: DiffPreviewProps) {
           <GitMerge className="h-10 w-10 text-slate-300" />
         </div>
         <div>
-          <p className="text-sm font-semibold text-slate-500">No PPMPs selected</p>
+          <p className="text-sm font-semibold text-slate-500">
+            No PPMPs selected
+          </p>
           <p className="text-xs text-slate-400 mt-1.5">
-            Select department PPMPs from the left panel to preview what will be merged into this
-            master PPMP.
+            Select department PPMPs from the left panel to preview what will be
+            merged into this master PPMP.
           </p>
         </div>
       </div>
     )
   }
 
-  const totalBudget = selectedPPMPs.reduce((sum, p) => sum + (p.totalEstimatedBudget ?? 0), 0)
-  const totalActivities = selectedPPMPs.reduce((sum, p) => sum + (p.PPMPActivities?.length ?? 0), 0)
+  const totalBudget = selectedPPMPs.reduce(
+    (sum, p) => sum + (p.totalEstimatedBudget ?? 0),
+    0,
+  )
+  const totalActivities = selectedPPMPs.reduce(
+    (sum, p) => sum + (p.PPMPActivities?.length ?? 0),
+    0,
+  )
 
   return (
     <div className="flex flex-col h-full">
@@ -676,18 +764,30 @@ function DiffPreview({ selectedPPMPs }: DiffPreviewProps) {
         </p>
         <div className="flex items-center gap-6">
           <div className="text-center">
-            <p className="text-lg font-bold text-slate-800">{selectedPPMPs.length}</p>
-            <p className="text-[10px] text-slate-500 uppercase tracking-wide">Dept PPMPs</p>
+            <p className="text-lg font-bold text-slate-800">
+              {selectedPPMPs.length}
+            </p>
+            <p className="text-[10px] text-slate-500 uppercase tracking-wide">
+              Dept PPMPs
+            </p>
           </div>
           <div className="h-8 w-px bg-primary/10" />
           <div className="text-center">
-            <p className="text-lg font-bold text-slate-800">{totalActivities}</p>
-            <p className="text-[10px] text-slate-500 uppercase tracking-wide">Activities</p>
+            <p className="text-lg font-bold text-slate-800">
+              {totalActivities}
+            </p>
+            <p className="text-[10px] text-slate-500 uppercase tracking-wide">
+              Activities
+            </p>
           </div>
           <div className="h-8 w-px bg-primary/10" />
           <div className="text-center">
-            <p className="text-lg font-bold text-slate-800">{formatCurrency(totalBudget)}</p>
-            <p className="text-[10px] text-slate-500 uppercase tracking-wide">Total Budget</p>
+            <p className="text-lg font-bold text-slate-800">
+              {formatCurrency(totalBudget)}
+            </p>
+            <p className="text-[10px] text-slate-500 uppercase tracking-wide">
+              Total Budget
+            </p>
           </div>
         </div>
       </div>
@@ -703,7 +803,10 @@ function DiffPreview({ selectedPPMPs }: DiffPreviewProps) {
             return (
               <div
                 key={ppmp.id}
-                className={cn('rounded-xl border overflow-hidden shadow-sm', color.border)}
+                className={cn(
+                  'rounded-xl border overflow-hidden shadow-sm',
+                  color.border,
+                )}
               >
                 {/* Office header */}
                 <button
@@ -715,9 +818,16 @@ function DiffPreview({ selectedPPMPs }: DiffPreviewProps) {
                   )}
                 >
                   <div className="flex items-center gap-2.5 min-w-0">
-                    <div className={cn('h-2 w-2 rounded-full shrink-0', color.dot)} />
+                    <div
+                      className={cn('h-2 w-2 rounded-full shrink-0', color.dot)}
+                    />
                     <div className="min-w-0">
-                      <p className={cn('text-xs font-bold uppercase tracking-wide truncate', color.text)}>
+                      <p
+                        className={cn(
+                          'text-xs font-bold uppercase tracking-wide truncate',
+                          color.text,
+                        )}
+                      >
                         From: {ppmp.officeName ?? ppmp.officeId}
                       </p>
                       <p className="text-[10px] text-slate-500 truncate">
@@ -757,7 +867,13 @@ export interface ConsolidationWorkspaceSheetProps {
   onOpenChange: (open: boolean) => void
   masterPpmp: Pick<
     PPMP,
-    'id' | 'officeId' | 'fiscalYearId' | 'libId' | 'documentName' | 'ppmpNumber' | 'officeName'
+    | 'id'
+    | 'officeId'
+    | 'fiscalYearId'
+    | 'libId'
+    | 'documentName'
+    | 'ppmpNumber'
+    | 'officeName'
   >
 }
 
@@ -834,7 +950,8 @@ export function ConsolidationWorkspaceSheet({
     [eligible, selectedIds],
   )
 
-  const { mutateAsync: consolidate, isPending: isConsolidating } = useConsolidatePPMPs()
+  const { mutateAsync: consolidate, isPending: isConsolidating } =
+    useConsolidatePPMPs()
 
   const handleToggle = useCallback((id: string) => {
     setSelectedIds((prev) => {
@@ -870,6 +987,8 @@ export function ConsolidationWorkspaceSheet({
             childPPMPIds: Array.from(selectedIds),
             parentOfficeId: masterPpmp.officeId,
             fiscalYearId: masterPpmp.fiscalYearId,
+            consolidatedPPMPNumber:
+              masterPpmp.ppmpNumber ?? `CONSOLIDATED-${Date.now()}`,
           },
         },
         {
@@ -889,7 +1008,9 @@ export function ConsolidationWorkspaceSheet({
       )
     } catch (err) {
       toast.error(
-        err instanceof Error ? err.message : 'Failed to consolidate department PPMPs.',
+        err instanceof Error
+          ? err.message
+          : 'Failed to consolidate department PPMPs.',
       )
     } finally {
       setConfirmOpen(false)
@@ -904,7 +1025,7 @@ export function ConsolidationWorkspaceSheet({
           className="h-[96vh] p-0 flex flex-col rounded-t-2xl overflow-hidden border-t border-slate-200 shadow-2xl"
         >
           {/* Header */}
-          <SheetHeader className="px-6 py-4 border-b border-slate-200 bg-white flex-shrink-0">
+          <SheetHeader className="px-6 py-4 border-b border-slate-200 bg-white shrink-0">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
                 <div className="h-9 w-9 rounded-xl bg-primary/10 flex items-center justify-center">
@@ -915,8 +1036,8 @@ export function ConsolidationWorkspaceSheet({
                     Consolidation Workspace
                   </SheetTitle>
                   <SheetDescription className="text-xs text-slate-500 mt-0.5">
-                    {masterPpmp.documentName || masterPpmp.ppmpNumber} — Select department PPMPs to
-                    merge into this master plan
+                    {masterPpmp.documentName || masterPpmp.ppmpNumber} — Select
+                    department PPMPs to merge into this master plan
                   </SheetDescription>
                 </div>
               </div>
@@ -935,7 +1056,7 @@ export function ConsolidationWorkspaceSheet({
           {/* Body — two-panel split */}
           <div className="flex flex-1 min-h-0 overflow-hidden">
             {/* Left: Eligible PPMP list */}
-            <div className="w-[420px] shrink-0 border-r border-slate-200 flex flex-col bg-white min-h-0">
+            <div className="w-105 shrink-0 border-r border-slate-200 flex flex-col bg-white min-h-0">
               <div className="px-4 pt-4 pb-2">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-slate-400">
                   Eligible Department PPMPs
@@ -970,14 +1091,18 @@ export function ConsolidationWorkspaceSheet({
           </div>
 
           {/* Footer */}
-          <div className="px-6 py-4 border-t border-slate-200 bg-white flex-shrink-0 flex items-center justify-between gap-4">
+          <div className="px-6 py-4 border-t border-slate-200 bg-white shrink-0 flex items-center justify-between gap-4">
             <p className="text-xs text-slate-400">
               Imported PPMPs will be marked as{' '}
-              <span className="font-semibold text-slate-600">Consolidated</span> and become
-              read-only.
+              <span className="font-semibold text-slate-600">Consolidated</span>{' '}
+              and become read-only.
             </p>
             <div className="flex items-center gap-3">
-              <Button variant="outline" onClick={handleClose} disabled={isConsolidating}>
+              <Button
+                variant="outline"
+                onClick={handleClose}
+                disabled={isConsolidating}
+              >
                 Cancel
               </Button>
               <Button

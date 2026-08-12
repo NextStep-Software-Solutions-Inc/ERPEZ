@@ -54,31 +54,57 @@ public class ConsolidatePPMPsCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
                 cancellationToken
             );
 
-            if (existingPPMP != null)
-                throw new ConflictException("PPMP with the same number and fiscal year already exists.");
-
-            // Calculate total budget
-            var totalBudget = childPPMPs.Sum(p => p.TotalEstimatedBudget);
+            // Sum budgets of the child PPMPs in this request
+            var childBudgetSum = childPPMPs.Sum(p => p.TotalEstimatedBudget);
 
             // Child PPMPs are already approved, so consolidated PPMP is marked approved by design.
             var fundSourceId = distinctFundSourceIds[0];
             var libId = distinctLibIds[0];
 
-            // Create consolidated PPMP
-            var consolidatedPPMP = new Domain.Entities.Planning.PPMP
+            Domain.Entities.Planning.PPMP consolidatedPPMP;
+            if (existingPPMP != null)
             {
-                PPMPNumber = request.ConsolidatedPPMPNumber,
-                OfficeId = request.ParentOfficeId,
-                FiscalYearId = request.FiscalYearId,
-                FundSourceId = fundSourceId,
-                LIBId = libId,
-                Version = 1,
-                TotalEstimatedBudget = totalBudget,
-                Status = ERPEZ.Domain.Enums.StatusEnum.Approved,
-                ApprovedDate = DateTime.UtcNow
-            };
+                if (!existingPPMP.IsMaster)
+                    throw new ConflictException("PPMP with the same number and fiscal year already exists.");
 
-            await unitOfWork.PPMPRepository.AddAsync(consolidatedPPMP, cancellationToken);
+                // Ensure existing master metadata matches the consolidation request
+                if (existingPPMP.OfficeId != request.ParentOfficeId ||
+                    existingPPMP.FundSourceId != fundSourceId ||
+                    existingPPMP.LIBId != libId)
+                {
+                    throw new ConflictException("Existing master PPMP metadata does not match the consolidation request (OfficeId, FundSourceId, or LIBId mismatch). Please create a new consolidated PPMP number or choose a different master.");
+                }
+
+                consolidatedPPMP = existingPPMP;
+
+                // Add budgets from the incoming child PPMPs to the existing master's budget
+                consolidatedPPMP.TotalEstimatedBudget = (consolidatedPPMP.TotalEstimatedBudget) + childBudgetSum;
+                consolidatedPPMP.Status = ERPEZ.Domain.Enums.StatusEnum.Approved;
+                consolidatedPPMP.ApprovedDate = DateTime.UtcNow;
+
+                unitOfWork.PPMPRepository.Update(consolidatedPPMP);
+            }
+            else
+            {
+                var totalBudget = childBudgetSum;
+
+                consolidatedPPMP = new Domain.Entities.Planning.PPMP
+                {
+                    PPMPNumber = request.ConsolidatedPPMPNumber,
+                    OfficeId = request.ParentOfficeId,
+                    FiscalYearId = request.FiscalYearId,
+                    FundSourceId = fundSourceId,
+                    LIBId = libId,
+                    Version = 1,
+                    TotalEstimatedBudget = totalBudget,
+                    Status = ERPEZ.Domain.Enums.StatusEnum.Approved,
+                    ApprovedDate = DateTime.UtcNow,
+                    IsFinal = true,
+                    IsMaster = true
+                };
+
+                await unitOfWork.PPMPRepository.AddAsync(consolidatedPPMP, cancellationToken);
+            }
 
             // Update child PPMPs to reference consolidated PPMP
             foreach (var childPPMP in childPPMPs)

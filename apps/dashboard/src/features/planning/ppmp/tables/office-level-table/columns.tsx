@@ -1,10 +1,11 @@
-﻿import { ColumnDef } from '@tanstack/react-table'
+import { ColumnDef } from '@tanstack/react-table'
 import {
   ArrowUpDown,
   MoreHorizontal,
   Trash2,
   FilePen,
   FolderOpen,
+  Download,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
@@ -18,8 +19,10 @@ import { PPMP } from '../../types'
 import { Checkbox } from '@/components/ui/checkbox'
 import { useSetAtom } from 'jotai'
 import { useNavigate } from '@tanstack/react-router'
-import { createQueryHookFromTemplate } from 'erpez-shared-lib'
-import { getPPMPRequest } from '../../handlers'
+import { createMutationHookFromTemplate } from 'erpez-shared-lib'
+import { generatePPMPDocumentRequest } from '../../handlers/generatePPMPDocumentRequest'
+import { downloadLIBDocumentRequest } from '@/features/planning/line-item-budgeting/line-item-budget/handlers/downloadLIBDocumentRequest'
+import { useToast } from '@/components/ui/use-toast'
 import {
   selectedPpmpForDeleteAtom,
   deletePpmpDialogOpenAtom,
@@ -49,8 +52,8 @@ export const columns: ColumnDef<PPMP>[] = [
     ),
   },
   {
-    accessorKey: 'documentName',
-    header: 'Document Name',
+    accessorKey: 'description',
+    header: 'Description',
   },
   {
     accessorKey: 'ppmpNumber',
@@ -88,44 +91,77 @@ export const columns: ColumnDef<PPMP>[] = [
       const setSelectedForEdit = useSetAtom(selectedPpmpForEditAtom)
       const setEditOpen = useSetAtom(editPpmpDialogOpenAtom)
 
-      const usePpmpDetail = createQueryHookFromTemplate(getPPMPRequest)
-      const { refetch } = usePpmpDetail({
-        pathParams: { id: ppmp.id },
-        queryParams: {},
-        enabled: false,
-      })
-
-      const handleView = async () => {
-        try {
-          const { data } = await refetch()
-          if (data?.data) {
-            setSelectedForEdit(data.data)
-          }
-        } catch (err) {
-          // ignore
-        } finally {
-          navigate({
-            to: '/v2/ppmp/office-level/$ppmpId',
-            params: { ppmpId: ppmp.id },
-          })
-        }
+      const handleView = () => {
+        navigate({
+          to: '/v2/ppmp/$ppmpId',
+          params: { ppmpId: ppmp.id },
+        })
       }
 
-      const handleEdit = async () => {
-        try {
-          const { data } = await refetch()
-          if (data?.data) {
-            setSelectedForEdit(data.data)
-            setEditOpen(true)
-          }
-        } catch (err) {
-          // ignore
-        }
+      const handleEdit = () => {
+        setSelectedForEdit(ppmp)
+        setEditOpen(true)
       }
 
       const handleDelete = () => {
         setSelectedForDelete(ppmp)
         setDeleteOpen(true)
+      }
+
+      const { toast } = useToast()
+
+      const useGeneratePPMPDocument = createMutationHookFromTemplate(
+        generatePPMPDocumentRequest,
+      )
+      const useDownloadDocument = createMutationHookFromTemplate(
+        downloadLIBDocumentRequest,
+      )
+
+      const { mutateAsync: generatePPMPDocument } = useGeneratePPMPDocument()
+      const { mutateAsync: downloadDocument } = useDownloadDocument()
+
+      const handleGenerate = async (format: 'Pdf' | 'Excel') => {
+        if (!ppmp.id) return
+        try {
+          const genResponse = await generatePPMPDocument({
+            pathParams: { ppmpId: ppmp.id },
+            queryParams: { format },
+          })
+
+          const documentId = genResponse.data
+          if (!documentId)
+            throw new Error('No document ID returned from generation API')
+
+          const downloadResponse = await downloadDocument({
+            pathParams: { documentId },
+          })
+          const blob = downloadResponse.blob
+
+          const fileExtension = format === 'Excel' ? 'xlsx' : 'pdf'
+          const filename = ppmp.ppmpNumber
+            ? `${ppmp.ppmpNumber}.${fileExtension}`
+            : `PPMP_${ppmp.id}.${fileExtension}`
+
+          const link = document.createElement('a')
+          link.href = URL.createObjectURL(blob)
+          link.download = filename
+          document.body.appendChild(link)
+          link.click()
+          document.body.removeChild(link)
+          URL.revokeObjectURL(link.href)
+
+          toast({
+            title: 'Export started',
+            description: 'Your document has been downloaded.',
+          })
+        } catch (err: any) {
+          toast({
+            title: 'Export failed',
+            description: err?.message ?? 'Could not generate document',
+          })
+        } finally {
+          // Export complete
+        }
       }
 
       return (
@@ -136,11 +172,20 @@ export const columns: ColumnDef<PPMP>[] = [
               <MoreHorizontal className="h-4 w-4" />
             </Button>
           </DropdownMenuTrigger>
-          <DropdownMenuContent align="end">
+          <DropdownMenuContent
+            align="end"
+            onCloseAutoFocus={(e) => e.preventDefault()}
+          >
             <DropdownMenuItem onClick={handleView}>
               <FolderOpen className="mr-2 h-4 w-4" />
               View Details
             </DropdownMenuItem>
+
+            <DropdownMenuItem onClick={() => handleGenerate('Pdf')}>
+              <Download className="mr-2 h-4 w-4" />
+              Export as PDF
+            </DropdownMenuItem>
+
             <DropdownMenuSeparator />
             <DropdownMenuItem onClick={handleEdit}>
               <FilePen className="mr-2 h-4 w-4" />
