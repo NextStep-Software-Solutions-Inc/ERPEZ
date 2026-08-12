@@ -134,9 +134,7 @@ const usePPMPExpenditureItems = createQueryHookFromTemplate(
   getPPMPExpenditureItemsRequest,
 )
 const usePPMPItems = createQueryHookFromTemplate(getPPMPItemsRequest)
-const useProcurementItem = createQueryHookFromTemplate(
-  getProcurementItemRequest,
-)
+const useProcurementItem = createQueryHookFromTemplate(getProcurementItemRequest)
 const useUOM = createQueryHookFromTemplate(getUOMRequest)
 const useNONCSEItem = createQueryHookFromTemplate(getNONCSEItemRequest)
 const useUpdatePPMPStatus = createMutationHookFromTemplate(
@@ -338,7 +336,7 @@ function ActivityCard({
         expanded ? 'w-120' : 'w-80',
         shouldThrob && !selected && 'animate-pulse-unselected',
         dimmed &&
-          'opacity-60 saturate-50 hover:opacity-100 hover:saturate-100 transition-all duration-300',
+        'opacity-60 saturate-50 hover:opacity-100 hover:saturate-100 transition-all duration-300',
       )}
     >
       {/* Left side (regular card content) */}
@@ -595,9 +593,7 @@ interface ItemDetailProps {
 
 const isUUID = (val: string | null | undefined): boolean => {
   if (!val) return false
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-    val,
-  )
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val)
 }
 
 interface ReferencedItemModalProps {
@@ -626,9 +622,7 @@ function ReferencedItemModal({
     <ResponsiveDialogDashtail
       open={isOpen}
       onOpenChange={(open) => !open && onClose()}
-      title={
-        isCse ? 'CSE Catalog Item Details' : 'Non-CSE Catalog Item Details'
-      }
+      title={isCse ? 'CSE Catalog Item Details' : 'Non-CSE Catalog Item Details'}
       size="xl"
     >
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 p-4">
@@ -641,18 +635,12 @@ function ReferencedItemModal({
 
             <div className="space-y-3">
               <div>
-                <span className="text-[10px] text-default-400 uppercase font-semibold block">
-                  Product Name
-                </span>
-                <span className="text-sm font-semibold text-default-850">
-                  {name}
-                </span>
+                <span className="text-[10px] text-default-400 uppercase font-semibold block">Product Name</span>
+                <span className="text-sm font-semibold text-default-850">{name}</span>
               </div>
 
               <div>
-                <span className="text-[10px] text-default-400 uppercase font-semibold block">
-                  Product Code
-                </span>
+                <span className="text-[10px] text-default-400 uppercase font-semibold block">Product Code</span>
                 <span className="text-xs font-mono font-bold text-default-700 bg-default-100 px-1.5 py-0.5 rounded w-fit block mt-0.5">
                   {itemDetails.productCode || '—'}
                 </span>
@@ -661,82 +649,45 @@ function ReferencedItemModal({
               {isCse ? (
                 <>
                   <div>
-                    <span className="text-[10px] text-default-400 uppercase font-semibold block">
-                      Object Code
-                    </span>
-                    <span className="text-xs font-medium text-default-750">
-                      {itemDetails.objectCodeName || '—'}
-                    </span>
+                    <span className="text-[10px] text-default-400 uppercase font-semibold block">Object Code</span>
+                    <span className="text-xs font-medium text-default-750">{itemDetails.objectCodeName || '—'}</span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-default-400 uppercase font-semibold block">
-                      UNSPSC Classification
-                    </span>
-                    <span className="text-xs font-medium text-default-750">
-                      {itemDetails.unspscCodeName || '—'}
-                    </span>
+                    <span className="text-[10px] text-default-400 uppercase font-semibold block">UNSPSC Classification</span>
+                    <span className="text-xs font-medium text-default-750">{itemDetails.unspscCodeName || '—'}</span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-default-400 uppercase font-semibold block">
-                      UOM
-                    </span>
-                    <span className="text-xs font-semibold text-default-800">
-                      {itemDetails.uomName || '—'}
-                    </span>
+                    <span className="text-[10px] text-default-400 uppercase font-semibold block">UOM</span>
+                    <span className="text-xs font-semibold text-default-800">{itemDetails.uomName || '—'}</span>
                   </div>
                 </>
               ) : (
                 <>
                   <div>
-                    <span className="text-[10px] text-default-400 uppercase font-semibold block">
-                      Procurement Category
-                    </span>
-                    <span className="text-xs font-medium text-default-750">
-                      {itemDetails.procurementCategoryName || '—'}
-                    </span>
+                    <span className="text-[10px] text-default-400 uppercase font-semibold block">Procurement Category</span>
+                    <span className="text-xs font-medium text-default-750">{itemDetails.procurementCategoryName || '—'}</span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-default-400 uppercase font-semibold block">
-                      UOM
-                    </span>
-                    <span className="text-xs font-semibold text-default-800">
-                      {itemDetails.uomName || '—'}
-                    </span>
+                    <span className="text-[10px] text-default-400 uppercase font-semibold block">UOM</span>
+                    <span className="text-xs font-semibold text-default-800">{itemDetails.uomName || '—'}</span>
                   </div>
                 </>
               )}
 
               <div>
-                <span className="text-[10px] text-default-400 uppercase font-semibold block">
-                  Reference Price
-                </span>
+                <span className="text-[10px] text-default-400 uppercase font-semibold block">Reference Price</span>
                 <span className="text-sm font-extrabold text-primary">
-                  {formatCurrency(
-                    isCse
-                      ? itemDetails.unitPrice || 0
-                      : itemDetails.currentPrice || 0,
-                  )}
+                  {formatCurrency(isCse ? (itemDetails.unitPrice || 0) : (itemDetails.currentPrice || 0))}
                 </span>
               </div>
 
               <div>
-                <span className="text-[10px] text-default-400 uppercase font-semibold block">
-                  Status
-                </span>
-                <span
-                  className={cn(
-                    'inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-semibold border-none mt-1',
-                    itemDetails.isActive
-                      ? 'bg-emerald-50 text-emerald-700'
-                      : 'bg-rose-50 text-rose-700',
-                  )}
-                >
-                  <span
-                    className={cn(
-                      'h-1.5 w-1.5 rounded-full',
-                      itemDetails.isActive ? 'bg-emerald-500' : 'bg-rose-500',
-                    )}
-                  />
+                <span className="text-[10px] text-default-400 uppercase font-semibold block">Status</span>
+                <span className={cn(
+                  "inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-semibold border-none mt-1",
+                  itemDetails.isActive ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"
+                )}>
+                  <span className={cn("h-1.5 w-1.5 rounded-full", itemDetails.isActive ? "bg-emerald-500" : "bg-rose-500")} />
                   {itemDetails.isActive ? 'Active Catalog' : 'Inactive'}
                 </span>
               </div>
@@ -748,9 +699,7 @@ function ReferencedItemModal({
         <div className="md:col-span-7 space-y-4">
           {isCse && (
             <div className="space-y-1.5">
-              <span className="text-[10px] text-default-400 uppercase font-bold tracking-wider">
-                Product Media
-              </span>
+              <span className="text-[10px] text-default-400 uppercase font-bold tracking-wider">Product Media</span>
               {imageSrc ? (
                 <div className="relative aspect-video sm:aspect-square w-full rounded-xl overflow-hidden border border-default-200 bg-slate-50 flex items-center justify-center shadow-sm">
                   <img
@@ -769,9 +718,7 @@ function ReferencedItemModal({
           )}
 
           <div className="space-y-1.5">
-            <span className="text-[10px] text-default-400 uppercase font-bold tracking-wider">
-              Specifications & Requirements
-            </span>
+            <span className="text-[10px] text-default-400 uppercase font-bold tracking-wider">Specifications & Requirements</span>
             <div className="rounded-xl border border-default-200 p-4 bg-white shadow-sm leading-relaxed text-xs text-default-700 whitespace-pre-line min-h-24">
               {specifications || 'No detailed specifications provided.'}
             </div>
@@ -779,9 +726,7 @@ function ReferencedItemModal({
 
           {itemDetails.remarks && (
             <div className="space-y-1.5">
-              <span className="text-[10px] text-default-400 uppercase font-bold tracking-wider">
-                Catalog Remarks
-              </span>
+              <span className="text-[10px] text-default-400 uppercase font-bold tracking-wider">Catalog Remarks</span>
               <div className="rounded-xl border border-amber-500/10 p-3 bg-amber-500/2 text-xs italic text-amber-800 leading-relaxed">
                 {itemDetails.remarks}
               </div>
@@ -828,22 +773,17 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
   const hasAllocations =
     item.PPMPItemAllocations && item.PPMPItemAllocations.length > 0
 
-  // Format date helper - validates date is valid before formatting
+  // Format date helper
   const formatDateDisplay = (dateStr: string | null | undefined) => {
     if (!dateStr) return '—'
     try {
-      const date = new Date(dateStr)
-      // Check if date is valid by verifying it's a valid Date object
-      // and that its ISO string doesn't start with an Invalid Date
-      if (isNaN(date.getTime())) return '—'
-
-      return date.toLocaleDateString('en-US', {
+      return new Date(dateStr).toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'short',
         day: 'numeric',
       })
     } catch {
-      return '—'
+      return dateStr
     }
   }
 
@@ -854,9 +794,7 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
     queryParams: {},
     enabled: isUnitUuid && !!item.unit,
   })
-  const displayUnit = isUnitUuid
-    ? uomResp?.data?.name || 'Loading...'
-    : item.unit || '—'
+  const displayUnit = isUnitUuid ? (uomResp?.data?.name || 'Loading...') : (item.unit || '—')
 
   // 2. Fetch CSE Item if cseItemId exists
   const { data: cseItemResp, isLoading: isLoadingCse } = useProcurementItem({
@@ -874,8 +812,8 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
   })
   const nonCseItem = nonCseItemResp?.data
 
-  // Modal State - keyed to prevent both CSE and Non-CSE modals opening simultaneously
-  const [activeModal, setActiveModal] = useState<'cse' | 'non-cse' | null>(null)
+  // Modal State
+  const [modalOpen, setModalOpen] = useState(false)
 
   return (
     <div className="space-y-5 p-4 bg-default-50/50 rounded-xl border border-default-100">
@@ -1395,13 +1333,8 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
                   <span className="text-[8px] font-bold uppercase tracking-wider text-primary px-1.5 py-0.5 bg-primary/10 rounded-md">
                     CSE Catalog
                   </span>
-                  <h5
-                    className="text-[11px] font-bold text-default-850 mt-1 line-clamp-1"
-                    title={cseItem?.name || item.name}
-                  >
-                    {isLoadingCse
-                      ? 'Loading catalog item...'
-                      : cseItem?.name || item.name}
+                  <h5 className="text-[11px] font-bold text-default-850 mt-1 line-clamp-1" title={cseItem?.name || item.name}>
+                    {isLoadingCse ? 'Loading catalog item...' : (cseItem?.name || item.name)}
                   </h5>
                 </div>
               </div>
@@ -1410,21 +1343,12 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
                 <>
                   <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[9px] text-default-550 border-t border-primary/10 pt-2">
                     <div>
-                      <span className="text-default-400 block text-[8px] uppercase font-semibold">
-                        Code
-                      </span>
-                      <span className="font-mono font-semibold text-default-700">
-                        {cseItem.productCode || '—'}
-                      </span>
+                      <span className="text-default-400 block text-[8px] uppercase font-semibold">Code</span>
+                      <span className="font-mono font-semibold text-default-700">{cseItem.productCode || '—'}</span>
                     </div>
                     <div>
-                      <span className="text-default-400 block text-[8px] uppercase font-semibold">
-                        Category
-                      </span>
-                      <span
-                        className="font-medium text-default-700 line-clamp-1"
-                        title={cseItem.objectCodeName || '—'}
-                      >
+                      <span className="text-default-400 block text-[8px] uppercase font-semibold">Category</span>
+                      <span className="font-medium text-default-700 line-clamp-1" title={cseItem.objectCodeName || '—'}>
                         {cseItem.objectCodeName || '—'}
                       </span>
                     </div>
@@ -1433,15 +1357,15 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
                     type="button"
                     variant="link"
                     size="sm"
-                    onClick={() => setActiveModal('cse')}
+                    onClick={() => setModalOpen(true)}
                     className="h-6 text-[10px] font-semibold text-primary hover:text-primary-active p-0 flex items-center gap-1 mt-1 shrink-0"
                   >
                     <Eye className="h-3 w-3" />
                     View specifications & image
                   </Button>
                   <ReferencedItemModal
-                    isOpen={activeModal === 'cse'}
-                    onClose={() => setActiveModal(null)}
+                    isOpen={modalOpen}
+                    onClose={() => setModalOpen(false)}
                     type="cse"
                     itemDetails={cseItem}
                   />
@@ -1452,9 +1376,7 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
                   <div className="h-2.5 bg-default-250/40 rounded w-1/2" />
                 </div>
               ) : (
-                <p className="text-[10px] text-default-400 italic pt-1">
-                  Failed to load catalog details.
-                </p>
+                <p className="text-[10px] text-default-400 italic pt-1">Failed to load catalog details.</p>
               )}
             </div>
           )}
@@ -1466,13 +1388,8 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
                   <span className="text-[8px] font-bold uppercase tracking-wider text-amber-700 px-1.5 py-0.5 bg-amber-500/10 rounded-md">
                     Non-CSE Catalog
                   </span>
-                  <h5
-                    className="text-[11px] font-bold text-default-850 mt-1 line-clamp-1"
-                    title={nonCseItem?.name || item.name}
-                  >
-                    {isLoadingNonCse
-                      ? 'Loading catalog item...'
-                      : nonCseItem?.name || item.name}
+                  <h5 className="text-[11px] font-bold text-default-850 mt-1 line-clamp-1" title={nonCseItem?.name || item.name}>
+                    {isLoadingNonCse ? 'Loading catalog item...' : (nonCseItem?.name || item.name)}
                   </h5>
                 </div>
               </div>
@@ -1481,38 +1398,29 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
                 <>
                   <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[9px] text-default-550 border-t border-amber-500/10 pt-2">
                     <div>
-                      <span className="text-default-400 block text-[8px] uppercase font-semibold">
-                        Code
-                      </span>
-                      <span className="font-mono font-semibold text-default-700">
-                        {nonCseItem.productCode || '—'}
-                      </span>
+                      <span className="text-default-400 block text-[8px] uppercase font-semibold">Code</span>
+                      <span className="font-mono font-semibold text-default-700">{nonCseItem.productCode || '—'}</span>
                     </div>
                     <div>
-                      <span className="text-default-400 block text-[8px] uppercase font-semibold">
-                        Category
-                      </span>
-                      <span
-                        className="font-medium text-default-700 line-clamp-1"
-                        title={nonCseItem.procurementCategoryName || '—'}
-                      >
+                      <span className="text-default-400 block text-[8px] uppercase font-semibold">Category</span>
+                      <span className="font-medium text-default-700 line-clamp-1" title={nonCseItem.procurementCategoryName || '—'}>
                         {nonCseItem.procurementCategoryName || '—'}
                       </span>
                     </div>
                   </div>
                   <Button
                     type="button"
-                    variant="link"
+
                     size="sm"
-                    onClick={() => setActiveModal('non-cse')}
+                    onClick={() => setModalOpen(true)}
                     className="h-6 text-[10px] font-semibold text-amber-700 hover:text-amber-800 p-0 flex items-center gap-1 mt-1 shrink-0"
                   >
                     <Eye className="h-3 w-3" />
                     View specifications
                   </Button>
                   <ReferencedItemModal
-                    isOpen={activeModal === 'non-cse'}
-                    onClose={() => setActiveModal(null)}
+                    isOpen={modalOpen}
+                    onClose={() => setModalOpen(false)}
                     type="non-cse"
                     itemDetails={nonCseItem}
                   />
@@ -1523,9 +1431,7 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
                   <div className="h-2.5 bg-default-250/40 rounded w-1/2" />
                 </div>
               ) : (
-                <p className="text-[10px] text-default-400 italic pt-1">
-                  Failed to load catalog details.
-                </p>
+                <p className="text-[10px] text-default-400 italic pt-1">Failed to load catalog details.</p>
               )}
             </div>
           )}
@@ -1731,7 +1637,9 @@ function ItemRow({
         </td>
         <td className="px-5 py-3 text-right">
           <div className="flex items-center justify-end gap-2">
-            <RowCompletionIndicator status={validationStatus} />
+            <RowCompletionIndicator
+              status={validationStatus}
+            />
             <div className="flex items-center gap-1.5">
               {onEdit && (
                 <Button
@@ -2860,8 +2768,8 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
                 ppmp.status.toLowerCase() === 'approved'
                   ? 'border-emerald-200 bg-emerald-50 text-emerald-700 ring-4 ring-emerald-500/5'
                   : ppmp.status.toLowerCase() === 'submitted' ||
-                      ppmp.status.toLowerCase() === 'pending_review' ||
-                      ppmp.status.toLowerCase() === 'pending review'
+                    ppmp.status.toLowerCase() === 'pending_review' ||
+                    ppmp.status.toLowerCase() === 'pending review'
                     ? 'border-blue-200 bg-blue-50 text-blue-700 ring-4 ring-blue-500/5'
                     : ppmp.status.toLowerCase() === 'rejected'
                       ? 'border-rose-200 bg-rose-50 text-rose-700 ring-4 ring-rose-500/5'
@@ -3122,27 +3030,27 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
                   const statusStyle =
                     statusLower === 'approved'
                       ? {
-                          badge:
-                            'bg-emerald-50 text-emerald-700 border-emerald-200',
-                          dot: 'bg-emerald-500',
-                        }
+                        badge:
+                          'bg-emerald-50 text-emerald-700 border-emerald-200',
+                        dot: 'bg-emerald-500',
+                      }
                       : statusLower === 'submitted' ||
-                          statusLower === 'pending_review' ||
-                          statusLower === 'pending review'
+                        statusLower === 'pending_review' ||
+                        statusLower === 'pending review'
                         ? {
-                            badge: 'bg-blue-50 text-blue-700 border-blue-200',
-                            dot: 'bg-blue-500',
-                          }
+                          badge: 'bg-blue-50 text-blue-700 border-blue-200',
+                          dot: 'bg-blue-500',
+                        }
                         : statusLower === 'rejected'
                           ? {
-                              badge: 'bg-rose-50 text-rose-700 border-rose-200',
-                              dot: 'bg-rose-500',
-                            }
+                            badge: 'bg-rose-50 text-rose-700 border-rose-200',
+                            dot: 'bg-rose-500',
+                          }
                           : {
-                              badge:
-                                'bg-slate-50 text-slate-600 border-slate-200',
-                              dot: 'bg-slate-400',
-                            }
+                            badge:
+                              'bg-slate-50 text-slate-600 border-slate-200',
+                            dot: 'bg-slate-400',
+                          }
                   return (
                     <button
                       key={child.id}
@@ -3242,9 +3150,9 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
             onToggleExpand={toggleExpandActivity}
             onAdd={
               activeTab === 'overview' &&
-              !ppmp.consolidatedIntoId &&
-              (ppmp.status?.toLowerCase() === 'draft' ||
-                ppmp.status?.toLowerCase() === 'rejected')
+                !ppmp.consolidatedIntoId &&
+                (ppmp.status?.toLowerCase() === 'draft' ||
+                  ppmp.status?.toLowerCase() === 'rejected')
                 ? () => setAddDialogOpen(true)
                 : undefined
             }
@@ -3315,10 +3223,9 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
           if (!s) setDeleteDialogOpen(false)
         }}
         title="Delete activity?"
-        description={`${
-          activities.find((a) => a.id === pendingDeleteActivityId)
-            ?.activityName || 'This activity'
-        } and all nested items will be permanently deleted.`}
+        description={`${activities.find((a) => a.id === pendingDeleteActivityId)
+          ?.activityName || 'This activity'
+          } and all nested items will be permanently deleted.`}
         onConfirm={confirmDeleteActivity}
         onCancel={() => setDeleteDialogOpen(false)}
         confirmLabel={isDeleting ? 'Deleting…' : 'Delete'}
@@ -3351,9 +3258,8 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
           if (!s) setDeleteItemConfirmOpen(false)
         }}
         title="Delete item?"
-        description={`Are you sure you want to permanently delete "${
-          pendingDeleteItem?.name || 'this item'
-        }"?`}
+        description={`Are you sure you want to permanently delete "${pendingDeleteItem?.name || 'this item'
+          }"?`}
         onConfirm={confirmDeleteItem}
         onCancel={() => setDeleteItemConfirmOpen(false)}
         confirmLabel={isItemDeleting ? 'Deleting…' : 'Delete'}
