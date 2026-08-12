@@ -1236,7 +1236,7 @@ function ItemRow({
 }: ItemRowProps) {
   const displayName = item.name || 'Unnamed item'
   const validationStatus = useItemValidationStatus(item)
-  const rowClasses = getRowCompletionClasses(validationStatus.isComplete)
+  const rowClasses = getRowCompletionClasses(validationStatus)
 
   return (
     <>

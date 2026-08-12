@@ -1,4 +1,4 @@
-﻿/**
+/**
  * RowCompletionIndicator
  * Displays completion status badge and provides tooltip with missing fields
  */
@@ -16,6 +16,7 @@ import type { ItemValidationStatus } from '../hooks/useItemValidationStatus'
 import {
   getCompletionBadgeColor,
   getCompletionBadgeVariant,
+  getCompletionBadgeLabel,
 } from '../hooks/useItemValidationStatus'
 
 interface RowCompletionIndicatorProps {
@@ -29,11 +30,9 @@ export function RowCompletionIndicator({
   showLabel = true,
   className,
 }: RowCompletionIndicatorProps) {
-  const color = getCompletionBadgeColor(status.isComplete)
+  const color = getCompletionBadgeColor(status)
   const variant = getCompletionBadgeVariant()
-  const label = status.isComplete
-    ? '✓ Complete'
-    : `${status.completionPercentage ?? 0}% Complete`
+  const label = getCompletionBadgeLabel(status)
 
   const content = (
     <Badge
@@ -62,7 +61,9 @@ export function RowCompletionIndicator({
         <TooltipTrigger asChild>{content}</TooltipTrigger>
         <TooltipContent side="top" className="max-w-xs">
           <div className="space-y-1">
-            <p className="font-semibold text-sm">Missing Fields:</p>
+            <p className="font-semibold text-sm">
+              {status.isDetailsComplete ? 'Missing Requirements:' : 'Missing Fields:'}
+            </p>
             <ul className="text-xs space-y-0.5">
               {status.missingFields.map((field) => (
                 <li key={field} className="flex items-center gap-1">
@@ -70,6 +71,12 @@ export function RowCompletionIndicator({
                   {field}
                 </li>
               ))}
+              {!status.hasAllocations && (
+                <li className="flex items-center gap-1">
+                  <span className="text-amber-500 font-bold">•</span>
+                  <span className="text-amber-500">Monthly Allocations</span>
+                </li>
+              )}
             </ul>
           </div>
         </TooltipContent>

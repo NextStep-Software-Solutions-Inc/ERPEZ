@@ -1,4 +1,4 @@
-﻿/**
+/**
  * useItemValidationStatus
  * Hook to determine item completion status based on required field validation
  */
@@ -9,6 +9,8 @@ import type { PPMPItem } from '../types'
 
 export interface ItemValidationStatus {
   isComplete: boolean
+  isDetailsComplete: boolean
+  hasAllocations: boolean
   missingFields: string[]
   completionPercentage: number
 }
@@ -39,6 +41,8 @@ export function useItemValidationStatus(
     if (!item) {
       return {
         isComplete: false,
+        isDetailsComplete: false,
+        hasAllocations: false,
         missingFields: REQUIRED_ITEM_FIELDS as unknown as string[],
         completionPercentage: 0,
       }
@@ -68,7 +72,9 @@ export function useItemValidationStatus(
 
     // Check if has at least one monthly allocation
     const hasAllocations =
-      item.PPMPItemAllocations && item.PPMPItemAllocations.length > 0
+      !!item.PPMPItemAllocations && item.PPMPItemAllocations.length > 0
+
+    const isDetailsComplete = missingFields.length === 0
 
     const completionPercentage = Math.round(
       ((REQUIRED_ITEM_FIELDS.length - missingFields.length) /
@@ -77,7 +83,9 @@ export function useItemValidationStatus(
     )
 
     return {
-      isComplete: missingFields.length === 0 && hasAllocations,
+      isComplete: isDetailsComplete && hasAllocations,
+      isDetailsComplete,
+      hasAllocations,
       missingFields,
       completionPercentage,
     } as ItemValidationStatus
@@ -87,21 +95,30 @@ export function useItemValidationStatus(
 /**
  * Get CSS classes for row styling based on completion status
  */
-export function getRowCompletionClasses(isComplete: boolean): string {
-  if (isComplete) {
+export function getRowCompletionClasses(status: ItemValidationStatus): string {
+  if (status.isComplete) {
     return 'bg-emerald-50/30 border-l-4 border-l-emerald-500 hover:bg-emerald-50/50'
+  }
+  if (status.isDetailsComplete) {
+    return 'bg-amber-50/20 border-l-4 border-l-amber-500 hover:bg-amber-50/30'
   }
   return 'bg-red-50/30 border-l-4 border-l-red-500 hover:bg-red-50/50'
 }
 
 /**
- * Get badge color based on completion percentage
+ * Get badge color based on completion status
  * Supports: default (complete), success, warning, destructive
  */
 export function getCompletionBadgeColor(
-  isComplete: boolean,
+  status: ItemValidationStatus,
 ): NonNullable<BadgeProps['color']> {
-  return isComplete ? 'success' : 'destructive'
+  if (status.isComplete) {
+    return 'success'
+  }
+  if (status.isDetailsComplete) {
+    return 'warning'
+  }
+  return 'destructive'
 }
 
 /**
@@ -114,14 +131,16 @@ export function getCompletionBadgeVariant(): NonNullable<
 }
 
 /**
- * Get badge label based on completion
+ * Get badge label based on completion status
  */
 export function getCompletionBadgeLabel(
-  isComplete: boolean,
-  completionPercentage?: number,
+  status: ItemValidationStatus,
 ): string {
-  if (isComplete) {
+  if (status.isComplete) {
     return '✓ Complete'
   }
-  return `${completionPercentage ?? 0}% Complete`
+  if (status.isDetailsComplete && !status.hasAllocations) {
+    return 'Allocations Required'
+  }
+  return `${status.completionPercentage ?? 0}% Complete`
 }
