@@ -1788,7 +1788,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<PPMPActivity>()
             .HasIndex(pa => new { pa.PPMPId, pa.LIBActivityId })
-            .IsUnique();
+            .IsUnique()
+            .HasFilter("\"IsDeleted\" = false");
 
         // PPMPExpenditureItem
         modelBuilder.Entity<PPMPExpenditureItem>()
