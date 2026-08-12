@@ -610,7 +610,7 @@ export default function AddPPMPItemsModal({
               type === 'cse'
                 ? (item as ProcurementItem).specifications || ''
                 : (item as NONCSEItem).description || '',
-            unit: item.id, // Or item.uomId
+            unit: item.uomName || '',
             unitPrice: config.unitPrice,
             procurementModeId: config.procurementModeId,
             cseItemId: type === 'cse' ? item.id : undefined,
@@ -618,18 +618,10 @@ export default function AddPPMPItemsModal({
             projectType: config.projectType,
             papCode: config.papCode || undefined,
             preProcurementConference: config.preProcurementConference,
-            procurementStartDate: config.procurementStartDate
-              ? new Date(config.procurementStartDate).toISOString()
-              : undefined,
-            procurementEndDate: config.procurementEndDate
-              ? new Date(config.procurementEndDate).toISOString()
-              : undefined,
-            expectedDeliveryStart: config.expectedDeliveryStart
-              ? new Date(config.expectedDeliveryStart).toISOString()
-              : undefined,
-            expectedDeliveryEnd: config.expectedDeliveryEnd
-              ? new Date(config.expectedDeliveryEnd).toISOString()
-              : undefined,
+            procurementStartDate: config.procurementStartDate || undefined,
+            procurementEndDate: config.procurementEndDate || undefined,
+            expectedDeliveryStart: config.expectedDeliveryStart || undefined,
+            expectedDeliveryEnd: config.expectedDeliveryEnd || undefined,
             remarks: config.remarks || undefined,
             mopOverride: false,
           }
@@ -638,7 +630,8 @@ export default function AddPPMPItemsModal({
             pathParams: {},
             payload,
           })
-          createdItemId = response.data.toString()
+          // Extract GUID from response - handle both string and object payloads
+          createdItemId = typeof response.data === 'string' ? response.data : (response.data?.id ?? '')
           successCount++
         } catch (err) {
           failedCount++

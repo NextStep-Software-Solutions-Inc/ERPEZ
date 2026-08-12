@@ -23,6 +23,7 @@ public class ConsolidatePPMPsCommandHandler(IUnitOfWork unitOfWork) : IRequestHa
                 if (childPPMP.Status != ERPEZ.Domain.Enums.StatusEnum.Approved)
                     throw new ValidationException($"PPMP {childPPMP.PPMPNumber} must be approved before consolidation.");
 
+                // Guard against double consolidation: prevent adding PPMPs that are already consolidated into another master
                 if (childPPMP.ConsolidatedIntoId != null)
                     throw new ValidationException($"PPMP {childPPMP.PPMPNumber} is already consolidated.");
 
