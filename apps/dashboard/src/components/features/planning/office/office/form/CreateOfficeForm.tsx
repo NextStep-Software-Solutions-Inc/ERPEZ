@@ -7,16 +7,22 @@ import { Button } from '@/components/ui/button'
 
 // Export schema and type for reuse
 export const officeFormSchema = z.object({
-  name: z.string().min(2, 'Office name is required'),
-  description: z.string().optional().nullable(),
-  address: z.string().min(5, 'Address is required'),
-  country: z.string().min(2, 'Country is required'),
-  email: z.string().email('Valid email is required'),
-  contactNumber: z.string().min(10, 'Contact number is required'),
-  officeHead: z.string().min(2, 'Office head name is required'),
-  clusterId: z.string().nullable().optional(),
-  isDeliveryUnit: z.boolean().default(false),
-  responsibilityCenterCode: z.string().nullable().optional(),
+  // Required fields (match CreateOfficeCommand)
+  name: z.string().min(3, 'Office name must be at least 3 characters'),
+  code: z.string().min(1, 'Office code is required').max(50),
+  address: z.string().min(5, 'Address is required').max(500),
+  // Required foreign keys
+  officeTypeId: z.string().uuid('OfficeType is required'),
+  organizationId: z.string().uuid('Organization is required'),
+  categoryId: z.string().uuid('Category is required'),
+  administrativeLevelId: z.string().uuid('Administrative Level is required'),
+  // Optional fields
+  description: z.string().max(1000).optional().nullable(),
+  responsibilityCenterCode: z.string().max(50).optional().nullable(),
+  budgetCostCenter: z.string().max(50).optional().nullable(),
+  clusterId: z.string().uuid().nullable().optional(),
+  parentId: z.string().uuid().nullable().optional(),
+  procurementWorkflowId: z.string().uuid().nullable().optional(),
 })
 
 export type OfficeFormType = z.infer<typeof officeFormSchema>
@@ -41,15 +47,18 @@ export default function OfficeForm({
   const form = useForm({
     defaultValues: initialValues ?? {
       name: '',
-      description: '',
+      code: '',
       address: '',
-      email: '',
-      contactNumber: '',
-      officeHead: '',
-      country: '',
-      clusterId: null,
-      isDeliveryUnit: false,
+      description: '',
+      officeTypeId: '',
+      organizationId: '',
+      categoryId: '',
+      administrativeLevelId: '',
       responsibilityCenterCode: null,
+      budgetCostCenter: null,
+      clusterId: null,
+      parentId: null,
+      procurementWorkflowId: null,
     },
     onSubmit: async (values) => {
       // Validate form data with Zod

@@ -27,7 +27,7 @@ public class Office : BaseEntity
     public Guid OfficeTypeId { get; set; }
 
     [Sieve(CanFilter = true, CanSort = true)]
-    public Guid OrganizationId { get; set; }
+    public Guid? OrganizationId { get; set; }
 
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid CategoryId { get; set; }
@@ -49,7 +49,7 @@ public class Office : BaseEntity
 
     // Navigation Properties
     public virtual OfficeType OfficeType { get; set; } = null!;
-    public virtual Organization Organization { get; set; } = null!;
+    public virtual Organization? Organization { get; set; }
     public virtual Category Category { get; set; } = null!;
     public virtual AdministrativeLevel AdministrativeLevel { get; set; } = null!;
     public virtual Cluster? Cluster { get; set; }

@@ -70,5 +70,22 @@ namespace ERPEZ.Api.Controllers
 
             return response.Succeeded ? Ok(response) : BadRequest(response);
         }
+
+        [HttpPost("import-excel")]
+        [Consumes("multipart/form-data")]
+        [ProducesResponseType(typeof(ApiResponse<int>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> ImportFundSourcesFromExcel(
+            IFormFile file,
+            [FromServices] ERPEZ.Infrastructure.Persistence.ApplicationDbContext context,
+            CancellationToken cancellationToken)
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest(ApiResponse<int>.Fail("No file was uploaded."));
+
+            using var stream = file.OpenReadStream();
+            var count = await ERPEZ.Infrastructure.Persistence.Seeders.FundSourceSeeder.SeedFromExcelAsync(context, stream, cancellationToken);
+            return Ok(ApiResponse<int>.Success(count, $"Successfully imported {count} Fund Source records."));
+        }
     }
 }
