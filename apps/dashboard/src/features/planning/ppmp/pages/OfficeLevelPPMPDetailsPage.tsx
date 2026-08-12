@@ -65,12 +65,18 @@ import {
   EditPPMPItemAllocationsDialog,
   MasterPPMPViewerModal,
 } from '../dialogs'
+import { PPMPGuidelinesModal } from '../dialogs/PPMPGuidelinesModal'
 import { ConsolidationWorkspaceSheet } from '../dialogs/ConsolidationWorkspaceSheet'
 import { DeptConsolidationSheet } from '../dialogs/DeptConsolidationSheet'
 import { updatePPMPStatusRequest } from '../handlers/updatePPMPStatusRequest'
 import { generatePPMPDocumentRequest } from '../handlers/generatePPMPDocumentRequest'
 import { downloadLIBDocumentRequest } from '@/features/planning/line-item-budgeting/line-item-budget/handlers/downloadLIBDocumentRequest'
 import { useKeycloak } from '@/providers/KeycloakProvider'
+import {
+  useItemValidationStatus,
+  getRowCompletionClasses,
+} from '../hooks/useItemValidationStatus'
+import { RowCompletionIndicator } from '../components/RowCompletionIndicator'
 
 // ============================
 // Type Definitions
@@ -808,10 +814,12 @@ function ItemRow({
   onEditAllocations,
 }: ItemRowProps) {
   const displayName = item.name || 'Unnamed item'
+  const validationStatus = useItemValidationStatus(item)
+  const rowClasses = getRowCompletionClasses(validationStatus.isComplete)
 
   return (
     <>
-      <tr className="hover:bg-default-50/50 transition-colors">
+      <tr className={cn('transition-colors', rowClasses)}>
         <td className="px-5 py-3 text-center">
           <button
             type="button"
@@ -876,29 +884,35 @@ function ItemRow({
           )}
         </td>
         <td className="px-5 py-3 text-right">
-          <div className="flex items-center justify-end gap-1.5">
-            {onEdit && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => onEdit(item)}
-                className="h-8 w-8 text-default-550 hover:text-primary rounded-lg"
-              >
-                <Pencil className="h-4 w-4" />
-              </Button>
-            )}
-            {onDelete && (
-              <Button
-                type="button"
-                variant="ghost"
-                size="icon"
-                onClick={() => onDelete(item)}
-                className="h-8 w-8 text-default-550 hover:text-destructive rounded-lg"
-              >
-                <Trash2 className="h-4 w-4" />
-              </Button>
-            )}
+          <div className="flex items-center justify-end gap-2">
+            <RowCompletionIndicator
+              status={validationStatus}
+              showLabel={true}
+            />
+            <div className="flex items-center gap-1.5">
+              {onEdit && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => onEdit(item)}
+                  className="h-8 w-8 text-default-550 hover:text-primary rounded-lg"
+                >
+                  <Pencil className="h-4 w-4" />
+                </Button>
+              )}
+              {onDelete && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  onClick={() => onDelete(item)}
+                  className="h-8 w-8 text-default-550 hover:text-destructive rounded-lg"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
           </div>
         </td>
       </tr>
@@ -1567,6 +1581,7 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
   const [addDialogOpen, setAddDialogOpen] = useState(false)
   const [consolidatedViewerOpen, setConsolidatedViewerOpen] = useState(false)
   const [isExporting, setIsExporting] = useState(false)
+  const [guidelinesModalOpen, setGuidelinesModalOpen] = useState(false)
   // Expose current PPMP to other components so they can read metadata defaults
   const setPpmpForEdit = useSetAtom(selectedPpmpForEditAtom)
 
@@ -2060,6 +2075,17 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
             </DropdownMenuContent>
           </DropdownMenu>
 
+          {/* View PPMP Guidelines Button */}
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setGuidelinesModalOpen(true)}
+            className="flex items-center gap-1.5 border-blue-200 text-blue-700 hover:bg-blue-50"
+          >
+            <FileText className="h-4 w-4" />
+            <span>PPMP Guidelines</span>
+          </Button>
+
           {/* Visual Separator */}
           <div className="h-5 w-px bg-slate-200" />
 
@@ -2534,6 +2560,11 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
         confirmLabel={isUpdatingStatus ? 'Approving…' : 'Approve'}
         cancelLabel="Cancel"
         loading={isUpdatingStatus}
+      />
+
+      <PPMPGuidelinesModal
+        open={guidelinesModalOpen}
+        onOpenChange={setGuidelinesModalOpen}
       />
 
       <ConsolidationWorkspaceSheet
