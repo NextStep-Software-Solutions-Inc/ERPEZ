@@ -1,5 +1,4 @@
 import { ColumnDef } from '@tanstack/react-table'
-import { useState } from 'react'
 import {
   ArrowUpDown,
   MoreHorizontal,
@@ -60,13 +59,10 @@ function PpmpActions({ ppmp }: { ppmp: PPMP }) {
 
   const { mutateAsync: generatePPMPDocument } = useGeneratePPMPDocument()
   const { mutateAsync: downloadDocument } = useDownloadDocument()
-  const [isExporting, setIsExporting] = useState(false)
 
   const handleGenerate = async (format: 'Pdf' | 'Excel') => {
     if (!ppmp.id) return
     try {
-      setIsExporting(true)
-
       const genResponse = await generatePPMPDocument({
         pathParams: { ppmpId: ppmp.id },
         queryParams: { format },
@@ -104,7 +100,7 @@ function PpmpActions({ ppmp }: { ppmp: PPMP }) {
         description: err?.message ?? 'Could not generate document',
       })
     } finally {
-      setIsExporting(false)
+      // Export complete
     }
   }
 
@@ -133,11 +129,6 @@ function PpmpActions({ ppmp }: { ppmp: PPMP }) {
         <DropdownMenuItem onClick={() => handleGenerate('Pdf')}>
           <Download className="mr-2 h-4 w-4" />
           Export as PDF
-        </DropdownMenuItem>
-
-        <DropdownMenuItem onClick={() => handleGenerate('Excel')}>
-          <Download className="mr-2 h-4 w-4" />
-          Export as Excel
         </DropdownMenuItem>
 
         <DropdownMenuSeparator />

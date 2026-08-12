@@ -2057,13 +2057,6 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
                 <Download className="mr-2 h-4 w-4" />
                 <span>Download PDF</span>
               </DropdownMenuItem>
-              <DropdownMenuItem
-                onClick={() => handleExportPPMP('Excel')}
-                disabled={isExporting}
-              >
-                <Download className="mr-2 h-4 w-4" />
-                <span>Download Excel</span>
-              </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
 
