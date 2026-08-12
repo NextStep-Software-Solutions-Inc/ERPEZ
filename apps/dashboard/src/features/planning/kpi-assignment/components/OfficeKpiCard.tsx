@@ -1,4 +1,4 @@
-﻿/**
+/**
  * OfficeKpiCard Component
  * Displays KPI assignment summary for a specific office
  * Shows count, targets, KPI names, and lock status
@@ -29,13 +29,16 @@ export const OfficeKpiCard = ({
   const cardContent = (
     <>
       {/* Header: Office Name + Count Badge */}
-      <div className="flex items-start justify-between mb-4">
-        <div className="flex-1 pr-4">
-          <h3 className="text-lg font-semibold text-gray-900 truncate">
+      <div className="flex items-start justify-between gap-3 mb-3 min-w-0">
+        <div className="min-w-0 flex-1">
+          <h3
+            className="text-base font-bold text-gray-900 leading-snug break-words"
+            title={office.name}
+          >
             {office.name}
           </h3>
         </div>
-        <Badge className="bg-primary-100 text-primary-700 font-semibold text-sm whitespace-nowrap">
+        <Badge className="bg-primary-100 text-primary-700 font-semibold text-xs whitespace-nowrap shrink-0">
           {office.assignmentCount}
         </Badge>
       </div>
@@ -43,9 +46,9 @@ export const OfficeKpiCard = ({
       {/* Lock Status Indicator */}
       <div className="mb-4 flex items-center gap-2">
         {hasLocked ? (
-          <Lock className="h-4 w-4 text-orange-600" />
+          <Lock className="h-4 w-4 text-orange-600 shrink-0" />
         ) : (
-          <Unlock className="h-4 w-4 text-green-600" />
+          <Unlock className="h-4 w-4 text-green-600 shrink-0" />
         )}
         <span
           className={`text-sm font-medium ${
@@ -57,11 +60,11 @@ export const OfficeKpiCard = ({
       </div>
 
       {/* Aggregated Targets Section */}
-      <div className="mb-4 bg-gray-50 rounded-lg p-4 border border-gray-100">
+      <div className="mb-4 bg-gray-50 rounded-lg p-3.5 border border-gray-100 min-w-0">
         <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">
           Aggregated Targets
         </p>
-        <div className="grid grid-cols-2 gap-3">
+        <div className="grid grid-cols-2 gap-3 min-w-0">
           <div>
             <span className="text-xs text-gray-600">Annual</span>
             <p className="text-lg font-bold text-primary-600">
@@ -98,23 +101,23 @@ export const OfficeKpiCard = ({
       </div>
 
       {/* KPI Names Preview */}
-      <div>
+      <div className="min-w-0">
         <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2">
           Assigned KPIs
         </p>
-        <div className="space-y-1">
+        <div className="space-y-1 min-w-0">
           {office.kpiNames.length > 0 ? (
-            <div className="flex flex-wrap gap-1">
+            <div className="flex flex-wrap gap-1.5 min-w-0">
               {office.kpiNames.slice(0, 3).map((kpiName, idx) => (
                 <Badge
                   key={idx}
-                  className="bg-blue-50 text-blue-700 text-xs font-medium"
+                  className="bg-blue-50 text-blue-700 text-xs font-medium whitespace-normal break-words text-left max-w-full leading-tight py-1 px-2.5 h-auto inline-block"
                 >
                   {kpiName}
                 </Badge>
               ))}
               {office.kpiNames.length > 3 && (
-                <Badge className="bg-gray-100 text-gray-700 text-xs font-medium">
+                <Badge className="bg-gray-100 text-gray-700 text-xs font-medium whitespace-nowrap shrink-0">
                   +{office.kpiNames.length - 3} more
                 </Badge>
               )}
@@ -127,7 +130,7 @@ export const OfficeKpiCard = ({
     </>
   )
 
-  const baseClasses = `bg-white border border-gray-200 rounded-lg p-6 shadow-sm hover:shadow-md hover:border-primary-300 transition-all duration-200 ${className}`
+  const baseClasses = `bg-white border border-gray-200 rounded-lg p-5 shadow-sm hover:shadow-md hover:border-primary-300 transition-all duration-200 w-full overflow-hidden ${className}`
 
   if (onClick) {
     return (
