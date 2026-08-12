@@ -373,7 +373,7 @@ export function AddPPMPItemForm({
                 htmlFor={field.name}
                 className="text-xs font-semibold leading-none cursor-pointer select-none"
               >
-                Pre-Procurement Conference Required
+                Pre-Procurement Conference
               </Label>
               <FieldDescriptionTooltip
                 fieldKey="preProcurementConference"

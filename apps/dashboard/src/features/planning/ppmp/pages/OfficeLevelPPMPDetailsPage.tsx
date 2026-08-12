@@ -1171,7 +1171,7 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
             )}
           </div>
         ) : (
-          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 lg:grid-cols-12 gap-2">
+          <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2.5">
             {months.map((m) => {
               const { qty, amt } = allocMap[m]
               const hasVal = qty > 0 || amt > 0
@@ -1179,7 +1179,7 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
                 <div
                   key={m}
                   className={cn(
-                    'rounded-lg border p-2 text-center flex flex-col justify-between min-h-13.75 transition-all',
+                    'rounded-lg border p-2.5 text-center flex flex-col justify-between min-h-[76px] transition-all',
                     hasVal
                       ? 'bg-primary/2 border-primary/20 shadow-sm'
                       : 'bg-default-100/20 border-default-100 text-default-400',
@@ -1187,24 +1187,24 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
                 >
                   <div
                     className={cn(
-                      'text-[9px] font-bold uppercase tracking-wider',
+                      'text-[10px] font-bold uppercase tracking-wider',
                       hasVal ? 'text-primary' : 'text-default-400',
                     )}
                   >
                     {m.substring(0, 3)}
                   </div>
                   {hasVal ? (
-                    <div className="mt-1">
-                      <div className="text-[10px] font-bold text-default-800">
-                        Qty: {qty}
-                      </div>
-                      <div className="text-[8px] font-semibold text-default-550 mt-0.5">
+                    <div className="mt-1 flex flex-col items-center justify-center gap-0.5">
+                      <div className="text-xs font-bold text-default-800">
                         {formatCurrency(amt)}
+                      </div>
+                      <div className="text-[10px] font-medium text-default-400">
+                        Qty: {qty}
                       </div>
                     </div>
                   ) : (
-                    <div className="text-[8px] italic text-default-300 mt-1">
-                      Empty
+                    <div className="text-[10px] text-default-300 mt-1.5 font-medium">
+                      —
                     </div>
                   )}
                 </div>

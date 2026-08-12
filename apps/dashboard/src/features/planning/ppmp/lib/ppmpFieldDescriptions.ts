@@ -52,7 +52,7 @@ export const PPMP_FIELD_DESCRIPTIONS = {
       'e.g., 5-02-03-010, PRJ-2025-001, or leave blank if not applicable',
   },
   preProcurementConference: {
-    label: 'Pre-Procurement Conference Required',
+    label: 'Pre-Procurement Conference',
     description:
       'Indicates whether a meeting with potential vendors is needed before issuing the procurement. Required for complex items, infrastructure works, or when technical clarification is needed to ensure fair competition.',
     examples:
