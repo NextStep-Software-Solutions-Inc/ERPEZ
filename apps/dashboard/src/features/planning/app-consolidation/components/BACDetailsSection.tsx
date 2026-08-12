@@ -26,19 +26,6 @@ export function BACDetailsSection({ app, isDraft, onEdit, itemCount = 0 }: BACDe
     setIsItemEditorOpen(true)
   }
 
-  // Calculate MOOE and CO totals
-  const calculateExpenseClassTotals = () => {
-    const totals = { MOOE: 0, CO: 0 }
-    app.bac.lineItems?.forEach((item) => {
-      if (item.allotmentClass === 'MOOE') {
-        totals.MOOE += item.totalAmount
-      } else if (item.allotmentClass === 'CO') {
-        totals.CO += item.totalAmount
-      }
-    })
-    return totals
-  }
-
   // Get unique offices
   const getIncludedOffices = () => {
     const offices = new Set<string>()
@@ -52,7 +39,6 @@ export function BACDetailsSection({ app, isDraft, onEdit, itemCount = 0 }: BACDe
     return Array.from(offices).sort()
   }
 
-  const expenseClassTotals = calculateExpenseClassTotals()
   const includedOffices = getIncludedOffices()
   const checklist = app.bac?.projectChecklist
   const checklistRequirements = checklist?.requirements ?? []
@@ -97,49 +83,6 @@ export function BACDetailsSection({ app, isDraft, onEdit, itemCount = 0 }: BACDe
           </div>
         </div>
         <CardContent className="px-6 pb-6 space-y-6">
-          {/* Total Budget & Source Funds */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-            <div className="p-5 bg-blue-50 rounded-xl border-l-4 border-blue-500 hover:shadow-lg hover:-translate-y-0.5 transition-all shadow-md">
-              <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide mb-1">
-                Total Budget
-              </p>
-              <p className="text-2xl font-bold text-blue-900">
-                ₱{(app.bac?.totalBudget ?? 0).toLocaleString('en-PH', { maximumFractionDigits: 0 })}
-              </p>
-            </div>
-            <div className="p-5 bg-purple-50 rounded-xl border-l-4 border-purple-500 hover:shadow-lg hover:-translate-y-0.5 transition-all shadow-md">
-              <p className="text-xs font-semibold text-purple-700 uppercase tracking-wide mb-1">
-                Source Funds
-              </p>
-              <p className="text-lg font-semibold text-purple-900">
-                {(app.bac?.sourceFunds ?? []).join(', ')}
-              </p>
-            </div>
-          </div>
-
-          {/* Expense Class Summary (MOOE & CO) */}
-          {app.bac?.lineItems && app.bac?.lineItems?.length > 0 && (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
-              <div className="p-5 bg-orange-50 rounded-xl border-l-4 border-orange-500 hover:shadow-lg hover:-translate-y-0.5 transition-all shadow-md">
-                <p className="text-xs font-semibold text-orange-700 uppercase tracking-wide mb-1">
-                  MOOE Total
-                </p>
-                <p className="text-2xl font-bold text-orange-900">
-                  ₱{expenseClassTotals.MOOE.toLocaleString('en-PH', { maximumFractionDigits: 0 })}
-                </p>
-                <p className="text-xs text-orange-600 mt-1">Maintenance & Other Operating Expenses</p>
-              </div>
-              <div className="p-5 bg-red-50 rounded-xl border-l-4 border-red-500 hover:shadow-lg hover:-translate-y-0.5 transition-all shadow-md">
-                <p className="text-xs font-semibold text-red-700 uppercase tracking-wide mb-1">
-                  CO Total
-                </p>
-                <p className="text-2xl font-bold text-red-900">
-                  ₱{expenseClassTotals.CO.toLocaleString('en-PH', { maximumFractionDigits: 0 })}
-                </p>
-                <p className="text-xs text-red-600 mt-1">Capital Outlay</p>
-              </div>
-            </div>
-          )}
 
           {/* Included Offices */}
           {includedOffices.length > 0 && (

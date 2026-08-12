@@ -35,6 +35,7 @@ import {
   CreateSupplementalAPPDialog,
   AddAPPItemDialog,
   CreateUpdatedAPPDialog,
+  CreateFinalAPPDialog,
 } from '@/features/planning/app-consolidation/dialogs'
 import { getAPPDetailRequest } from '@/features/planning/app-consolidation/handlers'
 import { changeAPPStatusRequest } from '@/features/planning/app-consolidation/handlers/changeAPPStatusRequest'
@@ -54,6 +55,7 @@ export function APPDetailsPage() {
   const [appExportOpen, setAppExportOpen] = useAtom(appExportDialogOpenAtom)
   const [createSupplementalOpen, setCreateSupplementalOpen] = useAtom(createSupplementalAPPDialogOpenAtom)
   const [createUpdatedOpen, setCreateUpdatedOpen] = useState(false)
+  const [createFinalOpen, setCreateFinalOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('overview')
 
   // Fetch APP detail from API
@@ -197,9 +199,7 @@ export function APPDetailsPage() {
   }
 
   const handleMarkAsFinal = () => {
-    // Follow-up: this should navigate to a "Create Final APP" flow.
-    // For now we surface a clear message so the user knows the action is coming.
-    toast.info('Create Final APP flow is being implemented. See the lifecycle follow-up.')
+    setCreateFinalOpen(true)
   }
 
   return (
@@ -327,7 +327,7 @@ export function APPDetailsPage() {
         <TabsContent value="aggregations" className="space-y-4 pointer-events-auto">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-lg">Aggregated Items</CardTitle>
+              <CardTitle className="text-lg">Aggregation Summary</CardTitle>
               {canEdit && itemCount > 0 && (
                 <Button
                   size="sm"
@@ -460,6 +460,11 @@ export function APPDetailsPage() {
       <CreateUpdatedAPPDialog
         open={createUpdatedOpen}
         onOpenChange={setCreateUpdatedOpen}
+      />
+      <CreateFinalAPPDialog
+        open={createFinalOpen}
+        onOpenChange={setCreateFinalOpen}
+        indicativeApp={app}
       />
       <AddAPPItemDialog />
     </div>
