@@ -63,23 +63,28 @@ export default function Toolbar<TData = unknown>({
     table.getColumn('projectTitle')?.setFilterValue(currentSearch || '')
   }, [currentSearch, table])
 
+  const totalRowsCount = table.getPreFilteredRowModel().rows.length
+  const showSearch = totalRowsCount > 5
+
   return (
     <>
-      <div className="flex flex-row space-x-2">
-        <Input
-          placeholder="Search Objective ..."
-          value={currentSearch || ''}
-          onChange={(event) => updateWFPSearch(event.target.value)}
-          className="max-w-sm"
-        />
-        <Button variant="ghost" onClick={() => updateWFPSearch('')}>
-          Clear
-        </Button>
-      </div>
+      {showSearch && (
+        <div className="flex flex-row space-x-2">
+          <Input
+            placeholder="Search Objective ..."
+            value={currentSearch || ''}
+            onChange={(event) => updateWFPSearch(event.target.value)}
+            className="max-w-sm"
+          />
+          <Button variant="ghost" onClick={() => updateWFPSearch('')}>
+            Clear
+          </Button>
+        </div>
+      )}
 
       <div className="grow flex items-center justify-between gap-1">
         <div className="flex items-center gap-1">
-          {showColumnVisibility && (
+          {showColumnVisibility && showSearch && (
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button variant="outline">
@@ -110,7 +115,7 @@ export default function Toolbar<TData = unknown>({
           )}
         </div>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-2 ml-auto">
           {selectedRowsCount > 0 && actions.includes('delete') && !readonly && (
             <PermissionCheck action="delete" actions={actions}>
               <Button
@@ -124,17 +129,17 @@ export default function Toolbar<TData = unknown>({
               </Button>
             </PermissionCheck>
           )}
-          {!readonly &&  (
+          {!readonly && (
             <PermissionCheck action="write" actions={actions}>
               <Button
-                className="bg-[#10b981] hover:bg-[#059669] text-white"
+                className="bg-emerald-600 hover:bg-emerald-700 text-white font-semibold text-xs shadow-2xs h-8 px-3"
                 onClick={() =>
                   setCreateDialog({ isOpen: true, showUnsavedWarning: false })
                 }
-                disabled={!remainingWeight || remainingWeight <= 0}
+                disabled={remainingWeight !== undefined && remainingWeight <= 0}
               >
-                <Plus className="mr-2 h-4 w-4" />
-                Create Objective
+                <Plus className="mr-1.5 h-3.5 w-3.5" />
+                Add Objective
               </Button>
             </PermissionCheck>
           )}

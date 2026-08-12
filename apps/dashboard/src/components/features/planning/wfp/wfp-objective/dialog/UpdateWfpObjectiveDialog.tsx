@@ -75,7 +75,7 @@ export default function UpdateWFPObjectiveDialog() {
       {
         loading: 'Updating WFP Objective...',
         success: 'WFP Objective updated successfully!',
-        error: 'Failed to update WFP Objective.',
+        error: (err: any) => err?.response?.data?.message || 'Failed to update WFP Objective.',
       },
     )
   }
@@ -115,8 +115,8 @@ export default function UpdateWFPObjectiveDialog() {
       <ResponsiveDialog
         open={dialogState.isOpen}
         onOpenChange={handleDialogOpenChange}
-        title="Update WFP"
-        description="Modify the details of the Work and Financial Plan."
+        title="Update WFP Objective"
+        description="Modify the details of the WFP Objective."
       >
         {isLoading ? (
           <div className="flex h-40 items-center justify-center">

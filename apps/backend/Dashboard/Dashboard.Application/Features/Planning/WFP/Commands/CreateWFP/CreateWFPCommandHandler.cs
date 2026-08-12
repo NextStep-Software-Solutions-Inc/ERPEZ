@@ -93,7 +93,11 @@ public class CreateWFPCommandHandler(IUnitOfWork unitOfWork, ICurrentUserService
                     unitOfWork.ObjectRepository.Query(o => !o.IsDeleted), cancellationToken);
                 var defaultObject = allObjects.FirstOrDefault();
 
-                foreach (var opcrItem in sourceOpcr.OPCRItems)
+                var opcrItemList = sourceOpcr.OPCRItems.ToList();
+                var totalOpcrItems = opcrItemList.Count;
+                decimal defaultObjectiveWeight = totalOpcrItems > 0 ? Math.Round(100m / totalOpcrItems, 2) : 0m;
+
+                foreach (var opcrItem in opcrItemList)
                 {
                     var baseName = opcrItem.KPIAssignment?.FYActiveKPI?.MasterKPI?.Name
                         ?? opcrItem.KPIAssignment?.FYActiveKPI?.MFOPAP?.Name
@@ -112,7 +116,7 @@ public class CreateWFPCommandHandler(IUnitOfWork unitOfWork, ICurrentUserService
                     {
                         WFPId = wfp.Id,
                         Description = objectiveName,
-                        Weight = 0m,
+                        Weight = defaultObjectiveWeight,
                         CreatedAt = now,
                         CreatedBy = currentUserId,
                     };
@@ -126,8 +130,11 @@ public class CreateWFPCommandHandler(IUnitOfWork unitOfWork, ICurrentUserService
                     var q3Val = opcrItem.Q3Target > 0 ? opcrItem.Q3Target : (opcrItem.KPIAssignment?.AssignedTargetQ3 ?? 25m);
                     var q4Val = opcrItem.Q4Target > 0 ? opcrItem.Q4Target : (opcrItem.KPIAssignment?.AssignedTargetQ4 ?? 25m);
 
-                    if (opcrItem.OPCRActivities != null)
+                    if (opcrItem.OPCRActivities != null && opcrItem.OPCRActivities.Count > 0)
                     {
+                        var activitiesCount = opcrItem.OPCRActivities.Count;
+                        decimal defaultActivityWeight = activitiesCount > 0 ? Math.Round(defaultObjectiveWeight / activitiesCount, 2) : 0m;
+
                         foreach (var activity in opcrItem.OPCRActivities)
                         {
                             // Verify OPCRActivity exists in DB to prevent foreign key violation
@@ -141,7 +148,7 @@ public class CreateWFPCommandHandler(IUnitOfWork unitOfWork, ICurrentUserService
                                 OPCRActivityId = opcrActivityExists ? activity.Id : null,
                                 ActivityName = string.IsNullOrWhiteSpace(activity.Name) ? "OPCR Activity" : activity.Name,
                                 Indicator = string.IsNullOrWhiteSpace(activity.Description) ? activity.Name : activity.Description,
-                                Weight = 0m,
+                                Weight = defaultActivityWeight,
                                 CreatedAt = now,
                                 CreatedBy = currentUserId,
                             };

@@ -39,6 +39,10 @@ function WFPObjectiveDetailPage({ wfpObjectiveId }: { wfpObjectiveId: string }) 
   }
 
   const activities = activitiesResponse?.data || []
+  const totalActivitiesWeight = activities.length > 0
+    ? activities.reduce((sum: number, act: any) => sum + (Number(act.weight) || 0), 0)
+    : (wfpObjectiveData.data.weight || 0)
+
   return (
     <PageContainer
       title={toTitleCase(wfpObjectiveData.data.description) || 'WFP Objective Details'}
@@ -72,11 +76,11 @@ function WFPObjectiveDetailPage({ wfpObjectiveId }: { wfpObjectiveId: string }) 
                     <Percent className="h-3.5 w-3.5" /> Weight Allocation
                   </span>
                   <div className="w-full bg-blue-100/50 rounded-full h-2 mt-2 overflow-hidden">
-                    <div className="bg-blue-600 h-full rounded-full" style={{ width: `${wfpObjectiveData.data.weight}%` }}></div>
+                    <div className="bg-blue-600 h-full rounded-full" style={{ width: `${Math.min(100, totalActivitiesWeight)}%` }}></div>
                   </div>
                 </div>
                 <div className="bg-blue-600 text-white px-3.5 py-2 rounded-xl text-lg font-extrabold shadow-sm">
-                  {wfpObjectiveData.data.weight}%
+                  {totalActivitiesWeight}%
                 </div>
               </CardContent>
             </Card>

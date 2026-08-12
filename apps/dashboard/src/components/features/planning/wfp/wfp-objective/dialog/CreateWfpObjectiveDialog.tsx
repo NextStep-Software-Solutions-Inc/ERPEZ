@@ -67,7 +67,7 @@ export default function CreateWFPObjectiveDialog({ onCreated, wfpId, remainingWe
       {
         loading: 'Creating WFP Objectives & Activities...',
         success: 'WFP Objectives & Activities created successfully!',
-        error: 'Failed to create WFP Objectives.',
+        error: (err: any) => err?.response?.data?.message || 'Failed to create WFP Objectives.',
       },
     )
   }
