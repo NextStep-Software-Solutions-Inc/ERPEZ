@@ -97,12 +97,12 @@ export function useItemValidationStatus(
  */
 export function getRowCompletionClasses(status: ItemValidationStatus): string {
   if (status.isComplete) {
-    return 'bg-emerald-50/30 border-l-4 border-l-emerald-500 hover:bg-emerald-50/50'
+    return 'border-l-4 border-l-emerald-500'
   }
   if (status.isDetailsComplete) {
-    return 'bg-amber-50/20 border-l-4 border-l-amber-500 hover:bg-amber-50/30'
+    return 'border-l-4 border-l-amber-500'
   }
-  return 'bg-red-50/30 border-l-4 border-l-red-500 hover:bg-red-50/50'
+  return 'border-l-4 border-l-red-500'
 }
 
 /**

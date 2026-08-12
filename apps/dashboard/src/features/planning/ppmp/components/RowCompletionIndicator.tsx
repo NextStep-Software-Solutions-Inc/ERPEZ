@@ -1,86 +1,108 @@
 /**
  * RowCompletionIndicator
- * Displays completion status badge and provides tooltip with missing fields
+ * Compact icon-only badge showing completion status.
+ * Three states:
+ *   ✓ Fully complete       → CheckCircle2 (green)
+ *   ⚠ Details done, no allocations → AlertTriangle (amber)
+ *   ✗ Details incomplete   → XCircle (red)
+ * Tooltip on hover shows concise breakdown of missing fields/allocations.
  */
 
-import { Badge } from '@/components/ui/badge'
 import {
   Tooltip,
   TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { CheckCircle2, AlertCircle } from 'lucide-react'
+import { CheckCircle2, AlertTriangle, XCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { ItemValidationStatus } from '../hooks/useItemValidationStatus'
-import {
-  getCompletionBadgeColor,
-  getCompletionBadgeVariant,
-  getCompletionBadgeLabel,
-} from '../hooks/useItemValidationStatus'
 
 interface RowCompletionIndicatorProps {
   status: ItemValidationStatus
-  showLabel?: boolean
   className?: string
 }
 
 export function RowCompletionIndicator({
   status,
-  showLabel = true,
   className,
 }: RowCompletionIndicatorProps) {
-  const color = getCompletionBadgeColor(status)
-  const variant = getCompletionBadgeVariant()
-  const label = getCompletionBadgeLabel(status)
-
-  const content = (
-    <Badge
-      color={color}
-      variant={variant}
-      className={cn('gap-1 text-xs font-medium transition-all', className)}
-    >
-      {status.isComplete ? (
-        <CheckCircle2 className="h-3 w-3" />
-      ) : (
-        <AlertCircle className="h-3 w-3" />
-      )}
-      {showLabel && <span>{label}</span>}
-    </Badge>
+  const icon = status.isComplete ? (
+    <CheckCircle2
+      className={cn('h-4 w-4 text-emerald-500', className)}
+    />
+  ) : status.isDetailsComplete ? (
+    <AlertTriangle
+      className={cn('h-4 w-4 text-amber-500', className)}
+    />
+  ) : (
+    <XCircle
+      className={cn('h-4 w-4 text-red-500', className)}
+    />
   )
 
-  // If complete, no tooltip needed
+  // Fully complete — no tooltip needed
   if (status.isComplete) {
-    return content
+    return (
+      <span className="inline-flex items-center" aria-label="Complete">
+        {icon}
+      </span>
+    )
   }
 
-  // Show tooltip with missing fields
+  const hasDetailsMissing = status.missingFields.length > 0
+  const allocationsMissing = !status.hasAllocations
+
   return (
-    <TooltipProvider delayDuration={200}>
+    <TooltipProvider delayDuration={150}>
       <Tooltip>
-        <TooltipTrigger asChild>{content}</TooltipTrigger>
-        <TooltipContent side="top" className="max-w-xs">
-          <div className="space-y-1">
-            <p className="font-semibold text-sm">
-              {status.isDetailsComplete ? 'Missing Requirements:' : 'Missing Fields:'}
-            </p>
-            <ul className="text-xs space-y-0.5">
-              {status.missingFields.map((field) => (
-                <li key={field} className="flex items-center gap-1">
-                  <span className="text-red-400">•</span>
-                  {field}
+        <TooltipTrigger asChild>
+          <span
+            className="inline-flex items-center cursor-default"
+            aria-label={
+              status.isDetailsComplete
+                ? 'Allocations required'
+                : `${status.completionPercentage}% complete`
+            }
+          >
+            {icon}
+          </span>
+        </TooltipTrigger>
+        <TooltipContent side="top" className="max-w-[220px] p-2.5">
+          <div className="space-y-1.5">
+            {hasDetailsMissing && (
+              <div>
+                <p className="text-[11px] font-bold text-default-700 uppercase tracking-wide mb-1">
+                  Missing Fields
+                </p>
+                <ul className="space-y-0.5">
+                  {status.missingFields.map((field) => (
+                    <li key={field} className="flex items-center gap-1.5 text-[11px]">
+                      <span className="h-1 w-1 rounded-full bg-red-400 shrink-0" />
+                      <span className="text-default-600">{field}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {allocationsMissing && (
+              <div>
+                {hasDetailsMissing && (
+                  <div className="border-t border-default-200 my-1" />
+                )}
+                <p className="text-[11px] font-bold text-default-700 uppercase tracking-wide mb-1">
+                  Missing
+                </p>
+                <li className="flex items-center gap-1.5 text-[11px] list-none">
+                  <span className="h-1 w-1 rounded-full bg-amber-500 shrink-0" />
+                  <span className="text-amber-600 font-medium">Monthly Allocations</span>
                 </li>
-              ))}
-              {!status.hasAllocations && (
-                <li className="flex items-center gap-1">
-                  <span className="text-amber-500 font-bold">•</span>
-                  <span className="text-amber-500">Monthly Allocations</span>
-                </li>
-              )}
-            </ul>
+              </div>
+            )}
           </div>
         </TooltipContent>
       </Tooltip>
     </TooltipProvider>
   )
 }
+

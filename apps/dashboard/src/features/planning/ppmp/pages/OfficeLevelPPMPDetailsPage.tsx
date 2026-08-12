@@ -1308,7 +1308,6 @@ function ItemRow({
           <div className="flex items-center justify-end gap-2">
             <RowCompletionIndicator
               status={validationStatus}
-              showLabel={true}
             />
             <div className="flex items-center gap-1.5">
               {onEdit && (
