@@ -102,10 +102,10 @@ export default function CreateWFPForm({
     enabled: opcrModeSelected,
   })
 
-  // 3. Fetch fund sources
+  // 3. Fetch fund sources (pageSize 1000 to load all fund sources)
   const { data: fundSourcesResponse, isLoading: fundSourcesLoading } = useFundSources({
     pathParams: {},
-    queryParams: {},
+    queryParams: { pageSize: 1000 },
   })
 
   const offices = officesResponse?.data || []
@@ -171,11 +171,15 @@ export default function CreateWFPForm({
     })
   }, [rawOpcrs, selectedOfficeId])
 
-  // Filter Fund Sources for External Mode (fundCluster focus)
-  const externalFundSources = useMemo(() => {
-    return fundSources.filter((fs: any) => {
-      const typeStr = (fs.type || fs.category || fs.code || '').toLowerCase()
-      return typeStr.includes('cluster') || typeStr.includes('external') || true
+  // Map Fund Sources to options format for searchable Combobox
+  const fundSourceOptions = useMemo(() => {
+    return fundSources.map((fs: any) => {
+      const codeStr = fs.code ? ` (${fs.code})` : ''
+      return {
+        value: fs.id,
+        label: `${fs.name}${codeStr}`,
+        raw: fs,
+      }
     })
   }, [fundSources])
 
@@ -325,36 +329,27 @@ export default function CreateWFPForm({
         />
       )}
 
-      {/* Fund Source (Required Manual Select) */}
+      {/* Fund Source (Required Searchable Combobox) */}
       <form.Field
         name="fundSourceId"
         children={(field) => (
-          <div className="grid gap-1.5 w-full">
+          <div className="grid gap-1.5 w-full min-w-0">
             <Label htmlFor={field.name} className="text-slate-800 font-bold text-xs">
               Fund Source <span className="text-rose-500">*</span>
             </Label>
-            <select
-              id={field.name}
+            <Combobox
+              options={fundSourceOptions}
               value={field.state.value || ''}
-              onBlur={field.handleBlur}
-              onChange={(e) => {
-                field.handleChange(e.target.value)
-                updateFormData('fundSourceId', e.target.value)
+              onValueChange={(val) => {
+                field.handleChange(val)
+                updateFormData('fundSourceId', val)
               }}
+              placeholder={fundSourcesLoading ? 'Loading fund sources...' : '-- Search or select Fund Source --'}
+              searchPlaceholder="Search fund source title or code..."
+              emptyMessage="No Fund Source found matching your search."
               disabled={fundSourcesLoading}
-              className={`w-full rounded-md border px-3 py-2 text-xs bg-white ${
-                field.state.meta.errors.length > 0 ? 'border-rose-500' : 'border-slate-300'
-              } ${fundSourcesLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-            >
-              <option value="">
-                {fundSourcesLoading ? 'Loading fund sources...' : '-- Select Fund Source --'}
-              </option>
-              {fundSources.map((fs: any) => (
-                <option key={fs.id} value={fs.id}>
-                  {fs.name} ({fs.code || 'Fund Source'})
-                </option>
-              ))}
-            </select>
+              className="w-full text-xs"
+            />
             {field.state.meta.errors.length > 0 && (
               <p className="text-[11px] text-rose-500">{String(field.state.meta.errors[0])}</p>
             )}
