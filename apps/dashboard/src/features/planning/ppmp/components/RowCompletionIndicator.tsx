@@ -28,17 +28,11 @@ export function RowCompletionIndicator({
   className,
 }: RowCompletionIndicatorProps) {
   const icon = status.isComplete ? (
-    <CheckCircle2
-      className={cn('h-4 w-4 text-emerald-500', className)}
-    />
+    <CheckCircle2 className={cn('h-4 w-4 text-emerald-500', className)} />
   ) : status.isDetailsComplete ? (
-    <AlertTriangle
-      className={cn('h-4 w-4 text-amber-500', className)}
-    />
+    <AlertTriangle className={cn('h-4 w-4 text-amber-500', className)} />
   ) : (
-    <XCircle
-      className={cn('h-4 w-4 text-red-500', className)}
-    />
+    <XCircle className={cn('h-4 w-4 text-red-500', className)} />
   )
 
   // Fully complete — no tooltip needed
@@ -68,7 +62,7 @@ export function RowCompletionIndicator({
             {icon}
           </span>
         </TooltipTrigger>
-        <TooltipContent side="top" className="max-w-[220px] p-2.5">
+        <TooltipContent side="top" className="max-w-55 p-2.5">
           <div className="space-y-1.5">
             {hasDetailsMissing && (
               <div>
@@ -77,7 +71,10 @@ export function RowCompletionIndicator({
                 </p>
                 <ul className="space-y-0.5">
                   {status.missingFields.map((field) => (
-                    <li key={field} className="flex items-center gap-1.5 text-[11px]">
+                    <li
+                      key={field}
+                      className="flex items-center gap-1.5 text-[11px]"
+                    >
                       <span className="h-1 w-1 rounded-full bg-red-400 shrink-0" />
                       <span className="text-default-600">{field}</span>
                     </li>
@@ -95,7 +92,9 @@ export function RowCompletionIndicator({
                 </p>
                 <li className="flex items-center gap-1.5 text-[11px] list-none">
                   <span className="h-1 w-1 rounded-full bg-amber-500 shrink-0" />
-                  <span className="text-amber-600 font-medium">Monthly Allocations</span>
+                  <span className="text-amber-600 font-medium">
+                    Monthly Allocations
+                  </span>
                 </li>
               </div>
             )}
@@ -105,4 +104,3 @@ export function RowCompletionIndicator({
     </TooltipProvider>
   )
 }
-
