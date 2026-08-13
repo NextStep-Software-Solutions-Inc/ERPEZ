@@ -29,16 +29,79 @@ public class UpdateBACLineItemsCommandHandler(IUnitOfWork unitOfWork)
             var appItem = appItems.FirstOrDefault(a => a.Id == entry.BACItemCode)
                 ?? throw new NotFoundException($"APP line item '{entry.BACItemCode}' not found in this APP.");
 
+            // Validation rules
+            if (entry.EstimatedBudgetOverride.HasValue && entry.EstimatedBudgetOverride < 0)
+            {
+                throw new ValidationException("Estimated Budget / ABC cannot be negative.");
+            }
+
+            if (entry.StartOfProcurementOverride.HasValue && entry.EndOfProcurementOverride.HasValue &&
+                entry.EndOfProcurementOverride < entry.StartOfProcurementOverride)
+            {
+                throw new ValidationException("End of Procurement cannot be earlier than Start of Procurement.");
+            }
+
+            // In an Updated APP, inherited items (IsNew == false) modified during revision are marked as IsRevised
+            if (string.Equals(app.APPType, "Updated", StringComparison.OrdinalIgnoreCase) && !appItem.IsNew)
+            {
+                var allocQty = appItem.PPMPItem?.PPMPItemAllocations.Where(a => !a.IsDeleted).Sum(a => a.Quantity) ?? 0;
+                var unitPrice = appItem.PPMPItem?.UnitPrice ?? 0;
+                var allocTotal = appItem.PPMPItem?.PPMPItemAllocations.Where(a => !a.IsDeleted).Sum(a => a.Amount) ?? 0;
+                var origBudget = allocTotal > 0 ? allocTotal : ((allocQty > 0 ? allocQty : 1) * unitPrice);
+
+                var oldEffectiveABC = appItem.EstimatedBudgetOverride ?? origBudget;
+                var newEffectiveABC = entry.EstimatedBudgetOverride ?? origBudget;
+
+                var oldEffectiveStart = appItem.StartOfProcurementOverride ?? (appItem.PPMPItem?.ProcurementStartDate.HasValue == true ? appItem.PPMPItem.ProcurementStartDate.Value.ToDateTime(TimeOnly.MinValue) : null);
+                var newEffectiveStart = entry.StartOfProcurementOverride ?? (appItem.PPMPItem?.ProcurementStartDate.HasValue == true ? appItem.PPMPItem.ProcurementStartDate.Value.ToDateTime(TimeOnly.MinValue) : null);
+
+                var oldEffectiveEnd = appItem.EndOfProcurementOverride ?? (appItem.PPMPItem?.ProcurementEndDate.HasValue == true ? appItem.PPMPItem.ProcurementEndDate.Value.ToDateTime(TimeOnly.MinValue) : null);
+                var newEffectiveEnd = entry.EndOfProcurementOverride ?? (appItem.PPMPItem?.ProcurementEndDate.HasValue == true ? appItem.PPMPItem.ProcurementEndDate.Value.ToDateTime(TimeOnly.MinValue) : null);
+
+                var modeChanged = appItem.ProcurementModeId != entry.ModeOfProcurementId;
+                var remarksChanged = appItem.Remarks != entry.Remarks;
+                var epaChanged = appItem.IsEarlyProcurementActivity != entry.EPAEligible;
+                var epaRemarksChanged = appItem.EPARemarks != entry.EPARemarks;
+                var startProcChanged = oldEffectiveStart != newEffectiveStart;
+                var endProcChanged = oldEffectiveEnd != newEffectiveEnd;
+                var budgetChanged = oldEffectiveABC != newEffectiveABC;
+                var criteriaChanged = entry.BidEvaluationCriteria != null && appItem.BidEvaluationCriteria?.ToString() != entry.BidEvaluationCriteria;
+                var outsourcedChanged = entry.IsOutsourced.HasValue && appItem.IsOutsourced != entry.IsOutsourced.Value;
+                var schedulesProvided = entry.Schedules is not null && entry.Schedules.Count > 0;
+
+                if (modeChanged || remarksChanged || epaChanged || epaRemarksChanged || startProcChanged || endProcChanged || budgetChanged || criteriaChanged || outsourcedChanged || schedulesProvided)
+                {
+                    appItem.IsRevised = true;
+                }
+            }
+
             // Update procurement strategy fields
             appItem.ProcurementModeId = entry.ModeOfProcurementId;
             appItem.Remarks = entry.Remarks;
             appItem.IsEarlyProcurementActivity = entry.EPAEligible;
+            appItem.EPARemarks = entry.EPARemarks;
+            appItem.StartOfProcurementOverride = entry.StartOfProcurementOverride;
+            appItem.EndOfProcurementOverride = entry.EndOfProcurementOverride;
+            appItem.EstimatedBudgetOverride = entry.EstimatedBudgetOverride;
+            if (entry.IsOutsourced.HasValue) appItem.IsOutsourced = entry.IsOutsourced.Value;
+            if (entry.BidEvaluationCriteria != null)
+            {
+                appItem.BidEvaluationCriteria = Enum.Parse<ERPEZ.Domain.Enums.BidEvaluationCriteria>(entry.BidEvaluationCriteria, true);
+            }
+            if (entry.ProcurementStrategies != null)
+            {
+                appItem.ProcurementStrategies = entry.ProcurementStrategies
+                    .Select(s => Enum.Parse<ERPEZ.Domain.Enums.ProcurementStrategy>(NormalizeProcurementStrategy(s), true))
+                    .ToList();
+            }
 
             if (entry.Schedules is null)
                 continue;
 
             // Sync APPProcurementSchedules on the tracked PPMPItem
-            var schedules = appItem.PPMPItem.APPProcurementSchedules;
+            var schedules = appItem.PPMPItem?.APPProcurementSchedules;
+            if (schedules is null)
+                continue;
 
             // Remove existing schedules not present in the new list
             var requestActivityTypeIds = entry.Schedules.Select(s => s.ProcurementActivityTypeId).ToHashSet();
@@ -82,5 +145,27 @@ public class UpdateBACLineItemsCommandHandler(IUnitOfWork unitOfWork)
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return ApiResponse<Unit>.Success(Unit.Value);
+    }
+
+    /// <summary>
+    /// Maps legacy/frontend strategy key aliases to the canonical backend ProcurementStrategy enum names.
+    /// </summary>
+    private static string NormalizeProcurementStrategy(string s)
+    {
+        if (string.IsNullOrWhiteSpace(s)) return s ?? string.Empty;
+        return s.ToUpperInvariant() switch
+        {
+            "LCA" or "LCCA" or "LCA_LCCA" => "LCA",
+            "SUBCONTRACTING" => "Subcontracting",
+            "MULTI_YEAR" or "MULTIYEAR" => "MultiYearContracting",
+            "DESIGN_BUILD" or "DESIGNBUILD" => "DesignAndBuild",
+            "PROCUREMENT_AGENT" or "PROCUREMENTAGENT" => "ProcurementAgent",
+            "FRAMEWORK_AGREEMENT" or "FRAMEWORKAGREEMENT" => "FrameworkAgreement",
+            "POOLED_PROCUREMENT" or "POOLEDPROCUREMENT" => "PooledProcurement",
+            "RENEWAL_SERVICES" or "RENEWALOFSERVICES" => "RenewalOfServices",
+            "WAREHOUSING_INVENTORY" or "WAREHOUSINGINVENTORY" => "WarehousingInventory",
+            "NA" or "NOTAPPLICABLE" => "NotApplicable",
+            _ => s // pass through; Enum.Parse will throw if invalid
+        };
     }
 }

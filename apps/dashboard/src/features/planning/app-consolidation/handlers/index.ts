@@ -1642,3 +1642,15 @@ export {
   getPPMPSummariesRequest, 
   getPPMPsByStatusRequest 
 } from './getPPMPsRequest'
+
+// ── Real API Handlers ─────────────────────────────────────────────────────────
+
+// Status mutation — replaces all mock submit/approve/reject/return handlers
+export { changeAPPStatusRequest, type ChangeAPPStatusPayload, type ChangeAPPStatusResult } from './changeAPPStatusRequest'
+
+// Analytics — fetches breakdown data from GET /apps/{id}/analytics
+export { getAPPAnalyticsRequest, type APPAnalyticsResponse, type APPAnalyticsBreakdownItem, type APPFinancialBreakdown } from './getAPPAnalyticsRequest'
+
+// Document generation — two-step POST generate + GET download blob
+export { generateAppDocument, type GenerateAppDocumentPayload, type AppDocumentFormat } from './generateAppDocumentRequest'
+

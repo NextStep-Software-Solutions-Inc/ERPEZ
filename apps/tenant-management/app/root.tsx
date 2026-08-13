@@ -10,7 +10,13 @@ import { AuthProvider } from './providers/AuthProvider'
 
 const CLERK_PUBLISHABLE_KEY = import.meta.env.VITE_CLERK_PUBLISHABLE_KEY as string
 
-export const loader = (args: Route.LoaderArgs) => rootAuthLoader(args)
+export const loader = async (args: Route.LoaderArgs) => {
+  try {
+    return await rootAuthLoader(args)
+  } catch {
+    return {}
+  }
+}
 
 const { Provider: QueryClientProvider } = erpSharedLib;
 export const links: Route.LinksFunction = () => [

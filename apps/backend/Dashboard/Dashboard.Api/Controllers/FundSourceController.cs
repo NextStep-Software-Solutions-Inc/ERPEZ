@@ -1,5 +1,6 @@
 using ERPEZ.Application.Features.Planning.FundSource.Commands.CreateFundSource;
 using ERPEZ.Application.Features.Planning.FundSource.Commands.DeleteFundSource;
+using ERPEZ.Application.Features.Planning.FundSource.Commands.ImportFundSourcesFromExcel;
 using ERPEZ.Application.Features.Planning.FundSource.Commands.UpdateFundSource;
 using ERPEZ.Application.Features.Planning.FundSource.Dtos;
 using ERPEZ.Application.Features.Planning.FundSource.Queries.FundSources;
@@ -68,6 +69,32 @@ namespace ERPEZ.Api.Controllers
             var command = new DeleteFundSourceCommand(id);
             var response = await mediator.Send(command);
 
+            return response.Succeeded ? Ok(response) : BadRequest(response);
+        }
+
+        [HttpPost("organization/{organizationId}/bulk")]
+        [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> BulkAssignOrganizationFundSource(
+            Guid organizationId, 
+            [FromBody] List<Guid> fundSourceIds)
+        {
+            var command = new ERPEZ.Application.Features.Planning.FundSource.Commands.BulkAssignOrganizationFundSource.BulkAssignOrganizationFundSourceCommand(
+                organizationId, 
+                fundSourceIds);
+            var response = await mediator.Send(command);
+            return response.Succeeded ? Ok(response) : BadRequest(response);
+        }
+
+        [HttpPost("import-excel")]
+        [Consumes("multipart/form-data")]
+        [ProducesResponseType(typeof(ApiResponse<int>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status400BadRequest)]
+        public async Task<IActionResult> ImportFundSourcesFromExcel(
+            IFormFile file,
+            CancellationToken cancellationToken)
+        {
+            var response = await mediator.Send(new ImportFundSourcesFromExcelCommand { File = file }, cancellationToken);
             return response.Succeeded ? Ok(response) : BadRequest(response);
         }
     }

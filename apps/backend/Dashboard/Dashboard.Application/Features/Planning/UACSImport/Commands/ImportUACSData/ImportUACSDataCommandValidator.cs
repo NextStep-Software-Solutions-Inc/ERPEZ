@@ -8,13 +8,13 @@ namespace ERPEZ.Application.Features.Planning.UACSImport.Commands.ImportUACSData
 public class ImportUACSDataCommandValidator : AbstractValidator<ImportUACSDataCommand>
 {
     private const long maxFileSizeBytes = 10 * 1024 * 1024;
-    private readonly string[] allowedExtensions = [".csv"];
+    private readonly string[] allowedExtensions = [".csv", ".xlsx", ".xls"];
 
     public ImportUACSDataCommandValidator()
     {
         RuleFor(x => x.File)
             .NotNull()
-            .WithMessage("CSV file is required.");
+            .WithMessage("File is required.");
 
         RuleFor(x => x.File.Length)
             .LessThanOrEqualTo(maxFileSizeBytes)
@@ -23,12 +23,14 @@ public class ImportUACSDataCommandValidator : AbstractValidator<ImportUACSDataCo
 
         RuleFor(x => x.File.FileName)
             .Must(fileName => allowedExtensions.Any(ext => fileName.EndsWith(ext, StringComparison.OrdinalIgnoreCase)))
-            .WithMessage("Only CSV files are allowed.")
+            .WithMessage("Only CSV (.csv) and Excel (.xlsx, .xls) files are allowed.")
             .When(x => x.File != null && !string.IsNullOrEmpty(x.File.FileName));
 
         RuleFor(x => x.SegmentType)
-            .IsInEnum()
-            .WithMessage("Invalid segment type.");
+            .NotEmpty()
+            .WithMessage("SegmentType is required.")
+            .Must(val => Enum.TryParse<ERPEZ.Domain.Enums.UACSSegmentTypeEnum>(val, true, out _))
+            .WithMessage("Invalid SegmentType. Allowed values: Object, FundSource, Organization, Location, MFOPAP.");
 
         RuleFor(x => x.ImportedBy)
             .NotEmpty()

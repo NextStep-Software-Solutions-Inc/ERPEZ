@@ -29,6 +29,9 @@ const config = defineConfig({
       },
     }),
   ],
+  ssr: {
+    external: ['axios', 'proxy-from-env'],
+  },
   build: {
     rollupOptions: {
       external: ['vaul'],

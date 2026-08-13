@@ -1,6 +1,6 @@
 import { createQueryHookFromTemplate } from 'erpez-shared-lib'
 import { getClustersRequest } from '../handlers/getClustersRequest'
-import { Checkbox } from '@/components/ui/checkbox'
+import { getOfficesRequest } from '../handlers/getOfficesRequest'
 import {
   Select,
   SelectContent,
@@ -8,73 +8,98 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Label } from '@/components/ui/label'
 
 interface Props {
   form: any
 }
 
 const useClusters = createQueryHookFromTemplate(getClustersRequest)
+const useOffices = createQueryHookFromTemplate(getOfficesRequest)
 
 export default function ClusterAndDeliveryUnitSection({ form }: Props) {
-  const { data: clustersData, isLoading } = useClusters({
+  const { data: clustersData, isLoading: clustersLoading } = useClusters({
+    pathParams: {},
+    queryParams: {},
+  })
+  const { data: officesData, isLoading: officesLoading } = useOffices({
     pathParams: {},
     queryParams: {},
   })
 
   const clusters = clustersData?.data ?? []
+  const offices = officesData?.data ?? []
 
   return (
-    <div className="space-y-6 md:grid md:grid-cols-2 md:gap-1 md:space-y-0">
+    <div className="space-y-6">
       {/* Organizational Cluster */}
       <form.Field
         name="clusterId"
         children={(field: any) => (
-          <div className="w-full">
-            <label className="font-medium">Organizational Cluster</label>
+          <div className="grid gap-2">
+            <Label>
+              Organizational Cluster <span className="text-muted-foreground text-xs font-normal">(optional)</span>
+            </Label>
             <Select
               value={
-                typeof field.state.value === 'string' &&
-                field.state.value !== ''
+                typeof field.state.value === 'string' && field.state.value !== ''
                   ? field.state.value
                   : ''
               }
               onValueChange={(v) => field.handleChange(v === '' ? null : v)}
-              disabled={isLoading}
+              disabled={clustersLoading}
             >
               <SelectTrigger>
                 <SelectValue
-                  placeholder={
-                    isLoading ? 'Loading...' : 'Select Organizational Cluster'
-                  }
+                  placeholder={clustersLoading ? 'Loading...' : 'Select Organizational Cluster (optional)'}
                 />
               </SelectTrigger>
               <SelectContent>
-                {clusters.map((c) => (
+                {clusters.map((c: any) => (
                   <SelectItem key={c.id} value={c.id}>
                     {c.name}
                   </SelectItem>
                 ))}
               </SelectContent>
             </Select>
-            {!isLoading && clusters.length === 0 && (
+            {!clustersLoading && clusters.length === 0 && (
               <p className="text-xs text-muted-foreground">No clusters found</p>
             )}
           </div>
         )}
       />
 
-      {/* Delivery Unit */}
+      {/* Parent Office */}
       <form.Field
-        name="isDeliveryUnit"
+        name="parentId"
         children={(field: any) => (
-          <div className="flex items-center gap-2 w-full">
-            <Checkbox
-              checked={!!field.state.value}
-              onCheckedChange={(v) => field.handleChange(Boolean(v))}
-            />
-            <label className="font-medium">
-              Delivery Unit <span className="text-destructive">*</span>
-            </label>
+          <div className="grid gap-2">
+            <Label>Parent Office</Label>
+            <Select
+              value={
+                typeof field.state.value === 'string' && field.state.value !== ''
+                  ? field.state.value
+                  : ''
+              }
+              onValueChange={(v) => field.handleChange(v === '' ? null : v)}
+              disabled={officesLoading}
+            >
+              <SelectTrigger>
+                <SelectValue
+                  placeholder={officesLoading ? 'Loading...' : 'Select Parent Office (optional)'}
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {offices.map((o: any) => (
+                  <SelectItem key={o.id} value={o.id}>
+                    {o.name} ({o.code})
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {!officesLoading && offices.length === 0 && (
+              <p className="text-xs text-muted-foreground">No offices found — this will be a root office</p>
+            )}
           </div>
         )}
       />

@@ -7,16 +7,11 @@ import type { UserRole } from '../types'
 import { AppActions } from './AppActions'
 
 const statusColors: Record<string, string> = {
-  'draft': 'bg-gray-100 text-gray-800',
-  'Draft': 'bg-gray-100 text-gray-800',
-  'pending-review': 'bg-yellow-100 text-yellow-800',
-  'For Review': 'bg-yellow-100 text-yellow-800',
-  'approved': 'bg-green-100 text-green-800',
-  'Approved': 'bg-green-100 text-green-800',
-  'published': 'bg-blue-100 text-blue-800',
-  'Published': 'bg-blue-100 text-blue-800',
-  'Submitted': 'bg-yellow-100 text-yellow-800',
-  'Locked': 'bg-purple-100 text-purple-800',
+  Draft:     'bg-gray-100 text-gray-800',
+  Submitted: 'bg-amber-100 text-amber-800',
+  Approved:  'bg-green-100 text-green-800',
+  Locked:    'bg-purple-100 text-purple-800',
+  Returned:  'bg-red-100 text-red-800',
 }
 
 const columnHelper = createColumnHelper<AppListResponse>()
@@ -69,12 +64,22 @@ export function createAppListColumns(userRole: UserRole = 'BAC_MEMBER'): ColumnD
       cell: (info) => `FY ${info.getValue()}`,
       size: 120,
     }),
-    columnHelper.accessor('officeName', {
-      header: 'Office',
-      cell: (info) => (
-        <span className="text-sm">{info.getValue()}</span>
-      ),
-      size: 150,
+    columnHelper.accessor('appType', {
+      header: 'Type',
+      cell: (info) => {
+        const t = info.getValue() || 'Indicative'
+        const typeColors: Record<string, string> = {
+          Indicative: 'bg-indigo-100 text-indigo-800',
+          Final:      'bg-emerald-100 text-emerald-800',
+          Updated:    'bg-amber-100 text-amber-800',
+        }
+        return (
+          <Badge className={`text-xs ${typeColors[t] ?? 'bg-gray-100 text-gray-700'}`}>
+            {t}
+          </Badge>
+        )
+      },
+      size: 110,
     }),
     columnHelper.accessor('status', {
       header: 'Status',

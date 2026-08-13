@@ -160,8 +160,18 @@ public class GenerateWfpDocumentCommandHandler(
 
     private static int CalculateDurationMonths(DateOnly start, DateOnly end)
     {
-        var months = (end.Year - start.Year) * 12 + end.Month - start.Month;
-        return Math.Max(months, 0);
+        if (end < start) return 0;
+        
+        int months = (end.Year - start.Year) * 12 + (end.Month - start.Month);
+        
+        // Include full month if end day reaches/exceeds (start day - 1) or is end of month
+        bool isEndOfMonth = end.Day == DateTime.DaysInMonth(end.Year, end.Month);
+        if (end.Day >= start.Day - 1 || isEndOfMonth)
+        {
+            months++;
+        }
+        
+        return Math.Max(months, 1);
     }
 
     private static string BuildAgencyName(WfpEntity wfp)

@@ -24,7 +24,22 @@ public class APP : ApprovableEntity
     public Guid FiscalYearId { get; set; }
     
     [Sieve(CanFilter = true, CanSort = true)]
-    public Guid OfficeId { get; set; }
+    public string APPType { get; set; } = "Indicative"; // Indicative, Final, Updated
+    
+    [Sieve(CanFilter = true, CanSort = true)]
+    public string Batch { get; set; } = "Batch 1";
+    
+    [Sieve(CanFilter = true, CanSort = true)]
+    public string Quarter { get; set; } = "Q1";
+    
+    [Sieve(CanFilter = true, CanSort = true)]
+    public int? VersionNumber { get; set; }
+    
+    [Sieve(CanFilter = true, CanSort = true)]
+    public DateTime? VersionDate { get; set; }
+    
+    [Sieve(CanFilter = true, CanSort = true)]
+    public Guid? SourceAPPId { get; set; }
     
     [Sieve(CanFilter = true, CanSort = true)]
     public string IsFinal { get; set; } = string.Empty;
@@ -37,9 +52,10 @@ public class APP : ApprovableEntity
     
     // Navigation properties
     public virtual FiscalYear? FiscalYear { get; set; }
-    public virtual Office? Office { get; set; }
+    public virtual APP? SourceAPP { get; set; }
     public virtual List<APPItem> APPItems { get; set; } = [];
     public virtual List<APPPPMP> APPPPMPs { get; set; } = [];
+    public virtual List<APPSignatory> APPSignatories { get; set; } = [];
     
     // Inherited from ApprovableEntity: 
     // public string Status { get; set; }

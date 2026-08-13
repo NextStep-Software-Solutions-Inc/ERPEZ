@@ -66,16 +66,38 @@ export function ExpenditureBlock({
                     <SelectValue placeholder="Select Type of Expenditure" />
                   </SelectTrigger>
                   <SelectContent>
-                    {objectsData?.data
-                      .filter((obj: Objects) => !selectedOtherExps.includes(obj.id))
-                      .map((obj: Objects) => (
+                    {(() => {
+                      const allObjects = allChildrenData?.data || objectsData?.data || []
+
+                      const expensesRoot = allObjects.find(
+                        (o: Objects) => o.code === 'CLS:Expenses' || o.name?.toLowerCase() === 'expenses'
+                      )
+
+                      const subClasses = allObjects.filter((obj: Objects) => {
+                        const isChildOfExpenses = expensesRoot
+                          ? (obj.parent?.id === expensesRoot.id || obj.parentId === expensesRoot.id)
+                          : (obj.parent?.code === 'CLS:Expenses' || obj.parent?.name?.toLowerCase() === 'expenses')
+
+                        return isChildOfExpenses && !selectedOtherExps.includes(obj.id)
+                      })
+
+                      const options = subClasses.length > 0
+                        ? subClasses
+                        : allObjects.filter((obj: Objects) => 
+                            !selectedOtherExps.includes(obj.id) && 
+                            obj.code?.startsWith('SC:')
+                          )
+
+                      if (options.length === 0) {
+                        return <span className="text-xs text-gray-500 px-3 py-2 block">No available sub-classes</span>
+                      }
+
+                      return options.map((obj: Objects) => (
                         <SelectItem key={obj.id} value={obj.id}>
                           {obj.name}
                         </SelectItem>
-                      ))}
-                    {objectsData?.data.filter((obj: Objects) => !selectedOtherExps.includes(obj.id)).length === 0 && (
-                      <span className="text-xs text-gray-500 pl-2">No available options</span>
-                    )}
+                      ))
+                    })()}
                   </SelectContent>
                 </Select>
               </div>

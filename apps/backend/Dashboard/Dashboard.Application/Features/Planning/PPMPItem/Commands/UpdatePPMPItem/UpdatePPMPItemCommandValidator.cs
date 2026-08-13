@@ -46,12 +46,13 @@ public class UpdatePPMPItemCommandValidator : AbstractValidator<UpdatePPMPItemCo
             .When(x => x.ProjectType.HasValue)
             .WithMessage("Invalid Project Type value.");
 
-        // ── Date range validations ────────────────────────────────────────────
+        // ── Date range validations (only when both dates in the rule are provided) ────────────────────────────────────────────
         RuleFor(x => x.ProcurementEndDate)
             .Must((cmd, endDate) =>
                 !endDate.HasValue ||
                 !cmd.ProcurementStartDate.HasValue ||
                 endDate.Value >= cmd.ProcurementStartDate.Value)
+            .When(x => x.ProcurementEndDate.HasValue && x.ProcurementStartDate.HasValue)
             .WithMessage("Procurement End Date must be on or after Procurement Start Date.");
 
         RuleFor(x => x.ExpectedDeliveryEnd)
@@ -59,6 +60,7 @@ public class UpdatePPMPItemCommandValidator : AbstractValidator<UpdatePPMPItemCo
                 !endDate.HasValue ||
                 !cmd.ExpectedDeliveryStart.HasValue ||
                 endDate.Value >= cmd.ExpectedDeliveryStart.Value)
+            .When(x => x.ExpectedDeliveryEnd.HasValue && x.ExpectedDeliveryStart.HasValue)
             .WithMessage("Expected Delivery End must be on or after Expected Delivery Start.");
 
         RuleFor(x => x.ExpectedDeliveryStart)
@@ -66,6 +68,7 @@ public class UpdatePPMPItemCommandValidator : AbstractValidator<UpdatePPMPItemCo
                 !deliveryStart.HasValue ||
                 !cmd.ProcurementEndDate.HasValue ||
                 deliveryStart.Value >= cmd.ProcurementEndDate.Value)
+            .When(x => x.ExpectedDeliveryStart.HasValue && x.ProcurementEndDate.HasValue)
             .WithMessage("Expected Delivery Start must be on or after Procurement End Date.");
 
         RuleFor(x => x.Remarks)

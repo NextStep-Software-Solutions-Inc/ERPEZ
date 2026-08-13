@@ -7,6 +7,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent } from '@/components/ui/card'
 import type { BACLineItem } from '../types'
 import { currentAppAtom, appListAtom } from '../atoms'
+import { useQueryClient } from '@tanstack/react-query'
 import { BACWorkspaceItemEditor } from '../components'
 import api from '@/services/api'
 
@@ -40,6 +41,7 @@ export function EditBACItemDialog({
 }: EditBACItemDialogProps) {
   const [currentApp, setCurrentApp] = useAtom(currentAppAtom)
   const [appList, setAppList] = useAtom(appListAtom)
+  const queryClient = useQueryClient()
   const [showUnsavedWarning, setShowUnsavedWarning] = useState(false)
   const [isSaving, setIsSaving] = useState(false)
   const [formData, setFormData] = useState<BACLineItem | null>(lineItem)
@@ -131,18 +133,29 @@ export function EditBACItemDialog({
             const mergedItem: BACLineItem = {
               ...lineItem,
               id: apiData.id || lineItem.id,
-              code: apiData.ppmpItemName || apiData.PPMPItem?.name || lineItem.code,
-              description: apiData.PPMPItem?.description || lineItem.description,
-              unit: apiData.PPMPItem?.unit || lineItem.unit,
+              code: apiData.papCode || apiData.ppmpItemName || lineItem.code,
+              description: apiData.PPMPItem?.description || apiData.description || lineItem.description,
+              unit: apiData.PPMPItem?.unit || apiData.unit || lineItem.unit,
               quantity: apiData.quantity || lineItem.quantity,
-              unitCost: apiData.PPMPItem?.unitPrice || apiData.unitPrice || lineItem.unitCost,
-              totalAmount: apiData.totalAmount || (apiData.quantity ? apiData.quantity * (apiData.PPMPItem?.unitPrice || 0) : lineItem.totalAmount),
+              unitCost: apiData.PPMPItem?.unitPrice || apiData.unitCost || lineItem.unitCost,
+              totalAmount: apiData.effectiveABC || apiData.totalAmount || (apiData.quantity ? apiData.quantity * (apiData.PPMPItem?.unitPrice || 0) : lineItem.totalAmount),
               modeOfProcurement: apiData.procurementModeName || apiData.ProcurementMode?.name || lineItem.modeOfProcurement,
               office: apiData.officeName || apiData.Office?.name || lineItem.office,
               fundSource: apiData.fundSourceName || apiData.FundSource?.name || lineItem.fundSource,
               remarks: apiData.remarks !== undefined ? apiData.remarks : lineItem.remarks,
               epaRemarks: apiData.epaRemarks !== undefined ? apiData.epaRemarks : lineItem.epaRemarks,
               eligibleForEPA: apiData.isEarlyProcurementActivity !== undefined ? apiData.isEarlyProcurementActivity : lineItem.eligibleForEPA,
+              startOfProcurementOverride: apiData.startOfProcurementOverride || '',
+              endOfProcurementOverride: apiData.endOfProcurementOverride || '',
+              effectiveStartOfProcurement: apiData.effectiveStartOfProcurement || '',
+              effectiveEndOfProcurement: apiData.effectiveEndOfProcurement || '',
+              isStartProcurementOverridden: apiData.isStartProcurementOverridden ?? !!apiData.startOfProcurementOverride,
+              isEndProcurementOverridden: apiData.isEndProcurementOverridden ?? !!apiData.endOfProcurementOverride,
+              isABCOverridden: apiData.isABCOverridden ?? (apiData.estimatedBudgetOverride !== null && apiData.estimatedBudgetOverride !== undefined),
+              originalPPMPBudget: apiData.originalPPMPBudget ?? apiData.totalAmount,
+              effectiveABC: apiData.effectiveABC ?? apiData.totalAmount,
+              estimatedBudgetOverride: apiData.estimatedBudgetOverride !== undefined && apiData.estimatedBudgetOverride !== null ? apiData.estimatedBudgetOverride : null,
+              isOutsourced: apiData.isOutsourced !== undefined ? apiData.isOutsourced : lineItem.isOutsourced,
               procurementStrategies: strats,
               milestones: milestones,
             }
@@ -278,12 +291,42 @@ export function EditBACItemDialog({
           }
         })
 
+        const toISODateTime = (val?: string | null): string | null => {
+          if (!val || typeof val !== 'string') return null
+          const trimmed = val.trim()
+          if (!trimmed) return null
+          if (/^\d{2}\/\d{4}$/.test(trimmed)) {
+            const [m, y] = trimmed.split('/')
+            return `${y}-${m.padStart(2, '0')}-01T00:00:00.000Z`
+          }
+          if (/^\d{4}-\d{2}$/.test(trimmed)) {
+            return `${trimmed}-01T00:00:00.000Z`
+          }
+          if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+            return `${trimmed}T00:00:00.000Z`
+          }
+          if (trimmed.includes('T')) return trimmed
+          try {
+            const d = new Date(trimmed)
+            if (!isNaN(d.getTime())) return d.toISOString()
+          } catch {
+            // ignore
+          }
+          return null
+        }
+
         return {
           bacItemCode: item.id,
           modeOfProcurementId: mopId || null,
           remarks: item.remarks || '',
           epaEligible: item.eligibleForEPA ?? false,
           epaRemarks: item.epaRemarks || '',
+          startOfProcurementOverride: toISODateTime(item.startOfProcurementOverride),
+          endOfProcurementOverride: toISODateTime(item.endOfProcurementOverride),
+          estimatedBudgetOverride: item.estimatedBudgetOverride !== undefined && item.estimatedBudgetOverride !== null ? item.estimatedBudgetOverride : null,
+          bidEvaluationCriteria: item.bidEvaluationCriteria || null,
+          procurementStrategies: item.procurementStrategies || null,
+          isOutsourced: item.isOutsourced ?? null,
           schedules: payloadSchedules,
         }
       })
@@ -303,6 +346,12 @@ export function EditBACItemDialog({
           app.id === updatedApp.id ? updatedApp : app
         )
       )
+
+      void queryClient.invalidateQueries({
+        predicate: (query) =>
+          typeof query.queryKey[0] === 'string' &&
+          (query.queryKey[0].startsWith('/apps') || query.queryKey[0].startsWith('/ppmps')),
+      })
 
       toast.success(`${formData.description} updated successfully!`)
       onOpenChange(false)
@@ -413,11 +462,7 @@ export function EditBACItemDialog({
                   <div className="space-y-4">
                     {/* Item Basic Info */}
                     <div className="grid grid-cols-2 md:grid-cols-3 gap-3">
-                      <div className="p-3 bg-white rounded-lg border border-blue-100">
-                        <p className="text-xs font-semibold text-gray-600 uppercase mb-1">Item ID</p>
-                        <p className="font-mono text-sm font-bold text-gray-900">{formData.id}</p>
-                      </div>
-                      <div className="p-3 bg-white rounded-lg border border-blue-100 md:col-span-2">
+                      <div className="p-3 bg-white rounded-lg border border-blue-100 md:col-span-3">
                         <p className="text-xs font-semibold text-gray-600 uppercase mb-1">Description</p>
                         <p className="text-sm font-semibold text-gray-900">{formData.description}</p>
                       </div>

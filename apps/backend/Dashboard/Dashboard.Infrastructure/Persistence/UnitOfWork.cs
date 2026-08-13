@@ -1,4 +1,5 @@
 using ERPEZ.Application.Common.Exceptions;
+using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Infrastructure.Persistence.Repositories;
 using Microsoft.EntityFrameworkCore;
@@ -34,6 +35,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IDeliveryUnitRepository deliveryUnitRepository;
     private readonly IOfficeRepository officeRepository;
     private readonly IOrganizationRepository organizationRepository;
+    private readonly IRepository<Domain.Entities.Planning.OrganizationFundSource> organizationFundSourceRepository;
     private readonly IFundSourceRepository fundSourceRepository;
     private readonly ILocationRepository locationRepository;
     private readonly ITransactionRepository transactionRepository;
@@ -119,6 +121,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IAPPPPMPRepository appPpmpRepository;
     private readonly IAPPItemRepository appItemRepository;
     private readonly IAPPItemScheduleRepository appItemScheduleRepository;
+    private readonly IRepository<APPSignatory> appSignatoryRepository;
     private readonly IItemRequestRepository itemRequestRepository;
     private readonly INonCSEItemRepository nonCSEItemRepository;
     private readonly IOPCRItemRatingRepository opcrItemRatingRepository;
@@ -181,6 +184,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         deliveryUnitRepository = new DeliveryUnitRepository(context, sieveProcessor);
         officeRepository = new OfficeRepository(context, sieveProcessor);
         organizationRepository = new OrganizationRepository(context, sieveProcessor);
+        organizationFundSourceRepository = new Repository<Domain.Entities.Planning.OrganizationFundSource>(context, sieveProcessor);
         fundSourceRepository = new FundSourceRepository(context, sieveProcessor);
         locationRepository = new LocationRepository(context, sieveProcessor);
         transactionRepository = new TransactionRepository(context, sieveProcessor);
@@ -266,6 +270,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         appPpmpRepository = new APPPPMPRepository(context, sieveProcessor);
         appItemRepository = new APPItemRepository(context, sieveProcessor);
         appItemScheduleRepository = new APPItemScheduleRepository(context, sieveProcessor);
+        appSignatoryRepository = new Repository<APPSignatory>(context, sieveProcessor);
         itemRequestRepository = new ItemRequestRepository(context, sieveProcessor);
         nonCSEItemRepository = new NonCSEItemRepository(context, sieveProcessor);
         opcrItemRatingRepository = new OPCRItemRatingRepository(context, sieveProcessor);
@@ -322,6 +327,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IDeliveryUnitRepository DeliveryUnitRepository => deliveryUnitRepository;
     public IOfficeRepository OfficeRepository => officeRepository;
     public IOrganizationRepository OrganizationRepository => organizationRepository;
+    public IRepository<Domain.Entities.Planning.OrganizationFundSource> OrganizationFundSourceRepository => organizationFundSourceRepository;
     public IFundSourceRepository FundSourceRepository => fundSourceRepository;
     public ILocationRepository LocationRepository => locationRepository;
     public ITransactionRepository TransactionRepository => transactionRepository;
@@ -407,6 +413,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IAPPPPMPRepository APPPPMPRepository => appPpmpRepository;
     public IAPPItemRepository APPItemRepository => appItemRepository;
     public IAPPItemScheduleRepository APPItemScheduleRepository => appItemScheduleRepository;
+    public IRepository<APPSignatory> APPSignatoryRepository => appSignatoryRepository;
     public IItemRequestRepository ItemRequestRepository => itemRequestRepository;
     public INonCSEItemRepository NonCSEItemRepository => nonCSEItemRepository;
     public IOPCRItemRatingRepository OPCRItemRatingRepository => opcrItemRatingRepository;

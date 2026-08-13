@@ -3,7 +3,7 @@ import { Button } from '@/components/ui/button'
 import { ArrowLeft, ArrowRight } from 'lucide-react'
 import { useState } from 'react'
 import { useOPCRById } from '@/features/planning/opcr/hooks/useOPCR'
-import { countKPIsByCategory } from '@/features/planning/opcr/utils/countKPIsByCategory'
+import { countKPIsByCategory, normalizeCategory } from '@/features/planning/opcr/utils/countKPIsByCategory'
 import { getCategoryVisuals } from '../utils/functions'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { FunctionCategory } from '@/features/planning/master-kpi/types'
@@ -41,11 +41,12 @@ export default function OPCRDetailPage({
   // Filter KPIs by selected category
   const filteredKPIs =
     functionCategory && opcrData?.opcrItems
-      ? opcrData.opcrItems.filter(
-          (item) =>
-            item.kpiAssignment?.fyActiveKPI?.functionCategory ===
-            functionCategory,
-        )
+      ? opcrData.opcrItems.filter((item) => {
+          const itemCat =
+            item.functionCategory ||
+            item.kpiAssignment?.fyActiveKPI?.functionCategory
+          return normalizeCategory(itemCat) === normalizeCategory(functionCategory)
+        })
       : []
 
   // Helper to calculate quarterly targets from quarterly values

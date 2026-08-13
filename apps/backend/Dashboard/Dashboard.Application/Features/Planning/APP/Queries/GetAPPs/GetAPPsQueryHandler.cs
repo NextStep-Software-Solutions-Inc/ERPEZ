@@ -30,8 +30,12 @@ public class GetAPPsQueryHandler(IUnitOfWork unitOfWork)
             Name = app.Name,
             FiscalYearId = app.FiscalYearId,
             FiscalYearName = app.FiscalYear?.Year.ToString() ?? string.Empty,
-            OfficeId = app.OfficeId,
-            OfficeName = app.Office?.Name ?? string.Empty,
+            APPType = app.APPType,
+            Batch = app.Batch,
+            Quarter = app.Quarter,
+            VersionNumber = app.VersionNumber,
+            VersionDate = app.VersionDate,
+            SourceAPPId = app.SourceAPPId,
             IsFinal = app.IsFinal,
             Remarks = app.Remarks,
             Description = app.Description,
@@ -50,14 +54,6 @@ public class GetAPPsQueryHandler(IUnitOfWork unitOfWork)
                 StartDate = app.FiscalYear.StartDate,
                 EndDate = app.FiscalYear.EndDate
             },
-            Office = app.Office == null ? null : new APPOfficeResponse
-            {
-                Id = app.Office.Id,
-                Name = app.Office.Name,
-                Code = app.Office.Code,
-                ResponsibilityCenterCode = app.Office.ResponsibilityCenterCode,
-                BudgetCostCenter = app.Office.BudgetCostCenter
-            },
             APPItems = app.APPItems.Where(item => !item.IsDeleted).Select(item => new APPItemSummaryResponse
             {
                 Id = item.Id,
@@ -73,6 +69,10 @@ public class GetAPPsQueryHandler(IUnitOfWork unitOfWork)
                 Remarks = item.Remarks,
                 IsEarlyProcurementActivity = item.IsEarlyProcurementActivity,
                 IsOutsourced = item.IsOutsourced,
+                StartOfProcurementOverride = item.StartOfProcurementOverride,
+                EndOfProcurementOverride = item.EndOfProcurementOverride,
+                IsNew = item.IsNew,
+                IsRevised = item.IsRevised,
                 Schedules = item.PPMPItem?.APPProcurementSchedules
                     .Where(schedule => !schedule.IsDeleted)
                     .Select(schedule => new APPItemScheduleSummaryResponse
