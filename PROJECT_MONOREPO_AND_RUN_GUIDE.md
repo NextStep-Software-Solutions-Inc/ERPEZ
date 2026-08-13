@@ -1,6 +1,6 @@
 # ERPEZ Unified Monorepo Development & Execution Guide
 
-This document is the official development guide for the **ERPEZ Full-Stack Monorepo** (`c:\Users\almau\ERPEZ-backend`). The workspace houses all backend .NET microservices, frontend applications, and shared libraries in a single repository.
+This document is the official development guide for the **ERPEZ Full-Stack Monorepo**. The workspace houses all backend .NET microservices, frontend applications, and shared libraries in a single repository.
 
 ---
 
@@ -39,7 +39,7 @@ ERPEZ-backend/
 The workspace is pre-configured with VS Code `.vscode/launch.json` and `.vscode/tasks.json` profiles for one-click debugging:
 
 ### A. Running the Backend API Server:
-1. Open the workspace root (`c:\Users\almau\ERPEZ-backend`) in VS Code.
+1. Open the repository root folder in VS Code.
 2. Press **`F5`** (or open the **Run & Debug** panel `Ctrl+Shift+D`).
 3. Select **`.NET Core Launch (ERPEZ.Api)`** from the dropdown and click **Play**.
 4. VS Code will build the project and start the server on **`http://localhost:5245/swagger`**.
@@ -96,10 +96,10 @@ If you are developing locally with a local PostgreSQL server (port `5432`):
 
 ## 5. Key File References
 
-- **Root Package Config**: [`package.json`](file:///c:/Users/almau/ERPEZ-backend/package.json)
-- **Monorepo Workspaces**: [`pnpm-workspace.yaml`](file:///c:/Users/almau/ERPEZ-backend/pnpm-workspace.yaml)
-- **Turborepo Config**: [`turbo.json`](file:///c:/Users/almau/ERPEZ-backend/turbo.json)
-- **Backend .NET Solution**: [`apps/backend/ERPEZ.sln`](file:///c:/Users/almau/ERPEZ-backend/apps/backend/ERPEZ.sln)
-- **Main Backend API**: [`apps/backend/ERPEZ/ERPEZ.Api`](file:///c:/Users/almau/ERPEZ-backend/apps/backend/ERPEZ/ERPEZ.Api)
-- **Main Frontend App**: [`apps/dashboard`](file:///c:/Users/almau/ERPEZ-backend/apps/dashboard)
-- **VS Code Debugger**: [`.vscode/launch.json`](file:///c:/Users/almau/ERPEZ-backend/.vscode/launch.json)
+- **Root Package Config**: [`package.json`](./package.json)
+- **Monorepo Workspaces**: [`pnpm-workspace.yaml`](./pnpm-workspace.yaml)
+- **Turborepo Config**: [`turbo.json`](./turbo.json)
+- **Backend .NET Solution**: [`apps/backend/ERPEZ.sln`](./apps/backend/ERPEZ.sln)
+- **Main Backend API**: [`apps/backend/Dashboard/Dashboard.Api`](./apps/backend/Dashboard/Dashboard.Api)
+- **Main Frontend App**: [`apps/dashboard`](./apps/dashboard)
+- **VS Code Debugger**: [`.vscode/launch.json`](./.vscode/launch.json)

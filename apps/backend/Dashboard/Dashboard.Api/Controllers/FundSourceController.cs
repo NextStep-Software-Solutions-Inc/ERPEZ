@@ -1,5 +1,6 @@
 using ERPEZ.Application.Features.Planning.FundSource.Commands.CreateFundSource;
 using ERPEZ.Application.Features.Planning.FundSource.Commands.DeleteFundSource;
+using ERPEZ.Application.Features.Planning.FundSource.Commands.ImportFundSourcesFromExcel;
 using ERPEZ.Application.Features.Planning.FundSource.Commands.UpdateFundSource;
 using ERPEZ.Application.Features.Planning.FundSource.Dtos;
 using ERPEZ.Application.Features.Planning.FundSource.Queries.FundSources;
@@ -91,15 +92,10 @@ namespace ERPEZ.Api.Controllers
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> ImportFundSourcesFromExcel(
             IFormFile file,
-            [FromServices] ERPEZ.Infrastructure.Persistence.ApplicationDbContext context,
             CancellationToken cancellationToken)
         {
-            if (file == null || file.Length == 0)
-                return BadRequest(ApiResponse<int>.Fail("No file was uploaded."));
-
-            using var stream = file.OpenReadStream();
-            var count = await ERPEZ.Infrastructure.Persistence.Seeders.FundSourceSeeder.SeedFromExcelAsync(context, stream, cancellationToken);
-            return Ok(ApiResponse<int>.Success(count, $"Successfully imported {count} Fund Source records."));
+            var response = await mediator.Send(new ImportFundSourcesFromExcelCommand { File = file }, cancellationToken);
+            return response.Succeeded ? Ok(response) : BadRequest(response);
         }
     }
 }
