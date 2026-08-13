@@ -19,7 +19,6 @@ import {
   Trash2,
   Building2,
   Coins,
-  Clock,
   TrendingUp,
   ChevronLeft,
   Pencil,
@@ -30,7 +29,6 @@ import {
   Download,
   Package,
   Image as ImageIcon,
-  Info,
   Eye,
   Circle,
 } from 'lucide-react'

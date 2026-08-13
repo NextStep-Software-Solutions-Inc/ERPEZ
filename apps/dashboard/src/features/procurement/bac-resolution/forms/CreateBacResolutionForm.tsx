@@ -177,7 +177,7 @@ function ManageWhereasClausesDialog({
           />
         </div>
 
-        <div className="max-h-[300px] overflow-y-auto space-y-2 pr-1">
+        <div className="max-h-75 overflow-y-auto space-y-2 pr-1">
           {isTemplatesLoading ? (
             <p className="text-sm text-muted-foreground text-center py-4">
               Loading templates...
@@ -260,7 +260,7 @@ function SelectedWhereasClauses({
                   value={clause.name}
                   onChange={(e) => onUpdateClauseName?.(index, e.target.value)}
                   placeholder="e.g. Legal Basis"
-                  className="max-w-[200px] h-7 text-xs font-semibold px-2 py-0.5"
+                  className="max-w-50 h-7 text-xs font-semibold px-2 py-0.5"
                   disabled={isLoading}
                 />
                 {!isCustom && (
@@ -280,7 +280,7 @@ function SelectedWhereasClauses({
                 value={clause.body}
                 onChange={(e) => onUpdateClauseBody(index, e.target.value)}
                 placeholder="WHEREAS, Section 12 of R.A. 9184..."
-                className="min-h-[80px] text-sm"
+                className="min-h-20 text-sm"
                 disabled={isLoading}
               />
             </div>
@@ -405,6 +405,7 @@ function ProvisionalMembersSection({
 
 export function CreateBacResolutionForm({
   onSubmit,
+  onCancel,
   initialValues,
   isLoading = false,
   onDirtyChange,
@@ -859,12 +860,12 @@ export function CreateBacResolutionForm({
             />
           </div>
 
-          <div className="border rounded-lg max-h-[320px] overflow-y-auto">
+          <div className="border rounded-lg max-h-80 overflow-y-auto">
             {sourceType === 'AppItem' ? (
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[50px]"></TableHead>
+                    <TableHead className="w-12.5"></TableHead>
                     <TableHead>Item Name</TableHead>
                     <TableHead>Office</TableHead>
                     <TableHead className="text-right">Budget (ABC)</TableHead>
@@ -914,7 +915,7 @@ export function CreateBacResolutionForm({
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead className="w-[50px]"></TableHead>
+                    <TableHead className="w-12.5"></TableHead>
                     <TableHead>CPR Number</TableHead>
                     <TableHead>Description / Purpose</TableHead>
                     <TableHead className="text-right">Total Amount</TableHead>
@@ -1222,7 +1223,7 @@ export function CreateBacResolutionForm({
                       <Button
                         type="button"
                         variant="outline"
-                        className="px-3 h-[40px]"
+                        className="px-3 h-10"
                         onClick={openResolvedDatePicker}
                         disabled={isLoading}
                       >
@@ -1250,7 +1251,7 @@ export function CreateBacResolutionForm({
                     onChange={(event) => field.handleChange(event.target.value)}
                     placeholder="University of Science and Technology of Southern Philippines, Cagayan de Oro City"
                     disabled={isLoading}
-                    className="min-h-[120px]"
+                    className="min-h-30"
                   />
                   {field.state.meta.errors.length > 0 && (
                     <p className="text-sm text-destructive">

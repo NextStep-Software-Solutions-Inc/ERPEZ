@@ -22,5 +22,4 @@ public record CreateProcurementProjectCommand : IRequest<ApiResponse<Guid>>
     public Guid? EndUserRepresentativeId { get; init; }
     public Guid? TechRepresentativeId { get; init; }
     public Guid UserId { get; init; }
-    public DateTime CreatedAt { get; init; } = DateTime.UtcNow;
 }
