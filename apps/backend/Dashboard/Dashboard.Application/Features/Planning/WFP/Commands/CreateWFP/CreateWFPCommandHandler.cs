@@ -95,10 +95,14 @@ public class CreateWFPCommandHandler(IUnitOfWork unitOfWork, ICurrentUserService
 
                 var opcrItemList = sourceOpcr.OPCRItems.ToList();
                 var totalOpcrItems = opcrItemList.Count;
-                decimal defaultObjectiveWeight = totalOpcrItems > 0 ? Math.Round(100m / totalOpcrItems, 2) : 0m;
+                var baseObjectiveWeight = totalOpcrItems > 0 ? Math.Round(100m / totalOpcrItems, 2) : 0m;
+                var remainingObjectiveWeight = totalOpcrItems > 0 ? 100m - (baseObjectiveWeight * totalOpcrItems) : 0m;
 
-                foreach (var opcrItem in opcrItemList)
+                for (var itemIdx = 0; itemIdx < totalOpcrItems; itemIdx++)
                 {
+                    var opcrItem = opcrItemList[itemIdx];
+                    var defaultObjectiveWeight = baseObjectiveWeight + (itemIdx == totalOpcrItems - 1 ? remainingObjectiveWeight : 0m);
+
                     var baseName = opcrItem.KPIAssignment?.FYActiveKPI?.MasterKPI?.Name
                         ?? opcrItem.KPIAssignment?.FYActiveKPI?.MFOPAP?.Name
                         ?? "OPCR Objective";
@@ -132,11 +136,16 @@ public class CreateWFPCommandHandler(IUnitOfWork unitOfWork, ICurrentUserService
 
                     if (opcrItem.OPCRActivities != null && opcrItem.OPCRActivities.Count > 0)
                     {
-                        var activitiesCount = opcrItem.OPCRActivities.Count;
-                        decimal defaultActivityWeight = activitiesCount > 0 ? Math.Round(defaultObjectiveWeight / activitiesCount, 2) : 0m;
+                        var opcrActivityList = opcrItem.OPCRActivities.ToList();
+                        var activitiesCount = opcrActivityList.Count;
+                        var baseActivityWeight = activitiesCount > 0 ? Math.Round(defaultObjectiveWeight / activitiesCount, 2) : 0m;
+                        var remainingActivityWeight = activitiesCount > 0 ? defaultObjectiveWeight - (baseActivityWeight * activitiesCount) : 0m;
 
-                        foreach (var activity in opcrItem.OPCRActivities)
+                        for (var actIdx = 0; actIdx < activitiesCount; actIdx++)
                         {
+                            var activity = opcrActivityList[actIdx];
+                            var defaultActivityWeight = baseActivityWeight + (actIdx == activitiesCount - 1 ? remainingActivityWeight : 0m);
+
                             // Verify OPCRActivity exists in DB to prevent foreign key violation
                             var opcrActivityExists = activity.Id != Guid.Empty &&
                                 (await unitOfWork.OPCRActivityRepository.FindAsync(a => a.Id == activity.Id, cancellationToken)) != null;

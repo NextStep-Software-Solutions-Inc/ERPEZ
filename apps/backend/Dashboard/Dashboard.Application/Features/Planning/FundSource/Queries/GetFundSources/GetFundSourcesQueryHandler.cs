@@ -40,7 +40,14 @@ public class GetFundSourcesQueryHandler(IUnitOfWork unitOfWork) : IRequestHandle
                 cancellationToken);
             var assignedIds = assignedLinks.Select(l => l.FundSourceId).ToList();
 
-            if (assignedIds.Count > 0)
+            if (assignedIds.Count == 0)
+            {
+                var emptyFilter = $"Id=={Guid.Empty}";
+                sieveModel.Filters = string.IsNullOrEmpty(sieveModel.Filters)
+                    ? emptyFilter
+                    : $"{sieveModel.Filters},{emptyFilter}";
+            }
+            else
             {
                 var orgFilter = string.Join("|", assignedIds.Select(id => $"Id=={id}"));
                 sieveModel.Filters = string.IsNullOrEmpty(sieveModel.Filters)
