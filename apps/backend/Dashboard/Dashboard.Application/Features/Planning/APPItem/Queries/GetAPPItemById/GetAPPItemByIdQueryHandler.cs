@@ -39,7 +39,8 @@ public class GetAPPItemByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandle
             {
                 Id = entity.APP.Id,
                 APPNumber = entity.APP.APPNumber,
-                Name = entity.APP.Name
+                Name = entity.APP.Name,
+                Status = entity.APP.Status.ToString()
             },
             PPMPItem = entity.PPMPItem == null ? null : new APPItemPPMPItemResponse
             {

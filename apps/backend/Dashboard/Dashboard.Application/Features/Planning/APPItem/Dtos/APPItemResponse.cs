@@ -50,6 +50,7 @@ public record APPItemAPPResponse
     public Guid Id { get; init; }
     public string APPNumber { get; init; } = string.Empty;
     public string Name { get; init; } = string.Empty;
+    public string Status { get; init; } = string.Empty;
 }
 
 public record APPItemPPMPItemResponse

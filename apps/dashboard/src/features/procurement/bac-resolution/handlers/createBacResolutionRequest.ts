@@ -7,6 +7,8 @@ const endpoint = '/bac/projects'
 export interface BackendProjectResponse {
   id: string
   title: string
+  sourceType?: string | null
+  appItemId?: string | null
   consolidatedPRId?: string | null
   modeOfProcurementName?: string | null
   abc: number
@@ -110,6 +112,9 @@ export const createBacResolutionRequest: MutationBlueprintFromTemplate<
       linkedConsolidatedPrs: [],
       activityLog: [],
       workspaceOrigin: payload.workspaceOrigin ?? null,
+      appItemId: backendData.appItemId || payload.appItemId || null,
+      consolidatedPRId:
+        backendData.consolidatedPRId || payload.consolidatedPRId || null,
     }
 
     return mappedResolution

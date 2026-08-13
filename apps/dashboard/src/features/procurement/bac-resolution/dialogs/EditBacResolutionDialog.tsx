@@ -76,6 +76,8 @@ export function EditBacResolutionDialog({
     whereasClauses: resolution.whereasClauses,
     provisionalMembers: resolution.provisionalMembers,
     signatoryOverrides: resolution.signatoryOverrides,
+    // appItemId: resolution.appItemId,
+    // consolidatedPRId: resolution.consolidatedPRId,
   }
 
   return (

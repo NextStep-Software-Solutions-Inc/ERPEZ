@@ -93,6 +93,8 @@ export type BacResolution = {
   signedDocumentFileName?: string | null
   printFileName?: string | null
   workspaceOrigin?: 'public-bidding' | 'standard' | null
+  appItemId?: string | null
+  consolidatedPRId?: string | null
 }
 
 export type BacResolutionListItem = BacResolution

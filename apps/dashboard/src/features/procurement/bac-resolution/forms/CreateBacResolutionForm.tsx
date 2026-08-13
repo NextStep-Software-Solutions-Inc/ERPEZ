@@ -45,6 +45,11 @@ import { CreateBACProjectPayload } from '../handlers/createBacProjectRequest'
 import FieldInfo from '@/components/FieldInfo'
 import { toast } from 'sonner'
 import type { User } from '@/services/api/users'
+import { createQueryHookFromTemplate } from 'erpez-shared-lib'
+import { getAPPItemsRequest } from '@/features/planning/app-consolidation/handlers/getAPPItemsRequest'
+import { useConsolidatedPrs } from '@/features/procurement/consolidated-pr/handlers/hooks'
+
+const useAPPItems = createQueryHookFromTemplate(getAPPItemsRequest)
 
 const defaultProvisionalMembers: BacResolutionProvisionalMember[] = [
   {
@@ -67,19 +72,55 @@ const clauseSchema = z.object({
   body: z.string().min(1, 'Clause body is required.'),
 })
 
-export const createBacResolutionSchema = z.object({
-  title: z.string().min(1, 'Title is required.'),
-  abc: z.number().min(0, 'ABC must be at least 0.'),
-  resolutionType: z.string().min(1, 'Resolution Type is required.'),
-  bacResolutionNumber: z.string().min(1, 'BAC Resolution Number is required.'),
-  resolutionDate: z.string().min(1, 'Resolution date is required.'),
-  description: z.string().optional(),
-  resolvedDateText: z.string().min(1, 'Resolved date text is required.'),
-  resolvedLocationText: z.string().min(1, 'Resolved location is required.'),
-  whereasClauses: z
-    .array(clauseSchema)
-    .min(1, 'At least one WHEREAS clause is required.'),
-})
+export const createBacResolutionSchema = z
+  .object({
+    title: z.string().min(1, 'Title is required.'),
+    abc: z.number().min(0, 'ABC must be at least 0.'),
+    resolutionType: z.string().min(1, 'Resolution Type is required.'),
+    bacResolutionNumber: z
+      .string()
+      .min(3, 'Resolution Number must be between 3 and 50 characters.')
+      .max(50, 'Resolution Number must be between 3 and 50 characters.'),
+    resolutionDate: z.string().min(1, 'Resolution date is required.'),
+    description: z.string().optional(),
+    resolvedDateText: z.string().min(1, 'Resolved date text is required.'),
+    resolvedLocationText: z
+      .string()
+      .min(1, 'Resolved Location is required.')
+      .max(200, 'Resolved Location cannot exceed 200 characters.'),
+    whereasClauses: z
+      .array(clauseSchema)
+      .min(1, 'At least one WHEREAS clause is required.'),
+    sourceType: z.enum(['AppItem', 'ConsolidatedPR']),
+    appItemId: z.string().optional().nullable(),
+    consolidatedPRId: z.string().optional().nullable(),
+  })
+  .refine(
+    (data) => {
+      if (data.sourceType === 'AppItem') {
+        return !!data.appItemId
+      }
+      return true
+    },
+    {
+      message:
+        'The selected APP Item is either not found, not approved, or already linked to a project.',
+      path: ['appItemId'],
+    },
+  )
+  .refine(
+    (data) => {
+      if (data.sourceType === 'ConsolidatedPR') {
+        return !!data.consolidatedPRId
+      }
+      return true
+    },
+    {
+      message:
+        'The selected Consolidated PR is either not found, not approved, or already linked to a project.',
+      path: ['consolidatedPRId'],
+    },
+  )
 
 export type CreateBacResolutionFormValues = z.infer<
   typeof createBacResolutionSchema
@@ -92,8 +133,8 @@ interface CreateBacResolutionFormProps {
   isLoading?: boolean
   onDirtyChange?: (isDirty: boolean) => void
   formId?: string
-  apiAppItems: any[]
-  apiConsolidatedPrs: any[]
+  apiAppItems?: any[]
+  apiConsolidatedPrs?: any[]
 }
 
 type WhereasClauseTemplate = {
@@ -454,23 +495,56 @@ export function CreateBacResolutionForm({
   isLoading = false,
   onDirtyChange,
   formId,
-  apiAppItems = [],
-  apiConsolidatedPrs = [],
+  apiAppItems: propApiAppItems = [],
+  apiConsolidatedPrs: propApiConsolidatedPrs = [],
 }: CreateBacResolutionFormProps) {
   const { data: templates, isLoading: isTemplatesLoading } =
     useWhereasClauseTemplates({})
   const { mutateAsync: updateTemplate } = useUpdateWhereasClauseTemplate()
 
-  const [step, setStep] = useState<1 | 2 | 3 | 4>(1)
-  const [sourceType, setSourceType] = useState<'AppItem' | 'ConsolidatedPR'>(
-    'AppItem',
+  // Fetch APP Items using the blueprint hook
+  const { data: appItemsResponse, isLoading: isLoadingAppItems } = useAPPItems({
+    pathParams: {},
+    queryParams: { pageNumber: 1, pageSize: 1000 },
+  })
+
+  // Fetch Consolidated PRs using the hook
+  const { data: consolidatedPrsResponse, isLoading: isLoadingConsolidatedPrs } =
+    useConsolidatedPrs({
+      pathParams: {},
+      queryParams: { PageNumber: 1, PageSize: 1000 },
+    })
+
+  const apiAppItems = useMemo(() => {
+    return propApiAppItems.length > 0
+      ? propApiAppItems
+      : (appItemsResponse?.data ?? [])
+  }, [propApiAppItems, appItemsResponse])
+
+  const apiConsolidatedPrs = useMemo(() => {
+    return propApiConsolidatedPrs.length > 0
+      ? propApiConsolidatedPrs
+      : (consolidatedPrsResponse?.data ?? [])
+  }, [propApiConsolidatedPrs, consolidatedPrsResponse])
+
+  // If initialValues contains details (edit mode), start at step 4
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(
+    initialValues?.bacResolutionNumber ? 4 : 1,
   )
+
+  const [sourceType, setSourceType] = useState<'AppItem' | 'ConsolidatedPR'>(
+    () => {
+      if (initialValues?.consolidatedPRId) return 'ConsolidatedPR'
+      return 'AppItem'
+    },
+  )
+
   const [selectedAppItemId, setSelectedAppItemId] = useState<string | null>(
-    null,
+    initialValues?.appItemId || null,
   )
   const [selectedConsolidatedPRId, setSelectedConsolidatedPRId] = useState<
     string | null
-  >(null)
+  >(initialValues?.consolidatedPRId || null)
   const [searchQuery, setSearchQuery] = useState('')
 
   const [selectedClauses, setSelectedClauses] = useState<
@@ -563,9 +637,14 @@ export function CreateBacResolutionForm({
   }, [apiConsolidatedPrs, selectedConsolidatedPRId])
 
   const filteredAppItems = useMemo(() => {
-    if (!searchQuery) return apiAppItems
+    // First filter to only approved APP Items
+    const approvedItems = apiAppItems.filter(
+      (item) => item.APP?.status === 'Approved' || item.APP?.status === '2',
+    )
+
+    if (!searchQuery) return approvedItems
     const query = searchQuery.toLowerCase()
-    return apiAppItems.filter((item) => {
+    return approvedItems.filter((item) => {
       const name =
         item.PPMPItemName?.toLowerCase() ||
         item.ppmpItem?.name?.toLowerCase() ||
@@ -617,6 +696,35 @@ export function CreateBacResolutionForm({
         'University of Science and Technology of Southern Philippines, Cagayan de Oro City',
     },
     onSubmit: async ({ value }) => {
+      // Validate required fields before submission
+      if (
+        !value.bacResolutionNumber ||
+        value.bacResolutionNumber.trim().length < 3
+      ) {
+        setSubmitError(
+          'Resolution Number is required and must be at least 3 characters.',
+        )
+        return
+      }
+
+      if (
+        !value.resolvedLocationText ||
+        value.resolvedLocationText.trim().length === 0
+      ) {
+        setSubmitError('Resolved Location is required.')
+        return
+      }
+
+      if (sourceType === 'AppItem' && !selectedAppItemId) {
+        setSubmitError('Please select an APP Item.')
+        return
+      }
+
+      if (sourceType === 'ConsolidatedPR' && !selectedConsolidatedPRId) {
+        setSubmitError('Please select a Consolidated PR.')
+        return
+      }
+
       const endUserRep = provisionalMembers.find(
         (m) => m.id === 'provisional-end-user-rep' || m.role === 'End-user Rep',
       )
@@ -652,9 +760,9 @@ export function CreateBacResolutionForm({
             ? selectedConsolidatedPRId || undefined
             : undefined,
         resolutionType: value.resolutionType,
-        resolutionNumber: value.bacResolutionNumber,
+        resolutionNumber: value.bacResolutionNumber.trim(),
         dateResolved: value.resolutionDate,
-        resolvedLocation: value.resolvedLocationText,
+        resolvedLocation: value.resolvedLocationText.trim(),
         selectedTemplateClauseIds: clausesToSubmit
           .map((c) => c.id)
           .filter(Boolean),
@@ -666,32 +774,27 @@ export function CreateBacResolutionForm({
         userId: '61a2206a-a15b-4512-8668-7d48f29b3fed', // Current user ID - should be from auth context
       }
 
-      const validation = createBacResolutionSchema.safeParse({
-        title: payload.title,
-        abc: payload.abc,
-        resolutionType: payload.resolutionType,
-        bacResolutionNumber: payload.resolutionNumber,
-        resolutionDate: payload.dateResolved,
-        description:
-          value.description || value.title || 'Untitled BAC Resolution',
-        resolvedDateText: value.resolvedDateText,
-        resolvedLocationText: value.resolvedLocationText,
-        whereasClauses: clausesToSubmit.map((template) => ({
-          id: template.id,
-          name: template.name,
-          body: template.body,
-        })),
-      })
-      if (!validation.success) {
-        setSubmitError(
-          validation.error.issues.map((issue) => issue.message).join(' '),
-        )
-        return
+      try {
+        await onSubmit(payload)
+        setSubmitError(null)
+        onDirtyChange?.(false)
+      } catch (error: any) {
+        const errorMessage =
+          error?.response?.data?.errors || error?.message || 'Submission failed'
+        if (typeof errorMessage === 'object') {
+          const errorList = Object.entries(errorMessage)
+            .map(([field, messages]: any) => {
+              if (Array.isArray(messages)) {
+                return messages.join(' ')
+              }
+              return messages
+            })
+            .join(' | ')
+          setSubmitError(errorList)
+        } else {
+          setSubmitError(errorMessage)
+        }
       }
-
-      await onSubmit(payload)
-      setSubmitError(null)
-      onDirtyChange?.(false)
     },
   })
 
@@ -1039,13 +1142,24 @@ export function CreateBacResolutionForm({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredAppItems.length === 0 ? (
+                  {isLoadingAppItems ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={5}
+                        className="text-center py-6 text-muted-foreground animate-pulse"
+                      >
+                        Loading Annual Procurement Plan Items...
+                      </TableCell>
+                    </TableRow>
+                  ) : filteredAppItems.length === 0 ? (
                     <TableRow>
                       <TableCell
                         colSpan={5}
                         className="text-center py-6 text-muted-foreground"
                       >
-                        No APP Items found matching search criteria.
+                        {searchQuery
+                          ? 'No approved APP Items found matching your search.'
+                          : 'No approved APP Items available. Please ensure APP Items are approved before creating a BAC Resolution.'}
                       </TableCell>
                     </TableRow>
                   ) : (
@@ -1073,6 +1187,7 @@ export function CreateBacResolutionForm({
                             {item.PPMPItemName ||
                               item.ppmpItem?.name ||
                               item.name ||
+                              item.PPMPItem.name ||
                               'Untitled Line Item'}
                           </TableCell>
                           <TableCell>
@@ -1107,7 +1222,16 @@ export function CreateBacResolutionForm({
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {filteredConsolidatedPrs.length === 0 ? (
+                  {isLoadingConsolidatedPrs ? (
+                    <TableRow>
+                      <TableCell
+                        colSpan={5}
+                        className="text-center py-6 text-muted-foreground animate-pulse"
+                      >
+                        Loading Consolidated Purchase Requests...
+                      </TableCell>
+                    </TableRow>
+                  ) : filteredConsolidatedPrs.length === 0 ? (
                     <TableRow>
                       <TableCell
                         colSpan={5}

@@ -26,6 +26,7 @@ export interface APPItemAPPResponse {
   id: string
   appNumber: string
   name: string
+  status: string
 }
 
 /**
