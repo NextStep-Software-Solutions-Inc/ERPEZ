@@ -405,7 +405,7 @@ export function TemplateTable<T extends { id: string | number }>({
           </TableBody>
         </Table>
       </div>
-      <div className="flex flex-row items-center justify-between space-x-2 py-4">
+      <div className="flex flex-row items-center justify-between space-x-2 py-2 pt-2.5">
         <div className="text-muted-foreground text-sm">
           {table.getFilteredSelectedRowModel().rows.length} of{' '}
           {totalCount !== undefined ? totalCount : table.getFilteredRowModel().rows.length} row(s) selected.

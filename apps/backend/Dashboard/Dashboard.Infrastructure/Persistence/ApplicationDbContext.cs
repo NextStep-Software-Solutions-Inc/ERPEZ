@@ -658,7 +658,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<WFPObjectiveActivity>()
             .HasOne(a => a.WFPObjective)
             .WithMany(o => o.WFPObjectiveActivities)
-            .HasForeignKey(a => a.WFPObjectiveId);
+            .HasForeignKey(a => a.WFPObjectiveId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<WFPObjectiveActivity>()
             .HasOne(a => a.OPCRActivity)
@@ -673,7 +674,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<WFPObjectiveActivityExpenditure>()
             .HasOne(e => e.WFPObjectiveActivity)
             .WithMany(a => a.WFPObjectiveActivityExpenditures)
-            .HasForeignKey(e => e.WFPObjectiveActivityId);
+            .HasForeignKey(e => e.WFPObjectiveActivityId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<WFPObjectiveActivityExpenditure>()
             .HasOne(e => e.Object)
@@ -693,7 +695,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasOne(t => t.WFPObjectiveActivity)
             .WithMany(a => a.WFPObjectiveTimelines)
             .HasForeignKey(t => t.WFPObjectiveActivityId)
-            .IsRequired();
+            .IsRequired()
+            .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<WFPObjectiveTimeline>()
             .Property(t => t.TargetValue)

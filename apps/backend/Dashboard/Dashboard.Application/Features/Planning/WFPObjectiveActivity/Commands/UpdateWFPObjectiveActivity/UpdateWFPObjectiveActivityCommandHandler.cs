@@ -1,4 +1,4 @@
-﻿using ERPEZ.Domain.Interfaces;
+using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
@@ -56,6 +56,28 @@ public class UpdateWFPObjectiveActivityCommandHandler(IUnitOfWork unitOfWork)
             activity.ActivityName = dto.ActivityName ?? activity.ActivityName;
         activity.Indicator = dto.Indicator ?? activity.Indicator;
         activity.Weight = dto.Weight ?? activity.Weight;
+
+        if (dto.Dates != null && dto.Dates.Any())
+        {
+            var oldTimelines = await unitOfWork.WFPObjectiveTimelineRepository.ToListAsync(
+                unitOfWork.WFPObjectiveTimelineRepository.Query(t => t.WFPObjectiveActivityId == activity.Id),
+                cancellationToken);
+
+            unitOfWork.WFPObjectiveTimelineRepository.RemoveRange(oldTimelines);
+
+            foreach (var d in dto.Dates)
+            {
+                var timeline = new Domain.Entities.Planning.WFPObjectiveTimeline
+                {
+                    WFPObjectiveActivityId = activity.Id,
+                    StartDate = d.StartDate,
+                    EndDate = d.EndDate,
+                    TargetValue = d.Value,
+                    TimelineType = Enum.Parse<Domain.Enums.TimelineTypeEnum>(d.TimelineType, ignoreCase: true)
+                };
+                await unitOfWork.WFPObjectiveTimelineRepository.AddAsync(timeline, cancellationToken);
+            }
+        }
 
         unitOfWork.WFPObjectiveActivityRepository.Update(activity);
         await unitOfWork.SaveChangesAsync(cancellationToken);

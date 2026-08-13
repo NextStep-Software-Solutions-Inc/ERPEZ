@@ -218,7 +218,7 @@ function WFPDetailPage({ wfpId }: { wfpId: string }) {
     <PageContainerDashtail
       title={toTitleCase(wfp?.projectTitle) || (isOPCRMode ? 'OPCR WFP Details' : 'WFP Details')}
       description={isOPCRMode ? 'Office Performance Commitment Review (OPCR) - Work and Financial Plan' : 'View detailed information about this Work and Financial Plan (WFP).'}
-      backTo={true}
+      backTo="/v2/wfp"
       backLabel="Back to WFP"
       actions={
         <div className="flex items-center gap-2">
@@ -367,37 +367,37 @@ function WFPDetailPage({ wfpId }: { wfpId: string }) {
         isGenerating={isGeneratingDoc}
       />
 
-      {/* ── 3. Objectives & Activities Registry ── */}
+      {/* ── 3. Objectives Registry ── */}
       <div id="objectives-registry-section">
-        <Card className="border-slate-200/80 shadow-2xs mb-3.5 bg-white">
-          <CardHeader className="py-2.5 px-4 border-b border-slate-100 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
+        <Card className="border-slate-200/80 dark:border-slate-800 shadow-2xs mb-2.5 bg-white dark:bg-slate-900">
+          <CardHeader className="py-2 px-3.5 mb-0 border-b border-slate-100 dark:border-slate-800 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-1.5">
             <div className="space-y-0.5">
-              <CardTitle className="text-xs sm:text-sm font-bold text-slate-800 flex items-center gap-2">
-                Objectives & Activities
-                <Badge variant="secondary" className="bg-slate-100 text-slate-700 text-[10px] px-1.5 py-0 font-bold">
-                  {wfp?.wfpObjectives?.length || 0} Objective{(wfp?.wfpObjectives?.length || 0) === 1 ? '' : 's'} · {totalActivities} Activity{totalActivities === 1 ? '' : 'ies'}
+              <CardTitle className="text-xs sm:text-sm font-bold text-slate-800 dark:text-slate-100 flex items-center gap-2">
+                Objectives
+                <Badge variant="soft" className="bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 text-[10px] px-1.5 py-0 font-bold">
+                  {wfp?.wfpObjectives?.length || 0} Objective{(wfp?.wfpObjectives?.length || 0) === 1 ? '' : 's'}
                 </Badge>
               </CardTitle>
             </div>
             
             <div className="flex items-center gap-2">
-              <span className="text-xs font-semibold text-slate-500">Weight Allocation:</span>
+              <span className="text-xs font-semibold text-slate-500 dark:text-slate-400">Weight Allocation:</span>
               {remainingWeight === 0 ? (
-                <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-200 gap-1 font-semibold text-[10px] py-0.5 px-2">
+                <Badge variant="outline" className="bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400 border-emerald-200 dark:border-emerald-800 gap-1 font-semibold text-[10px] py-0.5 px-2">
                   <Check className="h-3 w-3" /> Fully Allocated (100%)
                 </Badge>
               ) : remainingWeight > 0 ? (
-                <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200 gap-1 font-semibold text-[10px] py-0.5 px-2">
+                <Badge variant="outline" className="bg-amber-50 dark:bg-amber-950/40 text-amber-700 dark:text-amber-400 border-amber-200 dark:border-amber-800 gap-1 font-semibold text-[10px] py-0.5 px-2">
                   {100 - remainingWeight}% Allocated ({remainingWeight}% Remaining)
                 </Badge>
               ) : (
-                <Badge variant="outline" className="bg-rose-50 text-rose-700 border-rose-200 gap-1 font-semibold text-[10px] py-0.5 px-2">
+                <Badge variant="outline" className="bg-rose-50 dark:bg-rose-950/40 text-rose-700 dark:text-rose-400 border-rose-200 dark:border-rose-800 gap-1 font-semibold text-[10px] py-0.5 px-2">
                   Over Allocated ({Math.abs(remainingWeight)}% excess)
                 </Badge>
               )}
             </div>
           </CardHeader>
-          <CardContent className="px-4 pb-2 pt-1.5">
+          <CardContent className="px-3.5 pb-1.5 pt-1">
             <TemplateTable
               data={wfp?.wfpObjectives || []}
               columns={Column}

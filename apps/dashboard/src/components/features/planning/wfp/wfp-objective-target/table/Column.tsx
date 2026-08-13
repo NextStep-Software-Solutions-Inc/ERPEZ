@@ -131,6 +131,8 @@ export const Column: Array<ColumnDef<WFPObjectiveTarget>> = [
       const now = new Date()
       let completedCount = 0
 
+      const timelineType = sortedTimelines[0]?.timelineType || 'Quarterly'
+
       const processedTimelines = sortedTimelines.map((timeline, idx) => {
         const startDate = timeline.startDate ? new Date(timeline.startDate) : null
         const endDate = timeline.endDate ? new Date(timeline.endDate) : null
@@ -144,10 +146,22 @@ export const Column: Array<ColumnDef<WFPObjectiveTarget>> = [
           status = 'In Progress'
         }
 
-        const month = startDate ? startDate.getMonth() : idx * 3
-        const qNum = Math.floor(month / 3) + 1
         const year = startDate ? startDate.getFullYear() : 2026
-        const label = `Q${qNum} ${year}`
+        let label = `Q${idx + 1} ${year}`
+
+        if (timelineType === 'Monthly' && startDate) {
+          label = startDate.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+        } else if (timelineType === 'Annual' && startDate) {
+          label = `${year}`
+        } else if (timelineType === 'Weekly') {
+          label = `W${idx + 1} ${year}`
+        } else if (timelineType === 'Daily' && startDate) {
+          label = startDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })
+        } else if (startDate) {
+          const month = startDate.getMonth()
+          const qNum = Math.floor(month / 3) + 1
+          label = `Q${qNum} ${year}`
+        }
 
         return { ...timeline, status, label, idx }
       })
@@ -171,41 +185,41 @@ export const Column: Array<ColumnDef<WFPObjectiveTarget>> = [
                     })
                   }
                   title="Click to view or edit timeline details"
-                  className={`flex-shrink-0 w-[125px] p-2.5 rounded-xl border transition-all duration-200 cursor-pointer hover:border-blue-400 hover:shadow-sm hover:-translate-y-0.5 flex flex-col items-center justify-between text-center space-y-1 ${
+                  className={`flex-shrink-0 w-[125px] p-2.5 rounded-xl border transition-all duration-200 cursor-pointer hover:border-blue-400 dark:hover:border-blue-500 hover:shadow-sm hover:-translate-y-0.5 flex flex-col items-center justify-between text-center space-y-1 ${
                     timeline.status === 'Completed'
-                      ? 'bg-slate-50/70 border-slate-200'
+                      ? 'bg-slate-50/70 dark:bg-slate-800/70 border-slate-200 dark:border-slate-700'
                       : timeline.status === 'In Progress'
-                        ? 'bg-blue-50/20 border-blue-200 shadow-2xs'
-                        : 'bg-slate-50/40 border-slate-200/80'
+                        ? 'bg-blue-50/20 dark:bg-blue-950/40 border-blue-200 dark:border-blue-800 shadow-2xs'
+                        : 'bg-slate-50/40 dark:bg-slate-900/50 border-slate-200/80 dark:border-slate-800'
                   }`}
                 >
                   <div className="text-center w-full">
-                    <div className="font-extrabold text-xs text-slate-800 tracking-tight">
+                    <div className="font-extrabold text-xs text-slate-800 dark:text-slate-100 tracking-tight">
                       {timeline.label}
                     </div>
-                    <div className="text-[10px] font-medium text-slate-400 leading-tight">
+                    <div className="text-[10px] font-medium text-slate-400 dark:text-slate-400 leading-tight">
                       {startFmt} – {endFmt}
                     </div>
                   </div>
 
                   <div className="py-0.5 flex items-center justify-center w-full">
                     {timeline.status === 'Completed' ? (
-                      <span className="text-[11px] font-bold text-emerald-600 flex items-center justify-center gap-1">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 flex-shrink-0" /> Completed
+                      <span className="text-[11px] font-bold text-emerald-600 dark:text-emerald-400 flex items-center justify-center gap-1">
+                        <CheckCircle2 className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 flex-shrink-0" /> Completed
                       </span>
                     ) : timeline.status === 'In Progress' ? (
-                      <span className="text-[11px] font-bold text-blue-600 flex items-center justify-center gap-1">
-                        <Clock className="w-3.5 h-3.5 text-blue-600 flex-shrink-0" /> In Progress
+                      <span className="text-[11px] font-bold text-blue-600 dark:text-blue-400 flex items-center justify-center gap-1">
+                        <Clock className="w-3.5 h-3.5 text-blue-600 dark:text-blue-400 flex-shrink-0" /> In Progress
                       </span>
                     ) : (
-                      <span className="text-[11px] font-semibold text-slate-400 flex items-center justify-center gap-1">
-                        <Circle className="w-3.5 h-3.5 text-slate-300 flex-shrink-0" /> Upcoming
+                      <span className="text-[11px] font-semibold text-slate-400 dark:text-slate-500 flex items-center justify-center gap-1">
+                        <Circle className="w-3.5 h-3.5 text-slate-300 dark:text-slate-600 flex-shrink-0" /> Upcoming
                       </span>
                     )}
                   </div>
 
-                  <div className="text-[11px] font-medium text-slate-500 border-t border-slate-100 pt-1 w-full text-center">
-                    Target: <strong className="text-slate-800 font-bold">{timeline.targetValue}</strong>
+                  <div className="text-[11px] font-medium text-slate-500 dark:text-slate-400 border-t border-slate-100 dark:border-slate-800 pt-1 w-full text-center">
+                    Target: <strong className="text-slate-800 dark:text-slate-100 font-bold">{timeline.targetValue}</strong>
                   </div>
                 </div>
               )
@@ -214,7 +228,7 @@ export const Column: Array<ColumnDef<WFPObjectiveTarget>> = [
 
           {/* Segmented Progress Bar */}
           <div className="flex items-center gap-2 mt-1.5">
-            <div className="flex-1 flex gap-1 h-1.5 rounded-full overflow-hidden bg-slate-100 p-0.5">
+            <div className="flex-1 flex gap-1 h-1.5 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800 p-0.5">
               {processedTimelines.map((timeline) => (
                 <div
                   key={timeline.id || timeline.idx}
@@ -222,13 +236,13 @@ export const Column: Array<ColumnDef<WFPObjectiveTarget>> = [
                     timeline.status === 'Completed'
                       ? 'bg-emerald-500'
                       : timeline.status === 'In Progress'
-                        ? 'bg-blue-600'
-                        : 'bg-slate-200'
+                        ? 'bg-blue-600 dark:bg-blue-500'
+                        : 'bg-slate-200 dark:bg-slate-700'
                   }`}
                 />
               ))}
             </div>
-            <span className="text-[10px] font-bold text-slate-500 whitespace-nowrap">
+            <span className="text-[10px] font-bold text-slate-500 dark:text-slate-400 whitespace-nowrap">
               {completedCount} of {processedTimelines.length} completed
             </span>
           </div>

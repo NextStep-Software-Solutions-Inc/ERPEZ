@@ -63,8 +63,11 @@ export default function WFPExpenditurePage({ wfpObjectiveActivityId }: { wfpObje
     <PageContainer
       title={toTitleCase(targetData.data.activityName) || 'Activity Expenditures'}
       description='List of Expenditure for this Activity'
-      backTo={{ to: "/v2/wfp-objective/$wfpObjectiveId", params: { deliveryUnitId: targetData?.data?.wfpObjective.deliveryUnitId, wfpObjectiveId: targetData?.data?.wfpObjective.id } }}
-      backLabel="Back"
+      backTo={{
+        to: '/v2/wfp-objective/$wfpObjectiveId',
+        params: { wfpObjectiveId: targetData.data.wfpObjectiveId || targetData.data.wfpObjective?.id },
+      }}
+      backLabel="Back to Activity Registry"
     >
       <div className="space-y-4 mx-auto">
         {/* Expenditure List Header */}
