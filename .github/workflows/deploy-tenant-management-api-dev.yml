@@ -41,6 +41,7 @@ jobs:
       uses: actions/setup-dotnet@v4
       with:
         dotnet-version: '10.0.x'
+        allow-prerelease: true
     
     - name: Restore dependencies
       run: dotnet restore apps/backend/ERPEZ.sln
