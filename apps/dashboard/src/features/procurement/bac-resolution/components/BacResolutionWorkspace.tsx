@@ -175,7 +175,6 @@ export function BacResolutionWorkspace({
           createOpen={ws.createOpen}
           setCreateOpen={ws.setCreateOpen}
           onCreate={ws.handleCreate}
-          apiAppItems={ws.apiAppItems || []}
           apiConsolidatedPrs={ws.apiConsolidatedPrs || []}
           editOpen={ws.editOpen}
           setEditOpen={ws.setEditOpen}

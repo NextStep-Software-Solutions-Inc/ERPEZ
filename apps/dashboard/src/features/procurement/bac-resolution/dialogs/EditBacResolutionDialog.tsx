@@ -99,6 +99,8 @@ export function EditBacResolutionDialog({
         }
       >
         <CreateBacResolutionForm
+          apiAppItems={[]}
+          apiConsolidatedPrs={[]}
           formId={formId}
           initialValues={initialValues}
           onSubmit={handleSubmit}

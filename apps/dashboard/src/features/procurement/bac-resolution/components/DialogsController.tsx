@@ -7,6 +7,7 @@ import {
   ViewBacResolutionDetailsDialog,
   ViewConsolidatedPrDetailsDialog,
 } from '../dialogs'
+import { CreateBACProjectPayload } from '../handlers'
 import type {
   BacResolution,
   CreateBacResolutionPayload,
@@ -18,13 +19,15 @@ import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
 interface DialogsControllerProps {
   createOpen: boolean
   setCreateOpen: (open: boolean) => void
-  onCreate: (payload: CreateBacResolutionPayload) => Promise<void> | void
-  apiAppItems: any[]
+  onCreate: (payload: CreateBACProjectPayload) => Promise<void> | void
   apiConsolidatedPrs: any[]
   editOpen: boolean
   setEditOpen: (open: boolean) => void
   editingResolution?: BacResolution
-  onUpdate: (id: string, payload: CreateBacResolutionPayload) => Promise<void> | void
+  onUpdate: (
+    id: string,
+    payload: CreateBACProjectPayload,
+  ) => Promise<void> | void
   deleteConfirmOpen: boolean
   setDeleteConfirmOpen: (open: boolean) => void
   onConfirmDelete: () => Promise<void> | void
@@ -61,7 +64,6 @@ export function DialogsController({
   createOpen,
   setCreateOpen,
   onCreate,
-  apiAppItems,
   apiConsolidatedPrs,
   editOpen,
   setEditOpen,
@@ -98,7 +100,6 @@ export function DialogsController({
         open={createOpen}
         onOpenChange={setCreateOpen}
         onCreate={onCreate}
-        apiAppItems={apiAppItems}
         apiConsolidatedPrs={apiConsolidatedPrs}
       />
 

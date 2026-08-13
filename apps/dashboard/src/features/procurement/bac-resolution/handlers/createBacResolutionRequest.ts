@@ -49,7 +49,7 @@ export const createBacResolutionRequest: MutationBlueprintFromTemplate<
     const apiPayload = {
       title: payload.title || payload.description || undefined,
       abc: typeof payload.abc === 'number' ? payload.abc : undefined,
-      sourceType: payload.sourceType,
+      sourceType: payload.sourceType === 'AppItem' ? 0 : 1,
       appItemId:
         payload.sourceType === 'AppItem' ? payload.appItemId : undefined,
       consolidatedPRId:

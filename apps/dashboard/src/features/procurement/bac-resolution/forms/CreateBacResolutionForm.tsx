@@ -538,8 +538,13 @@ export function CreateBacResolutionForm({
 
   const calculateAppItemBudget = (item: any) => {
     if (!item) return 0
+    // Try direct ABC property first (from new API response)
+    if (item.abc !== undefined && item.abc !== null && item.abc !== 0)
+      return item.abc
+    // Fallback to amount property
     if (item.amount !== undefined && item.amount !== null && item.amount !== 0)
       return item.amount
+    // Calculate from PPMP item if available
     if (!item.ppmpItem) return 0
     const qty =
       item.ppmpItem.ppmpItemAllocations?.reduce(
@@ -561,9 +566,13 @@ export function CreateBacResolutionForm({
     if (!searchQuery) return apiAppItems
     const query = searchQuery.toLowerCase()
     return apiAppItems.filter((item) => {
-      const name = item.ppmpItem?.name?.toLowerCase() || ''
+      const name =
+        item.PPMPItemName?.toLowerCase() ||
+        item.ppmpItem?.name?.toLowerCase() ||
+        ''
       const desc = item.ppmpItem?.description?.toLowerCase() || ''
-      const office = item.office?.name?.toLowerCase() || ''
+      const office =
+        item.OfficeName?.toLowerCase() || item.office?.name?.toLowerCase() || ''
       return (
         name.includes(query) || desc.includes(query) || office.includes(query)
       )
@@ -589,7 +598,9 @@ export function CreateBacResolutionForm({
       title: initialValues?.title ?? '',
       abc: initialValues?.abc ?? 0,
       resolutionType: initialValues?.resolutionType ?? 'Standard',
-      bacResolutionNumber: initialValues?.bacResolutionNumber ?? '',
+      bacResolutionNumber:
+        initialValues?.bacResolutionNumber ??
+        `BAC-RES-${new Date().getFullYear()}-${String(Math.floor(Math.random() * 10000)).padStart(4, '0')}`,
       resolutionDate:
         initialValues?.resolutionDate ?? new Date().toISOString().split('T')[0],
       description: initialValues?.description ?? '',
@@ -624,7 +635,7 @@ export function CreateBacResolutionForm({
         title:
           value.title ||
           (sourceType === 'AppItem'
-            ? selectedAppItem?.ppmpItem?.name
+            ? selectedAppItem?.PPMPItemName || selectedAppItem?.ppmpItem?.name
             : selectedConsolidatedPR?.description) ||
           'BAC Resolution Project',
         abc:
@@ -1059,11 +1070,14 @@ export function CreateBacResolutionForm({
                             />
                           </TableCell>
                           <TableCell className="font-medium">
-                            {item.ppmpItem?.name ||
+                            {item.PPMPItemName ||
+                              item.ppmpItem?.name ||
                               item.name ||
                               'Untitled Line Item'}
                           </TableCell>
-                          <TableCell>{item.office?.name || 'N/A'}</TableCell>
+                          <TableCell>
+                            {item.OfficeName || item.office?.name || 'N/A'}
+                          </TableCell>
                           <TableCell className="text-right font-semibold">
                             ₱
                             {budget.toLocaleString('en-PH', {
@@ -1071,7 +1085,9 @@ export function CreateBacResolutionForm({
                             })}
                           </TableCell>
                           <TableCell>
-                            {item.ppmpItem?.procurementMode?.name || 'N/A'}
+                            {item.ProcurementModeName ||
+                              item.ppmpItem?.procurementMode?.name ||
+                              'N/A'}
                           </TableCell>
                         </TableRow>
                       )
@@ -1175,7 +1191,9 @@ export function CreateBacResolutionForm({
                     Project Item Title
                   </span>
                   <p className="font-semibold text-sm">
-                    {selectedAppItem.ppmpItem?.name || 'Untitled Line Item'}
+                    {selectedAppItem?.PPMPItemName ||
+                      selectedAppItem?.ppmpItem?.name ||
+                      'Untitled Line Item'}
                   </p>
                 </div>
                 <div>
