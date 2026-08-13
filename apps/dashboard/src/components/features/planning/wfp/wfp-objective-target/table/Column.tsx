@@ -162,12 +162,14 @@ export const Column: Array<ColumnDef<WFPObjectiveTarget>> = [
           const qNum = Math.floor(month / 3) + 1
           label = `Q${qNum} ${year}`
         }
-
         return { ...timeline, status, label, idx }
       })
 
+      const contentWidth = processedTimelines.length * 125 + Math.max(0, processedTimelines.length - 1) * 8
+      const containerWidth = Math.max(180, contentWidth)
+
       return (
-        <div className="py-1 min-w-[500px]">
+        <div className="py-1" style={{ width: `${containerWidth}px` }}>
           {/* Quarterly Cards */}
           <div className="flex gap-2 overflow-x-auto pb-1">
             {processedTimelines.map((timeline) => {
@@ -230,7 +232,7 @@ export const Column: Array<ColumnDef<WFPObjectiveTarget>> = [
           <div
             className="flex items-center gap-2 mt-1.5 max-w-full"
             style={{
-              width: `${processedTimelines.length * 125 + Math.max(0, processedTimelines.length - 1) * 8}px`,
+              width: `${containerWidth}px`,
             }}
           >
             <div className="flex-1 flex gap-1 h-1.5 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800 p-0.5">

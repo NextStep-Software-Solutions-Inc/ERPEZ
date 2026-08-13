@@ -465,14 +465,16 @@ export interface OfficeTypeSetting {
   id: string
   name: string
   code: string
-  canHaveChildren: boolean
-  isActive: boolean
+  canHaveChildren?: boolean
+  isActive?: boolean
   createdAt: string
-  createdBy: string
+  createdBy?: string
   defaultCategory?: OfficeCategory
   allowedCategories?: OfficeCategory[]
   metadata?: Record<string, any>
   updatedAt?: string
+  description?: string
+  status?: string
 }
 
 // Actual API Response Type for Office Types
@@ -480,11 +482,13 @@ export interface OfficeTypeEntity {
   id: string
   name: string
   code: string
-  canHaveChildren: boolean
-  isActive: boolean
+  canHaveChildren?: boolean
+  isActive?: boolean
   createdAt: string
-  createdBy: string
+  createdBy?: string
   updatedAt?: string
+  description?: string
+  status?: string
 }
 
 // Form values for Office Type (API payload)
@@ -498,15 +502,17 @@ export interface OfficeCategorySetting {
   id: string
   name: string
   code: string
-  canHaveChildren: boolean
-  isActive: boolean
+  canHaveChildren?: boolean
+  isActive?: boolean
   createdAt: string
-  createdBy: string
+  createdBy?: string
   officeType: OfficeType
   budgetingApproach?: 'cost-center' | 'responsibility-center'
   requiresCluster?: boolean
   metadata?: Record<string, any>
   updatedAt?: string
+  description?: string
+  status?: string
 }
 
 // Actual API Response Type for Office Categories
@@ -514,11 +520,13 @@ export interface OfficeCategoryEntity {
   id: string
   name: string
   code: string
-  canHaveChildren: boolean
-  isActive: boolean
+  canHaveChildren?: boolean
+  isActive?: boolean
   createdAt: string
-  createdBy: string
+  createdBy?: string
   updatedAt?: string
+  description?: string
+  status?: string
 }
 
 // Form values for Office Category (API payload)
@@ -533,10 +541,14 @@ export interface ProcurementWorkflowSetting {
   name: string
   code: string
   approvalLevel: number
-  isActive: boolean
+  approvalLevels?: number
+  thresholdAmount?: number
+  isActive?: boolean
   createdAt: string
   createdBy?: string
   updatedAt?: string
+  description?: string
+  status?: string
 }
 
 // Form values for Procurement Workflow (API payload)
@@ -631,14 +643,17 @@ export interface PositionTypeSetting {
   code: string
   description: string
   educationalLevel: string
+  requiredEducationLevel?: string
   category: string
   isCareerEligibilityRequired: boolean
+  careerEligibilityRequired?: boolean
   canReportDirectly: boolean
   isActive?: boolean
   status?: string
   createdAt: string
   createdBy?: string
   updatedAt?: string
+  positionType?: string
 }
 
 export interface PositionCategorySetting {

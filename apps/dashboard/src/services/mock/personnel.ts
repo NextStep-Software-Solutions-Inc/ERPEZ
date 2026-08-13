@@ -768,6 +768,7 @@ export function __resetPersonnel() {
       startDate: '2019-07-01',
       endDate: null,
       status: 'active',
+      employmentStatus: 'Permanent',
     },
     {
       id: 'u-2',
@@ -777,6 +778,7 @@ export function __resetPersonnel() {
       startDate: '2021-01-10',
       endDate: null,
       status: 'active',
+      employmentStatus: 'Permanent',
     },
   ]
 }
