@@ -36,20 +36,29 @@ export const createBacResolutionRequest: MutationBlueprintFromTemplate<
       throw new Error('BAC Resolution payload is required.')
     }
 
-    // Concatenate whereas clauses bodies, removing name/title (as requested by user)
-    const whereasClauseText = (payload.whereasClauses || [])
+    const templateClauseIds = (payload.whereasClauses || [])
+      .filter((c) => c.id && c.id !== '')
+      .map((c) => c.id!)
+
+    const customClausesText = (payload.whereasClauses || [])
+      .filter((c) => !c.id || c.id === '')
       .map((c) => c.body)
-      .join('\n\n')
 
     const apiPayload = {
-      title: payload.title || payload.description || 'Untitled Project',
-      abc: typeof payload.abc === 'number' ? payload.abc : 0,
-      status: 'Draft',
+      title: payload.title || payload.description || undefined,
+      abc: typeof payload.abc === 'number' ? payload.abc : undefined,
+      sourceType: payload.sourceType,
+      appItemId: payload.sourceType === 'AppItem' ? payload.appItemId : undefined,
+      consolidatedPRId: payload.sourceType === 'ConsolidatedPR' ? payload.consolidatedPRId : undefined,
       resolutionType: payload.resolutionType || 'Standard',
       resolutionNumber: payload.bacResolutionNumber,
-      whereasClause: whereasClauseText,
+      dateResolved: payload.resolutionDate,
+      resolvedLocation: payload.resolvedLocationText,
+      selectedTemplateClauseIds: templateClauseIds,
+      customClauses: customClausesText,
       endUserRepresentativeId: payload.endUserRepresentativeId || null,
       techRepresentativeId: payload.techRepresentativeId || null,
+      userId: '00000000-0000-0000-0000-000000000000'
     }
 
     const response = await api.post<{ succeeded: boolean; data: BackendProjectResponse }>(finalUrl, apiPayload)

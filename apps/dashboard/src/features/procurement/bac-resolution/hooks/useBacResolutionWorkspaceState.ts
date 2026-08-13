@@ -75,6 +75,7 @@ export function useBacResolutionWorkspaceState(
   const [returnOpen, setReturnOpen] = useState(false)
   const [submitConfirmOpen, setSubmitConfirmOpen] = useState(false)
   const [apiConsolidatedPrs, setApiConsolidatedPrs] = useState<any[]>([])
+  const [apiAppItems, setApiAppItems] = useState<any[]>([])
 
   useEffect(() => {
     if (!createOpen && !linkOpen) return
@@ -95,6 +96,26 @@ export function useBacResolutionWorkspaceState(
       active = false
     }
   }, [createOpen, linkOpen])
+
+  useEffect(() => {
+    if (!createOpen) return
+
+    let active = true
+    const fetchAppItems = async () => {
+      try {
+        const response = await api.get<{ succeeded: boolean; data: any[] }>('/app-items')
+        if (active && response.data?.succeeded) {
+          setApiAppItems(response.data.data || [])
+        }
+      } catch (e) {
+        console.error('Failed to load APP items:', e)
+      }
+    }
+    fetchAppItems()
+    return () => {
+      active = false
+    }
+  }, [createOpen])
 
   const {
     data: bacResolutions,
@@ -446,6 +467,8 @@ export function useBacResolutionWorkspaceState(
     handleViewConsolidatedPrDetails,
     statusOptions,
     inboxCards,
+    apiAppItems,
+    apiConsolidatedPrs,
   }
 }
 

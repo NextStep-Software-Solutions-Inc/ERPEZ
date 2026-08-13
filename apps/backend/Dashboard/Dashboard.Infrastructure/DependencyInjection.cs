@@ -121,6 +121,7 @@ public static class DependencyInjection
         services.AddScoped<IUACSCsvImporter, UACSImportService>();
         services.AddScoped<IUACSValidationEngine, UACSValidationEngine>();
         services.AddScoped<IPositionImportService, PositionImportService>();
+        services.AddScoped<BACResolutionPDFGenerator>();
         services.AddHostedService<TempFileCleanupService>();
 
         // ── Document Generation ─────────────────────────────────────────────────────

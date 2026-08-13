@@ -103,6 +103,9 @@ export type BacResolutionListItem = BacResolution
 export type CreateBacResolutionPayload = {
   title?: string
   abc?: number
+  sourceType: 'AppItem' | 'ConsolidatedPR'
+  appItemId?: string
+  consolidatedPRId?: string
   resolutionType?: string
   bacResolutionNumber: string
   resolutionDate: string

@@ -13,6 +13,7 @@ using ERPEZ.Application.Features.Procurement.Projects.Queries.GetProcurementProj
 using ERPEZ.Application.Features.Procurement.Projects.Commands.UpdateProcurementProjectStatus;
 using ERPEZ.Application.Features.Procurement.BiddingActivitySchedules.Commands.UpdateBiddingActivityScheduleStatus;
 using ERPEZ.Shared.Common;
+using ERPEZ.Infrastructure.Services;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -20,8 +21,29 @@ namespace ERPEZ.Api.Controllers;
 
 [Route("bac")]
 [ApiController]
-public class BACProjectController(ISender mediator) : ControllerBase
+public class BACProjectController(ISender mediator, BACResolutionPDFGenerator pdfGenerator) : ControllerBase
 {
+    [HttpGet("projects/{id}/print")]
+    [ProducesResponseType(StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> PrintBACResolution(Guid id, CancellationToken cancellationToken)
+    {
+        try
+        {
+            var pdfBytes = await pdfGenerator.GeneratePDFAsync(id, cancellationToken);
+            var fileName = $"BAC-Resolution-{id}.pdf";
+            return File(pdfBytes, "application/pdf", fileName);
+        }
+        catch (KeyNotFoundException)
+        {
+            return NotFound(ApiResponse<object>.Fail("Procurement project or BAC Resolution not found."));
+        }
+        catch (Exception ex)
+        {
+            return StatusCode(StatusCodes.Status500InternalServerError, ApiResponse<object>.Fail($"Failed to generate PDF: {ex.Message}"));
+        }
+    }
+
     //[Authorize(Roles = "BAC_Officer")]
     [HttpPost("projects")]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]

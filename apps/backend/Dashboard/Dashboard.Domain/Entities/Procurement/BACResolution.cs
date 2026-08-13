@@ -24,8 +24,12 @@ public class BACResolution : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public string Status { get; set; } = string.Empty;
 
+    [Sieve(CanFilter = true, CanSort = true)]
+    public string ResolvedLocation { get; set; } = string.Empty;
+
     public string? WhereasClause { get; set; }
 
     // Navigation properties
     public virtual ProcurementProject ProcurementProject { get; set; } = null!;
+    public virtual List<BACResolutionClause> SelectedClauses { get; set; } = [];
 }

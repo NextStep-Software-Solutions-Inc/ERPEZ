@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { ResponsiveDialogDashtail } from '@/components/ResponsiveDialogDashtail'
 import { Button } from '@/components/ui/button'
 import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
@@ -9,12 +9,16 @@ interface CreateBacResolutionDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   onCreate: (values: CreateBacResolutionPayload) => Promise<void> | void
+  apiAppItems: any[]
+  apiConsolidatedPrs: any[]
 }
 
 export function CreateBacResolutionDialog({
   open,
   onOpenChange,
   onCreate,
+  apiAppItems,
+  apiConsolidatedPrs,
 }: CreateBacResolutionDialogProps) {
   const [isDirty, setIsDirty] = useState(false)
   const [showDiscardWarning, setShowDiscardWarning] = useState(false)
@@ -36,29 +40,17 @@ export function CreateBacResolutionDialog({
         open={open && !showDiscardWarning}
         onOpenChange={handleOpenChange}
         title="Create BAC Resolution"
-        description="Start a new BAC Resolution draft before linking approved Consolidated PRs."
+        description="Start a new BAC Resolution by selecting a procurement source."
         size="lg"
         showCloseButton
-        footer={
-          <div className="flex justify-end gap-3 w-full">
-            <Button
-              variant="outline"
-              onClick={() => handleOpenChange(false)}
-              disabled={false}
-            >
-              Cancel
-            </Button>
-            <Button form={formId} type="submit">
-              Create
-            </Button>
-          </div>
-        }
       >
         <CreateBacResolutionForm
           formId={formId}
           onSubmit={onCreate}
           onCancel={() => handleOpenChange(false)}
           onDirtyChange={setIsDirty}
+          apiAppItems={apiAppItems}
+          apiConsolidatedPrs={apiConsolidatedPrs}
         />
       </ResponsiveDialogDashtail>
 

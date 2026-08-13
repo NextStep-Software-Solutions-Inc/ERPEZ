@@ -1,11 +1,12 @@
 using ERPEZ.Domain.Common;
 using ERPEZ.Domain.Entities.Planning;
+using ERPEZ.Domain.Enums;
 using Sieve.Attributes;
 
 namespace ERPEZ.Domain.Entities.Procurement;
 
 /// <summary>
-/// Represents a procurement project derived from a consolidated PR.
+/// Represents a procurement project derived from an APP Item or a consolidated PR.
 /// </summary>
 public class ProcurementProject : BaseEntity
 {
@@ -13,12 +14,23 @@ public class ProcurementProject : BaseEntity
     public string Title { get; set; } = string.Empty;
 
     [Sieve(CanFilter = true, CanSort = true)]
+    public ProcurementProjectSourceType SourceType { get; set; } = ProcurementProjectSourceType.ConsolidatedPR;
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public Guid? APPItemId { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
     public Guid? ConsolidatedPRId { get; set; }
 
+    [Sieve(CanFilter = true, CanSort = true)]
+    public Guid OfficeId { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public Guid FundSourceId { get; set; }
+
     /// <summary>
-    /// Snapshot of the MoP shared by all ConsolidatedPRItems included in this project.
+    /// Snapshot of the MoP shared by the source items.
     /// Set automatically at project creation — NOT user-editable.
-    /// Validated at creation time: all selected items must share the same ProcurementModeId.
     /// </summary>
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid? ProcurementModeId { get; set; }
@@ -45,15 +57,20 @@ public class ProcurementProject : BaseEntity
     public Guid? EndUserRepresentativeId { get; set; }
     public Guid? TechRepresentativeId { get; set; }
     public Guid? ApprovalAttachmentFileId { get; set; }
+
     // Navigation properties
+    public virtual APPItem? APPItem { get; set; }
     public virtual ConsolidatedPR? ConsolidatedPR { get; set; }
+    public virtual Office Office { get; set; } = null!;
+    public virtual FundSource FundSource { get; set; } = null!;
     public virtual List<BACResolution> BACResolutions { get; set; } = [];
     public virtual List<BiddingActivitySchedule> BiddingActivitySchedules { get; set; } = [];
     public virtual List<DirectContracting> DirectContractings { get; set; } = [];
+    public virtual List<PurchaseRequest> PurchaseRequests { get; set; } = [];
+
     [Sieve(CanFilter = true)]
     public virtual ProcurementMode? ProcurementMode { get; set; }
 
-    // Add to ProcurementProject navigation properties
     [Sieve(CanFilter = true)]
     public virtual BiddingDocument? BiddingDocument { get; set; }
     public virtual List<ProjectDocumentChecklist> ProjectDocumentChecklists { get; set; } = [];

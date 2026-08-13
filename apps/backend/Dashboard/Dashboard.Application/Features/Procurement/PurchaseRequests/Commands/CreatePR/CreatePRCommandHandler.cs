@@ -65,6 +65,7 @@
                 RequestedDate         = request.RequestedDate,
                 TotalAmount           = totalAmount,
                 Status                = StatusEnum.Draft,
+                ProcurementProjectId  = request.ProcurementProjectId,
                 PRItems               = prItems
             };
 

@@ -16,6 +16,7 @@ public record CreatePRCommand : IRequest<ApiResponse<Guid>>
     public Guid? PPMPId { get; init; }
     public Guid? FundSourceId { get; init; }
     public Guid? UACSCodeCombinationId { get; init; }
+    public Guid? ProcurementProjectId { get; init; }
     public PRType PRType { get; init; } = PRType.NonCSE;
     public List<PRItemRequest> Items { get; init; } = [];
 }

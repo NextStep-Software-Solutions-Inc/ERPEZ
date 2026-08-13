@@ -19,6 +19,8 @@ interface DialogsControllerProps {
   createOpen: boolean
   setCreateOpen: (open: boolean) => void
   onCreate: (payload: CreateBacResolutionPayload) => Promise<void> | void
+  apiAppItems: any[]
+  apiConsolidatedPrs: any[]
   editOpen: boolean
   setEditOpen: (open: boolean) => void
   editingResolution?: BacResolution
@@ -59,6 +61,8 @@ export function DialogsController({
   createOpen,
   setCreateOpen,
   onCreate,
+  apiAppItems,
+  apiConsolidatedPrs,
   editOpen,
   setEditOpen,
   editingResolution,
@@ -94,6 +98,8 @@ export function DialogsController({
         open={createOpen}
         onOpenChange={setCreateOpen}
         onCreate={onCreate}
+        apiAppItems={apiAppItems}
+        apiConsolidatedPrs={apiConsolidatedPrs}
       />
 
       <EditBacResolutionDialog

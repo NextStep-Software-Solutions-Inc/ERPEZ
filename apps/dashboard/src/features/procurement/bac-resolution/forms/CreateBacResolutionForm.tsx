@@ -1,7 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useForm } from '@tanstack/react-form'
 import { z } from 'zod'
-import { ArrowDown, ArrowUp, Trash } from 'lucide-react'
+import { ArrowDown, ArrowUp, Trash, Search, ArrowRight, ArrowLeft } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -71,6 +71,8 @@ interface CreateBacResolutionFormProps {
   isLoading?: boolean
   onDirtyChange?: (isDirty: boolean) => void
   formId?: string
+  apiAppItems: any[]
+  apiConsolidatedPrs: any[]
 }
 
 type WhereasClauseTemplate = {
@@ -101,17 +103,6 @@ interface SelectedWhereasClausesProps {
   onSaveTemplateOverride: (index: number) => void
 }
 
-interface ProvisionalMembersSectionProps {
-  provisionalMembers: BacResolutionProvisionalMember[]
-  isLoading: boolean
-  onUpdateMember: (
-    index: number,
-    field: 'name' | 'position',
-    value: string,
-  ) => void
-  usersSuggestions?: User[]
-}
-
 function ManageWhereasClausesDialog({
   open,
   onOpenChange,
@@ -123,75 +114,110 @@ function ManageWhereasClausesDialog({
   isLoading,
   isTemplatesLoading,
 }: ManageWhereasClausesDialogProps) {
+  const [searchQuery, setSearchQuery] = useState('')
+
+  const filteredTemplates = useMemo(() => {
+    if (!templates) return []
+    return templates.filter(
+      (t) =>
+        t.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        t.body.toLowerCase().includes(searchQuery.toLowerCase()),
+    )
+  }, [templates, searchQuery])
+
   return (
     <ResponsiveDialogDashtail
       open={open}
       onOpenChange={onOpenChange}
-      title="Manage WHEREAS Clauses"
-      description="Select the WHEREAS clause templates to include in this BAC resolution. Checked items will be shown in the selected clauses table."
-      size="xl"
+      title="Manage WHEREAS Templates"
+      description="Select template clauses to include in the BAC Resolution"
+      size="md"
+      showCloseButton
       footer={
-        <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex gap-2 w-full justify-between">
           <div className="flex gap-2">
             <Button
               type="button"
               variant="outline"
               size="sm"
               onClick={onSelectAll}
-              disabled={isLoading || isTemplatesLoading || !templates?.length}
+              disabled={isLoading || isTemplatesLoading}
             >
-              Select all
+              Select All
             </Button>
             <Button
               type="button"
               variant="outline"
               size="sm"
               onClick={onClearAll}
-              disabled={isLoading || !selectedTemplateIds.length}
+              disabled={isLoading || isTemplatesLoading}
             >
-              Clear selection
+              Clear All
             </Button>
           </div>
-          <Button type="button" onClick={() => onOpenChange(false)}>
+          <Button
+            type="button"
+            size="sm"
+            onClick={() => onOpenChange(false)}
+            disabled={isLoading}
+          >
             Done
           </Button>
         </div>
       }
     >
-      <div className="space-y-3">
-        {isTemplatesLoading ? (
-          <p className="text-sm text-muted-foreground">Loading clauses...</p>
-        ) : !templates?.length ? (
-          <p className="text-sm text-muted-foreground">
-            No WHEREAS clause templates found. Create clauses first in the clause manager.
-          </p>
-        ) : (
-          <div className="space-y-3">
-            {templates.map((template) => (
-              <label
-                key={template.id}
-                className="flex cursor-pointer items-start gap-3 rounded-lg border border-default-200 bg-default-50 p-3 transition hover:border-primary"
-              >
-                <Checkbox
-                  checked={selectedTemplateIds.includes(template.id)}
-                  onCheckedChange={() => onToggleTemplate(template.id)}
-                  disabled={isLoading}
-                />
-                <div className="flex-1 space-y-1">
-                  <div className="flex items-center justify-between gap-3">
-                    <p className="font-semibold text-sm">{template.name}</p>
-                    <p className="text-xs uppercase tracking-[0.12em] text-muted-foreground">
-                      Template
+      <div className="space-y-4 py-2">
+        <div className="relative">
+          <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            placeholder="Search templates..."
+            className="pl-8"
+          />
+        </div>
+
+        <div className="max-h-[300px] overflow-y-auto space-y-2 pr-1">
+          {isTemplatesLoading ? (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              Loading templates...
+            </p>
+          ) : filteredTemplates.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">
+              No templates found.
+            </p>
+          ) : (
+            filteredTemplates.map((template) => {
+              const isChecked = selectedTemplateIds.includes(template.id)
+              return (
+                <div
+                  key={template.id}
+                  onClick={() => onToggleTemplate(template.id)}
+                  className="flex items-start space-x-3 rounded-md border p-3 hover:bg-default-50 cursor-pointer transition-colors"
+                >
+                  <Checkbox
+                    id={`template-${template.id}`}
+                    checked={isChecked}
+                    onCheckedChange={() => onToggleTemplate(template.id)}
+                    onClick={(e) => e.stopPropagation()}
+                    disabled={isLoading}
+                  />
+                  <div className="grid gap-1.5 leading-none">
+                    <label
+                      htmlFor={`template-${template.id}`}
+                      className="text-sm font-semibold leading-none cursor-pointer"
+                    >
+                      {template.name}
+                    </label>
+                    <p className="text-xs text-muted-foreground line-clamp-2">
+                      {template.body}
                     </p>
                   </div>
-                  <p className="whitespace-pre-line text-sm text-muted-foreground">
-                    {template.body}
-                  </p>
                 </div>
-              </label>
-            ))}
-          </div>
-        )}
+              )
+            })
+          )}
+        </div>
       </div>
     </ResponsiveDialogDashtail>
   )
@@ -203,96 +229,110 @@ function SelectedWhereasClauses({
   onMove,
   onRemove,
   onUpdateClauseBody,
+  onUpdateClauseName,
   onSaveTemplateOverride,
 }: SelectedWhereasClausesProps) {
-  if (!selectedClauses.length) {
+  if (selectedClauses.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-default-300 bg-white p-4 text-sm text-muted-foreground">
-        No WHEREAS clauses selected yet. Click Manage WHEREAS to select saved templates, or Add Custom Clause to type custom ones.
+      <div className="rounded-lg border border-dashed p-8 text-center bg-default-50">
+        <p className="text-sm text-muted-foreground">
+          No clauses added yet. Click Add Custom Clause or Manage WHEREAS templates to start.
+        </p>
       </div>
     )
   }
 
   return (
-    <div className="overflow-hidden rounded-lg border border-default-200 bg-white">
-      <Table>
-        <TableHeader>
-          <TableRow>
-            <TableHead>WHEREAS Clause</TableHead>
-            <TableHead className="text-right">Actions</TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {selectedClauses.map((template, index) => (
-            <TableRow key={template.id || index}>
-              <TableCell>
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between gap-4">
-                    {!template.id ? (
-                      <p className="font-semibold text-muted-foreground">Custom WHEREAS Clause</p>
-                    ) : (
-                      <p className="font-semibold">{template.name}</p>
-                    )}
-                    {template.id && (
-                      <Button
-                        type="button"
-                        variant="ghost"
-                        size="xs"
-                        onClick={() => onSaveTemplateOverride(index)}
-                        disabled={isLoading}
-                        className="text-primary hover:text-primary-focus text-xs font-semibold px-2 py-1 h-auto"
-                      >
-                        Override Template
-                      </Button>
-                    )}
-                  </div>
-                  <Textarea
-                    value={template.body}
-                    onChange={(e) => onUpdateClauseBody(index, e.target.value)}
-                    disabled={isLoading}
-                    rows={4}
-                    placeholder="Enter WHEREAS clause description here..."
-                    className="w-full bg-white text-sm text-default-800 border-default-300 focus:border-primary focus:ring-primary"
-                  />
-                </div>
-              </TableCell>
-              <TableCell>
-                <div className="flex justify-end gap-2">
+    <div className="space-y-4">
+      {selectedClauses.map((clause, index) => {
+        const isCustom = !clause.id
+        return (
+          <div
+            key={clause.id || `custom-${index}`}
+            className="flex gap-4 items-start rounded-lg border p-4 bg-default-50 hover:shadow-sm transition-shadow"
+          >
+            <div className="grid gap-2 flex-1">
+              <div className="flex items-center gap-2">
+                <span className="text-xs font-bold text-muted-foreground uppercase">
+                  Clause {index + 1} {isCustom ? '(Custom)' : '(Template)'}
+                </span>
+                <Input
+                  value={clause.name}
+                  onChange={(e) => onUpdateClauseName?.(index, e.target.value)}
+                  placeholder="e.g. Legal Basis"
+                  className="max-w-[200px] h-7 text-xs font-semibold px-2 py-0.5"
+                  disabled={isLoading}
+                />
+                {!isCustom && (
                   <Button
                     type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onMove(index, -1)}
-                    disabled={index === 0 || isLoading}
-                  >
-                    <ArrowUp className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="outline"
-                    size="sm"
-                    onClick={() => onMove(index, 1)}
-                    disabled={index === selectedClauses.length - 1 || isLoading}
-                  >
-                    <ArrowDown className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    type="button"
-                    variant="destructive"
-                    size="sm"
-                    onClick={() => onRemove(index)}
+                    variant="ghost"
+                    size="xs"
+                    className="text-xs text-primary"
+                    onClick={() => onSaveTemplateOverride(index)}
                     disabled={isLoading}
                   >
-                    <Trash className="h-4 w-4" />
+                    Save Template Override
                   </Button>
-                </div>
-              </TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+                )}
+              </div>
+              <Textarea
+                value={clause.body}
+                onChange={(e) => onUpdateClauseBody(index, e.target.value)}
+                placeholder="WHEREAS, Section 12 of R.A. 9184..."
+                className="min-h-[80px] text-sm"
+                disabled={isLoading}
+              />
+            </div>
+
+            <div className="flex flex-col gap-1.5 self-center">
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-default-500"
+                onClick={() => onMove(index, -1)}
+                disabled={isLoading || index === 0}
+              >
+                <ArrowUp className="h-4 w-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-default-500"
+                onClick={() => onMove(index, 1)}
+                disabled={isLoading || index === selectedClauses.length - 1}
+              >
+                <ArrowDown className="h-4 w-4" />
+              </Button>
+              <Button
+                type="button"
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-destructive hover:bg-destructive/10"
+                onClick={() => onRemove(index)}
+                disabled={isLoading}
+              >
+                <Trash className="h-4 w-4" />
+              </Button>
+            </div>
+          </div>
+        )
+      })}
     </div>
   )
+}
+
+interface ProvisionalMembersSectionProps {
+  provisionalMembers: BacResolutionProvisionalMember[]
+  isLoading: boolean
+  onUpdateMember: (
+    index: number,
+    field: 'name' | 'position',
+    value: string,
+  ) => void
+  usersSuggestions: User[]
 }
 
 function ProvisionalMembersSection({
@@ -304,43 +344,55 @@ function ProvisionalMembersSection({
   return (
     <div className="space-y-4 rounded-lg border border-default-200 bg-default-50 p-4">
       <div>
-        <Label className="text-base font-semibold">Provisional Members</Label>
+        <Label className="text-base font-semibold">Provisional Signatories</Label>
         <p className="text-sm text-muted-foreground">
-          Provide the per-resolution provisional End-user and Technical representatives.
+          Define the provisional members representing the end-user office and technical reviews.
         </p>
       </div>
 
-      <div className="space-y-4">
+      <div className="grid gap-5 sm:grid-cols-2">
         {provisionalMembers.map((member, index) => (
-          <div
-            key={member.id}
-            className="rounded-lg border border-default-200 bg-white p-4 shadow-sm"
-          >
-            <div className="grid gap-2 md:grid-cols-2">
-              <div className="grid gap-2">
-                <Label>Name ({member.role})</Label>
-                <Input
-                  value={member.name}
-                  onChange={(event) => onUpdateMember(index, 'name', event.target.value)}
-                  disabled={isLoading}
-                  list={`users-suggestions-${member.id}`}
-                  placeholder="Type name to see suggestions..."
-                />
-                <datalist id={`users-suggestions-${member.id}`}>
-                  {usersSuggestions?.map((u) => (
-                    <option key={u.id} value={`${u.fullName} (${u.employeeNumber})`}>
-                      {u.officeName ? `Office: ${u.officeName}` : ''}
-                    </option>
-                  ))}
-                </datalist>
+          <div key={member.id} className="rounded-md border p-4 bg-background space-y-4">
+            <div className="flex items-center justify-between border-b pb-2">
+              <span className="text-sm font-bold text-primary">{member.role}</span>
+            </div>
+
+            <div className="space-y-3">
+              <div className="grid gap-1.5">
+                <Label htmlFor={`member-name-${member.id}`}>Full Name</Label>
+                <div className="relative">
+                  <Input
+                    id={`member-name-${member.id}`}
+                    value={member.name}
+                    onChange={(event) =>
+                      onUpdateMember(index, 'name', event.target.value)
+                    }
+                    placeholder="Enter or select name"
+                    disabled={isLoading}
+                    list={`suggestions-${member.id}`}
+                    className="w-full"
+                  />
+                  <datalist id={`suggestions-${member.id}`}>
+                    {usersSuggestions.map((user) => (
+                      <option
+                        key={user.id}
+                        value={`${user.fullName} (${user.employeeNumber})`}
+                      />
+                    ))}
+                  </datalist>
+                </div>
               </div>
 
-              <div className="grid gap-2">
-                <Label>Position</Label>
+              <div className="grid gap-1.5">
+                <Label htmlFor={`member-position-${member.id}`}>Position / Title</Label>
                 <Input
+                  id={`member-position-${member.id}`}
                   value={member.position}
-                  onChange={(event) => onUpdateMember(index, 'position', event.target.value)}
+                  onChange={(event) =>
+                    onUpdateMember(index, 'position', event.target.value)
+                  }
                   disabled={isLoading}
+                  placeholder="e.g. Director / Representative"
                 />
               </div>
             </div>
@@ -357,9 +409,18 @@ export function CreateBacResolutionForm({
   isLoading = false,
   onDirtyChange,
   formId,
+  apiAppItems = [],
+  apiConsolidatedPrs = [],
 }: CreateBacResolutionFormProps) {
   const { data: templates, isLoading: isTemplatesLoading } = useWhereasClauseTemplates({})
   const { mutateAsync: updateTemplate } = useUpdateWhereasClauseTemplate()
+
+  const [step, setStep] = useState<1 | 2 | 3 | 4>(1)
+  const [sourceType, setSourceType] = useState<'AppItem' | 'ConsolidatedPR'>('AppItem')
+  const [selectedAppItemId, setSelectedAppItemId] = useState<string | null>(null)
+  const [selectedConsolidatedPRId, setSelectedConsolidatedPRId] = useState<string | null>(null)
+  const [searchQuery, setSearchQuery] = useState('')
+
   const [selectedClauses, setSelectedClauses] = useState<WhereasClauseTemplate[]>(
     initialValues?.whereasClauses?.map((c) => ({
       id: c.id ?? '',
@@ -387,6 +448,7 @@ export function CreateBacResolutionForm({
 
   const [isManageWhereasOpen, setIsManageWhereasOpen] = useState(false)
   const [users, setUsers] = useState<User[]>([])
+
   useEffect(() => {
     fetchUsers()
       .then(setUsers)
@@ -394,7 +456,7 @@ export function CreateBacResolutionForm({
   }, [])
 
   const [provisionalMembers, setProvisionalMembers] = useState<
-    CreateBacResolutionPayload['provisionalMembers']
+    BacResolutionProvisionalMember[]
   >([])
 
   useEffect(() => {
@@ -419,27 +481,77 @@ export function CreateBacResolutionForm({
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [overrideIndex, setOverrideIndex] = useState<number | null>(null)
 
+  const calculateAppItemBudget = (item: any) => {
+    if (!item) return 0
+    if (item.amount !== undefined && item.amount !== null && item.amount !== 0) return item.amount
+    if (!item.ppmpItem) return 0
+    const qty = item.ppmpItem.ppmpItemAllocations?.reduce((sum: number, a: any) => sum + (a.quantity || 0), 0) || 0
+    return item.ppmpItem.unitPrice * qty
+  }
+
+  const selectedAppItem = useMemo(() => {
+    return apiAppItems.find((i) => i.id === selectedAppItemId)
+  }, [apiAppItems, selectedAppItemId])
+
+  const selectedConsolidatedPR = useMemo(() => {
+    return apiConsolidatedPrs.find((c) => c.id === selectedConsolidatedPRId)
+  }, [apiConsolidatedPrs, selectedConsolidatedPRId])
+
+  const filteredAppItems = useMemo(() => {
+    if (!searchQuery) return apiAppItems
+    const query = searchQuery.toLowerCase()
+    return apiAppItems.filter((item) => {
+      const name = item.ppmpItem?.name?.toLowerCase() || ''
+      const desc = item.ppmpItem?.description?.toLowerCase() || ''
+      const office = item.office?.name?.toLowerCase() || ''
+      return name.includes(query) || desc.includes(query) || office.includes(query)
+    })
+  }, [apiAppItems, searchQuery])
+
+  const filteredConsolidatedPrs = useMemo(() => {
+    if (!searchQuery) return apiConsolidatedPrs
+    const query = searchQuery.toLowerCase()
+    return apiConsolidatedPrs.filter((cpr) => {
+      const num = cpr.cprNumber?.toLowerCase() || cpr.prNumber?.toLowerCase() || ''
+      const desc = cpr.description?.toLowerCase() || ''
+      const purpose = cpr.purpose?.toLowerCase() || ''
+      return num.includes(query) || desc.includes(query) || purpose.includes(query)
+    })
+  }, [apiConsolidatedPrs, searchQuery])
+
   const form = useForm({
     defaultValues: {
       title: initialValues?.title ?? '',
       abc: initialValues?.abc ?? 0,
-      resolutionType: initialValues?.resolutionType ?? '',
+      resolutionType: initialValues?.resolutionType ?? 'Standard',
       bacResolutionNumber: initialValues?.bacResolutionNumber ?? '',
-      resolutionDate: initialValues?.resolutionDate ?? '',
+      resolutionDate: initialValues?.resolutionDate ?? new Date().toISOString().split('T')[0],
       description: initialValues?.description ?? '',
-      resolvedDateText: initialValues?.resolvedDateText ?? '',
-      resolvedLocationText: initialValues?.resolvedLocationText ?? '',
-    },
-    validators: {
+      resolvedDateText: initialValues?.resolvedDateText ?? new Date().toLocaleDateString('en-PH', {
+        weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
+      }),
+      resolvedLocationText: initialValues?.resolvedLocationText ?? 'University of Science and Technology of Southern Philippines, Cagayan de Oro City',
     },
     onSubmit: async ({ value }) => {
       const endUserRep = provisionalMembers.find(m => m.id === 'provisional-end-user-rep' || m.role === 'End-user Rep')
       const techRep = provisionalMembers.find(m => m.id === 'provisional-tech-rep' || m.role === 'Tech Rep')
 
+      // Auto-prepopulate clauses if still empty in step 4
+      const clausesToSubmit = selectedClauses.length > 0 ? selectedClauses : (templates ?? []).slice(0, 2)
+
       const payload: CreateBacResolutionPayload = {
-        ...value,
+        title: value.title || (sourceType === 'AppItem' ? selectedAppItem?.ppmpItem?.name : selectedConsolidatedPR?.description) || 'BAC Resolution Project',
+        abc: value.abc || (sourceType === 'AppItem' ? calculateAppItemBudget(selectedAppItem) : selectedConsolidatedPR?.totalAmount) || 0,
+        sourceType: sourceType,
+        appItemId: sourceType === 'AppItem' ? selectedAppItemId || undefined : undefined,
+        consolidatedPRId: sourceType === 'ConsolidatedPR' ? selectedConsolidatedPRId || undefined : undefined,
+        resolutionType: value.resolutionType,
+        bacResolutionNumber: value.bacResolutionNumber,
+        resolutionDate: value.resolutionDate,
         description: value.description || value.title || 'Untitled BAC Resolution',
-        whereasClauses: selectedClauses.map((template) => ({
+        resolvedDateText: value.resolvedDateText,
+        resolvedLocationText: value.resolvedLocationText,
+        whereasClauses: clausesToSubmit.map((template) => ({
           id: template.id,
           name: template.name,
           body: template.body,
@@ -467,6 +579,48 @@ export function CreateBacResolutionForm({
       onDirtyChange?.(false)
     },
   })
+
+  // Set default clauses when templates load
+  useEffect(() => {
+    if (templates && templates.length > 0 && selectedClauses.length === 0) {
+      setSelectedClauses(templates.map((t) => ({ ...t })))
+    }
+  }, [templates])
+
+  const handleNextStep = () => {
+    if (step === 1) {
+      setStep(2)
+      setSearchQuery('')
+    } else if (step === 2) {
+      if (sourceType === 'AppItem' && !selectedAppItemId) {
+        toast.error('Please select an APP Item.')
+        return
+      }
+      if (sourceType === 'ConsolidatedPR' && !selectedConsolidatedPRId) {
+        toast.error('Please select a Consolidated PR.')
+        return
+      }
+      setStep(3)
+    } else if (step === 3) {
+      // Prepopulate form values from chosen source
+      if (sourceType === 'AppItem' && selectedAppItem) {
+        form.setFieldValue('title', selectedAppItem.ppmpItem?.name || 'Procurement Project')
+        form.setFieldValue('abc', calculateAppItemBudget(selectedAppItem))
+        form.setFieldValue('description', selectedAppItem.ppmpItem?.description || '')
+      } else if (sourceType === 'ConsolidatedPR' && selectedConsolidatedPR) {
+        form.setFieldValue('title', selectedConsolidatedPR.description || 'Consolidated Procurement Project')
+        form.setFieldValue('abc', selectedConsolidatedPR.totalAmount)
+        form.setFieldValue('description', selectedConsolidatedPR.purpose || '')
+      }
+      setStep(4)
+    }
+  }
+
+  const handlePrevStep = () => {
+    if (step > 1) {
+      setStep((s) => (s - 1) as any)
+    }
+  }
 
   const isClausesDirty = selectedTemplateIds.length > 0
   const isProvisionalDirty = provisionalMembers.some(
@@ -535,8 +689,6 @@ export function CreateBacResolutionForm({
         id: '',
         name: 'WHEREAS, ',
         body: '',
-        createdAt: '',
-        updatedAt: '',
       },
     ])
   }
@@ -579,7 +731,6 @@ export function CreateBacResolutionForm({
         if (i !== index) return member
 
         if (field === 'name') {
-          // Check if the typed/selected name matches any user's "FullName (EmployeeNumber)" format
           const matchedUser = users.find(
             (u) => `${u.fullName} (${u.employeeNumber})`.toLowerCase() === value.trim().toLowerCase()
           )
@@ -599,283 +750,637 @@ export function CreateBacResolutionForm({
   }
 
   return (
-    <>
-      <form
-        id={formId}
-        onSubmit={(event) => {
-          event.preventDefault()
-          event.stopPropagation()
-          form.handleSubmit()
-        }}
-        className="space-y-6"
-      >
-        <div className="grid gap-5 md:grid-cols-3">
-          <form.Field name="title">
-            {(field) => (
-              <div className="grid gap-2">
-                <Label htmlFor={field.name}>Title</Label>
-                <Input
-                  id={field.name}
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(event) => field.handleChange(event.target.value)}
-                  placeholder="e.g. Title of Project"
-                  disabled={isLoading}
-                />
-                {field.state.meta.errors.length > 0 && (
-                  <p className="text-sm text-destructive">
-                    <FieldInfo field={field} />
-                  </p>
-                )}
-              </div>
-            )}
-          </form.Field>
-
-          <form.Field name="abc">
-            {(field) => (
-              <div className="grid gap-2">
-                <Label htmlFor={field.name}>ABC</Label>
-                <Input
-                  id={field.name}
-                  type="number"
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(event) => field.handleChange(Number(event.target.value))}
-                  placeholder="e.g. 50000"
-                  disabled={isLoading}
-                />
-                {field.state.meta.errors.length > 0 && (
-                  <p className="text-sm text-destructive">
-                    <FieldInfo field={field} />
-                  </p>
-                )}
-              </div>
-            )}
-          </form.Field>
-
-          <form.Field name="resolutionType">
-            {(field) => (
-              <div className="grid gap-2">
-                <Label htmlFor={field.name}>Resolution Type</Label>
-                <Input
-                  id={field.name}
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(event) => field.handleChange(event.target.value)}
-                  placeholder="e.g. Standard"
-                  disabled={isLoading}
-                />
-                {field.state.meta.errors.length > 0 && (
-                  <p className="text-sm text-destructive">
-                    <FieldInfo field={field} />
-                  </p>
-                )}
-              </div>
-            )}
-          </form.Field>
+    <div className="space-y-6">
+      {/* Visual Step Progress Indicator */}
+      <div className="flex items-center justify-between border-b pb-4 mb-2">
+        <div className="flex items-center space-x-2 sm:space-x-4">
+          <button
+            type="button"
+            disabled={step < 1}
+            onClick={() => step > 1 && setStep(1)}
+            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${step === 1 ? 'bg-primary text-white scale-105' : 'bg-default-100 text-default-600 hover:bg-default-200'
+              }`}
+          >
+            1. Source Selection
+          </button>
+          <span className="text-default-400 text-xs">/</span>
+          <button
+            type="button"
+            disabled={step < 2}
+            onClick={() => step > 2 && setStep(2)}
+            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${step === 2 ? 'bg-primary text-white scale-105' : 'bg-default-100 text-default-600 hover:bg-default-200'
+              }`}
+          >
+            2. Search & Select
+          </button>
+          <span className="text-default-400 text-xs">/</span>
+          <button
+            type="button"
+            disabled={step < 3}
+            onClick={() => step > 3 && setStep(3)}
+            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${step === 3 ? 'bg-primary text-white scale-105' : 'bg-default-100 text-default-600 hover:bg-default-200'
+              }`}
+          >
+            3. Preview Source
+          </button>
+          <span className="text-default-400 text-xs">/</span>
+          <span
+            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${step === 4 ? 'bg-primary text-white scale-105' : 'bg-default-100 text-default-600'
+              }`}
+          >
+            4. Fill Details
+          </span>
         </div>
+      </div>
 
-        <div className="grid gap-5 md:grid-cols-2">
-          <form.Field name="bacResolutionNumber">
-            {(field) => (
-              <div className="grid gap-2">
-                <Label htmlFor={field.name}>BAC Resolution Number</Label>
-                <Input
-                  id={field.name}
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(event) => field.handleChange(event.target.value)}
-                  placeholder="BAC-RES-2026-001"
-                  disabled={isLoading}
-                />
-                {field.state.meta.errors.length > 0 && (
-                  <p className="text-sm text-destructive">
-                    <FieldInfo field={field} />
-                  </p>
-                )}
+      {step === 1 && (
+        <div className="space-y-4">
+          <Label className="text-lg font-semibold block">Choose Procurement Source Type</Label>
+          <p className="text-sm text-muted-foreground">
+            A BAC Resolution can be initiated either from an individual approved APP Item or from a Consolidated Purchase Request.
+          </p>
+          <div className="grid gap-5 sm:grid-cols-2 pt-2">
+            <div
+              onClick={() => setSourceType('AppItem')}
+              className={`rounded-xl border p-6 cursor-pointer hover:shadow-md transition-all flex flex-col gap-3 ${sourceType === 'AppItem'
+                ? 'border-primary ring-2 ring-primary bg-primary/5 shadow-sm'
+                : 'border-default-200 bg-background hover:border-default-400'
+                }`}
+            >
+              <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-lg">
+                A
               </div>
-            )}
-          </form.Field>
+              <div>
+                <h4 className="font-bold text-base text-foreground">Annual Procurement Plan (APP) Item</h4>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Create a resolution directly from an approved line item in the Annual Procurement Plan. Best for standalone purchases.
+                </p>
+              </div>
+            </div>
 
-          <form.Field name="resolutionDate">
-            {(field) => (
-              <div className="grid gap-2">
-                <Label htmlFor={field.name}>Resolution Date</Label>
-                <Input
-                  id={field.name}
-                  type="date"
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(event) => field.handleChange(event.target.value)}
-                  disabled={isLoading}
-                />
-                {field.state.meta.errors.length > 0 && (
-                  <p className="text-sm text-destructive">
-                    <FieldInfo field={field} />
-                  </p>
-                )}
+            <div
+              onClick={() => setSourceType('ConsolidatedPR')}
+              className={`rounded-xl border p-6 cursor-pointer hover:shadow-md transition-all flex flex-col gap-3 ${sourceType === 'ConsolidatedPR'
+                ? 'border-primary ring-2 ring-primary bg-primary/5 shadow-sm'
+                : 'border-default-200 bg-background hover:border-default-400'
+                }`}
+            >
+              <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-lg">
+                B
               </div>
-            )}
-          </form.Field>
+              <div>
+                <h4 className="font-bold text-base text-foreground">Consolidated Purchase Request (CPR)</h4>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Create a resolution from a Consolidated Purchase Request. Best for grouped end-user requisitions.
+                </p>
+              </div>
+            </div>
+          </div>
         </div>
+      )}
 
-        <div className="grid gap-5 md:grid-cols-2">
-          <form.Field name="resolvedDateText">
-            {(field) => {
-              const currentDateValue = (() => {
-                const parsed = new Date(field.state.value)
-                return !isNaN(parsed.getTime())
-                  ? parsed.toISOString().split('T')[0]
-                  : ''
-              })()
+      {step === 2 && (
+        <div className="space-y-4">
+          <div className="flex flex-col gap-1.5">
+            <Label className="text-lg font-semibold">Search and Select {sourceType === 'AppItem' ? 'APP Item' : 'Consolidated PR'}</Label>
+            <p className="text-sm text-muted-foreground">
+              Search the database for approved {sourceType === 'AppItem' ? 'APP Line Items' : 'Consolidated Purchase Requests'}.
+            </p>
+          </div>
 
-              return (
+          <div className="relative">
+            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+            <Input
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              placeholder={`Search by name, description, or reference code...`}
+              className="pl-8"
+              disabled={isLoading}
+            />
+          </div>
+
+          <div className="border rounded-lg max-h-[320px] overflow-y-auto">
+            {sourceType === 'AppItem' ? (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[50px]"></TableHead>
+                    <TableHead>Item Name</TableHead>
+                    <TableHead>Office</TableHead>
+                    <TableHead className="text-right">Budget (ABC)</TableHead>
+                    <TableHead>Mode of Procurement</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredAppItems.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                        No APP Items found matching search criteria.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredAppItems.map((item) => {
+                      const isSelected = selectedAppItemId === item.id
+                      const budget = calculateAppItemBudget(item)
+                      return (
+                        <TableRow
+                          key={item.id}
+                          onClick={() => setSelectedAppItemId(item.id)}
+                          className={`cursor-pointer hover:bg-default-50 transition-colors ${isSelected ? 'bg-primary/5' : ''
+                            }`}
+                        >
+                          <TableCell>
+                            <Checkbox
+                              checked={isSelected}
+                              onCheckedChange={() => setSelectedAppItemId(item.id)}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            {item.ppmpItem?.name || item.name || 'Untitled Line Item'}
+                          </TableCell>
+                          <TableCell>{item.office?.name || 'N/A'}</TableCell>
+                          <TableCell className="text-right font-semibold">
+                            ₱{budget.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                          </TableCell>
+                          <TableCell>{item.ppmpItem?.procurementMode?.name || 'N/A'}</TableCell>
+                        </TableRow>
+                      )
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-[50px]"></TableHead>
+                    <TableHead>CPR Number</TableHead>
+                    <TableHead>Description / Purpose</TableHead>
+                    <TableHead className="text-right">Total Amount</TableHead>
+                    <TableHead>Status</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredConsolidatedPrs.length === 0 ? (
+                    <TableRow>
+                      <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                        No Consolidated PRs found matching search criteria.
+                      </TableCell>
+                    </TableRow>
+                  ) : (
+                    filteredConsolidatedPrs.map((cpr) => {
+                      const isSelected = selectedConsolidatedPRId === cpr.id
+                      return (
+                        <TableRow
+                          key={cpr.id}
+                          onClick={() => setSelectedConsolidatedPRId(cpr.id)}
+                          className={`cursor-pointer hover:bg-default-50 transition-colors ${isSelected ? 'bg-primary/5' : ''
+                            }`}
+                        >
+                          <TableCell>
+                            <Checkbox
+                              checked={isSelected}
+                              onCheckedChange={() => setSelectedConsolidatedPRId(cpr.id)}
+                              onClick={(e) => e.stopPropagation()}
+                            />
+                          </TableCell>
+                          <TableCell className="font-medium">
+                            {cpr.cprNumber || cpr.prNumber || 'CPR-N/A'}
+                          </TableCell>
+                          <TableCell>{cpr.description || cpr.purpose || 'No description'}</TableCell>
+                          <TableCell className="text-right font-semibold">
+                            ₱{(cpr.totalAmount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                          </TableCell>
+                          <TableCell>
+                            <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800">
+                              {cpr.status}
+                            </span>
+                          </TableCell>
+                        </TableRow>
+                      )
+                    })
+                  )}
+                </TableBody>
+              </Table>
+            )}
+          </div>
+        </div>
+      )}
+
+      {step === 3 && (
+        <div className="space-y-4">
+          <div className="flex flex-col gap-1.5">
+            <Label className="text-lg font-semibold">Verify Selected Source</Label>
+            <p className="text-sm text-muted-foreground">
+              Review parameters extracted from the chosen database record.
+            </p>
+          </div>
+
+          <div className="rounded-lg border p-6 bg-default-50 space-y-4 shadow-inner">
+            {sourceType === 'AppItem' && selectedAppItem ? (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <span className="text-xs font-bold text-muted-foreground uppercase">Source Type</span>
+                  <p className="font-semibold text-sm">Annual Procurement Plan (APP) Item</p>
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-muted-foreground uppercase">Project Item Title</span>
+                  <p className="font-semibold text-sm">{selectedAppItem.ppmpItem?.name || 'Untitled Line Item'}</p>
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-muted-foreground uppercase">Office / Implementing Unit</span>
+                  <p className="font-semibold text-sm">{selectedAppItem.office?.name || 'N/A'}</p>
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-muted-foreground uppercase">Approved Budget (ABC)</span>
+                  <p className="font-bold text-sm text-primary">
+                    ₱{calculateAppItemBudget(selectedAppItem).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-muted-foreground uppercase">Source of Fund</span>
+                  <p className="font-semibold text-sm">{selectedAppItem.fundSource?.name || 'N/A'}</p>
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-muted-foreground uppercase">Mode of Procurement</span>
+                  <p className="font-semibold text-sm">{selectedAppItem.ppmpItem?.procurementMode?.name || 'N/A'}</p>
+                </div>
+              </div>
+            ) : sourceType === 'ConsolidatedPR' && selectedConsolidatedPR ? (
+              <div className="grid gap-4 sm:grid-cols-2">
+                <div>
+                  <span className="text-xs font-bold text-muted-foreground uppercase">Source Type</span>
+                  <p className="font-semibold text-sm">Consolidated Purchase Request (CPR)</p>
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-muted-foreground uppercase">CPR Number</span>
+                  <p className="font-semibold text-sm">{selectedConsolidatedPR.cprNumber || selectedConsolidatedPR.prNumber || 'CPR-N/A'}</p>
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-muted-foreground uppercase">Description / Purpose</span>
+                  <p className="font-semibold text-sm">{selectedConsolidatedPR.description || 'No description'}</p>
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-muted-foreground uppercase">Total Consolidated Amount</span>
+                  <p className="font-bold text-sm text-primary">
+                    ₱{(selectedConsolidatedPR.totalAmount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                  </p>
+                </div>
+              </div>
+            ) : (
+              <p className="text-sm text-destructive font-semibold">No source item selected correctly.</p>
+            )}
+          </div>
+        </div>
+      )}
+
+      {step === 4 && (
+        <form
+          id={formId}
+          onSubmit={(event) => {
+            event.preventDefault()
+            event.stopPropagation()
+            form.handleSubmit()
+          }}
+          className="space-y-6"
+        >
+          {/* Read Only Source Header Badge */}
+          <div className="rounded-md bg-primary/5 border border-primary/20 p-3 flex justify-between items-center text-xs">
+            <div>
+              <span className="font-bold uppercase text-muted-foreground">Selected Source: </span>
+              <span className="font-bold text-primary">
+                {sourceType === 'AppItem' ? `APP Item: ${selectedAppItem?.ppmpItem?.name}` : `Consolidated PR: ${selectedConsolidatedPR?.cprNumber || selectedConsolidatedPR?.prNumber}`}
+              </span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setStep(2)}
+              className="text-primary hover:underline font-semibold"
+            >
+              Change Source
+            </button>
+          </div>
+
+          <div className="grid gap-5 md:grid-cols-3">
+            <form.Field name="title">
+              {(field) => (
                 <div className="grid gap-2">
-                  <Label htmlFor={field.name}>Resolved Date</Label>
-                  <div className="flex gap-2 items-center">
-                    <Input
-                      id={field.name}
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(event) => field.handleChange(event.target.value)}
-                      placeholder="e.g. December 31, 2026"
-                      disabled={isLoading}
-                      className="flex-1"
-                    />
-                    <input
-                      ref={resolvedDatePickerRef}
-                      type="date"
-                      value={currentDateValue}
-                      onChange={(event) => {
-                        const dateVal = event.target.value
-                        if (!dateVal) return
-                        const dateObj = new Date(dateVal)
-                        if (!isNaN(dateObj.getTime())) {
-                          field.handleChange(
-                            dateObj.toLocaleDateString('en-US', {
-                              weekday: 'long',
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric',
-                            }),
-                          )
-                        }
-                      }}
-                      className="sr-only"
-                      disabled={isLoading}
-                      aria-hidden="true"
-                      tabIndex={-1}
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="px-3 h-[40px]"
-                      onClick={openResolvedDatePicker}
-                      disabled={isLoading}
-                    >
-                      <Calendar className="h-4 w-4" />
-                    </Button>
-                  </div>
+                  <Label htmlFor={field.name}>Title</Label>
+                  <Input
+                    id={field.name}
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(event) => field.handleChange(event.target.value)}
+                    placeholder="e.g. Title of Project"
+                    disabled={isLoading}
+                  />
                   {field.state.meta.errors.length > 0 && (
                     <p className="text-sm text-destructive">
                       <FieldInfo field={field} />
                     </p>
                   )}
                 </div>
-              )
-            }}
-          </form.Field>
+              )}
+            </form.Field>
 
-          <form.Field name="resolvedLocationText">
-            {(field) => (
-              <div className="grid gap-2">
-                <Label htmlFor={field.name}>Resolved Location</Label>
-                <Textarea
-                  id={field.name}
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(event) => field.handleChange(event.target.value)}
-                  placeholder="University of Science and Technology of Southern Philippines, Cagayan de Oro City"
-                  disabled={isLoading}
-                  className="min-h-[120px]"
-                />
-                {field.state.meta.errors.length > 0 && (
-                  <p className="text-sm text-destructive">
-                    <FieldInfo field={field} />
-                  </p>
-                )}
-              </div>
-            )}
-          </form.Field>
-        </div>
+            <form.Field name="abc">
+              {(field) => (
+                <div className="grid gap-2">
+                  <Label htmlFor={field.name}>ABC</Label>
+                  <Input
+                    id={field.name}
+                    type="number"
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(event) => field.handleChange(Number(event.target.value))}
+                    placeholder="e.g. 50000"
+                    disabled={isLoading}
+                  />
+                  {field.state.meta.errors.length > 0 && (
+                    <p className="text-sm text-destructive">
+                      <FieldInfo field={field} />
+                    </p>
+                  )}
+                </div>
+              )}
+            </form.Field>
 
-        <div className="space-y-4 rounded-lg border border-default-200 bg-default-50 p-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <Label className="text-base font-semibold">WHEREAS Clauses</Label>
-              <p className="text-sm text-muted-foreground">
-                Selected WHEREAS clause templates will appear below. Use Manage WHEREAS to choose saved clause templates or Add Custom Clause to define custom ones.
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={addCustomClause}
-                disabled={isLoading}
-              >
-                Add Custom Clause
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setIsManageWhereasOpen(true)}
-                disabled={isLoading || isTemplatesLoading}
-              >
-                Manage WHEREAS
-              </Button>
-            </div>
+            <form.Field name="resolutionType">
+              {(field) => (
+                <div className="grid gap-2">
+                  <Label htmlFor={field.name}>Resolution Type</Label>
+                  <Input
+                    id={field.name}
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(event) => field.handleChange(event.target.value)}
+                    placeholder="e.g. Standard"
+                    disabled={isLoading}
+                  />
+                  {field.state.meta.errors.length > 0 && (
+                    <p className="text-sm text-destructive">
+                      <FieldInfo field={field} />
+                    </p>
+                  )}
+                </div>
+              )}
+            </form.Field>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Only chosen clauses appear in the selected table.
-          </p>
+
+          <div className="grid gap-5 md:grid-cols-2">
+            <form.Field name="bacResolutionNumber">
+              {(field) => (
+                <div className="grid gap-2">
+                  <Label htmlFor={field.name}>BAC Resolution Number</Label>
+                  <Input
+                    id={field.name}
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(event) => field.handleChange(event.target.value)}
+                    placeholder="BAC-RES-2026-001"
+                    disabled={isLoading}
+                  />
+                  {field.state.meta.errors.length > 0 && (
+                    <p className="text-sm text-destructive">
+                      <FieldInfo field={field} />
+                    </p>
+                  )}
+                </div>
+              )}
+            </form.Field>
+
+            <form.Field name="resolutionDate">
+              {(field) => (
+                <div className="grid gap-2">
+                  <Label htmlFor={field.name}>Resolution Date</Label>
+                  <Input
+                    id={field.name}
+                    type="date"
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(event) => field.handleChange(event.target.value)}
+                    disabled={isLoading}
+                  />
+                  {field.state.meta.errors.length > 0 && (
+                    <p className="text-sm text-destructive">
+                      <FieldInfo field={field} />
+                    </p>
+                  )}
+                </div>
+              )}
+            </form.Field>
+          </div>
+
+          <div className="grid gap-5 md:grid-cols-2">
+            <form.Field name="resolvedDateText">
+              {(field) => {
+                const currentDateValue = (() => {
+                  const parsed = new Date(field.state.value)
+                  return !isNaN(parsed.getTime())
+                    ? parsed.toISOString().split('T')[0]
+                    : ''
+                })()
+
+                return (
+                  <div className="grid gap-2">
+                    <Label htmlFor={field.name}>Resolved Date</Label>
+                    <div className="flex gap-2 items-center">
+                      <Input
+                        id={field.name}
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(event) => field.handleChange(event.target.value)}
+                        placeholder="e.g. December 31, 2026"
+                        disabled={isLoading}
+                        className="flex-1"
+                      />
+                      <input
+                        ref={resolvedDatePickerRef}
+                        type="date"
+                        value={currentDateValue}
+                        onChange={(event) => {
+                          const dateVal = event.target.value
+                          if (!dateVal) return
+                          const dateObj = new Date(dateVal)
+                          if (!isNaN(dateObj.getTime())) {
+                            field.handleChange(
+                              dateObj.toLocaleDateString('en-US', {
+                                weekday: 'long',
+                                year: 'numeric',
+                                month: 'long',
+                                day: 'numeric',
+                              }),
+                            )
+                          }
+                        }}
+                        className="sr-only"
+                        disabled={isLoading}
+                        aria-hidden="true"
+                        tabIndex={-1}
+                      />
+                      <Button
+                        type="button"
+                        variant="outline"
+                        className="px-3 h-[40px]"
+                        onClick={openResolvedDatePicker}
+                        disabled={isLoading}
+                      >
+                        <Calendar className="h-4 w-4" />
+                      </Button>
+                    </div>
+                    {field.state.meta.errors.length > 0 && (
+                      <p className="text-sm text-destructive">
+                        <FieldInfo field={field} />
+                      </p>
+                    )}
+                  </div>
+                )
+              }}
+            </form.Field>
+
+            <form.Field name="resolvedLocationText">
+              {(field) => (
+                <div className="grid gap-2">
+                  <Label htmlFor={field.name}>Resolved Location</Label>
+                  <Textarea
+                    id={field.name}
+                    value={field.state.value}
+                    onBlur={field.handleBlur}
+                    onChange={(event) => field.handleChange(event.target.value)}
+                    placeholder="University of Science and Technology of Southern Philippines, Cagayan de Oro City"
+                    disabled={isLoading}
+                    className="min-h-[120px]"
+                  />
+                  {field.state.meta.errors.length > 0 && (
+                    <p className="text-sm text-destructive">
+                      <FieldInfo field={field} />
+                    </p>
+                  )}
+                </div>
+              )}
+            </form.Field>
+          </div>
+
+          <div className="space-y-4 rounded-lg border border-default-200 bg-default-50 p-4">
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+              <div>
+                <Label className="text-base font-semibold">WHEREAS Clauses</Label>
+                <p className="text-sm text-muted-foreground">
+                  Selected WHEREAS clause templates will appear below. Use Manage WHEREAS to choose saved clause templates or Add Custom Clause to define custom ones.
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={addCustomClause}
+                  disabled={isLoading}
+                >
+                  Add Custom Clause
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsManageWhereasOpen(true)}
+                  disabled={isLoading || isTemplatesLoading}
+                >
+                  Manage WHEREAS
+                </Button>
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Only chosen clauses appear in the selected table.
+            </p>
+          </div>
+
+          <SelectedWhereasClauses
+            selectedClauses={selectedClauses}
+            isLoading={isLoading}
+            onMove={moveClause}
+            onRemove={removeClause}
+            onUpdateClauseBody={updateClauseBody}
+            onUpdateClauseName={updateClauseName}
+            onSaveTemplateOverride={handleSaveTemplateOverride}
+          />
+
+          <ManageWhereasClausesDialog
+            open={isManageWhereasOpen}
+            onOpenChange={setIsManageWhereasOpen}
+            templates={templates ?? []}
+            selectedTemplateIds={selectedTemplateIds}
+            onToggleTemplate={toggleTemplateSelection}
+            onSelectAll={selectAllTemplates}
+            onClearAll={clearAllTemplates}
+            isLoading={isLoading}
+            isTemplatesLoading={isTemplatesLoading}
+          />
+
+          {submitError ? (
+            <p className="text-sm text-destructive">{submitError}</p>
+          ) : null}
+
+          <ProvisionalMembersSection
+            provisionalMembers={provisionalMembers}
+            isLoading={isLoading}
+            onUpdateMember={updateProvisionalMember}
+            usersSuggestions={users}
+          />
+        </form>
+      )}
+
+      {/* Wizard Step Navigation Footer */}
+      <div className="flex justify-between items-center border-t pt-4 mt-6">
+        <div>
+          {step > 1 && (
+            <Button
+              type="button"
+              variant="outline"
+              onClick={handlePrevStep}
+              disabled={isLoading}
+              className="flex items-center gap-1.5"
+            >
+              <ArrowLeft className="h-4 w-4" /> Back
+            </Button>
+          )}
         </div>
 
-        <SelectedWhereasClauses
-          selectedClauses={selectedClauses}
-          isLoading={isLoading}
-          onMove={moveClause}
-          onRemove={removeClause}
-          onUpdateClauseBody={updateClauseBody}
-          onUpdateClauseName={updateClauseName}
-          onSaveTemplateOverride={handleSaveTemplateOverride}
-        />
+        <div className="flex gap-3">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onCancel}
+            disabled={isLoading}
+          >
+            Cancel
+          </Button>
 
-        <ManageWhereasClausesDialog
-          open={isManageWhereasOpen}
-          onOpenChange={setIsManageWhereasOpen}
-          templates={templates ?? []}
-          selectedTemplateIds={selectedTemplateIds}
-          onToggleTemplate={toggleTemplateSelection}
-          onSelectAll={selectAllTemplates}
-          onClearAll={clearAllTemplates}
-          isLoading={isLoading}
-          isTemplatesLoading={isTemplatesLoading}
-        />
-
-        {submitError ? (
-          <p className="text-sm text-destructive">{submitError}</p>
-        ) : null}
-
-        <ProvisionalMembersSection
-          provisionalMembers={provisionalMembers}
-          isLoading={isLoading}
-          onUpdateMember={updateProvisionalMember}
-          usersSuggestions={users}
-        />
-      </form>
+          {step < 4 ? (
+            <Button
+              type="button"
+              onClick={handleNextStep}
+              disabled={
+                isLoading ||
+                (step === 2 && sourceType === 'AppItem' && !selectedAppItemId) ||
+                (step === 2 && sourceType === 'ConsolidatedPR' && !selectedConsolidatedPRId)
+              }
+              className="flex items-center gap-1.5"
+            >
+              Next <ArrowRight className="h-4 w-4" />
+            </Button>
+          ) : (
+            <Button
+              form={formId}
+              type="submit"
+              disabled={isLoading}
+            >
+              {isLoading ? 'Creating...' : 'Create Draft'}
+            </Button>
+          )}
+        </div>
+      </div>
 
       <ConfirmAlertDialog
         open={overrideIndex !== null}
@@ -886,6 +1391,6 @@ export function CreateBacResolutionForm({
         confirmLabel="Override"
         cancelLabel="Cancel"
       />
-    </>
+    </div>
   )
 }

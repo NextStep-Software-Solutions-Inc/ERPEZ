@@ -106,6 +106,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<MarketScopingParameterSettings>? MarketScopingParameterSettings { get; set; }
     public DbSet<MarketScopingActivitySettings>? MarketScopingActivitySettings { get; set; }
     public DbSet<BACResolutionWhereasClause>? BACResolutionWhereasClauses { get; set; }
+    public DbSet<BACResolutionClause>? BACResolutionClauses { get; set; }
 
     //Procurement
     public DbSet<PurchaseOrder>? PurchaseOrders { get; set; }
@@ -2806,9 +2807,28 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             e.HasIndex(p => p.ConsolidatedPRId)
                 .IsUnique();
 
+            e.Property(p => p.SourceType)
+                .HasConversion<string>()
+                .HasMaxLength(50);
+
+            e.HasOne(p => p.APPItem)
+                .WithMany()
+                .HasForeignKey(p => p.APPItemId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             e.HasOne(p => p.ConsolidatedPR)
                 .WithOne()
                 .HasForeignKey<ProcurementProject>(p => p.ConsolidatedPRId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasOne(p => p.Office)
+                .WithMany()
+                .HasForeignKey(p => p.OfficeId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasOne(p => p.FundSource)
+                .WithMany()
+                .HasForeignKey(p => p.FundSourceId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             e.HasOne(p => p.EndUserRepresentative)
@@ -2820,6 +2840,36 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .WithMany()
                 .HasForeignKey(p => p.TechRepresentativeId)
                 .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<BACResolution>(e =>
+        {
+            e.HasIndex(r => r.ProcurementProjectId)
+                .IsUnique()
+                .HasFilter("\"IsDeleted\" = false");
+
+            e.HasMany(r => r.SelectedClauses)
+                .WithOne(c => c.BACResolution)
+                .HasForeignKey(c => c.BACResolutionId)
+                .OnDelete(DeleteBehavior.Cascade);
+        });
+
+        modelBuilder.Entity<BACResolutionClause>(e =>
+        {
+            e.HasOne(c => c.TemplateClause)
+                .WithMany()
+                .HasForeignKey(c => c.TemplateClauseId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasIndex(c => new { c.BACResolutionId, c.DisplayOrder });
+        });
+
+        modelBuilder.Entity<PurchaseRequest>(e =>
+        {
+            e.HasOne(pr => pr.ProcurementProject)
+                .WithMany(p => p.PurchaseRequests)
+                .HasForeignKey(pr => pr.ProcurementProjectId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         base.OnModelCreating(modelBuilder);

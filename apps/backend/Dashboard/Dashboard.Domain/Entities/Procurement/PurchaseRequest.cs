@@ -42,11 +42,15 @@ public class PurchaseRequest : ApprovableEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public decimal TotalAmount { get; set; }
 
+    [Sieve(CanFilter = true, CanSort = true)]
+    public Guid? ProcurementProjectId { get; set; }
+
     public virtual Office Office { get; set; } = null!;
     public virtual FundSource? FundSource { get; set; }
     public virtual PPMP? PPMP { get; set; }
     public virtual UACSCodeCombination? UACSCodeCombination { get; set; }
     public virtual ProcurementCategory? ProcurementCategory { get; set; }
+    public virtual ProcurementProject? ProcurementProject { get; set; }
     public virtual List<PRItem> PRItems { get; set; } = [];
     public virtual List<ApprovalEvent> ApprovalEvents { get; set; } = [];
 
