@@ -54,11 +54,13 @@ public static class ModelBuilderExtensions
                     .HasConversion<string>();
             }
 
-            // Apply soft delete query filter for ISoftDeleteEntity implementations
-            if (typeof(ISoftDeleteEntity).IsAssignableFrom(entity.ClrType))
+            // Apply soft delete query filter for entities with IsDeleted property (duck-typing)
+            // This supports both ISoftDeleteEntity implementations and entities with the property directly
+            var isDeletedProperty = entity.FindProperty("IsDeleted");
+            if (isDeletedProperty != null)
             {
                 var parameter = Expression.Parameter(entity.ClrType, "e");
-                var property = Expression.Property(parameter, nameof(ISoftDeleteEntity.IsDeleted));
+                var property = Expression.Property(parameter, "IsDeleted");
                 var notDeleted = Expression.Not(property);
                 var lambda = Expression.Lambda(notDeleted, parameter);
                 entity.SetQueryFilter(lambda);

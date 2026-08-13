@@ -4650,7 +4650,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("LIBActivityId");
 
                     b.HasIndex("PPMPId", "LIBActivityId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("\"IsDeleted\" = false");
 
                     b.ToTable("PPMPActivities", "planning");
                 });

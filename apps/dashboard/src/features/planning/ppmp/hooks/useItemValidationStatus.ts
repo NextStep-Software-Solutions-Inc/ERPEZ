@@ -34,62 +34,66 @@ const REQUIRED_ITEM_FIELDS = [
 /**
  * Check if an item has all required fields filled
  */
+export function getItemValidationStatus(
+  item: PPMPItem | null | undefined,
+): ItemValidationStatus {
+  if (!item) {
+    return {
+      isComplete: false,
+      isDetailsComplete: false,
+      hasAllocations: false,
+      missingFields: REQUIRED_ITEM_FIELDS as unknown as string[],
+      completionPercentage: 0,
+    }
+  }
+
+  const missingFields: string[] = []
+
+  // Check each required field
+  if (!item.name?.trim()) missingFields.push('Item Name')
+  if (!item.unit?.trim()) missingFields.push('Unit of Measure')
+  if (!item.unitPrice || item.unitPrice <= 0) missingFields.push('Unit Price')
+  if (!item.procurementModeId?.trim()) missingFields.push('Procurement Mode')
+  if (!item.projectType?.trim()) missingFields.push('Project Type')
+  if (
+    item.preProcurementConference === null ||
+    item.preProcurementConference === undefined
+  )
+    missingFields.push('Pre-Procurement Conference')
+  if (!item.procurementStartDate?.trim())
+    missingFields.push('Procurement Start Date')
+  if (!item.procurementEndDate?.trim())
+    missingFields.push('Procurement End Date')
+  if (!item.expectedDeliveryStart?.trim())
+    missingFields.push('Expected Delivery Start')
+  if (!item.expectedDeliveryEnd?.trim())
+    missingFields.push('Expected Delivery End')
+
+  // Check if has at least one monthly allocation
+  const hasAllocations =
+    !!item.PPMPItemAllocations && item.PPMPItemAllocations.length > 0
+
+  const isDetailsComplete = missingFields.length === 0
+
+  const completionPercentage = Math.round(
+    ((REQUIRED_ITEM_FIELDS.length - missingFields.length) /
+      REQUIRED_ITEM_FIELDS.length) *
+      100,
+  )
+
+  return {
+    isComplete: isDetailsComplete && hasAllocations,
+    isDetailsComplete,
+    hasAllocations,
+    missingFields,
+    completionPercentage,
+  } as ItemValidationStatus
+}
+
 export function useItemValidationStatus(
   item: PPMPItem | null | undefined,
 ): ItemValidationStatus {
-  return useMemo(() => {
-    if (!item) {
-      return {
-        isComplete: false,
-        isDetailsComplete: false,
-        hasAllocations: false,
-        missingFields: REQUIRED_ITEM_FIELDS as unknown as string[],
-        completionPercentage: 0,
-      }
-    }
-
-    const missingFields: string[] = []
-
-    // Check each required field
-    if (!item.name?.trim()) missingFields.push('Item Name')
-    if (!item.unit?.trim()) missingFields.push('Unit of Measure')
-    if (!item.unitPrice || item.unitPrice <= 0) missingFields.push('Unit Price')
-    if (!item.procurementModeId?.trim()) missingFields.push('Procurement Mode')
-    if (!item.projectType?.trim()) missingFields.push('Project Type')
-    if (
-      item.preProcurementConference === null ||
-      item.preProcurementConference === undefined
-    )
-      missingFields.push('Pre-Procurement Conference')
-    if (!item.procurementStartDate?.trim())
-      missingFields.push('Procurement Start Date')
-    if (!item.procurementEndDate?.trim())
-      missingFields.push('Procurement End Date')
-    if (!item.expectedDeliveryStart?.trim())
-      missingFields.push('Expected Delivery Start')
-    if (!item.expectedDeliveryEnd?.trim())
-      missingFields.push('Expected Delivery End')
-
-    // Check if has at least one monthly allocation
-    const hasAllocations =
-      !!item.PPMPItemAllocations && item.PPMPItemAllocations.length > 0
-
-    const isDetailsComplete = missingFields.length === 0
-
-    const completionPercentage = Math.round(
-      ((REQUIRED_ITEM_FIELDS.length - missingFields.length) /
-        REQUIRED_ITEM_FIELDS.length) *
-        100,
-    )
-
-    return {
-      isComplete: isDetailsComplete && hasAllocations,
-      isDetailsComplete,
-      hasAllocations,
-      missingFields,
-      completionPercentage,
-    } as ItemValidationStatus
-  }, [item])
+  return useMemo(() => getItemValidationStatus(item), [item])
 }
 
 /**
