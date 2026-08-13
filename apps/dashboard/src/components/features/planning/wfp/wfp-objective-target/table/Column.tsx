@@ -227,7 +227,12 @@ export const Column: Array<ColumnDef<WFPObjectiveTarget>> = [
           </div>
 
           {/* Segmented Progress Bar */}
-          <div className="flex items-center gap-2 mt-1.5">
+          <div
+            className="flex items-center gap-2 mt-1.5 max-w-full"
+            style={{
+              width: `${processedTimelines.length * 125 + Math.max(0, processedTimelines.length - 1) * 8}px`,
+            }}
+          >
             <div className="flex-1 flex gap-1 h-1.5 rounded-full overflow-hidden bg-slate-100 dark:bg-slate-800 p-0.5">
               {processedTimelines.map((timeline) => (
                 <div
