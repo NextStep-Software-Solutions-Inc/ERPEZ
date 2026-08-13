@@ -3,12 +3,13 @@ import { ResponsiveDialogDashtail } from '@/components/ResponsiveDialogDashtail'
 import { Button } from '@/components/ui/button'
 import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
 import type { CreateBacResolutionPayload } from '../types'
+import { CreateBACProjectPayload } from '../handlers/createBacProjectRequest'
 import { CreateBacResolutionForm } from '../forms/CreateBacResolutionForm'
 
 interface CreateBacResolutionDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onCreate: (values: CreateBacResolutionPayload) => Promise<void> | void
+  onCreate: (values: CreateBACProjectPayload) => Promise<void> | void
   apiAppItems: any[]
   apiConsolidatedPrs: any[]
 }

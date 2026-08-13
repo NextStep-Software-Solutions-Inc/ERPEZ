@@ -142,7 +142,9 @@ const usePPMPExpenditureItems = createQueryHookFromTemplate(
   getPPMPExpenditureItemsRequest,
 )
 const usePPMPItems = createQueryHookFromTemplate(getPPMPItemsRequest)
-const useProcurementItem = createQueryHookFromTemplate(getProcurementItemRequest)
+const useProcurementItem = createQueryHookFromTemplate(
+  getProcurementItemRequest,
+)
 const useUOM = createQueryHookFromTemplate(getUOMRequest)
 const useNONCSEItem = createQueryHookFromTemplate(getNONCSEItemRequest)
 const useUpdatePPMPStatus = createMutationHookFromTemplate(
@@ -344,7 +346,7 @@ function ActivityCard({
         expanded ? 'w-120' : 'w-80',
         shouldThrob && !selected && 'animate-pulse-unselected',
         dimmed &&
-        'opacity-60 saturate-50 hover:opacity-100 hover:saturate-100 transition-all duration-300',
+          'opacity-60 saturate-50 hover:opacity-100 hover:saturate-100 transition-all duration-300',
       )}
     >
       {/* Left side (regular card content) */}
@@ -601,7 +603,9 @@ interface ItemDetailProps {
 
 const isUUID = (val: string | null | undefined): boolean => {
   if (!val) return false
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val)
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+    val,
+  )
 }
 
 interface ReferencedItemModalProps {
@@ -630,7 +634,9 @@ function ReferencedItemModal({
     <ResponsiveDialogDashtail
       open={isOpen}
       onOpenChange={(open) => !open && onClose()}
-      title={isCse ? 'CSE Catalog Item Details' : 'Non-CSE Catalog Item Details'}
+      title={
+        isCse ? 'CSE Catalog Item Details' : 'Non-CSE Catalog Item Details'
+      }
       size="xl"
     >
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 p-4">
@@ -643,12 +649,18 @@ function ReferencedItemModal({
 
             <div className="space-y-3">
               <div>
-                <span className="text-[10px] text-default-400 uppercase font-semibold block">Product Name</span>
-                <span className="text-sm font-semibold text-default-850">{name}</span>
+                <span className="text-[10px] text-default-400 uppercase font-semibold block">
+                  Product Name
+                </span>
+                <span className="text-sm font-semibold text-default-850">
+                  {name}
+                </span>
               </div>
 
               <div>
-                <span className="text-[10px] text-default-400 uppercase font-semibold block">Product Code</span>
+                <span className="text-[10px] text-default-400 uppercase font-semibold block">
+                  Product Code
+                </span>
                 <span className="text-xs font-mono font-bold text-default-700 bg-default-100 px-1.5 py-0.5 rounded w-fit block mt-0.5">
                   {itemDetails.productCode || '—'}
                 </span>
@@ -657,45 +669,82 @@ function ReferencedItemModal({
               {isCse ? (
                 <>
                   <div>
-                    <span className="text-[10px] text-default-400 uppercase font-semibold block">Object Code</span>
-                    <span className="text-xs font-medium text-default-750">{itemDetails.objectCodeName || '—'}</span>
+                    <span className="text-[10px] text-default-400 uppercase font-semibold block">
+                      Object Code
+                    </span>
+                    <span className="text-xs font-medium text-default-750">
+                      {itemDetails.objectCodeName || '—'}
+                    </span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-default-400 uppercase font-semibold block">UNSPSC Classification</span>
-                    <span className="text-xs font-medium text-default-750">{itemDetails.unspscCodeName || '—'}</span>
+                    <span className="text-[10px] text-default-400 uppercase font-semibold block">
+                      UNSPSC Classification
+                    </span>
+                    <span className="text-xs font-medium text-default-750">
+                      {itemDetails.unspscCodeName || '—'}
+                    </span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-default-400 uppercase font-semibold block">UOM</span>
-                    <span className="text-xs font-semibold text-default-800">{itemDetails.uomName || '—'}</span>
+                    <span className="text-[10px] text-default-400 uppercase font-semibold block">
+                      UOM
+                    </span>
+                    <span className="text-xs font-semibold text-default-800">
+                      {itemDetails.uomName || '—'}
+                    </span>
                   </div>
                 </>
               ) : (
                 <>
                   <div>
-                    <span className="text-[10px] text-default-400 uppercase font-semibold block">Procurement Category</span>
-                    <span className="text-xs font-medium text-default-750">{itemDetails.procurementCategoryName || '—'}</span>
+                    <span className="text-[10px] text-default-400 uppercase font-semibold block">
+                      Procurement Category
+                    </span>
+                    <span className="text-xs font-medium text-default-750">
+                      {itemDetails.procurementCategoryName || '—'}
+                    </span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-default-400 uppercase font-semibold block">UOM</span>
-                    <span className="text-xs font-semibold text-default-800">{itemDetails.uomName || '—'}</span>
+                    <span className="text-[10px] text-default-400 uppercase font-semibold block">
+                      UOM
+                    </span>
+                    <span className="text-xs font-semibold text-default-800">
+                      {itemDetails.uomName || '—'}
+                    </span>
                   </div>
                 </>
               )}
 
               <div>
-                <span className="text-[10px] text-default-400 uppercase font-semibold block">Reference Price</span>
+                <span className="text-[10px] text-default-400 uppercase font-semibold block">
+                  Reference Price
+                </span>
                 <span className="text-sm font-extrabold text-primary">
-                  {formatCurrency(isCse ? (itemDetails.unitPrice || 0) : (itemDetails.currentPrice || 0))}
+                  {formatCurrency(
+                    isCse
+                      ? itemDetails.unitPrice || 0
+                      : itemDetails.currentPrice || 0,
+                  )}
                 </span>
               </div>
 
               <div>
-                <span className="text-[10px] text-default-400 uppercase font-semibold block">Status</span>
-                <span className={cn(
-                  "inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-semibold border-none mt-1",
-                  itemDetails.isActive ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"
-                )}>
-                  <span className={cn("h-1.5 w-1.5 rounded-full", itemDetails.isActive ? "bg-emerald-500" : "bg-rose-500")} />
+                <span className="text-[10px] text-default-400 uppercase font-semibold block">
+                  Status
+                </span>
+                <span
+                  className={cn(
+                    'inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-semibold border-none mt-1',
+                    itemDetails.isActive
+                      ? 'bg-emerald-50 text-emerald-700'
+                      : 'bg-rose-50 text-rose-700',
+                  )}
+                >
+                  <span
+                    className={cn(
+                      'h-1.5 w-1.5 rounded-full',
+                      itemDetails.isActive ? 'bg-emerald-500' : 'bg-rose-500',
+                    )}
+                  />
                   {itemDetails.isActive ? 'Active Catalog' : 'Inactive'}
                 </span>
               </div>
@@ -707,7 +756,9 @@ function ReferencedItemModal({
         <div className="md:col-span-7 space-y-4">
           {isCse && (
             <div className="space-y-1.5">
-              <span className="text-[10px] text-default-400 uppercase font-bold tracking-wider">Product Media</span>
+              <span className="text-[10px] text-default-400 uppercase font-bold tracking-wider">
+                Product Media
+              </span>
               {imageSrc ? (
                 <div className="relative aspect-video sm:aspect-square w-full rounded-xl overflow-hidden border border-default-200 bg-slate-50 flex items-center justify-center shadow-sm">
                   <img
@@ -726,7 +777,9 @@ function ReferencedItemModal({
           )}
 
           <div className="space-y-1.5">
-            <span className="text-[10px] text-default-400 uppercase font-bold tracking-wider">Specifications & Requirements</span>
+            <span className="text-[10px] text-default-400 uppercase font-bold tracking-wider">
+              Specifications & Requirements
+            </span>
             <div className="rounded-xl border border-default-200 p-4 bg-white shadow-sm leading-relaxed text-xs text-default-700 whitespace-pre-line min-h-24">
               {specifications || 'No detailed specifications provided.'}
             </div>
@@ -734,7 +787,9 @@ function ReferencedItemModal({
 
           {itemDetails.remarks && (
             <div className="space-y-1.5">
-              <span className="text-[10px] text-default-400 uppercase font-bold tracking-wider">Catalog Remarks</span>
+              <span className="text-[10px] text-default-400 uppercase font-bold tracking-wider">
+                Catalog Remarks
+              </span>
               <div className="rounded-xl border border-amber-500/10 p-3 bg-amber-500/2 text-xs italic text-amber-800 leading-relaxed">
                 {itemDetails.remarks}
               </div>
@@ -802,7 +857,9 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
     queryParams: {},
     enabled: isUnitUuid && !!item.unit,
   })
-  const displayUnit = isUnitUuid ? (uomResp?.data?.name || 'Loading...') : (item.unit || '—')
+  const displayUnit = isUnitUuid
+    ? uomResp?.data?.name || 'Loading...'
+    : item.unit || '—'
 
   // 2. Fetch CSE Item if cseItemId exists
   const { data: cseItemResp, isLoading: isLoadingCse } = useProcurementItem({
@@ -839,20 +896,36 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
 
             <div className="grid grid-cols-2 gap-3 text-xs">
               <div>
-                <span className="text-[10px] uppercase font-bold text-default-400 block">Unit</span>
-                <span className="font-semibold text-default-700 mt-0.5 block">{displayUnit}</span>
+                <span className="text-[10px] uppercase font-bold text-default-400 block">
+                  Unit
+                </span>
+                <span className="font-semibold text-default-700 mt-0.5 block">
+                  {displayUnit}
+                </span>
               </div>
               <div>
-                <span className="text-[10px] uppercase font-bold text-default-400 block">Unit Price</span>
-                <span className="font-semibold text-default-800 mt-0.5 block">{formatCurrency(item.unitPrice)}</span>
+                <span className="text-[10px] uppercase font-bold text-default-400 block">
+                  Unit Price
+                </span>
+                <span className="font-semibold text-default-800 mt-0.5 block">
+                  {formatCurrency(item.unitPrice)}
+                </span>
               </div>
               <div>
-                <span className="text-[10px] uppercase font-bold text-default-400 block">Project Type</span>
-                <span className="font-semibold text-default-700 mt-0.5 block">{item.projectType || '—'}</span>
+                <span className="text-[10px] uppercase font-bold text-default-400 block">
+                  Project Type
+                </span>
+                <span className="font-semibold text-default-700 mt-0.5 block">
+                  {item.projectType || '—'}
+                </span>
               </div>
               <div>
-                <span className="text-[10px] uppercase font-bold text-default-400 block">PAP Code</span>
-                <span className="font-mono text-default-700 mt-0.5 block">{item.papCode || '—'}</span>
+                <span className="text-[10px] uppercase font-bold text-default-400 block">
+                  PAP Code
+                </span>
+                <span className="font-mono text-default-700 mt-0.5 block">
+                  {item.papCode || '—'}
+                </span>
               </div>
             </div>
 
@@ -868,7 +941,9 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
 
           {item.remarks && (
             <div className="bg-default-50 p-2.5 rounded-lg border border-default-150/60 mt-2 text-xs italic text-default-600">
-              <span className="font-bold not-italic text-default-750 block text-[9px] uppercase tracking-wider mb-0.5">Remarks</span>
+              <span className="font-bold not-italic text-default-750 block text-[9px] uppercase tracking-wider mb-0.5">
+                Remarks
+              </span>
               "{item.remarks}"
             </div>
           )}
@@ -892,7 +967,8 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
                   Procurement Schedule
                 </span>
                 <p className="text-xs text-default-805 font-semibold mt-0.5">
-                  {formatDateDisplay(item.procurementStartDate)} – {formatDateDisplay(item.procurementEndDate)}
+                  {formatDateDisplay(item.procurementStartDate)} –{' '}
+                  {formatDateDisplay(item.procurementEndDate)}
                 </p>
               </div>
             </div>
@@ -905,21 +981,24 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
                   Expected Delivery Window
                 </span>
                 <p className="text-xs text-default-805 font-semibold mt-0.5">
-                  {formatDateDisplay(item.expectedDeliveryStart)} – {formatDateDisplay(item.expectedDeliveryEnd)}
+                  {formatDateDisplay(item.expectedDeliveryStart)} –{' '}
+                  {formatDateDisplay(item.expectedDeliveryEnd)}
                 </p>
               </div>
             </div>
           </div>
 
           <div className="pt-3 border-t border-default-100 flex items-center justify-between text-xs">
-            <span className="text-default-505 font-medium">Pre-Procurement Conference:</span>
+            <span className="text-default-505 font-medium">
+              Pre-Procurement Conference:
+            </span>
             <Badge
               variant={item.preProcurementConference ? 'soft' : 'outline'}
               className={cn(
                 'text-[10px] font-bold py-0.5 px-2.5 rounded-full',
                 item.preProcurementConference
                   ? 'bg-rose-500/10 text-rose-700 border-none'
-                  : 'text-slate-500'
+                  : 'text-slate-500',
               )}
             >
               {item.preProcurementConference ? 'Required' : 'Not Required'}
@@ -951,7 +1030,9 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
                 variant={item.mopOverride ? 'soft' : 'outline'}
                 className={cn(
                   'text-[9px] font-bold px-2 py-0.5 rounded-full',
-                  item.mopOverride ? 'bg-amber-500/10 text-amber-700 border-none' : 'text-default-400'
+                  item.mopOverride
+                    ? 'bg-amber-500/10 text-amber-700 border-none'
+                    : 'text-default-400',
                 )}
               >
                 {item.mopOverride ? 'MOP Overridden' : 'Standard MOP'}
@@ -986,7 +1067,9 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
                   </span>
                 </div>
                 <h5 className="text-[11px] font-bold text-default-850 line-clamp-1">
-                  {isLoadingCse ? 'Loading catalog item...' : (cseItem?.name || item.name)}
+                  {isLoadingCse
+                    ? 'Loading catalog item...'
+                    : cseItem?.name || item.name}
                 </h5>
                 {!isLoadingCse && cseItem && (
                   <Button
@@ -1018,7 +1101,9 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
                   </span>
                 </div>
                 <h5 className="text-[11px] font-bold text-default-850 line-clamp-1">
-                  {isLoadingNonCse ? 'Loading catalog item...' : (nonCseItem?.name || item.name)}
+                  {isLoadingNonCse
+                    ? 'Loading catalog item...'
+                    : nonCseItem?.name || item.name}
                 </h5>
                 {!isLoadingNonCse && nonCseItem && (
                   <Button
@@ -1165,7 +1250,11 @@ function ItemRow({
   return (
     <>
       <tr
-        className={cn('transition-colors cursor-pointer select-none', rowClasses, subtleBgClass)}
+        className={cn(
+          'transition-colors cursor-pointer select-none',
+          rowClasses,
+          subtleBgClass,
+        )}
         onClick={onToggle}
       >
         <td className="px-5 py-3 text-center">
@@ -1252,10 +1341,11 @@ function ItemRow({
           )}
         </td>
         <td className="px-5 py-3 text-right">
-          <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
-            <RowCompletionIndicator
-              status={validationStatus}
-            />
+          <div
+            className="flex items-center justify-end gap-2"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <RowCompletionIndicator status={validationStatus} />
             <DropdownMenu>
               <DropdownMenuTrigger asChild>
                 <Button
@@ -1268,27 +1358,25 @@ function ItemRow({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end" className="w-56 font-sans">
-                {validationStatus.hasAllocations ? (
-                  onEditAllocations && (
-                    <DropdownMenuItem
-                      onClick={() => onEditAllocations(item)}
-                      className="cursor-pointer"
-                    >
-                      <Pencil className="mr-2 h-4 w-4 text-primary" />
-                      <span>Edit Monthly Allocations</span>
-                    </DropdownMenuItem>
-                  )
-                ) : (
-                  onEditAllocations && (
-                    <DropdownMenuItem
-                      onClick={() => onEditAllocations(item)}
-                      className="cursor-pointer font-bold text-indigo-600 focus:text-indigo-700 focus:bg-indigo-50/50"
-                    >
-                      <Plus className="mr-2 h-4 w-4" />
-                      <span>Configure Monthly Allocations</span>
-                    </DropdownMenuItem>
-                  )
-                )}
+                {validationStatus.hasAllocations
+                  ? onEditAllocations && (
+                      <DropdownMenuItem
+                        onClick={() => onEditAllocations(item)}
+                        className="cursor-pointer"
+                      >
+                        <Pencil className="mr-2 h-4 w-4 text-primary" />
+                        <span>Edit Monthly Allocations</span>
+                      </DropdownMenuItem>
+                    )
+                  : onEditAllocations && (
+                      <DropdownMenuItem
+                        onClick={() => onEditAllocations(item)}
+                        className="cursor-pointer font-bold text-indigo-600 focus:text-indigo-700 focus:bg-indigo-50/50"
+                      >
+                        <Plus className="mr-2 h-4 w-4" />
+                        <span>Configure Monthly Allocations</span>
+                      </DropdownMenuItem>
+                    )}
                 {onEdit && (
                   <DropdownMenuItem
                     onClick={() => onEdit(item)}
@@ -2123,7 +2211,8 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
     if (!ppmp) return []
     if (activeTab === 'overview') {
       const masterItems = ppmp.PPMPItems || []
-      const childItems = ppmp.ChildPPMPs?.flatMap((c) => c.PPMPItems || []) || []
+      const childItems =
+        ppmp.ChildPPMPs?.flatMap((c) => c.PPMPItems || []) || []
       return [...masterItems, ...childItems]
     }
     return activeChildPpmp?.PPMPItems || ppmp.PPMPItems || []
@@ -2435,8 +2524,8 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
                 ppmp.status.toLowerCase() === 'approved'
                   ? 'border-emerald-200 bg-emerald-50 text-emerald-700 ring-4 ring-emerald-500/5'
                   : ppmp.status.toLowerCase() === 'submitted' ||
-                    ppmp.status.toLowerCase() === 'pending_review' ||
-                    ppmp.status.toLowerCase() === 'pending review'
+                      ppmp.status.toLowerCase() === 'pending_review' ||
+                      ppmp.status.toLowerCase() === 'pending review'
                     ? 'border-blue-200 bg-blue-50 text-blue-700 ring-4 ring-blue-500/5'
                     : ppmp.status.toLowerCase() === 'rejected'
                       ? 'border-rose-200 bg-rose-50 text-rose-700 ring-4 ring-rose-500/5'
@@ -2527,8 +2616,9 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
                         disabled={incompleteItems.length > 0}
                         onClick={() => setSubmitConfirmOpen(true)}
                         className={cn(
-                          "bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/10 font-semibold px-4 h-9 rounded-lg flex items-center gap-1.5 transition-all duration-300 hover:shadow-lg hover:shadow-indigo-600/20 active:scale-[0.98]",
-                          incompleteItems.length > 0 && "opacity-50 cursor-not-allowed bg-indigo-600/60 hover:bg-indigo-600/60 shadow-none"
+                          'bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/10 font-semibold px-4 h-9 rounded-lg flex items-center gap-1.5 transition-all duration-300 hover:shadow-lg hover:shadow-indigo-600/20 active:scale-[0.98]',
+                          incompleteItems.length > 0 &&
+                            'opacity-50 cursor-not-allowed bg-indigo-600/60 hover:bg-indigo-600/60 shadow-none',
                         )}
                       >
                         <Send className="h-4 w-4" />
@@ -2537,16 +2627,26 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
                     </span>
                   </TooltipTrigger>
                   {incompleteItems.length > 0 && (
-                    <TooltipContent side="top" className="max-w-xs bg-slate-900 border-slate-800 text-white p-3 shadow-xl z-50">
+                    <TooltipContent
+                      side="top"
+                      className="max-w-xs bg-slate-900 border-slate-800 text-white p-3 shadow-xl z-50"
+                    >
                       <div className="space-y-1.5 text-xs">
-                        <p className="font-bold text-red-400">Cannot Submit PPMP</p>
-                        <p className="text-slate-300">The following items are incomplete or missing allocations:</p>
+                        <p className="font-bold text-red-400">
+                          Cannot Submit PPMP
+                        </p>
+                        <p className="text-slate-300">
+                          The following items are incomplete or missing
+                          allocations:
+                        </p>
                         <ul className="list-disc pl-4 space-y-0.5 max-h-32 overflow-y-auto text-slate-200">
                           {incompleteItems.slice(0, 5).map((item) => (
                             <li key={item.id}>{item.name || 'Unnamed Item'}</li>
                           ))}
                           {incompleteItems.length > 5 && (
-                            <li className="italic text-slate-400">and {incompleteItems.length - 5} more...</li>
+                            <li className="italic text-slate-400">
+                              and {incompleteItems.length - 5} more...
+                            </li>
                           )}
                         </ul>
                       </div>
@@ -2616,10 +2716,14 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
           <div className="rounded-xl border border-amber-300 bg-amber-50/80 dark:bg-amber-950/20 p-4 shadow-sm flex items-start gap-3 border-l-4 border-l-amber-500 text-amber-900 dark:text-amber-200">
             <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
             <div className="space-y-0.5">
-              <h4 className="text-sm font-extrabold">PPMP Submission Blocked</h4>
+              <h4 className="text-sm font-extrabold">
+                PPMP Submission Blocked
+              </h4>
               <p className="text-xs font-semibold text-amber-850/90 dark:text-amber-300">
-                There are {incompleteItems.length} item(s) requiring configuration or monthly allocations.
-                Configure all items (marked with red or amber left borders) before submitting this PPMP.
+                There are {incompleteItems.length} item(s) requiring
+                configuration or monthly allocations. Configure all items
+                (marked with red or amber left borders) before submitting this
+                PPMP.
               </p>
             </div>
           </div>
@@ -2738,27 +2842,27 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
                   const statusStyle =
                     statusLower === 'approved'
                       ? {
-                        badge:
-                          'bg-emerald-50 text-emerald-700 border-emerald-200',
-                        dot: 'bg-emerald-500',
-                      }
-                      : statusLower === 'submitted' ||
-                        statusLower === 'pending_review' ||
-                        statusLower === 'pending review'
-                        ? {
-                          badge: 'bg-blue-50 text-blue-700 border-blue-200',
-                          dot: 'bg-blue-500',
+                          badge:
+                            'bg-emerald-50 text-emerald-700 border-emerald-200',
+                          dot: 'bg-emerald-500',
                         }
+                      : statusLower === 'submitted' ||
+                          statusLower === 'pending_review' ||
+                          statusLower === 'pending review'
+                        ? {
+                            badge: 'bg-blue-50 text-blue-700 border-blue-200',
+                            dot: 'bg-blue-500',
+                          }
                         : statusLower === 'rejected'
                           ? {
-                            badge: 'bg-rose-50 text-rose-700 border-rose-200',
-                            dot: 'bg-rose-500',
-                          }
+                              badge: 'bg-rose-50 text-rose-700 border-rose-200',
+                              dot: 'bg-rose-500',
+                            }
                           : {
-                            badge:
-                              'bg-slate-50 text-slate-600 border-slate-200',
-                            dot: 'bg-slate-400',
-                          }
+                              badge:
+                                'bg-slate-50 text-slate-600 border-slate-200',
+                              dot: 'bg-slate-400',
+                            }
                   return (
                     <button
                       key={child.id}
@@ -2858,9 +2962,9 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
             onToggleExpand={toggleExpandActivity}
             onAdd={
               activeTab === 'overview' &&
-                !ppmp.consolidatedIntoId &&
-                (ppmp.status?.toLowerCase() === 'draft' ||
-                  ppmp.status?.toLowerCase() === 'rejected')
+              !ppmp.consolidatedIntoId &&
+              (ppmp.status?.toLowerCase() === 'draft' ||
+                ppmp.status?.toLowerCase() === 'rejected')
                 ? () => setAddDialogOpen(true)
                 : undefined
             }
@@ -2931,9 +3035,10 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
           if (!s) setDeleteDialogOpen(false)
         }}
         title="Delete activity?"
-        description={`${activities.find((a) => a.id === pendingDeleteActivityId)
-          ?.activityName || 'This activity'
-          } and all nested items will be permanently deleted.`}
+        description={`${
+          activities.find((a) => a.id === pendingDeleteActivityId)
+            ?.activityName || 'This activity'
+        } and all nested items will be permanently deleted.`}
         onConfirm={confirmDeleteActivity}
         onCancel={() => setDeleteDialogOpen(false)}
         confirmLabel={isDeleting ? 'Deleting…' : 'Delete'}
@@ -2966,8 +3071,9 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
           if (!s) setDeleteItemConfirmOpen(false)
         }}
         title="Delete item?"
-        description={`Are you sure you want to permanently delete "${pendingDeleteItem?.name || 'this item'
-          }"?`}
+        description={`Are you sure you want to permanently delete "${
+          pendingDeleteItem?.name || 'this item'
+        }"?`}
         onConfirm={confirmDeleteItem}
         onCancel={() => setDeleteItemConfirmOpen(false)}
         confirmLabel={isItemDeleting ? 'Deleting…' : 'Delete'}

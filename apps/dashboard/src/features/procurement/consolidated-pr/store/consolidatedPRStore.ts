@@ -36,6 +36,9 @@ export type ConsolidatedPR = {
   status: 'DRAFT' | 'APPROVED/FOR BAC UTILIZATION'
   selectedPRItems: Array<ConsolidatedPRItem>
   itemMOPs?: Record<string, { mop?: string; allowPartial?: boolean }> // key: item.id
+  cprNumber?: string
+  modeOfProcurementId?: string
+  modeOfProcurementName?: string
 }
 
 interface ConsolidatedPRStore {
@@ -450,7 +453,8 @@ const DIRECT_ACQUISITION_MOCK_CPRS: Array<ConsolidatedPR> = [
     date: '2026-05-14',
     prNumber: 'CPR-2026-DA01',
     description: 'Urgent office consumables — direct purchase',
-    purpose: 'Emergency replenishment of daily-use office supplies via Direct Acquisition',
+    purpose:
+      'Emergency replenishment of daily-use office supplies via Direct Acquisition',
     status: 'APPROVED/FOR BAC UTILIZATION',
     selectedPRItems: [
       {
@@ -515,10 +519,22 @@ const DIRECT_ACQUISITION_MOCK_CPRS: Array<ConsolidatedPR> = [
       },
     ],
     itemMOPs: {
-      'PR-DA01-Printer Ink Cartridge Black HP680-pc': { mop: 'Direct Acquisition', allowPartial: false },
-      'PR-DA01-Correction Tape Roller-pc': { mop: 'Direct Acquisition', allowPartial: false },
-      'PR-DA01-Sticky Notes 3x3-pack': { mop: 'Direct Acquisition', allowPartial: false },
-      'PR-DA01-Whiteboard Marker Set-set': { mop: 'Direct Acquisition', allowPartial: false },
+      'PR-DA01-Printer Ink Cartridge Black HP680-pc': {
+        mop: 'Direct Acquisition',
+        allowPartial: false,
+      },
+      'PR-DA01-Correction Tape Roller-pc': {
+        mop: 'Direct Acquisition',
+        allowPartial: false,
+      },
+      'PR-DA01-Sticky Notes 3x3-pack': {
+        mop: 'Direct Acquisition',
+        allowPartial: false,
+      },
+      'PR-DA01-Whiteboard Marker Set-set': {
+        mop: 'Direct Acquisition',
+        allowPartial: false,
+      },
     },
   },
   {
@@ -526,7 +542,8 @@ const DIRECT_ACQUISITION_MOCK_CPRS: Array<ConsolidatedPR> = [
     date: '2026-05-20',
     prNumber: 'CPR-2026-DA02',
     description: 'Replacement IT peripherals — urgent deployment',
-    purpose: 'Immediate replacement of failed peripherals for active workstations via Direct Acquisition',
+    purpose:
+      'Immediate replacement of failed peripherals for active workstations via Direct Acquisition',
     status: 'APPROVED/FOR BAC UTILIZATION',
     selectedPRItems: [
       {
@@ -591,18 +608,32 @@ const DIRECT_ACQUISITION_MOCK_CPRS: Array<ConsolidatedPR> = [
       },
     ],
     itemMOPs: {
-      'PR-DA02-Laptop Cooling Pad-pc': { mop: 'Direct Acquisition', allowPartial: false },
-      'PR-DA02-USB Hub 7-port-pc': { mop: 'Direct Acquisition', allowPartial: false },
-      'PR-DA02-Screen Privacy Filter 15.6-pc': { mop: 'Direct Acquisition', allowPartial: false },
-      'PR-DA02-USB-C HDMI Adapter-pc': { mop: 'Direct Acquisition', allowPartial: false },
+      'PR-DA02-Laptop Cooling Pad-pc': {
+        mop: 'Direct Acquisition',
+        allowPartial: false,
+      },
+      'PR-DA02-USB Hub 7-port-pc': {
+        mop: 'Direct Acquisition',
+        allowPartial: false,
+      },
+      'PR-DA02-Screen Privacy Filter 15.6-pc': {
+        mop: 'Direct Acquisition',
+        allowPartial: false,
+      },
+      'PR-DA02-USB-C HDMI Adapter-pc': {
+        mop: 'Direct Acquisition',
+        allowPartial: false,
+      },
     },
   },
   {
     id: 'CPR-2026-DA03',
     date: '2026-06-02',
     prNumber: 'CPR-2026-DA03',
-    description: 'Proprietary software licenses & emergency supplies — mixed MoP',
-    purpose: 'Proprietary software renewal (Direct Contracting) and small-value emergency supplies (Direct Acquisition)',
+    description:
+      'Proprietary software licenses & emergency supplies — mixed MoP',
+    purpose:
+      'Proprietary software renewal (Direct Contracting) and small-value emergency supplies (Direct Acquisition)',
     status: 'APPROVED/FOR BAC UTILIZATION',
     selectedPRItems: [
       {
@@ -667,10 +698,22 @@ const DIRECT_ACQUISITION_MOCK_CPRS: Array<ConsolidatedPR> = [
       },
     ],
     itemMOPs: {
-      'PR-DA03-Adobe Acrobat Pro 1yr-license': { mop: 'Direct Contracting', allowPartial: false },
-      'PR-DA03-MS Visio 2021-license': { mop: 'Direct Contracting', allowPartial: false },
-      'PR-DA03-Toner Cartridge TN2365-pc': { mop: 'Direct Acquisition', allowPartial: false },
-      'PR-DA03-Label Tape 12mm-roll': { mop: 'Direct Acquisition', allowPartial: false },
+      'PR-DA03-Adobe Acrobat Pro 1yr-license': {
+        mop: 'Direct Contracting',
+        allowPartial: false,
+      },
+      'PR-DA03-MS Visio 2021-license': {
+        mop: 'Direct Contracting',
+        allowPartial: false,
+      },
+      'PR-DA03-Toner Cartridge TN2365-pc': {
+        mop: 'Direct Acquisition',
+        allowPartial: false,
+      },
+      'PR-DA03-Label Tape 12mm-roll': {
+        mop: 'Direct Acquisition',
+        allowPartial: false,
+      },
     },
   },
   {
@@ -678,7 +721,8 @@ const DIRECT_ACQUISITION_MOCK_CPRS: Array<ConsolidatedPR> = [
     date: '2026-05-19',
     prNumber: 'CPR-2026-DA04',
     description: 'Medical and first-aid supplies for health unit',
-    purpose: 'Quarterly health unit restocking via Direct Acquisition for below-threshold medical items',
+    purpose:
+      'Quarterly health unit restocking via Direct Acquisition for below-threshold medical items',
     status: 'APPROVED/FOR BAC UTILIZATION',
     selectedPRItems: [
       {
@@ -743,10 +787,22 @@ const DIRECT_ACQUISITION_MOCK_CPRS: Array<ConsolidatedPR> = [
       },
     ],
     itemMOPs: {
-      'PR-DA04-Digital Thermometer-pc': { mop: 'Direct Acquisition', allowPartial: false },
-      'PR-DA04-First Aid Kit Complete-kit': { mop: 'Direct Acquisition', allowPartial: false },
-      'PR-DA04-Surgical Face Mask 50pcs-box': { mop: 'Direct Acquisition', allowPartial: false },
-      'PR-DA04-Alcohol 70pct 500ml-btl': { mop: 'Direct Acquisition', allowPartial: false },
+      'PR-DA04-Digital Thermometer-pc': {
+        mop: 'Direct Acquisition',
+        allowPartial: false,
+      },
+      'PR-DA04-First Aid Kit Complete-kit': {
+        mop: 'Direct Acquisition',
+        allowPartial: false,
+      },
+      'PR-DA04-Surgical Face Mask 50pcs-box': {
+        mop: 'Direct Acquisition',
+        allowPartial: false,
+      },
+      'PR-DA04-Alcohol 70pct 500ml-btl': {
+        mop: 'Direct Acquisition',
+        allowPartial: false,
+      },
     },
   },
   {
@@ -754,7 +810,8 @@ const DIRECT_ACQUISITION_MOCK_CPRS: Array<ConsolidatedPR> = [
     date: '2026-05-23',
     prNumber: 'CPR-2026-DA05',
     description: 'Tarpaulin printing and event signage',
-    purpose: 'Direct Contracting for printing services — proprietary design assets and mandated supplier branding',
+    purpose:
+      'Direct Contracting for printing services — proprietary design assets and mandated supplier branding',
     status: 'APPROVED/FOR BAC UTILIZATION',
     selectedPRItems: [
       {
@@ -804,9 +861,18 @@ const DIRECT_ACQUISITION_MOCK_CPRS: Array<ConsolidatedPR> = [
       },
     ],
     itemMOPs: {
-      'PR-DA05-Tarpaulin Banner 3x6ft-pc': { mop: 'Direct Contracting', allowPartial: false },
-      'PR-DA05-Roll-Up Banner Stand 33x79-set': { mop: 'Direct Contracting', allowPartial: false },
-      'PR-DA05-A4 Trifold Brochure 1000pcs-lot': { mop: 'Direct Contracting', allowPartial: false },
+      'PR-DA05-Tarpaulin Banner 3x6ft-pc': {
+        mop: 'Direct Contracting',
+        allowPartial: false,
+      },
+      'PR-DA05-Roll-Up Banner Stand 33x79-set': {
+        mop: 'Direct Contracting',
+        allowPartial: false,
+      },
+      'PR-DA05-A4 Trifold Brochure 1000pcs-lot': {
+        mop: 'Direct Contracting',
+        allowPartial: false,
+      },
     },
   },
 ]

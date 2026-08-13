@@ -5,6 +5,7 @@ import {
 } from 'erpez-shared-lib'
 import { approveBacResolutionRequest } from './approveBacResolutionRequest'
 import { createBacResolutionRequest } from './createBacResolutionRequest'
+import { createBACProject } from './createBacProjectRequest'
 import { createWhereasClauseTemplateRequest } from './createWhereasClauseTemplateRequest'
 import { deleteWhereasClauseTemplateRequest } from './deleteWhereasClauseTemplateRequest'
 import { getBacResolutionRequest } from './getBacResolutionRequest'
@@ -18,8 +19,12 @@ import { submitBacResolutionRequest } from './submitBacResolutionRequest'
 import { updateWhereasClauseTemplateRequest } from './updateWhereasClauseTemplateRequest'
 import { updateBacResolutionRequest } from './updateBacResolutionRequest'
 import { deleteBacResolutionRequest } from './deleteBacResolutionRequest'
+import { getUsersRequest } from '@/features/planning/market-scoping/handlers/getUsersRequest'
 
-const bacResolutionQueryKeys = [['bac-resolutions'], ['bac-resolution']] as const
+const bacResolutionQueryKeys = [
+  ['bac-resolutions'],
+  ['bac-resolution'],
+] as const
 const whereasClauseQueryKeys = [['/bac-resolution-whereas-clauses']] as const
 
 type MutationResult<TData, TVariables> = UseMutationResult<
@@ -50,7 +55,12 @@ function makeMutationWithRefresh<TData, TVariables>(
         mutation.mutate(variables, {
           ...options,
           onSuccess: (data, mutationVariables, onMutateResult, context) => {
-            options?.onSuccess?.(data, mutationVariables, onMutateResult, context)
+            options?.onSuccess?.(
+              data,
+              mutationVariables,
+              onMutateResult,
+              context,
+            )
             invalidateBacResolutions()
           },
         })
@@ -85,7 +95,12 @@ function makeWhereasClauseMutationWithRefresh<TData, TVariables>(
         mutation.mutate(variables, {
           ...options,
           onSuccess: (data, mutationVariables, onMutateResult, context) => {
-            options?.onSuccess?.(data, mutationVariables, onMutateResult, context)
+            options?.onSuccess?.(
+              data,
+              mutationVariables,
+              onMutateResult,
+              context,
+            )
             invalidateWhereasClauses()
           },
         })
@@ -143,23 +158,20 @@ export const useWhereasClauseTemplates = createQueryHookFromTemplate(
 const useCreateWhereasClauseTemplateBase = createMutationHookFromTemplate(
   createWhereasClauseTemplateRequest,
 )
-export const useCreateWhereasClauseTemplate = makeWhereasClauseMutationWithRefresh(
-  useCreateWhereasClauseTemplateBase,
-)
+export const useCreateWhereasClauseTemplate =
+  makeWhereasClauseMutationWithRefresh(useCreateWhereasClauseTemplateBase)
 
 const useUpdateWhereasClauseTemplateBase = createMutationHookFromTemplate(
   updateWhereasClauseTemplateRequest,
 )
-export const useUpdateWhereasClauseTemplate = makeWhereasClauseMutationWithRefresh(
-  useUpdateWhereasClauseTemplateBase,
-)
+export const useUpdateWhereasClauseTemplate =
+  makeWhereasClauseMutationWithRefresh(useUpdateWhereasClauseTemplateBase)
 
 const useDeleteWhereasClauseTemplateBase = createMutationHookFromTemplate(
   deleteWhereasClauseTemplateRequest,
 )
-export const useDeleteWhereasClauseTemplate = makeWhereasClauseMutationWithRefresh(
-  useDeleteWhereasClauseTemplateBase,
-)
+export const useDeleteWhereasClauseTemplate =
+  makeWhereasClauseMutationWithRefresh(useDeleteWhereasClauseTemplateBase)
 
 const useApproveBacResolutionBase = createMutationHookFromTemplate(
   approveBacResolutionRequest,
@@ -187,4 +199,11 @@ const useDeleteBacResolutionBase = createMutationHookFromTemplate(
 )
 export const useDeleteBacResolution = makeMutationWithRefresh(
   useDeleteBacResolutionBase,
-)
+)
+
+const useCreateBacProjectBase = createMutationHookFromTemplate(createBACProject)
+export const useCreateBacProject = makeMutationWithRefresh(
+  useCreateBacProjectBase,
+)
+
+export const useGetUsers = createQueryHookFromTemplate(getUsersRequest)

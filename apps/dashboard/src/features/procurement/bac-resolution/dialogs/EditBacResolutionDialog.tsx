@@ -3,13 +3,17 @@ import { ResponsiveDialogDashtail } from '@/components/ResponsiveDialogDashtail'
 import { Button } from '@/components/ui/button'
 import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
 import type { CreateBacResolutionPayload, BacResolution } from '../types'
+import { CreateBACProjectPayload } from '../handlers/createBacProjectRequest'
 import { CreateBacResolutionForm } from '../forms/CreateBacResolutionForm'
 
 interface EditBacResolutionDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   resolution?: BacResolution
-  onUpdate: (id: string, values: CreateBacResolutionPayload) => Promise<void> | void
+  onUpdate: (
+    id: string,
+    values: CreateBACProjectPayload,
+  ) => Promise<void> | void
 }
 
 export function EditBacResolutionDialog({
@@ -21,7 +25,8 @@ export function EditBacResolutionDialog({
   const [isDirty, setIsDirty] = useState(false)
   const [showDiscardWarning, setShowDiscardWarning] = useState(false)
   const [showSaveConfirm, setShowSaveConfirm] = useState(false)
-  const [pendingValues, setPendingValues] = useState<CreateBacResolutionPayload | null>(null)
+  const [pendingValues, setPendingValues] =
+    useState<CreateBACProjectPayload | null>(null)
 
   // Reset dirty status on open change
   useEffect(() => {
@@ -41,7 +46,7 @@ export function EditBacResolutionDialog({
     onOpenChange(nextOpen)
   }
 
-  const handleSubmit = (values: CreateBacResolutionPayload) => {
+  const handleSubmit = (values: CreateBACProjectPayload) => {
     setPendingValues(values)
     setShowSaveConfirm(true)
   }
@@ -84,10 +89,7 @@ export function EditBacResolutionDialog({
         showCloseButton
         footer={
           <div className="flex justify-end gap-3 w-full">
-            <Button
-              variant="outline"
-              onClick={() => handleOpenChange(false)}
-            >
+            <Button variant="outline" onClick={() => handleOpenChange(false)}>
               Cancel
             </Button>
             <Button form={formId} type="submit">

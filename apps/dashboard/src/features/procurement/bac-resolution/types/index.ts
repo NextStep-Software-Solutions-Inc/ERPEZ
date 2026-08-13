@@ -1,16 +1,14 @@
+import { ConsolidatedPR } from '../../consolidated-pr/store/consolidatedPRStore'
+
 export type BacResolutionStatus =
-  | 'draft'
-  | 'for-approval'
-  | 'returned'
-  | 'approved'
+  'draft' | 'for-approval' | 'returned' | 'approved'
 
 export type BacResolutionRole = 'procurement-staff' | 'bac-chairperson'
 
 export type BacResolutionWorkspaceScope = 'all' | 'public-bidding'
 
 export type BacResolutionListRoutePath =
-  | '/v2/bac-resolutions'
-  | '/v2/bac-resolutions-public-bidding'
+  '/v2/bac-resolutions' | '/v2/bac-resolutions-public-bidding'
 
 export type BacResolutionScheduleRoutePath =
   | '/v2/bac-resolutions/$resolutionId/bidding-schedule'
@@ -19,8 +17,7 @@ export type BacResolutionScheduleRoutePath =
 export type BacResolutionInboxFilter = BacResolutionStatus | 'all'
 
 export type BacResolutionType =
-  | 'award-recommendation'
-  | 'procurement-mode-recommendation'
+  'award-recommendation' | 'procurement-mode-recommendation'
 
 export type BacResolutionAwardRecommendation = {
   winningSupplierName: string
@@ -156,3 +153,59 @@ export type PrintBacResolutionResult = {
   fileName: string
   blob: Blob
 }
+
+// ---- bac project types
+
+export type BACProject = {
+  id: string
+  title?: string
+  consolidatedPR?: ConsolidatedPR
+  abc?: number
+  status?: string
+  bacResolutions?: BACResolution[]
+  biddingActivitySchedules?: BiddingActivitySchedule[]
+  endUserRepresentativeId?: string
+  endUserRepresentative?: EndUserRepresentative
+  techRepresentativeId?: string
+  techRepresentative?: TechRepresentative
+  approvalAttachmentFileId?: string
+}
+
+export type BACProjectDetails = BACProject & {}
+
+export type BACResolution = {
+  id: string
+  projectProcurementId: string
+  resolutionType?: string
+  resolutionNumber?: string
+  dateResolved: string
+  status?: string
+  whereasClause?: string
+}
+
+export type BiddingActivitySchedule = {
+  id: string
+  procurementProjectId: string
+  procurementActivityTypeId: string
+  procurementActivityTypeName: string
+  startDate: string
+  endDate: string
+  venue: string
+  status: string
+  remarks: string
+}
+
+export type EndUserRepresentative = {
+  id: string
+  firstName?: string
+  lastName?: string
+  email?: string
+}
+
+export type TechRepresentative = {
+  id: string
+  firstName?: string
+  lastName?: string
+  email?: string
+}
+;``

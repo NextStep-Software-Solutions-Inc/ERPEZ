@@ -1,7 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useForm } from '@tanstack/react-form'
 import { z } from 'zod'
-import { ArrowDown, ArrowUp, Trash, Search, ArrowRight, ArrowLeft } from 'lucide-react'
+import {
+  ArrowDown,
+  ArrowUp,
+  Trash,
+  Search,
+  ArrowRight,
+  ArrowLeft,
+} from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -18,14 +25,26 @@ import {
 } from '@/components/ui/table'
 import { ResponsiveDialogDashtail } from '@/components/ResponsiveDialogDashtail'
 import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import type {
   BacResolutionProvisionalMember,
   CreateBacResolutionPayload,
 } from '../types'
-import { useWhereasClauseTemplates, useUpdateWhereasClauseTemplate } from '../handlers/hooks'
+import {
+  useWhereasClauseTemplates,
+  useUpdateWhereasClauseTemplate,
+  useGetUsers,
+} from '../handlers/hooks'
+import { CreateBACProjectPayload } from '../handlers/createBacProjectRequest'
 import FieldInfo from '@/components/FieldInfo'
 import { toast } from 'sonner'
-import { fetchUsers, type User } from '@/services/api/users'
+import type { User } from '@/services/api/users'
 
 const defaultProvisionalMembers: BacResolutionProvisionalMember[] = [
   {
@@ -57,7 +76,9 @@ export const createBacResolutionSchema = z.object({
   description: z.string().optional(),
   resolvedDateText: z.string().min(1, 'Resolved date text is required.'),
   resolvedLocationText: z.string().min(1, 'Resolved location is required.'),
-  whereasClauses: z.array(clauseSchema).min(1, 'At least one WHEREAS clause is required.'),
+  whereasClauses: z
+    .array(clauseSchema)
+    .min(1, 'At least one WHEREAS clause is required.'),
 })
 
 export type CreateBacResolutionFormValues = z.infer<
@@ -65,7 +86,7 @@ export type CreateBacResolutionFormValues = z.infer<
 >
 
 interface CreateBacResolutionFormProps {
-  onSubmit: (values: CreateBacResolutionPayload) => Promise<void> | void
+  onSubmit: (values: CreateBACProjectPayload) => Promise<void> | void
   onCancel: () => void
   initialValues?: Partial<CreateBacResolutionPayload>
   isLoading?: boolean
@@ -236,7 +257,8 @@ function SelectedWhereasClauses({
     return (
       <div className="rounded-lg border border-dashed p-8 text-center bg-default-50">
         <p className="text-sm text-muted-foreground">
-          No clauses added yet. Click Add Custom Clause or Manage WHEREAS templates to start.
+          No clauses added yet. Click Add Custom Clause or Manage WHEREAS
+          templates to start.
         </p>
       </div>
     )
@@ -329,7 +351,7 @@ interface ProvisionalMembersSectionProps {
   isLoading: boolean
   onUpdateMember: (
     index: number,
-    field: 'name' | 'position',
+    field: 'name' | 'position' | 'userId',
     value: string,
   ) => void
   usersSuggestions: User[]
@@ -344,47 +366,69 @@ function ProvisionalMembersSection({
   return (
     <div className="space-y-4 rounded-lg border border-default-200 bg-default-50 p-4">
       <div>
-        <Label className="text-base font-semibold">Provisional Signatories</Label>
+        <Label className="text-base font-semibold">
+          Provisional Signatories
+        </Label>
         <p className="text-sm text-muted-foreground">
-          Define the provisional members representing the end-user office and technical reviews.
+          Define the provisional members representing the end-user office and
+          technical reviews.
         </p>
       </div>
 
       <div className="grid gap-5 sm:grid-cols-2">
         {provisionalMembers.map((member, index) => (
-          <div key={member.id} className="rounded-md border p-4 bg-background space-y-4">
+          <div
+            key={member.id}
+            className="rounded-md border p-4 bg-background space-y-4"
+          >
             <div className="flex items-center justify-between border-b pb-2">
-              <span className="text-sm font-bold text-primary">{member.role}</span>
+              <span className="text-sm font-bold text-primary">
+                {member.role}
+              </span>
             </div>
 
             <div className="space-y-3">
               <div className="grid gap-1.5">
-                <Label htmlFor={`member-name-${member.id}`}>Full Name</Label>
-                <div className="relative">
-                  <Input
-                    id={`member-name-${member.id}`}
-                    value={member.name}
-                    onChange={(event) =>
-                      onUpdateMember(index, 'name', event.target.value)
-                    }
-                    placeholder="Enter or select name"
-                    disabled={isLoading}
-                    list={`suggestions-${member.id}`}
-                    className="w-full"
-                  />
-                  <datalist id={`suggestions-${member.id}`}>
+                <Label htmlFor={`member-user-${member.id}`}>Select User</Label>
+                <Select
+                  value={member.userId || ''}
+                  onValueChange={(value) =>
+                    onUpdateMember(index, 'userId', value)
+                  }
+                  disabled={isLoading}
+                >
+                  <SelectTrigger id={`member-user-${member.id}`}>
+                    <SelectValue placeholder="Choose a user" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">-- Select User --</SelectItem>
                     {usersSuggestions.map((user) => (
-                      <option
-                        key={user.id}
-                        value={`${user.fullName} (${user.employeeNumber})`}
-                      />
+                      <SelectItem key={user.id} value={user.id}>
+                        {user.fullName} ({user.employeeNumber})
+                      </SelectItem>
                     ))}
-                  </datalist>
-                </div>
+                  </SelectContent>
+                </Select>
               </div>
 
               <div className="grid gap-1.5">
-                <Label htmlFor={`member-position-${member.id}`}>Position / Title</Label>
+                <Label htmlFor={`member-name-${member.id}`}>Full Name</Label>
+                <Input
+                  id={`member-name-${member.id}`}
+                  value={member.name}
+                  onChange={(event) =>
+                    onUpdateMember(index, 'name', event.target.value)
+                  }
+                  placeholder="Enter or select name"
+                  disabled={isLoading}
+                  className="w-full"
+                />
+              </div>
+
+              <div className="grid gap-1.5">
+                <Label htmlFor={`member-position-${member.id}`}>
+                  Position / Title
+                </Label>
                 <Input
                   id={`member-position-${member.id}`}
                   value={member.position}
@@ -413,23 +457,32 @@ export function CreateBacResolutionForm({
   apiAppItems = [],
   apiConsolidatedPrs = [],
 }: CreateBacResolutionFormProps) {
-  const { data: templates, isLoading: isTemplatesLoading } = useWhereasClauseTemplates({})
+  const { data: templates, isLoading: isTemplatesLoading } =
+    useWhereasClauseTemplates({})
   const { mutateAsync: updateTemplate } = useUpdateWhereasClauseTemplate()
 
   const [step, setStep] = useState<1 | 2 | 3 | 4>(1)
-  const [sourceType, setSourceType] = useState<'AppItem' | 'ConsolidatedPR'>('AppItem')
-  const [selectedAppItemId, setSelectedAppItemId] = useState<string | null>(null)
-  const [selectedConsolidatedPRId, setSelectedConsolidatedPRId] = useState<string | null>(null)
+  const [sourceType, setSourceType] = useState<'AppItem' | 'ConsolidatedPR'>(
+    'AppItem',
+  )
+  const [selectedAppItemId, setSelectedAppItemId] = useState<string | null>(
+    null,
+  )
+  const [selectedConsolidatedPRId, setSelectedConsolidatedPRId] = useState<
+    string | null
+  >(null)
   const [searchQuery, setSearchQuery] = useState('')
 
-  const [selectedClauses, setSelectedClauses] = useState<WhereasClauseTemplate[]>(
+  const [selectedClauses, setSelectedClauses] = useState<
+    WhereasClauseTemplate[]
+  >(
     initialValues?.whereasClauses?.map((c) => ({
       id: c.id ?? '',
       name: c.name,
       body: c.body,
       createdAt: '',
       updatedAt: '',
-    })) ?? []
+    })) ?? [],
   )
 
   const resolvedDatePickerRef = useRef<HTMLInputElement | null>(null)
@@ -448,25 +501,26 @@ export function CreateBacResolutionForm({
   }, [selectedClauses])
 
   const [isManageWhereasOpen, setIsManageWhereasOpen] = useState(false)
-  const [users, setUsers] = useState<User[]>([])
 
-  useEffect(() => {
-    fetchUsers()
-      .then(setUsers)
-      .catch((err) => console.error('Failed to load user suggestions:', err))
-  }, [])
+  // Fetch users using the query hook
+  const { data: usersResponse } = useGetUsers({
+    pathParams: {},
+    queryParams: { PageNumber: 1, PageSize: 100 },
+  })
+  const users = usersResponse?.data || []
 
   const [provisionalMembers, setProvisionalMembers] = useState<
     BacResolutionProvisionalMember[]
   >([])
 
   useEffect(() => {
-    const initial = initialValues?.provisionalMembers ?? defaultProvisionalMembers
+    const initial =
+      initialValues?.provisionalMembers ?? defaultProvisionalMembers
     if (users.length > 0) {
       const resolved = initial.map((member) => {
         if (member.userId) return member
         const found = users.find(
-          (u) => u.fullName.toLowerCase() === member.name.trim().toLowerCase()
+          (u) => u.fullName.toLowerCase() === member.name.trim().toLowerCase(),
         )
         return {
           ...member,
@@ -484,9 +538,14 @@ export function CreateBacResolutionForm({
 
   const calculateAppItemBudget = (item: any) => {
     if (!item) return 0
-    if (item.amount !== undefined && item.amount !== null && item.amount !== 0) return item.amount
+    if (item.amount !== undefined && item.amount !== null && item.amount !== 0)
+      return item.amount
     if (!item.ppmpItem) return 0
-    const qty = item.ppmpItem.ppmpItemAllocations?.reduce((sum: number, a: any) => sum + (a.quantity || 0), 0) || 0
+    const qty =
+      item.ppmpItem.ppmpItemAllocations?.reduce(
+        (sum: number, a: any) => sum + (a.quantity || 0),
+        0,
+      ) || 0
     return item.ppmpItem.unitPrice * qty
   }
 
@@ -505,7 +564,9 @@ export function CreateBacResolutionForm({
       const name = item.ppmpItem?.name?.toLowerCase() || ''
       const desc = item.ppmpItem?.description?.toLowerCase() || ''
       const office = item.office?.name?.toLowerCase() || ''
-      return name.includes(query) || desc.includes(query) || office.includes(query)
+      return (
+        name.includes(query) || desc.includes(query) || office.includes(query)
+      )
     })
   }, [apiAppItems, searchQuery])
 
@@ -513,10 +574,13 @@ export function CreateBacResolutionForm({
     if (!searchQuery) return apiConsolidatedPrs
     const query = searchQuery.toLowerCase()
     return apiConsolidatedPrs.filter((cpr) => {
-      const num = cpr.cprNumber?.toLowerCase() || cpr.prNumber?.toLowerCase() || ''
+      const num =
+        cpr.cprNumber?.toLowerCase() || cpr.prNumber?.toLowerCase() || ''
       const desc = cpr.description?.toLowerCase() || ''
       const purpose = cpr.purpose?.toLowerCase() || ''
-      return num.includes(query) || desc.includes(query) || purpose.includes(query)
+      return (
+        num.includes(query) || desc.includes(query) || purpose.includes(query)
+      )
     })
   }, [apiConsolidatedPrs, searchQuery])
 
@@ -526,30 +590,79 @@ export function CreateBacResolutionForm({
       abc: initialValues?.abc ?? 0,
       resolutionType: initialValues?.resolutionType ?? 'Standard',
       bacResolutionNumber: initialValues?.bacResolutionNumber ?? '',
-      resolutionDate: initialValues?.resolutionDate ?? new Date().toISOString().split('T')[0],
+      resolutionDate:
+        initialValues?.resolutionDate ?? new Date().toISOString().split('T')[0],
       description: initialValues?.description ?? '',
-      resolvedDateText: initialValues?.resolvedDateText ?? new Date().toLocaleDateString('en-PH', {
-        weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
-      }),
-      resolvedLocationText: initialValues?.resolvedLocationText ?? 'University of Science and Technology of Southern Philippines, Cagayan de Oro City',
+      resolvedDateText:
+        initialValues?.resolvedDateText ??
+        new Date().toLocaleDateString('en-PH', {
+          weekday: 'long',
+          month: 'long',
+          day: 'numeric',
+          year: 'numeric',
+        }),
+      resolvedLocationText:
+        initialValues?.resolvedLocationText ??
+        'University of Science and Technology of Southern Philippines, Cagayan de Oro City',
     },
     onSubmit: async ({ value }) => {
-      const endUserRep = provisionalMembers.find(m => m.id === 'provisional-end-user-rep' || m.role === 'End-user Rep')
-      const techRep = provisionalMembers.find(m => m.id === 'provisional-tech-rep' || m.role === 'Tech Rep')
+      const endUserRep = provisionalMembers.find(
+        (m) => m.id === 'provisional-end-user-rep' || m.role === 'End-user Rep',
+      )
+      const techRep = provisionalMembers.find(
+        (m) => m.id === 'provisional-tech-rep' || m.role === 'Tech Rep',
+      )
 
       // Auto-prepopulate clauses if still empty in step 4
-      const clausesToSubmit = selectedClauses.length > 0 ? selectedClauses : (templates ?? []).slice(0, 2)
+      const clausesToSubmit =
+        selectedClauses.length > 0
+          ? selectedClauses
+          : (templates ?? []).slice(0, 2)
 
-      const payload: CreateBacResolutionPayload = {
-        title: value.title || (sourceType === 'AppItem' ? selectedAppItem?.ppmpItem?.name : selectedConsolidatedPR?.description) || 'BAC Resolution Project',
-        abc: value.abc || (sourceType === 'AppItem' ? calculateAppItemBudget(selectedAppItem) : selectedConsolidatedPR?.totalAmount) || 0,
+      // Map form data to CreateBACProjectPayload
+      const payload: CreateBACProjectPayload = {
+        title:
+          value.title ||
+          (sourceType === 'AppItem'
+            ? selectedAppItem?.ppmpItem?.name
+            : selectedConsolidatedPR?.description) ||
+          'BAC Resolution Project',
+        abc:
+          value.abc ||
+          (sourceType === 'AppItem'
+            ? calculateAppItemBudget(selectedAppItem)
+            : selectedConsolidatedPR?.totalAmount) ||
+          0,
         sourceType: sourceType,
-        appItemId: sourceType === 'AppItem' ? selectedAppItemId || undefined : undefined,
-        consolidatedPRId: sourceType === 'ConsolidatedPR' ? selectedConsolidatedPRId || undefined : undefined,
+        appItemId:
+          sourceType === 'AppItem' ? selectedAppItemId || undefined : undefined,
+        consolidatedPRId:
+          sourceType === 'ConsolidatedPR'
+            ? selectedConsolidatedPRId || undefined
+            : undefined,
         resolutionType: value.resolutionType,
-        bacResolutionNumber: value.bacResolutionNumber,
-        resolutionDate: value.resolutionDate,
-        description: value.description || value.title || 'Untitled BAC Resolution',
+        resolutionNumber: value.bacResolutionNumber,
+        dateResolved: value.resolutionDate,
+        resolvedLocation: value.resolvedLocationText,
+        selectedTemplateClauseIds: clausesToSubmit
+          .map((c) => c.id)
+          .filter(Boolean),
+        customClauses: clausesToSubmit
+          .filter((c) => !c.id || c.id === '')
+          .map((c) => c.body),
+        endUserRepresentativeId: endUserRep?.userId || undefined,
+        techRepresentativeId: techRep?.userId || undefined,
+        userId: '61a2206a-a15b-4512-8668-7d48f29b3fed', // Current user ID - should be from auth context
+      }
+
+      const validation = createBacResolutionSchema.safeParse({
+        title: payload.title,
+        abc: payload.abc,
+        resolutionType: payload.resolutionType,
+        bacResolutionNumber: payload.resolutionNumber,
+        resolutionDate: payload.dateResolved,
+        description:
+          value.description || value.title || 'Untitled BAC Resolution',
         resolvedDateText: value.resolvedDateText,
         resolvedLocationText: value.resolvedLocationText,
         whereasClauses: clausesToSubmit.map((template) => ({
@@ -557,17 +670,7 @@ export function CreateBacResolutionForm({
           name: template.name,
           body: template.body,
         })),
-        provisionalMembers: provisionalMembers.map(m => ({
-          id: m.id,
-          role: m.role,
-          name: m.name,
-          position: m.position,
-        })),
-        endUserRepresentativeId: endUserRep?.userId || null,
-        techRepresentativeId: techRep?.userId || null,
-      }
-
-      const validation = createBacResolutionSchema.safeParse(payload)
+      })
       if (!validation.success) {
         setSubmitError(
           validation.error.issues.map((issue) => issue.message).join(' '),
@@ -605,11 +708,21 @@ export function CreateBacResolutionForm({
     } else if (step === 3) {
       // Prepopulate form values from chosen source
       if (sourceType === 'AppItem' && selectedAppItem) {
-        form.setFieldValue('title', selectedAppItem.ppmpItem?.name || 'Procurement Project')
+        form.setFieldValue(
+          'title',
+          selectedAppItem.ppmpItem?.name || 'Procurement Project',
+        )
         form.setFieldValue('abc', calculateAppItemBudget(selectedAppItem))
-        form.setFieldValue('description', selectedAppItem.ppmpItem?.description || '')
+        form.setFieldValue(
+          'description',
+          selectedAppItem.ppmpItem?.description || '',
+        )
       } else if (sourceType === 'ConsolidatedPR' && selectedConsolidatedPR) {
-        form.setFieldValue('title', selectedConsolidatedPR.description || 'Consolidated Procurement Project')
+        form.setFieldValue(
+          'title',
+          selectedConsolidatedPR.description ||
+            'Consolidated Procurement Project',
+        )
         form.setFieldValue('abc', selectedConsolidatedPR.totalAmount)
         form.setFieldValue('description', selectedConsolidatedPR.purpose || '')
       }
@@ -724,16 +837,28 @@ export function CreateBacResolutionForm({
 
   const updateProvisionalMember = (
     index: number,
-    field: 'name' | 'position',
+    field: 'name' | 'position' | 'userId',
     value: string,
   ) => {
     setProvisionalMembers((current) =>
       current.map((member, i) => {
         if (i !== index) return member
 
+        if (field === 'userId') {
+          // When user ID is selected, update both userId and name
+          const selectedUser = users.find((u) => u.id === value)
+          return {
+            ...member,
+            userId: value || null,
+            name: selectedUser ? selectedUser.fullName : member.name,
+          }
+        }
+
         if (field === 'name') {
           const matchedUser = users.find(
-            (u) => `${u.fullName} (${u.employeeNumber})`.toLowerCase() === value.trim().toLowerCase()
+            (u) =>
+              `${u.fullName} (${u.employeeNumber})`.toLowerCase() ===
+              value.trim().toLowerCase(),
           )
           return {
             ...member,
@@ -759,8 +884,11 @@ export function CreateBacResolutionForm({
             type="button"
             disabled={step < 1}
             onClick={() => step > 1 && setStep(1)}
-            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${step === 1 ? 'bg-primary text-white scale-105' : 'bg-default-100 text-default-600 hover:bg-default-200'
-              }`}
+            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+              step === 1
+                ? 'bg-primary text-white scale-105'
+                : 'bg-default-100 text-default-600 hover:bg-default-200'
+            }`}
           >
             1. Source Selection
           </button>
@@ -769,8 +897,11 @@ export function CreateBacResolutionForm({
             type="button"
             disabled={step < 2}
             onClick={() => step > 2 && setStep(2)}
-            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${step === 2 ? 'bg-primary text-white scale-105' : 'bg-default-100 text-default-600 hover:bg-default-200'
-              }`}
+            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+              step === 2
+                ? 'bg-primary text-white scale-105'
+                : 'bg-default-100 text-default-600 hover:bg-default-200'
+            }`}
           >
             2. Search & Select
           </button>
@@ -779,15 +910,21 @@ export function CreateBacResolutionForm({
             type="button"
             disabled={step < 3}
             onClick={() => step > 3 && setStep(3)}
-            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${step === 3 ? 'bg-primary text-white scale-105' : 'bg-default-100 text-default-600 hover:bg-default-200'
-              }`}
+            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+              step === 3
+                ? 'bg-primary text-white scale-105'
+                : 'bg-default-100 text-default-600 hover:bg-default-200'
+            }`}
           >
             3. Preview Source
           </button>
           <span className="text-default-400 text-xs">/</span>
           <span
-            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${step === 4 ? 'bg-primary text-white scale-105' : 'bg-default-100 text-default-600'
-              }`}
+            className={`px-3 py-1.5 rounded-full text-xs font-bold transition-all ${
+              step === 4
+                ? 'bg-primary text-white scale-105'
+                : 'bg-default-100 text-default-600'
+            }`}
           >
             4. Fill Details
           </span>
@@ -796,43 +933,54 @@ export function CreateBacResolutionForm({
 
       {step === 1 && (
         <div className="space-y-4">
-          <Label className="text-lg font-semibold block">Choose Procurement Source Type</Label>
+          <Label className="text-lg font-semibold block">
+            Choose Procurement Source Type
+          </Label>
           <p className="text-sm text-muted-foreground">
-            A BAC Resolution can be initiated either from an individual approved APP Item or from a Consolidated Purchase Request.
+            A BAC Resolution can be initiated either from an individual approved
+            APP Item or from a Consolidated Purchase Request.
           </p>
           <div className="grid gap-5 sm:grid-cols-2 pt-2">
             <div
               onClick={() => setSourceType('AppItem')}
-              className={`rounded-xl border p-6 cursor-pointer hover:shadow-md transition-all flex flex-col gap-3 ${sourceType === 'AppItem'
-                ? 'border-primary ring-2 ring-primary bg-primary/5 shadow-sm'
-                : 'border-default-200 bg-background hover:border-default-400'
-                }`}
+              className={`rounded-xl border p-6 cursor-pointer hover:shadow-md transition-all flex flex-col gap-3 ${
+                sourceType === 'AppItem'
+                  ? 'border-primary ring-2 ring-primary bg-primary/5 shadow-sm'
+                  : 'border-default-200 bg-background hover:border-default-400'
+              }`}
             >
               <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-lg">
                 A
               </div>
               <div>
-                <h4 className="font-bold text-base text-foreground">Annual Procurement Plan (APP) Item</h4>
+                <h4 className="font-bold text-base text-foreground">
+                  Annual Procurement Plan (APP) Item
+                </h4>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Create a resolution directly from an approved line item in the Annual Procurement Plan. Best for standalone purchases.
+                  Create a resolution directly from an approved line item in the
+                  Annual Procurement Plan. Best for standalone purchases.
                 </p>
               </div>
             </div>
 
             <div
               onClick={() => setSourceType('ConsolidatedPR')}
-              className={`rounded-xl border p-6 cursor-pointer hover:shadow-md transition-all flex flex-col gap-3 ${sourceType === 'ConsolidatedPR'
-                ? 'border-primary ring-2 ring-primary bg-primary/5 shadow-sm'
-                : 'border-default-200 bg-background hover:border-default-400'
-                }`}
+              className={`rounded-xl border p-6 cursor-pointer hover:shadow-md transition-all flex flex-col gap-3 ${
+                sourceType === 'ConsolidatedPR'
+                  ? 'border-primary ring-2 ring-primary bg-primary/5 shadow-sm'
+                  : 'border-default-200 bg-background hover:border-default-400'
+              }`}
             >
               <div className="h-10 w-10 rounded-lg bg-primary/10 text-primary flex items-center justify-center font-bold text-lg">
                 B
               </div>
               <div>
-                <h4 className="font-bold text-base text-foreground">Consolidated Purchase Request (CPR)</h4>
+                <h4 className="font-bold text-base text-foreground">
+                  Consolidated Purchase Request (CPR)
+                </h4>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Create a resolution from a Consolidated Purchase Request. Best for grouped end-user requisitions.
+                  Create a resolution from a Consolidated Purchase Request. Best
+                  for grouped end-user requisitions.
                 </p>
               </div>
             </div>
@@ -843,9 +991,16 @@ export function CreateBacResolutionForm({
       {step === 2 && (
         <div className="space-y-4">
           <div className="flex flex-col gap-1.5">
-            <Label className="text-lg font-semibold">Search and Select {sourceType === 'AppItem' ? 'APP Item' : 'Consolidated PR'}</Label>
+            <Label className="text-lg font-semibold">
+              Search and Select{' '}
+              {sourceType === 'AppItem' ? 'APP Item' : 'Consolidated PR'}
+            </Label>
             <p className="text-sm text-muted-foreground">
-              Search the database for approved {sourceType === 'AppItem' ? 'APP Line Items' : 'Consolidated Purchase Requests'}.
+              Search the database for approved{' '}
+              {sourceType === 'AppItem'
+                ? 'APP Line Items'
+                : 'Consolidated Purchase Requests'}
+              .
             </p>
           </div>
 
@@ -875,7 +1030,10 @@ export function CreateBacResolutionForm({
                 <TableBody>
                   {filteredAppItems.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                      <TableCell
+                        colSpan={5}
+                        className="text-center py-6 text-muted-foreground"
+                      >
                         No APP Items found matching search criteria.
                       </TableCell>
                     </TableRow>
@@ -887,24 +1045,34 @@ export function CreateBacResolutionForm({
                         <TableRow
                           key={item.id}
                           onClick={() => setSelectedAppItemId(item.id)}
-                          className={`cursor-pointer hover:bg-default-50 transition-colors ${isSelected ? 'bg-primary/5' : ''
-                            }`}
+                          className={`cursor-pointer hover:bg-default-50 transition-colors ${
+                            isSelected ? 'bg-primary/5' : ''
+                          }`}
                         >
                           <TableCell>
                             <Checkbox
                               checked={isSelected}
-                              onCheckedChange={() => setSelectedAppItemId(item.id)}
+                              onCheckedChange={() =>
+                                setSelectedAppItemId(item.id)
+                              }
                               onClick={(e) => e.stopPropagation()}
                             />
                           </TableCell>
                           <TableCell className="font-medium">
-                            {item.ppmpItem?.name || item.name || 'Untitled Line Item'}
+                            {item.ppmpItem?.name ||
+                              item.name ||
+                              'Untitled Line Item'}
                           </TableCell>
                           <TableCell>{item.office?.name || 'N/A'}</TableCell>
                           <TableCell className="text-right font-semibold">
-                            ₱{budget.toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                            ₱
+                            {budget.toLocaleString('en-PH', {
+                              minimumFractionDigits: 2,
+                            })}
                           </TableCell>
-                          <TableCell>{item.ppmpItem?.procurementMode?.name || 'N/A'}</TableCell>
+                          <TableCell>
+                            {item.ppmpItem?.procurementMode?.name || 'N/A'}
+                          </TableCell>
                         </TableRow>
                       )
                     })
@@ -925,7 +1093,10 @@ export function CreateBacResolutionForm({
                 <TableBody>
                   {filteredConsolidatedPrs.length === 0 ? (
                     <TableRow>
-                      <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                      <TableCell
+                        colSpan={5}
+                        className="text-center py-6 text-muted-foreground"
+                      >
                         No Consolidated PRs found matching search criteria.
                       </TableCell>
                     </TableRow>
@@ -936,22 +1107,30 @@ export function CreateBacResolutionForm({
                         <TableRow
                           key={cpr.id}
                           onClick={() => setSelectedConsolidatedPRId(cpr.id)}
-                          className={`cursor-pointer hover:bg-default-50 transition-colors ${isSelected ? 'bg-primary/5' : ''
-                            }`}
+                          className={`cursor-pointer hover:bg-default-50 transition-colors ${
+                            isSelected ? 'bg-primary/5' : ''
+                          }`}
                         >
                           <TableCell>
                             <Checkbox
                               checked={isSelected}
-                              onCheckedChange={() => setSelectedConsolidatedPRId(cpr.id)}
+                              onCheckedChange={() =>
+                                setSelectedConsolidatedPRId(cpr.id)
+                              }
                               onClick={(e) => e.stopPropagation()}
                             />
                           </TableCell>
                           <TableCell className="font-medium">
                             {cpr.cprNumber || cpr.prNumber || 'CPR-N/A'}
                           </TableCell>
-                          <TableCell>{cpr.description || cpr.purpose || 'No description'}</TableCell>
+                          <TableCell>
+                            {cpr.description || cpr.purpose || 'No description'}
+                          </TableCell>
                           <TableCell className="text-right font-semibold">
-                            ₱{(cpr.totalAmount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                            ₱
+                            {(cpr.totalAmount || 0).toLocaleString('en-PH', {
+                              minimumFractionDigits: 2,
+                            })}
                           </TableCell>
                           <TableCell>
                             <span className="inline-block px-2 py-0.5 rounded-full text-xs font-semibold bg-green-100 text-green-800">
@@ -972,7 +1151,9 @@ export function CreateBacResolutionForm({
       {step === 3 && (
         <div className="space-y-4">
           <div className="flex flex-col gap-1.5">
-            <Label className="text-lg font-semibold">Verify Selected Source</Label>
+            <Label className="text-lg font-semibold">
+              Verify Selected Source
+            </Label>
             <p className="text-sm text-muted-foreground">
               Review parameters extracted from the chosen database record.
             </p>
@@ -982,55 +1163,103 @@ export function CreateBacResolutionForm({
             {sourceType === 'AppItem' && selectedAppItem ? (
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <span className="text-xs font-bold text-muted-foreground uppercase">Source Type</span>
-                  <p className="font-semibold text-sm">Annual Procurement Plan (APP) Item</p>
-                </div>
-                <div>
-                  <span className="text-xs font-bold text-muted-foreground uppercase">Project Item Title</span>
-                  <p className="font-semibold text-sm">{selectedAppItem.ppmpItem?.name || 'Untitled Line Item'}</p>
-                </div>
-                <div>
-                  <span className="text-xs font-bold text-muted-foreground uppercase">Office / Implementing Unit</span>
-                  <p className="font-semibold text-sm">{selectedAppItem.office?.name || 'N/A'}</p>
-                </div>
-                <div>
-                  <span className="text-xs font-bold text-muted-foreground uppercase">Approved Budget (ABC)</span>
-                  <p className="font-bold text-sm text-primary">
-                    ₱{calculateAppItemBudget(selectedAppItem).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                  <span className="text-xs font-bold text-muted-foreground uppercase">
+                    Source Type
+                  </span>
+                  <p className="font-semibold text-sm">
+                    Annual Procurement Plan (APP) Item
                   </p>
                 </div>
                 <div>
-                  <span className="text-xs font-bold text-muted-foreground uppercase">Source of Fund</span>
-                  <p className="font-semibold text-sm">{selectedAppItem.fundSource?.name || 'N/A'}</p>
+                  <span className="text-xs font-bold text-muted-foreground uppercase">
+                    Project Item Title
+                  </span>
+                  <p className="font-semibold text-sm">
+                    {selectedAppItem.ppmpItem?.name || 'Untitled Line Item'}
+                  </p>
                 </div>
                 <div>
-                  <span className="text-xs font-bold text-muted-foreground uppercase">Mode of Procurement</span>
-                  <p className="font-semibold text-sm">{selectedAppItem.ppmpItem?.procurementMode?.name || 'N/A'}</p>
+                  <span className="text-xs font-bold text-muted-foreground uppercase">
+                    Office / Implementing Unit
+                  </span>
+                  <p className="font-semibold text-sm">
+                    {selectedAppItem.office?.name || 'N/A'}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-muted-foreground uppercase">
+                    Approved Budget (ABC)
+                  </span>
+                  <p className="font-bold text-sm text-primary">
+                    ₱
+                    {calculateAppItemBudget(selectedAppItem).toLocaleString(
+                      'en-PH',
+                      { minimumFractionDigits: 2 },
+                    )}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-muted-foreground uppercase">
+                    Source of Fund
+                  </span>
+                  <p className="font-semibold text-sm">
+                    {selectedAppItem.fundSource?.name || 'N/A'}
+                  </p>
+                </div>
+                <div>
+                  <span className="text-xs font-bold text-muted-foreground uppercase">
+                    Mode of Procurement
+                  </span>
+                  <p className="font-semibold text-sm">
+                    {selectedAppItem.ppmpItem?.procurementMode?.name || 'N/A'}
+                  </p>
                 </div>
               </div>
             ) : sourceType === 'ConsolidatedPR' && selectedConsolidatedPR ? (
               <div className="grid gap-4 sm:grid-cols-2">
                 <div>
-                  <span className="text-xs font-bold text-muted-foreground uppercase">Source Type</span>
-                  <p className="font-semibold text-sm">Consolidated Purchase Request (CPR)</p>
+                  <span className="text-xs font-bold text-muted-foreground uppercase">
+                    Source Type
+                  </span>
+                  <p className="font-semibold text-sm">
+                    Consolidated Purchase Request (CPR)
+                  </p>
                 </div>
                 <div>
-                  <span className="text-xs font-bold text-muted-foreground uppercase">CPR Number</span>
-                  <p className="font-semibold text-sm">{selectedConsolidatedPR.cprNumber || selectedConsolidatedPR.prNumber || 'CPR-N/A'}</p>
+                  <span className="text-xs font-bold text-muted-foreground uppercase">
+                    CPR Number
+                  </span>
+                  <p className="font-semibold text-sm">
+                    {selectedConsolidatedPR.cprNumber ||
+                      selectedConsolidatedPR.prNumber ||
+                      'CPR-N/A'}
+                  </p>
                 </div>
                 <div>
-                  <span className="text-xs font-bold text-muted-foreground uppercase">Description / Purpose</span>
-                  <p className="font-semibold text-sm">{selectedConsolidatedPR.description || 'No description'}</p>
+                  <span className="text-xs font-bold text-muted-foreground uppercase">
+                    Description / Purpose
+                  </span>
+                  <p className="font-semibold text-sm">
+                    {selectedConsolidatedPR.description || 'No description'}
+                  </p>
                 </div>
                 <div>
-                  <span className="text-xs font-bold text-muted-foreground uppercase">Total Consolidated Amount</span>
+                  <span className="text-xs font-bold text-muted-foreground uppercase">
+                    Total Consolidated Amount
+                  </span>
                   <p className="font-bold text-sm text-primary">
-                    ₱{(selectedConsolidatedPR.totalAmount || 0).toLocaleString('en-PH', { minimumFractionDigits: 2 })}
+                    ₱
+                    {(selectedConsolidatedPR.totalAmount || 0).toLocaleString(
+                      'en-PH',
+                      { minimumFractionDigits: 2 },
+                    )}
                   </p>
                 </div>
               </div>
             ) : (
-              <p className="text-sm text-destructive font-semibold">No source item selected correctly.</p>
+              <p className="text-sm text-destructive font-semibold">
+                No source item selected correctly.
+              </p>
             )}
           </div>
         </div>
@@ -1049,9 +1278,13 @@ export function CreateBacResolutionForm({
           {/* Read Only Source Header Badge */}
           <div className="rounded-md bg-primary/5 border border-primary/20 p-3 flex justify-between items-center text-xs">
             <div>
-              <span className="font-bold uppercase text-muted-foreground">Selected Source: </span>
+              <span className="font-bold uppercase text-muted-foreground">
+                Selected Source:{' '}
+              </span>
               <span className="font-bold text-primary">
-                {sourceType === 'AppItem' ? `APP Item: ${selectedAppItem?.ppmpItem?.name}` : `Consolidated PR: ${selectedConsolidatedPR?.cprNumber || selectedConsolidatedPR?.prNumber}`}
+                {sourceType === 'AppItem'
+                  ? `APP Item: ${selectedAppItem?.ppmpItem?.name}`
+                  : `Consolidated PR: ${selectedConsolidatedPR?.cprNumber || selectedConsolidatedPR?.prNumber}`}
               </span>
             </div>
             <button
@@ -1094,7 +1327,9 @@ export function CreateBacResolutionForm({
                     type="number"
                     value={field.state.value}
                     onBlur={field.handleBlur}
-                    onChange={(event) => field.handleChange(Number(event.target.value))}
+                    onChange={(event) =>
+                      field.handleChange(Number(event.target.value))
+                    }
                     placeholder="e.g. 50000"
                     disabled={isLoading}
                   />
@@ -1191,7 +1426,9 @@ export function CreateBacResolutionForm({
                         id={field.name}
                         value={field.state.value}
                         onBlur={field.handleBlur}
-                        onChange={(event) => field.handleChange(event.target.value)}
+                        onChange={(event) =>
+                          field.handleChange(event.target.value)
+                        }
                         placeholder="e.g. December 31, 2026"
                         disabled={isLoading}
                         className="flex-1"
@@ -1266,9 +1503,13 @@ export function CreateBacResolutionForm({
           <div className="space-y-4 rounded-lg border border-default-200 bg-default-50 p-4">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
               <div>
-                <Label className="text-base font-semibold">WHEREAS Clauses</Label>
+                <Label className="text-base font-semibold">
+                  WHEREAS Clauses
+                </Label>
                 <p className="text-sm text-muted-foreground">
-                  Selected WHEREAS clause templates will appear below. Use Manage WHEREAS to choose saved clause templates or Add Custom Clause to define custom ones.
+                  Selected WHEREAS clause templates will appear below. Use
+                  Manage WHEREAS to choose saved clause templates or Add Custom
+                  Clause to define custom ones.
                 </p>
               </div>
               <div className="flex gap-2">
@@ -1364,19 +1605,19 @@ export function CreateBacResolutionForm({
               onClick={handleNextStep}
               disabled={
                 isLoading ||
-                (step === 2 && sourceType === 'AppItem' && !selectedAppItemId) ||
-                (step === 2 && sourceType === 'ConsolidatedPR' && !selectedConsolidatedPRId)
+                (step === 2 &&
+                  sourceType === 'AppItem' &&
+                  !selectedAppItemId) ||
+                (step === 2 &&
+                  sourceType === 'ConsolidatedPR' &&
+                  !selectedConsolidatedPRId)
               }
               className="flex items-center gap-1.5"
             >
               Next <ArrowRight className="h-4 w-4" />
             </Button>
           ) : (
-            <Button
-              form={formId}
-              type="submit"
-              disabled={isLoading}
-            >
+            <Button form={formId} type="submit" disabled={isLoading}>
               {isLoading ? 'Creating...' : 'Create Draft'}
             </Button>
           )}
@@ -1395,3 +1636,4 @@ export function CreateBacResolutionForm({
     </div>
   )
 }
+

@@ -1,6 +1,7 @@
 export * from './getBacResolutionsRequest'
 export * from './getBacResolutionRequest'
 export * from './createBacResolutionRequest'
+export * from './createBacProjectRequest'
 export * from './linkConsolidatedPrsRequest'
 export * from './submitBacResolutionRequest'
 export * from './printBacResolutionRequest'

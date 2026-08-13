@@ -13,15 +13,17 @@ export interface BackendProjectResponse {
   status: string
   createdAt?: string
   updatedAt?: string
-  bacResolutions?: {
-    id: string
-    procurementProjectId: string
-    resolutionType: string
-    resolutionNumber: string
-    dateResolved: string
-    status: string
-    whereasClause: string
-  }[] | null
+  bacResolutions?:
+    | {
+        id: string
+        procurementProjectId: string
+        resolutionType: string
+        resolutionNumber: string
+        dateResolved: string
+        status: string
+        whereasClause: string
+      }[]
+    | null
 }
 
 export const createBacResolutionRequest: MutationBlueprintFromTemplate<
@@ -48,8 +50,12 @@ export const createBacResolutionRequest: MutationBlueprintFromTemplate<
       title: payload.title || payload.description || undefined,
       abc: typeof payload.abc === 'number' ? payload.abc : undefined,
       sourceType: payload.sourceType,
-      appItemId: payload.sourceType === 'AppItem' ? payload.appItemId : undefined,
-      consolidatedPRId: payload.sourceType === 'ConsolidatedPR' ? payload.consolidatedPRId : undefined,
+      appItemId:
+        payload.sourceType === 'AppItem' ? payload.appItemId : undefined,
+      consolidatedPRId:
+        payload.sourceType === 'ConsolidatedPR'
+          ? payload.consolidatedPRId
+          : undefined,
       resolutionType: payload.resolutionType || 'Standard',
       resolutionNumber: payload.bacResolutionNumber,
       dateResolved: payload.resolutionDate,
@@ -58,10 +64,13 @@ export const createBacResolutionRequest: MutationBlueprintFromTemplate<
       customClauses: customClausesText,
       endUserRepresentativeId: payload.endUserRepresentativeId || null,
       techRepresentativeId: payload.techRepresentativeId || null,
-      userId: '00000000-0000-0000-0000-000000000000'
+      userId: '61a2206a-a15b-4512-8668-7d48f29b3fed',
     }
 
-    const response = await api.post<{ succeeded: boolean; data: BackendProjectResponse }>(finalUrl, apiPayload)
+    const response = await api.post<{
+      succeeded: boolean
+      data: BackendProjectResponse
+    }>(finalUrl, apiPayload)
     const backendData = response.data?.data
 
     if (!backendData) {
@@ -71,13 +80,25 @@ export const createBacResolutionRequest: MutationBlueprintFromTemplate<
     // Map backend project response back to frontend BacResolution structure
     const mappedResolution: BacResolution = {
       id: backendData.id || `bac-resolution-${Date.now()}`,
-      bacResolutionNumber: backendData.bacResolutions?.[0]?.resolutionNumber || payload.bacResolutionNumber,
-      resolutionDate: backendData.bacResolutions?.[0]?.dateResolved || payload.resolutionDate || new Date().toISOString(),
+      bacResolutionNumber:
+        backendData.bacResolutions?.[0]?.resolutionNumber ||
+        payload.bacResolutionNumber,
+      resolutionDate:
+        backendData.bacResolutions?.[0]?.dateResolved ||
+        payload.resolutionDate ||
+        new Date().toISOString(),
       description: payload.description || backendData.title || '',
-      resolvedDateText: payload.resolvedDateText || new Date(payload.resolutionDate).toLocaleDateString('en-PH', {
-        weekday: 'long', month: 'long', day: 'numeric', year: 'numeric'
-      }),
-      resolvedLocationText: payload.resolvedLocationText || 'University of Science and Technology of Southern Philippines, Cagayan de Oro City',
+      resolvedDateText:
+        payload.resolvedDateText ||
+        new Date(payload.resolutionDate).toLocaleDateString('en-PH', {
+          weekday: 'long',
+          month: 'long',
+          day: 'numeric',
+          year: 'numeric',
+        }),
+      resolvedLocationText:
+        payload.resolvedLocationText ||
+        'University of Science and Technology of Southern Philippines, Cagayan de Oro City',
       whereasClauses: payload.whereasClauses || [],
       provisionalMembers: payload.provisionalMembers || [],
       signatoryOverrides: payload.signatoryOverrides,
