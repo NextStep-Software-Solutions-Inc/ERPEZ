@@ -6,37 +6,77 @@ import { getAPPListRequest } from '@/features/planning/app-consolidation/handler
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { PackageSearch, FileText, Layers, CheckCircle, Clock, List } from 'lucide-react'
+import { useMemo } from 'react'
+import { useAtom } from 'jotai'
+import { appListFilterAtom } from '@/features/planning/app-consolidation/atoms'
+
 const useAPPList = createQueryHookFromTemplate(getAPPListRequest)
 
 export function APPConsolidationPage() {
+  const [filter] = useAtom(appListFilterAtom)
+
   // Fetch APP list from API with default pagination
   const { data: apiResponse, isLoading, error } = useAPPList({
     pathParams: {},
     queryParams: {
       pageNumber: 1,
-      pageSize: 10,
+      pageSize: 50,
     },
   })
 
   // Transform API response to component data
-  const appList = apiResponse?.data || []
+  const rawAppList = apiResponse?.data || []
   const actions: MetaActions = ['write', 'delete']
 
+  // Apply filters (search, fiscal year, status, type)
+  const filteredAppList = useMemo(() => {
+    return rawAppList.filter((app) => {
+      // 1. Search filter
+      if (filter.searchTerm?.trim()) {
+        const term = filter.searchTerm.trim().toLowerCase()
+        const matchesNumber = app.appNumber?.toLowerCase().includes(term)
+        const matchesName = app.name?.toLowerCase().includes(term)
+        const matchesDesc = app.description?.toLowerCase().includes(term)
+        if (!matchesNumber && !matchesName && !matchesDesc) return false
+      }
+
+      // 2. Fiscal Year filter
+      if (filter.fiscalYear && filter.fiscalYear !== 'all') {
+        const fyStr = filter.fiscalYear.toString()
+        const matchesFy = app.fiscalYearName?.includes(fyStr) || app.FiscalYear?.year === filter.fiscalYear
+        if (!matchesFy) return false
+      }
+
+      // 3. Status filter
+      if (filter.status && filter.status !== 'all') {
+        if (app.status?.toLowerCase() !== filter.status.toLowerCase()) return false
+      }
+
+      // 4. Type filter (Indicative, Final, Updated)
+      if (filter.appType && filter.appType !== 'all') {
+        const itemType = app.appType || 'Indicative'
+        if (itemType.toLowerCase() !== filter.appType.toLowerCase()) return false
+      }
+
+      return true
+    })
+  }, [rawAppList, filter])
+
   // Calculate APP metrics for dashboard consistency
-  const totalPlans = appList.length
-  const draftPlans = appList.filter(
+  const totalPlans = rawAppList.length
+  const draftPlans = rawAppList.filter(
     (app) => app.status?.toLowerCase() === 'draft'
   ).length
-  const pendingPlans = appList.filter(
+  const pendingPlans = rawAppList.filter(
     (app) =>
       app.status?.toLowerCase() === 'for review' ||
       app.status?.toLowerCase() === 'pending-review' ||
       app.status?.toLowerCase() === 'submitted'
   ).length
-  const approvedPlans = appList.filter(
+  const approvedPlans = rawAppList.filter(
     (app) => app.status?.toLowerCase() === 'approved'
   ).length
-  const publishedPlans = appList.filter(
+  const publishedPlans = rawAppList.filter(
     (app) => app.status?.toLowerCase() === 'published' || app.status?.toLowerCase() === 'locked'
   ).length
 
@@ -212,7 +252,7 @@ export function APPConsolidationPage() {
         <CardContent>
           <TemplateTable
             columns={AppListColumns}
-            data={appList}
+            data={filteredAppList}
             actions={actions}
             readonly={false}
             toolbar={(table) => <AppListToolbar table={table} />}

@@ -186,11 +186,14 @@ export interface PositionDropdownItem {
 // STAFF/PERSONNEL V2 SCHEMA
 export interface StaffV2 extends BaseEntity {
   // Personal Information
-  firstName: string
+  firstName?: string
   middleName?: string
-  lastName: string
+  lastName?: string
   nameSuffix?: string
-  fullName: string // Computed field
+  /** Computed or stored full name */
+  fullName?: string
+  /** Legacy simple name field used in mock data */
+  name?: string
 
   // Government IDs
   employeeNumber: string // Agency Employee Number
@@ -205,10 +208,10 @@ export interface StaffV2 extends BaseEntity {
   position?: PositionV2 // Populated reference
 
   // Employment Lifecycle
-  employmentStatus: EmploymentStatus
-  appointmentType: AppointmentType
+  employmentStatus?: EmploymentStatus
+  appointmentType?: AppointmentType
   startDate?: string
-  endDate?: string
+  endDate?: string | null
   contractEndDate?: string
 
   // Compensation & Benefits
@@ -242,8 +245,8 @@ export interface StaffV2 extends BaseEntity {
   trainingHistory?: TrainingRecord[]
 
   // Status & Lifecycle
-  status: PersonnelStatus
-  isActive: boolean
+  status?: PersonnelStatus | string
+  isActive?: boolean
 
   // Organizational Context
   orgUnitId?: string
@@ -465,16 +468,17 @@ export interface OfficeTypeSetting {
   id: string
   name: string
   code: string
+  description?: string
+  status?: string
   canHaveChildren?: boolean
   isActive?: boolean
   createdAt: string
+  updatedAt?: string
   createdBy?: string
+  updatedBy?: string
   defaultCategory?: OfficeCategory
   allowedCategories?: OfficeCategory[]
   metadata?: Record<string, any>
-  updatedAt?: string
-  description?: string
-  status?: string
 }
 
 // Actual API Response Type for Office Types
@@ -486,9 +490,6 @@ export interface OfficeTypeEntity {
   isActive?: boolean
   createdAt: string
   createdBy?: string
-  updatedAt?: string
-  description?: string
-  status?: string
 }
 
 // Form values for Office Type (API payload)
@@ -502,17 +503,18 @@ export interface OfficeCategorySetting {
   id: string
   name: string
   code: string
+  description?: string
+  status?: string
   canHaveChildren?: boolean
   isActive?: boolean
   createdAt: string
+  updatedAt?: string
   createdBy?: string
+  updatedBy?: string
   officeType: OfficeType
   budgetingApproach?: 'cost-center' | 'responsibility-center'
   requiresCluster?: boolean
   metadata?: Record<string, any>
-  updatedAt?: string
-  description?: string
-  status?: string
 }
 
 // Actual API Response Type for Office Categories
@@ -524,9 +526,6 @@ export interface OfficeCategoryEntity {
   isActive?: boolean
   createdAt: string
   createdBy?: string
-  updatedAt?: string
-  description?: string
-  status?: string
 }
 
 // Form values for Office Category (API payload)
@@ -540,15 +539,20 @@ export interface ProcurementWorkflowSetting {
   id: string
   name: string
   code: string
-  approvalLevel: number
-  approvalLevels?: number
-  thresholdAmount?: number
-  isActive?: boolean
-  createdAt: string
-  createdBy?: string
-  updatedAt?: string
   description?: string
   status?: string
+  /** Primary field; legacy alias: approvalLevels */
+  approvalLevel?: number
+  /** Legacy alias used in some mock data */
+  approvalLevels?: number | number[]
+  thresholdAmount?: number
+  requiresBiddingProcess?: boolean
+  estimatedProcessDays?: number
+  isActive?: boolean
+  createdAt: string
+  updatedAt?: string
+  createdBy?: string
+  updatedBy?: string
 }
 
 // Form values for Procurement Workflow (API payload)
@@ -569,7 +573,6 @@ export interface AdministrativeLevelSetting {
   createdBy: string
   hierarchyOrder: number
   metadata?: Record<string, any>
-  updatedAt?: string
 }
 
 // Actual API Response Type for Administrative Levels
@@ -581,7 +584,6 @@ export interface AdministrativeLevel {
   isActive: boolean
   createdAt: string
   createdBy: string
-  updatedAt?: string
 }
 
 // Form values for Administrative Level (API payload)
@@ -642,18 +644,26 @@ export interface PositionTypeSetting {
   name: string
   code: string
   description: string
-  educationalLevel: string
+  /** Primary field; legacy alias: requiredEducationLevel */
+  educationalLevel?: string
+  /** Legacy alias for educationalLevel used in mock data */
   requiredEducationLevel?: string
-  category: string
-  isCareerEligibilityRequired: boolean
+  category?: string
+  /** Optional extended type reference used in mock data */
+  positionType?: PositionType
+  defaultCategory?: PositionCategory
+  defaultPlantillaType?: PlantillaType
+  status?: string
+  /** Primary field; legacy alias: careerEligibilityRequired */
+  isCareerEligibilityRequired?: boolean
+  /** Legacy alias for isCareerEligibilityRequired used in mock data */
   careerEligibilityRequired?: boolean
   canReportDirectly: boolean
   isActive?: boolean
-  status?: string
   createdAt: string
-  createdBy?: string
   updatedAt?: string
-  positionType?: string
+  createdBy?: string
+  updatedBy?: string
 }
 
 export interface PositionCategorySetting {
@@ -661,25 +671,27 @@ export interface PositionCategorySetting {
   name: string
   code: string
   description?: string
-  isActive?: boolean
   status?: string
+  isActive?: boolean
   createdAt: string
+  updatedAt?: string
   createdBy?: string
+  updatedBy?: string
   positionType: PositionType
   minSalaryGrade?: string
   maxSalaryGrade?: string
   allowedPlantillaTypes?: PlantillaType[]
   requiresSpecialization?: boolean
   metadata?: Record<string, any>
-  updatedAt?: string
 }
 
 export interface SalaryGradeSetting {
   id: string
   name: string
   code: string
-  gradeNumber?: number
+  /** Alias for gradeNumber — used by mock/API responses */
   salaryGradeNumber?: number
+  gradeNumber?: number
   monthlySalaryMin?: number
   monthlySalaryMax?: number
   minStep?: number
@@ -687,9 +699,8 @@ export interface SalaryGradeSetting {
   stepIncrementAmount: number
   numberOfSteps: number
   effectiveDate: string
-  description: string
+  description?: string
   isActive?: boolean
-  status?: string
   createdAt: string
   updatedAt?: string
 }
@@ -698,16 +709,19 @@ export interface PlantillaTypeSetting {
   id: string
   name: string
   code: string
-  duration?: number | null
+  description?: string
+  status?: string
+  duration: number | null | undefined
   requiresActingAppointments?: boolean
+  /** Legacy alias used in mock data */
   requiresActingAppointment?: boolean
   allowsContractual?: boolean
+  /** Legacy alias used in mock data */
   allowsContractualConversion?: boolean
+  benefits?: string
+  /** Legacy alias used in mock data */
   benefitsEligibility?: string[]
   isActive?: boolean
-  status?: string
-  benefits?: string
-  description?: string
   createdAt: string
   updatedAt?: string
 }
@@ -732,36 +746,38 @@ export interface PMTMaximumSeatsSetting {
   id: string
   name: string
   code: string
-  isActive?: boolean
+  description?: string
   status?: string
+  isActive?: boolean
   createdAt: string
+  updatedAt?: string
   createdBy?: string
+  updatedBy?: string
   maxSeats: number
   effectiveDate?: string
   organizationWide: boolean
   officeId?: string // if not organization-wide
   minimumGradeLevel?: string
   reportingLevel?: 'executive' | 'managerial' | 'supervisory'
-  description?: string
   metadata?: Record<string, any>
-  updatedAt?: string
 }
 
 export interface PersonnelReportingTypeSetting {
   id: string
   name: string
   code: string
-  isActive?: boolean
+  description?: string
   status?: string
+  isActive?: boolean
   createdAt: string
+  updatedAt?: string
   createdBy?: string
+  updatedBy?: string
   reportingStructureType: 'direct' | 'functional' | 'matrix' | 'dotted'
   requiresApproval: boolean
   escalationPath?: string[]
   maxLevels?: number
-  description?: string
   metadata?: Record<string, any>
-  updatedAt?: string
 }
 
 // ======= COMBINED SETTINGS QUERIES =======

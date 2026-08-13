@@ -95,6 +95,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<PPMP>? PPMPs { get; set; }
     public DbSet<APP>? APPs { get; set; }
     public DbSet<APPPPMP>? APPPPMPs { get; set; }
+    public DbSet<APPSignatory>? APPSignatories { get; set; }
     public DbSet<LineItemBudgetActivity>? LineItemBudgetActivities { get; set; }
     public DbSet<LineItemBudgetDetail>? LineItemBudgetDetails { get; set; }
     public DbSet<LIBAmendmentRequest>? LIBAmendmentRequests { get; set; }
@@ -2018,7 +2019,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .Property(e => e.ProcurementStrategies)
             .HasConversion(
                 v => v == null ? null : string.Join(',', v.Select(x => x.ToString())),
-                v => v == null ? null : v.Split(',', StringSplitOptions.RemoveEmptyEntries).Select(x => (ProcurementStrategy)Enum.Parse(typeof(ProcurementStrategy), x)).ToList()
+                v => ParseStrategies(v)
             )
             .Metadata.SetValueComparer(
                 new Microsoft.EntityFrameworkCore.ChangeTracking.ValueComparer<List<ProcurementStrategy>?>(
@@ -2131,15 +2132,30 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasMaxLength(1000);
 
         modelBuilder.Entity<APP>()
+            .Property(e => e.APPType)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        modelBuilder.Entity<APP>()
+            .Property(e => e.Batch)
+            .IsRequired()
+            .HasMaxLength(50);
+
+        modelBuilder.Entity<APP>()
+            .Property(e => e.Quarter)
+            .IsRequired()
+            .HasMaxLength(20);
+
+        modelBuilder.Entity<APP>()
             .HasOne(e => e.FiscalYear)
             .WithMany()
             .HasForeignKey(e => e.FiscalYearId)
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<APP>()
-            .HasOne(e => e.Office)
+            .HasOne(e => e.SourceAPP)
             .WithMany()
-            .HasForeignKey(e => e.OfficeId)
+            .HasForeignKey(e => e.SourceAPPId)
             .OnDelete(DeleteBehavior.Restrict);
 
         modelBuilder.Entity<APP>()
@@ -2150,7 +2166,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasIndex(e => e.FiscalYearId);
 
         modelBuilder.Entity<APP>()
-            .HasIndex(e => e.OfficeId);
+            .HasIndex(e => e.SourceAPPId);
 
         // APPPPMP
         modelBuilder.Entity<APPPPMP>()
@@ -2174,6 +2190,12 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<APPPPMP>()
             .ToTable("APP_PPMP_Selections", "planning");
+
+        modelBuilder.Entity<APPPPMP>()
+            .HasQueryFilter(x => !x.IsDeleted);
+
+        modelBuilder.Entity<APPSignatory>()
+            .HasQueryFilter(x => !x.IsDeleted);
 
         // OPCRItemRating
         modelBuilder.Entity<OPCRItemRating>()
@@ -2990,5 +3012,20 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasIndex(a => new { a.ProcurementProjectId, a.TinNumber })
             .IsUnique()
             .HasDatabaseName("IX_PublicSupplierApplications_ProjectId_TinNumber");
+    }
+
+    private static System.Collections.Generic.List<ERPEZ.Domain.Enums.ProcurementStrategy>? ParseStrategies(string? v)
+    {
+        if (v == null) return null;
+        return v.Split(',', System.StringSplitOptions.RemoveEmptyEntries).Select(x => 
+        {
+            if (System.String.Equals(x, "LCA", System.StringComparison.OrdinalIgnoreCase) || 
+                System.String.Equals(x, "LCCA", System.StringComparison.OrdinalIgnoreCase) || 
+                System.String.Equals(x, "LCA_LCCA", System.StringComparison.OrdinalIgnoreCase))
+            {
+                return ERPEZ.Domain.Enums.ProcurementStrategy.LCA;
+            }
+            return System.Enum.TryParse<ERPEZ.Domain.Enums.ProcurementStrategy>(x, true, out var result) ? result : ERPEZ.Domain.Enums.ProcurementStrategy.NotApplicable;
+        }).ToList();
     }
 }

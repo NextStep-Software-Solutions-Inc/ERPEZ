@@ -25,6 +25,18 @@ public record APPItemResponse
     public string CreatedBy { get; init; } = string.Empty;
     public DateTime? UpdatedAt { get; init; }
     public string? UpdatedBy { get; init; }
+    public DateTime? EffectiveStartOfProcurement  { get; init; }
+    public DateTime? EffectiveEndOfProcurement  { get; init; }
+    public DateTime? StartOfProcurementOverride { get; init; }
+    public DateTime? EndOfProcurementOverride { get; init; }
+    public decimal? EstimatedBudgetOverride { get; init; }
+    public decimal OriginalPPMPBudget { get; init; }
+    public decimal EffectiveABC { get; init; }
+    public bool IsABCOverridden { get; init; }
+    public bool IsStartProcurementOverridden { get; init; }
+    public bool IsEndProcurementOverridden { get; init; }
+    public bool IsNew { get; init; }
+    public bool IsRevised { get; init; }
 
     [JsonPropertyName("APP")]
     public APPItemAPPResponse? APP { get; init; }
