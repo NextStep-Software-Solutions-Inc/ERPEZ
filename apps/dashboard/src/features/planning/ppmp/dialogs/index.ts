@@ -20,3 +20,5 @@ export { default as AddPPMPItemExpenditureDialog } from './AddPPMPItemExpenditur
 export { default as AddPPMPItemsModal } from './AddPPMPItemsModal'
 export { default as EditPPMPItemAllocationsDialog } from './EditPPMPItemAllocationsDialog'
 export { ConsolidationWorkspaceSheet } from './ConsolidationWorkspaceSheet'
+export { MasterPPMPViewerModal } from './MasterPPMPViewerModal'
+

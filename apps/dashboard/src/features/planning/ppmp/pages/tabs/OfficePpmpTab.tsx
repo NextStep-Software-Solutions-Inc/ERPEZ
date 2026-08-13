@@ -10,7 +10,7 @@ import {
 } from '../../dialogs'
 import { getPPMPsRequest } from '../../handlers/getPpmpsRequest'
 import { mockLineItemBudgets, mockPpmpDatabase } from '../../data/mockPpmpData'
-import type { PPMPManagementSearch } from '@/routes/v2/ppmp/constants'
+import type { PPMPManagementSearch } from '@/routes/v2/(planning)/ppmp/constants'
 import { DataTable } from '../../tables/office-level-table/data-table'
 import { columns } from '../../tables/office-level-table/columns'
 import { usePpmpFormData } from '../../hooks/usePpmpFormData'
