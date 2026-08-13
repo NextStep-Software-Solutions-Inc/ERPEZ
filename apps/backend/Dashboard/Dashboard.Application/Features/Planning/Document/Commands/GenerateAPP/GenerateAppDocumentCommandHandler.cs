@@ -100,7 +100,7 @@ public class GenerateAppDocumentCommandHandler(
         var totalEstimated = appItems.Sum(i => CalculateItemBudget(i));
 
         // Signatories
-        var signatories = await BuildSignatoriesAsync(cancellationToken);
+        var signatories = await BuildSignatoriesAsync(app, cancellationToken);
 
         var typeStr = app.APPType?.Trim() ?? "Indicative";
         bool isIndicative = string.Equals(typeStr, "Indicative", StringComparison.OrdinalIgnoreCase);
@@ -182,8 +182,42 @@ public class GenerateAppDocumentCommandHandler(
             .Sum(a => a.Amount) ?? 0);
     }
 
-    private async Task<List<SignatoryDto>> BuildSignatoriesAsync(CancellationToken cancellationToken)
+    private async Task<List<SignatoryDto>> BuildSignatoriesAsync(AppEntity app, CancellationToken cancellationToken)
     {
+        var activeSignatories = app.APPSignatories
+            .Where(s => !s.IsDeleted)
+            .OrderBy(s => s.SequenceOrder)
+            .ToList();
+
+        if (activeSignatories.Any())
+        {
+            return activeSignatories.Select(s =>
+            {
+                var label = GetRoleLabel(s.RoleKey);
+                var name = !string.IsNullOrWhiteSpace(s.Name)
+                    ? s.Name
+                    : (s.User?.FullName ?? string.Empty);
+
+                var position = !string.IsNullOrWhiteSpace(s.Position)
+                    ? s.Position
+                    : (s.PersonnelPosition?.Position?.Title ?? string.Empty);
+
+                var designation = !string.IsNullOrWhiteSpace(s.Department)
+                    ? s.Department
+                    : (s.PersonnelPosition?.Position?.FunctionalTitle ?? string.Empty);
+
+                return new SignatoryDto
+                {
+                    Label       = label,
+                    PrintedName = name,
+                    Position    = position,
+                    Designation = designation,
+                    Date        = s.SignatureDate
+                };
+            }).ToList();
+        }
+
+        // Fallback to global personnel position lookup only if no APP-specific signatories exist
         var signatories = new List<SignatoryDto>();
 
         // Prepared by (BAC Secretariat)
@@ -207,6 +241,20 @@ public class GenerateAppDocumentCommandHandler(
         signatories.Add(approvedBy);
 
         return signatories;
+    }
+
+    private static string GetRoleLabel(string roleKey)
+    {
+        if (string.IsNullOrWhiteSpace(roleKey)) return string.Empty;
+
+        return roleKey.ToLowerInvariant() switch
+        {
+            "preparedby"  => "Prepared by:",
+            "reviewedby"  => "Recommended by:",
+            "approvedby"  => "Approved by:",
+            "certifiedby" => "Certified by:",
+            _             => roleKey.EndsWith(':') ? roleKey : $"{roleKey}:"
+        };
     }
 
     private async Task<SignatoryDto> FindSignatoryAsync(string positionTitle, string label, CancellationToken cancellationToken)
