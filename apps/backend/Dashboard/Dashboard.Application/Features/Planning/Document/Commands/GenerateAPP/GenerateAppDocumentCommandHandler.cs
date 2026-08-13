@@ -6,7 +6,6 @@ using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -45,11 +44,13 @@ public class GenerateAppDocumentCommandHandler(
         var fileName  = $"APP_{app.APPNumber}_{DateTime.UtcNow:yyyyMMddHHmmss}.{extension}";
         var path      = await storageService.SaveAsync(bytes, fileName, cancellationToken);
 
+        var primaryOfficeId = app.APPItems.FirstOrDefault()?.OfficeId ?? Guid.Empty;
+
         var record = new GeneratedDocument
         {
             DocumentType  = DocumentType.App,
             Format        = request.Format,
-            OfficeId      = app.OfficeId,
+            OfficeId      = primaryOfficeId,
             StoragePath   = path,
             FileName      = fileName,
             FileSizeBytes = bytes.Length,
@@ -99,41 +100,27 @@ public class GenerateAppDocumentCommandHandler(
         var totalEstimated = appItems.Sum(i => CalculateItemBudget(i));
 
         // Signatories
-        var signatories = await BuildSignatoriesAsync(cancellationToken);
+        var signatories = await BuildSignatoriesAsync(app, cancellationToken);
 
-        // Map status: Indicative, Final, or Updated
-        bool isIndicative = false;
-        bool isFinal = false;
-        bool isUpdated = false;
+        var typeStr = app.APPType?.Trim() ?? "Indicative";
+        bool isIndicative = string.Equals(typeStr, "Indicative", StringComparison.OrdinalIgnoreCase);
+        bool isFinal = string.Equals(typeStr, "Final", StringComparison.OrdinalIgnoreCase);
+        bool isUpdated = string.Equals(typeStr, "Updated", StringComparison.OrdinalIgnoreCase);
 
-        var isFinalStr = app.IsFinal?.Trim().ToLowerInvariant();
-        if (isFinalStr == "true" || isFinalStr == "final")
-        {
-            isFinal = true;
-        }
-        else if (isFinalStr == "indicative")
-        {
-            isIndicative = true;
-        }
-        else if (isFinalStr == "updated" || isFinalStr == "revised")
-        {
-            isUpdated = true;
-        }
-        else
-        {
-            // Fallback default
-            isIndicative = true;
-        }
+        var versionNum = app.VersionNumber.HasValue ? app.VersionNumber.Value.ToString() : string.Empty;
+        var versionDate = app.VersionDate.HasValue ? app.VersionDate.Value.ToString("MMMM dd, yyyy") : string.Empty;
 
         return new AppDataDto
         {
-            OfficeId             = app.OfficeId,
             APPNumber            = app.APPNumber,
             FiscalYear           = app.FiscalYear?.Year.ToString() ?? string.Empty,
+            Batch                = app.Batch,
+            Quarter              = app.Quarter,
             IsIndicative         = isIndicative,
             IsFinal              = isFinal,
             IsUpdated            = isUpdated,
-            VersionNumber        = app.APPNumber.Contains("-") ? app.APPNumber.Split('-').Last() : "1",
+            VersionNumber        = versionNum,
+            VersionDate          = versionDate,
             GeneralRequirements  = generalRequirements,
             CommonUseSupplies    = commonUseSupplies,
             MiscellaneousItems   = miscellaneousItems,
@@ -147,19 +134,25 @@ public class GenerateAppDocumentCommandHandler(
     private static AppItemRowDto MapToRow(AppItemEntity item)
     {
         var projectTitle = item.PPMPItem?.Name ?? string.Empty;
-        var endUser      = item.Office?.Name ?? string.Empty;
+        var endUser      = item.Office?.Name ?? item.PPMPItem?.PPMPExpenditureItem?.PPMPActivity?.PPMP?.Office?.Name ?? string.Empty;
         var description  = item.PPMPItem?.Description ?? string.Empty;
         var mode         = item.ProcurementMode?.Name ?? string.Empty;
         var coveredByEpa = item.IsEarlyProcurementActivity;
 
         var criteria = item.BidEvaluationCriteria?.ToString() ?? "Domestic Preference";
 
-        var startProc = item.PPMPItem?.ProcurementStartDate?.ToString("MM/yyyy") ?? string.Empty;
-        var endProc   = item.PPMPItem?.ProcurementEndDate?.ToString("MM/yyyy")   ?? string.Empty;
+        var startProc = item.StartOfProcurementOverride?.ToString("MM/yyyy")
+                     ?? item.PPMPItem?.ProcurementStartDate?.ToString("MM/yyyy")
+                     ?? string.Empty;
+
+        var endProc   = item.EndOfProcurementOverride?.ToString("MM/yyyy")
+                     ?? item.PPMPItem?.ProcurementEndDate?.ToString("MM/yyyy")
+                     ?? string.Empty;
+
         var source    = item.FundSource?.Name ?? string.Empty;
         var budget    = CalculateItemBudget(item);
         var strategy  = item.ProcurementStrategies != null && item.ProcurementStrategies.Any()
-            ? string.Join(", ", item.ProcurementStrategies)
+            ? string.Join(", ", item.ProcurementStrategies.Select(FormatProcurementStrategy))
             : string.Empty;
         var remarks   = item.Remarks ?? string.Empty;
 
@@ -176,19 +169,55 @@ public class GenerateAppDocumentCommandHandler(
             SourceOfFund               = source,
             EstimatedBudget            = budget,
             ProcurementStrategyOrTools = strategy,
-            Remarks                    = remarks
+            Remarks                    = remarks,
+            IsNew                      = item.IsNew,
+            IsRevised                  = item.IsRevised
         };
     }
 
     private static decimal CalculateItemBudget(AppItemEntity item)
     {
-        return item.PPMPItem?.PPMPItemAllocations
+        return item.EstimatedBudgetOverride ?? (item.PPMPItem?.PPMPItemAllocations
             .Where(a => !a.IsDeleted)
-            .Sum(a => a.Amount) ?? 0;
+            .Sum(a => a.Amount) ?? 0);
     }
 
-    private async Task<List<SignatoryDto>> BuildSignatoriesAsync(CancellationToken cancellationToken)
+    private async Task<List<SignatoryDto>> BuildSignatoriesAsync(AppEntity app, CancellationToken cancellationToken)
     {
+        var activeSignatories = app.APPSignatories
+            .Where(s => !s.IsDeleted)
+            .OrderBy(s => s.SequenceOrder)
+            .ToList();
+
+        if (activeSignatories.Any())
+        {
+            return activeSignatories.Select(s =>
+            {
+                var label = GetRoleLabel(s.RoleKey);
+                var name = !string.IsNullOrWhiteSpace(s.Name)
+                    ? s.Name
+                    : (s.User?.FullName ?? string.Empty);
+
+                var position = !string.IsNullOrWhiteSpace(s.Position)
+                    ? s.Position
+                    : (s.PersonnelPosition?.Position?.Title ?? string.Empty);
+
+                var designation = !string.IsNullOrWhiteSpace(s.Department)
+                    ? s.Department
+                    : (s.PersonnelPosition?.Position?.FunctionalTitle ?? string.Empty);
+
+                return new SignatoryDto
+                {
+                    Label       = label,
+                    PrintedName = name,
+                    Position    = position,
+                    Designation = designation,
+                    Date        = s.SignatureDate
+                };
+            }).ToList();
+        }
+
+        // Fallback to global personnel position lookup only if no APP-specific signatories exist
         var signatories = new List<SignatoryDto>();
 
         // Prepared by (BAC Secretariat)
@@ -214,16 +243,23 @@ public class GenerateAppDocumentCommandHandler(
         return signatories;
     }
 
+    private static string GetRoleLabel(string roleKey)
+    {
+        if (string.IsNullOrWhiteSpace(roleKey)) return string.Empty;
+
+        return roleKey.ToLowerInvariant() switch
+        {
+            "preparedby"  => "Prepared by:",
+            "reviewedby"  => "Recommended by:",
+            "approvedby"  => "Approved by:",
+            "certifiedby" => "Certified by:",
+            _             => roleKey.EndsWith(':') ? roleKey : $"{roleKey}:"
+        };
+    }
+
     private async Task<SignatoryDto> FindSignatoryAsync(string positionTitle, string label, CancellationToken cancellationToken)
     {
-        var query = unitOfWork.PersonnelPositionRepository.Query(pp => pp.IsActive && !pp.IsDeleted)
-            .Include(pp => pp.User)
-            .Include(pp => pp.Position)
-            .Where(pp => pp.Position != null && 
-                        (pp.Position.Title.ToLower().Contains(positionTitle.ToLower()) || 
-                         (pp.Position.FunctionalTitle != null && pp.Position.FunctionalTitle.ToLower().Contains(positionTitle.ToLower()))));
-
-        var assignment = await unitOfWork.PersonnelPositionRepository.GetFirstAsync(query, cancellationToken);
+        var assignment = await unitOfWork.PersonnelPositionRepository.GetActiveByPositionTitleAsync(positionTitle, cancellationToken);
 
         if (assignment?.User != null)
         {
@@ -243,5 +279,27 @@ public class GenerateAppDocumentCommandHandler(
             Position    = positionTitle,
             Designation = string.Empty
         };
+    }
+
+    private static string FormatProcurementStrategy(ProcurementStrategy strategy) => strategy switch
+    {
+        ProcurementStrategy.LCA => "LCA",
+        ProcurementStrategy.Subcontracting => "Subcontracting",
+        ProcurementStrategy.MultiYearContracting => "Multi-Year Contracting",
+        ProcurementStrategy.DesignAndBuild => "Design and Build",
+        ProcurementStrategy.ProcurementAgent => "Engagement of a Procurement Agent",
+        ProcurementStrategy.FrameworkAgreement => "Use of Framework Agreement",
+        ProcurementStrategy.PooledProcurement => "Pooled Procurement",
+        ProcurementStrategy.RenewalOfServices => "Renewal of Regular and Recurring Services",
+        ProcurementStrategy.WarehousingInventory => "Warehousing & Inventory",
+        ProcurementStrategy.NotApplicable => "Not Applicable",
+        _ => FormatPascalCase(strategy.ToString())
+    };
+
+    private static string FormatPascalCase(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return string.Empty;
+        if (value.Contains(' ') || value.Contains('-')) return value;
+        return System.Text.RegularExpressions.Regex.Replace(value, "(?<!^)([A-Z])", " $1");
     }
 }

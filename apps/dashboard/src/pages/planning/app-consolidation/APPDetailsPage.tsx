@@ -1,11 +1,13 @@
 import { useNavigate, useParams } from '@tanstack/react-router'
 import { useAtom, useSetAtom } from 'jotai'
 import { ArrowLeft, Edit2, Download, Plus } from 'lucide-react'
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useMemo } from 'react'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { toast } from 'sonner'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { useQueryClient } from '@tanstack/react-query'
+import { createMutationHookFromTemplate, createQueryHookFromTemplate } from 'erpez-shared-lib'
 import {
   currentAppAtom,
   selectPPMPDialogOpenAtom,
@@ -17,7 +19,6 @@ import {
 import {
   PPMPListSection,
   AppDetailsHeader,
-  AppStatsGrid,
   AggregatedItemsSection,
   BACDetailsSection,
   SignatoriesSection,
@@ -32,15 +33,20 @@ import {
   AppExportDialog,
   CreateSupplementalAPPDialog,
   AddAPPItemDialog,
+  CreateUpdatedAPPDialog,
+  CreateFinalAPPDialog,
 } from '@/features/planning/app-consolidation/dialogs'
-import { createQueryHookFromTemplate } from 'erpez-shared-lib'
 import { getAPPDetailRequest } from '@/features/planning/app-consolidation/handlers'
+import { changeAPPStatusRequest } from '@/features/planning/app-consolidation/handlers/changeAPPStatusRequest'
 import { transformAppDetailToAppMaster } from '@/features/planning/app-consolidation/utils/transformAppDetail'
+import api from '@/services/api'
 
 const useAPPDetail = createQueryHookFromTemplate(getAPPDetailRequest)
+const useChangeAPPStatus = createMutationHookFromTemplate(changeAPPStatusRequest)
 
 export function APPDetailsPage() {
   const navigate = useNavigate()
+  const queryClient = useQueryClient()
   const { appId } = useParams({ from: '/v2/(planning)/app-consolidation/$appId' })
   const [currentApp, setCurrentApp] = useAtom(currentAppAtom)
   const setSelectPPMPDialog = useSetAtom(selectPPMPDialogOpenAtom)
@@ -48,16 +54,30 @@ export function APPDetailsPage() {
   const [, setSignatoriesDialog] = useAtom(signatoriesDialogOpenAtom)
   const [appExportOpen, setAppExportOpen] = useAtom(appExportDialogOpenAtom)
   const [createSupplementalOpen, setCreateSupplementalOpen] = useAtom(createSupplementalAPPDialogOpenAtom)
+  const [createUpdatedOpen, setCreateUpdatedOpen] = useState(false)
+  const [createFinalOpen, setCreateFinalOpen] = useState(false)
   const [activeTab, setActiveTab] = useState('overview')
 
   // Fetch APP detail from API
-  const { data: apiResponse, isLoading, error } = useAPPDetail({
+  const { data: apiResponse, isLoading, error, refetch } = useAPPDetail({
     pathParams: { appId },
     queryParams: { appId },
   })
 
+  // Real status mutation
+  const changeStatus = useChangeAPPStatus()
+
   // Use transformed API data or currentApp for real-time updates
-  const apiApp = apiResponse?.data ? transformAppDetailToAppMaster(apiResponse.data) : null
+  const rawApiApp = apiResponse?.data ? transformAppDetailToAppMaster(apiResponse.data) : null
+
+  // Preserve signatories from currentApp if apiApp has none
+  const apiApp = useMemo(() => {
+    if (!rawApiApp) return null
+    if (currentApp?.id === rawApiApp.id && currentApp.signatories && !rawApiApp.signatories?.preparedBy) {
+      return { ...rawApiApp, signatories: currentApp.signatories }
+    }
+    return rawApiApp
+  }, [rawApiApp, currentApp])
 
   useEffect(() => {
     if (apiApp && (!currentApp || currentApp.id !== apiApp.id)) {
@@ -65,9 +85,17 @@ export function APPDetailsPage() {
     }
   }, [apiApp, currentApp, setCurrentApp])
 
-  const app = currentApp && currentApp.id === appId 
-    ? currentApp 
-    : apiApp
+  // Always prefer fresh API data; fall back to atom only while refetching
+  const app = apiApp ?? (currentApp?.id === appId ? currentApp : null)
+
+  // Invalidate both the detail and the list after a status change
+  const invalidateAfterStatusChange = async () => {
+    await Promise.all([
+      queryClient.invalidateQueries({ queryKey: ['/apps'] }),
+      queryClient.invalidateQueries({ queryKey: [`/apps/${appId}`] }),
+    ])
+    await refetch()
+  }
 
   // Show loading state
   if (isLoading) {
@@ -111,8 +139,8 @@ export function APPDetailsPage() {
     )
   }
 
-  const isDraft = app.status === 'Draft'
-  const isLocked = app.status === 'Locked' || (app as any).isLocked
+  const isDraft = app.status === 'Draft' || app.status === ('Returned' as any)
+  const isLocked = app.status === 'Locked'
   const canEdit = isDraft && !isLocked
   const lineItemsCount = app.bac?.lineItems?.length || 0
   const lineItemsTotalQuantity = app.bac?.lineItems?.reduce((sum, item) => sum + item.quantity, 0) || 0
@@ -123,6 +151,15 @@ export function APPDetailsPage() {
   const totalQuantity = app.aggregationResults?.items && app.aggregationResults.items.length > 0
     ? app.aggregationResults.items.reduce((sum, item) => sum + item.totalQuantity, 0)
     : lineItemsTotalQuantity
+
+  // ── Lifecycle-aware action visibility ─────────────────────────────────────
+  // Follow-up (documented in implementation_plan.md):
+  //   Indicative + Approved → [Create Final APP]   (not Create Updated)
+  //   Final/Updated + Approved → [Create Updated APP]
+  // For now we apply the immediate fix: gate "Create Updated APP" on appType.
+  const canCreateUpdated =
+    (app.status === 'Approved' || isLocked) &&
+    (app.appType === 'Final' || app.appType === 'Updated')
 
   const handleExport = () => {
     setCurrentApp(app)
@@ -138,29 +175,55 @@ export function APPDetailsPage() {
     setCreateSupplementalOpen(true)
   }
 
-  const handleRemovePPMP = (_ppmpId: string) => {
-    toast.success('PPMP item removed')
+  const handleRemovePPMP = async (ppmpId: string) => {
+    try {
+      const response = await api.put(`/apps/${appId}/remove-ppmps`, { ppmpIds: [ppmpId] })
+      if (response.data?.succeeded !== false) {
+        toast.success('PPMP source removed from APP successfully')
+        void queryClient.invalidateQueries({
+          predicate: (query) =>
+            typeof query.queryKey[0] === 'string' &&
+            (query.queryKey[0].startsWith('/apps') || query.queryKey[0].startsWith('/ppmps')),
+        })
+        await refetch()
+      } else {
+        toast.error(response.data?.message || 'Failed to remove PPMP')
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to remove PPMP from APP')
+    }
   }
 
-  const handleSubmit = () => {
-    const updatedApp = { ...app, status: 'Submitted' as const }
-    setCurrentApp(updatedApp)
-    toast.success('APP submitted for review')
+  // ── Status mutations wired to real backend ────────────────────────────────
+
+  const handleSubmit = async () => {
+    try {
+      await changeStatus.mutateAsync({
+        pathParams: { appId },
+        payload: { appId, status: 'Submitted' },
+      })
+      toast.success('APP submitted for review')
+      await invalidateAfterStatusChange()
+    } catch {
+      toast.error('Failed to submit APP — please try again')
+    }
   }
 
-  const handleApprove = () => {
-    const updatedApp = { ...app, status: 'Approved' as const }
-    setCurrentApp(updatedApp)
-    toast.success('APP approved')
+  const handleApprove = async () => {
+    try {
+      await changeStatus.mutateAsync({
+        pathParams: { appId },
+        payload: { appId, status: 'Approved' },
+      })
+      toast.success('APP approved')
+      await invalidateAfterStatusChange()
+    } catch {
+      toast.error('Failed to approve APP — please try again')
+    }
   }
 
   const handleMarkAsFinal = () => {
-    const updatedApp = {
-      ...app,
-      appType: 'Final' as const,
-    }
-    setCurrentApp(updatedApp)
-    toast.success('APP marked as Final. It can now be submitted for review.')
+    setCreateFinalOpen(true)
   }
 
   return (
@@ -178,49 +241,73 @@ export function APPDetailsPage() {
         <StatusBadge status={app.status} />
       </div>
 
-      {/* APP Header & Stats */}
+      {/* APP Header */}
       <AppDetailsHeader app={app} />
-      <AppStatsGrid app={app} itemCount={itemCount} totalQuantity={totalQuantity} />
 
       {/* Main Content Grid - with Quick Actions Panel */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
         {/* Main Content - 3 columns */}
         <div className="lg:col-span-3 space-y-6">
           {/* Action Buttons */}
-          {/* NOTE: Consider consolidating these buttons into ActionButtonsBar component for consistency */}
           <div className="flex gap-2 justify-end pointer-events-auto flex-wrap">
-            {isDraft && app.appType === 'Indicative' && (
-              <Button 
-                onClick={handleMarkAsFinal} 
-                className="gap-2 cursor-pointer pointer-events-auto hover:opacity-90 transition-opacity bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold shadow-md"
+            {/* Indicative + Approved → Create Final APP (lifecycle follow-up) */}
+            {app.appType === 'Indicative' && app.status === 'Approved' && (
+              <Button
+                onClick={handleMarkAsFinal}
+                className="gap-2 cursor-pointer pointer-events-auto bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-white font-semibold shadow-md"
               >
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M5 9V7a5 5 0 0110 0v2a2 2 0 012 2v5a2 2 0 01-2 2H5a2 2 0 01-2-2v-5a2 2 0 012-2zm8-2v2H7V7a3 3 0 016 0z" clipRule="evenodd" />
                 </svg>
-                Mark as Final
+                Create Final APP
               </Button>
             )}
+
+            {/* Submit for Review — Draft or Returned */}
             {isDraft && (
-              <Button onClick={handleSubmit} className="gap-2 cursor-pointer pointer-events-auto hover:opacity-90 transition-opacity">
-                Submit for Review
+              <Button
+                onClick={handleSubmit}
+                disabled={changeStatus.isPending}
+                className="gap-2 cursor-pointer pointer-events-auto hover:opacity-90 transition-opacity"
+              >
+                {changeStatus.isPending ? 'Submitting…' : 'Submit for Review'}
               </Button>
             )}
+
+            {/* Approve — Submitted only */}
             {app.status === 'Submitted' && (
-              <Button onClick={handleApprove} className="gap-2 cursor-pointer pointer-events-auto hover:opacity-90 transition-opacity">
-                Approve
+              <Button
+                onClick={handleApprove}
+                disabled={changeStatus.isPending}
+                className="gap-2 cursor-pointer pointer-events-auto hover:opacity-90 transition-opacity"
+              >
+                {changeStatus.isPending ? 'Approving…' : 'Approve'}
               </Button>
             )}
-            {(app.status === 'Approved' || app.status === 'Locked') && (
+
+            {/* Create Updated APP — Final or Updated + Approved/Locked only */}
+            {canCreateUpdated && (
+              <Button
+                onClick={() => setCreateUpdatedOpen(true)}
+                className="gap-2 cursor-pointer pointer-events-auto bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white font-semibold shadow-md"
+              >
+                <Plus className="w-4 h-4" />
+                Create Updated APP
+              </Button>
+            )}
+
+            {/* Create Supplemental — Locked only */}
+            {isLocked && (
               <Button
                 onClick={handleCreateSupplemental}
-                disabled={app.status !== 'Locked'}
-                variant={app.status === 'Locked' ? 'default' : 'outline'}
+                variant="default"
                 className="gap-2 cursor-pointer pointer-events-auto hover:opacity-90 transition-opacity"
               >
                 <Plus className="w-4 h-4" />
                 Create Supplemental
               </Button>
             )}
+
             <Button
               onClick={handleExport}
               variant="outline"
@@ -235,10 +322,10 @@ export function APPDetailsPage() {
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-5 pointer-events-auto">
               <TabsTrigger value="overview" className="cursor-pointer pointer-events-auto transition-all hover:opacity-80">Overview</TabsTrigger>
-              <TabsTrigger value="aggregations" className="cursor-pointer pointer-events-auto transition-all hover:opacity-80">Aggregations</TabsTrigger>
-              <TabsTrigger value="bac" className="cursor-pointer pointer-events-auto transition-all hover:opacity-80">BAC Details</TabsTrigger>
+              <TabsTrigger value="aggregations" className="cursor-pointer pointer-events-auto transition-all hover:opacity-80">Summary</TabsTrigger>
+              <TabsTrigger value="bac" className="cursor-pointer pointer-events-auto transition-all hover:opacity-80">APP Item Details</TabsTrigger>
               <TabsTrigger value="signatories" className="cursor-pointer pointer-events-auto transition-all hover:opacity-80">Signatories</TabsTrigger>
-              {app.status === 'Locked' && (
+              {isLocked && (
                 <TabsTrigger value="supplementals" className="cursor-pointer pointer-events-auto transition-all hover:opacity-80">
                   Supplementals
                 </TabsTrigger>
@@ -259,25 +346,19 @@ export function APPDetailsPage() {
           />
         </TabsContent>
 
-        {/* Aggregations Tab */}
+        {/* Summary Tab — fetches real analytics from /apps/{id}/analytics */}
         <TabsContent value="aggregations" className="space-y-4 pointer-events-auto">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-lg">Aggregated Items</CardTitle>
-              {canEdit && itemCount > 0 && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => toast.info('Aggregations update coming soon')}
-                  className="gap-2 cursor-pointer pointer-events-auto hover:bg-gray-100 transition-colors"
-                >
-                  <Edit2 className="w-4 h-4" />
-                  Update
-                </Button>
-              )}
+          <Card className="border border-slate-200 shadow-xs bg-white rounded-xl overflow-hidden">
+            <CardHeader className="bg-slate-50/80 border-b border-slate-200 py-4 px-6">
+              <div>
+                <CardTitle className="text-lg font-semibold text-slate-900 leading-tight">APP Summary</CardTitle>
+                <p className="text-xs text-slate-600 font-medium mt-0.5">
+                  Consolidated financial, procurement, and organizational summary
+                </p>
+              </div>
             </CardHeader>
-            <CardContent>
-              <AggregatedItemsSection app={app} isDraft={canEdit} onEdit={() => toast.info('Edit aggregated items coming soon')} />
+            <CardContent className="p-6">
+              <AggregatedItemsSection appId={appId} app={app} isDraft={canEdit} />
             </CardContent>
           </Card>
         </TabsContent>
@@ -292,30 +373,16 @@ export function APPDetailsPage() {
                   🔒 LOCKED - No edits allowed
                 </span>
               )}
-              {canEdit && itemCount > 0 && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    setCurrentApp(app)
-                    setAppDetailsDialog(true)
-                  }}
-                  className="gap-2 cursor-pointer pointer-events-auto hover:bg-gray-100 transition-colors"
-                >
-                  <Edit2 className="w-4 h-4" />
-                  Edit
-                </Button>
-              )}
             </CardHeader>
             <CardContent>
-              <BACDetailsSection 
-                app={app} 
-                isDraft={canEdit} 
+              <BACDetailsSection
+                app={app}
+                isDraft={canEdit}
                 itemCount={itemCount}
                 onEdit={() => {
                   setCurrentApp(app)
                   setAppDetailsDialog(true)
-                }} 
+                }}
               />
             </CardContent>
           </Card>
@@ -323,40 +390,19 @@ export function APPDetailsPage() {
 
         {/* Signatories Tab */}
         <TabsContent value="signatories" className="space-y-4 pointer-events-auto">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-lg">Signatories</CardTitle>
-              {canEdit && itemCount > 0 && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    setCurrentApp(app)
-                    setSignatoriesDialog(true)
-                  }}
-                  className="gap-2 cursor-pointer pointer-events-auto hover:bg-gray-100 transition-colors"
-                >
-                  <Edit2 className="w-4 h-4" />
-                  Edit
-                </Button>
-              )}
-            </CardHeader>
-            <CardContent>
-              <SignatoriesSection 
-                app={app} 
-                isDraft={canEdit} 
-                itemCount={itemCount}
-                onEdit={() => {
-                  setCurrentApp(app)
-                  setSignatoriesDialog(true)
-                }} 
-              />
-            </CardContent>
-          </Card>
+          <SignatoriesSection
+            app={app}
+            isDraft={canEdit}
+            itemCount={itemCount}
+            onEdit={() => {
+              setCurrentApp(app)
+              setSignatoriesDialog(true)
+            }}
+          />
         </TabsContent>
 
         {/* Supplementals Tab */}
-        {app.status === 'Locked' && (
+        {isLocked && (
           <TabsContent value="supplementals" className="space-y-4 pointer-events-auto">
             <SupplementalAPPsTable
               masterAppId={app.id}
@@ -383,17 +429,24 @@ export function APPDetailsPage() {
       <SelectPPMPDialog />
       <EditAPPBACDialog />
       <EditSignatoriesDialog />
-      {/* Task 2.10: Export Dialog */}
       <AppExportDialog
         open={appExportOpen}
         onOpenChange={setAppExportOpen}
         app={app}
       />
-      {/* Task 3.10: Create Supplemental Dialog */}
       <CreateSupplementalAPPDialog
         open={createSupplementalOpen}
         onOpenChange={setCreateSupplementalOpen}
         masterApp={app}
+      />
+      <CreateUpdatedAPPDialog
+        open={createUpdatedOpen}
+        onOpenChange={setCreateUpdatedOpen}
+      />
+      <CreateFinalAPPDialog
+        open={createFinalOpen}
+        onOpenChange={setCreateFinalOpen}
+        indicativeApp={app}
       />
       <AddAPPItemDialog />
     </div>

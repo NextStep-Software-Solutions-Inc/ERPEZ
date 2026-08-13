@@ -50,12 +50,14 @@ export const bacWorkspaceTabAtom = atom<
   'checklist' | 'mop' | 'schedules' | 'strategy' | 'remarks' | 'epa'
 >('checklist')
 export const appListFilterAtom = atom<{
-  fiscalYear: number
+  fiscalYear: number | 'all'
   status: 'all' | 'Draft' | 'For Review' | 'Approved' | 'Published'
+  appType: 'all' | 'Indicative' | 'Final' | 'Updated'
   searchTerm: string
 }>({
-  fiscalYear: new Date().getFullYear(),
+  fiscalYear: 'all',
   status: 'all',
+  appType: 'all',
   searchTerm: '',
 })
 

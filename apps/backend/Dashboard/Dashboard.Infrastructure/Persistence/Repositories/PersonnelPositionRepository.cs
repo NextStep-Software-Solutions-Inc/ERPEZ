@@ -58,4 +58,15 @@ public class PersonnelPositionRepository : Repository<PersonnelPosition>, IPerso
                 .ThenInclude(p => p!.Office)
             .FirstOrDefaultAsync(pp => pp.Id == id && !pp.IsDeleted, cancellationToken);
     }
+
+    public async Task<PersonnelPosition?> GetActiveByPositionTitleAsync(string positionTitle, CancellationToken cancellationToken = default)
+    {
+        var lowerTitle = positionTitle.ToLower();
+        return await dbContext.PersonnelPositions!
+            .Include(pp => pp.User)
+            .Include(pp => pp.Position)
+            .FirstOrDefaultAsync(pp => pp.IsActive && !pp.IsDeleted && pp.Position != null &&
+                (pp.Position.Title.ToLower().Contains(lowerTitle) ||
+                 (pp.Position.FunctionalTitle != null && pp.Position.FunctionalTitle.ToLower().Contains(lowerTitle))), cancellationToken);
+    }
 }

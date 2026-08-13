@@ -1,9 +1,11 @@
 using ERPEZ.Application.Features.Planning.APP.Commands.ChangeAPPStatus;
+using ERPEZ.Application.Features.Planning.APP.Commands.CloneFinalAPP;
 using ERPEZ.Application.Features.Planning.APP.Commands.CreateAPP;
 using ERPEZ.Application.Features.Planning.APP.Commands.DeleteAPP;
 using ERPEZ.Application.Features.Planning.APP.Commands.RemovePPMPs;
 using ERPEZ.Application.Features.Planning.APP.Commands.SelectPPMPs;
 using ERPEZ.Application.Features.Planning.APP.Commands.UpdateBACLineItems;
+using ERPEZ.Application.Features.Planning.APP.Commands.UpdateAPPSignatories;
 using ERPEZ.Application.Features.Planning.APP.Dtos;
 using ERPEZ.Application.Features.Planning.APP.Queries.GetAPPBAC;
 using ERPEZ.Application.Features.Planning.APP.Queries.GetAPPById;
@@ -114,6 +116,25 @@ public class APPController(ISender mediator) : ControllerBase
     }
 
     /// <summary>
+    /// Update signatories for an APP
+    /// </summary>
+    [HttpPut("{id}/signatories")]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> UpdateAPPSignatories(Guid id, [FromBody] UpdateAPPSignatoriesRequest request)
+    {
+        var command = new UpdateAPPSignatoriesCommand
+        {
+            APPId = id,
+            Request = request
+        };
+
+        var result = await mediator.Send(command);
+
+        return Ok(result);
+    }
+
+    /// <summary>
     /// Get Budget Allocation by Category (BAC) read-model for a specific APP
     /// </summary>
     [HttpGet("{id}/bac")]
@@ -133,8 +154,32 @@ public class APPController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
-    public async Task<IActionResult> UpdateBACLineItems(Guid id, [FromBody] List<UpdateBACLineItemRequest> lineItems)
+    public async Task<IActionResult> UpdateBACLineItems(Guid id, [FromBody] System.Text.Json.JsonElement body)
     {
+        List<UpdateBACLineItemRequest>? lineItems = null;
+
+        var options = new System.Text.Json.JsonSerializerOptions
+        {
+            PropertyNameCaseInsensitive = true
+        };
+
+        if (body.ValueKind == System.Text.Json.JsonValueKind.Array)
+        {
+            lineItems = System.Text.Json.JsonSerializer.Deserialize<List<UpdateBACLineItemRequest>>(body.GetRawText(), options);
+        }
+        else if (body.ValueKind == System.Text.Json.JsonValueKind.Object)
+        {
+            if (body.TryGetProperty("lineItems", out var lineItemsProp) || body.TryGetProperty("LineItems", out lineItemsProp))
+            {
+                lineItems = System.Text.Json.JsonSerializer.Deserialize<List<UpdateBACLineItemRequest>>(lineItemsProp.GetRawText(), options);
+            }
+        }
+
+        if (lineItems == null)
+        {
+            return BadRequest(ApiResponse<Unit>.Fail("The lineItems field is required."));
+        }
+
         var command = new UpdateBACLineItemsCommand
         {
             AppId = id,
@@ -175,5 +220,53 @@ public class APPController(ISender mediator) : ControllerBase
 
         var result = await mediator.Send(command);
         return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    /// <summary>
+    /// Clone an approved Final/Updated APP into a new Updated APP version
+    /// </summary>
+    [HttpPost("{id}/clone-updated")]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> CloneUpdated(
+        [FromRoute] Guid id,
+        [FromBody] ERPEZ.Application.Features.Planning.APP.Commands.CloneUpdatedAPP.CloneUpdatedAPPCommand command)
+    {
+        var result = await mediator.Send(command with { SourceAppId = id });
+        return result.Succeeded
+            ? CreatedAtAction(nameof(GetAPPById), new { id = result.Data }, result)
+            : BadRequest(result);
+    }
+
+    /// <summary>
+    /// Clone an approved Indicative APP into a new Final APP, carrying forward
+    /// all PPMP sources and procurement items.
+    /// </summary>
+    [HttpPost("{id}/clone-final")]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> CloneFinal(
+        [FromRoute] Guid id,
+        [FromBody] CloneFinalAPPCommand command)
+    {
+        var result = await mediator.Send(command with { SourceAppId = id });
+        return result.Succeeded
+            ? CreatedAtAction(nameof(GetAPPById), new { id = result.Data }, result)
+            : BadRequest(result);
+    }
+
+    /// <summary>
+    /// Get APP Analytics and Summaries (breakdowns by office, category, fund source, procurement type)
+    /// </summary>
+    [HttpGet("{id}/analytics")]
+    [ProducesResponseType(typeof(ApiResponse<APPAnalyticsResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<APPAnalyticsResponse>), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> GetAnalytics(Guid id)
+    {
+        var query = new ERPEZ.Application.Features.Planning.APP.Queries.GetAPPAnalytics.GetAPPAnalyticsQuery(id);
+        var result = await mediator.Send(query);
+        return result.Succeeded ? Ok(result) : NotFound(result);
     }
 }

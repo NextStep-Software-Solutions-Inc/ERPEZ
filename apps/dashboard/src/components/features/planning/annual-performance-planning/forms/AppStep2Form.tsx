@@ -556,8 +556,6 @@ export default function AppStep2Form({
                   isLoadingFiscalYears={isLoadingFY}
                 />
               )}
-              globalFilter={globalFilter}
-              onGlobalFilterChange={handleGlobalFilterChange}
               manualPagination={true}
               pageCount={kpisResponse?.totalPages || 1}
               pageIndex={pageNumber - 1}

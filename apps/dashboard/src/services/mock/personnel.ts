@@ -7,7 +7,7 @@ export type Person = {
   endDate?: string | null
   status: 'active' | 'on-leave' | 'resigned'
   // Government Schema Fields
-  employmentStatus: 'Permanent' | 'Casual' | 'Contractual' | 'Coterminous'
+  employmentStatus?: 'Permanent' | 'Casual' | 'Contractual' | 'Coterminous'
   tin?: string
   gsis?: string
   philhealth?: string

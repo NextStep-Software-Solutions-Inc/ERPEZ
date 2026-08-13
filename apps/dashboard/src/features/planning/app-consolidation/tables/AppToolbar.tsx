@@ -79,18 +79,20 @@ export default function Toolbar({ }: ToolbarProps<AppMaster>) {
           </Select>
 
           <Select
-            value={filter.fiscalYear.toString()}
+            value={filter.fiscalYear?.toString() || 'all'}
             onValueChange={(value) =>
-              setFilter({ ...filter, fiscalYear: parseInt(value) })
+              setFilter({ ...filter, fiscalYear: value === 'all' ? 'all' : parseInt(value) })
             }
           >
             <SelectTrigger className="w-40">
-              <SelectValue />
+              <SelectValue placeholder="All Fiscal Years" />
             </SelectTrigger>
             <SelectContent>
+              <SelectItem value="all">All Fiscal Years</SelectItem>
               <SelectItem value="2024">FY 2024</SelectItem>
               <SelectItem value="2025">FY 2025</SelectItem>
               <SelectItem value="2026">FY 2026</SelectItem>
+              <SelectItem value="2027">FY 2027</SelectItem>
             </SelectContent>
           </Select>
         </div>

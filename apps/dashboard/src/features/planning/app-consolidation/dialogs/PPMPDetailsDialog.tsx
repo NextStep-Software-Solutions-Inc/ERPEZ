@@ -62,19 +62,27 @@ export function PPMPDetailsDialog({ open, onOpenChange, selectedItem, appItemId 
         ) : itemToDisplay ? (
           <div className="space-y-6 pt-4">
             {/* Item Name and Code Header */}
-            <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div className="bg-slate-50 p-4 rounded-lg border border-slate-100 flex items-center justify-between">
               <div>
                 <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">Item Code / PAP Code</p>
                 <p className="text-sm font-bold text-slate-800 font-mono bg-white px-2.5 py-1.5 rounded border border-slate-200 inline-block">
                   {details?.papCode || selectedItem?.code || '—'}
                 </p>
               </div>
-              <div>
-                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-1">APP ID</p>
-                <p className="text-xs text-slate-500 font-mono select-all truncate mt-2">
-                  {itemToDisplay.id}
-                </p>
-              </div>
+              {details && (
+                <div className="flex items-center gap-2">
+                  {details.isNew && (
+                    <span className="inline-flex items-center rounded px-2 py-0.5 text-xs font-bold bg-emerald-100 text-emerald-800 border border-emerald-300">
+                      NEW ITEM
+                    </span>
+                  )}
+                  {details.isRevised && (
+                    <span className="inline-flex items-center rounded px-2 py-0.5 text-xs font-bold bg-amber-100 text-amber-800 border border-amber-300">
+                      REVISED ITEM
+                    </span>
+                  )}
+                </div>
+              )}
             </div>
 
             {/* Description */}
@@ -133,6 +141,29 @@ export function PPMPDetailsDialog({ open, onOpenChange, selectedItem, appItemId 
                 </p>
                 {selectedItem?.itemCategory && (
                   <span className="text-[10px] text-slate-400 uppercase">{selectedItem.itemCategory}</span>
+                )}
+              </div>
+            </div>
+
+            {/* APP Procurement Timeline */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 p-4 bg-emerald-50/70 border border-emerald-200/80 rounded-lg">
+              <div>
+                <p className="text-xs font-semibold text-emerald-800 uppercase tracking-wider mb-1">Start of Procurement</p>
+                <p className="text-sm font-bold text-emerald-950">
+                  {details?.effectiveStartOfProcurement ? new Date(details.effectiveStartOfProcurement).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : (details?.startOfProcurementOverride || 'Not set')}
+                </p>
+                {details?.isStartProcurementOverridden && (
+                  <span className="text-[10px] text-amber-700 font-medium block">APP Override</span>
+                )}
+              </div>
+
+              <div>
+                <p className="text-xs font-semibold text-emerald-800 uppercase tracking-wider mb-1">End of Procurement</p>
+                <p className="text-sm font-bold text-emerald-950">
+                  {details?.effectiveEndOfProcurement ? new Date(details.effectiveEndOfProcurement).toLocaleDateString('en-US', { month: 'short', year: 'numeric' }) : (details?.endOfProcurementOverride || 'Not set')}
+                </p>
+                {details?.isEndProcurementOverridden && (
+                  <span className="text-[10px] text-amber-700 font-medium block">APP Override</span>
                 )}
               </div>
             </div>

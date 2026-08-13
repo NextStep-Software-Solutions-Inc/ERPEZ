@@ -20,10 +20,14 @@ internal abstract class BasePdfRenderer
     }
 
     protected static IContainer TableHeaderCell(IContainer c) =>
-        c.Border(1).BorderColor(Colors.Grey.Medium).Background(Colors.Grey.Lighten2).Padding(3);
+        c.Border(0.5f).BorderColor(Colors.Grey.Medium)
+        .Background(Colors.Grey.Lighten2)
+        .Padding(3)
+        .AlignCenter()
+        .AlignMiddle();
 
     protected static IContainer TableDataCell(IContainer c) =>
-        c.Border(1).BorderColor(Colors.Grey.Medium).Padding(3);
+        c.Border(0.5f).BorderColor(Colors.Grey.Medium).Padding(3);
 
     protected static void RenderSignatories(ColumnDescriptor col, List<SignatoryDto> signatories)
     {
