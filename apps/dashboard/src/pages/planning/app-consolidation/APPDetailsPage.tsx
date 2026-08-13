@@ -19,7 +19,6 @@ import {
 import {
   PPMPListSection,
   AppDetailsHeader,
-  AppStatsGrid,
   AggregatedItemsSection,
   BACDetailsSection,
   SignatoriesSection,
@@ -242,9 +241,8 @@ export function APPDetailsPage() {
         <StatusBadge status={app.status} />
       </div>
 
-      {/* APP Header & Stats */}
+      {/* APP Header */}
       <AppDetailsHeader app={app} />
-      <AppStatsGrid app={app} itemCount={itemCount} totalQuantity={totalQuantity} />
 
       {/* Main Content Grid - with Quick Actions Panel */}
       <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
@@ -348,24 +346,18 @@ export function APPDetailsPage() {
           />
         </TabsContent>
 
-        {/* Aggregations Tab — fetches real analytics from /apps/{id}/analytics */}
+        {/* Summary Tab — fetches real analytics from /apps/{id}/analytics */}
         <TabsContent value="aggregations" className="space-y-4 pointer-events-auto">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-lg">Aggregation Summary</CardTitle>
-              {canEdit && itemCount > 0 && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => toast.info('Aggregations update coming soon')}
-                  className="gap-2 cursor-pointer pointer-events-auto hover:bg-gray-100 transition-colors"
-                >
-                  <Edit2 className="w-4 h-4" />
-                  Update
-                </Button>
-              )}
+          <Card className="border border-slate-200 shadow-xs bg-white rounded-xl overflow-hidden">
+            <CardHeader className="bg-slate-50/80 border-b border-slate-200 py-4 px-6">
+              <div>
+                <CardTitle className="text-lg font-semibold text-slate-900 leading-tight">APP Summary</CardTitle>
+                <p className="text-xs text-slate-600 font-medium mt-0.5">
+                  Consolidated financial, procurement, and organizational summary
+                </p>
+              </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-6">
               <AggregatedItemsSection appId={appId} app={app} isDraft={canEdit} />
             </CardContent>
           </Card>
@@ -398,36 +390,15 @@ export function APPDetailsPage() {
 
         {/* Signatories Tab */}
         <TabsContent value="signatories" className="space-y-4 pointer-events-auto">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0">
-              <CardTitle className="text-lg">Signatories</CardTitle>
-              {canEdit && itemCount > 0 && (
-                <Button
-                  size="sm"
-                  variant="outline"
-                  onClick={() => {
-                    setCurrentApp(app)
-                    setSignatoriesDialog(true)
-                  }}
-                  className="gap-2 cursor-pointer pointer-events-auto hover:bg-gray-100 transition-colors"
-                >
-                  <Edit2 className="w-4 h-4" />
-                  Edit
-                </Button>
-              )}
-            </CardHeader>
-            <CardContent>
-              <SignatoriesSection
-                app={app}
-                isDraft={canEdit}
-                itemCount={itemCount}
-                onEdit={() => {
-                  setCurrentApp(app)
-                  setSignatoriesDialog(true)
-                }}
-              />
-            </CardContent>
-          </Card>
+          <SignatoriesSection
+            app={app}
+            isDraft={canEdit}
+            itemCount={itemCount}
+            onEdit={() => {
+              setCurrentApp(app)
+              setSignatoriesDialog(true)
+            }}
+          />
         </TabsContent>
 
         {/* Supplementals Tab */}
