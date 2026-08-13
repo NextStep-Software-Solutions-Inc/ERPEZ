@@ -19,6 +19,8 @@ import type { UpdateWFPObjectiveValues } from '../form/UpdateWFPObjectiveForm';
 import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
 import { ResponsiveDialog } from '@/components/ResponsiveDialog'
 
+import { extractErrorMessage } from '@/services/utils/messages'
+
 export const hasUnsavedUpdateFormAtom = atom(false)
 
 const useUpdateWFPObjective = createMutationHookFromTemplate(updateWFPObjectiveRequest)
@@ -54,30 +56,26 @@ export default function UpdateWFPObjectiveDialog() {
   }, [wfpObjectiveData, setFormData])
 
   const handleUpdate = async (data: UpdateWFPObjectiveValues) => {
-    toast.promise(
-      mutateAsync(
-        {
-          pathParams: { id: selectedId },
-          payload: data,
-        },
-        {
-          onSuccess: () => {
-            void queryClient.invalidateQueries({
-              predicate: (query) => query.queryKey.some(key => 
-                typeof key === 'string' && key.includes('/wfp-objectives')
-              ),
-            })
-            closeDialog(true)
-            setHasUnsavedChanges(false)
-          },
-        },
-      ),
-      {
-        loading: 'Updating WFP Objective...',
-        success: 'WFP Objective updated successfully!',
-        error: (err: any) => err?.response?.data?.message || 'Failed to update WFP Objective.',
-      },
-    )
+    const toastId = toast.loading('Updating WFP Objective...')
+    try {
+      await mutateAsync({
+        pathParams: { id: selectedId },
+        payload: data,
+      })
+      void queryClient.invalidateQueries({
+        predicate: (query) => query.queryKey.some(key => 
+          typeof key === 'string' && (
+            key.includes('/wfp-objectives') ||
+            key.includes('/wfps')
+          )
+        ),
+      })
+      toast.success('WFP Objective updated successfully!', { id: toastId })
+      closeDialog(true)
+      setHasUnsavedChanges(false)
+    } catch {
+      toast.dismiss(toastId)
+    }
   }
 
   const handleClose = () => {

@@ -30,7 +30,10 @@ export default function DeleteWFPObjectiveDialog() {
 
       void queryClient.invalidateQueries({
         predicate: (query) => query.queryKey.some(key => 
-          typeof key === 'string' && key.includes('/wfp-objectives')
+          typeof key === 'string' && (
+            key.includes('/wfp-objectives') ||
+            key.includes('/wfps')
+          )
         ),
       })
 

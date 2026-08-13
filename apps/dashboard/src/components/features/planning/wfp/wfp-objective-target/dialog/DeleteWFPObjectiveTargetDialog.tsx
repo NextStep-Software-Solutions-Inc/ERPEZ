@@ -29,7 +29,8 @@ export default function DeleteWFPObjectiveTargetDialog() {
         predicate: (query) => query.queryKey.some(key => 
           typeof key === 'string' && (
             key.includes('/wfp-objective-activities') || 
-            key.includes('/wfp-objectives')
+            key.includes('/wfp-objectives') ||
+            key.includes('/wfps')
           )
         ),
       })

@@ -16,8 +16,9 @@ import { updateWFPObjectiveTargetRequest } from '../handlers/updateWFPObjectiveT
 import { getWFPObjectiveTargetRequest } from '../handlers/getWFPObjectiveTargetRequest'
 import UpdateWFPObjectiveTargetForm from '../form/UpdateWFPObjectiveTargetForm'
 import type { UpdateWFPObjectiveTargetValues } from '../form/UpdateWFPObjectiveTargetForm'
-import { ResponsiveDialog } from '@/components/ResponsiveDialog'
 import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
+import { ResponsiveDialog } from '@/components/ResponsiveDialog'
+import { extractErrorMessage } from '@/services/utils/messages'
 
 export const hasUnsavedUpdateFormAtom = atom(false)
 
@@ -55,33 +56,27 @@ export default function UpdateWFPObjectiveTargetDialog() {
 
   const handleUpdate = async (data: UpdateWFPObjectiveTargetValues) => {
     const { wfpObjectiveId, ...payload } = data
-    toast.promise(
-      mutateAsync(
-        {
-          pathParams: { id: selectedId },
-          payload,
-        },
-        {
-          onSuccess: () => {
-            void queryClient.invalidateQueries({
-              predicate: (query) => query.queryKey.some(key => 
-                typeof key === 'string' && (
-                  key.includes('/wfp-objective-activities') || 
-                  key.includes('/wfp-objectives')
-                )
-              ),
-            })
-            closeDialog(true)
-            setHasUnsavedChanges(false)
-          },
-        },
-      ),
-      {
-        loading: 'Updating Activity...',
-        success: 'Activity updated successfully!',
-        error: 'Failed to update Activity.',
-      },
-    )
+    const toastId = toast.loading('Updating Activity...')
+    try {
+      await mutateAsync({
+        pathParams: { id: selectedId },
+        payload,
+      })
+      void queryClient.invalidateQueries({
+        predicate: (query) => query.queryKey.some(key => 
+          typeof key === 'string' && (
+            key.includes('/wfp-objective-activities') || 
+            key.includes('/wfp-objectives') ||
+            key.includes('/wfps')
+          )
+        ),
+      })
+      toast.success('Activity updated successfully!', { id: toastId })
+      closeDialog(true)
+      setHasUnsavedChanges(false)
+    } catch {
+      toast.dismiss(toastId)
+    }
   }
 
   const handleClose = () => {
