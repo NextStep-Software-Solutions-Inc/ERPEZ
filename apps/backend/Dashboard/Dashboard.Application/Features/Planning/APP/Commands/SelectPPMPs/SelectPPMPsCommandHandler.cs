@@ -34,20 +34,46 @@ public class SelectPPMPsCommandHandler(IUnitOfWork unitOfWork)
             throw new ValidationException($"PPMP does not belong to the APP Fiscal Year. Invalid PPMPs: {invalidNumbers}");
         }
 
-        // Batch validation: Check for duplicates via repository abstraction
-        var duplicateIds = await unitOfWork.APPPPMPRepository.GetLinkedPPMPIdsAsync(request.APPId, ppmpIds, cancellationToken);
+        // Fetch all existing links (both active and soft-deleted) for this APP and requested PPMPs
+        var existingLinks = await unitOfWork.APPPPMPRepository.GetLinksByAppAndPpmpIdsAsync(request.APPId, ppmpIds, cancellationToken);
 
-        if (duplicateIds.Any())
+        // Enforce uniqueness for active links
+        var activeDuplicatePpmpIds = existingLinks.Where(l => !l.IsDeleted).Select(l => l.PPMPId).ToHashSet();
+        if (activeDuplicatePpmpIds.Any())
         {
             var duplicateDetails = existingPpmps
-                .Where(p => duplicateIds.Contains(p.Id))
+                .Where(p => activeDuplicatePpmpIds.Contains(p.Id))
                 .Select(p => p.PPMPNumber)
                 .ToList();
             throw new ConflictException($"The following PPMPs are already linked to this APP: {string.Join(", ", duplicateDetails)}");
         }
 
-        // Create APPPPMP links for all validated PPMPs
+        // Restore soft-deleted APPPPMP links if present
+        var softDeletedLinks = existingLinks.Where(l => l.IsDeleted).ToList();
+        foreach (var link in softDeletedLinks)
+        {
+            link.IsDeleted = false;
+            link.DeletedAt = null;
+            link.DeletedBy = null;
+        }
+
+        // Also restore soft-deleted APPItems corresponding to the restored PPMPs
+        var restoredPpmpIds = softDeletedLinks.Select(l => l.PPMPId).ToHashSet();
+        if (restoredPpmpIds.Any())
+        {
+            var softDeletedAppItems = await unitOfWork.APPItemRepository.GetAPPItemsByPPMPIdsAsync(request.APPId, restoredPpmpIds, cancellationToken);
+            foreach (var item in softDeletedAppItems.Where(i => i.IsDeleted))
+            {
+                item.IsDeleted = false;
+                item.DeletedAt = null;
+                item.DeletedBy = null;
+            }
+        }
+
+        // Identify PPMPs that do not have any existing link (neither active nor soft-deleted)
+        var existingLinkPpmpIds = existingLinks.Select(l => l.PPMPId).ToHashSet();
         var linksToAdd = existingPpmps
+            .Where(ppmp => !existingLinkPpmpIds.Contains(ppmp.Id))
             .Select(ppmp => new APPPPMP
             {
                 Id = Guid.NewGuid(),
@@ -56,13 +82,17 @@ public class SelectPPMPsCommandHandler(IUnitOfWork unitOfWork)
             })
             .ToList();
 
-        // Add all links at once
         if (linksToAdd.Any())
         {
             await unitOfWork.APPPPMPRepository.AddRangeAsync(linksToAdd, cancellationToken);
+        }
+
+        var totalProcessed = linksToAdd.Count + softDeletedLinks.Count;
+        if (totalProcessed > 0)
+        {
             await unitOfWork.SaveChangesAsync(cancellationToken);
         }
 
-        return ApiResponse<Unit>.Success(Unit.Value, $"{linksToAdd.Count} PPMPs linked successfully.");
+        return ApiResponse<Unit>.Success(Unit.Value, $"{totalProcessed} PPMP(s) linked successfully.");
     }
 }
