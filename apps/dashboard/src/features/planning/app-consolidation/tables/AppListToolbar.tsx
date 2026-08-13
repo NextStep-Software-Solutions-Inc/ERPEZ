@@ -52,15 +52,16 @@ export function AppListToolbar({}: AppListToolbarProps) {
 
         {/* Fiscal Year Filter */}
         <Select
-          value={filter.fiscalYear?.toString()}
+          value={filter.fiscalYear?.toString() || 'all'}
           onValueChange={(value) =>
-            setFilter({ ...filter, fiscalYear: parseInt(value) })
+            setFilter({ ...filter, fiscalYear: value === 'all' ? 'all' : parseInt(value) })
           }
         >
           <SelectTrigger className="w-48">
-            <SelectValue placeholder="Select Fiscal Year" />
+            <SelectValue placeholder="All Fiscal Years" />
           </SelectTrigger>
           <SelectContent>
+            <SelectItem value="all">All Fiscal Years</SelectItem>
             <SelectItem value="2024">FY 2024</SelectItem>
             <SelectItem value="2025">FY 2025</SelectItem>
             <SelectItem value="2026">FY 2026</SelectItem>
@@ -84,6 +85,24 @@ export function AppListToolbar({}: AppListToolbarProps) {
             <SelectItem value="For Review">For Review</SelectItem>
             <SelectItem value="Approved">Approved</SelectItem>
             <SelectItem value="Published">Published</SelectItem>
+          </SelectContent>
+        </Select>
+
+        {/* Type Filter */}
+        <Select
+          value={filter.appType || 'all'}
+          onValueChange={(value) =>
+            setFilter({ ...filter, appType: value as 'all' | 'Indicative' | 'Final' | 'Updated' })
+          }
+        >
+          <SelectTrigger className="w-48">
+            <SelectValue placeholder="All Types" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">All Types</SelectItem>
+            <SelectItem value="Indicative">Indicative</SelectItem>
+            <SelectItem value="Final">Final</SelectItem>
+            <SelectItem value="Updated">Updated</SelectItem>
           </SelectContent>
         </Select>
 

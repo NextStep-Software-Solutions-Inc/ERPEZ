@@ -1,4 +1,4 @@
-﻿import { z } from 'zod'
+import { z } from 'zod'
 import {
   FunctionCategory,
   TargetDistributionBehavior,
@@ -16,18 +16,16 @@ export const kpiSchema = z.object({
   operationalDefinition: z
     .string()
     .min(1, 'Operational Definition is required'),
-  monitoringFrequency: z.enum(MonitoringFrequency),
-  measurementUnit: z.enum(MeasurementUnit),
+  monitoringFrequency: z.string().min(1, 'Monitoring Frequency is required'),
+  measurementUnit: z.string().min(1, 'Measurement Unit is required'),
   isGAD: z.boolean(),
   parentKPIId: z.string().nullable(),
   mfopapId: z.string().nullable(),
-  // API status string; currently forwarded as-is because the backend values
-  // are not yet normalized into a closed enum in this layer.
   status: z.string().optional(),
-  functionCategory: z.enum(FunctionCategory),
+  functionCategory: z.string().min(1, 'Function Category is required'),
   complianceTags: z.array(z.string()),
   developmentGoals: z.array(z.string()),
-  targetDistributionBehavior: z.enum(TargetDistributionBehavior).nullable(),
+  targetDistributionBehavior: z.string().nullable().optional(),
   isOptIn: z.boolean(),
 })
 

@@ -1,0 +1,53 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <ItemGroup>
+    <ProjectReference Include="..\Dashboard.Domain\Dashboard.Domain.csproj" />
+    <ProjectReference Include="..\..\Shared\Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="FluentValidation.DependencyInjectionExtensions" Version="12.1.0" />
+    <PackageReference Include="HtmlAgilityPack" Version="1.12.4" />
+    <PackageReference Include="MediatR" Version="13.0.0" />
+    <PackageReference Include="Sieve" Version="2.5.5" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Features\Planning\ActivityBudgetRequirement\Commands\" />
+    <Folder Include="Features\Planning\ActivityBudgetRequirement\Dtos\" />
+    <Folder Include="Features\Planning\ActivityBudgetRequirement\Queries\" />
+    <Folder Include="Features\Planning\OPCREvaluation\Commands\" />
+    <Folder Include="Features\Planning\OPCREvaluation\Dtos\" />
+    <Folder Include="Features\Planning\OPCREvaluation\Queries\" />
+    <Folder Include="Features\Planning\OPCRRating\Commands\" />
+    <Folder Include="Features\Planning\OPCRRating\Dtos\" />
+    <Folder Include="Features\Planning\OPCRRating\Queries\" />
+    <Folder Include="Features\Planning\WFPObjective\Commands\" />
+    <Folder Include="Features\Planning\WFPObjective\Dtos\" />
+    <Folder Include="Features\Planning\WFPObjective\Queries\" />
+    <Folder Include="Features\Planning\WFPObjective\Commands\" />
+    <Folder Include="Features\Planning\WFPObjective\Dtos\" />
+    <Folder Include="Features\\Planning\\WFPObjective\\Queries" />
+    <Folder Include="Features\\Planning\\SubDUAllocation\" />
+    <Folder Include="Features\Planning\SubDeliveryUnit\" />
+    <Folder Include="Features\Planning\OPCRPAP\" />
+    <Folder Include="Features\Planning\Object\" />
+    <Folder Include="Features\Planning\WFPPAPDepartment\Commands\" />
+    <Folder Include="Features\Planning\WFPPAPDepartment\Dtos\" />
+    <Folder Include="Features\Planning\WFPPAPDepartment\Queries\" />
+    <Folder Include="Features\Planning\WFPPAP\Commands\" />
+    <Folder Include="Features\Planning\WFPPAP\Dtos\" />
+    <Folder Include="Features\Planning\WFPPAP\Queries\" />
+    <Folder Include="Features\Planning\WFP\Commands\" />
+    <Folder Include="Features\Planning\WFP\Commands\" />
+    <Folder Include="Features\Planning\WFP\Dtos\" />
+    <Folder Include="Features\Planning\WFP\Queries\" />
+  </ItemGroup>
+
+  <PropertyGroup>
+    <TargetFramework>net9.0</TargetFramework>
+    <RootNamespace>ERPEZ.Application</RootNamespace>
+    <ImplicitUsings>enable</ImplicitUsings>
+    <Nullable>enable</Nullable>
+  </PropertyGroup>
+
+</Project>

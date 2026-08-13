@@ -6,24 +6,31 @@ import type { APIResponse, PaginationResponse } from 'erpez-shared-lib'
  */
 export const extractErrorMessage = (error: AxiosError): string => {
   if (!error.response?.data || typeof error.response?.data !== 'object') {
-    return 'An error occurred while processing your request.'
+    return error.message || 'An error occurred while processing your request.'
   }
 
   const data = error.response.data as Record<string, unknown>
 
-  let message =
-    'message' in data && typeof data.message === 'string'
-      ? data.message
-      : 'An error occurred while processing your request.'
+  let message = ''
+  if ('message' in data && typeof data.message === 'string' && data.message) {
+    message = data.message
+  } else if ('Message' in data && typeof data.Message === 'string' && data.Message) {
+    message = data.Message
+  } else if ('detail' in data && typeof data.detail === 'string' && data.detail) {
+    message = data.detail
+  } else if ('title' in data && typeof data.title === 'string' && data.title) {
+    message = data.title
+  }
 
-  // ApiResponse<T>.Fail(errors, message) shape: { [field]: string[] }
+  // Handle ASP.NET ValidationErrors or ApiResponse.Errors shape
   if ('errors' in data && data.errors && typeof data.errors === 'object') {
     const errorDetails = Object.entries(data.errors as Record<string, unknown>)
       .filter(([, value]) => Array.isArray(value))
       .flatMap(([key, value]) => (value as unknown[]).map((v) => `${key}: ${v}`))
 
     if (errorDetails.length > 0) {
-      message += '\n Details: ' + errorDetails.join('; ')
+      const detailsStr = errorDetails.join('; ')
+      message = message ? `${message} (${detailsStr})` : detailsStr
     }
   }
 
@@ -38,11 +45,12 @@ export const extractErrorMessage = (error: AxiosError): string => {
       )
 
     if (errorDetails.length > 0) {
-      message += '\n Details: ' + errorDetails.join('; ')
+      const detailsStr = errorDetails.join('; ')
+      message = message ? `${message} (${detailsStr})` : detailsStr
     }
   }
 
-  return message
+  return message || error.message || 'An error occurred while processing your request.'
 }
 
 /**

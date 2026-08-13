@@ -221,12 +221,42 @@ export function EditAPPBACDialog({
           }
         })
 
+        const toISODateTime = (val?: string | null): string | null => {
+          if (!val || typeof val !== 'string') return null
+          const trimmed = val.trim()
+          if (!trimmed) return null
+          if (/^\d{2}\/\d{4}$/.test(trimmed)) {
+            const [m, y] = trimmed.split('/')
+            return `${y}-${m.padStart(2, '0')}-01T00:00:00.000Z`
+          }
+          if (/^\d{4}-\d{2}$/.test(trimmed)) {
+            return `${trimmed}-01T00:00:00.000Z`
+          }
+          if (/^\d{4}-\d{2}-\d{2}$/.test(trimmed)) {
+            return `${trimmed}T00:00:00.000Z`
+          }
+          if (trimmed.includes('T')) return trimmed
+          try {
+            const d = new Date(trimmed)
+            if (!isNaN(d.getTime())) return d.toISOString()
+          } catch {
+            // ignore
+          }
+          return null
+        }
+
         return {
           bacItemCode: item.id,
           modeOfProcurementId: mopId || null,
           remarks: item.remarks || '',
           epaEligible: item.eligibleForEPA ?? false,
           epaRemarks: item.epaRemarks || '',
+          startOfProcurementOverride: toISODateTime(item.startOfProcurementOverride),
+          endOfProcurementOverride: toISODateTime(item.endOfProcurementOverride),
+          estimatedBudgetOverride: item.estimatedBudgetOverride !== undefined && item.estimatedBudgetOverride !== null ? item.estimatedBudgetOverride : null,
+          bidEvaluationCriteria: item.bidEvaluationCriteria || null,
+          procurementStrategies: item.procurementStrategies || null,
+          isOutsourced: item.isOutsourced ?? null,
           schedules: payloadSchedules,
         }
       })
@@ -242,8 +272,11 @@ export function EditAPPBACDialog({
         )
       )
 
-      queryClient.invalidateQueries({ queryKey: [`/apps/${formData.id}`] })
-      queryClient.invalidateQueries({ queryKey: [getAPPDetailRequest.endpoint, formData.id] })
+      void queryClient.invalidateQueries({
+        predicate: (query) =>
+          typeof query.queryKey[0] === 'string' &&
+          (query.queryKey[0].startsWith('/apps') || query.queryKey[0].startsWith('/ppmps')),
+      })
 
       toast.success('BAC configuration updated successfully!')
       handleOpenChange(false)
