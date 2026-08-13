@@ -152,7 +152,7 @@ public class GenerateAppDocumentCommandHandler(
         var source    = item.FundSource?.Name ?? string.Empty;
         var budget    = CalculateItemBudget(item);
         var strategy  = item.ProcurementStrategies != null && item.ProcurementStrategies.Any()
-            ? string.Join(", ", item.ProcurementStrategies)
+            ? string.Join(", ", item.ProcurementStrategies.Select(FormatProcurementStrategy))
             : string.Empty;
         var remarks   = item.Remarks ?? string.Empty;
 
@@ -279,5 +279,27 @@ public class GenerateAppDocumentCommandHandler(
             Position    = positionTitle,
             Designation = string.Empty
         };
+    }
+
+    private static string FormatProcurementStrategy(ProcurementStrategy strategy) => strategy switch
+    {
+        ProcurementStrategy.LCA => "LCA",
+        ProcurementStrategy.Subcontracting => "Subcontracting",
+        ProcurementStrategy.MultiYearContracting => "Multi-Year Contracting",
+        ProcurementStrategy.DesignAndBuild => "Design and Build",
+        ProcurementStrategy.ProcurementAgent => "Engagement of a Procurement Agent",
+        ProcurementStrategy.FrameworkAgreement => "Use of Framework Agreement",
+        ProcurementStrategy.PooledProcurement => "Pooled Procurement",
+        ProcurementStrategy.RenewalOfServices => "Renewal of Regular and Recurring Services",
+        ProcurementStrategy.WarehousingInventory => "Warehousing & Inventory",
+        ProcurementStrategy.NotApplicable => "Not Applicable",
+        _ => FormatPascalCase(strategy.ToString())
+    };
+
+    private static string FormatPascalCase(string value)
+    {
+        if (string.IsNullOrWhiteSpace(value)) return string.Empty;
+        if (value.Contains(' ') || value.Contains('-')) return value;
+        return System.Text.RegularExpressions.Regex.Replace(value, "(?<!^)([A-Z])", " $1");
     }
 }
