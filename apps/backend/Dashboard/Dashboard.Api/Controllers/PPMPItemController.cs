@@ -63,7 +63,14 @@ public class PPMPItemController(ISender mediator) : ControllerBase
             Unit = dto.Unit,
             UnitPrice = dto.UnitPrice,
             MOPOverride = dto.MOPOverride,
-            MOPJustification = dto.MOPJustification
+            MOPJustification = dto.MOPJustification,
+            ProjectType = dto.ProjectType,
+            PreProcurementConference = dto.PreProcurementConference,
+            ProcurementStartDate = dto.ProcurementStartDate,
+            ProcurementEndDate = dto.ProcurementEndDate,
+            ExpectedDeliveryStart = dto.ExpectedDeliveryStart,
+            ExpectedDeliveryEnd = dto.ExpectedDeliveryEnd,
+            Remarks = dto.Remarks
         };
         var result = await mediator.Send(command);
         return result.Succeeded ? Ok(result) : BadRequest(result);

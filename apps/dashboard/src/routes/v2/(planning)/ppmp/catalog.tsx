@@ -5,7 +5,7 @@
 
 import { createFileRoute, redirect } from '@tanstack/react-router'
 
-export const Route = createFileRoute('/v2/ppmp/catalog')({
+export const Route = createFileRoute('/v2/(planning)/ppmp/catalog')({
   beforeLoad: () => {
     throw redirect({
       to: '/v2/procurement-library',
