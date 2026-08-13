@@ -324,8 +324,8 @@ export function APPDetailsPage() {
           <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
             <TabsList className="grid w-full grid-cols-5 pointer-events-auto">
               <TabsTrigger value="overview" className="cursor-pointer pointer-events-auto transition-all hover:opacity-80">Overview</TabsTrigger>
-              <TabsTrigger value="aggregations" className="cursor-pointer pointer-events-auto transition-all hover:opacity-80">Aggregations</TabsTrigger>
-              <TabsTrigger value="bac" className="cursor-pointer pointer-events-auto transition-all hover:opacity-80">BAC Details</TabsTrigger>
+              <TabsTrigger value="aggregations" className="cursor-pointer pointer-events-auto transition-all hover:opacity-80">Summary</TabsTrigger>
+              <TabsTrigger value="bac" className="cursor-pointer pointer-events-auto transition-all hover:opacity-80">APP Item Details</TabsTrigger>
               <TabsTrigger value="signatories" className="cursor-pointer pointer-events-auto transition-all hover:opacity-80">Signatories</TabsTrigger>
               {isLocked && (
                 <TabsTrigger value="supplementals" className="cursor-pointer pointer-events-auto transition-all hover:opacity-80">

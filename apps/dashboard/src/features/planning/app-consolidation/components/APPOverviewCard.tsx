@@ -1,15 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import {
-  FileText,
-  Calendar,
-  Building,
-  Tag,
-  Info,
-  Clock,
-  User,
-  AlertCircle,
-  CheckCircle2
-} from 'lucide-react'
+import { FileText } from 'lucide-react'
 import type { AppMaster } from '../types'
 
 interface APPOverviewCardProps {
@@ -17,15 +7,15 @@ interface APPOverviewCardProps {
 }
 
 const statusColors: Record<string, string> = {
-  Draft: 'bg-gray-100 text-gray-800 border-gray-200',
-  draft: 'bg-gray-100 text-gray-800 border-gray-200',
-  Submitted: 'bg-amber-100 text-amber-800 border-amber-200',
-  'pending-review': 'bg-amber-100 text-amber-800 border-amber-200',
-  Approved: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-  approved: 'bg-emerald-100 text-emerald-800 border-emerald-200',
-  Locked: 'bg-blue-100 text-blue-800 border-blue-200',
-  published: 'bg-blue-100 text-blue-800 border-blue-200',
-  Rejected: 'bg-red-100 text-red-800 border-red-200',
+  Draft: 'bg-slate-100 text-slate-800 border-slate-300',
+  draft: 'bg-slate-100 text-slate-800 border-slate-300',
+  Submitted: 'bg-amber-100 text-amber-900 border-amber-300',
+  'pending-review': 'bg-amber-100 text-amber-900 border-amber-300',
+  Approved: 'bg-emerald-100 text-emerald-900 border-emerald-300',
+  approved: 'bg-emerald-100 text-emerald-900 border-emerald-300',
+  Locked: 'bg-blue-100 text-blue-900 border-blue-300',
+  published: 'bg-blue-100 text-blue-900 border-blue-300',
+  Rejected: 'bg-rose-100 text-rose-900 border-rose-300',
 }
 
 export function APPOverviewCard({ app }: APPOverviewCardProps) {
@@ -42,117 +32,171 @@ export function APPOverviewCard({ app }: APPOverviewCardProps) {
     }
   }
 
+  const offices = Array.from(
+    new Set(
+      (app.bac?.lineItems ?? []).map((i) => i.office).filter(Boolean)
+    )
+  )
+
+  const itemCount = app.aggregationResults?.items?.reduce((sum, item) => sum + item.items.length, 0) || app.bac?.lineItems?.length || 0
+  const ppmpSourceCount = app.ppmpIds?.length || app.appPpmps?.length || 0
+  const totalBudget = app.aggregationResults?.totalAmount ?? app.bac?.totalBudget ?? 0
+
   return (
-    <Card className="border-0 shadow-lg bg-white overflow-hidden border-t-4 border-t-blue-600 transition-all hover:shadow-xl">
-      <CardHeader className="bg-slate-50/50 pb-4">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-blue-50 rounded-lg text-blue-600">
-            <Info className="w-5 h-5" />
+    <Card className="border border-slate-200 shadow-xs bg-white rounded-xl overflow-hidden">
+      {/* Executive Header Banner */}
+      <CardHeader className="bg-slate-50/80 border-b border-slate-200 py-4 px-6">
+        <div className="flex flex-wrap items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-purple-100 rounded-lg text-purple-700 border border-purple-200">
+              <FileText className="w-5 h-5" />
+            </div>
+            <div>
+              <CardTitle className="text-lg font-semibold text-slate-900 leading-tight">
+                Annual Procurement Plan Overview
+              </CardTitle>
+              <p className="text-xs text-slate-600 font-medium mt-0.5">
+                Executive summary and consolidation metadata
+              </p>
+            </div>
           </div>
-          <div>
-            <CardTitle className="text-lg font-bold text-gray-900">Annual Procurement Plan Overview</CardTitle>
-            <p className="text-xs text-gray-500 mt-0.5">General plan profile and consolidation status</p>
+
+          <div className="flex items-center gap-2 font-semibold">
+            <span
+              className={`inline-flex items-center rounded-md px-3 py-1 text-xs border ${
+                statusColors[app.status] || 'bg-slate-100 text-slate-800'
+              }`}
+            >
+              {app.status}
+            </span>
+            <span className="inline-flex items-center rounded-md px-3 py-1 text-xs bg-purple-50 text-purple-800 border border-purple-200">
+              {app.appType || 'Indicative'}
+            </span>
+            <span className="inline-flex items-center rounded-md px-3 py-1 text-xs bg-blue-50 text-blue-800 border border-blue-200">
+              FY {app.fiscalYear}
+            </span>
           </div>
         </div>
       </CardHeader>
-      <CardContent className="pt-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div className="flex items-start gap-3">
-            <FileText className="w-5 h-5 text-gray-400 mt-0.5" />
-            <div>
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">APP Number & Code</p>
-              <p className="text-sm font-bold text-gray-800 mt-1">{app.appNumber || '—'}</p>
-              <p className="text-xs font-mono text-gray-400 mt-0.5">{app.appCode || '—'}</p>
-            </div>
+
+      <CardContent className="p-6 space-y-6">
+        {/* Executive KPI Summary Cards */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pb-6 border-b border-slate-200">
+          {/* Fiscal Year */}
+          <div className="p-3.5 rounded-lg bg-blue-50/70 border border-blue-200/70 space-y-1">
+            <span className="text-xs font-semibold text-blue-800 uppercase tracking-wider block">
+              Fiscal Year
+            </span>
+            <span className="text-lg font-bold text-blue-950">
+              FY {app.fiscalYear}
+            </span>
           </div>
 
-          <div className="flex items-start gap-3">
-            <Tag className="w-5 h-5 text-gray-400 mt-0.5" />
-            <div>
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">APP Name / Title</p>
-              <p className="text-sm font-semibold text-gray-800 mt-1 capitalize">{app.appName || '—'}</p>
-            </div>
+          {/* Number of Items */}
+          <div className="p-3.5 rounded-lg bg-purple-50/70 border border-purple-200/70 space-y-1">
+            <span className="text-xs font-semibold text-purple-800 uppercase tracking-wider block">
+              Line Items
+            </span>
+            <span className="text-lg font-bold text-purple-950">
+              {itemCount} items
+            </span>
           </div>
 
-          <div className="flex items-start gap-3">
-            <Calendar className="w-5 h-5 text-gray-400 mt-0.5" />
-            <div>
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Fiscal Year</p>
-              <p className="text-sm font-semibold text-gray-800 mt-1">{app.fiscalYear || '—'}</p>
-            </div>
+          {/* PPMP Sources */}
+          <div className="p-3.5 rounded-lg bg-amber-50/70 border border-amber-200/70 space-y-1">
+            <span className="text-xs font-semibold text-amber-800 uppercase tracking-wider block">
+              PPMP Sources
+            </span>
+            <span className="text-lg font-bold text-amber-950">
+              {ppmpSourceCount} sources
+            </span>
           </div>
 
-          <div className="flex items-start gap-3">
-            <Building className="w-5 h-5 text-gray-400 mt-0.5" />
-            <div>
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Implementing Units</p>
-              {(() => {
-                const offices = Array.from(
-                  new Set(
-                    (app.bac?.lineItems ?? []).map((i) => i.office).filter(Boolean)
-                  )
-                )
-                if (offices.length === 0) {
-                  return <p className="text-sm text-gray-400 italic mt-1">Not specified</p>
-                }
-                if (offices.length === 1) {
-                  return <p className="text-sm font-semibold text-gray-800 mt-1">{offices[0]}</p>
-                }
-                return (
-                  <div className="mt-1 space-y-0.5">
-                    {offices.slice(0, 3).map((o) => (
-                      <p key={o} className="text-xs text-gray-700">{o}</p>
-                    ))}
-                    {offices.length > 3 && (
-                      <p className="text-xs text-gray-400 italic">+{offices.length - 3} more</p>
-                    )}
-                  </div>
-                )
-              })()}
-            </div>
+          {/* Total Budget */}
+          <div className="p-3.5 rounded-lg bg-emerald-50/70 border border-emerald-200/70 space-y-1">
+            <span className="text-xs font-semibold text-emerald-800 uppercase tracking-wider block">
+              Total Budget
+            </span>
+            <span className="text-lg font-bold text-emerald-950">
+              ₱{totalBudget.toLocaleString('en-PH', { maximumFractionDigits: 0 })}
+            </span>
+          </div>
+        </div>
+
+        {/* Grouped Secondary Metadata */}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+          {/* Identifiers */}
+          <div className="space-y-1">
+            <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider block">
+              APP Identifiers
+            </span>
+            <p className="font-mono font-bold text-slate-900 text-sm">
+              {app.appNumber || '—'}
+            </p>
+            <p className="font-mono text-slate-600 text-xs">
+              {app.appCode || '—'}
+            </p>
           </div>
 
-          <div className="flex items-start gap-3">
-            <CheckCircle2 className="w-5 h-5 text-gray-400 mt-0.5" />
-            <div>
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Plan Status & Type</p>
-              <div className="flex items-center gap-2 mt-1.5">
-                <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold border ${statusColors[app.status] || 'bg-gray-100 text-gray-800'}`}>
-                  {app.status}
-                </span>
-                <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200">
-                  {app.appType || 'Indicative'}
-                </span>
+          {/* Implementing Units */}
+          <div className="space-y-1">
+            <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider block">
+              Implementing Units
+            </span>
+            {offices.length === 0 ? (
+              <p className="text-xs text-slate-500 italic">Not specified</p>
+            ) : (
+              <div className="space-y-0.5 text-xs font-semibold text-slate-800">
+                {offices.slice(0, 2).map((o) => (
+                  <p key={o} className="truncate" title={o}>{o}</p>
+                ))}
+                {offices.length > 2 && (
+                  <p className="text-slate-500 italic font-normal">+{offices.length - 2} more</p>
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Created By & Date */}
+          <div className="space-y-1">
+            <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider block">
+              Created By & Date
+            </span>
+            <p className="text-xs font-semibold text-slate-900">
+              {app.createdBy || 'Authorized User'}
+            </p>
+            <p className="text-xs text-slate-600">{formatDate(app.createdAt)}</p>
+          </div>
+
+          {/* Timeline Milestones */}
+          <div className="space-y-1">
+            <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider block">
+              Timeline Milestones
+            </span>
+            <div className="space-y-0.5 text-xs">
+              <div className="flex justify-between">
+                <span className="text-slate-600">Submitted:</span>
+                <span className="font-semibold text-slate-900">{formatDate(app.submittedDate)}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-slate-600">Approved:</span>
+                <span className="font-semibold text-slate-900">{formatDate(app.approvedDate)}</span>
               </div>
             </div>
           </div>
-
-          <div className="flex items-start gap-3">
-            <User className="w-5 h-5 text-gray-400 mt-0.5" />
-            <div>
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Created By & On</p>
-              <p className="text-sm font-semibold text-gray-800 mt-1">{app.createdBy || 'Authorized User'}</p>
-              <p className="text-xs text-gray-400 mt-0.5">{formatDate(app.createdAt)}</p>
-            </div>
-          </div>
-
-          <div className="md:col-span-2 flex items-start gap-3 border-t border-gray-100 pt-4">
-            <AlertCircle className="w-5 h-5 text-gray-400 mt-0.5" />
-            <div>
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Description</p>
-              <p className="text-sm text-gray-700 mt-1">{app.description || 'No description available for this plan.'}</p>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-3 border-t border-gray-100 pt-4">
-            <Clock className="w-5 h-5 text-gray-400 mt-0.5" />
-            <div>
-              <p className="text-xs font-semibold text-gray-400 uppercase tracking-wider">Timeline</p>
-              <p className="text-xs text-gray-600 mt-1">Submitted: <span className="font-medium text-gray-800">{formatDate(app.submittedDate)}</span></p>
-              <p className="text-xs text-gray-600 mt-0.5">Approved: <span className="font-medium text-gray-800">{formatDate(app.approvedDate)}</span></p>
-            </div>
-          </div>
         </div>
+
+        {/* Scope Note */}
+        {app.description && (
+          <div className="pt-4 border-t border-slate-200">
+            <span className="text-xs font-semibold text-slate-600 uppercase tracking-wider block mb-1.5">
+              Description / Scope Note
+            </span>
+            <p className="text-xs text-slate-700 leading-relaxed bg-slate-50/80 p-3 rounded-lg border border-slate-200">
+              {app.description}
+            </p>
+          </div>
+        )}
       </CardContent>
     </Card>
   )

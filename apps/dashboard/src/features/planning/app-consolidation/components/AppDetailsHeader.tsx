@@ -4,19 +4,11 @@ import { ProgressBadge } from './ProgressBadge'
 import type { AppMaster } from '../types'
 
 const statusColors: Record<string, string> = {
-  Draft:     'bg-gray-100 text-gray-800',
-  Submitted: 'bg-amber-100 text-amber-800',
-  Approved:  'bg-green-100 text-green-800',
-  Locked:    'bg-blue-100 text-blue-800',
-  Returned:  'bg-red-100 text-red-800',
-}
-
-const statusBgColors: Record<string, string> = {
-  Draft:     'bg-gray-50 border-gray-200',
-  Submitted: 'bg-amber-50 border-amber-200',
-  Approved:  'bg-green-50 border-green-200',
-  Locked:    'bg-blue-50 border-blue-200',
-  Returned:  'bg-red-50 border-red-200',
+  Draft:     'bg-slate-100 text-slate-800 border-slate-300',
+  Submitted: 'bg-amber-100 text-amber-900 border-amber-300',
+  Approved:  'bg-emerald-100 text-emerald-900 border-emerald-300',
+  Locked:    'bg-blue-100 text-blue-900 border-blue-300',
+  Returned:  'bg-rose-100 text-rose-900 border-rose-300',
 }
 
 interface AppDetailsHeaderProps {
@@ -26,7 +18,7 @@ interface AppDetailsHeaderProps {
 export function AppDetailsHeader({ app }: AppDetailsHeaderProps) {
   const statusLabels: Record<string, string> = {
     Draft: 'Draft',
-    Submitted: 'Submitted',
+    Submitted: 'Submitted for Review',
     Approved: 'Approved',
     Locked: 'Locked',
     Returned: 'Returned for Revision',
@@ -44,46 +36,49 @@ export function AppDetailsHeader({ app }: AppDetailsHeaderProps) {
   const appTypeStr = app.appType || 'Indicative'
   const isUpdated = appTypeStr === 'Updated'
 
+  // Clean title without repetitive clutter if title contains parenthetical version noise
+  const displayTitle = app.appName ? app.appName.replace(/\s*\([^)]*\)/g, '').trim() || app.appName : 'Annual Procurement Plan'
+
   return (
-    <Card className={`border-0 shadow-md rounded-lg overflow-hidden bg-gradient-to-br ${statusBgColors[app.status] || 'bg-gray-50 border-gray-200'}`}>
-      <div className="absolute inset-0 bg-gradient-to-r from-transparent via-white/5 to-transparent pointer-events-none"></div>
-      <CardHeader className="relative pb-6">
-        <div className="flex items-start justify-between gap-4">
-          <div className="flex-1">
-            <div className="flex items-center flex-wrap gap-3 mb-2">
-              <h1 className="text-3xl font-bold text-gray-900">
-                {app.appName}
+    <Card className="border border-slate-200/90 border-t-4 border-t-purple-600 shadow-sm rounded-xl overflow-hidden bg-white">
+      <CardHeader className="p-6">
+        <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
+          <div className="flex-1 space-y-3">
+            {/* Title & Status - Semibold / 600 weight for executive clarity */}
+            <div className="flex items-center flex-wrap gap-3">
+              <h1 className="text-2xl sm:text-3xl font-bold tracking-tight text-slate-900 break-words">
+                {displayTitle}
               </h1>
-              <Badge className={`${statusColors[app.status] || 'bg-gray-100 text-gray-800'} text-sm font-semibold px-4 py-1 shadow-md`}>
+              <Badge className={`${statusColors[app.status] || 'bg-slate-100 text-slate-800'} text-xs font-semibold px-3 py-1 border`}>
                 {statusLabel}
               </Badge>
             </div>
 
-            {/* Compact Metadata Row */}
-            <div className="flex items-center flex-wrap gap-2 mb-3">
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-blue-100 text-blue-800 border border-blue-200">
+            {/* Structured Metadata Badges - Readable & High Contrast */}
+            <div className="flex items-center flex-wrap gap-2 text-xs font-semibold">
+              <span className="inline-flex items-center px-2.5 py-1 rounded bg-blue-50 text-blue-800 border border-blue-200">
                 FY {app.fiscalYear}
               </span>
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-indigo-100 text-indigo-800 border border-indigo-200">
+              <span className="inline-flex items-center px-2.5 py-1 rounded bg-purple-50 text-purple-800 border border-purple-200">
                 Type: {appTypeStr}
               </span>
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+              <span className="inline-flex items-center px-2.5 py-1 rounded bg-slate-100 text-slate-800 border border-slate-200">
                 {app.batch || 'Batch 1'}
               </span>
-              <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-purple-100 text-purple-800 border border-purple-200">
+              <span className="inline-flex items-center px-2.5 py-1 rounded bg-slate-100 text-slate-800 border border-slate-200">
                 {app.quarter || 'Q1'}
               </span>
               {isUpdated && (
-                <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">
+                <span className="inline-flex items-center px-2.5 py-1 rounded bg-amber-50 text-amber-900 border border-amber-200">
                   Version {app.versionNumber || 1} {app.versionDate ? `• ${app.versionDate}` : ''}
                 </span>
               )}
             </div>
 
-            <div className="flex items-center gap-4">
-              <p className="text-sm text-gray-600 flex items-center gap-2">
-                <span className="w-2 h-2 bg-gray-400 rounded-full"></span>
-                Code: <span className="font-mono font-semibold text-gray-800 bg-white/60 px-3 py-1 rounded-md">{app.appCode}</span>
+            <div className="flex items-center gap-4 pt-1">
+              <p className="text-xs text-slate-600 flex items-center gap-1.5 font-medium">
+                <span className="w-2 h-2 bg-purple-600 rounded-full"></span>
+                Code: <span className="font-mono font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">{app.appCode}</span>
               </p>
               <ProgressBadge 
                 itemsAdded={itemCount}
@@ -92,9 +87,11 @@ export function AppDetailsHeader({ app }: AppDetailsHeaderProps) {
               />
             </div>
           </div>
-          <div className="text-right bg-white/30 backdrop-blur-sm rounded-lg p-4 border border-white/40">
-            <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">APP Number</p>
-            <p className="text-2xl font-bold text-gray-900 mt-1">{app.appNumber}</p>
+
+          {/* APP Number Badge Box */}
+          <div className="text-left md:text-right bg-slate-50/90 rounded-lg p-3.5 border border-slate-200 shrink-0">
+            <p className="text-xs font-semibold text-slate-600 uppercase tracking-wider">APP Number</p>
+            <p className="text-lg md:text-xl font-bold font-mono text-slate-900 mt-0.5">{app.appNumber}</p>
           </div>
         </div>
       </CardHeader>
