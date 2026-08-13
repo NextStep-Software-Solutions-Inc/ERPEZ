@@ -18,7 +18,7 @@ public record OfficeResponse
     public string? ResponsibilityCenterCode { get; init; }
     public string? BudgetCostCenter { get; init; }
     public Guid OfficeTypeId { get; init; }
-    public Guid OrganizationId { get; init; }
+    public Guid? OrganizationId { get; init; }
     public Guid CategoryId { get; init; }
     public Guid AdministrativeLevelId { get; init; }
     public Guid? ClusterId { get; init; }

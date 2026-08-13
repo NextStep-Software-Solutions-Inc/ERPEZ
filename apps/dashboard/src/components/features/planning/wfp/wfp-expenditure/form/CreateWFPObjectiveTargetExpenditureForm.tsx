@@ -28,17 +28,12 @@ export default function CreateWFPObjectiveTargetExpenditureForm({
   onChange,
 }: CreateWFPObjectiveTargetExpenditureFormProps) {
   
-  // Use for the Type of Expenditure dropdown
+  // Fetch all UACS objects with a large page size so the entire hierarchy is available
   const { data: objectsData } = useObjects({ 
     pathParams: {}, 
-    queryParams: { filters: 'parentId==null'}
+    queryParams: { pageSize: 2000 }
   })
-
-  // Get all children objects for expenditure item dropdown
-  const { data: allChildrenData } = useObjects({
-    pathParams: {},
-    queryParams: { filters: 'parentId!=null'}
-  })
+  const allChildrenData = objectsData
 
   const form = useForm({
     defaultValues: initialValues || {

@@ -11,199 +11,198 @@
 import { createFileRoute } from '@tanstack/react-router'
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as V1RouteImport } from './routes/v1'
 import { Route as V2RouteImport } from './routes/v2'
+import { Route as V1RouteImport } from './routes/v1'
+import { Route as IndexRouteImport } from './routes/index'
+import { Route as V2IndexRouteImport } from './routes/v2/index'
 import { Route as V1IndexRouteImport } from './routes/v1/index'
+import { Route as V2ProcurementLibraryRouteImport } from './routes/v2/procurement-library'
+import { Route as V2PerformanceReviewRouteImport } from './routes/v2/performance-review'
+import { Route as V2LineItemBudgetingRouteImport } from './routes/v2/line-item-budgeting'
+import { Route as V2BiddingDocumentLibraryRouteImport } from './routes/v2/bidding-document-library'
+import { Route as V2PlanningRouteImport } from './routes/v2/_planning'
 import { Route as V1OverviewRouteImport } from './routes/v1/overview'
 import { Route as V1PlanningRouteRouteImport } from './routes/v1/planning/route'
-import { Route as V2IndexRouteImport } from './routes/v2/index'
-import { Route as V2PlanningRouteImport } from './routes/v2/_planning'
-import { Route as V2BiddingDocumentLibraryRouteImport } from './routes/v2/bidding-document-library'
-import { Route as V2LineItemBudgetingRouteImport } from './routes/v2/line-item-budgeting'
-import { Route as V2PerformanceReviewRouteImport } from './routes/v2/performance-review'
-import { Route as V2ProcurementLibraryRouteImport } from './routes/v2/procurement-library'
-import { Route as V1FinanceIndexRouteImport } from './routes/v1/finance/index'
-import { Route as V1FinanceBudgetAllocationRouteImport } from './routes/v1/finance/budget-allocation'
-import { Route as V1FinanceFundMonitoringRouteImport } from './routes/v1/finance/fund-monitoring'
-import { Route as V1FinanceFundReceivingRouteImport } from './routes/v1/finance/fund-receiving'
-import { Route as V1FinanceFundSourceRouteImport } from './routes/v1/finance/fund-source'
-import { Route as V1FinanceOverviewRouteImport } from './routes/v1/finance/overview'
-import { Route as V1FinanceSettingsRouteImport } from './routes/v1/finance/settings'
-import { Route as V1PlanningIndexRouteImport } from './routes/v1/planning/index'
-import { Route as V1PlanningEvaluationRouteImport } from './routes/v1/planning/evaluation'
-import { Route as V1PlanningEvaluationDetailViewRouteImport } from './routes/v1/planning/evaluation-detail-view'
-import { Route as V1PlanningFiscalYearRouteImport } from './routes/v1/planning/fiscal-year'
-import { Route as V1PlanningKpiRouteRouteImport } from './routes/v1/planning/kpi/route'
-import { Route as V1PlanningKpiAssignmentViewRouteImport } from './routes/v1/planning/kpi-assignment-view'
-import { Route as V1PlanningKpiConfigViewRouteImport } from './routes/v1/planning/kpi-config-view'
-import { Route as V1PlanningKpiConfigurationRouteImport } from './routes/v1/planning/kpi-configuration'
-import { Route as V1PlanningOfficeRouteRouteImport } from './routes/v1/planning/office/route'
-import { Route as V1PlanningRootRouteImport } from './routes/v1/planning/root'
-import { Route as V1PlanningSettingsRouteImport } from './routes/v1/planning/settings'
-import { Route as V2planningAnnualPerformancePlanningRouteImport } from './routes/v2/(planning)/annual-performance-planning'
-import { Route as V2planningDashboardRouteImport } from './routes/v2/(planning)/dashboard'
-import { Route as V2planningUacsLibraryRouteImport } from './routes/v2/(planning)/uacs-library'
-import { Route as V2BacIndexRouteImport } from './routes/v2/bac/index'
-import { Route as V2CommitmentsIndexRouteImport } from './routes/v2/commitments/index'
-import { Route as V2FiscalYearAndPoliciesIndexRouteImport } from './routes/v2/fiscal-year-and-policies/index'
-import { Route as V2KpiLibraryIndexRouteImport } from './routes/v2/kpi-library/index'
 import { Route as V2NtpIndexRouteImport } from './routes/v2/ntp/index'
+import { Route as V2KpiLibraryIndexRouteImport } from './routes/v2/kpi-library/index'
+import { Route as V2FiscalYearAndPoliciesIndexRouteImport } from './routes/v2/fiscal-year-and-policies/index'
+import { Route as V2CommitmentsIndexRouteImport } from './routes/v2/commitments/index'
+import { Route as V2BacIndexRouteImport } from './routes/v2/bac/index'
+import { Route as V1PlanningIndexRouteImport } from './routes/v1/planning/index'
+import { Route as V1FinanceIndexRouteImport } from './routes/v1/finance/index'
 import { Route as V2NtpNtpIdRouteImport } from './routes/v2/ntp/$ntpId'
-import { Route as V1PlanningFiscalYearIndexRouteImport } from './routes/v1/planning/fiscal-year/index'
-import { Route as V1PlanningFundReceiveIndexRouteImport } from './routes/v1/planning/fund-receive/index'
-import { Route as V1PlanningFundReceiveFundSourceIdRouteImport } from './routes/v1/planning/fund-receive/$fundSourceId'
-import { Route as V1PlanningFundIndexRouteImport } from './routes/v1/planning/fund/index'
-import { Route as V1PlanningFundBudgetAllocationIdRouteImport } from './routes/v1/planning/fund/$budgetAllocationId'
-import { Route as V1PlanningFundFundIdRouteImport } from './routes/v1/planning/fund/$fundId'
-import { Route as V1PlanningKpiAssignmentForDuIndexRouteImport } from './routes/v1/planning/kpi-assignment-for-du/index'
-import { Route as V1PlanningKpiIndexRouteImport } from './routes/v1/planning/kpi/index'
-import { Route as V1PlanningOfficeIndexRouteImport } from './routes/v1/planning/office/index'
-import { Route as V1PlanningOpcrIndexRouteImport } from './routes/v1/planning/opcr/index'
-import { Route as V1PlanningWfpExpenditureIndexRouteImport } from './routes/v1/planning/wfp-expenditure/index'
-import { Route as V1PlanningWfpExpenditureWfpObjectiveActivityIdRouteImport } from './routes/v1/planning/wfp-expenditure/$wfpObjectiveActivityId'
-import { Route as V1PlanningWfpObjectiveIndexRouteImport } from './routes/v1/planning/wfp-objective/index'
-import { Route as V1PlanningWfpObjectiveWfpObjectiveIdRouteImport } from './routes/v1/planning/wfp-objective/$wfpObjectiveId'
-import { Route as V2planningAnnualPerformancePlanningIndexRouteImport } from './routes/v2/(planning)/annual-performance-planning/index'
-import { Route as V2planningAppConsolidationIndexRouteImport } from './routes/v2/(planning)/app-consolidation/index'
-import { Route as V2planningAppConsolidationAppIdRouteImport } from './routes/v2/(planning)/app-consolidation/$appId'
-import { Route as V2planningMarketScopingIndexRouteImport } from './routes/v2/(planning)/market-scoping/index'
-import { Route as V2planningMarketScopingIdRouteImport } from './routes/v2/(planning)/market-scoping/$id'
-import { Route as V2planningMarketScopingCreateRouteImport } from './routes/v2/(planning)/market-scoping/create'
-import { Route as V2planningMarketScopingSettingsRouteImport } from './routes/v2/(planning)/market-scoping/settings'
-import { Route as V2planningPpmpIndexRouteImport } from './routes/v2/(planning)/ppmp/index'
-import { Route as V2planningPpmpPpmpIdRouteImport } from './routes/v2/(planning)/ppmp/$ppmpId'
-import { Route as V2planningPpmpCatalogRouteImport } from './routes/v2/(planning)/ppmp/catalog'
-import { Route as V2planningUacsLibraryIndexRouteImport } from './routes/v2/(planning)/uacs-library/index'
-import { Route as V2planningWfpExpenditureIndexRouteImport } from './routes/v2/(planning)/wfp-expenditure/index'
-import { Route as V2planningWfpExpenditureWfpObjectiveActivityIdRouteImport } from './routes/v2/(planning)/wfp-expenditure/$wfpObjectiveActivityId'
-import { Route as V2planningWfpObjectiveIndexRouteImport } from './routes/v2/(planning)/wfp-objective/index'
-import { Route as V2planningWfpObjectiveWfpObjectiveIdRouteImport } from './routes/v2/(planning)/wfp-objective/$wfpObjectiveId'
-import { Route as V2planningWfpIndexRouteImport } from './routes/v2/(planning)/wfp/index'
-import { Route as V2planningWfpWfpIdRouteImport } from './routes/v2/(planning)/wfp/$wfpId'
-import { Route as V2procurementAbstractOfBidsAobIndexRouteImport } from './routes/v2/(procurement)/abstract-of-bids-aob/index'
-import { Route as V2procurementAbstractOfBidsAobAobIdRouteImport } from './routes/v2/(procurement)/abstract-of-bids-aob/$aobId'
-import { Route as V2procurementAgencyPurchaseRequestsAprIndexRouteImport } from './routes/v2/(procurement)/agency-purchase-requests-apr/index'
-import { Route as V2procurementAgencyPurchaseRequestsAprAprIdRouteImport } from './routes/v2/(procurement)/agency-purchase-requests-apr/$aprId'
-import { Route as V2procurementBacResolutionsPublicBiddingIndexRouteImport } from './routes/v2/(procurement)/bac-resolutions-public-bidding/index'
-import { Route as V2procurementBacResolutionsIndexRouteImport } from './routes/v2/(procurement)/bac-resolutions/index'
-import { Route as V2procurementBidEvaluationIndexRouteImport } from './routes/v2/(procurement)/bid-evaluation/index'
-import { Route as V2procurementBiddingDocumentsIndexRouteImport } from './routes/v2/(procurement)/bidding-documents/index'
-import { Route as V2procurementBiddingMasterCalendarIndexRouteImport } from './routes/v2/(procurement)/bidding-master-calendar/index'
-import { Route as V2procurementConsolidatePrsIndexRouteImport } from './routes/v2/(procurement)/consolidate-prs/index'
-import { Route as V2procurementContractsConsultingInfrastructureIndexRouteImport } from './routes/v2/(procurement)/contracts-consulting-infrastructure/index'
-import { Route as V2procurementDirectAcquisitionRequestIndexRouteImport } from './routes/v2/(procurement)/direct-acquisition-request/index'
-import { Route as V2procurementDirectContractingRequestIndexRouteImport } from './routes/v2/(procurement)/direct-contracting-request/index'
-import { Route as V2procurementManageAobIndexRouteImport } from './routes/v2/(procurement)/manage-aob/index'
-import { Route as V2procurementManageAobAobIdRouteImport } from './routes/v2/(procurement)/manage-aob/$aobId'
-import { Route as V2procurementManageAprsIndexRouteImport } from './routes/v2/(procurement)/manage-aprs/index'
-import { Route as V2procurementManageBacResolutionsIndexRouteImport } from './routes/v2/(procurement)/manage-bac-resolutions/index'
-import { Route as V2procurementManageContractsIndexRouteImport } from './routes/v2/(procurement)/manage-contracts/index'
-import { Route as V2procurementManageDirectAcquisitionIndexRouteImport } from './routes/v2/(procurement)/manage-direct-acquisition/index'
-import { Route as V2procurementManageDirectContractingIndexRouteImport } from './routes/v2/(procurement)/manage-direct-contracting/index'
-import { Route as V2procurementManageNoaIndexRouteImport } from './routes/v2/(procurement)/manage-noa/index'
-import { Route as V2procurementManageNtpIndexRouteImport } from './routes/v2/(procurement)/manage-ntp/index'
-import { Route as V2procurementManageNtpNtpIdRouteImport } from './routes/v2/(procurement)/manage-ntp/$ntpId'
-import { Route as V2procurementManagePoIndexRouteImport } from './routes/v2/(procurement)/manage-po/index'
-import { Route as V2procurementManagePosIndexRouteImport } from './routes/v2/(procurement)/manage-pos/index'
-import { Route as V2procurementManagePrsIndexRouteImport } from './routes/v2/(procurement)/manage-prs/index'
-import { Route as V2procurementManageRfqIndexRouteImport } from './routes/v2/(procurement)/manage-rfq/index'
-import { Route as V2procurementManageSupplierDirectAcquisitionIndexRouteImport } from './routes/v2/(procurement)/manage-supplier-direct-acquisition/index'
-import { Route as V2procurementManageSupplierDirectContractingIndexRouteImport } from './routes/v2/(procurement)/manage-supplier-direct-contracting/index'
-import { Route as V2procurementManageSupplierPortalIndexRouteImport } from './routes/v2/(procurement)/manage-supplier-portal/index'
-import { Route as V2procurementManageSupplierPortalProjectIdRouteImport } from './routes/v2/(procurement)/manage-supplier-portal/$projectId'
-import { Route as V2procurementNoticeOfAwardNoaIndexRouteImport } from './routes/v2/(procurement)/notice-of-award-noa/index'
-import { Route as V2procurementNoticeToProceedNtpIndexRouteImport } from './routes/v2/(procurement)/notice-to-proceed-ntp/index'
-import { Route as V2procurementNoticeToProceedNtpNtpIdRouteImport } from './routes/v2/(procurement)/notice-to-proceed-ntp/$ntpId'
-import { Route as V2procurementPoDirectAcquisitionIndexRouteImport } from './routes/v2/(procurement)/po-direct-acquisition/index'
-import { Route as V2procurementPoPublicBiddingIndexRouteImport } from './routes/v2/(procurement)/po-public-bidding/index'
-import { Route as V2procurementPoSvpIndexRouteImport } from './routes/v2/(procurement)/po-svp/index'
-import { Route as V2procurementProcurementDashboardIndexRouteImport } from './routes/v2/(procurement)/procurement-dashboard/index'
-import { Route as V2procurementPurchaseRequestsPrIndexRouteImport } from './routes/v2/(procurement)/purchase-requests-pr/index'
-import { Route as V2procurementRequestForQuotationRfqIndexRouteImport } from './routes/v2/(procurement)/request-for-quotation-rfq/index'
+import { Route as V2planningUacsLibraryRouteImport } from './routes/v2/(planning)/uacs-library'
+import { Route as V2planningDashboardRouteImport } from './routes/v2/(planning)/dashboard'
+import { Route as V2planningAnnualPerformancePlanningRouteImport } from './routes/v2/(planning)/annual-performance-planning'
+import { Route as V1PlanningSettingsRouteImport } from './routes/v1/planning/settings'
+import { Route as V1PlanningRootRouteImport } from './routes/v1/planning/root'
+import { Route as V1PlanningKpiConfigurationRouteImport } from './routes/v1/planning/kpi-configuration'
+import { Route as V1PlanningKpiConfigViewRouteImport } from './routes/v1/planning/kpi-config-view'
+import { Route as V1PlanningKpiAssignmentViewRouteImport } from './routes/v1/planning/kpi-assignment-view'
+import { Route as V1PlanningFiscalYearRouteImport } from './routes/v1/planning/fiscal-year'
+import { Route as V1PlanningEvaluationDetailViewRouteImport } from './routes/v1/planning/evaluation-detail-view'
+import { Route as V1PlanningEvaluationRouteImport } from './routes/v1/planning/evaluation'
+import { Route as V1FinanceSettingsRouteImport } from './routes/v1/finance/settings'
+import { Route as V1FinanceOverviewRouteImport } from './routes/v1/finance/overview'
+import { Route as V1FinanceFundSourceRouteImport } from './routes/v1/finance/fund-source'
+import { Route as V1FinanceFundReceivingRouteImport } from './routes/v1/finance/fund-receiving'
+import { Route as V1FinanceFundMonitoringRouteImport } from './routes/v1/finance/fund-monitoring'
+import { Route as V1FinanceBudgetAllocationRouteImport } from './routes/v1/finance/budget-allocation'
+import { Route as V1PlanningOfficeRouteRouteImport } from './routes/v1/planning/office/route'
+import { Route as V1PlanningKpiRouteRouteImport } from './routes/v1/planning/kpi/route'
 import { Route as V2PlanningOrganizationIndexRouteImport } from './routes/v2/_planning/organization/index'
-import { Route as V2PlanningOrganizationLayoutRouteImport } from './routes/v2/_planning/organization/layout'
+import { Route as V2procurementRequestForQuotationRfqIndexRouteImport } from './routes/v2/(procurement)/request-for-quotation-rfq/index'
+import { Route as V2procurementPurchaseRequestsPrIndexRouteImport } from './routes/v2/(procurement)/purchase-requests-pr/index'
+import { Route as V2procurementProcurementDashboardIndexRouteImport } from './routes/v2/(procurement)/procurement-dashboard/index'
+import { Route as V2procurementPoSvpIndexRouteImport } from './routes/v2/(procurement)/po-svp/index'
+import { Route as V2procurementPoPublicBiddingIndexRouteImport } from './routes/v2/(procurement)/po-public-bidding/index'
+import { Route as V2procurementPoDirectAcquisitionIndexRouteImport } from './routes/v2/(procurement)/po-direct-acquisition/index'
+import { Route as V2procurementNoticeToProceedNtpIndexRouteImport } from './routes/v2/(procurement)/notice-to-proceed-ntp/index'
+import { Route as V2procurementNoticeOfAwardNoaIndexRouteImport } from './routes/v2/(procurement)/notice-of-award-noa/index'
+import { Route as V2procurementManageSupplierPortalIndexRouteImport } from './routes/v2/(procurement)/manage-supplier-portal/index'
+import { Route as V2procurementManageSupplierDirectContractingIndexRouteImport } from './routes/v2/(procurement)/manage-supplier-direct-contracting/index'
+import { Route as V2procurementManageSupplierDirectAcquisitionIndexRouteImport } from './routes/v2/(procurement)/manage-supplier-direct-acquisition/index'
+import { Route as V2procurementManageRfqIndexRouteImport } from './routes/v2/(procurement)/manage-rfq/index'
+import { Route as V2procurementManagePrsIndexRouteImport } from './routes/v2/(procurement)/manage-prs/index'
+import { Route as V2procurementManagePosIndexRouteImport } from './routes/v2/(procurement)/manage-pos/index'
+import { Route as V2procurementManagePoIndexRouteImport } from './routes/v2/(procurement)/manage-po/index'
+import { Route as V2procurementManageNtpIndexRouteImport } from './routes/v2/(procurement)/manage-ntp/index'
+import { Route as V2procurementManageNoaIndexRouteImport } from './routes/v2/(procurement)/manage-noa/index'
+import { Route as V2procurementManageDirectContractingIndexRouteImport } from './routes/v2/(procurement)/manage-direct-contracting/index'
+import { Route as V2procurementManageDirectAcquisitionIndexRouteImport } from './routes/v2/(procurement)/manage-direct-acquisition/index'
+import { Route as V2procurementManageContractsIndexRouteImport } from './routes/v2/(procurement)/manage-contracts/index'
+import { Route as V2procurementManageBacResolutionsIndexRouteImport } from './routes/v2/(procurement)/manage-bac-resolutions/index'
+import { Route as V2procurementManageAprsIndexRouteImport } from './routes/v2/(procurement)/manage-aprs/index'
+import { Route as V2procurementManageAobIndexRouteImport } from './routes/v2/(procurement)/manage-aob/index'
+import { Route as V2procurementDirectContractingRequestIndexRouteImport } from './routes/v2/(procurement)/direct-contracting-request/index'
+import { Route as V2procurementDirectAcquisitionRequestIndexRouteImport } from './routes/v2/(procurement)/direct-acquisition-request/index'
+import { Route as V2procurementContractsConsultingInfrastructureIndexRouteImport } from './routes/v2/(procurement)/contracts-consulting-infrastructure/index'
+import { Route as V2procurementConsolidatePrsIndexRouteImport } from './routes/v2/(procurement)/consolidate-prs/index'
+import { Route as V2procurementBiddingMasterCalendarIndexRouteImport } from './routes/v2/(procurement)/bidding-master-calendar/index'
+import { Route as V2procurementBiddingDocumentsIndexRouteImport } from './routes/v2/(procurement)/bidding-documents/index'
+import { Route as V2procurementBidEvaluationIndexRouteImport } from './routes/v2/(procurement)/bid-evaluation/index'
+import { Route as V2procurementBacResolutionsIndexRouteImport } from './routes/v2/(procurement)/bac-resolutions/index'
+import { Route as V2procurementBacResolutionsPublicBiddingIndexRouteImport } from './routes/v2/(procurement)/bac-resolutions-public-bidding/index'
+import { Route as V2procurementAgencyPurchaseRequestsAprIndexRouteImport } from './routes/v2/(procurement)/agency-purchase-requests-apr/index'
+import { Route as V2procurementAbstractOfBidsAobIndexRouteImport } from './routes/v2/(procurement)/abstract-of-bids-aob/index'
+import { Route as V2planningWfpIndexRouteImport } from './routes/v2/(planning)/wfp/index'
+import { Route as V2planningWfpObjectiveIndexRouteImport } from './routes/v2/(planning)/wfp-objective/index'
+import { Route as V2planningWfpExpenditureIndexRouteImport } from './routes/v2/(planning)/wfp-expenditure/index'
+import { Route as V2planningUacsLibraryIndexRouteImport } from './routes/v2/(planning)/uacs-library/index'
+import { Route as V2planningPpmpIndexRouteImport } from './routes/v2/(planning)/ppmp/index'
+import { Route as V2planningMarketScopingIndexRouteImport } from './routes/v2/(planning)/market-scoping/index'
+import { Route as V2planningAppConsolidationIndexRouteImport } from './routes/v2/(planning)/app-consolidation/index'
+import { Route as V2planningAnnualPerformancePlanningIndexRouteImport } from './routes/v2/(planning)/annual-performance-planning/index'
+import { Route as V1PlanningWfpObjectiveIndexRouteImport } from './routes/v1/planning/wfp-objective/index'
+import { Route as V1PlanningWfpExpenditureIndexRouteImport } from './routes/v1/planning/wfp-expenditure/index'
+import { Route as V1PlanningOfficeIndexRouteImport } from './routes/v1/planning/office/index'
+import { Route as V1PlanningKpiIndexRouteImport } from './routes/v1/planning/kpi/index'
+import { Route as V1PlanningKpiAssignmentForDuIndexRouteImport } from './routes/v1/planning/kpi-assignment-for-du/index'
+import { Route as V1PlanningFundIndexRouteImport } from './routes/v1/planning/fund/index'
+import { Route as V1PlanningFundReceiveIndexRouteImport } from './routes/v1/planning/fund-receive/index'
+import { Route as V1PlanningFiscalYearIndexRouteImport } from './routes/v1/planning/fiscal-year/index'
 import { Route as V2BacDocumentDocIdRouteImport } from './routes/v2/bac/document.$docId'
-import { Route as V1PlanningDeliveryUnitIdWfpIndexRouteImport } from './routes/v1/planning/$deliveryUnitId/wfp/index'
-import { Route as V1PlanningDeliveryUnitIdWfpWfpIdRouteImport } from './routes/v1/planning/$deliveryUnitId/wfp/$wfpId'
-import { Route as V1PlanningFiscalYearFiscalYearIdIndexRouteImport } from './routes/v1/planning/fiscal-year/$fiscalYearId/index'
-import { Route as V1PlanningFiscalYearFiscalYearIdDeleteRouteImport } from './routes/v1/planning/fiscal-year/$fiscalYearId/delete'
-import { Route as V1PlanningFiscalYearFiscalYearIdLockRouteImport } from './routes/v1/planning/fiscal-year/$fiscalYearId/lock'
-import { Route as V1PlanningFunctionAllocationFiscalYearIdIndexRouteImport } from './routes/v1/planning/function-allocation/$fiscalYearId/index'
-import { Route as V1PlanningFunctionAllocationFiscalYearIdDeleteRouteImport } from './routes/v1/planning/function-allocation/$fiscalYearId/delete'
-import { Route as V1PlanningFunctionAllocationFiscalYearIdLockRouteImport } from './routes/v1/planning/function-allocation/$fiscalYearId/lock'
-import { Route as V1PlanningFundReceiveFundSourceIdIndexRouteImport } from './routes/v1/planning/fund-receive/$fundSourceId/index'
-import { Route as V1PlanningFundBudgetAllocationIdIndexRouteImport } from './routes/v1/planning/fund/$budgetAllocationId/index'
-import { Route as V1PlanningFundFundIdIndexRouteImport } from './routes/v1/planning/fund/$fundId/index'
-import { Route as V1PlanningKpiAssignmentForDuKpiAssignmentForDuIdIndexRouteImport } from './routes/v1/planning/kpi-assignment-for-du/$kpiAssignmentForDuId/index'
-import { Route as V1PlanningKpiAssignmentForDuKpiAssignmentForDuIdDeleteRouteImport } from './routes/v1/planning/kpi-assignment-for-du/$kpiAssignmentForDuId/delete'
-import { Route as V1PlanningKpiAssignmentForDuKpiAssignmentForDuIdSubKpiRouteImport } from './routes/v1/planning/kpi-assignment-for-du/$kpiAssignmentForDuId/subKpi'
-import { Route as V1PlanningKpiKpiIdIndexRouteImport } from './routes/v1/planning/kpi/$kpiId/index'
-import { Route as V1PlanningKpiKpiIdDeleteRouteImport } from './routes/v1/planning/kpi/$kpiId/delete'
-import { Route as V1PlanningKpiKpiIdEditRouteImport } from './routes/v1/planning/kpi/$kpiId/edit'
-import { Route as V1PlanningOfficeClusterIdIndexRouteImport } from './routes/v1/planning/office/$clusterId/index'
-import { Route as V1PlanningOfficeClusterIdDeleteRouteImport } from './routes/v1/planning/office/$clusterId/delete'
-import { Route as V1PlanningOfficeClusterIdEditRouteImport } from './routes/v1/planning/office/$clusterId/edit'
-import { Route as V1PlanningOfficeDeliveryUnitIdIndexRouteImport } from './routes/v1/planning/office/$deliveryUnitId/index'
-import { Route as V1PlanningOfficeDeliveryUnitIdDeleteRouteImport } from './routes/v1/planning/office/$deliveryUnitId/delete'
-import { Route as V1PlanningOfficeDeliveryUnitIdEditRouteImport } from './routes/v1/planning/office/$deliveryUnitId/edit'
-import { Route as V1PlanningOfficeOfficeIdIndexRouteImport } from './routes/v1/planning/office/$officeId/index'
-import { Route as V1PlanningOfficeOfficeIdDeleteRouteImport } from './routes/v1/planning/office/$officeId/delete'
-import { Route as V1PlanningOfficeOfficeIdEditRouteImport } from './routes/v1/planning/office/$officeId/edit'
-import { Route as V1PlanningOpcrOpcrIdIndexRouteImport } from './routes/v1/planning/opcr/$opcrId/index'
-import { Route as V1PlanningWfpExpenditureWfpObjectiveActivityIdIndexRouteImport } from './routes/v1/planning/wfp-expenditure/$wfpObjectiveActivityId/index'
-import { Route as V1PlanningWfpObjectiveWfpObjectiveIdIndexRouteImport } from './routes/v1/planning/wfp-objective/$wfpObjectiveId/index'
-import { Route as V2planningAppConsolidationSupplementalIndexRouteImport } from './routes/v2/(planning)/app-consolidation/supplemental/index'
-import { Route as V2planningAppConsolidationSupplementalSupplementalIdRouteImport } from './routes/v2/(planning)/app-consolidation/supplemental/$supplementalId'
-import { Route as V2planningMarketScopingManageActivitiesRouteImport } from './routes/v2/(planning)/market-scoping/manage/activities'
-import { Route as V2planningMarketScopingManageParametersRouteImport } from './routes/v2/(planning)/market-scoping/manage/parameters'
-import { Route as V2planningWfpExpenditureWfpObjectiveActivityIdIndexRouteImport } from './routes/v2/(planning)/wfp-expenditure/$wfpObjectiveActivityId/index'
-import { Route as V2planningWfpObjectiveWfpObjectiveIdIndexRouteImport } from './routes/v2/(planning)/wfp-objective/$wfpObjectiveId/index'
-import { Route as V2planningWfpWfpIdIndexRouteImport } from './routes/v2/(planning)/wfp/$wfpId/index'
-import { Route as V2planningWfpWfpIdActivityRouteImport } from './routes/v2/(planning)/wfp/$wfpId/activity'
-import { Route as V2planningWfpWfpIdGanttChartRouteImport } from './routes/v2/(planning)/wfp/$wfpId/gantt-chart'
-import { Route as V2procurementBiddingDocumentsBacResolutionIdIndexRouteImport } from './routes/v2/(procurement)/bidding-documents/$bacResolutionId/index'
-import { Route as V2procurementManageNoaNoaIdIndexRouteImport } from './routes/v2/(procurement)/manage-noa/$noaId/index'
-import { Route as V2procurementNoticeOfAwardNoaNoaIdIndexRouteImport } from './routes/v2/(procurement)/notice-of-award-noa/$noaId/index'
-import { Route as V2procurementPoPurchaseOrderIdIndexRouteImport } from './routes/v2/(procurement)/po/$purchaseOrderId/index'
-import { Route as V2procurementSupplierPortalDirectContractingItemIndexRouteImport } from './routes/v2/(procurement)/supplier-portal/direct-contracting-item/index'
+import { Route as V2PlanningOrganizationLayoutRouteImport } from './routes/v2/_planning/organization/layout'
+import { Route as V2procurementNoticeToProceedNtpNtpIdRouteImport } from './routes/v2/(procurement)/notice-to-proceed-ntp/$ntpId'
+import { Route as V2procurementManageSupplierPortalProjectIdRouteImport } from './routes/v2/(procurement)/manage-supplier-portal/$projectId'
+import { Route as V2procurementManageNtpNtpIdRouteImport } from './routes/v2/(procurement)/manage-ntp/$ntpId'
+import { Route as V2procurementManageAobAobIdRouteImport } from './routes/v2/(procurement)/manage-aob/$aobId'
+import { Route as V2procurementAgencyPurchaseRequestsAprAprIdRouteImport } from './routes/v2/(procurement)/agency-purchase-requests-apr/$aprId'
+import { Route as V2procurementAbstractOfBidsAobAobIdRouteImport } from './routes/v2/(procurement)/abstract-of-bids-aob/$aobId'
+import { Route as V2planningWfpWfpIdRouteImport } from './routes/v2/(planning)/wfp/$wfpId'
+import { Route as V2planningWfpObjectiveWfpObjectiveIdRouteImport } from './routes/v2/(planning)/wfp-objective/$wfpObjectiveId'
+import { Route as V2planningWfpExpenditureWfpObjectiveActivityIdRouteImport } from './routes/v2/(planning)/wfp-expenditure/$wfpObjectiveActivityId'
+import { Route as V2planningPpmpCatalogRouteImport } from './routes/v2/(planning)/ppmp/catalog'
+import { Route as V2planningPpmpPpmpIdRouteImport } from './routes/v2/(planning)/ppmp/$ppmpId'
+import { Route as V2planningMarketScopingSettingsRouteImport } from './routes/v2/(planning)/market-scoping/settings'
+import { Route as V2planningMarketScopingCreateRouteImport } from './routes/v2/(planning)/market-scoping/create'
+import { Route as V2planningMarketScopingIdRouteImport } from './routes/v2/(planning)/market-scoping/$id'
+import { Route as V2planningAppConsolidationAppIdRouteImport } from './routes/v2/(planning)/app-consolidation/$appId'
+import { Route as V1PlanningWfpObjectiveWfpObjectiveIdRouteImport } from './routes/v1/planning/wfp-objective/$wfpObjectiveId'
+import { Route as V1PlanningWfpExpenditureWfpObjectiveActivityIdRouteImport } from './routes/v1/planning/wfp-expenditure/$wfpObjectiveActivityId'
+import { Route as V1PlanningFundFundIdRouteImport } from './routes/v1/planning/fund/$fundId'
+import { Route as V1PlanningFundBudgetAllocationIdRouteImport } from './routes/v1/planning/fund/$budgetAllocationId'
+import { Route as V1PlanningFundReceiveFundSourceIdRouteImport } from './routes/v1/planning/fund-receive/$fundSourceId'
 import { Route as V2procurementSupplierPortalRfqItemIndexRouteImport } from './routes/v2/(procurement)/supplier-portal/rfq-item/index'
-import { Route as V1PlanningDeliveryUnitIdOpcrOpcrIdIndexRouteImport } from './routes/v1/planning/$deliveryUnitId/opcr/$opcrId/index'
-import { Route as V1PlanningDeliveryUnitIdWfpWfpIdIndexRouteImport } from './routes/v1/planning/$deliveryUnitId/wfp/$wfpId/index'
-import { Route as V1PlanningKpiKpiIdSubKpiIndexRouteImport } from './routes/v1/planning/kpi/$kpiId/subKpi/index'
-import { Route as V2planningWfpWfpIdActivityActivityIdRouteImport } from './routes/v2/(planning)/wfp/$wfpId/activity/$activityId'
-import { Route as V2planningWfpWfpIdOpcrIndexRouteImport } from './routes/v2/(planning)/wfp/$wfpId/opcr/index'
-import { Route as V2planningWfpWfpIdOpcrOpcrIdRouteImport } from './routes/v2/(planning)/wfp/$wfpId/opcr/$opcrId'
-import { Route as V2procurementBacResolutionsPublicBiddingResolutionIdBiddingScheduleIndexRouteImport } from './routes/v2/(procurement)/bac-resolutions-public-bidding/$resolutionId/bidding-schedule/index'
+import { Route as V2procurementSupplierPortalDirectContractingItemIndexRouteImport } from './routes/v2/(procurement)/supplier-portal/direct-contracting-item/index'
+import { Route as V2procurementPoPurchaseOrderIdIndexRouteImport } from './routes/v2/(procurement)/po/$purchaseOrderId/index'
+import { Route as V2procurementNoticeOfAwardNoaNoaIdIndexRouteImport } from './routes/v2/(procurement)/notice-of-award-noa/$noaId/index'
+import { Route as V2procurementManageNoaNoaIdIndexRouteImport } from './routes/v2/(procurement)/manage-noa/$noaId/index'
+import { Route as V2procurementBiddingDocumentsBacResolutionIdIndexRouteImport } from './routes/v2/(procurement)/bidding-documents/$bacResolutionId/index'
+import { Route as V2planningWfpWfpIdIndexRouteImport } from './routes/v2/(planning)/wfp/$wfpId/index'
+import { Route as V2planningWfpObjectiveWfpObjectiveIdIndexRouteImport } from './routes/v2/(planning)/wfp-objective/$wfpObjectiveId/index'
+import { Route as V2planningWfpExpenditureWfpObjectiveActivityIdIndexRouteImport } from './routes/v2/(planning)/wfp-expenditure/$wfpObjectiveActivityId/index'
+import { Route as V2planningAppConsolidationSupplementalIndexRouteImport } from './routes/v2/(planning)/app-consolidation/supplemental/index'
+import { Route as V1PlanningWfpObjectiveWfpObjectiveIdIndexRouteImport } from './routes/v1/planning/wfp-objective/$wfpObjectiveId/index'
+import { Route as V1PlanningWfpExpenditureWfpObjectiveActivityIdIndexRouteImport } from './routes/v1/planning/wfp-expenditure/$wfpObjectiveActivityId/index'
+import { Route as V1PlanningOpcrOpcrIdIndexRouteImport } from './routes/v1/planning/opcr/$opcrId/index'
+import { Route as V1PlanningOfficeOfficeIdIndexRouteImport } from './routes/v1/planning/office/$officeId/index'
+import { Route as V1PlanningOfficeDeliveryUnitIdIndexRouteImport } from './routes/v1/planning/office/$deliveryUnitId/index'
+import { Route as V1PlanningOfficeClusterIdIndexRouteImport } from './routes/v1/planning/office/$clusterId/index'
+import { Route as V1PlanningKpiKpiIdIndexRouteImport } from './routes/v1/planning/kpi/$kpiId/index'
+import { Route as V1PlanningKpiAssignmentForDuKpiAssignmentForDuIdIndexRouteImport } from './routes/v1/planning/kpi-assignment-for-du/$kpiAssignmentForDuId/index'
+import { Route as V1PlanningFundFundIdIndexRouteImport } from './routes/v1/planning/fund/$fundId/index'
+import { Route as V1PlanningFundBudgetAllocationIdIndexRouteImport } from './routes/v1/planning/fund/$budgetAllocationId/index'
+import { Route as V1PlanningFundReceiveFundSourceIdIndexRouteImport } from './routes/v1/planning/fund-receive/$fundSourceId/index'
+import { Route as V1PlanningFunctionAllocationFiscalYearIdIndexRouteImport } from './routes/v1/planning/function-allocation/$fiscalYearId/index'
+import { Route as V1PlanningFiscalYearFiscalYearIdIndexRouteImport } from './routes/v1/planning/fiscal-year/$fiscalYearId/index'
+import { Route as V1PlanningDeliveryUnitIdWfpIndexRouteImport } from './routes/v1/planning/$deliveryUnitId/wfp/index'
+import { Route as V2planningWfpWfpIdGanttChartRouteImport } from './routes/v2/(planning)/wfp/$wfpId/gantt-chart'
+import { Route as V2planningWfpWfpIdActivityRouteImport } from './routes/v2/(planning)/wfp/$wfpId/activity'
+import { Route as V2planningMarketScopingManageParametersRouteImport } from './routes/v2/(planning)/market-scoping/manage/parameters'
+import { Route as V2planningMarketScopingManageActivitiesRouteImport } from './routes/v2/(planning)/market-scoping/manage/activities'
+import { Route as V2planningAppConsolidationSupplementalSupplementalIdRouteImport } from './routes/v2/(planning)/app-consolidation/supplemental/$supplementalId'
+import { Route as V1PlanningOfficeOfficeIdEditRouteImport } from './routes/v1/planning/office/$officeId/edit'
+import { Route as V1PlanningOfficeOfficeIdDeleteRouteImport } from './routes/v1/planning/office/$officeId/delete'
+import { Route as V1PlanningOfficeDeliveryUnitIdEditRouteImport } from './routes/v1/planning/office/$deliveryUnitId/edit'
+import { Route as V1PlanningOfficeDeliveryUnitIdDeleteRouteImport } from './routes/v1/planning/office/$deliveryUnitId/delete'
+import { Route as V1PlanningOfficeClusterIdEditRouteImport } from './routes/v1/planning/office/$clusterId/edit'
+import { Route as V1PlanningOfficeClusterIdDeleteRouteImport } from './routes/v1/planning/office/$clusterId/delete'
+import { Route as V1PlanningKpiKpiIdEditRouteImport } from './routes/v1/planning/kpi/$kpiId/edit'
+import { Route as V1PlanningKpiKpiIdDeleteRouteImport } from './routes/v1/planning/kpi/$kpiId/delete'
+import { Route as V1PlanningKpiAssignmentForDuKpiAssignmentForDuIdSubKpiRouteImport } from './routes/v1/planning/kpi-assignment-for-du/$kpiAssignmentForDuId/subKpi'
+import { Route as V1PlanningKpiAssignmentForDuKpiAssignmentForDuIdDeleteRouteImport } from './routes/v1/planning/kpi-assignment-for-du/$kpiAssignmentForDuId/delete'
+import { Route as V1PlanningFunctionAllocationFiscalYearIdLockRouteImport } from './routes/v1/planning/function-allocation/$fiscalYearId/lock'
+import { Route as V1PlanningFunctionAllocationFiscalYearIdDeleteRouteImport } from './routes/v1/planning/function-allocation/$fiscalYearId/delete'
+import { Route as V1PlanningFiscalYearFiscalYearIdLockRouteImport } from './routes/v1/planning/fiscal-year/$fiscalYearId/lock'
+import { Route as V1PlanningFiscalYearFiscalYearIdDeleteRouteImport } from './routes/v1/planning/fiscal-year/$fiscalYearId/delete'
+import { Route as V1PlanningDeliveryUnitIdWfpWfpIdRouteImport } from './routes/v1/planning/$deliveryUnitId/wfp/$wfpId'
 import { Route as V2procurementBacResolutionsResolutionIdBiddingScheduleIndexRouteImport } from './routes/v2/(procurement)/bac-resolutions/$resolutionId/bidding-schedule/index'
-import { Route as V1PlanningDeliveryUnitIdOpcrKpiKpiIdIndexRouteImport } from './routes/v1/planning/$deliveryUnitId/opcr/kpi/$kpiId/index'
-import { Route as V1PlanningKpiKpiIdSubKpiSubKpiIdIndexRouteImport } from './routes/v1/planning/kpi/$kpiId/subKpi/$subKpiId/index'
+import { Route as V2procurementBacResolutionsPublicBiddingResolutionIdBiddingScheduleIndexRouteImport } from './routes/v2/(procurement)/bac-resolutions-public-bidding/$resolutionId/bidding-schedule/index'
+import { Route as V2planningWfpWfpIdOpcrIndexRouteImport } from './routes/v2/(planning)/wfp/$wfpId/opcr/index'
+import { Route as V1PlanningKpiKpiIdSubKpiIndexRouteImport } from './routes/v1/planning/kpi/$kpiId/subKpi/index'
+import { Route as V1PlanningDeliveryUnitIdWfpWfpIdIndexRouteImport } from './routes/v1/planning/$deliveryUnitId/wfp/$wfpId/index'
+import { Route as V1PlanningDeliveryUnitIdOpcrOpcrIdIndexRouteImport } from './routes/v1/planning/$deliveryUnitId/opcr/$opcrId/index'
+import { Route as V2planningWfpWfpIdOpcrOpcrIdRouteImport } from './routes/v2/(planning)/wfp/$wfpId/opcr/$opcrId'
+import { Route as V2planningWfpWfpIdActivityActivityIdRouteImport } from './routes/v2/(planning)/wfp/$wfpId/activity/$activityId'
 import { Route as V2planningWfpWfpIdActivityActivityIdIndexRouteImport } from './routes/v2/(planning)/wfp/$wfpId/activity/$activityId/index'
+import { Route as V1PlanningKpiKpiIdSubKpiSubKpiIdIndexRouteImport } from './routes/v1/planning/kpi/$kpiId/subKpi/$subKpiId/index'
+import { Route as V1PlanningDeliveryUnitIdOpcrKpiKpiIdIndexRouteImport } from './routes/v1/planning/$deliveryUnitId/opcr/kpi/$kpiId/index'
 import { Route as V2planningWfpWfpIdActivityActivityIdExpendituresRouteImport } from './routes/v2/(planning)/wfp/$wfpId/activity/$activityId/expenditures'
-import { Route as V1PlanningDeliveryUnitIdOpcrOpcrIdKpiFunctionTypeIndexRouteImport } from './routes/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$functionType/index'
-import { Route as V1PlanningDeliveryUnitIdOpcrOpcrIdKpiKpiIdIndexRouteImport } from './routes/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$kpiId/index'
 import { Route as V1PlanningDeliveryUnitIdOpcrKpiKpiIdSubkpiIndexRouteImport } from './routes/v1/planning/$deliveryUnitId/opcr/kpi/$kpiId/subkpi/index'
-import { Route as V1PlanningDeliveryUnitIdOpcrOpcrIdKpiFunctionTypeKpiIdIndexRouteImport } from './routes/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$functionType/$kpiId/index'
+import { Route as V1PlanningDeliveryUnitIdOpcrOpcrIdKpiKpiIdIndexRouteImport } from './routes/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$kpiId/index'
+import { Route as V1PlanningDeliveryUnitIdOpcrOpcrIdKpiFunctionTypeIndexRouteImport } from './routes/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$functionType/index'
 import { Route as V1PlanningDeliveryUnitIdOpcrOpcrIdKpiKpiIdSubKpiIndexRouteImport } from './routes/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$kpiId/subKpi/index'
+import { Route as V1PlanningDeliveryUnitIdOpcrOpcrIdKpiFunctionTypeKpiIdIndexRouteImport } from './routes/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$functionType/$kpiId/index'
 import { Route as V1PlanningDeliveryUnitIdOpcrOpcrIdKpiKpiIdSubKpiSubKpiIdIndexRouteImport } from './routes/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$kpiId/subKpi/$subKpiId/index'
 
-const V2procurementConsolidatePrsConsolidatedPrIdLazyRouteImport =
-  createFileRoute('/v2/(procurement)/consolidate-prs/$consolidatedPrId')()
-const V2KpiLibraryKpiMeasurementConfiguratorIndexLazyRouteImport =
-  createFileRoute('/v2/kpi-library/kpi-measurement-configurator/')()
-const V2KpiLibraryMasterKpiIndexLazyRouteImport = createFileRoute(
-  '/v2/kpi-library/master-kpi/',
-)()
-const V2KpiLibraryMasterKpiKpiIdLazyRouteImport = createFileRoute(
-  '/v2/kpi-library/master-kpi/$kpiId',
-)()
 const V2KpiLibraryRatingScalesIndexLazyRouteImport = createFileRoute(
   '/v2/kpi-library/rating-scales/',
 )()
+const V2KpiLibraryMasterKpiIndexLazyRouteImport = createFileRoute(
+  '/v2/kpi-library/master-kpi/',
+)()
+const V2KpiLibraryKpiMeasurementConfiguratorIndexLazyRouteImport =
+  createFileRoute('/v2/kpi-library/kpi-measurement-configurator/')()
+const V2KpiLibraryMasterKpiKpiIdLazyRouteImport = createFileRoute(
+  '/v2/kpi-library/master-kpi/$kpiId',
+)()
+const V2procurementConsolidatePrsConsolidatedPrIdLazyRouteImport =
+  createFileRoute('/v2/(procurement)/consolidate-prs/$consolidatedPrId')()
 
-const IndexRoute = IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const V2Route = V2RouteImport.update({
+  id: '/v2',
+  path: '/v2',
   getParentRoute: () => rootRouteImport,
 } as any)
 const V1Route = V1RouteImport.update({
@@ -211,15 +210,45 @@ const V1Route = V1RouteImport.update({
   path: '/v1',
   getParentRoute: () => rootRouteImport,
 } as any)
-const V2Route = V2RouteImport.update({
-  id: '/v2',
-  path: '/v2',
+const IndexRoute = IndexRouteImport.update({
+  id: '/',
+  path: '/',
   getParentRoute: () => rootRouteImport,
+} as any)
+const V2IndexRoute = V2IndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => V2Route,
 } as any)
 const V1IndexRoute = V1IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => V1Route,
+} as any)
+const V2ProcurementLibraryRoute = V2ProcurementLibraryRouteImport.update({
+  id: '/procurement-library',
+  path: '/procurement-library',
+  getParentRoute: () => V2Route,
+} as any)
+const V2PerformanceReviewRoute = V2PerformanceReviewRouteImport.update({
+  id: '/performance-review',
+  path: '/performance-review',
+  getParentRoute: () => V2Route,
+} as any)
+const V2LineItemBudgetingRoute = V2LineItemBudgetingRouteImport.update({
+  id: '/line-item-budgeting',
+  path: '/line-item-budgeting',
+  getParentRoute: () => V2Route,
+} as any)
+const V2BiddingDocumentLibraryRoute =
+  V2BiddingDocumentLibraryRouteImport.update({
+    id: '/bidding-document-library',
+    path: '/bidding-document-library',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2PlanningRoute = V2PlanningRouteImport.update({
+  id: '/_planning',
+  getParentRoute: () => V2Route,
 } as any)
 const V1OverviewRoute = V1OverviewRouteImport.update({
   id: '/overview',
@@ -231,154 +260,14 @@ const V1PlanningRouteRoute = V1PlanningRouteRouteImport.update({
   path: '/planning',
   getParentRoute: () => V1Route,
 } as any)
-const V2IndexRoute = V2IndexRouteImport.update({
-  id: '/',
-  path: '/',
+const V2NtpIndexRoute = V2NtpIndexRouteImport.update({
+  id: '/ntp/',
+  path: '/ntp/',
   getParentRoute: () => V2Route,
 } as any)
-const V2PlanningRoute = V2PlanningRouteImport.update({
-  id: '/_planning',
-  getParentRoute: () => V2Route,
-} as any)
-const V2BiddingDocumentLibraryRoute =
-  V2BiddingDocumentLibraryRouteImport.update({
-    id: '/bidding-document-library',
-    path: '/bidding-document-library',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2LineItemBudgetingRoute = V2LineItemBudgetingRouteImport.update({
-  id: '/line-item-budgeting',
-  path: '/line-item-budgeting',
-  getParentRoute: () => V2Route,
-} as any)
-const V2PerformanceReviewRoute = V2PerformanceReviewRouteImport.update({
-  id: '/performance-review',
-  path: '/performance-review',
-  getParentRoute: () => V2Route,
-} as any)
-const V2ProcurementLibraryRoute = V2ProcurementLibraryRouteImport.update({
-  id: '/procurement-library',
-  path: '/procurement-library',
-  getParentRoute: () => V2Route,
-} as any)
-const V1FinanceIndexRoute = V1FinanceIndexRouteImport.update({
-  id: '/finance/',
-  path: '/finance/',
-  getParentRoute: () => V1Route,
-} as any)
-const V1FinanceBudgetAllocationRoute =
-  V1FinanceBudgetAllocationRouteImport.update({
-    id: '/finance/budget-allocation',
-    path: '/finance/budget-allocation',
-    getParentRoute: () => V1Route,
-  } as any)
-const V1FinanceFundMonitoringRoute = V1FinanceFundMonitoringRouteImport.update({
-  id: '/finance/fund-monitoring',
-  path: '/finance/fund-monitoring',
-  getParentRoute: () => V1Route,
-} as any)
-const V1FinanceFundReceivingRoute = V1FinanceFundReceivingRouteImport.update({
-  id: '/finance/fund-receiving',
-  path: '/finance/fund-receiving',
-  getParentRoute: () => V1Route,
-} as any)
-const V1FinanceFundSourceRoute = V1FinanceFundSourceRouteImport.update({
-  id: '/finance/fund-source',
-  path: '/finance/fund-source',
-  getParentRoute: () => V1Route,
-} as any)
-const V1FinanceOverviewRoute = V1FinanceOverviewRouteImport.update({
-  id: '/finance/overview',
-  path: '/finance/overview',
-  getParentRoute: () => V1Route,
-} as any)
-const V1FinanceSettingsRoute = V1FinanceSettingsRouteImport.update({
-  id: '/finance/settings',
-  path: '/finance/settings',
-  getParentRoute: () => V1Route,
-} as any)
-const V1PlanningIndexRoute = V1PlanningIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => V1PlanningRouteRoute,
-} as any)
-const V1PlanningEvaluationRoute = V1PlanningEvaluationRouteImport.update({
-  id: '/evaluation',
-  path: '/evaluation',
-  getParentRoute: () => V1PlanningRouteRoute,
-} as any)
-const V1PlanningEvaluationDetailViewRoute =
-  V1PlanningEvaluationDetailViewRouteImport.update({
-    id: '/evaluation-detail-view',
-    path: '/evaluation-detail-view',
-    getParentRoute: () => V1PlanningRouteRoute,
-  } as any)
-const V1PlanningFiscalYearRoute = V1PlanningFiscalYearRouteImport.update({
-  id: '/fiscal-year',
-  path: '/fiscal-year',
-  getParentRoute: () => V1PlanningRouteRoute,
-} as any)
-const V1PlanningKpiRouteRoute = V1PlanningKpiRouteRouteImport.update({
-  id: '/kpi',
-  path: '/kpi',
-  getParentRoute: () => V1PlanningRouteRoute,
-} as any)
-const V1PlanningKpiAssignmentViewRoute =
-  V1PlanningKpiAssignmentViewRouteImport.update({
-    id: '/kpi-assignment-view',
-    path: '/kpi-assignment-view',
-    getParentRoute: () => V1PlanningRouteRoute,
-  } as any)
-const V1PlanningKpiConfigViewRoute = V1PlanningKpiConfigViewRouteImport.update({
-  id: '/kpi-config-view',
-  path: '/kpi-config-view',
-  getParentRoute: () => V1PlanningRouteRoute,
-} as any)
-const V1PlanningKpiConfigurationRoute =
-  V1PlanningKpiConfigurationRouteImport.update({
-    id: '/kpi-configuration',
-    path: '/kpi-configuration',
-    getParentRoute: () => V1PlanningRouteRoute,
-  } as any)
-const V1PlanningOfficeRouteRoute = V1PlanningOfficeRouteRouteImport.update({
-  id: '/office',
-  path: '/office',
-  getParentRoute: () => V1PlanningRouteRoute,
-} as any)
-const V1PlanningRootRoute = V1PlanningRootRouteImport.update({
-  id: '/root',
-  path: '/root',
-  getParentRoute: () => V1PlanningRouteRoute,
-} as any)
-const V1PlanningSettingsRoute = V1PlanningSettingsRouteImport.update({
-  id: '/settings',
-  path: '/settings',
-  getParentRoute: () => V1PlanningRouteRoute,
-} as any)
-const V2planningAnnualPerformancePlanningRoute =
-  V2planningAnnualPerformancePlanningRouteImport.update({
-    id: '/(planning)/annual-performance-planning',
-    path: '/annual-performance-planning',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2planningDashboardRoute = V2planningDashboardRouteImport.update({
-  id: '/(planning)/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => V2Route,
-} as any)
-const V2planningUacsLibraryRoute = V2planningUacsLibraryRouteImport.update({
-  id: '/(planning)/uacs-library',
-  path: '/uacs-library',
-  getParentRoute: () => V2Route,
-} as any)
-const V2BacIndexRoute = V2BacIndexRouteImport.update({
-  id: '/bac/',
-  path: '/bac/',
-  getParentRoute: () => V2Route,
-} as any)
-const V2CommitmentsIndexRoute = V2CommitmentsIndexRouteImport.update({
-  id: '/commitments/',
-  path: '/commitments/',
+const V2KpiLibraryIndexRoute = V2KpiLibraryIndexRouteImport.update({
+  id: '/kpi-library/',
+  path: '/kpi-library/',
   getParentRoute: () => V2Route,
 } as any)
 const V2FiscalYearAndPoliciesIndexRoute =
@@ -387,470 +276,138 @@ const V2FiscalYearAndPoliciesIndexRoute =
     path: '/fiscal-year-and-policies/',
     getParentRoute: () => V2Route,
   } as any)
-const V2KpiLibraryIndexRoute = V2KpiLibraryIndexRouteImport.update({
-  id: '/kpi-library/',
-  path: '/kpi-library/',
+const V2CommitmentsIndexRoute = V2CommitmentsIndexRouteImport.update({
+  id: '/commitments/',
+  path: '/commitments/',
   getParentRoute: () => V2Route,
 } as any)
-const V2NtpIndexRoute = V2NtpIndexRouteImport.update({
-  id: '/ntp/',
-  path: '/ntp/',
+const V2BacIndexRoute = V2BacIndexRouteImport.update({
+  id: '/bac/',
+  path: '/bac/',
   getParentRoute: () => V2Route,
+} as any)
+const V1PlanningIndexRoute = V1PlanningIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => V1PlanningRouteRoute,
+} as any)
+const V1FinanceIndexRoute = V1FinanceIndexRouteImport.update({
+  id: '/finance/',
+  path: '/finance/',
+  getParentRoute: () => V1Route,
 } as any)
 const V2NtpNtpIdRoute = V2NtpNtpIdRouteImport.update({
   id: '/ntp/$ntpId',
   path: '/ntp/$ntpId',
   getParentRoute: () => V2Route,
 } as any)
-const V1PlanningFiscalYearIndexRoute =
-  V1PlanningFiscalYearIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => V1PlanningFiscalYearRoute,
+const V2planningUacsLibraryRoute = V2planningUacsLibraryRouteImport.update({
+  id: '/(planning)/uacs-library',
+  path: '/uacs-library',
+  getParentRoute: () => V2Route,
+} as any)
+const V2planningDashboardRoute = V2planningDashboardRouteImport.update({
+  id: '/(planning)/dashboard',
+  path: '/dashboard',
+  getParentRoute: () => V2Route,
+} as any)
+const V2planningAnnualPerformancePlanningRoute =
+  V2planningAnnualPerformancePlanningRouteImport.update({
+    id: '/(planning)/annual-performance-planning',
+    path: '/annual-performance-planning',
+    getParentRoute: () => V2Route,
   } as any)
-const V1PlanningFundReceiveIndexRoute =
-  V1PlanningFundReceiveIndexRouteImport.update({
-    id: '/fund-receive/',
-    path: '/fund-receive/',
-    getParentRoute: () => V1PlanningRouteRoute,
-  } as any)
-const V1PlanningFundReceiveFundSourceIdRoute =
-  V1PlanningFundReceiveFundSourceIdRouteImport.update({
-    id: '/fund-receive/$fundSourceId',
-    path: '/fund-receive/$fundSourceId',
-    getParentRoute: () => V1PlanningRouteRoute,
-  } as any)
-const V1PlanningFundIndexRoute = V1PlanningFundIndexRouteImport.update({
-  id: '/fund/',
-  path: '/fund/',
+const V1PlanningSettingsRoute = V1PlanningSettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => V1PlanningRouteRoute,
 } as any)
-const V1PlanningFundBudgetAllocationIdRoute =
-  V1PlanningFundBudgetAllocationIdRouteImport.update({
-    id: '/fund/$budgetAllocationId',
-    path: '/fund/$budgetAllocationId',
-    getParentRoute: () => V1PlanningRouteRoute,
-  } as any)
-const V1PlanningFundFundIdRoute = V1PlanningFundFundIdRouteImport.update({
-  id: '/fund/$fundId',
-  path: '/fund/$fundId',
+const V1PlanningRootRoute = V1PlanningRootRouteImport.update({
+  id: '/root',
+  path: '/root',
   getParentRoute: () => V1PlanningRouteRoute,
 } as any)
-const V1PlanningKpiAssignmentForDuIndexRoute =
-  V1PlanningKpiAssignmentForDuIndexRouteImport.update({
-    id: '/kpi-assignment-for-du/',
-    path: '/kpi-assignment-for-du/',
+const V1PlanningKpiConfigurationRoute =
+  V1PlanningKpiConfigurationRouteImport.update({
+    id: '/kpi-configuration',
+    path: '/kpi-configuration',
     getParentRoute: () => V1PlanningRouteRoute,
   } as any)
-const V1PlanningKpiIndexRoute = V1PlanningKpiIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => V1PlanningKpiRouteRoute,
-} as any)
-const V1PlanningOfficeIndexRoute = V1PlanningOfficeIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => V1PlanningOfficeRouteRoute,
-} as any)
-const V1PlanningOpcrIndexRoute = V1PlanningOpcrIndexRouteImport.update({
-  id: '/opcr/',
-  path: '/opcr/',
+const V1PlanningKpiConfigViewRoute = V1PlanningKpiConfigViewRouteImport.update({
+  id: '/kpi-config-view',
+  path: '/kpi-config-view',
   getParentRoute: () => V1PlanningRouteRoute,
 } as any)
-const V1PlanningWfpExpenditureIndexRoute =
-  V1PlanningWfpExpenditureIndexRouteImport.update({
-    id: '/wfp-expenditure/',
-    path: '/wfp-expenditure/',
+const V1PlanningKpiAssignmentViewRoute =
+  V1PlanningKpiAssignmentViewRouteImport.update({
+    id: '/kpi-assignment-view',
+    path: '/kpi-assignment-view',
     getParentRoute: () => V1PlanningRouteRoute,
   } as any)
-const V1PlanningWfpExpenditureWfpObjectiveActivityIdRoute =
-  V1PlanningWfpExpenditureWfpObjectiveActivityIdRouteImport.update({
-    id: '/wfp-expenditure/$wfpObjectiveActivityId',
-    path: '/wfp-expenditure/$wfpObjectiveActivityId',
+const V1PlanningFiscalYearRoute = V1PlanningFiscalYearRouteImport.update({
+  id: '/fiscal-year',
+  path: '/fiscal-year',
+  getParentRoute: () => V1PlanningRouteRoute,
+} as any)
+const V1PlanningEvaluationDetailViewRoute =
+  V1PlanningEvaluationDetailViewRouteImport.update({
+    id: '/evaluation-detail-view',
+    path: '/evaluation-detail-view',
     getParentRoute: () => V1PlanningRouteRoute,
   } as any)
-const V1PlanningWfpObjectiveIndexRoute =
-  V1PlanningWfpObjectiveIndexRouteImport.update({
-    id: '/wfp-objective/',
-    path: '/wfp-objective/',
-    getParentRoute: () => V1PlanningRouteRoute,
-  } as any)
-const V1PlanningWfpObjectiveWfpObjectiveIdRoute =
-  V1PlanningWfpObjectiveWfpObjectiveIdRouteImport.update({
-    id: '/wfp-objective/$wfpObjectiveId',
-    path: '/wfp-objective/$wfpObjectiveId',
-    getParentRoute: () => V1PlanningRouteRoute,
-  } as any)
-const V2planningAnnualPerformancePlanningIndexRoute =
-  V2planningAnnualPerformancePlanningIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => V2planningAnnualPerformancePlanningRoute,
-  } as any)
-const V2planningAppConsolidationIndexRoute =
-  V2planningAppConsolidationIndexRouteImport.update({
-    id: '/(planning)/app-consolidation/',
-    path: '/app-consolidation/',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2planningAppConsolidationAppIdRoute =
-  V2planningAppConsolidationAppIdRouteImport.update({
-    id: '/(planning)/app-consolidation/$appId',
-    path: '/app-consolidation/$appId',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2planningMarketScopingIndexRoute =
-  V2planningMarketScopingIndexRouteImport.update({
-    id: '/(planning)/market-scoping/',
-    path: '/market-scoping/',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2planningMarketScopingIdRoute =
-  V2planningMarketScopingIdRouteImport.update({
-    id: '/(planning)/market-scoping/$id',
-    path: '/market-scoping/$id',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2planningMarketScopingCreateRoute =
-  V2planningMarketScopingCreateRouteImport.update({
-    id: '/(planning)/market-scoping/create',
-    path: '/market-scoping/create',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2planningMarketScopingSettingsRoute =
-  V2planningMarketScopingSettingsRouteImport.update({
-    id: '/(planning)/market-scoping/settings',
-    path: '/market-scoping/settings',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2planningPpmpIndexRoute = V2planningPpmpIndexRouteImport.update({
-  id: '/(planning)/ppmp/',
-  path: '/ppmp/',
-  getParentRoute: () => V2Route,
+const V1PlanningEvaluationRoute = V1PlanningEvaluationRouteImport.update({
+  id: '/evaluation',
+  path: '/evaluation',
+  getParentRoute: () => V1PlanningRouteRoute,
 } as any)
-const V2planningPpmpPpmpIdRoute = V2planningPpmpPpmpIdRouteImport.update({
-  id: '/(planning)/ppmp/$ppmpId',
-  path: '/ppmp/$ppmpId',
-  getParentRoute: () => V2Route,
+const V1FinanceSettingsRoute = V1FinanceSettingsRouteImport.update({
+  id: '/finance/settings',
+  path: '/finance/settings',
+  getParentRoute: () => V1Route,
 } as any)
-const V2planningPpmpCatalogRoute = V2planningPpmpCatalogRouteImport.update({
-  id: '/(planning)/ppmp/catalog',
-  path: '/ppmp/catalog',
-  getParentRoute: () => V2Route,
+const V1FinanceOverviewRoute = V1FinanceOverviewRouteImport.update({
+  id: '/finance/overview',
+  path: '/finance/overview',
+  getParentRoute: () => V1Route,
 } as any)
-const V2planningUacsLibraryIndexRoute =
-  V2planningUacsLibraryIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => V2planningUacsLibraryRoute,
-  } as any)
-const V2planningWfpExpenditureIndexRoute =
-  V2planningWfpExpenditureIndexRouteImport.update({
-    id: '/(planning)/wfp-expenditure/',
-    path: '/wfp-expenditure/',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2planningWfpExpenditureWfpObjectiveActivityIdRoute =
-  V2planningWfpExpenditureWfpObjectiveActivityIdRouteImport.update({
-    id: '/(planning)/wfp-expenditure/$wfpObjectiveActivityId',
-    path: '/wfp-expenditure/$wfpObjectiveActivityId',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2planningWfpObjectiveIndexRoute =
-  V2planningWfpObjectiveIndexRouteImport.update({
-    id: '/(planning)/wfp-objective/',
-    path: '/wfp-objective/',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2planningWfpObjectiveWfpObjectiveIdRoute =
-  V2planningWfpObjectiveWfpObjectiveIdRouteImport.update({
-    id: '/(planning)/wfp-objective/$wfpObjectiveId',
-    path: '/wfp-objective/$wfpObjectiveId',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2planningWfpIndexRoute = V2planningWfpIndexRouteImport.update({
-  id: '/(planning)/wfp/',
-  path: '/wfp/',
-  getParentRoute: () => V2Route,
+const V1FinanceFundSourceRoute = V1FinanceFundSourceRouteImport.update({
+  id: '/finance/fund-source',
+  path: '/finance/fund-source',
+  getParentRoute: () => V1Route,
 } as any)
-const V2planningWfpWfpIdRoute = V2planningWfpWfpIdRouteImport.update({
-  id: '/(planning)/wfp/$wfpId',
-  path: '/wfp/$wfpId',
-  getParentRoute: () => V2Route,
+const V1FinanceFundReceivingRoute = V1FinanceFundReceivingRouteImport.update({
+  id: '/finance/fund-receiving',
+  path: '/finance/fund-receiving',
+  getParentRoute: () => V1Route,
 } as any)
-const V2procurementAbstractOfBidsAobIndexRoute =
-  V2procurementAbstractOfBidsAobIndexRouteImport.update({
-    id: '/(procurement)/abstract-of-bids-aob/',
-    path: '/abstract-of-bids-aob/',
-    getParentRoute: () => V2Route,
+const V1FinanceFundMonitoringRoute = V1FinanceFundMonitoringRouteImport.update({
+  id: '/finance/fund-monitoring',
+  path: '/finance/fund-monitoring',
+  getParentRoute: () => V1Route,
+} as any)
+const V1FinanceBudgetAllocationRoute =
+  V1FinanceBudgetAllocationRouteImport.update({
+    id: '/finance/budget-allocation',
+    path: '/finance/budget-allocation',
+    getParentRoute: () => V1Route,
   } as any)
-const V2procurementAbstractOfBidsAobAobIdRoute =
-  V2procurementAbstractOfBidsAobAobIdRouteImport.update({
-    id: '/(procurement)/abstract-of-bids-aob/$aobId',
-    path: '/abstract-of-bids-aob/$aobId',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2procurementAgencyPurchaseRequestsAprIndexRoute =
-  V2procurementAgencyPurchaseRequestsAprIndexRouteImport.update({
-    id: '/(procurement)/agency-purchase-requests-apr/',
-    path: '/agency-purchase-requests-apr/',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2procurementAgencyPurchaseRequestsAprAprIdRoute =
-  V2procurementAgencyPurchaseRequestsAprAprIdRouteImport.update({
-    id: '/(procurement)/agency-purchase-requests-apr/$aprId',
-    path: '/agency-purchase-requests-apr/$aprId',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2procurementBacResolutionsPublicBiddingIndexRoute =
-  V2procurementBacResolutionsPublicBiddingIndexRouteImport.update({
-    id: '/(procurement)/bac-resolutions-public-bidding/',
-    path: '/bac-resolutions-public-bidding/',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2procurementBacResolutionsIndexRoute =
-  V2procurementBacResolutionsIndexRouteImport.update({
-    id: '/(procurement)/bac-resolutions/',
-    path: '/bac-resolutions/',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2procurementBidEvaluationIndexRoute =
-  V2procurementBidEvaluationIndexRouteImport.update({
-    id: '/(procurement)/bid-evaluation/',
-    path: '/bid-evaluation/',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2procurementBiddingDocumentsIndexRoute =
-  V2procurementBiddingDocumentsIndexRouteImport.update({
-    id: '/(procurement)/bidding-documents/',
-    path: '/bidding-documents/',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2procurementBiddingMasterCalendarIndexRoute =
-  V2procurementBiddingMasterCalendarIndexRouteImport.update({
-    id: '/(procurement)/bidding-master-calendar/',
-    path: '/bidding-master-calendar/',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2procurementConsolidatePrsIndexRoute =
-  V2procurementConsolidatePrsIndexRouteImport.update({
-    id: '/(procurement)/consolidate-prs/',
-    path: '/consolidate-prs/',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2procurementConsolidatePrsConsolidatedPrIdLazyRoute =
-  V2procurementConsolidatePrsConsolidatedPrIdLazyRouteImport.update({
-    id: '/(procurement)/consolidate-prs/$consolidatedPrId',
-    path: '/consolidate-prs/$consolidatedPrId',
+const V1PlanningOfficeRouteRoute = V1PlanningOfficeRouteRouteImport.update({
+  id: '/office',
+  path: '/office',
+  getParentRoute: () => V1PlanningRouteRoute,
+} as any)
+const V1PlanningKpiRouteRoute = V1PlanningKpiRouteRouteImport.update({
+  id: '/kpi',
+  path: '/kpi',
+  getParentRoute: () => V1PlanningRouteRoute,
+} as any)
+const V2KpiLibraryRatingScalesIndexLazyRoute =
+  V2KpiLibraryRatingScalesIndexLazyRouteImport.update({
+    id: '/kpi-library/rating-scales/',
+    path: '/kpi-library/rating-scales/',
     getParentRoute: () => V2Route,
   } as any).lazy(() =>
-    import('./routes/v2/(procurement)/consolidate-prs/$consolidatedPrId.lazy').then(
-      (d) => d.Route,
-    ),
-  )
-const V2procurementContractsConsultingInfrastructureIndexRoute =
-  V2procurementContractsConsultingInfrastructureIndexRouteImport.update({
-    id: '/(procurement)/contracts-consulting-infrastructure/',
-    path: '/contracts-consulting-infrastructure/',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2procurementDirectAcquisitionRequestIndexRoute =
-  V2procurementDirectAcquisitionRequestIndexRouteImport.update({
-    id: '/(procurement)/direct-acquisition-request/',
-    path: '/direct-acquisition-request/',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2procurementDirectContractingRequestIndexRoute =
-  V2procurementDirectContractingRequestIndexRouteImport.update({
-    id: '/(procurement)/direct-contracting-request/',
-    path: '/direct-contracting-request/',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2procurementManageAobIndexRoute =
-  V2procurementManageAobIndexRouteImport.update({
-    id: '/(procurement)/manage-aob/',
-    path: '/manage-aob/',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2procurementManageAobAobIdRoute =
-  V2procurementManageAobAobIdRouteImport.update({
-    id: '/(procurement)/manage-aob/$aobId',
-    path: '/manage-aob/$aobId',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2procurementManageAprsIndexRoute =
-  V2procurementManageAprsIndexRouteImport.update({
-    id: '/(procurement)/manage-aprs/',
-    path: '/manage-aprs/',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2procurementManageBacResolutionsIndexRoute =
-  V2procurementManageBacResolutionsIndexRouteImport.update({
-    id: '/(procurement)/manage-bac-resolutions/',
-    path: '/manage-bac-resolutions/',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2procurementManageContractsIndexRoute =
-  V2procurementManageContractsIndexRouteImport.update({
-    id: '/(procurement)/manage-contracts/',
-    path: '/manage-contracts/',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2procurementManageDirectAcquisitionIndexRoute =
-  V2procurementManageDirectAcquisitionIndexRouteImport.update({
-    id: '/(procurement)/manage-direct-acquisition/',
-    path: '/manage-direct-acquisition/',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2procurementManageDirectContractingIndexRoute =
-  V2procurementManageDirectContractingIndexRouteImport.update({
-    id: '/(procurement)/manage-direct-contracting/',
-    path: '/manage-direct-contracting/',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2procurementManageNoaIndexRoute =
-  V2procurementManageNoaIndexRouteImport.update({
-    id: '/(procurement)/manage-noa/',
-    path: '/manage-noa/',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2procurementManageNtpIndexRoute =
-  V2procurementManageNtpIndexRouteImport.update({
-    id: '/(procurement)/manage-ntp/',
-    path: '/manage-ntp/',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2procurementManageNtpNtpIdRoute =
-  V2procurementManageNtpNtpIdRouteImport.update({
-    id: '/(procurement)/manage-ntp/$ntpId',
-    path: '/manage-ntp/$ntpId',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2procurementManagePoIndexRoute =
-  V2procurementManagePoIndexRouteImport.update({
-    id: '/(procurement)/manage-po/',
-    path: '/manage-po/',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2procurementManagePosIndexRoute =
-  V2procurementManagePosIndexRouteImport.update({
-    id: '/(procurement)/manage-pos/',
-    path: '/manage-pos/',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2procurementManagePrsIndexRoute =
-  V2procurementManagePrsIndexRouteImport.update({
-    id: '/(procurement)/manage-prs/',
-    path: '/manage-prs/',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2procurementManageRfqIndexRoute =
-  V2procurementManageRfqIndexRouteImport.update({
-    id: '/(procurement)/manage-rfq/',
-    path: '/manage-rfq/',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2procurementManageSupplierDirectAcquisitionIndexRoute =
-  V2procurementManageSupplierDirectAcquisitionIndexRouteImport.update({
-    id: '/(procurement)/manage-supplier-direct-acquisition/',
-    path: '/manage-supplier-direct-acquisition/',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2procurementManageSupplierDirectContractingIndexRoute =
-  V2procurementManageSupplierDirectContractingIndexRouteImport.update({
-    id: '/(procurement)/manage-supplier-direct-contracting/',
-    path: '/manage-supplier-direct-contracting/',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2procurementManageSupplierPortalIndexRoute =
-  V2procurementManageSupplierPortalIndexRouteImport.update({
-    id: '/(procurement)/manage-supplier-portal/',
-    path: '/manage-supplier-portal/',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2procurementManageSupplierPortalProjectIdRoute =
-  V2procurementManageSupplierPortalProjectIdRouteImport.update({
-    id: '/(procurement)/manage-supplier-portal/$projectId',
-    path: '/manage-supplier-portal/$projectId',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2procurementNoticeOfAwardNoaIndexRoute =
-  V2procurementNoticeOfAwardNoaIndexRouteImport.update({
-    id: '/(procurement)/notice-of-award-noa/',
-    path: '/notice-of-award-noa/',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2procurementNoticeToProceedNtpIndexRoute =
-  V2procurementNoticeToProceedNtpIndexRouteImport.update({
-    id: '/(procurement)/notice-to-proceed-ntp/',
-    path: '/notice-to-proceed-ntp/',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2procurementNoticeToProceedNtpNtpIdRoute =
-  V2procurementNoticeToProceedNtpNtpIdRouteImport.update({
-    id: '/(procurement)/notice-to-proceed-ntp/$ntpId',
-    path: '/notice-to-proceed-ntp/$ntpId',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2procurementPoDirectAcquisitionIndexRoute =
-  V2procurementPoDirectAcquisitionIndexRouteImport.update({
-    id: '/(procurement)/po-direct-acquisition/',
-    path: '/po-direct-acquisition/',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2procurementPoPublicBiddingIndexRoute =
-  V2procurementPoPublicBiddingIndexRouteImport.update({
-    id: '/(procurement)/po-public-bidding/',
-    path: '/po-public-bidding/',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2procurementPoSvpIndexRoute = V2procurementPoSvpIndexRouteImport.update({
-  id: '/(procurement)/po-svp/',
-  path: '/po-svp/',
-  getParentRoute: () => V2Route,
-} as any)
-const V2procurementProcurementDashboardIndexRoute =
-  V2procurementProcurementDashboardIndexRouteImport.update({
-    id: '/(procurement)/procurement-dashboard/',
-    path: '/procurement-dashboard/',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2procurementPurchaseRequestsPrIndexRoute =
-  V2procurementPurchaseRequestsPrIndexRouteImport.update({
-    id: '/(procurement)/purchase-requests-pr/',
-    path: '/purchase-requests-pr/',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2procurementRequestForQuotationRfqIndexRoute =
-  V2procurementRequestForQuotationRfqIndexRouteImport.update({
-    id: '/(procurement)/request-for-quotation-rfq/',
-    path: '/request-for-quotation-rfq/',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2PlanningOrganizationIndexRoute =
-  V2PlanningOrganizationIndexRouteImport.update({
-    id: '/organization/',
-    path: '/organization/',
-    getParentRoute: () => V2PlanningRoute,
-  } as any)
-const V2PlanningOrganizationLayoutRoute =
-  V2PlanningOrganizationLayoutRouteImport.update({
-    id: '/organization/layout',
-    path: '/organization/layout',
-    getParentRoute: () => V2PlanningRoute,
-  } as any)
-const V2BacDocumentDocIdRoute = V2BacDocumentDocIdRouteImport.update({
-  id: '/bac/document/$docId',
-  path: '/bac/document/$docId',
-  getParentRoute: () => V2Route,
-} as any)
-const V2KpiLibraryKpiMeasurementConfiguratorIndexLazyRoute =
-  V2KpiLibraryKpiMeasurementConfiguratorIndexLazyRouteImport.update({
-    id: '/kpi-library/kpi-measurement-configurator/',
-    path: '/kpi-library/kpi-measurement-configurator/',
-    getParentRoute: () => V2Route,
-  } as any).lazy(() =>
-    import('./routes/v2/kpi-library/kpi-measurement-configurator/index.lazy').then(
+    import('./routes/v2/kpi-library/rating-scales/index.lazy').then(
       (d) => d.Route,
     ),
   )
@@ -864,6 +421,316 @@ const V2KpiLibraryMasterKpiIndexLazyRoute =
       (d) => d.Route,
     ),
   )
+const V2KpiLibraryKpiMeasurementConfiguratorIndexLazyRoute =
+  V2KpiLibraryKpiMeasurementConfiguratorIndexLazyRouteImport.update({
+    id: '/kpi-library/kpi-measurement-configurator/',
+    path: '/kpi-library/kpi-measurement-configurator/',
+    getParentRoute: () => V2Route,
+  } as any).lazy(() =>
+    import(
+      './routes/v2/kpi-library/kpi-measurement-configurator/index.lazy'
+    ).then((d) => d.Route),
+  )
+const V2PlanningOrganizationIndexRoute =
+  V2PlanningOrganizationIndexRouteImport.update({
+    id: '/organization/',
+    path: '/organization/',
+    getParentRoute: () => V2PlanningRoute,
+  } as any)
+const V2procurementRequestForQuotationRfqIndexRoute =
+  V2procurementRequestForQuotationRfqIndexRouteImport.update({
+    id: '/(procurement)/request-for-quotation-rfq/',
+    path: '/request-for-quotation-rfq/',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2procurementPurchaseRequestsPrIndexRoute =
+  V2procurementPurchaseRequestsPrIndexRouteImport.update({
+    id: '/(procurement)/purchase-requests-pr/',
+    path: '/purchase-requests-pr/',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2procurementProcurementDashboardIndexRoute =
+  V2procurementProcurementDashboardIndexRouteImport.update({
+    id: '/(procurement)/procurement-dashboard/',
+    path: '/procurement-dashboard/',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2procurementPoSvpIndexRoute = V2procurementPoSvpIndexRouteImport.update({
+  id: '/(procurement)/po-svp/',
+  path: '/po-svp/',
+  getParentRoute: () => V2Route,
+} as any)
+const V2procurementPoPublicBiddingIndexRoute =
+  V2procurementPoPublicBiddingIndexRouteImport.update({
+    id: '/(procurement)/po-public-bidding/',
+    path: '/po-public-bidding/',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2procurementPoDirectAcquisitionIndexRoute =
+  V2procurementPoDirectAcquisitionIndexRouteImport.update({
+    id: '/(procurement)/po-direct-acquisition/',
+    path: '/po-direct-acquisition/',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2procurementNoticeToProceedNtpIndexRoute =
+  V2procurementNoticeToProceedNtpIndexRouteImport.update({
+    id: '/(procurement)/notice-to-proceed-ntp/',
+    path: '/notice-to-proceed-ntp/',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2procurementNoticeOfAwardNoaIndexRoute =
+  V2procurementNoticeOfAwardNoaIndexRouteImport.update({
+    id: '/(procurement)/notice-of-award-noa/',
+    path: '/notice-of-award-noa/',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2procurementManageSupplierPortalIndexRoute =
+  V2procurementManageSupplierPortalIndexRouteImport.update({
+    id: '/(procurement)/manage-supplier-portal/',
+    path: '/manage-supplier-portal/',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2procurementManageSupplierDirectContractingIndexRoute =
+  V2procurementManageSupplierDirectContractingIndexRouteImport.update({
+    id: '/(procurement)/manage-supplier-direct-contracting/',
+    path: '/manage-supplier-direct-contracting/',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2procurementManageSupplierDirectAcquisitionIndexRoute =
+  V2procurementManageSupplierDirectAcquisitionIndexRouteImport.update({
+    id: '/(procurement)/manage-supplier-direct-acquisition/',
+    path: '/manage-supplier-direct-acquisition/',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2procurementManageRfqIndexRoute =
+  V2procurementManageRfqIndexRouteImport.update({
+    id: '/(procurement)/manage-rfq/',
+    path: '/manage-rfq/',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2procurementManagePrsIndexRoute =
+  V2procurementManagePrsIndexRouteImport.update({
+    id: '/(procurement)/manage-prs/',
+    path: '/manage-prs/',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2procurementManagePosIndexRoute =
+  V2procurementManagePosIndexRouteImport.update({
+    id: '/(procurement)/manage-pos/',
+    path: '/manage-pos/',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2procurementManagePoIndexRoute =
+  V2procurementManagePoIndexRouteImport.update({
+    id: '/(procurement)/manage-po/',
+    path: '/manage-po/',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2procurementManageNtpIndexRoute =
+  V2procurementManageNtpIndexRouteImport.update({
+    id: '/(procurement)/manage-ntp/',
+    path: '/manage-ntp/',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2procurementManageNoaIndexRoute =
+  V2procurementManageNoaIndexRouteImport.update({
+    id: '/(procurement)/manage-noa/',
+    path: '/manage-noa/',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2procurementManageDirectContractingIndexRoute =
+  V2procurementManageDirectContractingIndexRouteImport.update({
+    id: '/(procurement)/manage-direct-contracting/',
+    path: '/manage-direct-contracting/',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2procurementManageDirectAcquisitionIndexRoute =
+  V2procurementManageDirectAcquisitionIndexRouteImport.update({
+    id: '/(procurement)/manage-direct-acquisition/',
+    path: '/manage-direct-acquisition/',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2procurementManageContractsIndexRoute =
+  V2procurementManageContractsIndexRouteImport.update({
+    id: '/(procurement)/manage-contracts/',
+    path: '/manage-contracts/',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2procurementManageBacResolutionsIndexRoute =
+  V2procurementManageBacResolutionsIndexRouteImport.update({
+    id: '/(procurement)/manage-bac-resolutions/',
+    path: '/manage-bac-resolutions/',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2procurementManageAprsIndexRoute =
+  V2procurementManageAprsIndexRouteImport.update({
+    id: '/(procurement)/manage-aprs/',
+    path: '/manage-aprs/',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2procurementManageAobIndexRoute =
+  V2procurementManageAobIndexRouteImport.update({
+    id: '/(procurement)/manage-aob/',
+    path: '/manage-aob/',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2procurementDirectContractingRequestIndexRoute =
+  V2procurementDirectContractingRequestIndexRouteImport.update({
+    id: '/(procurement)/direct-contracting-request/',
+    path: '/direct-contracting-request/',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2procurementDirectAcquisitionRequestIndexRoute =
+  V2procurementDirectAcquisitionRequestIndexRouteImport.update({
+    id: '/(procurement)/direct-acquisition-request/',
+    path: '/direct-acquisition-request/',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2procurementContractsConsultingInfrastructureIndexRoute =
+  V2procurementContractsConsultingInfrastructureIndexRouteImport.update({
+    id: '/(procurement)/contracts-consulting-infrastructure/',
+    path: '/contracts-consulting-infrastructure/',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2procurementConsolidatePrsIndexRoute =
+  V2procurementConsolidatePrsIndexRouteImport.update({
+    id: '/(procurement)/consolidate-prs/',
+    path: '/consolidate-prs/',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2procurementBiddingMasterCalendarIndexRoute =
+  V2procurementBiddingMasterCalendarIndexRouteImport.update({
+    id: '/(procurement)/bidding-master-calendar/',
+    path: '/bidding-master-calendar/',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2procurementBiddingDocumentsIndexRoute =
+  V2procurementBiddingDocumentsIndexRouteImport.update({
+    id: '/(procurement)/bidding-documents/',
+    path: '/bidding-documents/',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2procurementBidEvaluationIndexRoute =
+  V2procurementBidEvaluationIndexRouteImport.update({
+    id: '/(procurement)/bid-evaluation/',
+    path: '/bid-evaluation/',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2procurementBacResolutionsIndexRoute =
+  V2procurementBacResolutionsIndexRouteImport.update({
+    id: '/(procurement)/bac-resolutions/',
+    path: '/bac-resolutions/',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2procurementBacResolutionsPublicBiddingIndexRoute =
+  V2procurementBacResolutionsPublicBiddingIndexRouteImport.update({
+    id: '/(procurement)/bac-resolutions-public-bidding/',
+    path: '/bac-resolutions-public-bidding/',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2procurementAgencyPurchaseRequestsAprIndexRoute =
+  V2procurementAgencyPurchaseRequestsAprIndexRouteImport.update({
+    id: '/(procurement)/agency-purchase-requests-apr/',
+    path: '/agency-purchase-requests-apr/',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2procurementAbstractOfBidsAobIndexRoute =
+  V2procurementAbstractOfBidsAobIndexRouteImport.update({
+    id: '/(procurement)/abstract-of-bids-aob/',
+    path: '/abstract-of-bids-aob/',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2planningWfpIndexRoute = V2planningWfpIndexRouteImport.update({
+  id: '/(planning)/wfp/',
+  path: '/wfp/',
+  getParentRoute: () => V2Route,
+} as any)
+const V2planningWfpObjectiveIndexRoute =
+  V2planningWfpObjectiveIndexRouteImport.update({
+    id: '/(planning)/wfp-objective/',
+    path: '/wfp-objective/',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2planningWfpExpenditureIndexRoute =
+  V2planningWfpExpenditureIndexRouteImport.update({
+    id: '/(planning)/wfp-expenditure/',
+    path: '/wfp-expenditure/',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2planningUacsLibraryIndexRoute =
+  V2planningUacsLibraryIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => V2planningUacsLibraryRoute,
+  } as any)
+const V2planningPpmpIndexRoute = V2planningPpmpIndexRouteImport.update({
+  id: '/(planning)/ppmp/',
+  path: '/ppmp/',
+  getParentRoute: () => V2Route,
+} as any)
+const V2planningMarketScopingIndexRoute =
+  V2planningMarketScopingIndexRouteImport.update({
+    id: '/(planning)/market-scoping/',
+    path: '/market-scoping/',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2planningAppConsolidationIndexRoute =
+  V2planningAppConsolidationIndexRouteImport.update({
+    id: '/(planning)/app-consolidation/',
+    path: '/app-consolidation/',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2planningAnnualPerformancePlanningIndexRoute =
+  V2planningAnnualPerformancePlanningIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => V2planningAnnualPerformancePlanningRoute,
+  } as any)
+const V1PlanningWfpObjectiveIndexRoute =
+  V1PlanningWfpObjectiveIndexRouteImport.update({
+    id: '/wfp-objective/',
+    path: '/wfp-objective/',
+    getParentRoute: () => V1PlanningRouteRoute,
+  } as any)
+const V1PlanningWfpExpenditureIndexRoute =
+  V1PlanningWfpExpenditureIndexRouteImport.update({
+    id: '/wfp-expenditure/',
+    path: '/wfp-expenditure/',
+    getParentRoute: () => V1PlanningRouteRoute,
+  } as any)
+const V1PlanningOfficeIndexRoute = V1PlanningOfficeIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => V1PlanningOfficeRouteRoute,
+} as any)
+const V1PlanningKpiIndexRoute = V1PlanningKpiIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => V1PlanningKpiRouteRoute,
+} as any)
+const V1PlanningKpiAssignmentForDuIndexRoute =
+  V1PlanningKpiAssignmentForDuIndexRouteImport.update({
+    id: '/kpi-assignment-for-du/',
+    path: '/kpi-assignment-for-du/',
+    getParentRoute: () => V1PlanningRouteRoute,
+  } as any)
+const V1PlanningFundIndexRoute = V1PlanningFundIndexRouteImport.update({
+  id: '/fund/',
+  path: '/fund/',
+  getParentRoute: () => V1PlanningRouteRoute,
+} as any)
+const V1PlanningFundReceiveIndexRoute =
+  V1PlanningFundReceiveIndexRouteImport.update({
+    id: '/fund-receive/',
+    path: '/fund-receive/',
+    getParentRoute: () => V1PlanningRouteRoute,
+  } as any)
+const V1PlanningFiscalYearIndexRoute =
+  V1PlanningFiscalYearIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => V1PlanningFiscalYearRoute,
+  } as any)
 const V2KpiLibraryMasterKpiKpiIdLazyRoute =
   V2KpiLibraryMasterKpiKpiIdLazyRouteImport.update({
     id: '/kpi-library/master-kpi/$kpiId',
@@ -874,263 +741,147 @@ const V2KpiLibraryMasterKpiKpiIdLazyRoute =
       (d) => d.Route,
     ),
   )
-const V2KpiLibraryRatingScalesIndexLazyRoute =
-  V2KpiLibraryRatingScalesIndexLazyRouteImport.update({
-    id: '/kpi-library/rating-scales/',
-    path: '/kpi-library/rating-scales/',
+const V2procurementConsolidatePrsConsolidatedPrIdLazyRoute =
+  V2procurementConsolidatePrsConsolidatedPrIdLazyRouteImport.update({
+    id: '/(procurement)/consolidate-prs/$consolidatedPrId',
+    path: '/consolidate-prs/$consolidatedPrId',
     getParentRoute: () => V2Route,
   } as any).lazy(() =>
-    import('./routes/v2/kpi-library/rating-scales/index.lazy').then(
-      (d) => d.Route,
-    ),
+    import(
+      './routes/v2/(procurement)/consolidate-prs/$consolidatedPrId.lazy'
+    ).then((d) => d.Route),
   )
-const V1PlanningDeliveryUnitIdWfpIndexRoute =
-  V1PlanningDeliveryUnitIdWfpIndexRouteImport.update({
-    id: '/$deliveryUnitId/wfp/',
-    path: '/$deliveryUnitId/wfp/',
-    getParentRoute: () => V1PlanningRouteRoute,
-  } as any)
-const V1PlanningDeliveryUnitIdWfpWfpIdRoute =
-  V1PlanningDeliveryUnitIdWfpWfpIdRouteImport.update({
-    id: '/$deliveryUnitId/wfp/$wfpId',
-    path: '/$deliveryUnitId/wfp/$wfpId',
-    getParentRoute: () => V1PlanningRouteRoute,
-  } as any)
-const V1PlanningFiscalYearFiscalYearIdIndexRoute =
-  V1PlanningFiscalYearFiscalYearIdIndexRouteImport.update({
-    id: '/$fiscalYearId/',
-    path: '/$fiscalYearId/',
-    getParentRoute: () => V1PlanningFiscalYearRoute,
-  } as any)
-const V1PlanningFiscalYearFiscalYearIdDeleteRoute =
-  V1PlanningFiscalYearFiscalYearIdDeleteRouteImport.update({
-    id: '/$fiscalYearId/delete',
-    path: '/$fiscalYearId/delete',
-    getParentRoute: () => V1PlanningFiscalYearRoute,
-  } as any)
-const V1PlanningFiscalYearFiscalYearIdLockRoute =
-  V1PlanningFiscalYearFiscalYearIdLockRouteImport.update({
-    id: '/$fiscalYearId/lock',
-    path: '/$fiscalYearId/lock',
-    getParentRoute: () => V1PlanningFiscalYearRoute,
-  } as any)
-const V1PlanningFunctionAllocationFiscalYearIdIndexRoute =
-  V1PlanningFunctionAllocationFiscalYearIdIndexRouteImport.update({
-    id: '/function-allocation/$fiscalYearId/',
-    path: '/function-allocation/$fiscalYearId/',
-    getParentRoute: () => V1PlanningRouteRoute,
-  } as any)
-const V1PlanningFunctionAllocationFiscalYearIdDeleteRoute =
-  V1PlanningFunctionAllocationFiscalYearIdDeleteRouteImport.update({
-    id: '/function-allocation/$fiscalYearId/delete',
-    path: '/function-allocation/$fiscalYearId/delete',
-    getParentRoute: () => V1PlanningRouteRoute,
-  } as any)
-const V1PlanningFunctionAllocationFiscalYearIdLockRoute =
-  V1PlanningFunctionAllocationFiscalYearIdLockRouteImport.update({
-    id: '/function-allocation/$fiscalYearId/lock',
-    path: '/function-allocation/$fiscalYearId/lock',
-    getParentRoute: () => V1PlanningRouteRoute,
-  } as any)
-const V1PlanningFundReceiveFundSourceIdIndexRoute =
-  V1PlanningFundReceiveFundSourceIdIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => V1PlanningFundReceiveFundSourceIdRoute,
-  } as any)
-const V1PlanningFundBudgetAllocationIdIndexRoute =
-  V1PlanningFundBudgetAllocationIdIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => V1PlanningFundBudgetAllocationIdRoute,
-  } as any)
-const V1PlanningFundFundIdIndexRoute =
-  V1PlanningFundFundIdIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => V1PlanningFundFundIdRoute,
-  } as any)
-const V1PlanningKpiAssignmentForDuKpiAssignmentForDuIdIndexRoute =
-  V1PlanningKpiAssignmentForDuKpiAssignmentForDuIdIndexRouteImport.update({
-    id: '/kpi-assignment-for-du/$kpiAssignmentForDuId/',
-    path: '/kpi-assignment-for-du/$kpiAssignmentForDuId/',
-    getParentRoute: () => V1PlanningRouteRoute,
-  } as any)
-const V1PlanningKpiAssignmentForDuKpiAssignmentForDuIdDeleteRoute =
-  V1PlanningKpiAssignmentForDuKpiAssignmentForDuIdDeleteRouteImport.update({
-    id: '/kpi-assignment-for-du/$kpiAssignmentForDuId/delete',
-    path: '/kpi-assignment-for-du/$kpiAssignmentForDuId/delete',
-    getParentRoute: () => V1PlanningRouteRoute,
-  } as any)
-const V1PlanningKpiAssignmentForDuKpiAssignmentForDuIdSubKpiRoute =
-  V1PlanningKpiAssignmentForDuKpiAssignmentForDuIdSubKpiRouteImport.update({
-    id: '/kpi-assignment-for-du/$kpiAssignmentForDuId/subKpi',
-    path: '/kpi-assignment-for-du/$kpiAssignmentForDuId/subKpi',
-    getParentRoute: () => V1PlanningRouteRoute,
-  } as any)
-const V1PlanningKpiKpiIdIndexRoute = V1PlanningKpiKpiIdIndexRouteImport.update({
-  id: '/$kpiId/',
-  path: '/$kpiId/',
-  getParentRoute: () => V1PlanningKpiRouteRoute,
+const V2BacDocumentDocIdRoute = V2BacDocumentDocIdRouteImport.update({
+  id: '/bac/document/$docId',
+  path: '/bac/document/$docId',
+  getParentRoute: () => V2Route,
 } as any)
-const V1PlanningKpiKpiIdDeleteRoute =
-  V1PlanningKpiKpiIdDeleteRouteImport.update({
-    id: '/$kpiId/delete',
-    path: '/$kpiId/delete',
-    getParentRoute: () => V1PlanningKpiRouteRoute,
+const V2PlanningOrganizationLayoutRoute =
+  V2PlanningOrganizationLayoutRouteImport.update({
+    id: '/organization/layout',
+    path: '/organization/layout',
+    getParentRoute: () => V2PlanningRoute,
   } as any)
-const V1PlanningKpiKpiIdEditRoute = V1PlanningKpiKpiIdEditRouteImport.update({
-  id: '/$kpiId/edit',
-  path: '/$kpiId/edit',
-  getParentRoute: () => V1PlanningKpiRouteRoute,
+const V2procurementNoticeToProceedNtpNtpIdRoute =
+  V2procurementNoticeToProceedNtpNtpIdRouteImport.update({
+    id: '/(procurement)/notice-to-proceed-ntp/$ntpId',
+    path: '/notice-to-proceed-ntp/$ntpId',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2procurementManageSupplierPortalProjectIdRoute =
+  V2procurementManageSupplierPortalProjectIdRouteImport.update({
+    id: '/(procurement)/manage-supplier-portal/$projectId',
+    path: '/manage-supplier-portal/$projectId',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2procurementManageNtpNtpIdRoute =
+  V2procurementManageNtpNtpIdRouteImport.update({
+    id: '/(procurement)/manage-ntp/$ntpId',
+    path: '/manage-ntp/$ntpId',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2procurementManageAobAobIdRoute =
+  V2procurementManageAobAobIdRouteImport.update({
+    id: '/(procurement)/manage-aob/$aobId',
+    path: '/manage-aob/$aobId',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2procurementAgencyPurchaseRequestsAprAprIdRoute =
+  V2procurementAgencyPurchaseRequestsAprAprIdRouteImport.update({
+    id: '/(procurement)/agency-purchase-requests-apr/$aprId',
+    path: '/agency-purchase-requests-apr/$aprId',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2procurementAbstractOfBidsAobAobIdRoute =
+  V2procurementAbstractOfBidsAobAobIdRouteImport.update({
+    id: '/(procurement)/abstract-of-bids-aob/$aobId',
+    path: '/abstract-of-bids-aob/$aobId',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2planningWfpWfpIdRoute = V2planningWfpWfpIdRouteImport.update({
+  id: '/(planning)/wfp/$wfpId',
+  path: '/wfp/$wfpId',
+  getParentRoute: () => V2Route,
 } as any)
-const V1PlanningOfficeClusterIdIndexRoute =
-  V1PlanningOfficeClusterIdIndexRouteImport.update({
-    id: '/$clusterId/',
-    path: '/$clusterId/',
-    getParentRoute: () => V1PlanningOfficeRouteRoute,
+const V2planningWfpObjectiveWfpObjectiveIdRoute =
+  V2planningWfpObjectiveWfpObjectiveIdRouteImport.update({
+    id: '/(planning)/wfp-objective/$wfpObjectiveId',
+    path: '/wfp-objective/$wfpObjectiveId',
+    getParentRoute: () => V2Route,
   } as any)
-const V1PlanningOfficeClusterIdDeleteRoute =
-  V1PlanningOfficeClusterIdDeleteRouteImport.update({
-    id: '/$clusterId/delete',
-    path: '/$clusterId/delete',
-    getParentRoute: () => V1PlanningOfficeRouteRoute,
+const V2planningWfpExpenditureWfpObjectiveActivityIdRoute =
+  V2planningWfpExpenditureWfpObjectiveActivityIdRouteImport.update({
+    id: '/(planning)/wfp-expenditure/$wfpObjectiveActivityId',
+    path: '/wfp-expenditure/$wfpObjectiveActivityId',
+    getParentRoute: () => V2Route,
   } as any)
-const V1PlanningOfficeClusterIdEditRoute =
-  V1PlanningOfficeClusterIdEditRouteImport.update({
-    id: '/$clusterId/edit',
-    path: '/$clusterId/edit',
-    getParentRoute: () => V1PlanningOfficeRouteRoute,
+const V2planningPpmpCatalogRoute = V2planningPpmpCatalogRouteImport.update({
+  id: '/(planning)/ppmp/catalog',
+  path: '/ppmp/catalog',
+  getParentRoute: () => V2Route,
+} as any)
+const V2planningPpmpPpmpIdRoute = V2planningPpmpPpmpIdRouteImport.update({
+  id: '/(planning)/ppmp/$ppmpId',
+  path: '/ppmp/$ppmpId',
+  getParentRoute: () => V2Route,
+} as any)
+const V2planningMarketScopingSettingsRoute =
+  V2planningMarketScopingSettingsRouteImport.update({
+    id: '/(planning)/market-scoping/settings',
+    path: '/market-scoping/settings',
+    getParentRoute: () => V2Route,
   } as any)
-const V1PlanningOfficeDeliveryUnitIdIndexRoute =
-  V1PlanningOfficeDeliveryUnitIdIndexRouteImport.update({
-    id: '/$deliveryUnitId/',
-    path: '/$deliveryUnitId/',
-    getParentRoute: () => V1PlanningOfficeRouteRoute,
+const V2planningMarketScopingCreateRoute =
+  V2planningMarketScopingCreateRouteImport.update({
+    id: '/(planning)/market-scoping/create',
+    path: '/market-scoping/create',
+    getParentRoute: () => V2Route,
   } as any)
-const V1PlanningOfficeDeliveryUnitIdDeleteRoute =
-  V1PlanningOfficeDeliveryUnitIdDeleteRouteImport.update({
-    id: '/$deliveryUnitId/delete',
-    path: '/$deliveryUnitId/delete',
-    getParentRoute: () => V1PlanningOfficeRouteRoute,
+const V2planningMarketScopingIdRoute =
+  V2planningMarketScopingIdRouteImport.update({
+    id: '/(planning)/market-scoping/$id',
+    path: '/market-scoping/$id',
+    getParentRoute: () => V2Route,
   } as any)
-const V1PlanningOfficeDeliveryUnitIdEditRoute =
-  V1PlanningOfficeDeliveryUnitIdEditRouteImport.update({
-    id: '/$deliveryUnitId/edit',
-    path: '/$deliveryUnitId/edit',
-    getParentRoute: () => V1PlanningOfficeRouteRoute,
+const V2planningAppConsolidationAppIdRoute =
+  V2planningAppConsolidationAppIdRouteImport.update({
+    id: '/(planning)/app-consolidation/$appId',
+    path: '/app-consolidation/$appId',
+    getParentRoute: () => V2Route,
   } as any)
-const V1PlanningOfficeOfficeIdIndexRoute =
-  V1PlanningOfficeOfficeIdIndexRouteImport.update({
-    id: '/$officeId/',
-    path: '/$officeId/',
-    getParentRoute: () => V1PlanningOfficeRouteRoute,
-  } as any)
-const V1PlanningOfficeOfficeIdDeleteRoute =
-  V1PlanningOfficeOfficeIdDeleteRouteImport.update({
-    id: '/$officeId/delete',
-    path: '/$officeId/delete',
-    getParentRoute: () => V1PlanningOfficeRouteRoute,
-  } as any)
-const V1PlanningOfficeOfficeIdEditRoute =
-  V1PlanningOfficeOfficeIdEditRouteImport.update({
-    id: '/$officeId/edit',
-    path: '/$officeId/edit',
-    getParentRoute: () => V1PlanningOfficeRouteRoute,
-  } as any)
-const V1PlanningOpcrOpcrIdIndexRoute =
-  V1PlanningOpcrOpcrIdIndexRouteImport.update({
-    id: '/opcr/$opcrId/',
-    path: '/opcr/$opcrId/',
+const V1PlanningWfpObjectiveWfpObjectiveIdRoute =
+  V1PlanningWfpObjectiveWfpObjectiveIdRouteImport.update({
+    id: '/wfp-objective/$wfpObjectiveId',
+    path: '/wfp-objective/$wfpObjectiveId',
     getParentRoute: () => V1PlanningRouteRoute,
   } as any)
-const V1PlanningWfpExpenditureWfpObjectiveActivityIdIndexRoute =
-  V1PlanningWfpExpenditureWfpObjectiveActivityIdIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => V1PlanningWfpExpenditureWfpObjectiveActivityIdRoute,
+const V1PlanningWfpExpenditureWfpObjectiveActivityIdRoute =
+  V1PlanningWfpExpenditureWfpObjectiveActivityIdRouteImport.update({
+    id: '/wfp-expenditure/$wfpObjectiveActivityId',
+    path: '/wfp-expenditure/$wfpObjectiveActivityId',
+    getParentRoute: () => V1PlanningRouteRoute,
   } as any)
-const V1PlanningWfpObjectiveWfpObjectiveIdIndexRoute =
-  V1PlanningWfpObjectiveWfpObjectiveIdIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => V1PlanningWfpObjectiveWfpObjectiveIdRoute,
-  } as any)
-const V2planningAppConsolidationSupplementalIndexRoute =
-  V2planningAppConsolidationSupplementalIndexRouteImport.update({
-    id: '/(planning)/app-consolidation/supplemental/',
-    path: '/app-consolidation/supplemental/',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2planningAppConsolidationSupplementalSupplementalIdRoute =
-  V2planningAppConsolidationSupplementalSupplementalIdRouteImport.update({
-    id: '/(planning)/app-consolidation/supplemental/$supplementalId',
-    path: '/app-consolidation/supplemental/$supplementalId',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2planningMarketScopingManageActivitiesRoute =
-  V2planningMarketScopingManageActivitiesRouteImport.update({
-    id: '/(planning)/market-scoping/manage/activities',
-    path: '/market-scoping/manage/activities',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2planningMarketScopingManageParametersRoute =
-  V2planningMarketScopingManageParametersRouteImport.update({
-    id: '/(planning)/market-scoping/manage/parameters',
-    path: '/market-scoping/manage/parameters',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2planningWfpExpenditureWfpObjectiveActivityIdIndexRoute =
-  V2planningWfpExpenditureWfpObjectiveActivityIdIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => V2planningWfpExpenditureWfpObjectiveActivityIdRoute,
-  } as any)
-const V2planningWfpObjectiveWfpObjectiveIdIndexRoute =
-  V2planningWfpObjectiveWfpObjectiveIdIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => V2planningWfpObjectiveWfpObjectiveIdRoute,
-  } as any)
-const V2planningWfpWfpIdIndexRoute = V2planningWfpWfpIdIndexRouteImport.update({
-  id: '/',
-  path: '/',
-  getParentRoute: () => V2planningWfpWfpIdRoute,
+const V1PlanningFundFundIdRoute = V1PlanningFundFundIdRouteImport.update({
+  id: '/fund/$fundId',
+  path: '/fund/$fundId',
+  getParentRoute: () => V1PlanningRouteRoute,
 } as any)
-const V2planningWfpWfpIdActivityRoute =
-  V2planningWfpWfpIdActivityRouteImport.update({
-    id: '/activity',
-    path: '/activity',
-    getParentRoute: () => V2planningWfpWfpIdRoute,
+const V1PlanningFundBudgetAllocationIdRoute =
+  V1PlanningFundBudgetAllocationIdRouteImport.update({
+    id: '/fund/$budgetAllocationId',
+    path: '/fund/$budgetAllocationId',
+    getParentRoute: () => V1PlanningRouteRoute,
   } as any)
-const V2planningWfpWfpIdGanttChartRoute =
-  V2planningWfpWfpIdGanttChartRouteImport.update({
-    id: '/gantt-chart',
-    path: '/gantt-chart',
-    getParentRoute: () => V2planningWfpWfpIdRoute,
+const V1PlanningFundReceiveFundSourceIdRoute =
+  V1PlanningFundReceiveFundSourceIdRouteImport.update({
+    id: '/fund-receive/$fundSourceId',
+    path: '/fund-receive/$fundSourceId',
+    getParentRoute: () => V1PlanningRouteRoute,
   } as any)
-const V2procurementBiddingDocumentsBacResolutionIdIndexRoute =
-  V2procurementBiddingDocumentsBacResolutionIdIndexRouteImport.update({
-    id: '/(procurement)/bidding-documents/$bacResolutionId/',
-    path: '/bidding-documents/$bacResolutionId/',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2procurementManageNoaNoaIdIndexRoute =
-  V2procurementManageNoaNoaIdIndexRouteImport.update({
-    id: '/(procurement)/manage-noa/$noaId/',
-    path: '/manage-noa/$noaId/',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2procurementNoticeOfAwardNoaNoaIdIndexRoute =
-  V2procurementNoticeOfAwardNoaNoaIdIndexRouteImport.update({
-    id: '/(procurement)/notice-of-award-noa/$noaId/',
-    path: '/notice-of-award-noa/$noaId/',
-    getParentRoute: () => V2Route,
-  } as any)
-const V2procurementPoPurchaseOrderIdIndexRoute =
-  V2procurementPoPurchaseOrderIdIndexRouteImport.update({
-    id: '/(procurement)/po/$purchaseOrderId/',
-    path: '/po/$purchaseOrderId/',
+const V2procurementSupplierPortalRfqItemIndexRoute =
+  V2procurementSupplierPortalRfqItemIndexRouteImport.update({
+    id: '/(procurement)/supplier-portal/rfq-item/',
+    path: '/supplier-portal/rfq-item/',
     getParentRoute: () => V2Route,
   } as any)
 const V2procurementSupplierPortalDirectContractingItemIndexRoute =
@@ -1139,56 +890,255 @@ const V2procurementSupplierPortalDirectContractingItemIndexRoute =
     path: '/supplier-portal/direct-contracting-item/',
     getParentRoute: () => V2Route,
   } as any)
-const V2procurementSupplierPortalRfqItemIndexRoute =
-  V2procurementSupplierPortalRfqItemIndexRouteImport.update({
-    id: '/(procurement)/supplier-portal/rfq-item/',
-    path: '/supplier-portal/rfq-item/',
+const V2procurementPoPurchaseOrderIdIndexRoute =
+  V2procurementPoPurchaseOrderIdIndexRouteImport.update({
+    id: '/(procurement)/po/$purchaseOrderId/',
+    path: '/po/$purchaseOrderId/',
     getParentRoute: () => V2Route,
   } as any)
-const V1PlanningDeliveryUnitIdOpcrOpcrIdIndexRoute =
-  V1PlanningDeliveryUnitIdOpcrOpcrIdIndexRouteImport.update({
-    id: '/$deliveryUnitId/opcr/$opcrId/',
-    path: '/$deliveryUnitId/opcr/$opcrId/',
-    getParentRoute: () => V1PlanningRouteRoute,
+const V2procurementNoticeOfAwardNoaNoaIdIndexRoute =
+  V2procurementNoticeOfAwardNoaNoaIdIndexRouteImport.update({
+    id: '/(procurement)/notice-of-award-noa/$noaId/',
+    path: '/notice-of-award-noa/$noaId/',
+    getParentRoute: () => V2Route,
   } as any)
-const V1PlanningDeliveryUnitIdWfpWfpIdIndexRoute =
-  V1PlanningDeliveryUnitIdWfpWfpIdIndexRouteImport.update({
+const V2procurementManageNoaNoaIdIndexRoute =
+  V2procurementManageNoaNoaIdIndexRouteImport.update({
+    id: '/(procurement)/manage-noa/$noaId/',
+    path: '/manage-noa/$noaId/',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2procurementBiddingDocumentsBacResolutionIdIndexRoute =
+  V2procurementBiddingDocumentsBacResolutionIdIndexRouteImport.update({
+    id: '/(procurement)/bidding-documents/$bacResolutionId/',
+    path: '/bidding-documents/$bacResolutionId/',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2planningWfpWfpIdIndexRoute = V2planningWfpWfpIdIndexRouteImport.update({
+  id: '/',
+  path: '/',
+  getParentRoute: () => V2planningWfpWfpIdRoute,
+} as any)
+const V2planningWfpObjectiveWfpObjectiveIdIndexRoute =
+  V2planningWfpObjectiveWfpObjectiveIdIndexRouteImport.update({
     id: '/',
     path: '/',
-    getParentRoute: () => V1PlanningDeliveryUnitIdWfpWfpIdRoute,
+    getParentRoute: () => V2planningWfpObjectiveWfpObjectiveIdRoute,
   } as any)
-const V1PlanningKpiKpiIdSubKpiIndexRoute =
-  V1PlanningKpiKpiIdSubKpiIndexRouteImport.update({
-    id: '/$kpiId/subKpi/',
-    path: '/$kpiId/subKpi/',
+const V2planningWfpExpenditureWfpObjectiveActivityIdIndexRoute =
+  V2planningWfpExpenditureWfpObjectiveActivityIdIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => V2planningWfpExpenditureWfpObjectiveActivityIdRoute,
+  } as any)
+const V2planningAppConsolidationSupplementalIndexRoute =
+  V2planningAppConsolidationSupplementalIndexRouteImport.update({
+    id: '/(planning)/app-consolidation/supplemental/',
+    path: '/app-consolidation/supplemental/',
+    getParentRoute: () => V2Route,
+  } as any)
+const V1PlanningWfpObjectiveWfpObjectiveIdIndexRoute =
+  V1PlanningWfpObjectiveWfpObjectiveIdIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => V1PlanningWfpObjectiveWfpObjectiveIdRoute,
+  } as any)
+const V1PlanningWfpExpenditureWfpObjectiveActivityIdIndexRoute =
+  V1PlanningWfpExpenditureWfpObjectiveActivityIdIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => V1PlanningWfpExpenditureWfpObjectiveActivityIdRoute,
+  } as any)
+const V1PlanningOpcrOpcrIdIndexRoute =
+  V1PlanningOpcrOpcrIdIndexRouteImport.update({
+    id: '/opcr/$opcrId/',
+    path: '/opcr/$opcrId/',
+    getParentRoute: () => V1PlanningRouteRoute,
+  } as any)
+const V1PlanningOfficeOfficeIdIndexRoute =
+  V1PlanningOfficeOfficeIdIndexRouteImport.update({
+    id: '/$officeId/',
+    path: '/$officeId/',
+    getParentRoute: () => V1PlanningOfficeRouteRoute,
+  } as any)
+const V1PlanningOfficeDeliveryUnitIdIndexRoute =
+  V1PlanningOfficeDeliveryUnitIdIndexRouteImport.update({
+    id: '/$deliveryUnitId/',
+    path: '/$deliveryUnitId/',
+    getParentRoute: () => V1PlanningOfficeRouteRoute,
+  } as any)
+const V1PlanningOfficeClusterIdIndexRoute =
+  V1PlanningOfficeClusterIdIndexRouteImport.update({
+    id: '/$clusterId/',
+    path: '/$clusterId/',
+    getParentRoute: () => V1PlanningOfficeRouteRoute,
+  } as any)
+const V1PlanningKpiKpiIdIndexRoute = V1PlanningKpiKpiIdIndexRouteImport.update({
+  id: '/$kpiId/',
+  path: '/$kpiId/',
+  getParentRoute: () => V1PlanningKpiRouteRoute,
+} as any)
+const V1PlanningKpiAssignmentForDuKpiAssignmentForDuIdIndexRoute =
+  V1PlanningKpiAssignmentForDuKpiAssignmentForDuIdIndexRouteImport.update({
+    id: '/kpi-assignment-for-du/$kpiAssignmentForDuId/',
+    path: '/kpi-assignment-for-du/$kpiAssignmentForDuId/',
+    getParentRoute: () => V1PlanningRouteRoute,
+  } as any)
+const V1PlanningFundFundIdIndexRoute =
+  V1PlanningFundFundIdIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => V1PlanningFundFundIdRoute,
+  } as any)
+const V1PlanningFundBudgetAllocationIdIndexRoute =
+  V1PlanningFundBudgetAllocationIdIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => V1PlanningFundBudgetAllocationIdRoute,
+  } as any)
+const V1PlanningFundReceiveFundSourceIdIndexRoute =
+  V1PlanningFundReceiveFundSourceIdIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => V1PlanningFundReceiveFundSourceIdRoute,
+  } as any)
+const V1PlanningFunctionAllocationFiscalYearIdIndexRoute =
+  V1PlanningFunctionAllocationFiscalYearIdIndexRouteImport.update({
+    id: '/function-allocation/$fiscalYearId/',
+    path: '/function-allocation/$fiscalYearId/',
+    getParentRoute: () => V1PlanningRouteRoute,
+  } as any)
+const V1PlanningFiscalYearFiscalYearIdIndexRoute =
+  V1PlanningFiscalYearFiscalYearIdIndexRouteImport.update({
+    id: '/$fiscalYearId/',
+    path: '/$fiscalYearId/',
+    getParentRoute: () => V1PlanningFiscalYearRoute,
+  } as any)
+const V1PlanningDeliveryUnitIdWfpIndexRoute =
+  V1PlanningDeliveryUnitIdWfpIndexRouteImport.update({
+    id: '/$deliveryUnitId/wfp/',
+    path: '/$deliveryUnitId/wfp/',
+    getParentRoute: () => V1PlanningRouteRoute,
+  } as any)
+const V2planningWfpWfpIdGanttChartRoute =
+  V2planningWfpWfpIdGanttChartRouteImport.update({
+    id: '/gantt-chart',
+    path: '/gantt-chart',
+    getParentRoute: () => V2planningWfpWfpIdRoute,
+  } as any)
+const V2planningWfpWfpIdActivityRoute =
+  V2planningWfpWfpIdActivityRouteImport.update({
+    id: '/activity',
+    path: '/activity',
+    getParentRoute: () => V2planningWfpWfpIdRoute,
+  } as any)
+const V2planningMarketScopingManageParametersRoute =
+  V2planningMarketScopingManageParametersRouteImport.update({
+    id: '/(planning)/market-scoping/manage/parameters',
+    path: '/market-scoping/manage/parameters',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2planningMarketScopingManageActivitiesRoute =
+  V2planningMarketScopingManageActivitiesRouteImport.update({
+    id: '/(planning)/market-scoping/manage/activities',
+    path: '/market-scoping/manage/activities',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2planningAppConsolidationSupplementalSupplementalIdRoute =
+  V2planningAppConsolidationSupplementalSupplementalIdRouteImport.update({
+    id: '/(planning)/app-consolidation/supplemental/$supplementalId',
+    path: '/app-consolidation/supplemental/$supplementalId',
+    getParentRoute: () => V2Route,
+  } as any)
+const V1PlanningOfficeOfficeIdEditRoute =
+  V1PlanningOfficeOfficeIdEditRouteImport.update({
+    id: '/$officeId/edit',
+    path: '/$officeId/edit',
+    getParentRoute: () => V1PlanningOfficeRouteRoute,
+  } as any)
+const V1PlanningOfficeOfficeIdDeleteRoute =
+  V1PlanningOfficeOfficeIdDeleteRouteImport.update({
+    id: '/$officeId/delete',
+    path: '/$officeId/delete',
+    getParentRoute: () => V1PlanningOfficeRouteRoute,
+  } as any)
+const V1PlanningOfficeDeliveryUnitIdEditRoute =
+  V1PlanningOfficeDeliveryUnitIdEditRouteImport.update({
+    id: '/$deliveryUnitId/edit',
+    path: '/$deliveryUnitId/edit',
+    getParentRoute: () => V1PlanningOfficeRouteRoute,
+  } as any)
+const V1PlanningOfficeDeliveryUnitIdDeleteRoute =
+  V1PlanningOfficeDeliveryUnitIdDeleteRouteImport.update({
+    id: '/$deliveryUnitId/delete',
+    path: '/$deliveryUnitId/delete',
+    getParentRoute: () => V1PlanningOfficeRouteRoute,
+  } as any)
+const V1PlanningOfficeClusterIdEditRoute =
+  V1PlanningOfficeClusterIdEditRouteImport.update({
+    id: '/$clusterId/edit',
+    path: '/$clusterId/edit',
+    getParentRoute: () => V1PlanningOfficeRouteRoute,
+  } as any)
+const V1PlanningOfficeClusterIdDeleteRoute =
+  V1PlanningOfficeClusterIdDeleteRouteImport.update({
+    id: '/$clusterId/delete',
+    path: '/$clusterId/delete',
+    getParentRoute: () => V1PlanningOfficeRouteRoute,
+  } as any)
+const V1PlanningKpiKpiIdEditRoute = V1PlanningKpiKpiIdEditRouteImport.update({
+  id: '/$kpiId/edit',
+  path: '/$kpiId/edit',
+  getParentRoute: () => V1PlanningKpiRouteRoute,
+} as any)
+const V1PlanningKpiKpiIdDeleteRoute =
+  V1PlanningKpiKpiIdDeleteRouteImport.update({
+    id: '/$kpiId/delete',
+    path: '/$kpiId/delete',
     getParentRoute: () => V1PlanningKpiRouteRoute,
   } as any)
-const V2planningWfpWfpIdActivityActivityIdRoute =
-  V2planningWfpWfpIdActivityActivityIdRouteImport.update({
-    id: '/$activityId',
-    path: '/$activityId',
-    getParentRoute: () => V2planningWfpWfpIdActivityRoute,
+const V1PlanningKpiAssignmentForDuKpiAssignmentForDuIdSubKpiRoute =
+  V1PlanningKpiAssignmentForDuKpiAssignmentForDuIdSubKpiRouteImport.update({
+    id: '/kpi-assignment-for-du/$kpiAssignmentForDuId/subKpi',
+    path: '/kpi-assignment-for-du/$kpiAssignmentForDuId/subKpi',
+    getParentRoute: () => V1PlanningRouteRoute,
   } as any)
-const V2planningWfpWfpIdOpcrIndexRoute =
-  V2planningWfpWfpIdOpcrIndexRouteImport.update({
-    id: '/opcr/',
-    path: '/opcr/',
-    getParentRoute: () => V2planningWfpWfpIdRoute,
+const V1PlanningKpiAssignmentForDuKpiAssignmentForDuIdDeleteRoute =
+  V1PlanningKpiAssignmentForDuKpiAssignmentForDuIdDeleteRouteImport.update({
+    id: '/kpi-assignment-for-du/$kpiAssignmentForDuId/delete',
+    path: '/kpi-assignment-for-du/$kpiAssignmentForDuId/delete',
+    getParentRoute: () => V1PlanningRouteRoute,
   } as any)
-const V2planningWfpWfpIdOpcrOpcrIdRoute =
-  V2planningWfpWfpIdOpcrOpcrIdRouteImport.update({
-    id: '/opcr/$opcrId',
-    path: '/opcr/$opcrId',
-    getParentRoute: () => V2planningWfpWfpIdRoute,
+const V1PlanningFunctionAllocationFiscalYearIdLockRoute =
+  V1PlanningFunctionAllocationFiscalYearIdLockRouteImport.update({
+    id: '/function-allocation/$fiscalYearId/lock',
+    path: '/function-allocation/$fiscalYearId/lock',
+    getParentRoute: () => V1PlanningRouteRoute,
   } as any)
-const V2procurementBacResolutionsPublicBiddingResolutionIdBiddingScheduleIndexRoute =
-  V2procurementBacResolutionsPublicBiddingResolutionIdBiddingScheduleIndexRouteImport.update(
-    {
-      id: '/(procurement)/bac-resolutions-public-bidding/$resolutionId/bidding-schedule/',
-      path: '/bac-resolutions-public-bidding/$resolutionId/bidding-schedule/',
-      getParentRoute: () => V2Route,
-    } as any,
-  )
+const V1PlanningFunctionAllocationFiscalYearIdDeleteRoute =
+  V1PlanningFunctionAllocationFiscalYearIdDeleteRouteImport.update({
+    id: '/function-allocation/$fiscalYearId/delete',
+    path: '/function-allocation/$fiscalYearId/delete',
+    getParentRoute: () => V1PlanningRouteRoute,
+  } as any)
+const V1PlanningFiscalYearFiscalYearIdLockRoute =
+  V1PlanningFiscalYearFiscalYearIdLockRouteImport.update({
+    id: '/$fiscalYearId/lock',
+    path: '/$fiscalYearId/lock',
+    getParentRoute: () => V1PlanningFiscalYearRoute,
+  } as any)
+const V1PlanningFiscalYearFiscalYearIdDeleteRoute =
+  V1PlanningFiscalYearFiscalYearIdDeleteRouteImport.update({
+    id: '/$fiscalYearId/delete',
+    path: '/$fiscalYearId/delete',
+    getParentRoute: () => V1PlanningFiscalYearRoute,
+  } as any)
+const V1PlanningDeliveryUnitIdWfpWfpIdRoute =
+  V1PlanningDeliveryUnitIdWfpWfpIdRouteImport.update({
+    id: '/$deliveryUnitId/wfp/$wfpId',
+    path: '/$deliveryUnitId/wfp/$wfpId',
+    getParentRoute: () => V1PlanningRouteRoute,
+  } as any)
 const V2procurementBacResolutionsResolutionIdBiddingScheduleIndexRoute =
   V2procurementBacResolutionsResolutionIdBiddingScheduleIndexRouteImport.update(
     {
@@ -1197,17 +1147,49 @@ const V2procurementBacResolutionsResolutionIdBiddingScheduleIndexRoute =
       getParentRoute: () => V2Route,
     } as any,
   )
-const V1PlanningDeliveryUnitIdOpcrKpiKpiIdIndexRoute =
-  V1PlanningDeliveryUnitIdOpcrKpiKpiIdIndexRouteImport.update({
-    id: '/$deliveryUnitId/opcr/kpi/$kpiId/',
-    path: '/$deliveryUnitId/opcr/kpi/$kpiId/',
+const V2procurementBacResolutionsPublicBiddingResolutionIdBiddingScheduleIndexRoute =
+  V2procurementBacResolutionsPublicBiddingResolutionIdBiddingScheduleIndexRouteImport.update(
+    {
+      id: '/(procurement)/bac-resolutions-public-bidding/$resolutionId/bidding-schedule/',
+      path: '/bac-resolutions-public-bidding/$resolutionId/bidding-schedule/',
+      getParentRoute: () => V2Route,
+    } as any,
+  )
+const V2planningWfpWfpIdOpcrIndexRoute =
+  V2planningWfpWfpIdOpcrIndexRouteImport.update({
+    id: '/opcr/',
+    path: '/opcr/',
+    getParentRoute: () => V2planningWfpWfpIdRoute,
+  } as any)
+const V1PlanningKpiKpiIdSubKpiIndexRoute =
+  V1PlanningKpiKpiIdSubKpiIndexRouteImport.update({
+    id: '/$kpiId/subKpi/',
+    path: '/$kpiId/subKpi/',
+    getParentRoute: () => V1PlanningKpiRouteRoute,
+  } as any)
+const V1PlanningDeliveryUnitIdWfpWfpIdIndexRoute =
+  V1PlanningDeliveryUnitIdWfpWfpIdIndexRouteImport.update({
+    id: '/',
+    path: '/',
+    getParentRoute: () => V1PlanningDeliveryUnitIdWfpWfpIdRoute,
+  } as any)
+const V1PlanningDeliveryUnitIdOpcrOpcrIdIndexRoute =
+  V1PlanningDeliveryUnitIdOpcrOpcrIdIndexRouteImport.update({
+    id: '/$deliveryUnitId/opcr/$opcrId/',
+    path: '/$deliveryUnitId/opcr/$opcrId/',
     getParentRoute: () => V1PlanningRouteRoute,
   } as any)
-const V1PlanningKpiKpiIdSubKpiSubKpiIdIndexRoute =
-  V1PlanningKpiKpiIdSubKpiSubKpiIdIndexRouteImport.update({
-    id: '/$kpiId/subKpi/$subKpiId/',
-    path: '/$kpiId/subKpi/$subKpiId/',
-    getParentRoute: () => V1PlanningKpiRouteRoute,
+const V2planningWfpWfpIdOpcrOpcrIdRoute =
+  V2planningWfpWfpIdOpcrOpcrIdRouteImport.update({
+    id: '/opcr/$opcrId',
+    path: '/opcr/$opcrId',
+    getParentRoute: () => V2planningWfpWfpIdRoute,
+  } as any)
+const V2planningWfpWfpIdActivityActivityIdRoute =
+  V2planningWfpWfpIdActivityActivityIdRouteImport.update({
+    id: '/$activityId',
+    path: '/$activityId',
+    getParentRoute: () => V2planningWfpWfpIdActivityRoute,
   } as any)
 const V2planningWfpWfpIdActivityActivityIdIndexRoute =
   V2planningWfpWfpIdActivityActivityIdIndexRouteImport.update({
@@ -1215,16 +1197,28 @@ const V2planningWfpWfpIdActivityActivityIdIndexRoute =
     path: '/',
     getParentRoute: () => V2planningWfpWfpIdActivityActivityIdRoute,
   } as any)
+const V1PlanningKpiKpiIdSubKpiSubKpiIdIndexRoute =
+  V1PlanningKpiKpiIdSubKpiSubKpiIdIndexRouteImport.update({
+    id: '/$kpiId/subKpi/$subKpiId/',
+    path: '/$kpiId/subKpi/$subKpiId/',
+    getParentRoute: () => V1PlanningKpiRouteRoute,
+  } as any)
+const V1PlanningDeliveryUnitIdOpcrKpiKpiIdIndexRoute =
+  V1PlanningDeliveryUnitIdOpcrKpiKpiIdIndexRouteImport.update({
+    id: '/$deliveryUnitId/opcr/kpi/$kpiId/',
+    path: '/$deliveryUnitId/opcr/kpi/$kpiId/',
+    getParentRoute: () => V1PlanningRouteRoute,
+  } as any)
 const V2planningWfpWfpIdActivityActivityIdExpendituresRoute =
   V2planningWfpWfpIdActivityActivityIdExpendituresRouteImport.update({
     id: '/expenditures',
     path: '/expenditures',
     getParentRoute: () => V2planningWfpWfpIdActivityActivityIdRoute,
   } as any)
-const V1PlanningDeliveryUnitIdOpcrOpcrIdKpiFunctionTypeIndexRoute =
-  V1PlanningDeliveryUnitIdOpcrOpcrIdKpiFunctionTypeIndexRouteImport.update({
-    id: '/$deliveryUnitId/opcr/$opcrId/kpi/$functionType/',
-    path: '/$deliveryUnitId/opcr/$opcrId/kpi/$functionType/',
+const V1PlanningDeliveryUnitIdOpcrKpiKpiIdSubkpiIndexRoute =
+  V1PlanningDeliveryUnitIdOpcrKpiKpiIdSubkpiIndexRouteImport.update({
+    id: '/$deliveryUnitId/opcr/kpi/$kpiId/subkpi/',
+    path: '/$deliveryUnitId/opcr/kpi/$kpiId/subkpi/',
     getParentRoute: () => V1PlanningRouteRoute,
   } as any)
 const V1PlanningDeliveryUnitIdOpcrOpcrIdKpiKpiIdIndexRoute =
@@ -1233,10 +1227,16 @@ const V1PlanningDeliveryUnitIdOpcrOpcrIdKpiKpiIdIndexRoute =
     path: '/$deliveryUnitId/opcr/$opcrId/kpi/$kpiId/',
     getParentRoute: () => V1PlanningRouteRoute,
   } as any)
-const V1PlanningDeliveryUnitIdOpcrKpiKpiIdSubkpiIndexRoute =
-  V1PlanningDeliveryUnitIdOpcrKpiKpiIdSubkpiIndexRouteImport.update({
-    id: '/$deliveryUnitId/opcr/kpi/$kpiId/subkpi/',
-    path: '/$deliveryUnitId/opcr/kpi/$kpiId/subkpi/',
+const V1PlanningDeliveryUnitIdOpcrOpcrIdKpiFunctionTypeIndexRoute =
+  V1PlanningDeliveryUnitIdOpcrOpcrIdKpiFunctionTypeIndexRouteImport.update({
+    id: '/$deliveryUnitId/opcr/$opcrId/kpi/$functionType/',
+    path: '/$deliveryUnitId/opcr/$opcrId/kpi/$functionType/',
+    getParentRoute: () => V1PlanningRouteRoute,
+  } as any)
+const V1PlanningDeliveryUnitIdOpcrOpcrIdKpiKpiIdSubKpiIndexRoute =
+  V1PlanningDeliveryUnitIdOpcrOpcrIdKpiKpiIdSubKpiIndexRouteImport.update({
+    id: '/$deliveryUnitId/opcr/$opcrId/kpi/$kpiId/subKpi/',
+    path: '/$deliveryUnitId/opcr/$opcrId/kpi/$kpiId/subKpi/',
     getParentRoute: () => V1PlanningRouteRoute,
   } as any)
 const V1PlanningDeliveryUnitIdOpcrOpcrIdKpiFunctionTypeKpiIdIndexRoute =
@@ -1247,12 +1247,6 @@ const V1PlanningDeliveryUnitIdOpcrOpcrIdKpiFunctionTypeKpiIdIndexRoute =
       getParentRoute: () => V1PlanningRouteRoute,
     } as any,
   )
-const V1PlanningDeliveryUnitIdOpcrOpcrIdKpiKpiIdSubKpiIndexRoute =
-  V1PlanningDeliveryUnitIdOpcrOpcrIdKpiKpiIdSubKpiIndexRouteImport.update({
-    id: '/$deliveryUnitId/opcr/$opcrId/kpi/$kpiId/subKpi/',
-    path: '/$deliveryUnitId/opcr/$opcrId/kpi/$kpiId/subKpi/',
-    getParentRoute: () => V1PlanningRouteRoute,
-  } as any)
 const V1PlanningDeliveryUnitIdOpcrOpcrIdKpiKpiIdSubKpiSubKpiIdIndexRoute =
   V1PlanningDeliveryUnitIdOpcrOpcrIdKpiKpiIdSubKpiSubKpiIdIndexRouteImport.update(
     {
@@ -1265,7 +1259,7 @@ const V1PlanningDeliveryUnitIdOpcrOpcrIdKpiKpiIdSubKpiSubKpiIdIndexRoute =
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/v1': typeof V1RouteWithChildren
-  '/v2': typeof V2RouteWithChildren
+  '/v2': typeof V2PlanningRouteWithChildren
   '/v1/planning': typeof V1PlanningRouteRouteWithChildren
   '/v1/overview': typeof V1OverviewRoute
   '/v2/bidding-document-library': typeof V2BiddingDocumentLibraryRoute
@@ -1294,13 +1288,13 @@ export interface FileRoutesByFullPath {
   '/v2/dashboard': typeof V2planningDashboardRoute
   '/v2/uacs-library': typeof V2planningUacsLibraryRouteWithChildren
   '/v2/ntp/$ntpId': typeof V2NtpNtpIdRoute
-  '/v1/finance/': typeof V1FinanceIndexRoute
+  '/v1/finance': typeof V1FinanceIndexRoute
   '/v1/planning/': typeof V1PlanningIndexRoute
-  '/v2/bac/': typeof V2BacIndexRoute
-  '/v2/commitments/': typeof V2CommitmentsIndexRoute
-  '/v2/fiscal-year-and-policies/': typeof V2FiscalYearAndPoliciesIndexRoute
-  '/v2/kpi-library/': typeof V2KpiLibraryIndexRoute
-  '/v2/ntp/': typeof V2NtpIndexRoute
+  '/v2/bac': typeof V2BacIndexRoute
+  '/v2/commitments': typeof V2CommitmentsIndexRoute
+  '/v2/fiscal-year-and-policies': typeof V2FiscalYearAndPoliciesIndexRoute
+  '/v2/kpi-library': typeof V2KpiLibraryIndexRoute
+  '/v2/ntp': typeof V2NtpIndexRoute
   '/v1/planning/fund-receive/$fundSourceId': typeof V1PlanningFundReceiveFundSourceIdRouteWithChildren
   '/v1/planning/fund/$budgetAllocationId': typeof V1PlanningFundBudgetAllocationIdRouteWithChildren
   '/v1/planning/fund/$fundId': typeof V1PlanningFundFundIdRouteWithChildren
@@ -1326,60 +1320,59 @@ export interface FileRoutesByFullPath {
   '/v2/consolidate-prs/$consolidatedPrId': typeof V2procurementConsolidatePrsConsolidatedPrIdLazyRoute
   '/v2/kpi-library/master-kpi/$kpiId': typeof V2KpiLibraryMasterKpiKpiIdLazyRoute
   '/v1/planning/fiscal-year/': typeof V1PlanningFiscalYearIndexRoute
-  '/v1/planning/fund-receive/': typeof V1PlanningFundReceiveIndexRoute
-  '/v1/planning/fund/': typeof V1PlanningFundIndexRoute
-  '/v1/planning/kpi-assignment-for-du/': typeof V1PlanningKpiAssignmentForDuIndexRoute
+  '/v1/planning/fund-receive': typeof V1PlanningFundReceiveIndexRoute
+  '/v1/planning/fund': typeof V1PlanningFundIndexRoute
+  '/v1/planning/kpi-assignment-for-du': typeof V1PlanningKpiAssignmentForDuIndexRoute
   '/v1/planning/kpi/': typeof V1PlanningKpiIndexRoute
   '/v1/planning/office/': typeof V1PlanningOfficeIndexRoute
-  '/v1/planning/opcr/': typeof V1PlanningOpcrIndexRoute
-  '/v1/planning/wfp-expenditure/': typeof V1PlanningWfpExpenditureIndexRoute
-  '/v1/planning/wfp-objective/': typeof V1PlanningWfpObjectiveIndexRoute
+  '/v1/planning/wfp-expenditure': typeof V1PlanningWfpExpenditureIndexRoute
+  '/v1/planning/wfp-objective': typeof V1PlanningWfpObjectiveIndexRoute
   '/v2/annual-performance-planning/': typeof V2planningAnnualPerformancePlanningIndexRoute
-  '/v2/app-consolidation/': typeof V2planningAppConsolidationIndexRoute
-  '/v2/market-scoping/': typeof V2planningMarketScopingIndexRoute
-  '/v2/ppmp/': typeof V2planningPpmpIndexRoute
+  '/v2/app-consolidation': typeof V2planningAppConsolidationIndexRoute
+  '/v2/market-scoping': typeof V2planningMarketScopingIndexRoute
+  '/v2/ppmp': typeof V2planningPpmpIndexRoute
   '/v2/uacs-library/': typeof V2planningUacsLibraryIndexRoute
-  '/v2/wfp-expenditure/': typeof V2planningWfpExpenditureIndexRoute
-  '/v2/wfp-objective/': typeof V2planningWfpObjectiveIndexRoute
-  '/v2/wfp/': typeof V2planningWfpIndexRoute
-  '/v2/abstract-of-bids-aob/': typeof V2procurementAbstractOfBidsAobIndexRoute
-  '/v2/agency-purchase-requests-apr/': typeof V2procurementAgencyPurchaseRequestsAprIndexRoute
-  '/v2/bac-resolutions-public-bidding/': typeof V2procurementBacResolutionsPublicBiddingIndexRoute
-  '/v2/bac-resolutions/': typeof V2procurementBacResolutionsIndexRoute
-  '/v2/bid-evaluation/': typeof V2procurementBidEvaluationIndexRoute
-  '/v2/bidding-documents/': typeof V2procurementBiddingDocumentsIndexRoute
-  '/v2/bidding-master-calendar/': typeof V2procurementBiddingMasterCalendarIndexRoute
-  '/v2/consolidate-prs/': typeof V2procurementConsolidatePrsIndexRoute
-  '/v2/contracts-consulting-infrastructure/': typeof V2procurementContractsConsultingInfrastructureIndexRoute
-  '/v2/direct-acquisition-request/': typeof V2procurementDirectAcquisitionRequestIndexRoute
-  '/v2/direct-contracting-request/': typeof V2procurementDirectContractingRequestIndexRoute
-  '/v2/manage-aob/': typeof V2procurementManageAobIndexRoute
-  '/v2/manage-aprs/': typeof V2procurementManageAprsIndexRoute
-  '/v2/manage-bac-resolutions/': typeof V2procurementManageBacResolutionsIndexRoute
-  '/v2/manage-contracts/': typeof V2procurementManageContractsIndexRoute
-  '/v2/manage-direct-acquisition/': typeof V2procurementManageDirectAcquisitionIndexRoute
-  '/v2/manage-direct-contracting/': typeof V2procurementManageDirectContractingIndexRoute
-  '/v2/manage-noa/': typeof V2procurementManageNoaIndexRoute
-  '/v2/manage-ntp/': typeof V2procurementManageNtpIndexRoute
-  '/v2/manage-po/': typeof V2procurementManagePoIndexRoute
-  '/v2/manage-pos/': typeof V2procurementManagePosIndexRoute
-  '/v2/manage-prs/': typeof V2procurementManagePrsIndexRoute
-  '/v2/manage-rfq/': typeof V2procurementManageRfqIndexRoute
-  '/v2/manage-supplier-direct-acquisition/': typeof V2procurementManageSupplierDirectAcquisitionIndexRoute
-  '/v2/manage-supplier-direct-contracting/': typeof V2procurementManageSupplierDirectContractingIndexRoute
-  '/v2/manage-supplier-portal/': typeof V2procurementManageSupplierPortalIndexRoute
-  '/v2/notice-of-award-noa/': typeof V2procurementNoticeOfAwardNoaIndexRoute
-  '/v2/notice-to-proceed-ntp/': typeof V2procurementNoticeToProceedNtpIndexRoute
-  '/v2/po-direct-acquisition/': typeof V2procurementPoDirectAcquisitionIndexRoute
-  '/v2/po-public-bidding/': typeof V2procurementPoPublicBiddingIndexRoute
-  '/v2/po-svp/': typeof V2procurementPoSvpIndexRoute
-  '/v2/procurement-dashboard/': typeof V2procurementProcurementDashboardIndexRoute
-  '/v2/purchase-requests-pr/': typeof V2procurementPurchaseRequestsPrIndexRoute
-  '/v2/request-for-quotation-rfq/': typeof V2procurementRequestForQuotationRfqIndexRoute
-  '/v2/organization/': typeof V2PlanningOrganizationIndexRoute
-  '/v2/kpi-library/kpi-measurement-configurator/': typeof V2KpiLibraryKpiMeasurementConfiguratorIndexLazyRoute
-  '/v2/kpi-library/master-kpi/': typeof V2KpiLibraryMasterKpiIndexLazyRoute
-  '/v2/kpi-library/rating-scales/': typeof V2KpiLibraryRatingScalesIndexLazyRoute
+  '/v2/wfp-expenditure': typeof V2planningWfpExpenditureIndexRoute
+  '/v2/wfp-objective': typeof V2planningWfpObjectiveIndexRoute
+  '/v2/wfp': typeof V2planningWfpIndexRoute
+  '/v2/abstract-of-bids-aob': typeof V2procurementAbstractOfBidsAobIndexRoute
+  '/v2/agency-purchase-requests-apr': typeof V2procurementAgencyPurchaseRequestsAprIndexRoute
+  '/v2/bac-resolutions-public-bidding': typeof V2procurementBacResolutionsPublicBiddingIndexRoute
+  '/v2/bac-resolutions': typeof V2procurementBacResolutionsIndexRoute
+  '/v2/bid-evaluation': typeof V2procurementBidEvaluationIndexRoute
+  '/v2/bidding-documents': typeof V2procurementBiddingDocumentsIndexRoute
+  '/v2/bidding-master-calendar': typeof V2procurementBiddingMasterCalendarIndexRoute
+  '/v2/consolidate-prs': typeof V2procurementConsolidatePrsIndexRoute
+  '/v2/contracts-consulting-infrastructure': typeof V2procurementContractsConsultingInfrastructureIndexRoute
+  '/v2/direct-acquisition-request': typeof V2procurementDirectAcquisitionRequestIndexRoute
+  '/v2/direct-contracting-request': typeof V2procurementDirectContractingRequestIndexRoute
+  '/v2/manage-aob': typeof V2procurementManageAobIndexRoute
+  '/v2/manage-aprs': typeof V2procurementManageAprsIndexRoute
+  '/v2/manage-bac-resolutions': typeof V2procurementManageBacResolutionsIndexRoute
+  '/v2/manage-contracts': typeof V2procurementManageContractsIndexRoute
+  '/v2/manage-direct-acquisition': typeof V2procurementManageDirectAcquisitionIndexRoute
+  '/v2/manage-direct-contracting': typeof V2procurementManageDirectContractingIndexRoute
+  '/v2/manage-noa': typeof V2procurementManageNoaIndexRoute
+  '/v2/manage-ntp': typeof V2procurementManageNtpIndexRoute
+  '/v2/manage-po': typeof V2procurementManagePoIndexRoute
+  '/v2/manage-pos': typeof V2procurementManagePosIndexRoute
+  '/v2/manage-prs': typeof V2procurementManagePrsIndexRoute
+  '/v2/manage-rfq': typeof V2procurementManageRfqIndexRoute
+  '/v2/manage-supplier-direct-acquisition': typeof V2procurementManageSupplierDirectAcquisitionIndexRoute
+  '/v2/manage-supplier-direct-contracting': typeof V2procurementManageSupplierDirectContractingIndexRoute
+  '/v2/manage-supplier-portal': typeof V2procurementManageSupplierPortalIndexRoute
+  '/v2/notice-of-award-noa': typeof V2procurementNoticeOfAwardNoaIndexRoute
+  '/v2/notice-to-proceed-ntp': typeof V2procurementNoticeToProceedNtpIndexRoute
+  '/v2/po-direct-acquisition': typeof V2procurementPoDirectAcquisitionIndexRoute
+  '/v2/po-public-bidding': typeof V2procurementPoPublicBiddingIndexRoute
+  '/v2/po-svp': typeof V2procurementPoSvpIndexRoute
+  '/v2/procurement-dashboard': typeof V2procurementProcurementDashboardIndexRoute
+  '/v2/purchase-requests-pr': typeof V2procurementPurchaseRequestsPrIndexRoute
+  '/v2/request-for-quotation-rfq': typeof V2procurementRequestForQuotationRfqIndexRoute
+  '/v2/organization': typeof V2PlanningOrganizationIndexRoute
+  '/v2/kpi-library/kpi-measurement-configurator': typeof V2KpiLibraryKpiMeasurementConfiguratorIndexLazyRoute
+  '/v2/kpi-library/master-kpi': typeof V2KpiLibraryMasterKpiIndexLazyRoute
+  '/v2/kpi-library/rating-scales': typeof V2KpiLibraryRatingScalesIndexLazyRoute
   '/v1/planning/$deliveryUnitId/wfp/$wfpId': typeof V1PlanningDeliveryUnitIdWfpWfpIdRouteWithChildren
   '/v1/planning/fiscal-year/$fiscalYearId/delete': typeof V1PlanningFiscalYearFiscalYearIdDeleteRoute
   '/v1/planning/fiscal-year/$fiscalYearId/lock': typeof V1PlanningFiscalYearFiscalYearIdLockRoute
@@ -1400,48 +1393,48 @@ export interface FileRoutesByFullPath {
   '/v2/market-scoping/manage/parameters': typeof V2planningMarketScopingManageParametersRoute
   '/v2/wfp/$wfpId/activity': typeof V2planningWfpWfpIdActivityRouteWithChildren
   '/v2/wfp/$wfpId/gantt-chart': typeof V2planningWfpWfpIdGanttChartRoute
-  '/v1/planning/$deliveryUnitId/wfp/': typeof V1PlanningDeliveryUnitIdWfpIndexRoute
-  '/v1/planning/fiscal-year/$fiscalYearId/': typeof V1PlanningFiscalYearFiscalYearIdIndexRoute
-  '/v1/planning/function-allocation/$fiscalYearId/': typeof V1PlanningFunctionAllocationFiscalYearIdIndexRoute
+  '/v1/planning/$deliveryUnitId/wfp': typeof V1PlanningDeliveryUnitIdWfpIndexRoute
+  '/v1/planning/fiscal-year/$fiscalYearId': typeof V1PlanningFiscalYearFiscalYearIdIndexRoute
+  '/v1/planning/function-allocation/$fiscalYearId': typeof V1PlanningFunctionAllocationFiscalYearIdIndexRoute
   '/v1/planning/fund-receive/$fundSourceId/': typeof V1PlanningFundReceiveFundSourceIdIndexRoute
   '/v1/planning/fund/$budgetAllocationId/': typeof V1PlanningFundBudgetAllocationIdIndexRoute
   '/v1/planning/fund/$fundId/': typeof V1PlanningFundFundIdIndexRoute
-  '/v1/planning/kpi-assignment-for-du/$kpiAssignmentForDuId/': typeof V1PlanningKpiAssignmentForDuKpiAssignmentForDuIdIndexRoute
-  '/v1/planning/kpi/$kpiId/': typeof V1PlanningKpiKpiIdIndexRoute
-  '/v1/planning/office/$clusterId/': typeof V1PlanningOfficeClusterIdIndexRoute
-  '/v1/planning/office/$deliveryUnitId/': typeof V1PlanningOfficeDeliveryUnitIdIndexRoute
-  '/v1/planning/office/$officeId/': typeof V1PlanningOfficeOfficeIdIndexRoute
-  '/v1/planning/opcr/$opcrId/': typeof V1PlanningOpcrOpcrIdIndexRoute
+  '/v1/planning/kpi-assignment-for-du/$kpiAssignmentForDuId': typeof V1PlanningKpiAssignmentForDuKpiAssignmentForDuIdIndexRoute
+  '/v1/planning/kpi/$kpiId': typeof V1PlanningKpiKpiIdIndexRoute
+  '/v1/planning/office/$clusterId': typeof V1PlanningOfficeClusterIdIndexRoute
+  '/v1/planning/office/$deliveryUnitId': typeof V1PlanningOfficeDeliveryUnitIdIndexRoute
+  '/v1/planning/office/$officeId': typeof V1PlanningOfficeOfficeIdIndexRoute
+  '/v1/planning/opcr/$opcrId': typeof V1PlanningOpcrOpcrIdIndexRoute
   '/v1/planning/wfp-expenditure/$wfpObjectiveActivityId/': typeof V1PlanningWfpExpenditureWfpObjectiveActivityIdIndexRoute
   '/v1/planning/wfp-objective/$wfpObjectiveId/': typeof V1PlanningWfpObjectiveWfpObjectiveIdIndexRoute
-  '/v2/app-consolidation/supplemental/': typeof V2planningAppConsolidationSupplementalIndexRoute
+  '/v2/app-consolidation/supplemental': typeof V2planningAppConsolidationSupplementalIndexRoute
   '/v2/wfp-expenditure/$wfpObjectiveActivityId/': typeof V2planningWfpExpenditureWfpObjectiveActivityIdIndexRoute
   '/v2/wfp-objective/$wfpObjectiveId/': typeof V2planningWfpObjectiveWfpObjectiveIdIndexRoute
   '/v2/wfp/$wfpId/': typeof V2planningWfpWfpIdIndexRoute
-  '/v2/bidding-documents/$bacResolutionId/': typeof V2procurementBiddingDocumentsBacResolutionIdIndexRoute
-  '/v2/manage-noa/$noaId/': typeof V2procurementManageNoaNoaIdIndexRoute
-  '/v2/notice-of-award-noa/$noaId/': typeof V2procurementNoticeOfAwardNoaNoaIdIndexRoute
-  '/v2/po/$purchaseOrderId/': typeof V2procurementPoPurchaseOrderIdIndexRoute
-  '/v2/supplier-portal/direct-contracting-item/': typeof V2procurementSupplierPortalDirectContractingItemIndexRoute
-  '/v2/supplier-portal/rfq-item/': typeof V2procurementSupplierPortalRfqItemIndexRoute
+  '/v2/bidding-documents/$bacResolutionId': typeof V2procurementBiddingDocumentsBacResolutionIdIndexRoute
+  '/v2/manage-noa/$noaId': typeof V2procurementManageNoaNoaIdIndexRoute
+  '/v2/notice-of-award-noa/$noaId': typeof V2procurementNoticeOfAwardNoaNoaIdIndexRoute
+  '/v2/po/$purchaseOrderId': typeof V2procurementPoPurchaseOrderIdIndexRoute
+  '/v2/supplier-portal/direct-contracting-item': typeof V2procurementSupplierPortalDirectContractingItemIndexRoute
+  '/v2/supplier-portal/rfq-item': typeof V2procurementSupplierPortalRfqItemIndexRoute
   '/v2/wfp/$wfpId/activity/$activityId': typeof V2planningWfpWfpIdActivityActivityIdRouteWithChildren
   '/v2/wfp/$wfpId/opcr/$opcrId': typeof V2planningWfpWfpIdOpcrOpcrIdRoute
-  '/v1/planning/$deliveryUnitId/opcr/$opcrId/': typeof V1PlanningDeliveryUnitIdOpcrOpcrIdIndexRoute
+  '/v1/planning/$deliveryUnitId/opcr/$opcrId': typeof V1PlanningDeliveryUnitIdOpcrOpcrIdIndexRoute
   '/v1/planning/$deliveryUnitId/wfp/$wfpId/': typeof V1PlanningDeliveryUnitIdWfpWfpIdIndexRoute
-  '/v1/planning/kpi/$kpiId/subKpi/': typeof V1PlanningKpiKpiIdSubKpiIndexRoute
-  '/v2/wfp/$wfpId/opcr/': typeof V2planningWfpWfpIdOpcrIndexRoute
-  '/v2/bac-resolutions-public-bidding/$resolutionId/bidding-schedule/': typeof V2procurementBacResolutionsPublicBiddingResolutionIdBiddingScheduleIndexRoute
-  '/v2/bac-resolutions/$resolutionId/bidding-schedule/': typeof V2procurementBacResolutionsResolutionIdBiddingScheduleIndexRoute
+  '/v1/planning/kpi/$kpiId/subKpi': typeof V1PlanningKpiKpiIdSubKpiIndexRoute
+  '/v2/wfp/$wfpId/opcr': typeof V2planningWfpWfpIdOpcrIndexRoute
+  '/v2/bac-resolutions-public-bidding/$resolutionId/bidding-schedule': typeof V2procurementBacResolutionsPublicBiddingResolutionIdBiddingScheduleIndexRoute
+  '/v2/bac-resolutions/$resolutionId/bidding-schedule': typeof V2procurementBacResolutionsResolutionIdBiddingScheduleIndexRoute
   '/v2/wfp/$wfpId/activity/$activityId/expenditures': typeof V2planningWfpWfpIdActivityActivityIdExpendituresRoute
-  '/v1/planning/$deliveryUnitId/opcr/kpi/$kpiId/': typeof V1PlanningDeliveryUnitIdOpcrKpiKpiIdIndexRoute
-  '/v1/planning/kpi/$kpiId/subKpi/$subKpiId/': typeof V1PlanningKpiKpiIdSubKpiSubKpiIdIndexRoute
+  '/v1/planning/$deliveryUnitId/opcr/kpi/$kpiId': typeof V1PlanningDeliveryUnitIdOpcrKpiKpiIdIndexRoute
+  '/v1/planning/kpi/$kpiId/subKpi/$subKpiId': typeof V1PlanningKpiKpiIdSubKpiSubKpiIdIndexRoute
   '/v2/wfp/$wfpId/activity/$activityId/': typeof V2planningWfpWfpIdActivityActivityIdIndexRoute
-  '/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$functionType/': typeof V1PlanningDeliveryUnitIdOpcrOpcrIdKpiFunctionTypeIndexRoute
-  '/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$kpiId/': typeof V1PlanningDeliveryUnitIdOpcrOpcrIdKpiKpiIdIndexRoute
-  '/v1/planning/$deliveryUnitId/opcr/kpi/$kpiId/subkpi/': typeof V1PlanningDeliveryUnitIdOpcrKpiKpiIdSubkpiIndexRoute
-  '/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$functionType/$kpiId/': typeof V1PlanningDeliveryUnitIdOpcrOpcrIdKpiFunctionTypeKpiIdIndexRoute
-  '/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$kpiId/subKpi/': typeof V1PlanningDeliveryUnitIdOpcrOpcrIdKpiKpiIdSubKpiIndexRoute
-  '/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$kpiId/subKpi/$subKpiId/': typeof V1PlanningDeliveryUnitIdOpcrOpcrIdKpiKpiIdSubKpiSubKpiIdIndexRoute
+  '/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$functionType': typeof V1PlanningDeliveryUnitIdOpcrOpcrIdKpiFunctionTypeIndexRoute
+  '/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$kpiId': typeof V1PlanningDeliveryUnitIdOpcrOpcrIdKpiKpiIdIndexRoute
+  '/v1/planning/$deliveryUnitId/opcr/kpi/$kpiId/subkpi': typeof V1PlanningDeliveryUnitIdOpcrKpiKpiIdSubkpiIndexRoute
+  '/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$functionType/$kpiId': typeof V1PlanningDeliveryUnitIdOpcrOpcrIdKpiFunctionTypeKpiIdIndexRoute
+  '/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$kpiId/subKpi': typeof V1PlanningDeliveryUnitIdOpcrOpcrIdKpiKpiIdSubKpiIndexRoute
+  '/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$kpiId/subKpi/$subKpiId': typeof V1PlanningDeliveryUnitIdOpcrOpcrIdKpiKpiIdSubKpiSubKpiIdIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -1496,7 +1489,6 @@ export interface FileRoutesByTo {
   '/v1/planning/kpi-assignment-for-du': typeof V1PlanningKpiAssignmentForDuIndexRoute
   '/v1/planning/kpi': typeof V1PlanningKpiIndexRoute
   '/v1/planning/office': typeof V1PlanningOfficeIndexRoute
-  '/v1/planning/opcr': typeof V1PlanningOpcrIndexRoute
   '/v1/planning/wfp-expenditure': typeof V1PlanningWfpExpenditureIndexRoute
   '/v1/planning/wfp-objective': typeof V1PlanningWfpObjectiveIndexRoute
   '/v2/annual-performance-planning': typeof V2planningAnnualPerformancePlanningIndexRoute
@@ -1677,7 +1669,6 @@ export interface FileRoutesById {
   '/v1/planning/kpi-assignment-for-du/': typeof V1PlanningKpiAssignmentForDuIndexRoute
   '/v1/planning/kpi/': typeof V1PlanningKpiIndexRoute
   '/v1/planning/office/': typeof V1PlanningOfficeIndexRoute
-  '/v1/planning/opcr/': typeof V1PlanningOpcrIndexRoute
   '/v1/planning/wfp-expenditure/': typeof V1PlanningWfpExpenditureIndexRoute
   '/v1/planning/wfp-objective/': typeof V1PlanningWfpObjectiveIndexRoute
   '/v2/(planning)/annual-performance-planning/': typeof V2planningAnnualPerformancePlanningIndexRoute
@@ -1823,13 +1814,13 @@ export interface FileRouteTypes {
     | '/v2/dashboard'
     | '/v2/uacs-library'
     | '/v2/ntp/$ntpId'
-    | '/v1/finance/'
+    | '/v1/finance'
     | '/v1/planning/'
-    | '/v2/bac/'
-    | '/v2/commitments/'
-    | '/v2/fiscal-year-and-policies/'
-    | '/v2/kpi-library/'
-    | '/v2/ntp/'
+    | '/v2/bac'
+    | '/v2/commitments'
+    | '/v2/fiscal-year-and-policies'
+    | '/v2/kpi-library'
+    | '/v2/ntp'
     | '/v1/planning/fund-receive/$fundSourceId'
     | '/v1/planning/fund/$budgetAllocationId'
     | '/v1/planning/fund/$fundId'
@@ -1855,60 +1846,59 @@ export interface FileRouteTypes {
     | '/v2/consolidate-prs/$consolidatedPrId'
     | '/v2/kpi-library/master-kpi/$kpiId'
     | '/v1/planning/fiscal-year/'
-    | '/v1/planning/fund-receive/'
-    | '/v1/planning/fund/'
-    | '/v1/planning/kpi-assignment-for-du/'
+    | '/v1/planning/fund-receive'
+    | '/v1/planning/fund'
+    | '/v1/planning/kpi-assignment-for-du'
     | '/v1/planning/kpi/'
     | '/v1/planning/office/'
-    | '/v1/planning/opcr/'
-    | '/v1/planning/wfp-expenditure/'
-    | '/v1/planning/wfp-objective/'
+    | '/v1/planning/wfp-expenditure'
+    | '/v1/planning/wfp-objective'
     | '/v2/annual-performance-planning/'
-    | '/v2/app-consolidation/'
-    | '/v2/market-scoping/'
-    | '/v2/ppmp/'
+    | '/v2/app-consolidation'
+    | '/v2/market-scoping'
+    | '/v2/ppmp'
     | '/v2/uacs-library/'
-    | '/v2/wfp-expenditure/'
-    | '/v2/wfp-objective/'
-    | '/v2/wfp/'
-    | '/v2/abstract-of-bids-aob/'
-    | '/v2/agency-purchase-requests-apr/'
-    | '/v2/bac-resolutions-public-bidding/'
-    | '/v2/bac-resolutions/'
-    | '/v2/bid-evaluation/'
-    | '/v2/bidding-documents/'
-    | '/v2/bidding-master-calendar/'
-    | '/v2/consolidate-prs/'
-    | '/v2/contracts-consulting-infrastructure/'
-    | '/v2/direct-acquisition-request/'
-    | '/v2/direct-contracting-request/'
-    | '/v2/manage-aob/'
-    | '/v2/manage-aprs/'
-    | '/v2/manage-bac-resolutions/'
-    | '/v2/manage-contracts/'
-    | '/v2/manage-direct-acquisition/'
-    | '/v2/manage-direct-contracting/'
-    | '/v2/manage-noa/'
-    | '/v2/manage-ntp/'
-    | '/v2/manage-po/'
-    | '/v2/manage-pos/'
-    | '/v2/manage-prs/'
-    | '/v2/manage-rfq/'
-    | '/v2/manage-supplier-direct-acquisition/'
-    | '/v2/manage-supplier-direct-contracting/'
-    | '/v2/manage-supplier-portal/'
-    | '/v2/notice-of-award-noa/'
-    | '/v2/notice-to-proceed-ntp/'
-    | '/v2/po-direct-acquisition/'
-    | '/v2/po-public-bidding/'
-    | '/v2/po-svp/'
-    | '/v2/procurement-dashboard/'
-    | '/v2/purchase-requests-pr/'
-    | '/v2/request-for-quotation-rfq/'
-    | '/v2/organization/'
-    | '/v2/kpi-library/kpi-measurement-configurator/'
-    | '/v2/kpi-library/master-kpi/'
-    | '/v2/kpi-library/rating-scales/'
+    | '/v2/wfp-expenditure'
+    | '/v2/wfp-objective'
+    | '/v2/wfp'
+    | '/v2/abstract-of-bids-aob'
+    | '/v2/agency-purchase-requests-apr'
+    | '/v2/bac-resolutions-public-bidding'
+    | '/v2/bac-resolutions'
+    | '/v2/bid-evaluation'
+    | '/v2/bidding-documents'
+    | '/v2/bidding-master-calendar'
+    | '/v2/consolidate-prs'
+    | '/v2/contracts-consulting-infrastructure'
+    | '/v2/direct-acquisition-request'
+    | '/v2/direct-contracting-request'
+    | '/v2/manage-aob'
+    | '/v2/manage-aprs'
+    | '/v2/manage-bac-resolutions'
+    | '/v2/manage-contracts'
+    | '/v2/manage-direct-acquisition'
+    | '/v2/manage-direct-contracting'
+    | '/v2/manage-noa'
+    | '/v2/manage-ntp'
+    | '/v2/manage-po'
+    | '/v2/manage-pos'
+    | '/v2/manage-prs'
+    | '/v2/manage-rfq'
+    | '/v2/manage-supplier-direct-acquisition'
+    | '/v2/manage-supplier-direct-contracting'
+    | '/v2/manage-supplier-portal'
+    | '/v2/notice-of-award-noa'
+    | '/v2/notice-to-proceed-ntp'
+    | '/v2/po-direct-acquisition'
+    | '/v2/po-public-bidding'
+    | '/v2/po-svp'
+    | '/v2/procurement-dashboard'
+    | '/v2/purchase-requests-pr'
+    | '/v2/request-for-quotation-rfq'
+    | '/v2/organization'
+    | '/v2/kpi-library/kpi-measurement-configurator'
+    | '/v2/kpi-library/master-kpi'
+    | '/v2/kpi-library/rating-scales'
     | '/v1/planning/$deliveryUnitId/wfp/$wfpId'
     | '/v1/planning/fiscal-year/$fiscalYearId/delete'
     | '/v1/planning/fiscal-year/$fiscalYearId/lock'
@@ -1929,48 +1919,48 @@ export interface FileRouteTypes {
     | '/v2/market-scoping/manage/parameters'
     | '/v2/wfp/$wfpId/activity'
     | '/v2/wfp/$wfpId/gantt-chart'
-    | '/v1/planning/$deliveryUnitId/wfp/'
-    | '/v1/planning/fiscal-year/$fiscalYearId/'
-    | '/v1/planning/function-allocation/$fiscalYearId/'
+    | '/v1/planning/$deliveryUnitId/wfp'
+    | '/v1/planning/fiscal-year/$fiscalYearId'
+    | '/v1/planning/function-allocation/$fiscalYearId'
     | '/v1/planning/fund-receive/$fundSourceId/'
     | '/v1/planning/fund/$budgetAllocationId/'
     | '/v1/planning/fund/$fundId/'
-    | '/v1/planning/kpi-assignment-for-du/$kpiAssignmentForDuId/'
-    | '/v1/planning/kpi/$kpiId/'
-    | '/v1/planning/office/$clusterId/'
-    | '/v1/planning/office/$deliveryUnitId/'
-    | '/v1/planning/office/$officeId/'
-    | '/v1/planning/opcr/$opcrId/'
+    | '/v1/planning/kpi-assignment-for-du/$kpiAssignmentForDuId'
+    | '/v1/planning/kpi/$kpiId'
+    | '/v1/planning/office/$clusterId'
+    | '/v1/planning/office/$deliveryUnitId'
+    | '/v1/planning/office/$officeId'
+    | '/v1/planning/opcr/$opcrId'
     | '/v1/planning/wfp-expenditure/$wfpObjectiveActivityId/'
     | '/v1/planning/wfp-objective/$wfpObjectiveId/'
-    | '/v2/app-consolidation/supplemental/'
+    | '/v2/app-consolidation/supplemental'
     | '/v2/wfp-expenditure/$wfpObjectiveActivityId/'
     | '/v2/wfp-objective/$wfpObjectiveId/'
     | '/v2/wfp/$wfpId/'
-    | '/v2/bidding-documents/$bacResolutionId/'
-    | '/v2/manage-noa/$noaId/'
-    | '/v2/notice-of-award-noa/$noaId/'
-    | '/v2/po/$purchaseOrderId/'
-    | '/v2/supplier-portal/direct-contracting-item/'
-    | '/v2/supplier-portal/rfq-item/'
+    | '/v2/bidding-documents/$bacResolutionId'
+    | '/v2/manage-noa/$noaId'
+    | '/v2/notice-of-award-noa/$noaId'
+    | '/v2/po/$purchaseOrderId'
+    | '/v2/supplier-portal/direct-contracting-item'
+    | '/v2/supplier-portal/rfq-item'
     | '/v2/wfp/$wfpId/activity/$activityId'
     | '/v2/wfp/$wfpId/opcr/$opcrId'
-    | '/v1/planning/$deliveryUnitId/opcr/$opcrId/'
+    | '/v1/planning/$deliveryUnitId/opcr/$opcrId'
     | '/v1/planning/$deliveryUnitId/wfp/$wfpId/'
-    | '/v1/planning/kpi/$kpiId/subKpi/'
-    | '/v2/wfp/$wfpId/opcr/'
-    | '/v2/bac-resolutions-public-bidding/$resolutionId/bidding-schedule/'
-    | '/v2/bac-resolutions/$resolutionId/bidding-schedule/'
+    | '/v1/planning/kpi/$kpiId/subKpi'
+    | '/v2/wfp/$wfpId/opcr'
+    | '/v2/bac-resolutions-public-bidding/$resolutionId/bidding-schedule'
+    | '/v2/bac-resolutions/$resolutionId/bidding-schedule'
     | '/v2/wfp/$wfpId/activity/$activityId/expenditures'
-    | '/v1/planning/$deliveryUnitId/opcr/kpi/$kpiId/'
-    | '/v1/planning/kpi/$kpiId/subKpi/$subKpiId/'
+    | '/v1/planning/$deliveryUnitId/opcr/kpi/$kpiId'
+    | '/v1/planning/kpi/$kpiId/subKpi/$subKpiId'
     | '/v2/wfp/$wfpId/activity/$activityId/'
-    | '/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$functionType/'
-    | '/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$kpiId/'
-    | '/v1/planning/$deliveryUnitId/opcr/kpi/$kpiId/subkpi/'
-    | '/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$functionType/$kpiId/'
-    | '/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$kpiId/subKpi/'
-    | '/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$kpiId/subKpi/$subKpiId/'
+    | '/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$functionType'
+    | '/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$kpiId'
+    | '/v1/planning/$deliveryUnitId/opcr/kpi/$kpiId/subkpi'
+    | '/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$functionType/$kpiId'
+    | '/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$kpiId/subKpi'
+    | '/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$kpiId/subKpi/$subKpiId'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -2025,7 +2015,6 @@ export interface FileRouteTypes {
     | '/v1/planning/kpi-assignment-for-du'
     | '/v1/planning/kpi'
     | '/v1/planning/office'
-    | '/v1/planning/opcr'
     | '/v1/planning/wfp-expenditure'
     | '/v1/planning/wfp-objective'
     | '/v2/annual-performance-planning'
@@ -2205,7 +2194,6 @@ export interface FileRouteTypes {
     | '/v1/planning/kpi-assignment-for-du/'
     | '/v1/planning/kpi/'
     | '/v1/planning/office/'
-    | '/v1/planning/opcr/'
     | '/v1/planning/wfp-expenditure/'
     | '/v1/planning/wfp-objective/'
     | '/v2/(planning)/annual-performance-planning/'
@@ -2326,11 +2314,11 @@ export interface RootRouteChildren {
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
-      path: '/'
-      fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
+    '/v2': {
+      id: '/v2'
+      path: '/v2'
+      fullPath: '/v2'
+      preLoaderRoute: typeof V2RouteImport
       parentRoute: typeof rootRouteImport
     }
     '/v1': {
@@ -2340,12 +2328,19 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof V1RouteImport
       parentRoute: typeof rootRouteImport
     }
-    '/v2': {
-      id: '/v2'
-      path: '/v2'
-      fullPath: '/v2'
-      preLoaderRoute: typeof V2RouteImport
+    '/': {
+      id: '/'
+      path: '/'
+      fullPath: '/'
+      preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
+    }
+    '/v2/': {
+      id: '/v2/'
+      path: '/'
+      fullPath: '/v2/'
+      preLoaderRoute: typeof V2IndexRouteImport
+      parentRoute: typeof V2Route
     }
     '/v1/': {
       id: '/v1/'
@@ -2353,6 +2348,41 @@ declare module '@tanstack/react-router' {
       fullPath: '/v1/'
       preLoaderRoute: typeof V1IndexRouteImport
       parentRoute: typeof V1Route
+    }
+    '/v2/procurement-library': {
+      id: '/v2/procurement-library'
+      path: '/procurement-library'
+      fullPath: '/v2/procurement-library'
+      preLoaderRoute: typeof V2ProcurementLibraryRouteImport
+      parentRoute: typeof V2Route
+    }
+    '/v2/performance-review': {
+      id: '/v2/performance-review'
+      path: '/performance-review'
+      fullPath: '/v2/performance-review'
+      preLoaderRoute: typeof V2PerformanceReviewRouteImport
+      parentRoute: typeof V2Route
+    }
+    '/v2/line-item-budgeting': {
+      id: '/v2/line-item-budgeting'
+      path: '/line-item-budgeting'
+      fullPath: '/v2/line-item-budgeting'
+      preLoaderRoute: typeof V2LineItemBudgetingRouteImport
+      parentRoute: typeof V2Route
+    }
+    '/v2/bidding-document-library': {
+      id: '/v2/bidding-document-library'
+      path: '/bidding-document-library'
+      fullPath: '/v2/bidding-document-library'
+      preLoaderRoute: typeof V2BiddingDocumentLibraryRouteImport
+      parentRoute: typeof V2Route
+    }
+    '/v2/_planning': {
+      id: '/v2/_planning'
+      path: ''
+      fullPath: '/v2'
+      preLoaderRoute: typeof V2PlanningRouteImport
+      parentRoute: typeof V2Route
     }
     '/v1/overview': {
       id: '/v1/overview'
@@ -2368,96 +2398,40 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof V1PlanningRouteRouteImport
       parentRoute: typeof V1Route
     }
-    '/v2/': {
-      id: '/v2/'
-      path: '/'
-      fullPath: '/v2/'
-      preLoaderRoute: typeof V2IndexRouteImport
+    '/v2/ntp/': {
+      id: '/v2/ntp/'
+      path: '/ntp'
+      fullPath: '/v2/ntp'
+      preLoaderRoute: typeof V2NtpIndexRouteImport
       parentRoute: typeof V2Route
     }
-    '/v2/_planning': {
-      id: '/v2/_planning'
-      path: ''
-      fullPath: '/v2'
-      preLoaderRoute: typeof V2PlanningRouteImport
+    '/v2/kpi-library/': {
+      id: '/v2/kpi-library/'
+      path: '/kpi-library'
+      fullPath: '/v2/kpi-library'
+      preLoaderRoute: typeof V2KpiLibraryIndexRouteImport
       parentRoute: typeof V2Route
     }
-    '/v2/bidding-document-library': {
-      id: '/v2/bidding-document-library'
-      path: '/bidding-document-library'
-      fullPath: '/v2/bidding-document-library'
-      preLoaderRoute: typeof V2BiddingDocumentLibraryRouteImport
+    '/v2/fiscal-year-and-policies/': {
+      id: '/v2/fiscal-year-and-policies/'
+      path: '/fiscal-year-and-policies'
+      fullPath: '/v2/fiscal-year-and-policies'
+      preLoaderRoute: typeof V2FiscalYearAndPoliciesIndexRouteImport
       parentRoute: typeof V2Route
     }
-    '/v2/line-item-budgeting': {
-      id: '/v2/line-item-budgeting'
-      path: '/line-item-budgeting'
-      fullPath: '/v2/line-item-budgeting'
-      preLoaderRoute: typeof V2LineItemBudgetingRouteImport
+    '/v2/commitments/': {
+      id: '/v2/commitments/'
+      path: '/commitments'
+      fullPath: '/v2/commitments'
+      preLoaderRoute: typeof V2CommitmentsIndexRouteImport
       parentRoute: typeof V2Route
     }
-    '/v2/performance-review': {
-      id: '/v2/performance-review'
-      path: '/performance-review'
-      fullPath: '/v2/performance-review'
-      preLoaderRoute: typeof V2PerformanceReviewRouteImport
+    '/v2/bac/': {
+      id: '/v2/bac/'
+      path: '/bac'
+      fullPath: '/v2/bac'
+      preLoaderRoute: typeof V2BacIndexRouteImport
       parentRoute: typeof V2Route
-    }
-    '/v2/procurement-library': {
-      id: '/v2/procurement-library'
-      path: '/procurement-library'
-      fullPath: '/v2/procurement-library'
-      preLoaderRoute: typeof V2ProcurementLibraryRouteImport
-      parentRoute: typeof V2Route
-    }
-    '/v1/finance/': {
-      id: '/v1/finance/'
-      path: '/finance'
-      fullPath: '/v1/finance/'
-      preLoaderRoute: typeof V1FinanceIndexRouteImport
-      parentRoute: typeof V1Route
-    }
-    '/v1/finance/budget-allocation': {
-      id: '/v1/finance/budget-allocation'
-      path: '/finance/budget-allocation'
-      fullPath: '/v1/finance/budget-allocation'
-      preLoaderRoute: typeof V1FinanceBudgetAllocationRouteImport
-      parentRoute: typeof V1Route
-    }
-    '/v1/finance/fund-monitoring': {
-      id: '/v1/finance/fund-monitoring'
-      path: '/finance/fund-monitoring'
-      fullPath: '/v1/finance/fund-monitoring'
-      preLoaderRoute: typeof V1FinanceFundMonitoringRouteImport
-      parentRoute: typeof V1Route
-    }
-    '/v1/finance/fund-receiving': {
-      id: '/v1/finance/fund-receiving'
-      path: '/finance/fund-receiving'
-      fullPath: '/v1/finance/fund-receiving'
-      preLoaderRoute: typeof V1FinanceFundReceivingRouteImport
-      parentRoute: typeof V1Route
-    }
-    '/v1/finance/fund-source': {
-      id: '/v1/finance/fund-source'
-      path: '/finance/fund-source'
-      fullPath: '/v1/finance/fund-source'
-      preLoaderRoute: typeof V1FinanceFundSourceRouteImport
-      parentRoute: typeof V1Route
-    }
-    '/v1/finance/overview': {
-      id: '/v1/finance/overview'
-      path: '/finance/overview'
-      fullPath: '/v1/finance/overview'
-      preLoaderRoute: typeof V1FinanceOverviewRouteImport
-      parentRoute: typeof V1Route
-    }
-    '/v1/finance/settings': {
-      id: '/v1/finance/settings'
-      path: '/finance/settings'
-      fullPath: '/v1/finance/settings'
-      preLoaderRoute: typeof V1FinanceSettingsRouteImport
-      parentRoute: typeof V1Route
     }
     '/v1/planning/': {
       id: '/v1/planning/'
@@ -2466,88 +2440,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof V1PlanningIndexRouteImport
       parentRoute: typeof V1PlanningRouteRoute
     }
-    '/v1/planning/evaluation': {
-      id: '/v1/planning/evaluation'
-      path: '/evaluation'
-      fullPath: '/v1/planning/evaluation'
-      preLoaderRoute: typeof V1PlanningEvaluationRouteImport
-      parentRoute: typeof V1PlanningRouteRoute
+    '/v1/finance/': {
+      id: '/v1/finance/'
+      path: '/finance'
+      fullPath: '/v1/finance'
+      preLoaderRoute: typeof V1FinanceIndexRouteImport
+      parentRoute: typeof V1Route
     }
-    '/v1/planning/evaluation-detail-view': {
-      id: '/v1/planning/evaluation-detail-view'
-      path: '/evaluation-detail-view'
-      fullPath: '/v1/planning/evaluation-detail-view'
-      preLoaderRoute: typeof V1PlanningEvaluationDetailViewRouteImport
-      parentRoute: typeof V1PlanningRouteRoute
-    }
-    '/v1/planning/fiscal-year': {
-      id: '/v1/planning/fiscal-year'
-      path: '/fiscal-year'
-      fullPath: '/v1/planning/fiscal-year'
-      preLoaderRoute: typeof V1PlanningFiscalYearRouteImport
-      parentRoute: typeof V1PlanningRouteRoute
-    }
-    '/v1/planning/kpi': {
-      id: '/v1/planning/kpi'
-      path: '/kpi'
-      fullPath: '/v1/planning/kpi'
-      preLoaderRoute: typeof V1PlanningKpiRouteRouteImport
-      parentRoute: typeof V1PlanningRouteRoute
-    }
-    '/v1/planning/kpi-assignment-view': {
-      id: '/v1/planning/kpi-assignment-view'
-      path: '/kpi-assignment-view'
-      fullPath: '/v1/planning/kpi-assignment-view'
-      preLoaderRoute: typeof V1PlanningKpiAssignmentViewRouteImport
-      parentRoute: typeof V1PlanningRouteRoute
-    }
-    '/v1/planning/kpi-config-view': {
-      id: '/v1/planning/kpi-config-view'
-      path: '/kpi-config-view'
-      fullPath: '/v1/planning/kpi-config-view'
-      preLoaderRoute: typeof V1PlanningKpiConfigViewRouteImport
-      parentRoute: typeof V1PlanningRouteRoute
-    }
-    '/v1/planning/kpi-configuration': {
-      id: '/v1/planning/kpi-configuration'
-      path: '/kpi-configuration'
-      fullPath: '/v1/planning/kpi-configuration'
-      preLoaderRoute: typeof V1PlanningKpiConfigurationRouteImport
-      parentRoute: typeof V1PlanningRouteRoute
-    }
-    '/v1/planning/office': {
-      id: '/v1/planning/office'
-      path: '/office'
-      fullPath: '/v1/planning/office'
-      preLoaderRoute: typeof V1PlanningOfficeRouteRouteImport
-      parentRoute: typeof V1PlanningRouteRoute
-    }
-    '/v1/planning/root': {
-      id: '/v1/planning/root'
-      path: '/root'
-      fullPath: '/v1/planning/root'
-      preLoaderRoute: typeof V1PlanningRootRouteImport
-      parentRoute: typeof V1PlanningRouteRoute
-    }
-    '/v1/planning/settings': {
-      id: '/v1/planning/settings'
-      path: '/settings'
-      fullPath: '/v1/planning/settings'
-      preLoaderRoute: typeof V1PlanningSettingsRouteImport
-      parentRoute: typeof V1PlanningRouteRoute
-    }
-    '/v2/(planning)/annual-performance-planning': {
-      id: '/v2/(planning)/annual-performance-planning'
-      path: '/annual-performance-planning'
-      fullPath: '/v2/annual-performance-planning'
-      preLoaderRoute: typeof V2planningAnnualPerformancePlanningRouteImport
-      parentRoute: typeof V2Route
-    }
-    '/v2/(planning)/dashboard': {
-      id: '/v2/(planning)/dashboard'
-      path: '/dashboard'
-      fullPath: '/v2/dashboard'
-      preLoaderRoute: typeof V2planningDashboardRouteImport
+    '/v2/ntp/$ntpId': {
+      id: '/v2/ntp/$ntpId'
+      path: '/ntp/$ntpId'
+      fullPath: '/v2/ntp/$ntpId'
+      preLoaderRoute: typeof V2NtpNtpIdRouteImport
       parentRoute: typeof V2Route
     }
     '/v2/(planning)/uacs-library': {
@@ -2557,214 +2461,417 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof V2planningUacsLibraryRouteImport
       parentRoute: typeof V2Route
     }
-    '/v2/bac/': {
-      id: '/v2/bac/'
-      path: '/bac'
-      fullPath: '/v2/bac/'
-      preLoaderRoute: typeof V2BacIndexRouteImport
+    '/v2/(planning)/dashboard': {
+      id: '/v2/(planning)/dashboard'
+      path: '/dashboard'
+      fullPath: '/v2/dashboard'
+      preLoaderRoute: typeof V2planningDashboardRouteImport
       parentRoute: typeof V2Route
     }
-    '/v2/commitments/': {
-      id: '/v2/commitments/'
-      path: '/commitments'
-      fullPath: '/v2/commitments/'
-      preLoaderRoute: typeof V2CommitmentsIndexRouteImport
+    '/v2/(planning)/annual-performance-planning': {
+      id: '/v2/(planning)/annual-performance-planning'
+      path: '/annual-performance-planning'
+      fullPath: '/v2/annual-performance-planning'
+      preLoaderRoute: typeof V2planningAnnualPerformancePlanningRouteImport
       parentRoute: typeof V2Route
     }
-    '/v2/fiscal-year-and-policies/': {
-      id: '/v2/fiscal-year-and-policies/'
-      path: '/fiscal-year-and-policies'
-      fullPath: '/v2/fiscal-year-and-policies/'
-      preLoaderRoute: typeof V2FiscalYearAndPoliciesIndexRouteImport
+    '/v1/planning/settings': {
+      id: '/v1/planning/settings'
+      path: '/settings'
+      fullPath: '/v1/planning/settings'
+      preLoaderRoute: typeof V1PlanningSettingsRouteImport
+      parentRoute: typeof V1PlanningRouteRoute
+    }
+    '/v1/planning/root': {
+      id: '/v1/planning/root'
+      path: '/root'
+      fullPath: '/v1/planning/root'
+      preLoaderRoute: typeof V1PlanningRootRouteImport
+      parentRoute: typeof V1PlanningRouteRoute
+    }
+    '/v1/planning/kpi-configuration': {
+      id: '/v1/planning/kpi-configuration'
+      path: '/kpi-configuration'
+      fullPath: '/v1/planning/kpi-configuration'
+      preLoaderRoute: typeof V1PlanningKpiConfigurationRouteImport
+      parentRoute: typeof V1PlanningRouteRoute
+    }
+    '/v1/planning/kpi-config-view': {
+      id: '/v1/planning/kpi-config-view'
+      path: '/kpi-config-view'
+      fullPath: '/v1/planning/kpi-config-view'
+      preLoaderRoute: typeof V1PlanningKpiConfigViewRouteImport
+      parentRoute: typeof V1PlanningRouteRoute
+    }
+    '/v1/planning/kpi-assignment-view': {
+      id: '/v1/planning/kpi-assignment-view'
+      path: '/kpi-assignment-view'
+      fullPath: '/v1/planning/kpi-assignment-view'
+      preLoaderRoute: typeof V1PlanningKpiAssignmentViewRouteImport
+      parentRoute: typeof V1PlanningRouteRoute
+    }
+    '/v1/planning/fiscal-year': {
+      id: '/v1/planning/fiscal-year'
+      path: '/fiscal-year'
+      fullPath: '/v1/planning/fiscal-year'
+      preLoaderRoute: typeof V1PlanningFiscalYearRouteImport
+      parentRoute: typeof V1PlanningRouteRoute
+    }
+    '/v1/planning/evaluation-detail-view': {
+      id: '/v1/planning/evaluation-detail-view'
+      path: '/evaluation-detail-view'
+      fullPath: '/v1/planning/evaluation-detail-view'
+      preLoaderRoute: typeof V1PlanningEvaluationDetailViewRouteImport
+      parentRoute: typeof V1PlanningRouteRoute
+    }
+    '/v1/planning/evaluation': {
+      id: '/v1/planning/evaluation'
+      path: '/evaluation'
+      fullPath: '/v1/planning/evaluation'
+      preLoaderRoute: typeof V1PlanningEvaluationRouteImport
+      parentRoute: typeof V1PlanningRouteRoute
+    }
+    '/v1/finance/settings': {
+      id: '/v1/finance/settings'
+      path: '/finance/settings'
+      fullPath: '/v1/finance/settings'
+      preLoaderRoute: typeof V1FinanceSettingsRouteImport
+      parentRoute: typeof V1Route
+    }
+    '/v1/finance/overview': {
+      id: '/v1/finance/overview'
+      path: '/finance/overview'
+      fullPath: '/v1/finance/overview'
+      preLoaderRoute: typeof V1FinanceOverviewRouteImport
+      parentRoute: typeof V1Route
+    }
+    '/v1/finance/fund-source': {
+      id: '/v1/finance/fund-source'
+      path: '/finance/fund-source'
+      fullPath: '/v1/finance/fund-source'
+      preLoaderRoute: typeof V1FinanceFundSourceRouteImport
+      parentRoute: typeof V1Route
+    }
+    '/v1/finance/fund-receiving': {
+      id: '/v1/finance/fund-receiving'
+      path: '/finance/fund-receiving'
+      fullPath: '/v1/finance/fund-receiving'
+      preLoaderRoute: typeof V1FinanceFundReceivingRouteImport
+      parentRoute: typeof V1Route
+    }
+    '/v1/finance/fund-monitoring': {
+      id: '/v1/finance/fund-monitoring'
+      path: '/finance/fund-monitoring'
+      fullPath: '/v1/finance/fund-monitoring'
+      preLoaderRoute: typeof V1FinanceFundMonitoringRouteImport
+      parentRoute: typeof V1Route
+    }
+    '/v1/finance/budget-allocation': {
+      id: '/v1/finance/budget-allocation'
+      path: '/finance/budget-allocation'
+      fullPath: '/v1/finance/budget-allocation'
+      preLoaderRoute: typeof V1FinanceBudgetAllocationRouteImport
+      parentRoute: typeof V1Route
+    }
+    '/v1/planning/office': {
+      id: '/v1/planning/office'
+      path: '/office'
+      fullPath: '/v1/planning/office'
+      preLoaderRoute: typeof V1PlanningOfficeRouteRouteImport
+      parentRoute: typeof V1PlanningRouteRoute
+    }
+    '/v1/planning/kpi': {
+      id: '/v1/planning/kpi'
+      path: '/kpi'
+      fullPath: '/v1/planning/kpi'
+      preLoaderRoute: typeof V1PlanningKpiRouteRouteImport
+      parentRoute: typeof V1PlanningRouteRoute
+    }
+    '/v2/kpi-library/rating-scales/': {
+      id: '/v2/kpi-library/rating-scales/'
+      path: '/kpi-library/rating-scales'
+      fullPath: '/v2/kpi-library/rating-scales'
+      preLoaderRoute: typeof V2KpiLibraryRatingScalesIndexLazyRouteImport
       parentRoute: typeof V2Route
     }
-    '/v2/kpi-library/': {
-      id: '/v2/kpi-library/'
-      path: '/kpi-library'
-      fullPath: '/v2/kpi-library/'
-      preLoaderRoute: typeof V2KpiLibraryIndexRouteImport
+    '/v2/kpi-library/master-kpi/': {
+      id: '/v2/kpi-library/master-kpi/'
+      path: '/kpi-library/master-kpi'
+      fullPath: '/v2/kpi-library/master-kpi'
+      preLoaderRoute: typeof V2KpiLibraryMasterKpiIndexLazyRouteImport
       parentRoute: typeof V2Route
     }
-    '/v2/ntp/': {
-      id: '/v2/ntp/'
-      path: '/ntp'
-      fullPath: '/v2/ntp/'
-      preLoaderRoute: typeof V2NtpIndexRouteImport
+    '/v2/kpi-library/kpi-measurement-configurator/': {
+      id: '/v2/kpi-library/kpi-measurement-configurator/'
+      path: '/kpi-library/kpi-measurement-configurator'
+      fullPath: '/v2/kpi-library/kpi-measurement-configurator'
+      preLoaderRoute: typeof V2KpiLibraryKpiMeasurementConfiguratorIndexLazyRouteImport
       parentRoute: typeof V2Route
     }
-    '/v2/ntp/$ntpId': {
-      id: '/v2/ntp/$ntpId'
-      path: '/ntp/$ntpId'
-      fullPath: '/v2/ntp/$ntpId'
-      preLoaderRoute: typeof V2NtpNtpIdRouteImport
+    '/v2/_planning/organization/': {
+      id: '/v2/_planning/organization/'
+      path: '/organization'
+      fullPath: '/v2/organization'
+      preLoaderRoute: typeof V2PlanningOrganizationIndexRouteImport
+      parentRoute: typeof V2PlanningRoute
+    }
+    '/v2/(procurement)/request-for-quotation-rfq/': {
+      id: '/v2/(procurement)/request-for-quotation-rfq/'
+      path: '/request-for-quotation-rfq'
+      fullPath: '/v2/request-for-quotation-rfq'
+      preLoaderRoute: typeof V2procurementRequestForQuotationRfqIndexRouteImport
       parentRoute: typeof V2Route
     }
-    '/v1/planning/fiscal-year/': {
-      id: '/v1/planning/fiscal-year/'
-      path: '/'
-      fullPath: '/v1/planning/fiscal-year/'
-      preLoaderRoute: typeof V1PlanningFiscalYearIndexRouteImport
-      parentRoute: typeof V1PlanningFiscalYearRoute
+    '/v2/(procurement)/purchase-requests-pr/': {
+      id: '/v2/(procurement)/purchase-requests-pr/'
+      path: '/purchase-requests-pr'
+      fullPath: '/v2/purchase-requests-pr'
+      preLoaderRoute: typeof V2procurementPurchaseRequestsPrIndexRouteImport
+      parentRoute: typeof V2Route
     }
-    '/v1/planning/fund-receive/': {
-      id: '/v1/planning/fund-receive/'
-      path: '/fund-receive'
-      fullPath: '/v1/planning/fund-receive/'
-      preLoaderRoute: typeof V1PlanningFundReceiveIndexRouteImport
-      parentRoute: typeof V1PlanningRouteRoute
+    '/v2/(procurement)/procurement-dashboard/': {
+      id: '/v2/(procurement)/procurement-dashboard/'
+      path: '/procurement-dashboard'
+      fullPath: '/v2/procurement-dashboard'
+      preLoaderRoute: typeof V2procurementProcurementDashboardIndexRouteImport
+      parentRoute: typeof V2Route
     }
-    '/v1/planning/fund-receive/$fundSourceId': {
-      id: '/v1/planning/fund-receive/$fundSourceId'
-      path: '/fund-receive/$fundSourceId'
-      fullPath: '/v1/planning/fund-receive/$fundSourceId'
-      preLoaderRoute: typeof V1PlanningFundReceiveFundSourceIdRouteImport
-      parentRoute: typeof V1PlanningRouteRoute
+    '/v2/(procurement)/po-svp/': {
+      id: '/v2/(procurement)/po-svp/'
+      path: '/po-svp'
+      fullPath: '/v2/po-svp'
+      preLoaderRoute: typeof V2procurementPoSvpIndexRouteImport
+      parentRoute: typeof V2Route
     }
-    '/v1/planning/fund/': {
-      id: '/v1/planning/fund/'
-      path: '/fund'
-      fullPath: '/v1/planning/fund/'
-      preLoaderRoute: typeof V1PlanningFundIndexRouteImport
-      parentRoute: typeof V1PlanningRouteRoute
+    '/v2/(procurement)/po-public-bidding/': {
+      id: '/v2/(procurement)/po-public-bidding/'
+      path: '/po-public-bidding'
+      fullPath: '/v2/po-public-bidding'
+      preLoaderRoute: typeof V2procurementPoPublicBiddingIndexRouteImport
+      parentRoute: typeof V2Route
     }
-    '/v1/planning/fund/$budgetAllocationId': {
-      id: '/v1/planning/fund/$budgetAllocationId'
-      path: '/fund/$budgetAllocationId'
-      fullPath: '/v1/planning/fund/$budgetAllocationId'
-      preLoaderRoute: typeof V1PlanningFundBudgetAllocationIdRouteImport
-      parentRoute: typeof V1PlanningRouteRoute
+    '/v2/(procurement)/po-direct-acquisition/': {
+      id: '/v2/(procurement)/po-direct-acquisition/'
+      path: '/po-direct-acquisition'
+      fullPath: '/v2/po-direct-acquisition'
+      preLoaderRoute: typeof V2procurementPoDirectAcquisitionIndexRouteImport
+      parentRoute: typeof V2Route
     }
-    '/v1/planning/fund/$fundId': {
-      id: '/v1/planning/fund/$fundId'
-      path: '/fund/$fundId'
-      fullPath: '/v1/planning/fund/$fundId'
-      preLoaderRoute: typeof V1PlanningFundFundIdRouteImport
-      parentRoute: typeof V1PlanningRouteRoute
+    '/v2/(procurement)/notice-to-proceed-ntp/': {
+      id: '/v2/(procurement)/notice-to-proceed-ntp/'
+      path: '/notice-to-proceed-ntp'
+      fullPath: '/v2/notice-to-proceed-ntp'
+      preLoaderRoute: typeof V2procurementNoticeToProceedNtpIndexRouteImport
+      parentRoute: typeof V2Route
     }
-    '/v1/planning/kpi-assignment-for-du/': {
-      id: '/v1/planning/kpi-assignment-for-du/'
-      path: '/kpi-assignment-for-du'
-      fullPath: '/v1/planning/kpi-assignment-for-du/'
-      preLoaderRoute: typeof V1PlanningKpiAssignmentForDuIndexRouteImport
-      parentRoute: typeof V1PlanningRouteRoute
+    '/v2/(procurement)/notice-of-award-noa/': {
+      id: '/v2/(procurement)/notice-of-award-noa/'
+      path: '/notice-of-award-noa'
+      fullPath: '/v2/notice-of-award-noa'
+      preLoaderRoute: typeof V2procurementNoticeOfAwardNoaIndexRouteImport
+      parentRoute: typeof V2Route
     }
-    '/v1/planning/kpi/': {
-      id: '/v1/planning/kpi/'
-      path: '/'
-      fullPath: '/v1/planning/kpi/'
-      preLoaderRoute: typeof V1PlanningKpiIndexRouteImport
-      parentRoute: typeof V1PlanningKpiRouteRoute
+    '/v2/(procurement)/manage-supplier-portal/': {
+      id: '/v2/(procurement)/manage-supplier-portal/'
+      path: '/manage-supplier-portal'
+      fullPath: '/v2/manage-supplier-portal'
+      preLoaderRoute: typeof V2procurementManageSupplierPortalIndexRouteImport
+      parentRoute: typeof V2Route
     }
-    '/v1/planning/office/': {
-      id: '/v1/planning/office/'
-      path: '/'
-      fullPath: '/v1/planning/office/'
-      preLoaderRoute: typeof V1PlanningOfficeIndexRouteImport
-      parentRoute: typeof V1PlanningOfficeRouteRoute
+    '/v2/(procurement)/manage-supplier-direct-contracting/': {
+      id: '/v2/(procurement)/manage-supplier-direct-contracting/'
+      path: '/manage-supplier-direct-contracting'
+      fullPath: '/v2/manage-supplier-direct-contracting'
+      preLoaderRoute: typeof V2procurementManageSupplierDirectContractingIndexRouteImport
+      parentRoute: typeof V2Route
     }
-    '/v1/planning/opcr/': {
-      id: '/v1/planning/opcr/'
-      path: '/opcr'
-      fullPath: '/v1/planning/opcr/'
-      preLoaderRoute: typeof V1PlanningOpcrIndexRouteImport
-      parentRoute: typeof V1PlanningRouteRoute
+    '/v2/(procurement)/manage-supplier-direct-acquisition/': {
+      id: '/v2/(procurement)/manage-supplier-direct-acquisition/'
+      path: '/manage-supplier-direct-acquisition'
+      fullPath: '/v2/manage-supplier-direct-acquisition'
+      preLoaderRoute: typeof V2procurementManageSupplierDirectAcquisitionIndexRouteImport
+      parentRoute: typeof V2Route
     }
-    '/v1/planning/wfp-expenditure/': {
-      id: '/v1/planning/wfp-expenditure/'
-      path: '/wfp-expenditure'
-      fullPath: '/v1/planning/wfp-expenditure/'
-      preLoaderRoute: typeof V1PlanningWfpExpenditureIndexRouteImport
-      parentRoute: typeof V1PlanningRouteRoute
+    '/v2/(procurement)/manage-rfq/': {
+      id: '/v2/(procurement)/manage-rfq/'
+      path: '/manage-rfq'
+      fullPath: '/v2/manage-rfq'
+      preLoaderRoute: typeof V2procurementManageRfqIndexRouteImport
+      parentRoute: typeof V2Route
     }
-    '/v1/planning/wfp-expenditure/$wfpObjectiveActivityId': {
-      id: '/v1/planning/wfp-expenditure/$wfpObjectiveActivityId'
-      path: '/wfp-expenditure/$wfpObjectiveActivityId'
-      fullPath: '/v1/planning/wfp-expenditure/$wfpObjectiveActivityId'
-      preLoaderRoute: typeof V1PlanningWfpExpenditureWfpObjectiveActivityIdRouteImport
-      parentRoute: typeof V1PlanningRouteRoute
+    '/v2/(procurement)/manage-prs/': {
+      id: '/v2/(procurement)/manage-prs/'
+      path: '/manage-prs'
+      fullPath: '/v2/manage-prs'
+      preLoaderRoute: typeof V2procurementManagePrsIndexRouteImport
+      parentRoute: typeof V2Route
     }
-    '/v1/planning/wfp-objective/': {
-      id: '/v1/planning/wfp-objective/'
+    '/v2/(procurement)/manage-pos/': {
+      id: '/v2/(procurement)/manage-pos/'
+      path: '/manage-pos'
+      fullPath: '/v2/manage-pos'
+      preLoaderRoute: typeof V2procurementManagePosIndexRouteImport
+      parentRoute: typeof V2Route
+    }
+    '/v2/(procurement)/manage-po/': {
+      id: '/v2/(procurement)/manage-po/'
+      path: '/manage-po'
+      fullPath: '/v2/manage-po'
+      preLoaderRoute: typeof V2procurementManagePoIndexRouteImport
+      parentRoute: typeof V2Route
+    }
+    '/v2/(procurement)/manage-ntp/': {
+      id: '/v2/(procurement)/manage-ntp/'
+      path: '/manage-ntp'
+      fullPath: '/v2/manage-ntp'
+      preLoaderRoute: typeof V2procurementManageNtpIndexRouteImport
+      parentRoute: typeof V2Route
+    }
+    '/v2/(procurement)/manage-noa/': {
+      id: '/v2/(procurement)/manage-noa/'
+      path: '/manage-noa'
+      fullPath: '/v2/manage-noa'
+      preLoaderRoute: typeof V2procurementManageNoaIndexRouteImport
+      parentRoute: typeof V2Route
+    }
+    '/v2/(procurement)/manage-direct-contracting/': {
+      id: '/v2/(procurement)/manage-direct-contracting/'
+      path: '/manage-direct-contracting'
+      fullPath: '/v2/manage-direct-contracting'
+      preLoaderRoute: typeof V2procurementManageDirectContractingIndexRouteImport
+      parentRoute: typeof V2Route
+    }
+    '/v2/(procurement)/manage-direct-acquisition/': {
+      id: '/v2/(procurement)/manage-direct-acquisition/'
+      path: '/manage-direct-acquisition'
+      fullPath: '/v2/manage-direct-acquisition'
+      preLoaderRoute: typeof V2procurementManageDirectAcquisitionIndexRouteImport
+      parentRoute: typeof V2Route
+    }
+    '/v2/(procurement)/manage-contracts/': {
+      id: '/v2/(procurement)/manage-contracts/'
+      path: '/manage-contracts'
+      fullPath: '/v2/manage-contracts'
+      preLoaderRoute: typeof V2procurementManageContractsIndexRouteImport
+      parentRoute: typeof V2Route
+    }
+    '/v2/(procurement)/manage-bac-resolutions/': {
+      id: '/v2/(procurement)/manage-bac-resolutions/'
+      path: '/manage-bac-resolutions'
+      fullPath: '/v2/manage-bac-resolutions'
+      preLoaderRoute: typeof V2procurementManageBacResolutionsIndexRouteImport
+      parentRoute: typeof V2Route
+    }
+    '/v2/(procurement)/manage-aprs/': {
+      id: '/v2/(procurement)/manage-aprs/'
+      path: '/manage-aprs'
+      fullPath: '/v2/manage-aprs'
+      preLoaderRoute: typeof V2procurementManageAprsIndexRouteImport
+      parentRoute: typeof V2Route
+    }
+    '/v2/(procurement)/manage-aob/': {
+      id: '/v2/(procurement)/manage-aob/'
+      path: '/manage-aob'
+      fullPath: '/v2/manage-aob'
+      preLoaderRoute: typeof V2procurementManageAobIndexRouteImport
+      parentRoute: typeof V2Route
+    }
+    '/v2/(procurement)/direct-contracting-request/': {
+      id: '/v2/(procurement)/direct-contracting-request/'
+      path: '/direct-contracting-request'
+      fullPath: '/v2/direct-contracting-request'
+      preLoaderRoute: typeof V2procurementDirectContractingRequestIndexRouteImport
+      parentRoute: typeof V2Route
+    }
+    '/v2/(procurement)/direct-acquisition-request/': {
+      id: '/v2/(procurement)/direct-acquisition-request/'
+      path: '/direct-acquisition-request'
+      fullPath: '/v2/direct-acquisition-request'
+      preLoaderRoute: typeof V2procurementDirectAcquisitionRequestIndexRouteImport
+      parentRoute: typeof V2Route
+    }
+    '/v2/(procurement)/contracts-consulting-infrastructure/': {
+      id: '/v2/(procurement)/contracts-consulting-infrastructure/'
+      path: '/contracts-consulting-infrastructure'
+      fullPath: '/v2/contracts-consulting-infrastructure'
+      preLoaderRoute: typeof V2procurementContractsConsultingInfrastructureIndexRouteImport
+      parentRoute: typeof V2Route
+    }
+    '/v2/(procurement)/consolidate-prs/': {
+      id: '/v2/(procurement)/consolidate-prs/'
+      path: '/consolidate-prs'
+      fullPath: '/v2/consolidate-prs'
+      preLoaderRoute: typeof V2procurementConsolidatePrsIndexRouteImport
+      parentRoute: typeof V2Route
+    }
+    '/v2/(procurement)/bidding-master-calendar/': {
+      id: '/v2/(procurement)/bidding-master-calendar/'
+      path: '/bidding-master-calendar'
+      fullPath: '/v2/bidding-master-calendar'
+      preLoaderRoute: typeof V2procurementBiddingMasterCalendarIndexRouteImport
+      parentRoute: typeof V2Route
+    }
+    '/v2/(procurement)/bidding-documents/': {
+      id: '/v2/(procurement)/bidding-documents/'
+      path: '/bidding-documents'
+      fullPath: '/v2/bidding-documents'
+      preLoaderRoute: typeof V2procurementBiddingDocumentsIndexRouteImport
+      parentRoute: typeof V2Route
+    }
+    '/v2/(procurement)/bid-evaluation/': {
+      id: '/v2/(procurement)/bid-evaluation/'
+      path: '/bid-evaluation'
+      fullPath: '/v2/bid-evaluation'
+      preLoaderRoute: typeof V2procurementBidEvaluationIndexRouteImport
+      parentRoute: typeof V2Route
+    }
+    '/v2/(procurement)/bac-resolutions/': {
+      id: '/v2/(procurement)/bac-resolutions/'
+      path: '/bac-resolutions'
+      fullPath: '/v2/bac-resolutions'
+      preLoaderRoute: typeof V2procurementBacResolutionsIndexRouteImport
+      parentRoute: typeof V2Route
+    }
+    '/v2/(procurement)/bac-resolutions-public-bidding/': {
+      id: '/v2/(procurement)/bac-resolutions-public-bidding/'
+      path: '/bac-resolutions-public-bidding'
+      fullPath: '/v2/bac-resolutions-public-bidding'
+      preLoaderRoute: typeof V2procurementBacResolutionsPublicBiddingIndexRouteImport
+      parentRoute: typeof V2Route
+    }
+    '/v2/(procurement)/agency-purchase-requests-apr/': {
+      id: '/v2/(procurement)/agency-purchase-requests-apr/'
+      path: '/agency-purchase-requests-apr'
+      fullPath: '/v2/agency-purchase-requests-apr'
+      preLoaderRoute: typeof V2procurementAgencyPurchaseRequestsAprIndexRouteImport
+      parentRoute: typeof V2Route
+    }
+    '/v2/(procurement)/abstract-of-bids-aob/': {
+      id: '/v2/(procurement)/abstract-of-bids-aob/'
+      path: '/abstract-of-bids-aob'
+      fullPath: '/v2/abstract-of-bids-aob'
+      preLoaderRoute: typeof V2procurementAbstractOfBidsAobIndexRouteImport
+      parentRoute: typeof V2Route
+    }
+    '/v2/(planning)/wfp/': {
+      id: '/v2/(planning)/wfp/'
+      path: '/wfp'
+      fullPath: '/v2/wfp'
+      preLoaderRoute: typeof V2planningWfpIndexRouteImport
+      parentRoute: typeof V2Route
+    }
+    '/v2/(planning)/wfp-objective/': {
+      id: '/v2/(planning)/wfp-objective/'
       path: '/wfp-objective'
-      fullPath: '/v1/planning/wfp-objective/'
-      preLoaderRoute: typeof V1PlanningWfpObjectiveIndexRouteImport
-      parentRoute: typeof V1PlanningRouteRoute
-    }
-    '/v1/planning/wfp-objective/$wfpObjectiveId': {
-      id: '/v1/planning/wfp-objective/$wfpObjectiveId'
-      path: '/wfp-objective/$wfpObjectiveId'
-      fullPath: '/v1/planning/wfp-objective/$wfpObjectiveId'
-      preLoaderRoute: typeof V1PlanningWfpObjectiveWfpObjectiveIdRouteImport
-      parentRoute: typeof V1PlanningRouteRoute
-    }
-    '/v2/(planning)/annual-performance-planning/': {
-      id: '/v2/(planning)/annual-performance-planning/'
-      path: '/'
-      fullPath: '/v2/annual-performance-planning/'
-      preLoaderRoute: typeof V2planningAnnualPerformancePlanningIndexRouteImport
-      parentRoute: typeof V2planningAnnualPerformancePlanningRoute
-    }
-    '/v2/(planning)/app-consolidation/': {
-      id: '/v2/(planning)/app-consolidation/'
-      path: '/app-consolidation'
-      fullPath: '/v2/app-consolidation/'
-      preLoaderRoute: typeof V2planningAppConsolidationIndexRouteImport
+      fullPath: '/v2/wfp-objective'
+      preLoaderRoute: typeof V2planningWfpObjectiveIndexRouteImport
       parentRoute: typeof V2Route
     }
-    '/v2/(planning)/app-consolidation/$appId': {
-      id: '/v2/(planning)/app-consolidation/$appId'
-      path: '/app-consolidation/$appId'
-      fullPath: '/v2/app-consolidation/$appId'
-      preLoaderRoute: typeof V2planningAppConsolidationAppIdRouteImport
-      parentRoute: typeof V2Route
-    }
-    '/v2/(planning)/market-scoping/': {
-      id: '/v2/(planning)/market-scoping/'
-      path: '/market-scoping'
-      fullPath: '/v2/market-scoping/'
-      preLoaderRoute: typeof V2planningMarketScopingIndexRouteImport
-      parentRoute: typeof V2Route
-    }
-    '/v2/(planning)/market-scoping/$id': {
-      id: '/v2/(planning)/market-scoping/$id'
-      path: '/market-scoping/$id'
-      fullPath: '/v2/market-scoping/$id'
-      preLoaderRoute: typeof V2planningMarketScopingIdRouteImport
-      parentRoute: typeof V2Route
-    }
-    '/v2/(planning)/market-scoping/create': {
-      id: '/v2/(planning)/market-scoping/create'
-      path: '/market-scoping/create'
-      fullPath: '/v2/market-scoping/create'
-      preLoaderRoute: typeof V2planningMarketScopingCreateRouteImport
-      parentRoute: typeof V2Route
-    }
-    '/v2/(planning)/market-scoping/settings': {
-      id: '/v2/(planning)/market-scoping/settings'
-      path: '/market-scoping/settings'
-      fullPath: '/v2/market-scoping/settings'
-      preLoaderRoute: typeof V2planningMarketScopingSettingsRouteImport
-      parentRoute: typeof V2Route
-    }
-    '/v2/(planning)/ppmp/': {
-      id: '/v2/(planning)/ppmp/'
-      path: '/ppmp'
-      fullPath: '/v2/ppmp/'
-      preLoaderRoute: typeof V2planningPpmpIndexRouteImport
-      parentRoute: typeof V2Route
-    }
-    '/v2/(planning)/ppmp/$ppmpId': {
-      id: '/v2/(planning)/ppmp/$ppmpId'
-      path: '/ppmp/$ppmpId'
-      fullPath: '/v2/ppmp/$ppmpId'
-      preLoaderRoute: typeof V2planningPpmpPpmpIdRouteImport
-      parentRoute: typeof V2Route
-    }
-    '/v2/(planning)/ppmp/catalog': {
-      id: '/v2/(planning)/ppmp/catalog'
-      path: '/ppmp/catalog'
-      fullPath: '/v2/ppmp/catalog'
-      preLoaderRoute: typeof V2planningPpmpCatalogRouteImport
+    '/v2/(planning)/wfp-expenditure/': {
+      id: '/v2/(planning)/wfp-expenditure/'
+      path: '/wfp-expenditure'
+      fullPath: '/v2/wfp-expenditure'
+      preLoaderRoute: typeof V2planningWfpExpenditureIndexRouteImport
       parentRoute: typeof V2Route
     }
     '/v2/(planning)/uacs-library/': {
@@ -2774,116 +2881,95 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof V2planningUacsLibraryIndexRouteImport
       parentRoute: typeof V2planningUacsLibraryRoute
     }
-    '/v2/(planning)/wfp-expenditure/': {
-      id: '/v2/(planning)/wfp-expenditure/'
-      path: '/wfp-expenditure'
-      fullPath: '/v2/wfp-expenditure/'
-      preLoaderRoute: typeof V2planningWfpExpenditureIndexRouteImport
+    '/v2/(planning)/ppmp/': {
+      id: '/v2/(planning)/ppmp/'
+      path: '/ppmp'
+      fullPath: '/v2/ppmp'
+      preLoaderRoute: typeof V2planningPpmpIndexRouteImport
       parentRoute: typeof V2Route
     }
-    '/v2/(planning)/wfp-expenditure/$wfpObjectiveActivityId': {
-      id: '/v2/(planning)/wfp-expenditure/$wfpObjectiveActivityId'
-      path: '/wfp-expenditure/$wfpObjectiveActivityId'
-      fullPath: '/v2/wfp-expenditure/$wfpObjectiveActivityId'
-      preLoaderRoute: typeof V2planningWfpExpenditureWfpObjectiveActivityIdRouteImport
+    '/v2/(planning)/market-scoping/': {
+      id: '/v2/(planning)/market-scoping/'
+      path: '/market-scoping'
+      fullPath: '/v2/market-scoping'
+      preLoaderRoute: typeof V2planningMarketScopingIndexRouteImport
       parentRoute: typeof V2Route
     }
-    '/v2/(planning)/wfp-objective/': {
-      id: '/v2/(planning)/wfp-objective/'
+    '/v2/(planning)/app-consolidation/': {
+      id: '/v2/(planning)/app-consolidation/'
+      path: '/app-consolidation'
+      fullPath: '/v2/app-consolidation'
+      preLoaderRoute: typeof V2planningAppConsolidationIndexRouteImport
+      parentRoute: typeof V2Route
+    }
+    '/v2/(planning)/annual-performance-planning/': {
+      id: '/v2/(planning)/annual-performance-planning/'
+      path: '/'
+      fullPath: '/v2/annual-performance-planning/'
+      preLoaderRoute: typeof V2planningAnnualPerformancePlanningIndexRouteImport
+      parentRoute: typeof V2planningAnnualPerformancePlanningRoute
+    }
+    '/v1/planning/wfp-objective/': {
+      id: '/v1/planning/wfp-objective/'
       path: '/wfp-objective'
-      fullPath: '/v2/wfp-objective/'
-      preLoaderRoute: typeof V2planningWfpObjectiveIndexRouteImport
-      parentRoute: typeof V2Route
+      fullPath: '/v1/planning/wfp-objective'
+      preLoaderRoute: typeof V1PlanningWfpObjectiveIndexRouteImport
+      parentRoute: typeof V1PlanningRouteRoute
     }
-    '/v2/(planning)/wfp-objective/$wfpObjectiveId': {
-      id: '/v2/(planning)/wfp-objective/$wfpObjectiveId'
-      path: '/wfp-objective/$wfpObjectiveId'
-      fullPath: '/v2/wfp-objective/$wfpObjectiveId'
-      preLoaderRoute: typeof V2planningWfpObjectiveWfpObjectiveIdRouteImport
-      parentRoute: typeof V2Route
+    '/v1/planning/wfp-expenditure/': {
+      id: '/v1/planning/wfp-expenditure/'
+      path: '/wfp-expenditure'
+      fullPath: '/v1/planning/wfp-expenditure'
+      preLoaderRoute: typeof V1PlanningWfpExpenditureIndexRouteImport
+      parentRoute: typeof V1PlanningRouteRoute
     }
-    '/v2/(planning)/wfp/': {
-      id: '/v2/(planning)/wfp/'
-      path: '/wfp'
-      fullPath: '/v2/wfp/'
-      preLoaderRoute: typeof V2planningWfpIndexRouteImport
-      parentRoute: typeof V2Route
+    '/v1/planning/office/': {
+      id: '/v1/planning/office/'
+      path: '/'
+      fullPath: '/v1/planning/office/'
+      preLoaderRoute: typeof V1PlanningOfficeIndexRouteImport
+      parentRoute: typeof V1PlanningOfficeRouteRoute
     }
-    '/v2/(planning)/wfp/$wfpId': {
-      id: '/v2/(planning)/wfp/$wfpId'
-      path: '/wfp/$wfpId'
-      fullPath: '/v2/wfp/$wfpId'
-      preLoaderRoute: typeof V2planningWfpWfpIdRouteImport
-      parentRoute: typeof V2Route
+    '/v1/planning/kpi/': {
+      id: '/v1/planning/kpi/'
+      path: '/'
+      fullPath: '/v1/planning/kpi/'
+      preLoaderRoute: typeof V1PlanningKpiIndexRouteImport
+      parentRoute: typeof V1PlanningKpiRouteRoute
     }
-    '/v2/(procurement)/abstract-of-bids-aob/': {
-      id: '/v2/(procurement)/abstract-of-bids-aob/'
-      path: '/abstract-of-bids-aob'
-      fullPath: '/v2/abstract-of-bids-aob/'
-      preLoaderRoute: typeof V2procurementAbstractOfBidsAobIndexRouteImport
-      parentRoute: typeof V2Route
+    '/v1/planning/kpi-assignment-for-du/': {
+      id: '/v1/planning/kpi-assignment-for-du/'
+      path: '/kpi-assignment-for-du'
+      fullPath: '/v1/planning/kpi-assignment-for-du'
+      preLoaderRoute: typeof V1PlanningKpiAssignmentForDuIndexRouteImport
+      parentRoute: typeof V1PlanningRouteRoute
     }
-    '/v2/(procurement)/abstract-of-bids-aob/$aobId': {
-      id: '/v2/(procurement)/abstract-of-bids-aob/$aobId'
-      path: '/abstract-of-bids-aob/$aobId'
-      fullPath: '/v2/abstract-of-bids-aob/$aobId'
-      preLoaderRoute: typeof V2procurementAbstractOfBidsAobAobIdRouteImport
-      parentRoute: typeof V2Route
+    '/v1/planning/fund/': {
+      id: '/v1/planning/fund/'
+      path: '/fund'
+      fullPath: '/v1/planning/fund'
+      preLoaderRoute: typeof V1PlanningFundIndexRouteImport
+      parentRoute: typeof V1PlanningRouteRoute
     }
-    '/v2/(procurement)/agency-purchase-requests-apr/': {
-      id: '/v2/(procurement)/agency-purchase-requests-apr/'
-      path: '/agency-purchase-requests-apr'
-      fullPath: '/v2/agency-purchase-requests-apr/'
-      preLoaderRoute: typeof V2procurementAgencyPurchaseRequestsAprIndexRouteImport
-      parentRoute: typeof V2Route
+    '/v1/planning/fund-receive/': {
+      id: '/v1/planning/fund-receive/'
+      path: '/fund-receive'
+      fullPath: '/v1/planning/fund-receive'
+      preLoaderRoute: typeof V1PlanningFundReceiveIndexRouteImport
+      parentRoute: typeof V1PlanningRouteRoute
     }
-    '/v2/(procurement)/agency-purchase-requests-apr/$aprId': {
-      id: '/v2/(procurement)/agency-purchase-requests-apr/$aprId'
-      path: '/agency-purchase-requests-apr/$aprId'
-      fullPath: '/v2/agency-purchase-requests-apr/$aprId'
-      preLoaderRoute: typeof V2procurementAgencyPurchaseRequestsAprAprIdRouteImport
-      parentRoute: typeof V2Route
+    '/v1/planning/fiscal-year/': {
+      id: '/v1/planning/fiscal-year/'
+      path: '/'
+      fullPath: '/v1/planning/fiscal-year/'
+      preLoaderRoute: typeof V1PlanningFiscalYearIndexRouteImport
+      parentRoute: typeof V1PlanningFiscalYearRoute
     }
-    '/v2/(procurement)/bac-resolutions-public-bidding/': {
-      id: '/v2/(procurement)/bac-resolutions-public-bidding/'
-      path: '/bac-resolutions-public-bidding'
-      fullPath: '/v2/bac-resolutions-public-bidding/'
-      preLoaderRoute: typeof V2procurementBacResolutionsPublicBiddingIndexRouteImport
-      parentRoute: typeof V2Route
-    }
-    '/v2/(procurement)/bac-resolutions/': {
-      id: '/v2/(procurement)/bac-resolutions/'
-      path: '/bac-resolutions'
-      fullPath: '/v2/bac-resolutions/'
-      preLoaderRoute: typeof V2procurementBacResolutionsIndexRouteImport
-      parentRoute: typeof V2Route
-    }
-    '/v2/(procurement)/bid-evaluation/': {
-      id: '/v2/(procurement)/bid-evaluation/'
-      path: '/bid-evaluation'
-      fullPath: '/v2/bid-evaluation/'
-      preLoaderRoute: typeof V2procurementBidEvaluationIndexRouteImport
-      parentRoute: typeof V2Route
-    }
-    '/v2/(procurement)/bidding-documents/': {
-      id: '/v2/(procurement)/bidding-documents/'
-      path: '/bidding-documents'
-      fullPath: '/v2/bidding-documents/'
-      preLoaderRoute: typeof V2procurementBiddingDocumentsIndexRouteImport
-      parentRoute: typeof V2Route
-    }
-    '/v2/(procurement)/bidding-master-calendar/': {
-      id: '/v2/(procurement)/bidding-master-calendar/'
-      path: '/bidding-master-calendar'
-      fullPath: '/v2/bidding-master-calendar/'
-      preLoaderRoute: typeof V2procurementBiddingMasterCalendarIndexRouteImport
-      parentRoute: typeof V2Route
-    }
-    '/v2/(procurement)/consolidate-prs/': {
-      id: '/v2/(procurement)/consolidate-prs/'
-      path: '/consolidate-prs'
-      fullPath: '/v2/consolidate-prs/'
-      preLoaderRoute: typeof V2procurementConsolidatePrsIndexRouteImport
+    '/v2/kpi-library/master-kpi/$kpiId': {
+      id: '/v2/kpi-library/master-kpi/$kpiId'
+      path: '/kpi-library/master-kpi/$kpiId'
+      fullPath: '/v2/kpi-library/master-kpi/$kpiId'
+      preLoaderRoute: typeof V2KpiLibraryMasterKpiKpiIdLazyRouteImport
       parentRoute: typeof V2Route
     }
     '/v2/(procurement)/consolidate-prs/$consolidatedPrId': {
@@ -2893,144 +2979,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof V2procurementConsolidatePrsConsolidatedPrIdLazyRouteImport
       parentRoute: typeof V2Route
     }
-    '/v2/(procurement)/contracts-consulting-infrastructure/': {
-      id: '/v2/(procurement)/contracts-consulting-infrastructure/'
-      path: '/contracts-consulting-infrastructure'
-      fullPath: '/v2/contracts-consulting-infrastructure/'
-      preLoaderRoute: typeof V2procurementContractsConsultingInfrastructureIndexRouteImport
+    '/v2/bac/document/$docId': {
+      id: '/v2/bac/document/$docId'
+      path: '/bac/document/$docId'
+      fullPath: '/v2/bac/document/$docId'
+      preLoaderRoute: typeof V2BacDocumentDocIdRouteImport
       parentRoute: typeof V2Route
     }
-    '/v2/(procurement)/direct-acquisition-request/': {
-      id: '/v2/(procurement)/direct-acquisition-request/'
-      path: '/direct-acquisition-request'
-      fullPath: '/v2/direct-acquisition-request/'
-      preLoaderRoute: typeof V2procurementDirectAcquisitionRequestIndexRouteImport
-      parentRoute: typeof V2Route
+    '/v2/_planning/organization/layout': {
+      id: '/v2/_planning/organization/layout'
+      path: '/organization/layout'
+      fullPath: '/v2/organization/layout'
+      preLoaderRoute: typeof V2PlanningOrganizationLayoutRouteImport
+      parentRoute: typeof V2PlanningRoute
     }
-    '/v2/(procurement)/direct-contracting-request/': {
-      id: '/v2/(procurement)/direct-contracting-request/'
-      path: '/direct-contracting-request'
-      fullPath: '/v2/direct-contracting-request/'
-      preLoaderRoute: typeof V2procurementDirectContractingRequestIndexRouteImport
-      parentRoute: typeof V2Route
-    }
-    '/v2/(procurement)/manage-aob/': {
-      id: '/v2/(procurement)/manage-aob/'
-      path: '/manage-aob'
-      fullPath: '/v2/manage-aob/'
-      preLoaderRoute: typeof V2procurementManageAobIndexRouteImport
-      parentRoute: typeof V2Route
-    }
-    '/v2/(procurement)/manage-aob/$aobId': {
-      id: '/v2/(procurement)/manage-aob/$aobId'
-      path: '/manage-aob/$aobId'
-      fullPath: '/v2/manage-aob/$aobId'
-      preLoaderRoute: typeof V2procurementManageAobAobIdRouteImport
-      parentRoute: typeof V2Route
-    }
-    '/v2/(procurement)/manage-aprs/': {
-      id: '/v2/(procurement)/manage-aprs/'
-      path: '/manage-aprs'
-      fullPath: '/v2/manage-aprs/'
-      preLoaderRoute: typeof V2procurementManageAprsIndexRouteImport
-      parentRoute: typeof V2Route
-    }
-    '/v2/(procurement)/manage-bac-resolutions/': {
-      id: '/v2/(procurement)/manage-bac-resolutions/'
-      path: '/manage-bac-resolutions'
-      fullPath: '/v2/manage-bac-resolutions/'
-      preLoaderRoute: typeof V2procurementManageBacResolutionsIndexRouteImport
-      parentRoute: typeof V2Route
-    }
-    '/v2/(procurement)/manage-contracts/': {
-      id: '/v2/(procurement)/manage-contracts/'
-      path: '/manage-contracts'
-      fullPath: '/v2/manage-contracts/'
-      preLoaderRoute: typeof V2procurementManageContractsIndexRouteImport
-      parentRoute: typeof V2Route
-    }
-    '/v2/(procurement)/manage-direct-acquisition/': {
-      id: '/v2/(procurement)/manage-direct-acquisition/'
-      path: '/manage-direct-acquisition'
-      fullPath: '/v2/manage-direct-acquisition/'
-      preLoaderRoute: typeof V2procurementManageDirectAcquisitionIndexRouteImport
-      parentRoute: typeof V2Route
-    }
-    '/v2/(procurement)/manage-direct-contracting/': {
-      id: '/v2/(procurement)/manage-direct-contracting/'
-      path: '/manage-direct-contracting'
-      fullPath: '/v2/manage-direct-contracting/'
-      preLoaderRoute: typeof V2procurementManageDirectContractingIndexRouteImport
-      parentRoute: typeof V2Route
-    }
-    '/v2/(procurement)/manage-noa/': {
-      id: '/v2/(procurement)/manage-noa/'
-      path: '/manage-noa'
-      fullPath: '/v2/manage-noa/'
-      preLoaderRoute: typeof V2procurementManageNoaIndexRouteImport
-      parentRoute: typeof V2Route
-    }
-    '/v2/(procurement)/manage-ntp/': {
-      id: '/v2/(procurement)/manage-ntp/'
-      path: '/manage-ntp'
-      fullPath: '/v2/manage-ntp/'
-      preLoaderRoute: typeof V2procurementManageNtpIndexRouteImport
-      parentRoute: typeof V2Route
-    }
-    '/v2/(procurement)/manage-ntp/$ntpId': {
-      id: '/v2/(procurement)/manage-ntp/$ntpId'
-      path: '/manage-ntp/$ntpId'
-      fullPath: '/v2/manage-ntp/$ntpId'
-      preLoaderRoute: typeof V2procurementManageNtpNtpIdRouteImport
-      parentRoute: typeof V2Route
-    }
-    '/v2/(procurement)/manage-po/': {
-      id: '/v2/(procurement)/manage-po/'
-      path: '/manage-po'
-      fullPath: '/v2/manage-po/'
-      preLoaderRoute: typeof V2procurementManagePoIndexRouteImport
-      parentRoute: typeof V2Route
-    }
-    '/v2/(procurement)/manage-pos/': {
-      id: '/v2/(procurement)/manage-pos/'
-      path: '/manage-pos'
-      fullPath: '/v2/manage-pos/'
-      preLoaderRoute: typeof V2procurementManagePosIndexRouteImport
-      parentRoute: typeof V2Route
-    }
-    '/v2/(procurement)/manage-prs/': {
-      id: '/v2/(procurement)/manage-prs/'
-      path: '/manage-prs'
-      fullPath: '/v2/manage-prs/'
-      preLoaderRoute: typeof V2procurementManagePrsIndexRouteImport
-      parentRoute: typeof V2Route
-    }
-    '/v2/(procurement)/manage-rfq/': {
-      id: '/v2/(procurement)/manage-rfq/'
-      path: '/manage-rfq'
-      fullPath: '/v2/manage-rfq/'
-      preLoaderRoute: typeof V2procurementManageRfqIndexRouteImport
-      parentRoute: typeof V2Route
-    }
-    '/v2/(procurement)/manage-supplier-direct-acquisition/': {
-      id: '/v2/(procurement)/manage-supplier-direct-acquisition/'
-      path: '/manage-supplier-direct-acquisition'
-      fullPath: '/v2/manage-supplier-direct-acquisition/'
-      preLoaderRoute: typeof V2procurementManageSupplierDirectAcquisitionIndexRouteImport
-      parentRoute: typeof V2Route
-    }
-    '/v2/(procurement)/manage-supplier-direct-contracting/': {
-      id: '/v2/(procurement)/manage-supplier-direct-contracting/'
-      path: '/manage-supplier-direct-contracting'
-      fullPath: '/v2/manage-supplier-direct-contracting/'
-      preLoaderRoute: typeof V2procurementManageSupplierDirectContractingIndexRouteImport
-      parentRoute: typeof V2Route
-    }
-    '/v2/(procurement)/manage-supplier-portal/': {
-      id: '/v2/(procurement)/manage-supplier-portal/'
-      path: '/manage-supplier-portal'
-      fullPath: '/v2/manage-supplier-portal/'
-      preLoaderRoute: typeof V2procurementManageSupplierPortalIndexRouteImport
+    '/v2/(procurement)/notice-to-proceed-ntp/$ntpId': {
+      id: '/v2/(procurement)/notice-to-proceed-ntp/$ntpId'
+      path: '/notice-to-proceed-ntp/$ntpId'
+      fullPath: '/v2/notice-to-proceed-ntp/$ntpId'
+      preLoaderRoute: typeof V2procurementNoticeToProceedNtpNtpIdRouteImport
       parentRoute: typeof V2Route
     }
     '/v2/(procurement)/manage-supplier-portal/$projectId': {
@@ -3040,355 +3007,180 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof V2procurementManageSupplierPortalProjectIdRouteImport
       parentRoute: typeof V2Route
     }
-    '/v2/(procurement)/notice-of-award-noa/': {
-      id: '/v2/(procurement)/notice-of-award-noa/'
-      path: '/notice-of-award-noa'
-      fullPath: '/v2/notice-of-award-noa/'
-      preLoaderRoute: typeof V2procurementNoticeOfAwardNoaIndexRouteImport
+    '/v2/(procurement)/manage-ntp/$ntpId': {
+      id: '/v2/(procurement)/manage-ntp/$ntpId'
+      path: '/manage-ntp/$ntpId'
+      fullPath: '/v2/manage-ntp/$ntpId'
+      preLoaderRoute: typeof V2procurementManageNtpNtpIdRouteImport
       parentRoute: typeof V2Route
     }
-    '/v2/(procurement)/notice-to-proceed-ntp/': {
-      id: '/v2/(procurement)/notice-to-proceed-ntp/'
-      path: '/notice-to-proceed-ntp'
-      fullPath: '/v2/notice-to-proceed-ntp/'
-      preLoaderRoute: typeof V2procurementNoticeToProceedNtpIndexRouteImport
+    '/v2/(procurement)/manage-aob/$aobId': {
+      id: '/v2/(procurement)/manage-aob/$aobId'
+      path: '/manage-aob/$aobId'
+      fullPath: '/v2/manage-aob/$aobId'
+      preLoaderRoute: typeof V2procurementManageAobAobIdRouteImport
       parentRoute: typeof V2Route
     }
-    '/v2/(procurement)/notice-to-proceed-ntp/$ntpId': {
-      id: '/v2/(procurement)/notice-to-proceed-ntp/$ntpId'
-      path: '/notice-to-proceed-ntp/$ntpId'
-      fullPath: '/v2/notice-to-proceed-ntp/$ntpId'
-      preLoaderRoute: typeof V2procurementNoticeToProceedNtpNtpIdRouteImport
+    '/v2/(procurement)/agency-purchase-requests-apr/$aprId': {
+      id: '/v2/(procurement)/agency-purchase-requests-apr/$aprId'
+      path: '/agency-purchase-requests-apr/$aprId'
+      fullPath: '/v2/agency-purchase-requests-apr/$aprId'
+      preLoaderRoute: typeof V2procurementAgencyPurchaseRequestsAprAprIdRouteImport
       parentRoute: typeof V2Route
     }
-    '/v2/(procurement)/po-direct-acquisition/': {
-      id: '/v2/(procurement)/po-direct-acquisition/'
-      path: '/po-direct-acquisition'
-      fullPath: '/v2/po-direct-acquisition/'
-      preLoaderRoute: typeof V2procurementPoDirectAcquisitionIndexRouteImport
+    '/v2/(procurement)/abstract-of-bids-aob/$aobId': {
+      id: '/v2/(procurement)/abstract-of-bids-aob/$aobId'
+      path: '/abstract-of-bids-aob/$aobId'
+      fullPath: '/v2/abstract-of-bids-aob/$aobId'
+      preLoaderRoute: typeof V2procurementAbstractOfBidsAobAobIdRouteImport
       parentRoute: typeof V2Route
     }
-    '/v2/(procurement)/po-public-bidding/': {
-      id: '/v2/(procurement)/po-public-bidding/'
-      path: '/po-public-bidding'
-      fullPath: '/v2/po-public-bidding/'
-      preLoaderRoute: typeof V2procurementPoPublicBiddingIndexRouteImport
+    '/v2/(planning)/wfp/$wfpId': {
+      id: '/v2/(planning)/wfp/$wfpId'
+      path: '/wfp/$wfpId'
+      fullPath: '/v2/wfp/$wfpId'
+      preLoaderRoute: typeof V2planningWfpWfpIdRouteImport
       parentRoute: typeof V2Route
     }
-    '/v2/(procurement)/po-svp/': {
-      id: '/v2/(procurement)/po-svp/'
-      path: '/po-svp'
-      fullPath: '/v2/po-svp/'
-      preLoaderRoute: typeof V2procurementPoSvpIndexRouteImport
+    '/v2/(planning)/wfp-objective/$wfpObjectiveId': {
+      id: '/v2/(planning)/wfp-objective/$wfpObjectiveId'
+      path: '/wfp-objective/$wfpObjectiveId'
+      fullPath: '/v2/wfp-objective/$wfpObjectiveId'
+      preLoaderRoute: typeof V2planningWfpObjectiveWfpObjectiveIdRouteImport
       parentRoute: typeof V2Route
     }
-    '/v2/(procurement)/procurement-dashboard/': {
-      id: '/v2/(procurement)/procurement-dashboard/'
-      path: '/procurement-dashboard'
-      fullPath: '/v2/procurement-dashboard/'
-      preLoaderRoute: typeof V2procurementProcurementDashboardIndexRouteImport
+    '/v2/(planning)/wfp-expenditure/$wfpObjectiveActivityId': {
+      id: '/v2/(planning)/wfp-expenditure/$wfpObjectiveActivityId'
+      path: '/wfp-expenditure/$wfpObjectiveActivityId'
+      fullPath: '/v2/wfp-expenditure/$wfpObjectiveActivityId'
+      preLoaderRoute: typeof V2planningWfpExpenditureWfpObjectiveActivityIdRouteImport
       parentRoute: typeof V2Route
     }
-    '/v2/(procurement)/purchase-requests-pr/': {
-      id: '/v2/(procurement)/purchase-requests-pr/'
-      path: '/purchase-requests-pr'
-      fullPath: '/v2/purchase-requests-pr/'
-      preLoaderRoute: typeof V2procurementPurchaseRequestsPrIndexRouteImport
+    '/v2/(planning)/ppmp/catalog': {
+      id: '/v2/(planning)/ppmp/catalog'
+      path: '/ppmp/catalog'
+      fullPath: '/v2/ppmp/catalog'
+      preLoaderRoute: typeof V2planningPpmpCatalogRouteImport
       parentRoute: typeof V2Route
     }
-    '/v2/(procurement)/request-for-quotation-rfq/': {
-      id: '/v2/(procurement)/request-for-quotation-rfq/'
-      path: '/request-for-quotation-rfq'
-      fullPath: '/v2/request-for-quotation-rfq/'
-      preLoaderRoute: typeof V2procurementRequestForQuotationRfqIndexRouteImport
+    '/v2/(planning)/ppmp/$ppmpId': {
+      id: '/v2/(planning)/ppmp/$ppmpId'
+      path: '/ppmp/$ppmpId'
+      fullPath: '/v2/ppmp/$ppmpId'
+      preLoaderRoute: typeof V2planningPpmpPpmpIdRouteImport
       parentRoute: typeof V2Route
     }
-    '/v2/_planning/organization/': {
-      id: '/v2/_planning/organization/'
-      path: '/organization'
-      fullPath: '/v2/organization/'
-      preLoaderRoute: typeof V2PlanningOrganizationIndexRouteImport
-      parentRoute: typeof V2PlanningRoute
-    }
-    '/v2/_planning/organization/layout': {
-      id: '/v2/_planning/organization/layout'
-      path: '/organization/layout'
-      fullPath: '/v2/organization/layout'
-      preLoaderRoute: typeof V2PlanningOrganizationLayoutRouteImport
-      parentRoute: typeof V2PlanningRoute
-    }
-    '/v2/bac/document/$docId': {
-      id: '/v2/bac/document/$docId'
-      path: '/bac/document/$docId'
-      fullPath: '/v2/bac/document/$docId'
-      preLoaderRoute: typeof V2BacDocumentDocIdRouteImport
+    '/v2/(planning)/market-scoping/settings': {
+      id: '/v2/(planning)/market-scoping/settings'
+      path: '/market-scoping/settings'
+      fullPath: '/v2/market-scoping/settings'
+      preLoaderRoute: typeof V2planningMarketScopingSettingsRouteImport
       parentRoute: typeof V2Route
     }
-    '/v2/kpi-library/kpi-measurement-configurator/': {
-      id: '/v2/kpi-library/kpi-measurement-configurator/'
-      path: '/kpi-library/kpi-measurement-configurator'
-      fullPath: '/v2/kpi-library/kpi-measurement-configurator/'
-      preLoaderRoute: typeof V2KpiLibraryKpiMeasurementConfiguratorIndexLazyRouteImport
+    '/v2/(planning)/market-scoping/create': {
+      id: '/v2/(planning)/market-scoping/create'
+      path: '/market-scoping/create'
+      fullPath: '/v2/market-scoping/create'
+      preLoaderRoute: typeof V2planningMarketScopingCreateRouteImport
       parentRoute: typeof V2Route
     }
-    '/v2/kpi-library/master-kpi/': {
-      id: '/v2/kpi-library/master-kpi/'
-      path: '/kpi-library/master-kpi'
-      fullPath: '/v2/kpi-library/master-kpi/'
-      preLoaderRoute: typeof V2KpiLibraryMasterKpiIndexLazyRouteImport
+    '/v2/(planning)/market-scoping/$id': {
+      id: '/v2/(planning)/market-scoping/$id'
+      path: '/market-scoping/$id'
+      fullPath: '/v2/market-scoping/$id'
+      preLoaderRoute: typeof V2planningMarketScopingIdRouteImport
       parentRoute: typeof V2Route
     }
-    '/v2/kpi-library/master-kpi/$kpiId': {
-      id: '/v2/kpi-library/master-kpi/$kpiId'
-      path: '/kpi-library/master-kpi/$kpiId'
-      fullPath: '/v2/kpi-library/master-kpi/$kpiId'
-      preLoaderRoute: typeof V2KpiLibraryMasterKpiKpiIdLazyRouteImport
+    '/v2/(planning)/app-consolidation/$appId': {
+      id: '/v2/(planning)/app-consolidation/$appId'
+      path: '/app-consolidation/$appId'
+      fullPath: '/v2/app-consolidation/$appId'
+      preLoaderRoute: typeof V2planningAppConsolidationAppIdRouteImport
       parentRoute: typeof V2Route
     }
-    '/v2/kpi-library/rating-scales/': {
-      id: '/v2/kpi-library/rating-scales/'
-      path: '/kpi-library/rating-scales'
-      fullPath: '/v2/kpi-library/rating-scales/'
-      preLoaderRoute: typeof V2KpiLibraryRatingScalesIndexLazyRouteImport
-      parentRoute: typeof V2Route
-    }
-    '/v1/planning/$deliveryUnitId/wfp/': {
-      id: '/v1/planning/$deliveryUnitId/wfp/'
-      path: '/$deliveryUnitId/wfp'
-      fullPath: '/v1/planning/$deliveryUnitId/wfp/'
-      preLoaderRoute: typeof V1PlanningDeliveryUnitIdWfpIndexRouteImport
+    '/v1/planning/wfp-objective/$wfpObjectiveId': {
+      id: '/v1/planning/wfp-objective/$wfpObjectiveId'
+      path: '/wfp-objective/$wfpObjectiveId'
+      fullPath: '/v1/planning/wfp-objective/$wfpObjectiveId'
+      preLoaderRoute: typeof V1PlanningWfpObjectiveWfpObjectiveIdRouteImport
       parentRoute: typeof V1PlanningRouteRoute
     }
-    '/v1/planning/$deliveryUnitId/wfp/$wfpId': {
-      id: '/v1/planning/$deliveryUnitId/wfp/$wfpId'
-      path: '/$deliveryUnitId/wfp/$wfpId'
-      fullPath: '/v1/planning/$deliveryUnitId/wfp/$wfpId'
-      preLoaderRoute: typeof V1PlanningDeliveryUnitIdWfpWfpIdRouteImport
+    '/v1/planning/wfp-expenditure/$wfpObjectiveActivityId': {
+      id: '/v1/planning/wfp-expenditure/$wfpObjectiveActivityId'
+      path: '/wfp-expenditure/$wfpObjectiveActivityId'
+      fullPath: '/v1/planning/wfp-expenditure/$wfpObjectiveActivityId'
+      preLoaderRoute: typeof V1PlanningWfpExpenditureWfpObjectiveActivityIdRouteImport
       parentRoute: typeof V1PlanningRouteRoute
     }
-    '/v1/planning/fiscal-year/$fiscalYearId/': {
-      id: '/v1/planning/fiscal-year/$fiscalYearId/'
-      path: '/$fiscalYearId'
-      fullPath: '/v1/planning/fiscal-year/$fiscalYearId/'
-      preLoaderRoute: typeof V1PlanningFiscalYearFiscalYearIdIndexRouteImport
-      parentRoute: typeof V1PlanningFiscalYearRoute
-    }
-    '/v1/planning/fiscal-year/$fiscalYearId/delete': {
-      id: '/v1/planning/fiscal-year/$fiscalYearId/delete'
-      path: '/$fiscalYearId/delete'
-      fullPath: '/v1/planning/fiscal-year/$fiscalYearId/delete'
-      preLoaderRoute: typeof V1PlanningFiscalYearFiscalYearIdDeleteRouteImport
-      parentRoute: typeof V1PlanningFiscalYearRoute
-    }
-    '/v1/planning/fiscal-year/$fiscalYearId/lock': {
-      id: '/v1/planning/fiscal-year/$fiscalYearId/lock'
-      path: '/$fiscalYearId/lock'
-      fullPath: '/v1/planning/fiscal-year/$fiscalYearId/lock'
-      preLoaderRoute: typeof V1PlanningFiscalYearFiscalYearIdLockRouteImport
-      parentRoute: typeof V1PlanningFiscalYearRoute
-    }
-    '/v1/planning/function-allocation/$fiscalYearId/': {
-      id: '/v1/planning/function-allocation/$fiscalYearId/'
-      path: '/function-allocation/$fiscalYearId'
-      fullPath: '/v1/planning/function-allocation/$fiscalYearId/'
-      preLoaderRoute: typeof V1PlanningFunctionAllocationFiscalYearIdIndexRouteImport
+    '/v1/planning/fund/$fundId': {
+      id: '/v1/planning/fund/$fundId'
+      path: '/fund/$fundId'
+      fullPath: '/v1/planning/fund/$fundId'
+      preLoaderRoute: typeof V1PlanningFundFundIdRouteImport
       parentRoute: typeof V1PlanningRouteRoute
     }
-    '/v1/planning/function-allocation/$fiscalYearId/delete': {
-      id: '/v1/planning/function-allocation/$fiscalYearId/delete'
-      path: '/function-allocation/$fiscalYearId/delete'
-      fullPath: '/v1/planning/function-allocation/$fiscalYearId/delete'
-      preLoaderRoute: typeof V1PlanningFunctionAllocationFiscalYearIdDeleteRouteImport
+    '/v1/planning/fund/$budgetAllocationId': {
+      id: '/v1/planning/fund/$budgetAllocationId'
+      path: '/fund/$budgetAllocationId'
+      fullPath: '/v1/planning/fund/$budgetAllocationId'
+      preLoaderRoute: typeof V1PlanningFundBudgetAllocationIdRouteImport
       parentRoute: typeof V1PlanningRouteRoute
     }
-    '/v1/planning/function-allocation/$fiscalYearId/lock': {
-      id: '/v1/planning/function-allocation/$fiscalYearId/lock'
-      path: '/function-allocation/$fiscalYearId/lock'
-      fullPath: '/v1/planning/function-allocation/$fiscalYearId/lock'
-      preLoaderRoute: typeof V1PlanningFunctionAllocationFiscalYearIdLockRouteImport
+    '/v1/planning/fund-receive/$fundSourceId': {
+      id: '/v1/planning/fund-receive/$fundSourceId'
+      path: '/fund-receive/$fundSourceId'
+      fullPath: '/v1/planning/fund-receive/$fundSourceId'
+      preLoaderRoute: typeof V1PlanningFundReceiveFundSourceIdRouteImport
       parentRoute: typeof V1PlanningRouteRoute
     }
-    '/v1/planning/fund-receive/$fundSourceId/': {
-      id: '/v1/planning/fund-receive/$fundSourceId/'
+    '/v2/(procurement)/supplier-portal/rfq-item/': {
+      id: '/v2/(procurement)/supplier-portal/rfq-item/'
+      path: '/supplier-portal/rfq-item'
+      fullPath: '/v2/supplier-portal/rfq-item'
+      preLoaderRoute: typeof V2procurementSupplierPortalRfqItemIndexRouteImport
+      parentRoute: typeof V2Route
+    }
+    '/v2/(procurement)/supplier-portal/direct-contracting-item/': {
+      id: '/v2/(procurement)/supplier-portal/direct-contracting-item/'
+      path: '/supplier-portal/direct-contracting-item'
+      fullPath: '/v2/supplier-portal/direct-contracting-item'
+      preLoaderRoute: typeof V2procurementSupplierPortalDirectContractingItemIndexRouteImport
+      parentRoute: typeof V2Route
+    }
+    '/v2/(procurement)/po/$purchaseOrderId/': {
+      id: '/v2/(procurement)/po/$purchaseOrderId/'
+      path: '/po/$purchaseOrderId'
+      fullPath: '/v2/po/$purchaseOrderId'
+      preLoaderRoute: typeof V2procurementPoPurchaseOrderIdIndexRouteImport
+      parentRoute: typeof V2Route
+    }
+    '/v2/(procurement)/notice-of-award-noa/$noaId/': {
+      id: '/v2/(procurement)/notice-of-award-noa/$noaId/'
+      path: '/notice-of-award-noa/$noaId'
+      fullPath: '/v2/notice-of-award-noa/$noaId'
+      preLoaderRoute: typeof V2procurementNoticeOfAwardNoaNoaIdIndexRouteImport
+      parentRoute: typeof V2Route
+    }
+    '/v2/(procurement)/manage-noa/$noaId/': {
+      id: '/v2/(procurement)/manage-noa/$noaId/'
+      path: '/manage-noa/$noaId'
+      fullPath: '/v2/manage-noa/$noaId'
+      preLoaderRoute: typeof V2procurementManageNoaNoaIdIndexRouteImport
+      parentRoute: typeof V2Route
+    }
+    '/v2/(procurement)/bidding-documents/$bacResolutionId/': {
+      id: '/v2/(procurement)/bidding-documents/$bacResolutionId/'
+      path: '/bidding-documents/$bacResolutionId'
+      fullPath: '/v2/bidding-documents/$bacResolutionId'
+      preLoaderRoute: typeof V2procurementBiddingDocumentsBacResolutionIdIndexRouteImport
+      parentRoute: typeof V2Route
+    }
+    '/v2/(planning)/wfp/$wfpId/': {
+      id: '/v2/(planning)/wfp/$wfpId/'
       path: '/'
-      fullPath: '/v1/planning/fund-receive/$fundSourceId/'
-      preLoaderRoute: typeof V1PlanningFundReceiveFundSourceIdIndexRouteImport
-      parentRoute: typeof V1PlanningFundReceiveFundSourceIdRoute
-    }
-    '/v1/planning/fund/$budgetAllocationId/': {
-      id: '/v1/planning/fund/$budgetAllocationId/'
-      path: '/'
-      fullPath: '/v1/planning/fund/$budgetAllocationId/'
-      preLoaderRoute: typeof V1PlanningFundBudgetAllocationIdIndexRouteImport
-      parentRoute: typeof V1PlanningFundBudgetAllocationIdRoute
-    }
-    '/v1/planning/fund/$fundId/': {
-      id: '/v1/planning/fund/$fundId/'
-      path: '/'
-      fullPath: '/v1/planning/fund/$fundId/'
-      preLoaderRoute: typeof V1PlanningFundFundIdIndexRouteImport
-      parentRoute: typeof V1PlanningFundFundIdRoute
-    }
-    '/v1/planning/kpi-assignment-for-du/$kpiAssignmentForDuId/': {
-      id: '/v1/planning/kpi-assignment-for-du/$kpiAssignmentForDuId/'
-      path: '/kpi-assignment-for-du/$kpiAssignmentForDuId'
-      fullPath: '/v1/planning/kpi-assignment-for-du/$kpiAssignmentForDuId/'
-      preLoaderRoute: typeof V1PlanningKpiAssignmentForDuKpiAssignmentForDuIdIndexRouteImport
-      parentRoute: typeof V1PlanningRouteRoute
-    }
-    '/v1/planning/kpi-assignment-for-du/$kpiAssignmentForDuId/delete': {
-      id: '/v1/planning/kpi-assignment-for-du/$kpiAssignmentForDuId/delete'
-      path: '/kpi-assignment-for-du/$kpiAssignmentForDuId/delete'
-      fullPath: '/v1/planning/kpi-assignment-for-du/$kpiAssignmentForDuId/delete'
-      preLoaderRoute: typeof V1PlanningKpiAssignmentForDuKpiAssignmentForDuIdDeleteRouteImport
-      parentRoute: typeof V1PlanningRouteRoute
-    }
-    '/v1/planning/kpi-assignment-for-du/$kpiAssignmentForDuId/subKpi': {
-      id: '/v1/planning/kpi-assignment-for-du/$kpiAssignmentForDuId/subKpi'
-      path: '/kpi-assignment-for-du/$kpiAssignmentForDuId/subKpi'
-      fullPath: '/v1/planning/kpi-assignment-for-du/$kpiAssignmentForDuId/subKpi'
-      preLoaderRoute: typeof V1PlanningKpiAssignmentForDuKpiAssignmentForDuIdSubKpiRouteImport
-      parentRoute: typeof V1PlanningRouteRoute
-    }
-    '/v1/planning/kpi/$kpiId/': {
-      id: '/v1/planning/kpi/$kpiId/'
-      path: '/$kpiId'
-      fullPath: '/v1/planning/kpi/$kpiId/'
-      preLoaderRoute: typeof V1PlanningKpiKpiIdIndexRouteImport
-      parentRoute: typeof V1PlanningKpiRouteRoute
-    }
-    '/v1/planning/kpi/$kpiId/delete': {
-      id: '/v1/planning/kpi/$kpiId/delete'
-      path: '/$kpiId/delete'
-      fullPath: '/v1/planning/kpi/$kpiId/delete'
-      preLoaderRoute: typeof V1PlanningKpiKpiIdDeleteRouteImport
-      parentRoute: typeof V1PlanningKpiRouteRoute
-    }
-    '/v1/planning/kpi/$kpiId/edit': {
-      id: '/v1/planning/kpi/$kpiId/edit'
-      path: '/$kpiId/edit'
-      fullPath: '/v1/planning/kpi/$kpiId/edit'
-      preLoaderRoute: typeof V1PlanningKpiKpiIdEditRouteImport
-      parentRoute: typeof V1PlanningKpiRouteRoute
-    }
-    '/v1/planning/office/$clusterId/': {
-      id: '/v1/planning/office/$clusterId/'
-      path: '/$clusterId'
-      fullPath: '/v1/planning/office/$clusterId/'
-      preLoaderRoute: typeof V1PlanningOfficeClusterIdIndexRouteImport
-      parentRoute: typeof V1PlanningOfficeRouteRoute
-    }
-    '/v1/planning/office/$clusterId/delete': {
-      id: '/v1/planning/office/$clusterId/delete'
-      path: '/$clusterId/delete'
-      fullPath: '/v1/planning/office/$clusterId/delete'
-      preLoaderRoute: typeof V1PlanningOfficeClusterIdDeleteRouteImport
-      parentRoute: typeof V1PlanningOfficeRouteRoute
-    }
-    '/v1/planning/office/$clusterId/edit': {
-      id: '/v1/planning/office/$clusterId/edit'
-      path: '/$clusterId/edit'
-      fullPath: '/v1/planning/office/$clusterId/edit'
-      preLoaderRoute: typeof V1PlanningOfficeClusterIdEditRouteImport
-      parentRoute: typeof V1PlanningOfficeRouteRoute
-    }
-    '/v1/planning/office/$deliveryUnitId/': {
-      id: '/v1/planning/office/$deliveryUnitId/'
-      path: '/$deliveryUnitId'
-      fullPath: '/v1/planning/office/$deliveryUnitId/'
-      preLoaderRoute: typeof V1PlanningOfficeDeliveryUnitIdIndexRouteImport
-      parentRoute: typeof V1PlanningOfficeRouteRoute
-    }
-    '/v1/planning/office/$deliveryUnitId/delete': {
-      id: '/v1/planning/office/$deliveryUnitId/delete'
-      path: '/$deliveryUnitId/delete'
-      fullPath: '/v1/planning/office/$deliveryUnitId/delete'
-      preLoaderRoute: typeof V1PlanningOfficeDeliveryUnitIdDeleteRouteImport
-      parentRoute: typeof V1PlanningOfficeRouteRoute
-    }
-    '/v1/planning/office/$deliveryUnitId/edit': {
-      id: '/v1/planning/office/$deliveryUnitId/edit'
-      path: '/$deliveryUnitId/edit'
-      fullPath: '/v1/planning/office/$deliveryUnitId/edit'
-      preLoaderRoute: typeof V1PlanningOfficeDeliveryUnitIdEditRouteImport
-      parentRoute: typeof V1PlanningOfficeRouteRoute
-    }
-    '/v1/planning/office/$officeId/': {
-      id: '/v1/planning/office/$officeId/'
-      path: '/$officeId'
-      fullPath: '/v1/planning/office/$officeId/'
-      preLoaderRoute: typeof V1PlanningOfficeOfficeIdIndexRouteImport
-      parentRoute: typeof V1PlanningOfficeRouteRoute
-    }
-    '/v1/planning/office/$officeId/delete': {
-      id: '/v1/planning/office/$officeId/delete'
-      path: '/$officeId/delete'
-      fullPath: '/v1/planning/office/$officeId/delete'
-      preLoaderRoute: typeof V1PlanningOfficeOfficeIdDeleteRouteImport
-      parentRoute: typeof V1PlanningOfficeRouteRoute
-    }
-    '/v1/planning/office/$officeId/edit': {
-      id: '/v1/planning/office/$officeId/edit'
-      path: '/$officeId/edit'
-      fullPath: '/v1/planning/office/$officeId/edit'
-      preLoaderRoute: typeof V1PlanningOfficeOfficeIdEditRouteImport
-      parentRoute: typeof V1PlanningOfficeRouteRoute
-    }
-    '/v1/planning/opcr/$opcrId/': {
-      id: '/v1/planning/opcr/$opcrId/'
-      path: '/opcr/$opcrId'
-      fullPath: '/v1/planning/opcr/$opcrId/'
-      preLoaderRoute: typeof V1PlanningOpcrOpcrIdIndexRouteImport
-      parentRoute: typeof V1PlanningRouteRoute
-    }
-    '/v1/planning/wfp-expenditure/$wfpObjectiveActivityId/': {
-      id: '/v1/planning/wfp-expenditure/$wfpObjectiveActivityId/'
-      path: '/'
-      fullPath: '/v1/planning/wfp-expenditure/$wfpObjectiveActivityId/'
-      preLoaderRoute: typeof V1PlanningWfpExpenditureWfpObjectiveActivityIdIndexRouteImport
-      parentRoute: typeof V1PlanningWfpExpenditureWfpObjectiveActivityIdRoute
-    }
-    '/v1/planning/wfp-objective/$wfpObjectiveId/': {
-      id: '/v1/planning/wfp-objective/$wfpObjectiveId/'
-      path: '/'
-      fullPath: '/v1/planning/wfp-objective/$wfpObjectiveId/'
-      preLoaderRoute: typeof V1PlanningWfpObjectiveWfpObjectiveIdIndexRouteImport
-      parentRoute: typeof V1PlanningWfpObjectiveWfpObjectiveIdRoute
-    }
-    '/v2/(planning)/app-consolidation/supplemental/': {
-      id: '/v2/(planning)/app-consolidation/supplemental/'
-      path: '/app-consolidation/supplemental'
-      fullPath: '/v2/app-consolidation/supplemental/'
-      preLoaderRoute: typeof V2planningAppConsolidationSupplementalIndexRouteImport
-      parentRoute: typeof V2Route
-    }
-    '/v2/(planning)/app-consolidation/supplemental/$supplementalId': {
-      id: '/v2/(planning)/app-consolidation/supplemental/$supplementalId'
-      path: '/app-consolidation/supplemental/$supplementalId'
-      fullPath: '/v2/app-consolidation/supplemental/$supplementalId'
-      preLoaderRoute: typeof V2planningAppConsolidationSupplementalSupplementalIdRouteImport
-      parentRoute: typeof V2Route
-    }
-    '/v2/(planning)/market-scoping/manage/activities': {
-      id: '/v2/(planning)/market-scoping/manage/activities'
-      path: '/market-scoping/manage/activities'
-      fullPath: '/v2/market-scoping/manage/activities'
-      preLoaderRoute: typeof V2planningMarketScopingManageActivitiesRouteImport
-      parentRoute: typeof V2Route
-    }
-    '/v2/(planning)/market-scoping/manage/parameters': {
-      id: '/v2/(planning)/market-scoping/manage/parameters'
-      path: '/market-scoping/manage/parameters'
-      fullPath: '/v2/market-scoping/manage/parameters'
-      preLoaderRoute: typeof V2planningMarketScopingManageParametersRouteImport
-      parentRoute: typeof V2Route
-    }
-    '/v2/(planning)/wfp-expenditure/$wfpObjectiveActivityId/': {
-      id: '/v2/(planning)/wfp-expenditure/$wfpObjectiveActivityId/'
-      path: '/'
-      fullPath: '/v2/wfp-expenditure/$wfpObjectiveActivityId/'
-      preLoaderRoute: typeof V2planningWfpExpenditureWfpObjectiveActivityIdIndexRouteImport
-      parentRoute: typeof V2planningWfpExpenditureWfpObjectiveActivityIdRoute
+      fullPath: '/v2/wfp/$wfpId/'
+      preLoaderRoute: typeof V2planningWfpWfpIdIndexRouteImport
+      parentRoute: typeof V2planningWfpWfpIdRoute
     }
     '/v2/(planning)/wfp-objective/$wfpObjectiveId/': {
       id: '/v2/(planning)/wfp-objective/$wfpObjectiveId/'
@@ -3397,11 +3189,123 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof V2planningWfpObjectiveWfpObjectiveIdIndexRouteImport
       parentRoute: typeof V2planningWfpObjectiveWfpObjectiveIdRoute
     }
-    '/v2/(planning)/wfp/$wfpId/': {
-      id: '/v2/(planning)/wfp/$wfpId/'
+    '/v2/(planning)/wfp-expenditure/$wfpObjectiveActivityId/': {
+      id: '/v2/(planning)/wfp-expenditure/$wfpObjectiveActivityId/'
       path: '/'
-      fullPath: '/v2/wfp/$wfpId/'
-      preLoaderRoute: typeof V2planningWfpWfpIdIndexRouteImport
+      fullPath: '/v2/wfp-expenditure/$wfpObjectiveActivityId/'
+      preLoaderRoute: typeof V2planningWfpExpenditureWfpObjectiveActivityIdIndexRouteImport
+      parentRoute: typeof V2planningWfpExpenditureWfpObjectiveActivityIdRoute
+    }
+    '/v2/(planning)/app-consolidation/supplemental/': {
+      id: '/v2/(planning)/app-consolidation/supplemental/'
+      path: '/app-consolidation/supplemental'
+      fullPath: '/v2/app-consolidation/supplemental'
+      preLoaderRoute: typeof V2planningAppConsolidationSupplementalIndexRouteImport
+      parentRoute: typeof V2Route
+    }
+    '/v1/planning/wfp-objective/$wfpObjectiveId/': {
+      id: '/v1/planning/wfp-objective/$wfpObjectiveId/'
+      path: '/'
+      fullPath: '/v1/planning/wfp-objective/$wfpObjectiveId/'
+      preLoaderRoute: typeof V1PlanningWfpObjectiveWfpObjectiveIdIndexRouteImport
+      parentRoute: typeof V1PlanningWfpObjectiveWfpObjectiveIdRoute
+    }
+    '/v1/planning/wfp-expenditure/$wfpObjectiveActivityId/': {
+      id: '/v1/planning/wfp-expenditure/$wfpObjectiveActivityId/'
+      path: '/'
+      fullPath: '/v1/planning/wfp-expenditure/$wfpObjectiveActivityId/'
+      preLoaderRoute: typeof V1PlanningWfpExpenditureWfpObjectiveActivityIdIndexRouteImport
+      parentRoute: typeof V1PlanningWfpExpenditureWfpObjectiveActivityIdRoute
+    }
+    '/v1/planning/opcr/$opcrId/': {
+      id: '/v1/planning/opcr/$opcrId/'
+      path: '/opcr/$opcrId'
+      fullPath: '/v1/planning/opcr/$opcrId'
+      preLoaderRoute: typeof V1PlanningOpcrOpcrIdIndexRouteImport
+      parentRoute: typeof V1PlanningRouteRoute
+    }
+    '/v1/planning/office/$officeId/': {
+      id: '/v1/planning/office/$officeId/'
+      path: '/$officeId'
+      fullPath: '/v1/planning/office/$officeId'
+      preLoaderRoute: typeof V1PlanningOfficeOfficeIdIndexRouteImport
+      parentRoute: typeof V1PlanningOfficeRouteRoute
+    }
+    '/v1/planning/office/$deliveryUnitId/': {
+      id: '/v1/planning/office/$deliveryUnitId/'
+      path: '/$deliveryUnitId'
+      fullPath: '/v1/planning/office/$deliveryUnitId'
+      preLoaderRoute: typeof V1PlanningOfficeDeliveryUnitIdIndexRouteImport
+      parentRoute: typeof V1PlanningOfficeRouteRoute
+    }
+    '/v1/planning/office/$clusterId/': {
+      id: '/v1/planning/office/$clusterId/'
+      path: '/$clusterId'
+      fullPath: '/v1/planning/office/$clusterId'
+      preLoaderRoute: typeof V1PlanningOfficeClusterIdIndexRouteImport
+      parentRoute: typeof V1PlanningOfficeRouteRoute
+    }
+    '/v1/planning/kpi/$kpiId/': {
+      id: '/v1/planning/kpi/$kpiId/'
+      path: '/$kpiId'
+      fullPath: '/v1/planning/kpi/$kpiId'
+      preLoaderRoute: typeof V1PlanningKpiKpiIdIndexRouteImport
+      parentRoute: typeof V1PlanningKpiRouteRoute
+    }
+    '/v1/planning/kpi-assignment-for-du/$kpiAssignmentForDuId/': {
+      id: '/v1/planning/kpi-assignment-for-du/$kpiAssignmentForDuId/'
+      path: '/kpi-assignment-for-du/$kpiAssignmentForDuId'
+      fullPath: '/v1/planning/kpi-assignment-for-du/$kpiAssignmentForDuId'
+      preLoaderRoute: typeof V1PlanningKpiAssignmentForDuKpiAssignmentForDuIdIndexRouteImport
+      parentRoute: typeof V1PlanningRouteRoute
+    }
+    '/v1/planning/fund/$fundId/': {
+      id: '/v1/planning/fund/$fundId/'
+      path: '/'
+      fullPath: '/v1/planning/fund/$fundId/'
+      preLoaderRoute: typeof V1PlanningFundFundIdIndexRouteImport
+      parentRoute: typeof V1PlanningFundFundIdRoute
+    }
+    '/v1/planning/fund/$budgetAllocationId/': {
+      id: '/v1/planning/fund/$budgetAllocationId/'
+      path: '/'
+      fullPath: '/v1/planning/fund/$budgetAllocationId/'
+      preLoaderRoute: typeof V1PlanningFundBudgetAllocationIdIndexRouteImport
+      parentRoute: typeof V1PlanningFundBudgetAllocationIdRoute
+    }
+    '/v1/planning/fund-receive/$fundSourceId/': {
+      id: '/v1/planning/fund-receive/$fundSourceId/'
+      path: '/'
+      fullPath: '/v1/planning/fund-receive/$fundSourceId/'
+      preLoaderRoute: typeof V1PlanningFundReceiveFundSourceIdIndexRouteImport
+      parentRoute: typeof V1PlanningFundReceiveFundSourceIdRoute
+    }
+    '/v1/planning/function-allocation/$fiscalYearId/': {
+      id: '/v1/planning/function-allocation/$fiscalYearId/'
+      path: '/function-allocation/$fiscalYearId'
+      fullPath: '/v1/planning/function-allocation/$fiscalYearId'
+      preLoaderRoute: typeof V1PlanningFunctionAllocationFiscalYearIdIndexRouteImport
+      parentRoute: typeof V1PlanningRouteRoute
+    }
+    '/v1/planning/fiscal-year/$fiscalYearId/': {
+      id: '/v1/planning/fiscal-year/$fiscalYearId/'
+      path: '/$fiscalYearId'
+      fullPath: '/v1/planning/fiscal-year/$fiscalYearId'
+      preLoaderRoute: typeof V1PlanningFiscalYearFiscalYearIdIndexRouteImport
+      parentRoute: typeof V1PlanningFiscalYearRoute
+    }
+    '/v1/planning/$deliveryUnitId/wfp/': {
+      id: '/v1/planning/$deliveryUnitId/wfp/'
+      path: '/$deliveryUnitId/wfp'
+      fullPath: '/v1/planning/$deliveryUnitId/wfp'
+      preLoaderRoute: typeof V1PlanningDeliveryUnitIdWfpIndexRouteImport
+      parentRoute: typeof V1PlanningRouteRoute
+    }
+    '/v2/(planning)/wfp/$wfpId/gantt-chart': {
+      id: '/v2/(planning)/wfp/$wfpId/gantt-chart'
+      path: '/gantt-chart'
+      fullPath: '/v2/wfp/$wfpId/gantt-chart'
+      preLoaderRoute: typeof V2planningWfpWfpIdGanttChartRouteImport
       parentRoute: typeof V2planningWfpWfpIdRoute
     }
     '/v2/(planning)/wfp/$wfpId/activity': {
@@ -3411,61 +3315,159 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof V2planningWfpWfpIdActivityRouteImport
       parentRoute: typeof V2planningWfpWfpIdRoute
     }
-    '/v2/(planning)/wfp/$wfpId/gantt-chart': {
-      id: '/v2/(planning)/wfp/$wfpId/gantt-chart'
-      path: '/gantt-chart'
-      fullPath: '/v2/wfp/$wfpId/gantt-chart'
-      preLoaderRoute: typeof V2planningWfpWfpIdGanttChartRouteImport
+    '/v2/(planning)/market-scoping/manage/parameters': {
+      id: '/v2/(planning)/market-scoping/manage/parameters'
+      path: '/market-scoping/manage/parameters'
+      fullPath: '/v2/market-scoping/manage/parameters'
+      preLoaderRoute: typeof V2planningMarketScopingManageParametersRouteImport
+      parentRoute: typeof V2Route
+    }
+    '/v2/(planning)/market-scoping/manage/activities': {
+      id: '/v2/(planning)/market-scoping/manage/activities'
+      path: '/market-scoping/manage/activities'
+      fullPath: '/v2/market-scoping/manage/activities'
+      preLoaderRoute: typeof V2planningMarketScopingManageActivitiesRouteImport
+      parentRoute: typeof V2Route
+    }
+    '/v2/(planning)/app-consolidation/supplemental/$supplementalId': {
+      id: '/v2/(planning)/app-consolidation/supplemental/$supplementalId'
+      path: '/app-consolidation/supplemental/$supplementalId'
+      fullPath: '/v2/app-consolidation/supplemental/$supplementalId'
+      preLoaderRoute: typeof V2planningAppConsolidationSupplementalSupplementalIdRouteImport
+      parentRoute: typeof V2Route
+    }
+    '/v1/planning/office/$officeId/edit': {
+      id: '/v1/planning/office/$officeId/edit'
+      path: '/$officeId/edit'
+      fullPath: '/v1/planning/office/$officeId/edit'
+      preLoaderRoute: typeof V1PlanningOfficeOfficeIdEditRouteImport
+      parentRoute: typeof V1PlanningOfficeRouteRoute
+    }
+    '/v1/planning/office/$officeId/delete': {
+      id: '/v1/planning/office/$officeId/delete'
+      path: '/$officeId/delete'
+      fullPath: '/v1/planning/office/$officeId/delete'
+      preLoaderRoute: typeof V1PlanningOfficeOfficeIdDeleteRouteImport
+      parentRoute: typeof V1PlanningOfficeRouteRoute
+    }
+    '/v1/planning/office/$deliveryUnitId/edit': {
+      id: '/v1/planning/office/$deliveryUnitId/edit'
+      path: '/$deliveryUnitId/edit'
+      fullPath: '/v1/planning/office/$deliveryUnitId/edit'
+      preLoaderRoute: typeof V1PlanningOfficeDeliveryUnitIdEditRouteImport
+      parentRoute: typeof V1PlanningOfficeRouteRoute
+    }
+    '/v1/planning/office/$deliveryUnitId/delete': {
+      id: '/v1/planning/office/$deliveryUnitId/delete'
+      path: '/$deliveryUnitId/delete'
+      fullPath: '/v1/planning/office/$deliveryUnitId/delete'
+      preLoaderRoute: typeof V1PlanningOfficeDeliveryUnitIdDeleteRouteImport
+      parentRoute: typeof V1PlanningOfficeRouteRoute
+    }
+    '/v1/planning/office/$clusterId/edit': {
+      id: '/v1/planning/office/$clusterId/edit'
+      path: '/$clusterId/edit'
+      fullPath: '/v1/planning/office/$clusterId/edit'
+      preLoaderRoute: typeof V1PlanningOfficeClusterIdEditRouteImport
+      parentRoute: typeof V1PlanningOfficeRouteRoute
+    }
+    '/v1/planning/office/$clusterId/delete': {
+      id: '/v1/planning/office/$clusterId/delete'
+      path: '/$clusterId/delete'
+      fullPath: '/v1/planning/office/$clusterId/delete'
+      preLoaderRoute: typeof V1PlanningOfficeClusterIdDeleteRouteImport
+      parentRoute: typeof V1PlanningOfficeRouteRoute
+    }
+    '/v1/planning/kpi/$kpiId/edit': {
+      id: '/v1/planning/kpi/$kpiId/edit'
+      path: '/$kpiId/edit'
+      fullPath: '/v1/planning/kpi/$kpiId/edit'
+      preLoaderRoute: typeof V1PlanningKpiKpiIdEditRouteImport
+      parentRoute: typeof V1PlanningKpiRouteRoute
+    }
+    '/v1/planning/kpi/$kpiId/delete': {
+      id: '/v1/planning/kpi/$kpiId/delete'
+      path: '/$kpiId/delete'
+      fullPath: '/v1/planning/kpi/$kpiId/delete'
+      preLoaderRoute: typeof V1PlanningKpiKpiIdDeleteRouteImport
+      parentRoute: typeof V1PlanningKpiRouteRoute
+    }
+    '/v1/planning/kpi-assignment-for-du/$kpiAssignmentForDuId/subKpi': {
+      id: '/v1/planning/kpi-assignment-for-du/$kpiAssignmentForDuId/subKpi'
+      path: '/kpi-assignment-for-du/$kpiAssignmentForDuId/subKpi'
+      fullPath: '/v1/planning/kpi-assignment-for-du/$kpiAssignmentForDuId/subKpi'
+      preLoaderRoute: typeof V1PlanningKpiAssignmentForDuKpiAssignmentForDuIdSubKpiRouteImport
+      parentRoute: typeof V1PlanningRouteRoute
+    }
+    '/v1/planning/kpi-assignment-for-du/$kpiAssignmentForDuId/delete': {
+      id: '/v1/planning/kpi-assignment-for-du/$kpiAssignmentForDuId/delete'
+      path: '/kpi-assignment-for-du/$kpiAssignmentForDuId/delete'
+      fullPath: '/v1/planning/kpi-assignment-for-du/$kpiAssignmentForDuId/delete'
+      preLoaderRoute: typeof V1PlanningKpiAssignmentForDuKpiAssignmentForDuIdDeleteRouteImport
+      parentRoute: typeof V1PlanningRouteRoute
+    }
+    '/v1/planning/function-allocation/$fiscalYearId/lock': {
+      id: '/v1/planning/function-allocation/$fiscalYearId/lock'
+      path: '/function-allocation/$fiscalYearId/lock'
+      fullPath: '/v1/planning/function-allocation/$fiscalYearId/lock'
+      preLoaderRoute: typeof V1PlanningFunctionAllocationFiscalYearIdLockRouteImport
+      parentRoute: typeof V1PlanningRouteRoute
+    }
+    '/v1/planning/function-allocation/$fiscalYearId/delete': {
+      id: '/v1/planning/function-allocation/$fiscalYearId/delete'
+      path: '/function-allocation/$fiscalYearId/delete'
+      fullPath: '/v1/planning/function-allocation/$fiscalYearId/delete'
+      preLoaderRoute: typeof V1PlanningFunctionAllocationFiscalYearIdDeleteRouteImport
+      parentRoute: typeof V1PlanningRouteRoute
+    }
+    '/v1/planning/fiscal-year/$fiscalYearId/lock': {
+      id: '/v1/planning/fiscal-year/$fiscalYearId/lock'
+      path: '/$fiscalYearId/lock'
+      fullPath: '/v1/planning/fiscal-year/$fiscalYearId/lock'
+      preLoaderRoute: typeof V1PlanningFiscalYearFiscalYearIdLockRouteImport
+      parentRoute: typeof V1PlanningFiscalYearRoute
+    }
+    '/v1/planning/fiscal-year/$fiscalYearId/delete': {
+      id: '/v1/planning/fiscal-year/$fiscalYearId/delete'
+      path: '/$fiscalYearId/delete'
+      fullPath: '/v1/planning/fiscal-year/$fiscalYearId/delete'
+      preLoaderRoute: typeof V1PlanningFiscalYearFiscalYearIdDeleteRouteImport
+      parentRoute: typeof V1PlanningFiscalYearRoute
+    }
+    '/v1/planning/$deliveryUnitId/wfp/$wfpId': {
+      id: '/v1/planning/$deliveryUnitId/wfp/$wfpId'
+      path: '/$deliveryUnitId/wfp/$wfpId'
+      fullPath: '/v1/planning/$deliveryUnitId/wfp/$wfpId'
+      preLoaderRoute: typeof V1PlanningDeliveryUnitIdWfpWfpIdRouteImport
+      parentRoute: typeof V1PlanningRouteRoute
+    }
+    '/v2/(procurement)/bac-resolutions/$resolutionId/bidding-schedule/': {
+      id: '/v2/(procurement)/bac-resolutions/$resolutionId/bidding-schedule/'
+      path: '/bac-resolutions/$resolutionId/bidding-schedule'
+      fullPath: '/v2/bac-resolutions/$resolutionId/bidding-schedule'
+      preLoaderRoute: typeof V2procurementBacResolutionsResolutionIdBiddingScheduleIndexRouteImport
+      parentRoute: typeof V2Route
+    }
+    '/v2/(procurement)/bac-resolutions-public-bidding/$resolutionId/bidding-schedule/': {
+      id: '/v2/(procurement)/bac-resolutions-public-bidding/$resolutionId/bidding-schedule/'
+      path: '/bac-resolutions-public-bidding/$resolutionId/bidding-schedule'
+      fullPath: '/v2/bac-resolutions-public-bidding/$resolutionId/bidding-schedule'
+      preLoaderRoute: typeof V2procurementBacResolutionsPublicBiddingResolutionIdBiddingScheduleIndexRouteImport
+      parentRoute: typeof V2Route
+    }
+    '/v2/(planning)/wfp/$wfpId/opcr/': {
+      id: '/v2/(planning)/wfp/$wfpId/opcr/'
+      path: '/opcr'
+      fullPath: '/v2/wfp/$wfpId/opcr'
+      preLoaderRoute: typeof V2planningWfpWfpIdOpcrIndexRouteImport
       parentRoute: typeof V2planningWfpWfpIdRoute
     }
-    '/v2/(procurement)/bidding-documents/$bacResolutionId/': {
-      id: '/v2/(procurement)/bidding-documents/$bacResolutionId/'
-      path: '/bidding-documents/$bacResolutionId'
-      fullPath: '/v2/bidding-documents/$bacResolutionId/'
-      preLoaderRoute: typeof V2procurementBiddingDocumentsBacResolutionIdIndexRouteImport
-      parentRoute: typeof V2Route
-    }
-    '/v2/(procurement)/manage-noa/$noaId/': {
-      id: '/v2/(procurement)/manage-noa/$noaId/'
-      path: '/manage-noa/$noaId'
-      fullPath: '/v2/manage-noa/$noaId/'
-      preLoaderRoute: typeof V2procurementManageNoaNoaIdIndexRouteImport
-      parentRoute: typeof V2Route
-    }
-    '/v2/(procurement)/notice-of-award-noa/$noaId/': {
-      id: '/v2/(procurement)/notice-of-award-noa/$noaId/'
-      path: '/notice-of-award-noa/$noaId'
-      fullPath: '/v2/notice-of-award-noa/$noaId/'
-      preLoaderRoute: typeof V2procurementNoticeOfAwardNoaNoaIdIndexRouteImport
-      parentRoute: typeof V2Route
-    }
-    '/v2/(procurement)/po/$purchaseOrderId/': {
-      id: '/v2/(procurement)/po/$purchaseOrderId/'
-      path: '/po/$purchaseOrderId'
-      fullPath: '/v2/po/$purchaseOrderId/'
-      preLoaderRoute: typeof V2procurementPoPurchaseOrderIdIndexRouteImport
-      parentRoute: typeof V2Route
-    }
-    '/v2/(procurement)/supplier-portal/direct-contracting-item/': {
-      id: '/v2/(procurement)/supplier-portal/direct-contracting-item/'
-      path: '/supplier-portal/direct-contracting-item'
-      fullPath: '/v2/supplier-portal/direct-contracting-item/'
-      preLoaderRoute: typeof V2procurementSupplierPortalDirectContractingItemIndexRouteImport
-      parentRoute: typeof V2Route
-    }
-    '/v2/(procurement)/supplier-portal/rfq-item/': {
-      id: '/v2/(procurement)/supplier-portal/rfq-item/'
-      path: '/supplier-portal/rfq-item'
-      fullPath: '/v2/supplier-portal/rfq-item/'
-      preLoaderRoute: typeof V2procurementSupplierPortalRfqItemIndexRouteImport
-      parentRoute: typeof V2Route
-    }
-    '/v1/planning/$deliveryUnitId/opcr/$opcrId/': {
-      id: '/v1/planning/$deliveryUnitId/opcr/$opcrId/'
-      path: '/$deliveryUnitId/opcr/$opcrId'
-      fullPath: '/v1/planning/$deliveryUnitId/opcr/$opcrId/'
-      preLoaderRoute: typeof V1PlanningDeliveryUnitIdOpcrOpcrIdIndexRouteImport
-      parentRoute: typeof V1PlanningRouteRoute
+    '/v1/planning/kpi/$kpiId/subKpi/': {
+      id: '/v1/planning/kpi/$kpiId/subKpi/'
+      path: '/$kpiId/subKpi'
+      fullPath: '/v1/planning/kpi/$kpiId/subKpi'
+      preLoaderRoute: typeof V1PlanningKpiKpiIdSubKpiIndexRouteImport
+      parentRoute: typeof V1PlanningKpiRouteRoute
     }
     '/v1/planning/$deliveryUnitId/wfp/$wfpId/': {
       id: '/v1/planning/$deliveryUnitId/wfp/$wfpId/'
@@ -3474,26 +3476,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof V1PlanningDeliveryUnitIdWfpWfpIdIndexRouteImport
       parentRoute: typeof V1PlanningDeliveryUnitIdWfpWfpIdRoute
     }
-    '/v1/planning/kpi/$kpiId/subKpi/': {
-      id: '/v1/planning/kpi/$kpiId/subKpi/'
-      path: '/$kpiId/subKpi'
-      fullPath: '/v1/planning/kpi/$kpiId/subKpi/'
-      preLoaderRoute: typeof V1PlanningKpiKpiIdSubKpiIndexRouteImport
-      parentRoute: typeof V1PlanningKpiRouteRoute
-    }
-    '/v2/(planning)/wfp/$wfpId/activity/$activityId': {
-      id: '/v2/(planning)/wfp/$wfpId/activity/$activityId'
-      path: '/$activityId'
-      fullPath: '/v2/wfp/$wfpId/activity/$activityId'
-      preLoaderRoute: typeof V2planningWfpWfpIdActivityActivityIdRouteImport
-      parentRoute: typeof V2planningWfpWfpIdActivityRoute
-    }
-    '/v2/(planning)/wfp/$wfpId/opcr/': {
-      id: '/v2/(planning)/wfp/$wfpId/opcr/'
-      path: '/opcr'
-      fullPath: '/v2/wfp/$wfpId/opcr/'
-      preLoaderRoute: typeof V2planningWfpWfpIdOpcrIndexRouteImport
-      parentRoute: typeof V2planningWfpWfpIdRoute
+    '/v1/planning/$deliveryUnitId/opcr/$opcrId/': {
+      id: '/v1/planning/$deliveryUnitId/opcr/$opcrId/'
+      path: '/$deliveryUnitId/opcr/$opcrId'
+      fullPath: '/v1/planning/$deliveryUnitId/opcr/$opcrId'
+      preLoaderRoute: typeof V1PlanningDeliveryUnitIdOpcrOpcrIdIndexRouteImport
+      parentRoute: typeof V1PlanningRouteRoute
     }
     '/v2/(planning)/wfp/$wfpId/opcr/$opcrId': {
       id: '/v2/(planning)/wfp/$wfpId/opcr/$opcrId'
@@ -3502,33 +3490,12 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof V2planningWfpWfpIdOpcrOpcrIdRouteImport
       parentRoute: typeof V2planningWfpWfpIdRoute
     }
-    '/v2/(procurement)/bac-resolutions-public-bidding/$resolutionId/bidding-schedule/': {
-      id: '/v2/(procurement)/bac-resolutions-public-bidding/$resolutionId/bidding-schedule/'
-      path: '/bac-resolutions-public-bidding/$resolutionId/bidding-schedule'
-      fullPath: '/v2/bac-resolutions-public-bidding/$resolutionId/bidding-schedule/'
-      preLoaderRoute: typeof V2procurementBacResolutionsPublicBiddingResolutionIdBiddingScheduleIndexRouteImport
-      parentRoute: typeof V2Route
-    }
-    '/v2/(procurement)/bac-resolutions/$resolutionId/bidding-schedule/': {
-      id: '/v2/(procurement)/bac-resolutions/$resolutionId/bidding-schedule/'
-      path: '/bac-resolutions/$resolutionId/bidding-schedule'
-      fullPath: '/v2/bac-resolutions/$resolutionId/bidding-schedule/'
-      preLoaderRoute: typeof V2procurementBacResolutionsResolutionIdBiddingScheduleIndexRouteImport
-      parentRoute: typeof V2Route
-    }
-    '/v1/planning/$deliveryUnitId/opcr/kpi/$kpiId/': {
-      id: '/v1/planning/$deliveryUnitId/opcr/kpi/$kpiId/'
-      path: '/$deliveryUnitId/opcr/kpi/$kpiId'
-      fullPath: '/v1/planning/$deliveryUnitId/opcr/kpi/$kpiId/'
-      preLoaderRoute: typeof V1PlanningDeliveryUnitIdOpcrKpiKpiIdIndexRouteImport
-      parentRoute: typeof V1PlanningRouteRoute
-    }
-    '/v1/planning/kpi/$kpiId/subKpi/$subKpiId/': {
-      id: '/v1/planning/kpi/$kpiId/subKpi/$subKpiId/'
-      path: '/$kpiId/subKpi/$subKpiId'
-      fullPath: '/v1/planning/kpi/$kpiId/subKpi/$subKpiId/'
-      preLoaderRoute: typeof V1PlanningKpiKpiIdSubKpiSubKpiIdIndexRouteImport
-      parentRoute: typeof V1PlanningKpiRouteRoute
+    '/v2/(planning)/wfp/$wfpId/activity/$activityId': {
+      id: '/v2/(planning)/wfp/$wfpId/activity/$activityId'
+      path: '/$activityId'
+      fullPath: '/v2/wfp/$wfpId/activity/$activityId'
+      preLoaderRoute: typeof V2planningWfpWfpIdActivityActivityIdRouteImport
+      parentRoute: typeof V2planningWfpWfpIdActivityRoute
     }
     '/v2/(planning)/wfp/$wfpId/activity/$activityId/': {
       id: '/v2/(planning)/wfp/$wfpId/activity/$activityId/'
@@ -3537,6 +3504,20 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof V2planningWfpWfpIdActivityActivityIdIndexRouteImport
       parentRoute: typeof V2planningWfpWfpIdActivityActivityIdRoute
     }
+    '/v1/planning/kpi/$kpiId/subKpi/$subKpiId/': {
+      id: '/v1/planning/kpi/$kpiId/subKpi/$subKpiId/'
+      path: '/$kpiId/subKpi/$subKpiId'
+      fullPath: '/v1/planning/kpi/$kpiId/subKpi/$subKpiId'
+      preLoaderRoute: typeof V1PlanningKpiKpiIdSubKpiSubKpiIdIndexRouteImport
+      parentRoute: typeof V1PlanningKpiRouteRoute
+    }
+    '/v1/planning/$deliveryUnitId/opcr/kpi/$kpiId/': {
+      id: '/v1/planning/$deliveryUnitId/opcr/kpi/$kpiId/'
+      path: '/$deliveryUnitId/opcr/kpi/$kpiId'
+      fullPath: '/v1/planning/$deliveryUnitId/opcr/kpi/$kpiId'
+      preLoaderRoute: typeof V1PlanningDeliveryUnitIdOpcrKpiKpiIdIndexRouteImport
+      parentRoute: typeof V1PlanningRouteRoute
+    }
     '/v2/(planning)/wfp/$wfpId/activity/$activityId/expenditures': {
       id: '/v2/(planning)/wfp/$wfpId/activity/$activityId/expenditures'
       path: '/expenditures'
@@ -3544,45 +3525,45 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof V2planningWfpWfpIdActivityActivityIdExpendituresRouteImport
       parentRoute: typeof V2planningWfpWfpIdActivityActivityIdRoute
     }
-    '/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$functionType/': {
-      id: '/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$functionType/'
-      path: '/$deliveryUnitId/opcr/$opcrId/kpi/$functionType'
-      fullPath: '/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$functionType/'
-      preLoaderRoute: typeof V1PlanningDeliveryUnitIdOpcrOpcrIdKpiFunctionTypeIndexRouteImport
+    '/v1/planning/$deliveryUnitId/opcr/kpi/$kpiId/subkpi/': {
+      id: '/v1/planning/$deliveryUnitId/opcr/kpi/$kpiId/subkpi/'
+      path: '/$deliveryUnitId/opcr/kpi/$kpiId/subkpi'
+      fullPath: '/v1/planning/$deliveryUnitId/opcr/kpi/$kpiId/subkpi'
+      preLoaderRoute: typeof V1PlanningDeliveryUnitIdOpcrKpiKpiIdSubkpiIndexRouteImport
       parentRoute: typeof V1PlanningRouteRoute
     }
     '/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$kpiId/': {
       id: '/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$kpiId/'
       path: '/$deliveryUnitId/opcr/$opcrId/kpi/$kpiId'
-      fullPath: '/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$kpiId/'
+      fullPath: '/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$kpiId'
       preLoaderRoute: typeof V1PlanningDeliveryUnitIdOpcrOpcrIdKpiKpiIdIndexRouteImport
       parentRoute: typeof V1PlanningRouteRoute
     }
-    '/v1/planning/$deliveryUnitId/opcr/kpi/$kpiId/subkpi/': {
-      id: '/v1/planning/$deliveryUnitId/opcr/kpi/$kpiId/subkpi/'
-      path: '/$deliveryUnitId/opcr/kpi/$kpiId/subkpi'
-      fullPath: '/v1/planning/$deliveryUnitId/opcr/kpi/$kpiId/subkpi/'
-      preLoaderRoute: typeof V1PlanningDeliveryUnitIdOpcrKpiKpiIdSubkpiIndexRouteImport
-      parentRoute: typeof V1PlanningRouteRoute
-    }
-    '/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$functionType/$kpiId/': {
-      id: '/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$functionType/$kpiId/'
-      path: '/$deliveryUnitId/opcr/$opcrId/kpi/$functionType/$kpiId'
-      fullPath: '/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$functionType/$kpiId/'
-      preLoaderRoute: typeof V1PlanningDeliveryUnitIdOpcrOpcrIdKpiFunctionTypeKpiIdIndexRouteImport
+    '/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$functionType/': {
+      id: '/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$functionType/'
+      path: '/$deliveryUnitId/opcr/$opcrId/kpi/$functionType'
+      fullPath: '/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$functionType'
+      preLoaderRoute: typeof V1PlanningDeliveryUnitIdOpcrOpcrIdKpiFunctionTypeIndexRouteImport
       parentRoute: typeof V1PlanningRouteRoute
     }
     '/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$kpiId/subKpi/': {
       id: '/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$kpiId/subKpi/'
       path: '/$deliveryUnitId/opcr/$opcrId/kpi/$kpiId/subKpi'
-      fullPath: '/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$kpiId/subKpi/'
+      fullPath: '/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$kpiId/subKpi'
       preLoaderRoute: typeof V1PlanningDeliveryUnitIdOpcrOpcrIdKpiKpiIdSubKpiIndexRouteImport
+      parentRoute: typeof V1PlanningRouteRoute
+    }
+    '/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$functionType/$kpiId/': {
+      id: '/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$functionType/$kpiId/'
+      path: '/$deliveryUnitId/opcr/$opcrId/kpi/$functionType/$kpiId'
+      fullPath: '/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$functionType/$kpiId'
+      preLoaderRoute: typeof V1PlanningDeliveryUnitIdOpcrOpcrIdKpiFunctionTypeKpiIdIndexRouteImport
       parentRoute: typeof V1PlanningRouteRoute
     }
     '/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$kpiId/subKpi/$subKpiId/': {
       id: '/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$kpiId/subKpi/$subKpiId/'
       path: '/$deliveryUnitId/opcr/$opcrId/kpi/$kpiId/subKpi/$subKpiId'
-      fullPath: '/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$kpiId/subKpi/$subKpiId/'
+      fullPath: '/v1/planning/$deliveryUnitId/opcr/$opcrId/kpi/$kpiId/subKpi/$subKpiId'
       preLoaderRoute: typeof V1PlanningDeliveryUnitIdOpcrOpcrIdKpiKpiIdSubKpiSubKpiIdIndexRouteImport
       parentRoute: typeof V1PlanningRouteRoute
     }
@@ -3771,7 +3752,6 @@ interface V1PlanningRouteRouteChildren {
   V1PlanningFundReceiveIndexRoute: typeof V1PlanningFundReceiveIndexRoute
   V1PlanningFundIndexRoute: typeof V1PlanningFundIndexRoute
   V1PlanningKpiAssignmentForDuIndexRoute: typeof V1PlanningKpiAssignmentForDuIndexRoute
-  V1PlanningOpcrIndexRoute: typeof V1PlanningOpcrIndexRoute
   V1PlanningWfpExpenditureIndexRoute: typeof V1PlanningWfpExpenditureIndexRoute
   V1PlanningWfpObjectiveIndexRoute: typeof V1PlanningWfpObjectiveIndexRoute
   V1PlanningDeliveryUnitIdWfpWfpIdRoute: typeof V1PlanningDeliveryUnitIdWfpWfpIdRouteWithChildren
@@ -3818,7 +3798,6 @@ const V1PlanningRouteRouteChildren: V1PlanningRouteRouteChildren = {
   V1PlanningFundIndexRoute: V1PlanningFundIndexRoute,
   V1PlanningKpiAssignmentForDuIndexRoute:
     V1PlanningKpiAssignmentForDuIndexRoute,
-  V1PlanningOpcrIndexRoute: V1PlanningOpcrIndexRoute,
   V1PlanningWfpExpenditureIndexRoute: V1PlanningWfpExpenditureIndexRoute,
   V1PlanningWfpObjectiveIndexRoute: V1PlanningWfpObjectiveIndexRoute,
   V1PlanningDeliveryUnitIdWfpWfpIdRoute:

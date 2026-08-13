@@ -36,6 +36,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<OPCRRating>? OPCRRatings { get; set; }
     public DbSet<OPCRPAPDepartment>? OPCRPAPDepartments { get; set; }
     public DbSet<Organization>? Organizations { get; set; }
+    public DbSet<OrganizationFundSource>? OrganizationFundSources { get; set; }
     public DbSet<PerformanceMeasure>? PerformanceMeasures { get; set; }
     public DbSet<Transaction>? Transactions { get; set; }
     public DbSet<WFP>? WFPs { get; set; }
@@ -245,6 +246,18 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<DUKPITargetAssignment>()
             .HasIndex(da => new { da.DeliveryUnitId, da.KPIId, da.KPITargetId })
             .IsUnique();
+
+        // OrganizationFundSource
+        modelBuilder.Entity<OrganizationFundSource>(entity =>
+        {
+            entity.ToTable("OrganizationFundSources", "planning");
+            entity.HasOne(ofs => ofs.Organization)
+                .WithMany(o => o.OrganizationFundSources)
+                .HasForeignKey(ofs => ofs.OrganizationId);
+            entity.HasOne(ofs => ofs.FundSource)
+                .WithMany(fs => fs.OrganizationFundSources)
+                .HasForeignKey(ofs => ofs.FundSourceId);
+        });
 
         // KPIModeOfVerification
         modelBuilder.Entity<KPIModeOfVerification>()
@@ -646,7 +659,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<WFPObjectiveActivity>()
             .HasOne(a => a.WFPObjective)
             .WithMany(o => o.WFPObjectiveActivities)
-            .HasForeignKey(a => a.WFPObjectiveId);
+            .HasForeignKey(a => a.WFPObjectiveId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<WFPObjectiveActivity>()
             .HasOne(a => a.OPCRActivity)
@@ -661,7 +675,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<WFPObjectiveActivityExpenditure>()
             .HasOne(e => e.WFPObjectiveActivity)
             .WithMany(a => a.WFPObjectiveActivityExpenditures)
-            .HasForeignKey(e => e.WFPObjectiveActivityId);
+            .HasForeignKey(e => e.WFPObjectiveActivityId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<WFPObjectiveActivityExpenditure>()
             .HasOne(e => e.Object)
@@ -681,7 +696,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasOne(t => t.WFPObjectiveActivity)
             .WithMany(a => a.WFPObjectiveTimelines)
             .HasForeignKey(t => t.WFPObjectiveActivityId)
-            .IsRequired();
+            .IsRequired()
+            .OnDelete(DeleteBehavior.Cascade);
 
         modelBuilder.Entity<WFPObjectiveTimeline>()
             .Property(t => t.TargetValue)

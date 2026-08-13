@@ -13,6 +13,11 @@ public class GlobalExceptionHandler : IExceptionHandler
 {
     public async ValueTask<bool> TryHandleAsync(HttpContext httpContext, Exception exception, CancellationToken cancellationToken)
     {
+        if (exception is OperationCanceledException || cancellationToken.IsCancellationRequested)
+        {
+            return true;
+        }
+
         if (exception is FluentValidation.ValidationException fluentValidationException)
         {
             httpContext.Response.StatusCode = (int)HttpStatusCode.BadRequest;

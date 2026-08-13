@@ -119,6 +119,7 @@ public static class DependencyInjection
         services.AddScoped<IFileStorageService, AzureBlobStorageService>();
         services.AddScoped<IPhilGepsService, PhilGepsService>();
         services.AddScoped<IUACSCsvImporter, UACSImportService>();
+        services.AddScoped<IFundSourceExcelImporter, FundSourceExcelImporter>();
         services.AddScoped<IUACSValidationEngine, UACSValidationEngine>();
         services.AddScoped<IPositionImportService, PositionImportService>();
         services.AddHostedService<TempFileCleanupService>();

@@ -12,10 +12,16 @@ public static class MiddlewareExtensions
         // 1. Exception handling FIRST (catches errors from all middleware)
         app.UseExceptionHandler();
 
-        // 2. HTTPS redirection
-        app.UseHttpsRedirection();
+        // 2. CORS (MUST be executed before HttpsRedirection so CORS preflight requests receive headers)
+        app.UseCors(app.Environment.EnvironmentName.ToLower());
 
-        // 3. Swagger (development only)
+        // 3. HTTPS redirection (disabled in Development to avoid 307 preflight CORS stalls)
+        if (!app.Environment.IsDevelopment())
+        {
+            app.UseHttpsRedirection();
+        }
+
+        // 4. Swagger (development only)
         if (app.Environment.IsDevelopment())
         {
             app.UseSwagger();
@@ -29,11 +35,8 @@ public static class MiddlewareExtensions
             });
         }
 
-        // 4. Routing (required for endpoint-based middleware)
+        // 5. Routing
         app.UseRouting();
-
-        // 5. CORS (after routing)
-        app.UseCors(app.Environment.EnvironmentName.ToLower());
 
         // 6. Authentication (after routing)
         app.UseAuthentication();

@@ -4130,7 +4130,7 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid>("OfficeTypeId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("OrganizationId")
+                    b.Property<Guid?>("OrganizationId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid?>("ParentId")
@@ -4364,6 +4364,52 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("Organizations", "planning");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OrganizationFundSource", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("FundSourceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FundSourceId");
+
+                    b.HasIndex("OrganizationId");
+
+                    b.ToTable("OrganizationFundSources", "planning");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.PMT", b =>
@@ -10350,9 +10396,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasOne("ERPEZ.Domain.Entities.Planning.Organization", "Organization")
                         .WithMany("Offices")
-                        .HasForeignKey("OrganizationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("OrganizationId");
 
                     b.HasOne("ERPEZ.Domain.Entities.Planning.Office", "Parent")
                         .WithMany("Children")
@@ -10421,6 +10465,25 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("FiscalYear");
 
                     b.Navigation("ParentOrganization");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OrganizationFundSource", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.FundSource", "FundSource")
+                        .WithMany("OrganizationFundSources")
+                        .HasForeignKey("FundSourceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.Organization", "Organization")
+                        .WithMany("OrganizationFundSources")
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("FundSource");
+
+                    b.Navigation("Organization");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.PMT", b =>
@@ -11791,6 +11854,8 @@ namespace ERPEZ.Infrastructure.Migrations
                 {
                     b.Navigation("FundSources");
 
+                    b.Navigation("OrganizationFundSources");
+
                     b.Navigation("Transactions");
                 });
 
@@ -11982,6 +12047,8 @@ namespace ERPEZ.Infrastructure.Migrations
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.Organization", b =>
                 {
                     b.Navigation("Offices");
+
+                    b.Navigation("OrganizationFundSources");
 
                     b.Navigation("Organizations");
 

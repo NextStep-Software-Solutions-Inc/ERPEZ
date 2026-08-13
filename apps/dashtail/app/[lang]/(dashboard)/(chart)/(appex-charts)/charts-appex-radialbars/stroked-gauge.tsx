@@ -12,7 +12,7 @@ const StrokedGauge = ({ height = 350 }) => {
 
   const series = [67, 80];
 
-  const options = {
+  const options: any = {
     chart: {
       toolbar: {
         show: false,
