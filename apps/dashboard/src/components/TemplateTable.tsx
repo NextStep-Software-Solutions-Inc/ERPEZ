@@ -321,14 +321,16 @@ export function TemplateTable<T extends { id: string | number }>({
   }, [])
 
   return (
-    <div className="w-full flex flex-col h-full p-2">
+    <div className="w-full flex flex-col h-full">
       {title && <h2 className="text-2xl font-bold">{title}</h2>}
       {description && (
         <p className="text-muted-foreground pt-2">{description}</p>
       )}
-      <div className="flex items-center py-4 gap-1 flex-wrap ">
-        {toolbar?.(table)}
-      </div>
+      {toolbar && (
+        <div className="flex items-center pb-2 gap-1 flex-wrap">
+          {toolbar(table)}
+        </div>
+      )}
       <div className="rounded-md border flex-1 flex flex-col min-h-0 bg-white">
         <Table>
           <TableHeader className=" bg-transparent border rounded-t-3xl">

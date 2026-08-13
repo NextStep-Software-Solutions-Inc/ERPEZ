@@ -50,7 +50,7 @@ export const WFPInformationPanel: React.FC<WFPInformationPanelProps> = ({
         )}
       </CardHeader>
 
-      <CardContent className="p-4">
+      <CardContent className="px-4 pb-3 pt-2">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {/* Column 1: Fiscal Year & Funding Source */}
           <div className="space-y-3.5">

@@ -397,7 +397,7 @@ function WFPDetailPage({ wfpId }: { wfpId: string }) {
               )}
             </div>
           </CardHeader>
-          <CardContent className="pt-2.5 px-4">
+          <CardContent className="px-4 pb-2 pt-1.5">
             <TemplateTable
               data={wfp?.wfpObjectives || []}
               columns={Column}

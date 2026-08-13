@@ -1,4 +1,4 @@
-﻿using ERPEZ.Domain.Enums;
+using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -38,11 +38,8 @@ public class CreateWFPObjectiveActivityCommandHandler(IUnitOfWork unitOfWork)
 
     string resolvedActivityName;
 
-    if (wfp.Mode == ModeEnum.OPCR)
+    if (request.OPCRActivityId.HasValue)
     {
-        if (!request.OPCRActivityId.HasValue)
-            throw new BadRequestException("OPCR Activity ID is required when the WFP mode is OPCR.");
-
         if (!wfp.OPCRId.HasValue)
             throw new BadRequestException("This WFP does not have an associated OPCR.");
 
@@ -57,16 +54,15 @@ public class CreateWFPObjectiveActivityCommandHandler(IUnitOfWork unitOfWork)
     }
     else
     {
-        // External path — WFPObjectiveId already validated above
         if (string.IsNullOrWhiteSpace(request.ActivityName))
-            throw new BadRequestException("Activity Name is required when the WFP mode is External.");
+            throw new BadRequestException("Activity Name is required.");
 
         resolvedActivityName = request.ActivityName;
     }
 
     // Duplicate check
     Domain.Entities.Planning.WFPObjectiveActivity? duplicate;
-    if (wfp.Mode == ModeEnum.OPCR)
+    if (request.OPCRActivityId.HasValue)
     {
         duplicate = await unitOfWork.WFPObjectiveActivityRepository.FindAsync(
             t => t.WFPId == resolvedWFPId
@@ -125,6 +121,17 @@ public class CreateWFPObjectiveActivityCommandHandler(IUnitOfWork unitOfWork)
                 TargetValue  = d.Value,
                 TimelineType = Enum.Parse<TimelineTypeEnum>(d.TimelineType, ignoreCase: true)
             })];
+    }
+    else
+    {
+        var year = wfp.ProjectStartDate.Year > 0 ? wfp.ProjectStartDate.Year : DateTime.UtcNow.Year;
+        activity.WFPObjectiveTimelines = new List<Domain.Entities.Planning.WFPObjectiveTimeline>
+        {
+            new() { StartDate = new DateOnly(year, 1, 1), EndDate = new DateOnly(year, 3, 31), TargetValue = 25m, TimelineType = TimelineTypeEnum.Quarterly },
+            new() { StartDate = new DateOnly(year, 4, 1), EndDate = new DateOnly(year, 6, 30), TargetValue = 25m, TimelineType = TimelineTypeEnum.Quarterly },
+            new() { StartDate = new DateOnly(year, 7, 1), EndDate = new DateOnly(year, 9, 30), TargetValue = 25m, TimelineType = TimelineTypeEnum.Quarterly },
+            new() { StartDate = new DateOnly(year, 10, 1), EndDate = new DateOnly(year, 12, 31), TargetValue = 25m, TimelineType = TimelineTypeEnum.Quarterly }
+        };
     }
 
     await unitOfWork.WFPObjectiveActivityRepository.AddAsync(activity, cancellationToken);

@@ -53,7 +53,7 @@ export const WFPStatusHistoryPanel: React.FC<WFPStatusHistoryPanelProps> = ({
           </Badge>
         </CardHeader>
 
-        <CardContent className="p-4">
+        <CardContent className="px-4 pb-3 pt-2">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {/* Sub-Section 1: Readiness Checklist */}
             <div className="space-y-2">

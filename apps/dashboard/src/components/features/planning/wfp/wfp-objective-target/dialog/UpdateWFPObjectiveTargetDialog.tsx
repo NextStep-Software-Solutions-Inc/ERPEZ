@@ -43,6 +43,14 @@ export default function UpdateWFPObjectiveTargetDialog() {
 
   const wfpObjectiveTargetData = wfpObjectiveTargetResponse?.data
 
+  const existingTimelines = wfpObjectiveTargetData?.wfpObjectiveTimelines || []
+  const initialDates = existingTimelines.map((t: any) => ({
+    timelineType: t.timelineType || 'Quarterly',
+    startDate: t.startDate,
+    endDate: t.endDate,
+    value: t.targetValue || 0,
+  }))
+
   useEffect(() => {
     if (wfpObjectiveTargetData) {
       setFormData({
@@ -50,6 +58,7 @@ export default function UpdateWFPObjectiveTargetDialog() {
         activityName: wfpObjectiveTargetData.activityName,
         indicator: wfpObjectiveTargetData.indicator,
         weight: wfpObjectiveTargetData.weight,
+        dates: initialDates,
       })
     }
   }, [wfpObjectiveTargetData, setFormData])
@@ -131,9 +140,11 @@ export default function UpdateWFPObjectiveTargetDialog() {
               indicator: formData.indicator,
               activityName: formData.activityName,
               weight: formData.weight,
+              dates: initialDates,
               ...formData,
             }}
             wfpObjectiveId={wfpObjectiveTargetData?.wfpObjective?.id || ''}
+            wfpData={wfpObjectiveTargetData?.wfpObjective?.wfp}
           />
         )}
       </ResponsiveDialog>
