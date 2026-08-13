@@ -443,7 +443,7 @@ export function EditSignatoriesDialog({
                         <div>
                           <Badge className={color + ' mr-2'}>{label}</Badge>
                           <span className="text-sm text-gray-600 font-medium">
-                            {signatories.length} {signatories.length === 1 ? 'signatory' : 'signatories'} added
+                            {signatories.length} {signatories.length <= 1 ? 'signatory' : 'signatories'} added
                           </span>
                         </div>
                       </div>

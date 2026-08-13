@@ -35,36 +35,37 @@ public class RemovePPMPsCommandHandler(IUnitOfWork unitOfWork)
             throw new NotFoundException($"The following PPMPs are not linked to this APP: {string.Join(", ", notLinkedIds)}");
         }
 
-        // Remove the links and associated APPItems
+        // Remove the links and associated APPItems (soft-delete)
         if (existingLinks.Any())
         {
-            foreach (var link in existingLinks)
+            var activeLinks = existingLinks.Where(l => !l.IsDeleted).ToList();
+            if (activeLinks.Any())
             {
-                link.AllowHardDelete = true;
+                unitOfWork.APPPPMPRepository.RemoveRange(activeLinks);
             }
-            unitOfWork.APPPPMPRepository.RemoveRange(existingLinks);
 
             // Also remove any APPItems in this APP that originated from the unselected PPMPs
             var targetPpmpIds = existingLinks.Select(link => link.PPMPId).ToHashSet();
-            var appItems = await unitOfWork.APPItemRepository.GetAPPItemsWithDetailsAsync(request.APPId, cancellationToken);
-            var itemsToRemove = appItems
-                .Where(item => {
-                    var pei = item.PPMPItem?.PPMPExpenditureItem;
-                    if (pei == null) return false;
-                    var id1 = pei.PPMPId;
-                    var id2 = pei.PPMPActivity?.PPMPId;
-                    return targetPpmpIds.Contains(id1) || (id2 != null && targetPpmpIds.Contains(id2.Value));
-                })
-                .ToList();
+            // Using GetAPPItemsByPPMPIdsAsync with IgnoreQueryFilters is required here because 
+            // if an APPItem was previously soft-deleted, we still need to retrieve it to ensure 
+            // no orphaned tracking states cause DbUpdateConcurrencyException, or simply to skip it
+            // if we are soft-deleting. Wait, if we are soft deleting, we should only delete the active ones!
+            var itemsToRemove = await unitOfWork.APPItemRepository.GetAPPItemsByPPMPIdsAsync(request.APPId, targetPpmpIds, cancellationToken);
+            var activeItemsToRemove = itemsToRemove.Where(i => !i.IsDeleted).ToList();
 
-            foreach (var item in itemsToRemove)
+            foreach (var item in activeItemsToRemove)
             {
-                unitOfWork.APPItemRepository.Remove(item, hardDelete: true);
+                unitOfWork.APPItemRepository.Remove(item);
             }
 
             try
             {
                 await unitOfWork.SaveChangesAsync(cancellationToken);
+            }
+            catch (Microsoft.EntityFrameworkCore.DbUpdateConcurrencyException ex)
+            {
+                var details = string.Join("; ", ex.Entries.Select(e => $"Entity: {e.Entity.GetType().Name}, State: {e.State}, ID: {(e.Entity as ERPEZ.Domain.Common.BaseEntity)?.Id}"));
+                throw new System.InvalidOperationException($"Save failed during PPMP removal (Concurrency): {ex.Message}. Tracked entries: {details}", ex);
             }
             catch (System.Exception ex)
             {

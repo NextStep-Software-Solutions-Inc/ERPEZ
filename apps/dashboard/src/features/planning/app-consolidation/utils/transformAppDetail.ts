@@ -1,5 +1,5 @@
-import type { AppDetailResponse, APPItemFromAPI, APPPPMPRelationFromAPI } from '../handlers/getAPPDetailRequest'
-import type { AppMaster, APPAggregationResult, BACLineItem } from '../types'
+import type { AppDetailResponse, APPItemFromAPI, APPPPMPRelationFromAPI, APPSignatoryFromAPI } from '../handlers/getAPPDetailRequest'
+import type { AppMaster, APPAggregationResult, BACLineItem, Signatory, SignatoryBlock } from '../types'
 
 /**
  * Transform API AppDetailResponse to AppMaster format
@@ -110,6 +110,26 @@ export function transformAppDetailToAppMaster(apiApp: AppDetailResponse): AppMas
     totalAmount: totalBudget,
   }
 
+  const mapSignatoriesList = (items?: APPSignatoryFromAPI[]): Signatory[] | undefined => {
+    if (!items || items.length === 0) return undefined
+    return items.map((s) => ({
+      id: s.id,
+      name: s.name,
+      position: s.position,
+      department: s.department,
+      signatureDate: s.signatureDate ? s.signatureDate.split('T')[0] : undefined,
+      userId: s.userId || undefined,
+      personnelPositionId: s.personnelPositionId || undefined,
+    }))
+  }
+
+  const signatories: SignatoryBlock = {
+    preparedBy: mapSignatoriesList(apiApp.signatories?.preparedBy),
+    reviewedBy: mapSignatoriesList(apiApp.signatories?.reviewedBy),
+    approvedBy: mapSignatoriesList(apiApp.signatories?.approvedBy),
+    certifiedBy: mapSignatoriesList(apiApp.signatories?.certifiedBy),
+  }
+
   return {
     id: apiApp.id,
     ppmpIds: apiApp.APPPPMPs?.map((p: APPPPMPRelationFromAPI) => p.ppmpId || p.id || '') || [],
@@ -129,12 +149,7 @@ export function transformAppDetailToAppMaster(apiApp: AppDetailResponse): AppMas
       totalBudget,
       modeOfProcurements,
     },
-    signatories: {
-      preparedBy: undefined,
-      reviewedBy: undefined,
-      approvedBy: undefined,
-      certifiedBy: undefined,
-    },
+    signatories,
     status,
     createdAt: apiApp.createdAt,
     updatedAt: apiApp.updatedAt || apiApp.createdAt,

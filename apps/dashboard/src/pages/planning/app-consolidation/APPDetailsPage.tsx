@@ -40,6 +40,7 @@ import {
 import { getAPPDetailRequest } from '@/features/planning/app-consolidation/handlers'
 import { changeAPPStatusRequest } from '@/features/planning/app-consolidation/handlers/changeAPPStatusRequest'
 import { transformAppDetailToAppMaster } from '@/features/planning/app-consolidation/utils/transformAppDetail'
+import api from '@/services/api'
 
 const useAPPDetail = createQueryHookFromTemplate(getAPPDetailRequest)
 const useChangeAPPStatus = createMutationHookFromTemplate(changeAPPStatusRequest)

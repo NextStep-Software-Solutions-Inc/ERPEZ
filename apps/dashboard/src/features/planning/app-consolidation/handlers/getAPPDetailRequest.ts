@@ -97,6 +97,23 @@ export interface APPPPMPRelationFromAPI {
   PPMPItems?: APPPPMPItemFromAPI[]
 }
 
+export interface APPSignatoryFromAPI {
+  id: string
+  userId?: string | null
+  personnelPositionId?: string | null
+  name: string
+  position: string
+  department: string
+  signatureDate?: string | null
+}
+
+export interface APPSignatoriesFromAPI {
+  preparedBy?: APPSignatoryFromAPI[]
+  reviewedBy?: APPSignatoryFromAPI[]
+  approvedBy?: APPSignatoryFromAPI[]
+  certifiedBy?: APPSignatoryFromAPI[]
+}
+
 export interface AppDetailResponse {
   id: string
   appNumber: string
@@ -134,6 +151,7 @@ export interface AppDetailResponse {
   }
   APPItems?: APPItemFromAPI[]
   APPPPMPs?: APPPPMPRelationFromAPI[]
+  signatories?: APPSignatoriesFromAPI
 }
 
 /**
