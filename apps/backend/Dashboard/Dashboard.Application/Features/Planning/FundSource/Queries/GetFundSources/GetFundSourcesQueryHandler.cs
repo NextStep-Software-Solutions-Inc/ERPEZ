@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using ERPEZ.Application.Features.Planning.FiscalYear.Dtos;
 using ERPEZ.Application.Features.Planning.FundSource.Dtos;
 using ERPEZ.Application.Features.Planning.FundSource.Queries.FundSources;
@@ -32,31 +33,19 @@ public class GetFundSourcesQueryHandler(IUnitOfWork unitOfWork) : IRequestHandle
                 : $"{sieveModel.Filters},{fiscalYearFilter}";
         }
 
-        // Add organization filter if provided
+        Expression<Func<Domain.Entities.Planning.FundSource, bool>>? orgPredicate = null;
+
+        // Add organization filter if provided via EF Core subquery (WHERE Id IN (SELECT FundSourceId FROM ...))
         if (query.OrganizationId.HasValue)
         {
-            var assignedLinks = await unitOfWork.OrganizationFundSourceRepository.ToListAsync(
-                unitOfWork.OrganizationFundSourceRepository.Query(l => l.OrganizationId == query.OrganizationId.Value && l.IsActive),
-                cancellationToken);
-            var assignedIds = assignedLinks.Select(l => l.FundSourceId).ToList();
+            var assignedFundSourceIds = unitOfWork.OrganizationFundSourceRepository
+                .Query(l => l.OrganizationId == query.OrganizationId.Value && l.IsActive)
+                .Select(l => l.FundSourceId);
 
-            if (assignedIds.Count == 0)
-            {
-                var emptyFilter = $"Id=={Guid.Empty}";
-                sieveModel.Filters = string.IsNullOrEmpty(sieveModel.Filters)
-                    ? emptyFilter
-                    : $"{sieveModel.Filters},{emptyFilter}";
-            }
-            else
-            {
-                var orgFilter = string.Join("|", assignedIds.Select(id => $"Id=={id}"));
-                sieveModel.Filters = string.IsNullOrEmpty(sieveModel.Filters)
-                    ? orgFilter
-                    : $"{sieveModel.Filters},({orgFilter})";
-            }
+            orgPredicate = fs => assignedFundSourceIds.Contains(fs.Id);
         }
 
-        var (fundSources, totalCount) = await unitOfWork.FundSourceRepository.GetPagedWithNavigationAsync(sieveModel, cancellationToken);
+        var (fundSources, totalCount) = await unitOfWork.FundSourceRepository.GetPagedWithNavigationAsync(sieveModel, orgPredicate, cancellationToken);
 
         var response = fundSources.Select(fundSource => new FundSourceResponse
         {
