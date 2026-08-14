@@ -41,7 +41,6 @@ import {
   useUpdateWhereasClauseTemplate,
   useGetUsers,
 } from '../handlers/hooks'
-import { CreateBACProjectPayload } from '../handlers/createBacProjectRequest'
 import FieldInfo from '@/components/FieldInfo'
 import { toast } from 'sonner'
 import type { User } from '@/services/api/users'
@@ -127,7 +126,7 @@ export type CreateBacResolutionFormValues = z.infer<
 >
 
 interface CreateBacResolutionFormProps {
-  onSubmit: (values: CreateBACProjectPayload) => Promise<void> | void
+  onSubmit: (values: CreateBacResolutionPayload) => Promise<void> | void
   onCancel: () => void
   initialValues?: Partial<CreateBacResolutionPayload>
   isLoading?: boolean
@@ -738,8 +737,8 @@ export function CreateBacResolutionForm({
           ? selectedClauses
           : (templates ?? []).slice(0, 2)
 
-      // Map form data to CreateBACProjectPayload
-      const payload: CreateBACProjectPayload = {
+      // Map form data to CreateBacResolutionPayload
+      const payload: CreateBacResolutionPayload = {
         title:
           value.title ||
           (sourceType === 'AppItem'
@@ -760,18 +759,24 @@ export function CreateBacResolutionForm({
             ? selectedConsolidatedPRId || undefined
             : undefined,
         resolutionType: value.resolutionType,
-        resolutionNumber: value.bacResolutionNumber.trim(),
-        dateResolved: value.resolutionDate,
-        resolvedLocation: value.resolvedLocationText.trim(),
-        selectedTemplateClauseIds: clausesToSubmit
-          .map((c) => c.id)
-          .filter(Boolean),
-        customClauses: clausesToSubmit
-          .filter((c) => !c.id || c.id === '')
-          .map((c) => c.body),
+        bacResolutionNumber: value.bacResolutionNumber.trim(),
+        resolutionDate: value.resolutionDate,
+        description:
+          value.description ||
+          (sourceType === 'AppItem'
+            ? selectedAppItem?.ppmpItem?.description
+            : selectedConsolidatedPR?.purpose) ||
+          '',
+        resolvedDateText: value.resolvedDateText,
+        resolvedLocationText: value.resolvedLocationText.trim(),
+        whereasClauses: clausesToSubmit.map((c) => ({
+          id: c.id,
+          name: c.name,
+          body: c.body,
+        })),
+        provisionalMembers: provisionalMembers,
         endUserRepresentativeId: endUserRep?.userId || undefined,
         techRepresentativeId: techRep?.userId || undefined,
-        userId: '61a2206a-a15b-4512-8668-7d48f29b3fed', // Current user ID - should be from auth context
       }
 
       try {

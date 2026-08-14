@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { ResponsiveDialogDashtail } from '@/components/ResponsiveDialogDashtail'
 import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
-import { CreateBACProjectPayload } from '../handlers/createBacProjectRequest'
+import type { CreateBacResolutionPayload } from '../types'
 import { CreateBacResolutionForm } from '../forms/CreateBacResolutionForm'
 import { getAPPItemsRequest } from '@/features/planning/app-consolidation/handlers/getAPPItemsRequest'
 import { createQueryHookFromTemplate } from 'erpez-shared-lib'
@@ -10,7 +10,7 @@ import { createQueryHookFromTemplate } from 'erpez-shared-lib'
 interface CreateBacResolutionDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onCreate: (values: CreateBACProjectPayload) => Promise<void> | void
+  onCreate: (values: CreateBacResolutionPayload) => Promise<void> | void
   apiConsolidatedPrs: any[]
 }
 

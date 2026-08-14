@@ -3,7 +3,6 @@ import { ResponsiveDialogDashtail } from '@/components/ResponsiveDialogDashtail'
 import { Button } from '@/components/ui/button'
 import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
 import type { CreateBacResolutionPayload, BacResolution } from '../types'
-import { CreateBACProjectPayload } from '../handlers/createBacProjectRequest'
 import { CreateBacResolutionForm } from '../forms/CreateBacResolutionForm'
 
 interface EditBacResolutionDialogProps {
@@ -12,7 +11,7 @@ interface EditBacResolutionDialogProps {
   resolution?: BacResolution
   onUpdate: (
     id: string,
-    values: CreateBACProjectPayload,
+    values: CreateBacResolutionPayload,
   ) => Promise<void> | void
 }
 
@@ -26,7 +25,7 @@ export function EditBacResolutionDialog({
   const [showDiscardWarning, setShowDiscardWarning] = useState(false)
   const [showSaveConfirm, setShowSaveConfirm] = useState(false)
   const [pendingValues, setPendingValues] =
-    useState<CreateBACProjectPayload | null>(null)
+    useState<CreateBacResolutionPayload | null>(null)
 
   // Reset dirty status on open change
   useEffect(() => {
