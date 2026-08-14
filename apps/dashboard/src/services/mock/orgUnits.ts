@@ -15,6 +15,7 @@ export type OrgUnit = {
   organizationName?: string
   parentOfficeName?: string
   administrativeLevelName?: string
+  categoryName?: string
   createdAt?: string
   createdBy?: string
   // Government Schema Fields
