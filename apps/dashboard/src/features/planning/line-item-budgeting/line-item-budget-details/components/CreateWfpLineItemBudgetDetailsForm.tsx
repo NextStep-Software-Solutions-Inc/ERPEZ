@@ -186,6 +186,7 @@ export default function CreateWfpLineItemBudgetDetailsForm({
   const [inheritedDescription, setInheritedDescription] = useState<
     string | null
   >(null)
+  const [autoInheritedName, setAutoInheritedName] = useState<string | null>(null)
   // Sequential submission of all line items
   const submitAllLineItems = useCallback(async () => {
     if (lineItems.length === 0) {
@@ -611,7 +612,7 @@ export default function CreateWfpLineItemBudgetDetailsForm({
         <form.Field
           name="objectId"
           children={(field) => (
-            <div className={cn("space-y-2", (!selectedParentObject || selectedParentObject.childObjectCount === 0) && "md:col-span-2")}>
+            <div className={cn("space-y-1.5", (!selectedParentObject || selectedParentObject.childObjectCount === 0) && "md:col-span-2")}>
               <Label htmlFor={field.name} className="font-medium">
                 Type of Expenditure
               </Label>
@@ -622,6 +623,20 @@ export default function CreateWfpLineItemBudgetDetailsForm({
                   setSelectedParentId(value)
                   // Reset child selection when parent changes
                   form.setFieldValue('itemOfExpenditureId', '')
+
+                  // Smart description inheritance if category has no child items
+                  const selectedParent = expenditureTypes.find((item) => item.id === value)
+                  if (selectedParent && (!selectedParent.childObjectCount || selectedParent.childObjectCount === 0)) {
+                    const currentDesc = form.getFieldValue('description') as string | undefined
+                    const isEmpty = !currentDesc || currentDesc.trim() === ''
+                    const matchesPreviousAuto = autoInheritedName && currentDesc === autoInheritedName
+                    const matchesAnyObjName = expenditureTypes.some((i) => i.name === currentDesc)
+
+                    if (isEmpty || matchesPreviousAuto || matchesAnyObjName) {
+                      form.setFieldValue('description', selectedParent.name)
+                      setAutoInheritedName(selectedParent.name)
+                    }
+                  }
                 }}
                 disabled={isPending || isLoadingTypes}
               >
@@ -653,13 +668,33 @@ export default function CreateWfpLineItemBudgetDetailsForm({
           <form.Field
             name="itemOfExpenditureId"
             children={(field) => (
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <Label htmlFor={field.name} className="font-medium">
                   Select Item of Expenditure
                 </Label>
                 <Select
                   value={field.state.value || ''}
-                  onValueChange={field.handleChange}
+                  onValueChange={(val) => {
+                    field.handleChange(val)
+
+                    // Smart Description Inheritance Logic
+                    const children = childObjectsResponse?.data || []
+                    const selectedChild = children.find((item) => item.id === val)
+
+                    if (selectedChild) {
+                      const currentDesc = form.getFieldValue('description') as string | undefined
+                      const isEmpty = !currentDesc || currentDesc.trim() === ''
+                      const matchesPreviousAuto = autoInheritedName && currentDesc === autoInheritedName
+                      const matchesAnyObjName = children.some((i) => i.name === currentDesc)
+
+                      // Rule A (Empty) or Rule B (Default Match): update Description
+                      if (isEmpty || matchesPreviousAuto || matchesAnyObjName) {
+                        form.setFieldValue('description', selectedChild.name)
+                        setAutoInheritedName(selectedChild.name)
+                      }
+                      // Rule C (Custom Edit): If user manually edited description, do NOT overwrite it!
+                    }
+                  }}
                   disabled={isLoading || isLoadingChildObjects}
                 >
                   <SelectTrigger id={field.name} className="w-full text-xs">
@@ -691,8 +726,8 @@ export default function CreateWfpLineItemBudgetDetailsForm({
           name="description"
           children={(field) => {
             const isInherited =
-              inheritedDescription !== null &&
-              inheritedDescription === field.state.value
+              (inheritedDescription !== null && inheritedDescription === field.state.value) ||
+              (autoInheritedName !== null && autoInheritedName === field.state.value)
             return (
               <div className="md:col-span-2 space-y-2">
                 <div className="flex items-center gap-2">
@@ -704,7 +739,7 @@ export default function CreateWfpLineItemBudgetDetailsForm({
                       className="text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-full"
                       title="Auto-populated from expenditure item"
                     >
-                      Inherited
+                      Auto-inherited
                     </span>
                   )}
                 </div>
@@ -718,7 +753,7 @@ export default function CreateWfpLineItemBudgetDetailsForm({
                   }
                   value={field.state.value || ''}
                   onChange={(e) => field.handleChange(e.target.value)}
-                  disabled={isLoading || (isInherited && editingId !== null)}
+                  disabled={isLoading || (inheritedDescription !== null && editingId !== null)}
                   className="w-full text-xs"
                 />
                 <FieldInfo field={field} />
