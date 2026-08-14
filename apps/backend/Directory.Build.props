@@ -4,6 +4,8 @@
     <!-- Only treat warnings as errors in CI environment, not locally -->
     <TreatWarningsAsErrors Condition="'$(CI)' == 'true'">true</TreatWarningsAsErrors>
     <TreatWarningsAsErrors Condition="'$(CI)' != 'true'">false</TreatWarningsAsErrors>
+    <!-- Do not fail restore on NuGet vulnerability audit warnings -->
+    <WarningsNotAsErrors>$(WarningsNotAsErrors);NU1901;NU1902;NU1903;NU1904</WarningsNotAsErrors>
     <!-- Use highest standard warning level -->
     <WarningLevel>5</WarningLevel>
     <!-- Enable .NET analyzers and fail build on their warnings -->

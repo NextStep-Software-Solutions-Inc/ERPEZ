@@ -16,6 +16,8 @@
     </PackageReference>
     <PackageReference Include="Sieve" Version="2.5.5" />
     <PackageReference Include="Swashbuckle.AspNetCore" Version="9.0.4" />
+    <!-- Security: Override vulnerable transitive dependencies -->
+    <PackageReference Include="Newtonsoft.Json" Version="13.0.3" />
   </ItemGroup>
 
   <ItemGroup>
