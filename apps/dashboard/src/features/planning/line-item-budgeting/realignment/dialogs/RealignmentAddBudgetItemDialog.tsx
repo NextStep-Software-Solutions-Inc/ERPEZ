@@ -39,7 +39,7 @@ export function RealignmentAddBudgetItemDialog({
         api.post(`/line-item-budget-details`, {
           lineItemBudgetId: activeLibId,
           lineItemBudgetActivityId: activityId,
-          objectId: item.objectId,
+          objectId: item.itemOfExpenditureId || item.objectId,
           description: item.description,
           unitQuantity: item.unitQuantity,
           unitCost: item.unitCost,
