@@ -58,17 +58,30 @@ export default function MarketScopingDashboardPage() {
     pageSize: 10,
   })
 
-  // Reset pagination to page 1 whenever search query or status filter changes
-  useEffect(() => {
-    setPagination((prev) => ({ ...prev, pageIndex: 0 }))
+  // Construct Sieve filter string for backend database search
+  const sieveFilters = useMemo(() => {
+    const parts: string[] = []
+    if (filter.searchTerm.trim()) {
+      parts.push(`ProjectName@=${filter.searchTerm.trim()}`)
+    }
+    if (filter.statusFilter && filter.statusFilter !== 'all') {
+      parts.push(`Status==${filter.statusFilter}`)
+    }
+    return parts.length > 0 ? parts.join(',') : undefined
   }, [filter.searchTerm, filter.statusFilter])
 
-  // Fetch market scoping forms from API
+  // Reset pagination to page 1 whenever global search or status filter changes
+  useEffect(() => {
+    setPagination((prev) => ({ ...prev, pageIndex: 0 }))
+  }, [sieveFilters])
+
+  // Fetch paginated market scoping forms from API with server-side pagination & filters
   const { data: apiResponse, isLoading, error } = useMarketScopings({
     pathParams: {},
     queryParams: {
-      pageNumber: 1,
-      pageSize: 100,
+      pageNumber: pagination.pageIndex + 1,
+      pageSize: pagination.pageSize,
+      filters: sieveFilters,
     },
   })
 
@@ -84,34 +97,36 @@ export default function MarketScopingDashboardPage() {
     return []
   }, [apiResponse])
 
-  // Apply search & status filters instantly across all records
-  const filteredForms = useMemo(() => {
-    let rows = forms
-    if (filter.statusFilter !== 'all') {
-      rows = rows.filter((f) => f.status === filter.statusFilter)
+  const totalCount = useMemo(() => {
+    if (!apiResponse) return 0
+    const rawData = (apiResponse as unknown) as Record<string, unknown>
+    if ('pagination' in rawData && rawData.pagination && typeof rawData.pagination === 'object') {
+      const pag = rawData.pagination as Record<string, unknown>
+      if (typeof pag.total === 'number') return pag.total
+      if (typeof pag.totalCount === 'number') return pag.totalCount
     }
-    if (filter.searchTerm.trim()) {
-      const q = filter.searchTerm.toLowerCase()
-      rows = rows.filter(
-        (f) =>
-          f.projectName?.toLowerCase().includes(q) ||
-          f.departmentUnit?.toLowerCase().includes(q) ||
-          f.representativeName?.toLowerCase().includes(q) ||
-          f.estimatedBudget?.toString().includes(q)
-      )
+    if ('totalCount' in rawData && typeof rawData.totalCount === 'number') {
+      return rawData.totalCount
     }
-    return rows
-  }, [forms, filter])
+    if ('total' in rawData && typeof rawData.total === 'number') {
+      return rawData.total
+    }
+    return forms.length
+  }, [apiResponse, forms.length])
 
-  // Compute pagination bounds based on filtered items
-  const totalCount = filteredForms.length
-  const pageCount = Math.ceil(totalCount / pagination.pageSize) || 1
-
-  // Slice forms for current page view
-  const paginatedForms = useMemo(() => {
-    const start = pagination.pageIndex * pagination.pageSize
-    return filteredForms.slice(start, start + pagination.pageSize)
-  }, [filteredForms, pagination.pageIndex, pagination.pageSize])
+  const pageCount = useMemo(() => {
+    if (!apiResponse) return 1
+    const rawData = (apiResponse as unknown) as Record<string, unknown>
+    if ('pagination' in rawData && rawData.pagination && typeof rawData.pagination === 'object') {
+      const pag = rawData.pagination as Record<string, unknown>
+      if (typeof pag.totalPages === 'number') return pag.totalPages
+      if (typeof pag.pageCount === 'number') return pag.pageCount
+    }
+    if ('totalPages' in rawData && typeof rawData.totalPages === 'number') {
+      return rawData.totalPages
+    }
+    return Math.ceil(totalCount / pagination.pageSize) || 1
+  }, [apiResponse, totalCount, pagination.pageSize])
 
   const actions: MetaActions = ['write', 'delete']
 
@@ -338,7 +353,7 @@ export default function MarketScopingDashboardPage() {
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
           <TemplateTable
             columns={columns}
-            data={paginatedForms}
+            data={forms}
             actions={actions}
             readonly={false}
             toolbar={(table) => <MarketScopingTableToolbar table={table} />}
@@ -356,13 +371,13 @@ export default function MarketScopingDashboardPage() {
             <MarketScopingTableToolbar />
           </div>
           
-          {filteredForms.length === 0 ? (
+          {forms.length === 0 ? (
             <div className="bg-white dark:bg-slate-950/20 rounded-xl border border-gray-200 dark:border-slate-800 p-12 text-center shadow-xs">
               <p className="text-slate-500 text-sm font-semibold">No market scoping forms found matching the filters.</p>
             </div>
           ) : (
             <MarketScopingCardView
-              data={paginatedForms}
+              data={forms}
               onViewDetails={handleViewDetails}
               onEdit={handleEdit}
               onDelete={handleDeleteClick}

@@ -13,12 +13,8 @@ const endpoint = "/market-scopings" as const;
 interface GetMarketScopingsParams extends QueryParams {
   pageNumber?: number;
   pageSize?: number;
-  status?: string;
-  departmentUnit?: string;
-  sortBy?: string;
-  sortOrder?: string;
   filters?: string;
-  searchTerm?: string;
+  sorts?: string;
 }
 
 export const getMarketScopingsRequest: QueryBlueprintFromTemplate<
