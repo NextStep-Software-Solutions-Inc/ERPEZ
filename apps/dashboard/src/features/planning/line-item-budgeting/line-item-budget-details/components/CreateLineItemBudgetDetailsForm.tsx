@@ -157,12 +157,39 @@ export default function CreateLineItemBudgetDetailsForm({
 }: CreateLineItemBudgetDetailsFormProps) {
   const queryClient = useQueryClient()
   const { mutateAsync, isPending } = useCreateLineItemBudgetDetails()
-  const { data: objectsResponse, isLoading: isLoadingObjects } = useGetObjects({
+
+  // Fetch root objects (parentId==null) to locate the Expenses root object
+  const { data: rootObjectsResponse, isLoading: isLoadingRootObjects } = useGetObjects({
     pathParams: {},
     queryParams: {
       filters: `parentId==null`,
     },
   })
+
+  // Locate the Expenses root object
+  const expensesRootObject = useMemo(() => {
+    return rootObjectsResponse?.data?.find(
+      (item) =>
+        item.code === 'CLS:Expenses' ||
+        item.name?.toLowerCase() === 'expenses' ||
+        item.code?.startsWith('5'),
+    )
+  }, [rootObjectsResponse?.data])
+
+  // Fetch expenditure types (children of Expenses)
+  const { data: expenditureTypesResponse, isLoading: isLoadingExpenditureTypes } = useGetObjects({
+    pathParams: {},
+    queryParams: {
+      filters: expensesRootObject ? `parentId==${expensesRootObject.id}` : 'parentId==null',
+    },
+  })
+
+  const expenditureTypes = useMemo(() => {
+    if (expensesRootObject && expenditureTypesResponse?.data) {
+      return expenditureTypesResponse.data
+    }
+    return []
+  }, [expensesRootObject, expenditureTypesResponse?.data])
 
   // Period allocation state
   const [periodAllocation, setPeriodAllocation] = useState<
@@ -208,7 +235,7 @@ export default function CreateLineItemBudgetDetailsForm({
         const finalObjectId = value.itemOfExpenditureId || value.objectId
 
         // Get the selected parent object to check if it has children
-        const parentObject = objectsResponse?.data?.find(
+        const parentObject = expenditureTypes?.find(
           (item) => item.id === value.objectId,
         )
 
@@ -361,7 +388,7 @@ export default function CreateLineItemBudgetDetailsForm({
       periodAllocation,
       activityStartDate,
       activityEndDate,
-      objectsResponse?.data,
+      expenditureTypes,
     ],
   )
 
@@ -377,9 +404,9 @@ export default function CreateLineItemBudgetDetailsForm({
 
   // Get the selected parent object details
   const selectedParentObject = useMemo(() => {
-    if (!objectsResponse?.data) return undefined
-    return objectsResponse.data.find((item) => item.id === selectedParentId)
-  }, [selectedParentId, objectsResponse?.data])
+    if (!expenditureTypes) return undefined
+    return expenditureTypes.find((item) => item.id === selectedParentId)
+  }, [selectedParentId, expenditureTypes])
 
   // Fetch child objects only when parent is selected and has children
   const { data: childObjectsResponse, isLoading: isLoadingChildObjects } =
@@ -388,6 +415,7 @@ export default function CreateLineItemBudgetDetailsForm({
   const currentTimelineType = form.getFieldValue('timelineType')
   const isPeriodTimeline = PERIOD_TIMELINE_TYPES.includes(currentTimelineType)
   const isLoading = isPending || isSubmitting
+  const isLoadingTypes = isLoadingRootObjects || isLoadingExpenditureTypes
 
   return (
     <form
@@ -415,24 +443,24 @@ export default function CreateLineItemBudgetDetailsForm({
                 // Reset child selection when parent changes
                 form.setFieldValue('itemOfExpenditureId', '')
               }}
-              disabled={isLoading || isLoadingObjects}
+              disabled={isLoading || isLoadingTypes}
             >
               <SelectTrigger id={field.name} className="w-full">
                 <SelectValue
                   placeholder={
-                    isLoadingObjects
-                      ? 'Loading items...'
+                    isLoadingTypes
+                      ? 'Loading types of expenditure...'
                       : 'Select type of expenditure'
                   }
                 />
               </SelectTrigger>
               <SelectContent>
-                {objectsResponse?.data?.map((item) => (
+                {expenditureTypes.map((item) => (
                   <SelectItem key={item.id} value={item.id}>
                     {item.name}
                     {item.code ? ` (${item.code})` : ''}
                   </SelectItem>
-                )) || []}
+                ))}
               </SelectContent>
             </Select>
             <FieldInfo field={field} />

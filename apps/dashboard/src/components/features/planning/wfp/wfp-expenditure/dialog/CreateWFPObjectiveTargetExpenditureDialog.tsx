@@ -35,8 +35,8 @@ export default function CreateWFPObjectiveTargetExpenditureDialog({ onCreated, w
   const hasUnsavedChanges = useAtomValue(hasUnsavedCreateFormAtom)
 
   const { isOpen, showUnsavedWarning } = dialogState
-  const dialogTitle = 'Create Expenditure'
-  const dialogDescription = 'Fill in the details to create a new Expenditure.'
+  const dialogTitle = 'Create Expenditures'
+  const dialogDescription = 'Define expenditure categories and add standardized expense items.'
 
   const sanitizedInitialValues = useMemo(() => {
     return formData && typeof formData === 'object' && 'expenditures' in formData ? formData : undefined

@@ -303,12 +303,37 @@ export default function CreateWfpLineItemBudgetDetailsForm({
     enabled: !!finalWfpObjectiveActivityId,
   })
 
-  const { data: objectsResponse, isLoading: isLoadingObjects } = useGetObjects({
+  const { data: rootObjectsResponse, isLoading: isLoadingRootObjects } = useGetObjects({
     pathParams: {},
     queryParams: {
       filters: `parentId==null`,
     },
   })
+
+  // Locate the Expenses root object
+  const expensesRootObject = useMemo(() => {
+    return rootObjectsResponse?.data?.find(
+      (item) =>
+        item.code === 'CLS:Expenses' ||
+        item.name?.toLowerCase() === 'expenses' ||
+        item.code?.startsWith('5'),
+    )
+  }, [rootObjectsResponse?.data])
+
+  // Fetch expenditure types (children of Expenses)
+  const { data: expenditureTypesResponse, isLoading: isLoadingExpenditureTypes } = useGetObjects({
+    pathParams: {},
+    queryParams: {
+      filters: expensesRootObject ? `parentId==${expensesRootObject.id}` : 'parentId==null',
+    },
+  })
+
+  const expenditureTypes = useMemo(() => {
+    if (expensesRootObject && expenditureTypesResponse?.data) {
+      return expenditureTypesResponse.data
+    }
+    return []
+  }, [expensesRootObject, expenditureTypesResponse?.data])
 
   // console.log('wfpObjectiveActivityData', wfpObjectiveActivityData)
   const [selectedParentId, setSelectedParentId] = useState<string | null>(null)
@@ -351,7 +376,7 @@ export default function CreateWfpLineItemBudgetDetailsForm({
         const finalObjectId = value.itemOfExpenditureId || value.objectId
 
         // Get the selected parent object to check if it has children
-        const parentObject = objectsResponse?.data?.find(
+        const parentObject = expenditureTypes?.find(
           (item) => item.id === value.objectId,
         )
 
@@ -428,7 +453,7 @@ export default function CreateWfpLineItemBudgetDetailsForm({
         toast.error('Failed to process line item')
       }
     },
-    [lineItems, editingId, objectsResponse?.data],
+    [lineItems, editingId, expenditureTypes],
   )
 
   const form = useLineItemBudgetDetailsFormInstance(
@@ -502,15 +527,16 @@ export default function CreateWfpLineItemBudgetDetailsForm({
 
   // Get the selected parent object details
   const selectedParentObject = useMemo(() => {
-    if (!objectsResponse?.data) return undefined
-    return objectsResponse.data.find((item) => item.id === selectedParentId)
-  }, [selectedParentId, objectsResponse?.data])
+    if (!expenditureTypes) return undefined
+    return expenditureTypes.find((item) => item.id === selectedParentId)
+  }, [selectedParentId, expenditureTypes])
 
   // Fetch child objects only when parent is selected and has children
   const { data: childObjectsResponse, isLoading: isLoadingChildObjects } =
     useGetChildObjects(selectedParentId)
 
   const isLoading = isPending
+  const isLoadingTypes = isLoadingRootObjects || isLoadingExpenditureTypes
 
   return (
     <form
@@ -553,12 +579,12 @@ export default function CreateWfpLineItemBudgetDetailsForm({
                       form.setFieldValue('budget', calculatedBudget)
                     }
                   }}
-                  disabled={isPending || isLoadingObjects || editingId !== null}
+                  disabled={isPending || isLoadingTypes || editingId !== null}
                 >
                   <SelectTrigger id={field.name} className="w-full text-xs">
                     <SelectValue
                       placeholder={
-                        isLoadingObjects
+                        isLoadingTypes
                           ? 'Loading items...'
                           : 'Select WFP Objective Activity Expenditure'
                       }
@@ -597,24 +623,24 @@ export default function CreateWfpLineItemBudgetDetailsForm({
                   // Reset child selection when parent changes
                   form.setFieldValue('itemOfExpenditureId', '')
                 }}
-                disabled={isPending || isLoadingObjects}
+                disabled={isPending || isLoadingTypes}
               >
                 <SelectTrigger id={field.name} className="w-full text-xs">
                   <SelectValue
                     placeholder={
-                      isLoadingObjects
-                        ? 'Loading items...'
+                      isLoadingTypes
+                        ? 'Loading types of expenditure...'
                         : 'Select type of expenditure'
                     }
                   />
                 </SelectTrigger>
                 <SelectContent>
-                  {objectsResponse?.data?.map((item) => (
+                  {expenditureTypes.map((item) => (
                     <SelectItem key={item.id} value={item.id}>
                       {item.name}
                       {item.code ? ` (${item.code})` : ''}
                     </SelectItem>
-                  )) || []}
+                  ))}
                 </SelectContent>
               </Select>
               <FieldInfo field={field} />
