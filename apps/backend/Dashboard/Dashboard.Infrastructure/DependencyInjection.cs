@@ -43,7 +43,8 @@ public static class DependencyInjection
 
         services.AddDbContext<ApplicationDbContext>((sp, options) =>
         {
-            options.UseNpgsql(connectionString);
+            options.UseNpgsql(connectionString, npgsqlOptions =>
+                npgsqlOptions.MigrationsHistoryTable("__EFMigrationsHistory", "public"));
             options.AddInterceptors(sp.GetRequiredService<AuditingInterceptor>());
 
             if (env != null && env.IsDevelopment())
@@ -174,13 +175,22 @@ public static class DependencyInjection
 
             try
             {
+                await dbContext.Database.ExecuteSqlRawAsync(
+                    "CREATE SCHEMA IF NOT EXISTS public; " +
+                    "CREATE SCHEMA IF NOT EXISTS planning; " +
+                    "CREATE SCHEMA IF NOT EXISTS procurement;");
                 await dbContext.Database.MigrateAsync();
             }
             catch (InvalidOperationException ex)
             {
-                logger.LogError(ex,
+                logger.LogWarning(ex,
                     "Database migration failed; pending model changes detected. " +
                     "Add a migration before updating the database.");
+            }
+            catch (Npgsql.PostgresException ex) when (ex.SqlState == "42P07" || ex.SqlState == "42710")
+            {
+                logger.LogWarning(ex,
+                    "Database object already exists on remote database ({SqlState}). Skipping migration step.", ex.SqlState);
             }
             catch (Exception ex)
             {
