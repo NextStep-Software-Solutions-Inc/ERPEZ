@@ -69,7 +69,16 @@ public class OfficeRepository : Repository<Office>, IOfficeRepository
 
         var filteredQuery = sieveProcessor.Apply(sieveModel, query, applyPagination: false);
         var filteredCount = await filteredQuery.CountAsync(cancellationToken);
-        var paginatedQuery = sieveProcessor.Apply(sieveModel, filteredQuery, applyFiltering: false, applySorting: false);
+        var paginatedQuery = sieveProcessor.Apply(sieveModel, filteredQuery, applyFiltering: false, applySorting: false)
+            .Include(o => o.OfficeType)
+            .Include(o => o.Organization)
+            .Include(o => o.Category)
+            .Include(o => o.AdministrativeLevel)
+            .Include(o => o.Cluster)
+            .Include(o => o.ProcurementWorkflow)
+            .Include(o => o.Parent)
+            .Include(o => o.Positions);
+
         var results = await paginatedQuery.ToListAsync(cancellationToken);
 
         return (results, filteredCount);

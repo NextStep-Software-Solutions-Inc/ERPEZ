@@ -13,6 +13,7 @@ const BLACKLISTED_CODES = ['ERR_CANCELED']
 const WHITELISTED_METHODS = ['post', 'put', 'patch', 'delete']
 
 export const api = createAxiosInstance(import.meta.env.VITE_ERPEZ_BACKEND_URL)
+api.defaults.timeout = 30000 // 30s timeout to allow database operations and debugging without premature frontend timeouts
 
 // Request interceptor to add Keycloak token
 api.interceptors.request.use(
