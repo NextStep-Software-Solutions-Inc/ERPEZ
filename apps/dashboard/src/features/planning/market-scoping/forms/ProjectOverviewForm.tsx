@@ -85,54 +85,125 @@ export function ProjectOverviewForm({
   const [targetFiscalYear, setTargetFiscalYear] = useState<string>('2024')
   const [selectedLibId, setSelectedLibId] = useState<string>('')
 
-  // Mock LIB structure matching Philippine SUC / Agency offices (USTP format)
-  const mockLibs = useMemo(() => [
-    {
-      id: 'lib-2024-vcri-01',
-      title: 'FY 2024 Line Item Budget (Internally Generated Income Fund)',
-      fiscalYear: '2024',
-      officeName: selectedUser?.officeName || 'VCRI',
-      fundSource: 'Internally Generated Income Fund 2024',
-      activities: [
-        { id: '11111111-1111-4111-8111-111111111101', name: 'Conduct Capability Trainings/Workshops on research and extension', budget: 50000, isScoped: false },
-        { id: '11111111-1111-4111-8111-111111111102', name: 'Conduct of Quarterly Meeting and performance evaluations', budget: 20000, isScoped: true, scopedMsfCode: 'MSF-2024-002' },
-        { id: '11111111-1111-4111-8111-111111111103', name: 'Organize Operational Planning', budget: 30000, isScoped: false },
-      ],
-    },
-    {
-      id: 'lib-2024-vcri-02',
-      title: 'FY 2024 Research & Innovation Systems Procurement',
-      fiscalYear: '2024',
-      officeName: selectedUser?.officeName || 'VCRI',
-      fundSource: 'General Appropriations Act (GAA) 2024',
-      activities: [
-        { id: '11111111-1111-4111-8111-111111111104', name: 'Procurement of High-Performance Server & Storage Clusters', budget: 450000, isScoped: true, scopedMsfCode: 'MSF-2024-001' },
-        { id: '11111111-1111-4111-8111-111111111105', name: 'Subscription to Scientific Journals & Research Databases', budget: 150000, isScoped: false },
-      ],
-    },
-    {
-      id: 'lib-2025-vcri-01',
-      title: 'FY 2025 Line Item Budget (GAA Fund - Proposed)',
-      fiscalYear: '2025',
-      officeName: selectedUser?.officeName || 'VCRI',
-      fundSource: 'Proposed GAA 2025',
-      activities: [
-        { id: '22222222-2222-4222-8222-222222222201', name: 'AI & Data Science Laboratory Hardware & Software', budget: 800000, isScoped: false },
-      ],
-    },
-  ], [selectedUser?.officeName])
+  // Real Fiscal Years state - supports all fiscal years from API with full range fallback
+  const [fiscalYears, setFiscalYears] = useState<string[]>([
+    '2030', '2029', '2028', '2027', '2026', '2025', '2024', '2023', '2022', '2021', '2020'
+  ])
 
-  // Available LIBs filtered by selected Fiscal Year and Representative's Office
+  useEffect(() => {
+    const fetchFiscalYears = async () => {
+      try {
+        const res = await api.get('/fiscal-years')
+        const items = res.data?.data?.items || res.data?.data || res.data?.items || res.data || []
+        if (Array.isArray(items) && items.length > 0) {
+          const apiYears = items
+            .map((item: { year?: number | string; name?: string; fiscalYear?: string; yearNumber?: number | string }) => 
+              String(item.year || item.yearNumber || item.name || item.fiscalYear || '')
+            )
+            .filter((y: string) => /^\d{4}$/.test(y))
+
+          if (apiYears.length > 0) {
+            const uniqueYears = Array.from(new Set(apiYears)).sort((a, b) => b.localeCompare(a))
+            setFiscalYears(uniqueYears)
+          }
+        }
+      } catch (err) {
+        console.warn('Falling back to standard fiscal years list:', err)
+      }
+    }
+    fetchFiscalYears()
+  }, [])
+
+  // Real Line Item Budgets (LIBs) state fetched from backend GET /libs API
+  interface RealLibItem {
+    id: string
+    title: string
+    fiscalYear: string
+    officeName?: string
+  }
+
+  const [realLibs, setRealLibs] = useState<RealLibItem[]>([])
+
+  useEffect(() => {
+    const fetchRealLibs = async () => {
+      try {
+        const res = await api.get('/libs')
+        const items = res.data?.data?.items || res.data?.data || res.data?.items || res.data || []
+        if (Array.isArray(items)) {
+          interface RawLib {
+            id: string
+            name?: string
+            title?: string
+            libNumber?: string
+            version?: number | string
+            status?: string
+            fiscalYear?: string | number | { year?: string | number }
+            fiscalYearEntity?: { year?: string | number }
+            office?: { name?: string }
+            officeName?: string
+          }
+
+          const rawItems = items as RawLib[]
+          const seenIds = new Set<string>()
+          const mappedLibs: RealLibItem[] = []
+
+          // Track name frequencies to fallback to sequential versioning if version property is missing
+          const nameCounters: Record<string, number> = {}
+
+          for (const item of rawItems) {
+            if (!item.id || seenIds.has(item.id)) continue
+            seenIds.add(item.id)
+
+            const fy = String(
+              (typeof item.fiscalYear === 'object' ? item.fiscalYear?.year : item.fiscalYear) ||
+              item.fiscalYearEntity?.year ||
+              '2026'
+            )
+            const baseName = item.name || item.title || 'Line Item Budget'
+            
+            // Determine version text (e.g. v1.0, v2.0)
+            nameCounters[baseName] = (nameCounters[baseName] || 0) + 1
+            const versionNum = item.version !== undefined && item.version !== null 
+              ? item.version 
+              : nameCounters[baseName]
+            const versionStr = ` (v${versionNum}.0)`
+
+            const libNumTag = item.libNumber ? ` [${item.libNumber}]` : ''
+            const fullTitle = baseName.startsWith('FY') 
+              ? `${baseName}${versionStr}${libNumTag}` 
+              : `FY ${fy} ${baseName}${versionStr}${libNumTag}`
+
+            mappedLibs.push({
+              id: item.id,
+              title: fullTitle,
+              fiscalYear: fy,
+              officeName: item.office?.name || item.officeName || '',
+            })
+          }
+
+          setRealLibs(mappedLibs)
+        }
+      } catch (err) {
+        console.error('Failed to fetch real LIBs:', err)
+      }
+    }
+    fetchRealLibs()
+  }, [])
+
+  // Available LIBs filtered by selected Target Fiscal Year and Selected User's Office Context
   const filteredLibs = useMemo(() => {
-    return mockLibs.filter((lib) => lib.fiscalYear === targetFiscalYear)
-  }, [mockLibs, targetFiscalYear])
+    if (!selectedUser) return []
+    return realLibs.filter((lib) => {
+      const matchesFy = lib.fiscalYear === targetFiscalYear
+      // Match office if office information is available
+      const matchesOffice = !selectedUser.officeName || !lib.officeName ||
+        lib.officeName.toLowerCase().includes(selectedUser.officeName.toLowerCase()) ||
+        selectedUser.officeName.toLowerCase().includes(lib.officeName.toLowerCase())
+      return matchesFy && matchesOffice
+    })
+  }, [realLibs, targetFiscalYear, selectedUser])
 
-  // Activities of the currently selected LIB
-  const activeLibObj = useMemo(() => {
-    return mockLibs.find((lib) => lib.id === selectedLibId)
-  }, [mockLibs, selectedLibId])
-
-  // Real LIB activities state fetched from backend
+  // Real LIB activities state fetched from backend GET /lib-activities API
   const [realLibActivities, setRealLibActivities] = useState<{ id: string; name: string; budget: number; lineItemBudgetId: string }[]>([])
 
   useEffect(() => {
@@ -180,15 +251,14 @@ export function ProjectOverviewForm({
     scopedMsfCode?: string
   }
 
-  // Combine passed props libActivities with real/mock activities, filtering by selected LIB
+  // Combine passed props libActivities with real activities, filtering by selected LIB
   const availableActivities = useMemo<ScopingActivityOption[]>(() => {
     if (realLibActivities.length > 0) {
       const filtered = realLibActivities.filter(act => act.lineItemBudgetId === selectedLibId)
       if (filtered.length > 0) return filtered as ScopingActivityOption[]
     }
-    if (activeLibObj) return activeLibObj.activities as ScopingActivityOption[]
     return libActivities as ScopingActivityOption[]
-  }, [realLibActivities, selectedLibId, activeLibObj, libActivities])
+  }, [realLibActivities, selectedLibId, libActivities])
 
   const form = useForm({
     defaultValues: {
@@ -321,6 +391,8 @@ export function ProjectOverviewForm({
                         setSelectedUser(null)
                         setPersonnelSearchTerm('')
                         form.setFieldValue('userId', '')
+                        setSelectedLibId('')
+                        form.setFieldValue('linkedLibActivityId', undefined)
                       }}
                       className="absolute right-3 top-2.5 h-5 w-5 text-gray-400 hover:text-gray-600"
                     >
@@ -341,6 +413,8 @@ export function ProjectOverviewForm({
                           setPersonnelSearchTerm(user.fullName)
                           setShowPersonnelDropdown(false)
                           form.setFieldValue('userId', user.id)
+                          setSelectedLibId('')
+                          form.setFieldValue('linkedLibActivityId', undefined)
                         }}
                         className={cn(
                           'w-full text-left px-4 py-3 hover:bg-blue-50 border-b last:border-b-0 transition-colors',
@@ -472,9 +546,15 @@ export function ProjectOverviewForm({
                   <div className="flex items-center justify-between border-b border-slate-200/80 pb-3">
                     <div>
                       <span className="text-xs font-semibold text-slate-700 block">Office / Department Context:</span>
-                      <span className="text-xs font-medium text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
-                        {selectedUser?.officeName || 'VCRI (Office of the Vice Chancellor for Research & Innovation)'}
-                      </span>
+                      {selectedUser ? (
+                        <span className="text-xs font-medium text-emerald-800 bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200 inline-flex items-center gap-1.5 mt-0.5">
+                          {selectedUser.officeName || 'No office assigned'}
+                        </span>
+                      ) : (
+                        <span className="text-xs font-medium text-slate-500 bg-slate-100 px-2 py-0.5 rounded border border-slate-200/80 inline-flex items-center gap-1.5 mt-0.5">
+                          Select a representative first
+                        </span>
+                      )}
                     </div>
                     <div>
                       <Label htmlFor="fySelect" className="text-xs font-semibold text-slate-700 block mb-1">
@@ -485,13 +565,15 @@ export function ProjectOverviewForm({
                         setSelectedLibId('')
                         form.setFieldValue('linkedLibActivityId', undefined)
                       }}>
-                        <SelectTrigger id="fySelect" className="h-8 text-xs bg-white w-28">
+                        <SelectTrigger id="fySelect" className="h-8 text-xs bg-white w-32 font-medium">
                           <SelectValue placeholder="FY Year" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="2024">FY 2024</SelectItem>
-                          <SelectItem value="2025">FY 2025</SelectItem>
-                          <SelectItem value="2026">FY 2026</SelectItem>
+                          {fiscalYears.map((fy) => (
+                            <SelectItem key={fy} value={fy}>
+                              FY {fy}
+                            </SelectItem>
+                          ))}
                         </SelectContent>
                       </Select>
                     </div>
@@ -504,18 +586,23 @@ export function ProjectOverviewForm({
                     </Label>
                     <Select
                       value={selectedLibId}
+                      disabled={!selectedUser}
                       onValueChange={(libId) => {
                         setSelectedLibId(libId)
                         form.setFieldValue('linkedLibActivityId', undefined)
                       }}
                     >
                       <SelectTrigger id="libSelect" className="bg-white text-sm">
-                        <SelectValue placeholder={`Select an approved LIB for ${selectedUser?.officeName || 'VCRI'} (${targetFiscalYear})...`} />
+                        <SelectValue placeholder={selectedUser ? `Select an approved LIB for ${selectedUser.officeName || 'office'} (${targetFiscalYear})...` : 'Select a representative first'} />
                       </SelectTrigger>
                       <SelectContent>
-                        {filteredLibs.length === 0 ? (
+                        {!selectedUser ? (
                           <div className="p-3 text-xs text-slate-500 text-center">
-                            No approved LIBs found for FY {targetFiscalYear}
+                            Please select a representative user first to view available LIBs
+                          </div>
+                        ) : filteredLibs.length === 0 ? (
+                          <div className="p-3 text-xs text-slate-500 text-center">
+                            No approved LIBs found for {selectedUser.officeName || 'office'} in FY {targetFiscalYear}
                           </div>
                         ) : (
                           filteredLibs.map((lib) => (
