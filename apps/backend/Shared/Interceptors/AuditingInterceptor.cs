@@ -7,6 +7,7 @@ namespace ERPEZ.Shared.Interceptors;
 /// <summary>
 /// Interceptor that automatically sets audit fields (CreatedAt, UpdatedAt, DeletedAt) and user tracking.
 /// Also implements soft delete functionality by marking entities as IsDeleted instead of hard deleting.
+/// Ensures all DateTime values have Kind=Utc to prevent PostgreSQL timestamp with time zone errors.
 /// </summary>
 public class AuditingInterceptor(ICurrentUserService currentUser) : SaveChangesInterceptor
 {
@@ -44,7 +45,13 @@ public class AuditingInterceptor(ICurrentUserService currentUser) : SaveChangesI
                     var val = (DateTime)createdAtProp.GetValue(entity)!;
                     if (val == default)
                     {
+                        // Always set to UtcNow with explicit UTC Kind
                         createdAtProp.SetValue(entity, now);
+                    }
+                    else
+                    {
+                        // Ensure existing value has UTC Kind
+                        createdAtProp.SetValue(entity, EnsureUtcKind(val));
                     }
                 }
 
@@ -63,6 +70,7 @@ public class AuditingInterceptor(ICurrentUserService currentUser) : SaveChangesI
                 var updatedAtProp = entityType.GetProperty("UpdatedAt");
                 if (updatedAtProp != null && updatedAtProp.CanWrite)
                 {
+                    // Always set to UtcNow with explicit UTC Kind
                     updatedAtProp.SetValue(entity, now);
                 }
 
@@ -87,6 +95,7 @@ public class AuditingInterceptor(ICurrentUserService currentUser) : SaveChangesI
                     var deletedAtProp = entityType.GetProperty("DeletedAt");
                     if (deletedAtProp != null && deletedAtProp.CanWrite)
                     {
+                        // Always set to UtcNow with explicit UTC Kind
                         deletedAtProp.SetValue(entity, now);
                     }
 
@@ -98,5 +107,20 @@ public class AuditingInterceptor(ICurrentUserService currentUser) : SaveChangesI
                 }
             }
         }
+    }
+
+    /// <summary>
+    /// Ensures a DateTime value has Kind=UTC. Converts Unspecified or Local kinds to UTC.
+    /// PostgreSQL's timestamp with time zone requires all DateTimes to have Kind=Utc.
+    /// </summary>
+    private static DateTime EnsureUtcKind(DateTime dateTime)
+    {
+        return dateTime.Kind switch
+        {
+            DateTimeKind.Utc => dateTime,
+            DateTimeKind.Unspecified => DateTime.SpecifyKind(dateTime, DateTimeKind.Utc),
+            DateTimeKind.Local => dateTime.ToUniversalTime(),
+            _ => dateTime
+        };
     }
 }

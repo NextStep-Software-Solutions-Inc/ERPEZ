@@ -21,6 +21,9 @@ public class CreateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
 
         await unitOfWork.ExecuteInTransactionAsync(async () =>
         {
+            var now = DateTime.UtcNow;
+            var createdByStr = request.UserId != Guid.Empty ? request.UserId.ToString() : "System";
+
             var project = new ProcurementProject
             {
                 SourceType = request.SourceType,
@@ -29,7 +32,9 @@ public class CreateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
                 Status = "Draft",
                 EndUserRepresentativeId = request.EndUserRepresentativeId,
                 TechRepresentativeId = request.TechRepresentativeId,
-                ChecklistConfirmed = false
+                ChecklistConfirmed = false,
+                CreatedAt = now,
+                CreatedBy = createdByStr
             };
 
             // 1. Resolve and snapshot metadata from the selected source
@@ -47,6 +52,18 @@ public class CreateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
                 project.Title = !string.IsNullOrWhiteSpace(request.Title)
                     ? request.Title
                     : (!string.IsNullOrWhiteSpace(appItem.PPMPItem?.Name) ? appItem.PPMPItem.Name : "Procurement Project");
+
+                if (project.OfficeId == Guid.Empty)
+                {
+                    var fallbackOffice = await unitOfWork.OfficeRepository.FindAsync(o => !o.IsDeleted, cancellationToken);
+                    project.OfficeId = fallbackOffice?.Id ?? Guid.Empty;
+                }
+
+                if (project.FundSourceId == Guid.Empty)
+                {
+                    var fallbackFund = await unitOfWork.FundSourceRepository.FindAsync(f => !f.IsDeleted, cancellationToken);
+                    project.FundSourceId = fallbackFund?.Id ?? Guid.Empty;
+                }
             }
             else // ConsolidatedPR
             {
@@ -61,8 +78,18 @@ public class CreateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
                 var firstItemMode = cpr.ConsolidatedPRItems.FirstOrDefault(i => i.ProcurementModeId.HasValue);
                 project.ProcurementModeId = firstItemMode?.ProcurementModeId;
 
-                var distinctOffices = cpr.ConsolidatedPRItems.Select(i => i.PurchaseRequest.OfficeId).Distinct().ToList();
-                var distinctFunds = cpr.ConsolidatedPRItems.Select(i => i.PurchaseRequest.FundSourceId).Where(id => id.HasValue).Select(id => id!.Value).Distinct().ToList();
+                var distinctOffices = cpr.ConsolidatedPRItems
+                    .Where(i => i.PurchaseRequest != null)
+                    .Select(i => i.PurchaseRequest.OfficeId)
+                    .Distinct()
+                    .ToList();
+                var distinctFunds = cpr.ConsolidatedPRItems
+                    .Where(i => i.PurchaseRequest != null)
+                    .Select(i => i.PurchaseRequest.FundSourceId)
+                    .Where(id => id.HasValue)
+                    .Select(id => id!.Value)
+                    .Distinct()
+                    .ToList();
 
                 if (distinctOffices.Any())
                 {
@@ -86,14 +113,20 @@ public class CreateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
             }
 
             // 2. Initialize the link BAC Resolution
+            var dateResolvedUtc = request.DateResolved.Kind == DateTimeKind.Unspecified
+                ? DateTime.SpecifyKind(request.DateResolved, DateTimeKind.Utc)
+                : request.DateResolved.ToUniversalTime();
+
             var resolution = new BACResolution
             {
                 ResolutionType = request.ResolutionType,
                 ResolutionNumber = request.ResolutionNumber,
-                DateResolved = request.DateResolved,
+                DateResolved = dateResolvedUtc,
                 ResolvedLocation = request.ResolvedLocation,
                 Status = "Draft",
-                WhereasClause = string.Empty // Backward compatibility: concatenate below
+                WhereasClause = string.Empty, // Backward compatibility: concatenate below
+                CreatedAt = now,
+                CreatedBy = createdByStr
             };
 
             // 3. Process WHEREAS clauses (snapshot details & display order)
@@ -112,7 +145,9 @@ public class CreateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
                         TemplateClauseId = templateId,
                         ClauseText = template.Body,
                         DisplayOrder = order++,
-                        IsCustom = false
+                        IsCustom = false,
+                        CreatedAt = now,
+                        CreatedBy = createdByStr
                     });
                 }
             }
@@ -128,7 +163,9 @@ public class CreateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
                         TemplateClauseId = null,
                         ClauseText = customText,
                         DisplayOrder = order++,
-                        IsCustom = true
+                        IsCustom = true,
+                        CreatedAt = now,
+                        CreatedBy = createdByStr
                     });
                 }
             }

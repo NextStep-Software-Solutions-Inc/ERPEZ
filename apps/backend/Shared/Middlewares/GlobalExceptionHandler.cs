@@ -60,12 +60,28 @@ public class GlobalExceptionHandler : IExceptionHandler
         httpContext.Response.StatusCode = statusCode;
 
         // Handle database-specific exceptions with user-friendly messages
-        if (exception is DbUpdateException dbEx && dbEx.InnerException is PostgresException pgEx)
+        if (exception is DbUpdateException dbEx)
         {
-            // Use the comprehensive PostgreSQL error dictionary
-            var (errorMessage, _) = Common.PostgresErrorCodes.GetErrorMessage(pgEx.SqlState);
+            httpContext.Response.StatusCode = (int)HttpStatusCode.BadRequest;
+            string detailMessage;
 
-            await httpContext.Response.WriteAsJsonAsync(ApiResponse<object>.Fail(errorMessage), cancellationToken);
+            if (dbEx.InnerException is PostgresException pgEx)
+            {
+                var (errorMessage, _) = Common.PostgresErrorCodes.GetErrorMessage(pgEx.SqlState);
+                detailMessage = !string.IsNullOrWhiteSpace(pgEx.Detail)
+                    ? $"{errorMessage}: {pgEx.Detail}"
+                    : (!string.IsNullOrWhiteSpace(pgEx.MessageText) ? $"{errorMessage}: {pgEx.MessageText}" : errorMessage);
+            }
+            else if (dbEx.InnerException != null)
+            {
+                detailMessage = dbEx.InnerException.Message;
+            }
+            else
+            {
+                detailMessage = dbEx.Message;
+            }
+
+            await httpContext.Response.WriteAsJsonAsync(ApiResponse<object>.Fail(detailMessage), cancellationToken);
             return true;
         }
 

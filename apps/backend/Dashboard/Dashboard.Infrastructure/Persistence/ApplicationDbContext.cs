@@ -1,5 +1,6 @@
 using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Domain.Entities.Procurement;
+using ERPEZ.Domain.Common;
 using ERPEZ.Shared.Persistence;
 using Microsoft.EntityFrameworkCore;
 using Object = ERPEZ.Domain.Entities.Planning.Object;
@@ -2805,7 +2806,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<ProcurementProject>(e =>
         {
             e.HasIndex(p => p.ConsolidatedPRId)
-                .IsUnique();
+                .IsUnique()
+                .HasFilter("\"ConsolidatedPRId\" IS NOT NULL AND \"IsDeleted\" = false");
 
             e.Property(p => p.SourceType)
                 .HasConversion<string>()
@@ -3025,5 +3027,32 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasIndex(a => new { a.ProcurementProjectId, a.TinNumber })
             .IsUnique()
             .HasDatabaseName("IX_PublicSupplierApplications_ProjectId_TinNumber");
+    }
+
+    public override Task<int> SaveChangesAsync(CancellationToken cancellationToken = default)
+    {
+        var entries = ChangeTracker.Entries<BaseEntity>();
+        var utcNow = DateTime.UtcNow;
+
+        foreach (var entry in entries)
+        {
+            if (entry.State == EntityState.Added)
+            {
+                if (entry.Entity.CreatedAt == default || entry.Entity.CreatedAt.Kind == DateTimeKind.Unspecified)
+                {
+                    entry.Entity.CreatedAt = utcNow;
+                }
+                if (string.IsNullOrWhiteSpace(entry.Entity.CreatedBy))
+                {
+                    entry.Entity.CreatedBy = "System";
+                }
+            }
+            else if (entry.State == EntityState.Modified)
+            {
+                entry.Entity.UpdatedAt = utcNow;
+            }
+        }
+
+        return base.SaveChangesAsync(cancellationToken);
     }
 }
