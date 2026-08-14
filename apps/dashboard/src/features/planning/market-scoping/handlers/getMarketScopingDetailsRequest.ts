@@ -114,7 +114,7 @@ export const getMarketScopingDetailsRequest: QueryBlueprintFromTemplate<
         periodTo: formatIsoToMmYyyy(raw.periodTo),
         expectedDeliveryDate: formatIsoToMmYyyy(raw.deliveryDate || raw.expectedDeliveryDate),
         agencyName: raw.agencyName || raw.user?.office?.organization?.name || raw.agency || "USTP System",
-        departmentUnit: raw.departmentUnit || raw.user?.office?.name || raw.department || "VCRI",
+        departmentUnit: raw.departmentUnit || raw.user?.office?.name || raw.department || "",
         representativeName: raw.user && (raw.user.firstName || raw.user.lastName)
           ? `${raw.user.firstName || ''} ${raw.user.lastName || ''}`.trim()
           : (raw.representativeName || ""),

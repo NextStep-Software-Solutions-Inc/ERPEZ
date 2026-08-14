@@ -70,7 +70,7 @@ export function MarketScopingGuideDialog() {
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogContent className="max-w-5xl md:max-w-5xl h-fit max-h-[85vh] flex flex-col p-0 overflow-hidden rounded-xl border border-slate-200 shadow-2xl">
+      <DialogContent className="max-w-5xl md:max-w-5xl h-fit max-h-[85vh] flex flex-col p-0 overflow-hidden rounded-xl border border-slate-200 shadow-2xl [&>button:last-child]:hidden">
         {/* Banner header - Deep Purple aesthetic strip */}
         <div className="bg-[#3f3883] p-6 text-white shrink-0 relative">
           <DialogHeader className="space-y-1">

@@ -85,7 +85,7 @@ export function ProjectOverviewSection({ form }: ProjectOverviewSectionProps) {
               <User2 className="w-3.5 h-3.5 text-sky-500" />
               <span>Department / Unit</span>
             </div>
-            <p className="text-sm font-medium text-slate-800">{form.departmentUnit || 'VCRI'}</p>
+            <p className="text-sm font-medium text-slate-800">{form.departmentUnit || 'N/A'}</p>
           </div>
         </div>
       </CardContent>
