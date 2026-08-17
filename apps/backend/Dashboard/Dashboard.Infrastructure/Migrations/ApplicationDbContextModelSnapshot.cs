@@ -4681,7 +4681,13 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<bool>("IsProcurable")
                         .HasColumnType("boolean");
 
-                    b.Property<Guid>("PPMPActivityId")
+                    b.Property<Guid>("ObjectId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid?>("PPMPActivityId")
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("PPMPId")
                         .HasColumnType("uuid");
 
                     b.Property<decimal>("TotalCost")
@@ -4696,7 +4702,11 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("ObjectId");
+
                     b.HasIndex("PPMPActivityId");
+
+                    b.HasIndex("PPMPId");
 
                     b.ToTable("PPMPExpenditureItems", "planning", t =>
                         {
@@ -10585,11 +10595,26 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.PPMPExpenditureItem", b =>
                 {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.Object", "Object")
+                        .WithMany("PPMPExpenditureItems")
+                        .HasForeignKey("ObjectId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
                     b.HasOne("ERPEZ.Domain.Entities.Planning.PPMPActivity", "PPMPActivity")
                         .WithMany("PPMPExpenditureItems")
                         .HasForeignKey("PPMPActivityId")
-                        .OnDelete(DeleteBehavior.Cascade)
+                        .OnDelete(DeleteBehavior.Cascade);
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.PPMP", "PPMP")
+                        .WithMany("PPMPExpenditureItems")
+                        .HasForeignKey("PPMPId")
+                        .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
+
+                    b.Navigation("Object");
+
+                    b.Navigation("PPMP");
 
                     b.Navigation("PPMPActivity");
                 });
@@ -12015,6 +12040,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Navigation("ObjectExpenseClasses");
 
+                    b.Navigation("PPMPExpenditureItems");
+
                     b.Navigation("Transactions");
 
                     b.Navigation("WFPObjectiveActivityExpenditures");
@@ -12068,6 +12095,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("ChildPPMPs");
 
                     b.Navigation("PPMPActivities");
+
+                    b.Navigation("PPMPExpenditureItems");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.PPMPActivity", b =>

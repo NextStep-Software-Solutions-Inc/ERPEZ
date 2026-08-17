@@ -21,4 +21,5 @@ public class Object : BaseEntity
     public virtual List<ObjectExpenseClass> ObjectExpenseClasses { get; set; } = [];
     public virtual List<WFPObjectiveActivityExpenditure> WFPObjectiveActivityExpenditures { get; set; } = [];
     public virtual List<Transaction> Transactions { get; set; } = [];
+    public virtual List<PPMPExpenditureItem> PPMPExpenditureItems { get; set; } = [];
 }

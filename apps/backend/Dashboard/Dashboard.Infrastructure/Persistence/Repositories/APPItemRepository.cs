@@ -77,7 +77,7 @@ public class APPItemRepository : Repository<APPItem>, IAPPItemRepository
             .Include(a => a.PPMPItem)
                 .ThenInclude(pi => pi.PPMPExpenditureItem)
                     .ThenInclude(pei => pei.PPMPActivity)
-                        .ThenInclude(pa => pa.LIBActivity)
+                        .ThenInclude(pa => pa!.LIBActivity)
                             .ThenInclude(la => la.LineItemBudgetDetails)
                                 .ThenInclude(ld => ld.Object)
                                     .ThenInclude(o => o.ObjectExpenseClasses)

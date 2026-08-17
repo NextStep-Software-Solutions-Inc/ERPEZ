@@ -4,6 +4,7 @@ using ERPEZ.Application.Features.Planning.Budgeting.LineItemBudgetDetail.Command
 using ERPEZ.Application.Features.Planning.Budgeting.LineItemBudgetDetail.Dtos;
 using ERPEZ.Application.Features.Planning.Budgeting.LineItemBudgetDetail.Queries.GetLineItemBudgetDetailById;
 using ERPEZ.Application.Features.Planning.Budgeting.LineItemBudgetDetail.Queries.GetLineItemBudgetDetails;
+using ERPEZ.Application.Features.Planning.Budgeting.LineItemBudgetDetail.Queries.GetLIBActivityObjects;
 using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -40,6 +41,14 @@ public class LineItemBudgetDetailController(ISender mediator) : ControllerBase
     {
         var result = await mediator.Send(new GetLineItemBudgetDetailByIdQuery(id));
         return result.Succeeded ? Ok(result) : NotFound(result);
+    }
+
+    [HttpGet("activity-objects")]
+    [ProducesResponseType(typeof(ApiResponse<List<LIBActivityObjectResponse>>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetLIBActivityObjects([FromQuery] GetLIBActivityObjectsQuery query)
+    {
+        var result = await mediator.Send(query);
+        return Ok(result);
     }
 
     [HttpPut("{id}")]
