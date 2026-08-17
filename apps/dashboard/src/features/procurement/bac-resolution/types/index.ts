@@ -65,6 +65,17 @@ export type ConsolidatedPrLink = {
 
 export type ProcurementSourceType = 'APP_ITEM' | 'CONSOLIDATED_PR'
 
+export type AppRecord = {
+  id: string
+  appNumber: string
+  title: string
+  fiscalYear: string
+  implementingUnit: string
+  totalBudget: number
+  itemCount: number
+  status: 'approved' | 'draft'
+}
+
 export type AppItemLink = {
   id: string
   appNumber: string

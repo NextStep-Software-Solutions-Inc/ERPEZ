@@ -450,6 +450,20 @@ const DEFAULT_WHEREAS_CLAUSE_TEMPLATES: WhereasClauseTemplate[] = [
     createdAt: SEED_TIMESTAMP,
     updatedAt: SEED_TIMESTAMP,
   },
+  {
+    id: 'template-003',
+    name: 'Annual Procurement Plan Inclusion',
+    body: 'WHEREAS, the approved Annual Procurement Plan (APP) for FY 2026 includes the procurement project as duly programmed, budgeted, and prioritized for agency operations;',
+    createdAt: SEED_TIMESTAMP,
+    updatedAt: SEED_TIMESTAMP,
+  },
+  {
+    id: 'template-004',
+    name: 'Competitive Bidding Mandate',
+    body: 'WHEREAS, pursuant to Section 10 of Republic Act No. 9184, all procurement shall be done through Competitive Public Bidding, except as provided under Alternative Methods of Procurement;',
+    createdAt: SEED_TIMESTAMP,
+    updatedAt: SEED_TIMESTAMP,
+  },
 ]
 
 let mockWhereasClauseDatabase: Array<WhereasClauseTemplate> | null = null

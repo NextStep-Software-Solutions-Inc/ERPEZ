@@ -46,6 +46,21 @@ export function useBacResolutionWorkspaceState(
   const [selectedResolutionId, setSelectedResolutionId] = useState<string | null>(null)
   const [searchValue, setSearchValue] = useState('')
   const [filter, setFilter] = useState<BacResolutionInboxFilter>(defaultFilter)
+  const [sourceTypeFilter, setSourceTypeFilter] = useState<'all' | 'APP_ITEM' | 'CONSOLIDATED_PR'>('all')
+  const [budgetTier, setBudgetTier] = useState<'all' | 'under-1m' | '1m-5m' | 'above-5m' | 'custom'>('all')
+  const [customMinBudget, setCustomMinBudget] = useState<number | null>(null)
+  const [customMaxBudget, setCustomMaxBudget] = useState<number | null>(null)
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'amount-desc' | 'amount-asc'>('newest')
+
+  const resetAllFilters = () => {
+    setSearchValue('')
+    setFilter('all')
+    setSourceTypeFilter('all')
+    setBudgetTier('all')
+    setCustomMinBudget(null)
+    setCustomMaxBudget(null)
+    setSortBy('newest')
+  }
 
   // Dialog controls
   const [createOpen, setCreateOpen] = useState(false)
@@ -74,15 +89,39 @@ export function useBacResolutionWorkspaceState(
   )
 
   const filteredResolutions = useMemo(() => {
-    return scopedResolutions
+    let result = scopedResolutions
+      // 1. Status filter
       .filter((item) => (filter === 'all' ? true : item.status === filter))
+      // 2. Source Type filter
+      .filter((item) => {
+        if (sourceTypeFilter === 'all') return true
+        return item.sourceType === sourceTypeFilter
+      })
+      // 3. Budget range filter
+      .filter((item) => {
+        const amount = item.procurementProjectContext?.abc || item.totalAmount || 0
+        if (budgetTier === 'under-1m') return amount < 1000000
+        if (budgetTier === '1m-5m') return amount >= 1000000 && amount <= 5000000
+        if (budgetTier === 'above-5m') return amount > 5000000
+        if (budgetTier === 'custom') {
+          if (customMinBudget !== null && amount < customMinBudget) return false
+          if (customMaxBudget !== null && amount > customMaxBudget) return false
+          return true
+        }
+        return true
+      })
+      // 4. Search query
       .filter((item) => {
         if (!searchValue.trim()) return true
 
         const needle = searchValue.toLowerCase()
+        const contextTitle = item.procurementProjectContext?.projectTitle || ''
+        const office = item.procurementProjectContext?.officeName || ''
         return [
           item.bacResolutionNumber,
           item.description,
+          contextTitle,
+          office,
           item.createdBy,
           ...item.linkedConsolidatedPrs.map((pr) => pr.prNumber),
         ]
@@ -90,7 +129,38 @@ export function useBacResolutionWorkspaceState(
           .toLowerCase()
           .includes(needle)
       })
-  }, [filter, scopedResolutions, searchValue])
+
+    // 5. Sorting
+    result = [...result].sort((a, b) => {
+      const amountA = a.procurementProjectContext?.abc || a.totalAmount || 0
+      const amountB = b.procurementProjectContext?.abc || b.totalAmount || 0
+      const dateA = new Date(a.createdAt || a.resolutionDate).getTime()
+      const dateB = new Date(b.createdAt || b.resolutionDate).getTime()
+
+      switch (sortBy) {
+        case 'oldest':
+          return dateA - dateB
+        case 'amount-desc':
+          return amountB - amountA
+        case 'amount-asc':
+          return amountA - amountB
+        case 'newest':
+        default:
+          return dateB - dateA
+      }
+    })
+
+    return result
+  }, [
+    filter,
+    sourceTypeFilter,
+    budgetTier,
+    customMinBudget,
+    customMaxBudget,
+    sortBy,
+    scopedResolutions,
+    searchValue,
+  ])
 
   useEffect(() => {
     if (
@@ -370,6 +440,17 @@ export function useBacResolutionWorkspaceState(
     setSearchValue,
     filter,
     setFilter,
+    sourceTypeFilter,
+    setSourceTypeFilter,
+    budgetTier,
+    setBudgetTier,
+    customMinBudget,
+    setCustomMinBudget,
+    customMaxBudget,
+    setCustomMaxBudget,
+    sortBy,
+    setSortBy,
+    resetAllFilters,
     createOpen,
     setCreateOpen,
     editOpen,

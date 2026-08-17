@@ -1,17 +1,16 @@
+import { useNavigate } from '@tanstack/react-router'
 import useBacResolutionService from '../hooks/useBacResolutionService'
-import SummaryCards from './SummaryCards'
 import { PageContainerDashtail } from '@/components/v2'
 import {
   Card,
-  CardContent,
   CardDescription,
   CardHeader,
   CardTitle,
 } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
 import { useState } from 'react'
-import { BacResolutionActionBar } from './index'
 import { Badge } from '@/components/ui/badge'
-import { ScrollText } from 'lucide-react'
+import { ScrollText, Plus, BookOpen } from 'lucide-react'
 import { downloadBacResolutionBlob } from '../utils/downloadBacResolutionBlob'
 import InboxPanel from './InboxPanel'
 import DetailsPanel from './DetailsPanel'
@@ -43,35 +42,63 @@ export function BacResolutionWorkspace({
   workspaceScope = 'all',
   bacListRoutePath = '/v2/bac-resolutions',
 }: BacResolutionWorkspaceProps) {
+  const navigate = useNavigate()
   const [clauseManagerOpen, setClauseManagerOpen] = useState(false)
   const [docPreviewOpen, setDocPreviewOpen] = useState(false)
   const [createPrModalOpen, setCreatePrModalOpen] = useState(false)
 
-  const { ws, isLoading, metricCards } = useBacResolutionService(
+  const { ws, isLoading } = useBacResolutionService(
     defaultFilter,
     initialSelectedResolutionId,
     workspaceScope,
   )
 
   return (
-    <div className="w-full space-y-6 pb-10">
-      {/* Header - match Fiscal Year & Policies styling */}
-      <Card className="bg-linear-to-r from-primary/10 to-primary/5 border-primary/20">
+    <div className="w-full space-y-6 pb-12">
+      {/* Sleek Unified Hero Header */}
+      <Card className="bg-linear-to-r from-primary/10 to-primary/5 border-primary/20 shadow-xs">
         <CardHeader>
           <div className="flex items-center justify-between gap-4 flex-wrap">
             <div className="space-y-1">
-              <CardTitle className="text-3xl">{title}</CardTitle>
-              <CardDescription className="text-base">
+              <div className="flex items-center gap-2">
+                <Badge
+                  variant="outline"
+                  className="bg-primary/10 text-primary border-primary/20 text-xs px-2.5 py-0.5 font-semibold"
+                >
+                  <ScrollText className="h-3 w-3 mr-1.5" /> Bids and Awards Committee
+                </Badge>
+              </div>
+              <CardTitle className="text-2xl lg:text-3xl font-bold tracking-tight text-foreground">
+                {title}
+              </CardTitle>
+              <CardDescription className="text-sm text-muted-foreground max-w-2xl leading-relaxed">
                 {description}
               </CardDescription>
             </div>
-            <div className="flex items-center gap-2">
-              <Badge
-                variant="outline"
-                className="h-fit px-3 py-1 font-semibold"
-              >
-                <ScrollText className="h-3.5 w-3.5 mr-1.5" /> BAC Resolutions
-              </Badge>
+
+            {/* Global Workspace Actions */}
+            <div className="flex items-center gap-2.5 flex-wrap">
+              {role === 'procurement-staff' && (
+                <Button
+                  variant="outline"
+                  onClick={() => void navigate({ to: '/v2/bac-resolutions/clauses' })}
+                  className="gap-1.5 text-xs h-9 bg-white/80 hover:bg-white shadow-xs border-default-300"
+                >
+                  <BookOpen className="h-3.5 w-3.5 text-primary" />
+                  Manage WHEREAS Clauses
+                </Button>
+              )}
+
+              {role === 'procurement-staff' && (
+                <Button
+                  onClick={() => ws.setCreateOpen(true)}
+                  disabled={isLoading}
+                  className="gap-1.5 text-xs h-9 shadow-xs"
+                >
+                  <Plus className="h-4 w-4" />
+                  Create BAC Resolution
+                </Button>
+              )}
             </div>
           </div>
         </CardHeader>
@@ -81,105 +108,82 @@ export function BacResolutionWorkspace({
         mode="simple"
         contentType="default"
         containerClassName="h-full min-h-0"
-        contentClassName="space-y-4"
+        contentClassName="space-y-6"
       >
-        <Card className="border border-default-200 shadow-sm">
-          <CardHeader className="flex flex-col gap-3 pb-3 lg:flex-row lg:items-center lg:justify-between">
-            <CardTitle className="text-base">
-              Quick Actions and Inbox Summary
-            </CardTitle>
-            <BacResolutionActionBar
+        {/* 2-Column Responsive Split Master-Detail Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-start">
+          {/* Left Column: Master Queue (4 cols on desktop) */}
+          <div className="lg:col-span-4">
+            <InboxPanel
+              inboxCards={ws.inboxCards}
+              isLoading={ws.isBacResolutionsLoading}
+              resolutions={ws.resolutions}
+              filteredResolutions={ws.filteredResolutions}
+              selectedResolutionId={ws.selectedResolutionId}
+              setSelectedResolutionId={ws.setSelectedResolutionId}
+              searchValue={ws.searchValue}
+              setSearchValue={ws.setSearchValue}
+              filter={ws.filter}
+              setFilter={ws.setFilter}
+              sourceTypeFilter={ws.sourceTypeFilter}
+              setSourceTypeFilter={ws.setSourceTypeFilter}
+              budgetTier={ws.budgetTier}
+              setBudgetTier={ws.setBudgetTier}
+              customMinBudget={ws.customMinBudget}
+              setCustomMinBudget={ws.setCustomMinBudget}
+              customMaxBudget={ws.customMaxBudget}
+              setCustomMaxBudget={ws.setCustomMaxBudget}
+              sortBy={ws.sortBy}
+              setSortBy={ws.setSortBy}
+              resetAllFilters={ws.resetAllFilters}
               role={role}
-              resolution={ws.selectedResolution ?? undefined}
-              onManageClauses={
-                role === 'procurement-staff'
-                  ? () => setClauseManagerOpen(true)
+              workspaceScope={workspaceScope}
+              bacListRoutePath={bacListRoutePath}
+              onEdit={(res) => {
+                ws.setEditingResolution(res)
+                ws.setEditOpen(true)
+              }}
+              onDelete={ws.handleDelete}
+              onViewDetails={(id) => {
+                ws.setDetailsResolutionId(id)
+                ws.setDetailsOpen(true)
+              }}
+            />
+          </div>
+
+          {/* Right Column: Workbench Details Pane (8 cols on desktop) */}
+          <div className="lg:col-span-8">
+            <DetailsPanel
+              selectedResolution={ws.selectedResolution}
+              role={role}
+              workspaceScope={workspaceScope}
+              bacListRoutePath={bacListRoutePath}
+              handleViewConsolidatedPrDetails={ws.handleViewConsolidatedPrDetails}
+              isLoading={isLoading}
+              onLinkPrs={
+                role === 'procurement-staff' && ws.selectedResolution
+                  ? () => ws.setLinkOpen(true)
                   : undefined
               }
-              onCreate={
-                role === 'procurement-staff'
-                  ? () => ws.setCreateOpen(true)
+              onPrint={
+                ws.selectedResolution
+                  ? async () => {
+                      const result = await ws.handlePrint()
+                      if (result)
+                        downloadBacResolutionBlob(result.blob, result.fileName)
+                    }
                   : undefined
               }
-              onApprove={
-                role === 'bac-chairperson' && ws.selectedResolution
-                  ? () => ws.setApproveOpen(true)
-                  : undefined
-              }
-              onReturn={
-                role === 'bac-chairperson' && ws.selectedResolution
-                  ? () => ws.setReturnOpen(true)
+              onSubmit={
+                role === 'procurement-staff' && ws.selectedResolution
+                  ? ws.handleSubmit
                   : undefined
               }
               onViewDocument={
                 ws.selectedResolution ? () => setDocPreviewOpen(true) : undefined
               }
-              onCreatePr={
-                ws.selectedResolution && ws.selectedResolution.status === 'approved'
-                  ? () => setCreatePrModalOpen(true)
-                  : undefined
-              }
-              isLoading={isLoading}
             />
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <SummaryCards metricCards={metricCards} />
-          </CardContent>
-        </Card>
-
-        <InboxPanel
-          inboxCards={ws.inboxCards}
-          isLoading={ws.isBacResolutionsLoading}
-          resolutions={ws.resolutions}
-          filteredResolutions={ws.filteredResolutions}
-          selectedResolutionId={ws.selectedResolutionId}
-          setSelectedResolutionId={ws.setSelectedResolutionId}
-          searchValue={ws.searchValue}
-          setSearchValue={ws.setSearchValue}
-          filter={ws.filter}
-          setFilter={ws.setFilter}
-          role={role}
-          workspaceScope={workspaceScope}
-          bacListRoutePath={bacListRoutePath}
-          onEdit={(res) => {
-            ws.setEditingResolution(res)
-            ws.setEditOpen(true)
-          }}
-          onDelete={ws.handleDelete}
-          onViewDetails={(id) => {
-            ws.setDetailsResolutionId(id)
-            ws.setDetailsOpen(true)
-          }}
-        />
-
-        <div className="space-y-4">
-          <DetailsPanel
-            selectedResolution={ws.selectedResolution}
-            role={role}
-            workspaceScope={workspaceScope}
-            bacListRoutePath={bacListRoutePath}
-            handleViewConsolidatedPrDetails={ws.handleViewConsolidatedPrDetails}
-            isLoading={isLoading}
-            onLinkPrs={
-              role === 'procurement-staff' && ws.selectedResolution
-                ? () => ws.setLinkOpen(true)
-                : undefined
-            }
-            onPrint={
-              ws.selectedResolution
-                ? async () => {
-                    const result = await ws.handlePrint()
-                    if (result)
-                      downloadBacResolutionBlob(result.blob, result.fileName)
-                  }
-                : undefined
-            }
-            onSubmit={
-              role === 'procurement-staff' && ws.selectedResolution
-                ? ws.handleSubmit
-                : undefined
-            }
-          />
+          </div>
         </div>
 
         <DialogsController
@@ -228,3 +232,5 @@ export function BacResolutionWorkspace({
     </div>
   )
 }
+
+export default BacResolutionWorkspace

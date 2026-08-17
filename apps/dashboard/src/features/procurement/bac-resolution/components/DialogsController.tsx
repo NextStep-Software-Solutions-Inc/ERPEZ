@@ -140,6 +140,10 @@ export function DialogsController({
         open={detailsOpen}
         onOpenChange={setDetailsOpen}
         resolutionId={detailsResolutionId}
+        onCreatePr={() => {
+          setDetailsOpen(false)
+          setCreatePrOpen?.(true)
+        }}
       />
 
       <ViewConsolidatedPrDetailsDialog

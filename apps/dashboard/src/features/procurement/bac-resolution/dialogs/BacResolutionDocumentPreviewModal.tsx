@@ -2,14 +2,6 @@ import { Printer, Download, FileText, CheckCircle2, ShieldCheck } from 'lucide-r
 import { ResponsiveDialogDashtail } from '@/components/ResponsiveDialogDashtail'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from '@/components/ui/table'
 import type { BacResolution } from '../types'
 
 interface BacResolutionDocumentPreviewModalProps {
@@ -141,44 +133,42 @@ export function BacResolutionDocumentPreviewModal({
           </p>
         </div>
 
-        {/* Mandatory Procurement Information Table (Columns 2, 4, 9, 10) */}
-        <div className="overflow-hidden rounded border border-default-400 font-sans my-4">
-          <Table>
-            <TableHeader className="bg-default-100">
-              <TableRow className="border-b border-default-400">
-                <TableHead className="font-bold text-xs text-default-900 border-r border-default-300">
-                  Col 2: Office / Implementing Unit
-                </TableHead>
-                <TableHead className="font-bold text-xs text-default-900 border-r border-default-300">
-                  Col 4: Mode of Procurement
-                </TableHead>
-                <TableHead className="font-bold text-xs text-default-900 border-r border-default-300">
-                  Col 9: Source of Fund
-                </TableHead>
-                <TableHead className="font-bold text-xs text-default-900 text-right">
-                  Col 10: Estimated Budget (ABC)
-                </TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {documentTableRows.map((row, idx) => (
-                <TableRow key={idx} className="border-b border-default-300">
-                  <TableCell className="border-r border-default-300 text-xs font-medium">
-                    {row.office}
-                  </TableCell>
-                  <TableCell className="border-r border-default-300 text-xs">
-                    {row.mode}
-                  </TableCell>
-                  <TableCell className="border-r border-default-300 text-xs">
-                    {row.fund}
-                  </TableCell>
-                  <TableCell className="text-right font-bold text-xs text-emerald-800">
-                    ₱{row.totalAbc.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                  </TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
+        {/* Mandatory Procurement Information Specification List */}
+        <div className="rounded-lg border border-default-300 bg-default-50/60 p-5 font-sans my-4 space-y-3">
+          <p className="font-bold text-xs uppercase tracking-wider text-default-700 border-b border-default-200 pb-1.5">
+            Procurement Project Specifications & Allocation
+          </p>
+          <div className="space-y-3 text-xs leading-relaxed">
+            {documentTableRows.map((row, idx) => (
+              <div key={idx} className="space-y-1.5 pl-2 border-l-2 border-primary/40">
+                {documentTableRows.length > 1 && (
+                  <p className="font-bold text-default-900 text-[13px]">
+                    Package / Lot {idx + 1}
+                  </p>
+                )}
+                <ul className="list-disc list-inside space-y-1.5 text-default-800">
+                  <li>
+                    <span className="font-bold text-default-900">Implementing Unit / End-User: </span>
+                    <span>{row.office}</span>
+                  </li>
+                  <li>
+                    <span className="font-bold text-default-900">Mode of Procurement: </span>
+                    <span className="font-semibold text-primary">{row.mode}</span>
+                  </li>
+                  <li>
+                    <span className="font-bold text-default-900">Source of Fund: </span>
+                    <span>{row.fund}</span>
+                  </li>
+                  <li>
+                    <span className="font-bold text-default-900">Approved Budget for the Contract (ABC): </span>
+                    <span className="font-bold text-emerald-800">
+                      ₱{row.totalAbc.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    </span>
+                  </li>
+                </ul>
+              </div>
+            ))}
+          </div>
         </div>
 
         {/* Date and Location Statement */}

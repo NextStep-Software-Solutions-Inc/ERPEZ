@@ -1,4 +1,37 @@
-import type { AppItemLink } from '../types'
+import type { AppItemLink, AppRecord } from '../types'
+
+export const MOCK_APPS: AppRecord[] = [
+  {
+    id: 'app-rec-001',
+    appNumber: 'APP-2026-001',
+    title: 'Annual Procurement Plan for FY 2026 - Information & Communications Technology',
+    fiscalYear: '2026',
+    implementingUnit: 'ICT & Network Operations',
+    totalBudget: 7300000,
+    itemCount: 2,
+    status: 'approved',
+  },
+  {
+    id: 'app-rec-002',
+    appNumber: 'APP-2026-002',
+    title: 'Annual Procurement Plan for FY 2026 - Infrastructure, Facilities & Capital Outlay',
+    fiscalYear: '2026',
+    implementingUnit: 'Capital Works & Physical Plant',
+    totalBudget: 4150000,
+    itemCount: 2,
+    status: 'approved',
+  },
+  {
+    id: 'app-rec-003',
+    appNumber: 'APP-2026-003',
+    title: 'Annual Procurement Plan for FY 2026 - Academic, Research & Institutional Projects',
+    fiscalYear: '2026',
+    implementingUnit: 'Academic Affairs & Research Extension',
+    totalBudget: 7350000,
+    itemCount: 2,
+    status: 'approved',
+  },
+]
 
 export const MOCK_APP_ITEMS: AppItemLink[] = [
   {
@@ -69,7 +102,15 @@ export const MOCK_APP_ITEMS: AppItemLink[] = [
   },
 ]
 
+let mockAppDatabase: AppRecord[] | null = null
 let mockAppItemDatabase: AppItemLink[] | null = null
+
+export const getMockAppRecords = (): AppRecord[] => {
+  if (!mockAppDatabase) {
+    mockAppDatabase = [...MOCK_APPS]
+  }
+  return mockAppDatabase
+}
 
 export const getMockAppItemDatabase = (): AppItemLink[] => {
   if (!mockAppItemDatabase) {
@@ -82,6 +123,10 @@ export const getEligibleAppItems = (): AppItemLink[] => {
   return getMockAppItemDatabase().filter((item) => item.status === 'eligible')
 }
 
+export const getAppItemsByAppNumber = (appNumber: string): AppItemLink[] => {
+  return getEligibleAppItems().filter((item) => item.appNumber === appNumber)
+}
+
 export const markAppItemAsLinked = (id: string) => {
   const db = getMockAppItemDatabase()
   const item = db.find((i) => i.id === id)
@@ -89,3 +134,4 @@ export const markAppItemAsLinked = (id: string) => {
     item.status = 'linked'
   }
 }
+
