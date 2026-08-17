@@ -70,6 +70,8 @@ export function FundSourceCard({
     .filter(
       (fs) => !selectedFundSources.includes(fs.id) || fs.id === fundSourceId,
     )
+    .slice()
+    .sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' }))
     .map((fs) => (
       <SelectItem key={fs.id} value={fs.id.toString()}>
         {toTitleCase(fs.name)}
@@ -106,7 +108,7 @@ export function FundSourceCard({
             <SelectTrigger className="h-8">
               <SelectValue placeholder="Choose source..." />
             </SelectTrigger>
-            <SelectContent>{fundSourcesList}</SelectContent>
+            <SelectContent className="max-h-72 overflow-y-auto">{fundSourcesList}</SelectContent>
           </Select>
         </div>
         <div className="space-y-1">

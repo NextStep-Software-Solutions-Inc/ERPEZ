@@ -96,19 +96,19 @@ export default function UpdateFundSourceForm({
 
   const fundCluster = useFundCluster({
     pathParams: {},
-    queryParams: { filters: 'type==FundCluster' },
+    queryParams: { filters: 'type==FundCluster', pageSize: 2000 },
   })
   const financingSource = useFinancingSource({
     pathParams: {},
-    queryParams: { filters: 'type==FinancingSource' },
+    queryParams: { filters: 'type==FinancingSource', pageSize: 2000 },
   })
   const authorizationCode = useAuthorizationCode({
     pathParams: {},
-    queryParams: { filters: 'type==AuthorizationCode' },
+    queryParams: { filters: 'type==AuthorizationCode', pageSize: 2000 },
   })
   const fundCategory = useFundCategory({
     pathParams: {},
-    queryParams: { filters: 'type==FundCategory' },
+    queryParams: { filters: 'type==FundCategory', pageSize: 2000 },
   })
 
   // Helper function to build default values with parent hierarchy

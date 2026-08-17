@@ -59,23 +59,43 @@ public class UpdateWFPObjectiveActivityCommandHandler(IUnitOfWork unitOfWork)
 
         if (dto.Dates != null && dto.Dates.Any())
         {
-            var oldTimelines = await unitOfWork.WFPObjectiveTimelineRepository.ToListAsync(
+            var existingTimelines = await unitOfWork.WFPObjectiveTimelineRepository.ToListAsync(
                 unitOfWork.WFPObjectiveTimelineRepository.Query(t => t.WFPObjectiveActivityId == activity.Id),
                 cancellationToken);
 
-            unitOfWork.WFPObjectiveTimelineRepository.RemoveRange(oldTimelines);
+            var matchedTimelineIds = new HashSet<Guid>();
 
             foreach (var d in dto.Dates)
             {
-                var timeline = new Domain.Entities.Planning.WFPObjectiveTimeline
+                var timelineType = Enum.Parse<Domain.Enums.TimelineTypeEnum>(d.TimelineType, ignoreCase: true);
+                var existing = existingTimelines.FirstOrDefault(t => t.StartDate == d.StartDate);
+
+                if (existing != null)
                 {
-                    WFPObjectiveActivityId = activity.Id,
-                    StartDate = d.StartDate,
-                    EndDate = d.EndDate,
-                    TargetValue = d.Value,
-                    TimelineType = Enum.Parse<Domain.Enums.TimelineTypeEnum>(d.TimelineType, ignoreCase: true)
-                };
-                await unitOfWork.WFPObjectiveTimelineRepository.AddAsync(timeline, cancellationToken);
+                    existing.EndDate = d.EndDate;
+                    existing.TargetValue = d.Value;
+                    existing.TimelineType = timelineType;
+                    unitOfWork.WFPObjectiveTimelineRepository.Update(existing);
+                    matchedTimelineIds.Add(existing.Id);
+                }
+                else
+                {
+                    var timeline = new Domain.Entities.Planning.WFPObjectiveTimeline
+                    {
+                        WFPObjectiveActivityId = activity.Id,
+                        StartDate = d.StartDate,
+                        EndDate = d.EndDate,
+                        TargetValue = d.Value,
+                        TimelineType = timelineType
+                    };
+                    await unitOfWork.WFPObjectiveTimelineRepository.AddAsync(timeline, cancellationToken);
+                }
+            }
+
+            var toRemove = existingTimelines.Where(t => !matchedTimelineIds.Contains(t.Id)).ToList();
+            if (toRemove.Count > 0)
+            {
+                unitOfWork.WFPObjectiveTimelineRepository.RemoveRange(toRemove);
             }
         }
 

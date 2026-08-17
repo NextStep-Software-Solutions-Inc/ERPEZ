@@ -43,6 +43,7 @@ import { activateKPIsRequest } from '../kpi-activation/handlers/activateKPIsRequ
 import { updateKPILockStatus } from '../kpi-activation/handlers/updateKPILockStatusRequest'
 import type { MasterKPI } from '../shared/utils/mockMasterKPIs'
 import { useKPIs, useFiscalYears, formatFiscalYearForDisplay, transformKPIToInternal } from '@/features/planning/annual-performance-planning/hooks/useAPPQueries'
+import { cn } from '@/lib/utils'
 import type { ActiveKPI } from '../shared/types/step2Types'
 import type {
   ActivatedKPI,
@@ -76,10 +77,11 @@ export default function AppStep2Form({
   const [globalFilter, setGlobalFilter] = useState('')
 
   useEffect(() => {
-    if (propSelectedFiscalYearId !== undefined && propSelectedFiscalYearId !== selectedFiscalYearId) {
-      setSelectedFiscalYearId(propSelectedFiscalYearId)
+    const targetId = propSelectedFiscalYearId || ''
+    if (targetId !== selectedFiscalYearId) {
+      setSelectedFiscalYearId(targetId)
     }
-  }, [propSelectedFiscalYearId])
+  }, [propSelectedFiscalYearId, selectedFiscalYearId])
   const [pageNumber, setPageNumber] = useState<number>(1)
   const [pageSize, setPageSize] = useState<number>(10)
   
@@ -729,9 +731,12 @@ export default function AppStep2Form({
               })
               onSubmit(activatedKPIs, selectedFiscalYearId)
             }}
-            disabled={submitting}
-            className="bg-green-600 hover:bg-green-700"
-            title="Proceed to target setting & office distribution"
+            disabled={submitting || !selectedFiscalYearId}
+            className={cn(
+              'bg-green-600 hover:bg-green-700 font-bold',
+              !selectedFiscalYearId && 'opacity-50 cursor-not-allowed bg-gray-400 hover:bg-gray-400',
+            )}
+            title={!selectedFiscalYearId ? 'Please select a Fiscal Year first before proceeding to set targets' : 'Proceed to target setting & office distribution'}
           >
             Proceed
           </Button>

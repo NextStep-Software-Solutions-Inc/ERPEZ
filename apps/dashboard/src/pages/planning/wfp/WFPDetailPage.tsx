@@ -1,6 +1,15 @@
 import { useState } from 'react'
 import { createQueryHookFromTemplate, createMutationHookFromTemplate } from 'erpez-shared-lib'
 import { useSetAtom } from 'jotai'
+import { Link } from '@tanstack/react-router'
+import {
+  Breadcrumb,
+  BreadcrumbList,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb'
 import { PageContainerDashtail } from '@/components/v2/PageContainerDashtail'
 import { Button } from '@/components/ui/button'
 import {
@@ -154,20 +163,26 @@ function WFPDetailPage({ wfpId }: { wfpId: string }) {
   const actions: MetaActions = ['write', 'delete', 'read']
 
   const registeredActivitiesFromObjectives = wfp.wfpObjectives?.reduce((acc: number, obj: any) => {
-    const actCount = obj.wfpObjectiveActivities?.length || 0
-    return acc + (actCount > 0 ? actCount : 1)
-  }, 0) || 0
+    return acc + (obj.wfpObjectiveActivities?.length || 0)
+  }, 0) ?? 0
 
   const opcrActivitiesCount = (opcr?.activities?.length || 0) + (opcr?.opcrItems?.length || 0)
 
-  const totalActivities = Math.max(
-    registeredActivitiesFromObjectives,
-    opcrActivitiesCount,
-    wfp.wfpObjectives?.length || 0
-  )
+  const totalActivities = isOPCRMode
+    ? Math.max(registeredActivitiesFromObjectives, opcrActivitiesCount)
+    : registeredActivitiesFromObjectives
 
-  const totalTimelines = totalActivities > 0 ? totalActivities * 4 : (isOPCRMode ? 4 : (wfp.wfpObjectives?.length || 0) * 2)
-  const totalExpenditures = totalActivities > 0 ? totalActivities * 2 : 5
+  const totalTimelines = wfp.wfpObjectives?.reduce((acc: number, obj: any) => {
+    return acc + (obj.wfpObjectiveActivities?.reduce((tAcc: number, act: any) => {
+      return tAcc + (act.wfpObjectiveTimelines?.length || 0)
+    }, 0) || 0)
+  }, 0) ?? 0
+
+  const totalExpenditures = wfp.wfpObjectives?.reduce((acc: number, obj: any) => {
+    return acc + (obj.wfpObjectiveActivities?.reduce((eAcc: number, act: any) => {
+      return eAcc + (act.wfpObjectiveActivityExpenditures?.length || 0)
+    }, 0) || 0)
+  }, 0) ?? 0
   const durationText = calculateProjectDuration(wfp?.projectStartDate, wfp?.projectEndDate)
 
   // Validation readiness booleans
@@ -214,12 +229,31 @@ function WFPDetailPage({ wfpId }: { wfpId: string }) {
     )
   }
 
+  const breadcrumbs = (
+    <Breadcrumb>
+      <BreadcrumbList>
+        <BreadcrumbItem>
+          <BreadcrumbLink asChild>
+            <Link to="/v2/wfp" className="text-slate-500 hover:text-indigo-600 font-medium text-xs">
+              Work & Financial Plans
+            </Link>
+          </BreadcrumbLink>
+        </BreadcrumbItem>
+        <BreadcrumbSeparator />
+        <BreadcrumbItem>
+          <BreadcrumbPage className="font-semibold text-slate-800 dark:text-slate-200 text-xs max-w-[320px] truncate" title={wfp?.projectTitle}>
+            {toTitleCase(wfp?.projectTitle) || 'WFP Details'}
+          </BreadcrumbPage>
+        </BreadcrumbItem>
+      </BreadcrumbList>
+    </Breadcrumb>
+  )
+
   return (
     <PageContainerDashtail
       title={toTitleCase(wfp?.projectTitle) || (isOPCRMode ? 'OPCR WFP Details' : 'WFP Details')}
       description={isOPCRMode ? 'Office Performance Commitment Review (OPCR) - Work and Financial Plan' : 'View detailed information about this Work and Financial Plan (WFP).'}
-      backTo="/v2/wfp"
-      backLabel="Back to WFP"
+      breadcrumbs={breadcrumbs}
       actions={
         <div className="flex items-center gap-2">
           {/* Edit WFP Details (visible on Draft/Returned when write permission exists) */}

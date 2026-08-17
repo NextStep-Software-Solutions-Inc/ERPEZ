@@ -1,6 +1,15 @@
 import { Percent, Plus, TrendingUp, Activity, CheckCircle2, Clock, Circle, Info } from 'lucide-react'
 import { createQueryHookFromTemplate } from 'erpez-shared-lib'
 import { useSetAtom } from 'jotai'
+import { Link } from '@tanstack/react-router'
+import {
+  Breadcrumb,
+  BreadcrumbList,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb'
 import { PageContainer } from '@/components/PageContainer'
 import { Button } from '@/components/ui/button'
 import { toSentenceCase, toTitleCase } from '@/utils/formatters'
@@ -49,11 +58,51 @@ function WFPObjectiveDetailPage({ wfpObjectiveId }: { wfpObjectiveId: string }) 
   const isOverAllocated = totalActivitiesWeight > objWeight
   const progressPct = objWeight > 0 ? Math.min(100, (totalActivitiesWeight / objWeight) * 100) : 0
 
+  const wfpId = wfpObjectiveData.data.wfpId || wfpObjectiveData.data.wfp?.id
+  const wfpTitle = wfpObjectiveData.data.wfp?.projectTitle || 'WFP Details'
+  const objectiveDesc = wfpObjectiveData.data.description
+
+  const breadcrumbs = (
+    <Breadcrumb>
+      <BreadcrumbList>
+        <BreadcrumbItem>
+          <BreadcrumbLink asChild>
+            <Link to="/v2/wfp" className="text-slate-500 hover:text-indigo-600 font-medium text-xs">
+              Work & Financial Plans
+            </Link>
+          </BreadcrumbLink>
+        </BreadcrumbItem>
+        <BreadcrumbSeparator />
+        {wfpId && (
+          <>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link
+                  to="/v2/wfp/$wfpId"
+                  params={{ wfpId }}
+                  className="text-slate-500 hover:text-indigo-600 font-medium text-xs max-w-[200px] truncate"
+                  title={wfpTitle}
+                >
+                  {wfpTitle}
+                </Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+          </>
+        )}
+        <BreadcrumbItem>
+          <BreadcrumbPage className="font-semibold text-slate-800 dark:text-slate-200 text-xs max-w-[300px] truncate" title={objectiveDesc}>
+            {toTitleCase(objectiveDesc) || 'Objective Details'}
+          </BreadcrumbPage>
+        </BreadcrumbItem>
+      </BreadcrumbList>
+    </Breadcrumb>
+  )
+
   return (
     <PageContainer
       title={toTitleCase(wfpObjectiveData.data.description) || 'WFP Objective Details'}
-      backTo={{ to: '/v2/wfp/$wfpId', params: { wfpId: wfpObjectiveData.data.wfpId || wfpObjectiveData.data.wfp?.id } }}
-      backLabel="Back to WFP Objectives"
+      breadcrumbs={breadcrumbs}
     >
       <div className="space-y-4 mx-auto">
         {/* Info Grid */}

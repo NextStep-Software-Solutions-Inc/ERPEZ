@@ -185,22 +185,24 @@ function WFPPage() {
         </Card>
       </div>
 
-      <div className="rounded-lg border bg-white shadow-sm">
-        <TemplateTable
-          columns={Column}
-          data={tableData}
-          actions={actions}
-          readonly={false}
-          toolbar={(table) => (
-            <Toolbar 
-              table={table} 
-              showColumnVisibility={true}
-            />
-          )}
-          meta={{ wfps: tableData }}
-          fixedPageSize={10}
-        />
-      </div>
+      <Card className="border-slate-200/80 dark:border-slate-800 shadow-xs bg-white dark:bg-slate-900">
+        <CardContent className="p-4 sm:p-5">
+          <TemplateTable
+            columns={Column}
+            data={tableData}
+            actions={actions}
+            readonly={false}
+            toolbar={(table) => (
+              <Toolbar 
+                table={table} 
+                showColumnVisibility={true}
+              />
+            )}
+            meta={{ wfps: tableData }}
+            fixedPageSize={10}
+          />
+        </CardContent>
+      </Card>
       <WFPDialogManager />
     </div>
   )

@@ -56,7 +56,7 @@ public class FundSourceRepository : Repository<Domain.Entities.Planning.FundSour
         var totalCount = await filteredQuery.CountAsync(cancellationToken);
 
         var orderedQuery = string.IsNullOrWhiteSpace(normalizedSieveModel.Sorts)
-            ? filteredQuery.OrderBy(x => x.CreatedAt).ThenBy(x => x.Id)
+            ? filteredQuery.OrderBy(x => x.Name).ThenBy(x => x.Code).ThenBy(x => x.Id)
             : filteredQuery;
 
         var items = await orderedQuery
