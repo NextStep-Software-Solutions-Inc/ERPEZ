@@ -14,6 +14,15 @@ import {
 } from 'lucide-react'
 import { createQueryHookFromTemplate } from 'erpez-shared-lib'
 import { useSetAtom } from 'jotai'
+import { Link } from '@tanstack/react-router'
+import {
+  Breadcrumb,
+  BreadcrumbList,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb'
 import { PageContainer } from '@/components/PageContainer'
 import { Button } from '@/components/ui/button'
 import { Card } from '@/components/ui/card'
@@ -145,18 +154,69 @@ export default function WFPExpenditurePage({
     return <div className="p-8 text-center text-slate-500 font-medium">Loading Expenditure Details...</div>
   }
 
+  const wfpObjectiveId = targetData.data.wfpObjectiveId || targetData.data.wfpObjective?.id
+  const wfpId = targetData.data.wfpObjective?.wfpId
+  const objectiveDesc = targetData.data.wfpObjective?.description || 'Objective Details'
+  const activityName = targetData.data.activityName
+
+  const breadcrumbs = (
+    <Breadcrumb>
+      <BreadcrumbList>
+        <BreadcrumbItem>
+          <BreadcrumbLink asChild>
+            <Link to="/v2/wfp" className="text-slate-500 hover:text-indigo-600 font-medium text-xs">
+              Work & Financial Plans
+            </Link>
+          </BreadcrumbLink>
+        </BreadcrumbItem>
+        <BreadcrumbSeparator />
+        {wfpId && (
+          <>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link
+                  to="/v2/wfp/$wfpId"
+                  params={{ wfpId }}
+                  className="text-slate-500 hover:text-indigo-600 font-medium text-xs max-w-[180px] truncate"
+                >
+                  WFP Details
+                </Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+          </>
+        )}
+        {wfpObjectiveId && (
+          <>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link
+                  to="/v2/wfp-objective/$wfpObjectiveId"
+                  params={{ wfpObjectiveId }}
+                  className="text-slate-500 hover:text-indigo-600 font-medium text-xs max-w-[200px] truncate"
+                  title={objectiveDesc}
+                >
+                  {toTitleCase(objectiveDesc)}
+                </Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+          </>
+        )}
+        <BreadcrumbItem>
+          <BreadcrumbPage className="font-semibold text-slate-800 dark:text-slate-200 text-xs max-w-[250px] truncate" title={activityName}>
+            {toTitleCase(activityName) || 'Activity Expenditures'}
+          </BreadcrumbPage>
+        </BreadcrumbItem>
+      </BreadcrumbList>
+    </Breadcrumb>
+  )
+
   return (
     <PageContainer
       title={toTitleCase(targetData.data.activityName) || 'Activity Expenditures'}
       description="List of Expenditures for this Activity"
-      backTo={{
-        to: '/v2/wfp-objective/$wfpObjectiveId',
-        params: {
-          wfpObjectiveId:
-            targetData.data.wfpObjectiveId || targetData.data.wfpObjective?.id,
-        },
-      }}
-      backLabel="Back to Activity Registry"
+      breadcrumbs={breadcrumbs}
     >
       <div className="space-y-6 mx-auto">
         {/* Page Header */}
@@ -302,19 +362,11 @@ export default function WFPExpenditurePage({
 
           {/* Empty State */}
           {expenditures.length === 0 && (
-            <div className="text-center py-12 bg-slate-50/60 rounded-xl border border-dashed border-slate-200 space-y-3">
+            <div className="text-center py-12 bg-slate-50/60 rounded-xl border border-dashed border-slate-200 space-y-2">
               <Package className="w-10 h-10 text-slate-400 mx-auto" />
               <p className="text-sm text-slate-600 font-medium">
                 No expenditures found for this activity.
               </p>
-              <Button
-                size="sm"
-                className="bg-blue-600 hover:bg-blue-700 text-white font-medium text-xs gap-1.5"
-                onClick={() => setCreateDialog({ isOpen: true, showUnsavedWarning: false })}
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Create Expenditure</span>
-              </Button>
             </div>
           )}
 
