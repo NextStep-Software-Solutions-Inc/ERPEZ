@@ -32,6 +32,12 @@ export interface PRHeaderDetails {
   // For out-of-stock PRs originating from APR/CNAS
   cnasReferenceNumber?: string
   sourceAPR?: string
+  // Multi-source BAC Resolution references
+  appItemId?: string
+  bacResolutionId?: string
+  bacResolutionNumber?: string
+  modeOfProcurement?: string
+  sourceType?: 'APP_ITEM' | 'CONSOLIDATED_PR'
 }
 
 export interface PRAttachment {
@@ -54,7 +60,7 @@ export interface PRItem {
   unitPrice: number
   totalAmount: number
   stockNo?: string
-  source?: 'ppmp' | 'apr' // Source of item
+  source?: 'ppmp' | 'apr' | 'bac' // Source of item
   ppmpDocId?: string // For non-CSE PRs, track which PPMP document this item came from
   ppmpDocName?: string // For non-CSE PRs, store the PPMP document name
   month?: string
@@ -91,6 +97,10 @@ export interface PurchaseRequest {
   remarks?: string
   torAttachment?: PRAttachment | null
   signedPdfUrl?: string
+  // BAC Multi-source metadata
+  approvalOrigin?: 'STANDARD' | 'APPROVED_VIA_BAC'
+  bacResolutionNumber?: string
+  modeOfProcurement?: string
 }
 
 export interface PPMPItemMonthAllocation {

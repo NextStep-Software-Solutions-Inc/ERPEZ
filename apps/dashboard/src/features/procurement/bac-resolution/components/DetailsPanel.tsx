@@ -74,6 +74,42 @@ export function DetailsPanel({
         onSubmit={onSubmit}
       />
 
+      {selectedResolution.procurementProjectContext && (
+        <div className="space-y-2">
+          <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground">
+            Authoritative Procurement Context
+          </p>
+          <div className="rounded-lg border border-primary/20 bg-primary/5 p-4 text-xs space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-sm text-default-900">
+                {selectedResolution.procurementProjectContext.projectTitle}
+              </span>
+              <span className="rounded-full bg-primary text-white font-semibold text-[10px] px-2 py-0.5">
+                {selectedResolution.procurementProjectContext.sourceType === 'APP_ITEM' ? 'Path A: APP Item' : 'Path B: Consolidated PR'}
+              </span>
+            </div>
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-default-700 pt-1">
+              <div>
+                <span className="text-muted-foreground block text-[10px]">Implementing Unit</span>
+                <span className="font-medium">{selectedResolution.procurementProjectContext.officeName}</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground block text-[10px]">Procurement Mode</span>
+                <span className="font-medium text-blue-700">{selectedResolution.procurementProjectContext.modeOfProcurement}</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground block text-[10px]">Source of Fund</span>
+                <span className="font-medium">{selectedResolution.procurementProjectContext.sourceOfFund}</span>
+              </div>
+              <div>
+                <span className="text-muted-foreground block text-[10px]">Estimated Budget</span>
+                <span className="font-bold text-emerald-700">₱{selectedResolution.procurementProjectContext.abc.toLocaleString('en-US', { minimumFractionDigits: 2 })}</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       <Card className="border border-default-200 shadow-sm">
         <CardHeader>
           <CardTitle className="text-base">Linked Consolidated PRs</CardTitle>

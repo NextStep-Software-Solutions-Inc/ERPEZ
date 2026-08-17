@@ -44,6 +44,9 @@ export function BacResolutionWorkspace({
   bacListRoutePath = '/v2/bac-resolutions',
 }: BacResolutionWorkspaceProps) {
   const [clauseManagerOpen, setClauseManagerOpen] = useState(false)
+  const [docPreviewOpen, setDocPreviewOpen] = useState(false)
+  const [createPrModalOpen, setCreatePrModalOpen] = useState(false)
+
   const { ws, isLoading, metricCards } = useBacResolutionService(
     defaultFilter,
     initialSelectedResolutionId,
@@ -106,6 +109,14 @@ export function BacResolutionWorkspace({
               onReturn={
                 role === 'bac-chairperson' && ws.selectedResolution
                   ? () => ws.setReturnOpen(true)
+                  : undefined
+              }
+              onViewDocument={
+                ws.selectedResolution ? () => setDocPreviewOpen(true) : undefined
+              }
+              onCreatePr={
+                ws.selectedResolution && ws.selectedResolution.status === 'approved'
+                  ? () => setCreatePrModalOpen(true)
                   : undefined
               }
               isLoading={isLoading}
@@ -203,6 +214,10 @@ export function BacResolutionWorkspace({
           submitConfirmOpen={ws.submitConfirmOpen}
           setSubmitConfirmOpen={ws.setSubmitConfirmOpen}
           onConfirmSubmit={ws.handleConfirmSubmit}
+          docPreviewOpen={docPreviewOpen}
+          setDocPreviewOpen={setDocPreviewOpen}
+          createPrOpen={createPrModalOpen}
+          setCreatePrOpen={setCreatePrModalOpen}
         />
 
         <ClauseTemplateManagerDialog

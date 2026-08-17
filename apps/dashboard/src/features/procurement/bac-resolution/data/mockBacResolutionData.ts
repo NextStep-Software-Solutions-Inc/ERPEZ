@@ -490,7 +490,169 @@ function buildSeededDatabase(): Array<BacResolution> {
   const pool = getConsolidatedPrPool()
   const assignedLinkedPrIds = new Set<string>()
 
-  return RESOLUTION_SEEDS.map((seed, index) => {
+  const pathASeeds: BacResolution[] = [
+    {
+      id: 'bac-resolution-app-001',
+      bacResolutionNumber: 'BAC-RES-2026-APP01',
+      resolutionType: 'procurement-mode-recommendation',
+      resolutionDate: '2026-05-10',
+      description: 'Procurement of High-Performance Servers and Networking Infrastructure.',
+      resolvedDateText: 'Sunday, May 10, 2026',
+      resolvedLocationText: 'University of Science and Technology of Southern Philippines, Cagayan de Oro City',
+      whereasClauses: [
+        {
+          id: 'seed-clause-app-1',
+          name: 'Legal Basis',
+          body: 'WHEREAS, Section 12 of R.A. 9184 IRR authorizes APP-driven procurement for priority ICT infrastructure;',
+        },
+      ],
+      provisionalMembers: [
+        {
+          id: 'seed-end-user-app',
+          role: 'End-user Rep',
+          name: 'Jane Doe',
+          position: 'Chief Information Officer',
+        },
+      ],
+      status: 'approved',
+      createdBy: 'Procurement Staff Demo',
+      createdAt: SEED_TIMESTAMP,
+      updatedAt: SEED_TIMESTAMP,
+      totalAmount: 2500000,
+      linkedConsolidatedPrs: [],
+      activityLog: [
+        {
+          id: 'log-seed-app-1',
+          action: 'Approved by HOPE',
+          actor: 'Chairperson Demo',
+          timestamp: SEED_TIMESTAMP,
+          note: 'Approved for Public Bidding PR Creation.',
+        },
+      ],
+      sourceType: 'APP_ITEM',
+      appItemId: 'app-item-001',
+      procurementProjectContext: {
+        sourceType: 'APP_ITEM',
+        sourceRef: 'APP-2026-001 / Item 01',
+        projectTitle: 'Procurement of High-Performance Servers and Networking Infrastructure',
+        officeName: 'ICT Center',
+        modeOfProcurement: 'Public Bidding',
+        sourceOfFund: 'General Appropriations Act (GAA)',
+        abc: 2500000,
+      },
+      approvedBy: 'Chairperson Demo',
+      approvedAt: SEED_TIMESTAMP,
+      isPrCreated: false,
+    },
+    {
+      id: 'bac-resolution-app-002',
+      bacResolutionNumber: 'BAC-RES-2026-APP02',
+      resolutionType: 'procurement-mode-recommendation',
+      resolutionDate: '2026-05-12',
+      description: 'Direct Contracting for Proprietary Campus Software License Expansion.',
+      resolvedDateText: 'Tuesday, May 12, 2026',
+      resolvedLocationText: 'University of Science and Technology of Southern Philippines, Cagayan de Oro City',
+      whereasClauses: [
+        {
+          id: 'seed-clause-app-2',
+          name: 'Exclusive Supplier',
+          body: 'WHEREAS, Section 50 of R.A. 9184 permits Direct Contracting for proprietary software licenses;',
+        },
+      ],
+      provisionalMembers: [
+        {
+          id: 'seed-tech-app-2',
+          role: 'Tech Rep',
+          name: 'John Smith',
+          position: 'Lead Software Architect',
+        },
+      ],
+      status: 'approved',
+      createdBy: 'Procurement Staff Demo',
+      createdAt: SEED_TIMESTAMP,
+      updatedAt: SEED_TIMESTAMP,
+      totalAmount: 1800000,
+      linkedConsolidatedPrs: [],
+      activityLog: [
+        {
+          id: 'log-seed-app-2',
+          action: 'Approved by HOPE',
+          actor: 'Chairperson Demo',
+          timestamp: SEED_TIMESTAMP,
+          note: 'Approved for Direct Contracting PR Creation.',
+        },
+      ],
+      sourceType: 'APP_ITEM',
+      appItemId: 'app-item-003',
+      procurementProjectContext: {
+        sourceType: 'APP_ITEM',
+        sourceRef: 'APP-2026-001 / Item 03',
+        projectTitle: 'Direct Contracting for Proprietary Campus Software License Expansion',
+        officeName: 'Software Engineering Unit',
+        modeOfProcurement: 'Direct Contracting',
+        sourceOfFund: 'Special Trust Fund (STF)',
+        abc: 1800000,
+      },
+      approvedBy: 'Chairperson Demo',
+      approvedAt: SEED_TIMESTAMP,
+      isPrCreated: false,
+    },
+    {
+      id: 'bac-resolution-app-003',
+      bacResolutionNumber: 'BAC-RES-2026-APP03',
+      resolutionType: 'procurement-mode-recommendation',
+      resolutionDate: '2026-05-14',
+      description: 'Small Value Procurement (SVP) for Emergency Office Air Conditioning Units.',
+      resolvedDateText: 'Thursday, May 14, 2026',
+      resolvedLocationText: 'University of Science and Technology of Southern Philippines, Cagayan de Oro City',
+      whereasClauses: [
+        {
+          id: 'seed-clause-app-3',
+          name: 'Alternative Procurement',
+          body: 'WHEREAS, Section 53.9 of R.A. 9184 IRR allows Small Value Procurement for emergency repairs;',
+        },
+      ],
+      provisionalMembers: [
+        {
+          id: 'seed-facilities-app-3',
+          role: 'End-user Rep',
+          name: 'Robert Tan',
+          position: 'Head of Facilities Management',
+        },
+      ],
+      status: 'approved',
+      createdBy: 'Procurement Staff Demo',
+      createdAt: SEED_TIMESTAMP,
+      updatedAt: SEED_TIMESTAMP,
+      totalAmount: 350000,
+      linkedConsolidatedPrs: [],
+      activityLog: [
+        {
+          id: 'log-seed-app-3',
+          action: 'Approved by HOPE',
+          actor: 'Chairperson Demo',
+          timestamp: SEED_TIMESTAMP,
+          note: 'Approved for SVP / RFQ PR Creation.',
+        },
+      ],
+      sourceType: 'APP_ITEM',
+      appItemId: 'app-item-004',
+      procurementProjectContext: {
+        sourceType: 'APP_ITEM',
+        sourceRef: 'APP-2026-001 / Item 04',
+        projectTitle: 'Small Value Procurement for Emergency Office Air Conditioning Units',
+        officeName: 'Physical Plant Division',
+        modeOfProcurement: 'Small Value Procurement',
+        sourceOfFund: 'General Appropriations Act (GAA)',
+        abc: 350000,
+      },
+      approvedBy: 'Chairperson Demo',
+      approvedAt: SEED_TIMESTAMP,
+      isPrCreated: false,
+    },
+  ]
+
+  const seededFromPrs = RESOLUTION_SEEDS.map((seed, index) => {
     const linkedPr = seed.preferredPrNumber
       ? pool.find((pr) => pr.prNumber === seed.preferredPrNumber)
       : pool.at(seed.preferredPrIndex ?? -1)
@@ -584,13 +746,25 @@ function buildSeededDatabase(): Array<BacResolution> {
         },
       ],
       returnReason: seed.returnReason ?? null,
+      sourceType: 'CONSOLIDATED_PR',
+      consolidatedPRId: linkedPr.id,
+      procurementProjectContext: {
+        sourceType: 'CONSOLIDATED_PR',
+        sourceRef: linkedPr.prNumber,
+        projectTitle: linkedPr.projectName || seed.description,
+        officeName: linkedPr.endUser,
+        modeOfProcurement: linkedPr.modeOfProcurement,
+        sourceOfFund: 'General Appropriations Act (GAA)',
+        abc: linkedPr.amount,
+      },
       approvedBy: seed.approvedBy ?? null,
       approvedAt: seed.approvedAt ?? null,
       signedDocumentFileName: seed.signedDocumentFileName ?? null,
       printFileName: seed.printFileName ?? null,
-      workspaceOrigin: seed.workspaceOrigin ?? null,
     }
   })
+
+  return [...pathASeeds, ...seededFromPrs]
 }
 
 let mockBacResolutionDatabase: Array<BacResolution> | null = null

@@ -76,6 +76,17 @@ export function BacResolutionCard({
       <div className="w-full space-y-3">
         <div className="flex items-start justify-between gap-3">
           <div className="min-w-0 flex-1">
+            <div className="mb-1 flex items-center gap-1.5">
+              {resolution.sourceType === 'APP_ITEM' ? (
+                <span className="rounded-full bg-blue-100 px-2 py-0.5 font-semibold text-blue-800 text-[10px]">
+                  Path A — APP Driven
+                </span>
+              ) : (
+                <span className="rounded-full bg-emerald-100 px-2 py-0.5 font-semibold text-emerald-800 text-[10px]">
+                  Path B — Consolidated PR
+                </span>
+              )}
+            </div>
             <p
               className="font-semibold text-foreground truncate"
               title={resolution.bacResolutionNumber}
