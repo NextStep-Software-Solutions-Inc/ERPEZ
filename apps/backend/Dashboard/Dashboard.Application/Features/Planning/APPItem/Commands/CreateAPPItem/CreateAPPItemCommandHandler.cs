@@ -19,11 +19,15 @@ public class CreateAPPItemCommandHandler(IUnitOfWork unitOfWork) : IRequestHandl
 
         var fundSourceId = request.FundSourceId != Guid.Empty
             ? request.FundSourceId
-            : (ppmpItem.PPMPExpenditureItem?.PPMPActivity?.PPMP?.FundSourceId ?? Guid.Empty);
+            : (ppmpItem.PPMPExpenditureItem?.PPMPActivity?.PPMP?.FundSourceId 
+               ?? ppmpItem.PPMPExpenditureItem?.PPMP?.FundSourceId 
+               ?? Guid.Empty);
 
         var officeId = request.OfficeId != Guid.Empty
             ? request.OfficeId
-            : (ppmpItem.PPMPExpenditureItem?.PPMPActivity?.PPMP?.OfficeId ?? Guid.Empty);
+            : (ppmpItem.PPMPExpenditureItem?.PPMPActivity?.PPMP?.OfficeId 
+               ?? ppmpItem.PPMPExpenditureItem?.PPMP?.OfficeId 
+               ?? Guid.Empty);
 
         _ = await unitOfWork.ProcurementModeRepository.GetByIdAsync(request.ProcurementModeId, cancellationToken)
             ?? throw new NotFoundException("Procurement mode not found.");

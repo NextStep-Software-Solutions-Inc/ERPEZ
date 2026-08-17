@@ -60,11 +60,11 @@ internal static class PPMPQueryProjection
             ChildPPMPs = ppmp.ChildPPMPs.Where(x => !x.IsDeleted).Select(x => BuildSummaryResponse(x, false)).ToList()
         };
     }
-
     internal static PPMPItemResponse BuildItemResponse(PPMPItemEntity item)
     {
         var allocations = item.PPMPItemAllocations.Where(x => !x.IsDeleted).ToList();
-        var ppmp = item.PPMPExpenditureItem?.PPMPActivity?.PPMP;
+        var ppmp = item.PPMPExpenditureItem?.PPMPActivity?.PPMP
+                ?? item.PPMPExpenditureItem?.PPMP;
 
         // ✅ CSE Items: Get price based on the most recent Fiscal Year
         decimal? csePrice = item.CSEItem?.ItemPrices?

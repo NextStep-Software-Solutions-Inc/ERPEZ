@@ -1,3 +1,4 @@
+using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
@@ -24,7 +25,7 @@ public class CreatePPMPExpenditureItemCommandHandler(IUnitOfWork unitOfWork)
             ?? throw new NotFoundException("Object code not found.");
 
         // Validate activity requirement based on LIB scope
-        if (lib.Scope == "ActivityLevel")
+        if (lib.Scope == nameof(BudgetScope.ActivityLevel))
         {
             if (!request.PPMPActivityId.HasValue)
                 throw new ValidationException("This LIB requires a PPMP Activity to be selected.");
@@ -44,9 +45,20 @@ public class CreatePPMPExpenditureItemCommandHandler(IUnitOfWork unitOfWork)
             if (objectExistsInActivity == null)
                 throw new BadRequestException("The selected object code does not belong to the selected activity.");
         }
+        else if (lib.Scope == nameof(BudgetScope.ProjectLevel))
+        {
+            if (request.PPMPActivityId.HasValue)
+                throw new ValidationException("This LIB is project-level and does not use activities.");
 
-        if (lib.Scope == "ProjectLevel" && request.PPMPActivityId.HasValue)
-            throw new ValidationException("This LIB is project-level and does not use activities.");
+            // Validate Object belongs to this Project-Level LIB
+            var objectExistsInLib = await unitOfWork.LineItemBudgetDetailRepository.FindAsync(
+                x => x.LineItemBudgetId == lib.Id
+                && x.ObjectId == request.ObjectId,
+                cancellationToken);
+
+            if (objectExistsInLib == null)
+                throw new BadRequestException("The selected object code does not belong to the selected Line Item Budget.");
+        }
 
         // Check for duplicate
         var existing = await unitOfWork.PPMPExpenditureItemRepository.FindAsync(
