@@ -110,10 +110,10 @@ export default function CreateWFPForm({
   const selectedOfficeObj = offices.find((o: any) => o.id === selectedOfficeIdForQuery)
   const selectedOrgId = selectedOfficeObj?.organizationId || selectedOfficeObj?.organization?.id
 
-  // 3. Fetch fund sources (filtered by organizationId if office selected, max 1000 items)
+  // 3. Fetch fund sources (filtered by organizationId if office selected, max 2000 items)
   const { data: fundSourcesResponse, isLoading: fundSourcesLoading } = useFundSources({
     pathParams: {},
-    queryParams: { pageSize: 1000, ...(selectedOrgId ? { organizationId: selectedOrgId } : {}) },
+    queryParams: { pageSize: 2000, ...(selectedOrgId ? { organizationId: selectedOrgId } : {}) },
   })
 
   const fundSources = fundSourcesResponse?.data || []
@@ -177,16 +177,18 @@ export default function CreateWFPForm({
     })
   }, [rawOpcrs, selectedOfficeId])
 
-  // Map Fund Sources to options format for searchable Combobox
+  // Map Fund Sources to options format for searchable Combobox (sorted alphabetically)
   const fundSourceOptions = useMemo(() => {
-    return fundSources.map((fs: any) => {
-      const codeStr = fs.code ? ` (${fs.code})` : ''
-      return {
-        value: fs.id,
-        label: `${fs.name}${codeStr}`,
-        raw: fs,
-      }
-    })
+    return fundSources
+      .map((fs: any) => {
+        const codeStr = fs.code ? ` (${fs.code})` : ''
+        return {
+          value: fs.id,
+          label: `${fs.name}${codeStr}`,
+          raw: fs,
+        }
+      })
+      .sort((a: any, b: any) => (a.label || '').localeCompare(b.label || '', undefined, { sensitivity: 'base' }))
   }, [fundSources])
 
   // Auto-inherit Fiscal Year Implementation Dates from selected OPCR

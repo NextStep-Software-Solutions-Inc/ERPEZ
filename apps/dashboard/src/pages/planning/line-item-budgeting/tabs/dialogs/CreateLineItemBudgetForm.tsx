@@ -206,12 +206,12 @@ export default function CreateLineItemBudgetForm({
       },
     })
 
-  // Bottom-up mode: all fund sources (no fiscal year filtering required by API, but we fetch them when mode is bottom-up)
+  // Bottom-up mode: all fund sources (fetch up to 2000 items to load all available sources)
   const { data: fundSourcesData, isLoading: isFundSourcesLoading } =
     useFundSources({
       pathParams: {},
       queryParams: {
-        pageSize: 100, // Fetch all available
+        pageSize: 2000,
       },
       enabled: budgetMode === 'bottom-up',
     })
@@ -242,15 +242,15 @@ export default function CreateLineItemBudgetForm({
     .sort((a, b) => a.name - b.name)
 
   // Bottom-up mode: all fund clusters directly from fund sources
-  const formattedAllFundClusters = (fundSourcesData?.data || []).map(
-    (fs: FundSource) => ({
+  const formattedAllFundClusters = (fundSourcesData?.data || [])
+    .map((fs: FundSource) => ({
       id: fs.id, // fundSourceId
       fundSourceId: fs.id,
       code: fs.code,
       name: fs.name,
       label: `${fs.name} (${fs.code})`,
-    }),
-  )
+    }))
+    .sort((a, b) => (a.label || '').localeCompare(b.label || '', undefined, { sensitivity: 'base' }))
 
   // Top-down mode: ceilings assigned to this office — extract AMB from each ceiling
   const formattedCeilingOptions = (officeCeilingsData?.data || [])
@@ -696,7 +696,7 @@ export default function CreateLineItemBudgetForm({
                           }
                         />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="max-h-72 overflow-y-auto">
                         {formattedAllFundClusters.length > 0 ? (
                           formattedAllFundClusters.map(
                             (cluster: { id: string; label: string }) => (
