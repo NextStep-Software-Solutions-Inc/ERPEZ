@@ -58,21 +58,27 @@ export function ActiveKPIsToolbar({
       {/* Fiscal Year Dropdown & Clear Button */}
       <div className="flex items-center gap-2 flex-shrink-0">
         {isLoadingFiscalYears ? (
-          <div className="w-48 flex items-center gap-2 text-sm text-gray-600">
+          <div className="w-52 flex items-center gap-2 text-sm text-gray-600">
             <Loader2 className="w-4 h-4 animate-spin" />
             <span>Loading fiscal years...</span>
           </div>
         ) : fiscalYears && fiscalYears.length > 0 ? (
           <>
-            <Select value={selectedFiscalYearId || ''} onValueChange={(value) => {
-              if (value && onFiscalYearChange) {
-                onFiscalYearChange(value)
-              }
-            }}>
-              <SelectTrigger className="w-48">
-                <SelectValue placeholder="Select Fiscal Year" />
+            <Select
+              value={selectedFiscalYearId || 'all'}
+              onValueChange={(value) => {
+                if (value === 'all') {
+                  onClearFiscalYear?.()
+                } else if (value && onFiscalYearChange) {
+                  onFiscalYearChange(value)
+                }
+              }}
+            >
+              <SelectTrigger className="w-52">
+                <SelectValue placeholder="All Fiscal Years" />
               </SelectTrigger>
               <SelectContent>
+                <SelectItem value="all">All Fiscal Years</SelectItem>
                 {fiscalYears.map((fy) => (
                   <SelectItem key={fy.id} value={fy.id}>
                     {fy.name}
@@ -85,8 +91,8 @@ export function ActiveKPIsToolbar({
                 type="button"
                 variant="ghost"
                 size="sm"
-                onClick={onClearFiscalYear}
-                className="text-gray-500 hover:text-gray-700 hover:bg-gray-100"
+                onClick={() => onClearFiscalYear?.()}
+                className="text-gray-500 hover:text-gray-700 hover:bg-gray-100 h-9 w-9 p-0"
                 title="Clear fiscal year selection"
               >
                 <X className="w-4 h-4" />
