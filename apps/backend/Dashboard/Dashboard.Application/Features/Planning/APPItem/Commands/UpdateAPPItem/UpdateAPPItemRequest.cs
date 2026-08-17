@@ -12,7 +12,11 @@ public record UpdateAPPItemRequest
     public string PAPCode { get; init; } = string.Empty;
     public string? Remarks { get; init; }
     public bool IsEarlyProcurementActivity { get; init; }
+    public string? EPARemarks { get; init; }
     public bool IsOutsourced { get; init; }
     public string? BidEvaluationCriteria { get; init; }
     public List<string>? ProcurementStrategies { get; init; }
+    public DateTime? StartOfProcurementOverride { get; init; }
+    public DateTime? EndOfProcurementOverride { get; init; }
+    public decimal? EstimatedBudgetOverride { get; init; }
 }

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * usePpmpFormData
  * Custom hook that manages all data-fetching for the CreatePpmpMetadataForm.
  * Centralizes API queries in one place for cleaner component code.
@@ -70,7 +70,9 @@ export function usePpmpFormData({
     offices: offices?.data ?? [],
     fiscalYears: fiscalYears?.data ?? [],
     libs: libs?.data ?? [],
-    fundSources: fundSources?.data ?? [],
+    fundSources: (fundSources?.data ?? []).slice().sort((a: any, b: any) =>
+      (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' })
+    ),
     ppmps: ppmps?.data ?? [],
     isLoading,
   }

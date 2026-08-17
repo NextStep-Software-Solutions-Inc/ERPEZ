@@ -21,4 +21,5 @@ public class Organization : BaseEntity
     public virtual List<Organization> Organizations { get; set; } = [];
     public virtual List<Transaction> Transactions { get; set; } = [];
     public virtual List<Office> Offices { get; set; } = [];
+    public virtual List<OrganizationFundSource> OrganizationFundSources { get; set; } = [];
 }

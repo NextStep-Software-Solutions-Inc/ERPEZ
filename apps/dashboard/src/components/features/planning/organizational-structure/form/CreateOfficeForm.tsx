@@ -48,19 +48,11 @@ export const officeSchema = z.object({
 }).refine(
   (data) => {
     // Check if all required fields have values
-    const requiredFields = ['name', 'code', 'type', 'category', 'level', 'parentId', 'responsibilityCenter', 'address', 'budgetingCostCenter']
+    const requiredFields = ['name', 'code', 'type', 'category', 'level', 'address']
     for (const field of requiredFields) {
       if (!data[field as keyof typeof data] || String(data[field as keyof typeof data]).trim() === '') {
         return false
       }
-    }
-
-    // Get current multi-site setting from localStorage
-    const stored = localStorage.getItem('org_is_multi_site')
-    const isMultiSite = stored !== null ? JSON.parse(stored) : organizationConfig.IS_MULTI_SITE
-    // For multi-site: cluster is required
-    if (isMultiSite && !data.cluster) {
-      return false
     }
     return true
   },
@@ -167,16 +159,16 @@ export function CreateOfficeForm({ onCreated, onClose, parentUnits, isDirtyCallb
           name: value.name?.trim() ?? '',
           code: value.code ?? '',
           address: value.address ?? '',
-          description: value.description || '',
-          responsibilityCenterCode: value.responsibilityCenter || '',
-          budgetCostCenter: value.budgetingCostCenter || '',
-          officeTypeId: officeTypeId || undefined,
-          organizationId: value.organizationId || finalOrganizationId || '',
-          categoryId: categoryId || undefined,
-          administrativeLevelId: administrativeLevelId || undefined,
-          clusterId: clusterId || undefined,
-          procurementWorkflowId: procurementWorkflowId || undefined,
-          parentId: parentOfficeId,
+          description: value.description || null,
+          responsibilityCenterCode: value.responsibilityCenter || null,
+          budgetCostCenter: value.budgetingCostCenter || null,
+          officeTypeId: officeTypeId || null,
+          organizationId: (value.organizationId || finalOrganizationId) || null,
+          categoryId: categoryId || null,
+          administrativeLevelId: administrativeLevelId || null,
+          clusterId: clusterId || null,
+          procurementWorkflowId: procurementWorkflowId || null,
+          parentId: parentOfficeId || null,
         } as Partial<import('@/services/api/offices').OfficeApiResponse>
 
         // Validate all required IDs are present
@@ -186,7 +178,7 @@ export function CreateOfficeForm({ onCreated, onClose, parentUnits, isDirtyCallb
 
         // the mutation hook is typed against OrgUnit but API payload includes extra ids;
         // cast here to keep typing quiet (will be validated server-side)
-        await createMutation.mutateAsync(payload as any)
+        await createMutation.mutateAsync(payload)
         onCreated()
       } catch (error) {
         console.error('Failed to create office:', error)
@@ -398,7 +390,7 @@ export function CreateOfficeForm({ onCreated, onClose, parentUnits, isDirtyCallb
           children={(field) => (
             <div className="space-y-2">
               <Label htmlFor={field.name} className="text-xs font-semibold text-default-700 tracking-wider">
-                Responsibility Center <div className="inline text-destructive">*</div>
+                Responsibility Center <span className="text-xs text-default-400 font-normal">(optional)</span>
               </Label>
               <Input
                 id={field.name}
@@ -453,7 +445,7 @@ export function CreateOfficeForm({ onCreated, onClose, parentUnits, isDirtyCallb
           children={(field) => (
             <div className="space-y-2">
               <Label htmlFor={field.name} className="text-xs font-semibold text-default-700 tracking-wider">
-                Budgeting Cost Center <div className="inline text-destructive">*</div>
+                Budgeting Cost Center <span className="text-xs text-default-400 font-normal">(optional)</span>
               </Label>
               <Input
                 id={field.name}
@@ -473,7 +465,7 @@ export function CreateOfficeForm({ onCreated, onClose, parentUnits, isDirtyCallb
         children={(field) => (
           <div className="space-y-2">
             <Label htmlFor={field.name} className="text-xs font-semibold text-default-700 tracking-wider">
-              Parent Unit <div className="inline text-destructive">*</div>
+              Parent Unit <span className="text-xs text-default-400 font-normal">(optional)</span>
             </Label>
             <Select
               value={field.state.value}
@@ -526,7 +518,7 @@ export function CreateOfficeForm({ onCreated, onClose, parentUnits, isDirtyCallb
         <form.Field
           name="cluster"
           children={(field) => {
-            // For multi-site: show dropdown (required), for single-site: hide the field
+            // For multi-site: show dropdown (optional), for single-site: hide the field
             if (!isMultiSite) {
               return null
             }
@@ -536,7 +528,7 @@ export function CreateOfficeForm({ onCreated, onClose, parentUnits, isDirtyCallb
             return (
               <div className="space-y-2">
                 <Label htmlFor={field.name} className="text-[10px] font-semibold text-default-500 tracking-wider">
-                  Satellite / Cluster <span className="text-destructive">*</span>
+                  Satellite / Cluster <span className="text-[8px] text-default-400 ml-1">(optional)</span>
                   {isLoading && <span className="text-[8px] text-default-400 ml-1 animate-pulse">(loading...)</span>}
                 </Label>
                 <Select

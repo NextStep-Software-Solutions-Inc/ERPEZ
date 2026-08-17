@@ -12,14 +12,17 @@ public class CreateOfficeCommandHandler(IUnitOfWork unitOfWork) : IRequestHandle
         // Validate required foreign keys
         _ = await unitOfWork.OfficeTypeRepository.GetByIdAsync(request.OfficeTypeId, cancellationToken: cancellationToken) ??
             throw new NotFoundException("OfficeType not found.");
-        _ = await unitOfWork.OrganizationRepository.GetByIdAsync(request.OrganizationId, cancellationToken: cancellationToken) ??
-            throw new NotFoundException("Organization not found.");
         _ = await unitOfWork.CategoryRepository.GetByIdAsync(request.CategoryId, cancellationToken: cancellationToken) ??
             throw new NotFoundException("Category not found.");
         _ = await unitOfWork.AdministrativeLevelRepository.GetByIdAsync(request.AdministrativeLevelId, cancellationToken: cancellationToken) ??
             throw new NotFoundException("AdministrativeLevel not found.");
 
         // Validate optional foreign keys
+        if (request.OrganizationId.HasValue)
+        {
+            _ = await unitOfWork.OrganizationRepository.GetByIdAsync(request.OrganizationId.Value, cancellationToken: cancellationToken) ??
+                throw new NotFoundException("Organization not found.");
+        }
         if (request.ClusterId.HasValue)
         {
             _ = await unitOfWork.ClusterRepository.GetByIdAsync(request.ClusterId.Value, cancellationToken: cancellationToken) ??

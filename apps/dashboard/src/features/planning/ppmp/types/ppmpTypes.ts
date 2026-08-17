@@ -370,6 +370,7 @@ export interface ApprovalEvent {
 export type PPMP = {
   id: string
   documentName?: string
+  description?: string
   ppmpNumber?: string
   officeId: string
   officeName?: string
@@ -409,7 +410,9 @@ export type PPMP = {
   finalizedAt?: string
   finalizedBy?: string
 }
-export type PPMPDetails = PPMP & {}
+export type PPMPDetails = PPMP & {
+  ChildPPMPs?: PPMPDetails[]
+}
 
 // Payload used by consolidatePPMPsRequest (wraps CreatePPMPConsolidatePaylod shape for compatibility)
 export type ConsolidatePPMPsPayload = {

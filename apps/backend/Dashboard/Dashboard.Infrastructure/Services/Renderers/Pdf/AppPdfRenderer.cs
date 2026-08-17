@@ -36,16 +36,19 @@ internal sealed class AppPdfRenderer : BasePdfRenderer, IDocumentRenderer<AppDat
                         .Text($"ANNUAL PROCUREMENT PLAN FOR FY {request.FiscalYear}")
                         .Bold().FontSize(11);
 
-                    // Status checkboxes
                     var indicativeBox = request.IsIndicative ? "☑" : "☐";
                     var finalBox      = request.IsFinal ? "☑" : "☐";
                     var updatedBox    = request.IsUpdated ? "☑" : "☐";
                     var versionStr    = request.IsUpdated && !string.IsNullOrWhiteSpace(request.VersionNumber)
-                        ? $" (Ver. {request.VersionNumber})"
+                        ? $" (Ver. {request.VersionNumber}{(string.IsNullOrWhiteSpace(request.VersionDate) ? "" : " - " + request.VersionDate)})"
+                        : string.Empty;
+
+                    var batchQuarterStr = (!string.IsNullOrWhiteSpace(request.Batch) || !string.IsNullOrWhiteSpace(request.Quarter))
+                        ? $" | {request.Batch} ({request.Quarter})"
                         : string.Empty;
 
                     h.Item().PaddingTop(3).AlignCenter()
-                        .Text($"{indicativeBox} INDICATIVE     {finalBox} FINAL     {updatedBox} UPDATED{versionStr}")
+                        .Text($"{indicativeBox} INDICATIVE     {finalBox} FINAL     {updatedBox} UPDATED{versionStr}{batchQuarterStr}")
                         .FontSize(9);
                 });
 
@@ -73,46 +76,39 @@ internal sealed class AppPdfRenderer : BasePdfRenderer, IDocumentRenderer<AppDat
 
                         table.Header(h =>
                         {
-                            // ── Row 1: Header names ────────────
-                            h.Cell().Element(TableHeaderCell).AlignCenter().AlignMiddle()
-                                .Text("Project Title").Bold().FontSize(7);
-                            h.Cell().Element(TableHeaderCell).AlignCenter().AlignMiddle()
-                                .Text("End-User or\nImplementing Unit").Bold().FontSize(7);
-                            h.Cell().Element(TableHeaderCell).AlignCenter().AlignMiddle()
-                                .Text("General Description of the Project").Bold().FontSize(7);
-                            h.Cell().Element(TableHeaderCell).AlignCenter().AlignMiddle()
-                                .Text("Mode of Procurement").Bold().FontSize(7);
-                            h.Cell().Element(TableHeaderCell).AlignCenter().AlignMiddle()
-                                .Text("To be covered by an Early\nProcurement Activity? (Yes/No)").Bold().FontSize(7);
-                            h.Cell().Element(TableHeaderCell).AlignCenter().AlignMiddle()
-                                .Text("Criteria for Bid Evaluation\n(Including Sustainability and\nDomestic Preference)").Bold().FontSize(7);
-                            h.Cell().Element(TableHeaderCell).AlignCenter().AlignMiddle()
-                                .Text("Start of Procurement\nActivity (MM/YYYY)").Bold().FontSize(7);
-                            h.Cell().Element(TableHeaderCell).AlignCenter().AlignMiddle()
-                                .Text("End of Procurement\nActivity (MM/YYYY)").Bold().FontSize(7);
-                            h.Cell().Element(TableHeaderCell).AlignCenter().AlignMiddle()
-                                .Text("Source of Fund").Bold().FontSize(7);
-                            h.Cell().Element(TableHeaderCell).AlignCenter().AlignMiddle()
-                                .Text("Estimated Budget /\nApproved Budget for the\nContract (PhP)").Bold().FontSize(7);
-                            h.Cell().Element(TableHeaderCell).AlignCenter().AlignMiddle()
-                                .Text("PROCUREMENT STRATEGY\nOR TOOLS").Bold().FontSize(7);
-                            h.Cell().Element(TableHeaderCell).AlignCenter().AlignMiddle()
-                                .Text("REMARKS").Bold().FontSize(7);
+                            // ── Row 0: Group headers ────────────
+                            h.Cell().ColumnSpan(6).Element(TableHeaderCell).Text("PROCUREMENT PROJECT DETAILS").Bold().FontSize(7);
+                            h.Cell().ColumnSpan(2).Element(TableHeaderCell).Text("PROJECTED TIMELINE (MM/YYYY)").Bold().FontSize(7);
+                            h.Cell().ColumnSpan(2).Element(TableHeaderCell).Text("FUNDING DETAILS").Bold().FontSize(7);
+                            h.Cell().RowSpan(2).Element(TableHeaderCell).Text("PROCUREMENT STRATEGY\nOR TOOLS").Bold().FontSize(7); // ← spans 2 rows
+                            h.Cell().RowSpan(2).Element(TableHeaderCell).Text("REMARKS\n(Other relevant descriptions of the\nprocurement project, if applicable)").Bold().FontSize(7); // ← spans 2 rows
+
+                            // ── Row 1: Column headers (10 cells only, not 12) ────────────
+                            h.Cell().Element(TableHeaderCell).Text("Project Title").Bold().FontSize(7);
+                            h.Cell().Element(TableHeaderCell).Text("End-User or\nImplementing Unit").Bold().FontSize(7);
+                            h.Cell().Element(TableHeaderCell).Text("General Description of the Project").Bold().FontSize(7);
+                            h.Cell().Element(TableHeaderCell).Text("Mode of Procurement").Bold().FontSize(7);
+                            h.Cell().Element(TableHeaderCell).Text("To be covered by an Early\nProcurement Activity? (Yes/No)").Bold().FontSize(7);
+                            h.Cell().Element(TableHeaderCell).Text("Criteria for Bid Evaluation\n(Including Sustainability and\nDomestic Preference)").Bold().FontSize(7);
+                            h.Cell().Element(TableHeaderCell).Text("Start of Procurement\nActivity (MM/YYYY)").Bold().FontSize(7);
+                            h.Cell().Element(TableHeaderCell).Text("End of Procurement\nActivity (MM/YYYY)").Bold().FontSize(7);
+                            h.Cell().Element(TableHeaderCell).Text("Source of Fund").Bold().FontSize(7);
+                            h.Cell().Element(TableHeaderCell).Text("Estimated Budget /\nApproved Budget for the\nContract (PhP)").Bold().FontSize(7);
+                            // ← No cells for Col 11 and 12 here — covered by RowSpan(2) above
 
                             // ── Row 2: Column numbers ────
                             for (var i = 1; i <= 12; i++)
-                                h.Cell().Element(TableHeaderCell).AlignCenter()
-                                    .Text($"Column {i}").Italic().FontSize(6);
+                                h.Cell().Element(TableHeaderCell).Text($"Column {i}").Italic().FontSize(6);
                         });
 
                         // Render sections
                         RenderSection(table, "General Requirements", request.GeneralRequirements);
-                        RenderSection(table, "Common-Use Supplies", request.CommonUseSupplies);
-                        RenderSection(table, "Miscellaneous Items", request.MiscellaneousItems);
+                        RenderSection(table, "Common Use Supplies and Equipment (CSE) to be purchased from PS-DBM (kindly indicate the summary/total amounts only)", request.CommonUseSupplies);
+                        RenderSection(table, "Miscellaneous Items (for Direct Acquisition only) Sec 32.2 of RA No. 12009", request.MiscellaneousItems);
                     });
 
                     // ── Footer Totals Block ───────────────────────────────────
-                    col.Item().AlignRight().Width(350).PaddingTop(10).Border(1).BorderColor(Colors.Grey.Lighten1).Padding(6).Column(sb =>
+                    col.Item().AlignRight().Width(350).PaddingTop(10).Border(0.5f).BorderColor(Colors.Grey.Medium).Padding(6).Column(sb =>
                     {
                         sb.Item().Row(r =>
                         {
@@ -154,24 +150,54 @@ internal sealed class AppPdfRenderer : BasePdfRenderer, IDocumentRenderer<AppDat
     {
         if (items == null || !items.Any()) return;
 
-        // Header row for the section
-        table.Cell().ColumnSpan(12).Background(Colors.Grey.Lighten3).Padding(4)
+        table.Cell().ColumnSpan(12).Border(0.5f).BorderColor(Colors.Grey.Medium).Background(Colors.Grey.Lighten3).Padding(4)
             .Text(sectionTitle).Bold().FontSize(8);
 
         foreach (var item in items)
         {
-            table.Cell().Element(TableDataCell).Text(item.ProjectTitle);
-            table.Cell().Element(TableDataCell).Text(item.EndUserOrImplementingUnit);
-            table.Cell().Element(TableDataCell).Text(item.GeneralDescription);
-            table.Cell().Element(TableDataCell).Text(item.ModeOfProcurement);
-            table.Cell().Element(TableDataCell).AlignCenter().Text(item.CoveredByEpa ? "Yes" : "No");
-            table.Cell().Element(TableDataCell).Text(item.CriteriaForBidEvaluation);
-            table.Cell().Element(TableDataCell).AlignCenter().Text(item.StartOfProcurement);
-            table.Cell().Element(TableDataCell).AlignCenter().Text(item.EndOfProcurement);
-            table.Cell().Element(TableDataCell).Text(item.SourceOfFund);
-            table.Cell().Element(TableDataCell).AlignRight().Text($"₱{item.EstimatedBudget:N2}");
-            table.Cell().Element(TableDataCell).Text(item.ProcurementStrategyOrTools);
-            table.Cell().Element(TableDataCell).Text(item.Remarks);
+            static IContainer CellStyle(IContainer container, bool center = false, bool right = false)
+            {
+                var c = container.Border(0.5f).BorderColor(Colors.Grey.Medium).Padding(3);
+                if (center) c = c.AlignCenter();
+                if (right) c = c.AlignRight();
+                return c;
+            }
+
+            table.Cell().Element(c => CellStyle(c))
+                .Text(item.ProjectTitle).FontSize(7);
+
+            table.Cell().Element(c => CellStyle(c))
+                .Text(item.EndUserOrImplementingUnit);
+
+            table.Cell().Element(c => CellStyle(c))
+                .Text(item.GeneralDescription);
+
+            table.Cell().Element(c => CellStyle(c))
+                .Text(item.ModeOfProcurement);
+
+            table.Cell().Element(c => CellStyle(c, center: true))
+                .Text(item.CoveredByEpa ? "Yes" : "No");
+
+            table.Cell().Element(c => CellStyle(c))
+                .Text(item.CriteriaForBidEvaluation);
+
+            table.Cell().Element(c => CellStyle(c, center: true))
+                .Text(item.StartOfProcurement);
+
+            table.Cell().Element(c => CellStyle(c, center: true))
+                .Text(item.EndOfProcurement);
+
+            table.Cell().Element(c => CellStyle(c))
+                .Text(item.SourceOfFund);
+
+            table.Cell().Element(c => CellStyle(c, right: true))
+                .Text($"₱{item.EstimatedBudget:N2}");
+
+            table.Cell().Element(c => CellStyle(c))
+                .Text(item.ProcurementStrategyOrTools);
+
+            table.Cell().Element(c => CellStyle(c))
+                .Text(item.Remarks);
         }
     }
 }

@@ -53,12 +53,6 @@ public class CreateOfficeCommandValidator : AbstractValidator<CreateOfficeComman
             .Must(id => id != Guid.Empty)
             .WithMessage("OfficeType ID must be a valid, non-empty GUID.");
 
-        RuleFor(x => x.OrganizationId)
-            .NotEmpty()
-            .WithMessage("Organization is required.")
-            .Must(id => id != Guid.Empty)
-            .WithMessage("Organization ID must be a valid, non-empty GUID.");
-
         RuleFor(x => x.CategoryId)
             .NotEmpty()
             .WithMessage("Category is required.")
@@ -72,6 +66,11 @@ public class CreateOfficeCommandValidator : AbstractValidator<CreateOfficeComman
             .WithMessage("AdministrativeLevel ID must be a valid, non-empty GUID.");
 
         // Optional foreign keys
+        RuleFor(x => x.OrganizationId)
+            .Must(id => id != Guid.Empty)
+            .WithMessage("If provided, the Organization ID must be a valid, non-empty GUID.")
+            .When(x => x.OrganizationId.HasValue);
+
         RuleFor(x => x.ClusterId)
             .Must(id => id != Guid.Empty)
             .WithMessage("If provided, the Cluster ID must be a valid, non-empty GUID.")

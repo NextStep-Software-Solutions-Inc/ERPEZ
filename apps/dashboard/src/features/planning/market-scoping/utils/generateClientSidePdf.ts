@@ -58,7 +58,7 @@ export function generateClientSidePdf(form?: MarketScopingForm): Blob {
   doc.setFont('helvetica', 'bold')
   doc.text('Department / Unit:', 14, 77)
   doc.setFont('helvetica', 'normal')
-  doc.text(form?.departmentUnit || 'VCRI', 50, 77)
+  doc.text(form?.departmentUnit || '', 50, 77)
 
   // Section 1: Activities Conducted
   doc.setFontSize(10)

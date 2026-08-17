@@ -1,8 +1,9 @@
-import type { QueryBlueprintFromTemplate, QueryKey } from 'erpez-shared-lib'
 import type {
   APIResponse,
+  QueryBlueprintFromTemplate,
+  QueryKey,
   QueryParams,
-} from 'erpez-shared-lib/dist/types/Blueprint'
+} from 'erpez-shared-lib'
 import type { Cluster } from '../table/types'
 import api from '@/services/api'
 

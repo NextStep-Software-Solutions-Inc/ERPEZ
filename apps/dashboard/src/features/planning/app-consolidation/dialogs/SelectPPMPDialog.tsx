@@ -289,15 +289,10 @@ export function SelectPPMPDialog() {
           setAppList((prevList) => prevList.map((app) => app.id === currentApp.id ? transformedApp : app))
         }
 
-        // Invalidate react-query cache to force all components using APP details to refresh
-        queryClient.invalidateQueries({
-          queryKey: [`/apps/${currentApp.id}`],
-        })
-        queryClient.invalidateQueries({
-          queryKey: [getAPPDetailRequest.endpoint, currentApp.id],
-        })
-        queryClient.invalidateQueries({
-          queryKey: ['/apps'],
+        void queryClient.invalidateQueries({
+          predicate: (query) =>
+            typeof query.queryKey[0] === 'string' &&
+            (query.queryKey[0].startsWith('/apps') || query.queryKey[0].startsWith('/ppmps')),
         })
 
         toast.success(`${eligibleIdsToSubmit.length} PPMP(s) consolidated successfully`)

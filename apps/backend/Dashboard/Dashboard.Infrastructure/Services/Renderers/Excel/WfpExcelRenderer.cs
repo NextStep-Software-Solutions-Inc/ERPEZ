@@ -57,11 +57,29 @@ internal sealed class WfpExcelRenderer
 
         ws.Cell(6, 1).Value           = "Project Owner:";
         ws.Cell(6, 1).Style.Font.Bold = true;
-        ws.Cell(6, 2).Value           = ownerLine;
+        // ── Table Header (Rows 7 & 8) ─────────────────────────────────────────
+        ws.Range(7, 1, 8, 1).Merge();
+        StyleHeader(ws.Cell(7, 1), "OBJECTIVES");
+
+        ws.Range(7, 2, 8, 2).Merge();
+        StyleHeader(ws.Cell(7, 2), "TARGET ACTIVITIES");
+
+        ws.Range(7, 3, 8, 3).Merge();
+        StyleHeader(ws.Cell(7, 3), "TARGET ACCOMPLISHMENTS\n(with % weight and objectively verifiable indicators)");
+
+        ws.Range(7, 4, 7, 9).Merge();
+        StyleHeader(ws.Cell(7, 4), "ANNUAL TARGET- 100% (with % weight per quarter)");
+
+        StyleHeader(ws.Cell(8, 4), "1st Quarter");
+        StyleHeader(ws.Cell(8, 5), "2nd Quarter");
+        StyleHeader(ws.Cell(8, 6), "3rd Quarter");
+        StyleHeader(ws.Cell(8, 7), "4th Quarter");
+        StyleHeader(ws.Cell(8, 8), "Total");
+        StyleHeader(ws.Cell(8, 9), "Weighted %\nTotal");
 
         // ── Table body ────────────────────────────────────────────────────────
         var currentRow   = 9;
-        var objectiveNum = 1; // mirrors PDF var objectiveNum = 1
+        var objectiveNum = 1;
 
         foreach (var objective in request.Objectives)
         {

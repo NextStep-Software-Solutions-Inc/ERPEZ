@@ -345,7 +345,7 @@ export function CreatePpmpMetadataForm({
               <SelectTrigger size="md">
                 <SelectValue placeholder="Select a fund source..." />
               </SelectTrigger>
-              <SelectContent>
+              <SelectContent className="max-h-72 overflow-y-auto">
                 <SelectItem value="none">None / Select a fund source...</SelectItem>
                 {fundSources.map((fundSource) => (
                   <SelectItem key={fundSource.id} value={fundSource.id}>

@@ -1,4 +1,4 @@
-﻿using ERPEZ.Domain.Interfaces;
+using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
@@ -15,7 +15,18 @@ public class DeleteWFPObjectiveActivityCommandHandler(IUnitOfWork unitOfWork)
         var target = await unitOfWork.WFPObjectiveActivityRepository.GetByIdAsync(request.Id, cancellationToken)
             ?? throw new NotFoundException("Activity not found.");
 
+        var timelines = await unitOfWork.WFPObjectiveTimelineRepository.ToListAsync(
+            unitOfWork.WFPObjectiveTimelineRepository.Query(t => t.WFPObjectiveActivityId == request.Id),
+            cancellationToken);
+
+        var expenditures = await unitOfWork.WFPObjectiveActivityExpenditureRepository.ToListAsync(
+            unitOfWork.WFPObjectiveActivityExpenditureRepository.Query(e => e.WFPObjectiveActivityId == request.Id),
+            cancellationToken);
+
+        unitOfWork.WFPObjectiveTimelineRepository.RemoveRange(timelines);
+        unitOfWork.WFPObjectiveActivityExpenditureRepository.RemoveRange(expenditures);
         unitOfWork.WFPObjectiveActivityRepository.Remove(target);
+
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return ApiResponse<bool>.Success(true, "Activity deleted successfully.");

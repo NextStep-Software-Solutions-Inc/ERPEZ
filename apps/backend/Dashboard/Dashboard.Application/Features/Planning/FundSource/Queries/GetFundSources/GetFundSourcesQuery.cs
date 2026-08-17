@@ -7,4 +7,5 @@ namespace ERPEZ.Application.Features.Planning.FundSource.Queries.FundSources;
 public record GetFundSourcesQuery : PaginatedQuery<PaginatedApiResponse<FundSourceResponse>>
 {
     public Guid? FiscalYearId { get; init; }
+    public Guid? OrganizationId { get; init; }
 }

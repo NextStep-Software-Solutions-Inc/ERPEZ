@@ -120,7 +120,7 @@ export function FundClusterTab() {
   // Fetch fund sources for the dialog
   const { data: fundSourcesResponse } = useFundSources({
     pathParams: {},
-    queryParams: { pageSize: 100 },
+    queryParams: { pageSize: 2000 },
   })
 
   const masterBudgets: AgencyMasterBudget[] = masterBudgetsResponse?.data ?? []

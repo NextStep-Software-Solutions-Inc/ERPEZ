@@ -47,6 +47,24 @@ public class APPItem : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public List<ProcurementStrategy>? ProcurementStrategies { get; set; }
     
+    [Sieve(CanFilter = true, CanSort = true)]
+    public DateTime? StartOfProcurementOverride { get; set; }
+    
+    [Sieve(CanFilter = true, CanSort = true)]
+    public DateTime? EndOfProcurementOverride { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public decimal? EstimatedBudgetOverride { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public string? EPARemarks { get; set; }
+    
+    [Sieve(CanFilter = true, CanSort = true)]
+    public bool IsNew { get; set; }
+    
+    [Sieve(CanFilter = true, CanSort = true)]
+    public bool IsRevised { get; set; }
+    
     // Navigation properties
     public virtual APP APP { get; set; } = null!;
     public virtual PPMPItem PPMPItem { get; set; } = null!;

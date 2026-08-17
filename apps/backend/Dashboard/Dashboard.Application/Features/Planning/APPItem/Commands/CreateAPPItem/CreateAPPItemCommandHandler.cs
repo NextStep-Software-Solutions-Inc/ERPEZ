@@ -11,7 +11,7 @@ public class CreateAPPItemCommandHandler(IUnitOfWork unitOfWork) : IRequestHandl
 {
     public async Task<ApiResponse<Guid>> Handle(CreateAPPItemCommand request, CancellationToken cancellationToken)
     {
-        _ = await unitOfWork.APPRepository.GetByIdAsync(request.APPId, cancellationToken)
+        var app = await unitOfWork.APPRepository.GetByIdAsync(request.APPId, cancellationToken)
             ?? throw new NotFoundException("APP not found.");
         var ppmpItem = await unitOfWork.PPMPItemRepository.GetByIdWithDetailsAsync(request.PPMPItemId, cancellationToken)
             ?? await unitOfWork.PPMPItemRepository.GetByIdAsync(request.PPMPItemId, cancellationToken)
@@ -42,6 +42,8 @@ public class CreateAPPItemCommandHandler(IUnitOfWork unitOfWork) : IRequestHandl
         if (existing is not null)
             throw new ConflictException("PPMP item is already attached to this APP.");
 
+        var isNewItem = string.Equals(app.APPType, "Updated", StringComparison.OrdinalIgnoreCase);
+
         var entity = new ERPEZ.Domain.Entities.Planning.APPItem
         {
             Id = Guid.NewGuid(),
@@ -55,7 +57,9 @@ public class CreateAPPItemCommandHandler(IUnitOfWork unitOfWork) : IRequestHandl
             IsEarlyProcurementActivity = request.IsEarlyProcurementActivity,
             IsOutsourced = request.IsOutsourced,
             BidEvaluationCriteria = request.BidEvaluationCriteria != null ? Enum.Parse<BidEvaluationCriteria>(request.BidEvaluationCriteria, true) : null,
-            ProcurementStrategies = request.ProcurementStrategies?.Select(x => Enum.Parse<ProcurementStrategy>(x, true)).ToList()
+            ProcurementStrategies = request.ProcurementStrategies?.Select(x => Enum.Parse<ProcurementStrategy>(x, true)).ToList(),
+            IsNew = isNewItem,
+            IsRevised = false
         };
 
         await unitOfWork.APPItemRepository.AddAsync(entity, cancellationToken);

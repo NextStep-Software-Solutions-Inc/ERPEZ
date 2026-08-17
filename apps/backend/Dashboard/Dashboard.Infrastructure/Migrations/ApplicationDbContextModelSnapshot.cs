@@ -65,8 +65,18 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasMaxLength(100)
                         .HasColumnType("character varying(100)");
 
+                    b.Property<string>("APPType")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
+
                     b.Property<DateTime?>("ApprovedDate")
                         .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("Batch")
+                        .IsRequired()
+                        .HasMaxLength(50)
+                        .HasColumnType("character varying(50)");
 
                     b.Property<DateTime>("CreatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -100,12 +110,17 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasMaxLength(500)
                         .HasColumnType("character varying(500)");
 
-                    b.Property<Guid>("OfficeId")
-                        .HasColumnType("uuid");
+                    b.Property<string>("Quarter")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("character varying(20)");
 
                     b.Property<string>("Remarks")
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
+
+                    b.Property<Guid?>("SourceAPPId")
+                        .HasColumnType("uuid");
 
                     b.Property<string>("Status")
                         .IsRequired()
@@ -121,6 +136,12 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("UpdatedBy")
                         .HasColumnType("text");
 
+                    b.Property<DateTime?>("VersionDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<int?>("VersionNumber")
+                        .HasColumnType("integer");
+
                     b.HasKey("Id");
 
                     b.HasIndex("APPNumber")
@@ -128,7 +149,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasIndex("FiscalYearId");
 
-                    b.HasIndex("OfficeId");
+                    b.HasIndex("SourceAPPId");
 
                     b.ToTable("APPs", "planning");
                 });
@@ -159,6 +180,15 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("DeletedBy")
                         .HasColumnType("text");
 
+                    b.Property<string>("EPARemarks")
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("EndOfProcurementOverride")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<decimal?>("EstimatedBudgetOverride")
+                        .HasColumnType("numeric");
+
                     b.Property<Guid>("FundSourceId")
                         .HasColumnType("uuid");
 
@@ -168,7 +198,13 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<bool>("IsEarlyProcurementActivity")
                         .HasColumnType("boolean");
 
+                    b.Property<bool>("IsNew")
+                        .HasColumnType("boolean");
+
                     b.Property<bool>("IsOutsourced")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsRevised")
                         .HasColumnType("boolean");
 
                     b.Property<Guid>("OfficeId")
@@ -191,6 +227,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("Remarks")
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
+
+                    b.Property<DateTime?>("StartOfProcurementOverride")
+                        .HasColumnType("timestamp with time zone");
 
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
@@ -306,6 +345,76 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("ScheduledDate");
 
                     b.ToTable("APPProcurementSchedules", "planning");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.APPSignatory", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<Guid>("APPId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<string>("Department")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("PersonnelPositionId")
+                        .HasColumnType("uuid");
+
+                    b.Property<string>("Position")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<string>("RoleKey")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<int>("SequenceOrder")
+                        .HasColumnType("integer");
+
+                    b.Property<DateTime?>("SignatureDate")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.Property<Guid?>("UserId")
+                        .HasColumnType("uuid");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("APPId");
+
+                    b.HasIndex("PersonnelPositionId");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("APPSignatories", "planning");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.AdministrativeLevel", b =>
@@ -4021,7 +4130,7 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid>("OfficeTypeId")
                         .HasColumnType("uuid");
 
-                    b.Property<Guid>("OrganizationId")
+                    b.Property<Guid?>("OrganizationId")
                         .HasColumnType("uuid");
 
                     b.Property<Guid?>("ParentId")
@@ -4255,6 +4364,52 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsUnique();
 
                     b.ToTable("Organizations", "planning");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OrganizationFundSource", b =>
+                {
+                    b.Property<Guid>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime>("CreatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("CreatedBy")
+                        .IsRequired()
+                        .HasColumnType("text");
+
+                    b.Property<DateTime?>("DeletedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("DeletedBy")
+                        .HasColumnType("text");
+
+                    b.Property<Guid>("FundSourceId")
+                        .HasColumnType("uuid");
+
+                    b.Property<bool>("IsActive")
+                        .HasColumnType("boolean");
+
+                    b.Property<bool>("IsDeleted")
+                        .HasColumnType("boolean");
+
+                    b.Property<Guid>("OrganizationId")
+                        .HasColumnType("uuid");
+
+                    b.Property<DateTime?>("UpdatedAt")
+                        .HasColumnType("timestamp with time zone");
+
+                    b.Property<string>("UpdatedBy")
+                        .HasColumnType("text");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("FundSourceId");
+
+                    b.HasIndex("OrganizationId");
+
+                    b.ToTable("OrganizationFundSources", "planning");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.PMT", b =>
@@ -4495,7 +4650,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("LIBActivityId");
 
                     b.HasIndex("PPMPId", "LIBActivityId")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("\"IsDeleted\" = false");
 
                     b.ToTable("PPMPActivities", "planning");
                 });
@@ -9187,15 +9343,14 @@ namespace ERPEZ.Infrastructure.Migrations
                         .OnDelete(DeleteBehavior.Restrict)
                         .IsRequired();
 
-                    b.HasOne("ERPEZ.Domain.Entities.Planning.Office", "Office")
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.APP", "SourceAPP")
                         .WithMany()
-                        .HasForeignKey("OfficeId")
-                        .OnDelete(DeleteBehavior.Restrict)
-                        .IsRequired();
+                        .HasForeignKey("SourceAPPId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.Navigation("FiscalYear");
 
-                    b.Navigation("Office");
+                    b.Navigation("SourceAPP");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.APPItem", b =>
@@ -9277,6 +9432,29 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("PPMPItem");
 
                     b.Navigation("ProcurementActivityType");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.APPSignatory", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.APP", "APP")
+                        .WithMany("APPSignatories")
+                        .HasForeignKey("APPId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.PersonnelPosition", "PersonnelPosition")
+                        .WithMany()
+                        .HasForeignKey("PersonnelPositionId");
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId");
+
+                    b.Navigation("APP");
+
+                    b.Navigation("PersonnelPosition");
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.AgencyMasterBudget", b =>
@@ -10229,9 +10407,7 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasOne("ERPEZ.Domain.Entities.Planning.Organization", "Organization")
                         .WithMany("Offices")
-                        .HasForeignKey("OrganizationId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
+                        .HasForeignKey("OrganizationId");
 
                     b.HasOne("ERPEZ.Domain.Entities.Planning.Office", "Parent")
                         .WithMany("Children")
@@ -10300,6 +10476,25 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("FiscalYear");
 
                     b.Navigation("ParentOrganization");
+                });
+
+            modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.OrganizationFundSource", b =>
+                {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.FundSource", "FundSource")
+                        .WithMany("OrganizationFundSources")
+                        .HasForeignKey("FundSourceId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.Organization", "Organization")
+                        .WithMany("OrganizationFundSources")
+                        .HasForeignKey("OrganizationId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("FundSource");
+
+                    b.Navigation("Organization");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.PMT", b =>
@@ -11594,6 +11789,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("APPItems");
 
                     b.Navigation("APPPPMPs");
+
+                    b.Navigation("APPSignatories");
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.AdministrativeLevel", b =>
@@ -11682,6 +11879,8 @@ namespace ERPEZ.Infrastructure.Migrations
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.FundSource", b =>
                 {
                     b.Navigation("FundSources");
+
+                    b.Navigation("OrganizationFundSources");
 
                     b.Navigation("Transactions");
                 });
@@ -11876,6 +12075,8 @@ namespace ERPEZ.Infrastructure.Migrations
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.Organization", b =>
                 {
                     b.Navigation("Offices");
+
+                    b.Navigation("OrganizationFundSources");
 
                     b.Navigation("Organizations");
 

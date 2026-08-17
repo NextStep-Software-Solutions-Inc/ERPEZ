@@ -75,6 +75,8 @@ public class BulkCreateKPIAssignmentCommandHandler(IUnitOfWork unitOfWork, IKPIA
                 foreach (var officeAssignment in kpiAssignment.OfficeAssignments)
                 {
                     var existingAssignment = existingAssignments.FirstOrDefault(a => a.OfficeId == officeAssignment.OfficeId);
+                    Guid targetAssignmentId;
+
                     if (existingAssignment != null)
                     {
                         // Update existing assignment
@@ -86,6 +88,7 @@ public class BulkCreateKPIAssignmentCommandHandler(IUnitOfWork unitOfWork, IKPIA
                         existingAssignment.IsLocked = officeAssignment.IsLocked;
 
                         unitOfWork.KPIAssignmentRepository.Update(existingAssignment);
+                        targetAssignmentId = existingAssignment.Id;
                         createdAssignmentIds.Add(existingAssignment.Id);
                         totalOfficesAssigned++;
                     }
@@ -112,8 +115,47 @@ public class BulkCreateKPIAssignmentCommandHandler(IUnitOfWork unitOfWork, IKPIA
                         };
 
                         await unitOfWork.KPIAssignmentRepository.AddAsync(assignment, cancellationToken);
+                        targetAssignmentId = assignmentId;
                         createdAssignmentIds.Add(assignmentId);
                         totalOfficesAssigned++;
+                    }
+
+                    // Auto-sync OPCRItem if a Draft OPCR already exists for this office & fiscal year
+                    var existingOpcr = await unitOfWork.OPCRRepository.FindAsync(
+                        o => o.OfficeId == officeAssignment.OfficeId && o.FiscalYearId == fyActiveKPI.FiscalYearId,
+                        cancellationToken);
+
+                    if (existingOpcr != null && existingOpcr.CommitmentStatus.Equals("Draft", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var existingOpcrItem = await unitOfWork.OPCRItemRepository.FindAsync(
+                            i => i.OPCRId == existingOpcr.Id && i.KPIAssignmentId == targetAssignmentId,
+                            cancellationToken);
+
+                        if (existingOpcrItem != null)
+                        {
+                            existingOpcrItem.Q1Target = (int)(officeAssignment.AssignedTargetQ1 ?? 0);
+                            existingOpcrItem.Q2Target = (int)(officeAssignment.AssignedTargetQ2 ?? 0);
+                            existingOpcrItem.Q3Target = (int)(officeAssignment.AssignedTargetQ3 ?? 0);
+                            existingOpcrItem.Q4Target = (int)(officeAssignment.AssignedTargetQ4 ?? 0);
+                            existingOpcrItem.UpdatedAt = DateTime.UtcNow;
+                            unitOfWork.OPCRItemRepository.Update(existingOpcrItem);
+                        }
+                        else
+                        {
+                            var opcrItem = new Domain.Entities.Planning.OPCRItem
+                            {
+                                Id = Guid.NewGuid(),
+                                OPCRId = existingOpcr.Id,
+                                KPIAssignmentId = targetAssignmentId,
+                                IsShopped = false,
+                                Q1Target = (int)(officeAssignment.AssignedTargetQ1 ?? 0),
+                                Q2Target = (int)(officeAssignment.AssignedTargetQ2 ?? 0),
+                                Q3Target = (int)(officeAssignment.AssignedTargetQ3 ?? 0),
+                                Q4Target = (int)(officeAssignment.AssignedTargetQ4 ?? 0),
+                                CreatedAt = DateTime.UtcNow
+                            };
+                            await unitOfWork.OPCRItemRepository.AddAsync(opcrItem, cancellationToken);
+                        }
                     }
                 }
 

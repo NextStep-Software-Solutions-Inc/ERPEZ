@@ -10,6 +10,20 @@ public class PlanningSieveConfiguration : ISieveConfiguration
 {
     public void Configure(SievePropertyMapper mapper)
     {
-        // Placeholder for future Sieve mappings
+        mapper.Property<FundSource>(p => p.Name)
+            .CanSort()
+            .CanFilter();
+
+        mapper.Property<FundSource>(p => p.Code)
+            .CanSort()
+            .CanFilter();
+
+        mapper.Property<FundSource>(p => p.Type)
+            .CanSort()
+            .CanFilter();
+
+        mapper.Property<FundSource>(p => p.FiscalYearId)
+            .CanSort()
+            .CanFilter();
     }
 }

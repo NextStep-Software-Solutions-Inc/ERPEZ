@@ -93,8 +93,16 @@ public class CreateWFPCommandHandler(IUnitOfWork unitOfWork, ICurrentUserService
                     unitOfWork.ObjectRepository.Query(o => !o.IsDeleted), cancellationToken);
                 var defaultObject = allObjects.FirstOrDefault();
 
-                foreach (var opcrItem in sourceOpcr.OPCRItems)
+                var opcrItemList = sourceOpcr.OPCRItems.ToList();
+                var totalOpcrItems = opcrItemList.Count;
+                var baseObjectiveWeight = totalOpcrItems > 0 ? Math.Round(100m / totalOpcrItems, 2) : 0m;
+                var remainingObjectiveWeight = totalOpcrItems > 0 ? 100m - (baseObjectiveWeight * totalOpcrItems) : 0m;
+
+                for (var itemIdx = 0; itemIdx < totalOpcrItems; itemIdx++)
                 {
+                    var opcrItem = opcrItemList[itemIdx];
+                    var defaultObjectiveWeight = baseObjectiveWeight + (itemIdx == totalOpcrItems - 1 ? remainingObjectiveWeight : 0m);
+
                     var baseName = opcrItem.KPIAssignment?.FYActiveKPI?.MasterKPI?.Name
                         ?? opcrItem.KPIAssignment?.FYActiveKPI?.MFOPAP?.Name
                         ?? "OPCR Objective";
@@ -112,7 +120,7 @@ public class CreateWFPCommandHandler(IUnitOfWork unitOfWork, ICurrentUserService
                     {
                         WFPId = wfp.Id,
                         Description = objectiveName,
-                        Weight = 0m,
+                        Weight = defaultObjectiveWeight,
                         CreatedAt = now,
                         CreatedBy = currentUserId,
                     };
@@ -126,10 +134,18 @@ public class CreateWFPCommandHandler(IUnitOfWork unitOfWork, ICurrentUserService
                     var q3Val = opcrItem.Q3Target > 0 ? opcrItem.Q3Target : (opcrItem.KPIAssignment?.AssignedTargetQ3 ?? 25m);
                     var q4Val = opcrItem.Q4Target > 0 ? opcrItem.Q4Target : (opcrItem.KPIAssignment?.AssignedTargetQ4 ?? 25m);
 
-                    if (opcrItem.OPCRActivities != null)
+                    if (opcrItem.OPCRActivities != null && opcrItem.OPCRActivities.Count > 0)
                     {
-                        foreach (var activity in opcrItem.OPCRActivities)
+                        var opcrActivityList = opcrItem.OPCRActivities.ToList();
+                        var activitiesCount = opcrActivityList.Count;
+                        var baseActivityWeight = activitiesCount > 0 ? Math.Round(defaultObjectiveWeight / activitiesCount, 2) : 0m;
+                        var remainingActivityWeight = activitiesCount > 0 ? defaultObjectiveWeight - (baseActivityWeight * activitiesCount) : 0m;
+
+                        for (var actIdx = 0; actIdx < activitiesCount; actIdx++)
                         {
+                            var activity = opcrActivityList[actIdx];
+                            var defaultActivityWeight = baseActivityWeight + (actIdx == activitiesCount - 1 ? remainingActivityWeight : 0m);
+
                             // Verify OPCRActivity exists in DB to prevent foreign key violation
                             var opcrActivityExists = activity.Id != Guid.Empty &&
                                 (await unitOfWork.OPCRActivityRepository.FindAsync(a => a.Id == activity.Id, cancellationToken)) != null;
@@ -141,7 +157,7 @@ public class CreateWFPCommandHandler(IUnitOfWork unitOfWork, ICurrentUserService
                                 OPCRActivityId = opcrActivityExists ? activity.Id : null,
                                 ActivityName = string.IsNullOrWhiteSpace(activity.Name) ? "OPCR Activity" : activity.Name,
                                 Indicator = string.IsNullOrWhiteSpace(activity.Description) ? activity.Name : activity.Description,
-                                Weight = 0m,
+                                Weight = defaultActivityWeight,
                                 CreatedAt = now,
                                 CreatedBy = currentUserId,
                             };

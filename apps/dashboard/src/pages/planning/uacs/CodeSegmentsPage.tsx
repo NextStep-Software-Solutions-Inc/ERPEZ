@@ -36,8 +36,8 @@ export default function CodeSegmentsPage() {
           <TabsTrigger value="organization">Organization</TabsTrigger>
           <TabsTrigger value="location">Location</TabsTrigger>
           <TabsTrigger value="mfo-pap">MFO/PAP</TabsTrigger>
-          <TabsTrigger value="object">Object Code</TabsTrigger>
           <TabsTrigger value="expense-class">Expense Class</TabsTrigger>
+          <TabsTrigger value="object">Object Code</TabsTrigger>
         </TabsList>
         <TabsContent value="funding-source" className="space-y-4">
           <FundingSourceTab />
@@ -51,11 +51,11 @@ export default function CodeSegmentsPage() {
         <TabsContent value="mfo-pap" className="space-y-4">
           <MfoPapTab />
         </TabsContent>
-        <TabsContent value="object" className="space-y-4">
-          <ObjectCodeTab />
-        </TabsContent>
         <TabsContent value="expense-class" className="space-y-4">
           <ExpenseClassTab />
+        </TabsContent>
+        <TabsContent value="object" className="space-y-4">
+          <ObjectCodeTab />
         </TabsContent>
       </Tabs>
     </TabsContent>

@@ -1,154 +1,390 @@
-import { Banknote, Plus } from 'lucide-react';
-import { createQueryHookFromTemplate } from 'erpez-shared-lib';
-import { useSetAtom } from 'jotai';
-import { PageContainer } from '@/components/PageContainer';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardHeader } from '@/components/ui/card';
-import { formatCurrencyPHP, toSentenceCase, toTitleCase } from '@/utils/formatters';
-import { getWFPObjectiveTargetRequest } from '@/components/features/planning/wfp/wfp-objective-target/handlers/getWFPObjectiveTargetRequest';
-import { getWFPObjectiveTargetExpendituresRequest } from '@/components/features/planning/wfp/wfp-expenditure/handlers/getWFPObjectiveTargetExpendituresRequest';
-import { createDialogAtom } from '@/components/features/planning/wfp/wfp-expenditure/atoms';
-import CreateWFPObjectiveTargetExpenditureDialog from '@/components/features/planning/wfp/wfp-expenditure/dialog/CreateWFPObjectiveTargetExpenditureDialog';
-import { Actions } from '@/components/features/planning/wfp/wfp-expenditure/table/Actions';
-import UpdateWFPObjectiveTargetExpenditureDialog from '@/components/features/planning/wfp/wfp-expenditure/dialog/UpdateWFPObjectiveTargetExpenditureDialog';
-import DeleteWFPObjectiveTargetExpenditureDialog from '@/components/features/planning/wfp/wfp-expenditure/dialog/DeleteWFPObjectiveTargetExpenditureDialog';
+import { useState, useMemo } from 'react'
+import {
+  Banknote,
+  Plus,
+  Package,
+  Briefcase,
+  Users,
+  Landmark,
+  Layers,
+  ChevronUp,
+  ChevronDown,
+  MoreVertical,
+  Wallet,
+} from 'lucide-react'
+import { createQueryHookFromTemplate } from 'erpez-shared-lib'
+import { useSetAtom } from 'jotai'
+import { Link } from '@tanstack/react-router'
+import {
+  Breadcrumb,
+  BreadcrumbList,
+  BreadcrumbItem,
+  BreadcrumbLink,
+  BreadcrumbPage,
+  BreadcrumbSeparator,
+} from '@/components/ui/breadcrumb'
+import { PageContainer } from '@/components/PageContainer'
+import { Button } from '@/components/ui/button'
+import { Card } from '@/components/ui/card'
+import { Badge } from '@/components/ui/badge'
+import { formatCurrencyPHP, toSentenceCase, toTitleCase } from '@/utils/formatters'
+import { getWFPObjectiveTargetRequest } from '@/components/features/planning/wfp/wfp-objective-target/handlers/getWFPObjectiveTargetRequest'
+import { getWFPObjectiveTargetExpendituresRequest } from '@/components/features/planning/wfp/wfp-expenditure/handlers/getWFPObjectiveTargetExpendituresRequest'
+import { createDialogAtom } from '@/components/features/planning/wfp/wfp-expenditure/atoms'
+import CreateWFPObjectiveTargetExpenditureDialog from '@/components/features/planning/wfp/wfp-expenditure/dialog/CreateWFPObjectiveTargetExpenditureDialog'
+import { Actions } from '@/components/features/planning/wfp/wfp-expenditure/table/Actions'
+import UpdateWFPObjectiveTargetExpenditureDialog from '@/components/features/planning/wfp/wfp-expenditure/dialog/UpdateWFPObjectiveTargetExpenditureDialog'
+import DeleteWFPObjectiveTargetExpenditureDialog from '@/components/features/planning/wfp/wfp-expenditure/dialog/DeleteWFPObjectiveTargetExpenditureDialog'
 
-const useWFPObjectiveTarget = createQueryHookFromTemplate(getWFPObjectiveTargetRequest);
-const useWFPObjectiveTargetExpenditures = createQueryHookFromTemplate(getWFPObjectiveTargetExpendituresRequest);
+const useWFPObjectiveTarget = createQueryHookFromTemplate(getWFPObjectiveTargetRequest)
+const useWFPObjectiveTargetExpenditures = createQueryHookFromTemplate(
+  getWFPObjectiveTargetExpendituresRequest,
+)
 
-export default function WFPExpenditurePage({ wfpObjectiveActivityId }: { wfpObjectiveActivityId: string }) {
+// Helper to assign category color scheme matching mockup in Screenshot 1
+const getCategoryTheme = (categoryName: string, index: number) => {
+  const nameLower = categoryName.toLowerCase()
+  if (nameLower.includes('maintenance') || nameLower.includes('mooe')) {
+    return {
+      bar: 'bg-red-600',
+      iconBg: 'bg-red-50 text-red-600 border border-red-100',
+      totalText: 'text-red-600',
+      subtotalText: 'text-red-600',
+      Icon: Briefcase,
+    }
+  }
+  if (nameLower.includes('personnel') || nameLower.includes('services')) {
+    return {
+      bar: 'bg-blue-600',
+      iconBg: 'bg-blue-50 text-blue-600 border border-blue-100',
+      totalText: 'text-blue-600',
+      subtotalText: 'text-blue-600',
+      Icon: Users,
+    }
+  }
+  if (nameLower.includes('financial') || nameLower.includes('direct') || nameLower.includes('cost')) {
+    return {
+      bar: 'bg-emerald-600',
+      iconBg: 'bg-emerald-50 text-emerald-600 border border-emerald-100',
+      totalText: 'text-emerald-600',
+      subtotalText: 'text-emerald-600',
+      Icon: Landmark,
+    }
+  }
 
+  // Fallback cyclic color scheme
+  const themes = [
+    { bar: 'bg-blue-600', iconBg: 'bg-blue-50 text-blue-600 border border-blue-100', totalText: 'text-blue-600', subtotalText: 'text-blue-600', Icon: Layers },
+    { bar: 'bg-emerald-600', iconBg: 'bg-emerald-50 text-emerald-600 border border-emerald-100', totalText: 'text-emerald-600', subtotalText: 'text-emerald-600', Icon: Landmark },
+    { bar: 'bg-amber-600', iconBg: 'bg-amber-50 text-amber-600 border border-amber-100', totalText: 'text-amber-600', subtotalText: 'text-amber-600', Icon: Layers },
+  ]
+  return themes[index % themes.length]
+}
+
+export default function WFPExpenditurePage({
+  wfpObjectiveActivityId,
+}: {
+  wfpObjectiveActivityId: string
+}) {
   const { data: targetData, isLoading: isLoadingTarget } = useWFPObjectiveTarget({
     pathParams: { id: wfpObjectiveActivityId },
     queryParams: {},
-  });
+  })
 
-  const { data: expendituresResponse, isLoading: isLoadingExpenditures } = useWFPObjectiveTargetExpenditures({
-    pathParams: {},
-    queryParams: {
-      filters: `wfpObjectiveActivityId==${wfpObjectiveActivityId}`
-    }
-  });
+  const { data: expendituresResponse, isLoading: isLoadingExpenditures } =
+    useWFPObjectiveTargetExpenditures({
+      pathParams: {},
+      queryParams: {
+        filters: `wfpObjectiveActivityId==${wfpObjectiveActivityId}`,
+      },
+    })
 
-  const setCreateDialog = useSetAtom(createDialogAtom);
+  const setCreateDialog = useSetAtom(createDialogAtom)
 
-  if (isLoadingTarget || !targetData?.data || isLoadingExpenditures) {
-    return <div className="p-8 text-center">Loading Expenditure Details...</div>;
+  // Track collapsed state per category
+  const [collapsedCategories, setCollapsedCategories] = useState<Record<string, boolean>>({})
+
+  const expenditures = expendituresResponse?.data || []
+  type ExpenditureItem = (typeof expenditures)[number]
+
+  // Group expenditures by Expenditure Category (Sub-Class parent name or object name)
+  const groupedCategories = useMemo(() => {
+    const map: Record<
+      string,
+      {
+        categoryName: string
+        items: ExpenditureItem[]
+        categoryTotal: number
+      }
+    > = {}
+
+    expenditures.forEach((item) => {
+      const categoryName =
+        item.object?.parent?.name || item.object?.name || 'General Expenditures'
+
+      if (!map[categoryName]) {
+        map[categoryName] = {
+          categoryName,
+          items: [],
+          categoryTotal: 0,
+        }
+      }
+      const itemSubtotal = (item.unitCost || 0) * (item.quantity || 0)
+      map[categoryName].items.push(item)
+      map[categoryName].categoryTotal += itemSubtotal
+    })
+
+    return Object.values(map)
+  }, [expenditures])
+
+  const grandTotal = useMemo(() => {
+    return expenditures.reduce((total: number, item: ExpenditureItem) => {
+      return total + (item.unitCost * item.quantity || 0)
+    }, 0)
+  }, [expenditures])
+
+  const toggleCategoryCollapse = (categoryName: string) => {
+    setCollapsedCategories((prev) => ({
+      ...prev,
+      [categoryName]: !prev[categoryName],
+    }))
   }
 
-  const expenditures = expendituresResponse?.data || [];
-  type ExpenditureItem = (typeof expenditures)[number];
-  type GroupedData = Record<string, Record<string, Array<ExpenditureItem>>>;
+  if (isLoadingTarget || !targetData?.data || isLoadingExpenditures) {
+    return <div className="p-8 text-center text-slate-500 font-medium">Loading Expenditure Details...</div>
+  }
 
-  // Group expenditures by parent and object name
-  const groupedExpenditures = expenditures.reduce<GroupedData>((acc: GroupedData, item: ExpenditureItem) => {
-    const parentName = item.object?.parent?.name || 'Uncategorized';
-    const objectName = item.object?.name || 'Unknown';
+  const wfpObjectiveId = targetData.data.wfpObjectiveId || targetData.data.wfpObjective?.id
+  const wfpId = targetData.data.wfpObjective?.wfpId
+  const objectiveDesc = targetData.data.wfpObjective?.description || 'Objective Details'
+  const activityName = targetData.data.activityName
 
-    if (!acc[parentName]) {
-      acc[parentName] = {};
-    }
-    if (!acc[parentName][objectName]) {
-      acc[parentName][objectName] = [];
-    }
-    acc[parentName][objectName].push(item);
-    return acc;
-  }, {});
-  const calculateGrandTotal = () => {
-    return expenditures.reduce((total: number, category: ExpenditureItem) => {
-      return total + (category.unitCost * category.quantity || 0);
-    }, 0);
-  };
+  const breadcrumbs = (
+    <Breadcrumb>
+      <BreadcrumbList>
+        <BreadcrumbItem>
+          <BreadcrumbLink asChild>
+            <Link to="/v2/wfp" className="text-slate-500 hover:text-indigo-600 font-medium text-xs">
+              Work & Financial Plans
+            </Link>
+          </BreadcrumbLink>
+        </BreadcrumbItem>
+        <BreadcrumbSeparator />
+        {wfpId && (
+          <>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link
+                  to="/v2/wfp/$wfpId"
+                  params={{ wfpId }}
+                  className="text-slate-500 hover:text-indigo-600 font-medium text-xs max-w-[180px] truncate"
+                >
+                  WFP Details
+                </Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+          </>
+        )}
+        {wfpObjectiveId && (
+          <>
+            <BreadcrumbItem>
+              <BreadcrumbLink asChild>
+                <Link
+                  to="/v2/wfp-objective/$wfpObjectiveId"
+                  params={{ wfpObjectiveId }}
+                  className="text-slate-500 hover:text-indigo-600 font-medium text-xs max-w-[200px] truncate"
+                  title={objectiveDesc}
+                >
+                  {toTitleCase(objectiveDesc)}
+                </Link>
+              </BreadcrumbLink>
+            </BreadcrumbItem>
+            <BreadcrumbSeparator />
+          </>
+        )}
+        <BreadcrumbItem>
+          <BreadcrumbPage className="font-semibold text-slate-800 dark:text-slate-200 text-xs max-w-[250px] truncate" title={activityName}>
+            {toTitleCase(activityName) || 'Activity Expenditures'}
+          </BreadcrumbPage>
+        </BreadcrumbItem>
+      </BreadcrumbList>
+    </Breadcrumb>
+  )
+
   return (
     <PageContainer
       title={toTitleCase(targetData.data.activityName) || 'Activity Expenditures'}
-      description='List of Expenditure for this Activity'
-      backTo={{ to: "/v2/wfp-objective/$wfpObjectiveId", params: { deliveryUnitId: targetData?.data?.wfpObjective.deliveryUnitId, wfpObjectiveId: targetData?.data?.wfpObjective.id } }}
-      backLabel="Back"
+      description="List of Expenditures for this Activity"
+      breadcrumbs={breadcrumbs}
     >
-      <div className="space-y-4 mx-auto">
-        {/* Expenditure List Header */}
-        <div className="flex items-center justify-between pt-6 border-t border-gray-100">
-          <h2 className="text-xl font-black text-gray-900 tracking-tight">Expenditure</h2>
-          <Button 
-            size="sm" 
-            className="bg-blue-600 hover:bg-blue-700 flex gap-2" 
+      <div className="space-y-6 mx-auto">
+        {/* Page Header */}
+        <div className="flex items-center justify-between pt-4 border-t border-slate-100">
+          <div>
+            <h2 className="text-xl font-bold text-slate-900 tracking-tight">Expenditures</h2>
+            <div className="flex items-center gap-2 mt-1">
+              <span className="text-xs font-bold text-slate-500 tracking-wide uppercase">
+                {groupedCategories.length} {groupedCategories.length === 1 ? 'CATEGORY' : 'CATEGORIES'}
+              </span>
+              <span className="text-red-500 font-bold">•</span>
+              <span className="text-xs font-bold text-slate-500 tracking-wide uppercase">
+                {expenditures.length} {expenditures.length === 1 ? 'ITEM' : 'ITEMS'}
+              </span>
+            </div>
+          </div>
+          <Button
+            size="sm"
+            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold flex gap-2 text-xs shadow-sm rounded-lg px-4 py-2 transition-all"
             onClick={() => setCreateDialog({ isOpen: true, showUnsavedWarning: false })}
           >
-            <Plus className="h-4 w-4" /> Create Expenditure
+            <Plus className="h-4 w-4" />
+            <span>Create Expenditure</span>
           </Button>
         </div>
 
-        {/* Grouped Expenditure List */}
-        <div className="space-y-8">
-          {(Object.entries(groupedExpenditures) as Array<[string, Record<string, Array<ExpenditureItem>>]>).map(([parentName, objects]) => (
-            <div key={parentName} className="space-y-6">
-              {/* Parent Category Title (Red Accent) */}
-              <h3 className="text-red-600 font-black text-base uppercase tracking-wider flex items-center gap-2">
-                <div className="w-1.5 h-1.5 rounded-full bg-red-600" />
-                {parentName}
-              </h3>
+        {/* Grouped Category Cards */}
+        <div className="space-y-4">
+          {groupedCategories.map((category, index) => {
+            const theme = getCategoryTheme(category.categoryName, index)
+            const isCollapsed = !!collapsedCategories[category.categoryName]
+            const CategoryIcon = theme.Icon
 
-              {(Object.entries(objects) as Array<[string, Array<ExpenditureItem>]>).map(([objectName, items]) => (
-                <div key={objectName} className="relative pl-3 space-y-3">
-                  {/* Red Side Accent */}
-                  <div className="absolute left-0 top-0 bottom-0 w-1 bg-red-500 rounded-full" />
+            return (
+              <Card
+                key={category.categoryName}
+                className="shadow-2xs border-slate-200/90 bg-white rounded-xl overflow-hidden relative transition-all"
+              >
+                {/* Left side accent bar matching category theme */}
+                <div className={`absolute left-0 top-0 bottom-0 w-1.5 ${theme.bar}`} />
 
-                  <Card className="shadow-none border-red-100 bg-white">
-                    <CardHeader className="pb-2">
-                      <h4 className="text-lg font-bold text-gray-900">{objectName}</h4>
-                    </CardHeader>
-                    <CardContent className="p-0">
-                      <div className="divide-y divide-gray-100">
-                        {items.map((item: ExpenditureItem, itemIdx: number) => (
-                          <div key={itemIdx} className="p-4 space-y-4">
-                            <div className="flex justify-between items-start">
-                              <h4 className="text-md text-gray-800 leading-snug">
-                                {toSentenceCase(item.itemDescription)}
+                {/* Card Header */}
+                <div className="p-4 flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-3">
+                    <div className={`w-9 h-9 rounded-lg flex items-center justify-center ${theme.iconBg}`}>
+                      <CategoryIcon className="w-5 h-5" />
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <h3 className="text-sm font-bold text-slate-900">{category.categoryName}</h3>
+                      <Badge
+                        variant="secondary"
+                        className="bg-slate-100 text-slate-600 text-[11px] font-medium px-2.5 py-0.5 rounded-full"
+                      >
+                        {category.items.length} {category.items.length === 1 ? 'item' : 'items'}
+                      </Badge>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center gap-3">
+                    <span className={`text-sm font-extrabold tabular-nums ${theme.totalText}`}>
+                      {formatCurrencyPHP(category.categoryTotal)}
+                    </span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8 text-slate-400 hover:text-slate-700"
+                      onClick={() => toggleCategoryCollapse(category.categoryName)}
+                      title={isCollapsed ? 'Expand category' : 'Collapse category'}
+                    >
+                      {isCollapsed ? (
+                        <ChevronDown className="w-4 h-4" />
+                      ) : (
+                        <ChevronUp className="w-4 h-4" />
+                      )}
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Expanded Table Section */}
+                {!isCollapsed && (
+                  <div className="border-t border-slate-100">
+                    {/* Header Columns */}
+                    <div className="bg-slate-50/60 px-6 py-2.5 grid grid-cols-12 gap-4 items-center text-[11px] font-semibold text-slate-500 uppercase tracking-wider">
+                      <div className="col-span-6">Item / Description</div>
+                      <div className="col-span-2 text-right">Unit Cost</div>
+                      <div className="col-span-2 text-center">Quantity</div>
+                      <div className="col-span-2 text-right pr-6">Sub-Total</div>
+                    </div>
+
+                    {/* Items Rows */}
+                    <div className="divide-y divide-slate-100">
+                      {category.items.map((item: ExpenditureItem, idx: number) => {
+                        const itemName = item.object?.name || 'Standard Expense Item'
+                        const subtotal = (item.unitCost || 0) * (item.quantity || 0)
+
+                        return (
+                          <div
+                            key={idx}
+                            className="px-6 py-3.5 grid grid-cols-12 gap-4 items-center hover:bg-slate-50/40 transition-colors"
+                          >
+                            <div className="col-span-6 space-y-0.5">
+                              <h4 className="text-xs font-bold text-slate-900 leading-snug">
+                                {itemName}
                               </h4>
+                              {item.itemDescription && (
+                                <p className="text-xs text-slate-500 leading-snug">
+                                  {toSentenceCase(item.itemDescription)}
+                                </p>
+                              )}
+                            </div>
+                            <div className="col-span-2 text-right text-xs font-semibold text-slate-700 tabular-nums">
+                              {formatCurrencyPHP(item.unitCost)}
+                            </div>
+                            <div className="col-span-2 text-center text-xs font-medium text-slate-700 tabular-nums">
+                              {item.quantity}
+                            </div>
+                            <div className="col-span-2 flex items-center justify-end gap-2 text-right">
+                              <span className={`text-xs font-bold tabular-nums ${theme.subtotalText}`}>
+                                {formatCurrencyPHP(subtotal)}
+                              </span>
                               <Actions data={item as any} actions={['read', 'write', 'delete']} />
                             </div>
-
-                            <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                              <div className="bg-gray-50 p-2 rounded border border-gray-100 text-center">
-                                <p className="text-[10px] text-gray-400 font-bold uppercase">Unit Cost</p>
-                                <p className="text-sm font-bold text-gray-700">{formatCurrencyPHP(item.unitCost)}</p>
-                              </div>
-                              <div className="bg-gray-50 p-2 rounded border border-gray-100 text-center">
-                                <p className="text-[10px] text-gray-400 font-bold uppercase">Quantity</p>
-                                <p className="text-sm font-bold text-gray-700">{item.quantity}</p>
-                              </div>
-                              <div className="bg-red-50/50 p-2 rounded border border-red-100 text-center">
-                                <p className="text-[10px] text-red-400 font-bold uppercase">Sub-Total</p>
-                                <p className="text-sm font-bold text-red-600">{formatCurrencyPHP(item.unitCost * item.quantity)}</p>
-                              </div>
-                            </div>
                           </div>
-                        ))}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </div>
-              ))}
-            </div>
-          ))}
+                        )
+                      })}
+                    </div>
+                  </div>
+                )}
+              </Card>
+            )
+          })}
 
+          {/* Add Another Expenditure Dashed Button */}
+          <button
+            type="button"
+            className="w-full border border-dashed border-blue-300 bg-blue-50/20 hover:bg-blue-50 text-blue-600 font-semibold text-xs py-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+            onClick={() => setCreateDialog({ isOpen: true, showUnsavedWarning: false })}
+          >
+            <Plus className="w-4 h-4" />
+            <span>Add Another Expenditure</span>
+          </button>
+
+          {/* Empty State */}
           {expenditures.length === 0 && (
-            <div className="text-center py-10 bg-gray-50 rounded-lg border border-dashed border-gray-200">
-              <p className="text-sm text-gray-500 font-medium">No expenditures found for this activity.</p>
+            <div className="text-center py-12 bg-slate-50/60 rounded-xl border border-dashed border-slate-200 space-y-2">
+              <Package className="w-10 h-10 text-slate-400 mx-auto" />
+              <p className="text-sm text-slate-600 font-medium">
+                No expenditures found for this activity.
+              </p>
             </div>
           )}
 
-          {/* Total Bar - Only show when there are expenditures */}
+          {/* Red Bottom Total Bar matching Screenshot 1 */}
           {expenditures.length > 0 && (
-            <div className="bg-red-600 rounded-xl p-4 flex justify-between items-center shadow-xl ring-4 ring-red-600/10 w-full max-w-none">
-              <div className="flex items-center gap-2 text-white font-black text-xl tracking-tighter">
-                <Banknote className="h-6 w-6" />
-                TOTAL
+            <div>
+              <div className="bg-[#c8232c] rounded-xl p-4 text-white flex items-center justify-between shadow-lg">
+                <div className="flex items-center gap-2.5 font-extrabold text-sm tracking-wider uppercase">
+                  <Wallet className="h-5 w-5 text-white" />
+                  <span>TOTAL EXPENDITURES</span>
+                </div>
+                <span className="text-2xl font-black tabular-nums text-white">
+                  {formatCurrencyPHP(grandTotal)}
+                </span>
               </div>
-              <span className="text-white text-2xl font-black tabular-nums">
-                {formatCurrencyPHP(calculateGrandTotal())}
-              </span>
+              <p className="text-xs text-slate-400 font-medium mt-2">
+                All amounts are in Philippine Peso (PHP)
+              </p>
             </div>
           )}
         </div>
@@ -158,5 +394,5 @@ export default function WFPExpenditurePage({ wfpObjectiveActivityId }: { wfpObje
       <DeleteWFPObjectiveTargetExpenditureDialog />
       <UpdateWFPObjectiveTargetExpenditureDialog />
     </PageContainer>
-  );
+  )
 }
