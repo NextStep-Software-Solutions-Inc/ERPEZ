@@ -51,7 +51,14 @@ public class GetLineItemBudgetDetailsQueryHandler(IUnitOfWork unitOfWork)
                     {
                         Id = entity.Object.Id,
                         Name = entity.Object.Name,
-                        Code = entity.Object.Code
+                        Code = entity.Object.Code,
+                        ParentId = entity.Object.ParentId,
+                        ParentObject = entity.Object.ParentObject == null ? null : new LineItemBudgetDetailObjectParentResponse
+                        {
+                            Id = entity.Object.ParentObject.Id,
+                            Name = entity.Object.ParentObject.Name,
+                            Code = entity.Object.ParentObject.Code
+                        }
                     },
                     WFPObjectiveActivityExpenditure = entity.WFPObjectiveActivityExpenditure == null ? null : new LineItemBudgetDetailWFPExpenditureResponse
                     {

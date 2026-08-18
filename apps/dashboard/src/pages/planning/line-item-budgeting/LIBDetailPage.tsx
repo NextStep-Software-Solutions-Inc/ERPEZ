@@ -645,6 +645,11 @@ export default function LIBDetailPage({
                       }}
                       type="OPCR"
                       opcrData={opcrData?.data}
+                      existingOPCRActivityIds={
+                        (displayActivities || [])
+                          .map((a: any) => a.opcrActivityId)
+                          .filter(Boolean) as string[]
+                      }
                       isOPCRLoading={isOPCRLoading}
                       isWFPLoading={isWFPLoading}
                     />

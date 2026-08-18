@@ -17,93 +17,120 @@ public class CreateLineItemBudgetDetailCommandHandler(IUnitOfWork unitOfWork)
     {
         var request = command.Request;
 
-        var lib = await unitOfWork.LineItemBudgetRepository.GetByIdAsync(request.LineItemBudgetId, cancellationToken)
-            ?? throw new NotFoundException($"LIB with ID {request.LineItemBudgetId} not found.");
+        Guid     resolvedObjectId = Guid.Empty;
+        string?  resolvedDescription = null;
+        int?     resolvedUnitQuantity = null;
+        decimal? resolvedUnitCost = null;
+        Domain.Entities.Planning.LineItemBudgetDetail? entity = null;
 
-        if (!LIBRules.IsEditable(lib.Status))
-            throw new ValidationException("Line item details can only be added to a Draft, Proposed, or Returned LIB.");
-
-        var isProjectScope  = lib.Scope.Equals(LIBScopeEnum.Project.ToString(),  StringComparison.OrdinalIgnoreCase);
-        var isActivityScope = lib.Scope.Equals(LIBScopeEnum.Activity.ToString(), StringComparison.OrdinalIgnoreCase);
-
-        if (!isProjectScope && !isActivityScope)
-            throw new ValidationException($"Unrecognized LIB scope '{lib.Scope}'.");
-
-        Guid     resolvedObjectId;
-        string?  resolvedDescription;
-        int?     resolvedUnitQuantity;
-        decimal? resolvedUnitCost;
-
-        if (isProjectScope)
+        await unitOfWork.ExecuteInTransactionAsync(async () =>
         {
-            // Project scope: expenditure provided → auto-map + validate; absent → fully manual.
-            if (request.WFPObjectiveActivityExpenditureId.HasValue)
+            var lib = await unitOfWork.LineItemBudgetRepository.GetByIdAsync(request.LineItemBudgetId, cancellationToken)
+                ?? throw new NotFoundException($"LIB with ID {request.LineItemBudgetId} not found.");
+
+            if (!LIBRules.IsEditable(lib.Status))
+                throw new ValidationException("Line item details can only be added to a Draft, Proposed, or Returned LIB.");
+
+            var isProjectScope  = lib.Scope.Equals(LIBScopeEnum.Project.ToString(),  StringComparison.OrdinalIgnoreCase);
+            var isActivityScope = lib.Scope.Equals(LIBScopeEnum.Activity.ToString(), StringComparison.OrdinalIgnoreCase);
+
+            if (!isProjectScope && !isActivityScope)
+                throw new ValidationException($"Unrecognized LIB scope '{lib.Scope}'.");
+
+            var isOpcrSource = lib.SourceType.Equals("OPCR", StringComparison.OrdinalIgnoreCase);
+
+            if (isProjectScope)
             {
-                (resolvedObjectId, resolvedDescription, resolvedUnitQuantity, resolvedUnitCost) =
-                    await ResolveFromExpenditureAsync(request, cancellationToken);
+                // Project scope: expenditure provided → auto-map + validate; absent → fully manual.
+                if (request.WFPObjectiveActivityExpenditureId.HasValue)
+                {
+                    (resolvedObjectId, resolvedDescription, resolvedUnitQuantity, resolvedUnitCost) =
+                        await ResolveFromExpenditureAsync(request, cancellationToken);
+                }
+                else
+                {
+                    if (!request.StartDate.HasValue || !request.EndDate.HasValue || string.IsNullOrWhiteSpace(request.TimelineType))
+                        throw new ValidationException("StartDate, EndDate and TimelineType are required for manual Project scope LIBs.");
+
+                    (resolvedObjectId, resolvedDescription, resolvedUnitQuantity, resolvedUnitCost) =
+                        ResolveFromManualInput(request);
+                }
             }
-            else
+            else // isActivityScope
             {
-                if (!request.StartDate.HasValue || !request.EndDate.HasValue || string.IsNullOrWhiteSpace(request.TimelineType))
-                    throw new ValidationException("StartDate, EndDate and TimelineType are required for manual Project scope LIBs.");
+                if (request.WFPObjectiveActivityExpenditureId.HasValue && request.LineItemBudgetActivityId.HasValue)
+                    throw new ValidationException("Only one of WFPObjectiveActivityExpenditureId or LineItemBudgetActivityId may be provided, not both.");
 
-                (resolvedObjectId, resolvedDescription, resolvedUnitQuantity, resolvedUnitCost) =
-                    ResolveFromManualInput(request);
+                if (request.WFPObjectiveActivityExpenditureId.HasValue)
+                {
+                    // Activity scope sourced from WFP expenditure — auto-map item fields, manual timeline.
+                    (resolvedObjectId, resolvedDescription, resolvedUnitQuantity, resolvedUnitCost) =
+                        await ResolveFromExpenditureAsync(request, cancellationToken);
+                }
+                else if (request.LineItemBudgetActivityId.HasValue)
+                {
+                    // Activity scope sourced from LIB Activity — fully manual with pessimistic lock.
+                    var activity = await unitOfWork.LineItemBudgetActivityRepository
+                        .GetByIdForUpdateAsync(request.LineItemBudgetActivityId.Value, cancellationToken)
+                        ?? await unitOfWork.LineItemBudgetActivityRepository
+                            .GetByIdWithDetailsAsync(request.LineItemBudgetActivityId.Value, cancellationToken)
+                        ?? throw new NotFoundException($"LIB Activity with ID {request.LineItemBudgetActivityId} not found.");
+
+                    if (activity.LineItemBudgetId != request.LineItemBudgetId)
+                        throw new ValidationException("Selected LIB Activity does not belong to the provided LIB.");
+
+                    if (!request.StartDate.HasValue || !request.EndDate.HasValue || string.IsNullOrWhiteSpace(request.TimelineType))
+                        throw new ValidationException("StartDate, EndDate and TimelineType are required for Activity scope LIBs.");
+
+                    if (isOpcrSource && activity.OPCRActivityId.HasValue)
+                    {
+                        var opcrActivity = activity.OPCRActivity
+                            ?? await unitOfWork.OPCRActivityRepository.GetByIdAsync(activity.OPCRActivityId.Value, cancellationToken)
+                            ?? throw new NotFoundException($"OPCR Activity with ID {activity.OPCRActivityId} not found.");
+
+                        var currentActivityTotal = activity.LineItemBudgetDetails
+                            .Where(d => !d.IsDeleted)
+                            .Sum(d => d.Budget);
+
+                        var effectiveTotal = currentActivityTotal + request.Budget;
+                        if (effectiveTotal > opcrActivity.Budget)
+                        {
+                            var availableBudget = opcrActivity.Budget - currentActivityTotal;
+                            throw new ValidationException(
+                                $"Expenditure exceeds available OPCR Activity budget. Available: ₱{availableBudget:N2}; Requested: ₱{request.Budget:N2}.");
+                        }
+                    }
+
+                    (resolvedObjectId, resolvedDescription, resolvedUnitQuantity, resolvedUnitCost) =
+                        ResolveFromManualInput(request);
+                }
+                else
+                {
+                    throw new ValidationException(
+                        "Either WFPObjectiveActivityExpenditureId or LineItemBudgetActivityId is required for Activity scope LIBs.");
+                }
             }
-        }
-        else // isActivityScope
-        {
-            if (request.WFPObjectiveActivityExpenditureId.HasValue && request.LineItemBudgetActivityId.HasValue)
-                throw new ValidationException("Only one of WFPObjectiveActivityExpenditureId or LineItemBudgetActivityId may be provided, not both.");
 
-            if (request.WFPObjectiveActivityExpenditureId.HasValue)
+            entity = new Domain.Entities.Planning.LineItemBudgetDetail
             {
-                // Activity scope sourced from WFP expenditure — auto-map item fields, manual timeline.
-                (resolvedObjectId, resolvedDescription, resolvedUnitQuantity, resolvedUnitCost) =
-                    await ResolveFromExpenditureAsync(request, cancellationToken);
-            }
-            else if (request.LineItemBudgetActivityId.HasValue)
-            {
-                // Activity scope sourced from LIB Activity — fully manual.
-                var activity = await unitOfWork.LineItemBudgetActivityRepository
-                    .GetByIdAsync(request.LineItemBudgetActivityId.Value, cancellationToken)
-                    ?? throw new NotFoundException($"LIB Activity with ID {request.LineItemBudgetActivityId} not found.");
+                LineItemBudgetId                  = request.LineItemBudgetId,
+                LineItemBudgetActivityId          = request.LineItemBudgetActivityId,
+                WFPObjectiveActivityExpenditureId = request.WFPObjectiveActivityExpenditureId,
+                ObjectId                          = resolvedObjectId,
+                Description                       = resolvedDescription,
+                UnitQuantity                      = resolvedUnitQuantity,
+                UnitCost                          = resolvedUnitCost,
+                TimelineType                      = request.TimelineType,
+                StartDate                         = request.StartDate,
+                EndDate                           = request.EndDate,
+                Budget                            = request.Budget,
+            };
 
-                if (activity.LineItemBudgetId != request.LineItemBudgetId)
-                    throw new ValidationException("Selected LIB Activity does not belong to the provided LIB.");
+            await unitOfWork.LineItemBudgetDetailRepository.AddAsync(entity, cancellationToken);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+        }, cancellationToken);
 
-                if (!request.StartDate.HasValue || !request.EndDate.HasValue || string.IsNullOrWhiteSpace(request.TimelineType))
-                    throw new ValidationException("StartDate, EndDate and TimelineType are required for Activity scope LIBs.");
-
-                (resolvedObjectId, resolvedDescription, resolvedUnitQuantity, resolvedUnitCost) =
-                    ResolveFromManualInput(request);
-            }
-            else
-            {
-                throw new ValidationException(
-                    "Either WFPObjectiveActivityExpenditureId or LineItemBudgetActivityId is required for Activity scope LIBs.");
-            }
-        }
-
-        var entity = new Domain.Entities.Planning.LineItemBudgetDetail
-        {
-            LineItemBudgetId                  = request.LineItemBudgetId,
-            LineItemBudgetActivityId          = request.LineItemBudgetActivityId,
-            WFPObjectiveActivityExpenditureId = request.WFPObjectiveActivityExpenditureId,
-            ObjectId                          = resolvedObjectId,
-            Description                       = resolvedDescription,
-            UnitQuantity                      = resolvedUnitQuantity,
-            UnitCost                          = resolvedUnitCost,
-            TimelineType                      = request.TimelineType,
-            StartDate                         = request.StartDate,
-            EndDate                           = request.EndDate,
-            Budget                            = request.Budget,
-        };
-
-        await unitOfWork.LineItemBudgetDetailRepository.AddAsync(entity, cancellationToken);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
-
-        return ApiResponse<Guid>.Success(entity.Id, "Line Item Budget Detail created successfully.");
+        return ApiResponse<Guid>.Success(entity!.Id, "Line Item Budget Detail created successfully.");
     }
 
     private async Task<(Guid objectId, string? description, int? unitQuantity, decimal? unitCost)>
