@@ -43,10 +43,37 @@ export function convertAppLineItemToAPRItem(
     lineItem.description ||
     (lineItem as any).remarks ||
     'Procurement Item'
-  const unit = lineItem.unit || 'unit'
-  const quantity = lineItem.quantity ?? 1
-  const unitCost = lineItem.unitCost ?? 0
-  const totalAmount = lineItem.totalAmount || (quantity * unitCost) || 0
+
+  const unit =
+    lineItem.unit ||
+    (lineItem as any).unitOfMeasure ||
+    (lineItem as any).unitOfMeasurement ||
+    (lineItem as any).uom ||
+    'unit'
+
+  const quantity =
+    lineItem.quantity ??
+    (lineItem as any).approvedQuantity ??
+    (lineItem as any).requestedQuantity ??
+    (lineItem as any).qty ??
+    1
+
+  const unitCost =
+    lineItem.unitCost ??
+    (lineItem as any).unitPrice ??
+    (lineItem as any).estimatedUnitCost ??
+    (lineItem as any).price ??
+    0
+
+  const totalAmount =
+    lineItem.totalAmount ||
+    (lineItem as any).totalCost ||
+    (lineItem as any).estimatedBudget ||
+    (lineItem as any).totalEstimatedBudget ||
+    (lineItem as any).originalPPMPBudget ||
+    (lineItem as any).effectiveABC ||
+    quantity * unitCost ||
+    0
   const office = lineItem.officeName || lineItem.office || ''
   const fundSource = lineItem.fundSourceName || lineItem.fundSource || ''
 

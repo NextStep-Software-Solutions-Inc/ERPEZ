@@ -20,11 +20,12 @@ export const createAPRRequest: MutationBlueprintFromTemplate<
   CreateAPRCommandPayload
 > = {
   endpoint,
-  fetcher: async ({ finalUrl, payload }) => {
-    if (!payload) {
+  fetcher: async ({ finalUrl, payload, body }: any) => {
+    const data = payload || body
+    if (!data) {
       throw new Error('createAPRRequest: Payload is required')
     }
-    const response = await api.post<APIResponse<string>>(finalUrl, payload)
+    const response = await api.post<APIResponse<string>>(finalUrl, data)
     return response.data
   },
 }

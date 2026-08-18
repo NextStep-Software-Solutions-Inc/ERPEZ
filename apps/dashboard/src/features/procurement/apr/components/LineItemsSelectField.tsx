@@ -88,18 +88,18 @@ export const LineItemsSelectField = React.memo(function LineItemsSelectField({
 
           {/* Select All */}
           {lineItems.length > 0 && (
-            <div
-              className="flex items-center gap-2 border-t pt-3 cursor-pointer select-none"
-              onClick={onSelectAll}
-            >
+            <div className="flex items-center gap-2 border-t pt-3 select-none">
               <Checkbox
+                id="select-all-line-items"
                 checked={allItemsSelected}
                 onCheckedChange={onSelectAll}
-                onClick={(e) => e.stopPropagation()}
               />
-              <span className="text-sm font-medium flex-1">
+              <label
+                htmlFor="select-all-line-items"
+                className="text-sm font-medium flex-1 cursor-pointer"
+              >
                 Select All Line Items across all selected APPs
-              </span>
+              </label>
             </div>
           )}
 
@@ -129,8 +129,7 @@ export const LineItemsSelectField = React.memo(function LineItemsSelectField({
                   return (
                     <div
                       key={`${lineItem.sourceAppId || 'app'}-${lineItem.id}`}
-                      onClick={() => onToggleLineItem(lineItem.id)}
-                      className={`flex items-start gap-3 p-3 rounded-lg border transition-colors cursor-pointer ${
+                      className={`flex items-start gap-3 p-3 rounded-lg border transition-colors ${
                         isSelected
                           ? 'border-blue-500 bg-blue-50/70 shadow-xs'
                           : 'border-gray-200 hover:bg-gray-50'
@@ -140,10 +139,12 @@ export const LineItemsSelectField = React.memo(function LineItemsSelectField({
                         id={`line-item-${lineItem.id}`}
                         checked={isSelected}
                         onCheckedChange={() => onToggleLineItem(lineItem.id)}
-                        onClick={(e) => e.stopPropagation()}
                         className="mt-1"
                       />
-                      <div className="flex-1 min-w-0 space-y-1">
+                      <label
+                        htmlFor={`line-item-${lineItem.id}`}
+                        className="flex-1 min-w-0 space-y-1 cursor-pointer select-none"
+                      >
                         <div className="flex items-center justify-between gap-2 flex-wrap">
                           <p className="font-semibold text-sm text-gray-900">{desc}</p>
                           <span className="text-sm font-semibold text-primary">
@@ -180,7 +181,7 @@ export const LineItemsSelectField = React.memo(function LineItemsSelectField({
                             </Badge>
                           )}
                         </div>
-                      </div>
+                      </label>
                     </div>
                   )
                 })

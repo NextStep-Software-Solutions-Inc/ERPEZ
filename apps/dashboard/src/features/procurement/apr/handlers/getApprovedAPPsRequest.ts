@@ -57,19 +57,24 @@ export interface GetApprovedAPPsParams extends QueryParams {
   Filters?: string
   Page?: number
   PageSize?: number
+  pageNumber?: number
+  pageSize?: number
   fiscalYear?: number
+  fiscalYearId?: string
+  status?: string
+  searchTerm?: string
 }
 
 export const getApprovedAPPsRequest: QueryBlueprintFromTemplate<
   typeof endpoint,
-  PaginationResponse<BackendAPPResponse>,
+  any,
   GetApprovedAPPsParams,
   QueryKey
 > = {
   endpoint,
-  key: ({ url }) => [url] as const,
+  key: ({ url, fiscalYearId, status }) => [url, fiscalYearId || '', status || ''] as const,
   fetcher: async ({ finalUrl, signal }) => {
-    const response = await api.get<PaginationResponse<BackendAPPResponse>>(finalUrl, { signal })
+    const response = await api.get<any>(finalUrl, { signal })
     return response.data
   },
 }

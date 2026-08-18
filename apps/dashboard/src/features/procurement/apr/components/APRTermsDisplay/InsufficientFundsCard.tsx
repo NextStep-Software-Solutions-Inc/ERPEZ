@@ -1,5 +1,10 @@
+﻿/**
+ * Insufficient Funds Card Component
+ * Clean policy presentation for budget shortfall handling
+ */
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { AlertTriangle } from 'lucide-react'
+import { AlertCircle } from 'lucide-react'
 import type { InsufficientFundsAction } from '@/features/procurement/apr/types'
 
 interface InsufficientFundsCardProps {
@@ -9,50 +14,48 @@ interface InsufficientFundsCardProps {
 const ACTION_LABELS: Record<string, { label: string; description: string }> = {
   REDUCE_QUANTITY: {
     label: 'Reduce Quantity',
-    description: 'Reduce item quantities if funds are insufficient',
+    description: 'Item quantities will automatically be reduced when available funds are insufficient.',
   },
   ReduceQuantity: {
     label: 'Reduce Quantity',
-    description: 'Reduce item quantities if funds are insufficient',
+    description: 'Item quantities will automatically be reduced when available funds are insufficient.',
   },
   BILL_US: {
     label: 'Bill Us',
-    description: 'Bill the requesting office for shortfall',
+    description: 'Procuring entity will issue an official billing statement for any funding deficit.',
   },
   BillUs: {
     label: 'Bill Us',
-    description: 'Bill the requesting office for shortfall',
+    description: 'Procuring entity will issue an official billing statement for any funding deficit.',
   },
   CHARGE_TO_DEPOSIT: {
-    label: 'Charge to Deposit',
-    description: 'Charge insufficient amount to deposit account',
+    label: 'Charge to Unutilized Deposit',
+    description: 'Any shortfall will be charged against the agency unutilized cash deposit account.',
   },
   ChargeToUnutilizedDeposit: {
-    label: 'Charge to Deposit',
-    description: 'Charge insufficient amount to deposit account',
+    label: 'Charge to Unutilized Deposit',
+    description: 'Any shortfall will be charged against the agency unutilized cash deposit account.',
   },
 }
 
 export function InsufficientFundsCard({
   action,
 }: InsufficientFundsCardProps) {
-  if (!action) return null
-
-  const details = ACTION_LABELS[action] || { label: String(action), description: '' }
+  const current = (action && ACTION_LABELS[action]) ? ACTION_LABELS[action] : { label: action || 'Reduce Quantity', description: 'Handling policy for budget shortfall' }
 
   return (
-    <Card className="bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-sm">
-          <AlertTriangle className="h-4 w-4 text-amber-600" />
-          Handling for Insufficient Funds
+    <Card className="border border-gray-200 shadow-xs bg-white">
+      <CardHeader className="py-3 px-5 border-b bg-slate-50/50 flex flex-row items-center justify-between">
+        <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+          <AlertCircle className="h-3.5 w-3.5 text-amber-600" />
+          If Funds Are Insufficient
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <p className="font-medium text-amber-900">{details.label}</p>
-        {details.description && (
-          <p className="text-xs text-amber-700 mt-1">{details.description}</p>
-        )}
+      <CardContent className="p-5 space-y-1">
+        <p className="font-semibold text-sm text-gray-900">{current.label}</p>
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          {current.description}
+        </p>
       </CardContent>
     </Card>
   )

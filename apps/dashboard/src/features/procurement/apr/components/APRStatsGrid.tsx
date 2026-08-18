@@ -1,10 +1,11 @@
-/**
+﻿/**
  * APR Stats Grid Component
- * Displays total items count, total amount, and other key metrics
+ * Compact high-density stats strip with primary Total Amount metric
  */
 
 import { formatCurrencyPHP } from '@/utils/formatters'
 import { Card, CardContent } from '@/components/ui/card'
+import { Package, Layers, DollarSign, Activity } from 'lucide-react'
 
 interface APRStatsGridProps {
   totalItemsCount: number
@@ -23,44 +24,68 @@ export function APRStatsGrid({
     {
       label: 'Total Items',
       value: totalItemsCount.toString(),
-      icon: '📦',
-      bgColor: 'bg-blue-50',
+      icon: Package,
+      highlight: false,
     },
     {
       label: 'Consolidated Items',
       value: consolidatedCount.toString(),
-      icon: '✓',
-      bgColor: 'bg-green-50',
+      icon: Layers,
+      highlight: false,
     },
     {
       label: 'Total Amount',
       value: formatCurrencyPHP(totalAmount),
-      icon: '₱',
-      bgColor: 'bg-purple-50',
+      icon: DollarSign,
+      highlight: true,
     },
     {
       label: 'Status',
-      value: approvalStatus,
-      icon: '📋',
-      bgColor: 'bg-orange-50',
+      value: approvalStatus || 'Draft',
+      icon: Activity,
+      highlight: false,
     },
   ]
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      {stats.map((stat, idx) => (
-        <Card key={idx} className={`${stat.bgColor} border-0`}>
-          <CardContent className="pt-6">
-            <div className="text-3xl mb-2">{stat.icon}</div>
-            <div className="text-sm font-medium text-gray-600">
-              {stat.label}
-            </div>
-            <div className="text-2xl font-bold text-gray-900 mt-2">
-              {stat.value}
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+      {stats.map((stat, idx) => {
+        const Icon = stat.icon
+        return (
+          <Card
+            key={idx}
+            className={`border shadow-xs transition-all ${
+              stat.highlight
+                ? 'bg-gradient-to-br from-white to-blue-50/40 border-blue-200/80 ring-1 ring-blue-500/10'
+                : 'bg-white border-gray-200/80'
+            }`}
+          >
+            <CardContent className="p-3.5 flex items-center justify-between gap-3">
+              <div className="min-w-0 space-y-0.5">
+                <p className="text-[11px] font-medium text-muted-foreground uppercase tracking-wider truncate">
+                  {stat.label}
+                </p>
+                <p
+                  className={`text-base font-bold truncate ${
+                    stat.highlight ? 'text-primary font-mono tracking-tight' : 'text-gray-900'
+                  }`}
+                >
+                  {stat.value}
+                </p>
+              </div>
+              <div
+                className={`flex-shrink-0 h-8 w-8 rounded-lg flex items-center justify-center ${
+                  stat.highlight
+                    ? 'bg-primary/10 text-primary'
+                    : 'bg-slate-100 text-gray-600'
+                }`}
+              >
+                <Icon className="h-4 w-4" />
+              </div>
+            </CardContent>
+          </Card>
+        )
+      })}
     </div>
   )
 }

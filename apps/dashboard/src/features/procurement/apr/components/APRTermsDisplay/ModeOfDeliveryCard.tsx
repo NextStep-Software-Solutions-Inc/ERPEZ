@@ -1,3 +1,8 @@
+﻿/**
+ * Mode of Delivery Card Component
+ * Clean neutral display of delivery configuration
+ */
+
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Truck } from 'lucide-react'
 import type { ModeOfDelivery } from '@/features/procurement/apr/types'
@@ -6,30 +11,32 @@ interface ModeOfDeliveryCardProps {
   mode: ModeOfDelivery | string | undefined
 }
 
-const MODE_LABELS: Record<string, string> = {
-  FAST_LANE: 'Fast Lane Delivery',
-  FastLane: 'Fast Lane Delivery',
-  SCHEDULED_PICKUP: 'Scheduled Pickup',
-  ScheduledPickUp: 'Scheduled Pickup',
-  ScheduledPickup: 'Scheduled Pickup',
-  DOOR_TO_DOOR: 'Door-to-Door Delivery',
-  DoorToDoor: 'Door-to-Door Delivery',
+const MODE_LABELS: Record<string, { label: string; description: string }> = {
+  FAST_LANE: { label: 'Fast Lane Delivery', description: 'Priority dispatch directly via PS-DBM Fast Lane' },
+  FastLane: { label: 'Fast Lane Delivery', description: 'Priority dispatch directly via PS-DBM Fast Lane' },
+  SCHEDULED_PICKUP: { label: 'Scheduled Pick-up', description: 'Designated agency representative to pick up items at warehouse' },
+  ScheduledPickUp: { label: 'Scheduled Pick-up', description: 'Designated agency representative to pick up items at warehouse' },
+  ScheduledPickup: { label: 'Scheduled Pick-up', description: 'Designated agency representative to pick up items at warehouse' },
+  DOOR_TO_DOOR: { label: 'Door-to-Door Delivery', description: 'Direct logistics delivery to agency premises' },
+  DoorToDoor: { label: 'Door-to-Door Delivery', description: 'Direct logistics delivery to agency premises' },
 }
 
 export function ModeOfDeliveryCard({ mode }: ModeOfDeliveryCardProps) {
-  if (!mode) return null
+  const current = (mode && MODE_LABELS[mode]) ? MODE_LABELS[mode] : { label: mode || 'Fast Lane', description: 'How items will be delivered from PS-DBM' }
 
   return (
-    <Card className="bg-gradient-to-br from-blue-50 to-blue-100 border-blue-200">
-      <CardHeader className="pb-3">
-        <CardTitle className="flex items-center gap-2 text-sm">
-          <Truck className="h-4 w-4 text-blue-600" />
+    <Card className="border border-gray-200 shadow-xs bg-white">
+      <CardHeader className="py-3 px-5 border-b bg-slate-50/50 flex flex-row items-center justify-between">
+        <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground flex items-center gap-2">
+          <Truck className="h-3.5 w-3.5 text-primary" />
           Mode of Delivery
         </CardTitle>
       </CardHeader>
-      <CardContent>
-        <p className="font-medium text-blue-900">{MODE_LABELS[mode] || mode}</p>
-        <p className="text-xs text-blue-700 mt-1">How items will be delivered</p>
+      <CardContent className="p-5 space-y-1">
+        <p className="font-semibold text-sm text-gray-900">{current.label}</p>
+        <p className="text-xs text-muted-foreground leading-relaxed">
+          {current.description}
+        </p>
       </CardContent>
     </Card>
   )

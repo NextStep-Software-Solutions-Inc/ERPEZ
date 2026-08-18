@@ -11,10 +11,10 @@
 import { useState, useMemo, useCallback } from 'react'
 import { useAtom } from 'jotai'
 import { useForm } from '@tanstack/react-form'
+import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
   createAPRDialogOpenAtom,
-  selectAPPDialogOpenAtom,
   selectedAPRFiscalYearAtom,
 } from '../atoms'
 import { useCreateAPRMutation, useFiscalYears } from '../handlers/hooks'
@@ -45,6 +45,32 @@ import {
 } from '@/components/ui/select'
 import { Loader2, CheckCircle2, ChevronRight, ArrowLeft, ArrowRight, FileText, Check } from 'lucide-react'
 
+export interface SourceAPP {
+  id: string
+  appNumber?: string
+  appCode?: string
+  name?: string
+  appName?: string
+  officeId?: string
+  fiscalYearId?: string
+  status?: string
+  FiscalYear?: { id: string; year: number }
+  fiscalYear?: { id: string; year: number } | number
+  APPItems?: any[]
+  appItems?: any[]
+  items?: any[]
+  APPPPMPs?: any[]
+  [key: string]: any
+}
+
+export interface WizardSelectionState {
+  sourceAppId: string | null
+  primaryApp: SourceAPP | null
+  selectedApps: SourceAPP[]
+  selectedLineItemIds: string[]
+  consolidatedItems: ConsolidatedAPRItem[]
+}
+
 type Step = 1 | 2 | 3 | 4
 
 const STEP_TITLES: Record<Step, { title: string; desc: string }> = {
@@ -54,19 +80,24 @@ const STEP_TITLES: Record<Step, { title: string; desc: string }> = {
   4: { title: 'Review & Create APR', desc: 'Step 4 of 4: Verify request summary before final submission' },
 }
 
+const SELECT_APP_FORM_ID = 'create-apr-select-app-form'
+const FINAL_CREATE_APR_FORM_ID = 'create-apr-final-form'
+
+const INITIAL_WIZARD_SELECTION: WizardSelectionState = {
+  sourceAppId: null,
+  primaryApp: null,
+  selectedApps: [],
+  selectedLineItemIds: [],
+  consolidatedItems: [],
+}
+
 export function CreateAPRDialog() {
-  const [createOpen, setCreateOpen] = useAtom(createAPRDialogOpenAtom)
-  const [selectOpen, setSelectOpen] = useAtom(selectAPPDialogOpenAtom)
+  const queryClient = useQueryClient()
+  const [isOpen, setIsOpen] = useAtom(createAPRDialogOpenAtom)
   const [selectedFiscalYear, setSelectedFiscalYear] = useAtom(selectedAPRFiscalYearAtom)
 
-  const isOpen = createOpen || selectOpen
-
   const [step, setStep] = useState<Step>(1)
-  const [sourceAPPId, setSourceAPPId] = useState<string | null>(null)
-  const [selectedApp, setSelectedApp] = useState<any | null>(null)
-  const [selectedApps, setSelectedApps] = useState<any[]>([])
-  const [selectedAppLineItemIds, setSelectedAppLineItemIds] = useState<string[]>([])
-  const [consolidatedItems, setConsolidatedItems] = useState<ConsolidatedAPRItem[]>([])
+  const [selection, setSelection] = useState<WizardSelectionState>(INITIAL_WIZARD_SELECTION)
 
   const { mutateAsync: createAPR, isPending } = useCreateAPRMutation()
 
@@ -104,60 +135,97 @@ export function CreateAPRDialog() {
       },
       remarks: '',
     },
-    onSubmit: async (values) => {
+    onSubmit: async (formValuesArg) => {
       try {
-        if (!sourceAPPId) {
-          toast.error('Please select an APP first')
+        const formValues = (formValuesArg as any)?.value ?? formValuesArg ?? form.state.values ?? {}
+
+        if (!selection.sourceAppId || !selection.primaryApp) {
+          toast.error('Please select an APP first.')
           setStep(1)
           return
         }
 
+        if (selection.selectedLineItemIds.length === 0) {
+          toast.error('Please select at least one line item.')
+          setStep(1)
+          return
+        }
+
+        // Strict extraction of officeId without silent dummy zero-UUID fallbacks
+        const primary = selection.primaryApp
         const officeId =
-          selectedApp?.officeId ||
-          selectedApp?.APPItems?.[0]?.officeId ||
-          selectedApp?.appItems?.[0]?.officeId ||
-          selectedApp?.APPPPMPs?.[0]?.PPMP?.officeId ||
-          selectedApp?.APPPPMPs?.[0]?.ppmp?.officeId ||
-          selectedApp?.appppmPs?.[0]?.ppmp?.officeId ||
-          '00000000-0000-0000-0000-000000000000'
+          primary.officeId ||
+          primary.APPItems?.[0]?.officeId ||
+          primary.appItems?.[0]?.officeId ||
+          primary.APPPPMPs?.[0]?.PPMP?.officeId ||
+          primary.APPPPMPs?.[0]?.ppmp?.officeId ||
+          primary.appppmPs?.[0]?.ppmp?.officeId
+
+        if (!officeId || officeId === '00000000-0000-0000-0000-000000000000') {
+          toast.error('Unable to determine the office for the selected APP. Please select a valid approved APP.')
+          setStep(1)
+          return
+        }
 
         const fiscalYearId =
-          selectedApp?.fiscalYearId ||
-          selectedApp?.FiscalYear?.id ||
-          selectedApp?.fiscalYear?.id ||
-          '00000000-0000-0000-0000-000000000000'
+          primary.fiscalYearId ||
+          primary.FiscalYear?.id ||
+          (typeof primary.fiscalYear === 'object' ? primary.fiscalYear?.id : null)
 
-        const items = selectedAppLineItemIds.map((lineItemId) => {
-          const item = consolidatedItems.find(
+        if (!fiscalYearId || fiscalYearId === '00000000-0000-0000-0000-000000000000') {
+          toast.error('Unable to determine the fiscal year for the selected APP. Please select a valid approved APP.')
+          setStep(1)
+          return
+        }
+
+        const items = selection.selectedLineItemIds.map((lineItemId) => {
+          const item = selection.consolidatedItems.find(
             (ci) => ci.appLineItemId === lineItemId || ci.id === lineItemId
           )
           return {
             appItemId: lineItemId,
-            quantityRequested: item?.quantity ?? null,
-            unitCost: item?.unitCost ?? null,
+            quantityRequested: item?.quantity ?? 1,
+            unitCost: item?.unitCost ?? 0,
           }
         })
 
         const commandPayload: CreateAPRCommandPayload = {
-          appId: sourceAPPId,
+          appId: selection.sourceAppId,
           officeId,
           fiscalYearId,
-          agencyControlNumber: values.value.agencyControlNumber || null,
-          agencyAccountCode: values.value.agencyAccountCode || null,
-          requestDate: values.value.requestDate.split('T')[0],
-          description: values.value.description || null,
-          modeOfDelivery: values.value.modeOfDelivery,
-          insufficientFundsAction: values.value.insufficientFundsAction,
-          requiresObR: !!values.value.attachments.observationReportRequired,
-          requiresCBA: !!values.value.attachments.collectiveBarterAgreementRequired,
-          requiresCompleteSpecifications: !!values.value.attachments.completeSpecsRequired,
-          additionalRemarks: values.value.remarks || null,
+          agencyControlNumber: formValues.agencyControlNumber || null,
+          agencyAccountCode: formValues.agencyAccountCode || null,
+          requestDate: (formValues.requestDate || new Date().toISOString()).split('T')[0],
+          description: formValues.description || null,
+          modeOfDelivery:
+            formValues.modeOfDelivery === 'DOOR_TO_DOOR' || formValues.modeOfDelivery === 'DoorToDoor'
+              ? ModeOfDelivery.DOOR_TO_DOOR
+              : formValues.modeOfDelivery === 'SCHEDULED_PICKUP' || formValues.modeOfDelivery === 'ScheduledPickUp'
+              ? ModeOfDelivery.SCHEDULED_PICKUP
+              : ModeOfDelivery.FAST_LANE,
+          insufficientFundsAction:
+            formValues.insufficientFundsAction === 'BILL_US' || formValues.insufficientFundsAction === 'BillUs'
+              ? InsufficientFundsAction.BILL_US
+              : formValues.insufficientFundsAction === 'CHARGE_TO_DEPOSIT' || formValues.insufficientFundsAction === 'ChargeToUnutilizedDeposit'
+              ? InsufficientFundsAction.CHARGE_TO_DEPOSIT
+              : InsufficientFundsAction.REDUCE_QUANTITY,
+          requiresObR: !!formValues.attachments?.observationReportRequired,
+          requiresCBA: !!formValues.attachments?.collectiveBarterAgreementRequired,
+          requiresCompleteSpecifications: !!formValues.attachments?.completeSpecsRequired,
+          additionalRemarks: formValues.remarks || null,
           items,
         }
 
         await createAPR({
+          pathParams: {},
           payload: commandPayload,
+          body: commandPayload,
         } as any)
+
+        // Invalidate APR list caches
+        void queryClient.invalidateQueries({
+          queryKey: ['/aprs'],
+        })
 
         toast.success('Agency Purchase Request (APR) created successfully')
         handleClose()
@@ -170,38 +238,47 @@ export function CreateAPRDialog() {
   })
 
   const handleClose = useCallback(() => {
-    setCreateOpen(false)
-    setSelectOpen(false)
+    setIsOpen(false)
     setStep(1)
-    setSourceAPPId(null)
-    setSelectedApp(null)
-    setSelectedApps([])
-    setSelectedAppLineItemIds([])
-    setConsolidatedItems([])
-  }, [setCreateOpen, setSelectOpen])
+    setSelection(INITIAL_WIZARD_SELECTION)
+  }, [setIsOpen])
 
-  // Step 1 Form Handler
+  // Step 1 Submission Handler
   const handleSelectAPPSubmit = (values: SelectAppFormValues) => {
-    setSourceAPPId(values.selectedAppId)
-    setSelectedApp(values.selectedApp)
-    if (values.selectedApps) setSelectedApps(values.selectedApps)
-    setSelectedAppLineItemIds(values.selectedLineItemIds)
-    setConsolidatedItems(values.consolidatedItems)
+    setSelection({
+      sourceAppId: values.selectedAppId,
+      primaryApp: values.selectedApp || (values.selectedApps ? values.selectedApps[0] : null),
+      selectedApps: values.selectedApps || (values.selectedApp ? [values.selectedApp] : []),
+      selectedLineItemIds: values.selectedLineItemIds,
+      consolidatedItems: values.consolidatedItems,
+    })
     setStep(2)
   }
 
+  // Per-step Validation Handlers
+  const handleDetailsNext = () => {
+    setStep(3)
+  }
+
+  const handleTermsNext = () => {
+    setStep(4)
+  }
+
   const appDisplayName = useMemo(() => {
-    if (selectedApps.length > 1) {
-      return selectedApps.map((a) => a.appNumber || a.appCode || a.name).join(', ')
+    const appsList = selection.selectedApps
+    if (appsList.length > 1) {
+      return appsList.map((a) => a.appNumber || a.appCode || a.name).join(', ')
     }
-    return selectedApp?.appNumber || selectedApp?.appCode || (sourceAPPId ? `APP ${sourceAPPId.substring(0, 8)}` : '')
-  }, [selectedApps, selectedApp, sourceAPPId])
+    const single = selection.primaryApp
+    return single?.appNumber || single?.appCode || (selection.sourceAppId ? `APP ${selection.sourceAppId.substring(0, 8)}` : '')
+  }, [selection])
 
   const totalCalculatedBudget = useMemo(() => {
-    return consolidatedItems.reduce((sum, item) => sum + (item.totalAmount || 0), 0)
-  }, [consolidatedItems])
-
-  const formId = 'select-app-wizard-form'
+    return selection.consolidatedItems.reduce((sum, item) => {
+      const amt = item.totalAmount || (item.unitCost || 0) * (item.quantity || 1) || 0
+      return sum + amt
+    }, 0)
+  }, [selection.consolidatedItems])
 
   if (!isOpen) return null
 
@@ -259,14 +336,14 @@ export function CreateAPRDialog() {
         </DialogHeader>
 
         {/* Selected APP Banner (Steps 2-4) */}
-        {step > 1 && sourceAPPId && (
+        {step > 1 && selection.sourceAppId && (
           <div className="mx-6 mt-4 p-3 bg-blue-50 border border-blue-200 rounded-lg flex items-center justify-between gap-4">
             <div className="min-w-0">
               <p className="text-xs text-blue-900 font-semibold truncate">
                 Selected APP: <span className="font-mono text-primary">{appDisplayName}</span>
               </p>
               <p className="text-[11px] text-blue-700">
-                {selectedAppLineItemIds.length} line items selected (Total: ?{totalCalculatedBudget.toLocaleString()})
+                {selection.selectedLineItemIds.length} line items selected (Total: ₱{totalCalculatedBudget.toLocaleString()})
               </p>
             </div>
             <Button
@@ -322,7 +399,7 @@ export function CreateAPRDialog() {
 
               <SelectAPPForm
                 key={`${selectedFiscalYear}-${selectedFYObj?.id || ''}`}
-                formId={formId}
+                formId={SELECT_APP_FORM_ID}
                 onSubmit={handleSelectAPPSubmit}
                 fiscalYear={selectedFiscalYear}
                 fiscalYearId={selectedFYObj?.id}
@@ -330,27 +407,33 @@ export function CreateAPRDialog() {
             </div>
           )}
 
-          {/* STEP 2: Header Information */}
-          {step === 2 && (
-            <div className="space-y-4">
+          {/* Persistent Form Container for Steps 2 & 3 (Keeps TanStack Form fields mounted) */}
+          <form
+            id={FINAL_CREATE_APR_FORM_ID}
+            onSubmit={(e) => {
+              e.preventDefault()
+              e.stopPropagation()
+              form.handleSubmit()
+            }}
+          >
+            {/* STEP 2: Header Information */}
+            <div className={step === 2 ? 'block space-y-4' : 'hidden'}>
               <APRHeaderForm form={form} />
             </div>
-          )}
 
-          {/* STEP 3: Terms & Conditions */}
-          {step === 3 && (
-            <div className="space-y-4">
+            {/* STEP 3: Terms & Conditions */}
+            <div className={step === 3 ? 'block space-y-4' : 'hidden'}>
               <APRTermsForm form={form} />
             </div>
-          )}
+          </form>
 
           {/* STEP 4: Review & Submit */}
           {step === 4 && (
             <div className="space-y-4">
               <Card>
                 <CardHeader className="pb-3">
-                  <CardTitle className="text-sm font-semibold text-gray-900">
-                    ?? Request Summary
+                  <CardTitle className="text-sm font-semibold text-gray-900 flex items-center gap-2">
+                    📋 Request Summary
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-4 text-xs">
@@ -365,11 +448,11 @@ export function CreateAPRDialog() {
                     </div>
                     <div>
                       <p className="text-muted-foreground">Selected Line Items</p>
-                      <p className="font-semibold text-primary">{selectedAppLineItemIds.length} items</p>
+                      <p className="font-semibold text-primary">{selection.selectedLineItemIds.length} items</p>
                     </div>
                     <div>
                       <p className="text-muted-foreground">Total Budget</p>
-                      <p className="font-semibold text-green-700">?{totalCalculatedBudget.toLocaleString()}</p>
+                      <p className="font-semibold text-green-700">₱{totalCalculatedBudget.toLocaleString()}</p>
                     </div>
                   </div>
 
@@ -386,8 +469,26 @@ export function CreateAPRDialog() {
                   <div className="space-y-2 border-t pt-3">
                     <p className="font-semibold text-gray-800">Terms & Conditions</p>
                     <div className="grid grid-cols-2 gap-2 text-gray-600">
-                      <div><span className="font-medium">Delivery Mode:</span> <Badge variant="outline" className="text-[10px]">{form.state.values.modeOfDelivery}</Badge></div>
-                      <div><span className="font-medium">Insufficient Funds:</span> <Badge variant="outline" className="text-[10px]">{form.state.values.insufficientFundsAction}</Badge></div>
+                      <div>
+                        <span className="font-medium">Delivery Mode:</span>{' '}
+                        <Badge variant="outline" className="text-[10px]">
+                          {form.state.values.modeOfDelivery === 'DoorToDoor' || form.state.values.modeOfDelivery === 'DOOR_TO_DOOR'
+                            ? 'Door-to-Door'
+                            : form.state.values.modeOfDelivery === 'ScheduledPickUp' || form.state.values.modeOfDelivery === 'SCHEDULED_PICKUP'
+                            ? 'Scheduled Pick-up'
+                            : 'Fast Lane'}
+                        </Badge>
+                      </div>
+                      <div>
+                        <span className="font-medium">Insufficient Funds:</span>{' '}
+                        <Badge variant="outline" className="text-[10px]">
+                          {form.state.values.insufficientFundsAction === 'BillUs' || form.state.values.insufficientFundsAction === 'BILL_US'
+                            ? 'Bill Us'
+                            : form.state.values.insufficientFundsAction === 'ChargeToUnutilizedDeposit' || form.state.values.insufficientFundsAction === 'CHARGE_TO_DEPOSIT'
+                            ? 'Charge to Unutilized Deposit'
+                            : 'Reduce Quantity'}
+                        </Badge>
+                      </div>
                     </div>
                   </div>
                 </CardContent>
@@ -404,7 +505,7 @@ export function CreateAPRDialog() {
 
           <div className="flex items-center gap-2">
             {step === 1 && (
-              <Button type="submit" form={formId}>
+              <Button type="submit" form={SELECT_APP_FORM_ID}>
                 Continue to Details <ArrowRight className="ml-1 h-4 w-4" />
               </Button>
             )}
@@ -414,7 +515,7 @@ export function CreateAPRDialog() {
                 <Button variant="outline" onClick={() => setStep(1)} disabled={isPending}>
                   <ArrowLeft className="mr-1 h-4 w-4" /> Back to Source APP
                 </Button>
-                <Button onClick={() => setStep(3)} disabled={isPending}>
+                <Button onClick={handleDetailsNext} disabled={isPending}>
                   Continue to Terms <ArrowRight className="ml-1 h-4 w-4" />
                 </Button>
               </>
@@ -425,7 +526,7 @@ export function CreateAPRDialog() {
                 <Button variant="outline" onClick={() => setStep(2)} disabled={isPending}>
                   <ArrowLeft className="mr-1 h-4 w-4" /> Back to Details
                 </Button>
-                <Button onClick={() => setStep(4)} disabled={isPending}>
+                <Button onClick={handleTermsNext} disabled={isPending}>
                   Continue to Review <ArrowRight className="ml-1 h-4 w-4" />
                 </Button>
               </>
@@ -436,7 +537,11 @@ export function CreateAPRDialog() {
                 <Button variant="outline" onClick={() => setStep(3)} disabled={isPending}>
                   <ArrowLeft className="mr-1 h-4 w-4" /> Back to Terms
                 </Button>
-                <Button onClick={() => form.handleSubmit()} disabled={isPending || !sourceAPPId}>
+                <Button
+                  type="submit"
+                  form={FINAL_CREATE_APR_FORM_ID}
+                  disabled={isPending || !selection.sourceAppId}
+                >
                   {isPending ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />

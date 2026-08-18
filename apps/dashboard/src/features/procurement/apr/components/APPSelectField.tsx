@@ -62,22 +62,23 @@ export const APPSelectField = React.memo(function APPSelectField({
             return (
               <div
                 key={app.id}
-                className={`rounded-lg border-2 p-3 cursor-pointer transition-colors ${
+                className={`rounded-lg border-2 p-3 transition-colors ${
                   isSelected
                     ? 'border-purple-500 bg-purple-100/70 shadow-sm'
                     : 'border-purple-200 hover:bg-purple-50/60'
                 }`}
-                onClick={() => onToggleApp(app.id)}
               >
                 <div className="flex items-start gap-3">
                   <Checkbox
                     id={`app-check-${app.id}`}
                     checked={isSelected}
                     onCheckedChange={() => onToggleApp(app.id)}
-                    onClick={(e) => e.stopPropagation()}
                     className="mt-1"
                   />
-                  <div className="flex-1 min-w-0">
+                  <label
+                    htmlFor={`app-check-${app.id}`}
+                    className="flex-1 min-w-0 cursor-pointer select-none"
+                  >
                     <div className="flex items-center justify-between gap-2 flex-wrap">
                       <p className="font-semibold text-sm truncate text-gray-900">{appCode}</p>
                       <div className="flex gap-1.5 flex-shrink-0 items-center">
@@ -98,7 +99,7 @@ export const APPSelectField = React.memo(function APPSelectField({
                     <p className="text-[11px] text-purple-700 mt-1 font-medium">
                       {itemCount} line item{itemCount !== 1 ? 's' : ''} available
                     </p>
-                  </div>
+                  </label>
                 </div>
               </div>
             )

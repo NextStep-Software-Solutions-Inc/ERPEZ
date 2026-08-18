@@ -8,7 +8,7 @@ import { useNavigate } from '@tanstack/react-router'
 import { useAtom } from 'jotai'
 import { toast } from 'sonner'
 import {
-  selectAPPDialogOpenAtom,
+  createAPRDialogOpenAtom,
   aprListFilterAtom,
 } from '@/features/procurement/apr/atoms'
 import { useAPRs, useDeleteAPRMutation } from '@/features/procurement/apr/handlers/hooks'
@@ -33,7 +33,7 @@ import {
 
 export function APRListPage() {
   const navigate = useNavigate()
-  const [, setSelectAPPDialogOpen] = useAtom(selectAPPDialogOpenAtom)
+  const [, setCreateAPRDialogOpen] = useAtom(createAPRDialogOpenAtom)
   const [filter, setFilter] = useAtom(aprListFilterAtom)
   const [aprToDelete, setAprToDelete] = useState<APRListItemDto | null>(null)
 
@@ -94,7 +94,7 @@ export function APRListPage() {
   }, [aprList, searchTerm, statusFilter, fiscalYearFilter])
 
   const handleCreateClick = () => {
-    setSelectAPPDialogOpen(true)
+    setCreateAPRDialogOpen(true)
   }
 
   const handleViewAPR = useCallback((apr: any) => {

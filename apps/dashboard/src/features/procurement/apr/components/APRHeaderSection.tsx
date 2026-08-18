@@ -1,10 +1,14 @@
-/**
+﻿/**
  * APR Header Section Component
- * Displays APR metadata: number, dates, entities, requestor info
+ * Displays prominent APR identity, status, metadata, and requestor info
  */
 
+import { useState } from 'react'
 import { format } from 'date-fns'
+import { Copy, Check } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Button } from '@/components/ui/button'
+import { toast } from 'sonner'
 import { APRStatusBadge } from './APRStatusBadge'
 import type { APRMaster } from '../types'
 
@@ -13,138 +17,125 @@ interface APRHeaderSectionProps {
 }
 
 export function APRHeaderSection({ apr }: APRHeaderSectionProps) {
+  const [copied, setCopied] = useState(false)
+
+  const handleCopyId = () => {
+    if (!apr.id) return
+    navigator.clipboard.writeText(apr.id)
+    setCopied(true)
+    toast.success('APR ID copied to clipboard')
+    setTimeout(() => setCopied(false), 2000)
+  }
+
+  const formattedRequestDate = (() => {
+    if (!apr.requestDate) return '—'
+    try {
+      return format(new Date(apr.requestDate), 'MMM dd, yyyy')
+    } catch {
+      return String(apr.requestDate)
+    }
+  })()
+
   const headerFields = [
-    { label: 'APR Number', value: apr.aprNumber },
-    { label: 'Control Number', value: apr.agencyControlNumber },
-    { label: 'Account Code', value: apr.agencyAccountCode },
-    { label: 'Fiscal Year', value: apr.fiscalYear.toString() },
-    {
-      label: 'Request Date',
-      value: format(new Date(apr.requestDate), 'MMM dd, yyyy'),
-    },
+    { label: 'APR Number', value: apr.aprNumber || '—' },
+    { label: 'Control Number', value: apr.agencyControlNumber || '—' },
+    { label: 'Account Code', value: apr.agencyAccountCode || '—' },
+    { label: 'Fiscal Year', value: `FY ${apr.fiscalYear}` },
+    { label: 'Request Date', value: formattedRequestDate },
   ]
 
   const entityFields = [
-    { label: 'Procuring Entity', value: apr.procuringEntity },
-    { label: 'Requesting Entity', value: apr.requestingEntity },
-    { label: 'Requested By', value: apr.requestedBy },
-    { label: 'Position', value: apr.requestedByPosition },
+    { label: 'Procuring Entity', value: apr.procuringEntity || 'Procurement Service - DBM' },
+    { label: 'Requesting Entity', value: apr.requestingEntity || '—' },
+    { label: 'Requested By', value: apr.requestedBy || '—' },
+    { label: 'Position', value: apr.requestedByPosition || '—' },
   ]
-
-  const timelineFields = [
-    apr.submittedAt ? {
-      label: 'Submitted',
-      value: format(new Date(apr.submittedAt), 'MMM dd, yyyy hh:mm a'),
-      detail: undefined,
-    } : null,
-    apr.returnedAt ? {
-      label: 'Returned',
-      value: format(new Date(apr.returnedAt), 'MMM dd, yyyy hh:mm a'),
-      detail: apr.returnedBy,
-    } : null,
-    apr.approvedAt ? {
-      label: 'Approved',
-      value: format(new Date(apr.approvedAt), 'MMM dd, yyyy hh:mm a'),
-      detail: apr.approvedBy,
-    } : null,
-  ].filter((f): f is { label: string; value: string; detail: string | undefined } => f !== null)
 
   return (
     <div className="space-y-4">
-      {/* Header Summary */}
-      <Card>
-        <CardHeader className="pb-3">
-          <div className="flex items-start justify-between">
-            <div>
-              <CardTitle className="text-2xl">{apr.aprNumber}</CardTitle>
-              <p className="text-sm text-gray-600 mt-1">{apr.description}</p>
-            </div>
+      {/* Primary APR Identity Banner */}
+      <div className="bg-white border rounded-xl p-5 shadow-xs flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+        <div className="space-y-1 min-w-0">
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="text-2xl font-bold tracking-tight text-gray-900 font-mono">
+              {apr.aprNumber}
+            </h1>
             <APRStatusBadge status={apr.status} size="lg" />
           </div>
-        </CardHeader>
-      </Card>
+          {apr.description && (
+            <p className="text-sm text-muted-foreground leading-relaxed">
+              {apr.description}
+            </p>
+          )}
+        </div>
 
-      <div className="grid gap-4 lg:grid-cols-2">
+        {/* Secondary UUID snippet */}
+        {apr.id && (
+          <div className="flex items-center gap-1.5 flex-shrink-0 self-start md:self-center">
+            <span className="text-xs font-mono text-muted-foreground bg-slate-50 border px-2.5 py-1 rounded-md max-w-[180px] sm:max-w-none truncate">
+              ID: {apr.id}
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-7 w-7 text-muted-foreground hover:text-gray-900"
+              onClick={handleCopyId}
+              title="Copy UUID"
+            >
+              {copied ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
+            </Button>
+          </div>
+        )}
+      </div>
+
+      {/* Two Column Summary Grid: Details + Entities & Requestor */}
+      <div className="grid gap-4 md:grid-cols-2">
         {/* APR Details */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Details</CardTitle>
+        <Card className="shadow-xs border-gray-200">
+          <CardHeader className="py-3 px-5 border-b bg-slate-50/50">
+            <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Details
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
+          <CardContent className="p-5">
+            <dl className="space-y-2.5">
               {headerFields.map((field, idx) => (
-                <div key={idx} className="flex justify-between border-b pb-2">
-                  <span className="text-sm font-medium text-gray-600">
+                <div key={idx} className="flex justify-between items-baseline text-xs gap-4">
+                  <dt className="text-muted-foreground font-medium flex-shrink-0">
                     {field.label}
-                  </span>
-                  <span className="text-sm text-gray-900">{field.value}</span>
+                  </dt>
+                  <dd className="text-gray-900 font-semibold text-right truncate">
+                    {field.value}
+                  </dd>
                 </div>
               ))}
-            </div>
+            </dl>
           </CardContent>
         </Card>
 
         {/* Entities & Requestor */}
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Entities & Requestor</CardTitle>
+        <Card className="shadow-xs border-gray-200">
+          <CardHeader className="py-3 px-5 border-b bg-slate-50/50">
+            <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+              Entities & Requestor
+            </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
+          <CardContent className="p-5">
+            <dl className="space-y-2.5">
               {entityFields.map((field, idx) => (
-                <div key={idx} className="flex justify-between border-b pb-2">
-                  <span className="text-sm font-medium text-gray-600">
+                <div key={idx} className="flex justify-between items-baseline text-xs gap-4">
+                  <dt className="text-muted-foreground font-medium flex-shrink-0">
                     {field.label}
-                  </span>
-                  <span className="text-sm text-gray-900">{field.value}</span>
+                  </dt>
+                  <dd className="text-gray-900 font-semibold text-right truncate">
+                    {field.value}
+                  </dd>
                 </div>
               ))}
-            </div>
+            </dl>
           </CardContent>
         </Card>
       </div>
-
-      {/* Timeline */}
-      {timelineFields.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="text-base">Timeline</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-3">
-              <div className="flex justify-between border-b pb-2">
-                <span className="text-sm font-medium text-gray-600">
-                  Created
-                </span>
-                <span className="text-sm text-gray-900">
-                  {(() => {
-                    const dt = apr.createdAt || apr.requestDate
-                    if (!dt) return '—'
-                    try {
-                      return format(new Date(dt), 'MMM dd, yyyy hh:mm a')
-                    } catch {
-                      return String(dt)
-                    }
-                  })()}
-                </span>
-              </div>
-              {timelineFields.map((field, idx) => (
-                <div key={idx} className="flex justify-between border-b pb-2">
-                  <div>
-                    <span className="text-sm font-medium text-gray-600">
-                      {field.label}
-                    </span>
-                    {field.detail && (
-                      <p className="text-xs text-gray-500">by {field.detail}</p>
-                    )}
-                  </div>
-                  <span className="text-sm text-gray-900">{field.value}</span>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
     </div>
   )
 }

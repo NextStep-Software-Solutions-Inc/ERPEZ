@@ -1,21 +1,34 @@
-/**
+﻿/**
  * APR Details Page
- * Displays complete APR information: header, items, timeline, and actions from live backend API
+ * Displays complete APR information: header hierarchy, compact stats, refined items, modernized terms, and sticky action bar
  */
 
 import { useMemo, useState } from 'react'
 import { useNavigate, useSearch } from '@tanstack/react-router'
-import { ArrowLeft, Plus, Loader2, AlertCircle } from 'lucide-react'
+import {
+  ArrowLeft,
+  Plus,
+  Loader2,
+  AlertCircle,
+  CheckCircle2,
+  Send,
+  RotateCcw,
+  Printer,
+  History,
+  FileCheck2,
+  Package,
+} from 'lucide-react'
+import { format } from 'date-fns'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
+import { Badge } from '@/components/ui/badge'
 import { toast } from 'sonner'
 import {
   APRHeaderSection,
   APRStatsGrid,
   ConsolidatedItemsTable,
   APRTermsConditionsSection,
-  APRActionsSection,
 } from '@/features/procurement/apr/components'
 import {
   SubmitAPRDialog,
@@ -225,9 +238,9 @@ export default function APRDetailsPage({ aprId }: APRDetailsPageProps) {
 
   if (isLoading) {
     return (
-      <div className="flex flex-col items-center justify-center h-96 gap-3">
-        <Loader2 className="h-10 w-10 animate-spin text-primary" />
-        <p className="text-sm font-medium text-gray-500">Loading APR details from database...</p>
+      <div className="flex flex-col items-center justify-center min-h-[400px] gap-3">
+        <Loader2 className="h-9 w-9 animate-spin text-primary" />
+        <p className="text-xs font-medium text-muted-foreground">Loading APR details from database...</p>
       </div>
     )
   }
@@ -235,17 +248,19 @@ export default function APRDetailsPage({ aprId }: APRDetailsPageProps) {
   if (error || !apr) {
     return (
       <div className="p-6 space-y-4">
-        <Button variant="ghost" onClick={handleBackClick} className="mb-2">
-          <ArrowLeft className="mr-2 h-4 w-4" />
+        <Button variant="ghost" size="sm" onClick={handleBackClick} className="gap-2">
+          <ArrowLeft className="h-4 w-4" />
           Back
         </Button>
-        <Card className="border-red-200 bg-red-50">
-          <CardContent className="pt-6 flex items-center justify-between">
-            <div className="flex items-center gap-2 text-red-800">
-              <AlertCircle className="h-5 w-5" />
+        <Card className="border-red-200 bg-red-50/50">
+          <CardContent className="p-6 flex items-center justify-between">
+            <div className="flex items-center gap-3 text-red-800">
+              <AlertCircle className="h-5 w-5 flex-shrink-0" />
               <div>
-                <p className="font-semibold">Failed to load APR</p>
-                <p className="text-sm">{String((error as any)?.message || 'The requested APR was not found in the database.')}</p>
+                <p className="font-semibold text-sm">Failed to load APR</p>
+                <p className="text-xs text-red-700 mt-0.5">
+                  {String((error as any)?.message || 'The requested APR was not found in the database.')}
+                </p>
               </div>
             </div>
             <Button variant="outline" size="sm" onClick={() => refetch()}>
@@ -259,86 +274,269 @@ export default function APRDetailsPage({ aprId }: APRDetailsPageProps) {
 
   // Determine available actions based on status
   const statusLower = (apr.status || '').toLowerCase()
-  const canSubmitForReview = statusLower === 'draft'
-  const canReturn = statusLower === 'forapproval' || statusLower === 'submitted'
-  const canApprove = statusLower === 'forapproval' || statusLower === 'submitted'
-  const canAddItems = statusLower === 'draft' || statusLower === 'returned'
+  const isDraft = statusLower === 'draft'
+  const isSubmitted = statusLower === 'forapproval' || statusLower === 'submitted'
+  const isReturned = statusLower === 'returned'
+  const isApproved = statusLower === 'approved'
+
+  // Activity events timeline
+  const timelineEvents = [
+    {
+      title: 'APR Created',
+      timestamp: apr.requestDate,
+      actor: apr.requestedBy || 'Procurement Officer',
+      status: 'completed',
+    },
+    apr.submittedAt ? {
+      title: 'Submitted for Review',
+      timestamp: apr.submittedAt,
+      actor: apr.requestedBy,
+      status: 'completed',
+    } : null,
+    apr.returnedAt ? {
+      title: 'Returned for Revisions',
+      timestamp: apr.returnedAt,
+      actor: apr.returnedBy,
+      status: 'returned',
+      remarks: apr.terms?.remarks,
+    } : null,
+    apr.approvedAt ? {
+      title: 'APR Approved',
+      timestamp: apr.approvedAt,
+      actor: apr.approvedBy,
+      status: 'approved',
+    } : null,
+  ].filter(Boolean) as Array<{ title: string; timestamp: string; actor?: string; status: string; remarks?: string }>
 
   return (
-    <div className="space-y-6 pb-8">
-      {/* Header Navigation */}
-      <div className="sticky top-0 bg-white border-b z-40 pt-6 -mx-6 px-6 pb-4 flex items-center justify-between">
-        <Button variant="ghost" onClick={handleBackClick}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          {search.from === 'manage-aprs' ? 'Back to Manage APRs' : 'Back to APRs'}
+    <div className="space-y-6 pb-28">
+      {/* Top Breadcrumb Navigation */}
+      <div className="flex items-center justify-between">
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={handleBackClick}
+          className="text-xs text-muted-foreground hover:text-gray-900 gap-1.5 -ml-2"
+        >
+          <ArrowLeft className="h-4 w-4" />
+          {search.from === 'manage-aprs' ? 'Agency Purchase Requests / Manage APRs' : 'Agency Purchase Requests'}
         </Button>
-        <div className="text-xs text-muted-foreground font-mono">
-          ID: {apr.id}
+      </div>
+
+      {/* APR Identity & Summary Header */}
+      <APRHeaderSection apr={apr} />
+
+      {/* Compact High-Density Stats Strip */}
+      <APRStatsGrid
+        totalItemsCount={apr.consolidatedItems.length}
+        totalAmount={apr.totalAmount}
+        consolidatedCount={apr.consolidatedItems.length}
+        approvalStatus={apr.status as any}
+      />
+
+      {/* Strong Tabs: Items, Terms & Conditions, Activity & Timeline */}
+      <Tabs defaultValue="items" className="w-full space-y-4">
+        <div className="border-b">
+          <TabsList className="bg-transparent h-10 p-0 gap-6 border-b-0">
+            <TabsTrigger
+              value="items"
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-primary px-2 pb-2.5 font-medium text-xs text-muted-foreground flex items-center gap-1.5 cursor-pointer"
+            >
+              <Package className="h-3.5 w-3.5" />
+              <span>Items</span>
+              <Badge variant="secondary" className="text-[10px] px-1.5 py-0 h-4">
+                {apr.consolidatedItems.length}
+              </Badge>
+            </TabsTrigger>
+            <TabsTrigger
+              value="terms"
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-primary px-2 pb-2.5 font-medium text-xs text-muted-foreground flex items-center gap-1.5 cursor-pointer"
+            >
+              <FileCheck2 className="h-3.5 w-3.5" />
+              <span>Terms & Conditions</span>
+            </TabsTrigger>
+            <TabsTrigger
+              value="activity"
+              className="rounded-none border-b-2 border-transparent data-[state=active]:border-primary data-[state=active]:bg-transparent data-[state=active]:shadow-none data-[state=active]:text-primary px-2 pb-2.5 font-medium text-xs text-muted-foreground flex items-center gap-1.5 cursor-pointer"
+            >
+              <History className="h-3.5 w-3.5" />
+              <span>Activity & Timeline</span>
+            </TabsTrigger>
+          </TabsList>
         </div>
-      </div>
 
-      {/* APR Header Section */}
-      <div>
-        <APRHeaderSection apr={apr} />
-      </div>
-
-      {/* APR Stats */}
-      <div>
-        <APRStatsGrid
-          totalItemsCount={apr.consolidatedItems.length}
-          totalAmount={apr.totalAmount}
-          consolidatedCount={apr.consolidatedItems.length}
-          approvalStatus={apr.status as any}
-        />
-      </div>
-
-      {/* Tabs: Items, Terms, Actions */}
-      <Tabs defaultValue="items" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
-          <TabsTrigger value="items">Items ({apr.consolidatedItems.length})</TabsTrigger>
-          <TabsTrigger value="terms">Terms & Conditions</TabsTrigger>
-          <TabsTrigger value="actions">Actions</TabsTrigger>
-        </TabsList>
-
-        {/* Items Tab */}
-        <TabsContent value="items" className="space-y-4">
-          <div className="flex justify-between items-center">
-            <h3 className="text-lg font-semibold">Consolidated Items</h3>
-            {canAddItems && (
-              <Button 
-                size="sm" 
-                className="gap-2"
-                onClick={() => setAddItemDialogOpen(true)}
-              >
-                <Plus className="h-4 w-4" />
-                Add Item from Catalog
-              </Button>
-            )}
-          </div>
-          <ConsolidatedItemsTable items={apr.consolidatedItems} status={apr.status as string} />
-        </TabsContent>
-
-        {/* Terms Tab */}
-        <TabsContent value="terms" className="space-y-4">
-          <APRTermsConditionsSection terms={apr.terms || {} as any} />
-        </TabsContent>
-
-        {/* Actions Tab */}
-        <TabsContent value="actions" className="space-y-4">
-          <APRActionsSection
-            apr={apr}
-            canSubmitForReview={canSubmitForReview}
-            canReturn={canReturn}
-            canApprove={canApprove}
-            isSubmitting={isSubmitting}
-            onSubmit={() => setSubmitDialogOpen(true)}
-            onReturn={() => setReturnDialogOpen(true)}
-            onApprove={() => setApproveDialogOpen(true)}
+        {/* Tab 1: Consolidated Items Table */}
+        <TabsContent value="items" className="space-y-4 outline-none">
+          <ConsolidatedItemsTable
+            items={apr.consolidatedItems}
+            status={apr.status as string}
+            onOpenAddItem={() => setAddItemDialogOpen(true)}
           />
+        </TabsContent>
+
+        {/* Tab 2: Modernized Terms & Conditions */}
+        <TabsContent value="terms" className="space-y-4 outline-none">
+          <APRTermsConditionsSection terms={apr.terms || ({} as any)} />
+        </TabsContent>
+
+        {/* Tab 3: Activity & Timeline */}
+        <TabsContent value="activity" className="space-y-4 outline-none">
+          <Card className="border shadow-xs bg-white">
+            <CardHeader className="py-3 px-5 border-b bg-slate-50/50">
+              <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+                Lifecycle Activity & Audit History
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="p-5">
+              <div className="space-y-4">
+                {timelineEvents.map((evt, idx) => (
+                  <div key={idx} className="flex items-start gap-3 pb-3 last:pb-0 border-b last:border-b-0">
+                    <div className="mt-0.5">
+                      <CheckCircle2 className="h-4 w-4 text-primary" />
+                    </div>
+                    <div className="flex-1 text-xs space-y-0.5">
+                      <div className="flex items-center justify-between">
+                        <p className="font-semibold text-gray-900">{evt.title}</p>
+                        <span className="text-[11px] text-muted-foreground font-mono">
+                          {(() => {
+                            try {
+                              return format(new Date(evt.timestamp), 'MMM dd, yyyy hh:mm a')
+                            } catch {
+                              return String(evt.timestamp)
+                            }
+                          })()}
+                        </span>
+                      </div>
+                      {evt.actor && (
+                        <p className="text-[11px] text-muted-foreground">by {evt.actor}</p>
+                      )}
+                      {evt.remarks && (
+                        <div className="mt-1.5 p-2 bg-slate-50 border rounded text-[11px] text-gray-700">
+                          {evt.remarks}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
 
-      {/* Dialogs */}
+      {/* Sticky Bottom Action Bar */}
+      <div className="fixed bottom-0 left-0 right-0 lg:left-64 bg-white/95 backdrop-blur-md border-t py-3 px-6 z-30 shadow-lg flex items-center justify-between gap-4">
+        {/* Status indicator on the left */}
+        <div className="flex items-center gap-3">
+          <Badge variant="outline" className="text-xs font-mono px-2 py-0.5">
+            {apr.status || 'Draft'}
+          </Badge>
+          <span className="text-xs text-muted-foreground hidden sm:inline">
+            Request Date: {apr.requestDate}
+          </span>
+        </div>
+
+        {/* Status/Role-aware Action Buttons */}
+        <div className="flex items-center gap-2">
+          {/* Draft Actions */}
+          {isDraft && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 text-xs"
+                onClick={() => setAddItemDialogOpen(true)}
+                disabled={isSubmitting}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Add Item
+              </Button>
+              <Button
+                size="sm"
+                className="gap-1.5 text-xs"
+                onClick={() => setSubmitDialogOpen(true)}
+                disabled={isSubmitting || apr.consolidatedItems.length === 0}
+              >
+                {isSubmittingAPR ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Send className="h-3.5 w-3.5" />
+                )}
+                Submit for Review
+              </Button>
+            </>
+          )}
+
+          {/* Submitted / ForApproval Actions */}
+          {isSubmitted && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 text-xs text-amber-700 hover:text-amber-800 border-amber-300 hover:bg-amber-50"
+                onClick={() => setReturnDialogOpen(true)}
+                disabled={isSubmitting}
+              >
+                <RotateCcw className="h-3.5 w-3.5" />
+                Return for Revisions
+              </Button>
+              <Button
+                size="sm"
+                className="gap-1.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white"
+                onClick={() => setApproveDialogOpen(true)}
+                disabled={isSubmitting}
+              >
+                {isApprovingAPR ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <CheckCircle2 className="h-3.5 w-3.5" />
+                )}
+                Approve APR
+              </Button>
+            </>
+          )}
+
+          {/* Returned Actions */}
+          {isReturned && (
+            <>
+              <Button
+                variant="outline"
+                size="sm"
+                className="gap-1.5 text-xs"
+                onClick={() => setAddItemDialogOpen(true)}
+                disabled={isSubmitting}
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Add Item
+              </Button>
+              <Button
+                size="sm"
+                className="gap-1.5 text-xs"
+                onClick={() => setSubmitDialogOpen(true)}
+                disabled={isSubmitting}
+              >
+                <Send className="h-3.5 w-3.5" />
+                Resubmit for Review
+              </Button>
+            </>
+          )}
+
+          {/* Approved Actions */}
+          {isApproved && (
+            <Button
+              variant="outline"
+              size="sm"
+              className="gap-1.5 text-xs"
+              onClick={() => window.print()}
+            >
+              <Printer className="h-3.5 w-3.5" />
+              Print / Export APR
+            </Button>
+          )}
+        </div>
+      </div>
+
+      {/* Action Dialogs */}
       <SubmitAPRDialog
         open={submitDialogOpen}
         onOpenChange={setSubmitDialogOpen}

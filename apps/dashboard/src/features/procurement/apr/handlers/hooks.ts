@@ -1,13 +1,12 @@
-/**
+﻿/**
  * APR API Hooks
  *
  * All query and mutation hooks for the APR feature.
- * Mutations that modify server data automatically invalidate the relevant query caches.
+ * Connects directly to backend REST endpoints.
  *
  * @module features/procurement/apr/handlers/hooks
  */
 
-import { useQueryClient, type UseMutationResult } from '@tanstack/react-query'
 import {
   createMutationHookFromTemplate,
   createQueryHookFromTemplate,
@@ -23,52 +22,6 @@ import { updateAPRRequest } from './updateAPRRequest'
 import { getApprovedAPPsRequest } from './getApprovedAPPsRequest'
 import { getAPPByIdRequest } from './getAPPByIdRequest'
 import { getFiscalYearsRequest } from './getFiscalYearsRequest'
-
-type MutationResult<TData, TVariables> = UseMutationResult<
-  TData,
-  unknown,
-  TVariables,
-  unknown
->
-
-/**
- * Wraps a mutation hook so that on success the /aprs query caches are automatically invalidated.
- */
-function makeAPRMutationWithRefresh<TData, TVariables>(
-  baseHook: () => MutationResult<TData, TVariables>,
-) {
-  return function useAPRMutationWithRefresh(): MutationResult<TData, TVariables> {
-    const queryClient = useQueryClient()
-    const mutation = baseHook()
-
-    const invalidateAPRCaches = () => {
-      void queryClient.invalidateQueries({
-        predicate: (query) => {
-          const key = query.queryKey[0]
-          return typeof key === 'string' && key.startsWith('/aprs')
-        },
-      })
-    }
-
-    return {
-      ...mutation,
-      mutate: ((variables, options) => {
-        mutation.mutate(variables, {
-          ...options,
-          onSuccess: (data, mutationVariables, onMutateResult, context) => {
-            options?.onSuccess?.(data, mutationVariables, onMutateResult, context)
-            invalidateAPRCaches()
-          },
-        })
-      }) as MutationResult<TData, TVariables>['mutate'],
-      mutateAsync: (async (variables, options) => {
-        const result = await mutation.mutateAsync(variables, options)
-        invalidateAPRCaches()
-        return result
-      }) as MutationResult<TData, TVariables>['mutateAsync'],
-    }
-  }
-}
 
 // ─── Query hooks ─────────────────────────────────────────────────────────────
 
@@ -87,31 +40,22 @@ export const useAPPById = createQueryHookFromTemplate(getAPPByIdRequest)
 /** List of active and available Fiscal Years. */
 export const useFiscalYears = createQueryHookFromTemplate(getFiscalYearsRequest)
 
-// ─── Base mutation hooks ─────────────────────────────────────────────────────
+// ─── Mutation hooks ──────────────────────────────────────────────────────────
 
-const useBaseCreateAPR = createMutationHookFromTemplate(createAPRRequest)
-const useBaseSubmitAPR = createMutationHookFromTemplate(submitAPRRequest)
-const useBaseApproveAPR = createMutationHookFromTemplate(approveAPRRequest)
-const useBaseReturnAPR = createMutationHookFromTemplate(returnAPRRequest)
-const useBaseDeleteAPR = createMutationHookFromTemplate(deleteAPRRequest)
-const useBaseUpdateAPR = createMutationHookFromTemplate(updateAPRRequest)
+/** Create APR */
+export const useCreateAPRMutation = createMutationHookFromTemplate(createAPRRequest)
 
-// ─── Invalidation-wrapped mutation hooks ─────────────────────────────────────
+/** Submit APR for approval */
+export const useSubmitAPRMutation = createMutationHookFromTemplate(submitAPRRequest)
 
-/** Create APR and invalidate APR cache. */
-export const useCreateAPRMutation = makeAPRMutationWithRefresh(useBaseCreateAPR)
+/** Approve APR */
+export const useApproveAPRMutation = createMutationHookFromTemplate(approveAPRRequest)
 
-/** Submit APR for approval and invalidate APR cache. */
-export const useSubmitAPRMutation = makeAPRMutationWithRefresh(useBaseSubmitAPR)
+/** Return APR for revision */
+export const useReturnAPRMutation = createMutationHookFromTemplate(returnAPRRequest)
 
-/** Approve APR and invalidate APR cache. */
-export const useApproveAPRMutation = makeAPRMutationWithRefresh(useBaseApproveAPR)
+/** Delete draft APR */
+export const useDeleteAPRMutation = createMutationHookFromTemplate(deleteAPRRequest)
 
-/** Return APR for revision and invalidate APR cache. */
-export const useReturnAPRMutation = makeAPRMutationWithRefresh(useBaseReturnAPR)
-
-/** Delete draft APR and invalidate APR cache. */
-export const useDeleteAPRMutation = makeAPRMutationWithRefresh(useBaseDeleteAPR)
-
-/** Update draft APR and invalidate APR cache. */
-export const useUpdateAPRMutation = makeAPRMutationWithRefresh(useBaseUpdateAPR)
+/** Update draft APR */
+export const useUpdateAPRMutation = createMutationHookFromTemplate(updateAPRRequest)

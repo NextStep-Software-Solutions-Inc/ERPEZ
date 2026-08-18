@@ -13,7 +13,7 @@ import { APPSelectField } from '../components/APPSelectField'
 import { LineItemsSelectField } from '../components/LineItemsSelectField'
 import { ValidationAlerts } from '../components/ValidationAlerts'
 import { APRItemsPreview } from '../components/APRItemsPreview'
-import { useApprovedAPPs } from '../handlers/hooks'
+import { useApprovedAPPs, useAPPById } from '../handlers/hooks'
 import { useAPPApprovalValidation } from '../hooks'
 import { convertAppLineItemsToAPRItems, validateBudgetCeiling } from '../utils'
 import type { ConsolidatedAPRItem } from '../types'
@@ -46,7 +46,10 @@ export function SelectAPPForm({
   fiscalYearId,
 }: SelectAPPFormProps) {
   const { data: appsResponse, isLoading: appsLoading } = useApprovedAPPs({
-    queryParams: APPROVED_APPS_QUERY_PARAMS,
+    queryParams: {
+      ...APPROVED_APPS_QUERY_PARAMS,
+      ...(fiscalYearId ? { fiscalYearId } : {}),
+    },
     enabled: true,
   } as any)
 
@@ -81,12 +84,56 @@ export function SelectAPPForm({
   )
 
   const primarySelectedApp = selectedApps[0] || null
+  const selectedAppId = primarySelectedApp?.id || ''
+
+  // Fetch detailed APP with full line items (APPItems & APPPPMPs) when an APP is selected
+  const { data: appDetailResponse } = useAPPById({
+    pathParams: { appId: selectedAppId },
+    enabled: !!selectedAppId,
+  } as any)
+
+  const detailedApp = useMemo(() => {
+    if (!appDetailResponse) return null
+    if ((appDetailResponse as any).data) return (appDetailResponse as any).data
+    return appDetailResponse as any
+  }, [appDetailResponse])
 
   const rawLineItems: any[] = useMemo(() => {
     if (selectedApps.length === 0) return []
     return selectedApps.flatMap((app: any) => {
       const appCode = app.appNumber || app.appCode || `APP-${app.id.substring(0, 8)}`
-      const items = app.APPItems || app.appItems || app.items || app.bac?.lineItems || []
+      const targetApp = (detailedApp && (detailedApp.id === app.id || detailedApp.appNumber === app.appNumber)) ? detailedApp : app
+
+      const directItems = targetApp.APPItems || targetApp.appItems || targetApp.items || targetApp.bac?.lineItems || []
+      
+      let items = directItems
+      if (!items || items.length === 0) {
+        const appPmps = targetApp.APPPPMPs || targetApp.appppmPs || []
+        const extracted: any[] = []
+        appPmps.forEach((rel: any) => {
+          const ppmp = rel.PPMP || rel.ppmp || rel
+          const pItems = ppmp?.PPMPItems || ppmp?.ppmpItems || ppmp?.items || []
+          pItems.forEach((pi: any) => {
+            extracted.push({
+              id: pi.id,
+              ppmpItemId: pi.id,
+              ppmpItemName: pi.description || pi.ppmpItemName || 'Procurement Item',
+              description: pi.description || pi.ppmpItemName || 'Procurement Item',
+              unit: pi.unit || 'unit',
+              quantity: pi.quantity ?? 1,
+              unitCost: pi.unitCost ?? 0,
+              totalAmount: pi.totalAmount ?? ((pi.quantity ?? 1) * (pi.unitCost ?? 0)),
+              officeId: ppmp?.officeId || targetApp.officeId,
+              officeName: ppmp?.officeName || targetApp.officeName,
+              fundSourceId: ppmp?.fundSourceId,
+              fundSourceName: ppmp?.fundSourceName,
+              procurementModeName: pi.modeOfProcurement || pi.procurementModeName,
+            })
+          })
+        })
+        items = extracted
+      }
+
       return items.map((item: any) => ({
         ...item,
         sourceAppId: app.id,
@@ -94,7 +141,7 @@ export function SelectAPPForm({
         sourceAppName: app.name || app.appName || '',
       }))
     })
-  }, [selectedApps])
+  }, [selectedApps, detailedApp])
 
   const validation = useAPPApprovalValidation({
     app: primarySelectedApp,
@@ -109,14 +156,17 @@ export function SelectAPPForm({
 
   const aprItems = useMemo(() => {
     if (selectedApps.length === 0 || selectedLineItems.length === 0) return []
-    return selectedLineItems.map((item: any) => {
-      const parentApp = selectedApps.find((a: any) => a.id === item.sourceAppId) || selectedApps[0]
-      return convertAppLineItemsToAPRItems(
-        [item],
-        parentApp?.id || '',
-        parentApp?.bac?.id || ''
-      )[0]
-    })
+    return selectedLineItems
+      .map((item: any) => {
+        const parentApp = selectedApps.find((a: any) => a.id === item.sourceAppId) || selectedApps[0]
+        const converted = convertAppLineItemsToAPRItems(
+          [item],
+          parentApp?.id || '',
+          parentApp?.bac?.id || ''
+        )
+        return converted?.[0] ?? null
+      })
+      .filter(Boolean) as ConsolidatedAPRItem[]
   }, [selectedApps, selectedLineItems])
 
   const aprTotalBudget = useMemo(
@@ -272,7 +322,7 @@ export function SelectAPPForm({
         onToggleLineItem={handleToggleLineItem}
         onSelectAll={handleSelectAllLineItems}
       />
-      {selectedApps.length > 0 && selectedLineItemIds.length > 0 && (
+      {/* {selectedApps.length > 0 && selectedLineItemIds.length > 0 && (
         <div className="rounded-lg border border-green-200 bg-green-50 p-4">
           <h3 className="text-sm font-semibold text-green-900 mb-3">
             ? Step 3: Preview Selected Items
@@ -283,7 +333,7 @@ export function SelectAPPForm({
             appTotalBudget={appTotalBudget}
           />
         </div>
-      )}
+      )} */}
     </form>
   )
 }

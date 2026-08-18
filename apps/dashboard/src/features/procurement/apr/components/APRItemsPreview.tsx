@@ -1,9 +1,8 @@
-/**
+﻿/**
  * APR Items Preview Component
  * 
  * Displays pre-populated APR items from selected APP line items
  * Shows variance information and budget alignment
- * Part of SelectAPPDialog workflow
  */
 
 import { useMemo } from 'react'
@@ -34,55 +33,67 @@ export function APRItemsPreview({
   items,
   appTotalBudget,
 }: APRItemsPreviewProps) {
-  // Calculate variance
-  const variance = useMemo(() => calculateTotalVariance(items), [items])
+  // Sanitize items array to remove any null/undefined entries
+  const safeItems = useMemo(() => {
+    if (!items || !Array.isArray(items)) return []
+    return items.filter(Boolean)
+  }, [items])
 
-  // Check for threshold violations
+  // Calculate variance safely
+  const variance = useMemo(() => {
+    if (safeItems.length === 0) return { totalApprovedBudget: 0, totalVariance: 0, totalVariancePercent: 0 }
+    return calculateTotalVariance(safeItems)
+  }, [safeItems])
+
+  // Check for threshold violations safely
   const hasVarianceIssues = useMemo(
-    () => items.some((item) => getVarianceWarning(item)),
-    [items]
+    () => safeItems.some((item) => Boolean(getVarianceWarning(item))),
+    [safeItems]
   )
 
-  // Validate budget ceiling against APP approved budget
+  // Validate budget ceiling against APP approved budget safely
   const currentBudget = useMemo(
-    () => items.reduce((sum, item) => sum + item.totalAmount, 0),
-    [items]
+    () => safeItems.reduce((sum, item) => sum + (item.totalAmount || 0), 0),
+    [safeItems]
   )
 
   const budgetCeilingValidation = useMemo(() => {
+    if (safeItems.length === 0) return null
     return validateBudgetCeiling(
       currentBudget,
       appTotalBudget,
       5, // threshold %
       10 // warning %
     )
-  }, [currentBudget, appTotalBudget])
+  }, [safeItems.length, currentBudget, appTotalBudget])
 
-  if (items.length === 0) return null
+  if (safeItems.length === 0) return null
 
   return (
     <Card className="bg-muted/50">
-      <CardHeader>
-        <CardTitle className="text-base">Preview: Items from {appName} to be Added to APR</CardTitle>
+      <CardHeader className="pb-3">
+        <CardTitle className="text-sm font-semibold text-gray-900">
+          Preview: Items from {appName} to be Added to APR
+        </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {/* Budget Summary */}
-        <div className="grid grid-cols-4 gap-4 text-sm">
+        <div className="grid grid-cols-4 gap-4 text-xs bg-white p-3 rounded-lg border">
           <div>
             <p className="text-muted-foreground">Items</p>
-            <p className="font-semibold">{items.length}</p>
+            <p className="font-semibold text-sm">{safeItems.length}</p>
           </div>
           <div>
             <p className="text-muted-foreground">Approved Budget</p>
-            <p className="font-semibold">₱{variance.totalApprovedBudget.toLocaleString()}</p>
+            <p className="font-semibold text-sm">₱{variance.totalApprovedBudget.toLocaleString()}</p>
           </div>
           <div>
             <p className="text-muted-foreground">Current Budget</p>
-            <p className="font-semibold">₱{currentBudget.toLocaleString()}</p>
+            <p className="font-semibold text-sm">₱{currentBudget.toLocaleString()}</p>
           </div>
           <div>
             <p className="text-muted-foreground">Budget Variance</p>
-            <p className={`font-semibold ${variance.totalVariance > 0 ? 'text-red-600' : 'text-green-600'}`}>
+            <p className={`font-semibold text-sm ${variance.totalVariance > 0 ? 'text-red-600' : 'text-green-600'}`}>
               {variance.totalVariancePercent > 0 ? '+' : ''}{variance.totalVariancePercent.toFixed(2)}%
             </p>
           </div>
@@ -100,66 +111,68 @@ export function APRItemsPreview({
         )}
 
         {/* Budget Ceiling Validation */}
-        <BudgetCeilingStatus
-          validation={budgetCeilingValidation}
-          compact={false}
-          showRecommendation={true}
-        />
+        {budgetCeilingValidation && (
+          <BudgetCeilingStatus
+            validation={budgetCeilingValidation}
+            compact={false}
+            showRecommendation={true}
+          />
+        )}
 
         {/* Items Table */}
-        <div className="border rounded-lg overflow-hidden">
+        <div className="border rounded-lg overflow-hidden bg-white">
           <ScrollArea className="h-64">
-            <table className="w-full text-sm">
-              <thead className="sticky top-0 bg-muted border-b">
+            <table className="w-full text-xs">
+              <thead className="sticky top-0 bg-muted/80 backdrop-blur-xs border-b">
                 <tr>
-                  <th className="text-left p-3">Description</th>
-                  <th className="text-right p-3">Qty</th>
-                  <th className="text-right p-3">Unit Cost</th>
-                  <th className="text-right p-3">Total</th>
-                  <th className="text-center p-3">Variance</th>
-                  <th className="text-center p-3">BAC Milestones</th>
+                  <th className="text-left p-2.5 font-semibold">Description</th>
+                  <th className="text-right p-2.5 font-semibold">Qty</th>
+                  <th className="text-right p-2.5 font-semibold">Unit Cost</th>
+                  <th className="text-right p-2.5 font-semibold">Total</th>
+                  <th className="text-center p-2.5 font-semibold">Variance</th>
+                  <th className="text-center p-2.5 font-semibold">BAC Milestones</th>
                 </tr>
               </thead>
               <tbody>
-                {items.map((item, index) => {
+                {safeItems.map((item, index) => {
                   const warning = getVarianceWarning(item)
                   return (
                     <tr
                       key={item.id || `item-preview-${index}`}
                       className={`border-b hover:bg-muted/50 ${
-                        warning ? 'bg-red-50' : ''
+                        warning ? 'bg-red-50/50' : ''
                       }`}
                     >
-                      <td className="p-3 font-medium text-xs">
-                        <div className="truncate">{item.description}</div>
+                      <td className="p-2.5 font-medium">
+                        <div className="truncate max-w-[200px]">{item.description}</div>
                         {warning && (
-                          <div className="text-red-600 text-xs mt-1 flex items-center gap-1">
-                            <AlertCircle className="h-3 w-3" />
+                          <div className="text-red-600 text-[11px] mt-0.5 flex items-center gap-1">
+                            <AlertCircle className="h-3 w-3 flex-shrink-0" />
                             {warning}
                           </div>
                         )}
                       </td>
-                      <td className="p-3 text-right">{item.quantity}</td>
-                      <td className="p-3 text-right">₱{item.unitCost.toLocaleString()}</td>
-                      <td className="p-3 text-right font-semibold">
-                        ₱{item.totalAmount.toLocaleString()}
+                      <td className="p-2.5 text-right font-mono">{item.quantity}</td>
+                      <td className="p-2.5 text-right font-mono">₱{(item.unitCost || 0).toLocaleString()}</td>
+                      <td className="p-2.5 text-right font-semibold font-mono">
+                        ₱{(item.totalAmount || 0).toLocaleString()}
                       </td>
-                      <td className="p-3 text-center">
+                      <td className="p-2.5 text-center">
                         <Badge
-                          color={
-                            (item.budgetVariancePercent ?? 0) === 0
-                              ? 'secondary'
-                              : Math.abs(item.budgetVariancePercent ?? 0) > 10
-                                ? 'destructive'
-                                : 'warning'
-                          }
                           variant="outline"
+                          className={`text-[10px] py-0 h-4 ${
+                            (item.budgetVariancePercent ?? 0) === 0
+                              ? 'bg-gray-50 text-gray-700 border-gray-300'
+                              : Math.abs(item.budgetVariancePercent ?? 0) > 10
+                              ? 'bg-red-50 text-red-700 border-red-300'
+                              : 'bg-amber-50 text-amber-700 border-amber-300'
+                          }`}
                         >
                           {(item.budgetVariancePercent ?? 0) > 0 ? '+' : ''}
                           {(item.budgetVariancePercent ?? 0).toFixed(1)}%
                         </Badge>
                       </td>
-                      <td className="p-3 text-center">
+                      <td className="p-2.5 text-center">
                         <BACMilestonesInline milestones={item.bacMilestones} compact />
                       </td>
                     </tr>
@@ -174,7 +187,7 @@ export function APRItemsPreview({
         <Alert>
           <Info className="h-4 w-4" />
           <AlertTitle>APP Pre-population</AlertTitle>
-          <AlertDescription>
+          <AlertDescription className="text-xs">
             These items will be automatically added to your APR. You can modify quantities and
             costs after creation.
           </AlertDescription>

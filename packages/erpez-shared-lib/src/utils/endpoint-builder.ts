@@ -5,11 +5,13 @@ export function buildEndpoint<T extends string, TQueryParams>(
   pathParams: ExtractPathParams<T>,
   queryParams: TQueryParams
 ): string {
-  const urlWithParams = Object.entries(pathParams).reduce<string>(
-    (url, [key, value]) =>
-      url.replace(`:${key}`, encodeURIComponent(String(value))),
-    endpoint
-  );
+  const urlWithParams = pathParams
+    ? Object.entries(pathParams).reduce<string>(
+        (url, [key, value]) =>
+          url.replace(`:${key}`, encodeURIComponent(String(value))),
+        endpoint
+      )
+    : endpoint;
 
   if (queryParams && Object.keys(queryParams).length > 0) {
     const searchParams = new URLSearchParams();
