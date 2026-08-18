@@ -5,6 +5,8 @@ using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
+using DomainMarketScopingActivity = ERPEZ.Domain.Entities.Planning.MarketScopingActivity;
+using DomainMarketScopingParameter = ERPEZ.Domain.Entities.Planning.MarketScopingParameter;
 
 namespace ERPEZ.Application.Features.Planning.Budgeting.MarketScoping.Commands.UpdateMarketScoping;
 
@@ -34,11 +36,34 @@ public class UpdateMarketScopingCommandHandler(
         marketScoping.TargetLineItemBudgetActivityId = request.TargetLineItemBudgetActivityId;
         marketScoping.UpdatedAt = DateTime.UtcNow;
 
-        // Clear and rebuild activities
-        marketScoping.ActivitiesConducted.Clear();
+        // 1. Clean up existing child activities and parameters
+        var existingActivities = await unitOfWork.MarketScopingActivityRepository
+            .FindAllAsync(a => a.MarketScopingId == marketScoping.Id, cancellationToken);
+        if (existingActivities.Count > 0)
+        {
+            foreach (var a in existingActivities)
+            {
+                a.AllowHardDelete = true;
+            }
+            unitOfWork.MarketScopingActivityRepository.RemoveRange(existingActivities);
+        }
+
+        var existingParameters = await unitOfWork.MarketScopingParameterRepository
+            .FindAllAsync(p => p.MarketScopingId == marketScoping.Id, cancellationToken);
+        if (existingParameters.Count > 0)
+        {
+            foreach (var p in existingParameters)
+            {
+                p.AllowHardDelete = true;
+            }
+            unitOfWork.MarketScopingParameterRepository.RemoveRange(existingParameters);
+        }
+
+        // 2. Rebuild and add new activities conducted
+        var newActivities = new List<DomainMarketScopingActivity>();
         foreach (var activityDto in request.ActivitiesConducted)
         {
-            var activity = new ERPEZ.Domain.Entities.Planning.MarketScopingActivity
+            var activity = new DomainMarketScopingActivity
             {
                 Id = Guid.NewGuid(),
                 MarketScopingId = marketScoping.Id,
@@ -73,14 +98,19 @@ public class UpdateMarketScopingCommandHandler(
                 });
             }
 
-            marketScoping.ActivitiesConducted.Add(activity);
+            newActivities.Add(activity);
         }
 
-        // Clear and rebuild parameters
-        marketScoping.ParameterEvaluations.Clear();
+        if (newActivities.Count > 0)
+        {
+            await unitOfWork.MarketScopingActivityRepository.AddRangeAsync(newActivities, cancellationToken);
+        }
+
+        // 3. Rebuild and add new parameter evaluations
+        var newParameters = new List<DomainMarketScopingParameter>();
         foreach (var parameterDto in request.ParameterEvaluations)
         {
-            var parameter = new ERPEZ.Domain.Entities.Planning.MarketScopingParameter
+            var parameter = new DomainMarketScopingParameter
             {
                 Id = Guid.NewGuid(),
                 MarketScopingId = marketScoping.Id,
@@ -117,10 +147,14 @@ public class UpdateMarketScopingCommandHandler(
                 });
             }
 
-            marketScoping.ParameterEvaluations.Add(parameter);
+            newParameters.Add(parameter);
         }
 
-        unitOfWork.MarketScopingRepository.Update(marketScoping);
+        if (newParameters.Count > 0)
+        {
+            await unitOfWork.MarketScopingParameterRepository.AddRangeAsync(newParameters, cancellationToken);
+        }
+
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return new ApiResponse<Unit>
