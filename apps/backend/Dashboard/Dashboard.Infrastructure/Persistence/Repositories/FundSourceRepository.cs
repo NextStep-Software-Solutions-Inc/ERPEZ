@@ -25,9 +25,16 @@ public class FundSourceRepository : Repository<Domain.Entities.Planning.FundSour
             .Where(fs => !fs.IsDeleted);
     }
 
-    public async Task<(List<Domain.Entities.Planning.FundSource> Items, int TotalCount)> GetPagedWithNavigationAsync(SieveModel sieveModel, CancellationToken cancellationToken = default)
+    public async Task<(List<Domain.Entities.Planning.FundSource> Items, int TotalCount)> GetPagedWithNavigationAsync(
+        SieveModel sieveModel, 
+        System.Linq.Expressions.Expression<Func<Domain.Entities.Planning.FundSource, bool>>? predicate = null, 
+        CancellationToken cancellationToken = default)
     {
         var query = GetAllWithNavigation();
+        if (predicate != null)
+        {
+            query = query.Where(predicate);
+        }
 
         var validatedPage = sieveModel.Page.GetValueOrDefault(1);
         if (validatedPage < 1)
@@ -49,7 +56,7 @@ public class FundSourceRepository : Repository<Domain.Entities.Planning.FundSour
         var totalCount = await filteredQuery.CountAsync(cancellationToken);
 
         var orderedQuery = string.IsNullOrWhiteSpace(normalizedSieveModel.Sorts)
-            ? filteredQuery.OrderBy(x => x.CreatedAt).ThenBy(x => x.Id)
+            ? filteredQuery.OrderBy(x => x.Name).ThenBy(x => x.Code).ThenBy(x => x.Id)
             : filteredQuery;
 
         var items = await orderedQuery

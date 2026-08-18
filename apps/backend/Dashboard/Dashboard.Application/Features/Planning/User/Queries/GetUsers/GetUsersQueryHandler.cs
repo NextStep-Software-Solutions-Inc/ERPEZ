@@ -36,6 +36,14 @@ public class GetUsersQueryHandler(IUnitOfWork unitOfWork)
             IsActive = u.IsActive,
             OfficeId = u.OfficeId,
             OfficeName = u.Office != null ? u.Office.Name : null,
+            PositionTitle = u.PersonnelPositions
+                .Where(pp => !pp.IsDeleted && pp.IsActive)
+                .Select(pp => pp.Position != null ? pp.Position.Title : null)
+                .FirstOrDefault(),
+            PersonnelPositionId = u.PersonnelPositions
+                .Where(pp => !pp.IsDeleted && pp.IsActive)
+                .Select(pp => (Guid?)pp.Id)
+                .FirstOrDefault(),
             FullName = u.FullName,
             CreatedAt = u.CreatedAt,
             CreatedBy = u.CreatedBy

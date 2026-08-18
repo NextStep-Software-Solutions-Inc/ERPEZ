@@ -7,6 +7,12 @@ public record UpdateBACLineItemRequest
     public string? Remarks { get; init; }
     public bool EPAEligible { get; init; }
     public string? EPARemarks { get; init; }
+    public DateTime? StartOfProcurementOverride { get; init; }
+    public DateTime? EndOfProcurementOverride { get; init; }
+    public decimal? EstimatedBudgetOverride { get; init; }
+    public string? BidEvaluationCriteria { get; init; }
+    public List<string>? ProcurementStrategies { get; init; }
+    public bool? IsOutsourced { get; init; }
     public List<BACItemScheduleRequest>? Schedules { get; init; }
 }
 

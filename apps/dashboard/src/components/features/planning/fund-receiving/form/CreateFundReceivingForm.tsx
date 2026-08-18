@@ -125,14 +125,14 @@ export default function CreateFundReceivingForm({
     error: errorSources,
   } = useFundSources({
     pathParams: { },
-    queryParams: {pageSize: 100, pageNumber: 1},
+    queryParams: { pageSize: 2000, pageNumber: 1 },
   })
 
   const fundSourcesData = response?.data || []
   const fundSourcesList = Array.isArray(fundSourcesData) ? fundSourcesData : []
-  const activeFundSourcesList = fundSourcesList.filter(
-    (source) => source.isActive,
-  )
+  const activeFundSourcesList = fundSourcesList
+    .filter((source) => source.isActive)
+    .sort((a, b) => (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' }))
   const form = createFormFactory({
     onSubmit,
     initialValues: {

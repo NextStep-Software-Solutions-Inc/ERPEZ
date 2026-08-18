@@ -5,13 +5,15 @@ namespace ERPEZ.Application.Common.Dtos;
 
 public class AppDataDto
 {
-    public Guid OfficeId { get; set; }
     public string APPNumber { get; set; } = string.Empty;
     public string FiscalYear { get; set; } = string.Empty;
+    public string Batch { get; set; } = string.Empty;
+    public string Quarter { get; set; } = string.Empty;
     public bool IsIndicative { get; set; }
     public bool IsFinal { get; set; }
     public bool IsUpdated { get; set; }
     public string VersionNumber { get; set; } = string.Empty;
+    public string VersionDate { get; set; } = string.Empty;
     public List<AppItemRowDto> GeneralRequirements { get; set; } = [];
     public List<AppItemRowDto> CommonUseSupplies { get; set; } = [];
     public List<AppItemRowDto> MiscellaneousItems { get; set; } = [];
@@ -35,4 +37,6 @@ public class AppItemRowDto
     public decimal EstimatedBudget { get; set; }
     public string ProcurementStrategyOrTools { get; set; } = string.Empty;
     public string Remarks { get; set; } = string.Empty;
+    public bool IsNew { get; set; }
+    public bool IsRevised { get; set; }
 }

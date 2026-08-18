@@ -32,6 +32,7 @@ import {
   Image as ImageIcon,
   Info,
   Eye,
+  Circle,
 } from 'lucide-react'
 import { getProcurementItemRequest } from '@/components/features/planning/procurement-item/handlers/getProcurementItemRequest'
 import { getUOMRequest } from '@/components/features/planning/procurement-library/unit-of-measurement/handlers/getUOMRequest'
@@ -45,6 +46,7 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
+  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { selectedPpmpForEditAtom } from '../atoms'
@@ -83,9 +85,17 @@ import { useKeycloak } from '@/providers/KeycloakProvider'
 import {
   useItemValidationStatus,
   getRowCompletionClasses,
+  getItemValidationStatus,
 } from '../hooks/useItemValidationStatus'
 import { RowCompletionIndicator } from '../components/RowCompletionIndicator'
 import { FieldDescriptionTooltip } from '../components/FieldDescriptionTooltip'
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from '@/components/ui/tooltip'
+import { MoreVertical, AlertCircle } from 'lucide-react'
 
 // ============================
 // Type Definitions
@@ -134,9 +144,7 @@ const usePPMPExpenditureItems = createQueryHookFromTemplate(
   getPPMPExpenditureItemsRequest,
 )
 const usePPMPItems = createQueryHookFromTemplate(getPPMPItemsRequest)
-const useProcurementItem = createQueryHookFromTemplate(
-  getProcurementItemRequest,
-)
+const useProcurementItem = createQueryHookFromTemplate(getProcurementItemRequest)
 const useUOM = createQueryHookFromTemplate(getUOMRequest)
 const useNONCSEItem = createQueryHookFromTemplate(getNONCSEItemRequest)
 const useUpdatePPMPStatus = createMutationHookFromTemplate(
@@ -338,7 +346,7 @@ function ActivityCard({
         expanded ? 'w-120' : 'w-80',
         shouldThrob && !selected && 'animate-pulse-unselected',
         dimmed &&
-          'opacity-60 saturate-50 hover:opacity-100 hover:saturate-100 transition-all duration-300',
+        'opacity-60 saturate-50 hover:opacity-100 hover:saturate-100 transition-all duration-300',
       )}
     >
       {/* Left side (regular card content) */}
@@ -595,9 +603,7 @@ interface ItemDetailProps {
 
 const isUUID = (val: string | null | undefined): boolean => {
   if (!val) return false
-  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-    val,
-  )
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val)
 }
 
 interface ReferencedItemModalProps {
@@ -626,9 +632,7 @@ function ReferencedItemModal({
     <ResponsiveDialogDashtail
       open={isOpen}
       onOpenChange={(open) => !open && onClose()}
-      title={
-        isCse ? 'CSE Catalog Item Details' : 'Non-CSE Catalog Item Details'
-      }
+      title={isCse ? 'CSE Catalog Item Details' : 'Non-CSE Catalog Item Details'}
       size="xl"
     >
       <div className="grid grid-cols-1 md:grid-cols-12 gap-6 p-4">
@@ -641,18 +645,12 @@ function ReferencedItemModal({
 
             <div className="space-y-3">
               <div>
-                <span className="text-[10px] text-default-400 uppercase font-semibold block">
-                  Product Name
-                </span>
-                <span className="text-sm font-semibold text-default-850">
-                  {name}
-                </span>
+                <span className="text-[10px] text-default-400 uppercase font-semibold block">Product Name</span>
+                <span className="text-sm font-semibold text-default-850">{name}</span>
               </div>
 
               <div>
-                <span className="text-[10px] text-default-400 uppercase font-semibold block">
-                  Product Code
-                </span>
+                <span className="text-[10px] text-default-400 uppercase font-semibold block">Product Code</span>
                 <span className="text-xs font-mono font-bold text-default-700 bg-default-100 px-1.5 py-0.5 rounded w-fit block mt-0.5">
                   {itemDetails.productCode || '—'}
                 </span>
@@ -661,82 +659,45 @@ function ReferencedItemModal({
               {isCse ? (
                 <>
                   <div>
-                    <span className="text-[10px] text-default-400 uppercase font-semibold block">
-                      Object Code
-                    </span>
-                    <span className="text-xs font-medium text-default-750">
-                      {itemDetails.objectCodeName || '—'}
-                    </span>
+                    <span className="text-[10px] text-default-400 uppercase font-semibold block">Object Code</span>
+                    <span className="text-xs font-medium text-default-750">{itemDetails.objectCodeName || '—'}</span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-default-400 uppercase font-semibold block">
-                      UNSPSC Classification
-                    </span>
-                    <span className="text-xs font-medium text-default-750">
-                      {itemDetails.unspscCodeName || '—'}
-                    </span>
+                    <span className="text-[10px] text-default-400 uppercase font-semibold block">UNSPSC Classification</span>
+                    <span className="text-xs font-medium text-default-750">{itemDetails.unspscCodeName || '—'}</span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-default-400 uppercase font-semibold block">
-                      UOM
-                    </span>
-                    <span className="text-xs font-semibold text-default-800">
-                      {itemDetails.uomName || '—'}
-                    </span>
+                    <span className="text-[10px] text-default-400 uppercase font-semibold block">UOM</span>
+                    <span className="text-xs font-semibold text-default-800">{itemDetails.uomName || '—'}</span>
                   </div>
                 </>
               ) : (
                 <>
                   <div>
-                    <span className="text-[10px] text-default-400 uppercase font-semibold block">
-                      Procurement Category
-                    </span>
-                    <span className="text-xs font-medium text-default-750">
-                      {itemDetails.procurementCategoryName || '—'}
-                    </span>
+                    <span className="text-[10px] text-default-400 uppercase font-semibold block">Procurement Category</span>
+                    <span className="text-xs font-medium text-default-750">{itemDetails.procurementCategoryName || '—'}</span>
                   </div>
                   <div>
-                    <span className="text-[10px] text-default-400 uppercase font-semibold block">
-                      UOM
-                    </span>
-                    <span className="text-xs font-semibold text-default-800">
-                      {itemDetails.uomName || '—'}
-                    </span>
+                    <span className="text-[10px] text-default-400 uppercase font-semibold block">UOM</span>
+                    <span className="text-xs font-semibold text-default-800">{itemDetails.uomName || '—'}</span>
                   </div>
                 </>
               )}
 
               <div>
-                <span className="text-[10px] text-default-400 uppercase font-semibold block">
-                  Reference Price
-                </span>
+                <span className="text-[10px] text-default-400 uppercase font-semibold block">Reference Price</span>
                 <span className="text-sm font-extrabold text-primary">
-                  {formatCurrency(
-                    isCse
-                      ? itemDetails.unitPrice || 0
-                      : itemDetails.currentPrice || 0,
-                  )}
+                  {formatCurrency(isCse ? (itemDetails.unitPrice || 0) : (itemDetails.currentPrice || 0))}
                 </span>
               </div>
 
               <div>
-                <span className="text-[10px] text-default-400 uppercase font-semibold block">
-                  Status
-                </span>
-                <span
-                  className={cn(
-                    'inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-semibold border-none mt-1',
-                    itemDetails.isActive
-                      ? 'bg-emerald-50 text-emerald-700'
-                      : 'bg-rose-50 text-rose-700',
-                  )}
-                >
-                  <span
-                    className={cn(
-                      'h-1.5 w-1.5 rounded-full',
-                      itemDetails.isActive ? 'bg-emerald-500' : 'bg-rose-500',
-                    )}
-                  />
+                <span className="text-[10px] text-default-400 uppercase font-semibold block">Status</span>
+                <span className={cn(
+                  "inline-flex items-center gap-1 text-[10px] px-2 py-0.5 rounded-full font-semibold border-none mt-1",
+                  itemDetails.isActive ? "bg-emerald-50 text-emerald-700" : "bg-rose-50 text-rose-700"
+                )}>
+                  <span className={cn("h-1.5 w-1.5 rounded-full", itemDetails.isActive ? "bg-emerald-500" : "bg-rose-500")} />
                   {itemDetails.isActive ? 'Active Catalog' : 'Inactive'}
                 </span>
               </div>
@@ -748,9 +709,7 @@ function ReferencedItemModal({
         <div className="md:col-span-7 space-y-4">
           {isCse && (
             <div className="space-y-1.5">
-              <span className="text-[10px] text-default-400 uppercase font-bold tracking-wider">
-                Product Media
-              </span>
+              <span className="text-[10px] text-default-400 uppercase font-bold tracking-wider">Product Media</span>
               {imageSrc ? (
                 <div className="relative aspect-video sm:aspect-square w-full rounded-xl overflow-hidden border border-default-200 bg-slate-50 flex items-center justify-center shadow-sm">
                   <img
@@ -769,9 +728,7 @@ function ReferencedItemModal({
           )}
 
           <div className="space-y-1.5">
-            <span className="text-[10px] text-default-400 uppercase font-bold tracking-wider">
-              Specifications & Requirements
-            </span>
+            <span className="text-[10px] text-default-400 uppercase font-bold tracking-wider">Specifications & Requirements</span>
             <div className="rounded-xl border border-default-200 p-4 bg-white shadow-sm leading-relaxed text-xs text-default-700 whitespace-pre-line min-h-24">
               {specifications || 'No detailed specifications provided.'}
             </div>
@@ -779,9 +736,7 @@ function ReferencedItemModal({
 
           {itemDetails.remarks && (
             <div className="space-y-1.5">
-              <span className="text-[10px] text-default-400 uppercase font-bold tracking-wider">
-                Catalog Remarks
-              </span>
+              <span className="text-[10px] text-default-400 uppercase font-bold tracking-wider">Catalog Remarks</span>
               <div className="rounded-xl border border-amber-500/10 p-3 bg-amber-500/2 text-xs italic text-amber-800 leading-relaxed">
                 {itemDetails.remarks}
               </div>
@@ -828,22 +783,17 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
   const hasAllocations =
     item.PPMPItemAllocations && item.PPMPItemAllocations.length > 0
 
-  // Format date helper - validates date is valid before formatting
+  // Format date helper
   const formatDateDisplay = (dateStr: string | null | undefined) => {
     if (!dateStr) return '—'
     try {
-      const date = new Date(dateStr)
-      // Check if date is valid by verifying it's a valid Date object
-      // and that its ISO string doesn't start with an Invalid Date
-      if (isNaN(date.getTime())) return '—'
-
-      return date.toLocaleDateString('en-US', {
+      return new Date(dateStr).toLocaleDateString('en-US', {
         year: 'numeric',
         month: 'short',
         day: 'numeric',
       })
     } catch {
-      return '—'
+      return dateStr
     }
   }
 
@@ -854,9 +804,7 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
     queryParams: {},
     enabled: isUnitUuid && !!item.unit,
   })
-  const displayUnit = isUnitUuid
-    ? uomResp?.data?.name || 'Loading...'
-    : item.unit || '—'
+  const displayUnit = isUnitUuid ? (uomResp?.data?.name || 'Loading...') : (item.unit || '—')
 
   // 2. Fetch CSE Item if cseItemId exists
   const { data: cseItemResp, isLoading: isLoadingCse } = useProcurementItem({
@@ -878,663 +826,227 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
   const [modalOpen, setModalOpen] = useState(false)
 
   return (
-    <div className="space-y-5 p-4 bg-default-50/50 rounded-xl border border-default-100">
-      {/* All Item Properties Section */}
-      <div className="border-b border-default-100 pb-4">
-        <h3 className="text-xs font-bold uppercase tracking-widest text-default-600 mb-3 flex items-center gap-2">
-          <Layers className="h-4 w-4" />
-          Complete Item Details
-        </h3>
-        <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
-          {/* ID */}
-          <div className="space-y-1">
-            <div className="flex items-center gap-1">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
-                ID
-              </span>
-              <FieldDescriptionTooltip fieldKey="id" className="h-3.5 w-3.5" />
+    <div className="space-y-5 p-5 bg-default-50/60 rounded-2xl border border-default-200 shadow-inner">
+      {/* 3-Column Grid */}
+      <div className="grid gap-6 grid-cols-1 md:grid-cols-2 lg:grid-cols-3">
+        {/* Column 1: Overview & Specs */}
+        <div className="space-y-4 bg-white p-4.5 rounded-xl border border-default-200/80 shadow-sm flex flex-col justify-between">
+          <div className="space-y-3">
+            <div className="flex items-center gap-1.5 pb-2 border-b border-default-100">
+              <Layers className="h-4 w-4 text-primary" />
+              <h4 className="text-xs font-bold uppercase tracking-wider text-default-800">
+                Overview & Specifications
+              </h4>
             </div>
-            <p className="text-xs font-mono text-default-700 break-all">
-              {item.id || '—'}
-            </p>
+
+            <div className="grid grid-cols-2 gap-3 text-xs">
+              <div>
+                <span className="text-[10px] uppercase font-bold text-default-400 block">Unit</span>
+                <span className="font-semibold text-default-700 mt-0.5 block">{displayUnit}</span>
+              </div>
+              <div>
+                <span className="text-[10px] uppercase font-bold text-default-400 block">Unit Price</span>
+                <span className="font-semibold text-default-800 mt-0.5 block">{formatCurrency(item.unitPrice)}</span>
+              </div>
+              <div>
+                <span className="text-[10px] uppercase font-bold text-default-400 block">Project Type</span>
+                <span className="font-semibold text-default-700 mt-0.5 block">{item.projectType || '—'}</span>
+              </div>
+              <div>
+                <span className="text-[10px] uppercase font-bold text-default-400 block">PAP Code</span>
+                <span className="font-mono text-default-700 mt-0.5 block">{item.papCode || '—'}</span>
+              </div>
+            </div>
+
+            <div className="border-t border-default-100 pt-3">
+              <span className="text-[10px] uppercase font-bold text-default-400 block mb-1">
+                Specifications
+              </span>
+              <p className="text-xs text-default-600 leading-relaxed max-h-24 overflow-y-auto pr-1 whitespace-pre-wrap">
+                {item.description || 'No specifications provided.'}
+              </p>
+            </div>
           </div>
 
-          {/* Item Name */}
-          <div className="space-y-1">
-            <div className="flex items-center gap-1">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
-                Item Name
-              </span>
-              <FieldDescriptionTooltip
-                fieldKey="name"
-                className="h-3.5 w-3.5"
-              />
+          {item.remarks && (
+            <div className="bg-default-50 p-2.5 rounded-lg border border-default-150/60 mt-2 text-xs italic text-default-600">
+              <span className="font-bold not-italic text-default-750 block text-[9px] uppercase tracking-wider mb-0.5">Remarks</span>
+              "{item.remarks}"
             </div>
-            <p className="text-xs font-semibold text-default-850">
-              {item.name || '—'}
-            </p>
+          )}
+        </div>
+
+        {/* Column 2: Timeline & Milestones */}
+        <div className="space-y-4 bg-white p-4.5 rounded-xl border border-default-200/80 shadow-sm flex flex-col">
+          <div className="flex items-center gap-1.5 pb-2 border-b border-default-100">
+            <CalendarDays className="h-4 w-4 text-indigo-500" />
+            <h4 className="text-xs font-bold uppercase tracking-wider text-default-800">
+              Timeline & Milestones
+            </h4>
           </div>
 
-          {/* CSE Item Name */}
-          <div className="space-y-1">
-            <div className="flex items-center gap-1">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
-                CSE Item Name
-              </span>
-              <FieldDescriptionTooltip
-                fieldKey="cseItemName"
-                className="h-3.5 w-3.5"
-              />
+          <div className="relative pl-6 border-l border-default-200 space-y-5 flex-1 py-1">
+            {/* Procurement Milestone */}
+            <div className="relative">
+              <Circle className="h-4 w-4 text-indigo-600 absolute -left-[32px] top-0.5 bg-indigo-50 rounded-full" />
+              <div>
+                <span className="text-[10px] uppercase font-bold text-default-400 block">
+                  Procurement Schedule
+                </span>
+                <p className="text-xs text-default-805 font-semibold mt-0.5">
+                  {formatDateDisplay(item.procurementStartDate)} – {formatDateDisplay(item.procurementEndDate)}
+                </p>
+              </div>
             </div>
-            <p className="text-xs text-default-700">
-              {item.cseItemName || '—'}
-            </p>
+
+            {/* Delivery Milestone */}
+            <div className="relative">
+              <Circle className="h-4 w-4 text-emerald-600 absolute -left-[32px] top-0.5 bg-emerald-50 rounded-full" />
+              <div>
+                <span className="text-[10px] uppercase font-bold text-default-400 block">
+                  Expected Delivery Window
+                </span>
+                <p className="text-xs text-default-805 font-semibold mt-0.5">
+                  {formatDateDisplay(item.expectedDeliveryStart)} – {formatDateDisplay(item.expectedDeliveryEnd)}
+                </p>
+              </div>
+            </div>
           </div>
 
-          {/* Non-CSE Item Name */}
-          <div className="space-y-1">
-            <div className="flex items-center gap-1">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
-                Non-CSE Item Name
-              </span>
-              <FieldDescriptionTooltip
-                fieldKey="nonCSEItemName"
-                className="h-3.5 w-3.5"
-              />
-            </div>
-            <p className="text-xs text-default-700">
-              {item.nonCSEItemName || '—'}
-            </p>
-          </div>
-
-          {/* Unit */}
-          <div className="space-y-1">
-            <div className="flex items-center gap-1">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
-                Unit
-              </span>
-              <FieldDescriptionTooltip
-                fieldKey="unit"
-                className="h-3.5 w-3.5"
-              />
-            </div>
-            <p className="text-xs font-semibold text-default-700">
-              {displayUnit}
-            </p>
-          </div>
-
-          {/* Unit Price */}
-          <div className="space-y-1">
-            <div className="flex items-center gap-1">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
-                Unit Price
-              </span>
-              <FieldDescriptionTooltip
-                fieldKey="unitPrice"
-                className="h-3.5 w-3.5"
-              />
-            </div>
-            <p className="text-xs font-semibold text-default-850">
-              {formatCurrency(item.unitPrice)}
-            </p>
-          </div>
-
-          {/* Project Type */}
-          <div className="space-y-1">
-            <div className="flex items-center gap-1">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
-                Project Type
-              </span>
-              <FieldDescriptionTooltip
-                fieldKey="projectType"
-                className="h-3.5 w-3.5"
-              />
-            </div>
-            <p className="text-xs font-semibold text-default-700">
-              {item.projectType || '—'}
-            </p>
-          </div>
-
-          {/* Procurement Mode Name */}
-          <div className="space-y-1">
-            <div className="flex items-center gap-1">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
-                Mode of Procurement
-              </span>
-              <FieldDescriptionTooltip
-                fieldKey="procurementModeName"
-                className="h-3.5 w-3.5"
-              />
-            </div>
-            <p className="text-xs font-semibold text-default-700">
-              {item.procurementModeName || '—'}
-            </p>
-          </div>
-
-          {/* MOP Override */}
-          <div className="space-y-1">
-            <div className="flex items-center gap-1">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
-                MOP Override
-              </span>
-              <FieldDescriptionTooltip
-                fieldKey="mopOverride"
-                className="h-3.5 w-3.5"
-              />
-            </div>
-            <Badge
-              variant={item.mopOverride ? 'soft' : 'outline'}
-              className="text-[9px] font-semibold w-fit"
-            >
-              {item.mopOverride ? 'Yes' : 'No'}
-            </Badge>
-          </div>
-
-          {/* Pre-Procurement Conference */}
-          <div className="space-y-1">
-            <div className="flex items-center gap-1">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
-                Pre-Procurement Conf.
-              </span>
-              <FieldDescriptionTooltip
-                fieldKey="preProcurementConference"
-                className="h-3.5 w-3.5"
-              />
-            </div>
+          <div className="pt-3 border-t border-default-100 flex items-center justify-between text-xs">
+            <span className="text-default-505 font-medium">Pre-Procurement Conference:</span>
             <Badge
               variant={item.preProcurementConference ? 'soft' : 'outline'}
-              className="text-[9px] font-semibold w-fit"
+              className={cn(
+                'text-[10px] font-bold py-0.5 px-2.5 rounded-full',
+                item.preProcurementConference
+                  ? 'bg-rose-500/10 text-rose-700 border-none'
+                  : 'text-slate-500'
+              )}
             >
               {item.preProcurementConference ? 'Required' : 'Not Required'}
             </Badge>
           </div>
-
-          {/* PAP Code */}
-          <div className="space-y-1">
-            <div className="flex items-center gap-1">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
-                PAP Code
-              </span>
-              <FieldDescriptionTooltip
-                fieldKey="papCode"
-                className="h-3.5 w-3.5"
-              />
-            </div>
-            <p className="text-xs font-mono text-default-700">
-              {item.papCode || '—'}
-            </p>
-          </div>
-
-          {/* Procurement Start Date */}
-          <div className="space-y-1">
-            <div className="flex items-center gap-1">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
-                Procurement Start Date
-              </span>
-              <FieldDescriptionTooltip
-                fieldKey="procurementStartDate"
-                className="h-3.5 w-3.5"
-              />
-            </div>
-            <p className="text-xs text-default-700">
-              {formatDateDisplay(item.procurementStartDate)}
-            </p>
-          </div>
-
-          {/* Procurement End Date */}
-          <div className="space-y-1">
-            <div className="flex items-center gap-1">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
-                Procurement End Date
-              </span>
-              <FieldDescriptionTooltip
-                fieldKey="procurementEndDate"
-                className="h-3.5 w-3.5"
-              />
-            </div>
-            <p className="text-xs text-default-700">
-              {formatDateDisplay(item.procurementEndDate)}
-            </p>
-          </div>
-
-          {/* Expected Delivery Start */}
-          <div className="space-y-1">
-            <div className="flex items-center gap-1">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
-                Expected Delivery Start
-              </span>
-              <FieldDescriptionTooltip
-                fieldKey="expectedDeliveryStart"
-                className="h-3.5 w-3.5"
-              />
-            </div>
-            <p className="text-xs text-default-700">
-              {formatDateDisplay(item.expectedDeliveryStart)}
-            </p>
-          </div>
-
-          {/* Expected Delivery End */}
-          <div className="space-y-1">
-            <div className="flex items-center gap-1">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
-                Expected Delivery End
-              </span>
-              <FieldDescriptionTooltip
-                fieldKey="expectedDeliveryEnd"
-                className="h-3.5 w-3.5"
-              />
-            </div>
-            <p className="text-xs text-default-700">
-              {formatDateDisplay(item.expectedDeliveryEnd)}
-            </p>
-          </div>
-
-          {/* CSE Item ID */}
-          <div className="space-y-1">
-            <div className="flex items-center gap-1">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
-                CSE Item ID
-              </span>
-              <FieldDescriptionTooltip
-                fieldKey="cseItemId"
-                className="h-3.5 w-3.5"
-              />
-            </div>
-            <p className="text-xs font-mono text-default-600 break-all text-[9px]">
-              {item.cseItemId || '—'}
-            </p>
-          </div>
-
-          {/* Non-CSE Item ID */}
-          <div className="space-y-1">
-            <div className="flex items-center gap-1">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
-                Non-CSE Item ID
-              </span>
-              <FieldDescriptionTooltip
-                fieldKey="nonCSEItemId"
-                className="h-3.5 w-3.5"
-              />
-            </div>
-            <p className="text-xs font-mono text-default-600 break-all text-[9px]">
-              {item.nonCSEItemId || '—'}
-            </p>
-          </div>
-
-          {/* Procurement Mode ID */}
-          <div className="space-y-1">
-            <div className="flex items-center gap-1">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
-                Procurement Mode ID
-              </span>
-              <FieldDescriptionTooltip
-                fieldKey="procurementModeId"
-                className="h-3.5 w-3.5"
-              />
-            </div>
-            <p className="text-xs font-mono text-default-600 break-all text-[9px]">
-              {item.procurementModeId || '—'}
-            </p>
-          </div>
-
-          {/* PPMP Expenditure Item ID */}
-          <div className="space-y-1">
-            <div className="flex items-center gap-1">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
-                Expenditure Item ID
-              </span>
-              <FieldDescriptionTooltip
-                fieldKey="ppmpExpenditureItemId"
-                className="h-3.5 w-3.5"
-              />
-            </div>
-            <p className="text-xs font-mono text-default-600 break-all text-[9px]">
-              {item.ppmpExpenditureItemId || '—'}
-            </p>
-          </div>
-
-          {/* Total Allocation Amount */}
-          <div className="space-y-1">
-            <div className="flex items-center gap-1">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
-                Total Allocation Amount
-              </span>
-              <FieldDescriptionTooltip
-                fieldKey="totalAllocationAmount"
-                className="h-3.5 w-3.5"
-              />
-            </div>
-            <p className="text-xs font-bold text-primary">
-              {formatCurrency(item.PPMPItemAllocationTotalAmount || 0)}
-            </p>
-          </div>
-
-          {/* Created At */}
-          <div className="space-y-1">
-            <div className="flex items-center gap-1">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
-                Created At
-              </span>
-              <FieldDescriptionTooltip
-                fieldKey="createdAt"
-                className="h-3.5 w-3.5"
-              />
-            </div>
-            <p className="text-xs text-default-600">
-              {formatDateDisplay(item.createdAt)}
-            </p>
-          </div>
-
-          {/* Created By */}
-          <div className="space-y-1">
-            <div className="flex items-center gap-1">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
-                Created By
-              </span>
-              <FieldDescriptionTooltip
-                fieldKey="createdBy"
-                className="h-3.5 w-3.5"
-              />
-            </div>
-            <p className="text-xs text-default-700 font-mono">
-              {item.createdBy || '—'}
-            </p>
-          </div>
-        </div>
-      </div>
-
-      <div className="grid gap-5 grid-cols-1 md:grid-cols-2 lg:grid-cols-4">
-        {/* Basic Details */}
-        <div className="space-y-3 relative pr-4">
-          <div>
-            <div className="flex items-center gap-1 mb-1">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
-                Specifications & Remarks
-              </span>
-              <FieldDescriptionTooltip
-                fieldKey="description"
-                className="h-3.5 w-3.5"
-              />
-            </div>
-            <p className="text-xs text-default-600 mt-1 leading-relaxed">
-              {item.description || 'No description provided.'}
-            </p>
-            {item.remarks && (
-              <p className="text-xs text-default-650 mt-2 bg-default-100/50 p-2 rounded-lg italic">
-                <span className="font-semibold not-italic">Remarks:</span>{' '}
-                {item.remarks}
-              </p>
-            )}
-          </div>
-          <div className="flex gap-2 flex-wrap mt-2">
-            {item.cseItemId ? (
-              <Badge
-                variant="soft"
-                className="text-[10px] font-semibold bg-primary/10 text-primary border-none flex items-center gap-1"
-              >
-                <Package className="h-3 w-3" />
-                CSE Catalog Item
-              </Badge>
-            ) : (
-              <Badge
-                className="text-[10px] font-semibold bg-amber-500/10 text-amber-700 border-none flex items-center gap-1"
-                variant="soft"
-              >
-                <Layers className="h-3 w-3" />
-                Non-CSE Item
-              </Badge>
-            )}
-            {item.preProcurementConference && (
-              <Badge
-                variant="outline"
-                className="text-[10px] font-semibold border-destructive/20 text-destructive bg-destructive/5"
-              >
-                Pre-Procurement Conf. Required
-              </Badge>
-            )}
-          </div>
         </div>
 
-        {/* Classification */}
-        <div className="space-y-3 border-t md:border-t-0 md:border-l border-default-100 md:pl-5">
-          <div>
-            <div className="flex items-center gap-1 mb-1">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
-                PAP Code
-              </span>
-              <FieldDescriptionTooltip
-                fieldKey="papCode"
-                className="h-3.5 w-3.5"
-              />
+        {/* Column 3: Linked Catalog & Procurement Mode */}
+        <div className="space-y-4 bg-white p-4.5 rounded-xl border border-default-200/80 shadow-sm flex flex-col justify-between">
+          <div className="space-y-4 w-full">
+            <div className="flex items-center gap-1.5 pb-2 border-b border-default-100">
+              <Package className="h-4 w-4 text-amber-500" />
+              <h4 className="text-xs font-bold uppercase tracking-wider text-default-800">
+                Catalog & Mode of Procurement
+              </h4>
             </div>
-            <p className="text-xs font-semibold text-default-850 mt-1">
-              {item.papCode || '—'}
-            </p>
-          </div>
-          <div>
-            <div className="flex items-center gap-1 mb-1">
-              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
-                Mode of Procurement
-              </span>
-              <FieldDescriptionTooltip
-                fieldKey="procurementModeName"
-                className="h-3.5 w-3.5"
-              />
-            </div>
-            <p className="text-xs font-semibold text-default-850 mt-1">
-              {item.procurementModeName || '—'}
-            </p>
-          </div>
-          {item.mopOverride && item.mopJustification && (
-            <div>
-              <div className="flex items-center gap-1 mb-1">
-                <span className="text-[10px] uppercase tracking-wider text-destructive font-semibold">
-                  MOP Override Justification
+
+            {/* Procurement Mode */}
+            <div className="flex items-center justify-between gap-2">
+              <div>
+                <span className="text-[10px] uppercase font-bold text-default-400 block">
+                  Mode of Procurement
                 </span>
-                <FieldDescriptionTooltip
-                  fieldKey="mopJustification"
-                  className="h-3.5 w-3.5"
-                />
+                <span className="text-xs font-bold text-default-850 mt-0.5 block">
+                  {item.procurementModeName || '—'}
+                </span>
               </div>
-              <p className="text-xs text-default-650 mt-1 bg-destructive/5 border border-destructive/10 p-2 rounded-lg italic">
-                {item.mopJustification}
-              </p>
+              <Badge
+                variant={item.mopOverride ? 'soft' : 'outline'}
+                className={cn(
+                  'text-[9px] font-bold px-2 py-0.5 rounded-full',
+                  item.mopOverride ? 'bg-amber-500/10 text-amber-700 border-none' : 'text-default-400'
+                )}
+              >
+                {item.mopOverride ? 'MOP Overridden' : 'Standard MOP'}
+              </Badge>
             </div>
-          )}
-        </div>
 
-        {/* Timeline */}
-        <div className="space-y-3 border-t lg:border-t-0 lg:border-l border-default-100 lg:pl-5">
-          <div>
-            <div className="flex items-center gap-1 mb-1">
-              <CalendarDays className="h-3.5 w-3.5 text-primary" />
-              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
-                Procurement Schedule
-              </span>
-              <FieldDescriptionTooltip
-                fieldKey="procurementStartDate"
-                className="h-3.5 w-3.5"
-              />
-            </div>
-            <p className="text-xs text-default-700 mt-1">
-              {formatDateDisplay(item.procurementStartDate)} –{' '}
-              {formatDateDisplay(item.procurementEndDate)}
-            </p>
+            {/* MOP Override Justification */}
+            {item.mopOverride && item.mopJustification && (
+              <div className="bg-amber-500/5 border border-amber-500/15 rounded-lg p-2.5 text-xs text-amber-800 leading-normal">
+                <span className="font-extrabold text-[9px] uppercase tracking-wider text-amber-750 block mb-0.5">
+                  Justification
+                </span>
+                "{item.mopJustification}"
+              </div>
+            )}
           </div>
-          <div>
-            <div className="flex items-center gap-1 mb-1">
-              <Clock className="h-3.5 w-3.5 text-info" />
-              <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
-                Expected Delivery Window
-              </span>
-              <FieldDescriptionTooltip
-                fieldKey="expectedDeliveryStart"
-                className="h-3.5 w-3.5"
-              />
-            </div>
-            <p className="text-xs text-default-700 mt-1">
-              {formatDateDisplay(item.expectedDeliveryStart)} –{' '}
-              {formatDateDisplay(item.expectedDeliveryEnd)}
-            </p>
-          </div>
-        </div>
 
-        {/* Linked Catalog Reference */}
-        <div className="space-y-3 border-t lg:border-t-0 lg:border-l border-default-100 lg:pl-5">
-          <div className="flex items-center gap-1 mb-1">
-            <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
+          {/* Linked Catalog Reference */}
+          <div className="border-t border-default-100 pt-3.5 mt-2">
+            <span className="text-[10px] uppercase font-bold text-default-400 block mb-2">
               Linked Catalog Reference
             </span>
-            <Info className="h-3.5 w-3.5 text-default-400" />
-          </div>
 
-          {item.cseItemId && (
-            <div className="border border-primary/15 bg-primary/2 rounded-xl p-3 space-y-2 transition-all hover:border-primary/30 hover:shadow-sm">
-              <div className="flex items-start justify-between gap-2">
-                <div className="space-y-0.5">
+            {item.cseItemId ? (
+              <div className="border border-primary/15 bg-primary/2 rounded-xl p-3 space-y-2 transition-all hover:border-primary/30">
+                <div className="flex items-center justify-between">
                   <span className="text-[8px] font-bold uppercase tracking-wider text-primary px-1.5 py-0.5 bg-primary/10 rounded-md">
                     CSE Catalog
                   </span>
-                  <h5
-                    className="text-[11px] font-bold text-default-850 mt-1 line-clamp-1"
-                    title={cseItem?.name || item.name}
-                  >
-                    {isLoadingCse
-                      ? 'Loading catalog item...'
-                      : cseItem?.name || item.name}
-                  </h5>
+                  <span className="text-[9px] font-mono text-default-450 font-semibold">
+                    Code: {cseItem?.productCode || '—'}
+                  </span>
                 </div>
-              </div>
-
-              {!isLoadingCse && cseItem ? (
-                <>
-                  <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[9px] text-default-550 border-t border-primary/10 pt-2">
-                    <div>
-                      <span className="text-default-400 block text-[8px] uppercase font-semibold">
-                        Code
-                      </span>
-                      <span className="font-mono font-semibold text-default-700">
-                        {cseItem.productCode || '—'}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-default-400 block text-[8px] uppercase font-semibold">
-                        Category
-                      </span>
-                      <span
-                        className="font-medium text-default-700 line-clamp-1"
-                        title={cseItem.objectCodeName || '—'}
-                      >
-                        {cseItem.objectCodeName || '—'}
-                      </span>
-                    </div>
-                  </div>
+                <h5 className="text-[11px] font-bold text-default-850 line-clamp-1">
+                  {isLoadingCse ? 'Loading catalog item...' : (cseItem?.name || item.name)}
+                </h5>
+                {!isLoadingCse && cseItem && (
                   <Button
                     type="button"
                     variant="link"
                     size="sm"
                     onClick={() => setModalOpen(true)}
-                    className="h-6 text-[10px] font-semibold text-primary hover:text-primary-active p-0 flex items-center gap-1 mt-1 shrink-0"
+                    className="h-5 text-[10px] font-semibold text-primary hover:text-primary-active p-0 flex items-center gap-1 shrink-0"
                   >
                     <Eye className="h-3 w-3" />
                     View specifications & image
                   </Button>
-                  <ReferencedItemModal
-                    isOpen={modalOpen}
-                    onClose={() => setModalOpen(false)}
-                    type="cse"
-                    itemDetails={cseItem}
-                  />
-                </>
-              ) : isLoadingCse ? (
-                <div className="space-y-1.5 pt-1.5 animate-pulse">
-                  <div className="h-2.5 bg-default-250/60 rounded w-3/4" />
-                  <div className="h-2.5 bg-default-250/40 rounded w-1/2" />
-                </div>
-              ) : (
-                <p className="text-[10px] text-default-400 italic pt-1">
-                  Failed to load catalog details.
-                </p>
-              )}
-            </div>
-          )}
-
-          {item.nonCSEItemId && (
-            <div className="border border-amber-500/15 bg-amber-500/2 rounded-xl p-3 space-y-2 transition-all hover:border-amber-500/30 hover:shadow-sm">
-              <div className="flex items-start justify-between gap-2">
-                <div className="space-y-0.5">
+                )}
+                <ReferencedItemModal
+                  isOpen={modalOpen}
+                  onClose={() => setModalOpen(false)}
+                  type="cse"
+                  itemDetails={cseItem}
+                />
+              </div>
+            ) : item.nonCSEItemId ? (
+              <div className="border border-amber-500/15 bg-amber-500/2 rounded-xl p-3 space-y-2 transition-all hover:border-amber-500/30">
+                <div className="flex items-center justify-between">
                   <span className="text-[8px] font-bold uppercase tracking-wider text-amber-700 px-1.5 py-0.5 bg-amber-500/10 rounded-md">
                     Non-CSE Catalog
                   </span>
-                  <h5
-                    className="text-[11px] font-bold text-default-850 mt-1 line-clamp-1"
-                    title={nonCseItem?.name || item.name}
-                  >
-                    {isLoadingNonCse
-                      ? 'Loading catalog item...'
-                      : nonCseItem?.name || item.name}
-                  </h5>
+                  <span className="text-[9px] font-mono text-default-450 font-semibold">
+                    Code: {nonCseItem?.productCode || '—'}
+                  </span>
                 </div>
-              </div>
-
-              {!isLoadingNonCse && nonCseItem ? (
-                <>
-                  <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-[9px] text-default-550 border-t border-amber-500/10 pt-2">
-                    <div>
-                      <span className="text-default-400 block text-[8px] uppercase font-semibold">
-                        Code
-                      </span>
-                      <span className="font-mono font-semibold text-default-700">
-                        {nonCseItem.productCode || '—'}
-                      </span>
-                    </div>
-                    <div>
-                      <span className="text-default-400 block text-[8px] uppercase font-semibold">
-                        Category
-                      </span>
-                      <span
-                        className="font-medium text-default-700 line-clamp-1"
-                        title={nonCseItem.procurementCategoryName || '—'}
-                      >
-                        {nonCseItem.procurementCategoryName || '—'}
-                      </span>
-                    </div>
-                  </div>
+                <h5 className="text-[11px] font-bold text-default-850 line-clamp-1">
+                  {isLoadingNonCse ? 'Loading catalog item...' : (nonCseItem?.name || item.name)}
+                </h5>
+                {!isLoadingNonCse && nonCseItem && (
                   <Button
                     type="button"
                     variant="link"
                     size="sm"
                     onClick={() => setModalOpen(true)}
-                    className="h-6 text-[10px] font-semibold text-amber-700 hover:text-amber-800 p-0 flex items-center gap-1 mt-1 shrink-0"
+                    className="h-5 text-[10px] font-semibold text-amber-700 hover:text-amber-800 p-0 flex items-center gap-1 shrink-0"
                   >
                     <Eye className="h-3 w-3" />
                     View specifications
                   </Button>
-                  <ReferencedItemModal
-                    isOpen={modalOpen}
-                    onClose={() => setModalOpen(false)}
-                    type="non-cse"
-                    itemDetails={nonCseItem}
-                  />
-                </>
-              ) : isLoadingNonCse ? (
-                <div className="space-y-1.5 pt-1.5 animate-pulse">
-                  <div className="h-2.5 bg-default-250/60 rounded w-3/4" />
-                  <div className="h-2.5 bg-default-250/40 rounded w-1/2" />
-                </div>
-              ) : (
-                <p className="text-[10px] text-default-400 italic pt-1">
-                  Failed to load catalog details.
-                </p>
-              )}
-            </div>
-          )}
-
-          {!item.cseItemId && !item.nonCSEItemId && (
-            <div className="border border-dashed border-default-200 rounded-xl p-3.5 text-center text-xs text-default-400 italic">
-              No catalog reference linked.
-            </div>
-          )}
+                )}
+                <ReferencedItemModal
+                  isOpen={modalOpen}
+                  onClose={() => setModalOpen(false)}
+                  type="non-cse"
+                  itemDetails={nonCseItem}
+                />
+              </div>
+            ) : (
+              <div className="border border-dashed border-default-250 bg-default-50 rounded-xl p-3 text-center text-xs text-default-400 italic">
+                No catalog reference linked.
+              </div>
+            )}
+          </div>
         </div>
       </div>
 
@@ -1646,22 +1158,34 @@ function ItemRow({
   const validationStatus = useItemValidationStatus(item)
   const rowClasses = getRowCompletionClasses(validationStatus)
 
+  const subtleBgClass = validationStatus.isComplete
+    ? 'bg-emerald-500/5 hover:bg-emerald-500/8 dark:bg-emerald-500/3'
+    : validationStatus.isDetailsComplete
+      ? 'bg-amber-500/5 hover:bg-amber-500/8 dark:bg-amber-500/3'
+      : 'bg-rose-500/5 hover:bg-rose-500/8 dark:bg-rose-500/3'
+
   return (
     <>
-      <tr className={cn('transition-colors', rowClasses)}>
+      <tr
+        className={cn('transition-colors cursor-pointer select-none', rowClasses, subtleBgClass)}
+        onClick={onToggle}
+      >
         <td className="px-5 py-3 text-center">
           <button
             type="button"
-            onClick={onToggle}
+            onClick={(e) => {
+              e.stopPropagation()
+              onToggle()
+            }}
             className={cn(
-              'p-1.5 rounded-lg hover:bg-default-100 transition-colors text-default-500 hover:text-default-900',
+              'p-2 rounded-lg hover:bg-default-100 transition-colors text-default-500 hover:text-default-900',
               FOCUS_RING,
             )}
           >
             {expanded ? (
-              <ChevronDown className="h-4 w-4" />
+              <ChevronDown className="h-5 w-5" />
             ) : (
-              <ChevronRight className="h-4 w-4" />
+              <ChevronRight className="h-5 w-5" />
             )}
           </button>
         </td>
@@ -1730,32 +1254,66 @@ function ItemRow({
           )}
         </td>
         <td className="px-5 py-3 text-right">
-          <div className="flex items-center justify-end gap-2">
-            <RowCompletionIndicator status={validationStatus} />
-            <div className="flex items-center gap-1.5">
-              {onEdit && (
+          <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
+            <RowCompletionIndicator
+              status={validationStatus}
+            />
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  onClick={() => onEdit(item)}
-                  className="h-8 w-8 text-default-550 hover:text-primary rounded-lg"
+                  className="h-8 w-8 text-default-550 hover:text-default-900 hover:bg-default-100 rounded-lg"
                 >
-                  <Pencil className="h-4 w-4" />
+                  <MoreVertical className="h-4.5 w-4.5" />
                 </Button>
-              )}
-              {onDelete && (
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  onClick={() => onDelete(item)}
-                  className="h-8 w-8 text-default-550 hover:text-destructive rounded-lg"
-                >
-                  <Trash2 className="h-4 w-4" />
-                </Button>
-              )}
-            </div>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="w-56 font-sans">
+                {validationStatus.hasAllocations ? (
+                  onEditAllocations && (
+                    <DropdownMenuItem
+                      onClick={() => onEditAllocations(item)}
+                      className="cursor-pointer"
+                    >
+                      <Pencil className="mr-2 h-4 w-4 text-primary" />
+                      <span>Edit Monthly Allocations</span>
+                    </DropdownMenuItem>
+                  )
+                ) : (
+                  onEditAllocations && (
+                    <DropdownMenuItem
+                      onClick={() => onEditAllocations(item)}
+                      className="cursor-pointer font-bold text-indigo-600 focus:text-indigo-700 focus:bg-indigo-50/50"
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      <span>Configure Monthly Allocations</span>
+                    </DropdownMenuItem>
+                  )
+                )}
+                {onEdit && (
+                  <DropdownMenuItem
+                    onClick={() => onEdit(item)}
+                    className="cursor-pointer"
+                  >
+                    <Pencil className="mr-2 h-4 w-4 text-default-550" />
+                    <span>Edit Item Details</span>
+                  </DropdownMenuItem>
+                )}
+                {onDelete && (
+                  <>
+                    <DropdownMenuSeparator />
+                    <DropdownMenuItem
+                      onClick={() => onDelete(item)}
+                      className="cursor-pointer text-destructive focus:text-destructive focus:bg-destructive/5"
+                    >
+                      <Trash2 className="mr-2 h-4 w-4" />
+                      <span>Delete Item</span>
+                    </DropdownMenuItem>
+                  </>
+                )}
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </td>
       </tr>
@@ -2562,6 +2120,25 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
     return activeChildPpmp?.PPMPItems?.length || ppmp.PPMPItems?.length || 0
   }, [ppmp, activeTab, activeChildPpmp])
 
+  // Gather all items currently displayed in the workspace
+  const allCurrentItems = useMemo(() => {
+    if (!ppmp) return []
+    if (activeTab === 'overview') {
+      const masterItems = ppmp.PPMPItems || []
+      const childItems = ppmp.ChildPPMPs?.flatMap((c) => c.PPMPItems || []) || []
+      return [...masterItems, ...childItems]
+    }
+    return activeChildPpmp?.PPMPItems || ppmp.PPMPItems || []
+  }, [ppmp, activeTab, activeChildPpmp])
+
+  // Find which items are incomplete (not green)
+  const incompleteItems = useMemo(() => {
+    return allCurrentItems.filter((item) => {
+      const status = getItemValidationStatus(item)
+      return !status.isComplete
+    })
+  }, [allCurrentItems])
+
   // Toggle activity expansion
   const toggleExpandActivity = useCallback((id: string) => {
     setExpandedActivityIds((prev) => {
@@ -2860,8 +2437,8 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
                 ppmp.status.toLowerCase() === 'approved'
                   ? 'border-emerald-200 bg-emerald-50 text-emerald-700 ring-4 ring-emerald-500/5'
                   : ppmp.status.toLowerCase() === 'submitted' ||
-                      ppmp.status.toLowerCase() === 'pending_review' ||
-                      ppmp.status.toLowerCase() === 'pending review'
+                    ppmp.status.toLowerCase() === 'pending_review' ||
+                    ppmp.status.toLowerCase() === 'pending review'
                     ? 'border-blue-200 bg-blue-50 text-blue-700 ring-4 ring-blue-500/5'
                     : ppmp.status.toLowerCase() === 'rejected'
                       ? 'border-rose-200 bg-rose-50 text-rose-700 ring-4 ring-rose-500/5'
@@ -2942,15 +2519,43 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
           {!ppmp.consolidatedIntoId &&
             (ppmp.status?.toLowerCase() === 'draft' ||
               ppmp.status?.toLowerCase() === 'rejected') && (
-              <Button
-                variant="default"
-                size="sm"
-                onClick={() => setSubmitConfirmOpen(true)}
-                className="bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/10 font-semibold px-4 h-9 rounded-lg flex items-center gap-1.5 transition-all duration-300 hover:shadow-lg hover:shadow-indigo-600/20 active:scale-[0.98]"
-              >
-                <Send className="h-4 w-4" />
-                <span>Submit PPMP</span>
-              </Button>
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger asChild>
+                    <span className="inline-block">
+                      <Button
+                        variant="default"
+                        size="sm"
+                        disabled={incompleteItems.length > 0}
+                        onClick={() => setSubmitConfirmOpen(true)}
+                        className={cn(
+                          "bg-indigo-600 hover:bg-indigo-700 text-white shadow-md shadow-indigo-600/10 font-semibold px-4 h-9 rounded-lg flex items-center gap-1.5 transition-all duration-300 hover:shadow-lg hover:shadow-indigo-600/20 active:scale-[0.98]",
+                          incompleteItems.length > 0 && "opacity-50 cursor-not-allowed bg-indigo-600/60 hover:bg-indigo-600/60 shadow-none"
+                        )}
+                      >
+                        <Send className="h-4 w-4" />
+                        <span>Submit PPMP</span>
+                      </Button>
+                    </span>
+                  </TooltipTrigger>
+                  {incompleteItems.length > 0 && (
+                    <TooltipContent side="top" className="max-w-xs bg-slate-900 border-slate-800 text-white p-3 shadow-xl z-50">
+                      <div className="space-y-1.5 text-xs">
+                        <p className="font-bold text-red-400">Cannot Submit PPMP</p>
+                        <p className="text-slate-300">The following items are incomplete or missing allocations:</p>
+                        <ul className="list-disc pl-4 space-y-0.5 max-h-32 overflow-y-auto text-slate-200">
+                          {incompleteItems.slice(0, 5).map((item) => (
+                            <li key={item.id}>{item.name || 'Unnamed Item'}</li>
+                          ))}
+                          {incompleteItems.length > 5 && (
+                            <li className="italic text-slate-400">and {incompleteItems.length - 5} more...</li>
+                          )}
+                        </ul>
+                      </div>
+                    </TooltipContent>
+                  )}
+                </Tooltip>
+              </TooltipProvider>
             )}
 
           {!ppmp.consolidatedIntoId &&
@@ -3009,6 +2614,19 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
       <style dangerouslySetInnerHTML={{ __html: THROB_STYLE }} />
 
       <div className="space-y-6">
+        {incompleteItems.length > 0 && (
+          <div className="rounded-xl border border-amber-300 bg-amber-50/80 dark:bg-amber-950/20 p-4 shadow-sm flex items-start gap-3 border-l-4 border-l-amber-500 text-amber-900 dark:text-amber-200">
+            <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+            <div className="space-y-0.5">
+              <h4 className="text-sm font-extrabold">PPMP Submission Blocked</h4>
+              <p className="text-xs font-semibold text-amber-850/90 dark:text-amber-300">
+                There are {incompleteItems.length} item(s) requiring configuration or monthly allocations.
+                Configure all items (marked with red or amber left borders) before submitting this PPMP.
+              </p>
+            </div>
+          </div>
+        )}
+
         {isDeptMode && ppmp.consolidatedIntoId && (
           <div className="rounded-xl border border-indigo-200 bg-linear-to-r from-indigo-50/90 to-indigo-100/40 p-5 shadow-sm flex flex-col sm:flex-row sm:items-center justify-between gap-4 transition-all duration-300 hover:shadow-md border-l-4 border-l-indigo-600 font-medium text-indigo-900">
             <div className="flex items-start gap-3.5">
@@ -3122,27 +2740,27 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
                   const statusStyle =
                     statusLower === 'approved'
                       ? {
-                          badge:
-                            'bg-emerald-50 text-emerald-700 border-emerald-200',
-                          dot: 'bg-emerald-500',
-                        }
+                        badge:
+                          'bg-emerald-50 text-emerald-700 border-emerald-200',
+                        dot: 'bg-emerald-500',
+                      }
                       : statusLower === 'submitted' ||
-                          statusLower === 'pending_review' ||
-                          statusLower === 'pending review'
+                        statusLower === 'pending_review' ||
+                        statusLower === 'pending review'
                         ? {
-                            badge: 'bg-blue-50 text-blue-700 border-blue-200',
-                            dot: 'bg-blue-500',
-                          }
+                          badge: 'bg-blue-50 text-blue-700 border-blue-200',
+                          dot: 'bg-blue-500',
+                        }
                         : statusLower === 'rejected'
                           ? {
-                              badge: 'bg-rose-50 text-rose-700 border-rose-200',
-                              dot: 'bg-rose-500',
-                            }
+                            badge: 'bg-rose-50 text-rose-700 border-rose-200',
+                            dot: 'bg-rose-500',
+                          }
                           : {
-                              badge:
-                                'bg-slate-50 text-slate-600 border-slate-200',
-                              dot: 'bg-slate-400',
-                            }
+                            badge:
+                              'bg-slate-50 text-slate-600 border-slate-200',
+                            dot: 'bg-slate-400',
+                          }
                   return (
                     <button
                       key={child.id}
@@ -3242,9 +2860,9 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
             onToggleExpand={toggleExpandActivity}
             onAdd={
               activeTab === 'overview' &&
-              !ppmp.consolidatedIntoId &&
-              (ppmp.status?.toLowerCase() === 'draft' ||
-                ppmp.status?.toLowerCase() === 'rejected')
+                !ppmp.consolidatedIntoId &&
+                (ppmp.status?.toLowerCase() === 'draft' ||
+                  ppmp.status?.toLowerCase() === 'rejected')
                 ? () => setAddDialogOpen(true)
                 : undefined
             }
@@ -3315,10 +2933,9 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
           if (!s) setDeleteDialogOpen(false)
         }}
         title="Delete activity?"
-        description={`${
-          activities.find((a) => a.id === pendingDeleteActivityId)
-            ?.activityName || 'This activity'
-        } and all nested items will be permanently deleted.`}
+        description={`${activities.find((a) => a.id === pendingDeleteActivityId)
+          ?.activityName || 'This activity'
+          } and all nested items will be permanently deleted.`}
         onConfirm={confirmDeleteActivity}
         onCancel={() => setDeleteDialogOpen(false)}
         confirmLabel={isDeleting ? 'Deleting…' : 'Delete'}
@@ -3351,9 +2968,8 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
           if (!s) setDeleteItemConfirmOpen(false)
         }}
         title="Delete item?"
-        description={`Are you sure you want to permanently delete "${
-          pendingDeleteItem?.name || 'this item'
-        }"?`}
+        description={`Are you sure you want to permanently delete "${pendingDeleteItem?.name || 'this item'
+          }"?`}
         onConfirm={confirmDeleteItem}
         onCancel={() => setDeleteItemConfirmOpen(false)}
         confirmLabel={isItemDeleting ? 'Deleting…' : 'Delete'}

@@ -9,22 +9,22 @@ import { MultiSiteConfigurationTab } from './MultiSiteConfigurationTab'
 export function StructureManagementSettings() {
   return (
     <div className="space-y-6">
-      <Tabs defaultValue="office-types">
+      <Tabs defaultValue="multi-site">
         <TabsList className="grid-cols-6">
+          <TabsTrigger value="multi-site">Multi-Site</TabsTrigger>
+          <TabsTrigger value="satellite-clusters">Clusters</TabsTrigger>
+          <TabsTrigger value="admin-levels">Admin Levels</TabsTrigger>
           <TabsTrigger value="office-types">Office Types</TabsTrigger>
           <TabsTrigger value="office-categories">Categories</TabsTrigger>
-          <TabsTrigger value="admin-levels">Admin Levels</TabsTrigger>
           <TabsTrigger value="procurement-workflows">Procurement</TabsTrigger>
-          <TabsTrigger value="satellite-clusters">Clusters</TabsTrigger>
-          <TabsTrigger value="multi-site">Multi-Site</TabsTrigger>
         </TabsList>
 
+        <MultiSiteConfigurationTab />
+        <SatelliteClustersTab />
+        <AdministrativeLevelsTab />
         <OfficeTypesTab />
         <OfficeCategoriesTab />
-        <AdministrativeLevelsTab />
         <ProcurementWorkflowsTab />
-        <SatelliteClustersTab />
-        <MultiSiteConfigurationTab />
       </Tabs>
     </div>
   )

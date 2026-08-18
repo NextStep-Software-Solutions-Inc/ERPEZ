@@ -8,7 +8,9 @@ public record CreateAPPRequest : IRequest<ApiResponse<Guid>>
     public string APPNumber { get; init; } = string.Empty;
     public string Name { get; init; } = string.Empty;
     public Guid FiscalYearId { get; init; }
-    public Guid OfficeId { get; init; }
+    public string APPType { get; init; } = "Indicative";
+    public string Batch { get; init; } = "Batch 1";
+    public string Quarter { get; init; } = "Q1";
     public string IsFinal { get; init; } = string.Empty;
     public string? Remarks { get; init; }
     public string? Description { get; init; }

@@ -53,6 +53,7 @@ import {
 import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 import DocumentViewer from '@/components/DocumentViewer'
+import { FieldDescriptionTooltip } from '../components/FieldDescriptionTooltip'
 
 import { getProcurementItemsRequest } from '@/components/features/planning/procurement-item/handlers/getProcurementItemsRequest'
 import { getProcurementItemRequest } from '@/components/features/planning/procurement-item/handlers/getProcurementItemRequest'
@@ -559,6 +560,9 @@ export default function AddPPMPItemsModal({
       if (!config) return true
       if (!config.procurementModeId) return true
       if (config.unitPrice < 0.01) return true
+      if (!config.procurementStartDate || !config.procurementEndDate || config.procurementEndDate < config.procurementStartDate) return true
+      if (!config.expectedDeliveryStart || !config.expectedDeliveryEnd || config.expectedDeliveryEnd < config.expectedDeliveryStart) return true
+      if (config.expectedDeliveryStart < config.procurementStartDate) return true
       if (config.enableAllocations) {
         const totalAllocQty = Object.values(config.monthlyQuantities).reduce(
           (a, b) => a + b,
@@ -571,7 +575,7 @@ export default function AddPPMPItemsModal({
 
     if (invalidItems.length > 0) {
       toast.warning(
-        'All items must have a selected Procurement Mode, a unit price >= ₱0.01, and monthly quantities if allocations are enabled.',
+        'All items must have a selected Procurement Mode, a unit price >= ₱0.01, valid procurement and delivery timeline dates, and monthly quantities if allocations are enabled.',
       )
       return
     }
@@ -1513,8 +1517,29 @@ export default function AddPPMPItemsModal({
                     const hasMopError = !config.procurementModeId
                     const hasAllocError =
                       config.enableAllocations && totalQty <= 0
+                    
+                    const hasProcStartError = !config.procurementStartDate
+                    const hasProcEndError =
+                      !config.procurementEndDate ||
+                      (config.procurementStartDate &&
+                        config.procurementEndDate < config.procurementStartDate)
+                    const hasDelivStartError =
+                      !config.expectedDeliveryStart ||
+                      (config.procurementStartDate &&
+                        config.expectedDeliveryStart < config.procurementStartDate)
+                    const hasDelivEndError =
+                      !config.expectedDeliveryEnd ||
+                      (config.expectedDeliveryStart &&
+                        config.expectedDeliveryEnd < config.expectedDeliveryStart)
+
                     const hasAnyError =
-                      hasPriceError || hasMopError || hasAllocError
+                      hasPriceError ||
+                      hasMopError ||
+                      hasAllocError ||
+                      hasProcStartError ||
+                      hasProcEndError ||
+                      hasDelivStartError ||
+                      hasDelivEndError
 
                     const specText =
                       type === 'cse'
@@ -1664,15 +1689,18 @@ export default function AddPPMPItemsModal({
                         {/* Collapsible Content */}
                         {isExpanded && (
                           <div className="grid gap-4 border-t border-border/60 pt-4 mt-2 animate-in fade-in slide-in-from-top-2 duration-200">
-                            <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+                             <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
                               {/* Unit Price */}
                               <div className="space-y-1.5">
-                                <label
-                                  htmlFor={`price-${item.id}`}
-                                  className="text-xs font-semibold text-muted-foreground select-none"
-                                >
-                                  Unit Price *
-                                </label>
+                                <div className="flex items-center gap-1">
+                                  <label
+                                    htmlFor={`price-${item.id}`}
+                                    className="text-xs font-semibold text-muted-foreground select-none"
+                                  >
+                                    Unit Price *
+                                  </label>
+                                  <FieldDescriptionTooltip fieldKey="unitPrice" className="h-3.5 w-3.5" />
+                                </div>
                                 <div className="relative w-full">
                                   <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-semibold">
                                     ₱
@@ -1711,9 +1739,12 @@ export default function AddPPMPItemsModal({
 
                               {/* Procurement Mode */}
                               <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-muted-foreground">
-                                  Procurement Mode *
-                                </label>
+                                <div className="flex items-center gap-1">
+                                  <label className="text-xs font-semibold text-muted-foreground">
+                                    Procurement Mode *
+                                  </label>
+                                  <FieldDescriptionTooltip fieldKey="procurementModeId" className="h-3.5 w-3.5" />
+                                </div>
                                 <Select
                                   value={config.procurementModeId}
                                   onValueChange={(val) =>
@@ -1747,9 +1778,12 @@ export default function AddPPMPItemsModal({
 
                               {/* Project Type */}
                               <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-muted-foreground">
-                                  Project Type
-                                </label>
+                                <div className="flex items-center gap-1">
+                                  <label className="text-xs font-semibold text-muted-foreground">
+                                    Project Type
+                                  </label>
+                                  <FieldDescriptionTooltip fieldKey="projectType" className="h-3.5 w-3.5" />
+                                </div>
                                 <Select
                                   value={config.projectType}
                                   onValueChange={(
@@ -1794,62 +1828,109 @@ export default function AddPPMPItemsModal({
                             <div className="grid gap-4 sm:grid-cols-2">
                               {/* Milestone Dates */}
                               <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-muted-foreground">
-                                  Procurement Schedule
-                                </label>
+                                <div className="flex items-center gap-1">
+                                  <label className="text-xs font-semibold text-muted-foreground">
+                                    Procurement Schedule *
+                                  </label>
+                                  <FieldDescriptionTooltip fieldKey="procurementStartDate" className="h-3.5 w-3.5" />
+                                </div>
                                 <div className="grid grid-cols-2 gap-2">
-                                  <Input
-                                    type="date"
-                                    value={config.procurementStartDate || ''}
-                                    onChange={(e) =>
-                                      updateConfig(item.id, {
-                                        procurementStartDate: e.target.value,
-                                      })
-                                    }
-                                    className="text-xs h-9 border-default-200"
-                                    placeholder="Start"
-                                  />
-                                  <Input
-                                    type="date"
-                                    value={config.procurementEndDate || ''}
-                                    onChange={(e) =>
-                                      updateConfig(item.id, {
-                                        procurementEndDate: e.target.value,
-                                      })
-                                    }
-                                    className="text-xs h-9 border-default-200"
-                                    placeholder="End"
-                                  />
+                                  <div>
+                                    <Input
+                                      type="date"
+                                      value={config.procurementStartDate || ''}
+                                      onChange={(e) =>
+                                        updateConfig(item.id, {
+                                          procurementStartDate: e.target.value,
+                                        })
+                                      }
+                                      className={cn(
+                                        'text-xs h-9 border-default-200 w-full',
+                                        hasProcStartError && 'border-red-500 bg-red-50/20'
+                                      )}
+                                      placeholder="Start"
+                                    />
+                                    {hasProcStartError && (
+                                      <p className="text-[10px] text-red-500 mt-0.5">Start date is required</p>
+                                    )}
+                                  </div>
+                                  <div>
+                                    <Input
+                                      type="date"
+                                      value={config.procurementEndDate || ''}
+                                      onChange={(e) =>
+                                        updateConfig(item.id, {
+                                          procurementEndDate: e.target.value,
+                                        })
+                                      }
+                                      className={cn(
+                                        'text-xs h-9 border-default-200 w-full',
+                                        hasProcEndError && 'border-red-500 bg-red-50/20'
+                                      )}
+                                      placeholder="End"
+                                    />
+                                    {config.procurementEndDate && config.procurementStartDate && config.procurementEndDate < config.procurementStartDate && (
+                                      <p className="text-[10px] text-red-500 mt-0.5">Cannot be before start date</p>
+                                    )}
+                                    {!config.procurementEndDate && (
+                                      <p className="text-[10px] text-red-500 mt-0.5">End date is required</p>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
 
                               <div className="space-y-1.5">
-                                <label className="text-xs font-semibold text-muted-foreground">
-                                  Expected Delivery Window
-                                </label>
+                                <div className="flex items-center gap-1">
+                                  <label className="text-xs font-semibold text-muted-foreground">
+                                    Expected Delivery Window *
+                                  </label>
+                                  <FieldDescriptionTooltip fieldKey="expectedDeliveryStart" className="h-3.5 w-3.5" />
+                                </div>
                                 <div className="grid grid-cols-2 gap-2">
-                                  <Input
-                                    type="date"
-                                    value={config.expectedDeliveryStart || ''}
-                                    onChange={(e) =>
-                                      updateConfig(item.id, {
-                                        expectedDeliveryStart: e.target.value,
-                                      })
-                                    }
-                                    className="text-xs h-9 border-default-200"
-                                    placeholder="Start"
-                                  />
-                                  <Input
-                                    type="date"
-                                    value={config.expectedDeliveryEnd || ''}
-                                    onChange={(e) =>
-                                      updateConfig(item.id, {
-                                        expectedDeliveryEnd: e.target.value,
-                                      })
-                                    }
-                                    className="text-xs h-9 border-default-200"
-                                    placeholder="End"
-                                  />
+                                  <div>
+                                    <Input
+                                      type="date"
+                                      value={config.expectedDeliveryStart || ''}
+                                      onChange={(e) =>
+                                        updateConfig(item.id, {
+                                          expectedDeliveryStart: e.target.value,
+                                        })
+                                      }
+                                      className={cn(
+                                        'text-xs h-9 border-default-200 w-full',
+                                        hasDelivStartError && 'border-red-500 bg-red-50/20'
+                                      )}
+                                      placeholder="Start"
+                                    />
+                                    {config.expectedDeliveryStart && config.procurementStartDate && config.expectedDeliveryStart < config.procurementStartDate && (
+                                      <p className="text-[10px] text-red-500 mt-0.5">Cannot be before procurement start</p>
+                                    )}
+                                    {!config.expectedDeliveryStart && (
+                                      <p className="text-[10px] text-red-500 mt-0.5">Start date is required</p>
+                                    )}
+                                  </div>
+                                  <div>
+                                    <Input
+                                      type="date"
+                                      value={config.expectedDeliveryEnd || ''}
+                                      onChange={(e) =>
+                                        updateConfig(item.id, {
+                                          expectedDeliveryEnd: e.target.value,
+                                        })
+                                      }
+                                      className={cn(
+                                        'text-xs h-9 border-default-200 w-full',
+                                        hasDelivEndError && 'border-red-500 bg-red-50/20'
+                                      )}
+                                      placeholder="End"
+                                    />
+                                    {config.expectedDeliveryEnd && config.expectedDeliveryStart && config.expectedDeliveryEnd < config.expectedDeliveryStart && (
+                                      <p className="text-[10px] text-red-500 mt-0.5">Cannot be before start date</p>
+                                    )}
+                                    {!config.expectedDeliveryEnd && (
+                                      <p className="text-[10px] text-red-500 mt-0.5">End date is required</p>
+                                    )}
+                                  </div>
                                 </div>
                               </div>
                             </div>
@@ -1857,9 +1938,12 @@ export default function AddPPMPItemsModal({
                             <div className="grid gap-4 sm:grid-cols-3 sm:items-center">
                               {/* PAP Code */}
                               <div className="space-y-1.5 sm:col-span-2">
-                                <label className="text-xs font-semibold text-muted-foreground">
-                                  PAP Code
-                                </label>
+                                <div className="flex items-center gap-1">
+                                  <label className="text-xs font-semibold text-muted-foreground">
+                                    PAP Code
+                                  </label>
+                                  <FieldDescriptionTooltip fieldKey="papCode" className="h-3.5 w-3.5" />
+                                </div>
                                 <Input
                                   value={config.papCode || ''}
                                   placeholder="e.g. 5020301000"
@@ -1894,9 +1978,12 @@ export default function AddPPMPItemsModal({
 
                             {/* Remarks */}
                             <div className="space-y-1.5">
-                              <label className="text-xs font-semibold text-muted-foreground">
-                                Remarks
-                              </label>
+                              <div className="flex items-center gap-1">
+                                <label className="text-xs font-semibold text-muted-foreground">
+                                  Remarks
+                                </label>
+                                <FieldDescriptionTooltip fieldKey="remarks" className="h-3.5 w-3.5" />
+                              </div>
                               <Textarea
                                 placeholder="Any specific comments or justifications..."
                                 value={config.remarks || ''}

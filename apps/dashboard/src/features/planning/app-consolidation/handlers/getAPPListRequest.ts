@@ -12,8 +12,8 @@ interface GetAPPListParams extends QueryParams {
 }
 
 /**
- * API Response type for APP data from backend
- * Maps to the actual API response structure
+ * API Response type for APP data from backend.
+ * Matches the APPResponse DTO returned by GET /apps.
  */
 export interface AppListResponse {
   id: string
@@ -21,9 +21,19 @@ export interface AppListResponse {
   name: string
   fiscalYearId: string
   fiscalYearName: string
-  officeId: string
-  officeName: string
-  isFinal: string
+  /** Indicative | Final | Updated */
+  appType?: string
+  /** e.g. Batch 1, Batch 2 */
+  batch?: string
+  /** e.g. Q1, Q2 */
+  quarter?: string
+  /** Version number for Updated APPs (1, 2, 3 …) */
+  versionNumber?: number | null
+  /** ISO date string for Updated APP version date */
+  versionDate?: string | null
+  /** Source APP id for Updated APPs */
+  sourceAppId?: string | null
+  isFinal?: boolean | string
   remarks?: string
   description?: string
   status: string
@@ -39,13 +49,6 @@ export interface AppListResponse {
     status: string
     startDate?: string | null
     endDate?: string | null
-  }
-  Office?: {
-    id: string
-    name: string
-    code: string
-    responsibilityCenterCode?: string
-    budgetCostCenter?: string
   }
   APPItems?: unknown[]
   APPPPMPs?: unknown[]

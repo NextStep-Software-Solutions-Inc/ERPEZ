@@ -33,4 +33,9 @@ public interface IPersonnelPositionRepository : IRepository<PersonnelPosition>
     /// Gets a personnel position by ID with User, Position, and Office navigation properties included.
     /// </summary>
     Task<PersonnelPosition?> GetByIdWithIncludesAsync(Guid id, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets active personnel position matching position title with User and Position included.
+    /// </summary>
+    Task<PersonnelPosition?> GetActiveByPositionTitleAsync(string positionTitle, CancellationToken cancellationToken = default);
 }

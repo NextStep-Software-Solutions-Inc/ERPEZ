@@ -1,4 +1,4 @@
-﻿using ERPEZ.Domain.Interfaces;
+using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
@@ -56,6 +56,48 @@ public class UpdateWFPObjectiveActivityCommandHandler(IUnitOfWork unitOfWork)
             activity.ActivityName = dto.ActivityName ?? activity.ActivityName;
         activity.Indicator = dto.Indicator ?? activity.Indicator;
         activity.Weight = dto.Weight ?? activity.Weight;
+
+        if (dto.Dates != null && dto.Dates.Any())
+        {
+            var existingTimelines = await unitOfWork.WFPObjectiveTimelineRepository.ToListAsync(
+                unitOfWork.WFPObjectiveTimelineRepository.Query(t => t.WFPObjectiveActivityId == activity.Id),
+                cancellationToken);
+
+            var matchedTimelineIds = new HashSet<Guid>();
+
+            foreach (var d in dto.Dates)
+            {
+                var timelineType = Enum.Parse<Domain.Enums.TimelineTypeEnum>(d.TimelineType, ignoreCase: true);
+                var existing = existingTimelines.FirstOrDefault(t => t.StartDate == d.StartDate);
+
+                if (existing != null)
+                {
+                    existing.EndDate = d.EndDate;
+                    existing.TargetValue = d.Value;
+                    existing.TimelineType = timelineType;
+                    unitOfWork.WFPObjectiveTimelineRepository.Update(existing);
+                    matchedTimelineIds.Add(existing.Id);
+                }
+                else
+                {
+                    var timeline = new Domain.Entities.Planning.WFPObjectiveTimeline
+                    {
+                        WFPObjectiveActivityId = activity.Id,
+                        StartDate = d.StartDate,
+                        EndDate = d.EndDate,
+                        TargetValue = d.Value,
+                        TimelineType = timelineType
+                    };
+                    await unitOfWork.WFPObjectiveTimelineRepository.AddAsync(timeline, cancellationToken);
+                }
+            }
+
+            var toRemove = existingTimelines.Where(t => !matchedTimelineIds.Contains(t.Id)).ToList();
+            if (toRemove.Count > 0)
+            {
+                unitOfWork.WFPObjectiveTimelineRepository.RemoveRange(toRemove);
+            }
+        }
 
         unitOfWork.WFPObjectiveActivityRepository.Update(activity);
         await unitOfWork.SaveChangesAsync(cancellationToken);

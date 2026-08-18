@@ -4,6 +4,9 @@ namespace ERPEZ.Application.Features.Planning.APP.Commands.CreateAPP;
 
 public class CreateAPPCommandValidator : AbstractValidator<CreateAPPCommand>
 {
+    private static readonly string[] validQuarters = ["Q1", "Q2", "Q3", "Q4"];
+    private static readonly string[] allowedTypes   = ["Indicative", "Final"];
+
     public CreateAPPCommandValidator()
     {
         RuleFor(x => x.APPNumber)
@@ -22,15 +25,19 @@ public class CreateAPPCommandValidator : AbstractValidator<CreateAPPCommand>
             .NotEmpty()
             .WithMessage("Fiscal Year is required.");
 
-        RuleFor(x => x.OfficeId)
-            .NotEmpty()
-            .WithMessage("Office is required.");
+        // Updated APPs are created only via the dedicated CloneUpdatedAPP workflow.
+        RuleFor(x => x.APPType)
+            .Must(t => allowedTypes.Contains(t, StringComparer.OrdinalIgnoreCase))
+            .WithMessage("APP Type must be either 'Indicative' or 'Final' for standard creation. Use the Updated APP workflow for Updated APPs.");
 
-        RuleFor(x => x.IsFinal)
+        RuleFor(x => x.Batch)
             .NotEmpty()
-            .WithMessage("IsFinal status is required.")
-            .MaximumLength(50)
-            .WithMessage("IsFinal cannot exceed 50 characters.");
+            .WithMessage("Batch is required.");
+
+        // Backend enforces controlled quarter values; frontend pre-validation is supplementary.
+        RuleFor(x => x.Quarter)
+            .Must(q => validQuarters.Contains(q?.Trim().ToUpper()))
+            .WithMessage("Quarter must be Q1, Q2, Q3, or Q4.");
 
         RuleFor(x => x.Remarks)
             .MaximumLength(1000)

@@ -1,3 +1,5 @@
+using ERPEZ.Domain.Entities.Planning;
+
 namespace ERPEZ.Domain.Interfaces;
 
 public interface IUnitOfWork
@@ -14,6 +16,7 @@ public interface IUnitOfWork
     IDeliveryUnitRepository DeliveryUnitRepository { get; }
     IOfficeRepository OfficeRepository { get; }
     IOrganizationRepository OrganizationRepository { get; }
+    IRepository<Domain.Entities.Planning.OrganizationFundSource> OrganizationFundSourceRepository { get; }
     IFundSourceRepository FundSourceRepository { get; }
     ITransactionRepository TransactionRepository { get; }
     IMFOPAPRepository MFOPAPRepository { get; }
@@ -108,6 +111,7 @@ public interface IUnitOfWork
     IAPPPPMPRepository APPPPMPRepository { get; }
     IAPPItemRepository APPItemRepository { get; }
     IAPPItemScheduleRepository APPItemScheduleRepository { get; }
+    IRepository<APPSignatory> APPSignatoryRepository { get; }
     IItemRequestRepository ItemRequestRepository { get; }
     INonCSEItemRepository NonCSEItemRepository { get; }
     IOPCRItemRatingRepository OPCRItemRatingRepository { get; }

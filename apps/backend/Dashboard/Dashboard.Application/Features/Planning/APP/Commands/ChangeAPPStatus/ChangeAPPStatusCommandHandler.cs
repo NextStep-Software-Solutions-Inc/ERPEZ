@@ -30,17 +30,26 @@ public class ChangeAPPStatusCommandHandler(IUnitOfWork unitOfWork)
                 app.SubmittedDate = DateTime.UtcNow;
                 app.ApprovedDate  = null;
                 break;
+
             case StatusEnum.Approved:
                 app.ApprovedDate = DateTime.UtcNow;
+                // Synchronize IsFinal: only a Final APP becomes IsFinal=true when approved.
+                // Indicative and Updated APPs remain IsFinal=false regardless of approval state.
+                app.IsFinal = string.Equals(app.APPType, "Final", StringComparison.OrdinalIgnoreCase)
+                    ? "true"
+                    : "false";
                 break;
+
             case StatusEnum.Returned:
             case StatusEnum.Draft:
                 app.SubmittedDate = null;
                 app.ApprovedDate  = null;
+                // Clear IsFinal if the APP is reverted from Approved state.
+                app.IsFinal = "false";
                 break;
         }
 
-        unitOfWork.APPRepository.Update(app); // ✅ void, no await
+        unitOfWork.APPRepository.Update(app);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return ApiResponse<Guid>.Success(

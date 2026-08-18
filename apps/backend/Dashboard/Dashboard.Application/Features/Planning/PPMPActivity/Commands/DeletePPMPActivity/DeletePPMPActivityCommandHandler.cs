@@ -14,10 +14,7 @@ public class DeletePPMPActivityCommandHandler(IUnitOfWork unitOfWork)
         if (entity == null)
             throw new NotFoundException("PPMP Activity not found.");
 
-        entity.IsDeleted = true;
-        entity.DeletedAt = DateTime.UtcNow;
-
-        unitOfWork.PPMPActivityRepository.Update(entity);
+        unitOfWork.PPMPActivityRepository.Remove(entity);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return ApiResponse<Guid>.Success(entity.Id, "PPMP Activity deleted successfully.");

@@ -101,11 +101,11 @@ public class PurchaseRequestRepository : Repository<PurchaseRequest>, IPurchaseR
         var ppmpItems = await context.Set<PPMPItem>()
             .Include(pi => pi.PPMPExpenditureItem)
                 .ThenInclude(pei => pei.PPMPActivity)
-                    .ThenInclude(pa => pa.PPMP)
+                    .ThenInclude(pa => pa!.PPMP)
                         .ThenInclude(p => p.Office)
             .Include(pi => pi.PPMPExpenditureItem)
                 .ThenInclude(pei => pei.PPMPActivity)
-                    .ThenInclude(pa => pa.PPMP)
+                    .ThenInclude(pa => pa!.PPMP)
                         .ThenInclude(p => p.FundSource)
             .Include(pi => pi.PPMPExpenditureItem)
             .Include(pi => pi.NonCSEItem)
@@ -113,11 +113,11 @@ public class PurchaseRequestRepository : Repository<PurchaseRequest>, IPurchaseR
             .Include(pi => pi.PPMPItemAllocations)
                 .Include(pi => pi.PPMPExpenditureItem)
                     .ThenInclude(pei => pei.PPMPActivity)
-                        .ThenInclude(pa => pa.LIBActivity)
+                        .ThenInclude(pa => pa!.LIBActivity)
             .Where(pi =>
                 !pi.IsDeleted &&
                 pi.CSEItemId == null &&
-                pi.PPMPExpenditureItem.PPMPActivity.PPMP.OfficeId == officeId &&
+                pi!.PPMPExpenditureItem!.PPMPActivity!.PPMP.OfficeId == officeId &&
                 pi.PPMPExpenditureItem.PPMPActivity.PPMP.Status == StatusEnum.Approved &&
                 !pi.PPMPExpenditureItem.PPMPActivity.PPMP.IsDeleted)
             .AsSplitQuery()
@@ -126,7 +126,7 @@ public class PurchaseRequestRepository : Repository<PurchaseRequest>, IPurchaseR
         return ppmpItems
             .SelectMany(pi =>
             {
-                var ppmp = pi.PPMPExpenditureItem.PPMPActivity.PPMP;
+                var ppmp = pi!.PPMPExpenditureItem!.PPMPActivity!.PPMP;
                 return pi.PPMPItemAllocations.Select(allocation =>
                 {
                     var allocMonth = allocation.AllocationMonth;
@@ -182,11 +182,11 @@ public class PurchaseRequestRepository : Repository<PurchaseRequest>, IPurchaseR
             .Include(ai => ai.PPMPItem)
                 .ThenInclude(pi => pi.PPMPExpenditureItem)
                     .ThenInclude(pei => pei.PPMPActivity)
-                        .ThenInclude(pa => pa.LIBActivity)
+                        .ThenInclude(pa => pa!.LIBActivity)
             .Include(ai => ai.PPMPItem)
                 .ThenInclude(pi => pi.PPMPExpenditureItem)
                     .ThenInclude(pei => pei.PPMPActivity)
-                        .ThenInclude(pa => pa.PPMP)
+                        .ThenInclude(pa => pa!.PPMP)
                             .ThenInclude(p => p.FundSource)
             .Where(ai =>
                 !ai.IsDeleted &&
@@ -274,7 +274,7 @@ public class PurchaseRequestRepository : Repository<PurchaseRequest>, IPurchaseR
                 .Where(pi =>
                     !pi.IsDeleted &&
                     pi.CSEItemId == null &&
-                    pi.PPMPExpenditureItem.PPMPActivity.PPMP.OfficeId == officeId &&
+                    pi!.PPMPExpenditureItem!.PPMPActivity!.PPMP.OfficeId == officeId &&
                     pi.PPMPExpenditureItem.PPMPActivity.PPMP.Status   == StatusEnum.Approved &&
                     !pi.PPMPExpenditureItem.PPMPActivity.PPMP.IsDeleted)
                 .ToListAsync(cancellationToken);

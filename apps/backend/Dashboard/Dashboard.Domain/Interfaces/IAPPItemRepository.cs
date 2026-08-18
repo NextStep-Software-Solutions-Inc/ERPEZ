@@ -17,4 +17,6 @@ public interface IAPPItemRepository : IRepository<APPItem>
     Task<(IReadOnlyList<APPItem> Entities, int TotalCount)> GetAllWithDetailsAsync(
         SieveModel sieveModel,
         CancellationToken cancellationToken = default);
+
+    Task<List<APPItem>> GetAPPItemsByPPMPIdsAsync(Guid appId, IEnumerable<Guid> ppmpIds, CancellationToken cancellationToken = default);
 }

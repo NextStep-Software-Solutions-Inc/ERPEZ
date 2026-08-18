@@ -40,7 +40,7 @@ export const createWFPSchema = z
     proposedBudget: z.number().min(0).optional().default(0),
     mode: z.enum(['opcr', 'external']).nullable().default(null),
     opcrId: z.string().optional().default(''),
-    fundSourceId: z.string().optional().default(''),
+    fundSourceId: z.string().min(1, 'Fund Source is required'),
   })
   .refine(
     (data) => {
@@ -102,14 +102,20 @@ export default function CreateWFPForm({
     enabled: opcrModeSelected,
   })
 
-  // 3. Fetch fund sources
-  const { data: fundSourcesResponse, isLoading: fundSourcesLoading } = useFundSources({
-    pathParams: {},
-    queryParams: {},
-  })
-
   const offices = officesResponse?.data || []
   const rawOpcrs = opcrsResponse?.data || []
+
+  // Extract selected Office and Organization ID to filter Fund Sources
+  const selectedOfficeIdForQuery = formData.officeId || ''
+  const selectedOfficeObj = offices.find((o: any) => o.id === selectedOfficeIdForQuery)
+  const selectedOrgId = selectedOfficeObj?.organizationId || selectedOfficeObj?.organization?.id
+
+  // 3. Fetch fund sources (filtered by organizationId if office selected, max 2000 items)
+  const { data: fundSourcesResponse, isLoading: fundSourcesLoading } = useFundSources({
+    pathParams: {},
+    queryParams: { pageSize: 2000, ...(selectedOrgId ? { organizationId: selectedOrgId } : {}) },
+  })
+
   const fundSources = fundSourcesResponse?.data || []
 
   const form = useForm({
@@ -171,26 +177,25 @@ export default function CreateWFPForm({
     })
   }, [rawOpcrs, selectedOfficeId])
 
-  // Filter Fund Sources for External Mode (fundCluster focus)
-  const externalFundSources = useMemo(() => {
-    return fundSources.filter((fs: any) => {
-      const typeStr = (fs.type || fs.category || fs.code || '').toLowerCase()
-      return typeStr.includes('cluster') || typeStr.includes('external') || true
-    })
+  // Map Fund Sources to options format for searchable Combobox (sorted alphabetically)
+  const fundSourceOptions = useMemo(() => {
+    return fundSources
+      .map((fs: any) => {
+        const codeStr = fs.code ? ` (${fs.code})` : ''
+        return {
+          value: fs.id,
+          label: `${fs.name}${codeStr}`,
+          raw: fs,
+        }
+      })
+      .sort((a: any, b: any) => (a.label || '').localeCompare(b.label || '', undefined, { sensitivity: 'base' }))
   }, [fundSources])
 
-  // Auto-inherit Fund Source & Fiscal Year Implementation Dates from selected OPCR
+  // Auto-inherit Fiscal Year Implementation Dates from selected OPCR
   useEffect(() => {
     if (currentMode === 'opcr' && selectedOpcrId) {
       const targetOpcr = rawOpcrs.find((o: { id: string }) => o.id === selectedOpcrId)
       if (targetOpcr) {
-        // Inherit Fund Source
-        const inheritedFundSourceId = targetOpcr.fundSourceId || targetOpcr.fundSource?.id || ''
-        if (inheritedFundSourceId && inheritedFundSourceId !== form.state.values.fundSourceId) {
-          form.setFieldValue('fundSourceId', inheritedFundSourceId)
-          setFormData((prev) => ({ ...prev, fundSourceId: inheritedFundSourceId }))
-        }
-
         // Inherit Fiscal Year Implementation Dates (Jan 1 to Dec 31 of fiscal year)
         const fyYear = targetOpcr.fiscalYear?.year || targetOpcr.year || currentYear
         const fyStart = `${fyYear}-01-01`
@@ -332,66 +337,32 @@ export default function CreateWFPForm({
         />
       )}
 
-      {/* Fund Source (Auto-inherited for OPCR / Manual for External) */}
+      {/* Fund Source (Required Searchable Combobox) */}
       <form.Field
         name="fundSourceId"
-        children={(field) => {
-          const selectedOpcrObj = opcrOptions.find((o) => o.value === selectedOpcrId)?.raw
-          const inheritedFundSourceName =
-            selectedOpcrObj?.fundSource?.name ||
-            fundSources.find((fs: any) => fs.id === field.state.value)?.name ||
-            'Regular Agency Fund'
-
-          return (
-            <div className="grid gap-1.5 w-full">
-              <div className="flex items-center justify-between">
-                <Label htmlFor={field.name} className="text-slate-800 font-bold text-xs">
-                  Fund Source
-                </Label>
-                {currentMode === 'opcr' && (
-                  <Badge variant="outline" className="bg-blue-50 text-blue-700 border-blue-200 text-[10px] gap-1 py-0.5">
-                    <Lock className="w-3 h-3" /> Auto-inherited from OPCR
-                  </Badge>
-                )}
-              </div>
-
-              {currentMode === 'opcr' ? (
-                <div className="p-2.5 rounded-md border border-slate-200 bg-slate-50 flex items-center justify-between text-xs overflow-hidden">
-                  <span className="font-semibold text-slate-700 truncate min-w-0 flex-1">
-                    {field.state.value ? inheritedFundSourceName : 'Select an OPCR above to auto-inherit Fund Source'}
-                  </span>
-                  <span className="text-[10px] text-slate-400 font-bold uppercase shrink-0 ml-2">SOURCE: OPCR</span>
-                </div>
-              ) : (
-                <select
-                  id={field.name}
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(e) => {
-                    field.handleChange(e.target.value)
-                    updateFormData('fundSourceId', e.target.value)
-                  }}
-                  disabled={fundSourcesLoading}
-                  className={`w-full rounded-md border px-3 py-2 text-xs bg-white ${
-                    field.state.meta.errors.length > 0 ? 'border-rose-500' : 'border-slate-300'
-                  } ${fundSourcesLoading ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
-                >
-                  <option value="">
-                    {fundSourcesLoading ? 'Loading fund sources...' : '-- Select Fund Source (Fund Cluster) --'}
-                  </option>
-                  {externalFundSources.map((fs: any) => (
-                    <option key={fs.id} value={fs.id}>
-                      {fs.name} ({fs.code || 'Fund Cluster'})
-                    </option>
-                  ))}
-                </select>
-              )}
-              {field.state.meta.errors.length > 0 && (
-                <p className="text-[11px] text-rose-500">{String(field.state.meta.errors[0])}</p>
-              )}
-            </div>
-          )
-        }}
+        children={(field) => (
+          <div className="grid gap-1.5 w-full min-w-0">
+            <Label htmlFor={field.name} className="text-slate-800 font-bold text-xs">
+              Fund Source <span className="text-rose-500">*</span>
+            </Label>
+            <Combobox
+              options={fundSourceOptions}
+              value={field.state.value || ''}
+              onValueChange={(val) => {
+                field.handleChange(val)
+                updateFormData('fundSourceId', val)
+              }}
+              placeholder={fundSourcesLoading ? 'Loading fund sources...' : '-- Search or select Fund Source --'}
+              searchPlaceholder="Search fund source title or code..."
+              emptyMessage="No Fund Source found matching your search."
+              disabled={fundSourcesLoading}
+              className="w-full text-xs"
+            />
+            {field.state.meta.errors.length > 0 && (
+              <p className="text-[11px] text-rose-500">{String(field.state.meta.errors[0])}</p>
+            )}
+          </div>
+        )}
       />
 
       {/* Project Title */}

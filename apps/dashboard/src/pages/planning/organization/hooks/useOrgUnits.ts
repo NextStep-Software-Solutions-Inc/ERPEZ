@@ -66,12 +66,14 @@ async function fetchOrgUnitById(id: string): Promise<OrgUnit | null> {
   }
 }
 
-async function createOrgUnit(payload: Omit<OrgUnit, 'id'>): Promise<OrgUnit> {
+import type { OfficeApiResponse } from '@/services/api/offices'
+
+async function createOrgUnit(payload: Partial<OfficeApiResponse> | Omit<OrgUnit, 'id'>): Promise<OrgUnit> {
   try {
-    return await createOfficeInApi(payload as Partial<Record<string, unknown>>)
+    return await createOfficeInApi(payload as Partial<OfficeApiResponse>)
   } catch (error) {
     console.warn('API create failed, falling back to mock:', error)
-    return createOrgUnitMock(payload)
+    return createOrgUnitMock(payload as Omit<OrgUnit, 'id'>)
   }
 }
 

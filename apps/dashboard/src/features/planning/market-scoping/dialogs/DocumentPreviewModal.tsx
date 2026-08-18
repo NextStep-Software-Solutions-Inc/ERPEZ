@@ -183,7 +183,7 @@ export function DocumentPreviewModal({
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-[880px] w-[92vw] max-h-[90vh] flex flex-col p-0 overflow-hidden bg-background border rounded-xl shadow-xl">
+      <DialogContent className="max-w-[880px] w-[92vw] max-h-[90vh] flex flex-col p-0 overflow-hidden bg-background border rounded-xl shadow-xl [&>button:last-child]:top-3.5 [&>button:last-child]:right-3.5 [&>button:last-child]:z-20 [&>button:last-child]:bg-slate-100/80 [&>button:last-child]:hover:bg-slate-200 [&>button:last-child]:rounded-full [&>button:last-child]:p-1 text-slate-500 [&>button:last-child]:hover:text-slate-900 [&>button:last-child]:transition-all">
         {/* Header */}
         <DialogHeader className="p-4 px-6 border-b bg-muted/30 flex flex-row items-center justify-between space-y-0">
           <div className="flex items-center gap-3 min-w-0 pr-4">
@@ -206,7 +206,7 @@ export function DocumentPreviewModal({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 flex-shrink-0">
+          <div className="flex items-center gap-2 flex-shrink-0 pr-10">
             {activeUrl && (
               <Button
                 onClick={handleOpenExternal}

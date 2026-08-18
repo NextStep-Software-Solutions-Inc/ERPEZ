@@ -13,6 +13,14 @@ public class GetAPPItemByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandle
         var entity = await unitOfWork.APPItemRepository.GetWithDetailsAsync(request.Id, cancellationToken)
             ?? throw new NotFoundException("APP item not found.");
 
+        var allocQty = entity.PPMPItem?.PPMPItemAllocations.Where(a => !a.IsDeleted).Sum(a => a.Quantity) ?? 0;
+        var unitPrice = entity.PPMPItem?.UnitPrice ?? 0;
+        var allocTotal = entity.PPMPItem?.PPMPItemAllocations.Where(a => !a.IsDeleted).Sum(a => a.Amount) ?? 0;
+        var origBudget = allocTotal > 0 ? allocTotal : ((allocQty > 0 ? allocQty : 1) * unitPrice);
+        var totalAmount = entity.EstimatedBudgetOverride ?? origBudget;
+        var effectiveStart = entity.StartOfProcurementOverride ?? (entity.PPMPItem?.ProcurementStartDate.HasValue == true ? entity.PPMPItem.ProcurementStartDate.Value.ToDateTime(TimeOnly.MinValue) : null);
+        var effectiveEnd = entity.EndOfProcurementOverride ?? (entity.PPMPItem?.ProcurementEndDate.HasValue == true ? entity.PPMPItem.ProcurementEndDate.Value.ToDateTime(TimeOnly.MinValue) : null);
+
         return ApiResponse<APPItemResponse>.Success(new APPItemResponse
         {
             Id = entity.Id,
@@ -35,6 +43,18 @@ public class GetAPPItemByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandle
             CreatedBy = entity.CreatedBy,
             UpdatedAt = entity.UpdatedAt,
             UpdatedBy = entity.UpdatedBy,
+            EffectiveStartOfProcurement = effectiveStart,
+            EffectiveEndOfProcurement = effectiveEnd,
+            StartOfProcurementOverride = entity.StartOfProcurementOverride,
+            EndOfProcurementOverride = entity.EndOfProcurementOverride,
+            EstimatedBudgetOverride = entity.EstimatedBudgetOverride,
+            OriginalPPMPBudget = origBudget,
+            EffectiveABC = totalAmount,
+            IsABCOverridden = entity.EstimatedBudgetOverride.HasValue,
+            IsStartProcurementOverridden = entity.StartOfProcurementOverride.HasValue,
+            IsEndProcurementOverridden = entity.EndOfProcurementOverride.HasValue,
+            IsNew = entity.IsNew,
+            IsRevised = entity.IsRevised,
             APP = entity.APP == null ? null : new APPItemAPPResponse
             {
                 Id = entity.APP.Id,

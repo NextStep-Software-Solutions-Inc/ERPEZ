@@ -144,14 +144,22 @@ internal static class OpcrMapper
                 a.Name?.Equals("PREXC", StringComparison.OrdinalIgnoreCase) == true);
         var sda = sdaAttr?.Name ?? string.Empty;
 
-        // Targets — OPCRItem is authoritative; auto-populated from KPIAssignment on creation
-        var q1    = FormatTarget(item.Q1Target, fy.MeasurementUnit);
-        var q2    = FormatTarget(item.Q2Target, fy.MeasurementUnit);
-        var q3    = FormatTarget(item.Q3Target, fy.MeasurementUnit);
-        var q4    = FormatTarget(item.Q4Target, fy.MeasurementUnit);
-        var total = FormatTarget(
-            item.Q1Target + item.Q2Target + item.Q3Target + item.Q4Target,
-            fy.MeasurementUnit);
+        // Targets — OPCRItem is authoritative, but falls back to KPIAssignment if OPCRItem quarterly targets are not set / zero
+        var rawQ1 = item.Q1Target != 0 ? item.Q1Target : (item.KPIAssignment?.AssignedTargetQ1 ?? 0m);
+        var rawQ2 = item.Q2Target != 0 ? item.Q2Target : (item.KPIAssignment?.AssignedTargetQ2 ?? 0m);
+        var rawQ3 = item.Q3Target != 0 ? item.Q3Target : (item.KPIAssignment?.AssignedTargetQ3 ?? 0m);
+        var rawQ4 = item.Q4Target != 0 ? item.Q4Target : (item.KPIAssignment?.AssignedTargetQ4 ?? 0m);
+        var rawTotal = (item.Q1Target + item.Q2Target + item.Q3Target + item.Q4Target) != 0
+            ? (item.Q1Target + item.Q2Target + item.Q3Target + item.Q4Target)
+            : ((item.KPIAssignment?.AssignedTargetAnnual ?? 0m) != 0
+                ? item.KPIAssignment!.AssignedTargetAnnual
+                : (rawQ1 + rawQ2 + rawQ3 + rawQ4));
+
+        var q1    = FormatTarget(rawQ1, fy.MeasurementUnit);
+        var q2    = FormatTarget(rawQ2, fy.MeasurementUnit);
+        var q3    = FormatTarget(rawQ3, fy.MeasurementUnit);
+        var q4    = FormatTarget(rawQ4, fy.MeasurementUnit);
+        var total = FormatTarget(rawTotal, fy.MeasurementUnit);
 
         var row = new OpcrKpiRowDto
         {

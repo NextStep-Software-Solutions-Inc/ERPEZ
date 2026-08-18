@@ -41,4 +41,14 @@ public interface IAPPRepository : IRepository<APP>
     /// Check if an APP with the given APPNumber exists, excluding a specific APP (for updates).
     /// </summary>
     Task<bool> HasAPPNumberAsync(string appNumber, Guid excludeId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Gets the next sequential version number for an APP family.
+    /// </summary>
+    Task<int> GetNextVersionNumberAsync(Guid sourceAppId, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Computes aggregated analytics data for an APP directly at database level.
+    /// </summary>
+    Task<ERPEZ.Domain.Models.APPAnalyticsData?> GetAPPAnalyticsAsync(Guid appId, CancellationToken cancellationToken = default);
 }

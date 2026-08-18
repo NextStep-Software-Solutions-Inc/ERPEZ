@@ -36,46 +36,33 @@ import {
 } from '../atoms'
 import { createMutationHookFromTemplate, createQueryHookFromTemplate } from 'erpez-shared-lib'
 import { createAppRequest } from '../handlers/createAppRequest'
-import { getOfficesRequest, type Office } from '../handlers/getOfficesRequest'
 import { getFiscalYearsRequest, type FiscalYear, type FiscalYearsResponse } from '../handlers/getFiscalYearsRequest'
+import { FileText, CheckCircle2, Lock } from 'lucide-react'
 
 export function CreateAPPDialog() {
   const [open, setOpen] = useAtom(createAPPDialogOpenAtom)
   const [, setAppList] = useAtom(appListAtom)
-  
-  // Fetch offices from API
-  const useOffices = createQueryHookFromTemplate(getOfficesRequest)
-  const { data: officesData } = useOffices({})
-  const offices: Office[] = Array.isArray(officesData) ? officesData : []
-  
+
   // Fetch fiscal years from API
   const useFiscalYears = createQueryHookFromTemplate(getFiscalYearsRequest)
   const { data: fiscalYearsData } = useFiscalYears({})
   const fiscalYearsResponse: FiscalYearsResponse | undefined = fiscalYearsData
   const fiscalYears: FiscalYear[] = fiscalYearsResponse?.data || []
-  
+
   const navigate = useNavigate() as any
   const useCreateApp = createMutationHookFromTemplate(createAppRequest)
   const { mutate: createApp, isPending: isCreating } = useCreateApp()
-  
+
   const [formData, setFormData] = useState({
     appName: '',
     appCode: '',
     fiscalYear: '',
-    officeId: '',
     fiscalYearId: '',
+    appType: 'Indicative' as 'Indicative' | 'Final' | 'Updated',
+    batch: 'Batch 1',
+    quarter: 'Q1',
   })
   const [showCancelConfirmation, setShowCancelConfirmation] = useState(false)
-
-  // Initialize officeId when offices are loaded
-  useEffect(() => {
-    if (offices.length > 0 && !formData.officeId) {
-      setFormData(prev => ({
-        ...prev,
-        officeId: offices[0].id,
-      }))
-    }
-  }, [offices])
 
   // Initialize fiscalYear and fiscalYearId when fiscal years are loaded
   useEffect(() => {
@@ -91,8 +78,8 @@ export function CreateAPPDialog() {
   }, [fiscalYears])
 
   const handleCreateAPP = useCallback(async () => {
-    const { appName, appCode, fiscalYear, officeId, fiscalYearId } = formData
-    
+    const { appName, appCode, fiscalYear, fiscalYearId, appType, batch, quarter } = formData
+
     if (!appName.trim()) {
       toast.error('Please enter APP name')
       return
@@ -101,12 +88,12 @@ export function CreateAPPDialog() {
       toast.error('Please enter APP code')
       return
     }
-    if (!officeId) {
-      toast.error('Please select an office')
-      return
-    }
     if (!fiscalYearId) {
       toast.error('Please select a fiscal year')
+      return
+    }
+    if (!batch.trim()) {
+      toast.error('Please enter Batch')
       return
     }
 
@@ -114,12 +101,12 @@ export function CreateAPPDialog() {
       {
         pathParams: {},
         payload: {
-          ppmpIds: [],
           appName: appName.trim(),
           appCode: appCode.trim(),
           fiscalYear: parseInt(fiscalYear),
-          appType: 'Indicative',
-          officeId,
+          appType,
+          batch: batch.trim(),
+          quarter,
           fiscalYearId,
         },
       },
@@ -130,11 +117,13 @@ export function CreateAPPDialog() {
             appName: '',
             appCode: '',
             fiscalYear: new Date().getFullYear().toString(),
-            officeId: offices.length > 0 ? offices[0].id : 'No offices available',
-            fiscalYearId: fiscalYears.find(fy => fy.year === new Date().getFullYear())?.id || 'No fiscal years available',
+            fiscalYearId: fiscalYears.find(fy => fy.year === new Date().getFullYear())?.id || '',
+            appType: 'Indicative',
+            batch: 'Batch 1',
+            quarter: 'Q1',
           })
           setOpen(false)
-          
+
           // Navigate to APP Details page with the returned ID
           if (response?.id) {
             navigate({ to: '/v2/app-consolidation/$appId', params: { appId: response.id } })
@@ -146,7 +135,7 @@ export function CreateAPPDialog() {
         },
       }
     )
-  }, [formData, setOpen, setAppList, navigate, createApp])
+  }, [formData, setOpen, setAppList, navigate, createApp, fiscalYears])
 
   const handleClose = useCallback(() => {
     if (isCreating) return
@@ -166,10 +155,12 @@ export function CreateAPPDialog() {
       appName: '',
       appCode: '',
       fiscalYear: currentFY ? currentFY.year.toString() : '',
-      officeId: offices.length > 0 ? offices[0].id : '',
       fiscalYearId: currentFY ? currentFY.id : '',
+      appType: 'Indicative',
+      batch: 'Batch 1',
+      quarter: 'Q1',
     })
-  }, [setOpen, offices, fiscalYears])
+  }, [setOpen, fiscalYears])
 
   const handleOpenChange = useCallback((newOpen: boolean) => {
     if (!newOpen && !isCreating) {
@@ -182,90 +173,155 @@ export function CreateAPPDialog() {
   return (
     <>
       <Dialog open={open} onOpenChange={handleOpenChange}>
-        <DialogContent className="z-[999] pointer-events-auto max-w-md">
+        <DialogContent className="z-[999] pointer-events-auto max-w-lg">
           <DialogHeader>
-            <DialogTitle>Create Annual Procurement Plan</DialogTitle>
-            <DialogDescription>
-              Enter basic information to create a new APP. You'll configure PPMP selections and details in the next step.
+            <DialogTitle className="text-xl font-bold">Create Annual Procurement Plan</DialogTitle>
+            <DialogDescription className="text-sm text-gray-500">
+              Create an APP for a specific fiscal year. PPMPs from different offices can be consolidated into this plan.
             </DialogDescription>
           </DialogHeader>
 
-          <div className="space-y-4">
+          <div className="space-y-4 py-2">
             <div className="space-y-2">
-              <Label htmlFor="appName">APP Name *</Label>
+              <Label htmlFor="appName" className="font-semibold">APP Name *</Label>
               <Input
                 id="appName"
-                placeholder="e.g., Indicative APP 2024"
+                placeholder="e.g., Indicative APP 2027"
                 value={formData.appName}
                 onChange={(e) => setFormData(prev => ({ ...prev, appName: e.target.value }))}
                 disabled={isCreating}
               />
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="appCode">APP Code *</Label>
-              <Input
-                id="appCode"
-                placeholder="e.g., APP-2024-001"
-                value={formData.appCode}
-                onChange={(e) => setFormData(prev => ({ ...prev, appCode: e.target.value }))}
-                disabled={isCreating}
-              />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="appCode" className="font-semibold">APP Code / Number *</Label>
+                <Input
+                  id="appCode"
+                  placeholder="e.g., APP-2027-001"
+                  value={formData.appCode}
+                  onChange={(e) => setFormData(prev => ({ ...prev, appCode: e.target.value }))}
+                  disabled={isCreating}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="fiscalYear" className="font-semibold">Fiscal Year *</Label>
+                <Select value={formData.fiscalYear} onValueChange={(value) => {
+                  const selectedFY = fiscalYears.find(fy => fy.year.toString() === value)
+                  setFormData(prev => ({
+                    ...prev,
+                    fiscalYear: value,
+                    fiscalYearId: selectedFY?.id || '',
+                  }))
+                }}>
+                  <SelectTrigger id="fiscalYear" disabled={isCreating || fiscalYears.length === 0}>
+                    <SelectValue placeholder={fiscalYears.length === 0 ? 'Loading...' : 'Select Year'} />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {fiscalYears.map(fy => (
+                      <SelectItem key={fy.id} value={fy.year.toString()}>
+                        {fy.year} {fy.description ? `- ${fy.description}` : ''}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
 
+            {/* APP Type Radio Cards */}
             <div className="space-y-2">
-              <Label htmlFor="officeId">Office *</Label>
-              <Select value={formData.officeId} onValueChange={(value) => setFormData(prev => ({ ...prev, officeId: value }))}>
-                <SelectTrigger id="officeId" disabled={isCreating || offices.length === 0}>
-                  <SelectValue placeholder={offices.length === 0 ? 'Loading offices...' : 'Select an office'} />
-                </SelectTrigger>
-                <SelectContent>
-                  {offices.map((office: Office) => (
-                    <SelectItem key={office.id} value={office.id}>
-                      {office.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <Label className="font-semibold">APP Type *</Label>
+              <div className="grid grid-cols-3 gap-3">
+                {/* Indicative Card */}
+                <div
+                  onClick={() => !isCreating && setFormData(prev => ({ ...prev, appType: 'Indicative' }))}
+                  className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                    formData.appType === 'Indicative'
+                      ? 'border-blue-600 bg-blue-50/70 shadow-sm'
+                      : 'border-gray-200 hover:border-gray-300 bg-white'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <FileText className={`w-4 h-4 ${formData.appType === 'Indicative' ? 'text-blue-600' : 'text-gray-500'}`} />
+                    <span className="font-semibold text-sm text-gray-900">Indicative</span>
+                  </div>
+                  <p className="text-xs text-gray-500">Budget proposal APP</p>
+                </div>
+
+                {/* Final Card */}
+                <div
+                  onClick={() => !isCreating && setFormData(prev => ({ ...prev, appType: 'Final' }))}
+                  className={`p-3 rounded-lg border-2 cursor-pointer transition-all ${
+                    formData.appType === 'Final'
+                      ? 'border-blue-600 bg-blue-50/70 shadow-sm'
+                      : 'border-gray-200 hover:border-gray-300 bg-white'
+                  }`}
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <CheckCircle2 className={`w-4 h-4 ${formData.appType === 'Final' ? 'text-blue-600' : 'text-gray-500'}`} />
+                    <span className="font-semibold text-sm text-gray-900">Final</span>
+                  </div>
+                  <p className="text-xs text-gray-500">Approved implementation plan</p>
+                </div>
+
+                {/* Updated Card (Disabled in standard creation) */}
+                <div
+                  title="Updated APPs can only be created from an approved Final APP."
+                  className="p-3 rounded-lg border-2 border-gray-200 bg-gray-100/70 opacity-60 cursor-not-allowed relative"
+                >
+                  <div className="flex items-center gap-2 mb-1">
+                    <Lock className="w-4 h-4 text-gray-400" />
+                    <span className="font-semibold text-sm text-gray-500">Updated</span>
+                  </div>
+                  <p className="text-[11px] text-gray-500 leading-tight">Requires approved Final APP</p>
+                </div>
+              </div>
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="fiscalYear">Fiscal Year *</Label>
-              <Select value={formData.fiscalYear} onValueChange={(value) => {
-                const selectedFY = fiscalYears.find(fy => fy.year.toString() === value)
-                setFormData(prev => ({
-                  ...prev,
-                  fiscalYear: value,
-                  fiscalYearId: selectedFY?.id || '',
-                }))
-              }}>
-                <SelectTrigger id="fiscalYear" disabled={isCreating || fiscalYears.length === 0}>
-                  <SelectValue placeholder={fiscalYears.length === 0 ? 'Loading fiscal years...' : 'Select a fiscal year'} />
-                </SelectTrigger>
-                <SelectContent>
-                  {fiscalYears.map(fy => (
-                    <SelectItem key={fy.id} value={fy.year.toString()}>
-                      {fy.year} {fy.description ? `- ${fy.description}` : ''}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+            {/* Submission Metadata: Batch and Quarter */}
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="batch" className="font-semibold">Batch *</Label>
+                <Input
+                  id="batch"
+                  placeholder="e.g., Batch 1"
+                  value={formData.batch}
+                  onChange={(e) => setFormData(prev => ({ ...prev, batch: e.target.value }))}
+                  disabled={isCreating}
+                />
+              </div>
+
+              <div className="space-y-2">
+                <Label htmlFor="quarter" className="font-semibold">Quarter *</Label>
+                <Select value={formData.quarter} onValueChange={(value) => setFormData(prev => ({ ...prev, quarter: value }))}>
+                  <SelectTrigger id="quarter" disabled={isCreating}>
+                    <SelectValue placeholder="Select Quarter" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="Q1">Q1 (1st Quarter)</SelectItem>
+                    <SelectItem value="Q2">Q2 (2nd Quarter)</SelectItem>
+                    <SelectItem value="Q3">Q3 (3rd Quarter)</SelectItem>
+                    <SelectItem value="Q4">Q4 (4th Quarter)</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
           </div>
 
-          <DialogFooter className="flex items-center gap-2 pt-4">
-            <Button 
-              variant="outline" 
-              onClick={handleClose} 
+          <DialogFooter className="flex items-center justify-end gap-2 pt-4 border-t">
+            <Button
+              variant="outline"
+              onClick={handleClose}
               disabled={isCreating}
               className="pointer-events-auto cursor-pointer"
             >
               Cancel
             </Button>
-            <Button 
-              onClick={handleCreateAPP} 
+            <Button
+              onClick={handleCreateAPP}
               disabled={isCreating}
-              className="pointer-events-auto cursor-pointer bg-blue-600 hover:bg-blue-700"
+              className="pointer-events-auto cursor-pointer bg-blue-600 hover:bg-blue-700 font-semibold"
             >
               {isCreating ? 'Creating...' : 'Create & Continue'}
             </Button>
@@ -283,7 +339,7 @@ export function CreateAPPDialog() {
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel className="pointer-events-auto cursor-pointer">Keep Editing</AlertDialogCancel>
-            <AlertDialogAction 
+            <AlertDialogAction
               onClick={handleConfirmCancel}
               className="pointer-events-auto cursor-pointer bg-red-600 hover:bg-red-700"
             >

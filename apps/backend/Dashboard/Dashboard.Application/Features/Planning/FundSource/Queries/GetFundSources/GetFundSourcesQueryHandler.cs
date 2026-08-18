@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using ERPEZ.Application.Features.Planning.FiscalYear.Dtos;
 using ERPEZ.Application.Features.Planning.FundSource.Dtos;
 using ERPEZ.Application.Features.Planning.FundSource.Queries.FundSources;
@@ -32,7 +33,19 @@ public class GetFundSourcesQueryHandler(IUnitOfWork unitOfWork) : IRequestHandle
                 : $"{sieveModel.Filters},{fiscalYearFilter}";
         }
 
-        var (fundSources, totalCount) = await unitOfWork.FundSourceRepository.GetPagedWithNavigationAsync(sieveModel, cancellationToken);
+        Expression<Func<Domain.Entities.Planning.FundSource, bool>>? orgPredicate = null;
+
+        // Add organization filter if provided via EF Core subquery (WHERE Id IN (SELECT FundSourceId FROM ...))
+        if (query.OrganizationId.HasValue)
+        {
+            var assignedFundSourceIds = unitOfWork.OrganizationFundSourceRepository
+                .Query(l => l.OrganizationId == query.OrganizationId.Value && l.IsActive)
+                .Select(l => l.FundSourceId);
+
+            orgPredicate = fs => assignedFundSourceIds.Contains(fs.Id);
+        }
+
+        var (fundSources, totalCount) = await unitOfWork.FundSourceRepository.GetPagedWithNavigationAsync(sieveModel, orgPredicate, cancellationToken);
 
         var response = fundSources.Select(fundSource => new FundSourceResponse
         {

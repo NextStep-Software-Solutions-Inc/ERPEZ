@@ -26,6 +26,19 @@ public class APPItemRepository : Repository<APPItem>, IAPPItemRepository
             .ToListAsync(cancellationToken);
     }
 
+    public async Task<List<APPItem>> GetAPPItemsByPPMPIdsAsync(Guid appId, IEnumerable<Guid> ppmpIds, CancellationToken cancellationToken = default)
+    {
+        var ppmpIdList = ppmpIds.ToList();
+        return await context.Set<APPItem>()
+            .IgnoreQueryFilters()
+            .Where(a => a.APPId == appId && 
+                        a.PPMPItem != null && 
+                        a.PPMPItem.PPMPExpenditureItem != null &&
+                        a.PPMPItem.PPMPExpenditureItem.PPMPActivity != null && 
+                        ppmpIdList.Contains(a.PPMPItem.PPMPExpenditureItem.PPMPActivity.PPMPId))
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<APPItem?> GetWithDetailsAsync(Guid id, CancellationToken cancellationToken = default)
     {
         return await BuildDetailedQuery(context.Set<APPItem>().Where(a => a.Id == id && !a.IsDeleted))
@@ -64,7 +77,7 @@ public class APPItemRepository : Repository<APPItem>, IAPPItemRepository
             .Include(a => a.PPMPItem)
                 .ThenInclude(pi => pi.PPMPExpenditureItem)
                     .ThenInclude(pei => pei.PPMPActivity)
-                        .ThenInclude(pa => pa.LIBActivity)
+                        .ThenInclude(pa => pa!.LIBActivity)
                             .ThenInclude(la => la.LineItemBudgetDetails)
                                 .ThenInclude(ld => ld.Object)
                                     .ThenInclude(o => o.ObjectExpenseClasses)

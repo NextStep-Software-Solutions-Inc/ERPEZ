@@ -47,6 +47,33 @@ public class UpdateWFPObjectiveCommandHandler(IUnitOfWork unitOfWork) : IRequest
         wfpObjective.Weight = dto.Weight ?? wfpObjective.Weight;
         wfpObjective.Outcome = dto.Outcome ?? wfpObjective.Outcome;
 
+        // Synchronize child activity weights when objective weight is updated
+        if (dto.Weight.HasValue)
+        {
+            var activitiesQuery = unitOfWork.WFPObjectiveActivityRepository.Query(a => a.WFPObjectiveId == wfpObjective.Id);
+            var activities = await unitOfWork.WFPObjectiveActivityRepository.ToListAsync(activitiesQuery, cancellationToken);
+
+            if (activities.Count == 1)
+            {
+                // Single activity under objective: sync weight to match objective weight
+                activities[0].Weight = dto.Weight.Value;
+                unitOfWork.WFPObjectiveActivityRepository.Update(activities[0]);
+            }
+            else if (activities.Count > 1)
+            {
+                var totalActWeight = activities.Sum(a => a.Weight);
+                if (totalActWeight > dto.Weight.Value && totalActWeight > 0)
+                {
+                    // Scale multiple activities proportionally to fit inside new objective weight
+                    foreach (var act in activities)
+                    {
+                        act.Weight = Math.Round((act.Weight / totalActWeight) * dto.Weight.Value, 2);
+                        unitOfWork.WFPObjectiveActivityRepository.Update(act);
+                    }
+                }
+            }
+        }
+
         unitOfWork.WFPObjectiveRepository.Update(wfpObjective);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
