@@ -23,14 +23,15 @@ public class GetPPMPExpenditureItemsQueryHandler(IUnitOfWork unitOfWork)
         Expression<Func<Domain.Entities.Planning.PPMPExpenditureItem, PPMPExpenditureItemResponse>> projection = item => new PPMPExpenditureItemResponse
         {
             Id = item.Id,
+            PPMPId = item.PPMPId,
             PPMPActivityId = item.PPMPActivityId,
+            ObjectId = item.ObjectId,
             IsProcurable = item.IsProcurable,
             TotalCost = item.TotalCost,
             CreatedAt = item.CreatedAt,
             CreatedBy = item.CreatedBy,
-            PPMPActivityName = item.PPMPActivity.LIBActivity.Name
+            PPMPActivityName = item.PPMPActivity != null ? item.PPMPActivity.LIBActivity.Name : null
         };
-
         var (items, totalCount) = await unitOfWork.PPMPExpenditureItemRepository.GetAllAsync(
             sieveModel,
             projection,

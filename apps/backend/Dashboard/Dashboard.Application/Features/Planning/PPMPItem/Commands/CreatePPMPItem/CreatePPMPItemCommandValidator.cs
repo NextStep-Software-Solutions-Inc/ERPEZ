@@ -25,17 +25,20 @@ public class CreatePPMPItemCommandValidator : AbstractValidator<CreatePPMPItemCo
             .NotEmpty()
             .WithMessage("Item Name is required.")
             .MaximumLength(250)
-            .WithMessage("Item Name cannot exceed 250 characters.");
+            .WithMessage("Item Name cannot exceed 250 characters.")
+            .When(x => !x.CSEItemId.HasValue && !x.NonCSEItemId.HasValue); // ← only required if no item selected
 
         RuleFor(x => x.Unit)
             .NotEmpty()
             .WithMessage("Unit is required.")
             .MaximumLength(50)
-            .WithMessage("Unit cannot exceed 50 characters.");
+            .WithMessage("Unit cannot exceed 50 characters.")
+            .When(x => !x.CSEItemId.HasValue && !x.NonCSEItemId.HasValue); // ← only required if no item selected
 
         RuleFor(x => x.UnitPrice)
-            .GreaterThanOrEqualTo(0)
-            .WithMessage("Unit Price must be greater than or equal to 0.");
+            .GreaterThan(0)
+            .WithMessage("Unit Price must be greater than 0.")
+            .When(x => !x.CSEItemId.HasValue && !x.NonCSEItemId.HasValue); // ← only required if no item selected
 
         RuleFor(x => x.MOPJustification)
             .NotEmpty()

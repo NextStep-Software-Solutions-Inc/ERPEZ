@@ -32,6 +32,7 @@ import type {
 interface CreateMarketScopingDialogProps {
   title?: string
   description?: string
+  onSuccess?: () => void  // ← add this
   userProfile?: {
     readonly name: string
     readonly designation: string
@@ -44,6 +45,7 @@ interface CreateMarketScopingDialogProps {
 export function CreateMarketScopingDialog({
   title = 'Create Market Scoping Form',
   description = 'Complete the 4-step wizard to create a new market scoping form.',
+  onSuccess,
   userProfile,
   libActivities,
 }: CreateMarketScopingDialogProps = {}) {
@@ -83,6 +85,8 @@ export function CreateMarketScopingDialog({
           queryClient.invalidateQueries({ queryKey: ['/market-scopings'] })
           queryClient.invalidateQueries({ queryKey: ['market-scoping', formId] })
 
+          onSuccess?.()
+
           setTimeout(() => {
             navigate({
               to: '/v2/market-scoping/$id',
@@ -106,13 +110,8 @@ export function CreateMarketScopingDialog({
               payload: payload as UpdateMarketScopingRequest,
             },
             {
-              onSuccess: (response) => {
-                const formId = response.data?.id
-                if (!formId) {
-                  reject(new Error('Unable to determine market scoping ID from response.'))
-                  return
-                }
-                handleSuccess(formId, 'Market Scoping form updated successfully!')
+              onSuccess: () => {
+                handleSuccess(submittedData.id!, 'Market Scoping form updated successfully!')
               },
               onError: handleError,
             }

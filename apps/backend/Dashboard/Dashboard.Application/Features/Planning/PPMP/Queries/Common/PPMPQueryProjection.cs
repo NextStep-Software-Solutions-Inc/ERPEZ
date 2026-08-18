@@ -60,11 +60,19 @@ internal static class PPMPQueryProjection
             ChildPPMPs = ppmp.ChildPPMPs.Where(x => !x.IsDeleted).Select(x => BuildSummaryResponse(x, false)).ToList()
         };
     }
-
     internal static PPMPItemResponse BuildItemResponse(PPMPItemEntity item)
     {
         var allocations = item.PPMPItemAllocations.Where(x => !x.IsDeleted).ToList();
-        var ppmp = item.PPMPExpenditureItem?.PPMPActivity?.PPMP;
+        var ppmp = item.PPMPExpenditureItem?.PPMPActivity?.PPMP
+                ?? item.PPMPExpenditureItem?.PPMP;
+
+        // ✅ CSE Items: Get price based on the most recent Fiscal Year
+        decimal? csePrice = item.CSEItem?.ItemPrices?
+            .OrderByDescending(p => p.FiscalYear?.Year ?? 0)
+            .FirstOrDefault()?.UnitPrice;
+
+        // ✅ Non-CSE Items: Fetch price directly from CurrentPrice property
+        decimal? nonCsePrice = item.NonCSEItem?.CurrentPrice;
 
         return new PPMPItemResponse
         {
@@ -77,7 +85,10 @@ internal static class PPMPQueryProjection
             Name = item.Name,
             Description = item.Description,
             Unit = item.Unit,
-            UnitPrice = item.UnitPrice,
+            // Uses CSE FY price, or Non-CSE current price, or fallback calculation
+            UnitPrice = item.UnitPrice > 0 
+                ? item.UnitPrice 
+                : (csePrice ?? nonCsePrice ?? (allocations.Any() && allocations.First().Quantity > 0 ? allocations.First().Amount / allocations.First().Quantity : 0)),
             MOPOverride = item.MOPOverride,
             // ── New fields ───────────────────────────────────────────────────────
             ProjectType              = item.ProjectType,
@@ -116,6 +127,9 @@ internal static class PPMPQueryProjection
 
     internal static PPMPItemAllocationResponse BuildAllocationResponse(PPMPAllocationEntity allocation)
     {
+        var ppmp = allocation.PPMPItem?.PPMPExpenditureItem?.PPMPActivity?.PPMP
+                ?? allocation.PPMPItem?.PPMPExpenditureItem?.PPMP; // ← fallback to direct PPMP
+
         return new PPMPItemAllocationResponse
         {
             Id = allocation.Id,
@@ -125,10 +139,7 @@ internal static class PPMPQueryProjection
             Amount = allocation.Amount,
             CreatedAt = allocation.CreatedAt,
             CreatedBy = allocation.CreatedBy,
-            PPMPItem = BuildItemWithoutAllocations(allocation.PPMPItem),
-            PPMP = allocation.PPMPItem?.PPMPExpenditureItem?.PPMPActivity?.PPMP == null
-                ? null
-                : BuildSummaryResponse(allocation.PPMPItem.PPMPExpenditureItem.PPMPActivity.PPMP, false)
+            PPMPItem = allocation.PPMPItem == null ? null : BuildItemWithoutAllocations(allocation.PPMPItem),            PPMP = ppmp == null ? null : BuildSummaryResponse(ppmp, false)
         };
     }
 
@@ -236,6 +247,14 @@ internal static class PPMPQueryProjection
 
     private static PPMPItemResponse BuildItemWithoutAllocations(PPMPItemEntity item)
     {
+        // ✅ CSE Items: Get price based on the most recent Fiscal Year
+        decimal? csePrice = item.CSEItem?.ItemPrices?
+            .OrderByDescending(p => p.FiscalYear?.Year ?? 0)
+            .FirstOrDefault()?.UnitPrice;
+
+        // ✅ Non-CSE Items: Fetch price directly from CurrentPrice property
+        decimal? nonCsePrice = item.NonCSEItem?.CurrentPrice;
+
         return new PPMPItemResponse
         {
             Id = item.Id,
@@ -247,7 +266,9 @@ internal static class PPMPQueryProjection
             Name = item.Name,
             Description = item.Description,
             Unit = item.Unit,
-            UnitPrice = item.UnitPrice,
+            UnitPrice = item.UnitPrice > 0 
+                ? item.UnitPrice 
+                : (csePrice ?? nonCsePrice ?? 0),
             MOPOverride = item.MOPOverride,
             MOPJustification = item.MOPJustification,
             // ── New fields ───────────────────────────────────────────────────────
@@ -269,10 +290,19 @@ internal static class PPMPQueryProjection
 
     private static List<PPMPItemEntity> GetPPMPItems(PPMPEntity ppmp)
     {
-        return ppmp.PPMPActivities
+        // Activity-based items
+        var activityItems = ppmp.PPMPActivities
             .Where(activity => !activity.IsDeleted)
-            .SelectMany(activity => activity.PPMPExpenditureItems.Where(expenditureItem => !expenditureItem.IsDeleted))
-            .SelectMany(expenditureItem => expenditureItem.PPMPItems.Where(item => !item.IsDeleted))
+            .SelectMany(activity => activity.PPMPExpenditureItems.Where(ei => !ei.IsDeleted))
+            .SelectMany(ei => ei.PPMPItems.Where(item => !item.IsDeleted))
             .ToList();
+
+        // Project-level items (no activity)
+        var projectItems = ppmp.PPMPExpenditureItems?
+            .Where(ei => !ei.IsDeleted && ei.PPMPActivityId == null)
+            .SelectMany(ei => ei.PPMPItems.Where(item => !item.IsDeleted))
+            .ToList() ?? [];
+
+        return activityItems.Concat(projectItems).ToList();
     }
 }

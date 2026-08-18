@@ -3013,6 +3013,18 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasIndex(a => new { a.ProcurementProjectId, a.TinNumber })
             .IsUnique()
             .HasDatabaseName("IX_PublicSupplierApplications_ProjectId_TinNumber");
+        
+        modelBuilder.Entity<PPMPExpenditureItem>()
+            .HasOne(pei => pei.PPMP)
+            .WithMany(p => p.PPMPExpenditureItems)
+            .HasForeignKey(pei => pei.PPMPId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        modelBuilder.Entity<PPMPExpenditureItem>()
+            .HasOne(pei => pei.Object)
+            .WithMany(p => p.PPMPExpenditureItems)
+            .HasForeignKey(pei => pei.ObjectId)
+            .OnDelete(DeleteBehavior.Restrict);
     }
 
     private static System.Collections.Generic.List<ERPEZ.Domain.Enums.ProcurementStrategy>? ParseStrategies(string? v)

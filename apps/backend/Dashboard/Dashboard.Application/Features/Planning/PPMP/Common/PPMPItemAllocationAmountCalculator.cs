@@ -30,7 +30,9 @@ public static class PPMPItemAllocationAmountCalculator
                     x.CSEItemId,
                     x.NonCSEItemId,
                     x.UnitPrice,
-                    FiscalYearId = x.PPMPExpenditureItem.PPMPActivity.PPMP.FiscalYearId
+                    FiscalYearId = x.PPMPExpenditureItem.PPMPActivity != null
+                        ? x.PPMPExpenditureItem.PPMPActivity.PPMP.FiscalYearId
+                        : x.PPMPExpenditureItem.PPMP.FiscalYearId
                 }),
             cancellationToken);
 
