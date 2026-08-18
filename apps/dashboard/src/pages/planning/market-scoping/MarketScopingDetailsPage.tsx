@@ -338,6 +338,7 @@ export default function MarketScopingDetailsPage({ id: propId }: MarketScopingDe
       <CreateMarketScopingDialog
         title="Edit Market Scoping Form"
         description="Update the details in the 4-step wizard to edit the draft form."
+        onSuccess={refetch}
       />
     </div>
   )
