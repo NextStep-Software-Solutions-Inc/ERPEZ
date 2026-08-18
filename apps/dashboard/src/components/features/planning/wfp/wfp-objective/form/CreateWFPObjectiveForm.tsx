@@ -82,11 +82,12 @@ export default function CreateWFPObjectiveForm({
   const [activityModes, setActivityModes] = useState<Record<number, 'opcr' | 'manual'>>({ 0: 'opcr' })
 
   // Sync form state with Jotai atom for unsaved changes detection
+  // ✅ Correct — Subscription object has .unsubscribe(), not ()
   useEffect(() => {
-    const unsubscribe = form.store.subscribe(() => {
+    const subscription = form.store.subscribe(() => {
       setFormData(form.state.values)
     })
-    return unsubscribe
+    return () => subscription.unsubscribe()
   }, [form.store, setFormData])
 
   // Memoize weight calculations to avoid recalculation on every render
