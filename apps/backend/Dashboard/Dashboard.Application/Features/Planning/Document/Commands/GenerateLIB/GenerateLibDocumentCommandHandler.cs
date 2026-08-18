@@ -64,25 +64,7 @@ public class GenerateLibDocumentCommandHandler(
             throw new InvalidOperationException(
                 $"Line Item Budget '{lib.LIBNumber}' has no associated office. Cannot persist generated document.");
 
-        var fiscalYear = lib.FiscalYearEntity?.Year.ToString();
-        if (string.IsNullOrEmpty(fiscalYear))
-        {
-            if (wfp is not null)
-            {
-                fiscalYear = wfp.ProjectStartDate.Year == wfp.ProjectEndDate.Year
-                    ? wfp.ProjectStartDate.Year.ToString()
-                    : $"{wfp.ProjectStartDate.Year}-{wfp.ProjectEndDate.Year}";
-            }
-            else
-            {
-                var allDetails = CollectAllDetails(lib);
-                var minYear = allDetails.Where(d => d.StartDate.HasValue).Min(d => (int?)d.StartDate!.Value.Year);
-                var maxYear = allDetails.Where(d => d.EndDate.HasValue).Max(d => (int?)d.EndDate!.Value.Year);
-                fiscalYear = minYear.HasValue && maxYear.HasValue
-                    ? (minYear == maxYear ? minYear.Value.ToString() : $"{minYear}-{maxYear}")
-                    : DateTime.UtcNow.Year.ToString();
-            }
-        }
+        var fiscalYear = ResolveFiscalYear(lib, wfp);
 
         var extension  = request.Format == ExportFormat.Excel ? "xlsx" : "pdf";
         var fileName   = $"LIB_{lib.LIBNumber}_{DateTime.UtcNow:yyyyMMddHHmmss}.{extension}";
@@ -181,24 +163,7 @@ public class GenerateLibDocumentCommandHandler(
             TotalBudget   = totalBudget
         };
 
-        var fiscalYearString = lib.FiscalYearEntity?.Year.ToString();
-        if (string.IsNullOrEmpty(fiscalYearString))
-        {
-            if (wfp is not null)
-            {
-                fiscalYearString = wfp.ProjectStartDate.Year == wfp.ProjectEndDate.Year
-                    ? wfp.ProjectStartDate.Year.ToString()
-                    : $"{wfp.ProjectStartDate.Year}-{wfp.ProjectEndDate.Year}";
-            }
-            else
-            {
-                var minYear = allDetails.Where(d => d.StartDate.HasValue).Min(d => (int?)d.StartDate!.Value.Year);
-                var maxYear = allDetails.Where(d => d.EndDate.HasValue).Max(d => (int?)d.EndDate!.Value.Year);
-                fiscalYearString = minYear.HasValue && maxYear.HasValue
-                    ? (minYear == maxYear ? minYear.Value.ToString() : $"{minYear}-{maxYear}")
-                    : DateTime.UtcNow.Year.ToString();
-            }
-        }
+        var fiscalYearString = ResolveFiscalYear(lib, wfp, allDetails);
 
         return new LibDataDto
         {
@@ -218,6 +183,40 @@ public class GenerateLibDocumentCommandHandler(
             FundSourceSummary     = fundSourceSummary,
             Signatories           = []
         };
+    }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Fiscal Year Resolution
+    // ─────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Resolves the fiscal year string for a Line Item Budget document.
+    /// Prefers the configured FiscalYearEntity, falls back to the WFP project date range,
+    /// or derives the year range from budget detail start/end dates.
+    /// </summary>
+    private static string ResolveFiscalYear(
+        LibEntity                     lib,
+        Domain.Entities.Planning.WFP? wfp     = null,
+        IEnumerable<DetailEntity>?    details = null)
+    {
+        var fiscalYear = lib.FiscalYearEntity?.Year.ToString();
+        if (!string.IsNullOrEmpty(fiscalYear))
+            return fiscalYear;
+
+        if (wfp is not null)
+        {
+            return wfp.ProjectStartDate.Year == wfp.ProjectEndDate.Year
+                ? wfp.ProjectStartDate.Year.ToString()
+                : $"{wfp.ProjectStartDate.Year}-{wfp.ProjectEndDate.Year}";
+        }
+
+        var detailList = details?.ToList() ?? CollectAllDetails(lib);
+        var minYear    = detailList.Where(d => d.StartDate.HasValue).Min(d => (int?)d.StartDate!.Value.Year);
+        var maxYear    = detailList.Where(d => d.EndDate.HasValue).Max(d => (int?)d.EndDate!.Value.Year);
+
+        return minYear.HasValue && maxYear.HasValue
+            ? (minYear == maxYear ? minYear.Value.ToString() : $"{minYear}-{maxYear}")
+            : DateTime.UtcNow.Year.ToString();
     }
 
     // ─────────────────────────────────────────────────────────────────────────
