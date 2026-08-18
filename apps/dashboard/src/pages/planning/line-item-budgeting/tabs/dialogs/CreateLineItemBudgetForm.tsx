@@ -169,34 +169,7 @@ export default function CreateLineItemBudgetForm({
     queryParams: {},
   })
 
-  // Fetch all source data - OPCR/WFP filtered by office, fiscal year, and office level
-  const selectedOffice = (officesData?.data || []).find(
-    (o: Office) => o.id === officeIdValue,
-  )
-  const selectedOfficeLevel = selectedOffice
-    ? getOfficeLevel(selectedOffice)
-    : null
-
-  const { data: opcrs, isLoading: isOpcrsLoading } = useOpcrs({
-    pathParams: {},
-    queryParams: {
-      ...(fiscalYearValue &&
-        officeIdValue && {
-          filters: `officeId==${officeIdValue},fiscalYearId==${fiscalYearValue},commitmentStatus==Approved`,
-        }),
-    },
-  })
-
-  const { data: wfps, isLoading: isWfpsLoading } = useWfps({
-    pathParams: {},
-    queryParams: {
-      ...(officeIdValue &&
-        selectedOfficeLevel && {
-          filters: `status==Approved`,
-        }),
-    },
-  })
-
+  // Fetch fiscal years first to get selected fiscal year number
   const { data: fiscalYearsData, isLoading: isFiscalYearsLoading } =
     useFiscalYears({
       pathParams: {},
@@ -205,6 +178,38 @@ export default function CreateLineItemBudgetForm({
         sorts: 'year==asc',
       },
     })
+
+  const selectedFiscalYear = (fiscalYearsData?.data || []).find(
+    (fy: FiscalYear) => fy.id === fiscalYearValue,
+  )
+  const selectedYear = selectedFiscalYear?.year
+
+  // Fetch all source data - OPCR/WFP filtered by office, fiscal year, and status==Approved
+  const selectedOffice = (officesData?.data || []).find(
+    (o: Office) => o.id === officeIdValue,
+  )
+
+
+  const { data: opcrs, isLoading: isOpcrsLoading } = useOpcrs({
+    pathParams: {},
+    queryParams: {
+      ...(fiscalYearValue &&
+        officeIdValue && {
+        filters: `officeId==${officeIdValue},fiscalYearId==${fiscalYearValue},commitmentStatus==Approved`,
+      }),
+    },
+  })
+
+  const { data: wfps, isLoading: isWfpsLoading } = useWfps({
+    pathParams: {},
+    queryParams: {
+      ...(fiscalYearValue &&
+        officeIdValue &&
+        selectedYear && {
+        filters: `officeId==${officeIdValue},fiscalYear==${selectedYear},status==Approved`,
+      }),
+    },
+  })
 
   // Bottom-up mode: all fund sources (no fiscal year filtering required by API, but we fetch them when mode is bottom-up)
   const { data: fundSourcesData, isLoading: isFundSourcesLoading } =
@@ -277,23 +282,36 @@ export default function CreateLineItemBudgetForm({
       code: opcr.id,
       name: `OPCR - FY ${opcr.fiscalYear}`,
       status: opcr.commitmentStatus === 'Approved' ? 'Approved' : 'Draft',
-      office: opcr.officeName || 'Selected Office',
+      office: opcr.officeName || selectedOffice?.name || 'Selected Office',
       type: 'OPCR',
       fiscalYear: String(opcr.fiscalYear),
     }),
   )
 
   const formattedWfps: SourceDocument[] = (wfps?.data || []).map(
-    (wfp: WFP) => ({
-      id: wfp.id,
-      code: wfp.id,
-      name: wfp.projectTitle || 'Unnamed WFP',
-      status: wfp.status === 'Approved' ? 'Approved' : 'Draft',
-      office: wfp.officeName || 'Selected Office',
-      type: 'WFP',
-      fiscalYear: '',
-      projectName: wfp.projectTitle || 'Unnamed WFP',
-    }),
+    (wfp: WFP) => {
+      const startYear = wfp.projectStartDate
+        ? new Date(wfp.projectStartDate).getFullYear().toString()
+        : ''
+      const endYear = wfp.projectEndDate
+        ? new Date(wfp.projectEndDate).getFullYear().toString()
+        : ''
+      const fyLabel =
+        startYear && endYear && startYear !== endYear
+          ? `${startYear} - ${endYear}`
+          : startYear || String(selectedYear || '')
+
+      return {
+        id: wfp.id,
+        code: wfp.id.substring(0, 8).toUpperCase(),
+        name: wfp.projectTitle || 'Unnamed WFP',
+        status: wfp.status === 'Approved' ? 'Approved' : 'Draft',
+        office: wfp.officeName || selectedOffice?.name || 'Selected Office',
+        type: 'WFP',
+        fiscalYear: fyLabel,
+        projectName: wfp.projectTitle || 'Unnamed WFP',
+      }
+    },
   )
 
   // Handle budget mode toggle — reset AMB when switching mode
@@ -314,21 +332,19 @@ export default function CreateLineItemBudgetForm({
 
           {/* Active Connector Line - Animated */}
           <div
-            className={`absolute top-6 left-8 h-1 bg-green-500 rounded-full transition-all duration-500 z-0 ${
-              1 < currentStep ? 'right-8' : 'right-auto w-1/2'
-            }`}
+            className={`absolute top-6 left-8 h-1 bg-green-500 rounded-full transition-all duration-500 z-0 ${1 < currentStep ? 'right-8' : 'right-auto w-1/2'
+              }`}
           />
 
           {/* Step 1 */}
           <div className="flex flex-col items-center relative z-10">
             <div
-              className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-300 shadow-md ${
-                1 === currentStep
+              className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-300 shadow-md ${1 === currentStep
                   ? 'bg-blue-600 text-white shadow-lg scale-110'
                   : 1 < currentStep
                     ? 'bg-green-500 text-white'
                     : 'bg-gray-200 text-gray-600'
-              }`}
+                }`}
             >
               {1 < currentStep ? (
                 <svg
@@ -349,9 +365,8 @@ export default function CreateLineItemBudgetForm({
               )}
             </div>
             <span
-              className={`text-xs font-semibold mt-3 text-center transition-colors ${
-                1 <= currentStep ? 'text-foreground' : 'text-gray-500'
-              }`}
+              className={`text-xs font-semibold mt-3 text-center transition-colors ${1 <= currentStep ? 'text-foreground' : 'text-gray-500'
+                }`}
             >
               Document
             </span>
@@ -360,13 +375,12 @@ export default function CreateLineItemBudgetForm({
           {/* Step 2 */}
           <div className="flex flex-col items-center relative z-10">
             <div
-              className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-300 shadow-md ${
-                2 === currentStep
+              className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-sm transition-all duration-300 shadow-md ${2 === currentStep
                   ? 'bg-blue-600 text-white shadow-lg scale-110'
                   : 2 < currentStep
                     ? 'bg-green-500 text-white'
                     : 'bg-gray-200 text-gray-600'
-              }`}
+                }`}
             >
               {2 < currentStep ? (
                 <svg
@@ -387,9 +401,8 @@ export default function CreateLineItemBudgetForm({
               )}
             </div>
             <span
-              className={`text-xs font-semibold mt-3 text-center transition-colors ${
-                2 <= currentStep ? 'text-foreground' : 'text-gray-500'
-              }`}
+              className={`text-xs font-semibold mt-3 text-center transition-colors ${2 <= currentStep ? 'text-foreground' : 'text-gray-500'
+                }`}
             >
               Source
             </span>
