@@ -43,6 +43,9 @@ import {
   WFPObjectiveActivityExpenditure,
 } from '@/features/planning/wfp/types/type.wfp'
 import OrphanLineItemsView from '@/features/planning/line-item-budgeting/line-item-budget-details/components/OrphanLineItemsView'
+import GroupedExpenditureItemsView from '@/features/planning/line-item-budgeting/line-item-budget-details/components/GroupedExpenditureItemsView'
+import { groupExpenditureItems } from '@/features/planning/line-item-budgeting/line-item-budget-details/utils/groupExpenditureData'
+import type { LineItemBudgetDetails } from '@/features/planning/line-item-budgeting/line-item-budget-details/types/types'
 import { updateLIBStatusRequest } from '@/features/planning/line-item-budgeting/line-item-budget/handlers/updateLIBStatusRequest'
 import { generateLIBDocumentRequest } from '@/features/planning/line-item-budgeting/line-item-budget/handlers/generateLIBDocumentRequest'
 import { downloadLIBDocumentRequest } from '@/features/planning/line-item-budgeting/line-item-budget/handlers/downloadLIBDocumentRequest'
@@ -415,7 +418,14 @@ export default function LIBDetailPage({
       value:
         typeof lib?.fiscalYear === 'string'
           ? lib.fiscalYear
-          : lib?.fiscalYear?.year || 'N/A',
+          : lib?.fiscalYear?.year
+            ? lib.fiscalYear.year.toString()
+            : wfpData?.data?.projectStartDate && wfpData?.data?.projectEndDate
+              ? new Date(wfpData.data.projectStartDate).getFullYear() ===
+                new Date(wfpData.data.projectEndDate).getFullYear()
+                ? new Date(wfpData.data.projectStartDate).getFullYear().toString()
+                : `${new Date(wfpData.data.projectStartDate).getFullYear()} – ${new Date(wfpData.data.projectEndDate).getFullYear()}`
+              : 'N/A',
       icon: <Calendar className="h-5 w-5" />,
       gradientClass: 'from-purple-50/40 to-white hover:from-purple-50/70',
       borderClass: 'from-purple-400 to-purple-600',
@@ -587,19 +597,19 @@ export default function LIBDetailPage({
           {/* Activities Column (left - spans 2) */}
           <div className="lg:col-span-2">
             {lib?.sourceType === 'WFP' && lib?.scope === 'Project' ? (
-              // For WFP Project scope: Show Orphan Line Items
+              // For WFP Project scope: Show Grouped Expenditure Items
               <>
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-2">
-                    <div className="w-1 h-6 bg-amber-500 rounded-full" />
+                    <div className="w-1 h-6 bg-blue-600 rounded-full" />
                     <h2 className="text-lg font-semibold text-gray-900">
-                      Orphan Line Items ({lib?.orphanDetails?.length || 0})
+                      Line Items ({lib?.orphanDetails?.length || 0})
                     </h2>
-                    <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded">
-                      Unlinked Items
+                    <span className="text-xs bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-full font-medium">
+                      Project Scope
                     </span>
                   </div>
-                  {/* Add Orphan Line Item Button for WFP Project scope */}
+                  {/* Add Line Item Button for WFP Project scope */}
                   <CreateLIBActivityDialog
                     libId={libId ?? ''}
                     onActivityAdded={() => {
@@ -612,16 +622,42 @@ export default function LIBDetailPage({
                   />
                 </div>
                 {lib?.orphanDetails && lib.orphanDetails.length > 0 ? (
-                  <OrphanLineItemsView
-                    data={lib.orphanDetails as OrphanLineItemDetail[]}
-                    onDeleteItem={handleDeleteOrphanItem}
+                  <GroupedExpenditureItemsView
+                    data={groupExpenditureItems(
+                      lib.orphanDetails as unknown as LineItemBudgetDetails[],
+                    )}
+                    onDeleteItem={async (item: LineItemBudgetDetails) => {
+                      setDeletingOrphanItemId(item.id)
+                      try {
+                        await deleteLineItemBudgetDetails(
+                          {
+                            pathParams: { id: item.id },
+                          },
+                          {
+                            onSuccess: async () => {
+                              toast.success('Line item deleted successfully!')
+                              void refetch()
+                            },
+                          },
+                        )
+                      } catch (err) {
+                        const message =
+                          err instanceof Error ? err.message : 'Failed to delete line item'
+                        toast.error(message)
+                      } finally {
+                        setDeletingOrphanItemId(null)
+                      }
+                    }}
                     isDeletingItemId={deletingOrphanItemId || undefined}
                   />
                 ) : (
                   <Card className="border-dashed">
-                    <CardContent className="pt-6 text-center">
-                      <p className="text-gray-500">
-                        No orphan line items found
+                    <CardContent className="pt-6 text-center py-12">
+                      <p className="text-gray-500 font-medium">
+                        No line items found
+                      </p>
+                      <p className="text-sm text-gray-400 mt-1">
+                        Click "Add Line Items" to add expenditures
                       </p>
                     </CardContent>
                   </Card>

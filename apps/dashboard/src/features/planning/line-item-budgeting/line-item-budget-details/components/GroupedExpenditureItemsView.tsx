@@ -176,42 +176,42 @@ export default function GroupedExpenditureItemsView({
               {/* Level 2 & 3 — Items Matrix Table */}
               {!isCollapsed && (
                 <div className="overflow-x-auto border-t border-gray-200">
-                  <table className="w-full text-xs sm:text-sm">
+                  <table className="w-full text-xs sm:text-sm min-w-[820px]">
                     <thead className="bg-gray-50/70 border-b border-gray-200 text-gray-600">
                       <tr>
-                        <th className="text-left px-5 py-3 text-xs sm:text-sm font-semibold text-gray-700">
+                        <th className="text-left px-5 py-3 text-xs sm:text-sm font-semibold text-gray-700 min-w-[280px]">
                           Item of Expenditure
                         </th>
-                        <th className="text-right px-4 py-3 text-xs sm:text-sm font-semibold text-gray-700 w-28 sm:w-32">
+                        <th className="text-right px-3 py-3 text-xs sm:text-sm font-semibold text-gray-700 w-28 min-w-[105px] shrink-0 whitespace-nowrap">
                           <div>Q1</div>
-                          <div className="text-[11px] text-gray-500 font-normal mt-0.5">
+                          <div className="text-[11px] text-gray-500 font-normal mt-0.5 whitespace-nowrap">
                             Jan – Mar
                           </div>
                         </th>
-                        <th className="text-right px-4 py-3 text-xs sm:text-sm font-semibold text-gray-700 w-28 sm:w-32">
+                        <th className="text-right px-3 py-3 text-xs sm:text-sm font-semibold text-gray-700 w-28 min-w-[105px] shrink-0 whitespace-nowrap">
                           <div>Q2</div>
-                          <div className="text-[11px] text-gray-500 font-normal mt-0.5">
+                          <div className="text-[11px] text-gray-500 font-normal mt-0.5 whitespace-nowrap">
                             Apr – Jun
                           </div>
                         </th>
-                        <th className="text-right px-4 py-3 text-xs sm:text-sm font-semibold text-gray-700 w-28 sm:w-32">
+                        <th className="text-right px-3 py-3 text-xs sm:text-sm font-semibold text-gray-700 w-28 min-w-[105px] shrink-0 whitespace-nowrap">
                           <div>Q3</div>
-                          <div className="text-[11px] text-gray-500 font-normal mt-0.5">
+                          <div className="text-[11px] text-gray-500 font-normal mt-0.5 whitespace-nowrap">
                             Jul – Sep
                           </div>
                         </th>
-                        <th className="text-right px-4 py-3 text-xs sm:text-sm font-semibold text-gray-700 w-28 sm:w-32">
+                        <th className="text-right px-3 py-3 text-xs sm:text-sm font-semibold text-gray-700 w-28 min-w-[105px] shrink-0 whitespace-nowrap">
                           <div>Q4</div>
-                          <div className="text-[11px] text-gray-500 font-normal mt-0.5">
+                          <div className="text-[11px] text-gray-500 font-normal mt-0.5 whitespace-nowrap">
                             Oct – Dec
                           </div>
                         </th>
-                        <th className="text-right px-5 py-3 text-xs sm:text-sm font-semibold text-gray-700 w-32 sm:w-36">
+                        <th className="text-right px-4 py-3 text-xs sm:text-sm font-semibold text-gray-700 w-32 min-w-[110px] shrink-0 whitespace-nowrap">
                           Total
                         </th>
                         {(onViewItem ||
                           (!readOnly && (onEditItem || onDeleteItem))) && (
-                          <th className="text-center px-4 py-3 text-xs sm:text-sm font-semibold text-gray-700 w-20">
+                          <th className="text-center px-2 py-3 text-xs sm:text-sm font-semibold text-gray-700 w-14 shrink-0">
                             Actions
                           </th>
                         )}
@@ -226,7 +226,7 @@ export default function GroupedExpenditureItemsView({
                         return (
                           <React.Fragment key={row.itemId}>
                             <tr className="hover:bg-gray-50/50 transition-colors">
-                              <td className="px-5 py-3 text-gray-900">
+                              <td className="px-5 py-3 text-gray-900 min-w-[280px]">
                                 <div className="flex items-center gap-2 flex-wrap">
                                   <span className="font-semibold text-sm text-gray-900 leading-snug">
                                     {row.itemName}
@@ -248,11 +248,14 @@ export default function GroupedExpenditureItemsView({
                                     {row.allocationCount !== 1 ? 's' : ''}
                                   </Badge>
                                 </div>
-                                <p className="text-xs text-gray-500 mt-0.5 font-normal">
+                                <p
+                                  className="text-xs text-gray-600 mt-1 font-normal leading-relaxed break-words"
+                                  title={row.groupName}
+                                >
                                   {row.groupName}
                                 </p>
                               </td>
-                              <td className="px-4 py-3 text-right text-sm">
+                              <td className="px-3 py-3 text-right text-xs sm:text-sm w-28 min-w-[105px] shrink-0 whitespace-nowrap">
                                 {row.q1.budget !== null ? (
                                   <span className="font-semibold text-blue-600">
                                     {formatCurrencyPHP(row.q1.budget)}
@@ -261,7 +264,7 @@ export default function GroupedExpenditureItemsView({
                                   <span className="text-gray-300">—</span>
                                 )}
                               </td>
-                              <td className="px-4 py-3 text-right text-sm">
+                              <td className="px-3 py-3 text-right text-xs sm:text-sm w-28 min-w-[105px] shrink-0 whitespace-nowrap">
                                 {row.q2.budget !== null ? (
                                   <span className="font-semibold text-blue-600">
                                     {formatCurrencyPHP(row.q2.budget)}
@@ -270,7 +273,7 @@ export default function GroupedExpenditureItemsView({
                                   <span className="text-gray-300">—</span>
                                 )}
                               </td>
-                              <td className="px-4 py-3 text-right text-sm">
+                              <td className="px-3 py-3 text-right text-xs sm:text-sm w-28 min-w-[105px] shrink-0 whitespace-nowrap">
                                 {row.q3.budget !== null ? (
                                   <span className="font-semibold text-blue-600">
                                     {formatCurrencyPHP(row.q3.budget)}
@@ -279,7 +282,7 @@ export default function GroupedExpenditureItemsView({
                                   <span className="text-gray-300">—</span>
                                 )}
                               </td>
-                              <td className="px-4 py-3 text-right text-sm">
+                              <td className="px-3 py-3 text-right text-xs sm:text-sm w-28 min-w-[105px] shrink-0 whitespace-nowrap">
                                 {row.q4.budget !== null ? (
                                   <span className="font-semibold text-blue-600">
                                     {formatCurrencyPHP(row.q4.budget)}
@@ -288,13 +291,13 @@ export default function GroupedExpenditureItemsView({
                                   <span className="text-gray-300">—</span>
                                 )}
                               </td>
-                              <td className="px-5 py-3 text-right text-sm font-semibold text-gray-900">
+                              <td className="px-4 py-3 text-right text-xs sm:text-sm font-semibold text-gray-900 w-32 min-w-[110px] shrink-0 whitespace-nowrap">
                                 {formatCurrencyPHP(row.total)}
                               </td>
                               {(onViewItem ||
                                 (!readOnly &&
                                   (onEditItem || onDeleteItem))) && (
-                                <td className="px-4 py-3 text-center">
+                                <td className="px-2 py-3 text-center shrink-0">
                                   {row.allocations.length === 1 ? (
                                     <ExpenditureLineItemActionMenu
                                       item={row.allocations[0]}
@@ -431,12 +434,12 @@ export default function GroupedExpenditureItemsView({
                         >
                           Category Total
                         </td>
-                        <td className="px-5 py-3.5 text-right text-sm font-semibold text-emerald-600">
+                        <td className="px-4 py-3.5 text-right text-xs sm:text-sm font-semibold text-emerald-600 shrink-0">
                           {formatCurrencyPHP(group.typeTotal)}
                         </td>
                         {(onViewItem ||
                           (!readOnly && (onEditItem || onDeleteItem))) && (
-                          <td />
+                          <td className="px-2 py-3.5 text-center shrink-0" />
                         )}
                       </tr>
                     </tfoot>

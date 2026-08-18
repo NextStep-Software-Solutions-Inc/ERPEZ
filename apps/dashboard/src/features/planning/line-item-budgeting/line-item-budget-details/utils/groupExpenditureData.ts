@@ -10,6 +10,8 @@ export interface ItemOfExpenditureRow {
   itemName: string
   itemCode?: string
   groupName: string
+  quantity?: number
+  unitCost?: number
   q1: MatrixQuarterCell
   q2: MatrixQuarterCell
   q3: MatrixQuarterCell
@@ -146,6 +148,27 @@ export function getQuarterFromItem(
   return 'q4'
 }
 
+function normalizeCustomDescription(desc?: string, objectName?: string): string {
+  if (!desc) return ''
+  const trimmed = desc.trim()
+  if (!trimmed) return ''
+  if (objectName) {
+    if (trimmed.toLowerCase() === objectName.trim().toLowerCase()) return ''
+    // If description is just the objectName with a period/quarter/date suffix (e.g. "Salaries and Wages - Q1")
+    const stripped = trimmed
+      .replace(
+        new RegExp(
+          `^${objectName.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}\\s*[-–(]?\\s*(Q[1-4]|Quarter\\s*[1-4]|[0-9]{4}|Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec).*\\)?$`,
+          'i',
+        ),
+        '',
+      )
+      .trim()
+    if (!stripped) return ''
+  }
+  return trimmed
+}
+
 /**
  * Group line items according to the authoritative business expenditure hierarchy:
  *
@@ -224,14 +247,22 @@ export function groupExpenditureItems(
           parentObj.code === '50000000' ||
           parentObj.code?.startsWith('50000000'))
 
+      const customDesc = normalizeCustomDescription(
+        item.description,
+        item.object?.name,
+      )
+
       let itemKey: string
-      if (parentObj && !isRootNode) {
-        // Child UACS item was selected (e.g. Training Expenses under MOOE)
-        itemKey = item.objectId || item.object?.id || item.id
-      } else if (item.object?.id && item.description && item.description.trim() !== '' && item.description !== item.object?.name) {
-        // Parent category was selected directly, description holds the logical item (e.g. "Salary for Justine")
-        itemKey = `${item.objectId || item.object.id}-${item.description.trim()}`
+      if (item.wfpObjectiveActivityExpenditureId) {
+        // Inherited WFP expenditure: group by upstream WFP expenditure ID
+        itemKey = `wfp-${item.wfpObjectiveActivityExpenditureId}`
+      } else if (customDesc !== '') {
+        // Manual line item with custom description: group by objectId + description
+        // so multiple period slices aggregate into one logical item, while distinct
+        // manual items under the same object stay separate.
+        itemKey = `${item.objectId || item.object?.id || 'manual'}-${customDesc}`
       } else {
+        // Default: group by objectId
         itemKey = item.objectId || item.object?.id || item.id
       }
 
@@ -254,11 +285,14 @@ export function groupExpenditureItems(
           parentObj.code?.startsWith('50000000'))
 
       let itemName: string
-      let groupSubtitle: string
+      let baseSubtitle: string
 
       if (parentObj && !isRootNode) {
-        itemName = firstAlloc.object?.name || firstAlloc.description || 'Item of Expenditure'
-        groupSubtitle =
+        itemName =
+          firstAlloc.object?.name ||
+          firstAlloc.description ||
+          'Item of Expenditure'
+        baseSubtitle =
           firstAlloc.description && firstAlloc.description !== itemName
             ? firstAlloc.description
             : firstAlloc.object?.code
@@ -270,10 +304,35 @@ export function groupExpenditureItems(
           firstAlloc.description && firstAlloc.description.trim() !== ''
             ? firstAlloc.description
             : firstAlloc.object?.name || 'Item of Expenditure'
-        groupSubtitle = firstAlloc.object?.code ? `Code: ${firstAlloc.object.code}` : `GRP: ${meta.name}`
+        baseSubtitle = firstAlloc.object?.code
+          ? `Code: ${firstAlloc.object.code}`
+          : `GRP: ${meta.name}`
       }
 
       const itemCode = firstAlloc.object?.code
+
+      const quantity =
+        firstAlloc.wfpObjectiveActivityExpenditure?.quantity ??
+        allocations.find((a) => a.unitQuantity && a.unitQuantity > 0)
+          ?.unitQuantity
+
+      const unitCost =
+        firstAlloc.wfpObjectiveActivityExpenditure?.unitCost ??
+        allocations.find((a) => a.unitCost && a.unitCost > 0)?.unitCost
+
+      const metadataParts: string[] = [baseSubtitle]
+      if (quantity !== undefined && quantity > 0) {
+        metadataParts.push(`Qty: ${quantity}`)
+      }
+      if (unitCost !== undefined && unitCost > 0) {
+        metadataParts.push(
+          `Unit Cost: ₱${unitCost.toLocaleString('en-PH', {
+            minimumFractionDigits: 2,
+            maximumFractionDigits: 2,
+          })}`,
+        )
+      }
+      const groupSubtitle = metadataParts.join(' • ')
 
       const q1Allocations = allocations.filter(
         (a) => getQuarterFromItem(a) === 'q1',
@@ -312,6 +371,8 @@ export function groupExpenditureItems(
         itemName,
         itemCode,
         groupName: groupSubtitle,
+        quantity,
+        unitCost,
         q1: { budget: q1Budget, allocations: q1Allocations },
         q2: { budget: q2Budget, allocations: q2Allocations },
         q3: { budget: q3Budget, allocations: q3Allocations },

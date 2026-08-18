@@ -37,12 +37,22 @@ public class GenerateLibDocumentCommandHandler(
         // ── Validate scope consistency ────────────────────────────────────
         ValidateLibScope(lib.Scope);
 
+        // ── Resolve WFP source document if applicable ────────────────────────
+        var wfp = lib.LineItemBudgetActivities
+            .Select(a => a.WFPObjectiveActivity?.WFPObjective?.WFP)
+            .FirstOrDefault(w => w is not null);
+
+        if (wfp is null && lib.SourceId.HasValue && lib.SourceType.Equals("WFP", StringComparison.OrdinalIgnoreCase))
+        {
+            wfp = await unitOfWork.WFPRepository.GetByIdAsync(lib.SourceId.Value, cancellationToken);
+        }
+
         // ── 2. Map ───────────────────────────────────────────────────────────
-        var dataDto = MapToLibDataDto(lib);
+        var dataDto = MapToLibDataDto(lib, wfp);
 
         if (string.Equals(lib.Scope, nameof(LIBScopeEnum.Project), StringComparison.OrdinalIgnoreCase))
         {
-            dataDto = dataDto with { ProjectScope = BuildProjectScope(lib) };
+            dataDto = dataDto with { ProjectScope = BuildProjectScope(lib, wfp) };
         }
 
         // ── 3. Render ────────────────────────────────────────────────────────
@@ -54,12 +64,27 @@ public class GenerateLibDocumentCommandHandler(
             throw new InvalidOperationException(
                 $"Line Item Budget '{lib.LIBNumber}' has no associated office. Cannot persist generated document.");
 
-        if (lib.FiscalYearEntity is null)
-            throw new InvalidOperationException(
-                $"Line Item Budget '{lib.LIBNumber}' has no fiscal year assigned. Cannot persist generated document.");  
+        var fiscalYear = lib.FiscalYearEntity?.Year.ToString();
+        if (string.IsNullOrEmpty(fiscalYear))
+        {
+            if (wfp is not null)
+            {
+                fiscalYear = wfp.ProjectStartDate.Year == wfp.ProjectEndDate.Year
+                    ? wfp.ProjectStartDate.Year.ToString()
+                    : $"{wfp.ProjectStartDate.Year}-{wfp.ProjectEndDate.Year}";
+            }
+            else
+            {
+                var allDetails = CollectAllDetails(lib);
+                var minYear = allDetails.Where(d => d.StartDate.HasValue).Min(d => (int?)d.StartDate!.Value.Year);
+                var maxYear = allDetails.Where(d => d.EndDate.HasValue).Max(d => (int?)d.EndDate!.Value.Year);
+                fiscalYear = minYear.HasValue && maxYear.HasValue
+                    ? (minYear == maxYear ? minYear.Value.ToString() : $"{minYear}-{maxYear}")
+                    : DateTime.UtcNow.Year.ToString();
+            }
+        }
 
         var extension  = request.Format == ExportFormat.Excel ? "xlsx" : "pdf";
-        var fiscalYear = lib.FiscalYearEntity?.Year.ToString() ?? string.Empty;
         var fileName   = $"LIB_{lib.LIBNumber}_{DateTime.UtcNow:yyyyMMddHHmmss}.{extension}";
         var path       = await storageService.SaveAsync(bytes, fileName, cancellationToken);
 
@@ -87,7 +112,7 @@ public class GenerateLibDocumentCommandHandler(
     // Mapping
     // ═════════════════════════════════════════════════════════════════════════
 
-    private static LibDataDto MapToLibDataDto(LibEntity lib)
+    private static LibDataDto MapToLibDataDto(LibEntity lib, Domain.Entities.Planning.WFP? wfp = null)
     {
         var allDetails = CollectAllDetails(lib);
 
@@ -156,11 +181,30 @@ public class GenerateLibDocumentCommandHandler(
             TotalBudget   = totalBudget
         };
 
+        var fiscalYearString = lib.FiscalYearEntity?.Year.ToString();
+        if (string.IsNullOrEmpty(fiscalYearString))
+        {
+            if (wfp is not null)
+            {
+                fiscalYearString = wfp.ProjectStartDate.Year == wfp.ProjectEndDate.Year
+                    ? wfp.ProjectStartDate.Year.ToString()
+                    : $"{wfp.ProjectStartDate.Year}-{wfp.ProjectEndDate.Year}";
+            }
+            else
+            {
+                var minYear = allDetails.Where(d => d.StartDate.HasValue).Min(d => (int?)d.StartDate!.Value.Year);
+                var maxYear = allDetails.Where(d => d.EndDate.HasValue).Max(d => (int?)d.EndDate!.Value.Year);
+                fiscalYearString = minYear.HasValue && maxYear.HasValue
+                    ? (minYear == maxYear ? minYear.Value.ToString() : $"{minYear}-{maxYear}")
+                    : DateTime.UtcNow.Year.ToString();
+            }
+        }
+
         return new LibDataDto
         {
             LIBNumber             = lib.LIBNumber,
             OfficeName            = BuildAgencyName(lib),
-            FiscalYear            = lib.FiscalYearEntity?.Year.ToString() ?? string.Empty,
+            FiscalYear            = fiscalYearString,
             FundSource            = lib.FundSource?.Name ?? string.Empty,
             Scope                 = lib.Scope,
             SourceType            = lib.SourceType,
@@ -477,6 +521,15 @@ public class GenerateLibDocumentCommandHandler(
 
         chain.Reverse();
 
+        // If the top node is the root 'Expenses' classification, remove it so chain[0] is PS/MOOE/CO
+        if (chain.Count > 1 && (
+            chain[0].Name.Equals("Expenses", StringComparison.OrdinalIgnoreCase) ||
+            chain[0].Code.StartsWith("50000000") ||
+            chain[0].Code.Equals("CLS:Expenses", StringComparison.OrdinalIgnoreCase)))
+        {
+            chain.RemoveAt(0);
+        }
+
         var uacsCode = BuildUacsCode(detail);   // ← replaces leafCode
 
         return chain.Count switch
@@ -490,7 +543,7 @@ public class GenerateLibDocumentCommandHandler(
 
             2 => new ObjectHierarchy(
                     AllotmentClass:  chain[0].Name,
-                    AccountGroup:    chain[0].Name,
+                    AccountGroup:    chain[1].Name,
                     SubAccountGroup: null,
                     ObjectName:      chain[1].Name,
                     UACSCode:        uacsCode),
@@ -601,9 +654,9 @@ public class GenerateLibDocumentCommandHandler(
     // Project scope (WFP-sourced, dynamic cross-year quarterly columns)
     // ─────────────────────────────────────────────────────────────────────────
 
-    private static LibProjectScopeDto BuildProjectScope(LibEntity lib)
+    private static LibProjectScopeDto BuildProjectScope(LibEntity lib, Domain.Entities.Planning.WFP? wfp = null)
     {
-        var wfp = lib.LineItemBudgetActivities
+        wfp ??= lib.LineItemBudgetActivities
             .Select(a => a.WFPObjectiveActivity?.WFPObjective?.WFP)
             .FirstOrDefault(w => w is not null);
 
@@ -636,7 +689,7 @@ public class GenerateLibDocumentCommandHandler(
             cursor = cursor.AddMonths(3);
         }
 
-        // ── Allotment groups: one row per detail (smallest unit), not merged ──
+        // ── Allotment groups: group logical expenditures (combining multiple quarter allocations) ──
         var allotmentGroups = allDetails
             .Select(d => (Detail: d, Hier: ResolveHierarchy(d)))
             .GroupBy(x => x.Hier.AllotmentClass)
@@ -655,12 +708,16 @@ public class GenerateLibDocumentCommandHandler(
                             {
                                 SubGroupName = subGrp.Key,
                                 Rows = subGrp
-                                    .GroupBy(x => x.Detail.Description)
+                                    .GroupBy(x => x.Detail.WFPObjectiveActivityExpenditureId.HasValue
+                                        ? $"wfp-{x.Detail.WFPObjectiveActivityExpenditureId}"
+                                        : (string.IsNullOrWhiteSpace(x.Detail.Description)
+                                            ? $"{x.Detail.ObjectId}"
+                                            : $"{x.Detail.ObjectId}-{x.Detail.Description.Trim()}"))
                                     .Select(descGrp => new LibRowDto
                                     {
                                         UACSCode       = descGrp.First().Hier.UACSCode,
                                         ObjectName     = descGrp.First().Hier.ObjectName,
-                                        Description    = descGrp.Key,
+                                        Description    = descGrp.First().Detail.Description ?? descGrp.First().Hier.ObjectName,
                                         QuarterAmounts = DistributeAcrossColumns(descGrp.Select(x => x.Detail), columns),
                                         TotalBudget    = descGrp.Sum(x => x.Detail.Budget)
                                     })

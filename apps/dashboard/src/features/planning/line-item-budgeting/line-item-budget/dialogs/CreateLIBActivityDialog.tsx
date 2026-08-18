@@ -139,6 +139,7 @@ export default function CreateLIBActivityDialog({
           <CreateWfpLineItemBudgetDetailsForm
             libId={libId}
             scope={scope}
+            wfpData={wfpData}
             onClose={() => setOpen(false)}
             onCreated={() => {
               setOpen(false)
