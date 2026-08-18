@@ -5,6 +5,15 @@ export interface MatrixQuarterCell {
   allocations: LineItemBudgetDetails[]
 }
 
+export interface PeriodColumn {
+  key: string
+  year: number
+  quarterNumber: number
+  quarterLabel: string
+  dateRangeLabel: string
+  fullLabel: string
+}
+
 export interface ItemOfExpenditureRow {
   itemId: string
   itemName: string
@@ -12,6 +21,7 @@ export interface ItemOfExpenditureRow {
   groupName: string
   quantity?: number
   unitCost?: number
+  periodAmounts: Record<string, MatrixQuarterCell>
   q1: MatrixQuarterCell
   q2: MatrixQuarterCell
   q3: MatrixQuarterCell
@@ -36,6 +46,7 @@ export interface TypeOfExpenditureGroup {
   typeTotal: number
   itemCount: number
   allocationCount: number
+  columns: PeriodColumn[]
   items: ItemOfExpenditureRow[]
 }
 
@@ -148,6 +159,85 @@ export function getQuarterFromItem(
   return 'q4'
 }
 
+export function getYearAwareQuarterFromItem(
+  item: LineItemBudgetDetails,
+): { key: string; year: number; quarterNumber: number } | null {
+  if (
+    item.timelineType &&
+    item.timelineType.toLowerCase() !== 'quarterly'
+  ) {
+    return null
+  }
+
+  if (!item.startDate) return null
+  const date = new Date(item.startDate)
+  if (isNaN(date.getTime())) return null
+  const year = date.getFullYear()
+  const month = date.getMonth()
+  const quarterNumber = Math.floor(month / 3) + 1
+  return {
+    key: `${year}-Q${quarterNumber}`,
+    year,
+    quarterNumber,
+  }
+}
+
+export function resolveProjectPeriodColumns(
+  items: LineItemBudgetDetails[],
+): PeriodColumn[] {
+  const dateRangeLabels = ['Jan – Mar', 'Apr – Jun', 'Jul – Sep', 'Oct – Dec']
+  const dates = items
+    .filter((d) => d.startDate)
+    .map((d) => ({
+      start: new Date(d.startDate!),
+      end: d.endDate ? new Date(d.endDate) : new Date(d.startDate!),
+    }))
+    .filter((d) => !isNaN(d.start.getTime()) && !isNaN(d.end.getTime()))
+
+  if (dates.length === 0) {
+    const currentYear = new Date().getFullYear()
+    return [1, 2, 3, 4].map((q) => ({
+      key: `${currentYear}-Q${q}`,
+      year: currentYear,
+      quarterNumber: q,
+      quarterLabel: `Q${q}`,
+      dateRangeLabel: dateRangeLabels[q - 1],
+      fullLabel: `${currentYear} Q${q}`,
+    }))
+  }
+
+  const minTime = Math.min(...dates.map((d) => d.start.getTime()))
+  const maxTime = Math.max(...dates.map((d) => d.end.getTime()))
+
+  const minDate = new Date(minTime)
+  const maxDate = new Date(maxTime)
+
+  const minYear = minDate.getFullYear()
+  const maxYear = maxDate.getFullYear()
+
+  const startQuarter = Math.floor(minDate.getMonth() / 3) + 1
+  const endQuarter = Math.floor(maxDate.getMonth() / 3) + 1
+
+  const columns: PeriodColumn[] = []
+
+  for (let y = minYear; y <= maxYear; y++) {
+    const qStart = y === minYear ? startQuarter : 1
+    const qEnd = y === maxYear ? endQuarter : 4
+    for (let q = qStart; q <= qEnd; q++) {
+      columns.push({
+        key: `${y}-Q${q}`,
+        year: y,
+        quarterNumber: q,
+        quarterLabel: `Q${q}`,
+        dateRangeLabel: dateRangeLabels[q - 1],
+        fullLabel: `${y} Q${q}`,
+      })
+    }
+  }
+
+  return columns
+}
+
 function normalizeCustomDescription(desc?: string, objectName?: string): string {
   if (!desc) return ''
   const trimmed = desc.trim()
@@ -174,13 +264,15 @@ function normalizeCustomDescription(desc?: string, objectName?: string): string 
  *
  * Level 1: Type of Expenditure (e.g. Personnel Services, Maintenance and Other Operating Expenses)
  * Level 2: Item of Expenditure (e.g. Salaries and Wages, Training Expenses, or specific detail item)
- * Level 3: Period allocations (Q1, Q2, Q3, Q4) — aggregated into single item rows
+ * Level 3: Period allocations (Q1, Q2, Q3, Q4 / 2026-Q3, 2026-Q4, 2027-Q1) — aggregated into single item rows
  *
  * Preserves every underlying LineItemBudgetDetail.id for individual CRUD operations.
  */
 export function groupExpenditureItems(
   items: LineItemBudgetDetails[],
 ): TypeOfExpenditureGroup[] {
+  const globalColumns = resolveProjectPeriodColumns(items)
+
   // 1. Group by Level 1: Type of Expenditure
   const typeGroupsMap = new Map<string, LineItemBudgetDetails[]>()
   const typeMetadata = new Map<
@@ -239,14 +331,6 @@ export function groupExpenditureItems(
     const itemMap = new Map<string, LineItemBudgetDetails[]>()
 
     typeItems.forEach((item) => {
-      const parentObj = item.object?.parentObject
-      const isRootNode =
-        parentObj &&
-        (parentObj.name?.toLowerCase() === 'expenses' ||
-          parentObj.code === 'CLS:Expenses' ||
-          parentObj.code === '50000000' ||
-          parentObj.code?.startsWith('50000000'))
-
       const customDesc = normalizeCustomDescription(
         item.description,
         item.object?.name,
@@ -334,6 +418,25 @@ export function groupExpenditureItems(
       }
       const groupSubtitle = metadataParts.join(' • ')
 
+      // Year-aware period mapping
+      const periodAmounts: Record<string, MatrixQuarterCell> = {}
+      globalColumns.forEach((col) => {
+        periodAmounts[col.key] = { budget: null, allocations: [] }
+      })
+
+      allocations.forEach((a) => {
+        const periodInfo = getYearAwareQuarterFromItem(a)
+        if (periodInfo) {
+          if (!periodAmounts[periodInfo.key]) {
+            periodAmounts[periodInfo.key] = { budget: null, allocations: [] }
+          }
+          periodAmounts[periodInfo.key].budget =
+            (periodAmounts[periodInfo.key].budget || 0) + (a.budget || 0)
+          periodAmounts[periodInfo.key].allocations.push(a)
+        }
+      })
+
+      // Legacy quarter mapping for backward compatibility
       const q1Allocations = allocations.filter(
         (a) => getQuarterFromItem(a) === 'q1',
       )
@@ -373,6 +476,7 @@ export function groupExpenditureItems(
         groupName: groupSubtitle,
         quantity,
         unitCost,
+        periodAmounts,
         q1: { budget: q1Budget, allocations: q1Allocations },
         q2: { budget: q2Budget, allocations: q2Allocations },
         q3: { budget: q3Budget, allocations: q3Allocations },
@@ -394,6 +498,7 @@ export function groupExpenditureItems(
       typeTotal,
       itemCount: itemsList.length,
       allocationCount: typeItems.length,
+      columns: globalColumns,
       items: itemsList,
     }
   })

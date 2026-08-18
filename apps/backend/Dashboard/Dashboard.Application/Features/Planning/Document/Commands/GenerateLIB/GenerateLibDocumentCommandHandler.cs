@@ -569,6 +569,19 @@ public class GenerateLibDocumentCommandHandler(
     // Budget distribution helpers
     // ─────────────────────────────────────────────────────────────────────────
 
+    /// <summary>
+    /// Converts a DateTime (UTC or client-offset) to the canonical Philippine calendar date (UTC+8).
+    /// Prevents dates like 2026-12-31T16:00:00Z from falling into the previous year or quarter.
+    /// </summary>
+    private static DateOnly ToPhilippineDate(DateTime dateTime)
+    {
+        var adjusted = dateTime.Kind == DateTimeKind.Utc || dateTime.Hour >= 12
+            ? dateTime.AddHours(8)
+            : dateTime;
+
+        return DateOnly.FromDateTime(adjusted);
+    }
+
     private static decimal GetQuarterBudget(DetailEntity detail, int quarter)
     {
         if (detail.StartDate is null)
@@ -582,7 +595,8 @@ public class GenerateLibDocumentCommandHandler(
             return quarter == 1 ? detail.Budget : 0m;
         }
 
-        var detailQuarter = (detail.StartDate.Value.Month - 1) / 3 + 1;
+        var calDate = ToPhilippineDate(detail.StartDate.Value);
+        var detailQuarter = (calDate.Month - 1) / 3 + 1;
         return detailQuarter == quarter ? detail.Budget : 0m;
     }
 
@@ -599,7 +613,8 @@ public class GenerateLibDocumentCommandHandler(
             return month == 1 ? detail.Budget : 0m;
         }
 
-        return detail.StartDate.Value.Month == month ? detail.Budget : 0m;
+        var calDate = ToPhilippineDate(detail.StartDate.Value);
+        return calDate.Month == month ? detail.Budget : 0m;
     }
 
     // ─────────────────────────────────────────────────────────────────────
@@ -670,8 +685,8 @@ public class GenerateLibDocumentCommandHandler(
             throw new InvalidOperationException(
                 $"Line Item Budget '{lib.LIBNumber}' is Project scope but no budget details have a StartDate. Cannot build quarter columns.");
 
-        var minDate = DateOnly.FromDateTime(datedDetails.Min(d => d.StartDate!.Value));
-        var maxDate = DateOnly.FromDateTime(datedDetails.Max(d => d.EndDate ?? d.StartDate!.Value));
+        var minDate = datedDetails.Min(d => ToPhilippineDate(d.StartDate!.Value));
+        var maxDate = datedDetails.Max(d => ToPhilippineDate(d.EndDate ?? d.StartDate!.Value));
 
         var columns = new List<LibProjectQuarterColumnDto>();
         var cursor  = new DateOnly(minDate.Year, ((minDate.Month - 1) / 3) * 3 + 1, 1);
@@ -771,8 +786,9 @@ public class GenerateLibDocumentCommandHandler(
         {
             if (detail.StartDate is not null)
             {
-                var detailYear    = detail.StartDate.Value.Year;
-                var detailQuarter = (detail.StartDate.Value.Month - 1) / 3 + 1;
+                var calDate       = ToPhilippineDate(detail.StartDate.Value);
+                var detailYear    = calDate.Year;
+                var detailQuarter = (calDate.Month - 1) / 3 + 1;
 
                 var idx = columns.FindIndex(c => c.Year == detailYear && c.QuarterNumber == detailQuarter);
                 if (idx >= 0)

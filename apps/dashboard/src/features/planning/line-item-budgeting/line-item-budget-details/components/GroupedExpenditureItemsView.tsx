@@ -14,6 +14,7 @@ import {
 import { ExpenditureLineItemActionMenu } from './ExpenditureLineItemActionMenu'
 import {
   getQuarterFromItem,
+  getYearAwareQuarterFromItem,
   type GroupedExpenditureData,
 } from '../utils/groupExpenditureData'
 import type { LineItemBudgetDetails } from '../types/types'
@@ -172,280 +173,373 @@ export default function GroupedExpenditureItemsView({
                   </div>
                 </div>
               </div>
+              {!isCollapsed && (() => {
+                const defaultCols = [
+                  {
+                    key: '2026-Q1',
+                    year: 2026,
+                    quarterNumber: 1,
+                    quarterLabel: 'Q1',
+                    dateRangeLabel: 'Jan – Mar',
+                    fullLabel: '2026 Q1',
+                  },
+                  {
+                    key: '2026-Q2',
+                    year: 2026,
+                    quarterNumber: 2,
+                    quarterLabel: 'Q2',
+                    dateRangeLabel: 'Apr – Jun',
+                    fullLabel: '2026 Q2',
+                  },
+                  {
+                    key: '2026-Q3',
+                    year: 2026,
+                    quarterNumber: 3,
+                    quarterLabel: 'Q3',
+                    dateRangeLabel: 'Jul – Sep',
+                    fullLabel: '2026 Q3',
+                  },
+                  {
+                    key: '2026-Q4',
+                    year: 2026,
+                    quarterNumber: 4,
+                    quarterLabel: 'Q4',
+                    dateRangeLabel: 'Oct – Dec',
+                    fullLabel: '2026 Q4',
+                  },
+                ]
+                const columns =
+                  group.columns && group.columns.length > 0
+                    ? group.columns
+                    : defaultCols
 
-              {/* Level 2 & 3 — Items Matrix Table */}
-              {!isCollapsed && (
-                <div className="overflow-x-auto border-t border-gray-200">
-                  <table className="w-full text-xs sm:text-sm min-w-[820px]">
-                    <thead className="bg-gray-50/70 border-b border-gray-200 text-gray-600">
-                      <tr>
-                        <th className="text-left px-5 py-3 text-xs sm:text-sm font-semibold text-gray-700 min-w-[280px]">
-                          Item of Expenditure
-                        </th>
-                        <th className="text-right px-3 py-3 text-xs sm:text-sm font-semibold text-gray-700 w-28 min-w-[105px] shrink-0 whitespace-nowrap">
-                          <div>Q1</div>
-                          <div className="text-[11px] text-gray-500 font-normal mt-0.5 whitespace-nowrap">
-                            Jan – Mar
-                          </div>
-                        </th>
-                        <th className="text-right px-3 py-3 text-xs sm:text-sm font-semibold text-gray-700 w-28 min-w-[105px] shrink-0 whitespace-nowrap">
-                          <div>Q2</div>
-                          <div className="text-[11px] text-gray-500 font-normal mt-0.5 whitespace-nowrap">
-                            Apr – Jun
-                          </div>
-                        </th>
-                        <th className="text-right px-3 py-3 text-xs sm:text-sm font-semibold text-gray-700 w-28 min-w-[105px] shrink-0 whitespace-nowrap">
-                          <div>Q3</div>
-                          <div className="text-[11px] text-gray-500 font-normal mt-0.5 whitespace-nowrap">
-                            Jul – Sep
-                          </div>
-                        </th>
-                        <th className="text-right px-3 py-3 text-xs sm:text-sm font-semibold text-gray-700 w-28 min-w-[105px] shrink-0 whitespace-nowrap">
-                          <div>Q4</div>
-                          <div className="text-[11px] text-gray-500 font-normal mt-0.5 whitespace-nowrap">
-                            Oct – Dec
-                          </div>
-                        </th>
-                        <th className="text-right px-4 py-3 text-xs sm:text-sm font-semibold text-gray-700 w-32 min-w-[110px] shrink-0 whitespace-nowrap">
-                          Total
-                        </th>
-                        {(onViewItem ||
-                          (!readOnly && (onEditItem || onDeleteItem))) && (
-                          <th className="text-center px-2 py-3 text-xs sm:text-sm font-semibold text-gray-700 w-14 shrink-0">
-                            Actions
-                          </th>
-                        )}
-                      </tr>
-                    </thead>
-                    <tbody className="divide-y divide-gray-100">
-                      {group.items.map((row) => {
-                        const isRowExpanded = expandedRowIds.has(row.itemId)
-                        const hasMultipleAllocations =
-                          row.allocations.length > 1
+                const yearGroups: Array<{
+                  year: number
+                  cols: typeof columns
+                }> = []
+                columns.forEach((col) => {
+                  const last = yearGroups[yearGroups.length - 1]
+                  if (last && last.year === col.year) {
+                    last.cols.push(col)
+                  } else {
+                    yearGroups.push({ year: col.year, cols: [col] })
+                  }
+                })
+                const isMultiYear = yearGroups.length > 1
+                const showActions =
+                  onViewItem || (!readOnly && (onEditItem || onDeleteItem))
+                const totalColSpan =
+                  1 + columns.length + 1 + (showActions ? 1 : 0)
 
-                        return (
-                          <React.Fragment key={row.itemId}>
-                            <tr className="hover:bg-gray-50/50 transition-colors">
-                              <td className="px-5 py-3 text-gray-900 min-w-[280px]">
-                                <div className="flex items-center gap-2 flex-wrap">
-                                  <span className="font-semibold text-sm text-gray-900 leading-snug">
-                                    {row.itemName}
-                                  </span>
-                                  <Badge
-                                    variant="secondary"
-                                    className={`text-[11px] bg-blue-50 text-blue-700 border border-blue-200 font-medium px-2 py-0.5 ${
-                                      hasMultipleAllocations
-                                        ? 'cursor-pointer hover:bg-blue-100'
-                                        : ''
-                                    }`}
-                                    onClick={
-                                      hasMultipleAllocations
-                                        ? () => toggleRowExpanded(row.itemId)
-                                        : undefined
-                                    }
-                                  >
-                                    {row.allocationCount} allocation
-                                    {row.allocationCount !== 1 ? 's' : ''}
-                                  </Badge>
-                                </div>
-                                <p
-                                  className="text-xs text-gray-600 mt-1 font-normal leading-relaxed break-words"
-                                  title={row.groupName}
+                return (
+                  <div className="overflow-x-auto border-t border-gray-200">
+                    <table className="w-full text-xs sm:text-sm min-w-[820px]">
+                      <thead className="bg-gray-50/70 border-b border-gray-200 text-gray-600">
+                        {isMultiYear ? (
+                          <>
+                            <tr>
+                              <th
+                                rowSpan={2}
+                                className="text-left px-5 py-3 text-xs sm:text-sm font-semibold text-gray-700 min-w-[280px] align-middle"
+                              >
+                                Item of Expenditure
+                              </th>
+                              {yearGroups.map((yg) => (
+                                <th
+                                  key={yg.year}
+                                  colSpan={yg.cols.length}
+                                  className="text-center px-3 py-1.5 text-xs sm:text-sm font-bold text-gray-800 bg-gray-100/90 border-b border-gray-200"
                                 >
-                                  {row.groupName}
-                                </p>
-                              </td>
-                              <td className="px-3 py-3 text-right text-xs sm:text-sm w-28 min-w-[105px] shrink-0 whitespace-nowrap">
-                                {row.q1.budget !== null ? (
-                                  <span className="font-semibold text-blue-600">
-                                    {formatCurrencyPHP(row.q1.budget)}
-                                  </span>
-                                ) : (
-                                  <span className="text-gray-300">—</span>
-                                )}
-                              </td>
-                              <td className="px-3 py-3 text-right text-xs sm:text-sm w-28 min-w-[105px] shrink-0 whitespace-nowrap">
-                                {row.q2.budget !== null ? (
-                                  <span className="font-semibold text-blue-600">
-                                    {formatCurrencyPHP(row.q2.budget)}
-                                  </span>
-                                ) : (
-                                  <span className="text-gray-300">—</span>
-                                )}
-                              </td>
-                              <td className="px-3 py-3 text-right text-xs sm:text-sm w-28 min-w-[105px] shrink-0 whitespace-nowrap">
-                                {row.q3.budget !== null ? (
-                                  <span className="font-semibold text-blue-600">
-                                    {formatCurrencyPHP(row.q3.budget)}
-                                  </span>
-                                ) : (
-                                  <span className="text-gray-300">—</span>
-                                )}
-                              </td>
-                              <td className="px-3 py-3 text-right text-xs sm:text-sm w-28 min-w-[105px] shrink-0 whitespace-nowrap">
-                                {row.q4.budget !== null ? (
-                                  <span className="font-semibold text-blue-600">
-                                    {formatCurrencyPHP(row.q4.budget)}
-                                  </span>
-                                ) : (
-                                  <span className="text-gray-300">—</span>
-                                )}
-                              </td>
-                              <td className="px-4 py-3 text-right text-xs sm:text-sm font-semibold text-gray-900 w-32 min-w-[110px] shrink-0 whitespace-nowrap">
-                                {formatCurrencyPHP(row.total)}
-                              </td>
-                              {(onViewItem ||
-                                (!readOnly &&
-                                  (onEditItem || onDeleteItem))) && (
-                                <td className="px-2 py-3 text-center shrink-0">
-                                  {row.allocations.length === 1 ? (
-                                    <ExpenditureLineItemActionMenu
-                                      item={row.allocations[0]}
-                                      onView={
-                                        onViewItem
-                                          ? () =>
-                                              onViewItem?.(row.allocations[0])
-                                          : undefined
-                                      }
-                                      onEdit={
-                                        !readOnly && onEditItem
-                                          ? () =>
-                                              onEditItem?.(row.allocations[0])
-                                          : undefined
-                                      }
-                                      onDelete={
-                                        !readOnly && onDeleteItem
-                                          ? () =>
-                                              onDeleteItem?.(row.allocations[0])
-                                          : undefined
-                                      }
-                                      isDeleting={
-                                        isDeletingItemId ===
-                                        row.allocations[0].id
-                                      }
-                                    />
-                                  ) : (
-                                    <Button
-                                      variant="ghost"
-                                      size="sm"
-                                      onClick={() =>
-                                        toggleRowExpanded(row.itemId)
-                                      }
-                                      className="text-blue-500 hover:text-blue-700 font-bold h-7 px-2 text-base leading-none tracking-widest"
-                                    >
-                                      •••
-                                    </Button>
-                                  )}
-                                </td>
+                                  {yg.year}
+                                </th>
+                              ))}
+                              <th
+                                rowSpan={2}
+                                className="text-right px-4 py-3 text-xs sm:text-sm font-semibold text-gray-700 w-32 min-w-[110px] shrink-0 whitespace-nowrap align-middle"
+                              >
+                                Total
+                              </th>
+                              {showActions && (
+                                <th
+                                  rowSpan={2}
+                                  className="text-center px-2 py-3 text-xs sm:text-sm font-semibold text-gray-700 w-14 shrink-0 align-middle"
+                                >
+                                  Actions
+                                </th>
                               )}
                             </tr>
-
-                            {/* Expandable breakdown for multi-allocation items */}
-                            {isRowExpanded && hasMultipleAllocations && (
-                              <tr className="bg-blue-50/20">
-                                <td
-                                  colSpan={7}
-                                  className="px-8 py-3 border-t border-b border-blue-100"
+                            <tr className="bg-gray-50/70 border-b border-gray-200">
+                              {columns.map((col) => (
+                                <th
+                                  key={col.key}
+                                  className="text-right px-3 py-2 text-xs sm:text-sm font-semibold text-gray-700 w-28 min-w-[105px] shrink-0 whitespace-nowrap"
                                 >
-                                  <div className="rounded-lg border border-blue-100 bg-white p-3 space-y-2">
-                                    <div className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
-                                      Quarterly Breakdown (
-                                      {row.allocations.length} allocations)
-                                    </div>
-                                    <div className="divide-y divide-gray-100 text-xs">
-                                      {row.allocations.map((alloc) => {
-                                        const q = getQuarterFromItem(alloc)
-                                        const timelineLabel = q
-                                          ? q.toUpperCase()
-                                          : alloc.timelineType || 'Quarterly'
-                                        return (
-                                          <div
-                                            key={alloc.id}
-                                            className="py-2 px-2 flex items-center justify-between gap-4 hover:bg-gray-50 rounded"
-                                          >
-                                            <div className="flex items-center gap-3">
-                                              <Badge
-                                                variant="outline"
-                                                className="text-[11px] font-semibold text-blue-700 bg-blue-50 border-blue-200"
-                                              >
-                                                {timelineLabel}
-                                              </Badge>
-                                              <span className="text-gray-800 font-medium text-sm">
-                                                {alloc.description ||
-                                                  alloc.object?.name ||
-                                                  '—'}
-                                              </span>
-                                              {alloc.startDate && (
-                                                <span className="text-gray-500 text-xs">
-                                                  {formatDisplayDate(
-                                                    alloc.startDate,
-                                                  )}
-                                                  {alloc.endDate
-                                                    ? ` – ${formatDisplayDate(alloc.endDate)}`
-                                                    : ''}
-                                                </span>
-                                              )}
-                                            </div>
-                                            <div className="flex items-center gap-4">
-                                              <span className="font-semibold text-gray-900 text-sm">
-                                                {formatCurrencyPHP(alloc.budget)}
-                                              </span>
-                                              <ExpenditureLineItemActionMenu
-                                                item={alloc}
-                                                onView={
-                                                  onViewItem
-                                                    ? () => onViewItem?.(alloc)
-                                                    : undefined
-                                                }
-                                                onEdit={
-                                                  !readOnly && onEditItem
-                                                    ? () => onEditItem?.(alloc)
-                                                    : undefined
-                                                }
-                                                onDelete={
-                                                  !readOnly && onDeleteItem
-                                                    ? () =>
-                                                        onDeleteItem?.(alloc)
-                                                    : undefined
-                                                }
-                                                isDeleting={
-                                                  isDeletingItemId === alloc.id
-                                                }
-                                              />
-                                            </div>
-                                          </div>
-                                        )
-                                      })}
-                                    </div>
+                                  <div>{col.quarterLabel}</div>
+                                  <div className="text-[11px] text-gray-500 font-normal mt-0.5 whitespace-nowrap">
+                                    {col.dateRangeLabel}
                                   </div>
-                                </td>
-                              </tr>
+                                </th>
+                              ))}
+                            </tr>
+                          </>
+                        ) : (
+                          <tr>
+                            <th className="text-left px-5 py-3 text-xs sm:text-sm font-semibold text-gray-700 min-w-[280px]">
+                              Item of Expenditure
+                            </th>
+                            {columns.map((col) => (
+                              <th
+                                key={col.key}
+                                className="text-right px-3 py-3 text-xs sm:text-sm font-semibold text-gray-700 w-28 min-w-[105px] shrink-0 whitespace-nowrap"
+                              >
+                                <div>{col.quarterLabel}</div>
+                                <div className="text-[11px] text-gray-500 font-normal mt-0.5 whitespace-nowrap">
+                                  {col.dateRangeLabel}
+                                </div>
+                              </th>
+                            ))}
+                            <th className="text-right px-4 py-3 text-xs sm:text-sm font-semibold text-gray-700 w-32 min-w-[110px] shrink-0 whitespace-nowrap">
+                              Total
+                            </th>
+                            {showActions && (
+                              <th className="text-center px-2 py-3 text-xs sm:text-sm font-semibold text-gray-700 w-14 shrink-0">
+                                Actions
+                              </th>
                             )}
-                          </React.Fragment>
-                        )
-                      })}
-                    </tbody>
-                    {/* Category Total Footer */}
-                    <tfoot className="bg-gray-50/50 border-t border-gray-200">
-                      <tr>
-                        <td
-                          colSpan={5}
-                          className="px-5 py-3.5 text-right text-xs text-gray-600 font-medium"
-                        >
-                          Category Total
-                        </td>
-                        <td className="px-4 py-3.5 text-right text-xs sm:text-sm font-semibold text-emerald-600 shrink-0">
-                          {formatCurrencyPHP(group.typeTotal)}
-                        </td>
-                        {(onViewItem ||
-                          (!readOnly && (onEditItem || onDeleteItem))) && (
-                          <td className="px-2 py-3.5 text-center shrink-0" />
+                          </tr>
                         )}
-                      </tr>
-                    </tfoot>
-                  </table>
-                </div>
-              )}
+                      </thead>
+                      <tbody className="divide-y divide-gray-100">
+                        {group.items.map((row) => {
+                          const isRowExpanded = expandedRowIds.has(row.itemId)
+                          const hasMultipleAllocations =
+                            row.allocations.length > 1
+
+                          return (
+                            <React.Fragment key={row.itemId}>
+                              <tr className="hover:bg-gray-50/50 transition-colors">
+                                <td className="px-5 py-3 text-gray-900 min-w-[280px]">
+                                  <div className="flex items-center gap-2 flex-wrap">
+                                    <span className="font-semibold text-sm text-gray-900 leading-snug">
+                                      {row.itemName}
+                                    </span>
+                                    <Badge
+                                      variant="secondary"
+                                      className={`text-[11px] bg-blue-50 text-blue-700 border border-blue-200 font-medium px-2 py-0.5 ${
+                                        hasMultipleAllocations
+                                          ? 'cursor-pointer hover:bg-blue-100'
+                                          : ''
+                                      }`}
+                                      onClick={
+                                        hasMultipleAllocations
+                                          ? () => toggleRowExpanded(row.itemId)
+                                          : undefined
+                                      }
+                                    >
+                                      {row.allocationCount} allocation
+                                      {row.allocationCount !== 1 ? 's' : ''}
+                                    </Badge>
+                                  </div>
+                                  <p
+                                    className="text-xs text-gray-600 mt-1 font-normal leading-relaxed break-words"
+                                    title={row.groupName}
+                                  >
+                                    {row.groupName}
+                                  </p>
+                                </td>
+                                {columns.map((col) => {
+                                  const cell =
+                                    row.periodAmounts?.[col.key] ||
+                                    (col.quarterNumber === 1
+                                      ? row.q1
+                                      : col.quarterNumber === 2
+                                        ? row.q2
+                                        : col.quarterNumber === 3
+                                          ? row.q3
+                                          : row.q4)
+                                  const budget = cell?.budget
+                                  return (
+                                    <td
+                                      key={col.key}
+                                      className="px-3 py-3 text-right text-xs sm:text-sm w-28 min-w-[105px] shrink-0 whitespace-nowrap"
+                                    >
+                                      {budget !== null &&
+                                      budget !== undefined &&
+                                      budget > 0 ? (
+                                        <span className="font-semibold text-blue-600">
+                                          {formatCurrencyPHP(budget)}
+                                        </span>
+                                      ) : (
+                                        <span className="text-gray-300">—</span>
+                                      )}
+                                    </td>
+                                  )
+                                })}
+                                <td className="px-4 py-3 text-right text-xs sm:text-sm font-semibold text-gray-900 w-32 min-w-[110px] shrink-0 whitespace-nowrap">
+                                  {formatCurrencyPHP(row.total)}
+                                </td>
+                                {showActions && (
+                                  <td className="px-2 py-3 text-center shrink-0">
+                                    {row.allocations.length === 1 ? (
+                                      <ExpenditureLineItemActionMenu
+                                        item={row.allocations[0]}
+                                        onView={
+                                          onViewItem
+                                            ? () =>
+                                                onViewItem?.(row.allocations[0])
+                                            : undefined
+                                        }
+                                        onEdit={
+                                          !readOnly && onEditItem
+                                            ? () =>
+                                                onEditItem?.(row.allocations[0])
+                                            : undefined
+                                        }
+                                        onDelete={
+                                          !readOnly && onDeleteItem
+                                            ? () =>
+                                                onDeleteItem?.(
+                                                  row.allocations[0],
+                                                )
+                                            : undefined
+                                        }
+                                        isDeleting={
+                                          isDeletingItemId ===
+                                          row.allocations[0].id
+                                        }
+                                      />
+                                    ) : (
+                                      <Button
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={() =>
+                                          toggleRowExpanded(row.itemId)
+                                        }
+                                        className="h-8 px-2 text-xs text-gray-500 hover:text-blue-600"
+                                      >
+                                        {isRowExpanded ? 'Hide' : 'Details'}
+                                      </Button>
+                                    )}
+                                  </td>
+                                )}
+                              </tr>
+
+                              {/* Expandable breakdown for multi-allocation items */}
+                              {isRowExpanded && hasMultipleAllocations && (
+                                <tr className="bg-blue-50/20">
+                                  <td
+                                    colSpan={totalColSpan}
+                                    className="px-8 py-3 border-t border-b border-blue-100"
+                                  >
+                                    <div className="rounded-lg border border-blue-100 bg-white p-3 space-y-2">
+                                      <div className="text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                                        Quarterly Breakdown (
+                                        {row.allocations.length} allocations)
+                                      </div>
+                                      <div className="divide-y divide-gray-100 text-xs">
+                                        {row.allocations.map((alloc) => {
+                                          const periodInfo =
+                                            getYearAwareQuarterFromItem(alloc)
+                                          const timelineLabel = periodInfo
+                                            ? `${periodInfo.key}`
+                                            : getQuarterFromItem(
+                                                alloc,
+                                              )?.toUpperCase() ||
+                                              alloc.timelineType ||
+                                              'Quarterly'
+                                          return (
+                                            <div
+                                              key={alloc.id}
+                                              className="py-2 px-2 flex items-center justify-between gap-4 hover:bg-gray-50 rounded"
+                                            >
+                                              <div className="flex items-center gap-3">
+                                                <Badge
+                                                  variant="outline"
+                                                  className="text-[11px] font-semibold text-blue-700 bg-blue-50 border-blue-200"
+                                                >
+                                                  {timelineLabel}
+                                                </Badge>
+                                                <span className="text-gray-800 font-medium text-sm">
+                                                  {alloc.description ||
+                                                    alloc.object?.name ||
+                                                    '—'}
+                                                </span>
+                                                {alloc.startDate && (
+                                                  <span className="text-gray-500 text-xs">
+                                                    {formatDisplayDate(
+                                                      alloc.startDate,
+                                                    )}
+                                                    {alloc.endDate
+                                                      ? ` – ${formatDisplayDate(alloc.endDate)}`
+                                                      : ''}
+                                                  </span>
+                                                )}
+                                              </div>
+                                              <div className="flex items-center gap-4">
+                                                <span className="font-semibold text-gray-900 text-sm">
+                                                  {formatCurrencyPHP(
+                                                    alloc.budget,
+                                                  )}
+                                                </span>
+                                                <ExpenditureLineItemActionMenu
+                                                  item={alloc}
+                                                  onView={
+                                                    onViewItem
+                                                      ? () =>
+                                                          onViewItem?.(alloc)
+                                                      : undefined
+                                                  }
+                                                  onEdit={
+                                                    !readOnly && onEditItem
+                                                      ? () =>
+                                                          onEditItem?.(alloc)
+                                                      : undefined
+                                                  }
+                                                  onDelete={
+                                                    !readOnly && onDeleteItem
+                                                      ? () =>
+                                                          onDeleteItem?.(alloc)
+                                                      : undefined
+                                                  }
+                                                  isDeleting={
+                                                    isDeletingItemId ===
+                                                    alloc.id
+                                                  }
+                                                />
+                                              </div>
+                                            </div>
+                                          )
+                                        })}
+                                      </div>
+                                    </div>
+                                  </td>
+                                </tr>
+                              )}
+                            </React.Fragment>
+                          )
+                        })}
+                      </tbody>
+                      {/* Category Total Footer */}
+                      <tfoot className="bg-gray-50/50 border-t border-gray-200">
+                        <tr>
+                          <td
+                            colSpan={1 + columns.length}
+                            className="px-5 py-3.5 text-right text-xs text-gray-600 font-medium"
+                          >
+                            Category Total
+                          </td>
+                          <td className="px-4 py-3.5 text-right text-xs sm:text-sm font-semibold text-emerald-600 shrink-0">
+                            {formatCurrencyPHP(group.typeTotal)}
+                          </td>
+                          {showActions && (
+                            <td className="px-2 py-3.5 text-center shrink-0" />
+                          )}
+                        </tr>
+                      </tfoot>
+                    </table>
+                  </div>
+                )
+              })()}
             </div>
           )
         })}
