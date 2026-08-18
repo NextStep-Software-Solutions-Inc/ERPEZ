@@ -87,11 +87,15 @@ export function AdminAPRsManagementTable({
     })
   }, [data, searchTerm, statusFilter, fiscalYearFilter])
 
-  const columns = getAdminAPRsTableColumns({
-    onView,
-    onApprove,
-    onReturn,
-  })
+  const columns = useMemo(
+    () =>
+      getAdminAPRsTableColumns({
+        onView,
+        onApprove,
+        onReturn,
+      }),
+    [onView, onApprove, onReturn]
+  )
 
   const table = useReactTable({
     data: filteredData,

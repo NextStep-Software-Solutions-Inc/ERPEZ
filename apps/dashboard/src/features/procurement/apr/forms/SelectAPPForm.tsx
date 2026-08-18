@@ -1,14 +1,14 @@
 /**
  * Select APP Form Component
- * 
- * Main form handler for multi-APP selection and line item picking
- * Uses TanStack Form with live backend APPs
+ *
+ * Main form handler for multi-APP selection and line item picking.
+ * Pure React state with live backend APPs.
  */
 
-import { useMemo, useState, useEffect, useRef } from 'react'
-import { useForm } from '@tanstack/react-form'
+import { useMemo, useState, useCallback } from 'react'
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import { AlertCircle } from 'lucide-react'
+import { toast } from 'sonner'
 import { APPSelectField } from '../components/APPSelectField'
 import { LineItemsSelectField } from '../components/LineItemsSelectField'
 import { ValidationAlerts } from '../components/ValidationAlerts'
@@ -30,27 +30,26 @@ export type SelectAppFormValues = {
 interface SelectAPPFormProps {
   formId: string
   onSubmit: (values: SelectAppFormValues) => void
-  onValidationChange?: (isValid: boolean) => void
   fiscalYear?: number
   fiscalYearId?: string
+}
+
+const APPROVED_APPS_QUERY_PARAMS = {
+  PageSize: 100,
+  Filters: 'Status==Approved',
 }
 
 export function SelectAPPForm({
   formId,
   onSubmit,
-  onValidationChange,
   fiscalYear = new Date().getFullYear(),
   fiscalYearId,
 }: SelectAPPFormProps) {
   const { data: appsResponse, isLoading: appsLoading } = useApprovedAPPs({
-    queryParams: {
-      PageSize: 100,
-      Filters: 'Status==Approved',
-    },
+    queryParams: APPROVED_APPS_QUERY_PARAMS,
     enabled: true,
   } as any)
 
-  // Extract APPs array from PaginationResponse
   const apps = useMemo(() => {
     if (!appsResponse) return []
     if (Array.isArray(appsResponse)) return appsResponse
@@ -76,19 +75,6 @@ export function SelectAPPForm({
   const [selectedAppIds, setSelectedAppIds] = useState<string[]>([])
   const [selectedLineItemIds, setSelectedLineItemIds] = useState<string[]>([])
 
-  // Reset selections safely only when fiscal year actually changes
-  const prevFyRef = useRef({ fiscalYear, fiscalYearId })
-  useEffect(() => {
-    if (
-      prevFyRef.current.fiscalYear !== fiscalYear ||
-      prevFyRef.current.fiscalYearId !== fiscalYearId
-    ) {
-      prevFyRef.current = { fiscalYear, fiscalYearId }
-      setSelectedAppIds([])
-      setSelectedLineItemIds([])
-    }
-  }, [fiscalYear, fiscalYearId])
-
   const selectedApps = useMemo(
     () => apps.filter((app: any) => selectedAppIds.includes(app.id)),
     [apps, selectedAppIds]
@@ -110,25 +96,6 @@ export function SelectAPPForm({
     })
   }, [selectedApps])
 
-  const form = useForm({
-    defaultValues: {
-      selectedAppIds: [] as string[],
-      selectedLineItemIds: [] as string[],
-      consolidatedItems: [] as ConsolidatedAPRItem[],
-    },
-    onSubmit: async (values) => {
-      onSubmit({
-        selectedAppIds: values.value.selectedAppIds,
-        selectedAppId: values.value.selectedAppIds[0] || '',
-        selectedLineItemIds: values.value.selectedLineItemIds,
-        consolidatedItems: aprItems,
-        selectedApps,
-        selectedApp: primarySelectedApp,
-      })
-    },
-  })
-
-  // Validation logic
   const validation = useAPPApprovalValidation({
     app: primarySelectedApp,
     selectedLineItemCount: selectedLineItemIds.length,
@@ -185,100 +152,81 @@ export function SelectAPPForm({
 
   const budgetValidation = useMemo(() => {
     if (selectedApps.length === 0) return null
-    return validateBudgetCeiling(
-      aprTotalBudget,
-      appTotalBudget,
-      5,
-      10
+    return validateBudgetCeiling(aprTotalBudget, appTotalBudget, 5, 10)
+  }, [selectedApps.length, aprTotalBudget, appTotalBudget])
+
+  // -- Stable handlers ----------------------------------------------------------
+  // All wrapped in useCallback so memoized children never re-render from ref churn.
+
+  const handleToggleApp = useCallback((appId: string) => {
+    setSelectedAppIds((prev) =>
+      prev.includes(appId) ? prev.filter((id) => id !== appId) : [...prev, appId]
     )
-  }, [selectedApps, aprTotalBudget, appTotalBudget])
+  }, [])
 
-  // Boolean validation flag to prevent re-render cascades
-  const isValid = useMemo(() => {
-    return (
-      selectedAppIds.length > 0 &&
-      selectedLineItemIds.length > 0 &&
-      validation.blockingErrors.length === 0 &&
-      !(budgetValidation && budgetValidation.isBlocker)
-    )
-  }, [
-    selectedAppIds.length,
-    selectedLineItemIds.length,
-    validation.blockingErrors.length,
-    budgetValidation,
-  ])
-
-  // Report validation state to parent only when boolean value changes
-  useEffect(() => {
-    onValidationChange?.(isValid)
-  }, [isValid, onValidationChange])
-
-  // Multi-APP toggle handler
-  const handleToggleApp = (appId: string) => {
-    const isAlreadySelected = selectedAppIds.includes(appId)
-    const newAppIds = isAlreadySelected
-      ? selectedAppIds.filter((id) => id !== appId)
-      : [...selectedAppIds, appId]
-
-    setSelectedAppIds(newAppIds)
-    form.setFieldValue('selectedAppIds', newAppIds)
-
-    // Remove line item IDs that belonged exclusively to unselected APP
-    if (isAlreadySelected) {
-      const appBeingRemoved = apps.find((a: any) => a.id === appId)
-      const removedItemIds = (appBeingRemoved?.APPItems || appBeingRemoved?.appItems || appBeingRemoved?.items || []).map(
-        (i: any) => i.id
-      )
-      const newSelectedLineItemIds = selectedLineItemIds.filter((id) => !removedItemIds.includes(id))
-      setSelectedLineItemIds(newSelectedLineItemIds)
-      form.setFieldValue('selectedLineItemIds', newSelectedLineItemIds)
-    }
-  }
-
-  // Select all / Deselect all APPs
-  const handleSelectAllApps = () => {
-    if (selectedAppIds.length === filteredApps.length) {
-      setSelectedAppIds([])
-      setSelectedLineItemIds([])
-      form.setFieldValue('selectedAppIds', [])
-      form.setFieldValue('selectedLineItemIds', [])
-    } else {
-      const allAppIds = filteredApps.map((a: any) => a.id)
-      setSelectedAppIds(allAppIds)
-      form.setFieldValue('selectedAppIds', allAppIds)
-    }
-  }
-
-  const handleToggleLineItem = (lineItemId: string) => {
-    const newIds = selectedLineItemIds.includes(lineItemId)
-      ? selectedLineItemIds.filter((id) => id !== lineItemId)
-      : [...selectedLineItemIds, lineItemId]
-    setSelectedLineItemIds(newIds)
-    form.setFieldValue('selectedLineItemIds', newIds)
-  }
-
-  const handleSelectAllLineItems = () => {
-    const allIds =
-      selectedLineItemIds.length === rawLineItems.length
-        ? []
-        : rawLineItems.map((item: any) => item.id)
-    setSelectedLineItemIds(allIds)
-    form.setFieldValue('selectedLineItemIds', allIds)
-  }
-
-  const handleFormSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    if (selectedAppIds.length === 0 || selectedLineItemIds.length === 0) return
-    if (validation.blockingErrors.length > 0 || (budgetValidation && budgetValidation.isBlocker)) return
-    onSubmit({
-      selectedAppIds,
-      selectedAppId: selectedAppIds[0] || '',
-      selectedLineItemIds,
-      consolidatedItems: aprItems,
-      selectedApps,
-      selectedApp: primarySelectedApp,
+  const handleSelectAllApps = useCallback(() => {
+    setSelectedAppIds((prev) => {
+      const allIds = filteredApps.map((a: any) => a.id)
+      if (prev.length === allIds.length) {
+        setSelectedLineItemIds([])
+        return []
+      }
+      return allIds
     })
-  }
+  }, [filteredApps])
+
+  const handleToggleLineItem = useCallback((lineItemId: string) => {
+    setSelectedLineItemIds((prev) =>
+      prev.includes(lineItemId) ? prev.filter((id) => id !== lineItemId) : [...prev, lineItemId]
+    )
+  }, [])
+
+  const handleSelectAllLineItems = useCallback(() => {
+    setSelectedLineItemIds((prev) => {
+      const allIds = rawLineItems.map((item: any) => item.id)
+      return prev.length === allIds.length ? [] : allIds
+    })
+  }, [rawLineItems])
+
+  const handleFormSubmit = useCallback(
+    (e: React.FormEvent) => {
+      e.preventDefault()
+      if (selectedAppIds.length === 0) {
+        toast.error('Please select at least one approved APP.')
+        return
+      }
+      if (selectedLineItemIds.length === 0) {
+        toast.error('Please select at least one line item to include in this APR.')
+        return
+      }
+      if (validation.blockingErrors.length > 0) {
+        toast.error(validation.blockingErrors[0].message)
+        return
+      }
+      if (budgetValidation && budgetValidation.isBlocker) {
+        toast.error(budgetValidation.message)
+        return
+      }
+      onSubmit({
+        selectedAppIds,
+        selectedAppId: selectedAppIds[0] || '',
+        selectedLineItemIds,
+        consolidatedItems: aprItems,
+        selectedApps,
+        selectedApp: primarySelectedApp,
+      })
+    },
+    [
+      selectedAppIds,
+      selectedLineItemIds,
+      validation,
+      budgetValidation,
+      aprItems,
+      selectedApps,
+      primarySelectedApp,
+      onSubmit,
+    ]
+  )
 
   if (appsLoading) {
     return (
@@ -295,7 +243,8 @@ export function SelectAPPForm({
         <AlertCircle className="h-4 w-4" />
         <AlertTitle>No Approved APPs Found</AlertTitle>
         <AlertDescription>
-          There are no approved APPs available for FY {fiscalYear}. Please consolidate and approve an APP before creating an APR.
+          There are no approved APPs available for FY {fiscalYear}. Please consolidate and approve
+          an APP before creating an APR.
         </AlertDescription>
       </Alert>
     )
@@ -309,6 +258,7 @@ export function SelectAPPForm({
     <form id={formId} onSubmit={handleFormSubmit} className="space-y-4">
       <ValidationAlerts validation={validation} budgetValidation={budgetValidation} />
       <APPSelectField
+        key={fiscalYear}
         apps={filteredApps}
         selectedAppIds={selectedAppIds}
         onToggleApp={handleToggleApp}
@@ -317,18 +267,19 @@ export function SelectAPPForm({
       />
       <LineItemsSelectField
         apps={selectedApps}
+        lineItems={rawLineItems}
         selectedLineItemIds={selectedLineItemIds}
         onToggleLineItem={handleToggleLineItem}
         onSelectAll={handleSelectAllLineItems}
       />
       {selectedApps.length > 0 && selectedLineItemIds.length > 0 && (
         <div className="rounded-lg border border-green-200 bg-green-50 p-4">
-          <h3 className="text-sm font-semibold text-green-900 mb-3">✅ Step 3: Preview Selected Items</h3>
+          <h3 className="text-sm font-semibold text-green-900 mb-3">
+            ? Step 3: Preview Selected Items
+          </h3>
           <APRItemsPreview
-            appId={selectedApps[0]?.id}
-            appBACId={selectedApps[0]?.bac?.id}
             appName={combinedAppNames}
-            lineItems={selectedLineItems}
+            items={aprItems}
             appTotalBudget={appTotalBudget}
           />
         </div>

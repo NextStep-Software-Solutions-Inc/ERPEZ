@@ -3,12 +3,12 @@
  * Main page for viewing and managing APRs with live backend API data
  */
 
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useCallback } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useAtom } from 'jotai'
 import { toast } from 'sonner'
 import {
-  createAPRDialogOpenAtom,
+  selectAPPDialogOpenAtom,
   aprListFilterAtom,
 } from '@/features/procurement/apr/atoms'
 import { useAPRs, useDeleteAPRMutation } from '@/features/procurement/apr/handlers/hooks'
@@ -33,7 +33,7 @@ import {
 
 export function APRListPage() {
   const navigate = useNavigate()
-  const [, setCreateDialogOpen] = useAtom(createAPRDialogOpenAtom)
+  const [, setSelectAPPDialogOpen] = useAtom(selectAPPDialogOpenAtom)
   const [filter, setFilter] = useAtom(aprListFilterAtom)
   const [aprToDelete, setAprToDelete] = useState<APRListItemDto | null>(null)
 
@@ -94,19 +94,19 @@ export function APRListPage() {
   }, [aprList, searchTerm, statusFilter, fiscalYearFilter])
 
   const handleCreateClick = () => {
-    setCreateDialogOpen(true)
+    setSelectAPPDialogOpen(true)
   }
 
-  const handleViewAPR = (apr: any) => {
+  const handleViewAPR = useCallback((apr: any) => {
     navigate({
       to: '/v2/agency-purchase-requests-apr/$aprId',
       params: { aprId: apr.id },
     })
-  }
+  }, [navigate])
 
-  const handleDeleteClick = (apr: APRListItemDto) => {
+  const handleDeleteClick = useCallback((apr: APRListItemDto) => {
     setAprToDelete(apr)
-  }
+  }, [])
 
   const handleConfirmDelete = async () => {
     if (!aprToDelete) return
@@ -122,10 +122,14 @@ export function APRListPage() {
     }
   }
 
-  const columns = getAPRsTableColumns({
-    onView: handleViewAPR,
-    onDelete: handleDeleteClick,
-  })
+  const columns = useMemo(
+    () =>
+      getAPRsTableColumns({
+        onView: handleViewAPR,
+        onDelete: handleDeleteClick,
+      }),
+    [handleViewAPR, handleDeleteClick]
+  )
 
   return (
     <div className="w-full space-y-6 pb-10">

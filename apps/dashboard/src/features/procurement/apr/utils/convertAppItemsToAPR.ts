@@ -37,7 +37,7 @@ export function convertAppLineItemToAPRItem(
   appBACId: string = '',
   index: number = 0
 ): ConsolidatedAPRItem {
-  const itemId = lineItem.id || `apr-item-${appId}-${Date.now()}-${index}`
+  const itemId = lineItem.id || lineItem.ppmpItemId || `apr-item-${appId}-${index}`
   const description =
     lineItem.ppmpItemName ||
     lineItem.description ||

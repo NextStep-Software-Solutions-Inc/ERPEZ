@@ -4,6 +4,7 @@
  * Encapsulates the multi-APP selection UI with scrollable list and checkbox handling
  */
 
+import React from 'react';
 import { Badge } from '@/components/ui/badge'
 import { Checkbox } from '@/components/ui/checkbox'
 import { ScrollArea } from '@/components/ui/scroll-area'
@@ -16,7 +17,7 @@ interface APPSelectFieldProps {
   fiscalYear: number
 }
 
-export function APPSelectField({
+export const APPSelectField = React.memo(function APPSelectField({
   apps,
   selectedAppIds,
   onToggleApp,
@@ -106,4 +107,4 @@ export function APPSelectField({
       </ScrollArea>
     </div>
   )
-}
+});
