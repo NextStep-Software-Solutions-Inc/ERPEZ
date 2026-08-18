@@ -109,6 +109,7 @@ export default function AddPPMPItemExpenditureDialog({
 
   const initialValues: Partial<PPMPExpenditureItemFormValues> = {
     isProcurable: groupToEdit?.isProcurable ?? true,
+    objectId: groupToEdit?.objectId ?? '',
   }
 
   return (

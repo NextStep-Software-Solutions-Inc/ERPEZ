@@ -10,6 +10,7 @@ const endpoint = '/ppmp-expenditure-items'
 export type CreatePPMPExpenditureItemPayload = {
   ppmpActivityId: string
   isProcurable: boolean
+  objectId: string
 }
 
 export const createPPMPExpenditureItemRequest: MutationBlueprintFromTemplate<
