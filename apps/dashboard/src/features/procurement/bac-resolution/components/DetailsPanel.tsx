@@ -2,9 +2,6 @@ import { useState } from 'react'
 import {
   AlertTriangle,
   FileText,
-  Building2,
-  Tag,
-  Wallet,
   ScrollText,
   CalendarDays,
   History,
@@ -16,10 +13,10 @@ import {
   Printer,
   Sparkles,
   Layers,
-  ArrowUpRight,
+  FilePlus,
 } from 'lucide-react'
 import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -36,7 +33,6 @@ import type {
 import {
   getBacResolutionScheduleRoutePath,
   hasExactlyOneLinkedConsolidatedPr,
-  isBacResolutionPublicBiddingEligible,
   resolveBacScheduleEntryState,
 } from '../utils/bacResolutionWorkflow'
 import { useNavigate } from '@tanstack/react-router'
@@ -52,12 +48,12 @@ interface DetailsPanelProps {
   onPrint?: () => void | Promise<void>
   onSubmit?: () => void | Promise<void>
   onViewDocument?: () => void
+  onCreatePr?: () => void
 }
 
 export function DetailsPanel({
   selectedResolution,
   role,
-  workspaceScope = 'all',
   bacListRoutePath = '/v2/bac-resolutions',
   handleViewConsolidatedPrDetails,
   isLoading = false,
@@ -65,6 +61,7 @@ export function DetailsPanel({
   onPrint,
   onSubmit,
   onViewDocument,
+  onCreatePr,
 }: DetailsPanelProps) {
   const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('overview')
@@ -91,15 +88,10 @@ export function DetailsPanel({
   const context = selectedResolution.procurementProjectContext
   const title = context?.projectTitle || selectedResolution.description || 'Procurement Project'
   const isDraft = selectedResolution.status === 'draft'
-  const isForApproval = selectedResolution.status === 'for-approval'
   const isApproved = selectedResolution.status === 'approved'
   const isReturned = selectedResolution.status === 'returned'
 
   const missingSingleOwnedPr = !hasExactlyOneLinkedConsolidatedPr(selectedResolution)
-  const lacksPublicBiddingEligibility =
-    selectedResolution.status === 'approved' &&
-    !missingSingleOwnedPr &&
-    !isBacResolutionPublicBiddingEligible(selectedResolution)
 
   const scheduleEntryState = resolveBacScheduleEntryState({
     resolution: selectedResolution,
@@ -108,9 +100,6 @@ export function DetailsPanel({
   const scheduleCtaLabel = scheduleEntryState.canOpenSchedule
     ? 'Open Bidding Schedule'
     : 'Generate Bidding Schedule'
-  const showScheduleBlocker =
-    workspaceScope === 'public-bidding' &&
-    scheduleEntryState.showBlockedScheduleAction
   const canScheduleNavigate =
     scheduleEntryState.canGenerateSchedule || scheduleEntryState.canOpenSchedule
   const scheduleRoutePath = getBacResolutionScheduleRoutePath(
@@ -139,6 +128,25 @@ export function DetailsPanel({
 
             {/* Quick Actions in Header Banner */}
             <div className="flex flex-wrap items-center gap-2">
+              {isApproved && (
+                selectedResolution.isPrCreated ? (
+                  <Badge className="bg-emerald-600 text-white font-medium py-1 px-2.5 text-xs">
+                    <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+                    PR Created: {selectedResolution.createdPrNumber}
+                  </Badge>
+                ) : onCreatePr ? (
+                  <Button
+                    size="sm"
+                    onClick={onCreatePr}
+                    disabled={isLoading}
+                    className="gap-1.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white shadow-xs"
+                  >
+                    <FilePlus className="h-3.5 w-3.5" />
+                    Create PR
+                  </Button>
+                ) : null
+              )}
+
               {canScheduleNavigate && (
                 <Button
                   size="sm"

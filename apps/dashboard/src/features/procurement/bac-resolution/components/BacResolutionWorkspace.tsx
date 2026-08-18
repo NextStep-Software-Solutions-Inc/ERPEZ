@@ -182,6 +182,11 @@ export function BacResolutionWorkspace({
               onViewDocument={
                 ws.selectedResolution ? () => setDocPreviewOpen(true) : undefined
               }
+              onCreatePr={
+                ws.selectedResolution && ws.selectedResolution.status === 'approved'
+                  ? () => setCreatePrModalOpen(true)
+                  : undefined
+              }
             />
           </div>
         </div>
