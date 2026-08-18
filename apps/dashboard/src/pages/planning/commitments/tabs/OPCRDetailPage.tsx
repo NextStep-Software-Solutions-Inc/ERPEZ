@@ -2,7 +2,11 @@ import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, ArrowRight, Download, Loader2 } from 'lucide-react'
 import { useState } from 'react'
-import { useOPCRById, useGenerateOPCRDocument } from '@/features/planning/opcr/hooks/useOPCR'
+import {
+  useOPCRById,
+  useGenerateOPCRDocument,
+  useDownloadOPCRDocument,
+} from '@/features/planning/opcr'
 import { countKPIsByCategory, normalizeCategory } from '@/features/planning/opcr/utils/countKPIsByCategory'
 import { getCategoryVisuals } from '../utils/functions'
 import { useNavigate, useSearch } from '@tanstack/react-router'
@@ -11,7 +15,6 @@ import { getStatusLabel } from '@/utils/formatters'
 import OPCRItemKPIAccordion from '@/features/planning/opcr/components/OPCRItemKPIAccordion'
 import { OPCRItem } from '@/features/planning/opcr/types/type.opcr'
 import { toast } from 'sonner'
-import api from '@/services/api'
 
 interface OPCRDetailPageProps {
   opcrId: string
@@ -38,8 +41,12 @@ export default function OPCRDetailPage({
     pathParams: { id: opcrId },
     queryParams: {},
   })
-  const { mutateAsync: generateOPCRDocument, isPending: isGeneratingPdf } =
+  const { mutateAsync: generateOPCRDocument, isPending: isGenerating } =
     useGenerateOPCRDocument()
+  const { mutateAsync: downloadOPCRDocument, isPending: isDownloading } =
+    useDownloadOPCRDocument()
+
+  const isGeneratingPdf = isGenerating || isDownloading
   const opcrData = opcrResponse?.data
 
   const handleGeneratePdf = async () => {
@@ -54,17 +61,29 @@ export default function OPCRDetailPage({
         throw new Error('No document ID returned from backend generator.')
       }
 
-      const response = await api.get(`/api/planning/documents/${documentId}/download`, {
-        responseType: 'blob',
+      const downloadRes = await downloadOPCRDocument({
+        pathParams: { documentId },
       })
 
-      const filename = `OPCR_${opcrData?.name?.replace(/\s+/g, '_') || opcrId}.pdf`
-      const url = URL.createObjectURL(response.data)
-      const anchor = document.createElement('a')
-      anchor.href = url
-      anchor.download = filename
-      anchor.click()
-      setTimeout(() => URL.revokeObjectURL(url), 100)
+      const blob = downloadRes?.blob
+      if (!blob) {
+        throw new Error('Failed to retrieve document binary from backend.')
+      }
+
+      const sanitizedName = opcrData?.name?.trim().replace(/\s+/g, '_')
+      const filename = sanitizedName ? `OPCR_${sanitizedName}.pdf` : `OPCR_${opcrId || 'document'}.pdf`
+      const url = URL.createObjectURL(blob)
+
+      try {
+        const anchor = document.createElement('a')
+        anchor.href = url
+        anchor.download = filename
+        document.body.appendChild(anchor)
+        anchor.click()
+        document.body.removeChild(anchor)
+      } finally {
+        URL.revokeObjectURL(url)
+      }
 
       toast.success('OPCR PDF generated and downloaded successfully.')
     } catch (error) {
@@ -72,6 +91,7 @@ export default function OPCRDetailPage({
       toast.error('Failed to generate or download the OPCR PDF from backend API.')
     }
   }
+
 
 
   // Filter KPIs by selected category

@@ -12,6 +12,7 @@ import { submitOPCRRatingRequest } from '../handlers/submitOPCRRatingRequest'
 import { returnOPCRRatingRequest } from '../handlers/returnOPCRRatingRequest'
 import { getOPCRRequest } from '../handlers/getOPCRRequest'
 import { generateOPCRDocumentRequest } from '../handlers/generateOPCRDocumentRequest'
+import { downloadOPCRDocumentRequest } from '../handlers/downloadOPCRDocumentRequest'
 
 /**
  * Hook for fetching a list of OPCRs
@@ -91,5 +92,18 @@ export const useReturnOPCRRating = createMutationHookFromTemplate(
 export const useGenerateOPCRDocument = createMutationHookFromTemplate(
   generateOPCRDocumentRequest,
 )
+
+/**
+ * Hook for downloading a generated OPCR document (GET /api/planning/documents/:documentId/download)
+ *
+ * Usage:
+ * const { mutateAsync, isPending } = useDownloadOPCRDocument()
+ * const res = await mutateAsync({ pathParams: { documentId: 'doc-id' } })
+ */
+export const useDownloadOPCRDocument = createMutationHookFromTemplate(
+  downloadOPCRDocumentRequest,
+)
+
+
 
 
