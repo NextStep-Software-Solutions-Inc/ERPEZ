@@ -1,13 +1,12 @@
 /**
  * Select APP Dialog Component
  * 
- * Uses dialog + form pattern with Jotai atom state management
- * Max 50 lines - clean separation of concerns
+ * Uses dialog + form pattern with Jotai atom state management and live API Fiscal Years
  */
 
-import { useState } from 'react'
+import { useState, useMemo, useEffect, useCallback } from 'react'
 import { useAtom } from 'jotai'
-import { CheckCircle2 } from 'lucide-react'
+import { CheckCircle2, Loader2 } from 'lucide-react'
 import {
   Dialog,
   DialogContent,
@@ -24,12 +23,21 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
+import { Badge } from '@/components/ui/badge'
 import { SelectAPPForm, type SelectAppFormValues } from '../forms/SelectAPPForm'
 import { selectAPPDialogOpenAtom, selectedAPRFiscalYearAtom } from '../atoms'
+import { useFiscalYears } from '../handlers/hooks'
 import type { ConsolidatedAPRItem } from '../types'
 
 interface SelectAPPDialogProps {
-  onSelectAPP: (appId: string, lineItemIds: string[], consolidatedItems: ConsolidatedAPRItem[]) => void
+  onSelectAPP: (
+    appId: string,
+    lineItemIds: string[],
+    consolidatedItems: ConsolidatedAPRItem[],
+    selectedApp?: any,
+    selectedAppIds?: string[],
+    selectedApps?: any[]
+  ) => void
 }
 
 export function SelectAPPDialog({ onSelectAPP }: SelectAPPDialogProps) {
@@ -38,8 +46,45 @@ export function SelectAPPDialog({ onSelectAPP }: SelectAPPDialogProps) {
   const [isFormValid, setIsFormValid] = useState(false)
   const formId = 'select-app-form'
 
+  // Fetch live fiscal years from backend API
+  const { data: fiscalYearsResponse, isLoading: fiscalYearsLoading } = useFiscalYears({})
+
+  const fiscalYears = useMemo(() => {
+    if (!fiscalYearsResponse) return []
+    if (Array.isArray(fiscalYearsResponse)) return fiscalYearsResponse
+    if (Array.isArray((fiscalYearsResponse as any).data)) return (fiscalYearsResponse as any).data
+    if (Array.isArray((fiscalYearsResponse as any).items)) return (fiscalYearsResponse as any).items
+    return []
+  }, [fiscalYearsResponse])
+
+  // Automatically select the active fiscal year if not yet set
+  useEffect(() => {
+    if (fiscalYears.length > 0 && !selectedFiscalYear) {
+      const activeFY = fiscalYears.find((fy: any) => fy.status === 'active') || fiscalYears[0]
+      if (activeFY?.year) {
+        setSelectedFiscalYear(activeFY.year)
+      }
+    }
+  }, [fiscalYears, selectedFiscalYear, setSelectedFiscalYear])
+
+  const selectedFYObj = useMemo(
+    () => fiscalYears.find((fy: any) => fy.year === selectedFiscalYear),
+    [fiscalYears, selectedFiscalYear]
+  )
+
+  const handleValidationChange = useCallback((valid: boolean) => {
+    setIsFormValid((prev) => (prev !== valid ? valid : prev))
+  }, [])
+
   const handleSubmit = (values: SelectAppFormValues) => {
-    onSelectAPP(values.selectedAppId, values.selectedLineItemIds, values.consolidatedItems)
+    onSelectAPP(
+      values.selectedAppId,
+      values.selectedLineItemIds,
+      values.consolidatedItems,
+      values.selectedApp,
+      values.selectedAppIds,
+      values.selectedApps
+    )
     setOpen(false)
   }
 
@@ -53,22 +98,50 @@ export function SelectAPPDialog({ onSelectAPP }: SelectAPPDialogProps) {
           </DialogDescription>
         </DialogHeader>
 
-        {/* Fiscal Year Selector */}
+        {/* Fiscal Year Selector — API integrated */}
         <div className="px-6 py-3 bg-blue-50 rounded-lg border border-blue-200 space-y-2">
-          <label className="text-sm font-medium text-blue-900">Select Fiscal Year</label>
-          <Select value={selectedFiscalYear.toString()} onValueChange={(val) => setSelectedFiscalYear(parseInt(val))}>
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium text-blue-900">Select Fiscal Year</label>
+            {fiscalYearsLoading && (
+              <span className="text-xs text-blue-600 flex items-center gap-1">
+                <Loader2 className="h-3 w-3 animate-spin" /> Loading fiscal years...
+              </span>
+            )}
+          </div>
+          <Select
+            value={selectedFiscalYear ? selectedFiscalYear.toString() : ''}
+            onValueChange={(val) => setSelectedFiscalYear(parseInt(val, 10))}
+            disabled={fiscalYearsLoading || fiscalYears.length === 0}
+          >
             <SelectTrigger className="w-full bg-white">
               <SelectValue placeholder="Select fiscal year" />
             </SelectTrigger>
             <SelectContent>
-              {Array.from({ length: 10 }, (_, i) => {
-                const year = new Date().getFullYear() - 5 + i
-                return (
-                  <SelectItem key={year} value={year.toString()}>
-                    FY {year}
+              {fiscalYears.length > 0 ? (
+                fiscalYears.map((fy: any) => (
+                  <SelectItem key={fy.id || fy.year} value={fy.year.toString()}>
+                    <div className="flex items-center justify-between w-full gap-3">
+                      <span>FY {fy.year}</span>
+                      {fy.status && (
+                        <Badge
+                          variant="outline"
+                          className={`text-[10px] py-0 h-4 capitalize ${
+                            fy.status === 'active'
+                              ? 'bg-green-50 text-green-700 border-green-300'
+                              : 'bg-gray-50 text-gray-600 border-gray-300'
+                          }`}
+                        >
+                          {fy.status}
+                        </Badge>
+                      )}
+                    </div>
                   </SelectItem>
-                )
-              })}
+                ))
+              ) : (
+                <SelectItem value={selectedFiscalYear ? selectedFiscalYear.toString() : ''}>
+                  FY {selectedFiscalYear || 2026}
+                </SelectItem>
+              )}
             </SelectContent>
           </Select>
         </div>
@@ -77,8 +150,9 @@ export function SelectAPPDialog({ onSelectAPP }: SelectAPPDialogProps) {
           <SelectAPPForm
             formId={formId}
             onSubmit={handleSubmit}
-            onValidationChange={setIsFormValid}
+            onValidationChange={handleValidationChange}
             fiscalYear={selectedFiscalYear}
+            fiscalYearId={selectedFYObj?.id}
           />
         </div>
 

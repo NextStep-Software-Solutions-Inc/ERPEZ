@@ -36,7 +36,7 @@ export interface PSDBMItem {
   unitPrice: number // Price per unit in PHP
   unit: string // e.g., "BOX", "ROLL", "PIECE", "GALLON", "BOTTLE"
   imageUrl: string // URL to item image
-  availability: PSDBMItemAvailability
+  availability: PSDBMItemAvailability | 'Available' | 'Limited' | 'Out of Stock'
 }
 
 /**

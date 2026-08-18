@@ -1,80 +1,91 @@
 /**
  * APR List Page Component
- * Main page for viewing and managing APRs
+ * Main page for viewing and managing APRs with live backend API data
  */
 
-import { useMemo } from 'react'
+import { useMemo, useState } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import { useAtom } from 'jotai'
-import { createQueryHookFromTemplate } from 'erpez-shared-lib'
+import { toast } from 'sonner'
 import {
   createAPRDialogOpenAtom,
   aprListFilterAtom,
 } from '@/features/procurement/apr/atoms'
-import { getAPRsRequest } from '@/features/procurement/apr/handlers'
+import { useAPRs, useDeleteAPRMutation } from '@/features/procurement/apr/handlers/hooks'
 import { getAPRsTableColumns } from '@/features/procurement/apr/tables/APRsTableColumns'
 import { APRsTableToolbar } from '@/features/procurement/apr/tables/APRsTableToolbar'
 import { CreateAPRDialog, AddAgencyAPPDialog } from '@/features/procurement/apr/dialogs'
-import { mockAPRList } from '@/features/procurement/apr/mocks'
-import type { APRMaster } from '@/features/procurement/apr/types'
+import type { APRListItemDto } from '@/features/procurement/apr/types'
 import { TemplateTable } from '@/components/TemplateTable'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { AlertCircle, ClipboardList } from 'lucide-react'
-
-const useAPRs = createQueryHookFromTemplate(getAPRsRequest)
+import { AlertCircle, ClipboardList, Loader2 } from 'lucide-react'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 export function APRListPage() {
   const navigate = useNavigate()
   const [, setCreateDialogOpen] = useAtom(createAPRDialogOpenAtom)
   const [filter, setFilter] = useAtom(aprListFilterAtom)
+  const [aprToDelete, setAprToDelete] = useState<APRListItemDto | null>(null)
 
-  // Fetch APRs - fallback to mock data if API not available
-  const { data, isLoading, error } = useAPRs({
-    pathParams: {},
-    queryParams: {},
-  })
+  // Fetch APRs from real backend database
+  const { data: responseData, isLoading, error, refetch } = useAPRs({
+    queryParams: {
+      PageNumber: 1,
+      PageSize: 50,
+    },
+  } as any)
 
-  // Parse nested response structure: APIResponse<APRListResponse>
-  // --- Structure ---
-  // Outer: APIResponse wrapper { data, succeeded, errors }
-  // Inner: APRListResponse { data: APRMaster[], total, page, pageSize }
-  // Access: data.data = APRListResponse, then data.data.data = APRMaster[]
-  const responseData = data?.data
-  // TODO: Replace with API data once backend is ready
-  // const aprList = (responseData?.data as APRMaster[] | undefined) ?? mockAPRList
-  const aprList = mockAPRList
+  const { mutateAsync: deleteAPR, isPending: isDeleting } = useDeleteAPRMutation()
+
+  // Extract items array from PaginatedApiResponse
+  const aprList: APRListItemDto[] = useMemo(() => {
+    if (!responseData) return []
+    if (Array.isArray(responseData)) return responseData
+    if (Array.isArray((responseData as any).data)) return (responseData as any).data
+    if (Array.isArray((responseData as any).items)) return (responseData as any).items
+    return []
+  }, [responseData])
 
   const searchTerm = filter.searchTerm
   const statusFilter = filter.status
   const fiscalYearFilter = filter.fiscalYear
 
   /**
-   * Apply filters to APR list
-   * Filters by: search term (aprNumber, description, agencyControlNumber)
-   *            status (if not 'all')
-   *            fiscal year
+   * Apply client-side filters to live APR list
    */
   const filteredAprList = useMemo(() => {
     return aprList.filter((apr) => {
       // Search term filter (case-insensitive)
       if (searchTerm.trim()) {
         const lowerSearch = searchTerm.toLowerCase()
-        const matchesSearch =
-          apr.aprNumber.toLowerCase().includes(lowerSearch) ||
-          apr.description.toLowerCase().includes(lowerSearch) ||
-          apr.agencyControlNumber.toLowerCase().includes(lowerSearch)
-
-        if (!matchesSearch) return false
+        const aprNum = (apr.aprNumber || '').toLowerCase()
+        const office = (apr.officeName || '').toLowerCase()
+        if (!aprNum.includes(lowerSearch) && !office.includes(lowerSearch)) {
+          return false
+        }
       }
 
       // Status filter
-      if (statusFilter !== 'all' && apr.status !== statusFilter) {
-        return false
+      if (statusFilter !== 'all') {
+        const statusLower = (apr.status || '').toLowerCase()
+        const filterLower = statusFilter.toLowerCase()
+        if (statusLower !== filterLower) {
+          return false
+        }
       }
 
       // Fiscal year filter
-      if (apr.fiscalYear !== fiscalYearFilter) {
+      if (fiscalYearFilter && apr.fiscalYear && apr.fiscalYear !== fiscalYearFilter) {
         return false
       }
 
@@ -86,20 +97,34 @@ export function APRListPage() {
     setCreateDialogOpen(true)
   }
 
-  const handleViewAPR = (apr: APRMaster) => {
+  const handleViewAPR = (apr: any) => {
     navigate({
       to: '/v2/agency-purchase-requests-apr/$aprId',
       params: { aprId: apr.id },
     })
   }
 
-  const handleDeleteAPR = (apr: APRMaster) => {
-    console.log('Delete APR:', apr.id)
+  const handleDeleteClick = (apr: APRListItemDto) => {
+    setAprToDelete(apr)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!aprToDelete) return
+    try {
+      await deleteAPR({
+        pathParams: { aprId: aprToDelete.id },
+      } as any)
+      toast.success(`APR ${aprToDelete.aprNumber} deleted successfully`)
+      setAprToDelete(null)
+    } catch (err: any) {
+      const msg = err?.response?.data?.message || err?.message || 'Failed to delete APR'
+      toast.error(msg)
+    }
   }
 
   const columns = getAPRsTableColumns({
     onView: handleViewAPR,
-    onDelete: handleDeleteAPR,
+    onDelete: handleDeleteClick,
   })
 
   return (
@@ -144,12 +169,20 @@ export function APRListPage() {
         {/* Error State */}
         {error && (
           <Card className="border-red-200 bg-red-50">
-            <CardContent className="pt-6 flex items-center gap-2 text-red-800">
-              <AlertCircle className="h-5 w-5 flex-shrink-0" />
-              <div>
-                <p className="font-medium">Failed to load APRs</p>
-                <p className="text-sm">An error occurred while fetching APRs</p>
+            <CardContent className="pt-6 flex items-center justify-between gap-2 text-red-800">
+              <div className="flex items-center gap-2">
+                <AlertCircle className="h-5 w-5 flex-shrink-0 text-red-600" />
+                <div>
+                  <p className="font-medium">Failed to load APRs</p>
+                  <p className="text-sm">{String((error as any)?.message || 'An error occurred while fetching APRs from server')}</p>
+                </div>
               </div>
+              <button
+                onClick={() => refetch()}
+                className="px-3 py-1 bg-red-100 hover:bg-red-200 text-red-800 text-sm font-medium rounded border border-red-300"
+              >
+                Retry
+              </button>
             </CardContent>
           </Card>
         )}
@@ -158,19 +191,23 @@ export function APRListPage() {
         {isLoading && (
           <Card>
             <CardContent className="pt-6">
-              <div className="flex items-center justify-center gap-2 text-gray-500">
-                <div className="h-4 w-4 animate-spin rounded-full border-2 border-blue-500 border-t-transparent" />
-                Loading APRs...
+              <div className="flex items-center justify-center gap-2 text-gray-500 py-12">
+                <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                <span className="text-sm font-medium">Fetching live APRs from database...</span>
               </div>
             </CardContent>
           </Card>
         )}
 
-        {/* Table */}
+        {/* Live Table */}
         {!isLoading && filteredAprList && filteredAprList.length > 0 && (
           <Card>
             <CardContent className="pt-6">
-              <TemplateTable columns={columns as any} data={filteredAprList} actions={['read', 'write', 'delete', 'submit']} />
+              <TemplateTable
+                columns={columns as any}
+                data={filteredAprList}
+                actions={['read', 'write', 'delete', 'submit']}
+              />
             </CardContent>
           </Card>
         )}
@@ -179,25 +216,45 @@ export function APRListPage() {
         {!isLoading && (!filteredAprList || filteredAprList.length === 0) && !error && (
           <Card>
             <CardContent className="pt-6">
-              <div className="text-center py-8">
-                <p className="text-gray-500 mb-4">
+              <div className="text-center py-12">
+                <ClipboardList className="mx-auto h-12 w-12 text-gray-400 mb-3" />
+                <p className="text-gray-600 font-medium mb-1">
                   {searchTerm.trim() || statusFilter !== 'all'
                     ? 'No APRs match your filters'
-                    : 'No APRs found'}
+                    : 'No Agency Purchase Requests found'}
                 </p>
-                <button
-                  onClick={handleCreateClick}
-                  className="text-blue-600 hover:underline text-sm font-medium"
-                >
+                <p className="text-sm text-gray-400">
                   {searchTerm.trim() || statusFilter !== 'all'
-                    ? 'Clear filters or create new APR'
-                    : 'Create your first APR'}
-                </button>
+                    ? 'Try adjusting your search criteria'
+                    : 'Create your first APR from an approved Annual Procurement Plan (APP)'}
+                </p>
               </div>
             </CardContent>
           </Card>
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={!!aprToDelete} onOpenChange={(open) => !open && setAprToDelete(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Draft APR?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete <span className="font-semibold">{aprToDelete?.aprNumber}</span>? This action cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isDeleting}>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleConfirmDelete}
+              disabled={isDeleting}
+              className="bg-red-600 hover:bg-red-700 text-white"
+            >
+              {isDeleting ? 'Deleting...' : 'Delete'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Dialogs */}
       <CreateAPRDialog />

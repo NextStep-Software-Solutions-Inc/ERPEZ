@@ -5,7 +5,6 @@
  * Step 1: Select source APP and line items (SelectAPPDialog)
  * Step 2: Configure header information
  * Step 3: Configure terms & conditions
- * Uses OrdinaryDialog composition pattern
  */
 
 import { useState } from 'react'
@@ -13,16 +12,19 @@ import * as React from 'react'
 import { useAtom } from 'jotai'
 import { useForm } from '@tanstack/react-form'
 import { toast } from 'sonner'
-import { createMutationHookFromTemplate } from 'erpez-shared-lib'
 import {
   createAPRDialogOpenAtom,
   selectAPPDialogOpenAtom,
   selectedAPRFiscalYearAtom,
 } from '../atoms'
-import { createAPRRequest } from '../handlers'
+import { useCreateAPRMutation } from '../handlers/hooks'
 import { APRHeaderForm, APRTermsForm } from '../forms'
-import { ModeOfDelivery, InsufficientFundsAction } from '../types'
-import type { CreateAPRPayload } from '../types'
+import {
+  ModeOfDelivery,
+  InsufficientFundsAction,
+  type CreateAPRCommandPayload,
+  type ConsolidatedAPRItem,
+} from '../types'
 import {
   Dialog,
   DialogContent,
@@ -34,9 +36,7 @@ import {
 import { Button } from '@/components/ui/button'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { SelectAPPDialog } from './SelectAPPDialog'
-import type { ConsolidatedAPRItem } from '../types'
-
-const useCreateAPR = createMutationHookFromTemplate(createAPRRequest)
+import { Loader2 } from 'lucide-react'
 
 export function CreateAPRDialog() {
   const [open, setOpen] = useAtom(createAPRDialogOpenAtom)
@@ -44,15 +44,16 @@ export function CreateAPRDialog() {
   const [selectedFiscalYear] = useAtom(selectedAPRFiscalYearAtom)
   const [activeTab, setActiveTab] = useState('header')
   const [sourceAPPId, setSourceAPPId] = useState<string | null>(null)
+  const [selectedApp, setSelectedApp] = useState<any | null>(null)
   const [selectedAppLineItemIds, setSelectedAppLineItemIds] = useState<string[]>([])
   const [consolidatedItems, setConsolidatedItems] = useState<ConsolidatedAPRItem[]>([])
 
-  const { mutateAsync: createAPR, isPending } = useCreateAPR()
+  const { mutateAsync: createAPR, isPending } = useCreateAPRMutation()
 
-  // Auto-open SelectAPPDialog when CreateAPRDialog opens
+  // Auto-open SelectAPPDialog when CreateAPRDialog opens without selected APP
   React.useEffect(() => {
     if (open && !sourceAPPId) {
-      setSelectAPPDialogOpen(true)
+      setSelectAPPDialogOpen((prev) => (!prev ? true : prev))
     }
   }, [open, sourceAPPId, setSelectAPPDialogOpen])
 
@@ -61,7 +62,7 @@ export function CreateAPRDialog() {
       agencyControlNumber: '',
       agencyAccountCode: '',
       description: '',
-      requestDate: new Date().toISOString(),
+      requestDate: new Date().toISOString().split('T')[0],
       fiscalYear: selectedFiscalYear,
       modeOfDelivery: ModeOfDelivery.FAST_LANE,
       insufficientFundsAction: InsufficientFundsAction.REDUCE_QUANTITY,
@@ -79,45 +80,77 @@ export function CreateAPRDialog() {
           return
         }
 
-        const payload: CreateAPRPayload = {
-          sourceAPPId,
-          selectedAppLineItemIds,
-          consolidatedItems,
-          header: {
-            agencyControlNumber: values.value.agencyControlNumber,
-            agencyAccountCode: values.value.agencyAccountCode,
-            description: values.value.description,
-            requestDate: values.value.requestDate,
-            fiscalYear: values.value.fiscalYear,
-            procuringEntity: '',
-            requestingEntity: '',
-          },
-          terms: {
-            modeOfDelivery: values.value.modeOfDelivery,
-            insufficientFundsAction: values.value.insufficientFundsAction,
-            attachments: values.value.attachments,
-            remarks: values.value.remarks,
-          },
+        const officeId =
+          selectedApp?.officeId ||
+          selectedApp?.APPItems?.[0]?.officeId ||
+          selectedApp?.appItems?.[0]?.officeId ||
+          selectedApp?.APPPPMPs?.[0]?.PPMP?.officeId ||
+          selectedApp?.APPPPMPs?.[0]?.ppmp?.officeId ||
+          selectedApp?.appppmPs?.[0]?.ppmp?.officeId ||
+          '00000000-0000-0000-0000-000000000000'
+
+        const fiscalYearId =
+          selectedApp?.fiscalYearId ||
+          selectedApp?.FiscalYear?.id ||
+          selectedApp?.fiscalYear?.id ||
+          '00000000-0000-0000-0000-000000000000'
+
+        // Map line items to backend CreateAPRItemDto
+        const items = selectedAppLineItemIds.map((lineItemId) => {
+          const item = consolidatedItems.find(
+            (ci) => ci.appLineItemId === lineItemId || ci.id === lineItemId
+          )
+          return {
+            appItemId: lineItemId,
+            quantityRequested: item?.quantity ?? null,
+            unitCost: item?.unitCost ?? null,
+          }
+        })
+
+        const commandPayload: CreateAPRCommandPayload = {
+          appId: sourceAPPId,
+          officeId,
+          fiscalYearId,
+          agencyControlNumber: values.value.agencyControlNumber || null,
+          agencyAccountCode: values.value.agencyAccountCode || null,
+          requestDate: values.value.requestDate.split('T')[0],
+          description: values.value.description || null,
+          modeOfDelivery: values.value.modeOfDelivery,
+          insufficientFundsAction: values.value.insufficientFundsAction,
+          requiresObR: !!values.value.attachments.observationReportRequired,
+          requiresCBA: !!values.value.attachments.collectiveBarterAgreementRequired,
+          requiresCompleteSpecifications: !!values.value.attachments.completeSpecsRequired,
+          additionalRemarks: values.value.remarks || null,
+          items,
         }
 
         await createAPR({
-          pathParams: {},
-          payload,
-        })
+          payload: commandPayload,
+        } as any)
 
-        toast.success('APR created successfully')
-        setOpen(false)
-        setSourceAPPId(null)
-        setSelectedAppLineItemIds([])
-        setConsolidatedItems([])
-      } catch (error) {
-        toast.error('Failed to create APR')
+        toast.success('Agency Purchase Request (APR) created successfully')
+        handleClose()
+      } catch (error: any) {
+        console.error('Failed to create APR:', error)
+        const msg = error?.response?.data?.message || error?.message || 'Failed to create APR'
+        toast.error(msg)
       }
     },
   })
 
-  const handleSelectAPP = (appId: string, lineItemIds: string[], items: ConsolidatedAPRItem[]) => {
+  const [selectedApps, setSelectedApps] = useState<any[]>([])
+
+  const handleSelectAPP = (
+    appId: string,
+    lineItemIds: string[],
+    items: ConsolidatedAPRItem[],
+    app?: any,
+    _selectedAppIds?: string[],
+    appsList?: any[]
+  ) => {
     setSourceAPPId(appId)
+    setSelectedApp(app)
+    if (appsList) setSelectedApps(appsList)
     setSelectedAppLineItemIds(lineItemIds)
     setConsolidatedItems(items)
     setSelectAPPDialogOpen(false)
@@ -126,6 +159,8 @@ export function CreateAPRDialog() {
   const handleClose = () => {
     setOpen(false)
     setSourceAPPId(null)
+    setSelectedApp(null)
+    setSelectedApps([])
     setSelectedAppLineItemIds([])
     setConsolidatedItems([])
   }
@@ -133,6 +168,11 @@ export function CreateAPRDialog() {
   const handleOpenSelectAPP = () => {
     setSelectAPPDialogOpen(true)
   }
+
+  const appDisplayName =
+    selectedApps.length > 1
+      ? selectedApps.map((a) => a.appNumber || a.appCode || a.name).join(', ')
+      : selectedApp?.appNumber || selectedApp?.appCode || (sourceAPPId ? `APP ${sourceAPPId.substring(0, 8)}` : '')
 
   return (
     <>
@@ -161,16 +201,17 @@ export function CreateAPRDialog() {
               <div className="flex items-center justify-between">
                 <div>
                   <p className="text-sm font-medium text-green-900">
-                    ✅ APP Selected
+                    ✅ APP Selected: <span className="font-bold">{appDisplayName}</span>
                   </p>
                   <p className="text-xs text-green-700">
-                    {selectedAppLineItemIds.length} line items will be added to this APR
+                    {selectedAppLineItemIds.length} line items selected for this APR
                   </p>
                 </div>
                 <Button
                   variant="outline"
                   size="sm"
                   onClick={handleOpenSelectAPP}
+                  disabled={isPending}
                 >
                   Change APP
                 </Button>
@@ -205,7 +246,14 @@ export function CreateAPRDialog() {
               Change APP
             </Button>
             <Button onClick={() => form.handleSubmit()} disabled={isPending || !sourceAPPId}>
-              {isPending ? 'Creating...' : 'Create APR'}
+              {isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creating APR...
+                </>
+              ) : (
+                'Create APR'
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

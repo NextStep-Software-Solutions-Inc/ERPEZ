@@ -117,7 +117,15 @@ export function APRHeaderSection({ apr }: APRHeaderSectionProps) {
                   Created
                 </span>
                 <span className="text-sm text-gray-900">
-                  {format(new Date(apr.createdAt), 'MMM dd, yyyy hh:mm a')}
+                  {(() => {
+                    const dt = apr.createdAt || apr.requestDate
+                    if (!dt) return '—'
+                    try {
+                      return format(new Date(dt), 'MMM dd, yyyy hh:mm a')
+                    } catch {
+                      return String(dt)
+                    }
+                  })()}
                 </span>
               </div>
               {timelineFields.map((field, idx) => (

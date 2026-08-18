@@ -3,13 +3,17 @@ import { Truck } from 'lucide-react'
 import type { ModeOfDelivery } from '@/features/procurement/apr/types'
 
 interface ModeOfDeliveryCardProps {
-  mode: ModeOfDelivery | undefined
+  mode: ModeOfDelivery | string | undefined
 }
 
 const MODE_LABELS: Record<string, string> = {
   FAST_LANE: 'Fast Lane Delivery',
+  FastLane: 'Fast Lane Delivery',
   SCHEDULED_PICKUP: 'Scheduled Pickup',
+  ScheduledPickUp: 'Scheduled Pickup',
+  ScheduledPickup: 'Scheduled Pickup',
   DOOR_TO_DOOR: 'Door-to-Door Delivery',
+  DoorToDoor: 'Door-to-Door Delivery',
 }
 
 export function ModeOfDeliveryCard({ mode }: ModeOfDeliveryCardProps) {

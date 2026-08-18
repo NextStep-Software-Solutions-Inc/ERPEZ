@@ -20,19 +20,18 @@ import {
   getVarianceWarning,
   validateBudgetCeiling,
 } from '../utils'
-import type { BACLineItem } from '@/features/planning/app-consolidation/types'
 
 interface APRItemsPreviewProps {
   appId: string
-  appBACId: string
+  appBACId?: string
   appName: string
-  lineItems: BACLineItem[]
+  lineItems: any[]
   appTotalBudget: number
 }
 
 export function APRItemsPreview({
   appId,
-  appBACId,
+  appBACId = '',
   appName,
   lineItems,
   appTotalBudget,
@@ -52,7 +51,7 @@ export function APRItemsPreview({
     [aprItems]
   )
 
-  // ✅ Validate budget ceiling against APP approved budget
+  // Validate budget ceiling against APP approved budget
   const currentBudget = useMemo(
     () => aprItems.reduce((sum, item) => sum + item.totalAmount, 0),
     [aprItems]
@@ -87,7 +86,7 @@ export function APRItemsPreview({
           </div>
           <div>
             <p className="text-muted-foreground">Current Budget</p>
-            <p className="font-semibold">{aprItems.reduce((sum, item) => sum + item.totalAmount, 0).toLocaleString()}</p>
+            <p className="font-semibold">₱{aprItems.reduce((sum, item) => sum + item.totalAmount, 0).toLocaleString()}</p>
           </div>
           <div>
             <p className="text-muted-foreground">Budget Variance</p>
@@ -108,7 +107,7 @@ export function APRItemsPreview({
           </Alert>
         )}
 
-        {/* ✅ Budget Ceiling Validation */}
+        {/* Budget Ceiling Validation */}
         <BudgetCeilingStatus
           validation={budgetCeilingValidation}
           compact={false}
@@ -156,16 +155,16 @@ export function APRItemsPreview({
                       <td className="p-3 text-center">
                         <Badge
                           color={
-                            item.budgetVariancePercent === 0
+                            (item.budgetVariancePercent ?? 0) === 0
                               ? 'secondary'
-                              : Math.abs(item.budgetVariancePercent) > 10
+                              : Math.abs(item.budgetVariancePercent ?? 0) > 10
                                 ? 'destructive'
                                 : 'warning'
                           }
                           variant="outline"
                         >
-                          {item.budgetVariancePercent > 0 ? '+' : ''}
-                          {item.budgetVariancePercent.toFixed(1)}%
+                          {(item.budgetVariancePercent ?? 0) > 0 ? '+' : ''}
+                          {(item.budgetVariancePercent ?? 0).toFixed(1)}%
                         </Badge>
                       </td>
                       <td className="p-3 text-center">

@@ -179,6 +179,10 @@ export interface SourceAPRItem {
   itemName: string
   category: string
   quantity: number
+  outOfStockQuantity?: number
+  originalNeeded?: number
+  totalGot?: number
+  editedNeeded?: number
   unitOfMeasure: string
   unitPrice: number
   totalAmount: number

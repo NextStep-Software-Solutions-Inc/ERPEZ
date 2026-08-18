@@ -1,6 +1,6 @@
 /**
  * Admin APRs Table Column Definitions
- * Columns: APR Number, Office, Status, Request Date, Total Amount, Submitted By, Actions
+ * Columns: APR Number, Office, Status, Request Date, Total Amount, Items, Actions
  */
 
 import { createColumnHelper } from '@tanstack/react-table'
@@ -15,24 +15,31 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { MoreVertical, Eye, Check, RotateCcw } from 'lucide-react'
-import type { APRMaster, APRStatus } from '../types'
 
-const columnHelper = createColumnHelper<APRMaster>()
+const columnHelper = createColumnHelper<any>()
 
 // Status badge variants
-const statusVariants: Record<APRStatus, string> = {
-  DRAFT: 'bg-gray-100 text-gray-800',
-  FOR_APPROVAL: 'bg-blue-100 text-blue-800',
-  RETURNED: 'bg-red-100 text-red-800',
-  APPROVED: 'bg-green-100 text-green-800',
-  PARTIALLY_AVAILABLE: 'bg-yellow-100 text-yellow-800',
-  OUT_OF_STOCK: 'bg-orange-100 text-orange-800',
+const statusVariants: Record<string, string> = {
+  Draft: 'bg-gray-100 text-gray-800 border-gray-300',
+  DRAFT: 'bg-gray-100 text-gray-800 border-gray-300',
+  ForApproval: 'bg-blue-100 text-blue-800 border-blue-300',
+  FOR_APPROVAL: 'bg-blue-100 text-blue-800 border-blue-300',
+  Submitted: 'bg-blue-100 text-blue-800 border-blue-300',
+  SUBMITTED: 'bg-blue-100 text-blue-800 border-blue-300',
+  Returned: 'bg-red-100 text-red-800 border-red-300',
+  RETURNED: 'bg-red-100 text-red-800 border-red-300',
+  Approved: 'bg-green-100 text-green-800 border-green-300',
+  APPROVED: 'bg-green-100 text-green-800 border-green-300',
+  PartiallyAvailable: 'bg-yellow-100 text-yellow-800 border-yellow-300',
+  PARTIALLY_AVAILABLE: 'bg-yellow-100 text-yellow-800 border-yellow-300',
+  OutOfStock: 'bg-orange-100 text-orange-800 border-orange-300',
+  OUT_OF_STOCK: 'bg-orange-100 text-orange-800 border-orange-300',
 }
 
 interface AdminAPRsTableColumnsProps {
-  onView: (apr: APRMaster) => void
-  onApprove: (apr: APRMaster) => void
-  onReturn: (apr: APRMaster) => void
+  onView: (apr: any) => void
+  onApprove: (apr: any) => void
+  onReturn: (apr: any) => void
 }
 
 export function getAdminAPRsTableColumns({
@@ -46,30 +53,20 @@ export function getAdminAPRsTableColumns({
       header: 'APR Number',
       enableSorting: true,
       cell: (info) => (
-        <span className="font-medium text-blue-600">{info.getValue()}</span>
+        <span
+          className="font-medium text-blue-600 cursor-pointer hover:underline"
+          onClick={() => onView(info.row.original)}
+        >
+          {info.getValue() || '—'}
+        </span>
       ),
     }),
 
-    columnHelper.accessor('requestingEntity', {
+    columnHelper.accessor((row) => row.officeName || row.requestingEntity || '', {
       id: 'office',
       header: 'Office / Entity',
       enableSorting: true,
-      cell: (info) => <span className="text-sm">{info.getValue()}</span>,
-    }),
-
-    columnHelper.accessor('requestedBy', {
-      id: 'requestedBy',
-      header: 'Submitted By',
-      enableSorting: true,
-      cell: (info) => (
-        <span className="text-sm">
-          {info.getValue()}
-          <br />
-          <span className="text-xs text-gray-500">
-            {info.row.original.requestedByPosition}
-          </span>
-        </span>
-      ),
+      cell: (info) => <span className="text-sm">{info.getValue() || '—'}</span>,
     }),
 
     columnHelper.accessor('totalAmount', {
@@ -78,7 +75,7 @@ export function getAdminAPRsTableColumns({
       enableSorting: true,
       cell: (info) => (
         <span className="font-medium">
-          ₱{new Intl.NumberFormat('en-PH').format(info.getValue())}
+          ₱{new Intl.NumberFormat('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(info.getValue() || 0)}
         </span>
       ),
     }),
@@ -87,22 +84,33 @@ export function getAdminAPRsTableColumns({
       id: 'requestDate',
       header: 'Request Date',
       enableSorting: true,
-      cell: (info) =>
-        format(new Date(info.getValue()), 'MMM dd, yyyy'),
+      cell: (info) => {
+        const val = info.getValue()
+        if (!val) return '—'
+        try {
+          return format(new Date(val), 'MMM dd, yyyy')
+        } catch {
+          return val
+        }
+      },
     }),
 
     columnHelper.accessor('status', {
       id: 'status',
       header: 'Status',
       enableSorting: true,
-      cell: (info) => (
-        <Badge className={statusVariants[info.getValue()]}>
-          {info.getValue().replace(/_/g, ' ')}
-        </Badge>
-      ),
+      cell: (info) => {
+        const status = info.getValue() || 'Draft'
+        const variantClass = statusVariants[status] || 'bg-gray-100 text-gray-800'
+        return (
+          <Badge variant="outline" className={variantClass}>
+            {String(status).replace(/_/g, ' ')}
+          </Badge>
+        )
+      },
     }),
 
-    columnHelper.accessor('totalItemsCount', {
+    columnHelper.accessor((row) => row.itemCount ?? row.totalItemsCount ?? row.items?.length ?? 0, {
       id: 'items',
       header: 'Items',
       enableSorting: true,
@@ -111,14 +119,15 @@ export function getAdminAPRsTableColumns({
       ),
     }),
 
-    columnHelper.accessor('status', {
+    columnHelper.accessor('id', {
       id: 'actions',
       header: 'Actions',
       enableSorting: false,
       cell: (info) => {
         const apr = info.row.original
-        const canApprove = apr.status === 'FOR_APPROVAL'
-        const canReturn = apr.status === 'FOR_APPROVAL' || apr.status === 'DRAFT'
+        const status = (apr.status || '').toLowerCase()
+        const canApprove = status === 'forapproval' || status === 'submitted'
+        const canReturn = status === 'forapproval' || status === 'submitted' || status === 'draft'
 
         return (
           <DropdownMenu>

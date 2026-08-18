@@ -3,7 +3,7 @@ import { AlertTriangle } from 'lucide-react'
 import type { InsufficientFundsAction } from '@/features/procurement/apr/types'
 
 interface InsufficientFundsCardProps {
-  action: InsufficientFundsAction | undefined
+  action: InsufficientFundsAction | string | undefined
 }
 
 const ACTION_LABELS: Record<string, { label: string; description: string }> = {
@@ -11,11 +11,23 @@ const ACTION_LABELS: Record<string, { label: string; description: string }> = {
     label: 'Reduce Quantity',
     description: 'Reduce item quantities if funds are insufficient',
   },
+  ReduceQuantity: {
+    label: 'Reduce Quantity',
+    description: 'Reduce item quantities if funds are insufficient',
+  },
   BILL_US: {
     label: 'Bill Us',
     description: 'Bill the requesting office for shortfall',
   },
+  BillUs: {
+    label: 'Bill Us',
+    description: 'Bill the requesting office for shortfall',
+  },
   CHARGE_TO_DEPOSIT: {
+    label: 'Charge to Deposit',
+    description: 'Charge insufficient amount to deposit account',
+  },
+  ChargeToUnutilizedDeposit: {
     label: 'Charge to Deposit',
     description: 'Charge insufficient amount to deposit account',
   },
@@ -26,7 +38,7 @@ export function InsufficientFundsCard({
 }: InsufficientFundsCardProps) {
   if (!action) return null
 
-  const details = ACTION_LABELS[action] || { label: action, description: '' }
+  const details = ACTION_LABELS[action] || { label: String(action), description: '' }
 
   return (
     <Card className="bg-gradient-to-br from-amber-50 to-amber-100 border-amber-200">
