@@ -138,11 +138,11 @@ export default function GroupedExpenditureItemsView({
                     {renderCategoryIcon(group.categoryTheme.iconName)}
                   </div>
                   <div className="min-w-0">
-                    <h2 className="text-sm sm:text-base font-bold text-gray-900 tracking-wide uppercase truncate">
+                    <h2 className="text-base font-semibold text-gray-900 tracking-wide uppercase truncate">
                       {group.typeName}
                     </h2>
                     {group.typeCode && (
-                      <p className="text-xs text-gray-500 mt-0.5 font-mono">
+                      <p className="text-xs text-gray-500 mt-0.5">
                         Code: {group.typeCode}
                       </p>
                     )}
@@ -159,7 +159,7 @@ export default function GroupedExpenditureItemsView({
                     <p className="text-xs text-gray-500 font-medium mb-0.5">
                       Group Total
                     </p>
-                    <p className="text-base sm:text-lg font-bold text-emerald-600 font-mono">
+                    <p className="text-base sm:text-lg font-semibold text-emerald-600">
                       {formatCurrencyPHP(group.typeTotal)}
                     </p>
                   </div>
@@ -179,39 +179,39 @@ export default function GroupedExpenditureItemsView({
                   <table className="w-full text-xs sm:text-sm">
                     <thead className="bg-gray-50/70 border-b border-gray-200 text-gray-600">
                       <tr>
-                        <th className="text-left px-5 py-3 font-semibold text-gray-700">
+                        <th className="text-left px-5 py-3 text-xs sm:text-sm font-semibold text-gray-700">
                           Item of Expenditure
                         </th>
-                        <th className="text-right px-4 py-3 font-semibold text-gray-700 w-28 sm:w-32">
+                        <th className="text-right px-4 py-3 text-xs sm:text-sm font-semibold text-gray-700 w-28 sm:w-32">
                           <div>Q1</div>
-                          <div className="text-[10px] text-gray-400 font-normal">
-                            (Jan - Mar)
+                          <div className="text-[11px] text-gray-500 font-normal mt-0.5">
+                            Jan – Mar
                           </div>
                         </th>
-                        <th className="text-right px-4 py-3 font-semibold text-gray-700 w-28 sm:w-32">
+                        <th className="text-right px-4 py-3 text-xs sm:text-sm font-semibold text-gray-700 w-28 sm:w-32">
                           <div>Q2</div>
-                          <div className="text-[10px] text-gray-400 font-normal">
-                            (Apr - Jun)
+                          <div className="text-[11px] text-gray-500 font-normal mt-0.5">
+                            Apr – Jun
                           </div>
                         </th>
-                        <th className="text-right px-4 py-3 font-semibold text-gray-700 w-28 sm:w-32">
+                        <th className="text-right px-4 py-3 text-xs sm:text-sm font-semibold text-gray-700 w-28 sm:w-32">
                           <div>Q3</div>
-                          <div className="text-[10px] text-gray-400 font-normal">
-                            (Jul - Sep)
+                          <div className="text-[11px] text-gray-500 font-normal mt-0.5">
+                            Jul – Sep
                           </div>
                         </th>
-                        <th className="text-right px-4 py-3 font-semibold text-gray-700 w-28 sm:w-32">
+                        <th className="text-right px-4 py-3 text-xs sm:text-sm font-semibold text-gray-700 w-28 sm:w-32">
                           <div>Q4</div>
-                          <div className="text-[10px] text-gray-400 font-normal">
-                            (Oct - Dec)
+                          <div className="text-[11px] text-gray-500 font-normal mt-0.5">
+                            Oct – Dec
                           </div>
                         </th>
-                        <th className="text-right px-5 py-3 font-semibold text-gray-700 w-32 sm:w-36">
+                        <th className="text-right px-5 py-3 text-xs sm:text-sm font-semibold text-gray-700 w-32 sm:w-36">
                           Total
                         </th>
                         {(onViewItem ||
                           (!readOnly && (onEditItem || onDeleteItem))) && (
-                          <th className="text-center px-4 py-3 font-semibold text-gray-700 w-20">
+                          <th className="text-center px-4 py-3 text-xs sm:text-sm font-semibold text-gray-700 w-20">
                             Actions
                           </th>
                         )}
@@ -233,7 +233,7 @@ export default function GroupedExpenditureItemsView({
                                   </span>
                                   <Badge
                                     variant="secondary"
-                                    className={`text-[10px] bg-blue-50 text-blue-700 border border-blue-200 font-medium px-2 py-0.5 ${
+                                    className={`text-[11px] bg-blue-50 text-blue-700 border border-blue-200 font-medium px-2 py-0.5 ${
                                       hasMultipleAllocations
                                         ? 'cursor-pointer hover:bg-blue-100'
                                         : ''
@@ -248,11 +248,11 @@ export default function GroupedExpenditureItemsView({
                                     {row.allocationCount !== 1 ? 's' : ''}
                                   </Badge>
                                 </div>
-                                <p className="text-xs text-gray-400 mt-0.5">
+                                <p className="text-xs text-gray-500 mt-0.5 font-normal">
                                   {row.groupName}
                                 </p>
                               </td>
-                              <td className="px-4 py-3 text-right font-mono text-sm">
+                              <td className="px-4 py-3 text-right text-sm">
                                 {row.q1.budget !== null ? (
                                   <span className="font-semibold text-blue-600">
                                     {formatCurrencyPHP(row.q1.budget)}
@@ -261,7 +261,7 @@ export default function GroupedExpenditureItemsView({
                                   <span className="text-gray-300">—</span>
                                 )}
                               </td>
-                              <td className="px-4 py-3 text-right font-mono text-sm">
+                              <td className="px-4 py-3 text-right text-sm">
                                 {row.q2.budget !== null ? (
                                   <span className="font-semibold text-blue-600">
                                     {formatCurrencyPHP(row.q2.budget)}
@@ -270,7 +270,7 @@ export default function GroupedExpenditureItemsView({
                                   <span className="text-gray-300">—</span>
                                 )}
                               </td>
-                              <td className="px-4 py-3 text-right font-mono text-sm">
+                              <td className="px-4 py-3 text-right text-sm">
                                 {row.q3.budget !== null ? (
                                   <span className="font-semibold text-blue-600">
                                     {formatCurrencyPHP(row.q3.budget)}
@@ -279,7 +279,7 @@ export default function GroupedExpenditureItemsView({
                                   <span className="text-gray-300">—</span>
                                 )}
                               </td>
-                              <td className="px-4 py-3 text-right font-mono text-sm">
+                              <td className="px-4 py-3 text-right text-sm">
                                 {row.q4.budget !== null ? (
                                   <span className="font-semibold text-blue-600">
                                     {formatCurrencyPHP(row.q4.budget)}
@@ -288,7 +288,7 @@ export default function GroupedExpenditureItemsView({
                                   <span className="text-gray-300">—</span>
                                 )}
                               </td>
-                              <td className="px-5 py-3 text-right font-mono text-sm font-bold text-gray-900">
+                              <td className="px-5 py-3 text-right text-sm font-semibold text-gray-900">
                                 {formatCurrencyPHP(row.total)}
                               </td>
                               {(onViewItem ||
@@ -363,17 +363,17 @@ export default function GroupedExpenditureItemsView({
                                             <div className="flex items-center gap-3">
                                               <Badge
                                                 variant="outline"
-                                                className="text-[10px] font-semibold text-blue-700 bg-blue-50 border-blue-200"
+                                                className="text-[11px] font-semibold text-blue-700 bg-blue-50 border-blue-200"
                                               >
                                                 {timelineLabel}
                                               </Badge>
-                                              <span className="text-gray-700 font-medium">
+                                              <span className="text-gray-800 font-medium text-sm">
                                                 {alloc.description ||
                                                   alloc.object?.name ||
                                                   '—'}
                                               </span>
                                               {alloc.startDate && (
-                                                <span className="text-gray-400 text-[11px]">
+                                                <span className="text-gray-500 text-xs">
                                                   {formatDisplayDate(
                                                     alloc.startDate,
                                                   )}
@@ -384,7 +384,7 @@ export default function GroupedExpenditureItemsView({
                                               )}
                                             </div>
                                             <div className="flex items-center gap-4">
-                                              <span className="font-mono font-bold text-gray-900 text-xs sm:text-sm">
+                                              <span className="font-semibold text-gray-900 text-sm">
                                                 {formatCurrencyPHP(alloc.budget)}
                                               </span>
                                               <ExpenditureLineItemActionMenu
@@ -427,11 +427,11 @@ export default function GroupedExpenditureItemsView({
                       <tr>
                         <td
                           colSpan={5}
-                          className="px-5 py-3.5 text-right text-xs text-gray-500 font-semibold"
+                          className="px-5 py-3.5 text-right text-xs text-gray-600 font-medium"
                         >
                           Category Total
                         </td>
-                        <td className="px-5 py-3.5 text-right font-mono text-sm font-bold text-emerald-600">
+                        <td className="px-5 py-3.5 text-right text-sm font-semibold text-emerald-600">
                           {formatCurrencyPHP(group.typeTotal)}
                         </td>
                         {(onViewItem ||
