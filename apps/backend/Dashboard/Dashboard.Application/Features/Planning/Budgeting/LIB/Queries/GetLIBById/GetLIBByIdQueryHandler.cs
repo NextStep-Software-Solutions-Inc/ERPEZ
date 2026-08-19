@@ -102,7 +102,14 @@ public class GetLIBByIdQueryHandler(IUnitOfWork unitOfWork)
                             {
                                 Id = d.Object.Id,
                                 Name = d.Object.Name,
-                                Code = d.Object.Code
+                                Code = d.Object.Code,
+                                ParentId = d.Object.ParentId,
+                                ParentObject = d.Object.ParentObject == null ? null : new LIBNestedObjectParentResponse
+                                {
+                                    Id = d.Object.ParentObject.Id,
+                                    Name = d.Object.ParentObject.Name,
+                                    Code = d.Object.ParentObject.Code
+                                }
                             },
                             ExpenseClass = d.Object?.ObjectExpenseClasses.FirstOrDefault(oc => oc.IsActive)?.ExpenseClass is { } ec1
                                 ? new LIBNestedExpenseClassResponse { Id = ec1.Id, Name = ec1.Name, Code = ec1.Code, Type = ec1.Type.ToString() }
@@ -136,7 +143,14 @@ public class GetLIBByIdQueryHandler(IUnitOfWork unitOfWork)
                     {
                         Id = d.Object.Id,
                         Name = d.Object.Name,
-                        Code = d.Object.Code
+                        Code = d.Object.Code,
+                        ParentId = d.Object.ParentId,
+                        ParentObject = d.Object.ParentObject == null ? null : new LIBNestedObjectParentResponse
+                        {
+                            Id = d.Object.ParentObject.Id,
+                            Name = d.Object.ParentObject.Name,
+                            Code = d.Object.ParentObject.Code
+                        }
                     },
                     ExpenseClass = d.Object?.ObjectExpenseClasses.FirstOrDefault(oc => oc.IsActive)?.ExpenseClass is { } ec2
                         ? new LIBNestedExpenseClassResponse { Id = ec2.Id, Name = ec2.Name, Code = ec2.Code, Type = ec2.Type.ToString() }

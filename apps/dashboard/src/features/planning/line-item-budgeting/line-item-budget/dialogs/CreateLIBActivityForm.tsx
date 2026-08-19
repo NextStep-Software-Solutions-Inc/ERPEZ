@@ -34,6 +34,7 @@ interface CreateLIBActivityFormProps {
   libId: string
   opcrData?: OPCRDetails
   isOPCRLoading?: boolean
+  existingOPCRActivityIds?: string[]
   onCreated?: () => void
   onClose?: () => void
   setForm?: (form: ReturnType<typeof useForm>) => void
@@ -45,6 +46,7 @@ export default function CreateLIBActivityForm({
   libId,
   opcrData,
   isOPCRLoading = false,
+  existingOPCRActivityIds = [],
   onCreated,
   onClose,
   setForm,
@@ -54,7 +56,7 @@ export default function CreateLIBActivityForm({
   const queryClient = useQueryClient()
   const { mutateAsync, isPending } = useCreateLIBActivity()
 
-  // Extract activities from opcrData
+  // Extract activities from opcrData and filter out already-linked ones
   const opcrActivities = useMemo(() => {
     const activities: OPCRActivity[] = []
     if (opcrData?.opcrItems) {
@@ -64,8 +66,11 @@ export default function CreateLIBActivityForm({
         }
       })
     }
+    if (existingOPCRActivityIds.length > 0) {
+      return activities.filter((a) => !existingOPCRActivityIds.includes(a.id))
+    }
     return activities
-  }, [opcrData])
+  }, [opcrData, existingOPCRActivityIds])
 
   const form = useForm({
     defaultValues: {

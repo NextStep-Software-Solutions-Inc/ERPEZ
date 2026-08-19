@@ -232,17 +232,19 @@ export default function CreateWFPObjectiveTargetForm({
 
   // Sync form state to Jotai atom for persistence
   useEffect(() => {
-    const unsubscribe = form.store.subscribe(() => {
-      const values = form.state.values;
+    const subscription = form.store.subscribe(() => {
+      const values = form.state.values
       setFormData({
         wfpObjectiveId: values.wfpObjectiveId,
         activityName: values.activityName,
         indicator: values.indicator,
         weight: values.weight,
         dates: values.dates,
-      });
-    });
-    return unsubscribe;
+      })
+    })
+    return () => {
+      subscription.unsubscribe()
+    }
   }, [form.store, setFormData])
 
   // Reset form when onCancel is called

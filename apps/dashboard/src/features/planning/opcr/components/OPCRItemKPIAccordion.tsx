@@ -1,4 +1,4 @@
-﻿import {
+import {
   createMutationHookFromTemplate,
   useQueryClient,
 } from 'erpez-shared-lib'
@@ -47,6 +47,7 @@ interface OPCRItemKPIAccordionProps {
   selectedKPIForActivity: OPCRItem | null
   setSelectedKPIForActivity: (kpi: OPCRItem | null) => void
   getQuarterlyTargets: (opcrItem: OPCRItem) => Record<string, number>
+  officeId?: string
 }
 
 const useCreateOPCRActivity = createMutationHookFromTemplate(
@@ -69,6 +70,7 @@ export default function OPCRItemKPIAccordion({
   setCreateActivityDialogOpen,
   selectedKPIForActivity,
   setSelectedKPIForActivity,
+  officeId,
 }: OPCRItemKPIAccordionProps) {
   const [openPopoverId, setOpenPopoverId] = useState<string | null>(null)
   const [openActivityPopoverId, setOpenActivityPopoverId] = useState<
@@ -101,6 +103,7 @@ export default function OPCRItemKPIAccordion({
             name: values.name,
             description: values.description,
             budget: values.budget,
+            PAPDepartmentIds: values.PAPDepartmentIds,
           },
         },
         {
@@ -603,6 +606,7 @@ export default function OPCRItemKPIAccordion({
       <CreateOPCRActivityDialog
         isOpen={createActivityDialogOpen}
         onOpenChange={setCreateActivityDialogOpen}
+        officeId={officeId}
         defaultKpi={
           selectedKPIForActivity?.kpiAssignment?.fyActiveKPI?.name || ''
         }
@@ -620,6 +624,7 @@ export default function OPCRItemKPIAccordion({
       {selectedActivityForUpdate && (
         <UpdateOPCRActivityDialog
           activity={selectedActivityForUpdate}
+          officeId={officeId}
           isOpen={updateActivityDialogOpen}
           onOpenChange={setUpdateActivityDialogOpen}
           onActivityUpdated={handleUpdateActivity}

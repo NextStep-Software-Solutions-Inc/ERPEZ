@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Utilities for period-based budget allocation (Quarterly/Monthly)
  */
 
@@ -188,10 +188,13 @@ export function generateAllocationSummary(
 }
 
 /**
- * Format date to ISO string (for API submission)
+ * Format date to ISO string preserving the local calendar date (for API submission)
  */
 export function formatDateToISO(date: Date): string {
-  return date.toISOString()
+  const year = date.getFullYear()
+  const month = String(date.getMonth() + 1).padStart(2, '0')
+  const day = String(date.getDate()).padStart(2, '0')
+  return `${year}-${month}-${day}T00:00:00.000Z`
 }
 
 /**
@@ -226,3 +229,182 @@ export function validatePeriodBudgetSum(
 
   return { valid: true }
 }
+
+export interface ProjectPeriodConfig {
+  key: string // Year-aware key, e.g. "Q2-2026", "2026-06"
+  label: string // e.g. "Q2 2026", "June 2026"
+  dateRangeLabel: string // e.g. "Jun 15 – Jun 30, 2026"
+  startDate: Date // Clamped start date
+  endDate: Date // Clamped end date
+  rawCalStartDate: Date // Normal calendar start date
+  rawCalEndDate: Date // Normal calendar end date
+  isFirstPeriodClamped: boolean
+  isLastPeriodClamped: boolean
+}
+
+/**
+ * Generate every Quarterly or Monthly period that intersects the WFP/project window.
+ * Supports multi-year ranges.
+ * Clamps only the first and final periods to project boundaries.
+ * Interior periods retain normal calendar boundaries.
+ */
+export function generateProjectPeriods(
+  timelineType: 'quarterly' | 'monthly',
+  projectStartDate: Date | string,
+  projectEndDate: Date | string,
+): ProjectPeriodConfig[] {
+  const pStart =
+    typeof projectStartDate === 'string'
+      ? new Date(projectStartDate)
+      : projectStartDate
+  const pEnd =
+    typeof projectEndDate === 'string'
+      ? new Date(projectEndDate)
+      : projectEndDate
+
+  if (
+    !pStart ||
+    !pEnd ||
+    isNaN(pStart.getTime()) ||
+    isNaN(pEnd.getTime()) ||
+    pStart > pEnd
+  ) {
+    return []
+  }
+
+  const periods: ProjectPeriodConfig[] = []
+  const startYear = pStart.getFullYear()
+  const endYear = pEnd.getFullYear()
+
+  if (timelineType === 'quarterly') {
+    const startQ = Math.floor(pStart.getMonth() / 3) // 0..3
+    const endQ = Math.floor(pEnd.getMonth() / 3) // 0..3
+
+    for (let year = startYear; year <= endYear; year++) {
+      const qFrom = year === startYear ? startQ : 0
+      const qTo = year === endYear ? endQ : 3
+
+      for (let q = qFrom; q <= qTo; q++) {
+        const calStart = new Date(year, q * 3, 1)
+        const calEnd = new Date(year, q * 3 + 3, 0) // last day of quarter
+
+        // Clamping to project boundaries
+        const effectiveStart =
+          calStart < pStart ? new Date(pStart.getTime()) : calStart
+        const effectiveEnd =
+          calEnd > pEnd ? new Date(pEnd.getTime()) : calEnd
+
+        const qNumber = q + 1
+        const key = `Q${qNumber}-${year}`
+        const label = `Q${qNumber} ${year}`
+
+        const startFmt = effectiveStart.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+        })
+        const endFmt = effectiveEnd.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+        })
+        const dateRangeLabel = `${startFmt} – ${endFmt}`
+
+        periods.push({
+          key,
+          label,
+          dateRangeLabel,
+          startDate: effectiveStart,
+          endDate: effectiveEnd,
+          rawCalStartDate: calStart,
+          rawCalEndDate: calEnd,
+          isFirstPeriodClamped: effectiveStart.getTime() !== calStart.getTime(),
+          isLastPeriodClamped: effectiveEnd.getTime() !== calEnd.getTime(),
+        })
+      }
+    }
+  } else if (timelineType === 'monthly') {
+    const monthNames = [
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
+    ]
+
+    const startM = pStart.getMonth() // 0..11
+    const endM = pEnd.getMonth() // 0..11
+
+    for (let year = startYear; year <= endYear; year++) {
+      const mFrom = year === startYear ? startM : 0
+      const mTo = year === endYear ? endM : 11
+
+      for (let m = mFrom; m <= mTo; m++) {
+        const calStart = new Date(year, m, 1)
+        const calEnd = new Date(year, m + 1, 0) // last day of month
+
+        // Clamping to project boundaries
+        const effectiveStart =
+          calStart < pStart ? new Date(pStart.getTime()) : calStart
+        const effectiveEnd =
+          calEnd > pEnd ? new Date(pEnd.getTime()) : calEnd
+
+        const monthPadded = String(m + 1).padStart(2, '0')
+        const key = `${year}-${monthPadded}`
+        const label = `${monthNames[m]} ${year}`
+
+        const startFmt = effectiveStart.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+        })
+        const endFmt = effectiveEnd.toLocaleDateString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          year: 'numeric',
+        })
+        const dateRangeLabel = `${startFmt} – ${endFmt}`
+
+        periods.push({
+          key,
+          label,
+          dateRangeLabel,
+          startDate: effectiveStart,
+          endDate: effectiveEnd,
+          rawCalStartDate: calStart,
+          rawCalEndDate: calEnd,
+          isFirstPeriodClamped: effectiveStart.getTime() !== calStart.getTime(),
+          isLastPeriodClamped: effectiveEnd.getTime() !== calEnd.getTime(),
+        })
+      }
+    }
+  }
+
+  return periods
+}
+
+/**
+ * Filter and convert non-zero project allocations into PeriodDetails
+ */
+export function generateProjectPeriodDetails(
+  periods: ProjectPeriodConfig[],
+  allocations: Record<string, number>,
+): PeriodDetails[] {
+  return periods
+    .map((p) => {
+      const budget = allocations[p.key] || 0
+      return {
+        period: p.label,
+        startDate: p.startDate,
+        endDate: p.endDate,
+        budget,
+      }
+    })
+    .filter((d) => d.budget > 0)
+}
+

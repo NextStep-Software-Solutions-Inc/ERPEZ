@@ -20,8 +20,11 @@ public class DeleteLineItemBudgetDetailCommandHandler(IUnitOfWork unitOfWork)
         if (!LIBRules.IsEditable(lib.Status))
             throw new ValidationException("Line item details can only be deleted from a Draft, Proposed, or Returned LIB.");
 
-        unitOfWork.LineItemBudgetDetailRepository.Remove(entity);
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+        await unitOfWork.ExecuteInTransactionAsync(async () =>
+        {
+            unitOfWork.LineItemBudgetDetailRepository.Remove(entity);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+        }, cancellationToken);
 
         return ApiResponse<Unit>.Success(Unit.Value, "Line Item Budget Detail deleted successfully.");
     }
