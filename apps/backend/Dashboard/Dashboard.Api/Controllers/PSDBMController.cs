@@ -19,48 +19,35 @@ namespace ERPEZ.Api.Controllers
         /// Get PSDBM catalogue items with depot stock, price, and pagination
         /// </summary>
         [HttpGet("items")]
-        [ProducesResponseType(typeof(ApiResponse<GetPsdbmItemsResponse>), StatusCodes.Status200OK)]
-        [ProducesResponseType(typeof(ApiResponse<GetPsdbmItemsResponse>), StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> GetItemsQuery(
-            [FromQuery] string mode = "regional",
-            [FromQuery] string? search = null,
-            [FromQuery] string? category = null,
-            [FromQuery] int max = 50,
-            [FromQuery] string? depot = null)
-        {
-            var query = new GetPsdbmItemsQuery
-            {
-                Mode = mode,
-                Search = search,
-                Category = category,
-                Max = max,
-                Depot = depot
-            };
-
-            var result = await mediator.Send(query);
-            return result.Succeeded ? Ok(result) : BadRequest(result);
-        }
-
-        /// <summary>
-        /// Get PSDBM catalogue items by mode (backward-compatible route)
-        /// </summary>
         [HttpGet("items/{mode}")]
         [ProducesResponseType(typeof(ApiResponse<GetPsdbmItemsResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<GetPsdbmItemsResponse>), StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> GetItems(
-            [FromRoute] string mode,
+            [FromRoute] string? mode = "regional",
             [FromQuery] string? search = null,
             [FromQuery] string? category = null,
-            [FromQuery] int max = 50,
-            [FromQuery] string? depot = null)
+            [FromQuery] string? depot = null,
+            [FromQuery] string? availability = null,
+            [FromQuery] string? stockFilter = null,
+            [FromQuery] string? sortBy = null,
+            [FromQuery] bool sortDescending = false,
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 25,
+            [FromQuery] int max = 50)
         {
             var query = new GetPsdbmItemsQuery
             {
-                Mode = mode,
+                Mode = mode ?? "regional",
                 Search = search,
                 Category = category,
-                Max = max,
-                Depot = depot
+                Depot = depot,
+                Availability = availability,
+                StockFilter = stockFilter,
+                SortBy = sortBy,
+                SortDescending = sortDescending,
+                PageNumber = pageNumber,
+                PageSize = pageSize,
+                Max = max
             };
 
             var result = await mediator.Send(query);
@@ -119,14 +106,16 @@ namespace ERPEZ.Api.Controllers
         }
 
         /// <summary>
-        /// Get available regional and LGU depots
+        /// Get available regional and LGU depots (optionally filtered by mode: 'regional' or 'lgu')
         /// </summary>
         [HttpGet("depots")]
+        [HttpGet("depots/{mode}")]
         [ProducesResponseType(typeof(ApiResponse<List<PsdbmDepotDto>>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<List<PsdbmDepotDto>>), StatusCodes.Status400BadRequest)]
-        public async Task<IActionResult> GetDepots()
+        public async Task<IActionResult> GetDepots([FromRoute] string? mode = null, [FromQuery] string? queryMode = null)
         {
-            var result = await mediator.Send(new GetPsdbmDepotsQuery());
+            var effectiveMode = !string.IsNullOrWhiteSpace(mode) ? mode : queryMode;
+            var result = await mediator.Send(new GetPsdbmDepotsQuery { Mode = effectiveMode });
             return result.Succeeded ? Ok(result) : BadRequest(result);
         }
 

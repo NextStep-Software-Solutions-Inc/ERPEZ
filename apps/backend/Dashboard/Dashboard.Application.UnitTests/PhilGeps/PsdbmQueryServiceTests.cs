@@ -205,6 +205,80 @@ public class PsdbmQueryServiceTests
         depots.Should().Contain(d => d.Name == "CEBU");
     }
 
+    [Fact]
+    public async Task GetItemsAsync_WithPagination_ShouldReturnCorrectPageAndTotal()
+    {
+        // Arrange
+        var db = CreateInMemoryDbContext(nameof(GetItemsAsync_WithPagination_ShouldReturnCorrectPageAndTotal));
+        var queryService = new PsdbmQueryService(db, new StubPhilGepsService(), NullLogger<PsdbmQueryService>.Instance);
+
+        // Act
+        var result = await queryService.GetItemsAsync(new GetPsdbmItemsQuery
+        {
+            Mode = "regional",
+            Depot = "BAGUIO",
+            PageNumber = 1,
+            PageSize = 10
+        });
+
+        // Assert
+        result.Should().NotBeNull();
+        result.TotalItems.Should().Be(1);
+        result.PageNumber.Should().Be(1);
+        result.PageSize.Should().Be(10);
+        result.TotalPages.Should().Be(1);
+        result.HasPreviousPage.Should().BeFalse();
+        result.HasNextPage.Should().BeFalse();
+    }
+
+    [Fact]
+    public async Task GetItemsAsync_WithStockFilter_ShouldFilterInStock()
+    {
+        // Arrange
+        var db = CreateInMemoryDbContext(nameof(GetItemsAsync_WithStockFilter_ShouldFilterInStock));
+        var queryService = new PsdbmQueryService(db, new StubPhilGepsService(), NullLogger<PsdbmQueryService>.Instance);
+
+        // Act
+        var inStock = await queryService.GetItemsAsync(new GetPsdbmItemsQuery
+        {
+            Mode = "regional",
+            Depot = "BAGUIO",
+            StockFilter = "in_stock"
+        });
+
+        var outOfStock = await queryService.GetItemsAsync(new GetPsdbmItemsQuery
+        {
+            Mode = "regional",
+            Depot = "BAGUIO",
+            StockFilter = "out_of_stock"
+        });
+
+        // Assert
+        inStock.Items.Should().ContainSingle();
+        outOfStock.Items.Should().BeEmpty();
+    }
+
+    [Fact]
+    public async Task GetItemsAsync_WithSorting_ShouldSortByPrice()
+    {
+        // Arrange
+        var db = CreateInMemoryDbContext(nameof(GetItemsAsync_WithSorting_ShouldSortByPrice));
+        var queryService = new PsdbmQueryService(db, new StubPhilGepsService(), NullLogger<PsdbmQueryService>.Instance);
+
+        // Act
+        var result = await queryService.GetItemsAsync(new GetPsdbmItemsQuery
+        {
+            Mode = "regional",
+            Depot = "BAGUIO",
+            SortBy = "price",
+            SortDescending = true
+        });
+
+        // Assert
+        result.Items.Should().ContainSingle();
+        result.Items[0].UnitPrice.Should().Be(204.67m);
+    }
+
     private sealed class StubPhilGepsService : IPhilGepsService
     {
         public Task<List<PsdbmItemDto>> GetItemsAsync(string mode, string? search, string? category, int max, string? depot, CancellationToken cancellationToken = default)

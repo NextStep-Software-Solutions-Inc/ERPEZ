@@ -3,10 +3,11 @@
  * 
  * Allows users to:
  * 1. Select PSDBM catalog mode (Main, Regional, LGU)
- * 2. Choose depot (for Regional/LGU modes) with stock verification
- * 3. Trigger manual or automatic synchronization with PS-PhilGEPS
- * 4. Inspect real-time stock on hand and remaining deliveries
- * 5. Select items and adjust quantities for APR
+ * 2. Choose depot (filtered strictly by Regional vs LGU)
+ * 3. Filter items by Search, Category, Stock Status, and Availability
+ * 4. Navigate catalogue with client-side responsive pagination & page-size selector
+ * 5. Synchronize depot catalog from PS-PhilGEPS
+ * 6. Select items across pages and adjust quantities for APR
  */
 
 import { useState, useMemo, useCallback } from 'react'
@@ -28,7 +29,20 @@ import {
 } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { AlertCircle, Loader2, Database, MapPin, RefreshCw } from 'lucide-react'
+import {
+  AlertCircle,
+  Loader2,
+  Database,
+  MapPin,
+  RefreshCw,
+  Search,
+  X,
+  ChevronLeft,
+  ChevronRight,
+  ChevronsLeft,
+  ChevronsRight,
+  Filter,
+} from 'lucide-react'
 import { toast } from 'sonner'
 import api from '@/services/api'
 import type { ConsolidatedAPRItem } from '@/features/procurement/apr/types'
@@ -38,7 +52,7 @@ import {
   usePSDBMCategories,
   usePSDBMDepots,
 } from '@/features/procurement/psdbm/hooks'
-import type { PSDBMCatalogMode, PSDBMItemWithQuantity } from '@/features/procurement/psdbm/types'
+import type { PSDBMCatalogMode, PSDBMItemWithQuantity, PSDBMItem } from '@/features/procurement/psdbm/types'
 import { convertPSDBMItemToAPR } from '@/features/procurement/psdbm/utils/convertToAPRItem'
 import { PSDBMCatalogMode as PSDBMCatalogModeEnum } from '@/features/procurement/psdbm/types'
 
@@ -63,8 +77,14 @@ export function AddItemDialog({
   // Search and filter state
   const [searchTerm, setSearchTerm] = useState('')
   const [categoryFilter, setCategoryFilter] = useState<string>('All')
+  const [stockFilter, setStockFilter] = useState<string>('all')
+  const [availabilityFilter, setAvailabilityFilter] = useState<string>('all')
   const [selectedDepot, setSelectedDepot] = useState<string>('')
-  const [maxResults, setMaxResults] = useState<number>(50)
+
+  // Pagination state
+  const [pageNumber, setPageNumber] = useState<number>(1)
+  const [pageSize, setPageSize] = useState<number>(25)
+
   const [isSyncing, setIsSyncing] = useState<boolean>(false)
 
   // Selected items state (Map: itemCode → PSDBMItemWithQuantity)
@@ -72,53 +92,132 @@ export function AddItemDialog({
     Map<string, PSDBMItemWithQuantity>
   >(new Map())
 
-  // Fetch categories for current mode
+  // Fetch categories from API
   const { data: categoriesData, isLoading: categoriesLoading } =
     usePSDBMCategories({
       pathParams: { mode: catalogMode },
       enabled: open,
     } as any)
-  const categories = useMemo(() => {
-    return categoriesData?.data || []
-  }, [categoriesData])
 
   // Fetch depots
   const { data: depotsData, isLoading: depotsLoading } = usePSDBMDepots({
     enabled: open,
   })
+
+  // Segregate depots by Regional vs LGU
   const depots = useMemo(() => {
-    return depotsData?.data || []
-  }, [depotsData])
+    const allDepots = depotsData?.data || []
+    if (catalogMode === PSDBMCatalogModeEnum.REGIONAL) {
+      return allDepots.filter(
+        (d) =>
+          d.mode?.toLowerCase() === 'regional' ||
+          (!d.mode && !d.name.includes('(LGU)') && !d.region?.includes('LGU'))
+      )
+    }
+    if (catalogMode === PSDBMCatalogModeEnum.LGU) {
+      return allDepots.filter(
+        (d) =>
+          d.mode?.toLowerCase() === 'lgu' ||
+          (!d.mode && (d.name.includes('(LGU)') || d.region?.includes('LGU')))
+      )
+    }
+    return allDepots
+  }, [depotsData, catalogMode])
 
   // Determine if depot is required
   const isDepotRequired = catalogMode !== PSDBMCatalogModeEnum.MAIN
   const isReadyToFetch = !isDepotRequired || Boolean(selectedDepot)
 
-  // Fetch items for current mode/search/category
+  // Fetch all items for current mode/depot (up to 1000 items)
   const itemsParams = useMemo(
     () => ({
       pathParams: { mode: catalogMode },
       queryParams: {
-        search: searchTerm || undefined,
-        category:
-          categoryFilter && categoryFilter !== 'All' ? categoryFilter : undefined,
-        depot:
-          (catalogMode !== PSDBMCatalogModeEnum.MAIN && selectedDepot) || undefined,
-        max: maxResults || undefined,
+        depot: (catalogMode !== PSDBMCatalogModeEnum.MAIN && selectedDepot) || undefined,
+        max: 1000,
       },
       enabled: open && isReadyToFetch,
     }),
-    [catalogMode, searchTerm, categoryFilter, selectedDepot, maxResults, open, isReadyToFetch]
+    [catalogMode, selectedDepot, open, isReadyToFetch]
   )
 
   const { data: itemsData, isLoading: itemsLoading, error: itemsError, refetch: refetchItems } = usePSDBMItems(
     itemsParams as any
   )
 
-  // Get items from API response
-  const items = useMemo(() => {
+  // Raw items from API response
+  const rawItems: PSDBMItem[] = useMemo(() => {
     return itemsData?.data?.items || []
   }, [itemsData])
+
+  // Compute available categories from both API categories and item categories
+  const categories = useMemo(() => {
+    const apiCats = categoriesData?.data || []
+    const itemCats = Array.from(
+      new Set(rawItems.map((i) => i.category).filter(Boolean))
+    ) as string[]
+
+    const combined = new Set<string>()
+    apiCats.forEach((c) => combined.add(c.name))
+    itemCats.forEach((c) => combined.add(c))
+
+    return Array.from(combined)
+      .sort((a, b) => a.localeCompare(b))
+      .map((name) => ({ id: name, name }))
+  }, [categoriesData, rawItems])
+
+  // Instantaneous, multi-criteria filtering
+  const filteredItems = useMemo(() => {
+    return rawItems.filter((item) => {
+      // 1. Search filter (itemCode and description)
+      if (searchTerm.trim()) {
+        const query = searchTerm.trim().toLowerCase()
+        const matchCode = item.itemCode?.toLowerCase().includes(query)
+        const matchDesc = item.description?.toLowerCase().includes(query)
+        if (!matchCode && !matchDesc) return false
+      }
+
+      // 2. Category filter
+      if (categoryFilter && categoryFilter !== 'All') {
+        const itemCat = item.category?.trim().toLowerCase() || ''
+        const selectedCat = categoryFilter.trim().toLowerCase()
+        if (itemCat !== selectedCat) return false
+      }
+
+      // 3. Stock Status filter
+      const stock = item.availableStock ?? 0
+      const delivery = item.remainingQtyForDelivery ?? 0
+      const isTextOutOfStock = item.availability?.toLowerCase().includes('out of stock')
+
+      if (stockFilter === 'in_stock') {
+        if (stock <= 0) return false
+      } else if (stockFilter === 'low_stock') {
+        if (stock <= 0 || stock > 50) return false
+      } else if (stockFilter === 'out_of_stock') {
+        if (stock > 0 && !isTextOutOfStock) return false
+      } else if (stockFilter === 'has_delivery') {
+        if (delivery <= 0) return false
+      }
+
+      // 4. Availability status filter
+      if (availabilityFilter === 'Available') {
+        if (isTextOutOfStock && stock === 0) return false
+      } else if (availabilityFilter === 'Out of Stock') {
+        if (!isTextOutOfStock && stock > 0) return false
+      }
+
+      return true
+    })
+  }, [rawItems, searchTerm, categoryFilter, stockFilter, availabilityFilter])
+
+  // Paged items for the current page
+  const totalFilteredItems = filteredItems.length
+  const totalPages = Math.max(1, Math.ceil(totalFilteredItems / pageSize))
+
+  const pagedItems = useMemo(() => {
+    const start = (pageNumber - 1) * pageSize
+    return filteredItems.slice(start, start + pageSize)
+  }, [filteredItems, pageNumber, pageSize])
 
   const lastSyncTime = useMemo(() => {
     const timestamp = itemsData?.data?.lastSynchronizedAt
@@ -132,6 +231,22 @@ export function AddItemDialog({
       return null
     }
   }, [itemsData])
+
+  // Handler: Reset filters
+  const handleClearFilters = useCallback(() => {
+    setSearchTerm('')
+    setCategoryFilter('All')
+    setStockFilter('all')
+    setAvailabilityFilter('all')
+    setPageNumber(1)
+  }, [])
+
+  const hasActiveFilters = Boolean(
+    searchTerm ||
+    (categoryFilter && categoryFilter !== 'All') ||
+    (stockFilter && stockFilter !== 'all') ||
+    (availabilityFilter && availabilityFilter !== 'all')
+  )
 
   // Handler: Sync Depot / Catalog
   const handleSyncDepot = useCallback(async () => {
@@ -202,23 +317,29 @@ export function AddItemDialog({
     []
   )
 
-  // Handler: Select all
+  // Handler: Select all (current page)
   const handleSelectAll = useCallback((selected: boolean) => {
     if (selected) {
-      const newMap = new Map<string, PSDBMItemWithQuantity>()
-      items.forEach((item) => {
-        newMap.set(item.itemCode, {
-          ...item,
-          quantity: 1,
-          selectedOffice: '',
-          selectedFundSource: '',
-        })
+      const newMap = new Map<string, PSDBMItemWithQuantity>(selectedItems)
+      pagedItems.forEach((item) => {
+        if (!newMap.has(item.itemCode)) {
+          newMap.set(item.itemCode, {
+            ...item,
+            quantity: 1,
+            selectedOffice: '',
+            selectedFundSource: '',
+          })
+        }
       })
       setSelectedItems(newMap)
     } else {
-      setSelectedItems(new Map())
+      const newMap = new Map<string, PSDBMItemWithQuantity>(selectedItems)
+      pagedItems.forEach((item) => {
+        newMap.delete(item.itemCode)
+      })
+      setSelectedItems(newMap)
     }
-  }, [items])
+  }, [pagedItems, selectedItems])
 
   // Handler: Add items
   const handleAddItems = useCallback(() => {
@@ -240,8 +361,10 @@ export function AddItemDialog({
     setSelectedItems(new Map())
     setSearchTerm('')
     setCategoryFilter('All')
+    setStockFilter('all')
+    setAvailabilityFilter('all')
     setSelectedDepot('')
-    setMaxResults(50)
+    setPageNumber(1)
     onOpenChange(false)
   }, [selectedItems, catalogMode, selectedDepot, categoryFilter, onAddItems, onOpenChange])
 
@@ -253,9 +376,13 @@ export function AddItemDialog({
     0
   )
 
+  // Pagination bounds calculation
+  const startItem = totalFilteredItems === 0 ? 0 : (pageNumber - 1) * pageSize + 1
+  const endItem = Math.min(pageNumber * pageSize, totalFilteredItems)
+
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto" size="2xl">
+      <DialogContent className="max-w-6xl max-h-[92vh] overflow-y-auto" size="2xl">
         <DialogHeader>
           <div className="flex flex-wrap items-center justify-between gap-3 pr-6">
             <div>
@@ -263,7 +390,7 @@ export function AddItemDialog({
                 <span>Add Items from PSDBM Catalog</span>
               </DialogTitle>
               <DialogDescription>
-                Select warehouse-available goods and common-use supplies from PS-PhilGEPS
+                Search and select warehouse-available goods and common-use supplies from PS-PhilGEPS
               </DialogDescription>
             </div>
 
@@ -309,6 +436,7 @@ export function AddItemDialog({
             onValueChange={(value) => {
               setCatalogMode(value as PSDBMCatalogMode)
               setSelectedDepot('')
+              setPageNumber(1)
             }}
             className="w-full"
           >
@@ -319,57 +447,81 @@ export function AddItemDialog({
             </TabsList>
           </Tabs>
 
-          {/* Filters Grid */}
-          <div className="grid grid-cols-1 gap-4">
-            {/* Depot Selector (conditional for Regional/LGU modes) */}
-            {isDepotRequired && (
-              <div className="space-y-1.5 bg-muted/30 p-3 rounded-lg border">
-                <div className="flex items-center gap-1.5">
-                  <MapPin className="h-4 w-4 text-primary" />
-                  <label className="text-sm font-semibold">
-                    {catalogMode === PSDBMCatalogModeEnum.REGIONAL ? 'Select Regional Warehouse / Depot' : 'Select LGU Location'}
-                  </label>
-                  <span className="text-xs text-red-500 font-medium">* Required for stock lookup</span>
-                </div>
-                <Select value={selectedDepot} onValueChange={setSelectedDepot}>
-                  <SelectTrigger disabled={isDepotSelectDisabled} className="bg-background">
-                    <SelectValue placeholder="Choose a depot to load warehouse stocks..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                    {depots.map((depot) => (
-                      <SelectItem key={depot.id} value={depot.name}>
-                        {depot.name}
-                        {depot.region && ` (${depot.region})`}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+          {/* Depot Selector (conditional for Regional/LGU modes) */}
+          {isDepotRequired && (
+            <div className="space-y-1.5 bg-muted/30 p-3 rounded-lg border">
+              <div className="flex items-center gap-1.5">
+                <MapPin className="h-4 w-4 text-primary" />
+                <label className="text-sm font-semibold">
+                  {catalogMode === PSDBMCatalogModeEnum.REGIONAL ? 'Select Regional Warehouse / Depot' : 'Select LGU Location'}
+                </label>
+                <span className="text-xs text-red-500 font-medium">* Required for stock lookup</span>
               </div>
-            )}
+              <Select
+                value={selectedDepot}
+                onValueChange={(value) => {
+                  setSelectedDepot(value)
+                  setPageNumber(1)
+                }}
+              >
+                <SelectTrigger disabled={isDepotSelectDisabled} className="bg-background">
+                  <SelectValue placeholder="Choose a depot to load warehouse stocks..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {depots.map((depot) => (
+                    <SelectItem key={depot.id} value={depot.name}>
+                      {depot.name}
+                      {depot.region && ` (${depot.region})`}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          )}
+
+          {/* Unified Catalogue Toolbar */}
+          <div className="bg-card border rounded-lg p-3.5 space-y-3 shadow-xs">
+            {/* Primary Search Row */}
+            <div className="relative">
+              <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search by item code or description (e.g. 14111507-PP-M01, multicopy, marker)..."
+                value={searchTerm}
+                onChange={(e) => {
+                  setSearchTerm(e.target.value)
+                  setPageNumber(1)
+                }}
+                disabled={isLoading && !isReadyToFetch}
+                className="pl-9 pr-8 h-9 text-sm"
+              />
+              {searchTerm && (
+                <button
+                  type="button"
+                  onClick={() => {
+                    setSearchTerm('')
+                    setPageNumber(1)
+                  }}
+                  className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
 
             {/* Filter Controls Row */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              {/* Search Filter */}
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">Search Supplies</label>
-                <Input
-                  placeholder="Item code or description..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  disabled={isLoading}
-                />
-              </div>
-
+            <div className="flex flex-wrap items-center gap-2.5">
               {/* Category Filter */}
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">Category</label>
+              <div className="w-48">
                 <Select
                   value={categoryFilter}
-                  onValueChange={setCategoryFilter}
-                  disabled={isLoading}
+                  onValueChange={(value) => {
+                    setCategoryFilter(value)
+                    setPageNumber(1)
+                  }}
+                  disabled={isLoading && !isReadyToFetch}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Select category" />
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Category" />
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="All">All Categories</SelectItem>
@@ -382,25 +534,70 @@ export function AddItemDialog({
                 </Select>
               </div>
 
-              {/* Max Results Filter */}
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium">Results Per Page</label>
+              {/* Stock Filter */}
+              <div className="w-44">
                 <Select
-                  value={String(maxResults)}
-                  onValueChange={(value) => setMaxResults(Number(value))}
-                  disabled={isLoading}
+                  value={stockFilter}
+                  onValueChange={(value) => {
+                    setStockFilter(value)
+                    setPageNumber(1)
+                  }}
+                  disabled={isLoading && !isReadyToFetch}
                 >
-                  <SelectTrigger>
-                    <SelectValue placeholder="Results" />
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Stock Status" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="25">25 items</SelectItem>
-                    <SelectItem value="50">50 items</SelectItem>
-                    <SelectItem value="100">100 items</SelectItem>
-                    <SelectItem value="200">200 items</SelectItem>
-                    <SelectItem value="500">500 items</SelectItem>
+                    <SelectItem value="all">All Stocks</SelectItem>
+                    <SelectItem value="in_stock">In Stock (Stock &gt; 0)</SelectItem>
+                    <SelectItem value="low_stock">Low Stock (≤ 50)</SelectItem>
+                    <SelectItem value="out_of_stock">Out of Stock</SelectItem>
+                    <SelectItem value="has_delivery">Has Pending Delivery</SelectItem>
                   </SelectContent>
                 </Select>
+              </div>
+
+              {/* Availability Filter */}
+              <div className="w-36">
+                <Select
+                  value={availabilityFilter}
+                  onValueChange={(value) => {
+                    setAvailabilityFilter(value)
+                    setPageNumber(1)
+                  }}
+                  disabled={isLoading && !isReadyToFetch}
+                >
+                  <SelectTrigger className="h-8 text-xs">
+                    <SelectValue placeholder="Availability" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">All Availability</SelectItem>
+                    <SelectItem value="Available">Available</SelectItem>
+                    <SelectItem value="Out of Stock">Out of Stock</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* Clear Filters Button */}
+              {hasActiveFilters && (
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="sm"
+                  onClick={handleClearFilters}
+                  className="h-8 text-xs text-muted-foreground hover:text-foreground gap-1 px-2.5"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  <span>Clear Filters</span>
+                </Button>
+              )}
+
+              {/* Count Indicator */}
+              <div className="ml-auto flex items-center gap-1 text-xs text-muted-foreground font-medium">
+                <Filter className="h-3 w-3" />
+                <span>
+                  {totalFilteredItems} item{totalFilteredItems !== 1 ? 's' : ''} found
+                </span>
               </div>
             </div>
           </div>
@@ -417,7 +614,7 @@ export function AddItemDialog({
           ) : (
             <>
               {/* Unsynced depot banner */}
-              {!lastSyncTime && !isLoading && items.length > 0 && (
+              {!lastSyncTime && !isLoading && rawItems.length > 0 && (
                 <div className="bg-amber-50/70 border border-amber-200 rounded-lg p-3 flex items-center justify-between gap-3 text-xs text-amber-900">
                   <div className="flex items-center gap-2">
                     <AlertCircle className="h-4 w-4 text-amber-600 flex-shrink-0" />
@@ -458,14 +655,107 @@ export function AddItemDialog({
               )}
 
               <PSDBMItemsGrid
-                items={items}
+                items={pagedItems}
                 selectedItems={selectedItems}
                 onItemSelect={handleItemSelect}
                 onQuantityChange={handleQuantityChange}
                 onSelectAll={handleSelectAll}
-                isLoading={isLoading || (isSyncing && items.length === 0)}
+                isLoading={isLoading && rawItems.length === 0}
                 error={itemsError ? 'Failed to load items from local database.' : null}
               />
+
+              {/* Pagination & Results Controls Footer */}
+              <div className="flex flex-wrap items-center justify-between gap-3 pt-1 border-t px-1 text-xs">
+                {/* Showing Range */}
+                <div className="text-muted-foreground">
+                  Showing <span className="font-medium text-foreground">{startItem}</span>–<span className="font-medium text-foreground">{endItem}</span> of{' '}
+                  <span className="font-medium text-foreground">{totalFilteredItems}</span> items
+                </div>
+
+                {/* Navigation and Page Size */}
+                <div className="flex items-center gap-4">
+                  {/* Page Size Selector */}
+                  <div className="flex items-center gap-1.5">
+                    <span className="text-muted-foreground">Per page:</span>
+                    <Select
+                      value={String(pageSize)}
+                      onValueChange={(value) => {
+                        setPageSize(Number(value))
+                        setPageNumber(1)
+                      }}
+                    >
+                      <SelectTrigger className="h-7 w-20 text-xs">
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="25">25</SelectItem>
+                        <SelectItem value="50">50</SelectItem>
+                        <SelectItem value="100">100</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  {/* Page Navigation Buttons */}
+                  <div className="flex items-center gap-1">
+                    {/* First Page */}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => setPageNumber(1)}
+                      disabled={pageNumber <= 1 || isLoading}
+                      title="First page"
+                    >
+                      <ChevronsLeft className="h-3.5 w-3.5" />
+                    </Button>
+
+                    {/* Previous Page */}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => setPageNumber((p) => Math.max(1, p - 1))}
+                      disabled={pageNumber <= 1 || isLoading}
+                      title="Previous page"
+                    >
+                      <ChevronLeft className="h-3.5 w-3.5" />
+                    </Button>
+
+                    {/* Current Page Badge */}
+                    <span className="px-2 py-1 font-medium text-xs bg-muted rounded border min-w-16 text-center">
+                      Page {pageNumber} of {totalPages}
+                    </span>
+
+                    {/* Next Page */}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => setPageNumber((p) => Math.min(totalPages, p + 1))}
+                      disabled={pageNumber >= totalPages || isLoading}
+                      title="Next page"
+                    >
+                      <ChevronRight className="h-3.5 w-3.5" />
+                    </Button>
+
+                    {/* Last Page */}
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="icon"
+                      className="h-7 w-7"
+                      onClick={() => setPageNumber(totalPages)}
+                      disabled={pageNumber >= totalPages || isLoading}
+                      title="Last page"
+                    >
+                      <ChevronsRight className="h-3.5 w-3.5" />
+                    </Button>
+                  </div>
+                </div>
+              </div>
             </>
           )}
 
@@ -475,7 +765,7 @@ export function AddItemDialog({
               <div className="flex justify-between items-center">
                 <div>
                   <p className="text-sm font-medium text-primary">
-                    {selectedCount} item{selectedCount !== 1 ? 's' : ''} selected
+                    {selectedCount} item{selectedCount !== 1 ? 's' : ''} selected across pages
                   </p>
                   <p className="text-xs text-muted-foreground">
                     Selected items will be converted to APR Consolidated line items.

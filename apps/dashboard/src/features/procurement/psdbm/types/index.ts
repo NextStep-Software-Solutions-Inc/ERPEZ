@@ -48,6 +48,7 @@ export interface PSDBMDepot {
   id: string
   name: string // e.g., "BAGUIO", "CEBU", "DAVAO"
   region?: string
+  mode?: string
 }
 
 /**
@@ -68,6 +69,12 @@ export interface PSDBMSearchParams {
   max?: number
   depot?: string
   mode: PSDBMCatalogMode | string
+  availability?: string
+  stockFilter?: string
+  sortBy?: string
+  sortDescending?: boolean
+  pageNumber?: number
+  pageSize?: number
 }
 
 /**
@@ -80,6 +87,11 @@ export interface PSDBMCatalogResponse {
   mode: PSDBMCatalogMode | string
   depot?: string
   totalItems?: number
+  pageNumber?: number
+  pageSize?: number
+  totalPages?: number
+  hasPreviousPage?: boolean
+  hasNextPage?: boolean
   lastSynchronizedAt?: string
   isMockData?: boolean
 }

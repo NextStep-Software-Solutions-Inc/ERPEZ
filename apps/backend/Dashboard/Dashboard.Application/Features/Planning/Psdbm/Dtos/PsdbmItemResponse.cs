@@ -21,6 +21,11 @@ public record GetPsdbmItemsResponse
 {
     public List<PsdbmItemDto> Items { get; init; } = [];
     public int TotalItems { get; init; }
+    public int PageNumber { get; init; } = 1;
+    public int PageSize { get; init; } = 25;
+    public int TotalPages => PageSize > 0 ? (int)Math.Ceiling((double)TotalItems / PageSize) : 1;
+    public bool HasPreviousPage => PageNumber > 1;
+    public bool HasNextPage => PageNumber < TotalPages;
     public string? Category { get; init; }
     public string? SearchTerm { get; init; }
     public required string Mode { get; init; }

@@ -18,7 +18,13 @@ import {
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
-import { AlertCircle, Image as ImageIcon, FileText, CheckCircle2, Clock } from 'lucide-react'
+import {
+  AlertCircle,
+  Image as ImageIcon,
+  FileText,
+  CheckCircle2,
+  Clock,
+} from 'lucide-react'
 import type { PSDBMItem, PSDBMItemWithQuantity } from '../types'
 
 interface PSDBMItemsGridProps {
@@ -101,10 +107,10 @@ export function PSDBMItemsGrid({
   }
 
   return (
-    <div className="border rounded-lg overflow-hidden bg-card">
+    <div className="border rounded-lg overflow-hidden bg-card shadow-sm">
       <Table>
         <TableHeader>
-          <TableRow className="bg-muted/50">
+          <TableRow className="bg-muted/50 select-none">
             <TableHead className="w-10">
               <Checkbox
                 checked={allSelected && items.length > 0}
@@ -115,9 +121,10 @@ export function PSDBMItemsGrid({
             <TableHead className="w-16">Image</TableHead>
             <TableHead className="w-32">Item Code</TableHead>
             <TableHead>Description & Specifications</TableHead>
-            <TableHead className="w-24 text-right">Unit Price</TableHead>
+            <TableHead className="w-28 text-right">Unit Price</TableHead>
             <TableHead className="w-20">UOM</TableHead>
-            <TableHead className="w-40 text-center">Warehouse Stock</TableHead>
+            <TableHead className="w-36 text-center">Warehouse Stock</TableHead>
+            <TableHead className="w-28 text-center">Delivery</TableHead>
             <TableHead className="w-24 text-center">Req. Qty</TableHead>
             <TableHead className="w-28 text-right">Subtotal</TableHead>
           </TableRow>
@@ -212,14 +219,14 @@ export function PSDBMItemsGrid({
                     {item.unit}
                   </TableCell>
 
-                  {/* Warehouse Stock on Hand & Pending Deliveries */}
+                  {/* Warehouse Stock on Hand */}
                   <TableCell className="text-center">
                     <div className="flex flex-col items-center gap-1">
                       {item.lastSyncedAt ? (
                         stock > 0 ? (
                           <Badge
                             variant="secondary"
-                            className="bg-emerald-50 text-emerald-700 border-emerald-200 text-xs font-semibold px-2 py-0.5"
+                            className="bg-emerald-50 text-emerald-700 border-emerald-200 text-xs font-semibold px-2 py-0.5 whitespace-nowrap"
                           >
                             <CheckCircle2 className="h-3 w-3 mr-1 text-emerald-600" />
                             {stock.toLocaleString()} {item.unit}
@@ -249,14 +256,19 @@ export function PSDBMItemsGrid({
                           </Badge>
                         )
                       )}
-
-                      {pendingDelivery > 0 && (
-                        <span className="inline-flex items-center text-[10px] text-amber-700 font-medium bg-amber-50 px-1.5 py-0.2 rounded border border-amber-200">
-                          <Clock className="h-2.5 w-2.5 mr-1" />
-                          {pendingDelivery.toLocaleString()} for delivery
-                        </span>
-                      )}
                     </div>
+                  </TableCell>
+
+                  {/* Pending Deliveries */}
+                  <TableCell className="text-center">
+                    {pendingDelivery > 0 ? (
+                      <span className="inline-flex items-center text-[11px] text-amber-700 font-semibold bg-amber-50 px-2 py-0.5 rounded border border-amber-200 whitespace-nowrap">
+                        <Clock className="h-3 w-3 mr-1" />
+                        {pendingDelivery.toLocaleString()}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">-</span>
+                    )}
                   </TableCell>
 
                   {/* Quantity Input */}
@@ -281,7 +293,7 @@ export function PSDBMItemsGrid({
                   <TableCell className="text-right font-semibold text-sm">
                     {selected ? (
                       <span className="text-primary font-mono">
-                        ₱{total.toLocaleString('en-PH', {
+                        ₱{totalAmount.toLocaleString('en-PH', {
                           minimumFractionDigits: 2,
                           maximumFractionDigits: 2,
                         })}
@@ -295,7 +307,7 @@ export function PSDBMItemsGrid({
             })
           ) : (
             <TableRow>
-              <TableCell colSpan={9} className="text-center py-12">
+              <TableCell colSpan={10} className="text-center py-12">
                 <p className="text-sm text-muted-foreground">{emptyMessage}</p>
               </TableCell>
             </TableRow>

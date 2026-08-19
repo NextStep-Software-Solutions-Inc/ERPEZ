@@ -16,7 +16,7 @@ public class GetPsdbmDepotsQueryHandler(
     {
         try
         {
-            var depots = await queryService.GetDepotsAsync(cancellationToken);
+            var depots = await queryService.GetDepotsAsync(request.Mode, cancellationToken);
             return ApiResponse<List<PsdbmDepotDto>>.Success(depots, "Depots fetched successfully.");
         }
         catch (Exception ex)

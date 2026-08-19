@@ -12,9 +12,13 @@ public class GetPsdbmItemsQueryValidator : AbstractValidator<GetPsdbmItemsQuery>
             .Must(m => m is "main" or "regional" or "lgu")
             .WithMessage("Mode must be 'main', 'regional', or 'lgu'.");
 
-        RuleFor(x => x.Max)
-            .InclusiveBetween(1, 1000)
-            .WithMessage("Max must be between 1 and 1000.");
+        RuleFor(x => x.PageNumber)
+            .GreaterThanOrEqualTo(1)
+            .WithMessage("PageNumber must be at least 1.");
+
+        RuleFor(x => x.PageSize)
+            .InclusiveBetween(1, 500)
+            .WithMessage("PageSize must be between 1 and 500.");
 
         RuleFor(x => x.Depot)
             .NotEmpty()

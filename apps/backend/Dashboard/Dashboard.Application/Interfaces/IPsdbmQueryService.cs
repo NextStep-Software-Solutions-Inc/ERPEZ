@@ -19,5 +19,6 @@ public interface IPsdbmQueryService
         CancellationToken cancellationToken = default);
 
     Task<List<PsdbmDepotDto>> GetDepotsAsync(
+        string? mode = null,
         CancellationToken cancellationToken = default);
 }

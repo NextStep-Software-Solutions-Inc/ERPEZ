@@ -1,6 +1,7 @@
 using ERPEZ.Application.Features.Planning.Psdbm.Dtos;
 using ERPEZ.Application.Features.Planning.Psdbm.Queries.GetItems;
 using ERPEZ.Application.Interfaces;
+using ERPEZ.Domain.Entities.Procurement;
 using ERPEZ.Domain.Enums;
 using ERPEZ.Infrastructure.Persistence;
 using Microsoft.EntityFrameworkCore;
@@ -20,10 +21,13 @@ public class PsdbmQueryService(
         var normalizedMode = (request.Mode ?? "regional").ToLowerInvariant();
         var hasDbData = dbContext.PsdbmProducts != null && await dbContext.PsdbmProducts.AnyAsync(cancellationToken);
 
+        var pageNumber = Math.Max(1, request.PageNumber);
+        var pageSize = request.PageSize > 0 ? request.PageSize : (request.Max > 0 ? request.Max : 25);
+
         if (hasDbData)
         {
-            logger.LogInformation("Querying PSDBM catalogue from local database (Mode: {Mode}, Depot: {Depot}, Search: {Search}, Category: {Category})",
-                request.Mode, request.Depot, request.Search, request.Category);
+            logger.LogInformation("Querying PSDBM catalogue from local database (Mode: {Mode}, Depot: {Depot}, Page: {Page}, PageSize: {PageSize}, Search: {Search}, Category: {Category}, Stock: {StockFilter})",
+                request.Mode, request.Depot, pageNumber, pageSize, request.Search, request.Category, request.StockFilter);
 
             List<PsdbmItemDto> items = [];
             var totalCount = 0;
@@ -43,11 +47,13 @@ public class PsdbmQueryService(
                         .Include(dp => dp.Product)
                         .Where(dp => dp.DepotId == depot.Id && dp.Product != null && dp.Product.IsActive);
 
+                    // Category filter
                     if (!string.IsNullOrWhiteSpace(request.Category) && !request.Category.Equals("All", StringComparison.OrdinalIgnoreCase))
                     {
                         query = query.Where(dp => dp.Product!.Category == request.Category);
                     }
 
+                    // Combined Search (ItemCode and Description)
                     if (!string.IsNullOrWhiteSpace(request.Search))
                     {
                         var term = request.Search.Trim().ToLower();
@@ -55,12 +61,36 @@ public class PsdbmQueryService(
                                                   dp.Product!.ItemCode.ToLower().Contains(term));
                     }
 
+                    // Availability status filter
+                    if (!string.IsNullOrWhiteSpace(request.Availability) && !request.Availability.Equals("All", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var avail = request.Availability.Trim().ToLower();
+                        query = query.Where(dp => dp.Availability.ToLower() == avail);
+                    }
+
+                    // Smart Stock Filter
+                    if (!string.IsNullOrWhiteSpace(request.StockFilter) && !request.StockFilter.Equals("All", StringComparison.OrdinalIgnoreCase))
+                    {
+                        var stockMode = request.StockFilter.Trim().ToLower();
+                        query = stockMode switch
+                        {
+                            "in_stock" or "instock" => query.Where(dp => dp.AvailableStock > 0),
+                            "out_of_stock" or "outofstock" => query.Where(dp => dp.AvailableStock == 0 || dp.Availability.ToLower() == "out of stock"),
+                            "low_stock" or "lowstock" => query.Where(dp => dp.AvailableStock > 0 && dp.AvailableStock <= 50),
+                            "has_delivery" or "delivery" => query.Where(dp => dp.RemainingQtyForDelivery > 0),
+                            _ => query
+                        };
+                    }
+
                     totalCount = await query.CountAsync(cancellationToken);
 
-                    var maxResults = Math.Max(1, Math.Min(request.Max, 500));
+                    // Sorting
+                    query = ApplyDepotProductSorting(query, request.SortBy, request.SortDescending);
+
+                    // Pagination
                     var depotProducts = await query
-                        .OrderBy(dp => dp.Product!.Description)
-                        .Take(maxResults)
+                        .Skip((pageNumber - 1) * pageSize)
+                        .Take(pageSize)
                         .ToListAsync(cancellationToken);
 
                     items = depotProducts.Select(dp => new PsdbmItemDto
@@ -105,10 +135,13 @@ public class PsdbmQueryService(
 
                 totalCount = await query.CountAsync(cancellationToken);
 
-                var maxResults = Math.Max(1, Math.Min(request.Max, 500));
+                // Sorting
+                query = ApplyProductSorting(query, request.SortBy, request.SortDescending);
+
+                // Pagination
                 var products = await query
-                    .OrderBy(p => p.Description)
-                    .Take(maxResults)
+                    .Skip((pageNumber - 1) * pageSize)
+                    .Take(pageSize)
                     .ToListAsync(cancellationToken);
 
                 items = products.Select(p => new PsdbmItemDto
@@ -147,6 +180,8 @@ public class PsdbmQueryService(
             {
                 Items = items,
                 TotalItems = totalCount,
+                PageNumber = pageNumber,
+                PageSize = pageSize,
                 Category = request.Category,
                 SearchTerm = request.Search,
                 Mode = request.Mode ?? "regional",
@@ -162,14 +197,22 @@ public class PsdbmQueryService(
             request.Mode ?? "regional",
             request.Search,
             request.Category,
-            request.Max,
+            request.Max > 0 ? request.Max : pageSize,
             request.Depot,
             cancellationToken);
 
+        // Apply in-memory paging for fallback if list is large
+        var pagedLiveItems = liveItems
+            .Skip((pageNumber - 1) * pageSize)
+            .Take(pageSize)
+            .ToList();
+
         return new GetPsdbmItemsResponse
         {
-            Items = liveItems,
+            Items = pagedLiveItems.Count > 0 ? pagedLiveItems : liveItems,
             TotalItems = liveItems.Count,
+            PageNumber = pageNumber,
+            PageSize = pageSize,
             Category = request.Category,
             SearchTerm = request.Search,
             Mode = request.Mode ?? "regional",
@@ -183,41 +226,49 @@ public class PsdbmQueryService(
         string? itemCode,
         CancellationToken cancellationToken = default)
     {
-        var query = dbContext.PsdbmProducts!
-            .Include(p => p.DepotProducts)
-            .ThenInclude(dp => dp.Depot)
-            .AsNoTracking();
+        if (dbContext.PsdbmProducts == null) return null;
 
-        var product = id.HasValue
-            ? await query.FirstOrDefaultAsync(p => p.Id == id.Value, cancellationToken)
-            : await query.FirstOrDefaultAsync(p => p.ItemCode == itemCode, cancellationToken);
+        var query = dbContext.PsdbmProducts
+            .Include(p => p.DepotProducts)
+                .ThenInclude(dp => dp.Depot)
+            .AsQueryable();
+
+        PsdbmProduct? product = null;
+
+        if (id.HasValue && id.Value != Guid.Empty)
+        {
+            product = await query.FirstOrDefaultAsync(p => p.Id == id.Value, cancellationToken);
+        }
+        else if (!string.IsNullOrWhiteSpace(itemCode))
+        {
+            var code = itemCode.Trim().ToLowerInvariant();
+            product = await query.FirstOrDefaultAsync(p => p.ItemCode.ToLower() == code, cancellationToken);
+        }
 
         if (product == null) return null;
-
-        var depotStocks = product.DepotProducts.Select(dp => new PsdbmDepotStockDto
-        {
-            DepotId = dp.DepotId,
-            DepotName = dp.Depot?.Name ?? "Unknown",
-            Region = dp.Depot?.Region,
-            Mode = dp.Depot?.Mode,
-            Price = dp.Price,
-            Availability = dp.Availability,
-            AvailableStock = dp.AvailableStock,
-            RemainingQtyForDelivery = dp.RemainingQtyForDelivery,
-            LastSyncedAt = dp.LastSyncedAt
-        }).ToList();
 
         return new PsdbmProductDetailDto
         {
             Id = product.Id,
             ItemCode = product.ItemCode,
             Description = product.Description,
-            Category = product.Category,
+            Category = product.Category ?? "General",
             Unit = product.Unit,
             ImageUrl = product.ImageUrl,
             TechnicalSpecificationUrl = product.TechnicalSpecificationUrl,
             IsActive = product.IsActive,
-            DepotStocks = depotStocks
+            DepotStocks = product.DepotProducts.Select(dp => new PsdbmDepotStockDto
+            {
+                DepotId = dp.DepotId,
+                DepotName = dp.Depot?.Name ?? "Unknown",
+                Region = dp.Depot?.Region,
+                Mode = dp.Depot?.Mode,
+                Price = dp.Price,
+                Availability = dp.Availability,
+                AvailableStock = dp.AvailableStock,
+                RemainingQtyForDelivery = dp.RemainingQtyForDelivery,
+                LastSyncedAt = dp.LastSyncedAt
+            }).ToList()
         };
     }
 
@@ -225,13 +276,11 @@ public class PsdbmQueryService(
         string mode,
         CancellationToken cancellationToken = default)
     {
-        var hasDbData = dbContext.PsdbmProducts != null && await dbContext.PsdbmProducts.AnyAsync(cancellationToken);
-
-        if (hasDbData)
+        if (dbContext.PsdbmProducts != null && await dbContext.PsdbmProducts.AnyAsync(cancellationToken))
         {
-            var categoriesWithCount = await dbContext.PsdbmProducts!
+            var dbCategories = await dbContext.PsdbmProducts
                 .Where(p => p.IsActive && !string.IsNullOrWhiteSpace(p.Category))
-                .GroupBy(p => p.Category)
+                .GroupBy(p => p.Category!)
                 .Select(g => new PsdbmCategoryDto
                 {
                     Id = g.Key,
@@ -241,42 +290,94 @@ public class PsdbmQueryService(
                 .OrderBy(c => c.Name)
                 .ToListAsync(cancellationToken);
 
-            if (categoriesWithCount.Count > 0)
-            {
-                return categoriesWithCount;
-            }
+            if (dbCategories.Count > 0) return dbCategories;
         }
 
-        // Fallback
         return await philGepsService.GetCategoriesAsync(mode, cancellationToken);
     }
 
     public async Task<List<PsdbmDepotDto>> GetDepotsAsync(
+        string? mode = null,
         CancellationToken cancellationToken = default)
     {
-        var hasDbData = dbContext.PsdbmDepots != null && await dbContext.PsdbmDepots.AnyAsync(cancellationToken);
+        var normalizedMode = !string.IsNullOrWhiteSpace(mode) ? mode.Trim().ToLowerInvariant() : null;
 
-        if (hasDbData)
+        if (dbContext.PsdbmDepots != null && await dbContext.PsdbmDepots.AnyAsync(cancellationToken))
         {
-            var depots = await dbContext.PsdbmDepots!
-                .Where(d => d.IsActive)
-                .OrderBy(d => d.Mode)
-                .ThenBy(d => d.Name)
+            var query = dbContext.PsdbmDepots.Where(d => d.IsActive);
+
+            if (!string.IsNullOrWhiteSpace(normalizedMode))
+            {
+                query = query.Where(d => d.Mode.ToLower() == normalizedMode);
+            }
+
+            var dbDepots = await query
+                .OrderBy(d => d.Name)
                 .Select(d => new PsdbmDepotDto
                 {
                     Id = d.Id.ToString(),
                     Name = d.Name,
-                    Region = d.Region ?? d.Mode.ToUpperInvariant()
+                    Region = d.Region ?? string.Empty,
+                    Mode = d.Mode
                 })
                 .ToListAsync(cancellationToken);
 
-            if (depots.Count > 0)
-            {
-                return depots;
-            }
+            if (dbDepots.Count > 0) return dbDepots;
         }
 
-        // Fallback
+        if (normalizedMode == "regional")
+        {
+            return await philGepsService.GetRegionalDepotsAsync(cancellationToken);
+        }
+
+        if (normalizedMode == "lgu")
+        {
+            return await philGepsService.GetLguDepotsAsync(cancellationToken);
+        }
+
         return await philGepsService.GetDepotsAsync(cancellationToken);
+    }
+
+    private static IQueryable<PsdbmDepotProduct> ApplyDepotProductSorting(
+        IQueryable<PsdbmDepotProduct> query,
+        string? sortBy,
+        bool sortDescending)
+    {
+        var sort = (sortBy ?? "description").ToLowerInvariant();
+        return sort switch
+        {
+            "stock" or "availablestock" => sortDescending
+                ? query.OrderByDescending(dp => dp.AvailableStock).ThenBy(dp => dp.Product!.Description)
+                : query.OrderBy(dp => dp.AvailableStock).ThenBy(dp => dp.Product!.Description),
+            "delivery" or "remainingqtyfordelivery" => sortDescending
+                ? query.OrderByDescending(dp => dp.RemainingQtyForDelivery).ThenBy(dp => dp.Product!.Description)
+                : query.OrderBy(dp => dp.RemainingQtyForDelivery).ThenBy(dp => dp.Product!.Description),
+            "price" or "unitprice" => sortDescending
+                ? query.OrderByDescending(dp => dp.Price).ThenBy(dp => dp.Product!.Description)
+                : query.OrderBy(dp => dp.Price).ThenBy(dp => dp.Product!.Description),
+            "itemcode" or "code" => sortDescending
+                ? query.OrderByDescending(dp => dp.Product!.ItemCode)
+                : query.OrderBy(dp => dp.Product!.ItemCode),
+            _ => sortDescending
+                ? query.OrderByDescending(dp => dp.Product!.Description)
+                : query.OrderBy(dp => dp.Product!.Description)
+        };
+    }
+
+    private static IQueryable<PsdbmProduct> ApplyProductSorting(
+        IQueryable<PsdbmProduct> query,
+        string? sortBy,
+        bool sortDescending)
+    {
+        var sort = (sortBy ?? "description").ToLowerInvariant();
+        return sort switch
+        {
+            "itemcode" or "code" => sortDescending
+                ? query.OrderByDescending(p => p.ItemCode)
+                : query.OrderBy(p => p.ItemCode),
+            _ => sortDescending
+                ? query.OrderByDescending(p => p.Description)
+                : query.OrderBy(p => p.Description)
+        };
     }
 }
