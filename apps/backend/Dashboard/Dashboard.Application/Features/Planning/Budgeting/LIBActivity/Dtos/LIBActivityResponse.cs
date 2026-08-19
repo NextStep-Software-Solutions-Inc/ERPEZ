@@ -7,6 +7,7 @@ public record LIBActivityResponse
     public Guid? WFPObjectiveActivityId { get; init; }
     public Guid? OPCRActivityId { get; init; }
     public string Name { get; init; } = string.Empty;
+    public decimal Budget { get; init; }
     public LIBActivityLineItemBudgetResponse? LineItemBudget { get; init; }
     public LIBActivityWFPResponse? WFPObjectiveActivity { get; init; }
     public LIBActivityOPCRResponse? OPCRActivity { get; init; }
