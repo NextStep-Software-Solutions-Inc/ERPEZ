@@ -8526,6 +8526,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<decimal>("ABC")
                         .HasColumnType("numeric");
 
+                    b.Property<Guid?>("APPItemId")
+                        .HasColumnType("uuid");
+
                     b.Property<Guid?>("ApprovalAttachmentFileId")
                         .HasColumnType("uuid");
 
@@ -8569,6 +8572,10 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<string>("ScopeOfWork")
                         .HasColumnType("text");
 
+                    b.Property<string>("SourceType")
+                        .IsRequired()
+                        .HasColumnType("text");
+
                     b.Property<string>("Status")
                         .IsRequired()
                         .HasColumnType("text");
@@ -8587,6 +8594,8 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasColumnType("text");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("APPItemId");
 
                     b.HasIndex("ConsolidatedPRId")
                         .IsUnique();
@@ -8919,6 +8928,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid?>("ProcurementCategoryId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("ProcurementProjectId")
+                        .HasColumnType("uuid");
+
                     b.Property<string>("Purpose")
                         .IsRequired()
                         .HasColumnType("text");
@@ -8958,6 +8970,8 @@ namespace ERPEZ.Infrastructure.Migrations
                         .IsUnique();
 
                     b.HasIndex("ProcurementCategoryId");
+
+                    b.HasIndex("ProcurementProjectId");
 
                     b.HasIndex("UACSCodeCombinationId");
 
@@ -11130,7 +11144,8 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasOne("ERPEZ.Domain.Entities.Planning.WFPObjective", "WFPObjective")
                         .WithMany("WFPObjectiveActivities")
-                        .HasForeignKey("WFPObjectiveId");
+                        .HasForeignKey("WFPObjectiveId")
+                        .OnDelete(DeleteBehavior.Cascade);
 
                     b.Navigation("OPCRActivity");
 
@@ -11558,6 +11573,11 @@ namespace ERPEZ.Infrastructure.Migrations
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Procurement.ProcurementProject", b =>
                 {
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.APPItem", "APPItem")
+                        .WithMany()
+                        .HasForeignKey("APPItemId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("ERPEZ.Domain.Entities.Procurement.ConsolidatedPR", "ConsolidatedPR")
                         .WithOne()
                         .HasForeignKey("ERPEZ.Domain.Entities.Procurement.ProcurementProject", "ConsolidatedPRId")
@@ -11576,6 +11596,8 @@ namespace ERPEZ.Infrastructure.Migrations
                         .WithMany()
                         .HasForeignKey("TechRepresentativeId")
                         .OnDelete(DeleteBehavior.SetNull);
+
+                    b.Navigation("APPItem");
 
                     b.Navigation("ConsolidatedPR");
 
@@ -11660,6 +11682,11 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasForeignKey("ProcurementCategoryId")
                         .OnDelete(DeleteBehavior.Restrict);
 
+                    b.HasOne("ERPEZ.Domain.Entities.Procurement.ProcurementProject", "ProcurementProject")
+                        .WithMany()
+                        .HasForeignKey("ProcurementProjectId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
                     b.HasOne("ERPEZ.Domain.Entities.Planning.UACSCodeCombination", "UACSCodeCombination")
                         .WithMany()
                         .HasForeignKey("UACSCodeCombinationId")
@@ -11672,6 +11699,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Navigation("PPMP");
 
                     b.Navigation("ProcurementCategory");
+
+                    b.Navigation("ProcurementProject");
 
                     b.Navigation("UACSCodeCombination");
                 });

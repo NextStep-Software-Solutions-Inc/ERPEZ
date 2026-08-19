@@ -1,4 +1,4 @@
-﻿import type { MutationBlueprintFromTemplate } from 'erpez-shared-lib'
+import type { MutationBlueprintFromTemplate } from 'erpez-shared-lib'
 import { jsPDF } from 'jspdf'
 import type { PrintBacResolutionResult } from '../types'
 import {
@@ -67,14 +67,9 @@ export const printBacResolutionRequest: MutationBlueprintFromTemplate<
     }
 
     const printable = cloneResolution(resolution)
+    const ctx = printable.procurementProjectContext
+    const linkedPr = printable.linkedConsolidatedPrs?.[0]
 
-    if (printable.linkedConsolidatedPrs.length !== 1) {
-      throw new Error(
-        'BAC Resolution printing requires exactly one linked Consolidated PR.',
-      )
-    }
-
-    const linkedPr = printable.linkedConsolidatedPrs[0]
     const fileName =
       printable.printFileName ?? `${printable.bacResolutionNumber}.pdf`
 
@@ -134,7 +129,7 @@ export const printBacResolutionRequest: MutationBlueprintFromTemplate<
             {
               id: 'default-whereas-2',
               name: 'Requirement Review',
-              body: 'WHEREAS, the BAC has reviewed the procurement requirement reflected in the selected BAC Resolution and has confirmed that the linked Consolidated PRs support the recommended mode of procurement;',
+              body: 'WHEREAS, the BAC has reviewed the procurement requirement reflected in the selected BAC Resolution and has confirmed that the linked procurement source supports the recommended mode of procurement;',
             },
           ]
 
@@ -159,13 +154,18 @@ export const printBacResolutionRequest: MutationBlueprintFromTemplate<
     )
     cursorY += 8
 
-    const procurementMode = linkedPr?.modeOfProcurement ?? 'Not specified'
+    const procurementMode = ctx?.modeOfProcurement ?? linkedPr?.modeOfProcurement ?? 'Not specified'
+    const sourceRef = ctx?.sourceRef ?? linkedPr?.prNumber ?? 'N/A'
+    const officeName = ctx?.officeName ?? linkedPr?.endUser ?? 'N/A'
+    const projectTitle = ctx?.projectTitle ?? linkedPr?.projectName ?? printable.description
+    const amount = ctx?.abc ?? printable.totalAmount
+
     const resolutionDetails = [
       ['Method', procurementMode],
-      ['PR Number', linkedPr?.prNumber ?? 'N/A'],
-      ['End-user', linkedPr?.endUser ?? 'N/A'],
-      ['Amount', `₱${printable.totalAmount.toLocaleString('en-PH')}`],
-      ['Name of Project', linkedPr?.projectName ?? printable.description],
+      ['Source Ref', sourceRef],
+      ['Office / Unit', officeName],
+      ['ABC / Amount', `₱${amount.toLocaleString('en-PH')}`],
+      ['Name of Project', projectTitle],
     ] as const
 
     doc.setFont('helvetica', 'bold')

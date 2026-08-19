@@ -42,6 +42,9 @@ export const createBacResolutionRequest: MutationBlueprintFromTemplate<
       .join('\n\n')
 
     const apiPayload = {
+      sourceType: payload.sourceType === 'APP_ITEM' ? 1 : 2,
+      appItemId: payload.appItemId || null,
+      consolidatedPRId: payload.consolidatedPRId || null,
       title: payload.title || payload.description || 'Untitled Project',
       abc: typeof payload.abc === 'number' ? payload.abc : 0,
       status: 'Draft',
