@@ -1,8 +1,9 @@
+using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Commands.AddCatalogItems;
+using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Commands.ChangeAPRStatus;
 using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Commands.CreateAPR;
 using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Commands.DeleteAPR;
 using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Commands.SubmitAPR;
 using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Commands.UpdateAPR;
-using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Commands.ChangeAPRStatus;
 using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Dtos;
 using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Queries.GetAPRById;
 using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Queries.GetAPRs;
@@ -116,6 +117,24 @@ public class APRController(ISender mediator) : ControllerBase
             Status = request.Status,
             Remarks = request.Remarks
         };
+
+        var result = await mediator.Send(command);
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    /// <summary>
+    /// Add or update items from PSDBM catalog in an existing Draft/Returned APR
+    /// </summary>
+    [HttpPost("{id}/catalog-items")]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> AddCatalogItems(Guid id, [FromBody] AddCatalogItemsToAPRCommand command)
+    {
+        if (id != command.APRId)
+        {
+            command = command with { APRId = id };
+        }
 
         var result = await mediator.Send(command);
         return result.Succeeded ? Ok(result) : BadRequest(result);

@@ -54,10 +54,14 @@ public class UpdateAPRCommandHandler(IUnitOfWork unitOfWork)
         apr.RequiresCompleteSpecifications = request.RequiresCompleteSpecifications;
         apr.AdditionalRemarks = request.AdditionalRemarks;
 
-        var existingByAppItemId = apr.APRItems.ToDictionary(i => i.APPItemId);
+        var existingByAppItemId = apr.APRItems
+            .Where(i => i.APPItemId.HasValue)
+            .ToDictionary(i => i.APPItemId!.Value);
         var incomingAppItemIds = request.Items.Select(i => i.APPItemId).ToHashSet();
 
-        var toRemove = apr.APRItems.Where(i => !incomingAppItemIds.Contains(i.APPItemId)).ToList();
+        var toRemove = apr.APRItems
+            .Where(i => i.APPItemId.HasValue && !incomingAppItemIds.Contains(i.APPItemId.Value))
+            .ToList();
         foreach (var item in toRemove)
         {
             unitOfWork.APRItemRepository.Remove(item);

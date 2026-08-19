@@ -54,6 +54,7 @@ import {
   useSubmitAPRMutation,
   useApproveAPRMutation,
   useReturnAPRMutation,
+  useAddCatalogItemsToAPRMutation,
 } from '@/features/procurement/apr/handlers/hooks'
 
 interface APRDetailsPageProps {
@@ -76,6 +77,7 @@ export default function APRDetailsPage({ aprId }: APRDetailsPageProps) {
   const { mutateAsync: submitAPR, isPending: isSubmittingAPR } = useSubmitAPRMutation()
   const { mutateAsync: approveAPR, isPending: isApprovingAPR } = useApproveAPRMutation()
   const { mutateAsync: returnAPR, isPending: isReturningAPR } = useReturnAPRMutation()
+  const { mutateAsync: addCatalogItems, isPending: isAddingCatalogItems } = useAddCatalogItemsToAPRMutation()
 
   // Dialog states
   const [submitDialogOpen, setSubmitDialogOpen] = useState(false)
@@ -83,12 +85,15 @@ export default function APRDetailsPage({ aprId }: APRDetailsPageProps) {
   const [approveDialogOpen, setApproveDialogOpen] = useState(false)
   const [addItemDialogOpen, setAddItemDialogOpen] = useState(false)
 
+  // Extra items added from PSDBM catalogue during session (optimistic / fallback)
+  const [extraItems, setExtraItems] = useState<ConsolidatedAPRItem[]>([])
+
   // Map backend APRDetailDto to frontend APRMaster view model
-  const apr: APRMaster | null = useMemo(() => {
-    if (!rawResponse) return null
+  const baseConsolidatedItems: ConsolidatedAPRItem[] = useMemo(() => {
+    if (!rawResponse) return []
     const data: APRDetailDto = (rawResponse as any).data || rawResponse
 
-    const consolidatedItems: ConsolidatedAPRItem[] = (data.items || []).map((item, idx) => ({
+    return (data.items || []).map((item, idx) => ({
       id: item.id || `item-${idx}`,
       itemCode: item.ppmpItemId || item.appItemId || `ITEM-${idx + 1}`,
       description: item.description || 'Procurement Item',
@@ -116,6 +121,19 @@ export default function APRDetailsPage({ aprId }: APRDetailsPageProps) {
         contractSigningDate: item.milestones[3]?.scheduledDate,
       } : undefined,
     }))
+  }, [rawResponse])
+
+  const consolidatedItems = useMemo(() => {
+    return [...baseConsolidatedItems, ...extraItems]
+  }, [baseConsolidatedItems, extraItems])
+
+  const totalAmount = useMemo(() => {
+    return consolidatedItems.reduce((sum, i) => sum + i.totalAmount, 0)
+  }, [consolidatedItems])
+
+  const apr: APRMaster | null = useMemo(() => {
+    if (!rawResponse) return null
+    const data: APRDetailDto = (rawResponse as any).data || rawResponse
 
     return {
       id: data.id,
@@ -152,17 +170,17 @@ export default function APRDetailsPage({ aprId }: APRDetailsPageProps) {
       },
       consolidatedItems,
       totalItemsCount: consolidatedItems.length,
-      totalAmount: data.totalAmount ?? consolidatedItems.reduce((sum, i) => sum + i.totalAmount, 0),
+      totalAmount,
       submittedAt: data.submittedDate,
       approvedAt: data.approvedDate,
       sourceAPPId: data.appId,
       appStatus: 'Approved',
-      appApprovedBudget: data.totalAmount,
+      appApprovedBudget: totalAmount,
       appApprovedItemsCount: consolidatedItems.length,
       totalBudgetVariance: 0,
       totalBudgetVariancePercent: 0,
     }
-  }, [rawResponse])
+  }, [rawResponse, consolidatedItems, totalAmount])
 
   // Action handlers
   const handleSubmitForReview = async () => {
@@ -225,11 +243,48 @@ export default function APRDetailsPage({ aprId }: APRDetailsPageProps) {
   }
 
   const handleAddItems = async (newItems: ConsolidatedAPRItem[]) => {
-    toast.success(`${newItems.length} item(s) selected.`)
-    setAddItemDialogOpen(false)
+    try {
+      const payloadItems = newItems.map((item) => ({
+        itemCode: item.itemCode,
+        description: item.description,
+        unit: item.unit,
+        unitPrice: item.unitCost,
+        quantity: item.quantity,
+      }))
+
+      await addCatalogItems({
+        pathParams: { aprId },
+        payload: {
+          aprId,
+          items: payloadItems,
+        },
+      } as any)
+
+      toast.success(`Successfully saved ${newItems.length} catalog item(s) to APR!`)
+      setAddItemDialogOpen(false)
+      await refetch()
+    } catch (err: any) {
+      console.error('Error saving catalog items to APR:', err)
+      const msg = err?.response?.data?.message || err?.message || 'Failed to save items to APR'
+      toast.error(msg)
+      setExtraItems((prev) => {
+        const existingCodes = new Set([
+          ...baseConsolidatedItems.map((i) => i.itemCode),
+          ...prev.map((i) => i.itemCode),
+        ])
+        const uniqueNew = newItems.filter((i) => !existingCodes.has(i.itemCode))
+        return [...prev, ...uniqueNew]
+      })
+      setAddItemDialogOpen(false)
+    }
   }
 
-  const isSubmitting = isSubmittingAPR || isApprovingAPR || isReturningAPR
+  const handleRemoveItem = (itemCode: string) => {
+    setExtraItems((prev) => prev.filter((i) => i.itemCode !== itemCode && i.id !== itemCode))
+    toast.success('Item removed.')
+  }
+
+  const isSubmitting = isSubmittingAPR || isApprovingAPR || isReturningAPR || isAddingCatalogItems
 
   const handleBackClick = () => {
     if (search.from === 'manage-aprs') {
@@ -353,6 +408,7 @@ export default function APRDetailsPage({ aprId }: APRDetailsPageProps) {
       <ConsolidatedItemsTable
         items={apr.consolidatedItems}
         status={apr.status as string}
+        onRemoveItem={handleRemoveItem}
         onOpenAddItem={() => setAddItemDialogOpen(true)}
       />
 

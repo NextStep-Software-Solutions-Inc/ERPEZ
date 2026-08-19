@@ -3,7 +3,8 @@
  * 
  * Displays PSDBM catalog items in a structured table format
  * Displays authoritative Available Stock on Hand and Remaining Delivery Qty
- * Allows item selection and quantity adjustment
+ * Prevents selection of out-of-stock items
+ * Allows item selection and quantity adjustment for available items
  */
 
 import { useCallback, useMemo } from 'react'
@@ -38,6 +39,16 @@ interface PSDBMItemsGridProps {
   emptyMessage?: string
 }
 
+export function isItemOutOfStock(item: PSDBMItem): boolean {
+  if (item.lastSyncedAt) {
+    return (item.availableStock ?? 0) <= 0
+  }
+  return (
+    item.availability?.toLowerCase() === 'out of stock' ||
+    (item.availableStock !== undefined && item.availableStock <= 0)
+  )
+}
+
 export function PSDBMItemsGrid({
   items,
   selectedItems,
@@ -48,11 +59,16 @@ export function PSDBMItemsGrid({
   error = null,
   emptyMessage = 'No items found matching your filter criteria.',
 }: PSDBMItemsGridProps) {
-  // Calculate if all items are selected
+  // Only items that are in stock are selectable
+  const selectableItems = useMemo(() => {
+    return items.filter((item) => !isItemOutOfStock(item))
+  }, [items])
+
+  // Calculate if all selectable items are selected
   const allSelected = useMemo(() => {
-    if (items.length === 0) return false
-    return items.every((item) => selectedItems.has(item.itemCode))
-  }, [items, selectedItems])
+    if (selectableItems.length === 0) return false
+    return selectableItems.every((item) => selectedItems.has(item.itemCode))
+  }, [selectableItems, selectedItems])
 
   // Handle select all toggle
   const handleSelectAllChange = useCallback(
@@ -65,6 +81,7 @@ export function PSDBMItemsGrid({
   // Handle individual item selection
   const handleItemChange = useCallback(
     (item: PSDBMItem, checked: boolean) => {
+      if (isItemOutOfStock(item) && checked) return
       onItemSelect(item, checked)
     },
     [onItemSelect]
@@ -113,9 +130,10 @@ export function PSDBMItemsGrid({
           <TableRow className="bg-muted/50 select-none">
             <TableHead className="w-10">
               <Checkbox
-                checked={allSelected && items.length > 0}
+                checked={allSelected && selectableItems.length > 0}
+                disabled={selectableItems.length === 0}
                 onCheckedChange={handleSelectAllChange}
-                aria-label="Select all items"
+                aria-label="Select all available items"
               />
             </TableHead>
             <TableHead className="w-16">Image</TableHead>
@@ -132,6 +150,7 @@ export function PSDBMItemsGrid({
         <TableBody>
           {items.length > 0 ? (
             items.map((item) => {
+              const outOfStock = isItemOutOfStock(item)
               const selected = selectedItems.has(item.itemCode)
               const selectedItem = selectedItems.get(item.itemCode)
               const quantity = selectedItem?.quantity ?? 1
@@ -142,16 +161,24 @@ export function PSDBMItemsGrid({
               return (
                 <TableRow
                   key={item.itemCode}
-                  className={`transition-colors hover:bg-muted/30 ${selected ? 'bg-primary/5 font-medium' : ''}`}
+                  className={`transition-colors hover:bg-muted/30 ${
+                    outOfStock ? 'opacity-65 bg-muted/15' : ''
+                  } ${selected ? 'bg-primary/5 font-medium' : ''}`}
                 >
                   {/* Checkbox */}
                   <TableCell>
                     <Checkbox
                       checked={selected}
+                      disabled={outOfStock}
                       onCheckedChange={(checked) =>
                         handleItemChange(item, checked as boolean)
                       }
-                      aria-label={`Select ${item.description}`}
+                      aria-label={
+                        outOfStock
+                          ? `${item.description} is out of stock and cannot be added`
+                          : `Select ${item.description}`
+                      }
+                      title={outOfStock ? 'Out of stock items cannot be added to APR' : undefined}
                     />
                   </TableCell>
 
@@ -293,7 +320,7 @@ export function PSDBMItemsGrid({
                   <TableCell className="text-right font-semibold text-sm">
                     {selected ? (
                       <span className="text-primary font-mono">
-                        ₱{totalAmount.toLocaleString('en-PH', {
+                        ₱{total.toLocaleString('en-PH', {
                           minimumFractionDigits: 2,
                           maximumFractionDigits: 2,
                         })}

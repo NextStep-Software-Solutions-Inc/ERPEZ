@@ -46,7 +46,7 @@ import {
 import { toast } from 'sonner'
 import api from '@/services/api'
 import type { ConsolidatedAPRItem } from '@/features/procurement/apr/types'
-import { PSDBMItemsGrid } from '@/features/procurement/psdbm/components'
+import { PSDBMItemsGrid, isItemOutOfStock } from '@/features/procurement/psdbm/components'
 import {
   usePSDBMItems,
   usePSDBMCategories,
@@ -286,6 +286,7 @@ export function AddItemDialog({
 
   // Handler: Item selection toggle
   const handleItemSelect = useCallback((item: any, selected: boolean) => {
+    if (isItemOutOfStock(item) && selected) return
     setSelectedItems((prev) => {
       const newMap = new Map(prev)
       if (selected) {
@@ -317,12 +318,12 @@ export function AddItemDialog({
     []
   )
 
-  // Handler: Select all (current page)
+  // Handler: Select all (current page, in-stock items only)
   const handleSelectAll = useCallback((selected: boolean) => {
     if (selected) {
       const newMap = new Map<string, PSDBMItemWithQuantity>(selectedItems)
       pagedItems.forEach((item) => {
-        if (!newMap.has(item.itemCode)) {
+        if (!isItemOutOfStock(item) && !newMap.has(item.itemCode)) {
           newMap.set(item.itemCode, {
             ...item,
             quantity: 1,

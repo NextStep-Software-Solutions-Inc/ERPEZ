@@ -1,4 +1,4 @@
-﻿/**
+/**
  * APR API Hooks
  *
  * All query and mutation hooks for the APR feature.
@@ -19,6 +19,7 @@ import { approveAPRRequest } from './approveAPRRequest'
 import { returnAPRRequest } from './returnAPRRequest'
 import { deleteAPRRequest } from './deleteAPRRequest'
 import { updateAPRRequest } from './updateAPRRequest'
+import { addItemsToAPRRequest } from './addItemsToAPRRequest'
 import { getApprovedAPPsRequest } from './getApprovedAPPsRequest'
 import { getAPPByIdRequest } from './getAPPByIdRequest'
 import { getFiscalYearsRequest } from './getFiscalYearsRequest'
@@ -59,3 +60,6 @@ export const useDeleteAPRMutation = createMutationHookFromTemplate(deleteAPRRequ
 
 /** Update draft APR */
 export const useUpdateAPRMutation = createMutationHookFromTemplate(updateAPRRequest)
+
+/** Add catalog items to draft APR */
+export const useAddCatalogItemsToAPRMutation = createMutationHookFromTemplate(addItemsToAPRRequest)
