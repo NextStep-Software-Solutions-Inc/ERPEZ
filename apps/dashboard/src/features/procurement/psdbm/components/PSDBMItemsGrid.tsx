@@ -7,7 +7,7 @@
  * Allows item selection and quantity adjustment for available items
  */
 
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import {
   Table,
   TableBody,
@@ -25,8 +25,10 @@ import {
   FileText,
   CheckCircle2,
   Clock,
+  ZoomIn,
 } from 'lucide-react'
 import type { PSDBMItem, PSDBMItemWithQuantity } from '../types'
+import { APRImageViewerModal } from '@/features/procurement/apr/components/APRImageViewerModal'
 
 interface PSDBMItemsGridProps {
   items: PSDBMItem[]
@@ -59,6 +61,8 @@ export function PSDBMItemsGrid({
   error = null,
   emptyMessage = 'No items found matching your filter criteria.',
 }: PSDBMItemsGridProps) {
+  const [previewItem, setPreviewItem] = useState<PSDBMItem | null>(null)
+
   // Only items that are in stock are selectable
   const selectableItems = useMemo(() => {
     return items.filter((item) => !isItemOutOfStock(item))
@@ -186,14 +190,27 @@ export function PSDBMItemsGrid({
                   <TableCell>
                     <div className="flex items-center justify-center">
                       {item.imageUrl ? (
-                        <img
-                          src={item.imageUrl}
-                          alt={item.description}
-                          className="h-12 w-12 object-cover rounded border bg-background"
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none'
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setPreviewItem(item)
                           }}
-                        />
+                          className="relative group rounded border overflow-hidden bg-background focus:outline-hidden focus:ring-2 focus:ring-primary"
+                          title="Click to view full image"
+                        >
+                          <img
+                            src={item.imageUrl}
+                            alt={item.description}
+                            className="h-12 w-12 object-cover transition-transform group-hover:scale-110"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none'
+                            }}
+                          />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
+                            <ZoomIn className="w-4 h-4" />
+                          </div>
+                        </button>
                       ) : (
                         <div className="h-12 w-12 bg-muted rounded border flex items-center justify-center">
                           <ImageIcon className="h-5 w-5 text-muted-foreground" />
@@ -341,6 +358,18 @@ export function PSDBMItemsGrid({
           )}
         </TableBody>
       </Table>
+
+      {/* Image Preview Modal */}
+      {previewItem && (
+        <APRImageViewerModal
+          isOpen={!!previewItem}
+          onClose={() => setPreviewItem(null)}
+          imageUrl={previewItem.imageUrl}
+          itemTitle={previewItem.description}
+          itemCode={previewItem.itemCode}
+          unitPrice={previewItem.unitPrice}
+        />
+      )}
     </div>
   )
 }

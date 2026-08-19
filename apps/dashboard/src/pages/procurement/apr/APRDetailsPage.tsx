@@ -11,6 +11,8 @@
 
 import { useMemo, useState } from 'react'
 import { useNavigate, useSearch } from '@tanstack/react-router'
+import { useQueryClient } from '@tanstack/react-query'
+import { invalidateAPRQueries } from '@/features/procurement/apr/utils/invalidateAPRQueries'
 import {
   ArrowLeft,
   ChevronLeft,
@@ -36,6 +38,7 @@ import {
   APRStatsGrid,
   ConsolidatedItemsTable,
   APRTermsConditionsSection,
+  APRStatusBadge,
 } from '@/features/procurement/apr/components'
 import {
   SubmitAPRDialog,
@@ -72,6 +75,7 @@ interface SearchParams {
 export default function APRDetailsPage({ aprId }: APRDetailsPageProps) {
   const navigate = useNavigate()
   const search = useSearch({ from: '__root__' }) as SearchParams
+  const isFromManageAPRs = search?.from === 'manage-aprs' || (typeof window !== 'undefined' && window.location.pathname.includes('/manage-aprs'))
 
   // Fetch live APR detail from backend GET /aprs/:aprId
   const { data: rawResponse, isLoading, error, refetch } = useAPR({
@@ -192,6 +196,8 @@ export default function APRDetailsPage({ aprId }: APRDetailsPageProps) {
     }
   }, [rawResponse, consolidatedItems, totalAmount])
 
+  const queryClient = useQueryClient()
+
   // Action handlers
   const handleSubmitForReview = async () => {
     try {
@@ -201,6 +207,7 @@ export default function APRDetailsPage({ aprId }: APRDetailsPageProps) {
 
       const updatedNumber = (result as any)?.data || (result as any)?.message || apr?.aprNumber
       toast.success(`APR ${updatedNumber} has been submitted for review.`)
+      invalidateAPRQueries(queryClient)
       setSubmitDialogOpen(false)
       refetch()
     } catch (err: any) {
@@ -222,6 +229,7 @@ export default function APRDetailsPage({ aprId }: APRDetailsPageProps) {
       } as any)
 
       toast.success(`APR ${apr?.aprNumber} has been returned for revisions.`)
+      invalidateAPRQueries(queryClient)
       setReturnDialogOpen(false)
       refetch()
     } catch (err: any) {
@@ -243,6 +251,7 @@ export default function APRDetailsPage({ aprId }: APRDetailsPageProps) {
       } as any)
 
       toast.success(`APR ${apr?.aprNumber} has been approved successfully.`)
+      invalidateAPRQueries(queryClient)
       setApproveDialogOpen(false)
       refetch()
     } catch (err: any) {
@@ -271,6 +280,7 @@ export default function APRDetailsPage({ aprId }: APRDetailsPageProps) {
       } as any)
 
       toast.success(`Successfully saved ${newItems.length} catalog item(s) to APR!`)
+      invalidateAPRQueries(queryClient)
       setAddItemDialogOpen(false)
       await refetch()
     } catch (err: any) {
@@ -296,11 +306,13 @@ export default function APRDetailsPage({ aprId }: APRDetailsPageProps) {
       } as any)
       setExtraItems((prev) => prev.filter((i) => i.itemCode !== itemIdentifier && i.id !== itemIdentifier))
       toast.success('Item removed from APR.')
+      invalidateAPRQueries(queryClient)
       await refetch()
     } catch (err: any) {
       console.error('Error removing item from APR:', err)
       setExtraItems((prev) => prev.filter((i) => i.itemCode !== itemIdentifier && i.id !== itemIdentifier))
       toast.success('Item removed.')
+      invalidateAPRQueries(queryClient)
       await refetch()
     }
   }
@@ -416,7 +428,7 @@ export default function APRDetailsPage({ aprId }: APRDetailsPageProps) {
       </div>
 
       {/* 1. Top Soft Purple Identity Banner */}
-      <APRIdentityBanner apr={apr} />
+      <APRIdentityBanner apr={apr} context={isFromManageAPRs ? 'procurement_officer' : 'user'} />
 
       {/* Return Revisions Notice Banner */}
       {isReturned && (
@@ -528,9 +540,11 @@ export default function APRDetailsPage({ aprId }: APRDetailsPageProps) {
       <div className="sticky bottom-4 z-30 bg-white/95 backdrop-blur-md border border-gray-200/80 shadow-md rounded-2xl py-3.5 px-6 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
         {/* Status indicator and timestamps on the left */}
         <div className="flex items-center gap-3">
-          <span className="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold bg-[#f5f3ff] text-[#6366f1] border border-[#ede9fe]">
-            {apr.status || 'Draft'}
-          </span>
+          <APRStatusBadge
+            status={apr.status || 'Draft'}
+            context={isFromManageAPRs ? 'procurement_officer' : 'user'}
+            size="sm"
+          />
           <div className="flex flex-col text-[11px] text-gray-400 leading-tight">
             <span className="text-gray-600 font-medium">Request Date: {formattedRequestDate}</span>
             <span>

@@ -1,4 +1,4 @@
-﻿namespace ERPEZ.Application.Features.Planning.WFPObjectiveTimeline.Dtos;
+namespace ERPEZ.Application.Features.Planning.WFPObjectiveTimeline.Dtos;
 
 public record WFPObjectiveTimelineResponse
 {
@@ -10,4 +10,6 @@ public record WFPObjectiveTimelineResponse
     public decimal TargetValue { get; init; }
     public DateTime CreatedAt { get; init; }
     public string CreatedBy { get; init; } = string.Empty;
+    public DateTime? UpdatedAt { get; init; }
+    public string? UpdatedBy { get; init; }
 }

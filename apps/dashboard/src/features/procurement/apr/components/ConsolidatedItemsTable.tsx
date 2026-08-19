@@ -36,9 +36,12 @@ import {
   AlertTriangle,
   Package,
   FolderClosed,
+  ZoomIn,
+  Image as ImageIcon,
 } from 'lucide-react'
 import { formatCurrencyPHP } from '@/utils/formatters'
 import type { ConsolidatedAPRItem } from '../types'
+import { APRImageViewerModal } from './APRImageViewerModal'
 
 interface ConsolidatedItemsTableProps {
   items: ConsolidatedAPRItem[]
@@ -55,6 +58,7 @@ export function ConsolidatedItemsTable({
 }: ConsolidatedItemsTableProps) {
   const isDraft = status?.toUpperCase() === 'DRAFT' || status?.toUpperCase() === 'RETURNED'
   const [itemToDelete, setItemToDelete] = useState<ConsolidatedAPRItem | null>(null)
+  const [previewItem, setPreviewItem] = useState<ConsolidatedAPRItem | null>(null)
 
   const handleConfirmDelete = () => {
     if (itemToDelete) {
@@ -171,13 +175,33 @@ export function ConsolidatedItemsTable({
                       key={item.id || item.itemCode || `item-row-${index}`}
                       className="bg-white hover:bg-[#f8fafc]/70 transition-colors border-b border-gray-200/90 last:border-b-0"
                     >
-                      {/* Item & Description with Folder Thumbnail Preview */}
+                      {/* Item & Description with Image / Folder Thumbnail Preview */}
                       <TableCell className="pl-6 py-4.5 align-middle">
                         <div className="flex items-center gap-3.5 max-w-sm">
-                          {/* Folder Preview Box */}
-                          <div className="h-11 w-11 rounded-xl bg-[#fef3c7] border border-[#f59e0b]/40 flex items-center justify-center text-[#b45309] flex-shrink-0 shadow-2xs">
-                            <FolderClosed className="h-5 w-5 fill-[#fde68a] text-[#b45309]" />
-                          </div>
+                          {item.imageUrl ? (
+                            <button
+                              type="button"
+                              onClick={() => setPreviewItem(item)}
+                              className="relative group h-11 w-11 rounded-xl overflow-hidden border border-slate-200 bg-white flex items-center justify-center flex-shrink-0 shadow-2xs cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-primary"
+                              title="Click to view full image"
+                            >
+                              <img
+                                src={item.imageUrl}
+                                alt={item.description}
+                                className="h-full w-full object-cover group-hover:scale-110 transition-transform"
+                                onError={(e) => {
+                                  e.currentTarget.style.display = 'none'
+                                }}
+                              />
+                              <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
+                                <ZoomIn className="w-3.5 h-3.5" />
+                              </div>
+                            </button>
+                          ) : (
+                            <div className="h-11 w-11 rounded-xl bg-[#fef3c7] border border-[#f59e0b]/40 flex items-center justify-center text-[#b45309] flex-shrink-0 shadow-2xs">
+                              <FolderClosed className="h-5 w-5 fill-[#fde68a] text-[#b45309]" />
+                            </div>
+                          )}
                           <div className="space-y-0.5 min-w-0">
                             <p className="font-bold text-xs text-gray-950 leading-snug truncate">
                               {item.description}
@@ -341,6 +365,18 @@ export function ConsolidatedItemsTable({
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Image Preview Modal */}
+      {previewItem && (
+        <APRImageViewerModal
+          isOpen={!!previewItem}
+          onClose={() => setPreviewItem(null)}
+          imageUrl={previewItem.imageUrl}
+          itemTitle={previewItem.description}
+          itemCode={previewItem.itemCode}
+          unitPrice={previewItem.unitCost}
+        />
+      )}
     </>
   )
 }

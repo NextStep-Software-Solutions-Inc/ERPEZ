@@ -1,4 +1,5 @@
-﻿using ERPEZ.Application.Features.Planning.Object.Dtos;
+using ERPEZ.Application.Features.Planning.Object.Dtos;
+using ERPEZ.Application.Features.Planning.WFP.Dtos;
 using ERPEZ.Application.Features.Planning.WFPObjective.Dtos;
 using ERPEZ.Application.Features.Planning.WFPObjectiveActivity.Dtos;
 using ERPEZ.Application.Features.Planning.WFPObjectiveActivityExpenditure.Dtos;
@@ -27,6 +28,7 @@ public class GetWFPObjectiveActivityByIdQueryHandler(IUnitOfWork unitOfWork)
                 Weight = target.Weight,
                 CreatedAt = target.CreatedAt,
                 CreatedBy = target.CreatedBy,
+                WFPStatus = target.WFPObjective != null && target.WFPObjective.WFP != null ? target.WFPObjective.WFP.Status.ToString() : null,
                 WFPObjective = target.WFPObjective != null ? new WFPObjectiveResponse
                 {
                     Id = target.WFPObjective.Id,
@@ -36,6 +38,19 @@ public class GetWFPObjectiveActivityByIdQueryHandler(IUnitOfWork unitOfWork)
                     Outcome = target.WFPObjective.Outcome,
                     CreatedAt = target.WFPObjective.CreatedAt,
                     CreatedBy = target.WFPObjective.CreatedBy,
+                    UpdatedAt = target.WFPObjective.UpdatedAt,
+                    UpdatedBy = target.WFPObjective.UpdatedBy,
+                    WFPStatus = target.WFPObjective.WFP != null ? target.WFPObjective.WFP.Status.ToString() : null,
+                    WFP = target.WFPObjective.WFP != null ? new WFPResponse
+                    {
+                        Id = target.WFPObjective.WFP.Id,
+                        Status = target.WFPObjective.WFP.Status.ToString(),
+                        GeneralObjective = target.WFPObjective.WFP.GeneralObjective,
+                        ProjectTitle = target.WFPObjective.WFP.ProjectTitle,
+                        ProposedBudget = target.WFPObjective.WFP.ProposedBudget,
+                        CreatedAt = target.WFPObjective.WFP.CreatedAt,
+                        CreatedBy = target.WFPObjective.WFP.CreatedBy,
+                    } : null,
                     WFPObjectiveActivities = new List<WFPObjectiveActivityResponse>()
                 } : null,
                 WFPObjectiveActivityExpenditures = target.WFPObjectiveActivityExpenditures.Select(exp => new WFPObjectiveActivityExpenditureResponse

@@ -13,6 +13,7 @@ import { useForm } from '@tanstack/react-form'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import { useUpdateAPRMutation, useFiscalYears } from '../handlers/hooks'
+import { invalidateAPRQueries } from '../utils/invalidateAPRQueries'
 import { APRHeaderForm, APRTermsForm, SelectAPPForm, type SelectAppFormValues } from '../forms'
 import {
   ModeOfDelivery,
@@ -202,9 +203,7 @@ export function EditAPRDialog({ open, onOpenChange, apr, onSuccess }: EditAPRDia
         } as any)
 
         // Invalidate APR queries
-        void queryClient.invalidateQueries({
-          queryKey: ['/aprs'],
-        })
+        invalidateAPRQueries(queryClient)
 
         toast.success(`APR ${apr.aprNumber || ''} updated successfully`)
         onSuccess?.()

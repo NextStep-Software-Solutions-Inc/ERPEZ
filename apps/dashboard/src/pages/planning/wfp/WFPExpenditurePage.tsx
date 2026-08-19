@@ -157,7 +157,15 @@ export default function WFPExpenditurePage({
   const wfpObjectiveId = targetData.data.wfpObjectiveId || targetData.data.wfpObjective?.id
   const wfpId = targetData.data.wfpObjective?.wfpId
   const objectiveDesc = targetData.data.wfpObjective?.description || 'Objective Details'
-  const activityName = targetData.data.activityName
+  const activityName = targetData.data.activityName || 'Activity Expenditures'
+  const wfpStatus =
+    targetData.data.wfpStatus ||
+    targetData.data.wfpObjective?.wfpStatus ||
+    targetData.data.wfpObjective?.wfp?.status ||
+    targetData.data.status
+
+  const isEditable = wfpStatus ? (wfpStatus === 'Draft' || wfpStatus === 'Returned') : false
+  const tableActions: ('read' | 'write' | 'delete')[] = isEditable ? ['read', 'write', 'delete'] : ['read']
 
   const breadcrumbs = (
     <Breadcrumb>
@@ -233,14 +241,16 @@ export default function WFPExpenditurePage({
               </span>
             </div>
           </div>
-          <Button
-            size="sm"
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold flex gap-2 text-xs shadow-sm rounded-lg px-4 py-2 transition-all"
-            onClick={() => setCreateDialog({ isOpen: true, showUnsavedWarning: false })}
-          >
-            <Plus className="h-4 w-4" />
-            <span>Create Expenditure</span>
-          </Button>
+          {isEditable && (
+            <Button
+              size="sm"
+              className="bg-blue-600 hover:bg-blue-700 text-white font-semibold flex gap-2 text-xs shadow-sm rounded-lg px-4 py-2 transition-all"
+              onClick={() => setCreateDialog({ isOpen: true, showUnsavedWarning: false })}
+            >
+              <Plus className="h-4 w-4" />
+              <span>Create Expenditure</span>
+            </Button>
+          )}
         </div>
 
         {/* Grouped Category Cards */}
@@ -338,7 +348,7 @@ export default function WFPExpenditurePage({
                               <span className={`text-xs font-bold tabular-nums ${theme.subtotalText}`}>
                                 {formatCurrencyPHP(subtotal)}
                               </span>
-                              <Actions data={item as any} actions={['read', 'write', 'delete']} />
+                              <Actions data={item as any} readonly={!isEditable} actions={tableActions} />
                             </div>
                           </div>
                         )
@@ -351,14 +361,16 @@ export default function WFPExpenditurePage({
           })}
 
           {/* Add Another Expenditure Dashed Button */}
-          <button
-            type="button"
-            className="w-full border border-dashed border-blue-300 bg-blue-50/20 hover:bg-blue-50 text-blue-600 font-semibold text-xs py-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
-            onClick={() => setCreateDialog({ isOpen: true, showUnsavedWarning: false })}
-          >
-            <Plus className="w-4 h-4" />
-            <span>Add Another Expenditure</span>
-          </button>
+          {isEditable && (
+            <button
+              type="button"
+              className="w-full border border-dashed border-blue-300 bg-blue-50/20 hover:bg-blue-50 text-blue-600 font-semibold text-xs py-3 rounded-xl flex items-center justify-center gap-1.5 transition-colors cursor-pointer"
+              onClick={() => setCreateDialog({ isOpen: true, showUnsavedWarning: false })}
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Another Expenditure</span>
+            </button>
+          )}
 
           {/* Empty State */}
           {expenditures.length === 0 && (

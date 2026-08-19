@@ -1,4 +1,4 @@
-﻿/**
+/**
  * APR Header Section Components
  * Matches the updated design:
  * 1. APRIdentityBanner: Soft purple card with title, status pill, description, copyable ID
@@ -12,12 +12,14 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 import type { APRMaster } from '../types'
+import { APRStatusBadge } from './APRStatusBadge'
 
 interface APRHeaderSectionProps {
   apr: APRMaster
+  context?: 'user' | 'procurement_officer'
 }
 
-export function APRIdentityBanner({ apr }: APRHeaderSectionProps) {
+export function APRIdentityBanner({ apr, context = 'user' }: APRHeaderSectionProps) {
   const [copied, setCopied] = useState(false)
 
   const handleCopyId = () => {
@@ -28,8 +30,6 @@ export function APRIdentityBanner({ apr }: APRHeaderSectionProps) {
     setTimeout(() => setCopied(false), 2000)
   }
 
-  const isDraft = (apr.status || '').toLowerCase() === 'draft'
-
   return (
     <div className="relative overflow-hidden bg-gradient-to-r from-[#f4f2ff] via-[#f7f5ff] to-[#efeaff] border border-[#e8e3fe] rounded-2xl p-6 shadow-xs flex flex-col md:flex-row md:items-start md:justify-between gap-4">
       <div className="space-y-1.5 min-w-0 z-10">
@@ -37,15 +37,7 @@ export function APRIdentityBanner({ apr }: APRHeaderSectionProps) {
           <h1 className="text-xl font-bold text-gray-900 font-sans tracking-tight">
             {apr.aprNumber}
           </h1>
-          <span
-            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${
-              isDraft
-                ? 'bg-white text-gray-700 border-gray-200 shadow-2xs'
-                : 'bg-indigo-50 text-indigo-700 border-indigo-200'
-            }`}
-          >
-            {apr.status || 'Draft'}
-          </span>
+          <APRStatusBadge status={apr.status || 'Draft'} context={context} size="sm" />
         </div>
         {apr.description ? (
           <p className="text-xs text-gray-500 leading-relaxed max-w-2xl">

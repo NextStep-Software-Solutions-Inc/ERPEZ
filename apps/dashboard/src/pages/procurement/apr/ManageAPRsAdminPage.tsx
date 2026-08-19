@@ -6,6 +6,7 @@
 
 import { useState, useMemo } from 'react'
 import { useNavigate } from '@tanstack/react-router'
+import { useQueryClient } from '@tanstack/react-query'
 import { ClipboardList, Loader2, AlertCircle } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -22,6 +23,7 @@ import {
   useApproveAPRMutation,
   useReturnAPRMutation,
 } from '@/features/procurement/apr/handlers/hooks'
+import { invalidateAPRQueries } from '@/features/procurement/apr/utils/invalidateAPRQueries'
 
 /**
  * Calculate live statistics from live APR data
@@ -122,6 +124,8 @@ export function ManageAPRsAdminPage() {
     setReturnDialogOpen(true)
   }
 
+  const queryClient = useQueryClient()
+
   const handleConfirmApprove = async (file?: File) => {
     if (!selectedAPR) return
 
@@ -136,6 +140,7 @@ export function ManageAPRsAdminPage() {
       } as any)
 
       toast.success(`APR ${selectedAPR.aprNumber} has been approved successfully`)
+      invalidateAPRQueries(queryClient)
       setApproveDialogOpen(false)
       setSelectedAPR(null)
       refetch()
@@ -160,6 +165,7 @@ export function ManageAPRsAdminPage() {
       } as any)
 
       toast.success(`APR ${selectedAPR.aprNumber} has been returned for revisions`)
+      invalidateAPRQueries(queryClient)
       setReturnDialogOpen(false)
       setSelectedAPR(null)
       refetch()
