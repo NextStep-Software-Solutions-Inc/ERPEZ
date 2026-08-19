@@ -334,4 +334,71 @@ public class CreateLineItemBudgetDetailCommandHandlerTests
         result.Succeeded.Should().BeTrue();
         libDetailRepoMock.Verify(r => r.AddAsync(It.IsAny<ERPEZ.Domain.Entities.Planning.LineItemBudgetDetail>(), It.IsAny<CancellationToken>()), Times.Once);
     }
+
+    [Fact]
+    public async Task Handle_WfpActivityScope_SubmitLineItem_ShouldAssociateWithLineItemBudgetActivity()
+    {
+        // Arrange
+        var libId = Guid.NewGuid();
+        var activityId = Guid.NewGuid();
+        var wfpObjectiveActivityId = Guid.NewGuid();
+        var objectId = Guid.NewGuid();
+
+        var lib = new LineItemBudget
+        {
+            Id = libId,
+            SourceType = "WFP",
+            Scope = "Activity",
+            Status = "Proposed"
+        };
+
+        var activity = new LineItemBudgetActivity
+        {
+            Id = activityId,
+            LineItemBudgetId = libId,
+            WFPObjectiveActivityId = wfpObjectiveActivityId,
+            LineItemBudgetDetails = new List<ERPEZ.Domain.Entities.Planning.LineItemBudgetDetail>()
+        };
+
+        libRepoMock.Setup(r => r.GetByIdAsync(libId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(lib);
+
+        libActivityRepoMock.Setup(r => r.GetByIdForUpdateAsync(activityId, It.IsAny<CancellationToken>()))
+            .ReturnsAsync(activity);
+
+        ERPEZ.Domain.Entities.Planning.LineItemBudgetDetail? createdDetail = null;
+        libDetailRepoMock.Setup(r => r.AddAsync(It.IsAny<ERPEZ.Domain.Entities.Planning.LineItemBudgetDetail>(), It.IsAny<CancellationToken>()))
+            .Callback<ERPEZ.Domain.Entities.Planning.LineItemBudgetDetail, CancellationToken>((d, _) => createdDetail = d)
+            .Returns(Task.CompletedTask);
+
+        var startDate = new DateTime(2026, 7, 1);
+        var endDate = new DateTime(2026, 9, 30);
+
+        var command = new CreateLineItemBudgetDetailCommand(new CreateLineItemBudgetDetailRequest
+        {
+            LineItemBudgetId = libId,
+            LineItemBudgetActivityId = activityId,
+            ObjectId = objectId,
+            Budget = 75000m,
+            TimelineType = "Quarterly",
+            StartDate = startDate,
+            EndDate = endDate,
+            Description = "WFP Activity Line Item"
+        });
+
+        // Act
+        var result = await handler.Handle(command, CancellationToken.None);
+
+        // Assert
+        result.Should().NotBeNull();
+        result.Succeeded.Should().BeTrue();
+        createdDetail.Should().NotBeNull();
+        createdDetail!.LineItemBudgetId.Should().Be(libId);
+        createdDetail.LineItemBudgetActivityId.Should().Be(activityId);
+        createdDetail.ObjectId.Should().Be(objectId);
+        createdDetail.Budget.Should().Be(75000m);
+        createdDetail.Description.Should().Be("WFP Activity Line Item");
+        createdDetail.TimelineType.Should().Be("Quarterly");
+        unitOfWorkMock.Verify(u => u.SaveChangesAsync(It.IsAny<CancellationToken>()), Times.Once);
+    }
 }

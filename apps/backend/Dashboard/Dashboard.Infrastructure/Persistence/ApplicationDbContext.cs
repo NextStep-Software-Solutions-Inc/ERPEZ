@@ -1601,7 +1601,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<LineItemBudget>()
             .HasIndex(e => e.LIBNumber)
-            .IsUnique();
+            .IsUnique()
+            .HasFilter("\"IsDeleted\" = false");
 
         modelBuilder.Entity<LineItemBudget>()
             .HasIndex(e => e.FiscalYearId);

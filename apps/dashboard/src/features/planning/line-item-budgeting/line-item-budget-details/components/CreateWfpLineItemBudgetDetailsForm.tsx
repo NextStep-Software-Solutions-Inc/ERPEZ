@@ -125,6 +125,7 @@ export interface WfpFormController {
 
 interface CreateWfpLineItemBudgetDetailsFormProps {
   libId: string
+  libActivityId?: string
   wfpObjectiveActivityId?: string
   onCreated?: () => void
   onClose?: () => void
@@ -147,6 +148,7 @@ const useCreateLineItemBudgetDetails = createMutationHookFromTemplate(
 
 export default function CreateWfpLineItemBudgetDetailsForm({
   libId,
+  libActivityId,
   wfpObjectiveActivityId: wfpObjectiveActivityIdProp,
   onCreated,
   onClose,
@@ -261,6 +263,10 @@ export default function CreateWfpLineItemBudgetDetailsForm({
             pathParams: {},
             payload: {
               lineItemBudgetId: libId,
+              lineItemBudgetActivityId:
+                scope === 'Project'
+                  ? undefined
+                  : libActivityId || undefined,
               wfpObjectiveActivityExpenditureId:
                 scope === 'Project'
                   ? undefined
@@ -335,6 +341,7 @@ export default function CreateWfpLineItemBudgetDetailsForm({
     onSubmitOverride,
     mutateAsync,
     libId,
+    libActivityId,
     scope,
     queryClient,
     onCreated,

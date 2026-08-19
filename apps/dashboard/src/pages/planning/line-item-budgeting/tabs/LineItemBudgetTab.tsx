@@ -135,7 +135,9 @@ export function LineItemBudgetTab({
     clearSelection,
   } = useBulkActions()
 
-  const handleUpdateLIB = () => {}
+  const handleUpdateLIB = (id: string) => {
+    handleViewDetails(id)
+  }
 
   const handleDeleteLIB = (libraryId: string) => {
     const lib = libs?.data.find((l) => l.id === libraryId)
