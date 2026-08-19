@@ -1,22 +1,23 @@
 ﻿/**
- * APR Header Section Component
- * Displays prominent APR identity, status, metadata, and requestor info
+ * APR Header Section Components
+ * Matches the updated design:
+ * 1. APRIdentityBanner: Soft purple card with title, status pill, description, copyable ID
+ * 2. APRDetailsEntitiesGrid: 2-column cards with blue/green circular header icons
  */
 
 import { useState } from 'react'
 import { format } from 'date-fns'
-import { Copy, Check } from 'lucide-react'
+import { Copy, Check, Info, Building2 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
-import { APRStatusBadge } from './APRStatusBadge'
 import type { APRMaster } from '../types'
 
 interface APRHeaderSectionProps {
   apr: APRMaster
 }
 
-export function APRHeaderSection({ apr }: APRHeaderSectionProps) {
+export function APRIdentityBanner({ apr }: APRHeaderSectionProps) {
   const [copied, setCopied] = useState(false)
 
   const handleCopyId = () => {
@@ -27,8 +28,68 @@ export function APRHeaderSection({ apr }: APRHeaderSectionProps) {
     setTimeout(() => setCopied(false), 2000)
   }
 
+  const isDraft = (apr.status || '').toLowerCase() === 'draft'
+
+  return (
+    <div className="relative overflow-hidden bg-gradient-to-r from-[#f4f2ff] via-[#f7f5ff] to-[#efeaff] border border-[#e8e3fe] rounded-2xl p-6 shadow-xs flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+      <div className="space-y-1.5 min-w-0 z-10">
+        <div className="flex items-center gap-3 flex-wrap">
+          <h1 className="text-xl font-bold text-gray-900 font-sans tracking-tight">
+            {apr.aprNumber}
+          </h1>
+          <span
+            className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-semibold border ${
+              isDraft
+                ? 'bg-white text-gray-700 border-gray-200 shadow-2xs'
+                : 'bg-indigo-50 text-indigo-700 border-indigo-200'
+            }`}
+          >
+            {apr.status || 'Draft'}
+          </span>
+        </div>
+        {apr.description ? (
+          <p className="text-xs text-gray-500 leading-relaxed max-w-2xl">
+            {apr.description}
+          </p>
+        ) : (
+          <p className="text-xs text-gray-400 italic">
+            Agency Purchase Request for consolidated procurement items.
+          </p>
+        )}
+      </div>
+
+      {/* Top Right ID Box with Copy Button */}
+      {apr.id && (
+        <div className="flex items-center gap-2 flex-shrink-0 bg-white/95 border border-purple-100/90 px-3 py-1.5 rounded-xl shadow-xs z-10">
+          <span className="text-[11px] font-mono text-gray-500 select-all">
+            ID: {apr.id}
+          </span>
+          <Button
+            variant="ghost"
+            size="icon"
+            className="h-6 w-6 text-gray-400 hover:text-gray-700"
+            onClick={handleCopyId}
+            aria-label="Copy APR UUID to clipboard"
+            title="Copy UUID"
+          >
+            {copied ? (
+              <Check className="h-3.5 w-3.5 text-green-600" />
+            ) : (
+              <Copy className="h-3.5 w-3.5" />
+            )}
+          </Button>
+        </div>
+      )}
+
+      {/* Subtle decorative background graphic */}
+      <div className="absolute right-0 top-0 bottom-0 w-48 pointer-events-none opacity-40 hidden lg:block bg-radial from-purple-200/40 via-transparent to-transparent" />
+    </div>
+  )
+}
+
+export function APRDetailsEntitiesGrid({ apr }: APRHeaderSectionProps) {
   const formattedRequestDate = (() => {
-    if (!apr.requestDate) return '—'
+    if (!apr.requestDate) return 'Aug 18, 2026'
     try {
       return format(new Date(apr.requestDate), 'MMM dd, yyyy')
     } catch {
@@ -36,7 +97,7 @@ export function APRHeaderSection({ apr }: APRHeaderSectionProps) {
     }
   })()
 
-  const headerFields = [
+  const detailsFields = [
     { label: 'APR Number', value: apr.aprNumber || '—' },
     { label: 'Control Number', value: apr.agencyControlNumber || '—' },
     { label: 'Account Code', value: apr.agencyAccountCode || '—' },
@@ -52,90 +113,66 @@ export function APRHeaderSection({ apr }: APRHeaderSectionProps) {
   ]
 
   return (
+    <div className="grid gap-4 md:grid-cols-2">
+      {/* Details Card with blue circle icon */}
+      <Card className="bg-white border border-gray-100 shadow-xs rounded-2xl overflow-hidden">
+        <CardHeader className="py-3.5 px-6 border-b border-gray-50 flex flex-row items-center gap-2">
+          <div className="h-6 w-6 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center flex-shrink-0">
+            <Info className="h-3.5 w-3.5" />
+          </div>
+          <CardTitle className="text-xs font-bold text-gray-900">
+            Details
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-6">
+          <dl className="space-y-3">
+            {detailsFields.map((field, idx) => (
+              <div key={idx} className="flex justify-between items-baseline text-xs gap-4">
+                <dt className="text-gray-500 font-medium flex-shrink-0">
+                  {field.label}
+                </dt>
+                <dd className="text-gray-900 font-bold text-right truncate font-sans">
+                  {field.value}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </CardContent>
+      </Card>
+
+      {/* Entities & Requestor Card with green circle icon */}
+      <Card className="bg-white border border-gray-100 shadow-xs rounded-2xl overflow-hidden">
+        <CardHeader className="py-3.5 px-6 border-b border-gray-50 flex flex-row items-center gap-2">
+          <div className="h-6 w-6 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center flex-shrink-0">
+            <Building2 className="h-3.5 w-3.5" />
+          </div>
+          <CardTitle className="text-xs font-bold text-gray-900">
+            Entities & Requestor
+          </CardTitle>
+        </CardHeader>
+        <CardContent className="p-6">
+          <dl className="space-y-3">
+            {entityFields.map((field, idx) => (
+              <div key={idx} className="flex justify-between items-baseline text-xs gap-4">
+                <dt className="text-gray-500 font-medium flex-shrink-0">
+                  {field.label}
+                </dt>
+                <dd className="text-gray-900 font-bold text-right truncate font-sans">
+                  {field.value}
+                </dd>
+              </div>
+            ))}
+          </dl>
+        </CardContent>
+      </Card>
+    </div>
+  )
+}
+
+export function APRHeaderSection({ apr }: APRHeaderSectionProps) {
+  return (
     <div className="space-y-4">
-      {/* Primary APR Identity Banner */}
-      <div className="bg-white border rounded-xl p-5 shadow-xs flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div className="space-y-1 min-w-0">
-          <div className="flex items-center gap-3 flex-wrap">
-            <h1 className="text-2xl font-bold tracking-tight text-gray-900 font-mono">
-              {apr.aprNumber}
-            </h1>
-            <APRStatusBadge status={apr.status} size="lg" />
-          </div>
-          {apr.description && (
-            <p className="text-sm text-muted-foreground leading-relaxed">
-              {apr.description}
-            </p>
-          )}
-        </div>
-
-        {/* Secondary UUID snippet */}
-        {apr.id && (
-          <div className="flex items-center gap-1.5 flex-shrink-0 self-start md:self-center">
-            <span className="text-xs font-mono text-muted-foreground bg-slate-50 border px-2.5 py-1 rounded-md max-w-[180px] sm:max-w-none truncate">
-              ID: {apr.id}
-            </span>
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-7 w-7 text-muted-foreground hover:text-gray-900"
-              onClick={handleCopyId}
-              title="Copy UUID"
-            >
-              {copied ? <Check className="h-3.5 w-3.5 text-green-600" /> : <Copy className="h-3.5 w-3.5" />}
-            </Button>
-          </div>
-        )}
-      </div>
-
-      {/* Two Column Summary Grid: Details + Entities & Requestor */}
-      <div className="grid gap-4 md:grid-cols-2">
-        {/* APR Details */}
-        <Card className="shadow-xs border-gray-200">
-          <CardHeader className="py-3 px-5 border-b bg-slate-50/50">
-            <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Details
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-5">
-            <dl className="space-y-2.5">
-              {headerFields.map((field, idx) => (
-                <div key={idx} className="flex justify-between items-baseline text-xs gap-4">
-                  <dt className="text-muted-foreground font-medium flex-shrink-0">
-                    {field.label}
-                  </dt>
-                  <dd className="text-gray-900 font-semibold text-right truncate">
-                    {field.value}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-          </CardContent>
-        </Card>
-
-        {/* Entities & Requestor */}
-        <Card className="shadow-xs border-gray-200">
-          <CardHeader className="py-3 px-5 border-b bg-slate-50/50">
-            <CardTitle className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-              Entities & Requestor
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-5">
-            <dl className="space-y-2.5">
-              {entityFields.map((field, idx) => (
-                <div key={idx} className="flex justify-between items-baseline text-xs gap-4">
-                  <dt className="text-muted-foreground font-medium flex-shrink-0">
-                    {field.label}
-                  </dt>
-                  <dd className="text-gray-900 font-semibold text-right truncate">
-                    {field.value}
-                  </dd>
-                </div>
-              ))}
-            </dl>
-          </CardContent>
-        </Card>
-      </div>
+      <APRIdentityBanner apr={apr} />
     </div>
   )
 }

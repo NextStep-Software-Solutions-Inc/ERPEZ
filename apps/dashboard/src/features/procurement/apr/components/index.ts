@@ -5,7 +5,7 @@
 export { APRConsolidationFilter } from './APRConsolidationFilter'
 export { APRStatusBadge } from './APRStatusBadge'
 export { APRStatsGrid } from './APRStatsGrid'
-export { APRHeaderSection } from './APRHeaderSection'
+export { APRHeaderSection, APRIdentityBanner, APRDetailsEntitiesGrid } from './APRHeaderSection'
 export { APRStatisticsCards } from './APRStatisticsCards'
 export { AdminAPRsManagementTable } from './AdminAPRsManagementTable'
 export { ConsolidatedItemsTable } from './ConsolidatedItemsTable'

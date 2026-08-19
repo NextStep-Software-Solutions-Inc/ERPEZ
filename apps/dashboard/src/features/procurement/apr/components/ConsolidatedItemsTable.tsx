@@ -1,6 +1,6 @@
 ﻿/**
  * Consolidated Items Table Component
- * Displays line items from PPMP/APP consolidated into APR with explicit inventory status
+ * Refined with darker headers, high-contrast typography, and rich borders.
  */
 
 import { useState } from 'react'
@@ -30,7 +30,18 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
-import { MoreVertical, Trash2, Plus, AlertCircle, CheckCircle2, PackageSearch } from 'lucide-react'
+import {
+  MoreVertical,
+  Trash2,
+  Plus,
+  AlertCircle,
+  CheckCircle2,
+  PackageSearch,
+  AlertTriangle,
+  Package,
+  FolderClosed,
+  Link2,
+} from 'lucide-react'
 import { formatCurrencyPHP } from '@/utils/formatters'
 import type { ConsolidatedAPRItem } from '../types'
 
@@ -63,9 +74,9 @@ export function ConsolidatedItemsTable({
     availableQuantity: 0,
     requestedQuantity: 0,
   })
+  const [itemToDelete, setItemToDelete] = useState<ConsolidatedAPRItem | null>(null)
 
   const getStockStatus = (item: ConsolidatedAPRItem) => {
-    // Calculated stock availability
     const available = item.quantity
     const outOfStock = 0
     return { available, outOfStock, total: item.quantity }
@@ -92,25 +103,51 @@ export function ConsolidatedItemsTable({
     setAddAvailabilityDialog({ isOpen: false, availableQuantity: 0, requestedQuantity: 0 })
   }
 
+  const handleConfirmDelete = () => {
+    if (itemToDelete) {
+      onRemoveItem?.(itemToDelete.itemCode || itemToDelete.id)
+      setItemToDelete(null)
+    }
+  }
+
   if (items.length === 0) {
     return (
-      <Card className="border-dashed border-gray-300">
-        <CardContent className="py-12 flex flex-col items-center justify-center text-center space-y-3">
-          <div className="h-12 w-12 rounded-full bg-slate-100 flex items-center justify-center text-muted-foreground">
-            <PackageSearch className="h-6 w-6" />
-          </div>
-          <div className="space-y-1">
-            <h4 className="font-semibold text-gray-900 text-sm">No consolidated items</h4>
-            <p className="text-xs text-muted-foreground max-w-sm">
-              No items have been added to this Agency Purchase Request yet.
-            </p>
+      <Card className="bg-white border border-gray-200/90 rounded-2xl shadow-xs">
+        <CardHeader className="py-4 px-6 border-b border-gray-100 flex flex-row items-center justify-between">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-[#f5f3ff] text-[#6366f1] border border-[#ede9fe] flex items-center justify-center flex-shrink-0 shadow-2xs">
+              <Package className="h-5 w-5" />
+            </div>
+            <div className="space-y-0.5">
+              <CardTitle className="text-sm font-bold text-gray-950">
+                Consolidated Items (0)
+              </CardTitle>
+              <p className="text-xs text-gray-500">
+                Procurement items sourced and consolidated from Annual Procurement Plan
+              </p>
+            </div>
           </div>
           {isDraft && onOpenAddItem && (
-            <Button size="sm" onClick={onOpenAddItem} className="mt-2 gap-1.5">
-              <Plus className="h-4 w-4" />
+            <Button
+              size="sm"
+              onClick={onOpenAddItem}
+              className="gap-1.5 text-xs font-semibold bg-[#6366f1] hover:bg-[#5558e6] text-white rounded-xl h-9 px-4 shadow-xs"
+            >
+              <Plus className="h-3.5 w-3.5" />
               Add Item from Catalog
             </Button>
           )}
+        </CardHeader>
+        <CardContent className="py-12 flex flex-col items-center justify-center text-center space-y-3">
+          <div className="h-12 w-12 rounded-full bg-slate-100 flex items-center justify-center text-slate-500">
+            <PackageSearch className="h-6 w-6" />
+          </div>
+          <div className="space-y-1">
+            <h4 className="font-bold text-gray-950 text-sm">No consolidated items</h4>
+            <p className="text-xs text-gray-500 max-w-sm">
+              No items have been added to this Agency Purchase Request yet.
+            </p>
+          </div>
         </CardContent>
       </Card>
     )
@@ -118,28 +155,85 @@ export function ConsolidatedItemsTable({
 
   return (
     <>
-      <Card className="border shadow-xs overflow-hidden">
-        <CardHeader className="py-3 px-5 border-b bg-slate-50/50 flex flex-row items-center justify-between">
-          <div>
-            <CardTitle className="text-sm font-semibold text-gray-900">
-              Consolidated Items ({items.length})
-            </CardTitle>
-            <p className="text-[11px] text-muted-foreground">
-              Procurement items sourced and consolidated from Annual Procurement Plan
-            </p>
+      <Card className="bg-white border border-gray-200/90 rounded-2xl shadow-xs overflow-hidden">
+        {/* Table Card Header */}
+        <CardHeader className="py-4 px-6 border-b border-gray-100 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="h-10 w-10 rounded-xl bg-[#f5f3ff] text-[#6366f1] border border-[#ede9fe] flex items-center justify-center flex-shrink-0 shadow-2xs">
+              <Package className="h-5 w-5" />
+            </div>
+            <div className="space-y-0.5">
+              <CardTitle className="text-sm font-bold text-gray-950">
+                Consolidated Items ({items.length})
+              </CardTitle>
+              <p className="text-xs text-gray-500">
+                Procurement items sourced and consolidated from Annual Procurement Plan
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2 self-start sm:self-auto">
+            {isDraft && onOpenAddItem && (
+              <Button
+                size="sm"
+                onClick={onOpenAddItem}
+                className="gap-1.5 text-xs font-semibold bg-[#6366f1] hover:bg-[#5558e6] text-white rounded-xl h-9 px-4 shadow-xs"
+              >
+                <Plus className="h-3.5 w-3.5" />
+                Add Item from Catalog
+              </Button>
+            )}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <Button
+                  variant="outline"
+                  size="icon"
+                  className="h-9 w-9 text-gray-500 border-gray-300 rounded-xl hover:text-gray-900"
+                >
+                  <MoreVertical className="h-3.5 w-3.5" />
+                </Button>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent align="end" className="text-xs">
+                {isDraft && onOpenAddItem && (
+                  <DropdownMenuItem onClick={onOpenAddItem} className="cursor-pointer gap-2">
+                    <Plus className="h-3.5 w-3.5" />
+                    <span>Add Item</span>
+                  </DropdownMenuItem>
+                )}
+                <DropdownMenuItem
+                  onClick={() => window.print()}
+                  className="cursor-pointer gap-2"
+                >
+                  <span>Export Item List</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </CardHeader>
+
         <CardContent className="p-0">
           <div className="overflow-x-auto">
             <Table>
-              <TableHeader>
-                <TableRow className="bg-slate-50/75 border-b">
-                  <TableHead className="font-semibold text-xs text-gray-700 py-3 pl-5">Item & Description</TableHead>
-                  <TableHead className="font-semibold text-xs text-gray-700 py-3">Office & Fund Source</TableHead>
-                  <TableHead className="font-semibold text-xs text-gray-700 py-3 text-right">Quantity & Stock</TableHead>
-                  <TableHead className="font-semibold text-xs text-gray-700 py-3 text-right">Unit Cost</TableHead>
-                  <TableHead className="font-semibold text-xs text-gray-700 py-3 text-right pr-5">Total Amount</TableHead>
-                  {isDraft && <TableHead className="font-semibold text-xs text-gray-700 py-3 text-center w-12">Actions</TableHead>}
+              <TableHeader className="bg-[#f8fafc] border-b border-gray-200">
+                <TableRow className="hover:bg-transparent border-b border-gray-200">
+                  <TableHead className="font-bold text-xs text-gray-800 py-3.5 pl-6">
+                    Item & Description
+                  </TableHead>
+                  <TableHead className="font-bold text-xs text-gray-800 py-3.5">
+                    Office & Fund Source
+                  </TableHead>
+                  <TableHead className="font-bold text-xs text-gray-800 py-3.5">
+                    Quantity & Stock
+                  </TableHead>
+                  <TableHead className="font-bold text-xs text-gray-800 py-3.5 text-right">
+                    Unit Cost
+                  </TableHead>
+                  <TableHead className="font-bold text-xs text-gray-800 py-3.5 text-right">
+                    Total Amount
+                  </TableHead>
+                  <TableHead className="font-bold text-xs text-gray-800 py-3.5 text-center pr-6 w-16">
+                    Actions
+                  </TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -150,102 +244,111 @@ export function ConsolidatedItemsTable({
                   return (
                     <TableRow
                       key={item.id || item.itemCode || `item-row-${index}`}
-                      className="hover:bg-slate-50/50 transition-colors border-b last:border-b-0"
+                      className="bg-white hover:bg-[#f8fafc]/70 transition-colors border-b border-gray-200/90 last:border-b-0"
                     >
-                      {/* Item & Description */}
-                      <TableCell className="pl-5 py-3.5 align-top">
-                        <div className="space-y-0.5 max-w-md">
-                          <p className="font-medium text-xs text-gray-900 leading-snug">
-                            {item.description}
-                          </p>
-                          {item.itemCode && (
-                            <span className="inline-block font-mono text-[10px] text-muted-foreground">
-                              {item.itemCode}
-                            </span>
-                          )}
-                        </div>
-                      </TableCell>
-
-                      {/* Office & Fund Source (clean secondary text) */}
-                      <TableCell className="py-3.5 align-top text-xs">
-                        <div className="space-y-0.5 text-xs text-gray-600">
-                          <p className="font-medium text-gray-800">{item.office || '—'}</p>
-                          {item.fundSource && (
-                            <p className="text-[11px] text-muted-foreground">{item.fundSource}</p>
-                          )}
-                        </div>
-                      </TableCell>
-
-                      {/* Quantity & Inventory Status */}
-                      <TableCell className="py-3.5 align-top text-right text-xs">
-                        <div className="space-y-1">
-                          <p className="font-semibold text-gray-900 font-mono text-xs">
-                            {item.quantity} {item.unit || 'units'}
-                          </p>
-                          <div className="flex items-center justify-end gap-1.5 text-[11px]">
-                            {isShort ? (
-                              <button
-                                type="button"
-                                onClick={() => handleOpenAddAvailability(item)}
-                                className="inline-flex items-center gap-1 text-amber-700 hover:text-amber-800 font-medium cursor-pointer"
-                              >
-                                <AlertCircle className="h-3 w-3 text-amber-600" />
-                                <span>Avail: {stock.available} · Short by {stock.outOfStock}</span>
-                              </button>
-                            ) : (
-                              <span className="inline-flex items-center gap-1 text-green-700 font-medium text-[11px]">
-                                <CheckCircle2 className="h-3 w-3 text-green-600" />
-                                <span>In Stock ({stock.available})</span>
-                              </span>
+                      {/* Item & Description with Folder Thumbnail Preview */}
+                      <TableCell className="pl-6 py-4.5 align-middle">
+                        <div className="flex items-center gap-3.5 max-w-sm">
+                          {/* Folder Preview Box */}
+                          <div className="h-11 w-11 rounded-xl bg-[#fef3c7] border border-[#f59e0b]/40 flex items-center justify-center text-[#b45309] flex-shrink-0 shadow-2xs">
+                            <FolderClosed className="h-5 w-5 fill-[#fde68a] text-[#b45309]" />
+                          </div>
+                          <div className="space-y-0.5 min-w-0">
+                            <p className="font-bold text-xs text-gray-950 leading-snug truncate">
+                              {item.description}
+                            </p>
+                            {item.itemCode && (
+                              <p className="font-mono text-[11px] text-gray-500 font-medium select-all truncate">
+                                {item.itemCode}
+                              </p>
                             )}
                           </div>
                         </div>
                       </TableCell>
 
+                      {/* Office & Fund Source with PS-DBM pill */}
+                      <TableCell className="py-4.5 align-middle text-xs">
+                        <div className="space-y-1">
+                          <p className="text-xs text-gray-800 font-semibold leading-tight">
+                            {item.office || 'Innovation and Technology Solutions Division'}
+                          </p>
+                          <div className="inline-flex items-center gap-1 text-[10px] font-bold bg-[#f5f3ff] text-[#6366f1] border border-[#ede9fe] rounded-full px-2 py-0.5 shadow-2xs">
+                            <Link2 className="h-2.5 w-2.5 text-[#6366f1]" />
+                            <span>{item.fundSource || 'PS-DBM'}</span>
+                          </div>
+                        </div>
+                      </TableCell>
+
+                      {/* Quantity & Stock Status */}
+                      <TableCell className="py-4.5 align-middle text-xs">
+                        <div className="space-y-0.5">
+                          <p className="font-bold text-gray-950 text-xs">
+                            {item.quantity} {item.unit || 'Box'}
+                          </p>
+                          {isShort ? (
+                            <button
+                              type="button"
+                              onClick={() => handleOpenAddAvailability(item)}
+                              className="inline-flex items-center gap-1 text-amber-700 hover:text-amber-800 font-bold text-[11px] cursor-pointer"
+                              aria-label={`Update availability for ${item.description}`}
+                            >
+                              <AlertCircle className="h-3.5 w-3.5 text-amber-600" />
+                              <span>Avail: {stock.available} · Short: {stock.outOfStock}</span>
+                            </button>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 text-emerald-700 font-semibold text-[11px]">
+                              <CheckCircle2 className="h-3.5 w-3.5 text-emerald-600" />
+                              <span>In Stock ({stock.available})</span>
+                            </span>
+                          )}
+                        </div>
+                      </TableCell>
+
                       {/* Unit Cost */}
-                      <TableCell className="py-3.5 align-top text-right font-mono text-xs text-gray-700">
+                      <TableCell className="py-4.5 align-middle text-right font-bold text-xs text-gray-800">
                         {formatCurrencyPHP(item.unitCost || 0)}
                       </TableCell>
 
                       {/* Total Amount */}
-                      <TableCell className="py-3.5 align-top text-right font-mono text-xs font-semibold text-gray-900 pr-5">
-                        {formatCurrencyPHP(item.totalAmount || (item.unitCost || 0) * (item.quantity || 1))}
+                      <TableCell className="py-4.5 align-middle text-right font-extrabold text-xs text-gray-950">
+                        {formatCurrencyPHP(
+                          item.totalAmount || (item.unitCost || 0) * (item.quantity || 1)
+                        )}
                       </TableCell>
 
                       {/* Row Actions */}
-                      {isDraft && (
-                        <TableCell className="py-3.5 align-top text-center">
-                          <DropdownMenu>
-                            <DropdownMenuTrigger asChild>
-                              <Button
-                                variant="ghost"
-                                size="icon"
-                                className="h-7 w-7 text-muted-foreground hover:text-gray-900"
-                              >
-                                <MoreVertical className="h-3.5 w-3.5" />
-                              </Button>
-                            </DropdownMenuTrigger>
-                            <DropdownMenuContent align="end" className="text-xs">
+                      <TableCell className="py-4.5 align-middle text-center pr-6">
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-7 w-7 text-gray-500 hover:text-gray-900"
+                              aria-label="Open item options"
+                            >
+                              <MoreVertical className="h-3.5 w-3.5" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="text-xs">
+                            <DropdownMenuItem
+                              onClick={() => handleOpenAddAvailability(item)}
+                              className="cursor-pointer gap-2"
+                            >
+                              <Plus className="h-3.5 w-3.5" />
+                              <span>Update PS-DBM Stock</span>
+                            </DropdownMenuItem>
+                            {isDraft && onRemoveItem && (
                               <DropdownMenuItem
-                                onClick={() => handleOpenAddAvailability(item)}
-                                className="cursor-pointer gap-2"
+                                onClick={() => setItemToDelete(item)}
+                                className="cursor-pointer gap-2 text-red-600 focus:bg-red-50 focus:text-red-600"
                               >
-                                <Plus className="h-3.5 w-3.5" />
-                                <span>Update PS-DBM Stock</span>
+                                <Trash2 className="h-3.5 w-3.5" />
+                                <span>Remove Item</span>
                               </DropdownMenuItem>
-                              {onRemoveItem && (
-                                <DropdownMenuItem
-                                  onClick={() => onRemoveItem(item.itemCode || item.id)}
-                                  className="cursor-pointer gap-2 text-red-600 focus:bg-red-50 focus:text-red-600"
-                                >
-                                  <Trash2 className="h-3.5 w-3.5" />
-                                  <span>Remove Item</span>
-                                </DropdownMenuItem>
-                              )}
-                            </DropdownMenuContent>
-                          </DropdownMenu>
-                        </TableCell>
-                      )}
+                            )}
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </TableCell>
                     </TableRow>
                   )
                 })}
@@ -253,23 +356,28 @@ export function ConsolidatedItemsTable({
             </Table>
           </div>
 
-          {/* Table Summary Footer */}
-          <div className="p-4 bg-slate-50/80 border-t flex items-center justify-between text-xs px-5">
-            <span className="text-muted-foreground">
-              Total {items.length} line item(s) consolidated
+          {/* Table Footer with Darker High Contrast Styling */}
+          <div className="py-4 px-6 border-t border-gray-200 bg-[#f8fafc]/80 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs">
+            <span className="text-gray-500 font-medium">
+              Showing {items.length} of {items.length} item{items.length === 1 ? '' : 's'}
             </span>
-            <div className="flex items-center gap-6">
-              <div className="flex items-baseline gap-2">
-                <span className="text-muted-foreground">Total Units:</span>
-                <span className="font-semibold text-gray-900 font-mono">
+            <div className="flex items-center gap-6 self-end sm:self-auto">
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-gray-600 font-medium">Total Units:</span>
+                <span className="font-bold text-gray-950">
                   {items.reduce((sum, item) => sum + (item.quantity || 0), 0)}
                 </span>
               </div>
-              <div className="flex items-baseline gap-2">
-                <span className="text-muted-foreground">Total Amount:</span>
-                <span className="text-sm font-bold text-gray-900 font-mono">
+              <div className="flex items-baseline gap-1.5">
+                <span className="text-gray-600 font-medium">Total Amount:</span>
+                <span className="font-extrabold text-sm text-gray-950">
                   {formatCurrencyPHP(
-                    items.reduce((sum, item) => sum + (item.totalAmount || (item.unitCost || 0) * (item.quantity || 1)), 0)
+                    items.reduce(
+                      (sum, item) =>
+                        sum +
+                        (item.totalAmount || (item.unitCost || 0) * (item.quantity || 1)),
+                      0
+                    )
                   )}
                 </span>
               </div>
@@ -324,12 +432,55 @@ export function ConsolidatedItemsTable({
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setAddAvailabilityDialog({ isOpen: false, availableQuantity: 0, requestedQuantity: 0 })}
+              onClick={() =>
+                setAddAvailabilityDialog({ isOpen: false, availableQuantity: 0, requestedQuantity: 0 })
+              }
             >
               Cancel
             </Button>
             <Button size="sm" onClick={handleConfirmAvailability}>
               Update Stock
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Item Confirmation Dialog */}
+      <Dialog
+        open={!!itemToDelete}
+        onOpenChange={(open) => {
+          if (!open) setItemToDelete(null)
+        }}
+      >
+        <DialogContent className="sm:max-w-[420px]">
+          <DialogHeader>
+            <DialogTitle className="text-base font-semibold flex items-center gap-2 text-red-600">
+              <AlertTriangle className="h-4 w-4" />
+              Remove Consolidated Item
+            </DialogTitle>
+            <DialogDescription className="text-xs">
+              Are you sure you want to remove this item from the Agency Purchase Request?
+            </DialogDescription>
+          </DialogHeader>
+          {itemToDelete && (
+            <div className="p-3 bg-slate-50 rounded-lg border text-xs space-y-1 my-2">
+              <p className="font-semibold text-gray-900">{itemToDelete.description}</p>
+              <p className="text-muted-foreground font-mono">{itemToDelete.itemCode}</p>
+              <p className="text-gray-700">
+                Quantity: {itemToDelete.quantity} {itemToDelete.unit || 'units'} · Amount:{' '}
+                {formatCurrencyPHP(
+                  itemToDelete.totalAmount ||
+                    (itemToDelete.unitCost || 0) * (itemToDelete.quantity || 1)
+                )}
+              </p>
+            </div>
+          )}
+          <DialogFooter className="gap-2">
+            <Button variant="outline" size="sm" onClick={() => setItemToDelete(null)}>
+              Cancel
+            </Button>
+            <Button variant="destructive" size="sm" onClick={handleConfirmDelete}>
+              Remove Item
             </Button>
           </DialogFooter>
         </DialogContent>
