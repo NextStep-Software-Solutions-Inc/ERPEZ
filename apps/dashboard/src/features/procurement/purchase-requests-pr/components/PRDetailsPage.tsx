@@ -643,6 +643,11 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
                   <StatusIcon className="h-3 w-3 mr-1" />
                   {STATUS_BADGE_CONFIG[displayStatus].label}
                 </Badge>
+                {pr.approvalOrigin === 'APPROVED_VIA_BAC' && (
+                  <Badge className="bg-emerald-600 text-white font-semibold text-xs px-3 py-1">
+                    Approved via BAC Resolution ({pr.bacResolutionNumber || 'Path A'})
+                  </Badge>
+                )}
               </div>
               {pr.headerDetails.description && (
                 <CardDescription className="text-sm text-slate-600 dark:text-slate-400">
@@ -651,6 +656,24 @@ export function PRDetailsPage({ pr: initialPR, onBack }: PRDetailsPageProps) {
               )}
             </div>
             <div className="flex items-center gap-2">
+              {pr.approvalOrigin === 'APPROVED_VIA_BAC' && (
+                <Button
+                  size="sm"
+                  className="gap-2 h-8 bg-blue-600 hover:bg-blue-700 text-white shadow-sm"
+                  onClick={() => {
+                    const mode = (pr.modeOfProcurement || pr.headerDetails?.modeOfProcurement || '').toLowerCase()
+                    let targetPath = '/v2/bidding-master-calendar'
+                    if (mode.includes('direct')) targetPath = '/v2/direct-contracting-request'
+                    else if (mode.includes('shopping') || mode.includes('small value') || mode.includes('svp')) targetPath = '/v2/rfq'
+                    if (typeof window !== 'undefined') {
+                      window.location.href = targetPath
+                    }
+                  }}
+                >
+                  <CheckCircle className="h-4 w-4" />
+                  Proceed to Execution
+                </Button>
+              )}
               <Button
                 variant="outline"
                 size="sm"

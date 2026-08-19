@@ -7,6 +7,8 @@ import {
   ViewBacResolutionDetailsDialog,
   ViewConsolidatedPrDetailsDialog,
 } from '../dialogs'
+import { BacResolutionDocumentPreviewModal } from '../dialogs/BacResolutionDocumentPreviewModal'
+import { CreatePrFromBacModal } from '../dialogs/CreatePrFromBacModal'
 import type {
   BacResolution,
   CreateBacResolutionPayload,
@@ -53,6 +55,12 @@ interface DialogsControllerProps {
   submitConfirmOpen: boolean
   setSubmitConfirmOpen: (open: boolean) => void
   onConfirmSubmit: () => Promise<void> | void
+  // Multi-source additional dialog controls
+  docPreviewOpen?: boolean
+  setDocPreviewOpen?: (open: boolean) => void
+  createPrOpen?: boolean
+  setCreatePrOpen?: (open: boolean) => void
+  onPrCreated?: (prNumber: string) => void
 }
 
 export function DialogsController({
@@ -87,6 +95,11 @@ export function DialogsController({
   submitConfirmOpen,
   setSubmitConfirmOpen,
   onConfirmSubmit,
+  docPreviewOpen = false,
+  setDocPreviewOpen,
+  createPrOpen = false,
+  setCreatePrOpen,
+  onPrCreated,
 }: DialogsControllerProps) {
   return (
     <>
@@ -127,6 +140,10 @@ export function DialogsController({
         open={detailsOpen}
         onOpenChange={setDetailsOpen}
         resolutionId={detailsResolutionId}
+        onCreatePr={() => {
+          setDetailsOpen(false)
+          setCreatePrOpen?.(true)
+        }}
       />
 
       <ViewConsolidatedPrDetailsDialog
@@ -134,6 +151,23 @@ export function DialogsController({
         onOpenChange={setViewConsolidatedPrOpen}
         consolidatedPrId={viewConsolidatedPrId}
       />
+
+      {setDocPreviewOpen && (
+        <BacResolutionDocumentPreviewModal
+          open={docPreviewOpen}
+          onOpenChange={setDocPreviewOpen}
+          resolution={selectedResolution ?? null}
+        />
+      )}
+
+      {setCreatePrOpen && (
+        <CreatePrFromBacModal
+          open={createPrOpen}
+          onOpenChange={setCreatePrOpen}
+          resolution={selectedResolution ?? null}
+          onPrCreated={onPrCreated}
+        />
+      )}
 
       {selectedResolution && (
         <LinkConsolidatedPrsDialog

@@ -63,6 +63,51 @@ export type ConsolidatedPrLink = {
   status: ConsolidatedPrStatus
 }
 
+export type ProcurementSourceType = 'APP_ITEM' | 'CONSOLIDATED_PR'
+
+export type AppRecord = {
+  id: string
+  appNumber: string
+  title: string
+  fiscalYear: string
+  implementingUnit: string
+  totalBudget: number
+  itemCount: number
+  status: 'approved' | 'draft'
+}
+
+export type AppItemLink = {
+  id: string
+  appNumber: string
+  itemNumber: string
+  description: string
+  officeName: string
+  modeOfProcurement: string
+  sourceOfFund: string
+  abc: number
+  status: 'eligible' | 'linked'
+}
+
+export type ProcurementProjectItemBreakdown = {
+  itemNumber: string
+  description: string
+  officeName: string
+  modeOfProcurement: string
+  sourceOfFund: string
+  estimatedBudget: number
+}
+
+export type ProcurementProjectContext = {
+  sourceType: ProcurementSourceType
+  sourceRef: string // e.g. "APP-2026-001 / Item 03" or "CPR-2026-001"
+  projectTitle: string
+  officeName: string
+  modeOfProcurement: string
+  sourceOfFund: string
+  abc: number
+  itemBreakdown?: ProcurementProjectItemBreakdown[]
+}
+
 export type BacResolutionLogEntry = {
   id: string
   action: string
@@ -96,6 +141,13 @@ export type BacResolution = {
   signedDocumentFileName?: string | null
   printFileName?: string | null
   workspaceOrigin?: 'public-bidding' | 'standard' | null
+  // Multi-source procurement project extensions
+  sourceType?: ProcurementSourceType
+  appItemId?: string | null
+  consolidatedPRId?: string | null
+  procurementProjectContext?: ProcurementProjectContext | null
+  isPrCreated?: boolean
+  createdPrNumber?: string | null
 }
 
 export type BacResolutionListItem = BacResolution
@@ -115,6 +167,11 @@ export type CreateBacResolutionPayload = {
   workspaceOrigin?: 'public-bidding' | 'standard' | null
   endUserRepresentativeId?: string | null
   techRepresentativeId?: string | null
+  // Multi-source procurement payload
+  sourceType?: ProcurementSourceType
+  appItemId?: string | null
+  consolidatedPRId?: string | null
+  procurementProjectContext?: ProcurementProjectContext | null
 }
 
 export type LinkConsolidatedPrsPayload = {
