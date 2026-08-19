@@ -12,7 +12,8 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { getObjectCodesRequest } from '@/components/features/planning/procurement-library/item-master/handlers/getObjectCodesRequest'
-import { getLIBActivityObjectsRequest } from '../handlers/getLIBActivityObjectsRequest'
+import { getLIBActivityObjectsRequest } from '@/features/planning/line-item-budgeting/line-item-budget-details/handlers/getLIBActivityObjectsRequest'
+import FieldInfo from '@/components/FieldInfo'
 
 const useObjectCodesQuery = createQueryHookFromTemplate(getObjectCodesRequest)
 const useLIBActivityObjectsQuery = createQueryHookFromTemplate(
@@ -32,6 +33,7 @@ interface AddPPMPItemExpenditureFormProps {
   formId?: string
   libActivityId?: string
   initialValues?: Partial<PPMPExpenditureItemFormValues>
+  libActivityId?: string
   onSubmit: (values: PPMPExpenditureItemFormValues) => void
   isLoading?: boolean
 }
@@ -40,41 +42,30 @@ export function AddPPMPItemExpenditureForm({
   formId = 'add-ppmp-expenditure-form',
   libActivityId,
   initialValues,
+  libActivityId,
   onSubmit,
   isLoading = false,
 }: AddPPMPItemExpenditureFormProps) {
-  const hasLibActivity = Boolean(libActivityId)
-
-  const { data: libActivityObjectsResponse, isLoading: isLibActivityObjectsLoading } =
-    useLIBActivityObjectsQuery(
-      {
-        pathParams: {},
-        queryParams: { LIBActivityId: libActivityId! },
-        enabled: hasLibActivity,
-      },
-
-    )
+  const { data: activityObjectsResponse, isLoading: isActivityObjectsLoading } =
+    useLIBActivityObjectsQuery({
+      pathParams: {},
+      queryParams: { LIBActivityId: libActivityId || '' },
+      enabled: !!libActivityId,
+    })
 
   const { data: objectCodesResponse, isLoading: isObjectCodesLoading } =
-    useObjectCodesQuery(
-      {
-        pathParams: {},
-        queryParams: {},
-        enabled: !hasLibActivity,
-      },
-
-    )
-
-  const isObjectsLoading = hasLibActivity
-    ? isLibActivityObjectsLoading
-    : isObjectCodesLoading
+    useObjectCodesQuery({
+      pathParams: {},
+      queryParams: {},
+      enabled: !libActivityId,
+    })
 
   const objectCodeOptions = useMemo(() => {
-    if (hasLibActivity) {
+    if (libActivityId && activityObjectsResponse?.data) {
       return (
-        libActivityObjectsResponse?.data?.map((item) => ({
+        activityObjectsResponse.data.map((item) => ({
           id: item.objectId,
-          label: `${item.objectCode || ''} - ${item.objectName || ''} (Budget: ₱${(item.totalBudget ?? 0).toLocaleString()})`,
+          label: `${item.objectCode} - ${item.objectName}`,
         })) ?? []
       )
     }
@@ -87,7 +78,11 @@ export function AddPPMPItemExpenditureForm({
           label: `${item.code} - ${item.name}`,
         })) ?? []
     )
-  }, [hasLibActivity, libActivityObjectsResponse?.data, objectCodesResponse?.data])
+  }, [libActivityId, activityObjectsResponse?.data, objectCodesResponse?.data])
+
+  const isOptionsLoading = libActivityId
+    ? isActivityObjectsLoading
+    : isObjectCodesLoading
 
   const form = useForm({
     defaultValues: {
@@ -127,12 +122,12 @@ export function AddPPMPItemExpenditureForm({
             <Select
               value={field.state.value}
               onValueChange={(val) => field.handleChange(val)}
-              disabled={isLoading || isObjectsLoading}
+              disabled={isLoading || isOptionsLoading}
             >
               <SelectTrigger id={field.name} className="w-full text-xs">
                 <SelectValue
                   placeholder={
-                    isObjectsLoading
+                    isOptionsLoading
                       ? 'Loading object codes...'
                       : 'Select Object Code'
                   }
@@ -146,12 +141,7 @@ export function AddPPMPItemExpenditureForm({
                 ))}
               </SelectContent>
             </Select>
-            {field.state.meta.isTouched &&
-              field.state.meta.errors.length > 0 && (
-                <p className="text-[10px] text-destructive">
-                  {field.state.meta.errors.join(', ')}
-                </p>
-              )}
+            <FieldInfo field={field} />
           </div>
         )}
       />
@@ -194,4 +184,3 @@ export function AddPPMPItemExpenditureForm({
     </form>
   )
 }
-

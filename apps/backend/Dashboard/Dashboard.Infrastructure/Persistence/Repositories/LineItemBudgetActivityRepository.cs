@@ -39,6 +39,22 @@ public class LineItemBudgetActivityRepository : Repository<LineItemBudgetActivit
             .FirstOrDefaultAsync(x => x.Id == id, cancellationToken);
     }
 
+    public async Task<LineItemBudgetActivity?> GetByIdForUpdateAsync(Guid id, CancellationToken cancellationToken = default)
+    {
+        var entityType = dbContext.Model.FindEntityType(typeof(LineItemBudgetActivity));
+        var schema = entityType?.GetSchema() ?? "planning";
+        var tableName = entityType?.GetTableName() ?? "LineItemBudgetActivities";
+
+        var sql = $"SELECT * FROM {schema}.\"{tableName}\" WHERE \"Id\" = {{0}} AND \"IsDeleted\" = false FOR UPDATE";
+
+        return await dbContext.LineItemBudgetActivities!
+            .FromSqlRaw(sql, id)
+            .Include(x => x.LineItemBudget)
+            .Include(x => x.OPCRActivity)
+            .Include(x => x.LineItemBudgetDetails)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
+
     public async Task<List<LineItemBudgetActivity>> GetAllWithDetailsAsync(bool includeDeleted = false, CancellationToken cancellationToken = default)
     {
         var query = dbContext.LineItemBudgetActivities!

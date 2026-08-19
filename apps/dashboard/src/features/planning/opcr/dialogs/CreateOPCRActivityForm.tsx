@@ -1,4 +1,4 @@
-﻿import { useEffect } from 'react'
+import { useEffect } from 'react'
 import { useSearch } from '@tanstack/react-router'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
@@ -8,12 +8,11 @@ import { useForm } from '@tanstack/react-form'
 import { z } from 'zod'
 import { createQueryHookFromTemplate } from 'erpez-shared-lib'
 import FieldInfo from '@/components/FieldInfo'
-import { getOPCRPAPDepartmentsRequest } from '@/features/planning/opcr/handlers/getOPCRPAPDepartmentsRequest'
+import { getOfficesRequest } from '@/components/features/planning/office/office/handlers/getOfficesRequest'
 
-// Create hooks from templates
-const useOPCRPAPDepartments = createQueryHookFromTemplate(
-  getOPCRPAPDepartmentsRequest,
-)
+// Create hook for offices
+const useOffices = createQueryHookFromTemplate(getOfficesRequest)
+
 const createActivitySchema = z.object({
   name: z.string().min(1, 'Activity name is required'),
   description: z.string(),
@@ -49,6 +48,7 @@ export type OPCRActivityFormApi = ReturnType<typeof useOPCRActivityFormInstance>
 
 interface CreateOPCRActivityFormProps {
   onActivityCreated: (activity: CreateOPCRActivityFormValues) => void
+  officeId?: string
   defaultKpi?: string
   defaultDimension?: string
   defaultSubKpiId?: string
@@ -58,20 +58,17 @@ interface CreateOPCRActivityFormProps {
 
 export default function CreateOPCRActivityForm({
   onActivityCreated,
+  officeId,
   setForm,
 }: CreateOPCRActivityFormProps) {
-  const searchParams = useSearch({ from: '/v2/commitments/' })
-  const opcrId = searchParams.opcrId
-
-  // Fetch available departments from OPCRPAPDepartments API
-  const { data: departmentsData, isLoading: departmentsLoading } =
-    useOPCRPAPDepartments({
-      pathParams: {},
-      queryParams: {
-        filters: opcrId ? `opcrId==${opcrId}` : '',
-        pageSize: 1000,
-      },
-    })
+  // Fetch available sub-offices (departments) of the OPCR office
+  const { data: subOfficesData, isLoading: subOfficesLoading } = useOffices({
+    pathParams: {},
+    queryParams: {
+      filters: officeId ? `parentId==${officeId}` : '',
+      pageSize: 1000,
+    },
+  })
 
   const activityDefaults: ActivityDefaults = {
     name: '',
@@ -111,7 +108,6 @@ export default function CreateOPCRActivityForm({
               value={field.state.value}
               onBlur={field.handleBlur}
               onChange={(e) => field.handleChange(e.target.value)}
-              // disabled={isPending}
             />
             <FieldInfo field={field} />
           </div>
@@ -130,7 +126,6 @@ export default function CreateOPCRActivityForm({
               value={field.state.value}
               onBlur={field.handleBlur}
               onChange={(e) => field.handleChange(e.target.value)}
-              // disabled={isPending}
               rows={3}
             />
             <FieldInfo field={field} />
@@ -155,7 +150,6 @@ export default function CreateOPCRActivityForm({
               value={field.state.value}
               onBlur={field.handleBlur}
               onChange={(e) => field.handleChange(Number(e.target.value))}
-              // disabled={isPending}
             />
             <FieldInfo field={field} />
             <span className="text-xs text-muted-foreground">
@@ -165,7 +159,7 @@ export default function CreateOPCRActivityForm({
         )}
       />
 
-      {/* Involved Divisions Field */}
+      {/* Involved Divisions / Sub-Offices Field */}
       <form.Field
         name="PAPDepartmentIds"
         children={(field) => {
@@ -179,32 +173,31 @@ export default function CreateOPCRActivityForm({
 
           return (
             <div className="space-y-2">
-              <Label>Involved Departments</Label>
+              <Label>Involved Departments / Sub-Offices</Label>
               <div className="max-h-64 overflow-y-auto border rounded-md p-3 space-y-2">
-                {departmentsLoading ? (
+                {subOfficesLoading ? (
                   <div className="text-sm text-muted-foreground italic py-4">
                     Loading departments...
                   </div>
-                ) : departmentsData?.data && departmentsData.data.length > 0 ? (
-                  departmentsData.data.map((dept) => (
-                    <div key={dept.id} className="flex items-center space-x-2">
+                ) : subOfficesData?.data && subOfficesData.data.length > 0 ? (
+                  subOfficesData.data.map((office) => (
+                    <div key={office.id} className="flex items-center space-x-2">
                       <Checkbox
-                        id={dept.id}
-                        checked={selectedIds.includes(dept.id)}
-                        onCheckedChange={() => handleToggle(dept.id)}
-                        // disabled={isPending}
+                        id={office.id}
+                        checked={selectedIds.includes(office.id)}
+                        onCheckedChange={() => handleToggle(office.id)}
                       />
                       <Label
-                        htmlFor={dept.id}
+                        htmlFor={office.id}
                         className="text-sm cursor-pointer"
                       >
-                        {dept.office.name}
+                        {office.name} {office.code ? `(${office.code})` : ''}
                       </Label>
                     </div>
                   ))
                 ) : (
                   <div className="text-sm text-muted-foreground italic py-4">
-                    No departments available for this OPCR
+                    No sub-offices available for this OPCR office
                   </div>
                 )}
               </div>

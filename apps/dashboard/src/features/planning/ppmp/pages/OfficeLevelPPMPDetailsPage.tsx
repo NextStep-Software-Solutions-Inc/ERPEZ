@@ -2980,7 +2980,7 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
       <AddPPMPItemExpenditureDialog
         isOpen={groupDialogOpen}
         onOpenChange={setGroupDialogOpen}
-        ppmpId={ppmp.id}
+        ppmpId={ppmpId}
         ppmpActivityId={selectedActivityId || ''}
         libActivityId={selectedActivity?.libActivityId}
         groupToEdit={groupDialogEditGroup}

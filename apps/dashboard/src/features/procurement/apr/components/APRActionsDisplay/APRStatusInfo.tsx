@@ -4,7 +4,7 @@ import { Info } from 'lucide-react'
 import type { APRStatus, APRMaster } from '@/features/procurement/apr/types'
 
 interface APRStatusInfoProps {
-  status: APRStatus
+  status: APRStatus | string
   apr: APRMaster
 }
 
@@ -34,31 +34,39 @@ const STATUS_COLORS: Record<string, { bg: string; text: string; label: string }>
 }
 
 export function APRStatusInfo({ status, apr }: APRStatusInfoProps) {
-  const statusConfig = STATUS_COLORS[status] || STATUS_COLORS.DRAFT
+  const statusKey = String(status || 'DRAFT').toUpperCase()
+  const statusConfig = STATUS_COLORS[statusKey] || STATUS_COLORS.DRAFT
   
   // Select the appropriate timestamp based on status
   const getStatusTimestamp = (): string => {
-    switch (status) {
+    switch (statusKey) {
       case 'APPROVED':
-        return apr.approvedAt || apr.updatedAt
+        return apr.approvedAt || apr.updatedAt || new Date().toISOString()
       case 'FOR_APPROVAL':
-        return apr.submittedAt || apr.updatedAt
+      case 'FORAPPROVAL':
+      case 'SUBMITTED':
+        return apr.submittedAt || apr.updatedAt || new Date().toISOString()
       case 'RETURNED':
-        return apr.returnedAt || apr.updatedAt
+        return apr.returnedAt || apr.updatedAt || new Date().toISOString()
       case 'DRAFT':
       default:
-        return apr.createdAt
+        return apr.createdAt || apr.requestDate || new Date().toISOString()
     }
   }
   
-  const statusTimestamp = new Date(getStatusTimestamp())
-  const dateTime = statusTimestamp.toLocaleDateString('en-US', {
-    month: 'short',
-    day: 'numeric',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-  })
+  let dateTime = '—'
+  try {
+    const statusTimestamp = new Date(getStatusTimestamp())
+    dateTime = statusTimestamp.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+  } catch {
+    dateTime = getStatusTimestamp()
+  }
 
   return (
     <Card>

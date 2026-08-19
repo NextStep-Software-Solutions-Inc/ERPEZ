@@ -209,12 +209,13 @@ const appLineItems003: BACLineItem[] = [
 // Mock approved APP 001
 const mockApprovedApp001: AppMaster = {
   id: 'app-001',
+  appType: 'Final',
   ppmpIds: ['ppmp-001', 'ppmp-002'],
   fiscalYear: 2026,
   appName: 'Annual Procurement Plan 2026 - Administrative Division',
   appCode: 'APP-2026-ADM-001',
   appNumber: 'APP-2026-001',
-  status: 'approved',
+  status: 'Approved',
   createdAt: '2026-02-01T08:00:00Z',
   updatedAt: '2026-03-15T10:30:00Z',
   createdBy: 'bac-secretariat-001',
@@ -240,12 +241,13 @@ const mockApprovedApp001: AppMaster = {
 // Mock approved APP 002
 const mockApprovedApp002: AppMaster = {
   id: 'app-002',
+  appType: 'Final',
   ppmpIds: ['ppmp-003'],
   fiscalYear: 2026,
   appName: 'Annual Procurement Plan 2026 - Medical Services',
   appCode: 'APP-2026-MED-001',
   appNumber: 'APP-2026-002',
-  status: 'approved',
+  status: 'Approved',
   createdAt: '2026-02-10T09:00:00Z',
   updatedAt: '2026-03-20T11:00:00Z',
   createdBy: 'bac-secretariat-002',
@@ -271,12 +273,13 @@ const mockApprovedApp002: AppMaster = {
 // Mock approved APP 003
 const mockApprovedApp003: AppMaster = {
   id: 'app-003',
+  appType: 'Final',
   ppmpIds: ['ppmp-004', 'ppmp-005'],
   fiscalYear: 2026,
   appName: 'Annual Procurement Plan 2026 - HR & Services',
   appCode: 'APP-2026-HRS-001',
   appNumber: 'APP-2026-003',
-  status: 'approved',
+  status: 'Approved',
   createdAt: '2026-02-15T08:30:00Z',
   updatedAt: '2026-03-18T14:00:00Z',
   createdBy: 'bac-secretariat-003',

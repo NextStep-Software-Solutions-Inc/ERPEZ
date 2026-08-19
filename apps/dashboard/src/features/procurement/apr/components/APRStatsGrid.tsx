@@ -1,10 +1,11 @@
-/**
+﻿/**
  * APR Stats Grid Component
- * Displays total items count, total amount, and other key metrics
+ * Matches the updated multi-accent 4-card metric strip
  */
 
 import { formatCurrencyPHP } from '@/utils/formatters'
 import { Card, CardContent } from '@/components/ui/card'
+import { Package, Layers, DollarSign, Activity } from 'lucide-react'
 
 interface APRStatsGridProps {
   totalItemsCount: number
@@ -21,46 +22,74 @@ export function APRStatsGrid({
 }: APRStatsGridProps) {
   const stats = [
     {
-      label: 'Total Items',
+      label: 'TOTAL ITEMS',
       value: totalItemsCount.toString(),
-      icon: '📦',
-      bgColor: 'bg-blue-50',
+      icon: Package,
+      labelColor: 'text-slate-500',
+      valueColor: 'text-gray-900',
+      cardBorder: 'border-slate-100 hover:border-blue-100',
+      iconBox: 'bg-[#f0f7ff] text-[#2563eb] border border-[#dbeafe]',
+      topAccent: '',
     },
     {
-      label: 'Consolidated Items',
+      label: 'CONSOLIDATED ITEMS',
       value: consolidatedCount.toString(),
-      icon: '✓',
-      bgColor: 'bg-green-50',
+      icon: Layers,
+      labelColor: 'text-emerald-700',
+      valueColor: 'text-gray-900',
+      cardBorder: 'border-slate-100 hover:border-emerald-100',
+      iconBox: 'bg-[#ecfdf5] text-[#059669] border border-[#d1fae5]',
+      topAccent: 'border-l-2 border-l-emerald-500',
     },
     {
-      label: 'Total Amount',
+      label: 'TOTAL AMOUNT',
       value: formatCurrencyPHP(totalAmount),
-      icon: '₱',
-      bgColor: 'bg-purple-50',
+      icon: DollarSign,
+      labelColor: 'text-indigo-700',
+      valueColor: 'text-[#6366f1]',
+      cardBorder: 'border-slate-100 hover:border-purple-100',
+      iconBox: 'bg-[#f5f3ff] text-[#6366f1] border border-[#ede9fe]',
+      topAccent: '',
     },
     {
-      label: 'Status',
-      value: approvalStatus,
-      icon: '📋',
-      bgColor: 'bg-orange-50',
+      label: 'STATUS',
+      value: approvalStatus || 'Draft',
+      icon: Activity,
+      labelColor: 'text-amber-700',
+      valueColor: 'text-gray-900',
+      cardBorder: 'border-slate-100 hover:border-amber-100',
+      iconBox: 'bg-[#fffbeb] text-[#d97706] border border-[#fef3c7]',
+      topAccent: '',
     },
   ]
 
   return (
-    <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
-      {stats.map((stat, idx) => (
-        <Card key={idx} className={`${stat.bgColor} border-0`}>
-          <CardContent className="pt-6">
-            <div className="text-3xl mb-2">{stat.icon}</div>
-            <div className="text-sm font-medium text-gray-600">
-              {stat.label}
-            </div>
-            <div className="text-2xl font-bold text-gray-900 mt-2">
-              {stat.value}
-            </div>
-          </CardContent>
-        </Card>
-      ))}
+    <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      {stats.map((stat, idx) => {
+        const Icon = stat.icon
+        return (
+          <Card
+            key={idx}
+            className={`bg-white border ${stat.cardBorder} ${stat.topAccent} rounded-2xl shadow-2xs p-0 transition-all hover:shadow-xs`}
+          >
+            <CardContent className="p-4 sm:p-5 flex items-center justify-between gap-3">
+              <div className="min-w-0 space-y-1">
+                <p className={`text-[10px] font-bold uppercase tracking-wider ${stat.labelColor}`}>
+                  {stat.label}
+                </p>
+                <p className={`text-lg sm:text-xl font-bold tracking-tight truncate ${stat.valueColor}`}>
+                  {stat.value}
+                </p>
+              </div>
+              <div
+                className={`flex-shrink-0 h-10 w-10 sm:h-11 sm:w-11 rounded-xl flex items-center justify-center ${stat.iconBox}`}
+              >
+                <Icon className="h-5 w-5" />
+              </div>
+            </CardContent>
+          </Card>
+        )
+      })}
     </div>
   )
 }

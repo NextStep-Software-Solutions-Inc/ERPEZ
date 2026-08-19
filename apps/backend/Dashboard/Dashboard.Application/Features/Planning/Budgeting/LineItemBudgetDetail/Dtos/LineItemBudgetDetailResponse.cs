@@ -39,6 +39,15 @@ public record LineItemBudgetDetailObjectResponse
     public Guid Id { get; init; }
     public string Name { get; init; } = string.Empty;
     public string Code { get; init; } = string.Empty;
+    public Guid? ParentId { get; init; }
+    public LineItemBudgetDetailObjectParentResponse? ParentObject { get; init; }
+}
+
+public record LineItemBudgetDetailObjectParentResponse
+{
+    public Guid Id { get; init; }
+    public string Name { get; init; } = string.Empty;
+    public string Code { get; init; } = string.Empty;
 }
 
 public record LineItemBudgetDetailWFPExpenditureResponse

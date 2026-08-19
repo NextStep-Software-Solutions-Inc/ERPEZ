@@ -521,7 +521,7 @@ export function AddItemsModal({
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Funds</SelectItem>
-                    {funds.map((fund) => (
+                    {funds.filter((f): f is string => typeof f === 'string' && f.length > 0).map((fund) => (
                       <SelectItem key={fund} value={fund}>{fund}</SelectItem>
                     ))}
                   </SelectContent>
@@ -744,11 +744,11 @@ export function AddItemsModal({
                  {filteredAPRs.map((apr: SourceAPR) => {
                   const isSelected = selectedAPR.has(apr.id)
                   const isExpanded = expandedAPRs.has(apr.id)
-                  const hasOutOfStockItems = apr.items.some(item => item.outOfStockQuantity > 0)
+                  const hasOutOfStockItems = apr.items.some(item => (item.outOfStockQuantity ?? 0) > 0)
 
                   if (!hasOutOfStockItems) return null
 
-                  const totalAmount = apr.items.reduce((sum, item) => sum + (item.outOfStockQuantity > 0 ? item.unitPrice * item.outOfStockQuantity : 0), 0)
+                  const totalAmount = apr.items.reduce((sum, item) => sum + ((item.outOfStockQuantity ?? 0) > 0 ? item.unitPrice * (item.outOfStockQuantity ?? 0) : 0), 0)
 
                   return (
                     <div key={apr.id} className="border rounded-lg overflow-hidden">
@@ -776,7 +776,7 @@ export function AddItemsModal({
                         })()}
                         <div className="flex-1">
                           <div className="font-medium">{apr.aprNumber} • {apr.officeName || apr.officeCode}</div>
-                          <div className="text-xs text-muted-foreground">Office: {apr.officeCode} • {apr.items.filter(item => item.outOfStockQuantity > 0).length} item(s)</div>
+                          <div className="text-xs text-muted-foreground">Office: {apr.officeCode} • {apr.items.filter(item => (item.outOfStockQuantity ?? 0) > 0).length} item(s)</div>
                         </div>
                         <div className="flex items-center gap-3">
                           <Badge color="default" className="text-sm font-semibold">₱{totalAmount.toLocaleString()}</Badge>
@@ -793,7 +793,7 @@ export function AddItemsModal({
                                 <TableHead className="w-40">Category</TableHead>
                                 <TableHead className="w-24">Fund</TableHead>
                                 {ORDERED_MONTHS.map((m) => (
-                                  <TableHead key={m} className="w-20 text-center">{m.slice(0,3)}</TableHead>
+                                 <TableHead key={m} className="w-20 text-center">{m.slice(0,3)}</TableHead>
                                 ))}
                                 <TableHead className="w-36 text-left">Total Required</TableHead>
                                 <TableHead className="w-32 text-left">Current Total</TableHead>
@@ -807,8 +807,8 @@ export function AddItemsModal({
                                 const matchesSearch = item.itemName.toLowerCase().includes(searchTerm.toLowerCase())
                                 const matchesCategory = categoryFilter === 'all' || item.category === categoryFilter
                                 const matchesMonth = monthFilter === 'all' || item.month === monthFilter
-                                const matchesFund = fundFilter === 'all' || item.fund === fundFilter
-                                return item.outOfStockQuantity > 0 && matchesSearch && matchesCategory && matchesMonth && matchesFund
+                                const matchesFund = fundFilter === 'all' || (item.fund || '') === fundFilter
+                                return (item.outOfStockQuantity ?? 0) > 0 && matchesSearch && matchesCategory && matchesMonth && matchesFund
                               }).map((item: SourceAPRItem) => {
                                 const originalNeeded = item.quantity || 0
                                 const originalOut = item.outOfStockQuantity || 0

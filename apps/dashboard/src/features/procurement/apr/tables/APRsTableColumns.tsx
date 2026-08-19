@@ -1,6 +1,6 @@
 /**
  * APRs Table Column Definitions
- * Columns: APR Number, Status, Request Date, Total Amount, Items Count, Actions
+ * Columns: APR Number, Office, Items, Total Amount, Request Date, Status, Actions
  */
 
 import { createColumnHelper } from '@tanstack/react-table'
@@ -15,23 +15,31 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { MoreVertical, Eye, Trash2 } from 'lucide-react'
-import type { APRMaster, APRStatus } from '../types'
+import type { APRListItemDto } from '../types'
 
-const columnHelper = createColumnHelper<APRMaster>()
+const columnHelper = createColumnHelper<APRListItemDto | any>()
 
 // Status badge variants
-const statusVariants: Record<APRStatus, string> = {
-  DRAFT: 'bg-gray-100 text-gray-800',
-  FOR_APPROVAL: 'bg-blue-100 text-blue-800',
-  RETURNED: 'bg-red-100 text-red-800',
-  APPROVED: 'bg-green-100 text-green-800',
-  PARTIALLY_AVAILABLE: 'bg-yellow-100 text-yellow-800',
-  OUT_OF_STOCK: 'bg-orange-100 text-orange-800',
+const statusVariants: Record<string, string> = {
+  Draft: 'bg-gray-100 text-gray-800 border-gray-300',
+  DRAFT: 'bg-gray-100 text-gray-800 border-gray-300',
+  ForApproval: 'bg-blue-100 text-blue-800 border-blue-300',
+  FOR_APPROVAL: 'bg-blue-100 text-blue-800 border-blue-300',
+  Submitted: 'bg-blue-100 text-blue-800 border-blue-300',
+  SUBMITTED: 'bg-blue-100 text-blue-800 border-blue-300',
+  Returned: 'bg-red-100 text-red-800 border-red-300',
+  RETURNED: 'bg-red-100 text-red-800 border-red-300',
+  Approved: 'bg-green-100 text-green-800 border-green-300',
+  APPROVED: 'bg-green-100 text-green-800 border-green-300',
+  PartiallyAvailable: 'bg-yellow-100 text-yellow-800 border-yellow-300',
+  PARTIALLY_AVAILABLE: 'bg-yellow-100 text-yellow-800 border-yellow-300',
+  OutOfStock: 'bg-orange-100 text-orange-800 border-orange-300',
+  OUT_OF_STOCK: 'bg-orange-100 text-orange-800 border-orange-300',
 }
 
 interface ColumnsProps {
-  onView: (apr: APRMaster) => void
-  onDelete: (apr: APRMaster) => void
+  onView: (apr: any) => void
+  onDelete: (apr: any) => void
 }
 
 export function getAPRsTableColumns({ onView, onDelete }: ColumnsProps) {
@@ -40,11 +48,19 @@ export function getAPRsTableColumns({ onView, onDelete }: ColumnsProps) {
       id: 'aprNumber',
       header: 'APR Number',
       cell: (info) => (
-        <span className="font-medium text-blue-600">{info.getValue()}</span>
+        <span className="font-medium text-blue-600 cursor-pointer hover:underline" onClick={() => onView(info.row.original)}>
+          {info.getValue() || '—'}
+        </span>
       ),
     }),
 
-    columnHelper.accessor('totalItemsCount', {
+    columnHelper.accessor((row) => row.officeName || row.requestingEntity || '', {
+      id: 'office',
+      header: 'Office',
+      cell: (info) => <span className="text-sm">{info.getValue() || '—'}</span>,
+    }),
+
+    columnHelper.accessor((row) => row.itemCount ?? row.totalItemsCount ?? row.items?.length ?? 0, {
       id: 'items',
       header: 'Items',
       cell: (info) => (
@@ -56,8 +72,8 @@ export function getAPRsTableColumns({ onView, onDelete }: ColumnsProps) {
       id: 'totalAmount',
       header: 'Total Amount',
       cell: (info) => (
-        <span>
-          ₱{new Intl.NumberFormat('en-PH').format(info.getValue())}
+        <span className="font-medium">
+          ₱{new Intl.NumberFormat('en-PH', { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(info.getValue() || 0)}
         </span>
       ),
     }),
@@ -65,25 +81,39 @@ export function getAPRsTableColumns({ onView, onDelete }: ColumnsProps) {
     columnHelper.accessor('requestDate', {
       id: 'requestDate',
       header: 'Request Date',
-      cell: (info) =>
-        format(new Date(info.getValue()), 'MMM dd, yyyy'),
+      cell: (info) => {
+        const val = info.getValue()
+        if (!val) return '—'
+        try {
+          return format(new Date(val), 'MMM dd, yyyy')
+        } catch {
+          return val
+        }
+      },
     }),
 
     columnHelper.accessor('status', {
       id: 'status',
       header: 'Status',
-      cell: (info) => (
-        <Badge className={statusVariants[info.getValue()]}>
-          {info.getValue().replace(/_/g, ' ')}
-        </Badge>
-      ),
+      cell: (info) => {
+        const status = info.getValue() || 'Draft'
+        const variantClass = statusVariants[status] || 'bg-gray-100 text-gray-800'
+        return (
+          <Badge variant="outline" className={variantClass}>
+            {String(status).replace(/_/g, ' ')}
+          </Badge>
+        )
+      },
     }),
 
-    columnHelper.accessor('status', {
+    columnHelper.accessor('id', {
       id: 'actions',
       header: 'Actions',
       cell: (info) => {
         const apr = info.row.original
+        const status = (apr.status || '').toLowerCase()
+        const isDraft = status === 'draft'
+
         return (
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -101,12 +131,12 @@ export function getAPRsTableColumns({ onView, onDelete }: ColumnsProps) {
                 <Eye className="mr-2 h-4 w-4" />
                 View Details
               </DropdownMenuItem>
-              {apr.status === 'DRAFT' && (
+              {isDraft && (
                 <>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem
                     onClick={() => onDelete(apr)}
-                    className="text-red-600"
+                    className="text-red-600 focus:text-red-600"
                   >
                     <Trash2 className="mr-2 h-4 w-4" />
                     Delete

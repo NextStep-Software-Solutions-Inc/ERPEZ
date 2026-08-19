@@ -22,8 +22,8 @@ const useUpdatePPMPExpenditureItem = createMutationHookFromTemplate(
 interface AddPPMPItemExpenditureDialogProps {
   isOpen: boolean
   onOpenChange: (open: boolean) => void
-  ppmpId?: string
-  ppmpActivityId?: string
+  ppmpId: string
+  ppmpActivityId: string
   libActivityId?: string
   groupToEdit?: PPMPExpenditureItem | null
 }
@@ -31,7 +31,7 @@ interface AddPPMPItemExpenditureDialogProps {
 export default function AddPPMPItemExpenditureDialog({
   isOpen,
   onOpenChange,
-  ppmpId = '',
+  ppmpId,
   ppmpActivityId,
   libActivityId,
   groupToEdit,
@@ -49,7 +49,7 @@ export default function AddPPMPItemExpenditureDialog({
     const payload = {
       ...values,
       ppmpId,
-      ppmpActivityId: ppmpActivityId || undefined,
+      ppmpActivityId,
     }
 
     try {
@@ -159,6 +159,7 @@ export default function AddPPMPItemExpenditureDialog({
           formId="add-ppmp-expenditure-form"
           libActivityId={libActivityId}
           initialValues={initialValues}
+          libActivityId={libActivityId}
           onSubmit={handleSubmit}
           isLoading={isLoading}
         />

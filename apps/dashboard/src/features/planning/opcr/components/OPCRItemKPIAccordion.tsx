@@ -1,4 +1,4 @@
-﻿import {
+import {
   createMutationHookFromTemplate,
   useQueryClient,
 } from 'erpez-shared-lib'
@@ -19,7 +19,7 @@ import { motion } from 'framer-motion'
 import { cardVariants } from '@/utils/animation'
 import { cn } from '@/lib/utils'
 // import { CreateActivityDialog } from '@/features/planning/opcr/dialogs/CreateOPCRActivityDialog'
-import { ArrowRight, Eye, MoreHorizontal, Pencil, Trash2 } from 'lucide-react'
+import { Eye, MoreHorizontal, Pencil, Plus, Trash2 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 
@@ -47,6 +47,7 @@ interface OPCRItemKPIAccordionProps {
   selectedKPIForActivity: OPCRItem | null
   setSelectedKPIForActivity: (kpi: OPCRItem | null) => void
   getQuarterlyTargets: (opcrItem: OPCRItem) => Record<string, number>
+  officeId?: string
 }
 
 const useCreateOPCRActivity = createMutationHookFromTemplate(
@@ -69,6 +70,7 @@ export default function OPCRItemKPIAccordion({
   setCreateActivityDialogOpen,
   selectedKPIForActivity,
   setSelectedKPIForActivity,
+  officeId,
 }: OPCRItemKPIAccordionProps) {
   const [openPopoverId, setOpenPopoverId] = useState<string | null>(null)
   const [openActivityPopoverId, setOpenActivityPopoverId] = useState<
@@ -87,7 +89,7 @@ export default function OPCRItemKPIAccordion({
   const { mutateAsync: updateAsync } = useUpdateOPCRActivity()
   const { mutateAsync: updateKPIAsync } = useUpdateKPIAssignment()
   const queryClient = useQueryClient()
-  const navigation = useNavigate({ from: '/v2/commitments' })
+  const navigation = useNavigate({ from: '/v2/commitments/' })
   const searchParams = useSearch({ from: '/v2/commitments/' })
   const handleCreateOPCRActivity = async (
     values: CreateOPCRActivityFormValues,
@@ -101,6 +103,7 @@ export default function OPCRItemKPIAccordion({
             name: values.name,
             description: values.description,
             budget: values.budget,
+            PAPDepartmentIds: values.PAPDepartmentIds,
           },
         },
         {
@@ -277,16 +280,16 @@ export default function OPCRItemKPIAccordion({
                         <div className="flex items-center gap-2">
                           {opcrItem?.kpiAssignment?.fyActiveKPI
                             ?.functionCategory && (
-                            <Badge
-                              className="text-xs font-semibold bg-blue-100 text-blue-800 hover:bg-blue-100"
-                              variant="outline"
-                            >
-                              {
-                                opcrItem.kpiAssignment.fyActiveKPI
-                                  .functionCategory
-                              }
-                            </Badge>
-                          )}
+                              <Badge
+                                className="text-xs font-semibold bg-blue-100 text-blue-800 hover:bg-blue-100"
+                                variant="outline"
+                              >
+                                {
+                                  opcrItem.kpiAssignment.fyActiveKPI
+                                    .functionCategory
+                                }
+                              </Badge>
+                            )}
                           {/* KPI Actions Popover */}
                           <Popover
                             open={openPopoverId === opcrItem.id}
@@ -400,20 +403,18 @@ export default function OPCRItemKPIAccordion({
                                   )}
                                 >
                                   <p
-                                    className={`text-xs font-bold mb-1.5 uppercase tracking-wider ${
-                                      isAnnual
-                                        ? 'text-blue-700'
-                                        : 'text-gray-600'
-                                    }`}
+                                    className={`text-xs font-bold mb-1.5 uppercase tracking-wider ${isAnnual
+                                      ? 'text-blue-700'
+                                      : 'text-gray-600'
+                                      }`}
                                   >
                                     {quarter.label}
                                   </p>
                                   <p
-                                    className={`text-base font-bold ${
-                                      isAnnual
-                                        ? 'text-blue-700'
-                                        : 'text-gray-900'
-                                    }`}
+                                    className={`text-base font-bold ${isAnnual
+                                      ? 'text-blue-700'
+                                      : 'text-gray-900'
+                                      }`}
                                   >
                                     {quarter.value?.toLocaleString() || 0}
                                   </p>
@@ -508,11 +509,10 @@ export default function OPCRItemKPIAccordion({
                                                     <Button
                                                       key={action.id}
                                                       variant="ghost"
-                                                      className={`flex items-center gap-3 px-4 py-2 text-sm transition-colors border-b last:border-b-0 justify-start ${
-                                                        action.id === 'delete'
-                                                          ? 'text-red-600 hover:bg-red-50'
-                                                          : 'text-gray-700 hover:bg-gray-100'
-                                                      }`}
+                                                      className={`flex items-center gap-3 px-4 py-2 text-sm transition-colors border-b last:border-b-0 justify-start ${action.id === 'delete'
+                                                        ? 'text-red-600 hover:bg-red-50'
+                                                        : 'text-gray-700 hover:bg-gray-100'
+                                                        }`}
                                                       onClick={(e) => {
                                                         e.stopPropagation()
                                                         setOpenActivityPopoverId(
@@ -550,18 +550,16 @@ export default function OPCRItemKPIAccordion({
                                                       }}
                                                     >
                                                       <IconComponent
-                                                        className={`w-4 h-4 ${
-                                                          action.id === 'delete'
-                                                            ? 'text-red-600'
-                                                            : 'text-gray-600'
-                                                        }`}
+                                                        className={`w-4 h-4 ${action.id === 'delete'
+                                                          ? 'text-red-600'
+                                                          : 'text-gray-600'
+                                                          }`}
                                                       />
                                                       <span
-                                                        className={`font-medium ${
-                                                          action.id === 'delete'
-                                                            ? 'text-red-600'
-                                                            : 'text-gray-900'
-                                                        }`}
+                                                        className={`font-medium ${action.id === 'delete'
+                                                          ? 'text-red-600'
+                                                          : 'text-gray-900'
+                                                          }`}
                                                       >
                                                         {action.label}
                                                       </span>
@@ -583,12 +581,12 @@ export default function OPCRItemKPIAccordion({
                         {/* No Activities Message */}
                         {(!opcrItem.opcrActivities ||
                           opcrItem.opcrActivities.length === 0) && (
-                          <div className="text-center py-6 border-t">
-                            <p className="text-sm text-muted-foreground">
-                              No activities assigned to this KPI
-                            </p>
-                          </div>
-                        )}
+                            <div className="text-center py-6 border-t">
+                              <p className="text-sm text-muted-foreground">
+                                No activities assigned to this KPI
+                              </p>
+                            </div>
+                          )}
                       </div>
                     </AccordionContent>
                   </AccordionItem>
@@ -603,6 +601,7 @@ export default function OPCRItemKPIAccordion({
       <CreateOPCRActivityDialog
         isOpen={createActivityDialogOpen}
         onOpenChange={setCreateActivityDialogOpen}
+        officeId={officeId}
         defaultKpi={
           selectedKPIForActivity?.kpiAssignment?.fyActiveKPI?.name || ''
         }
@@ -620,6 +619,7 @@ export default function OPCRItemKPIAccordion({
       {selectedActivityForUpdate && (
         <UpdateOPCRActivityDialog
           activity={selectedActivityForUpdate}
+          officeId={officeId}
           isOpen={updateActivityDialogOpen}
           onOpenChange={setUpdateActivityDialogOpen}
           onActivityUpdated={handleUpdateActivity}
@@ -662,7 +662,7 @@ export const KPI_ACTIONS = [
   {
     id: 'add-activity',
     label: 'Add Activity',
-    icon: ArrowRight,
+    icon: Plus,
     description: 'Create new activity',
   },
 ]
