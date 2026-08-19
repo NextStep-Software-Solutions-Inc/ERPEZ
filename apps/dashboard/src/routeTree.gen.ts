@@ -106,6 +106,7 @@ import { Route as V2PlanningOrganizationLayoutRouteImport } from './routes/v2/_p
 import { Route as V2procurementNoticeToProceedNtpNtpIdRouteImport } from './routes/v2/(procurement)/notice-to-proceed-ntp/$ntpId'
 import { Route as V2procurementManageSupplierPortalProjectIdRouteImport } from './routes/v2/(procurement)/manage-supplier-portal/$projectId'
 import { Route as V2procurementManageNtpNtpIdRouteImport } from './routes/v2/(procurement)/manage-ntp/$ntpId'
+import { Route as V2procurementManageAprsAprIdRouteImport } from './routes/v2/(procurement)/manage-aprs/$aprId'
 import { Route as V2procurementManageAobAobIdRouteImport } from './routes/v2/(procurement)/manage-aob/$aobId'
 import { Route as V2procurementAgencyPurchaseRequestsAprAprIdRouteImport } from './routes/v2/(procurement)/agency-purchase-requests-apr/$aprId'
 import { Route as V2procurementAbstractOfBidsAobAobIdRouteImport } from './routes/v2/(procurement)/abstract-of-bids-aob/$aobId'
@@ -780,6 +781,12 @@ const V2procurementManageNtpNtpIdRoute =
     path: '/manage-ntp/$ntpId',
     getParentRoute: () => V2Route,
   } as any)
+const V2procurementManageAprsAprIdRoute =
+  V2procurementManageAprsAprIdRouteImport.update({
+    id: '/(procurement)/manage-aprs/$aprId',
+    path: '/manage-aprs/$aprId',
+    getParentRoute: () => V2Route,
+  } as any)
 const V2procurementManageAobAobIdRoute =
   V2procurementManageAobAobIdRouteImport.update({
     id: '/(procurement)/manage-aob/$aobId',
@@ -1312,6 +1319,7 @@ export interface FileRoutesByFullPath {
   '/v2/abstract-of-bids-aob/$aobId': typeof V2procurementAbstractOfBidsAobAobIdRoute
   '/v2/agency-purchase-requests-apr/$aprId': typeof V2procurementAgencyPurchaseRequestsAprAprIdRoute
   '/v2/manage-aob/$aobId': typeof V2procurementManageAobAobIdRoute
+  '/v2/manage-aprs/$aprId': typeof V2procurementManageAprsAprIdRoute
   '/v2/manage-ntp/$ntpId': typeof V2procurementManageNtpNtpIdRoute
   '/v2/manage-supplier-portal/$projectId': typeof V2procurementManageSupplierPortalProjectIdRoute
   '/v2/notice-to-proceed-ntp/$ntpId': typeof V2procurementNoticeToProceedNtpNtpIdRoute
@@ -1476,6 +1484,7 @@ export interface FileRoutesByTo {
   '/v2/abstract-of-bids-aob/$aobId': typeof V2procurementAbstractOfBidsAobAobIdRoute
   '/v2/agency-purchase-requests-apr/$aprId': typeof V2procurementAgencyPurchaseRequestsAprAprIdRoute
   '/v2/manage-aob/$aobId': typeof V2procurementManageAobAobIdRoute
+  '/v2/manage-aprs/$aprId': typeof V2procurementManageAprsAprIdRoute
   '/v2/manage-ntp/$ntpId': typeof V2procurementManageNtpNtpIdRoute
   '/v2/manage-supplier-portal/$projectId': typeof V2procurementManageSupplierPortalProjectIdRoute
   '/v2/notice-to-proceed-ntp/$ntpId': typeof V2procurementNoticeToProceedNtpNtpIdRoute
@@ -1656,6 +1665,7 @@ export interface FileRoutesById {
   '/v2/(procurement)/abstract-of-bids-aob/$aobId': typeof V2procurementAbstractOfBidsAobAobIdRoute
   '/v2/(procurement)/agency-purchase-requests-apr/$aprId': typeof V2procurementAgencyPurchaseRequestsAprAprIdRoute
   '/v2/(procurement)/manage-aob/$aobId': typeof V2procurementManageAobAobIdRoute
+  '/v2/(procurement)/manage-aprs/$aprId': typeof V2procurementManageAprsAprIdRoute
   '/v2/(procurement)/manage-ntp/$ntpId': typeof V2procurementManageNtpNtpIdRoute
   '/v2/(procurement)/manage-supplier-portal/$projectId': typeof V2procurementManageSupplierPortalProjectIdRoute
   '/v2/(procurement)/notice-to-proceed-ntp/$ntpId': typeof V2procurementNoticeToProceedNtpNtpIdRoute
@@ -1838,6 +1848,7 @@ export interface FileRouteTypes {
     | '/v2/abstract-of-bids-aob/$aobId'
     | '/v2/agency-purchase-requests-apr/$aprId'
     | '/v2/manage-aob/$aobId'
+    | '/v2/manage-aprs/$aprId'
     | '/v2/manage-ntp/$ntpId'
     | '/v2/manage-supplier-portal/$projectId'
     | '/v2/notice-to-proceed-ntp/$ntpId'
@@ -2002,6 +2013,7 @@ export interface FileRouteTypes {
     | '/v2/abstract-of-bids-aob/$aobId'
     | '/v2/agency-purchase-requests-apr/$aprId'
     | '/v2/manage-aob/$aobId'
+    | '/v2/manage-aprs/$aprId'
     | '/v2/manage-ntp/$ntpId'
     | '/v2/manage-supplier-portal/$projectId'
     | '/v2/notice-to-proceed-ntp/$ntpId'
@@ -2181,6 +2193,7 @@ export interface FileRouteTypes {
     | '/v2/(procurement)/abstract-of-bids-aob/$aobId'
     | '/v2/(procurement)/agency-purchase-requests-apr/$aprId'
     | '/v2/(procurement)/manage-aob/$aobId'
+    | '/v2/(procurement)/manage-aprs/$aprId'
     | '/v2/(procurement)/manage-ntp/$ntpId'
     | '/v2/(procurement)/manage-supplier-portal/$projectId'
     | '/v2/(procurement)/notice-to-proceed-ntp/$ntpId'
@@ -3012,6 +3025,13 @@ declare module '@tanstack/react-router' {
       path: '/manage-ntp/$ntpId'
       fullPath: '/v2/manage-ntp/$ntpId'
       preLoaderRoute: typeof V2procurementManageNtpNtpIdRouteImport
+      parentRoute: typeof V2Route
+    }
+    '/v2/(procurement)/manage-aprs/$aprId': {
+      id: '/v2/(procurement)/manage-aprs/$aprId'
+      path: '/manage-aprs/$aprId'
+      fullPath: '/v2/manage-aprs/$aprId'
+      preLoaderRoute: typeof V2procurementManageAprsAprIdRouteImport
       parentRoute: typeof V2Route
     }
     '/v2/(procurement)/manage-aob/$aobId': {
@@ -4018,6 +4038,7 @@ interface V2RouteChildren {
   V2procurementAbstractOfBidsAobAobIdRoute: typeof V2procurementAbstractOfBidsAobAobIdRoute
   V2procurementAgencyPurchaseRequestsAprAprIdRoute: typeof V2procurementAgencyPurchaseRequestsAprAprIdRoute
   V2procurementManageAobAobIdRoute: typeof V2procurementManageAobAobIdRoute
+  V2procurementManageAprsAprIdRoute: typeof V2procurementManageAprsAprIdRoute
   V2procurementManageNtpNtpIdRoute: typeof V2procurementManageNtpNtpIdRoute
   V2procurementManageSupplierPortalProjectIdRoute: typeof V2procurementManageSupplierPortalProjectIdRoute
   V2procurementNoticeToProceedNtpNtpIdRoute: typeof V2procurementNoticeToProceedNtpNtpIdRoute
@@ -4114,6 +4135,7 @@ const V2RouteChildren: V2RouteChildren = {
   V2procurementAgencyPurchaseRequestsAprAprIdRoute:
     V2procurementAgencyPurchaseRequestsAprAprIdRoute,
   V2procurementManageAobAobIdRoute: V2procurementManageAobAobIdRoute,
+  V2procurementManageAprsAprIdRoute: V2procurementManageAprsAprIdRoute,
   V2procurementManageNtpNtpIdRoute: V2procurementManageNtpNtpIdRoute,
   V2procurementManageSupplierPortalProjectIdRoute:
     V2procurementManageSupplierPortalProjectIdRoute,

@@ -66,16 +66,21 @@ import {
 
 interface APRDetailsPageProps {
   aprId: string
+  isReviewerMode?: boolean
 }
 
 interface SearchParams {
   from?: string
 }
 
-export default function APRDetailsPage({ aprId }: APRDetailsPageProps) {
+export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPageProps) {
   const navigate = useNavigate()
   const search = useSearch({ from: '__root__' }) as SearchParams
-  const isFromManageAPRs = search?.from === 'manage-aprs' || (typeof window !== 'undefined' && window.location.pathname.includes('/manage-aprs'))
+  const isFromManageAPRs =
+    isReviewerMode === true ||
+    search?.from === 'manage-aprs' ||
+    (typeof window !== 'undefined' && window.location.pathname.includes('/manage-aprs'))
+  const isReviewer = isFromManageAPRs
 
   // Fetch live APR detail from backend GET /aprs/:aprId
   const { data: rawResponse, isLoading, error, refetch } = useAPR({
@@ -321,7 +326,7 @@ export default function APRDetailsPage({ aprId }: APRDetailsPageProps) {
     isSubmittingAPR || isApprovingAPR || isReturningAPR || isAddingCatalogItems || isRemovingAPRItem
 
   const handleBackClick = () => {
-    if (search.from === 'manage-aprs') {
+    if (isReviewer) {
       navigate({ to: '/v2/manage-aprs' })
     } else if (search.from) {
       navigate({ to: search.from })
@@ -421,14 +426,14 @@ export default function APRDetailsPage({ aprId }: APRDetailsPageProps) {
           className="text-[#6366f1] hover:text-[#4f46e5] font-semibold flex items-center gap-1 transition-colors cursor-pointer"
         >
           <ChevronLeft className="h-3.5 w-3.5" />
-          <span>Agency Purchase Requests</span>
+          <span>{isReviewer ? 'Manage APRs' : 'Agency Purchase Requests'}</span>
         </button>
         <span className="text-gray-300 font-bold">›</span>
         <span className="text-gray-900 font-bold">Details</span>
       </div>
 
       {/* 1. Top Soft Purple Identity Banner */}
-      <APRIdentityBanner apr={apr} context={isFromManageAPRs ? 'procurement_officer' : 'user'} />
+      <APRIdentityBanner apr={apr} context={isReviewer ? 'procurement_officer' : 'user'} />
 
       {/* Return Revisions Notice Banner */}
       {isReturned && (
@@ -452,14 +457,15 @@ export default function APRDetailsPage({ aprId }: APRDetailsPageProps) {
         totalAmount={apr.totalAmount}
         consolidatedCount={apr.consolidatedItems.length}
         approvalStatus={apr.status as any}
+        isReviewer={isReviewer}
       />
 
       {/* 3. Consolidated Items Table Card (Positioned directly below Stats) */}
       <ConsolidatedItemsTable
         items={apr.consolidatedItems}
         status={apr.status as string}
-        onRemoveItem={handleRemoveItem}
-        onOpenAddItem={() => setAddItemDialogOpen(true)}
+        onRemoveItem={isReviewer ? undefined : handleRemoveItem}
+        onOpenAddItem={isReviewer ? undefined : () => setAddItemDialogOpen(true)}
       />
 
       {/* 4. Details & Entities 2-Column Grid (Positioned below Table) */}
@@ -542,7 +548,7 @@ export default function APRDetailsPage({ aprId }: APRDetailsPageProps) {
         <div className="flex items-center gap-3">
           <APRStatusBadge
             status={apr.status || 'Draft'}
-            context={isFromManageAPRs ? 'procurement_officer' : 'user'}
+            context={isReviewer ? 'procurement_officer' : 'user'}
             size="sm"
           />
           <div className="flex flex-col text-[11px] text-gray-400 leading-tight">
@@ -555,113 +561,158 @@ export default function APRDetailsPage({ aprId }: APRDetailsPageProps) {
 
         {/* Workflow Actions on the right */}
         <div className="flex items-center gap-2.5 self-end sm:self-auto">
-          {/* Draft Actions */}
-          {isDraft && (
+          {/* Reviewer Mode (Manage APRs) Actions */}
+          {isReviewer ? (
             <>
+              {isSubmitted && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 text-xs text-amber-700 hover:text-amber-800 border-amber-300 hover:bg-amber-50 rounded-xl h-9 px-4"
+                    onClick={() => setReturnDialogOpen(true)}
+                    disabled={isSubmitting}
+                  >
+                    <RotateCcw className="h-3.5 w-3.5" />
+                    Return for Revisions
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="gap-1.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-9 px-5 shadow-xs"
+                    onClick={() => setApproveDialogOpen(true)}
+                    disabled={isSubmitting}
+                  >
+                    {isApprovingAPR ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <CheckCircle2 className="h-3.5 w-3.5" />
+                    )}
+                    Approve APR
+                  </Button>
+                </>
+              )}
+              {isDraft && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-gray-100 text-gray-700 border border-gray-200">
+                  Draft — Not Yet Submitted
+                </span>
+              )}
+              {isReturned && (
+                <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-100 text-amber-800 border border-amber-200">
+                  Returned for Revisions
+                </span>
+              )}
               <Button
                 variant="outline"
                 size="sm"
-                className="text-xs font-medium text-gray-600 border-gray-200 hover:bg-gray-50 rounded-xl px-4 h-9"
-                onClick={handleBackClick}
-                disabled={isSubmitting}
+                className="gap-1.5 text-xs rounded-xl h-9 px-4"
+                onClick={() => window.print()}
               >
-                Cancel
-              </Button>
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-1.5 text-xs font-semibold text-[#6366f1] border-indigo-200 hover:bg-indigo-50/70 rounded-xl px-4 h-9 shadow-2xs"
-                onClick={() => setEditDialogOpen(true)}
-                disabled={isSubmitting}
-              >
-                <FileEdit className="h-3.5 w-3.5" />
-                Edit APR / Reselect APP
-              </Button>
-              <Button
-                size="sm"
-                className="text-xs font-semibold bg-[#6366f1] hover:bg-[#5558e6] text-white rounded-xl px-5 h-9 gap-1.5 shadow-xs"
-                onClick={() => setSubmitDialogOpen(true)}
-                disabled={isSubmitting || apr.consolidatedItems.length === 0}
-              >
-                {isSubmittingAPR ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Send className="h-3.5 w-3.5" />
-                )}
-                Submit for Review
+                <Printer className="h-3.5 w-3.5" />
+                Print / Export APR
               </Button>
             </>
-          )}
-
-          {/* Submitted / ForApproval Actions */}
-          {isSubmitted && (
+          ) : (
+            /* Requesting User Mode (Agency Purchase Requests) Actions */
             <>
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-1.5 text-xs text-amber-700 hover:text-amber-800 border-amber-300 hover:bg-amber-50 rounded-xl h-9 px-4"
-                onClick={() => setReturnDialogOpen(true)}
-                disabled={isSubmitting}
-              >
-                <RotateCcw className="h-3.5 w-3.5" />
-                Return for Revisions
-              </Button>
-              <Button
-                size="sm"
-                className="gap-1.5 text-xs bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl h-9 px-5 shadow-xs"
-                onClick={() => setApproveDialogOpen(true)}
-                disabled={isSubmitting}
-              >
-                {isApprovingAPR ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <CheckCircle2 className="h-3.5 w-3.5" />
-                )}
-                Approve APR
-              </Button>
-            </>
-          )}
+              {/* Draft Actions */}
+              {isDraft && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-xs font-medium text-gray-600 border-gray-200 hover:bg-gray-50 rounded-xl px-4 h-9"
+                    onClick={handleBackClick}
+                    disabled={isSubmitting}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 text-xs font-semibold text-[#6366f1] border-indigo-200 hover:bg-indigo-50/70 rounded-xl px-4 h-9 shadow-2xs"
+                    onClick={() => setEditDialogOpen(true)}
+                    disabled={isSubmitting}
+                  >
+                    <FileEdit className="h-3.5 w-3.5" />
+                    Edit APR / Reselect APP
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="text-xs font-semibold bg-[#6366f1] hover:bg-[#5558e6] text-white rounded-xl px-5 h-9 gap-1.5 shadow-xs"
+                    onClick={() => setSubmitDialogOpen(true)}
+                    disabled={isSubmitting || apr.consolidatedItems.length === 0}
+                  >
+                    {isSubmittingAPR ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Send className="h-3.5 w-3.5" />
+                    )}
+                    Submit for Review
+                  </Button>
+                </>
+              )}
 
-          {/* Returned Actions */}
-          {isReturned && (
-            <>
-              <Button
-                variant="outline"
-                size="sm"
-                className="gap-1.5 text-xs font-semibold text-[#6366f1] border-indigo-200 hover:bg-indigo-50/70 rounded-xl px-4 h-9 shadow-2xs"
-                onClick={() => setEditDialogOpen(true)}
-                disabled={isSubmitting}
-              >
-                <FileEdit className="h-3.5 w-3.5" />
-                Edit APR / Reselect APP
-              </Button>
-              <Button
-                size="sm"
-                className="text-xs font-semibold bg-[#6366f1] hover:bg-[#5558e6] text-white rounded-xl px-5 h-9 gap-1.5 shadow-xs"
-                onClick={() => setSubmitDialogOpen(true)}
-                disabled={isSubmitting || apr.consolidatedItems.length === 0}
-              >
-                {isSubmittingAPR ? (
-                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                ) : (
-                  <Send className="h-3.5 w-3.5" />
-                )}
-                Resubmit for Review
-              </Button>
-            </>
-          )}
+              {/* Submitted / ForApproval Actions for Requesting User */}
+              {isSubmitted && (
+                <div className="flex items-center gap-2">
+                  <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-semibold bg-amber-50 text-amber-800 border border-amber-200">
+                    <span className="h-2 w-2 rounded-full bg-amber-500 animate-pulse" />
+                    Under Review by Procurement Officer
+                  </span>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 text-xs rounded-xl h-9 px-4"
+                    onClick={() => window.print()}
+                  >
+                    <Printer className="h-3.5 w-3.5" />
+                    Print / Export APR
+                  </Button>
+                </div>
+              )}
 
-          {/* Approved Actions */}
-          {isApproved && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="gap-1.5 text-xs rounded-xl h-9 px-4"
-              onClick={() => window.print()}
-            >
-              <Printer className="h-3.5 w-3.5" />
-              Print / Export APR
-            </Button>
+              {/* Returned Actions for Requesting User */}
+              {isReturned && (
+                <>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5 text-xs font-semibold text-[#6366f1] border-indigo-200 hover:bg-indigo-50/70 rounded-xl px-4 h-9 shadow-2xs"
+                    onClick={() => setEditDialogOpen(true)}
+                    disabled={isSubmitting}
+                  >
+                    <FileEdit className="h-3.5 w-3.5" />
+                    Edit APR / Reselect APP
+                  </Button>
+                  <Button
+                    size="sm"
+                    className="text-xs font-semibold bg-[#6366f1] hover:bg-[#5558e6] text-white rounded-xl px-5 h-9 gap-1.5 shadow-xs"
+                    onClick={() => setSubmitDialogOpen(true)}
+                    disabled={isSubmitting || apr.consolidatedItems.length === 0}
+                  >
+                    {isSubmittingAPR ? (
+                      <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                    ) : (
+                      <Send className="h-3.5 w-3.5" />
+                    )}
+                    Resubmit for Review
+                  </Button>
+                </>
+              )}
+
+              {/* Approved Actions for Requesting User */}
+              {isApproved && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="gap-1.5 text-xs rounded-xl h-9 px-4"
+                  onClick={() => window.print()}
+                >
+                  <Printer className="h-3.5 w-3.5" />
+                  Print / Export APR
+                </Button>
+              )}
+            </>
           )}
         </div>
       </div>

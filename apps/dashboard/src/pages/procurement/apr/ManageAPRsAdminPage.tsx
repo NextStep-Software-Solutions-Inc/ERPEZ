@@ -108,9 +108,8 @@ export function ManageAPRsAdminPage() {
   const handleViewAPR = (apr: any) => {
     setSelectedAPR(apr)
     navigate({
-      to: '/v2/agency-purchase-requests-apr/$aprId',
+      to: '/v2/manage-aprs/$aprId',
       params: { aprId: apr.id },
-      search: { from: 'manage-aprs' },
     })
   }
 
