@@ -1,8 +1,7 @@
 import { useEffect, useMemo, useState } from 'react'
-import { Link, useNavigate } from '@tanstack/react-router'
+import { useNavigate } from '@tanstack/react-router'
 import {
   ArrowLeft,
-  Plus,
   Edit3,
   Trash2,
   Search,
@@ -90,12 +89,6 @@ export function ManageWhereasClausesPage() {
       })
     }
   }, [selectedTemplate])
-
-  const handleStartCreate = () => {
-    setSelectedTemplateId(null)
-    setDraft({ id: '', name: '', body: '' })
-    setIsEditing(true)
-  }
 
   const handleSelectTemplate = (id: string) => {
     setSelectedTemplateId(id)
@@ -439,4 +432,3 @@ export function ManageWhereasClausesPage() {
     </div>
   )
 }
-

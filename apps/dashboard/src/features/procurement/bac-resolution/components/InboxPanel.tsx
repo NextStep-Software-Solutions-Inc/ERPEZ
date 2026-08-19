@@ -5,16 +5,11 @@ import {
   SlidersHorizontal,
   X,
   RotateCcw,
-  Tag,
-  Layers,
-  Wallet,
   ArrowUpDown,
-  Check,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import {
   Popover,
@@ -49,7 +44,9 @@ interface InboxPanelProps {
   sourceTypeFilter?: 'all' | 'APP_ITEM' | 'CONSOLIDATED_PR'
   setSourceTypeFilter?: (v: 'all' | 'APP_ITEM' | 'CONSOLIDATED_PR') => void
   budgetTier?: 'all' | 'under-1m' | '1m-5m' | 'above-5m' | 'custom'
-  setBudgetTier?: (v: 'all' | 'under-1m' | '1m-5m' | 'above-5m' | 'custom') => void
+  setBudgetTier?: (
+    v: 'all' | 'under-1m' | '1m-5m' | 'above-5m' | 'custom',
+  ) => void
   customMinBudget?: number | null
   setCustomMinBudget?: (v: number | null) => void
   customMaxBudget?: number | null
@@ -115,11 +112,6 @@ export function InboxPanel({
       setSortBy?.('newest')
       setSearchValue('')
     }
-  }
-
-  const getStatusLabel = (s: BacResolutionInboxFilter) => {
-    const card = inboxCards.find((c) => c.status === s)
-    return card ? `${card.label} (${card.count})` : s
   }
 
   const getBudgetTierLabel = (tier: string) => {
@@ -333,7 +325,9 @@ export function InboxPanel({
                         placeholder="Min ₱"
                         value={customMinBudget ?? ''}
                         onChange={(e) => {
-                          const val = e.target.value ? Number(e.target.value) : null
+                          const val = e.target.value
+                            ? Number(e.target.value)
+                            : null
                           setCustomMinBudget(val)
                           if (val !== null) setBudgetTier('custom')
                         }}
@@ -345,7 +339,9 @@ export function InboxPanel({
                         placeholder="Max ₱"
                         value={customMaxBudget ?? ''}
                         onChange={(e) => {
-                          const val = e.target.value ? Number(e.target.value) : null
+                          const val = e.target.value
+                            ? Number(e.target.value)
+                            : null
                           setCustomMaxBudget(val)
                           if (val !== null) setBudgetTier('custom')
                         }}
@@ -368,18 +364,19 @@ export function InboxPanel({
                     onChange={(e) =>
                       setSortBy(
                         e.target.value as
-                          | 'newest'
-                          | 'oldest'
-                          | 'amount-desc'
-                          | 'amount-asc',
+                          'newest' | 'oldest' | 'amount-desc' | 'amount-asc',
                       )
                     }
                     className="w-full h-8 rounded-lg border border-default-200 bg-default-50 px-2.5 py-1 text-xs text-default-800 focus:outline-none focus:border-primary"
                   >
                     <option value="newest">Newest First</option>
                     <option value="oldest">Oldest First</option>
-                    <option value="amount-desc">Budget: Highest to Lowest</option>
-                    <option value="amount-asc">Budget: Lowest to Highest</option>
+                    <option value="amount-desc">
+                      Budget: Highest to Lowest
+                    </option>
+                    <option value="amount-asc">
+                      Budget: Lowest to Highest
+                    </option>
                   </select>
                 </div>
               )}
@@ -405,7 +402,10 @@ export function InboxPanel({
 
             {sourceTypeFilter !== 'all' && setSourceTypeFilter && (
               <span className="inline-flex items-center gap-1 rounded-md bg-blue-50 px-2 py-0.5 text-[11px] font-medium text-blue-700 border border-blue-200">
-                Source: {sourceTypeFilter === 'APP_ITEM' ? 'APP Item' : 'Consolidated PR'}
+                Source:{' '}
+                {sourceTypeFilter === 'APP_ITEM'
+                  ? 'APP Item'
+                  : 'Consolidated PR'}
                 <button
                   type="button"
                   onClick={() => setSourceTypeFilter('all')}
@@ -452,7 +452,9 @@ export function InboxPanel({
           </div>
         ) : filteredResolutions.length === 0 ? (
           <div className="rounded-xl border border-dashed border-default-200 bg-default-50/70 p-6 text-center text-xs text-muted-foreground space-y-1">
-            <p className="font-semibold text-default-800">No resolutions found</p>
+            <p className="font-semibold text-default-800">
+              No resolutions found
+            </p>
             <p>Try adjusting your search query or active filters.</p>
             {activeFiltersCount > 0 && (
               <Button
