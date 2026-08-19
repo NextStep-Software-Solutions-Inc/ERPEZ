@@ -176,14 +176,14 @@ public class PurchaseRequestRepository : Repository<PurchaseRequest>, IPurchaseR
                 .ThenInclude(a => a.Office)
             .Include(ai => ai.APR)
                 .ThenInclude(a => a.FiscalYear)
-            .Include(ai => ai.PPMPItem)
+            .Include(ai => ai.PPMPItem!)
                 .ThenInclude(pi => pi.CSEItem)
                     .ThenInclude(c => c!.UOM)
-            .Include(ai => ai.PPMPItem)
+            .Include(ai => ai.PPMPItem!)
                 .ThenInclude(pi => pi.PPMPExpenditureItem)
                     .ThenInclude(pei => pei.PPMPActivity)
                         .ThenInclude(pa => pa!.LIBActivity)
-            .Include(ai => ai.PPMPItem)
+            .Include(ai => ai.PPMPItem!)
                 .ThenInclude(pi => pi.PPMPExpenditureItem)
                     .ThenInclude(pei => pei.PPMPActivity)
                         .ThenInclude(pa => pa!.PPMP)
@@ -216,10 +216,10 @@ public class PurchaseRequestRepository : Repository<PurchaseRequest>, IPurchaseR
                     OfficeId:           apr.OfficeId,
                     OfficeName:         apr.Office?.Name ?? string.Empty,
                     APRItemId:          ai.Id,
-                    ItemName:           ai.PPMPItem?.Name ?? string.Empty,
+                    ItemName:           ai.Description ?? ai.PPMPItem?.Name ?? string.Empty,
                     Category:           ai.PPMPItem?.PPMPExpenditureItem?.PPMPActivity?.LIBActivity?.Name ?? string.Empty,
                     Fund:               ai.PPMPItem?.PPMPExpenditureItem?.PPMPActivity?.PPMP?.FundSource?.Name ?? string.Empty,
-                    Unit:               ai.PPMPItem?.Unit ?? string.Empty,
+                    Unit:               ai.Unit ?? ai.PPMPItem?.Unit ?? string.Empty,
                     UnitPrice:          ai.UnitCost,
                     MonthlyAllocations: allocations,
                     TotalRequired:      totalReq,
