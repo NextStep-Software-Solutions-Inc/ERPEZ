@@ -21,7 +21,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { MoreVertical, Eye, CheckCircle, CornerDownLeft, FileText, Wallet, AlertCircle, Funnel } from 'lucide-react'
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { usePurchaseRequestStore } from '../store/purchaseRequestStore'
 import { ApprovePRModal } from './ApprovePRModal'
 import { ReturnPRModal } from './ReturnPRModal'
@@ -56,36 +56,44 @@ interface ManagePRTabProps {
 export function ManagePRTab({ onViewDetails }: ManagePRTabProps) {
   const { setIsManagePRView } = usePurchaseRequestStore()
   const { toast } = useToast()
-  
+
   // Use API hooks
   const { data: prResponse } = usePurchaseRequests({ pathParams: {}, queryParams: { PageSize: 100 } })
   const statusMutation = useUpdatePurchaseRequestStatus()
-  
-  // Map API response to frontend PurchaseRequest models
-  const purchaseRequests: PurchaseRequest[] = (prResponse?.data || []).map((apiPr) => ({
-    id: apiPr.id,
-    type: fromApiPrType(apiPr.prType),
-    status: fromApiStatus(apiPr.status),
-    headerDetails: {
-      prNumber: apiPr.prNumber,
-      description: apiPr.description,
-      date: apiPr.requestedDate,
-      purpose: '',
-      officeId: apiPr.officeId,
-      officeName: apiPr.officeName,
-    },
-    items: [],
-    totalAmount: apiPr.totalAmount,
-    createdAt: apiPr.createdDate,
-    updatedAt: apiPr.createdDate,
-    createdBy: '',
-  } as PurchaseRequest))
+
+  const storePrs = usePurchaseRequestStore((state) => state.purchaseRequests)
+
+  // Map API response to frontend PurchaseRequest models and merge with store PRs
+  const purchaseRequests: PurchaseRequest[] = useMemo(() => {
+    const apiMapped = (prResponse?.data || []).map((apiPr) => ({
+      id: apiPr.id,
+      type: fromApiPrType(apiPr.prType),
+      status: fromApiStatus(apiPr.status),
+      headerDetails: {
+        prNumber: apiPr.prNumber,
+        description: apiPr.description,
+        date: apiPr.requestedDate,
+        purpose: '',
+        officeId: apiPr.officeId,
+        officeName: apiPr.officeName,
+      },
+      items: [],
+      totalAmount: apiPr.totalAmount,
+      createdAt: apiPr.createdDate,
+      updatedAt: apiPr.createdDate,
+      createdBy: '',
+    } as PurchaseRequest))
+
+    const apiIds = new Set(apiMapped.map((p) => p.id))
+    const uniqueStorePrs = storePrs.filter((p) => !apiIds.has(p.id))
+    return [...uniqueStorePrs, ...apiMapped]
+  }, [prResponse, storePrs])
 
   // Local UI state for modals and selected PR
   const [approveOpen, setApproveOpen] = useState(false)
   const [returnOpen, setReturnOpen] = useState(false)
   const [selectedPR, setSelectedPR] = useState<PurchaseRequest | null>(null)
-  
+
   // Filter state for PR type (multi-select, restore original behavior)
   const [selectedTypes, setSelectedTypes] = useState<PRType[]>(['non-cse', 'out-of-stock'])
 

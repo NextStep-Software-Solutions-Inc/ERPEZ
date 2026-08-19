@@ -1,11 +1,23 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useForm } from '@tanstack/react-form'
 import { z } from 'zod'
+import { createQueryHookFromTemplate } from 'erpez-shared-lib'
 import { Label } from '@/components/ui/label'
-import { Checkbox } from '@/components/ui/checkbox'
+import { RadioGroup, RadioGroupItem } from '@/components/ui/radio-group'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
+import { getObjectCodesRequest } from '@/components/features/planning/procurement-library/item-master/handlers/getObjectCodesRequest'
+
+const useObjectCodesQuery = createQueryHookFromTemplate(getObjectCodesRequest)
 
 export const ppmpExpenditureItemSchema = z.object({
   isProcurable: z.boolean(),
+  objectId: z.string().min(1, 'Object code is required'),
 })
 
 export type PPMPExpenditureItemFormValues = z.infer<
@@ -25,9 +37,27 @@ export function AddPPMPItemExpenditureForm({
   onSubmit,
   isLoading = false,
 }: AddPPMPItemExpenditureFormProps) {
+  const { data: objectCodesResponse, isLoading: isObjectCodesLoading } =
+    useObjectCodesQuery({
+      pathParams: {},
+      queryParams: {},
+    })
+
+  const objectCodeOptions = useMemo(() => {
+    return (
+      objectCodesResponse?.data
+        ?.filter((item) => item.isActive)
+        .map((item) => ({
+          id: item.id,
+          label: `${item.code} - ${item.name}`,
+        })) ?? []
+    )
+  }, [objectCodesResponse?.data])
+
   const form = useForm({
     defaultValues: {
       isProcurable: initialValues?.isProcurable ?? true,
+      objectId: initialValues?.objectId ?? '',
     } as PPMPExpenditureItemFormValues,
     validators: { onChange: ppmpExpenditureItemSchema },
     onSubmit: async ({ value }) => {
@@ -38,6 +68,7 @@ export function AddPPMPItemExpenditureForm({
   useEffect(() => {
     form.reset({
       isProcurable: initialValues?.isProcurable ?? true,
+      objectId: initialValues?.objectId ?? '',
     } as PPMPExpenditureItemFormValues)
   }, [initialValues, form])
 
@@ -52,24 +83,80 @@ export function AddPPMPItemExpenditureForm({
       className="space-y-4 font-sans"
     >
       <form.Field
+        name="objectId"
+        children={(field) => (
+          <div className="space-y-1.5">
+            <Label htmlFor={field.name} className="text-xs font-semibold">
+              Object Code <span className="text-destructive">*</span>
+            </Label>
+            <Select
+              value={field.state.value}
+              onValueChange={(val) => field.handleChange(val)}
+              disabled={isLoading || isObjectCodesLoading}
+            >
+              <SelectTrigger id={field.name} className="w-full text-xs">
+                <SelectValue
+                  placeholder={
+                    isObjectCodesLoading
+                      ? 'Loading object codes...'
+                      : 'Select Object Code'
+                  }
+                />
+              </SelectTrigger>
+              <SelectContent>
+                {objectCodeOptions.map((item) => (
+                  <SelectItem key={item.id} value={item.id} className="text-xs">
+                    {item.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            {field.state.meta.isTouched &&
+              field.state.meta.errors.length > 0 && (
+                <p className="text-[10px] text-destructive">
+                  {field.state.meta.errors.join(', ')}
+                </p>
+              )}
+          </div>
+        )}
+      />
+
+      <form.Field
         name="isProcurable"
         children={(field) => (
-          <div className="flex items-center gap-2 py-1">
-            <Checkbox
-              id={field.name}
-              checked={field.state.value}
-              onCheckedChange={(checked) => field.handleChange(!!checked)}
-              disabled={isLoading}
-            />
-            <Label
-              htmlFor={field.name}
-              className="text-xs font-semibold leading-none cursor-pointer select-none"
-            >
-              Is Procurable Group (CSE/Non-CSE Catalog)
+          <div className="space-y-2 py-1">
+            <Label className="text-xs font-semibold">
+              Procurement Type <span className="text-destructive">*</span>
             </Label>
+            <RadioGroup
+              value={field.state.value ? 'true' : 'false'}
+              onValueChange={(val) => field.handleChange(val === 'true')}
+              disabled={isLoading}
+              className="flex flex-col gap-2"
+            >
+              <div className="flex items-center gap-2">
+                <RadioGroupItem value="true" id="procurable-true" />
+                <Label
+                  htmlFor="procurable-true"
+                  className="text-xs font-medium cursor-pointer"
+                >
+                  Procurable Group (CSE/Non-CSE Catalog)
+                </Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <RadioGroupItem value="false" id="procurable-false" />
+                <Label
+                  htmlFor="procurable-false"
+                  className="text-xs font-medium cursor-pointer"
+                >
+                  Non-Procurable Group
+                </Label>
+              </div>
+            </RadioGroup>
           </div>
         )}
       />
     </form>
   )
 }
+

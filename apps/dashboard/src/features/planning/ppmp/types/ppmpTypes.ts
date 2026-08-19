@@ -539,6 +539,7 @@ export type PPMPActivity = {
 export type PPMPExpenditureItem = {
   id: string
   ppmpActivityId: string
+  objectId?: string
   isProcurable: boolean
   totalCost: number
   createdAt: string

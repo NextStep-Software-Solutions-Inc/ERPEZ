@@ -12,6 +12,7 @@ export type UpdatePPMPExpenditureItemPayload = {
   ppmpActivityId?: string
   isProcurable?: boolean
   totalCost?: number
+  objectId?: string
 }
 
 export const updatePPMPExpenditureItemRequest: MutationBlueprintFromTemplate<

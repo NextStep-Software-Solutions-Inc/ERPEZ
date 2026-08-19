@@ -1,4 +1,5 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
+import { getMockWhereasClauseDatabase } from '../data/mockBacResolutionData'
 import { ResponsiveDialogDashtail } from '@/components/ResponsiveDialogDashtail'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -40,9 +41,13 @@ export function ClauseTemplateManagerDialog({
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
   const [showUpdateConfirm, setShowUpdateConfirm] = useState(false)
 
-  const { data: templates = [], isLoading: isTemplatesLoading } = useWhereasClauseTemplates({
+  const { data: apiTemplates, isLoading: isTemplatesLoading } = useWhereasClauseTemplates({
     enabled: open,
   })
+  const templates = useMemo(() => {
+    if (apiTemplates && apiTemplates.length > 0) return apiTemplates
+    return getMockWhereasClauseDatabase()
+  }, [apiTemplates])
   const createTemplate = useCreateWhereasClauseTemplate()
   const updateTemplate = useUpdateWhereasClauseTemplate()
   const deleteTemplate = useDeleteWhereasClauseTemplate()
