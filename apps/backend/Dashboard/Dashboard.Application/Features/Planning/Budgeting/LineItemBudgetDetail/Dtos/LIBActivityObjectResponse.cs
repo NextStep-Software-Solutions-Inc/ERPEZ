@@ -3,8 +3,16 @@ namespace ERPEZ.Application.Features.Planning.Budgeting.LineItemBudgetDetail.Dto
 
 public record LIBActivityObjectResponse
 {
-    public Guid ObjectId { get; init; }
-    public string ObjectCode { get; init; } = string.Empty;
-    public string ObjectName { get; init; } = string.Empty;
+    public Guid ParentObjectId { get; init; }
+    public string ParentObjectCode { get; init; } = string.Empty;
+    public string ParentObjectName { get; init; } = string.Empty;
+    public List<LIBActivityObjectItemResponse> Items { get; init; } = [];
+}
+
+public record LIBActivityObjectItemResponse
+{
+    public Guid Id { get; init; }
+    public string Code { get; init; } = string.Empty;
+    public string Name { get; init; } = string.Empty;
     public decimal TotalBudget { get; init; }
 }

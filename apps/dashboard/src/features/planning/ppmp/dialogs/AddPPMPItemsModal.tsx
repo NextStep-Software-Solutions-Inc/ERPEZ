@@ -6,7 +6,7 @@
  * pre-populated inherited pricing, sequential creation, and safety loaders.
  */
 
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { toast } from 'sonner'
 import {
@@ -201,6 +201,7 @@ export default function AddPPMPItemsModal({
   const [isAdding, setIsAdding] = useState(false)
   const [progressIndex, setProgressIndex] = useState(0)
   const [totalProgress, setTotalProgress] = useState(0)
+  const isCommittedRef = useRef(false)
 
   // Filters by CSE tab vs Non-CSE tab
   const [filtersByTab, setFiltersByTab] = useState<
@@ -422,6 +423,12 @@ export default function AddPPMPItemsModal({
     }
   }, [isAdding])
 
+  useEffect(() => {
+    if (isOpen) {
+      isCommittedRef.current = false
+    }
+  }, [isOpen])
+
   const updateCurrentFilters = useCallback(
     (patch: Partial<TabFilters>, resetPage = false) => {
       setFiltersByTab((prev) => ({
@@ -531,26 +538,34 @@ export default function AddPPMPItemsModal({
     setIsAdding(false)
     setDetailsItemId(null)
     setDetailsItemType(null)
+    setConfirmCloseOpen(false)
+    isCommittedRef.current = false
   }, [])
 
-  const forceClose = () => {
+  const forceClose = useCallback(() => {
     setConfirmCloseOpen(false)
     handleReset()
     onOpenChange(false)
-  }
+  }, [handleReset, onOpenChange])
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     if (isAdding) return
-    if (selectedCount > 0) {
+    if (isCommittedRef.current) {
+      forceClose()
+      return
+    }
+    if (selectedItems.size > 0) {
       setConfirmCloseOpen(true)
     } else {
       forceClose()
     }
-  }
+  }, [isAdding, selectedItems.size, forceClose])
 
   const handleConfirmAdd = async () => {
-    if (selectedCount === 0) {
-      toast.warning('Please select at least one item.')
+    if (isAdding || selectedCount === 0) {
+      if (selectedCount === 0) {
+        toast.warning('Please select at least one item.')
+      }
       return
     }
 
@@ -581,6 +596,7 @@ export default function AddPPMPItemsModal({
     }
 
     setIsAdding(true)
+    isCommittedRef.current = false
 
     // Calculate total operations to track progress
     let totalOps = selectedList.length
@@ -599,6 +615,7 @@ export default function AddPPMPItemsModal({
 
     let successCount = 0
     let failedCount = 0
+    const successfullyCreatedIds: string[] = []
 
     try {
       for (const { type, item } of selectedList) {
@@ -637,6 +654,7 @@ export default function AddPPMPItemsModal({
           // Extract GUID from response - handle both string and object payloads
           createdItemId = typeof response.data === 'string' ? response.data : (response.data?.id ?? '')
           successCount++
+          successfullyCreatedIds.push(item.id)
         } catch (err) {
           failedCount++
           console.error(`Failed to add item: ${item.name}`, err)
@@ -669,25 +687,50 @@ export default function AddPPMPItemsModal({
         }
       }
 
-      if (successCount > 0) {
+      if (successfullyCreatedIds.length > 0) {
+        // Remove successfully created items from selection
+        setSelectedItems((prev) => {
+          const next = new Map(prev)
+          for (const id of successfullyCreatedIds) {
+            next.delete(id)
+          }
+          return next
+        })
+        setConfigs((prev) => {
+          const next = { ...prev }
+          for (const id of successfullyCreatedIds) {
+            delete next[id]
+          }
+          return next
+        })
+
         toast.success(
           `Successfully added ${successCount} item(s) to expenditure block.`,
         )
+
+        // Invalidate queries to refresh lists and workspace
+        await queryClient.invalidateQueries({
+          predicate: (query) =>
+            typeof query.queryKey[0] === 'string' &&
+            (query.queryKey[0].startsWith('/ppmp-items') ||
+              query.queryKey[0].startsWith('/ppmp-expenditure-items') ||
+              query.queryKey[0].startsWith('/ppmp')),
+        })
+
         onSuccess?.()
       }
+
       if (failedCount > 0) {
         toast.error(`Failed to add ${failedCount} item(s).`)
       }
 
-      // Invalidate queries to refresh lists
-      void queryClient.invalidateQueries({
-        predicate: (query) =>
-          typeof query.queryKey[0] === 'string' &&
-          (query.queryKey[0].startsWith('/ppmp-items') ||
-            query.queryKey[0].startsWith('/ppmp-expenditure-items') ||
-            query.queryKey[0].startsWith('/ppmp')),
-      })
-      handleClose()
+      // If all items succeeded, mark committed and close cleanly
+      if (failedCount === 0 && successCount > 0) {
+        isCommittedRef.current = true
+        setConfirmCloseOpen(false)
+        handleReset()
+        onOpenChange(false)
+      }
     } catch (globalErr) {
       toast.error('An error occurred during batch creation.')
     } finally {
@@ -707,10 +750,14 @@ export default function AddPPMPItemsModal({
         onOpenChange={(next) => {
           if (!next) {
             if (isAdding) return
-            if (selectedCount > 0) {
+            if (isCommittedRef.current) {
+              forceClose()
+              return
+            }
+            if (selectedItems.size > 0) {
               setConfirmCloseOpen(true)
             } else {
-              handleClose()
+              forceClose()
             }
           }
         }}
@@ -729,7 +776,7 @@ export default function AddPPMPItemsModal({
         onPointerDownOutside={
           isAdding
             ? (e) => e.preventDefault()
-            : selectedCount > 0
+            : selectedItems.size > 0 && !isCommittedRef.current
               ? (e) => {
                   e.preventDefault()
                   setConfirmCloseOpen(true)
