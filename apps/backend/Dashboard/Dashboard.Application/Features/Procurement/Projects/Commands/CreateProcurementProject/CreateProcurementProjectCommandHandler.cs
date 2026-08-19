@@ -22,29 +22,29 @@ public class CreateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
         {
             if (!request.APPItemId.HasValue)
             {
-                return ApiResponse<Guid>.Error("APPItemId is required when SourceType is APPItem.");
+                return ApiResponse<Guid>.Fail("APPItemId is required when SourceType is APPItem.");
             }
 
             var appItem = await unitOfWork.APPItemRepository.GetByIdAsync(request.APPItemId.Value, cancellationToken);
             if (appItem == null)
             {
-                return ApiResponse<Guid>.Error($"APP Item with ID '{request.APPItemId.Value}' was not found.");
+                return ApiResponse<Guid>.Fail($"APP Item with ID '{request.APPItemId.Value}' was not found.");
             }
 
             // Duplicate protection check for APP Item
-            var existingProject = await unitOfWork.ProcurementProjectRepository.FirstOrDefaultAsync(
+            var existingProject = await unitOfWork.ProcurementProjectRepository.FindAsync(
                 p => p.APPItemId == request.APPItemId.Value && p.Status != "Cancelled",
                 cancellationToken);
 
             if (existingProject != null)
             {
-                return ApiResponse<Guid>.Error("An active Procurement Project already exists for this APP Item.");
+                return ApiResponse<Guid>.Fail("An active Procurement Project already exists for this APP Item.");
             }
 
             // Authoritative Hydration from DB
             projectTitle = !string.IsNullOrWhiteSpace(appItem.Remarks)
                 ? appItem.Remarks
-                : (appItem.PPMPItem != null ? appItem.PPMPItem.ItemDescription : (request.Title ?? "APP Procurement Project"));
+                : (appItem.PPMPItem != null && !string.IsNullOrWhiteSpace(appItem.PPMPItem.Name) ? appItem.PPMPItem.Name : (request.Title ?? "APP Procurement Project"));
 
             projectABC = appItem.EstimatedBudgetOverride.HasValue && appItem.EstimatedBudgetOverride.Value > 0
                 ? appItem.EstimatedBudgetOverride.Value
@@ -56,32 +56,31 @@ public class CreateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
         {
             if (!request.ConsolidatedPRId.HasValue)
             {
-                return ApiResponse<Guid>.Error("ConsolidatedPRId is required when SourceType is ConsolidatedPR.");
+                return ApiResponse<Guid>.Fail("ConsolidatedPRId is required when SourceType is ConsolidatedPR.");
             }
 
             var consolidatedPr = await unitOfWork.ConsolidatedPRRepository.GetByIdAsync(request.ConsolidatedPRId.Value, cancellationToken);
             if (consolidatedPr == null)
             {
-                return ApiResponse<Guid>.Error($"Consolidated PR with ID '{request.ConsolidatedPRId.Value}' was not found.");
+                return ApiResponse<Guid>.Fail($"Consolidated PR with ID '{request.ConsolidatedPRId.Value}' was not found.");
             }
 
             // Duplicate protection check for Consolidated PR
-            var existingProject = await unitOfWork.ProcurementProjectRepository.FirstOrDefaultAsync(
+            var existingProject = await unitOfWork.ProcurementProjectRepository.FindAsync(
                 p => p.ConsolidatedPRId == request.ConsolidatedPRId.Value && p.Status != "Cancelled",
                 cancellationToken);
 
             if (existingProject != null)
             {
-                return ApiResponse<Guid>.Error("An active Procurement Project already exists for this Consolidated PR.");
+                return ApiResponse<Guid>.Fail("An active Procurement Project already exists for this Consolidated PR.");
             }
 
             // Authoritative Hydration from DB
-            projectTitle = !string.IsNullOrWhiteSpace(consolidatedPr.ProjectTitle)
-                ? consolidatedPr.ProjectTitle
-                : (!string.IsNullOrWhiteSpace(consolidatedPr.Description) ? consolidatedPr.Description : (request.Title ?? "Consolidated PR Project"));
+            projectTitle = !string.IsNullOrWhiteSpace(consolidatedPr.Description)
+                ? consolidatedPr.Description
+                : (!string.IsNullOrWhiteSpace(consolidatedPr.CPRNumber) ? consolidatedPr.CPRNumber : (request.Title ?? "Consolidated PR Project"));
 
             projectABC = consolidatedPr.TotalAmount > 0 ? consolidatedPr.TotalAmount : (request.ABC ?? 0);
-            procurementModeId = consolidatedPr.ProcurementModeId;
         }
 
         var project = new ProcurementProject
