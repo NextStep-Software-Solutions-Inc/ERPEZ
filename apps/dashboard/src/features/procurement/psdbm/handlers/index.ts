@@ -6,3 +6,5 @@
 export { getPSDBMItemsRequest } from './getPSDBMItemsRequest'
 export { getPSDBMCategoriesRequest } from './getPSDBMCategoriesRequest'
 export { getPSDBMDepotsRequest } from './getPSDBMDepotsRequest'
+export { triggerPSDBMSyncRequest } from './triggerPSDBMSyncRequest'
+

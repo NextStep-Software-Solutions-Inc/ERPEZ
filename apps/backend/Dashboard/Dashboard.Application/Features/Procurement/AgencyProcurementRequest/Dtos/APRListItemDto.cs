@@ -44,9 +44,10 @@ public class APRDetailDto
 public class APRItemDto
 {
     public Guid Id { get; set; }
-    public Guid APPItemId { get; set; }
-    public Guid PPMPItemId { get; set; }
-    public string Description { get; set; } = string.Empty; // from PPMPItem.Name (Image 6-10)
+    public Guid? APPItemId { get; set; }
+    public Guid? PPMPItemId { get; set; }
+    public string ItemCode { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
     public string Unit { get; set; } = string.Empty;
     public decimal QuantityRequested { get; set; }
     public decimal UnitCost { get; set; }

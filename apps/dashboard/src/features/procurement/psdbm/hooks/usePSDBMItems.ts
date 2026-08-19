@@ -15,13 +15,17 @@ import type { PSDBMCatalogMode, PSDBMCatalogResponse } from '../types'
 import type { UseQueryResult } from '@tanstack/react-query'
 import type { APIResponse } from 'erpez-shared-lib'
 
-interface UsePSDBMItemsOptions {
+export interface UsePSDBMItemsOptions {
   pathParams: { mode: PSDBMCatalogMode }
-  queryParams: {
+  queryParams?: {
     search?: string
     category?: string
     max?: number
     depot?: string
+    availability?: string
+    stockFilter?: string
+    pageNumber?: number
+    pageSize?: number
   }
   enabled?: boolean
 }
@@ -34,4 +38,3 @@ const baseHook = createQueryHookFromTemplate(getPSDBMItemsRequest)
 export function usePSDBMItems(options: UsePSDBMItemsOptions): UseQueryResult<APIResponse<PSDBMCatalogResponse>> {
   return baseHook(options)
 }
-

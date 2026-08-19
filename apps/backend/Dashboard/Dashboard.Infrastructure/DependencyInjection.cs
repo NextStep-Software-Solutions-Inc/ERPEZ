@@ -119,6 +119,8 @@ public static class DependencyInjection
         // ── Other Services ──────────────────────────────────────────────────────────
         services.AddScoped<IFileStorageService, AzureBlobStorageService>();
         services.AddScoped<IPhilGepsService, PhilGepsService>();
+        services.AddScoped<IPsdbmSyncService, PsdbmSyncService>();
+        services.AddScoped<IPsdbmQueryService, PsdbmQueryService>();
         services.AddScoped<IUACSCsvImporter, UACSImportService>();
         services.AddScoped<IFundSourceExcelImporter, FundSourceExcelImporter>();
         services.AddScoped<IUACSValidationEngine, UACSValidationEngine>();

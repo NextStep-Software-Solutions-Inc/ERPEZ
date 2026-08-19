@@ -57,12 +57,18 @@ export function AdminAPRsManagementTable({
       // Search filter - check multiple fields
       if (searchTerm.trim()) {
         const searchLower = searchTerm.toLowerCase()
+        const aprNumber = (apr.aprNumber || '').toLowerCase()
+        const requestingEntity = (apr.requestingEntity || (apr as any).officeName || '').toLowerCase()
+        const requestedBy = (apr.requestedBy || '').toLowerCase()
+        const agencyControlNumber = (apr.agencyControlNumber || '').toLowerCase()
+        const description = (apr.description || '').toLowerCase()
+
         const matchesSearch =
-          apr.aprNumber.toLowerCase().includes(searchLower) ||
-          apr.requestingEntity.toLowerCase().includes(searchLower) ||
-          apr.requestedBy.toLowerCase().includes(searchLower) ||
-          apr.agencyControlNumber.toLowerCase().includes(searchLower) ||
-          apr.description.toLowerCase().includes(searchLower)
+          aprNumber.includes(searchLower) ||
+          requestingEntity.includes(searchLower) ||
+          requestedBy.includes(searchLower) ||
+          agencyControlNumber.includes(searchLower) ||
+          description.includes(searchLower)
 
         if (!matchesSearch) return false
       }
@@ -81,11 +87,15 @@ export function AdminAPRsManagementTable({
     })
   }, [data, searchTerm, statusFilter, fiscalYearFilter])
 
-  const columns = getAdminAPRsTableColumns({
-    onView,
-    onApprove,
-    onReturn,
-  })
+  const columns = useMemo(
+    () =>
+      getAdminAPRsTableColumns({
+        onView,
+        onApprove,
+        onReturn,
+      }),
+    [onView, onApprove, onReturn]
+  )
 
   const table = useReactTable({
     data: filteredData,
