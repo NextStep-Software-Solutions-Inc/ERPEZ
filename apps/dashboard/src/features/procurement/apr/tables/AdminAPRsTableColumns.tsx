@@ -15,6 +15,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
 import { MoreVertical, Eye, Check, RotateCcw } from 'lucide-react'
+import { APRStatusBadge } from '../components/APRStatusBadge'
 
 const columnHelper = createColumnHelper<any>()
 
@@ -100,13 +101,7 @@ export function getAdminAPRsTableColumns({
       header: 'Status',
       enableSorting: true,
       cell: (info) => {
-        const status = info.getValue() || 'Draft'
-        const variantClass = statusVariants[status] || 'bg-gray-100 text-gray-800'
-        return (
-          <Badge variant="outline" className={variantClass}>
-            {String(status).replace(/_/g, ' ')}
-          </Badge>
-        )
+        return <APRStatusBadge status={info.getValue() || 'Draft'} context="procurement_officer" />
       },
     }),
 

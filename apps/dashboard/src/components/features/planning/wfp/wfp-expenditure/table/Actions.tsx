@@ -27,6 +27,10 @@ export function Actions({ data, readonly, actions }: ActionsProps) {
   const showWrite = actions?.includes('write') && !readonly
   const showDelete = actions?.includes('delete') && !readonly
 
+  if (!showWrite && !showDelete) {
+    return null
+  }
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>

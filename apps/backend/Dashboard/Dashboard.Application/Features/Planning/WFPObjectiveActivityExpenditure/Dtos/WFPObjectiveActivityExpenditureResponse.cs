@@ -1,4 +1,4 @@
-﻿using ERPEZ.Application.Features.Planning.Object.Dtos;
+using ERPEZ.Application.Features.Planning.Object.Dtos;
 
 namespace ERPEZ.Application.Features.Planning.WFPObjectiveActivityExpenditure.Dtos;
 
@@ -12,4 +12,6 @@ public record WFPObjectiveActivityExpenditureResponse
     public decimal UnitCost { get; init; }
     public DateTime CreatedAt { get; init; }
     public string CreatedBy { get; init; } = string.Empty;
+    public DateTime? UpdatedAt { get; init; }
+    public string? UpdatedBy { get; init; }
 }

@@ -128,6 +128,10 @@ export interface APRDetailDto {
   additionalRemarks?: string | null
   submittedDate?: string | null
   approvedDate?: string | null
+  returnedDate?: string | null
+  returnRemarks?: string | null
+  approvedBy?: string | null
+  returnedBy?: string | null
   items: APRItemDto[]
 }
 

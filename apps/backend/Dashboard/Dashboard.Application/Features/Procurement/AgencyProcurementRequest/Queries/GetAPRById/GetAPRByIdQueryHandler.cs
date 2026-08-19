@@ -45,6 +45,10 @@ public class GetAPRByIdQueryHandler : IRequestHandler<GetAPRByIdQuery, ApiRespon
             AdditionalRemarks = apr.AdditionalRemarks,
             SubmittedDate = apr.SubmittedDate,
             ApprovedDate = apr.ApprovedDate,
+            ReturnedDate = apr.ReturnedDate,
+            ReturnRemarks = apr.ReturnRemarks,
+            ApprovedBy = apr.ApprovedBy,
+            ReturnedBy = apr.ReturnedBy,
             Items = apr.APRItems.Select(item => new APRItemDto
             {
                 Id = item.Id,

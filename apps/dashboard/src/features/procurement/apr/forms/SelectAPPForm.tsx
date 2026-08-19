@@ -13,7 +13,7 @@ import { APPSelectField } from '../components/APPSelectField'
 import { LineItemsSelectField } from '../components/LineItemsSelectField'
 import { ValidationAlerts } from '../components/ValidationAlerts'
 import { APRItemsPreview } from '../components/APRItemsPreview'
-import { useApprovedAPPs, useAPPById } from '../handlers/hooks'
+import { useApprovedAPPs, useAPPById, useAllocatedAPPItemIds } from '../handlers/hooks'
 import { useAPPApprovalValidation } from '../hooks'
 import { convertAppLineItemsToAPRItems, validateBudgetCeiling } from '../utils'
 import type { ConsolidatedAPRItem } from '../types'
@@ -32,6 +32,9 @@ interface SelectAPPFormProps {
   onSubmit: (values: SelectAppFormValues) => void
   fiscalYear?: number
   fiscalYearId?: string
+  initialAppId?: string
+  initialSelectedLineItemIds?: string[]
+  excludeAprId?: string
 }
 
 const APPROVED_APPS_QUERY_PARAMS = {
@@ -44,6 +47,9 @@ export function SelectAPPForm({
   onSubmit,
   fiscalYear = new Date().getFullYear(),
   fiscalYearId,
+  initialAppId,
+  initialSelectedLineItemIds,
+  excludeAprId,
 }: SelectAPPFormProps) {
   const { data: appsResponse, isLoading: appsLoading } = useApprovedAPPs({
     queryParams: {
@@ -52,6 +58,19 @@ export function SelectAPPForm({
     },
     enabled: true,
   } as any)
+
+  const { data: allocatedIdsResponse } = useAllocatedAPPItemIds({
+    queryParams: excludeAprId ? { excludeAprId } : {},
+    enabled: true,
+  } as any)
+
+  const allocatedItemIds = useMemo(() => {
+    if (!allocatedIdsResponse) return new Set<string>()
+    const raw = Array.isArray(allocatedIdsResponse)
+      ? allocatedIdsResponse
+      : (allocatedIdsResponse as any)?.data || []
+    return new Set<string>(raw.map((id: any) => String(id).toLowerCase()))
+  }, [allocatedIdsResponse])
 
   const apps = useMemo(() => {
     if (!appsResponse) return []
@@ -64,19 +83,44 @@ export function SelectAPPForm({
   const filteredApps = useMemo(() => {
     return apps.filter((app: any) => {
       if (fiscalYearId && (app.fiscalYearId === fiscalYearId || app.FiscalYear?.id === fiscalYearId)) {
-        return true
+        // match
+      } else {
+        const fy =
+          app.FiscalYear?.year ||
+          app.fiscalYear?.year ||
+          app.fiscalYear ||
+          (app.fiscalYearName ? parseInt(app.fiscalYearName, 10) : undefined)
+        if (fy && fy !== fiscalYear) return false
       }
-      const fy =
-        app.FiscalYear?.year ||
-        app.fiscalYear?.year ||
-        app.fiscalYear ||
-        (app.fiscalYearName ? parseInt(app.fiscalYearName, 10) : undefined)
-      return !fy || fy === fiscalYear
-    })
-  }, [apps, fiscalYear, fiscalYearId])
 
-  const [selectedAppIds, setSelectedAppIds] = useState<string[]>([])
-  const [selectedLineItemIds, setSelectedLineItemIds] = useState<string[]>([])
+      // Filter out APPs that have no remaining unallocated line items
+      const directItems = app.APPItems || app.appItems || app.items || []
+      if (directItems.length === 0) {
+        const appPmps = app.APPPPMPs || app.appppmPs || []
+        if (appPmps.length === 0) return true
+        const allExtractedIds: string[] = []
+        appPmps.forEach((rel: any) => {
+          const ppmp = rel.PPMP || rel.ppmp || rel
+          const pItems = ppmp?.PPMPItems || ppmp?.ppmpItems || ppmp?.items || []
+          pItems.forEach((pi: any) => allExtractedIds.push(String(pi.id).toLowerCase()))
+        })
+        return allExtractedIds.some((id) => !allocatedItemIds.has(id))
+      }
+
+      const unallocatedCount = directItems.filter(
+        (item: any) => !allocatedItemIds.has(String(item.id).toLowerCase())
+      ).length
+
+      return unallocatedCount > 0
+    })
+  }, [apps, fiscalYear, fiscalYearId, allocatedItemIds])
+
+  const [selectedAppIds, setSelectedAppIds] = useState<string[]>(() =>
+    initialAppId ? [initialAppId] : []
+  )
+  const [selectedLineItemIds, setSelectedLineItemIds] = useState<string[]>(() =>
+    initialSelectedLineItemIds || []
+  )
 
   const selectedApps = useMemo(
     () => apps.filter((app: any) => selectedAppIds.includes(app.id)),
@@ -134,14 +178,19 @@ export function SelectAPPForm({
         items = extracted
       }
 
-      return items.map((item: any) => ({
+      // Filter out items already allocated to another APR
+      const unallocatedItems = items.filter(
+        (item: any) => !allocatedItemIds.has(String(item.id).toLowerCase())
+      )
+
+      return unallocatedItems.map((item: any) => ({
         ...item,
         sourceAppId: app.id,
         sourceAppCode: appCode,
         sourceAppName: app.name || app.appName || '',
       }))
     })
-  }, [selectedApps, detailedApp])
+  }, [selectedApps, detailedApp, allocatedItemIds])
 
   const validation = useAPPApprovalValidation({
     app: primarySelectedApp,
@@ -314,6 +363,7 @@ export function SelectAPPForm({
         onToggleApp={handleToggleApp}
         onSelectAllApps={handleSelectAllApps}
         fiscalYear={fiscalYear}
+        allocatedItemIds={allocatedItemIds}
       />
       <LineItemsSelectField
         apps={selectedApps}

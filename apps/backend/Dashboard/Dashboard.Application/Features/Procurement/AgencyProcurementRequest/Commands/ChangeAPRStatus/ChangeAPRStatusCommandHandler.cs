@@ -12,7 +12,8 @@ public class ChangeAPRStatusCommandHandler(IUnitOfWork unitOfWork)
     private static readonly Dictionary<StatusEnum, StatusEnum[]> allowedTransitions = new()
     {
         [StatusEnum.ForApproval] = new[] { StatusEnum.Approved, StatusEnum.Returned },
-        [StatusEnum.Returned] = new[] { StatusEnum.Draft }
+        [StatusEnum.Returned] = new[] { StatusEnum.Draft, StatusEnum.ForApproval },
+        [StatusEnum.Draft] = new[] { StatusEnum.ForApproval }
     };
 
     public async Task<ApiResponse<Guid>> Handle(ChangeAPRStatusCommand request, CancellationToken cancellationToken)
@@ -28,10 +29,23 @@ public class ChangeAPRStatusCommandHandler(IUnitOfWork unitOfWork)
         apr.Status = request.Status;
 
         if (request.Status == StatusEnum.Approved)
+        {
             apr.ApprovedDate = DateTime.UtcNow;
-
-        if (!string.IsNullOrWhiteSpace(request.Remarks))
-            apr.AdditionalRemarks = request.Remarks;
+            apr.ApprovedBy = "Procurement Officer";
+        }
+        else if (request.Status == StatusEnum.Returned)
+        {
+            apr.ReturnedDate = DateTime.UtcNow;
+            apr.ReturnedBy = "Procurement Officer";
+            if (!string.IsNullOrWhiteSpace(request.Remarks))
+            {
+                apr.ReturnRemarks = request.Remarks;
+            }
+        }
+        else if (request.Status == StatusEnum.ForApproval)
+        {
+            apr.SubmittedDate = DateTime.UtcNow;
+        }
 
         await unitOfWork.SaveChangesAsync(cancellationToken);
 

@@ -1,5 +1,4 @@
-import { useEffect } from 'react'
-import { atom, useAtom, useAtomValue, useSetAtom } from 'jotai'
+import { useAtom } from 'jotai'
 import {
   createMutationHookFromTemplate,
   createQueryHookFromTemplate,
@@ -7,53 +6,53 @@ import {
 } from 'erpez-shared-lib'
 import { toast } from 'sonner'
 import { Loader2 } from 'lucide-react'
-import {
-  closeUpdateDialogAtom,
-  updateDialogAtom,
-  updateFormDataAtom,
-} from '../atoms'
+import { updateDialogAtom } from '../atoms'
 import { updateWFPObjectiveRequest } from '../handlers/updateWFPObjectiveRequest'
 import { getWFPObjectiveRequest } from '../handlers/getWFPObjectiveRequest'
 import UpdateWFPObjectiveForm from '../form/UpdateWFPObjectiveForm'
-import type { UpdateWFPObjectiveValues } from '../form/UpdateWFPObjectiveForm';
-import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
+import type { UpdateWFPObjectiveValues } from '../form/UpdateWFPObjectiveForm'
 import { ResponsiveDialog } from '@/components/ResponsiveDialog'
 
-import { extractErrorMessage } from '@/services/utils/messages'
-
-export const hasUnsavedUpdateFormAtom = atom(false)
+interface UpdateWFPObjectiveDialogProps {
+  objectiveId?: string | null
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  onClose?: () => void
+}
 
 const useUpdateWFPObjective = createMutationHookFromTemplate(updateWFPObjectiveRequest)
 const useWFPObjective = createQueryHookFromTemplate(getWFPObjectiveRequest)
 
-export default function UpdateWFPObjectiveDialog() {
+export default function UpdateWFPObjectiveDialog({
+  objectiveId: propObjectiveId,
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
+  onClose,
+}: UpdateWFPObjectiveDialogProps = {}) {
   const { mutateAsync } = useUpdateWFPObjective()
-  const [dialogState, setDialogState] = useAtom(updateDialogAtom)
-  const [formData, setFormData] = useAtom(updateFormDataAtom)
-  const setHasUnsavedChanges = useSetAtom(hasUnsavedUpdateFormAtom)
-  const hasUnsavedChangesValue = useAtomValue(hasUnsavedUpdateFormAtom)
-  const closeDialog = useSetAtom(closeUpdateDialogAtom)
+  const [atomState, setAtomState] = useAtom(updateDialogAtom)
   const queryClient = useQueryClient()
 
-  const selectedId = dialogState.selectedId || ''
-  
+  const selectedId = propObjectiveId !== undefined ? (propObjectiveId || '') : (atomState.selectedId || '')
+  const isOpen = controlledOpen !== undefined ? controlledOpen : atomState.isOpen
+
+  const handleOpenChange = (open: boolean) => {
+    if (controlledOnOpenChange) {
+      controlledOnOpenChange(open)
+    } else {
+      setAtomState({ isOpen: open, selectedId: open ? selectedId : null, showUnsavedWarning: false })
+    }
+    if (!open && onClose) {
+      onClose()
+    }
+  }
+
   const { data: wfpObjectiveResponse, isLoading } = useWFPObjective({
     pathParams: { id: selectedId },
     queryParams: {},
   })
 
   const wfpObjectiveData = wfpObjectiveResponse?.data
-
-  useEffect(() => {
-    if (wfpObjectiveData) {
-      setFormData({
-        description: wfpObjectiveData.description,
-        weight: wfpObjectiveData.weight,
-        outcome: wfpObjectiveData.outcome,
-        wfpId: wfpObjectiveData.wfpId,
-      })
-    }
-  }, [wfpObjectiveData, setFormData])
 
   const handleUpdate = async (data: UpdateWFPObjectiveValues) => {
     const toastId = toast.loading('Updating WFP Objective...')
@@ -71,83 +70,40 @@ export default function UpdateWFPObjectiveDialog() {
         ),
       })
       toast.success('WFP Objective updated successfully!', { id: toastId })
-      closeDialog(true)
-      setHasUnsavedChanges(false)
+      handleOpenChange(false)
     } catch {
       toast.dismiss(toastId)
     }
   }
 
   const handleClose = () => {
-    if (hasUnsavedChangesValue) {
-      setDialogState({ ...dialogState, showUnsavedWarning: true })
-    } else {
-      closeDialog(true)
-    }
-  }
-
-  // Prevent dialog from closing if there are unsaved changes
-  const handleDialogOpenChange = (open: boolean) => {
-    if (!open && hasUnsavedChangesValue) {
-      // Show confirmation instead of closing
-      setDialogState({ ...dialogState, showUnsavedWarning: true })
-      return
-    }
-    if (!open) {
-      // Safe to close
-      closeDialog(true)
-    }
-  }
-
-  const handleConfirmDiscard = () => {
-    setHasUnsavedChanges(false)
-    closeDialog(true)
-  }
-
-  const handleCancelUnsavedWarning = () => {
-    setDialogState({ ...dialogState, showUnsavedWarning: false })
+    handleOpenChange(false)
   }
 
   return (
-    <>
-      <ResponsiveDialog
-        open={dialogState.isOpen}
-        onOpenChange={handleDialogOpenChange}
-        title="Update WFP Objective"
-        description="Modify the details of the WFP Objective."
-      >
-        {isLoading ? (
-          <div className="flex h-40 items-center justify-center">
-            <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
-          </div>
-        ) : (
-          <UpdateWFPObjectiveForm
-            onSubmit={handleUpdate}
-            onCancel={handleClose}
-            initialValues={{
-              description: wfpObjectiveData?.description || '',
-              weight: wfpObjectiveData?.weight || 0,
-              outcome: wfpObjectiveData?.outcome || '',
-              wfpId: wfpObjectiveData?.wfpId || '',
-              ...formData,
-            }}
-            wfpId={wfpObjectiveData?.wfpId || ''}
-          />
-        )}
-      </ResponsiveDialog>
-
-      <ConfirmAlertDialog
-        open={dialogState.showUnsavedWarning}
-        onOpenChange={(open) =>
-          !open && handleCancelUnsavedWarning()
-        }
-        title="Unsaved Changes"
-        description="You have unsaved changes. Are you sure you want to discard them?"
-        confirmLabel="Discard Changes"
-        cancelLabel="Keep Editing"
-        onConfirm={handleConfirmDiscard}
-        onCancel={handleCancelUnsavedWarning}
-      />
-    </>
+    <ResponsiveDialog
+      open={isOpen}
+      onOpenChange={handleOpenChange}
+      title="Update WFP Objective"
+      description="Modify the details of the WFP Objective."
+    >
+      {isLoading ? (
+        <div className="flex h-40 items-center justify-center">
+          <Loader2 className="h-8 w-8 animate-spin text-blue-600" />
+        </div>
+      ) : (
+        <UpdateWFPObjectiveForm
+          onSubmit={handleUpdate}
+          onCancel={handleClose}
+          initialValues={{
+            description: wfpObjectiveData?.description || '',
+            weight: wfpObjectiveData?.weight || 0,
+            outcome: wfpObjectiveData?.outcome || '',
+            wfpId: wfpObjectiveData?.wfpId || '',
+          }}
+          wfpId={wfpObjectiveData?.wfpId || ''}
+        />
+      )}
+    </ResponsiveDialog>
   )
 }

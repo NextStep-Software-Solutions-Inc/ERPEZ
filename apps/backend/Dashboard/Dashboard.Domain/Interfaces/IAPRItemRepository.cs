@@ -5,4 +5,5 @@ namespace ERPEZ.Domain.Interfaces;
 public interface IAPRItemRepository : IRepository<APRItem>
 {
     Task<List<APRItem>> GetByAPRIdAsync(Guid aprId, CancellationToken cancellationToken = default);
+    Task<List<Guid>> GetAllocatedAPPItemIdsAsync(Guid? excludeAprId = null, CancellationToken cancellationToken = default);
 }

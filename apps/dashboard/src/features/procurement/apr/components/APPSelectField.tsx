@@ -15,6 +15,7 @@ interface APPSelectFieldProps {
   onToggleApp: (appId: string) => void
   onSelectAllApps?: () => void
   fiscalYear: number
+  allocatedItemIds?: Set<string>
 }
 
 export const APPSelectField = React.memo(function APPSelectField({
@@ -23,6 +24,7 @@ export const APPSelectField = React.memo(function APPSelectField({
   onToggleApp,
   onSelectAllApps,
   fiscalYear: _fiscalYear,
+  allocatedItemIds,
 }: APPSelectFieldProps) {
   const allAppsSelected = apps.length > 0 && selectedAppIds.length === apps.length
 
@@ -57,7 +59,10 @@ export const APPSelectField = React.memo(function APPSelectField({
             const fy = app.FiscalYear?.year || app.fiscalYear?.year || app.fiscalYear || app.fiscalYearName || '2026'
             const isSelected = selectedAppIds.includes(app.id)
             const appType = app.appType || (app.isFinal === 'true' || app.isFinal === true ? 'Final' : null)
-            const itemCount = (app.APPItems || app.appItems || app.items || []).length
+            const directItems = app.APPItems || app.appItems || app.items || []
+            const itemCount = allocatedItemIds && allocatedItemIds.size > 0
+              ? directItems.filter((i: any) => !allocatedItemIds.has(String(i.id).toLowerCase())).length
+              : directItems.length
 
             return (
               <div
