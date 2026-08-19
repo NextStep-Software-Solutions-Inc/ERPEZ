@@ -15,6 +15,12 @@ public class ProcurementProject : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid? ConsolidatedPRId { get; set; }
 
+    [Sieve(CanFilter = true, CanSort = true)]
+    public Guid? APPItemId { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public ERPEZ.Domain.Enums.ProcurementProjectSourceType SourceType { get; set; } = ERPEZ.Domain.Enums.ProcurementProjectSourceType.ConsolidatedPR;
+
     /// <summary>
     /// Snapshot of the MoP shared by all ConsolidatedPRItems included in this project.
     /// Set automatically at project creation — NOT user-editable.
@@ -47,6 +53,7 @@ public class ProcurementProject : BaseEntity
     public Guid? ApprovalAttachmentFileId { get; set; }
     // Navigation properties
     public virtual ConsolidatedPR? ConsolidatedPR { get; set; }
+    public virtual APPItem? APPItem { get; set; }
     public virtual List<BACResolution> BACResolutions { get; set; } = [];
     public virtual List<BiddingActivitySchedule> BiddingActivitySchedules { get; set; } = [];
     public virtual List<DirectContracting> DirectContractings { get; set; } = [];

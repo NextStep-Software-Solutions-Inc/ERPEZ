@@ -2849,6 +2849,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .HasForeignKey<ProcurementProject>(p => p.ConsolidatedPRId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            e.HasIndex(p => p.APPItemId);
+
+            e.HasOne(p => p.APPItem)
+                .WithMany()
+                .HasForeignKey(p => p.APPItemId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             e.HasOne(p => p.EndUserRepresentative)
                 .WithMany()
                 .HasForeignKey(p => p.EndUserRepresentativeId)
@@ -2858,6 +2865,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .WithMany()
                 .HasForeignKey(p => p.TechRepresentativeId)
                 .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<PurchaseRequest>(e =>
+        {
+            e.HasOne(pr => pr.ProcurementProject)
+                .WithMany()
+                .HasForeignKey(pr => pr.ProcurementProjectId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         base.OnModelCreating(modelBuilder);
