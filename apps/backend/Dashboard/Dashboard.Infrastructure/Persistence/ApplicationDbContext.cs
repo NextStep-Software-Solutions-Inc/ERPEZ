@@ -1608,7 +1608,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<LineItemBudget>()
             .HasIndex(e => e.LIBNumber)
-            .IsUnique();
+            .IsUnique()
+            .HasFilter("\"IsDeleted\" = false");
 
         modelBuilder.Entity<LineItemBudget>()
             .HasIndex(e => e.FiscalYearId);
@@ -1654,6 +1655,16 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<LineItemBudgetActivity>()
             .HasIndex(e => e.OPCRActivityId);
+
+        modelBuilder.Entity<LineItemBudgetActivity>()
+            .HasIndex(e => new { e.LineItemBudgetId, e.OPCRActivityId })
+            .IsUnique()
+            .HasFilter("\"IsDeleted\" = false AND \"OPCRActivityId\" IS NOT NULL");
+
+        modelBuilder.Entity<LineItemBudgetActivity>()
+            .HasIndex(e => new { e.LineItemBudgetId, e.WFPObjectiveActivityId })
+            .IsUnique()
+            .HasFilter("\"IsDeleted\" = false AND \"WFPObjectiveActivityId\" IS NOT NULL");
 
         // Budget - LineItemBudgetDetail
         modelBuilder.Entity<LineItemBudgetDetail>()

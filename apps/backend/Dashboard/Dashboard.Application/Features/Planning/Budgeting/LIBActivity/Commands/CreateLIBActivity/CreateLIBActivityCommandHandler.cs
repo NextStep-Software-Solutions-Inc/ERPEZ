@@ -33,6 +33,15 @@ public class CreateLIBActivityCommandHandler(IUnitOfWork unitOfWork)
             if (!request.WFPObjectiveActivityId.HasValue)
                 throw new ERPEZ.Shared.Exceptions.ValidationException("WFPObjectiveActivityId is required for WFP-sourced LIB.");
 
+            var existingWfp = await unitOfWork.LineItemBudgetActivityRepository.FindAsync(
+                x => x.LineItemBudgetId == request.LineItemBudgetId &&
+                     x.WFPObjectiveActivityId == request.WFPObjectiveActivityId.Value &&
+                     !x.IsDeleted,
+                cancellationToken);
+
+            if (existingWfp != null)
+                throw new ERPEZ.Shared.Exceptions.ValidationException("This WFP Activity is already linked to this Line Item Budget.");
+
             wfpActivity = await unitOfWork.WFPObjectiveActivityRepository.GetByIdAsync(request.WFPObjectiveActivityId.Value, cancellationToken)
                 ?? throw new NotFoundException($"WFP Objective Activity with ID {request.WFPObjectiveActivityId} not found.");
         }
@@ -40,6 +49,15 @@ public class CreateLIBActivityCommandHandler(IUnitOfWork unitOfWork)
         {
             if (!request.OPCRActivityId.HasValue)
                 throw new ERPEZ.Shared.Exceptions.ValidationException("OPCRActivityId is required for OPCR-sourced LIB.");
+
+            var existingOpcr = await unitOfWork.LineItemBudgetActivityRepository.FindAsync(
+                x => x.LineItemBudgetId == request.LineItemBudgetId &&
+                     x.OPCRActivityId == request.OPCRActivityId.Value &&
+                     !x.IsDeleted,
+                cancellationToken);
+
+            if (existingOpcr != null)
+                throw new ERPEZ.Shared.Exceptions.ValidationException("This OPCR Activity is already linked to this Line Item Budget.");
 
             opcrActivity = await unitOfWork.OPCRActivityRepository.GetByIdAsync(request.OPCRActivityId.Value, cancellationToken)
                 ?? throw new NotFoundException($"OPCR Activity with ID {request.OPCRActivityId} not found.");

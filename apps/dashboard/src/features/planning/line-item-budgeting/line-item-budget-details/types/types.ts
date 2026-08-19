@@ -1,4 +1,4 @@
-﻿export type LineItemBudgetDetails = {
+export type LineItemBudgetDetails = {
   id: string
   lineItemBudgetId: string
   lineItemBudgetActivityId: string
@@ -24,6 +24,12 @@
     id: string
     name?: string
     code?: string
+    parentId?: string
+    parentObject?: {
+      id: string
+      name?: string
+      code?: string
+    }
   }
   wfpObjectiveActivityExpenditure: {
     id: string

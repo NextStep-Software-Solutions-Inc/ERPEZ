@@ -2427,7 +2427,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("FundSourceId");
 
                     b.HasIndex("LIBNumber")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("\"IsDeleted\" = false");
 
                     b.HasIndex("OfficeId");
 
@@ -2489,6 +2490,14 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("OPCRActivityId");
 
                     b.HasIndex("WFPObjectiveActivityId");
+
+                    b.HasIndex("LineItemBudgetId", "OPCRActivityId")
+                        .IsUnique()
+                        .HasFilter("\"IsDeleted\" = false AND \"OPCRActivityId\" IS NOT NULL");
+
+                    b.HasIndex("LineItemBudgetId", "WFPObjectiveActivityId")
+                        .IsUnique()
+                        .HasFilter("\"IsDeleted\" = false AND \"WFPObjectiveActivityId\" IS NOT NULL");
 
                     b.ToTable("LineItemBudgetActivities", "planning");
                 });

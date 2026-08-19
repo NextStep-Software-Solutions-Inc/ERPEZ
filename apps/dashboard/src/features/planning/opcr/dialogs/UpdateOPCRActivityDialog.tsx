@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { Edit } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ResponsiveDialogDashtail } from '@/components/ResponsiveDialogDashtail'
@@ -11,6 +11,7 @@ import { OPCRActivity } from '@/features/planning/opcr/types'
 
 interface UpdateOPCRActivityDialogProps {
   activity: OPCRActivity
+  officeId?: string
   onActivityUpdated: (activity: UpdateOPCRActivityFormValues) => void
   isOpen?: boolean
   onOpenChange?: (open: boolean) => void
@@ -21,6 +22,7 @@ interface UpdateOPCRActivityDialogProps {
 
 export function UpdateOPCRActivityDialog({
   activity,
+  officeId,
   onActivityUpdated,
   isOpen: externalIsOpen,
   onOpenChange: externalOnOpenChange,
@@ -80,6 +82,7 @@ export function UpdateOPCRActivityDialog({
       <div className="p-2">
         <UpdateOPCRActivityForm
           activity={activity}
+          officeId={officeId}
           onActivityUpdated={onActivityUpdated}
           onClose={() => setIsOpen(false)}
           setForm={setForm}
