@@ -199,15 +199,15 @@ export default function CreateLineItemBudgetForm({
     },
   })
 
+  const canFetchWfps = !!fiscalYearValue && !!officeIdValue && !!selectedYear
   const { data: wfps, isLoading: isWfpsLoading } = useWfps({
     pathParams: {},
     queryParams: {
-      ...(fiscalYearValue &&
-        officeIdValue &&
-        selectedYear && {
-          filters: `officeId==${officeIdValue},fiscalYear==${selectedYear},status==Approved`,
-        }),
+      ...(canFetchWfps && {
+        filters: `officeId==${officeIdValue},fiscalYear==${selectedYear},status==Approved`,
+      }),
     },
+    enabled: canFetchWfps,
   })
 
   // Bottom-up mode: all fund sources (no fiscal year filtering required by API, but we fetch them when mode is bottom-up)

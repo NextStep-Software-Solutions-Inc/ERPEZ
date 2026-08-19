@@ -8,6 +8,7 @@ import { PPMPExpenditureItem } from '../types'
 const endpoint = '/ppmp-expenditure-items'
 
 export type CreatePPMPExpenditureItemPayload = {
+  ppmpId: string
   ppmpActivityId: string
   isProcurable: boolean
   objectId: string
