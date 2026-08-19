@@ -15,16 +15,16 @@ import {
   buildLinkableConsolidatedPrs,
   isBacResolutionInPublicBiddingScope,
 } from '../utils/bacResolutionWorkflow'
-import {
-  useBacResolutionsQuery,
-  useCreateBacResolutionMutation,
-  useUpdateBacResolutionMutation,
-  useDeleteBacResolutionMutation,
-  useLinkConsolidatedPrMutation,
-  useSubmitBacResolutionMutation,
-  useApproveBacResolutionMutation,
-  useReturnBacResolutionMutation,
-} from './useBacResolutionQueries'
+import { createMutationHookFromTemplate, createQueryHookFromTemplate } from 'erpez-shared-lib'
+import { createBacResolutionRequest } from '../handlers/createBacResolutionRequest'
+import { updateBacResolutionRequest } from '../handlers/updateBacResolutionRequest'
+import { deleteBacResolutionRequest } from '../handlers/deleteBacResolutionRequest'
+import { linkConsolidatedPrsRequest } from '../handlers/linkConsolidatedPrsRequest'
+import { submitBacResolutionRequest } from '../handlers/submitBacResolutionRequest'
+import { approveBacResolutionRequest } from '../handlers/approveBacResolutionRequest'
+import { returnBacResolutionRequest } from '../handlers/returnBacResolutionRequest'
+import { getBacResolutionsRequest } from '../handlers/getBacResolutionsRequest'
+
 
 const statusOptions: BacResolutionInboxFilter[] = [
   'all',
@@ -38,10 +38,19 @@ function formatInboxFilterLabel(status: BacResolutionInboxFilter) {
   return status === 'all'
     ? 'All'
     : status
-        .split('-')
-        .map((part) => part[0].toUpperCase() + part.slice(1))
-        .join(' ')
+      .split('-')
+      .map((part) => part[0].toUpperCase() + part.slice(1))
+      .join(' ')
 }
+
+const useCreateBacResolutionMutation = createMutationHookFromTemplate(createBacResolutionRequest)
+const useUpdateBacResolutionMutation = createMutationHookFromTemplate(updateBacResolutionRequest)
+const useDeleteBacResolutionMutation = createMutationHookFromTemplate(deleteBacResolutionRequest)
+const useLinkConsolidatedPrMutation = createMutationHookFromTemplate(linkConsolidatedPrsRequest)
+const useSubmitBacResolutionMutation = createMutationHookFromTemplate(submitBacResolutionRequest)
+const useApproveBacResolutionMutation = createMutationHookFromTemplate(approveBacResolutionRequest)
+const useReturnBacResolutionMutation = createMutationHookFromTemplate(returnBacResolutionRequest)
+const useBacResolutionsQuery = createQueryHookFromTemplate(getBacResolutionsRequest)
 
 export function useBacResolutionWorkspaceState(
   defaultFilter: BacResolutionInboxFilter = 'all',
@@ -49,7 +58,7 @@ export function useBacResolutionWorkspaceState(
   workspaceScope: BacResolutionWorkspaceScope = 'all',
 ) {
   // Query backend APIs via TanStack Query
-  const { data: serverResolutions, isLoading: isBacResolutionsLoading, isFetching: isBacResolutionsFetching, isError } = useBacResolutionsQuery()
+  const { data: serverResolutions, isLoading: isBacResolutionsLoading, isFetching: isBacResolutionsFetching, isError } = useBacResolutionsQuery({ enabled: false })
 
   // Mutations
   const createMutation = useCreateBacResolutionMutation()
@@ -245,7 +254,7 @@ export function useBacResolutionWorkspaceState(
   // --- CRUD HANDLERS WITH API MUTATION & LOCAL FALLBACK ---
 
   const handleCreate = (payload: CreateBacResolutionPayload) => {
-    createMutation.mutate(payload, {
+    createMutation.mutate({ pathParams: {}, payload }, {
       onSuccess: () => {
         setCreateOpen(false)
       },
@@ -301,7 +310,7 @@ export function useBacResolutionWorkspaceState(
 
   const handleUpdate = (id: string, payload: CreateBacResolutionPayload) => {
     updateMutation.mutate(
-      { id, payload },
+      { pathParams: { id }, payload },
       {
         onSuccess: () => {
           setEditOpen(false)
@@ -345,7 +354,7 @@ export function useBacResolutionWorkspaceState(
   const handleConfirmDelete = () => {
     if (!resolutionToDeleteId) return
 
-    deleteMutation.mutate(resolutionToDeleteId, {
+    deleteMutation.mutate({ pathParams: { id: resolutionToDeleteId } }, {
       onSuccess: () => {
         if (selectedResolutionId === resolutionToDeleteId) {
           setSelectedResolutionId(null)
@@ -368,7 +377,7 @@ export function useBacResolutionWorkspaceState(
   }
 
   const handleLink = (payload: LinkConsolidatedPrsPayload) => {
-    linkMutation.mutate(payload, {
+    linkMutation.mutate({ pathParams: { id: payload.bacResolutionId }, payload }, {
       onSuccess: () => {
         setLinkOpen(false)
       },
@@ -416,7 +425,11 @@ export function useBacResolutionWorkspaceState(
   const handleConfirmSubmit = () => {
     if (!selectedResolution) return
 
-    submitMutation.mutate(selectedResolution.id, {
+    submitMutation.mutate({
+      pathParams: { id: selectedResolution.id }, payload: {
+        bacResolutionId: selectedResolution.id
+      }
+    }, {
       onSuccess: () => {
         setSubmitConfirmOpen(false)
       },
@@ -453,7 +466,7 @@ export function useBacResolutionWorkspaceState(
 
   const handleApprove = (payload: { bacResolutionId: string; signedDocument: File }) => {
     approveMutation.mutate(
-      { id: payload.bacResolutionId, signedDocumentFileName: payload.signedDocument.name },
+      { pathParams: { id: payload.bacResolutionId }, payload: { bacResolutionId: payload.bacResolutionId, signedDocument: payload.signedDocument } },
       {
         onSuccess: () => {
           setApproveOpen(false)
@@ -491,7 +504,7 @@ export function useBacResolutionWorkspaceState(
 
   const handleReturn = (payload: { bacResolutionId: string; reason: string }) => {
     returnMutation.mutate(
-      { id: payload.bacResolutionId, reason: payload.reason },
+      { pathParams: { id: payload.bacResolutionId }, payload: { bacResolutionId: payload.bacResolutionId, reason: payload.reason } },
       {
         onSuccess: () => {
           setReturnOpen(false);
