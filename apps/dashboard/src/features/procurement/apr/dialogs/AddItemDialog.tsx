@@ -1,14 +1,12 @@
 /**
- * Add Item Dialog (Refactored for PSDBM Integration)
+ * Add Item Dialog (PSDBM Local Synchronization Integration)
  * 
  * Allows users to:
  * 1. Select PSDBM catalog mode (Main, Regional, LGU)
- * 2. Choose depot (for Regional/LGU modes)
- * 3. Search and filter items
- * 4. Select items and adjust quantities
- * 5. Add selected items to APR
- * 
- * Falls back to mock data when backend API not available
+ * 2. Choose depot (for Regional/LGU modes) with stock verification
+ * 3. Trigger manual or automatic synchronization with PS-PhilGEPS
+ * 4. Inspect real-time stock on hand and remaining deliveries
+ * 5. Select items and adjust quantities for APR
  */
 
 import { useState, useMemo, useCallback } from 'react'
@@ -30,7 +28,9 @@ import {
 } from '@/components/ui/select'
 import { Input } from '@/components/ui/input'
 import { Tabs, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { AlertCircle, Loader2 } from 'lucide-react'
+import { AlertCircle, Loader2, Database, MapPin, RefreshCw } from 'lucide-react'
+import { toast } from 'sonner'
+import api from '@/services/api'
 import type { ConsolidatedAPRItem } from '@/features/procurement/apr/types'
 import { PSDBMItemsGrid } from '@/features/procurement/psdbm/components'
 import {
@@ -58,13 +58,14 @@ export function AddItemDialog({
   isSubmitting = false,
 }: AddItemDialogProps) {
   // Catalog mode state
-  const [catalogMode, setCatalogMode] = useState<PSDBMCatalogMode>(PSDBMCatalogModeEnum.MAIN)
+  const [catalogMode, setCatalogMode] = useState<PSDBMCatalogMode>(PSDBMCatalogModeEnum.REGIONAL)
 
   // Search and filter state
   const [searchTerm, setSearchTerm] = useState('')
   const [categoryFilter, setCategoryFilter] = useState<string>('All')
   const [selectedDepot, setSelectedDepot] = useState<string>('')
   const [maxResults, setMaxResults] = useState<number>(50)
+  const [isSyncing, setIsSyncing] = useState<boolean>(false)
 
   // Selected items state (Map: itemCode → PSDBMItemWithQuantity)
   const [selectedItems, setSelectedItems] = useState<
@@ -89,6 +90,10 @@ export function AddItemDialog({
     return depotsData?.data || []
   }, [depotsData])
 
+  // Determine if depot is required
+  const isDepotRequired = catalogMode !== PSDBMCatalogModeEnum.MAIN
+  const isReadyToFetch = !isDepotRequired || Boolean(selectedDepot)
+
   // Fetch items for current mode/search/category
   const itemsParams = useMemo(
     () => ({
@@ -101,12 +106,12 @@ export function AddItemDialog({
           (catalogMode !== PSDBMCatalogModeEnum.MAIN && selectedDepot) || undefined,
         max: maxResults || undefined,
       },
-      enabled: open,
+      enabled: open && isReadyToFetch,
     }),
-    [catalogMode, searchTerm, categoryFilter, selectedDepot, maxResults, open]
+    [catalogMode, searchTerm, categoryFilter, selectedDepot, maxResults, open, isReadyToFetch]
   )
 
-  const { data: itemsData, isLoading: itemsLoading, error: itemsError } = usePSDBMItems(
+  const { data: itemsData, isLoading: itemsLoading, error: itemsError, refetch: refetchItems } = usePSDBMItems(
     itemsParams as any
   )
 
@@ -114,6 +119,55 @@ export function AddItemDialog({
   const items = useMemo(() => {
     return itemsData?.data?.items || []
   }, [itemsData])
+
+  const lastSyncTime = useMemo(() => {
+    const timestamp = itemsData?.data?.lastSynchronizedAt
+    if (!timestamp) return null
+    try {
+      return new Date(timestamp).toLocaleString('en-PH', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      })
+    } catch {
+      return null
+    }
+  }, [itemsData])
+
+  // Handler: Sync Depot / Catalog
+  const handleSyncDepot = useCallback(async () => {
+    setIsSyncing(true)
+    const target = selectedDepot || (catalogMode === PSDBMCatalogModeEnum.MAIN ? 'Main Catalog' : 'Catalog')
+
+    const syncPromise = (async () => {
+      const response = await api.post(
+        '/api/psdbm/sync',
+        {
+          syncMode: 'Full',
+          depots: selectedDepot ? [selectedDepot] : undefined,
+          mode: catalogMode,
+        },
+        {
+          timeout: 300000, // 5 minutes timeout for full depot web crawling
+        }
+      )
+      await refetchItems()
+      return response.data
+    })()
+
+    toast.promise(syncPromise, {
+      loading: `Connecting to PS-PhilGEPS and synchronizing ${target} warehouse stocks...`,
+      success: () => `Successfully synchronized ${target}! Stocks and items updated.`,
+      error: (err: any) => `Sync failed: ${err?.response?.data?.message || err?.message || 'Please check backend logs.'}`,
+    })
+
+    try {
+      await syncPromise
+    } catch (err) {
+      console.error('PSDBM sync error:', err)
+    } finally {
+      setIsSyncing(false)
+    }
+  }, [selectedDepot, catalogMode, refetchItems])
 
   // Handler: Item selection toggle
   const handleItemSelect = useCallback((item: any, selected: boolean) => {
@@ -191,11 +245,8 @@ export function AddItemDialog({
     onOpenChange(false)
   }, [selectedItems, catalogMode, selectedDepot, categoryFilter, onAddItems, onOpenChange])
 
-  // Determine if depot is required
-  const isDepotRequired = catalogMode !== PSDBMCatalogModeEnum.MAIN
   const isDepotSelectDisabled = depotsLoading || depots.length === 0
-
-  const isLoading = itemsLoading || categoriesLoading || depotsLoading
+  const isLoading = isReadyToFetch && (itemsLoading || categoriesLoading || depotsLoading)
   const selectedCount = selectedItems.size
   const totalAmount = Array.from(selectedItems.values()).reduce(
     (sum, item) => sum + item.unitPrice * item.quantity,
@@ -206,10 +257,49 @@ export function AddItemDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-6xl max-h-[90vh] overflow-y-auto" size="2xl">
         <DialogHeader>
-          <DialogTitle>Add Items from PSDBM Catalog</DialogTitle>
-          <DialogDescription>
-            Search and select items from PS-PhilGEPS commodity database
-          </DialogDescription>
+          <div className="flex flex-wrap items-center justify-between gap-3 pr-6">
+            <div>
+              <DialogTitle className="text-xl flex items-center gap-2">
+                <span>Add Items from PSDBM Catalog</span>
+              </DialogTitle>
+              <DialogDescription>
+                Select warehouse-available goods and common-use supplies from PS-PhilGEPS
+              </DialogDescription>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {lastSyncTime && (
+                <div className="flex items-center gap-1.5 text-xs text-muted-foreground bg-muted/60 px-2.5 py-1 rounded-md border">
+                  <Database className="h-3.5 w-3.5 text-emerald-600" />
+                  <span>Last Synced: {lastSyncTime}</span>
+                </div>
+              )}
+
+              {isReadyToFetch && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={handleSyncDepot}
+                  disabled={isSyncing || isLoading}
+                  className="h-8 gap-1.5 text-xs font-medium border-primary/30 hover:bg-primary/5"
+                  title="Synchronize latest prices and warehouse stock counts from PS-PhilGEPS"
+                >
+                  {isSyncing ? (
+                    <>
+                      <Loader2 className="h-3.5 w-3.5 animate-spin text-primary" />
+                      <span>Syncing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <RefreshCw className="h-3.5 w-3.5 text-primary" />
+                      <span>{selectedDepot ? `Sync ${selectedDepot}` : 'Sync Catalog'}</span>
+                    </>
+                  )}
+                </Button>
+              )}
+            </div>
+          </div>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -223,9 +313,9 @@ export function AddItemDialog({
             className="w-full"
           >
             <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value={PSDBMCatalogModeEnum.MAIN}>Main Catalog</TabsTrigger>
-              <TabsTrigger value={PSDBMCatalogModeEnum.REGIONAL}>Regional (Depot)</TabsTrigger>
-              <TabsTrigger value={PSDBMCatalogModeEnum.LGU}>LGU</TabsTrigger>
+              <TabsTrigger value={PSDBMCatalogModeEnum.REGIONAL}>Regional Depot (Recommended)</TabsTrigger>
+              <TabsTrigger value={PSDBMCatalogModeEnum.LGU}>LGU Depot</TabsTrigger>
+              <TabsTrigger value={PSDBMCatalogModeEnum.MAIN}>Main (National Catalog)</TabsTrigger>
             </TabsList>
           </Tabs>
 
@@ -233,13 +323,17 @@ export function AddItemDialog({
           <div className="grid grid-cols-1 gap-4">
             {/* Depot Selector (conditional for Regional/LGU modes) */}
             {isDepotRequired && (
-              <div className="space-y-2">
-                <label className="text-sm font-medium">
-                  {catalogMode === PSDBMCatalogModeEnum.REGIONAL ? 'Select Regional Depot' : 'Select LGU'}
-                </label>
+              <div className="space-y-1.5 bg-muted/30 p-3 rounded-lg border">
+                <div className="flex items-center gap-1.5">
+                  <MapPin className="h-4 w-4 text-primary" />
+                  <label className="text-sm font-semibold">
+                    {catalogMode === PSDBMCatalogModeEnum.REGIONAL ? 'Select Regional Warehouse / Depot' : 'Select LGU Location'}
+                  </label>
+                  <span className="text-xs text-red-500 font-medium">* Required for stock lookup</span>
+                </div>
                 <Select value={selectedDepot} onValueChange={setSelectedDepot}>
-                  <SelectTrigger disabled={isDepotSelectDisabled}>
-                    <SelectValue placeholder="Choose a depot..." />
+                  <SelectTrigger disabled={isDepotSelectDisabled} className="bg-background">
+                    <SelectValue placeholder="Choose a depot to load warehouse stocks..." />
                   </SelectTrigger>
                   <SelectContent>
                     {depots.map((depot) => (
@@ -256,10 +350,10 @@ export function AddItemDialog({
             {/* Filter Controls Row */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
               {/* Search Filter */}
-              <div className="space-y-2">
-                <label className="text-sm font-medium">Search Items</label>
+              <div className="space-y-1.5">
+                <label className="text-sm font-medium">Search Supplies</label>
                 <Input
-                  placeholder="Item code or name..."
+                  placeholder="Item code or description..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   disabled={isLoading}
@@ -267,7 +361,7 @@ export function AddItemDialog({
               </div>
 
               {/* Category Filter */}
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <label className="text-sm font-medium">Category</label>
                 <Select
                   value={categoryFilter}
@@ -289,7 +383,7 @@ export function AddItemDialog({
               </div>
 
               {/* Max Results Filter */}
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 <label className="text-sm font-medium">Results Per Page</label>
                 <Select
                   value={String(maxResults)}
@@ -303,6 +397,7 @@ export function AddItemDialog({
                     <SelectItem value="25">25 items</SelectItem>
                     <SelectItem value="50">50 items</SelectItem>
                     <SelectItem value="100">100 items</SelectItem>
+                    <SelectItem value="200">200 items</SelectItem>
                     <SelectItem value="500">500 items</SelectItem>
                   </SelectContent>
                 </Select>
@@ -310,44 +405,90 @@ export function AddItemDialog({
             </div>
           </div>
 
-          {/* Items Grid */}
-          {itemsError && (
-            <div className="border rounded-lg p-4 bg-red-50">
-              <div className="flex gap-2">
-                <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
-                <div className="text-sm text-red-800">
-                  <p className="font-medium">Failed to load items</p>
-                  <p>Unable to fetch from PSDBM catalog. Check your backend connection.</p>
-                </div>
-              </div>
+          {/* Items Grid or Depot Selection Prompt */}
+          {!isReadyToFetch ? (
+            <div className="border border-dashed rounded-lg p-10 text-center bg-muted/20">
+              <MapPin className="h-8 w-8 mx-auto text-muted-foreground/60 mb-2" />
+              <h4 className="text-sm font-medium text-foreground">Depot Selection Required</h4>
+              <p className="text-xs text-muted-foreground mt-1 max-w-sm mx-auto">
+                Please select a regional or LGU warehouse above to view real-time stock on hand, delivery quantities, and localized pricing.
+              </p>
             </div>
-          )}
+          ) : (
+            <>
+              {/* Unsynced depot banner */}
+              {!lastSyncTime && !isLoading && items.length > 0 && (
+                <div className="bg-amber-50/70 border border-amber-200 rounded-lg p-3 flex items-center justify-between gap-3 text-xs text-amber-900">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="h-4 w-4 text-amber-600 flex-shrink-0" />
+                    <span>
+                      Warehouse stock figures for <strong>{selectedDepot || 'this catalog'}</strong> have not been synchronized yet. Click <strong>Sync Now</strong> to fetch authoritative stock counts from PS-PhilGEPS.
+                    </span>
+                  </div>
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="outline"
+                    onClick={handleSyncDepot}
+                    disabled={isSyncing}
+                    className="h-7 text-xs bg-amber-100 hover:bg-amber-200 text-amber-900 border-amber-300 font-medium whitespace-nowrap"
+                  >
+                    {isSyncing ? (
+                      <>
+                        <Loader2 className="h-3 w-3 animate-spin mr-1" />
+                        Syncing...
+                      </>
+                    ) : (
+                      'Sync Now'
+                    )}
+                  </Button>
+                </div>
+              )}
 
-          <PSDBMItemsGrid
-            items={items}
-            selectedItems={selectedItems}
-            onItemSelect={handleItemSelect}
-            onQuantityChange={handleQuantityChange}
-            onSelectAll={handleSelectAll}
-            isLoading={isLoading}
-            error={itemsError ? 'Failed to load items from API. Using mock data.' : null}
-          />
+              {itemsError && (
+                <div className="border rounded-lg p-4 bg-red-50">
+                  <div className="flex gap-2">
+                    <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0 mt-0.5" />
+                    <div className="text-sm text-red-800">
+                      <p className="font-medium">Failed to load items</p>
+                      <p>Unable to retrieve PSDBM items. Please verify your connection.</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+
+              <PSDBMItemsGrid
+                items={items}
+                selectedItems={selectedItems}
+                onItemSelect={handleItemSelect}
+                onQuantityChange={handleQuantityChange}
+                onSelectAll={handleSelectAll}
+                isLoading={isLoading || (isSyncing && items.length === 0)}
+                error={itemsError ? 'Failed to load items from local database.' : null}
+              />
+            </>
+          )}
 
           {/* Selection Summary */}
           {selectedCount > 0 && (
-            <div className="bg-blue-50 border border-blue-200 rounded-lg p-3">
+            <div className="bg-primary/5 border border-primary/20 rounded-lg p-3">
               <div className="flex justify-between items-center">
                 <div>
-                  <p className="text-sm font-medium text-blue-900">
+                  <p className="text-sm font-medium text-primary">
                     {selectedCount} item{selectedCount !== 1 ? 's' : ''} selected
                   </p>
-                  <p className="text-sm text-blue-700">
-                    Total: ₱
-                    {totalAmount.toLocaleString('en-PH', {
+                  <p className="text-xs text-muted-foreground">
+                    Selected items will be converted to APR Consolidated line items.
+                  </p>
+                </div>
+                <div className="text-right">
+                  <span className="text-xs text-muted-foreground block">Estimated Subtotal</span>
+                  <span className="text-base font-bold text-primary font-mono">
+                    ₱{totalAmount.toLocaleString('en-PH', {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
                     })}
-                  </p>
+                  </span>
                 </div>
               </div>
             </div>
@@ -358,17 +499,17 @@ export function AddItemDialog({
           <Button
             variant="outline"
             onClick={() => onOpenChange(false)}
-            disabled={isSubmitting || isLoading}
+            disabled={isSubmitting || isLoading || isSyncing}
           >
             Cancel
           </Button>
           <Button
             onClick={handleAddItems}
-            disabled={selectedCount === 0 || isSubmitting || isLoading}
+            disabled={selectedCount === 0 || isSubmitting || isLoading || isSyncing}
           >
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             Add {selectedCount > 0 ? `(${selectedCount})` : ''} Item
-            {selectedCount !== 1 ? 's' : ''}
+            {selectedCount !== 1 ? 's' : ''} to APR
           </Button>
         </DialogFooter>
       </DialogContent>

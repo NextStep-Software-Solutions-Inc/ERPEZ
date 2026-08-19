@@ -181,6 +181,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<PublicSupplierApplication>?   PublicSupplierApplications { get; set; }
     public DbSet<ApplicationUploadedDocument>? ApplicationUploadedDocuments { get; set; }
 
+    // PSDBM Synchronization
+    public DbSet<PsdbmProduct>? PsdbmProducts { get; set; }
+    public DbSet<PsdbmDepot>? PsdbmDepots { get; set; }
+    public DbSet<PsdbmDepotProduct>? PsdbmDepotProducts { get; set; }
+    public DbSet<PsdbmStockHistory>? PsdbmStockHistories { get; set; }
+    public DbSet<PsdbmSyncRun>? PsdbmSyncRuns { get; set; }
+
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
         // Apply default conventions for all entities
@@ -3025,6 +3032,105 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .WithMany(p => p.PPMPExpenditureItems)
             .HasForeignKey(pei => pei.ObjectId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // ==========================================
+        // PSDBM Synchronization Entities
+        // ==========================================
+
+        // PsdbmProduct
+        modelBuilder.Entity<PsdbmProduct>(entity =>
+        {
+            entity.ToTable("PsdbmProducts", "procurement");
+            entity.Property(e => e.ItemCode).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Description).IsRequired().HasMaxLength(1000);
+            entity.Property(e => e.Category).IsRequired().HasMaxLength(200);
+            entity.Property(e => e.Unit).IsRequired().HasMaxLength(50);
+            entity.Property(e => e.ImageUrl).HasMaxLength(2000);
+            entity.Property(e => e.TechnicalSpecificationUrl).HasMaxLength(2000);
+            entity.HasIndex(e => e.ItemCode).IsUnique();
+            entity.HasIndex(e => e.Category);
+            entity.HasIndex(e => e.IsActive);
+        });
+
+        // PsdbmDepot
+        modelBuilder.Entity<PsdbmDepot>(entity =>
+        {
+            entity.ToTable("PsdbmDepots", "procurement");
+            entity.Property(e => e.Name).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.Region).HasMaxLength(200);
+            entity.Property(e => e.SourceValue).HasMaxLength(100);
+            entity.Property(e => e.Mode).IsRequired().HasMaxLength(50);
+            entity.HasIndex(e => new { e.Name, e.Mode }).IsUnique();
+            entity.HasIndex(e => e.IsActive);
+        });
+
+        // PsdbmDepotProduct
+        modelBuilder.Entity<PsdbmDepotProduct>(entity =>
+        {
+            entity.ToTable("PsdbmDepotProducts", "procurement");
+            entity.Property(e => e.Price).HasPrecision(18, 2).IsRequired();
+            entity.Property(e => e.Availability).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.AvailableStock).IsRequired();
+            entity.Property(e => e.RemainingQtyForDelivery).IsRequired();
+            entity.Property(e => e.LastSyncedAt).IsRequired();
+
+            entity.HasOne(e => e.Product)
+                .WithMany(p => p.DepotProducts)
+                .HasForeignKey(e => e.ProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.Depot)
+                .WithMany(d => d.DepotProducts)
+                .HasForeignKey(e => e.DepotId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasIndex(e => new { e.ProductId, e.DepotId }).IsUnique();
+            entity.HasIndex(e => e.LastSyncedAt);
+        });
+
+        // PsdbmStockHistory
+        modelBuilder.Entity<PsdbmStockHistory>(entity =>
+        {
+            entity.ToTable("PsdbmStockHistories", "procurement");
+            entity.Property(e => e.Price).HasPrecision(18, 2).IsRequired();
+            entity.Property(e => e.Availability).IsRequired().HasMaxLength(100);
+            entity.Property(e => e.AvailableStock).IsRequired();
+            entity.Property(e => e.RemainingQtyForDelivery).IsRequired();
+            entity.Property(e => e.CapturedAt).IsRequired();
+
+            entity.HasOne(e => e.DepotProduct)
+                .WithMany(dp => dp.StockHistories)
+                .HasForeignKey(e => e.DepotProductId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(e => e.SyncRun)
+                .WithMany(sr => sr.StockHistories)
+                .HasForeignKey(e => e.SyncRunId)
+                .OnDelete(DeleteBehavior.SetNull);
+
+            entity.HasIndex(e => e.DepotProductId);
+            entity.HasIndex(e => e.CapturedAt);
+            entity.HasIndex(e => e.SyncRunId);
+        });
+
+        // PsdbmSyncRun
+        modelBuilder.Entity<PsdbmSyncRun>(entity =>
+        {
+            entity.ToTable("PsdbmSyncRuns", "procurement");
+            entity.Property(e => e.StartedAt).IsRequired();
+            entity.Property(e => e.Status)
+                .HasConversion<string>()
+                .IsRequired()
+                .HasMaxLength(50);
+            entity.Property(e => e.SyncMode)
+                .HasConversion<string>()
+                .IsRequired()
+                .HasMaxLength(50);
+            entity.Property(e => e.Errors);
+
+            entity.HasIndex(e => e.StartedAt);
+            entity.HasIndex(e => e.Status);
+        });
     }
 
     private static System.Collections.Generic.List<ERPEZ.Domain.Enums.ProcurementStrategy>? ParseStrategies(string? v)
