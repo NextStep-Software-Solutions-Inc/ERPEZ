@@ -24,7 +24,7 @@ interface AddPPMPItemExpenditureDialogProps {
   onOpenChange: (open: boolean) => void
   ppmpId: string
   ppmpActivityId: string
-  libActivityId?: string
+  libActivityId: string
   groupToEdit?: PPMPExpenditureItem | null
 }
 
@@ -159,7 +159,6 @@ export default function AddPPMPItemExpenditureDialog({
           formId="add-ppmp-expenditure-form"
           libActivityId={libActivityId}
           initialValues={initialValues}
-          libActivityId={libActivityId}
           onSubmit={handleSubmit}
           isLoading={isLoading}
         />

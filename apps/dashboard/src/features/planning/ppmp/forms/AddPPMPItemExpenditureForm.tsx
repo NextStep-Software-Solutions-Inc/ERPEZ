@@ -31,9 +31,8 @@ export type PPMPExpenditureItemFormValues = z.infer<
 
 interface AddPPMPItemExpenditureFormProps {
   formId?: string
-  libActivityId?: string
+  libActivityId: string
   initialValues?: Partial<PPMPExpenditureItemFormValues>
-  libActivityId?: string
   onSubmit: (values: PPMPExpenditureItemFormValues) => void
   isLoading?: boolean
 }
@@ -42,7 +41,6 @@ export function AddPPMPItemExpenditureForm({
   formId = 'add-ppmp-expenditure-form',
   libActivityId,
   initialValues,
-  libActivityId,
   onSubmit,
   isLoading = false,
 }: AddPPMPItemExpenditureFormProps) {
