@@ -18,6 +18,7 @@ import {
   selectedAPRFiscalYearAtom,
 } from '../atoms'
 import { useCreateAPRMutation, useFiscalYears } from '../handlers/hooks'
+import { invalidateAPRQueries } from '../utils/invalidateAPRQueries'
 import { APRHeaderForm, APRTermsForm, SelectAPPForm, type SelectAppFormValues } from '../forms'
 import {
   ModeOfDelivery,
@@ -223,9 +224,7 @@ export function CreateAPRDialog() {
         } as any)
 
         // Invalidate APR list caches
-        void queryClient.invalidateQueries({
-          queryKey: ['/aprs'],
-        })
+        invalidateAPRQueries(queryClient)
 
         toast.success('Agency Purchase Request (APR) created successfully')
         handleClose()

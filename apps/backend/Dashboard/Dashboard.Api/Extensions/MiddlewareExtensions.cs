@@ -1,3 +1,4 @@
+using ERPEZ.Infrastructure.Services;
 using Hangfire;
 
 namespace ERPEZ.Api.Extensions;
@@ -49,8 +50,9 @@ public static class MiddlewareExtensions
         app.UseResponseCaching();
         app.UseResponseCompression();
 
-        // 9. Hangfire Dashboard endpoint
+        // 9. Hangfire Dashboard endpoint & PSDBM automated recurring jobs
         app.UseHangfireDashboard();
+        app.UsePsdbmRecurringJobs();
 
         return app;
     }

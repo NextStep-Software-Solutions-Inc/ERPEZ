@@ -62,6 +62,10 @@ function WFPObjectiveDetailPage({ wfpObjectiveId }: { wfpObjectiveId: string }) 
   const wfpTitle = wfpObjectiveData.data.wfp?.projectTitle || 'WFP Details'
   const objectiveDesc = wfpObjectiveData.data.description
 
+  const wfpStatus = wfpObjectiveData.data.wfp?.status || wfpObjectiveData.data.wfpStatus || wfpObjectiveData.data.status
+  const isEditable = wfpStatus ? (wfpStatus === 'Draft' || wfpStatus === 'Returned') : false
+  const tableActions: ('read' | 'write' | 'delete')[] = isEditable ? ['read', 'write', 'delete'] : ['read']
+
   const breadcrumbs = (
     <Breadcrumb>
       <BreadcrumbList>
@@ -190,26 +194,28 @@ function WFPObjectiveDetailPage({ wfpObjectiveId }: { wfpObjectiveId: string }) 
               </p>
             </div>
 
-            <Button
-              size="sm"
-              className="bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-500 transition-colors shadow-2xs h-7 text-xs px-3 font-semibold flex gap-1.5"
-              onClick={() =>
-                setCreateDialog({
-                  isOpen: true,
-                  showUnsavedWarning: false,
-                  wfpId: wfpObjectiveData.data.wfpId,
-                })
-              }
-            >
-              <Plus className="h-3.5 w-3.5" /> Add Activity
-            </Button>
+            {isEditable && (
+              <Button
+                size="sm"
+                className="bg-emerald-600 hover:bg-emerald-700 dark:bg-emerald-600 dark:hover:bg-emerald-500 transition-colors shadow-2xs h-7 text-xs px-3 font-semibold flex gap-1.5"
+                onClick={() =>
+                  setCreateDialog({
+                    isOpen: true,
+                    showUnsavedWarning: false,
+                    wfpId: wfpObjectiveData.data.wfpId,
+                  })
+                }
+              >
+                <Plus className="h-3.5 w-3.5" /> Add Activity
+              </Button>
+            )}
           </CardHeader>
           <CardContent className="px-4 pb-2 pt-0.5">
             <TemplateTable
               columns={Column}
               data={activities}
-              actions={['read', 'write', 'delete']}
-              readonly={false}
+              actions={tableActions}
+              readonly={!isEditable}
             />
           </CardContent>
         </Card>

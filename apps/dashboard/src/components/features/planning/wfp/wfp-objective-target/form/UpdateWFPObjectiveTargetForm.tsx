@@ -1,9 +1,7 @@
 import { useForm } from '@tanstack/react-form'
 import { z } from 'zod'
 import { Loader2 } from 'lucide-react'
-import { useAtom } from 'jotai'
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import { updateFormDataAtom } from '../atoms'
 import {
   MONTH_ABBREVIATIONS,
   QUARTER_LABELS,
@@ -47,13 +45,11 @@ interface UpdateWFPObjectiveTargetFormProps {
 export default function UpdateWFPObjectiveTargetForm({ 
   onSubmit, 
   onCancel, 
-  isLoading = false,
+  isLoading = false, 
   wfpObjectiveId,
   wfpData,
   initialValues
 }: UpdateWFPObjectiveTargetFormProps) {
-  const [formData, setFormData] = useAtom(updateFormDataAtom)
-
   const initialTimelineType = initialValues.dates && initialValues.dates.length > 0
     ? initialValues.dates[0].timelineType
     : 'Quarterly'
@@ -144,9 +140,9 @@ export default function UpdateWFPObjectiveTargetForm({
   const form = useForm({
     defaultValues: {
       wfpObjectiveId,
-      activityName: formData.activityName || initialValues.activityName || '',
-      indicator: formData.indicator || initialValues.indicator || '',
-      weight: formData.weight ?? initialValues.weight ?? 0,
+      activityName: initialValues.activityName || '',
+      indicator: initialValues.indicator || '',
+      weight: initialValues.weight ?? 0,
       dates: initialValues.dates || [],
     } as UpdateWFPObjectiveTargetValues,
     validators: {
@@ -162,7 +158,6 @@ export default function UpdateWFPObjectiveTargetForm({
         dates: dates.length > 0 ? dates : undefined,
       }
       onSubmit(payload)
-      setFormData({})
     },
   })
 
@@ -171,9 +166,9 @@ export default function UpdateWFPObjectiveTargetForm({
     if (initialValues.activityName || initialValues.indicator || initialValues.weight || initialValues.dates) {
       form.reset({
         wfpObjectiveId,
-        activityName: formData.activityName || initialValues.activityName || '',
-        indicator: formData.indicator || initialValues.indicator || '',
-        weight: formData.weight ?? initialValues.weight ?? 0,
+        activityName: initialValues.activityName || '',
+        indicator: initialValues.indicator || '',
+        weight: initialValues.weight ?? 0,
         dates: initialValues.dates || [],
       } as UpdateWFPObjectiveTargetValues)
 
@@ -189,7 +184,7 @@ export default function UpdateWFPObjectiveTargetForm({
         setTargetValues(map)
       }
     }
-  }, [initialValues, wfpObjectiveId, formData, form])
+  }, [initialValues, wfpObjectiveId, form])
 
   return (
     <form

@@ -38,6 +38,10 @@ public class APRDetailDto
     public string? AdditionalRemarks { get; set; }
     public DateTime? SubmittedDate { get; set; }
     public DateTime? ApprovedDate { get; set; }
+    public DateTime? ReturnedDate { get; set; }
+    public string? ReturnRemarks { get; set; }
+    public string? ApprovedBy { get; set; }
+    public string? ReturnedBy { get; set; }
     public List<APRItemDto> Items { get; set; } = [];
 }
 

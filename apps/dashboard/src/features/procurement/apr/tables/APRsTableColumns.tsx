@@ -16,6 +16,7 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { MoreVertical, Eye, Trash2 } from 'lucide-react'
 import type { APRListItemDto } from '../types'
+import { APRStatusBadge } from '../components/APRStatusBadge'
 
 const columnHelper = createColumnHelper<APRListItemDto | any>()
 
@@ -96,13 +97,7 @@ export function getAPRsTableColumns({ onView, onDelete }: ColumnsProps) {
       id: 'status',
       header: 'Status',
       cell: (info) => {
-        const status = info.getValue() || 'Draft'
-        const variantClass = statusVariants[status] || 'bg-gray-100 text-gray-800'
-        return (
-          <Badge variant="outline" className={variantClass}>
-            {String(status).replace(/_/g, ' ')}
-          </Badge>
-        )
+        return <APRStatusBadge status={info.getValue() || 'Draft'} context="user" />
       },
     }),
 

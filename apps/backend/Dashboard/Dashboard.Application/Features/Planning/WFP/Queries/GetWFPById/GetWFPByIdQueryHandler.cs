@@ -184,6 +184,10 @@ public class GetWFPByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
                 Status = w.Status.ToString(),
                 CreatedBy = w.CreatedBy,
                 CreatedAt = w.CreatedAt,
+                UpdatedAt = w.UpdatedAt,
+                UpdatedBy = w.UpdatedBy,
+                SubmittedDate = w.SubmittedDate,
+                ApprovedDate = w.ApprovedDate,
                 ObjectiveCount = w.WFPObjectives.Count,
                 ActivityCount = w.WFPObjectives.SelectMany(o => o.WFPObjectiveActivities).Count(),
                 WFPObjectives = w.WFPObjectives.Select(o => new WFPObjectiveResponse
@@ -194,6 +198,8 @@ public class GetWFPByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
                     Description = o.Description,
                     CreatedAt = o.CreatedAt,
                     CreatedBy = o.CreatedBy,
+                    UpdatedAt = o.UpdatedAt,
+                    UpdatedBy = o.UpdatedBy,
                     WFPObjectiveActivities = o.WFPObjectiveActivities.Select(t => new WFPObjectiveActivityResponse
                     {
                         Id = t.Id,
@@ -202,6 +208,8 @@ public class GetWFPByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
                         Weight = t.Weight,
                         CreatedAt = t.CreatedAt,
                         CreatedBy = t.CreatedBy,
+                        UpdatedAt = t.UpdatedAt,
+                        UpdatedBy = t.UpdatedBy,
                         WFPObjectiveTimelines = t.WFPObjectiveTimelines.Select(ot => new WFPObjectiveTimelineResponse
                         {
                             Id = ot.Id,
@@ -211,6 +219,8 @@ public class GetWFPByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
                             TargetValue = ot.TargetValue,
                             CreatedAt = ot.CreatedAt,
                             CreatedBy = ot.CreatedBy,
+                            UpdatedAt = ot.UpdatedAt,
+                            UpdatedBy = ot.UpdatedBy,
                         }).ToList(),
                         WFPObjectiveActivityExpenditures = t.WFPObjectiveActivityExpenditures.Select(ab => new WFPObjectiveActivityExpenditureResponse
                         {
@@ -220,6 +230,8 @@ public class GetWFPByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandler<Ge
                             UnitCost = ab.UnitCost ?? 0,
                             CreatedAt = ab.CreatedAt,
                             CreatedBy = ab.CreatedBy,
+                            UpdatedAt = ab.UpdatedAt,
+                            UpdatedBy = ab.UpdatedBy,
                             Object = new ObjectResponse
                             {
                                 Id = ab.Object.Id,

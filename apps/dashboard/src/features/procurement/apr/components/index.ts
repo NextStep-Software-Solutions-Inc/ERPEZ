@@ -16,3 +16,4 @@ export { BACMilestonesDisplay, BACMilestonesInline } from './BACMilestonesDispla
 export { BudgetCeilingStatus } from './BudgetCeilingStatus'
 export { APRReconciliationDisplay } from './APRReconciliationDisplay'
 export { APPNotFoundDisplay } from './APPNotFoundDisplay'
+export { APRImageViewerModal } from './APRImageViewerModal'

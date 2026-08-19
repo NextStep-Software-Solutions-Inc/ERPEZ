@@ -61,6 +61,18 @@ public class APR : ApprovableEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public string? AdditionalRemarks { get; set; }
 
+    [Sieve(CanFilter = true, CanSort = true)]
+    public DateTime? ReturnedDate { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public string? ReturnRemarks { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public string? ApprovedBy { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public string? ReturnedBy { get; set; }
+
     // Navigation properties
     public virtual APP APP { get; set; } = null!;
     public virtual Office? Office { get; set; }
