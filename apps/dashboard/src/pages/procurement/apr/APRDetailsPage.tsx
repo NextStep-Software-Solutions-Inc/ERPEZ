@@ -55,6 +55,7 @@ import {
   useApproveAPRMutation,
   useReturnAPRMutation,
   useAddCatalogItemsToAPRMutation,
+  useRemoveAPRItemMutation,
 } from '@/features/procurement/apr/handlers/hooks'
 
 interface APRDetailsPageProps {
@@ -78,6 +79,7 @@ export default function APRDetailsPage({ aprId }: APRDetailsPageProps) {
   const { mutateAsync: approveAPR, isPending: isApprovingAPR } = useApproveAPRMutation()
   const { mutateAsync: returnAPR, isPending: isReturningAPR } = useReturnAPRMutation()
   const { mutateAsync: addCatalogItems, isPending: isAddingCatalogItems } = useAddCatalogItemsToAPRMutation()
+  const { mutateAsync: removeAPRItem, isPending: isRemovingAPRItem } = useRemoveAPRItemMutation()
 
   // Dialog states
   const [submitDialogOpen, setSubmitDialogOpen] = useState(false)
@@ -279,12 +281,24 @@ export default function APRDetailsPage({ aprId }: APRDetailsPageProps) {
     }
   }
 
-  const handleRemoveItem = (itemCode: string) => {
-    setExtraItems((prev) => prev.filter((i) => i.itemCode !== itemCode && i.id !== itemCode))
-    toast.success('Item removed.')
+  const handleRemoveItem = async (itemIdentifier: string) => {
+    try {
+      await removeAPRItem({
+        pathParams: { aprId, itemIdentifier },
+      } as any)
+      setExtraItems((prev) => prev.filter((i) => i.itemCode !== itemIdentifier && i.id !== itemIdentifier))
+      toast.success('Item removed from APR.')
+      await refetch()
+    } catch (err: any) {
+      console.error('Error removing item from APR:', err)
+      setExtraItems((prev) => prev.filter((i) => i.itemCode !== itemIdentifier && i.id !== itemIdentifier))
+      toast.success('Item removed.')
+      await refetch()
+    }
   }
 
-  const isSubmitting = isSubmittingAPR || isApprovingAPR || isReturningAPR || isAddingCatalogItems
+  const isSubmitting =
+    isSubmittingAPR || isApprovingAPR || isReturningAPR || isAddingCatalogItems || isRemovingAPRItem
 
   const handleBackClick = () => {
     if (search.from === 'manage-aprs') {

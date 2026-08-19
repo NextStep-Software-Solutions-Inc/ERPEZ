@@ -20,6 +20,7 @@ import { returnAPRRequest } from './returnAPRRequest'
 import { deleteAPRRequest } from './deleteAPRRequest'
 import { updateAPRRequest } from './updateAPRRequest'
 import { addItemsToAPRRequest } from './addItemsToAPRRequest'
+import { deleteAPRItemRequest } from './deleteAPRItemRequest'
 import { getApprovedAPPsRequest } from './getApprovedAPPsRequest'
 import { getAPPByIdRequest } from './getAPPByIdRequest'
 import { getFiscalYearsRequest } from './getFiscalYearsRequest'
@@ -63,3 +64,6 @@ export const useUpdateAPRMutation = createMutationHookFromTemplate(updateAPRRequ
 
 /** Add catalog items to draft APR */
 export const useAddCatalogItemsToAPRMutation = createMutationHookFromTemplate(addItemsToAPRRequest)
+
+/** Remove item from draft APR */
+export const useRemoveAPRItemMutation = createMutationHookFromTemplate(deleteAPRItemRequest)

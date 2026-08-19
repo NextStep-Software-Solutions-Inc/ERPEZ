@@ -2,6 +2,7 @@ using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Commands.A
 using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Commands.ChangeAPRStatus;
 using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Commands.CreateAPR;
 using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Commands.DeleteAPR;
+using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Commands.RemoveAPRItem;
 using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Commands.SubmitAPR;
 using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Commands.UpdateAPR;
 using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Dtos;
@@ -137,6 +138,19 @@ public class APRController(ISender mediator) : ControllerBase
         }
 
         var result = await mediator.Send(command);
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    /// <summary>
+    /// Remove an item from a Draft/Returned APR
+    /// </summary>
+    [HttpDelete("{id}/items/{itemIdentifier}")]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> RemoveAPRItem(Guid id, string itemIdentifier)
+    {
+        var result = await mediator.Send(new RemoveAPRItemCommand(id, itemIdentifier));
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 }

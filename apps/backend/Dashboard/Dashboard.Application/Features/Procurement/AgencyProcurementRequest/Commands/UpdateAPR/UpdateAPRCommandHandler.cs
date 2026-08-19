@@ -108,7 +108,8 @@ public class UpdateAPRCommandHandler(IUnitOfWork unitOfWork)
             }
         }
 
-        apr.TotalAmount = totalAmount;
+        var catalogTotal = apr.APRItems.Where(i => !i.APPItemId.HasValue).Sum(i => i.TotalCost);
+        apr.TotalAmount = totalAmount + catalogTotal;
 
         if (totalAmount > appApprovedBudget)
             return ApiResponse<Guid>.Fail(
