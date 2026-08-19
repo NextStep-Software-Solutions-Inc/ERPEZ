@@ -30,6 +30,7 @@ import { getLIBsRequest } from '@/features/planning/line-item-budgeting/line-ite
 import { deleteLIBRequest } from '@/features/planning/line-item-budgeting/line-item-budget/handlers/deleteLIBRequest'
 import { updateLIBStatusRequest } from '@/features/planning/line-item-budgeting/line-item-budget/handlers/updateLIBStatusRequest'
 import { LinkCeilingDialog } from '../dialogs/LinkCeilingDialog'
+import { EditLIBDialog } from './dialogs/EditLIBDialog'
 import type { LIB } from '@/features/planning/line-item-budgeting/line-item-budget/types'
 
 const useLIBs = createQueryHookFromTemplate(getLIBsRequest)
@@ -104,6 +105,9 @@ export function LineItemBudgetTab({
   // Link Ceiling Dialog State
   const [selectedLibForCeiling, setSelectedLibForCeiling] = useState<LIB | null>(null)
 
+  // Edit LIB Dialog State
+  const [editingLibId, setEditingLibId] = useState<string | null>(null)
+
   const { mutateAsync: deleteAsync } = useDeleteLIB()
   const { mutateAsync: updateStatusAsync } = useUpdateLIBStatus()
   const {
@@ -136,7 +140,7 @@ export function LineItemBudgetTab({
   } = useBulkActions()
 
   const handleUpdateLIB = (id: string) => {
-    handleViewDetails(id)
+    setEditingLibId(id)
   }
 
   const handleDeleteLIB = (libraryId: string) => {
@@ -388,10 +392,18 @@ export function LineItemBudgetTab({
     <div className="space-y-8">
       {/* Show detail page if libId in search params, otherwise show list */}
       {libId ? (
-        <LIBDetailPage
-          onBack={handleBackFromDetails}
-          // onStatusUpdate={handleStatusChange}
-        />
+        <>
+          <LIBDetailPage
+            onBack={handleBackFromDetails}
+            onEdit={() => setEditingLibId(libId)}
+          />
+          <EditLIBDialog
+            libId={editingLibId}
+            open={!!editingLibId}
+            onOpenChange={(open) => !open && setEditingLibId(null)}
+            onSuccess={refetch}
+          />
+        </>
       ) : (
         <>
           <HeroSection title={title} scope={scope} isSubOfficeToggleEnabled />
@@ -504,6 +516,14 @@ export function LineItemBudgetTab({
             open={!!selectedLibForCeiling}
             onOpenChange={(open) => !open && setSelectedLibForCeiling(null)}
             lib={selectedLibForCeiling}
+            onSuccess={refetch}
+          />
+
+          {/* Edit LIB Metadata Dialog */}
+          <EditLIBDialog
+            libId={editingLibId}
+            open={!!editingLibId}
+            onOpenChange={(open) => !open && setEditingLibId(null)}
             onSuccess={refetch}
           />
         </>
