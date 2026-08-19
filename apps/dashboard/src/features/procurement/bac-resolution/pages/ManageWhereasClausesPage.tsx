@@ -12,7 +12,13 @@ import {
 } from 'lucide-react'
 import { PageContainerDashtail } from '@/components/v2'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -36,13 +42,20 @@ const emptyDraft = {
 export function ManageWhereasClausesPage() {
   const navigate = useNavigate()
   const [searchTerm, setSearchTerm] = useState('')
-  const [draft, setDraft] = useState<{ id: string; name: string; body: string }>(emptyDraft)
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(null)
+  const [draft, setDraft] = useState<{
+    id: string
+    name: string
+    body: string
+  }>(emptyDraft)
+  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(
+    null,
+  )
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
   const [showUpdateConfirm, setShowUpdateConfirm] = useState(false)
   const [isEditing, setIsEditing] = useState(false)
 
-  const { data: apiTemplates, isLoading: isTemplatesLoading } = useWhereasClauseTemplates({})
+  const { data: apiTemplates, isLoading: isTemplatesLoading } =
+    useWhereasClauseTemplates({})
   const templates = useMemo(() => {
     if (apiTemplates && apiTemplates.length > 0) return apiTemplates
     return getMockWhereasClauseDatabase()
@@ -54,8 +67,12 @@ export function ManageWhereasClausesPage() {
 
   const filteredTemplates = useMemo(() => {
     return templates.filter((template) => {
-      const matchName = template.name.toLowerCase().includes(searchTerm.toLowerCase())
-      const matchBody = template.body.toLowerCase().includes(searchTerm.toLowerCase())
+      const matchName = template.name
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase())
+      const matchBody = template.body
+        .toLowerCase()
+        .includes(searchTerm.toLowerCase())
       return matchName || matchBody
     })
   }, [templates, searchTerm])
@@ -184,16 +201,17 @@ export function ManageWhereasClausesPage() {
               </div>
               <CardTitle className="text-3xl">Manage WHEREAS Clauses</CardTitle>
               <CardDescription className="text-base">
-                Standard legal clause repository and template manager for BAC Resolutions.
+                Standard legal clause repository and template manager for BAC
+                Resolutions.
               </CardDescription>
             </div>
             <div className="flex items-center gap-2">
-              <Badge variant="outline" className="h-fit px-3 py-1 font-semibold">
+              <Badge
+                variant="outline"
+                className="h-fit px-3 py-1 font-semibold"
+              >
                 <ScrollText className="h-3.5 w-3.5 mr-1.5" /> Clause Repository
               </Badge>
-              <Button onClick={handleStartCreate} className="gap-1.5 shadow-sm">
-                <Plus className="h-4 w-4" /> Create New Clause
-              </Button>
             </div>
           </div>
         </CardHeader>
@@ -237,10 +255,11 @@ export function ManageWhereasClausesPage() {
                       <div
                         key={template.id}
                         onClick={() => handleSelectTemplate(template.id)}
-                        className={`cursor-pointer rounded-xl border p-4 transition-all ${isSelected
+                        className={`cursor-pointer rounded-xl border p-4 transition-all ${
+                          isSelected
                             ? 'border-primary bg-primary/5 shadow-xs ring-1 ring-primary/30'
                             : 'border-default-200 bg-white hover:border-primary/40 hover:bg-default-50/70'
-                          }`}
+                        }`}
                       >
                         <div className="flex items-start justify-between gap-2">
                           <h4 className="font-bold text-sm text-foreground">
@@ -289,7 +308,9 @@ export function ManageWhereasClausesPage() {
                 <div className="flex items-center justify-between">
                   <div className="space-y-0.5">
                     <CardTitle className="text-base font-semibold">
-                      {draft.id ? 'Edit WHEREAS Clause Template' : 'Create New WHEREAS Clause'}
+                      {draft.id
+                        ? 'Edit WHEREAS Clause Template'
+                        : 'Create New WHEREAS Clause'}
                     </CardTitle>
                     <CardDescription className="text-xs">
                       {draft.id
@@ -298,7 +319,10 @@ export function ManageWhereasClausesPage() {
                     </CardDescription>
                   </div>
                   {draft.id && (
-                    <Badge variant="outline" className="bg-primary/5 text-primary border-primary/20 text-xs">
+                    <Badge
+                      variant="outline"
+                      className="bg-primary/5 text-primary border-primary/20 text-xs"
+                    >
                       Template ID: {draft.id}
                     </Badge>
                   )}
@@ -306,35 +330,48 @@ export function ManageWhereasClausesPage() {
               </CardHeader>
               <CardContent className="space-y-5 pt-5">
                 <div className="space-y-2">
-                  <Label htmlFor="clause-title" className="text-xs font-bold uppercase tracking-wider text-default-700">
-                    Clause Title / Reference Name <span className="text-destructive">*</span>
+                  <Label
+                    htmlFor="clause-title"
+                    className="text-xs font-bold uppercase tracking-wider text-default-700"
+                  >
+                    Clause Title / Reference Name{' '}
+                    <span className="text-destructive">*</span>
                   </Label>
                   <Input
                     id="clause-title"
                     placeholder="e.g., WHEREAS, Public Bidding Requirement (RA 9184)"
                     value={draft.name}
-                    onChange={(e) => setDraft((prev) => ({ ...prev, name: e.target.value }))}
+                    onChange={(e) =>
+                      setDraft((prev) => ({ ...prev, name: e.target.value }))
+                    }
                     className="text-sm font-medium"
                   />
                   <p className="text-[11px] text-muted-foreground">
-                    Descriptive label used when selecting clauses during resolution creation.
+                    Descriptive label used when selecting clauses during
+                    resolution creation.
                   </p>
                 </div>
 
                 <div className="space-y-2">
-                  <Label htmlFor="clause-body" className="text-xs font-bold uppercase tracking-wider text-default-700">
+                  <Label
+                    htmlFor="clause-body"
+                    className="text-xs font-bold uppercase tracking-wider text-default-700"
+                  >
                     Clause Body Text <span className="text-destructive">*</span>
                   </Label>
                   <Textarea
                     id="clause-body"
                     placeholder="Enter the formal legal clause body text here..."
                     value={draft.body}
-                    onChange={(e) => setDraft((prev) => ({ ...prev, body: e.target.value }))}
+                    onChange={(e) =>
+                      setDraft((prev) => ({ ...prev, body: e.target.value }))
+                    }
                     rows={8}
                     className="font-serif text-sm leading-relaxed"
                   />
                   <p className="text-[11px] text-muted-foreground">
-                    This exact text will be inserted into the formal printed BAC Resolution document.
+                    This exact text will be inserted into the formal printed BAC
+                    Resolution document.
                   </p>
                 </div>
 
@@ -345,7 +382,9 @@ export function ManageWhereasClausesPage() {
                       Document Rendering Preview
                     </p>
                     <p className="text-xs font-serif leading-relaxed text-default-800 text-justify">
-                      <span className="font-bold">{draft.name || 'WHEREAS,'} </span>
+                      <span className="font-bold">
+                        {draft.name || 'WHEREAS,'}{' '}
+                      </span>
                       {draft.body}
                     </p>
                   </div>
@@ -400,3 +439,4 @@ export function ManageWhereasClausesPage() {
     </div>
   )
 }
+
