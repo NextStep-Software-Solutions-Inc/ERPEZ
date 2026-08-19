@@ -24,6 +24,7 @@ import { deleteAPRItemRequest } from './deleteAPRItemRequest'
 import { getApprovedAPPsRequest } from './getApprovedAPPsRequest'
 import { getAPPByIdRequest } from './getAPPByIdRequest'
 import { getFiscalYearsRequest } from './getFiscalYearsRequest'
+import { getAllocatedAPPItemIdsRequest } from './getAllocatedAPPItemIdsRequest'
 
 // ─── Query hooks ─────────────────────────────────────────────────────────────
 
@@ -41,6 +42,9 @@ export const useAPPById = createQueryHookFromTemplate(getAPPByIdRequest)
 
 /** List of active and available Fiscal Years. */
 export const useFiscalYears = createQueryHookFromTemplate(getFiscalYearsRequest)
+
+/** List of APP Item IDs already allocated in active APRs. Pass `{ queryParams: { excludeAprId } }`. */
+export const useAllocatedAPPItemIds = createQueryHookFromTemplate(getAllocatedAPPItemIdsRequest)
 
 // ─── Mutation hooks ──────────────────────────────────────────────────────────
 

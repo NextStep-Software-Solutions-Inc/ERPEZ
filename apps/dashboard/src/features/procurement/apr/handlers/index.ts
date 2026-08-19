@@ -16,6 +16,7 @@ export { getAdminAPRsRequest } from './getAdminAPRsRequest'
 export { getApprovedAPPsRequest, type BackendAPPResponse, type APPItemResponse } from './getApprovedAPPsRequest'
 export { getAPPByIdRequest, type GetAPPByIdParams } from './getAPPByIdRequest'
 export { getFiscalYearsRequest, type FiscalYearDto, type FiscalYearsResponse } from './getFiscalYearsRequest'
+export { getAllocatedAPPItemIdsRequest, type GetAllocatedAPPItemIdsParams } from './getAllocatedAPPItemIdsRequest'
 
 // React Query and Mutation Hooks
 export {
@@ -24,10 +25,13 @@ export {
   useApprovedAPPs,
   useAPPById,
   useFiscalYears,
+  useAllocatedAPPItemIds,
   useCreateAPRMutation,
   useSubmitAPRMutation,
   useApproveAPRMutation,
   useReturnAPRMutation,
   useDeleteAPRMutation,
   useUpdateAPRMutation,
+  useAddCatalogItemsToAPRMutation,
+  useRemoveAPRItemMutation,
 } from './hooks'

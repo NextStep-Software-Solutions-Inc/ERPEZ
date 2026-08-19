@@ -6,6 +6,7 @@ using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Commands.R
 using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Commands.SubmitAPR;
 using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Commands.UpdateAPR;
 using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Dtos;
+using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Queries.GetAllocatedAPPItemIds;
 using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Queries.GetAPRById;
 using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Queries.GetAPRs;
 using ERPEZ.Shared.Common;
@@ -21,6 +22,17 @@ namespace ERPEZ.Api.Controllers;
 [ApiController]
 public class APRController(ISender mediator) : ControllerBase
 {
+    /// <summary>
+    /// Get list of APP item IDs already allocated in active APRs
+    /// </summary>
+    [HttpGet("allocated-app-item-ids")]
+    [ProducesResponseType(typeof(ApiResponse<List<Guid>>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAllocatedAPPItemIds([FromQuery] Guid? excludeAprId = null)
+    {
+        var result = await mediator.Send(new GetAllocatedAPPItemIdsQuery(excludeAprId));
+        return Ok(result);
+    }
+
     /// <summary>
     /// Create a new Agency Purchase Request (APR) from an approved APP
     /// </summary>

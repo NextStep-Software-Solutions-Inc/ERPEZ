@@ -22,6 +22,8 @@ import {
   Printer,
   History,
   FileText,
+  FileEdit,
+  AlertTriangle,
 } from 'lucide-react'
 import { format } from 'date-fns'
 import { Button } from '@/components/ui/button'
@@ -40,6 +42,7 @@ import {
   ReturnAPRDialog,
   ApproveAPRDialog,
   AddItemDialog,
+  EditAPRDialog,
 } from '@/features/procurement/apr/dialogs'
 import {
   APRStatus,
@@ -86,6 +89,7 @@ export default function APRDetailsPage({ aprId }: APRDetailsPageProps) {
   const [returnDialogOpen, setReturnDialogOpen] = useState(false)
   const [approveDialogOpen, setApproveDialogOpen] = useState(false)
   const [addItemDialogOpen, setAddItemDialogOpen] = useState(false)
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
 
   // Extra items added from PSDBM catalogue during session (optimistic / fallback)
   const [extraItems, setExtraItems] = useState<ConsolidatedAPRItem[]>([])
@@ -175,6 +179,10 @@ export default function APRDetailsPage({ aprId }: APRDetailsPageProps) {
       totalAmount,
       submittedAt: data.submittedDate,
       approvedAt: data.approvedDate,
+      approvedBy: data.approvedBy,
+      returnedAt: data.returnedDate,
+      returnedBy: data.returnedBy,
+      returnRemarks: data.returnRemarks,
       sourceAPPId: data.appId,
       appStatus: 'Approved',
       appApprovedBudget: totalAmount,
@@ -358,20 +366,20 @@ export default function APRDetailsPage({ aprId }: APRDetailsPageProps) {
     apr.approvedAt ? {
       title: 'APR Approved',
       timestamp: apr.approvedAt,
-      actor: apr.approvedBy,
+      actor: apr.approvedBy || 'Procurement Officer',
       status: 'approved',
     } : null,
-    apr.returnedAt ? {
+    (apr.returnedAt || isReturned) ? {
       title: 'Returned for Revisions',
-      timestamp: apr.returnedAt,
-      actor: apr.returnedBy,
+      timestamp: apr.returnedAt || apr.updatedAt || new Date().toISOString(),
+      actor: apr.returnedBy || 'Procurement Officer',
       status: 'returned',
-      remarks: apr.terms?.remarks,
+      remarks: apr.returnRemarks,
     } : null,
     apr.submittedAt ? {
       title: 'Submitted for Review',
       timestamp: apr.submittedAt,
-      actor: apr.requestedBy,
+      actor: apr.requestedBy || 'Procurement Officer',
       status: 'completed',
     } : null,
     {
@@ -409,6 +417,22 @@ export default function APRDetailsPage({ aprId }: APRDetailsPageProps) {
 
       {/* 1. Top Soft Purple Identity Banner */}
       <APRIdentityBanner apr={apr} />
+
+      {/* Return Revisions Notice Banner */}
+      {isReturned && (
+        <div className="p-4 bg-amber-50/90 border border-amber-200/90 rounded-2xl flex items-start gap-3.5 shadow-xs">
+          <div className="h-9 w-9 rounded-xl bg-amber-100 border border-amber-200 flex items-center justify-center flex-shrink-0 text-amber-700">
+            <AlertTriangle className="h-5 w-5" />
+          </div>
+          <div className="space-y-1 text-xs flex-1">
+            <p className="font-bold text-amber-950 text-sm">APR Returned for Revisions</p>
+            <p className="text-amber-900 leading-relaxed font-medium">
+              <span className="font-bold">Procurement Officer Remarks:</span>{' '}
+              {apr.returnRemarks || 'Please review and adjust line items or terms before resubmitting.'}
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* 2. 4-Card Metric Stats Strip */}
       <APRStatsGrid
@@ -532,11 +556,12 @@ export default function APRDetailsPage({ aprId }: APRDetailsPageProps) {
               <Button
                 variant="outline"
                 size="sm"
-                className="text-xs font-medium border-indigo-200 text-[#6366f1] hover:bg-indigo-50/50 rounded-xl px-4 h-9"
-                onClick={() => toast.success('Draft saved successfully')}
+                className="gap-1.5 text-xs font-semibold text-[#6366f1] border-indigo-200 hover:bg-indigo-50/70 rounded-xl px-4 h-9 shadow-2xs"
+                onClick={() => setEditDialogOpen(true)}
                 disabled={isSubmitting}
               >
-                Save Draft
+                <FileEdit className="h-3.5 w-3.5" />
+                Edit APR / Reselect APP
               </Button>
               <Button
                 size="sm"
@@ -589,19 +614,24 @@ export default function APRDetailsPage({ aprId }: APRDetailsPageProps) {
               <Button
                 variant="outline"
                 size="sm"
-                className="text-xs border-indigo-200 text-[#6366f1] rounded-xl h-9 px-4"
-                onClick={() => setAddItemDialogOpen(true)}
+                className="gap-1.5 text-xs font-semibold text-[#6366f1] border-indigo-200 hover:bg-indigo-50/70 rounded-xl px-4 h-9 shadow-2xs"
+                onClick={() => setEditDialogOpen(true)}
                 disabled={isSubmitting}
               >
-                Add Item
+                <FileEdit className="h-3.5 w-3.5" />
+                Edit APR / Reselect APP
               </Button>
               <Button
                 size="sm"
-                className="text-xs font-semibold bg-[#6366f1] hover:bg-[#5558e6] text-white rounded-xl h-9 px-5 gap-1.5 shadow-xs"
+                className="text-xs font-semibold bg-[#6366f1] hover:bg-[#5558e6] text-white rounded-xl px-5 h-9 gap-1.5 shadow-xs"
                 onClick={() => setSubmitDialogOpen(true)}
-                disabled={isSubmitting}
+                disabled={isSubmitting || apr.consolidatedItems.length === 0}
               >
-                <Send className="h-3.5 w-3.5" />
+                {isSubmittingAPR ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <Send className="h-3.5 w-3.5" />
+                )}
                 Resubmit for Review
               </Button>
             </>
@@ -653,6 +683,13 @@ export default function APRDetailsPage({ aprId }: APRDetailsPageProps) {
         existingItemIds={apr.consolidatedItems.map((item) => item.id)}
         onAddItems={handleAddItems}
         isSubmitting={isSubmitting}
+      />
+
+      <EditAPRDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        apr={apr}
+        onSuccess={refetch}
       />
     </div>
   )
