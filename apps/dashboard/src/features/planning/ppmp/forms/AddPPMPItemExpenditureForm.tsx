@@ -12,8 +12,12 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { getObjectCodesRequest } from '@/components/features/planning/procurement-library/item-master/handlers/getObjectCodesRequest'
+import { getLIBActivityObjectsRequest } from '../handlers/getLIBActivityObjectsRequest'
 
 const useObjectCodesQuery = createQueryHookFromTemplate(getObjectCodesRequest)
+const useLIBActivityObjectsQuery = createQueryHookFromTemplate(
+  getLIBActivityObjectsRequest,
+)
 
 export const ppmpExpenditureItemSchema = z.object({
   isProcurable: z.boolean(),
@@ -26,6 +30,7 @@ export type PPMPExpenditureItemFormValues = z.infer<
 
 interface AddPPMPItemExpenditureFormProps {
   formId?: string
+  libActivityId?: string
   initialValues?: Partial<PPMPExpenditureItemFormValues>
   onSubmit: (values: PPMPExpenditureItemFormValues) => void
   isLoading?: boolean
@@ -33,17 +38,47 @@ interface AddPPMPItemExpenditureFormProps {
 
 export function AddPPMPItemExpenditureForm({
   formId = 'add-ppmp-expenditure-form',
+  libActivityId,
   initialValues,
   onSubmit,
   isLoading = false,
 }: AddPPMPItemExpenditureFormProps) {
+  const hasLibActivity = Boolean(libActivityId)
+
+  const { data: libActivityObjectsResponse, isLoading: isLibActivityObjectsLoading } =
+    useLIBActivityObjectsQuery(
+      {
+        pathParams: {},
+        queryParams: { LIBActivityId: libActivityId! },
+        enabled: hasLibActivity,
+      },
+
+    )
+
   const { data: objectCodesResponse, isLoading: isObjectCodesLoading } =
-    useObjectCodesQuery({
-      pathParams: {},
-      queryParams: {},
-    })
+    useObjectCodesQuery(
+      {
+        pathParams: {},
+        queryParams: {},
+        enabled: !hasLibActivity,
+      },
+
+    )
+
+  const isObjectsLoading = hasLibActivity
+    ? isLibActivityObjectsLoading
+    : isObjectCodesLoading
 
   const objectCodeOptions = useMemo(() => {
+    if (hasLibActivity) {
+      return (
+        libActivityObjectsResponse?.data?.map((item) => ({
+          id: item.objectId,
+          label: `${item.objectCode || ''} - ${item.objectName || ''} (Budget: ₱${(item.totalBudget ?? 0).toLocaleString()})`,
+        })) ?? []
+      )
+    }
+
     return (
       objectCodesResponse?.data
         ?.filter((item) => item.isActive)
@@ -52,7 +87,7 @@ export function AddPPMPItemExpenditureForm({
           label: `${item.code} - ${item.name}`,
         })) ?? []
     )
-  }, [objectCodesResponse?.data])
+  }, [hasLibActivity, libActivityObjectsResponse?.data, objectCodesResponse?.data])
 
   const form = useForm({
     defaultValues: {
@@ -92,12 +127,12 @@ export function AddPPMPItemExpenditureForm({
             <Select
               value={field.state.value}
               onValueChange={(val) => field.handleChange(val)}
-              disabled={isLoading || isObjectCodesLoading}
+              disabled={isLoading || isObjectsLoading}
             >
               <SelectTrigger id={field.name} className="w-full text-xs">
                 <SelectValue
                   placeholder={
-                    isObjectCodesLoading
+                    isObjectsLoading
                       ? 'Loading object codes...'
                       : 'Select Object Code'
                   }
