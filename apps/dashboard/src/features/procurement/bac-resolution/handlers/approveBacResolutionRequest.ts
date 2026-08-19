@@ -21,6 +21,28 @@ export const approveBacResolutionRequest: MutationBlueprintFromTemplate<
       throw new Error('Approve BAC Resolution payload is required.')
     }
 
+    if (USE_MOCK_BAC_RESOLUTIONS) {
+      const db = getMockBacResolutionDatabase()
+      const resolution = db.find((item) => item.id === payload.bacResolutionId)
+      if (!resolution) {
+        throw new Error('BAC Resolution not found.')
+      }
+      if (!resolution.linkedConsolidatedPrs || resolution.linkedConsolidatedPrs.length === 0) {
+        throw new Error('Link exactly one approved Consolidated PR before approving.')
+      }
+      resolution.status = 'approved'
+      resolution.approvedBy = 'BAC Chairperson Demo'
+      resolution.approvedAt = new Date().toISOString()
+      resolution.activityLog.unshift({
+        id: `log-${Date.now()}`,
+        action: 'Approved BAC Resolution',
+        actor: 'BAC Chairperson Demo',
+        timestamp: new Date().toISOString(),
+        note: 'Physically signed PDF uploaded and approved.',
+      })
+      return cloneResolution(resolution)
+    }
+
     // 1. Upload the signed PDF file in the background
     const formData = new FormData()
     formData.append('file', payload.signedDocument)

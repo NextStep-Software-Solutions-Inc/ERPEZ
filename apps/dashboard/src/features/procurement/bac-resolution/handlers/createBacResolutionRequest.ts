@@ -80,6 +80,10 @@ export const createBacResolutionRequest: MutationBlueprintFromTemplate<
       linkedConsolidatedPrs: [],
       activityLog: [],
       workspaceOrigin: payload.workspaceOrigin ?? null,
+      sourceType: payload.sourceType,
+      appItemId: payload.appItemId,
+      consolidatedPRId: payload.consolidatedPRId,
+      procurementProjectContext: payload.procurementProjectContext,
     }
 
     return mappedResolution

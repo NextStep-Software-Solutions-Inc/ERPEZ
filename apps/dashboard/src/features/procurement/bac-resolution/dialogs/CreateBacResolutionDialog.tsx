@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { ResponsiveDialogDashtail } from '@/components/ResponsiveDialogDashtail'
 import { Button } from '@/components/ui/button'
 import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
@@ -36,21 +36,25 @@ export function CreateBacResolutionDialog({
         open={open && !showDiscardWarning}
         onOpenChange={handleOpenChange}
         title="Create BAC Resolution"
-        description="Start a new BAC Resolution draft before linking approved Consolidated PRs."
-        size="lg"
+        description="Create a new BAC Resolution originating from an approved APP Item or Consolidated PR."
+        size="xl"
         showCloseButton
         footer={
-          <div className="flex justify-end gap-3 w-full">
-            <Button
-              variant="outline"
-              onClick={() => handleOpenChange(false)}
-              disabled={false}
-            >
-              Cancel
-            </Button>
-            <Button form={formId} type="submit">
-              Create
-            </Button>
+          <div className="flex justify-between items-center w-full">
+            <span className="text-xs text-muted-foreground">
+              Step 3 allows submitting the draft after reviewing procurement context.
+            </span>
+            <div className="flex gap-2">
+              <Button
+                variant="outline"
+                onClick={() => handleOpenChange(false)}
+              >
+                Cancel
+              </Button>
+              <Button form={formId} type="submit">
+                Create BAC Resolution
+              </Button>
+            </div>
           </div>
         }
       >
