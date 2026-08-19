@@ -13,6 +13,7 @@ import {
 } from '@/components/ui/select'
 import { getObjectCodesRequest } from '@/components/features/planning/procurement-library/item-master/handlers/getObjectCodesRequest'
 import { getLIBActivityObjectsRequest } from '@/features/planning/line-item-budgeting/line-item-budget-details/handlers/getLIBActivityObjectsRequest'
+import FieldInfo from '@/components/FieldInfo'
 
 const useObjectCodesQuery = createQueryHookFromTemplate(getObjectCodesRequest)
 const useLIBActivityObjectsQuery = createQueryHookFromTemplate(
@@ -138,12 +139,7 @@ export function AddPPMPItemExpenditureForm({
                 ))}
               </SelectContent>
             </Select>
-            {field.state.meta.isTouched &&
-              field.state.meta.errors.length > 0 && (
-                <p className="text-[10px] text-destructive">
-                  {field.state.meta.errors.join(', ')}
-                </p>
-              )}
+            <FieldInfo field={field} />
           </div>
         )}
       />

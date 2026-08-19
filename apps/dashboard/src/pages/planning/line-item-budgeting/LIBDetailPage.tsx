@@ -11,6 +11,7 @@ import {
   Calendar,
   Wallet,
   Coins,
+  Send,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -244,7 +245,12 @@ export default function LIBDetailPage({
     )
   }
 
-  const totalBudgetFromSource = opcrData?.data?.totalBudget ?? lib?.totalAmount
+  const totalBudgetFromSource =
+    lib?.sourceType === 'OPCR'
+      ? (opcrData?.data?.totalBudget ?? lib?.totalAmount)
+      : lib?.sourceType === 'WFP'
+        ? (wfpData?.data?.proposedBudget ?? lib?.totalAmount)
+        : lib?.totalAmount
 
   //Calculate total amount from all activities added from each activities's expenditures
   const activityDetailsBudget = lib?.activities?.reduce(
@@ -263,14 +269,13 @@ export default function LIBDetailPage({
   ) ?? 0
 
   const totalActivitiesDetailBudget = activityDetailsBudget + orphanDetailsBudget
+  const proposedLibTotalBudget = Math.max(totalActivitiesDetailBudget, lib?.totalAmount ?? 0)
 
-  // Check if LIB is ready for submission
+  // Check if LIB is ready for submission (proposed totalBudget >= OPCR/Source totalBudget)
   const isReadyForSubmission =
-    totalBudgetFromSource !== undefined &&
-    totalBudgetFromSource > 0 &&
-    totalActivitiesDetailBudget >= totalBudgetFromSource &&
-    lib?.activities &&
-    lib.activities.length > 0
+    totalBudgetFromSource !== undefined && totalBudgetFromSource > 0
+      ? proposedLibTotalBudget >= totalBudgetFromSource
+      : proposedLibTotalBudget > 0 || (lib?.activities && lib.activities.length > 0)
 
   const activityCount = lib?.activities?.length ?? 0
   const opcrActivityCount = opcrData?.data?.activityCount
@@ -484,11 +489,10 @@ export default function LIBDetailPage({
               <Button
                 variant="outline"
                 size="sm"
-                className={`gap-2 ${
-                  showHistory
-                    ? 'bg-slate-100 text-slate-800 border-slate-300'
-                    : 'text-slate-650 hover:bg-slate-50'
-                }`}
+                className={`gap-2 ${showHistory
+                  ? 'bg-slate-100 text-slate-800 border-slate-300'
+                  : 'text-slate-650 hover:bg-slate-50'
+                  }`}
                 onClick={() => setShowHistory(!showHistory)}
               >
                 <History className="w-4 h-4" />
@@ -548,6 +552,7 @@ export default function LIBDetailPage({
             <div className="flex items-start gap-3">
               <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
               <div>
+
                 <h3 className="font-semibold text-green-800 text-sm">
                   Ready for Submission
                 </h3>
@@ -563,6 +568,7 @@ export default function LIBDetailPage({
               className="bg-green-600 hover:bg-green-700 text-white flex-shrink-0 ml-4"
               size="sm"
             >
+              <Send className="w-5 h-5 text-white flex-shrink-0 mr-2" />
               {isSubmitting ? 'Submitting...' : 'Submit LIB'}
             </Button>
           </div>
@@ -886,14 +892,14 @@ export default function LIBDetailPage({
       <LIBSummaryDialog
         open={showSummary}
         onOpenChange={setShowSummary}
-        libId={libId}
+        libId={libId || null}
       />
 
       {/* Version History Comparative Modal */}
       <LIBHistoryDialog
         open={showHistory}
         onOpenChange={setShowHistory}
-        libId={libId}
+        libId={libId || null}
       />
 
       {/* Submission Confirmation Dialog */}
