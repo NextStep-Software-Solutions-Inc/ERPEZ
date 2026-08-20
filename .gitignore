@@ -345,3 +345,4 @@ Desktop.ini
 todos.json
 count.txt
 build.log
+apps/dashboard/src/routeTree.gen.ts
