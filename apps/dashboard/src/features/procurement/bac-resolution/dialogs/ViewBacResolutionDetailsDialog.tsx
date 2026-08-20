@@ -14,10 +14,7 @@ import {
   Tag,
   Wallet,
   CheckCircle2,
-  ExternalLink,
-  ShieldCheck,
 } from 'lucide-react'
-import { getMockBacResolutionDatabase } from '../data/mockBacResolutionData'
 import type { BacResolution } from '../types'
 
 interface ViewBacResolutionDetailsDialogProps {
@@ -94,10 +91,7 @@ export function ViewBacResolutionDetailsDialog({
   // Robust mock resolution resolution fallback
   const mockResolution = useMemo(() => {
     if (!resolutionId) return null
-    return (
-      getMockBacResolutionDatabase().find((res) => res.id === resolutionId) ||
-      null
-    )
+    return ([] as any[]).find((res) => res.id === resolutionId) || null
   }, [resolutionId, open])
 
   // Unified details view data
@@ -267,9 +261,7 @@ export function ViewBacResolutionDetailsDialog({
         {isLoading && !details ? (
           <div className="flex flex-col items-center justify-center p-12 space-y-4">
             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-            <p className="text-sm text-muted-foreground">
-              Loading details...
-            </p>
+            <p className="text-sm text-muted-foreground">Loading details...</p>
           </div>
         ) : details ? (
           <div className="space-y-6 text-sm">
@@ -330,7 +322,9 @@ export function ViewBacResolutionDetailsDialog({
                   </span>
                   <div className="flex items-center gap-1.5 font-semibold text-primary">
                     <Tag className="h-3.5 w-3.5 text-primary" />
-                    <span className="truncate">{details.modeOfProcurement}</span>
+                    <span className="truncate">
+                      {details.modeOfProcurement}
+                    </span>
                   </div>
                 </div>
 
@@ -380,10 +374,7 @@ export function ViewBacResolutionDetailsDialog({
                           <span className="font-bold text-foreground">
                             {res.resolutionNumber || 'N/A'}
                           </span>
-                          <Badge
-                            className="ml-2"
-                            variant="secondary"
-                          >
+                          <Badge className="ml-2" variant="secondary">
                             {res.resolutionType || 'Standard'}
                           </Badge>
                         </div>

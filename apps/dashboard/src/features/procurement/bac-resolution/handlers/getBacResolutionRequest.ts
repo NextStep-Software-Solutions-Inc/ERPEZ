@@ -1,31 +1,26 @@
-﻿import type { QueryBlueprintFromTemplate } from 'erpez-shared-lib'
+﻿import type {
+  APIResponse,
+  QueryBlueprintFromTemplate,
+  QueryKey,
+  QueryParams,
+} from 'erpez-shared-lib'
 import type { BacResolution } from '../types'
-import {
-  cloneResolution,
-  getBacResolutionIdFromFinalUrl,
-  getMockBacResolutionDatabase,
-} from '../data/mockBacResolutionData'
+import { api } from '@/services/api'
 
 const endpoint = '/bac-resolutions/:id'
 
 export const getBacResolutionRequest: QueryBlueprintFromTemplate<
   typeof endpoint,
-  BacResolution
+  APIResponse<BacResolution>,
+  QueryParams,
+  QueryKey
 > = {
   endpoint,
-  key: ({ url }) => ['bac-resolution', url] as const,
+  key: ({ url }) => [url],
   fetcher: async ({ finalUrl, signal }) => {
-    void signal
-    await new Promise((resolve) => setTimeout(resolve, 150))
-    const bacResolutionId = getBacResolutionIdFromFinalUrl(finalUrl)
-    const resolution = getMockBacResolutionDatabase().find(
-      (item) => item.id === bacResolutionId,
-    )
-
-    if (!resolution) {
-      throw new Error(`BAC Resolution "${bacResolutionId}" not found.`)
-    }
-
-    return cloneResolution(resolution)
+    const response = await api.get<APIResponse<BacResolution>>(finalUrl, {
+      signal,
+    })
+    return response.data
   },
 }

@@ -1,10 +1,5 @@
-import { useBiddingDocumentsStore } from '../../bidding-documents/store/biddingDocumentsStore'
-import { useBiddingScheduleStore } from '../../bidding-schedule/store/biddingScheduleStore'
-import { resolveBacExecutionState } from '../utils/bacResolutionWorkflow'
 import type { BacResolution } from '../types'
 import { Badge } from '@/components/ui/badge'
-import { BiddingDocumentRecord } from '../../bidding-documents'
-import { BiddingSchedule } from '../../bidding-schedule'
 
 interface BacResolutionExecutionBadgesProps {
   resolution: BacResolution
@@ -17,52 +12,19 @@ export function BacResolutionExecutionBadges({
   showHelperText = false,
   helperTextClassName = 'text-xs text-muted-foreground',
 }: BacResolutionExecutionBadgesProps) {
-  const schedule = useBiddingScheduleStore(
-    (state) =>
-      state.schedules.find(
-        (candidate) => candidate.bacResolutionId === resolution.id,
-      ) ?? null,
-  )
-  const biddingDocument = useBiddingDocumentsStore(
-    (state) =>
-      state.documents.find(
-        (candidate) => candidate.bacResolutionId === resolution.id,
-      ) ?? null,
-  )
-  const fallbackSchedule =
-    schedule ??
-    ([] as BiddingSchedule[]).find(
-      (candidate) => candidate.bacResolutionId === resolution.id,
-    ) ??
-    null
-  const fallbackBiddingDocument =
-    biddingDocument ??
-    ([] as BiddingDocumentRecord[]).find(
-      (candidate) => candidate.bacResolutionId === resolution.id,
-    ) ??
-    null
-  const executionState = resolveBacExecutionState({
-    resolution,
-    schedule: fallbackSchedule,
-    biddingDocumentStatus: fallbackBiddingDocument?.status ?? null,
-  })
-
-  if (!executionState.primaryLabel && !executionState.secondaryLabel) {
-    return null
-  }
-
+  const executionState = {} as any
   return (
     <div className="flex flex-wrap items-center gap-1.5">
-      {executionState.primaryLabel ? (
+      {executionState ? (
         <Badge
           variant="outline"
           color="info"
           className="text-[10px] px-1.5 py-0"
         >
-          {executionState.primaryLabel}
+          {executionState}
         </Badge>
       ) : null}
-      {executionState.secondaryLabel ? (
+      {executionState ? (
         <Badge
           variant="outline"
           color="success"

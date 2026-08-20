@@ -8,7 +8,6 @@ import { BiddingSchedulePrerequisiteChecklist } from './BiddingSchedulePrerequis
 import { BiddingScheduleResolutionBanner } from './BiddingScheduleResolutionBanner'
 import { DialogsController } from './DialogsController'
 import type { UseBiddingScheduleService } from '../hooks/useBiddingScheduleService'
-import { getMockBiddingScheduleDatabase } from '../data/mockBiddingScheduleData'
 import { useBiddingScheduleStore } from '../store/biddingScheduleStore'
 import { buildScheduleConflictPreview } from '../utils/buildScheduleConflictPreview'
 import type { BacResolutionListRoutePath } from '../../bac-resolution/types'
@@ -51,8 +50,7 @@ export function BiddingScheduleWorkspace({
     return null
   }
 
-  const allSchedules =
-    liveSchedules.length > 0 ? liveSchedules : getMockBiddingScheduleDatabase()
+  const allSchedules = liveSchedules
   const conflictPreview = schedule
     ? buildScheduleConflictPreview({
         schedule,

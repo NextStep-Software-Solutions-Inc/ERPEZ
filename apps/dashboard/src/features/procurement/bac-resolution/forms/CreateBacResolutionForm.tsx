@@ -21,7 +21,6 @@ import {
 import { Check, ChevronsUpDown, Loader2 } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type {
-  CreateBacResolutionPayload,
   EligibleAppForProcurement,
   EligibleAppItem,
   EligibleConsolidatedPR,
@@ -34,7 +33,7 @@ import { fetchUsers, type User } from '@/services/api/users'
 import { SourceTypeSelectorStep } from './steps/SourceTypeSelectorStep'
 import { SourceRecordPickerStep } from './steps/SourceRecordPickerStep'
 import { ProcurementProjectPreviewBanner } from '../components/ProcurementProjectPreviewBanner'
-import { getMockWhereasClauseDatabase } from '../data/mockBacResolutionData'
+import { CreateBacResolutionPayload } from '../handlers/createBacResolutionRequest'
 
 export const createBacResolutionSchema = z.object({
   appItemId: z.string().optional(),
@@ -214,18 +213,7 @@ export function CreateBacResolutionForm({
   ])
 
   // Fetch WHEREAS templates
-  const { data: apiTemplates, isLoading: isTemplatesLoading } =
-    useWhereasClauseTemplates({})
-  const templates = useMemo(() => {
-    if (apiTemplates && apiTemplates.length > 0) return apiTemplates
-    return getMockWhereasClauseDatabase().map((t) => ({
-      id: t.id,
-      name: t.name,
-      body: t.body,
-      createdAt: t.createdAt,
-      updatedAt: t.updatedAt,
-    }))
-  }, [apiTemplates])
+  const { data: apiTemplates, isLoading: isTemplatesLoading } = [] as any[]
 
   // Users for rep picker
   const [users, setUsers] = useState<User[]>([])

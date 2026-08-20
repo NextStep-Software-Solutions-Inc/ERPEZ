@@ -1,22 +1,23 @@
 import { useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import {
-  getMockBacResolutionDatabase,
-  getMockConsolidatedPrs,
-} from '../data/mockBacResolutionData'
 import type {
   BacResolution,
   BacResolutionInboxFilter,
   BacResolutionWorkspaceScope,
-  CreateBacResolutionPayload,
   LinkConsolidatedPrsPayload,
 } from '../types'
 import {
   buildLinkableConsolidatedPrs,
   isBacResolutionInPublicBiddingScope,
 } from '../utils/bacResolutionWorkflow'
-import { createMutationHookFromTemplate, createQueryHookFromTemplate } from 'erpez-shared-lib'
-import { createBacResolutionRequest } from '../handlers/createBacResolutionRequest'
+import {
+  createMutationHookFromTemplate,
+  createQueryHookFromTemplate,
+} from 'erpez-shared-lib'
+import {
+  CreateBacResolutionPayload,
+  createBacResolutionRequest,
+} from '../handlers/createBacResolutionRequest'
 import { updateBacResolutionRequest } from '../handlers/updateBacResolutionRequest'
 import { deleteBacResolutionRequest } from '../handlers/deleteBacResolutionRequest'
 import { linkConsolidatedPrsRequest } from '../handlers/linkConsolidatedPrsRequest'
@@ -24,7 +25,6 @@ import { submitBacResolutionRequest } from '../handlers/submitBacResolutionReque
 import { approveBacResolutionRequest } from '../handlers/approveBacResolutionRequest'
 import { returnBacResolutionRequest } from '../handlers/returnBacResolutionRequest'
 import { getBacResolutionsRequest } from '../handlers/getBacResolutionsRequest'
-
 
 const statusOptions: BacResolutionInboxFilter[] = [
   'all',
@@ -38,19 +38,35 @@ function formatInboxFilterLabel(status: BacResolutionInboxFilter) {
   return status === 'all'
     ? 'All'
     : status
-      .split('-')
-      .map((part) => part[0].toUpperCase() + part.slice(1))
-      .join(' ')
+        .split('-')
+        .map((part) => part[0].toUpperCase() + part.slice(1))
+        .join(' ')
 }
 
-const useCreateBacResolutionMutation = createMutationHookFromTemplate(createBacResolutionRequest)
-const useUpdateBacResolutionMutation = createMutationHookFromTemplate(updateBacResolutionRequest)
-const useDeleteBacResolutionMutation = createMutationHookFromTemplate(deleteBacResolutionRequest)
-const useLinkConsolidatedPrMutation = createMutationHookFromTemplate(linkConsolidatedPrsRequest)
-const useSubmitBacResolutionMutation = createMutationHookFromTemplate(submitBacResolutionRequest)
-const useApproveBacResolutionMutation = createMutationHookFromTemplate(approveBacResolutionRequest)
-const useReturnBacResolutionMutation = createMutationHookFromTemplate(returnBacResolutionRequest)
-const useBacResolutionsQuery = createQueryHookFromTemplate(getBacResolutionsRequest)
+const useCreateBacResolutionMutation = createMutationHookFromTemplate(
+  createBacResolutionRequest,
+)
+const useUpdateBacResolutionMutation = createMutationHookFromTemplate(
+  updateBacResolutionRequest,
+)
+const useDeleteBacResolutionMutation = createMutationHookFromTemplate(
+  deleteBacResolutionRequest,
+)
+const useLinkConsolidatedPrMutation = createMutationHookFromTemplate(
+  linkConsolidatedPrsRequest,
+)
+const useSubmitBacResolutionMutation = createMutationHookFromTemplate(
+  submitBacResolutionRequest,
+)
+const useApproveBacResolutionMutation = createMutationHookFromTemplate(
+  approveBacResolutionRequest,
+)
+const useReturnBacResolutionMutation = createMutationHookFromTemplate(
+  returnBacResolutionRequest,
+)
+const useBacResolutionsQuery = createQueryHookFromTemplate(
+  getBacResolutionsRequest,
+)
 
 export function useBacResolutionWorkspaceState(
   defaultFilter: BacResolutionInboxFilter = 'all',
@@ -58,7 +74,12 @@ export function useBacResolutionWorkspaceState(
   workspaceScope: BacResolutionWorkspaceScope = 'all',
 ) {
   // Query backend APIs via TanStack Query
-  const { data: serverResolutions, isLoading: isBacResolutionsLoading, isFetching: isBacResolutionsFetching, isError } = useBacResolutionsQuery({ enabled: false })
+  const {
+    data: serverResolutions,
+    isLoading: isBacResolutionsLoading,
+    isFetching: isBacResolutionsFetching,
+    isError,
+  } = useBacResolutionsQuery({ enabled: false })
 
   // Mutations
   const createMutation = useCreateBacResolutionMutation()
@@ -79,9 +100,9 @@ export function useBacResolutionWorkspaceState(
     returnMutation.isPending
 
   // Fallback to mock data if offline or no server resolutions returned yet
-  const [localFallbackResolutions, setLocalFallbackResolutions] = useState<BacResolution[]>(() =>
-    getMockBacResolutionDatabase()
-  )
+  const [localFallbackResolutions, setLocalFallbackResolutions] = useState<
+    BacResolution[]
+  >(() => [])
 
   const resolutions: BacResolution[] = useMemo(() => {
     if (serverResolutions && serverResolutions.length > 0) {
@@ -90,14 +111,22 @@ export function useBacResolutionWorkspaceState(
     return localFallbackResolutions
   }, [serverResolutions, localFallbackResolutions])
 
-  const [selectedResolutionId, setSelectedResolutionId] = useState<string | null>(null)
+  const [selectedResolutionId, setSelectedResolutionId] = useState<
+    string | null
+  >(null)
   const [searchValue, setSearchValue] = useState('')
   const [filter, setFilter] = useState<BacResolutionInboxFilter>(defaultFilter)
-  const [sourceTypeFilter, setSourceTypeFilter] = useState<'all' | 'APP_ITEM' | 'CONSOLIDATED_PR'>('all')
-  const [budgetTier, setBudgetTier] = useState<'all' | 'under-1m' | '1m-5m' | 'above-5m' | 'custom'>('all')
+  const [sourceTypeFilter, setSourceTypeFilter] = useState<
+    'all' | 'APP_ITEM' | 'CONSOLIDATED_PR'
+  >('all')
+  const [budgetTier, setBudgetTier] = useState<
+    'all' | 'under-1m' | '1m-5m' | 'above-5m' | 'custom'
+  >('all')
   const [customMinBudget, setCustomMinBudget] = useState<number | null>(null)
   const [customMaxBudget, setCustomMaxBudget] = useState<number | null>(null)
-  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'amount-desc' | 'amount-asc'>('newest')
+  const [sortBy, setSortBy] = useState<
+    'newest' | 'oldest' | 'amount-desc' | 'amount-asc'
+  >('newest')
 
   const resetAllFilters = () => {
     setSearchValue('')
@@ -112,13 +141,20 @@ export function useBacResolutionWorkspaceState(
   // Dialog controls
   const [createOpen, setCreateOpen] = useState(false)
   const [editOpen, setEditOpen] = useState(false)
-  const [editingResolution, setEditingResolution] = useState<BacResolution | null>(null)
+  const [editingResolution, setEditingResolution] =
+    useState<BacResolution | null>(null)
   const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
-  const [resolutionToDeleteId, setResolutionToDeleteId] = useState<string | null>(null)
+  const [resolutionToDeleteId, setResolutionToDeleteId] = useState<
+    string | null
+  >(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
-  const [detailsResolutionId, setDetailsResolutionId] = useState<string | null>(null)
+  const [detailsResolutionId, setDetailsResolutionId] = useState<string | null>(
+    null,
+  )
   const [viewConsolidatedPrOpen, setViewConsolidatedPrOpen] = useState(false)
-  const [viewConsolidatedPrId, setViewConsolidatedPrId] = useState<string | null>(null)
+  const [viewConsolidatedPrId, setViewConsolidatedPrId] = useState<
+    string | null
+  >(null)
   const [linkOpen, setLinkOpen] = useState(false)
   const [approveOpen, setApproveOpen] = useState(false)
   const [returnOpen, setReturnOpen] = useState(false)
@@ -146,9 +182,11 @@ export function useBacResolutionWorkspaceState(
       })
       // 3. Budget range filter
       .filter((item) => {
-        const amount = item.procurementProjectContext?.abc || item.totalAmount || 0
+        const amount =
+          item.procurementProjectContext?.abc || item.totalAmount || 0
         if (budgetTier === 'under-1m') return amount < 1000000
-        if (budgetTier === '1m-5m') return amount >= 1000000 && amount <= 5000000
+        if (budgetTier === '1m-5m')
+          return amount >= 1000000 && amount <= 5000000
         if (budgetTier === 'above-5m') return amount > 5000000
         if (budgetTier === 'custom') {
           if (customMinBudget !== null && amount < customMinBudget) return false
@@ -212,7 +250,9 @@ export function useBacResolutionWorkspaceState(
   useEffect(() => {
     if (
       initialSelectedResolutionId &&
-      filteredResolutions.some((item) => item.id === initialSelectedResolutionId)
+      filteredResolutions.some(
+        (item) => item.id === initialSelectedResolutionId,
+      )
     ) {
       setSelectedResolutionId(initialSelectedResolutionId)
       return
@@ -232,13 +272,15 @@ export function useBacResolutionWorkspaceState(
   }, [filteredResolutions, initialSelectedResolutionId, selectedResolutionId])
 
   const selectedResolution = useMemo(
-    () => scopedResolutions.find((item) => item.id === selectedResolutionId) ?? null,
+    () =>
+      scopedResolutions.find((item) => item.id === selectedResolutionId) ??
+      null,
     [scopedResolutions, selectedResolutionId],
   )
 
   const availablePrs = useMemo(() => {
     if (!selectedResolution) return []
-    const mockPrs = getMockConsolidatedPrs()
+    const mockPrs = [] as any[]
     return buildLinkableConsolidatedPrs({
       availablePrs: mockPrs,
       resolutions,
@@ -253,98 +295,9 @@ export function useBacResolutionWorkspaceState(
 
   // --- CRUD HANDLERS WITH API MUTATION & LOCAL FALLBACK ---
 
-  const handleCreate = (payload: CreateBacResolutionPayload) => {
-    createMutation.mutate({ pathParams: {}, payload }, {
-      onSuccess: () => {
-        setCreateOpen(false)
-      },
-      onError: () => {
-        // Local fallback update if offline
-        const createdRecord: BacResolution = {
-          id: `bac-res-${Date.now()}`,
-          bacResolutionNumber: payload.bacResolutionNumber,
-          resolutionType: (payload.resolutionType as any) || 'procurement-mode-recommendation',
-          resolutionDate: payload.resolutionDate || new Date().toISOString().split('T')[0],
-          description: payload.description || payload.title || 'Untitled BAC Resolution',
-          resolvedDateText:
-            payload.resolvedDateText ||
-            new Date(payload.resolutionDate).toLocaleDateString('en-PH', {
-              weekday: 'long',
-              month: 'long',
-              day: 'numeric',
-              year: 'numeric',
-            }),
-          resolvedLocationText:
-            payload.resolvedLocationText ||
-            'University of Science and Technology of Southern Philippines, Cagayan de Oro City',
-          whereasClauses: payload.whereasClauses || [],
-          provisionalMembers: payload.provisionalMembers || [],
-          status: 'draft',
-          createdBy: 'Procurement Staff Demo',
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          totalAmount: payload.abc || 0,
-          linkedConsolidatedPrs: [],
-          activityLog: [
-            {
-              id: `log-${Date.now()}`,
-              action: 'Created draft',
-              actor: 'Procurement Staff Demo',
-              timestamp: new Date().toISOString(),
-            },
-          ],
-          workspaceOrigin: payload.workspaceOrigin ?? null,
-          sourceType: payload.sourceType,
-          appItemId: payload.appItemId,
-          consolidatedPRId: payload.consolidatedPRId,
-          procurementProjectContext: payload.procurementProjectContext,
-        }
+  const handleCreate = () => {}
 
-        setLocalFallbackResolutions((current) => [createdRecord, ...current])
-        setSelectedResolutionId(createdRecord.id)
-        toast.success(`BAC Resolution ${createdRecord.bacResolutionNumber} draft created.`)
-        setCreateOpen(false)
-      },
-    })
-  }
-
-  const handleUpdate = (id: string, payload: CreateBacResolutionPayload) => {
-    updateMutation.mutate(
-      { pathParams: { id }, payload },
-      {
-        onSuccess: () => {
-          setEditOpen(false)
-          setEditingResolution(null)
-        },
-        onError: () => {
-          setLocalFallbackResolutions((current) =>
-            current.map((item) => {
-              if (item.id !== id) return item
-              return {
-                ...item,
-                bacResolutionNumber: payload.bacResolutionNumber,
-                description: payload.description || payload.title || item.description,
-                resolutionDate: payload.resolutionDate,
-                resolvedDateText: payload.resolvedDateText,
-                resolvedLocationText: payload.resolvedLocationText,
-                whereasClauses: payload.whereasClauses,
-                provisionalMembers: payload.provisionalMembers,
-                updatedAt: new Date().toISOString(),
-                totalAmount: payload.abc ?? item.totalAmount,
-                sourceType: payload.sourceType ?? item.sourceType,
-                appItemId: payload.appItemId ?? item.appItemId,
-                consolidatedPRId: payload.consolidatedPRId ?? item.consolidatedPRId,
-                procurementProjectContext: payload.procurementProjectContext ?? item.procurementProjectContext,
-              }
-            })
-          )
-          toast.success('BAC Resolution draft updated.')
-          setEditOpen(false)
-          setEditingResolution(null)
-        },
-      }
-    )
-  }
+  const handleUpdate = () => {}
 
   const handleDelete = (id: string) => {
     setResolutionToDeleteId(id)
@@ -354,68 +307,32 @@ export function useBacResolutionWorkspaceState(
   const handleConfirmDelete = () => {
     if (!resolutionToDeleteId) return
 
-    deleteMutation.mutate({ pathParams: { id: resolutionToDeleteId } }, {
-      onSuccess: () => {
-        if (selectedResolutionId === resolutionToDeleteId) {
-          setSelectedResolutionId(null)
-        }
-        setDeleteConfirmOpen(false)
-        setResolutionToDeleteId(null)
+    deleteMutation.mutate(
+      { pathParams: { id: resolutionToDeleteId } },
+      {
+        onSuccess: () => {
+          if (selectedResolutionId === resolutionToDeleteId) {
+            setSelectedResolutionId(null)
+          }
+          setDeleteConfirmOpen(false)
+          setResolutionToDeleteId(null)
+        },
+        onError: () => {
+          setLocalFallbackResolutions((current) =>
+            current.filter((item) => item.id !== resolutionToDeleteId),
+          )
+          if (selectedResolutionId === resolutionToDeleteId) {
+            setSelectedResolutionId(null)
+          }
+          toast.success('BAC Resolution draft deleted.')
+          setDeleteConfirmOpen(false)
+          setResolutionToDeleteId(null)
+        },
       },
-      onError: () => {
-        setLocalFallbackResolutions((current) =>
-          current.filter((item) => item.id !== resolutionToDeleteId)
-        )
-        if (selectedResolutionId === resolutionToDeleteId) {
-          setSelectedResolutionId(null)
-        }
-        toast.success('BAC Resolution draft deleted.')
-        setDeleteConfirmOpen(false)
-        setResolutionToDeleteId(null)
-      },
-    })
+    )
   }
 
-  const handleLink = (payload: LinkConsolidatedPrsPayload) => {
-    linkMutation.mutate({ pathParams: { id: payload.bacResolutionId }, payload }, {
-      onSuccess: () => {
-        setLinkOpen(false)
-      },
-      onError: () => {
-        const mockPrs = getMockConsolidatedPrs()
-        const foundPr = mockPrs.find((p) => p.id === payload.consolidatedPRId)
-
-        if (!foundPr) {
-          toast.error('Selected Consolidated PR not found.')
-          return
-        }
-
-        setLocalFallbackResolutions((current) =>
-          current.map((item) => {
-            if (item.id !== payload.bacResolutionId) return item
-            return {
-              ...item,
-              linkedConsolidatedPrs: [{ ...foundPr }],
-              totalAmount: foundPr.amount,
-              updatedAt: new Date().toISOString(),
-              activityLog: [
-                {
-                  id: `log-${Date.now()}`,
-                  action: 'Linked Consolidated PR',
-                  actor: 'Procurement Staff Demo',
-                  timestamp: new Date().toISOString(),
-                  note: `Linked ${foundPr.prNumber}`,
-                },
-                ...item.activityLog,
-              ],
-            }
-          })
-        )
-        toast.success(`Consolidated PR ${foundPr.prNumber} linked successfully.`)
-        setLinkOpen(false)
-      },
-    })
-  }
+  const handleLink = () => {}
 
   const handleSubmit = () => {
     if (!selectedResolution) return
@@ -425,38 +342,42 @@ export function useBacResolutionWorkspaceState(
   const handleConfirmSubmit = () => {
     if (!selectedResolution) return
 
-    submitMutation.mutate({
-      pathParams: { id: selectedResolution.id }, payload: {
-        bacResolutionId: selectedResolution.id
-      }
-    }, {
-      onSuccess: () => {
-        setSubmitConfirmOpen(false)
+    submitMutation.mutate(
+      {
+        pathParams: { id: selectedResolution.id },
+        payload: {
+          bacResolutionId: selectedResolution.id,
+        },
       },
-      onError: () => {
-        setLocalFallbackResolutions((current) =>
-          current.map((item) => {
-            if (item.id !== selectedResolution.id) return item
-            return {
-              ...item,
-              status: 'for-approval',
-              updatedAt: new Date().toISOString(),
-              activityLog: [
-                {
-                  id: `log-${Date.now()}`,
-                  action: 'Submitted for approval',
-                  actor: 'Procurement Staff Demo',
-                  timestamp: new Date().toISOString(),
-                },
-                ...item.activityLog,
-              ],
-            }
-          })
-        )
-        toast.success('BAC Resolution submitted for approval.')
-        setSubmitConfirmOpen(false)
+      {
+        onSuccess: () => {
+          setSubmitConfirmOpen(false)
+        },
+        onError: () => {
+          setLocalFallbackResolutions((current) =>
+            current.map((item) => {
+              if (item.id !== selectedResolution.id) return item
+              return {
+                ...item,
+                status: 'for-approval',
+                updatedAt: new Date().toISOString(),
+                activityLog: [
+                  {
+                    id: `log-${Date.now()}`,
+                    action: 'Submitted for approval',
+                    actor: 'Procurement Staff Demo',
+                    timestamp: new Date().toISOString(),
+                  },
+                  ...item.activityLog,
+                ],
+              }
+            }),
+          )
+          toast.success('BAC Resolution submitted for approval.')
+          setSubmitConfirmOpen(false)
+        },
       },
-    })
+    )
   }
 
   const handlePrint = async () => {
@@ -464,9 +385,18 @@ export function useBacResolutionWorkspaceState(
     toast.success('BAC Resolution document layout generated.')
   }
 
-  const handleApprove = (payload: { bacResolutionId: string; signedDocument: File }) => {
+  const handleApprove = (payload: {
+    bacResolutionId: string
+    signedDocument: File
+  }) => {
     approveMutation.mutate(
-      { pathParams: { id: payload.bacResolutionId }, payload: { bacResolutionId: payload.bacResolutionId, signedDocument: payload.signedDocument } },
+      {
+        pathParams: { id: payload.bacResolutionId },
+        payload: {
+          bacResolutionId: payload.bacResolutionId,
+          signedDocument: payload.signedDocument,
+        },
+      },
       {
         onSuccess: () => {
           setApproveOpen(false)
@@ -493,21 +423,30 @@ export function useBacResolutionWorkspaceState(
                   ...item.activityLog,
                 ],
               }
-            })
-          );
-          toast.success('BAC Resolution approved by HOPE.');
-          setApproveOpen(false);
+            }),
+          )
+          toast.success('BAC Resolution approved by HOPE.')
+          setApproveOpen(false)
         },
-      }
-    );
-  };
+      },
+    )
+  }
 
-  const handleReturn = (payload: { bacResolutionId: string; reason: string }) => {
+  const handleReturn = (payload: {
+    bacResolutionId: string
+    reason: string
+  }) => {
     returnMutation.mutate(
-      { pathParams: { id: payload.bacResolutionId }, payload: { bacResolutionId: payload.bacResolutionId, reason: payload.reason } },
+      {
+        pathParams: { id: payload.bacResolutionId },
+        payload: {
+          bacResolutionId: payload.bacResolutionId,
+          reason: payload.reason,
+        },
+      },
       {
         onSuccess: () => {
-          setReturnOpen(false);
+          setReturnOpen(false)
         },
         onError: () => {
           setLocalFallbackResolutions((current) =>
@@ -529,14 +468,14 @@ export function useBacResolutionWorkspaceState(
                   ...item.activityLog,
                 ],
               }
-            })
-          );
-          toast.success('BAC Resolution returned for revision.');
-          setReturnOpen(false);
+            }),
+          )
+          toast.success('BAC Resolution returned for revision.')
+          setReturnOpen(false)
         },
-      }
-    );
-  };
+      },
+    )
+  }
 
   const countByStatus = (status: BacResolutionInboxFilter) => {
     if (status === 'all') return scopedResolutions.length

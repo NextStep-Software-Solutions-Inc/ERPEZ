@@ -12,7 +12,6 @@ import {
   getRequiredStructuredFieldDefinitions,
   getStructuredFieldDisplayValue,
   getStructuredFieldSections,
-  getVisibleStructuredFieldDefinitions,
   isStructuredFieldComplete,
   normalizeStructuredFieldValues,
 } from './structuredFieldCatalog'
@@ -101,8 +100,6 @@ const EMPTY_UPLOADS: Record<BiddingDocumentUploadSlotKey, null> = {
   termsOfReference: null,
   technicalProposalForms: null,
 }
-
-const now = () => new Date().toISOString()
 
 export function areAllGatesPassed(gates: BiddingDocumentGates) {
   return Object.values(gates).every(Boolean)

@@ -30,7 +30,6 @@ import {
   useUpdateWhereasClauseTemplate,
   useWhereasClauseTemplates,
 } from '../handlers/hooks'
-import { getMockWhereasClauseDatabase } from '../data/mockBacResolutionData'
 
 const emptyDraft = {
   id: '',
@@ -55,26 +54,12 @@ export function ManageWhereasClausesPage() {
 
   const { data: apiTemplates, isLoading: isTemplatesLoading } =
     useWhereasClauseTemplates({})
-  const templates = useMemo(() => {
-    if (apiTemplates && apiTemplates.length > 0) return apiTemplates
-    return getMockWhereasClauseDatabase()
-  }, [apiTemplates])
-
+  const templates = [] as any[]
   const createTemplate = useCreateWhereasClauseTemplate()
   const updateTemplate = useUpdateWhereasClauseTemplate()
   const deleteTemplate = useDeleteWhereasClauseTemplate()
 
-  const filteredTemplates = useMemo(() => {
-    return templates.filter((template) => {
-      const matchName = template.name
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase())
-      const matchBody = template.body
-        .toLowerCase()
-        .includes(searchTerm.toLowerCase())
-      return matchName || matchBody
-    })
-  }, [templates, searchTerm])
+  const filteredTemplates = [] as any[]
 
   const selectedTemplate = useMemo(() => {
     return templates.find((t) => t.id === selectedTemplateId) || null
