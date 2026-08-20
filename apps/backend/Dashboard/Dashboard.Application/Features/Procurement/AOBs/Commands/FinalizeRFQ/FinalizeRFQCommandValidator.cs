@@ -6,8 +6,8 @@ public class FinalizeRFQCommandValidator : AbstractValidator<FinalizeRFQCommand>
 {
     public FinalizeRFQCommandValidator()
     {
-        RuleFor(x => x.ProcurementProjectId)
+        RuleFor(x => x.RFQId)
             .NotEmpty()
-            .WithMessage("Procurement Project ID is required.");
+            .WithMessage("RFQ ID is required.");
     }
 }

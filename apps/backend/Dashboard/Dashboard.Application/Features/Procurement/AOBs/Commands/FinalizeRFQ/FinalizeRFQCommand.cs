@@ -3,4 +3,4 @@ using MediatR;
 
 namespace ERPEZ.Application.Features.Procurement.AOBs.Commands.FinalizeRFQ;
 
-public record FinalizeRFQCommand(Guid ProcurementProjectId) : IRequest<ApiResponse<Unit>>;
+public record FinalizeRFQCommand(Guid RFQId) : IRequest<ApiResponse<Unit>>;

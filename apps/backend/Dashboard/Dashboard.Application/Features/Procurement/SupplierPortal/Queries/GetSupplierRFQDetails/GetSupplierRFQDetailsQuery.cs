@@ -1,0 +1,66 @@
+using ERPEZ.Application.Features.Procurement.SupplierPortal.Dtos;
+using ERPEZ.Domain.Interfaces;
+using ERPEZ.Shared.Common;
+using MediatR;
+using Microsoft.EntityFrameworkCore;
+
+namespace ERPEZ.Application.Features.Procurement.SupplierPortal.Queries.GetSupplierRFQDetails;
+
+public record GetSupplierRFQDetailsQuery(Guid RFQId, Guid SupplierId) : IRequest<ApiResponse<SupplierRFQDto>>;
+
+public class GetSupplierRFQDetailsQueryHandler(IUnitOfWork unitOfWork)
+    : IRequestHandler<GetSupplierRFQDetailsQuery, ApiResponse<SupplierRFQDto>>
+{
+    public async Task<ApiResponse<SupplierRFQDto>> Handle(GetSupplierRFQDetailsQuery request, CancellationToken cancellationToken)
+    {
+        var rfq = await unitOfWork.RFQRepository.Query()
+            .Include(r => r.RFQItems)
+            .Include(r => r.RFQSuppliers)
+            .FirstOrDefaultAsync(r => r.Id == request.RFQId && !r.IsDeleted, cancellationToken);
+
+        if (rfq == null)
+        {
+            return ApiResponse<SupplierRFQDto>.Fail("Request for Quotation (RFQ) not found.");
+        }
+
+        var invitation = rfq.RFQSuppliers.FirstOrDefault(s => s.SupplierId == request.SupplierId);
+        if (invitation == null)
+        {
+            return ApiResponse<SupplierRFQDto>.Fail("Supplier has not been invited to this RFQ.");
+        }
+
+        var existingBid = await unitOfWork.SupplierBidRepository.Query()
+            .FirstOrDefaultAsync(b => b.RFQId == request.RFQId && b.SupplierId == request.SupplierId && !b.IsDeleted, cancellationToken);
+
+        var dto = new SupplierRFQDto
+        {
+            Id = rfq.Id,
+            RFQNumber = rfq.RFQNumber,
+            TracingNumber = rfq.TracingNumber,
+            Description = rfq.Description,
+            Purpose = rfq.Purpose,
+            DeliveryPeriod = rfq.DeliveryPeriod,
+            Date = rfq.Date,
+            Deadline = rfq.Deadline,
+            TotalAmount = rfq.TotalAmount,
+            Status = rfq.Status,
+            InvitedAt = invitation.InvitedAt,
+            HasSubmittedBid = existingBid != null,
+            BidStatus = existingBid?.Status,
+            Items = rfq.RFQItems.Select(i => new SupplierRFQItemDto
+            {
+                Id = i.Id,
+                RFQId = i.RFQId,
+                ItemName = i.ItemNameSnapshot,
+                Category = i.CategorySnapshot,
+                Quantity = i.Quantity,
+                UnitPriceSnapshot = i.UnitPriceSnapshot,
+                TotalABC = i.Quantity * i.UnitPriceSnapshot,
+                IsBrochureRequired = i.IsBrochureRequired,
+                GreenSpecification = i.GreenSpecification
+            }).ToList()
+        };
+
+        return ApiResponse<SupplierRFQDto>.Success(dto);
+    }
+}

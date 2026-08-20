@@ -1,8 +1,4 @@
-using System;
-using System.Linq;
 using System.Linq.Expressions;
-using System.Threading;
-using System.Threading.Tasks;
 using ERPEZ.Application.Features.Procurement.AOBs.Dtos;
 using ERPEZ.Domain.Entities.Procurement;
 using ERPEZ.Domain.Interfaces;
@@ -40,16 +36,26 @@ public class GetAOBsQueryHandler(IUnitOfWork unitOfWork, ISieveProcessor sievePr
             AOBDate = a.AOBDate,
             OpeningDate = a.OpeningDate,
             Status = a.Status,
-            ProcurementProjectIds = a.AOBProcurementProjectMappings.Select(m => m.ProcurementProjectId).ToList(),
+            SubmittedBy = a.SubmittedBy,
+            SubmittedAt = a.SubmittedAt,
+            ApprovedBy = a.ApprovedBy,
+            ApprovedAt = a.ApprovedAt,
+            SignedDocumentUrl = a.SignedDocumentUrl,
+            Remarks = a.Remarks,
+            RFQIds = a.AOBRFQMappings.Select(m => m.RFQId).ToList(),
             AwardedItems = a.AOBAwardedItems.Select(ai => new AOBAwardedItemResponse
             {
                 Id = ai.Id,
-                APPItemId = ai.APPItemId,
-                APPItemName = ai.APPItem != null && ai.APPItem.PPMPItem != null ? ai.APPItem.PPMPItem.Name : string.Empty,
+                RFQItemId = ai.RFQItemId,
+                ItemName = ai.RFQItem != null ? ai.RFQItem.ItemNameSnapshot : string.Empty,
                 WinningSupplierId = ai.WinningSupplierId,
                 WinningSupplierName = ai.WinningSupplier != null ? ai.WinningSupplier.Name : string.Empty,
                 AwardedUnitPrice = ai.AwardedUnitPrice,
-                Score = ai.Score
+                AwardedQuantity = ai.AwardedQuantity,
+                TotalAwardedAmount = ai.TotalAwardedAmount,
+                Score = ai.Score,
+                AwardReason = ai.AwardReason,
+                PurchaseOrderId = ai.PurchaseOrderId
             }).ToList()
         };
 
