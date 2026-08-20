@@ -18,13 +18,19 @@ public class UpdateAPRCommandHandler(IUnitOfWork unitOfWork)
         if (apr is null)
             throw new NotFoundException("APR not found.");
 
-        if (apr.Status != StatusEnum.Draft)
+        if (apr.Status != StatusEnum.Draft && apr.Status != StatusEnum.Returned)
             return ApiResponse<Guid>.Fail(
-                $"Only APRs in Draft status can be edited. Current status: {apr.Status}.");
+                $"Only APRs in Draft or Returned status can be edited. Current status: {apr.Status}.");
 
-        var app = await unitOfWork.APPRepository.GetAPPWithDetailsAsync(apr.APPId, cancellationToken);
+        var targetAppId = request.APPId.HasValue && request.APPId.Value != Guid.Empty
+            ? request.APPId.Value
+            : apr.APPId;
+
+        var app = await unitOfWork.APPRepository.GetAPPWithDetailsAsync(targetAppId, cancellationToken);
         if (app is null)
             throw new NotFoundException("Source APP not found.");
+
+        apr.APPId = targetAppId;
 
         var allAppItemsForApp = app.APPItems;
         var appItemIds = request.Items.Select(i => i.APPItemId).ToList();
@@ -32,6 +38,11 @@ public class UpdateAPRCommandHandler(IUnitOfWork unitOfWork)
 
         if (selectedAppItems.Count != appItemIds.Count)
             return ApiResponse<Guid>.Fail("One or more selected line items do not belong to the source APP.");
+
+        var allocatedItemIds = await unitOfWork.APRItemRepository.GetAllocatedAPPItemIdsAsync(apr.Id, cancellationToken);
+        var conflictingIds = appItemIds.Intersect(allocatedItemIds).ToList();
+        if (conflictingIds.Count > 0)
+            return ApiResponse<Guid>.Fail("One or more selected line items have already been added to another APR.");
 
         static (decimal qty, decimal amount) GetTotals(APPItem appItem)
         {
@@ -54,10 +65,14 @@ public class UpdateAPRCommandHandler(IUnitOfWork unitOfWork)
         apr.RequiresCompleteSpecifications = request.RequiresCompleteSpecifications;
         apr.AdditionalRemarks = request.AdditionalRemarks;
 
-        var existingByAppItemId = apr.APRItems.ToDictionary(i => i.APPItemId);
+        var existingByAppItemId = apr.APRItems
+            .Where(i => i.APPItemId.HasValue)
+            .ToDictionary(i => i.APPItemId!.Value);
         var incomingAppItemIds = request.Items.Select(i => i.APPItemId).ToHashSet();
 
-        var toRemove = apr.APRItems.Where(i => !incomingAppItemIds.Contains(i.APPItemId)).ToList();
+        var toRemove = apr.APRItems
+            .Where(i => i.APPItemId.HasValue && !incomingAppItemIds.Contains(i.APPItemId.Value))
+            .ToList();
         foreach (var item in toRemove)
         {
             unitOfWork.APRItemRepository.Remove(item);
@@ -104,7 +119,8 @@ public class UpdateAPRCommandHandler(IUnitOfWork unitOfWork)
             }
         }
 
-        apr.TotalAmount = totalAmount;
+        var catalogTotal = apr.APRItems.Where(i => !i.APPItemId.HasValue).Sum(i => i.TotalCost);
+        apr.TotalAmount = totalAmount + catalogTotal;
 
         if (totalAmount > appApprovedBudget)
             return ApiResponse<Guid>.Fail(

@@ -28,6 +28,7 @@ interface CreateLIBActivityDialogProps {
   wfpData?: WFPDetails
   isOPCRLoading?: boolean
   isWFPLoading?: boolean
+  existingOPCRActivityIds?: string[]
 }
 
 export default function CreateLIBActivityDialog({
@@ -39,6 +40,7 @@ export default function CreateLIBActivityDialog({
   wfpData,
   isOPCRLoading,
   isWFPLoading,
+  existingOPCRActivityIds = [],
   open: controlledOpen,
   onOpenChange: controlledOnOpenChange,
   onSubmitOverride,
@@ -123,6 +125,7 @@ export default function CreateLIBActivityDialog({
             libId={libId}
             isOPCRLoading={isOPCRLoading}
             opcrData={opcrData}
+            existingOPCRActivityIds={existingOPCRActivityIds}
             onClose={() => setOpen(false)}
             onCreated={() => {
               setOpen(false)
@@ -136,6 +139,7 @@ export default function CreateLIBActivityDialog({
           <CreateWfpLineItemBudgetDetailsForm
             libId={libId}
             scope={scope}
+            wfpData={wfpData}
             onClose={() => setOpen(false)}
             onCreated={() => {
               setOpen(false)

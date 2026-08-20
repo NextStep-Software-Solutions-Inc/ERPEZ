@@ -1,9 +1,12 @@
+using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Commands.AddCatalogItems;
+using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Commands.ChangeAPRStatus;
 using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Commands.CreateAPR;
 using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Commands.DeleteAPR;
+using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Commands.RemoveAPRItem;
 using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Commands.SubmitAPR;
 using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Commands.UpdateAPR;
-using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Commands.ChangeAPRStatus;
 using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Dtos;
+using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Queries.GetAllocatedAPPItemIds;
 using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Queries.GetAPRById;
 using ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Queries.GetAPRs;
 using ERPEZ.Shared.Common;
@@ -19,6 +22,17 @@ namespace ERPEZ.Api.Controllers;
 [ApiController]
 public class APRController(ISender mediator) : ControllerBase
 {
+    /// <summary>
+    /// Get list of APP item IDs already allocated in active APRs
+    /// </summary>
+    [HttpGet("allocated-app-item-ids")]
+    [ProducesResponseType(typeof(ApiResponse<List<Guid>>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetAllocatedAPPItemIds([FromQuery] Guid? excludeAprId = null)
+    {
+        var result = await mediator.Send(new GetAllocatedAPPItemIdsQuery(excludeAprId));
+        return Ok(result);
+    }
+
     /// <summary>
     /// Create a new Agency Purchase Request (APR) from an approved APP
     /// </summary>
@@ -118,6 +132,37 @@ public class APRController(ISender mediator) : ControllerBase
         };
 
         var result = await mediator.Send(command);
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    /// <summary>
+    /// Add or update items from PSDBM catalog in an existing Draft/Returned APR
+    /// </summary>
+    [HttpPost("{id}/catalog-items")]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> AddCatalogItems(Guid id, [FromBody] AddCatalogItemsToAPRCommand command)
+    {
+        if (id != command.APRId)
+        {
+            command = command with { APRId = id };
+        }
+
+        var result = await mediator.Send(command);
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
+
+    /// <summary>
+    /// Remove an item from a Draft/Returned APR
+    /// </summary>
+    [HttpDelete("{id}/items/{itemIdentifier}")]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> RemoveAPRItem(Guid id, string itemIdentifier)
+    {
+        var result = await mediator.Send(new RemoveAPRItemCommand(id, itemIdentifier));
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 }

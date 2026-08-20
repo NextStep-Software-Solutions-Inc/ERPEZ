@@ -159,8 +159,9 @@ function WFPDetailPage({ wfpId }: { wfpId: string }) {
   const opcr = wfp.opcr
   const office = wfp.office
   const fundSource = wfp.fundSource
+  const isEditableState = wfp?.status === 'Draft' || wfp?.status === 'Returned'
+  const actions: MetaActions = isEditableState ? ['write', 'delete', 'read'] : ['read']
   const remainingWeight = 100 - (wfp.wfpObjectives?.reduce((acc: number, obj: { weight: number }) => acc + obj.weight, 0) ?? 0)
-  const actions: MetaActions = ['write', 'delete', 'read']
 
   const registeredActivitiesFromObjectives = wfp.wfpObjectives?.reduce((acc: number, obj: any) => {
     return acc + (obj.wfpObjectiveActivities?.length || 0)
@@ -202,8 +203,6 @@ function WFPDetailPage({ wfpId }: { wfpId: string }) {
     label: (wfp?.status || 'DRAFT').toUpperCase(),
     variant: 'bg-slate-50 text-slate-700 border-slate-200',
   }
-
-  const isEditableState = wfp?.status === 'Draft' || wfp?.status === 'Returned'
 
   // Submit Handler with Validation Dialog Trigger
   const handleSubmissionClick = () => {
@@ -436,9 +435,9 @@ function WFPDetailPage({ wfpId }: { wfpId: string }) {
               data={wfp?.wfpObjectives || []}
               columns={Column}
               actions={actions}
-              readonly={false}
+              readonly={!isEditableState}
               toolbar={(table) => <Toolbar table={table} remainingWeight={remainingWeight} />}
-              meta={{ wfps: wfp || [] }}
+              meta={{ wfps: wfp || [], readonly: !isEditableState, actions }}
               fixedPageSize={10}
             />
             <CreateWFPObjectiveDialog wfpId={wfpId} remainingWeight={remainingWeight} opcr={opcr} />
@@ -452,7 +451,7 @@ function WFPDetailPage({ wfpId }: { wfpId: string }) {
       <WFPInformationPanel
         wfp={wfp}
         fundSource={fundSource}
-        onEditObjective={() => setUpdateDialog({ isOpen: true, selectedId: wfpId })}
+        onEditObjective={isEditableState && actions.includes('write') ? () => setUpdateDialog({ isOpen: true, selectedId: wfpId }) : undefined}
       />
 
       {/* ── 5. Consolidated WFP Status & Audit History Panel ── */}

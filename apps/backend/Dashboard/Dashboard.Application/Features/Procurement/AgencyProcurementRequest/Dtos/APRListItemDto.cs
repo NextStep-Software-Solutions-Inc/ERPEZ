@@ -38,15 +38,20 @@ public class APRDetailDto
     public string? AdditionalRemarks { get; set; }
     public DateTime? SubmittedDate { get; set; }
     public DateTime? ApprovedDate { get; set; }
+    public DateTime? ReturnedDate { get; set; }
+    public string? ReturnRemarks { get; set; }
+    public string? ApprovedBy { get; set; }
+    public string? ReturnedBy { get; set; }
     public List<APRItemDto> Items { get; set; } = [];
 }
 
 public class APRItemDto
 {
     public Guid Id { get; set; }
-    public Guid APPItemId { get; set; }
-    public Guid PPMPItemId { get; set; }
-    public string Description { get; set; } = string.Empty; // from PPMPItem.Name (Image 6-10)
+    public Guid? APPItemId { get; set; }
+    public Guid? PPMPItemId { get; set; }
+    public string ItemCode { get; set; } = string.Empty;
+    public string Description { get; set; } = string.Empty;
     public string Unit { get; set; } = string.Empty;
     public decimal QuantityRequested { get; set; }
     public decimal UnitCost { get; set; }

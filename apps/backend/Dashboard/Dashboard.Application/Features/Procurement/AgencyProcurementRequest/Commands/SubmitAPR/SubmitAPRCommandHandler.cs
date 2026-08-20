@@ -17,9 +17,9 @@ public class SubmitAPRCommandHandler(IUnitOfWork unitOfWork)
         if (apr is null)
             return ApiResponse<string>.Fail("APR not found.");
 
-        if (apr.Status != StatusEnum.Draft)
+        if (apr.Status != StatusEnum.Draft && apr.Status != StatusEnum.Returned)
             return ApiResponse<string>.Fail(
-                $"Only APRs in Draft status can be submitted for approval. Current status: {apr.Status}.");
+                $"Only APRs in Draft or Returned status can be submitted for approval. Current status: {apr.Status}.");
 
         if (apr.APRItems.Count == 0)
             return ApiResponse<string>.Fail("Cannot submit an APR with no line items.");
@@ -30,6 +30,12 @@ public class SubmitAPRCommandHandler(IUnitOfWork unitOfWork)
 
         apr.Status = StatusEnum.ForApproval;
         apr.SubmittedDate = DateTime.UtcNow;
+
+        if (!string.IsNullOrWhiteSpace(apr.APRNumber) && !apr.APRNumber.Contains("DRAFT", StringComparison.OrdinalIgnoreCase))
+        {
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+            return ApiResponse<string>.Success(apr.APRNumber, "APR submitted for approval.");
+        }
 
         for (var attempt = 0; ; attempt++)
         {

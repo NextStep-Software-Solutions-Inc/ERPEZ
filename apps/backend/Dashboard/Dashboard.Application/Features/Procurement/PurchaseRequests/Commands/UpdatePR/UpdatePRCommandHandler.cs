@@ -51,7 +51,12 @@ public class UpdatePRCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<Up
                             itemReq.APRItemId.Value, cancellationToken)
                             ?? throw new NotFoundException(
                                 $"APR Item with ID {itemReq.APRItemId} not found.");
-                        resolvedPpmpItemId = aprItem.PPMPItemId;
+                        if (!aprItem.PPMPItemId.HasValue)
+                        {
+                            throw new ValidationException(
+                                $"APR Item with ID {itemReq.APRItemId} has no linked PPMP item.");
+                        }
+                        resolvedPpmpItemId = aprItem.PPMPItemId.Value;
                     }
                     else
                     {

@@ -94,6 +94,15 @@ public record LIBNestedObjectResponse
     public Guid Id { get; init; }
     public string Name { get; init; } = string.Empty;
     public string Code { get; init; } = string.Empty;
+    public Guid? ParentId { get; init; }
+    public LIBNestedObjectParentResponse? ParentObject { get; init; }
+}
+
+public record LIBNestedObjectParentResponse
+{
+    public Guid Id { get; init; }
+    public string Name { get; init; } = string.Empty;
+    public string Code { get; init; } = string.Empty;
 }
 
 public record LIBNestedExpenseClassResponse

@@ -268,6 +268,7 @@ export default function OPCRDetailPage({
                 selectedKPIForActivity={selectedKPIForActivity}
                 setSelectedKPIForActivity={setSelectedKPIForActivity}
                 getQuarterlyTargets={getQuarterlyTargets}
+                officeId={opcrData?.office?.id || (opcrData as any)?.officeId}
               />
             ) : (
               <div className="text-center py-10">

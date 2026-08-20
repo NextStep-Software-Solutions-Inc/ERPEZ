@@ -106,6 +106,7 @@ import { Route as V2PlanningOrganizationLayoutRouteImport } from './routes/v2/_p
 import { Route as V2procurementNoticeToProceedNtpNtpIdRouteImport } from './routes/v2/(procurement)/notice-to-proceed-ntp/$ntpId'
 import { Route as V2procurementManageSupplierPortalProjectIdRouteImport } from './routes/v2/(procurement)/manage-supplier-portal/$projectId'
 import { Route as V2procurementManageNtpNtpIdRouteImport } from './routes/v2/(procurement)/manage-ntp/$ntpId'
+import { Route as V2procurementManageAprsAprIdRouteImport } from './routes/v2/(procurement)/manage-aprs/$aprId'
 import { Route as V2procurementManageAobAobIdRouteImport } from './routes/v2/(procurement)/manage-aob/$aobId'
 import { Route as V2procurementAgencyPurchaseRequestsAprAprIdRouteImport } from './routes/v2/(procurement)/agency-purchase-requests-apr/$aprId'
 import { Route as V2procurementAbstractOfBidsAobAobIdRouteImport } from './routes/v2/(procurement)/abstract-of-bids-aob/$aobId'
@@ -129,6 +130,7 @@ import { Route as V2procurementPoPurchaseOrderIdIndexRouteImport } from './route
 import { Route as V2procurementNoticeOfAwardNoaNoaIdIndexRouteImport } from './routes/v2/(procurement)/notice-of-award-noa/$noaId/index'
 import { Route as V2procurementManageNoaNoaIdIndexRouteImport } from './routes/v2/(procurement)/manage-noa/$noaId/index'
 import { Route as V2procurementBiddingDocumentsBacResolutionIdIndexRouteImport } from './routes/v2/(procurement)/bidding-documents/$bacResolutionId/index'
+import { Route as V2procurementBacResolutionsClausesIndexRouteImport } from './routes/v2/(procurement)/bac-resolutions/clauses/index'
 import { Route as V2planningWfpWfpIdIndexRouteImport } from './routes/v2/(planning)/wfp/$wfpId/index'
 import { Route as V2planningWfpObjectiveWfpObjectiveIdIndexRouteImport } from './routes/v2/(planning)/wfp-objective/$wfpObjectiveId/index'
 import { Route as V2planningWfpExpenditureWfpObjectiveActivityIdIndexRouteImport } from './routes/v2/(planning)/wfp-expenditure/$wfpObjectiveActivityId/index'
@@ -780,6 +782,12 @@ const V2procurementManageNtpNtpIdRoute =
     path: '/manage-ntp/$ntpId',
     getParentRoute: () => V2Route,
   } as any)
+const V2procurementManageAprsAprIdRoute =
+  V2procurementManageAprsAprIdRouteImport.update({
+    id: '/(procurement)/manage-aprs/$aprId',
+    path: '/manage-aprs/$aprId',
+    getParentRoute: () => V2Route,
+  } as any)
 const V2procurementManageAobAobIdRoute =
   V2procurementManageAobAobIdRouteImport.update({
     id: '/(procurement)/manage-aob/$aobId',
@@ -912,6 +920,12 @@ const V2procurementBiddingDocumentsBacResolutionIdIndexRoute =
   V2procurementBiddingDocumentsBacResolutionIdIndexRouteImport.update({
     id: '/(procurement)/bidding-documents/$bacResolutionId/',
     path: '/bidding-documents/$bacResolutionId/',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2procurementBacResolutionsClausesIndexRoute =
+  V2procurementBacResolutionsClausesIndexRouteImport.update({
+    id: '/(procurement)/bac-resolutions/clauses/',
+    path: '/bac-resolutions/clauses/',
     getParentRoute: () => V2Route,
   } as any)
 const V2planningWfpWfpIdIndexRoute = V2planningWfpWfpIdIndexRouteImport.update({
@@ -1312,6 +1326,7 @@ export interface FileRoutesByFullPath {
   '/v2/abstract-of-bids-aob/$aobId': typeof V2procurementAbstractOfBidsAobAobIdRoute
   '/v2/agency-purchase-requests-apr/$aprId': typeof V2procurementAgencyPurchaseRequestsAprAprIdRoute
   '/v2/manage-aob/$aobId': typeof V2procurementManageAobAobIdRoute
+  '/v2/manage-aprs/$aprId': typeof V2procurementManageAprsAprIdRoute
   '/v2/manage-ntp/$ntpId': typeof V2procurementManageNtpNtpIdRoute
   '/v2/manage-supplier-portal/$projectId': typeof V2procurementManageSupplierPortalProjectIdRoute
   '/v2/notice-to-proceed-ntp/$ntpId': typeof V2procurementNoticeToProceedNtpNtpIdRoute
@@ -1411,6 +1426,7 @@ export interface FileRoutesByFullPath {
   '/v2/wfp-expenditure/$wfpObjectiveActivityId/': typeof V2planningWfpExpenditureWfpObjectiveActivityIdIndexRoute
   '/v2/wfp-objective/$wfpObjectiveId/': typeof V2planningWfpObjectiveWfpObjectiveIdIndexRoute
   '/v2/wfp/$wfpId/': typeof V2planningWfpWfpIdIndexRoute
+  '/v2/bac-resolutions/clauses': typeof V2procurementBacResolutionsClausesIndexRoute
   '/v2/bidding-documents/$bacResolutionId': typeof V2procurementBiddingDocumentsBacResolutionIdIndexRoute
   '/v2/manage-noa/$noaId': typeof V2procurementManageNoaNoaIdIndexRoute
   '/v2/notice-of-award-noa/$noaId': typeof V2procurementNoticeOfAwardNoaNoaIdIndexRoute
@@ -1476,6 +1492,7 @@ export interface FileRoutesByTo {
   '/v2/abstract-of-bids-aob/$aobId': typeof V2procurementAbstractOfBidsAobAobIdRoute
   '/v2/agency-purchase-requests-apr/$aprId': typeof V2procurementAgencyPurchaseRequestsAprAprIdRoute
   '/v2/manage-aob/$aobId': typeof V2procurementManageAobAobIdRoute
+  '/v2/manage-aprs/$aprId': typeof V2procurementManageAprsAprIdRoute
   '/v2/manage-ntp/$ntpId': typeof V2procurementManageNtpNtpIdRoute
   '/v2/manage-supplier-portal/$projectId': typeof V2procurementManageSupplierPortalProjectIdRoute
   '/v2/notice-to-proceed-ntp/$ntpId': typeof V2procurementNoticeToProceedNtpNtpIdRoute
@@ -1574,6 +1591,7 @@ export interface FileRoutesByTo {
   '/v2/wfp-expenditure/$wfpObjectiveActivityId': typeof V2planningWfpExpenditureWfpObjectiveActivityIdIndexRoute
   '/v2/wfp-objective/$wfpObjectiveId': typeof V2planningWfpObjectiveWfpObjectiveIdIndexRoute
   '/v2/wfp/$wfpId': typeof V2planningWfpWfpIdIndexRoute
+  '/v2/bac-resolutions/clauses': typeof V2procurementBacResolutionsClausesIndexRoute
   '/v2/bidding-documents/$bacResolutionId': typeof V2procurementBiddingDocumentsBacResolutionIdIndexRoute
   '/v2/manage-noa/$noaId': typeof V2procurementManageNoaNoaIdIndexRoute
   '/v2/notice-of-award-noa/$noaId': typeof V2procurementNoticeOfAwardNoaNoaIdIndexRoute
@@ -1656,6 +1674,7 @@ export interface FileRoutesById {
   '/v2/(procurement)/abstract-of-bids-aob/$aobId': typeof V2procurementAbstractOfBidsAobAobIdRoute
   '/v2/(procurement)/agency-purchase-requests-apr/$aprId': typeof V2procurementAgencyPurchaseRequestsAprAprIdRoute
   '/v2/(procurement)/manage-aob/$aobId': typeof V2procurementManageAobAobIdRoute
+  '/v2/(procurement)/manage-aprs/$aprId': typeof V2procurementManageAprsAprIdRoute
   '/v2/(procurement)/manage-ntp/$ntpId': typeof V2procurementManageNtpNtpIdRoute
   '/v2/(procurement)/manage-supplier-portal/$projectId': typeof V2procurementManageSupplierPortalProjectIdRoute
   '/v2/(procurement)/notice-to-proceed-ntp/$ntpId': typeof V2procurementNoticeToProceedNtpNtpIdRoute
@@ -1755,6 +1774,7 @@ export interface FileRoutesById {
   '/v2/(planning)/wfp-expenditure/$wfpObjectiveActivityId/': typeof V2planningWfpExpenditureWfpObjectiveActivityIdIndexRoute
   '/v2/(planning)/wfp-objective/$wfpObjectiveId/': typeof V2planningWfpObjectiveWfpObjectiveIdIndexRoute
   '/v2/(planning)/wfp/$wfpId/': typeof V2planningWfpWfpIdIndexRoute
+  '/v2/(procurement)/bac-resolutions/clauses/': typeof V2procurementBacResolutionsClausesIndexRoute
   '/v2/(procurement)/bidding-documents/$bacResolutionId/': typeof V2procurementBiddingDocumentsBacResolutionIdIndexRoute
   '/v2/(procurement)/manage-noa/$noaId/': typeof V2procurementManageNoaNoaIdIndexRoute
   '/v2/(procurement)/notice-of-award-noa/$noaId/': typeof V2procurementNoticeOfAwardNoaNoaIdIndexRoute
@@ -1838,6 +1858,7 @@ export interface FileRouteTypes {
     | '/v2/abstract-of-bids-aob/$aobId'
     | '/v2/agency-purchase-requests-apr/$aprId'
     | '/v2/manage-aob/$aobId'
+    | '/v2/manage-aprs/$aprId'
     | '/v2/manage-ntp/$ntpId'
     | '/v2/manage-supplier-portal/$projectId'
     | '/v2/notice-to-proceed-ntp/$ntpId'
@@ -1937,6 +1958,7 @@ export interface FileRouteTypes {
     | '/v2/wfp-expenditure/$wfpObjectiveActivityId/'
     | '/v2/wfp-objective/$wfpObjectiveId/'
     | '/v2/wfp/$wfpId/'
+    | '/v2/bac-resolutions/clauses'
     | '/v2/bidding-documents/$bacResolutionId'
     | '/v2/manage-noa/$noaId'
     | '/v2/notice-of-award-noa/$noaId'
@@ -2002,6 +2024,7 @@ export interface FileRouteTypes {
     | '/v2/abstract-of-bids-aob/$aobId'
     | '/v2/agency-purchase-requests-apr/$aprId'
     | '/v2/manage-aob/$aobId'
+    | '/v2/manage-aprs/$aprId'
     | '/v2/manage-ntp/$ntpId'
     | '/v2/manage-supplier-portal/$projectId'
     | '/v2/notice-to-proceed-ntp/$ntpId'
@@ -2100,6 +2123,7 @@ export interface FileRouteTypes {
     | '/v2/wfp-expenditure/$wfpObjectiveActivityId'
     | '/v2/wfp-objective/$wfpObjectiveId'
     | '/v2/wfp/$wfpId'
+    | '/v2/bac-resolutions/clauses'
     | '/v2/bidding-documents/$bacResolutionId'
     | '/v2/manage-noa/$noaId'
     | '/v2/notice-of-award-noa/$noaId'
@@ -2181,6 +2205,7 @@ export interface FileRouteTypes {
     | '/v2/(procurement)/abstract-of-bids-aob/$aobId'
     | '/v2/(procurement)/agency-purchase-requests-apr/$aprId'
     | '/v2/(procurement)/manage-aob/$aobId'
+    | '/v2/(procurement)/manage-aprs/$aprId'
     | '/v2/(procurement)/manage-ntp/$ntpId'
     | '/v2/(procurement)/manage-supplier-portal/$projectId'
     | '/v2/(procurement)/notice-to-proceed-ntp/$ntpId'
@@ -2280,6 +2305,7 @@ export interface FileRouteTypes {
     | '/v2/(planning)/wfp-expenditure/$wfpObjectiveActivityId/'
     | '/v2/(planning)/wfp-objective/$wfpObjectiveId/'
     | '/v2/(planning)/wfp/$wfpId/'
+    | '/v2/(procurement)/bac-resolutions/clauses/'
     | '/v2/(procurement)/bidding-documents/$bacResolutionId/'
     | '/v2/(procurement)/manage-noa/$noaId/'
     | '/v2/(procurement)/notice-of-award-noa/$noaId/'
@@ -3014,6 +3040,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof V2procurementManageNtpNtpIdRouteImport
       parentRoute: typeof V2Route
     }
+    '/v2/(procurement)/manage-aprs/$aprId': {
+      id: '/v2/(procurement)/manage-aprs/$aprId'
+      path: '/manage-aprs/$aprId'
+      fullPath: '/v2/manage-aprs/$aprId'
+      preLoaderRoute: typeof V2procurementManageAprsAprIdRouteImport
+      parentRoute: typeof V2Route
+    }
     '/v2/(procurement)/manage-aob/$aobId': {
       id: '/v2/(procurement)/manage-aob/$aobId'
       path: '/manage-aob/$aobId'
@@ -3173,6 +3206,13 @@ declare module '@tanstack/react-router' {
       path: '/bidding-documents/$bacResolutionId'
       fullPath: '/v2/bidding-documents/$bacResolutionId'
       preLoaderRoute: typeof V2procurementBiddingDocumentsBacResolutionIdIndexRouteImport
+      parentRoute: typeof V2Route
+    }
+    '/v2/(procurement)/bac-resolutions/clauses/': {
+      id: '/v2/(procurement)/bac-resolutions/clauses/'
+      path: '/bac-resolutions/clauses'
+      fullPath: '/v2/bac-resolutions/clauses'
+      preLoaderRoute: typeof V2procurementBacResolutionsClausesIndexRouteImport
       parentRoute: typeof V2Route
     }
     '/v2/(planning)/wfp/$wfpId/': {
@@ -4018,6 +4058,7 @@ interface V2RouteChildren {
   V2procurementAbstractOfBidsAobAobIdRoute: typeof V2procurementAbstractOfBidsAobAobIdRoute
   V2procurementAgencyPurchaseRequestsAprAprIdRoute: typeof V2procurementAgencyPurchaseRequestsAprAprIdRoute
   V2procurementManageAobAobIdRoute: typeof V2procurementManageAobAobIdRoute
+  V2procurementManageAprsAprIdRoute: typeof V2procurementManageAprsAprIdRoute
   V2procurementManageNtpNtpIdRoute: typeof V2procurementManageNtpNtpIdRoute
   V2procurementManageSupplierPortalProjectIdRoute: typeof V2procurementManageSupplierPortalProjectIdRoute
   V2procurementNoticeToProceedNtpNtpIdRoute: typeof V2procurementNoticeToProceedNtpNtpIdRoute
@@ -4071,6 +4112,7 @@ interface V2RouteChildren {
   V2planningMarketScopingManageActivitiesRoute: typeof V2planningMarketScopingManageActivitiesRoute
   V2planningMarketScopingManageParametersRoute: typeof V2planningMarketScopingManageParametersRoute
   V2planningAppConsolidationSupplementalIndexRoute: typeof V2planningAppConsolidationSupplementalIndexRoute
+  V2procurementBacResolutionsClausesIndexRoute: typeof V2procurementBacResolutionsClausesIndexRoute
   V2procurementBiddingDocumentsBacResolutionIdIndexRoute: typeof V2procurementBiddingDocumentsBacResolutionIdIndexRoute
   V2procurementManageNoaNoaIdIndexRoute: typeof V2procurementManageNoaNoaIdIndexRoute
   V2procurementNoticeOfAwardNoaNoaIdIndexRoute: typeof V2procurementNoticeOfAwardNoaNoaIdIndexRoute
@@ -4114,6 +4156,7 @@ const V2RouteChildren: V2RouteChildren = {
   V2procurementAgencyPurchaseRequestsAprAprIdRoute:
     V2procurementAgencyPurchaseRequestsAprAprIdRoute,
   V2procurementManageAobAobIdRoute: V2procurementManageAobAobIdRoute,
+  V2procurementManageAprsAprIdRoute: V2procurementManageAprsAprIdRoute,
   V2procurementManageNtpNtpIdRoute: V2procurementManageNtpNtpIdRoute,
   V2procurementManageSupplierPortalProjectIdRoute:
     V2procurementManageSupplierPortalProjectIdRoute,
@@ -4198,6 +4241,8 @@ const V2RouteChildren: V2RouteChildren = {
     V2planningMarketScopingManageParametersRoute,
   V2planningAppConsolidationSupplementalIndexRoute:
     V2planningAppConsolidationSupplementalIndexRoute,
+  V2procurementBacResolutionsClausesIndexRoute:
+    V2procurementBacResolutionsClausesIndexRoute,
   V2procurementBiddingDocumentsBacResolutionIdIndexRoute:
     V2procurementBiddingDocumentsBacResolutionIdIndexRoute,
   V2procurementManageNoaNoaIdIndexRoute: V2procurementManageNoaNoaIdIndexRoute,

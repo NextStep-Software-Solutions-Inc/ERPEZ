@@ -11,6 +11,7 @@ import {
   Calendar,
   Wallet,
   Coins,
+  Send,
 } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -43,6 +44,9 @@ import {
   WFPObjectiveActivityExpenditure,
 } from '@/features/planning/wfp/types/type.wfp'
 import OrphanLineItemsView from '@/features/planning/line-item-budgeting/line-item-budget-details/components/OrphanLineItemsView'
+import GroupedExpenditureItemsView from '@/features/planning/line-item-budgeting/line-item-budget-details/components/GroupedExpenditureItemsView'
+import { groupExpenditureItems } from '@/features/planning/line-item-budgeting/line-item-budget-details/utils/groupExpenditureData'
+import type { LineItemBudgetDetails } from '@/features/planning/line-item-budgeting/line-item-budget-details/types/types'
 import { updateLIBStatusRequest } from '@/features/planning/line-item-budgeting/line-item-budget/handlers/updateLIBStatusRequest'
 import { generateLIBDocumentRequest } from '@/features/planning/line-item-budgeting/line-item-budget/handlers/generateLIBDocumentRequest'
 import { downloadLIBDocumentRequest } from '@/features/planning/line-item-budgeting/line-item-budget/handlers/downloadLIBDocumentRequest'
@@ -244,7 +248,12 @@ export default function LIBDetailPage({
     )
   }
 
-  const totalBudgetFromSource = opcrData?.data?.totalBudget ?? lib?.totalAmount
+  const totalBudgetFromSource =
+    lib?.sourceType === 'OPCR'
+      ? (opcrData?.data?.totalBudget ?? lib?.totalAmount)
+      : lib?.sourceType === 'WFP'
+        ? (wfpData?.data?.proposedBudget ?? lib?.totalAmount)
+        : lib?.totalAmount
 
   //Calculate total amount from all activities added from each activities's expenditures
   const activityDetailsBudget = lib?.activities?.reduce(
@@ -263,14 +272,13 @@ export default function LIBDetailPage({
   ) ?? 0
 
   const totalActivitiesDetailBudget = activityDetailsBudget + orphanDetailsBudget
+  const proposedLibTotalBudget = Math.max(totalActivitiesDetailBudget, lib?.totalAmount ?? 0)
 
-  // Check if LIB is ready for submission
+  // Check if LIB is ready for submission (proposed totalBudget >= OPCR/Source totalBudget)
   const isReadyForSubmission =
-    totalBudgetFromSource !== undefined &&
-    totalBudgetFromSource > 0 &&
-    totalActivitiesDetailBudget >= totalBudgetFromSource &&
-    lib?.activities &&
-    lib.activities.length > 0
+    totalBudgetFromSource !== undefined && totalBudgetFromSource > 0
+      ? proposedLibTotalBudget >= totalBudgetFromSource
+      : proposedLibTotalBudget > 0 || (lib?.activities && lib.activities.length > 0)
 
   const activityCount = lib?.activities?.length ?? 0
   const opcrActivityCount = opcrData?.data?.activityCount
@@ -415,7 +423,14 @@ export default function LIBDetailPage({
       value:
         typeof lib?.fiscalYear === 'string'
           ? lib.fiscalYear
-          : lib?.fiscalYear?.year || 'N/A',
+          : lib?.fiscalYear?.year
+            ? lib.fiscalYear.year.toString()
+            : wfpData?.data?.projectStartDate && wfpData?.data?.projectEndDate
+              ? new Date(wfpData.data.projectStartDate).getFullYear() ===
+                new Date(wfpData.data.projectEndDate).getFullYear()
+                ? new Date(wfpData.data.projectStartDate).getFullYear().toString()
+                : `${new Date(wfpData.data.projectStartDate).getFullYear()} – ${new Date(wfpData.data.projectEndDate).getFullYear()}`
+              : 'N/A',
       icon: <Calendar className="h-5 w-5" />,
       gradientClass: 'from-purple-50/40 to-white hover:from-purple-50/70',
       borderClass: 'from-purple-400 to-purple-600',
@@ -484,11 +499,10 @@ export default function LIBDetailPage({
               <Button
                 variant="outline"
                 size="sm"
-                className={`gap-2 ${
-                  showHistory
-                    ? 'bg-slate-100 text-slate-800 border-slate-300'
-                    : 'text-slate-650 hover:bg-slate-50'
-                }`}
+                className={`gap-2 ${showHistory
+                  ? 'bg-slate-100 text-slate-800 border-slate-300'
+                  : 'text-slate-650 hover:bg-slate-50'
+                  }`}
                 onClick={() => setShowHistory(!showHistory)}
               >
                 <History className="w-4 h-4" />
@@ -548,6 +562,7 @@ export default function LIBDetailPage({
             <div className="flex items-start gap-3">
               <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
               <div>
+
                 <h3 className="font-semibold text-green-800 text-sm">
                   Ready for Submission
                 </h3>
@@ -563,6 +578,7 @@ export default function LIBDetailPage({
               className="bg-green-600 hover:bg-green-700 text-white flex-shrink-0 ml-4"
               size="sm"
             >
+              <Send className="w-5 h-5 text-white flex-shrink-0 mr-2" />
               {isSubmitting ? 'Submitting...' : 'Submit LIB'}
             </Button>
           </div>
@@ -587,19 +603,19 @@ export default function LIBDetailPage({
           {/* Activities Column (left - spans 2) */}
           <div className="lg:col-span-2">
             {lib?.sourceType === 'WFP' && lib?.scope === 'Project' ? (
-              // For WFP Project scope: Show Orphan Line Items
+              // For WFP Project scope: Show Grouped Expenditure Items
               <>
                 <div className="flex items-center justify-between mb-6">
                   <div className="flex items-center gap-2">
-                    <div className="w-1 h-6 bg-amber-500 rounded-full" />
+                    <div className="w-1 h-6 bg-blue-600 rounded-full" />
                     <h2 className="text-lg font-semibold text-gray-900">
-                      Orphan Line Items ({lib?.orphanDetails?.length || 0})
+                      Line Items ({lib?.orphanDetails?.length || 0})
                     </h2>
-                    <span className="text-xs bg-amber-100 text-amber-700 px-2 py-1 rounded">
-                      Unlinked Items
+                    <span className="text-xs bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-full font-medium">
+                      Project Scope
                     </span>
                   </div>
-                  {/* Add Orphan Line Item Button for WFP Project scope */}
+                  {/* Add Line Item Button for WFP Project scope */}
                   <CreateLIBActivityDialog
                     libId={libId ?? ''}
                     onActivityAdded={() => {
@@ -612,16 +628,42 @@ export default function LIBDetailPage({
                   />
                 </div>
                 {lib?.orphanDetails && lib.orphanDetails.length > 0 ? (
-                  <OrphanLineItemsView
-                    data={lib.orphanDetails as OrphanLineItemDetail[]}
-                    onDeleteItem={handleDeleteOrphanItem}
+                  <GroupedExpenditureItemsView
+                    data={groupExpenditureItems(
+                      lib.orphanDetails as unknown as LineItemBudgetDetails[],
+                    )}
+                    onDeleteItem={async (item: LineItemBudgetDetails) => {
+                      setDeletingOrphanItemId(item.id)
+                      try {
+                        await deleteLineItemBudgetDetails(
+                          {
+                            pathParams: { id: item.id },
+                          },
+                          {
+                            onSuccess: async () => {
+                              toast.success('Line item deleted successfully!')
+                              void refetch()
+                            },
+                          },
+                        )
+                      } catch (err) {
+                        const message =
+                          err instanceof Error ? err.message : 'Failed to delete line item'
+                        toast.error(message)
+                      } finally {
+                        setDeletingOrphanItemId(null)
+                      }
+                    }}
                     isDeletingItemId={deletingOrphanItemId || undefined}
                   />
                 ) : (
                   <Card className="border-dashed">
-                    <CardContent className="pt-6 text-center">
-                      <p className="text-gray-500">
-                        No orphan line items found
+                    <CardContent className="pt-6 text-center py-12">
+                      <p className="text-gray-500 font-medium">
+                        No line items found
+                      </p>
+                      <p className="text-sm text-gray-400 mt-1">
+                        Click "Add Line Items" to add expenditures
                       </p>
                     </CardContent>
                   </Card>
@@ -645,6 +687,11 @@ export default function LIBDetailPage({
                       }}
                       type="OPCR"
                       opcrData={opcrData?.data}
+                      existingOPCRActivityIds={
+                        (displayActivities || [])
+                          .map((a: any) => a.opcrActivityId)
+                          .filter(Boolean) as string[]
+                      }
                       isOPCRLoading={isOPCRLoading}
                       isWFPLoading={isWFPLoading}
                     />
@@ -886,14 +933,14 @@ export default function LIBDetailPage({
       <LIBSummaryDialog
         open={showSummary}
         onOpenChange={setShowSummary}
-        libId={libId}
+        libId={libId || null}
       />
 
       {/* Version History Comparative Modal */}
       <LIBHistoryDialog
         open={showHistory}
         onOpenChange={setShowHistory}
-        libId={libId}
+        libId={libId || null}
       />
 
       {/* Submission Confirmation Dialog */}

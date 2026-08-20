@@ -2,51 +2,141 @@
  * APR (Agency Purchase Request) Types & Interfaces
  * 
  * Defines all data structures for APR functionality aligned with PS-DBM Form 002
+ * and backend ERD / API DTO contracts.
  */
 
 /**
- * APR Status Enum
+ * APR Status Enum aligned with backend StatusEnum
  */
 export enum APRStatus {
-  DRAFT = 'DRAFT',
-  FOR_APPROVAL = 'FOR_APPROVAL',
-  RETURNED = 'RETURNED',
-  APPROVED = 'APPROVED',
-  PARTIALLY_AVAILABLE = 'PARTIALLY_AVAILABLE',
-  OUT_OF_STOCK = 'OUT_OF_STOCK',
+  Draft = 'Draft',
+  DRAFT = 'Draft',
+  Submitted = 'Submitted',
+  SUBMITTED = 'Submitted',
+  ForApproval = 'ForApproval',
+  FOR_APPROVAL = 'ForApproval',
+  Returned = 'Returned',
+  RETURNED = 'Returned',
+  Approved = 'Approved',
+  APPROVED = 'Approved',
+  Active = 'Active',
+  ACTIVE = 'Active',
+  Archived = 'Archived',
+  ARCHIVED = 'Archived',
+  Completed = 'Completed',
+  COMPLETED = 'Completed',
+  Failed = 'Failed',
+  FAILED = 'Failed',
+  Pending = 'Pending',
+  PENDING = 'Pending',
+  PartiallyAvailable = 'PartiallyAvailable',
+  PARTIALLY_AVAILABLE = 'PartiallyAvailable',
+  OutOfStock = 'OutOfStock',
+  OUT_OF_STOCK = 'OutOfStock',
 }
 
 /**
- * Mode of Delivery Options (Form 002)
+ * Mode of Delivery Options (Form 002) aligned with backend APRModeOfDelivery
  */
 export enum ModeOfDelivery {
-  FAST_LANE = 'FAST_LANE',
-  SCHEDULED_PICKUP = 'SCHEDULED_PICKUP',
-  DOOR_TO_DOOR = 'DOOR_TO_DOOR',
+  FAST_LANE = 'FastLane',
+  SCHEDULED_PICKUP = 'ScheduledPickUp',
+  DOOR_TO_DOOR = 'DoorToDoor',
 }
 
 /**
- * Insufficient Funds Handling Options
+ * Insufficient Funds Handling Options aligned with backend APRInsufficientFundsAction
  */
 export enum InsufficientFundsAction {
-  REDUCE_QUANTITY = 'REDUCE_QUANTITY',
-  BILL_US = 'BILL_US',
-  CHARGE_TO_DEPOSIT = 'CHARGE_TO_DEPOSIT',
+  REDUCE_QUANTITY = 'ReduceQuantity',
+  BILL_US = 'BillUs',
+  CHARGE_TO_DEPOSIT = 'ChargeToUnutilizedDeposit',
 }
 
 /**
  * Attachment Types for Non-Common Items
  */
 export interface AttachmentOptions {
-  observationReportRequired: boolean
-  collectiveBarterAgreementRequired: boolean
-  completeSpecsRequired: boolean
+  observationReportRequired?: boolean
+  collectiveBarterAgreementRequired?: boolean
+  completeSpecsRequired?: boolean
+}
+
+/**
+ * Backend APR List Item DTO (from GET /aprs)
+ */
+export interface APRListItemDto {
+  id: string
+  aprNumber: string
+  itemCount: number
+  totalAmount: number
+  requestDate: string
+  status: APRStatus | string
+  officeName: string
+  fiscalYear: number
+}
+
+/**
+ * Backend Milestone DTO within APR Item
+ */
+export interface APRItemMilestoneDto {
+  id: string
+  procurementActivityTypeId: string
+  procurementActivityTypeName: string
+  scheduledDate: string
+  remarks?: string | null
+}
+
+/**
+ * Backend APR Item DTO (within GET /aprs/:id)
+ */
+export interface APRItemDto {
+  id: string
+  appItemId: string
+  ppmpItemId: string
+  description: string
+  unit: string
+  quantityRequested: number
+  unitCost: number
+  totalCost: number
+  milestones: APRItemMilestoneDto[]
+}
+
+/**
+ * Backend APR Detail DTO (from GET /aprs/:id)
+ */
+export interface APRDetailDto {
+  id: string
+  aprNumber: string
+  appId: string
+  appNumber: string
+  officeId: string
+  officeName: string
+  fiscalYearId: string
+  fiscalYear: number
+  totalAmount: number
+  status: APRStatus | string
+  agencyControlNumber?: string | null
+  agencyAccountCode?: string | null
+  requestDate: string
+  description?: string | null
+  modeOfDelivery: ModeOfDelivery | string
+  insufficientFundsAction: InsufficientFundsAction | string
+  requiresObR: boolean
+  requiresCBA: boolean
+  requiresCompleteSpecifications: boolean
+  additionalRemarks?: string | null
+  submittedDate?: string | null
+  approvedDate?: string | null
+  returnedDate?: string | null
+  returnRemarks?: string | null
+  approvedBy?: string | null
+  returnedBy?: string | null
+  items: APRItemDto[]
 }
 
 /**
  * Consolidated CSE Item from PPMP/APP
- * Links to APP (Annual Procurement Plan) via appLineItemId
- * Tracks variance from approved APP allocation
  */
 export interface ConsolidatedAPRItem {
   id: string
@@ -56,35 +146,34 @@ export interface ConsolidatedAPRItem {
   quantity: number
   unitCost: number
   totalAmount: number
-  office: string
-  fundSource: string // General Fund, SEF, etc.
-  ppmpId: string
-  appId: string
-  itemCategory: string // Goods, Services, Infrastructure
-  allotmentClass: 'CO' | 'MOOE'
-  sourceFiscalYear: number
-  sourceCategory: string // From Categories filter
-  sourceMonth: string // From Months filter
+  office?: string
+  fundSource?: string
+  ppmpId?: string
+  appId?: string
+  itemCategory?: string
+  allotmentClass?: 'CO' | 'MOOE'
+  sourceFiscalYear?: number
+  sourceCategory?: string
+  sourceMonth?: string
   // APP References (SPMS Compliance)
-  appLineItemId: string // ✅ Link to specific APP BAC line item
-  appBACId?: string // BAC document reference
-  appApprovedQuantity: number // Original approved quantity in APP
-  appApprovedBudget: number // Original approved budget in APP
-  // Variance Tracking (Budget Alignment)
-  quantityVariance: number // Current quantity - APP approved quantity
-  quantityVariancePercent: number // (quantityVariance / appApprovedQuantity) * 100
-  budgetVariance: number // Current budget - APP approved budget
-  budgetVariancePercent: number // (budgetVariance / appApprovedBudget) * 100
-  // Procurement Milestones from BAC
-  bacMilestones?: APRMilestones // Copied from APP BAC at time of APR creation
-  // PSDBM Catalog Integration (for Draft APR items)
+  appLineItemId: string
+  appBACId?: string
+  appApprovedQuantity?: number
+  appApprovedBudget?: number
+  // Variance Tracking
+  quantityVariance?: number
+  quantityVariancePercent?: number
+  budgetVariance?: number
+  budgetVariancePercent?: number
+  // Procurement Milestones
+  bacMilestones?: APRMilestones
   psdbmMatches?: Array<{
     itemCode: string
     description: string
     unitPrice: number
     unit: string
     availability: string
-  }> // Available catalog items matching this APR item category
+  }>
 }
 
 /**
@@ -92,143 +181,148 @@ export interface ConsolidatedAPRItem {
  */
 export interface APRHeader {
   aprNumber?: string
-  agencyControlNumber: string
-  agencyAccountCode: string
-  description: string
+  agencyControlNumber?: string
+  agencyAccountCode?: string
+  description?: string
   requestDate: string
   fiscalYear: number
-  procuringEntity: string
-  requestingEntity: string
+  procuringEntity?: string
+  requestingEntity?: string
 }
 
 /**
  * Procurement Milestones (BAC)
  */
 export interface APRMilestones {
-  advertisementDate?: string // Advertisement/Posting of IB/REI
-  submissionDate?: string // Submission/Opening of Bids
-  noticeOfAwardDate?: string // Notice of Award
-  contractSigningDate?: string // Contract Signing
+  advertisementDate?: string
+  submissionDate?: string
+  noticeOfAwardDate?: string
+  contractSigningDate?: string
 }
 
 /**
  * APR Terms & Conditions
  */
 export interface APRTerms {
-  modeOfDelivery: ModeOfDelivery
-  insufficientFundsAction: InsufficientFundsAction
-  attachments: AttachmentOptions
+  modeOfDelivery: ModeOfDelivery | string
+  insufficientFundsAction: InsufficientFundsAction | string
+  attachments?: AttachmentOptions
   milestones?: APRMilestones
   remarks?: string
 }
 
 /**
- * APR Master Record
- * Linked to APP (Annual Procurement Plan) for SPMS compliance
- * Traces all items back to approved procurement plan
+ * APR Master Record (UI View Model)
  */
 export interface APRMaster {
   id: string
   aprNumber: string
-  agencyControlNumber: string
-  agencyAccountCode: string
-  description: string
+  agencyControlNumber?: string
+  agencyAccountCode?: string
+  description?: string
   requestDate: string
   fiscalYear: number
-  status: APRStatus
-  procuringEntity: string
-  requestingEntity: string
-  requestedBy: string
-  requestedByPosition: string
-  header: APRHeader
-  terms: APRTerms
+  status: APRStatus | string
+  procuringEntity?: string
+  requestingEntity?: string
+  requestedBy?: string
+  requestedByPosition?: string
+  header?: APRHeader
+  terms?: APRTerms
   consolidatedItems: ConsolidatedAPRItem[]
   totalItemsCount: number
   totalAmount: number
-  createdBy: string
-  createdAt: string
-  updatedAt: string
-  submittedAt?: string
-  approvedAt?: string
-  approvedBy?: string
-  returnedAt?: string
-  returnedBy?: string
-  returnRemarks?: string
-  signedDocumentUrl?: string // URL to physically signed APR file
-  // APP Integration (SPMS Compliance)
-  sourceAPPId: string // ✅ Which APP does this APR derive from?
-  appStatus: 'DRAFT' | 'CONSOLIDATING' | 'CONSOLIDATED' | 'APPROVED' | 'REJECTED' // Status of source APP
-  appApprovedBudget: number // Total approved budget in source APP
-  appApprovedItemsCount: number // Total approved items in source APP
-  // Variance & Validation
-  totalBudgetVariance: number // Sum of all item budget variances
-  totalBudgetVariancePercent: number // (totalBudgetVariance / appApprovedBudget) * 100
-  appValidationStatus: 'NOT_VALIDATED' | 'VALID' | 'VARIANCE_THRESHOLD_EXCEEDED' // Validation result
-  appValidationMessage?: string // Reason if validation failed
+  createdBy?: string
+  createdAt?: string
+  updatedAt?: string
+  submittedAt?: string | null
+  approvedAt?: string | null
+  approvedBy?: string | null
+  returnedAt?: string | null
+  returnedBy?: string | null
+  returnRemarks?: string | null
+  signedDocumentUrl?: string
+  sourceAPPId?: string
+  appStatus?: string
+  appApprovedBudget?: number
+  appApprovedItemsCount?: number
+  totalBudgetVariance?: number
+  totalBudgetVariancePercent?: number
+  appValidationStatus?: string
+  appValidationMessage?: string
 }
 
 /**
- * APR Creation Payload
- * Now requires source APP selection for SPMS compliance
- * 
- * Pre-converted consolidatedItems avoid needing to lookup APP data in production
+ * Backend Create APR Item DTO
+ */
+export interface CreateAPRItemInputDto {
+  appItemId: string
+  quantityRequested?: number | null
+  unitCost?: number | null
+}
+
+/**
+ * Backend Create APR Command Payload (POST /aprs)
+ */
+export interface CreateAPRCommandPayload {
+  appId: string
+  officeId: string
+  fiscalYearId: string
+  agencyControlNumber?: string | null
+  agencyAccountCode?: string | null
+  requestDate: string
+  description?: string | null
+  modeOfDelivery: ModeOfDelivery | string
+  insufficientFundsAction: InsufficientFundsAction | string
+  requiresObR: boolean
+  requiresCBA: boolean
+  requiresCompleteSpecifications: boolean
+  additionalRemarks?: string | null
+  items: CreateAPRItemInputDto[]
+}
+
+/**
+ * Frontend Create APR Payload (for form handling)
  */
 export interface CreateAPRPayload {
   header: APRHeader
   terms: APRTerms
-  sourceAPPId: string // ✅ REQUIRED: Which APP is this APR derived from?
-  selectedAppLineItemIds?: string[] // Which specific APP items to include (for backward compatibility)
-  consolidatedItems?: ConsolidatedAPRItem[] // ✅ Pre-converted APR items from APP (preferred)
-}
-
-/**
- * APP Reference for APR Traceability
- * Maintains audit trail linking APR back to source APP
- */
-export interface APRAppReference {
-  appId: string
-  appNumber: string
-  appStatus: string
-  appApprovedBudget: number
-  consolidatedAt: string
-  approvedAt?: string
-  approvedBy?: string
-}
-
-/**
- * APR Validation Context
- * Used to validate APR against source APP
- */
-export interface APRValidationContext {
-  aprId: string
   sourceAPPId: string
-  appStatus: string // Must be APPROVED
-  budgetThresholdPercent: number // e.g., 10% variance allowed
-  quantityThresholdPercent: number // e.g., 10% variance allowed
-  validationErrors: string[]
-  isValid: boolean
+  officeId?: string
+  fiscalYearId?: string
+  selectedAppLineItemIds?: string[]
+  consolidatedItems?: ConsolidatedAPRItem[]
+  items?: CreateAPRItemInputDto[]
 }
 
 /**
- * APR Item Consolidation Filter
+ * Backend Update APR Command Payload (PUT /aprs/:id)
  */
-export interface APRConsolidationFilter {
-  fiscalYear?: number
-  categories: string[]
-  months: string[]
-  funds: string[]
+export interface UpdateAPRCommandPayload {
+  id: string
+  agencyControlNumber?: string | null
+  agencyAccountCode?: string | null
+  requestDate: string
+  description?: string | null
+  modeOfDelivery: ModeOfDelivery | string
+  insufficientFundsAction: InsufficientFundsAction | string
+  requiresObR: boolean
+  requiresCBA: boolean
+  requiresCompleteSpecifications: boolean
+  additionalRemarks?: string | null
+  items: Array<{
+    appItemId: string
+    quantityRequested?: number | null
+    unitCost?: number | null
+  }>
 }
 
 /**
- * APP Line Item Selection State for APR Creation
- * Manages selection of APP items when creating new APR
+ * Change APR Status Request (PATCH /aprs/:id/status)
  */
-export interface APRConsolidationState {
-  sourceAPPId: string // Selected APP document ID
-  selectedAppLineItemIds: string[] // Selected line items from APP BAC
-  selectedItems: ConsolidatedAPRItem[] // Prepared items for APR
-  filter: APRConsolidationFilter // Filtering options for item selection
-  isLoading: boolean // Loading state during APP fetch
+export interface ChangeAPRStatusRequest {
+  status: APRStatus | string
+  remarks?: string | null
 }
 
 /**
@@ -236,7 +330,7 @@ export interface APRConsolidationState {
  */
 export interface SubmitAPRPayload {
   aprId: string
-  submittedAt: string
+  submittedAt?: string
 }
 
 /**
@@ -245,7 +339,7 @@ export interface SubmitAPRPayload {
 export interface ReturnAPRPayload {
   aprId: string
   remarks: string
-  returnedAt: string
+  returnedAt?: string
 }
 
 /**
@@ -253,8 +347,8 @@ export interface ReturnAPRPayload {
  */
 export interface ApproveAPRPayload {
   aprId: string
-  signedDocumentFile: File
-  approvedAt: string
+  signedDocumentFile?: File
+  approvedAt?: string
 }
 
 /**
@@ -267,7 +361,7 @@ export enum StockAvailabilityStatus {
 }
 
 /**
- * APR Item Stock Status (for Phase 3)
+ * APR Item Stock Status
  */
 export interface APRItemStockStatus {
   aprItemId: string
@@ -284,7 +378,6 @@ export interface APRItemStockStatus {
  */
 export type { APRStatistics, AdminAPRListResponse, AdminAPRFilters } from './types/adminTypes'
 
-
 /**
  * Certificate of Non-Availability of Stocks (CNAS)
  */
@@ -297,12 +390,25 @@ export interface CNAS {
   status: 'GENERATED' | 'FORWARDED_TO_PR'
 }
 
+export interface APRConsolidationState {
+  sourceAPPId: string
+  selectedAppLineItemIds: string[]
+  selectedItems: ConsolidatedAPRItem[]
+  filter: {
+    categories: string[]
+    months: string[]
+    funds: string[]
+  }
+  isLoading: boolean
+}
+
 /**
  * APR List Response with Pagination
  */
 export interface APRListResponse {
-  data: APRMaster[]
+  data: APRListItemDto[]
   total: number
   page: number
   pageSize: number
 }
+

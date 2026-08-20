@@ -1,9 +1,10 @@
 /**
  * Admin APRs Table Toolbar with Search and Filters
  * 
- * Provides search, status filter, fiscal year selector for admin APRs list
+ * Provides search, status filter, live fiscal year selector for admin APRs list
  */
 
+import { useMemo } from 'react'
 import { Input } from '@/components/ui/input'
 import {
   Select,
@@ -13,7 +14,9 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Button } from '@/components/ui/button'
+import { Badge } from '@/components/ui/badge'
 import { X } from 'lucide-react'
+import { useFiscalYears } from '../handlers/hooks'
 
 interface AdminAPRsTableToolbarProps {
   searchTerm: string
@@ -32,7 +35,15 @@ export function AdminAPRsTableToolbar({
   fiscalYear,
   onFiscalYearChange,
 }: AdminAPRsTableToolbarProps) {
-  const currentYear = new Date().getFullYear()
+  const { data: fiscalYearsResponse } = useFiscalYears({})
+
+  const fiscalYears = useMemo(() => {
+    if (!fiscalYearsResponse) return []
+    if (Array.isArray(fiscalYearsResponse)) return fiscalYearsResponse
+    if (Array.isArray((fiscalYearsResponse as any).data)) return (fiscalYearsResponse as any).data
+    if (Array.isArray((fiscalYearsResponse as any).items)) return (fiscalYearsResponse as any).items
+    return []
+  }, [fiscalYearsResponse])
 
   return (
     <div className="space-y-4 mb-4">
@@ -75,19 +86,30 @@ export function AdminAPRsTableToolbar({
         </Select>
 
         <Select value={fiscalYear} onValueChange={onFiscalYearChange}>
-          <SelectTrigger className="w-40">
+          <SelectTrigger className="w-44">
             <SelectValue placeholder="Select fiscal year" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="all">All Years</SelectItem>
-            {Array.from({ length: 10 }, (_, i) => {
-              const year = currentYear - 5 + i
-              return (
-                <SelectItem key={year} value={year.toString()}>
-                  FY {year}
-                </SelectItem>
-              )
-            })}
+            {fiscalYears.map((fy: any) => (
+              <SelectItem key={fy.id || fy.year} value={fy.year.toString()}>
+                <div className="flex items-center justify-between w-full gap-2">
+                  <span>FY {fy.year}</span>
+                  {fy.status && (
+                    <Badge
+                      variant="outline"
+                      className={`text-[10px] py-0 h-4 capitalize ${
+                        fy.status === 'active'
+                          ? 'bg-green-50 text-green-700 border-green-300'
+                          : 'bg-gray-50 text-gray-600 border-gray-300'
+                      }`}
+                    >
+                      {fy.status}
+                    </Badge>
+                  )}
+                </div>
+              </SelectItem>
+            ))}
           </SelectContent>
         </Select>
       </div>

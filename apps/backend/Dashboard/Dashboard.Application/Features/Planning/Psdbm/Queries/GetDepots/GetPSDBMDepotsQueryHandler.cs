@@ -1,11 +1,14 @@
-using ERPEZ.Application.Interfaces;
 using ERPEZ.Application.Features.Planning.Psdbm.Dtos;
+using ERPEZ.Application.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
+using Microsoft.Extensions.Logging;
 
 namespace ERPEZ.Application.Features.Planning.Psdbm.Queries.GetDepots;
 
-public class GetPsdbmDepotsQueryHandler(IPhilGepsService philGepsService)
+public class GetPsdbmDepotsQueryHandler(
+    IPsdbmQueryService queryService,
+    ILogger<GetPsdbmDepotsQueryHandler> logger)
     : IRequestHandler<GetPsdbmDepotsQuery, ApiResponse<List<PsdbmDepotDto>>>
 {
     public async Task<ApiResponse<List<PsdbmDepotDto>>> Handle(
@@ -13,15 +16,13 @@ public class GetPsdbmDepotsQueryHandler(IPhilGepsService philGepsService)
     {
         try
         {
-            var depots = await philGepsService.GetDepotsAsync(cancellationToken);
-
-            return ApiResponse<List<PsdbmDepotDto>>.Success(
-                depots, "Depots fetched successfully");
+            var depots = await queryService.GetDepotsAsync(request.Mode, cancellationToken);
+            return ApiResponse<List<PsdbmDepotDto>>.Success(depots, "Depots fetched successfully.");
         }
         catch (Exception ex)
         {
-            return ApiResponse<List<PsdbmDepotDto>>.Fail(
-                $"Failed to communicate with PhilGEPS: {ex.Message}");
+            logger.LogError(ex, "Failed to retrieve PSDBM depots");
+            return ApiResponse<List<PsdbmDepotDto>>.Fail($"Failed to retrieve depots: {ex.Message}");
         }
     }
 }

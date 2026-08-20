@@ -9,7 +9,7 @@ namespace ERPEZ.Application.Features.Planning.WFP.Dtos;
 public record WFPResponse
 {
     public Guid Id { get; init; }
-    public required OfficeResponse Office { get; init; }
+    public OfficeResponse? Office { get; init; }
     public string ProjectTitle { get; init; } = string.Empty;
     public Guid? OPCRId { get; init; }
     public OPCRDetailedResponse? OPCR { get; init; }
@@ -23,6 +23,10 @@ public record WFPResponse
     public string Status { get; init; } = string.Empty;
     public DateTime CreatedAt { get; init; }
     public string CreatedBy { get; init; } = string.Empty;
+    public DateTime? UpdatedAt { get; init; }
+    public string? UpdatedBy { get; init; }
+    public DateTime? SubmittedDate { get; init; }
+    public DateTime? ApprovedDate { get; init; }
     public int ObjectiveCount { get; init; } = 0;
     public int ActivityCount { get; init; } = 0;
 

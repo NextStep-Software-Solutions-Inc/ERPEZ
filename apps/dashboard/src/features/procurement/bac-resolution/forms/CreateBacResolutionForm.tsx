@@ -1,13 +1,19 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { useForm } from '@tanstack/react-form'
 import { z } from 'zod'
-import { ArrowDown, ArrowUp, Trash } from 'lucide-react'
+import {
+  ArrowDown,
+  ArrowUp,
+  Trash,
+  ChevronRight,
+  ChevronLeft,
+  Calendar,
+} from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Button } from '@/components/ui/button'
-import { Calendar } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -21,11 +27,26 @@ import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
 import type {
   BacResolutionProvisionalMember,
   CreateBacResolutionPayload,
+  ProcurementSourceType,
+  AppItemLink,
+  ConsolidatedPrLink,
+  ProcurementProjectContext,
 } from '../types'
-import { useWhereasClauseTemplates, useUpdateWhereasClauseTemplate } from '../handlers/hooks'
+import {
+  useWhereasClauseTemplates,
+  useUpdateWhereasClauseTemplate,
+} from '../handlers/hooks'
 import FieldInfo from '@/components/FieldInfo'
 import { toast } from 'sonner'
 import { fetchUsers, type User } from '@/services/api/users'
+import { SourceTypeSelectorStep } from './steps/SourceTypeSelectorStep'
+import { SourceRecordPickerStep } from './steps/SourceRecordPickerStep'
+import { ProcurementProjectPreviewBanner } from '../components/ProcurementProjectPreviewBanner'
+import { getEligibleAppItems } from '../data/mockAppItemData'
+import {
+  getMockConsolidatedPrs,
+  getMockWhereasClauseDatabase,
+} from '../data/mockBacResolutionData'
 
 const defaultProvisionalMembers: BacResolutionProvisionalMember[] = [
   {
@@ -57,7 +78,9 @@ export const createBacResolutionSchema = z.object({
   description: z.string().optional(),
   resolvedDateText: z.string().min(1, 'Resolved date text is required.'),
   resolvedLocationText: z.string().min(1, 'Resolved location is required.'),
-  whereasClauses: z.array(clauseSchema).min(1, 'At least one WHEREAS clause is required.'),
+  whereasClauses: z
+    .array(clauseSchema)
+    .min(1, 'At least one WHEREAS clause is required.'),
 })
 
 export type CreateBacResolutionFormValues = z.infer<
@@ -128,7 +151,7 @@ function ManageWhereasClausesDialog({
       open={open}
       onOpenChange={onOpenChange}
       title="Manage WHEREAS Clauses"
-      description="Select the WHEREAS clause templates to include in this BAC resolution. Checked items will be shown in the selected clauses table."
+      description="Select the WHEREAS clause templates to include in this BAC resolution."
       size="xl"
       footer={
         <div className="flex flex-wrap items-center justify-between gap-3">
@@ -163,7 +186,7 @@ function ManageWhereasClausesDialog({
           <p className="text-sm text-muted-foreground">Loading clauses...</p>
         ) : !templates?.length ? (
           <p className="text-sm text-muted-foreground">
-            No WHEREAS clause templates found. Create clauses first in the clause manager.
+            No WHEREAS clause templates found.
           </p>
         ) : (
           <div className="space-y-3">
@@ -208,7 +231,8 @@ function SelectedWhereasClauses({
   if (!selectedClauses.length) {
     return (
       <div className="rounded-lg border border-dashed border-default-300 bg-white p-4 text-sm text-muted-foreground">
-        No WHEREAS clauses selected yet. Click Manage WHEREAS to select saved templates, or Add Custom Clause to type custom ones.
+        No WHEREAS clauses selected yet. Click Manage WHEREAS to select saved
+        templates, or Add Custom Clause to type custom ones.
       </div>
     )
   }
@@ -229,7 +253,9 @@ function SelectedWhereasClauses({
                 <div className="space-y-2">
                   <div className="flex items-center justify-between gap-4">
                     {!template.id ? (
-                      <p className="font-semibold text-muted-foreground">Custom WHEREAS Clause</p>
+                      <p className="font-semibold text-muted-foreground">
+                        Custom WHEREAS Clause
+                      </p>
                     ) : (
                       <p className="font-semibold">{template.name}</p>
                     )}
@@ -306,7 +332,8 @@ function ProvisionalMembersSection({
       <div>
         <Label className="text-base font-semibold">Provisional Members</Label>
         <p className="text-sm text-muted-foreground">
-          Provide the per-resolution provisional End-user and Technical representatives.
+          Provide the per-resolution provisional End-user and Technical
+          representatives.
         </p>
       </div>
 
@@ -321,14 +348,19 @@ function ProvisionalMembersSection({
                 <Label>Name ({member.role})</Label>
                 <Input
                   value={member.name}
-                  onChange={(event) => onUpdateMember(index, 'name', event.target.value)}
+                  onChange={(event) =>
+                    onUpdateMember(index, 'name', event.target.value)
+                  }
                   disabled={isLoading}
                   list={`users-suggestions-${member.id}`}
                   placeholder="Type name to see suggestions..."
                 />
                 <datalist id={`users-suggestions-${member.id}`}>
                   {usersSuggestions?.map((u) => (
-                    <option key={u.id} value={`${u.fullName} (${u.employeeNumber})`}>
+                    <option
+                      key={u.id}
+                      value={`${u.fullName} (${u.employeeNumber})`}
+                    >
                       {u.officeName ? `Office: ${u.officeName}` : ''}
                     </option>
                   ))}
@@ -339,7 +371,9 @@ function ProvisionalMembersSection({
                 <Label>Position</Label>
                 <Input
                   value={member.position}
-                  onChange={(event) => onUpdateMember(index, 'position', event.target.value)}
+                  onChange={(event) =>
+                    onUpdateMember(index, 'position', event.target.value)
+                  }
                   disabled={isLoading}
                 />
               </div>
@@ -358,16 +392,75 @@ export function CreateBacResolutionForm({
   onDirtyChange,
   formId,
 }: CreateBacResolutionFormProps) {
-  const { data: templates, isLoading: isTemplatesLoading } = useWhereasClauseTemplates({})
+  // Wizard Step State (1: Select Source Type, 2: Select Source Record, 3: Preview & Resolution Details)
+  const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1)
+  const [selectedSourceType, setSelectedSourceType] =
+    useState<ProcurementSourceType | null>(initialValues?.sourceType ?? null)
+
+  // Datasets for Step 2
+  const appItemsPool = useMemo(() => getEligibleAppItems(), [])
+  const consolidatedPrsPool = useMemo(() => getMockConsolidatedPrs(), [])
+
+  const [selectedAppItem, setSelectedAppItem] = useState<AppItemLink | null>(
+    null,
+  )
+  const [selectedConsolidatedPr, setSelectedConsolidatedPr] =
+    useState<ConsolidatedPrLink | null>(null)
+
+  // Authoritative Procurement Project Context
+  const projectContext = useMemo<ProcurementProjectContext | null>(() => {
+    if (selectedSourceType === 'APP_ITEM' && selectedAppItem) {
+      return {
+        sourceType: 'APP_ITEM',
+        sourceRef: `${selectedAppItem.appNumber} / ${selectedAppItem.itemNumber}`,
+        projectTitle: selectedAppItem.description,
+        officeName: selectedAppItem.officeName,
+        modeOfProcurement: selectedAppItem.modeOfProcurement,
+        sourceOfFund: selectedAppItem.sourceOfFund,
+        abc: selectedAppItem.abc,
+      }
+    }
+
+    if (selectedSourceType === 'CONSOLIDATED_PR' && selectedConsolidatedPr) {
+      return {
+        sourceType: 'CONSOLIDATED_PR',
+        sourceRef: selectedConsolidatedPr.prNumber,
+        projectTitle:
+          selectedConsolidatedPr.projectName ||
+          selectedConsolidatedPr.description,
+        officeName: selectedConsolidatedPr.endUser,
+        modeOfProcurement: selectedConsolidatedPr.modeOfProcurement,
+        sourceOfFund: 'General Appropriations Act (GAA)',
+        abc: selectedConsolidatedPr.amount,
+      }
+    }
+
+    return null
+  }, [selectedSourceType, selectedAppItem, selectedConsolidatedPr])
+
+  const { data: apiTemplates, isLoading: isTemplatesLoading } =
+    useWhereasClauseTemplates({})
+  const templates = useMemo(() => {
+    if (apiTemplates && apiTemplates.length > 0) return apiTemplates
+    return getMockWhereasClauseDatabase().map((t) => ({
+      id: t.id,
+      name: t.name,
+      body: t.body,
+      createdAt: t.createdAt,
+      updatedAt: t.updatedAt,
+    }))
+  }, [apiTemplates])
   const { mutateAsync: updateTemplate } = useUpdateWhereasClauseTemplate()
-  const [selectedClauses, setSelectedClauses] = useState<WhereasClauseTemplate[]>(
+  const [selectedClauses, setSelectedClauses] = useState<
+    WhereasClauseTemplate[]
+  >(
     initialValues?.whereasClauses?.map((c) => ({
       id: c.id ?? '',
       name: c.name,
       body: c.body,
       createdAt: '',
       updatedAt: '',
-    })) ?? []
+    })) ?? [],
   )
 
   const resolvedDatePickerRef = useRef<HTMLInputElement | null>(null)
@@ -398,12 +491,13 @@ export function CreateBacResolutionForm({
   >([])
 
   useEffect(() => {
-    const initial = initialValues?.provisionalMembers ?? defaultProvisionalMembers
+    const initial =
+      initialValues?.provisionalMembers ?? defaultProvisionalMembers
     if (users.length > 0) {
       const resolved = initial.map((member) => {
         if (member.userId) return member
         const found = users.find(
-          (u) => u.fullName.toLowerCase() === member.name.trim().toLowerCase()
+          (u) => u.fullName.toLowerCase() === member.name.trim().toLowerCase(),
         )
         return {
           ...member,
@@ -419,32 +513,59 @@ export function CreateBacResolutionForm({
   const [submitError, setSubmitError] = useState<string | null>(null)
   const [overrideIndex, setOverrideIndex] = useState<number | null>(null)
 
+  const defaultResNumber = `BAC-RES-2026-${Math.floor(100 + Math.random() * 900)}`
+
   const form = useForm({
     defaultValues: {
-      title: initialValues?.title ?? '',
-      abc: initialValues?.abc ?? 0,
-      resolutionType: initialValues?.resolutionType ?? '',
-      bacResolutionNumber: initialValues?.bacResolutionNumber ?? '',
-      resolutionDate: initialValues?.resolutionDate ?? '',
-      description: initialValues?.description ?? '',
-      resolvedDateText: initialValues?.resolvedDateText ?? '',
-      resolvedLocationText: initialValues?.resolvedLocationText ?? '',
+      title: initialValues?.title ?? projectContext?.projectTitle ?? '',
+      abc: initialValues?.abc ?? projectContext?.abc ?? 0,
+      resolutionType: initialValues?.resolutionType ?? 'Standard',
+      bacResolutionNumber:
+        initialValues?.bacResolutionNumber ?? defaultResNumber,
+      resolutionDate:
+        initialValues?.resolutionDate ?? new Date().toISOString().split('T')[0],
+      description:
+        initialValues?.description ?? projectContext?.projectTitle ?? '',
+      resolvedDateText:
+        initialValues?.resolvedDateText ??
+        new Date().toLocaleDateString('en-US', {
+          weekday: 'long',
+          year: 'numeric',
+          month: 'long',
+          day: 'numeric',
+        }),
+      resolvedLocationText:
+        initialValues?.resolvedLocationText ??
+        'University of Science and Technology of Southern Philippines, Cagayan de Oro City',
     },
-    validators: {
-    },
+    validators: {},
     onSubmit: async ({ value }) => {
-      const endUserRep = provisionalMembers.find(m => m.id === 'provisional-end-user-rep' || m.role === 'End-user Rep')
-      const techRep = provisionalMembers.find(m => m.id === 'provisional-tech-rep' || m.role === 'Tech Rep')
+      if (!selectedSourceType || !projectContext) {
+        toast.error('Please select a valid procurement source in Step 1 & 2.')
+        return
+      }
+
+      const endUserRep = provisionalMembers.find(
+        (m) => m.id === 'provisional-end-user-rep' || m.role === 'End-user Rep',
+      )
+      const techRep = provisionalMembers.find(
+        (m) => m.id === 'provisional-tech-rep' || m.role === 'Tech Rep',
+      )
 
       const payload: CreateBacResolutionPayload = {
         ...value,
-        description: value.description || value.title || 'Untitled BAC Resolution',
+        title: projectContext.projectTitle,
+        abc: projectContext.abc,
+        description:
+          value.description ||
+          projectContext.projectTitle ||
+          'Untitled BAC Resolution',
         whereasClauses: selectedClauses.map((template) => ({
           id: template.id,
           name: template.name,
           body: template.body,
         })),
-        provisionalMembers: provisionalMembers.map(m => ({
+        provisionalMembers: provisionalMembers.map((m) => ({
           id: m.id,
           role: m.role,
           name: m.name,
@@ -452,6 +573,11 @@ export function CreateBacResolutionForm({
         })),
         endUserRepresentativeId: endUserRep?.userId || null,
         techRepresentativeId: techRep?.userId || null,
+        // Multi-source fields
+        sourceType: selectedSourceType,
+        appItemId: selectedAppItem?.id || null,
+        consolidatedPRId: selectedConsolidatedPr?.id || null,
+        procurementProjectContext: projectContext,
       }
 
       const validation = createBacResolutionSchema.safeParse(payload)
@@ -468,6 +594,15 @@ export function CreateBacResolutionForm({
     },
   })
 
+  // Sync title and ABC when projectContext changes
+  useEffect(() => {
+    if (projectContext) {
+      form.setFieldValue('title', projectContext.projectTitle)
+      form.setFieldValue('abc', projectContext.abc)
+      form.setFieldValue('description', projectContext.projectTitle)
+    }
+  }, [projectContext, form])
+
   const isClausesDirty = selectedTemplateIds.length > 0
   const isProvisionalDirty = provisionalMembers.some(
     (member, index) =>
@@ -476,8 +611,19 @@ export function CreateBacResolutionForm({
   )
 
   useEffect(() => {
-    onDirtyChange?.(form.state.isDirty || isClausesDirty || isProvisionalDirty)
-  }, [form.state.isDirty, isClausesDirty, isProvisionalDirty, onDirtyChange])
+    onDirtyChange?.(
+      form.state.isDirty ||
+        isClausesDirty ||
+        isProvisionalDirty ||
+        currentStep > 1,
+    )
+  }, [
+    form.state.isDirty,
+    isClausesDirty,
+    isProvisionalDirty,
+    currentStep,
+    onDirtyChange,
+  ])
 
   const toggleTemplateSelection = (templateId: string) => {
     setSelectedClauses((current) => {
@@ -579,9 +725,10 @@ export function CreateBacResolutionForm({
         if (i !== index) return member
 
         if (field === 'name') {
-          // Check if the typed/selected name matches any user's "FullName (EmployeeNumber)" format
           const matchedUser = users.find(
-            (u) => `${u.fullName} (${u.employeeNumber})`.toLowerCase() === value.trim().toLowerCase()
+            (u) =>
+              `${u.fullName} (${u.employeeNumber})`.toLowerCase() ===
+              value.trim().toLowerCase(),
           )
           return {
             ...member,
@@ -598,284 +745,379 @@ export function CreateBacResolutionForm({
     )
   }
 
+  const canProceedToStep2 = selectedSourceType !== null
+  const canProceedToStep3 =
+    (selectedSourceType === 'APP_ITEM' && selectedAppItem !== null) ||
+    (selectedSourceType === 'CONSOLIDATED_PR' &&
+      selectedConsolidatedPr !== null)
+
   return (
     <>
-      <form
-        id={formId}
-        onSubmit={(event) => {
-          event.preventDefault()
-          event.stopPropagation()
-          form.handleSubmit()
-        }}
-        className="space-y-6"
-      >
-        <div className="grid gap-5 md:grid-cols-3">
-          <form.Field name="title">
-            {(field) => (
-              <div className="grid gap-2">
-                <Label htmlFor={field.name}>Title</Label>
-                <Input
-                  id={field.name}
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(event) => field.handleChange(event.target.value)}
-                  placeholder="e.g. Title of Project"
-                  disabled={isLoading}
-                />
-                {field.state.meta.errors.length > 0 && (
-                  <p className="text-sm text-destructive">
-                    <FieldInfo field={field} />
-                  </p>
-                )}
-              </div>
-            )}
-          </form.Field>
+      <div className="space-y-6">
+        {/* Stepper Navigation Indicator Header */}
+        <div className="flex items-center justify-between border-b border-default-200 pb-4">
+          <div className="flex items-center gap-2">
+            <span
+              className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
+                currentStep === 1
+                  ? 'bg-primary text-white'
+                  : currentStep > 1
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-default-200 text-default-600'
+              }`}
+            >
+              1
+            </span>
+            <span
+              className={`text-xs font-semibold ${currentStep === 1 ? 'text-primary' : 'text-default-700'}`}
+            >
+              Select Source Type
+            </span>
 
-          <form.Field name="abc">
-            {(field) => (
-              <div className="grid gap-2">
-                <Label htmlFor={field.name}>ABC</Label>
-                <Input
-                  id={field.name}
-                  type="number"
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(event) => field.handleChange(Number(event.target.value))}
-                  placeholder="e.g. 50000"
-                  disabled={isLoading}
-                />
-                {field.state.meta.errors.length > 0 && (
-                  <p className="text-sm text-destructive">
-                    <FieldInfo field={field} />
-                  </p>
-                )}
-              </div>
-            )}
-          </form.Field>
+            <ChevronRight className="h-4 w-4 text-default-400" />
 
-          <form.Field name="resolutionType">
-            {(field) => (
-              <div className="grid gap-2">
-                <Label htmlFor={field.name}>Resolution Type</Label>
-                <Input
-                  id={field.name}
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(event) => field.handleChange(event.target.value)}
-                  placeholder="e.g. Standard"
-                  disabled={isLoading}
-                />
-                {field.state.meta.errors.length > 0 && (
-                  <p className="text-sm text-destructive">
-                    <FieldInfo field={field} />
-                  </p>
-                )}
-              </div>
-            )}
-          </form.Field>
-        </div>
+            <span
+              className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
+                currentStep === 2
+                  ? 'bg-primary text-white'
+                  : currentStep > 2
+                    ? 'bg-emerald-600 text-white'
+                    : 'bg-default-200 text-default-600'
+              }`}
+            >
+              2
+            </span>
+            <span
+              className={`text-xs font-semibold ${currentStep === 2 ? 'text-primary' : 'text-default-700'}`}
+            >
+              Pick Source Record
+            </span>
 
-        <div className="grid gap-5 md:grid-cols-2">
-          <form.Field name="bacResolutionNumber">
-            {(field) => (
-              <div className="grid gap-2">
-                <Label htmlFor={field.name}>BAC Resolution Number</Label>
-                <Input
-                  id={field.name}
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(event) => field.handleChange(event.target.value)}
-                  placeholder="BAC-RES-2026-001"
-                  disabled={isLoading}
-                />
-                {field.state.meta.errors.length > 0 && (
-                  <p className="text-sm text-destructive">
-                    <FieldInfo field={field} />
-                  </p>
-                )}
-              </div>
-            )}
-          </form.Field>
+            <ChevronRight className="h-4 w-4 text-default-400" />
 
-          <form.Field name="resolutionDate">
-            {(field) => (
-              <div className="grid gap-2">
-                <Label htmlFor={field.name}>Resolution Date</Label>
-                <Input
-                  id={field.name}
-                  type="date"
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(event) => field.handleChange(event.target.value)}
-                  disabled={isLoading}
-                />
-                {field.state.meta.errors.length > 0 && (
-                  <p className="text-sm text-destructive">
-                    <FieldInfo field={field} />
-                  </p>
-                )}
-              </div>
-            )}
-          </form.Field>
-        </div>
-
-        <div className="grid gap-5 md:grid-cols-2">
-          <form.Field name="resolvedDateText">
-            {(field) => {
-              const currentDateValue = (() => {
-                const parsed = new Date(field.state.value)
-                return !isNaN(parsed.getTime())
-                  ? parsed.toISOString().split('T')[0]
-                  : ''
-              })()
-
-              return (
-                <div className="grid gap-2">
-                  <Label htmlFor={field.name}>Resolved Date</Label>
-                  <div className="flex gap-2 items-center">
-                    <Input
-                      id={field.name}
-                      value={field.state.value}
-                      onBlur={field.handleBlur}
-                      onChange={(event) => field.handleChange(event.target.value)}
-                      placeholder="e.g. December 31, 2026"
-                      disabled={isLoading}
-                      className="flex-1"
-                    />
-                    <input
-                      ref={resolvedDatePickerRef}
-                      type="date"
-                      value={currentDateValue}
-                      onChange={(event) => {
-                        const dateVal = event.target.value
-                        if (!dateVal) return
-                        const dateObj = new Date(dateVal)
-                        if (!isNaN(dateObj.getTime())) {
-                          field.handleChange(
-                            dateObj.toLocaleDateString('en-US', {
-                              weekday: 'long',
-                              year: 'numeric',
-                              month: 'long',
-                              day: 'numeric',
-                            }),
-                          )
-                        }
-                      }}
-                      className="sr-only"
-                      disabled={isLoading}
-                      aria-hidden="true"
-                      tabIndex={-1}
-                    />
-                    <Button
-                      type="button"
-                      variant="outline"
-                      className="px-3 h-[40px]"
-                      onClick={openResolvedDatePicker}
-                      disabled={isLoading}
-                    >
-                      <Calendar className="h-4 w-4" />
-                    </Button>
-                  </div>
-                  {field.state.meta.errors.length > 0 && (
-                    <p className="text-sm text-destructive">
-                      <FieldInfo field={field} />
-                    </p>
-                  )}
-                </div>
-              )
-            }}
-          </form.Field>
-
-          <form.Field name="resolvedLocationText">
-            {(field) => (
-              <div className="grid gap-2">
-                <Label htmlFor={field.name}>Resolved Location</Label>
-                <Textarea
-                  id={field.name}
-                  value={field.state.value}
-                  onBlur={field.handleBlur}
-                  onChange={(event) => field.handleChange(event.target.value)}
-                  placeholder="University of Science and Technology of Southern Philippines, Cagayan de Oro City"
-                  disabled={isLoading}
-                  className="min-h-[120px]"
-                />
-                {field.state.meta.errors.length > 0 && (
-                  <p className="text-sm text-destructive">
-                    <FieldInfo field={field} />
-                  </p>
-                )}
-              </div>
-            )}
-          </form.Field>
-        </div>
-
-        <div className="space-y-4 rounded-lg border border-default-200 bg-default-50 p-4">
-          <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
-            <div>
-              <Label className="text-base font-semibold">WHEREAS Clauses</Label>
-              <p className="text-sm text-muted-foreground">
-                Selected WHEREAS clause templates will appear below. Use Manage WHEREAS to choose saved clause templates or Add Custom Clause to define custom ones.
-              </p>
-            </div>
-            <div className="flex gap-2">
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={addCustomClause}
-                disabled={isLoading}
-              >
-                Add Custom Clause
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                size="sm"
-                onClick={() => setIsManageWhereasOpen(true)}
-                disabled={isLoading || isTemplatesLoading}
-              >
-                Manage WHEREAS
-              </Button>
-            </div>
+            <span
+              className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
+                currentStep === 3
+                  ? 'bg-primary text-white'
+                  : 'bg-default-200 text-default-600'
+              }`}
+            >
+              3
+            </span>
+            <span
+              className={`text-xs font-semibold ${currentStep === 3 ? 'text-primary' : 'text-default-700'}`}
+            >
+              BAC Resolution Details
+            </span>
           </div>
-          <p className="text-sm text-muted-foreground">
-            Only chosen clauses appear in the selected table.
-          </p>
+
+          {/* Stepper controls */}
+          <div className="flex items-center gap-2">
+            {currentStep > 1 && (
+              <Button
+                type="button"
+                variant="outline"
+                size="sm"
+                onClick={() => setCurrentStep((prev) => (prev - 1) as 1 | 2)}
+                className="gap-1 text-xs"
+              >
+                <ChevronLeft className="h-4 w-4" />
+                Back
+              </Button>
+            )}
+
+            {currentStep === 1 && (
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => setCurrentStep(2)}
+                disabled={!canProceedToStep2}
+                className="gap-1 text-xs"
+              >
+                Next Step
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            )}
+
+            {currentStep === 2 && (
+              <Button
+                type="button"
+                size="sm"
+                onClick={() => setCurrentStep(3)}
+                disabled={!canProceedToStep3}
+                className="gap-1 text-xs"
+              >
+                Next: BAC Details
+                <ChevronRight className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
         </div>
 
-        <SelectedWhereasClauses
-          selectedClauses={selectedClauses}
-          isLoading={isLoading}
-          onMove={moveClause}
-          onRemove={removeClause}
-          onUpdateClauseBody={updateClauseBody}
-          onUpdateClauseName={updateClauseName}
-          onSaveTemplateOverride={handleSaveTemplateOverride}
-        />
+        {/* STEP 1: SELECT SOURCE TYPE */}
+        {currentStep === 1 && (
+          <SourceTypeSelectorStep
+            selectedSourceType={selectedSourceType}
+            onSelectSourceType={(type) => {
+              setSelectedSourceType(type)
+              setSelectedAppItem(null)
+              setSelectedConsolidatedPr(null)
+            }}
+          />
+        )}
 
-        <ManageWhereasClausesDialog
-          open={isManageWhereasOpen}
-          onOpenChange={setIsManageWhereasOpen}
-          templates={templates ?? []}
-          selectedTemplateIds={selectedTemplateIds}
-          onToggleTemplate={toggleTemplateSelection}
-          onSelectAll={selectAllTemplates}
-          onClearAll={clearAllTemplates}
-          isLoading={isLoading}
-          isTemplatesLoading={isTemplatesLoading}
-        />
+        {/* STEP 2: SELECT SOURCE RECORD */}
+        {currentStep === 2 && selectedSourceType && (
+          <SourceRecordPickerStep
+            sourceType={selectedSourceType}
+            appItems={appItemsPool}
+            consolidatedPrs={consolidatedPrsPool}
+            selectedAppItem={selectedAppItem}
+            selectedConsolidatedPr={selectedConsolidatedPr}
+            onSelectAppItem={setSelectedAppItem}
+            onSelectConsolidatedPr={setSelectedConsolidatedPr}
+          />
+        )}
 
-        {submitError ? (
-          <p className="text-sm text-destructive">{submitError}</p>
-        ) : null}
+        {/* STEP 3: PREVIEW & BAC RESOLUTION DETAILS FORM */}
+        {currentStep === 3 && (
+          <form
+            id={formId}
+            onSubmit={(event) => {
+              event.preventDefault()
+              event.stopPropagation()
+              form.handleSubmit()
+            }}
+            className="space-y-6"
+          >
+            {/* Read-Only Procurement Project Preview Banner */}
+            {projectContext && (
+              <ProcurementProjectPreviewBanner context={projectContext} />
+            )}
 
-        <ProvisionalMembersSection
-          provisionalMembers={provisionalMembers}
-          isLoading={isLoading}
-          onUpdateMember={updateProvisionalMember}
-          usersSuggestions={users}
-        />
-      </form>
+            {/* BAC Resolution Specific Details */}
+            <div className="rounded-lg border border-default-200 bg-white p-4 space-y-5">
+              <h4 className="font-bold text-sm text-default-900 border-b border-default-200 pb-2">
+                BAC Resolution Information
+              </h4>
+
+              <div className="grid gap-5 md:grid-cols-2">
+                <form.Field name="bacResolutionNumber">
+                  {(field) => (
+                    <div className="grid gap-2">
+                      <Label htmlFor={field.name}>BAC Resolution Number</Label>
+                      <Input
+                        id={field.name}
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(event) =>
+                          field.handleChange(event.target.value)
+                        }
+                        placeholder="BAC-RES-2026-001"
+                        disabled={isLoading}
+                      />
+                      {field.state.meta.errors.length > 0 && (
+                        <p className="text-sm text-destructive">
+                          <FieldInfo field={field} />
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </form.Field>
+
+                <form.Field name="resolutionDate">
+                  {(field) => (
+                    <div className="grid gap-2">
+                      <Label htmlFor={field.name}>Resolution Date</Label>
+                      <Input
+                        id={field.name}
+                        type="date"
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(event) =>
+                          field.handleChange(event.target.value)
+                        }
+                        disabled={isLoading}
+                      />
+                      {field.state.meta.errors.length > 0 && (
+                        <p className="text-sm text-destructive">
+                          <FieldInfo field={field} />
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </form.Field>
+              </div>
+
+              <div className="grid gap-5 md:grid-cols-2">
+                <form.Field name="resolvedDateText">
+                  {(field) => {
+                    const currentDateValue = (() => {
+                      const parsed = new Date(field.state.value)
+                      return !isNaN(parsed.getTime())
+                        ? parsed.toISOString().split('T')[0]
+                        : ''
+                    })()
+
+                    return (
+                      <div className="grid gap-2">
+                        <Label htmlFor={field.name}>
+                          Resolved Date Wording
+                        </Label>
+                        <div className="flex gap-2 items-center">
+                          <Input
+                            id={field.name}
+                            value={field.state.value}
+                            onBlur={field.handleBlur}
+                            onChange={(event) =>
+                              field.handleChange(event.target.value)
+                            }
+                            placeholder="e.g. December 31, 2026"
+                            disabled={isLoading}
+                            className="flex-1"
+                          />
+                          <input
+                            ref={resolvedDatePickerRef}
+                            type="date"
+                            value={currentDateValue}
+                            onChange={(event) => {
+                              const dateVal = event.target.value
+                              if (!dateVal) return
+                              const dateObj = new Date(dateVal)
+                              if (!isNaN(dateObj.getTime())) {
+                                field.handleChange(
+                                  dateObj.toLocaleDateString('en-US', {
+                                    weekday: 'long',
+                                    year: 'numeric',
+                                    month: 'long',
+                                    day: 'numeric',
+                                  }),
+                                )
+                              }
+                            }}
+                            className="sr-only"
+                            disabled={isLoading}
+                            aria-hidden="true"
+                            tabIndex={-1}
+                          />
+                          <Button
+                            type="button"
+                            variant="outline"
+                            className="px-3 h-[40px]"
+                            onClick={openResolvedDatePicker}
+                            disabled={isLoading}
+                          >
+                            <Calendar className="h-4 w-4" />
+                          </Button>
+                        </div>
+                        {field.state.meta.errors.length > 0 && (
+                          <p className="text-sm text-destructive">
+                            <FieldInfo field={field} />
+                          </p>
+                        )}
+                      </div>
+                    )
+                  }}
+                </form.Field>
+
+                <form.Field name="resolvedLocationText">
+                  {(field) => (
+                    <div className="grid gap-2">
+                      <Label htmlFor={field.name}>
+                        Resolved Location Wording
+                      </Label>
+                      <Input
+                        id={field.name}
+                        value={field.state.value}
+                        onBlur={field.handleBlur}
+                        onChange={(event) =>
+                          field.handleChange(event.target.value)
+                        }
+                        placeholder="University of Science and Technology of Southern Philippines, Cagayan de Oro City"
+                        disabled={isLoading}
+                      />
+                      {field.state.meta.errors.length > 0 && (
+                        <p className="text-sm text-destructive">
+                          <FieldInfo field={field} />
+                        </p>
+                      )}
+                    </div>
+                  )}
+                </form.Field>
+              </div>
+            </div>
+
+            {/* WHEREAS Clauses Section */}
+            <div className="space-y-4 rounded-lg border border-default-200 bg-default-50 p-4">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
+                <div>
+                  <Label className="text-base font-semibold">
+                    WHEREAS Clauses
+                  </Label>
+                  <p className="text-sm text-muted-foreground">
+                    Selected WHEREAS clause templates will appear below. Use
+                    Manage WHEREAS to choose saved clause templates or Add
+                    Custom Clause to define custom ones.
+                  </p>
+                </div>
+                <div className="flex gap-2">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={addCustomClause}
+                    disabled={isLoading}
+                  >
+                    Add Custom Clause
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsManageWhereasOpen(true)}
+                    disabled={isLoading || isTemplatesLoading}
+                  >
+                    Manage WHEREAS
+                  </Button>
+                </div>
+              </div>
+            </div>
+
+            <SelectedWhereasClauses
+              selectedClauses={selectedClauses}
+              isLoading={isLoading}
+              onMove={moveClause}
+              onRemove={removeClause}
+              onUpdateClauseBody={updateClauseBody}
+              onUpdateClauseName={updateClauseName}
+              onSaveTemplateOverride={handleSaveTemplateOverride}
+            />
+
+            <ManageWhereasClausesDialog
+              open={isManageWhereasOpen}
+              onOpenChange={setIsManageWhereasOpen}
+              templates={templates ?? []}
+              selectedTemplateIds={selectedTemplateIds}
+              onToggleTemplate={toggleTemplateSelection}
+              onSelectAll={selectAllTemplates}
+              onClearAll={clearAllTemplates}
+              isLoading={isLoading}
+              isTemplatesLoading={isTemplatesLoading}
+            />
+
+            {submitError ? (
+              <p className="text-sm text-destructive">{submitError}</p>
+            ) : null}
+
+            <ProvisionalMembersSection
+              provisionalMembers={provisionalMembers}
+              isLoading={isLoading}
+              onUpdateMember={updateProvisionalMember}
+              usersSuggestions={users}
+            />
+          </form>
+        )}
+      </div>
 
       <ConfirmAlertDialog
         open={overrideIndex !== null}

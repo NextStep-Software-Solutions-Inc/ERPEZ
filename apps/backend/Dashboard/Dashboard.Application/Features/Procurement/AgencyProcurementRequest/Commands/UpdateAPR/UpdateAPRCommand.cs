@@ -7,6 +7,7 @@ namespace ERPEZ.Application.Features.Procurement.AgencyProcurementRequest.Comman
 public record UpdateAPRCommand : IRequest<ApiResponse<Guid>>
 {
     public Guid Id { get; init; }
+    public Guid? APPId { get; init; }
 
     public string? AgencyControlNumber { get; init; }
     public string? AgencyAccountCode { get; init; }

@@ -16,93 +16,116 @@ public class UpdateLineItemBudgetDetailCommandHandler(IUnitOfWork unitOfWork)
     {
         var request = command.Request;
 
-        var entity = await unitOfWork.LineItemBudgetDetailRepository.GetByIdAsync(command.Id, cancellationToken)
-            ?? throw new NotFoundException($"Line Item Budget Detail with ID {command.Id} not found.");
-
-        var effectiveLibId = request.LineItemBudgetId ?? entity.LineItemBudgetId;
-
-        var lib = await unitOfWork.LineItemBudgetRepository.GetByIdAsync(effectiveLibId, cancellationToken)
-            ?? throw new NotFoundException($"LIB with ID {effectiveLibId} not found.");
-
-        if (!LIBRules.IsEditable(lib.Status))
-            throw new ValidationException("Line item details can only be modified on a Draft, Proposed, or Returned LIB.");
-
-        var isProjectScope  = lib.Scope.Equals(LIBScopeEnum.Project.ToString(),  StringComparison.OrdinalIgnoreCase);
-        var isActivityScope = lib.Scope.Equals(LIBScopeEnum.Activity.ToString(), StringComparison.OrdinalIgnoreCase);
-
-        if (!isProjectScope && !isActivityScope)
-            throw new ValidationException($"Unrecognized LIB scope '{lib.Scope}'.");
-
-        var effectiveExpenditureId = request.WFPObjectiveActivityExpenditureId ?? entity.WFPObjectiveActivityExpenditureId;
-        var effectiveActivityId    = request.LineItemBudgetActivityId ?? entity.LineItemBudgetActivityId;
-        var effectiveBudget        = request.Budget ?? entity.Budget;
-
-        Guid     resolvedObjectId;
-        string?  resolvedDescription;
-        int?     resolvedUnitQuantity;
-        decimal? resolvedUnitCost;
-
-        if (isProjectScope)
+        await unitOfWork.ExecuteInTransactionAsync(async () =>
         {
-            if (effectiveExpenditureId.HasValue)
+            var entity = await unitOfWork.LineItemBudgetDetailRepository.GetByIdAsync(command.Id, cancellationToken)
+                ?? throw new NotFoundException($"Line Item Budget Detail with ID {command.Id} not found.");
+
+            var effectiveLibId = request.LineItemBudgetId ?? entity.LineItemBudgetId;
+
+            var lib = await unitOfWork.LineItemBudgetRepository.GetByIdAsync(effectiveLibId, cancellationToken)
+                ?? throw new NotFoundException($"LIB with ID {effectiveLibId} not found.");
+
+            if (!LIBRules.IsEditable(lib.Status))
+                throw new ValidationException("Line item details can only be modified on a Draft, Proposed, or Returned LIB.");
+
+            var isProjectScope  = lib.Scope.Equals(LIBScopeEnum.Project.ToString(),  StringComparison.OrdinalIgnoreCase);
+            var isActivityScope = lib.Scope.Equals(LIBScopeEnum.Activity.ToString(), StringComparison.OrdinalIgnoreCase);
+
+            if (!isProjectScope && !isActivityScope)
+                throw new ValidationException($"Unrecognized LIB scope '{lib.Scope}'.");
+
+            var effectiveExpenditureId = request.WFPObjectiveActivityExpenditureId ?? entity.WFPObjectiveActivityExpenditureId;
+            var effectiveActivityId    = request.LineItemBudgetActivityId ?? entity.LineItemBudgetActivityId;
+            var effectiveBudget        = request.Budget ?? entity.Budget;
+
+            Guid     resolvedObjectId;
+            string?  resolvedDescription;
+            int?     resolvedUnitQuantity;
+            decimal? resolvedUnitCost;
+
+            if (isProjectScope)
             {
-                (resolvedObjectId, resolvedDescription, resolvedUnitQuantity, resolvedUnitCost) =
-                    await ResolveFromExpenditureAsync(effectiveExpenditureId.Value, request, entity, effectiveBudget, cancellationToken);
+                if (effectiveExpenditureId.HasValue)
+                {
+                    (resolvedObjectId, resolvedDescription, resolvedUnitQuantity, resolvedUnitCost) =
+                        await ResolveFromExpenditureAsync(effectiveExpenditureId.Value, request, entity, effectiveBudget, cancellationToken);
+                }
+                else
+                {
+                    EnsureTimelineFieldsPresent(request, entity);
+
+                    (resolvedObjectId, resolvedDescription, resolvedUnitQuantity, resolvedUnitCost) =
+                        ResolveFromManualInput(request, entity, effectiveBudget);
+                }
             }
-            else
+            else // isActivityScope
             {
-                EnsureTimelineFieldsPresent(request, entity);
+                if (effectiveExpenditureId.HasValue && effectiveActivityId.HasValue)
+                    throw new ValidationException("Only one of WFPObjectiveActivityExpenditureId or LineItemBudgetActivityId may be set, not both.");
 
-                (resolvedObjectId, resolvedDescription, resolvedUnitQuantity, resolvedUnitCost) =
-                    ResolveFromManualInput(request, entity, effectiveBudget);
+                if (effectiveExpenditureId.HasValue)
+                {
+                    (resolvedObjectId, resolvedDescription, resolvedUnitQuantity, resolvedUnitCost) =
+                        await ResolveFromExpenditureAsync(effectiveExpenditureId.Value, request, entity, effectiveBudget, cancellationToken);
+                }
+                else if (effectiveActivityId.HasValue)
+                {
+                    var activity = await unitOfWork.LineItemBudgetActivityRepository
+                        .GetByIdForUpdateAsync(effectiveActivityId.Value, cancellationToken)
+                        ?? await unitOfWork.LineItemBudgetActivityRepository
+                            .GetByIdWithDetailsAsync(effectiveActivityId.Value, cancellationToken)
+                        ?? throw new NotFoundException($"LIB Activity with ID {effectiveActivityId} not found.");
+
+                    if (activity.LineItemBudgetId != effectiveLibId)
+                        throw new ValidationException("Selected LIB Activity does not belong to the provided LIB.");
+
+                    EnsureTimelineFieldsPresent(request, entity);
+
+                    if (lib.SourceType.Equals("OPCR", StringComparison.OrdinalIgnoreCase) && activity.OPCRActivityId.HasValue)
+                    {
+                        var opcrActivity = activity.OPCRActivity
+                            ?? await unitOfWork.OPCRActivityRepository.GetByIdAsync(activity.OPCRActivityId.Value, cancellationToken)
+                            ?? throw new NotFoundException($"OPCR Activity with ID {activity.OPCRActivityId} not found.");
+
+                        var currentOtherDetailsSum = activity.LineItemBudgetDetails
+                            .Where(d => !d.IsDeleted && d.Id != entity.Id)
+                            .Sum(d => d.Budget);
+
+                        var effectiveTotal = currentOtherDetailsSum + effectiveBudget;
+                        if (effectiveTotal > opcrActivity.Budget)
+                        {
+                            var availableBudget = opcrActivity.Budget - currentOtherDetailsSum;
+                            throw new ValidationException(
+                                $"Expenditure exceeds available OPCR Activity budget. Available: ₱{availableBudget:N2}; Requested: ₱{effectiveBudget:N2}.");
+                        }
+                    }
+
+                    (resolvedObjectId, resolvedDescription, resolvedUnitQuantity, resolvedUnitCost) =
+                        ResolveFromManualInput(request, entity, effectiveBudget);
+                }
+                else
+                {
+                    throw new ValidationException(
+                        "Either WFPObjectiveActivityExpenditureId or LineItemBudgetActivityId is required for Activity scope LIBs.");
+                }
             }
-        }
-        else // isActivityScope
-        {
-            if (effectiveExpenditureId.HasValue && effectiveActivityId.HasValue)
-                throw new ValidationException("Only one of WFPObjectiveActivityExpenditureId or LineItemBudgetActivityId may be set, not both.");
 
-            if (effectiveExpenditureId.HasValue)
-            {
-                (resolvedObjectId, resolvedDescription, resolvedUnitQuantity, resolvedUnitCost) =
-                    await ResolveFromExpenditureAsync(effectiveExpenditureId.Value, request, entity, effectiveBudget, cancellationToken);
-            }
-            else if (effectiveActivityId.HasValue)
-            {
-                var activity = await unitOfWork.LineItemBudgetActivityRepository
-                    .GetByIdAsync(effectiveActivityId.Value, cancellationToken)
-                    ?? throw new NotFoundException($"LIB Activity with ID {effectiveActivityId} not found.");
+            entity.LineItemBudgetId                  = effectiveLibId;
+            entity.LineItemBudgetActivityId          = effectiveActivityId;
+            entity.WFPObjectiveActivityExpenditureId = effectiveExpenditureId;
+            entity.ObjectId                          = resolvedObjectId;
+            entity.Description                       = resolvedDescription;
+            entity.UnitQuantity                       = resolvedUnitQuantity;
+            entity.UnitCost                           = resolvedUnitCost;
+            entity.TimelineType                       = request.TimelineType ?? entity.TimelineType;
+            entity.StartDate                          = request.StartDate ?? entity.StartDate;
+            entity.EndDate                            = request.EndDate ?? entity.EndDate;
+            entity.Budget                             = effectiveBudget;
 
-                if (activity.LineItemBudgetId != effectiveLibId)
-                    throw new ValidationException("Selected LIB Activity does not belong to the provided LIB.");
-
-                EnsureTimelineFieldsPresent(request, entity);
-
-                (resolvedObjectId, resolvedDescription, resolvedUnitQuantity, resolvedUnitCost) =
-                    ResolveFromManualInput(request, entity, effectiveBudget);
-            }
-            else
-            {
-                throw new ValidationException(
-                    "Either WFPObjectiveActivityExpenditureId or LineItemBudgetActivityId is required for Activity scope LIBs.");
-            }
-        }
-
-        entity.LineItemBudgetId                  = effectiveLibId;
-        entity.LineItemBudgetActivityId          = effectiveActivityId;
-        entity.WFPObjectiveActivityExpenditureId = effectiveExpenditureId;
-        entity.ObjectId                          = resolvedObjectId;
-        entity.Description                       = resolvedDescription;
-        entity.UnitQuantity                       = resolvedUnitQuantity;
-        entity.UnitCost                           = resolvedUnitCost;
-        entity.TimelineType                       = request.TimelineType ?? entity.TimelineType;
-        entity.StartDate                          = request.StartDate ?? entity.StartDate;
-        entity.EndDate                            = request.EndDate ?? entity.EndDate;
-        entity.Budget                             = effectiveBudget;
-
-        unitOfWork.LineItemBudgetDetailRepository.Update(entity);
-
-        await unitOfWork.SaveChangesAsync(cancellationToken);
+            unitOfWork.LineItemBudgetDetailRepository.Update(entity);
+            await unitOfWork.SaveChangesAsync(cancellationToken);
+        }, cancellationToken);
 
         return ApiResponse<Unit>.Success(Unit.Value, "Line Item Budget Detail updated successfully.");
     }

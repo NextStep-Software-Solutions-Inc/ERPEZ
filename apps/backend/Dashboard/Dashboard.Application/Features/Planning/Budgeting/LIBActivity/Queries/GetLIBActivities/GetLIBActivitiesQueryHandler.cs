@@ -29,6 +29,7 @@ public class GetLIBActivitiesQueryHandler(IUnitOfWork unitOfWork)
                     WFPObjectiveActivityId = entity.WFPObjectiveActivityId,
                     OPCRActivityId = entity.OPCRActivityId,
                     Name = entity.Name,
+                    Budget = entity.LineItemBudgetDetails.Sum(d => d.Budget), 
                     LineItemBudget = entity.LineItemBudget == null ? null : new LIBActivityLineItemBudgetResponse
                     {
                         Id = entity.LineItemBudget.Id,
