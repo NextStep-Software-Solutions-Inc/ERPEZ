@@ -24,6 +24,7 @@ import {
   useReturnAPRMutation,
 } from '@/features/procurement/apr/handlers/hooks'
 import { invalidateAPRQueries } from '@/features/procurement/apr/utils/invalidateAPRQueries'
+import { normalizeAPRStatus } from '@/features/procurement/apr/utils'
 
 /**
  * Calculate live statistics from live APR data
@@ -49,24 +50,28 @@ function calculateStatistics(aprList: any[]): APRStatistics {
   }
 
   aprList.forEach((apr) => {
-    const status = (apr.status || '').toLowerCase()
+    const status = normalizeAPRStatus(apr.status)
     const amount = Number(apr.totalAmount) || 0
     stats.totalBudgetRequested += amount
 
-    if (status === 'approved') {
+    if (status === 'APPROVED') {
       stats.totalApproved += 1
       stats.totalBudgetApproved += amount
       stats.statisticsByStatus.APPROVED = (stats.statisticsByStatus.APPROVED || 0) + 1
-    } else if (status === 'forapproval' || status === 'submitted') {
+    } else if (status === 'FOR_APPROVAL') {
       stats.totalPending += 1
       stats.totalSubmitted += 1
       stats.statisticsByStatus.FOR_APPROVAL = (stats.statisticsByStatus.FOR_APPROVAL || 0) + 1
-    } else if (status === 'returned') {
+    } else if (status === 'RETURNED') {
       stats.totalReturned += 1
       stats.statisticsByStatus.RETURNED = (stats.statisticsByStatus.RETURNED || 0) + 1
-    } else if (status === 'draft') {
+    } else if (status === 'DRAFT') {
       stats.totalDraft += 1
       stats.statisticsByStatus.DRAFT = (stats.statisticsByStatus.DRAFT || 0) + 1
+    } else if (status === 'PARTIALLY_AVAILABLE') {
+      stats.statisticsByStatus.PARTIALLY_AVAILABLE = (stats.statisticsByStatus.PARTIALLY_AVAILABLE || 0) + 1
+    } else if (status === 'OUT_OF_STOCK') {
+      stats.statisticsByStatus.OUT_OF_STOCK = (stats.statisticsByStatus.OUT_OF_STOCK || 0) + 1
     }
 
     const fy = apr.fiscalYear || new Date().getFullYear()

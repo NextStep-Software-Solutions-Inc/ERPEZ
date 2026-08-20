@@ -2,6 +2,7 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Info } from 'lucide-react'
 import type { APRStatus, APRMaster } from '@/features/procurement/apr/types'
+import { normalizeAPRStatus } from '@/features/procurement/apr/utils'
 
 interface APRStatusInfoProps {
   status: APRStatus | string
@@ -34,7 +35,7 @@ const STATUS_COLORS: Record<string, { bg: string; text: string; label: string }>
 }
 
 export function APRStatusInfo({ status, apr }: APRStatusInfoProps) {
-  const statusKey = String(status || 'DRAFT').toUpperCase()
+  const statusKey = normalizeAPRStatus(status) || 'DRAFT'
   const statusConfig = STATUS_COLORS[statusKey] || STATUS_COLORS.DRAFT
   
   // Select the appropriate timestamp based on status
@@ -43,8 +44,6 @@ export function APRStatusInfo({ status, apr }: APRStatusInfoProps) {
       case 'APPROVED':
         return apr.approvedAt || apr.updatedAt || new Date().toISOString()
       case 'FOR_APPROVAL':
-      case 'FORAPPROVAL':
-      case 'SUBMITTED':
         return apr.submittedAt || apr.updatedAt || new Date().toISOString()
       case 'RETURNED':
         return apr.returnedAt || apr.updatedAt || new Date().toISOString()

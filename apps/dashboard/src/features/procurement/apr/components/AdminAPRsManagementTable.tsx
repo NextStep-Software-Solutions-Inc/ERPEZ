@@ -28,6 +28,7 @@ import { Button } from '@/components/ui/button'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 import { getAdminAPRsTableColumns } from '../tables/AdminAPRsTableColumns'
 import { AdminAPRsTableToolbar } from '../tables/AdminAPRsTableToolbar'
+import { matchesAPRStatus } from '../utils'
 import type { APRMaster } from '../types'
 
 interface AdminAPRsTableProps {
@@ -74,12 +75,12 @@ export function AdminAPRsManagementTable({
       }
 
       // Status filter
-      if (statusFilter !== 'ALL' && apr.status !== statusFilter) {
+      if (!matchesAPRStatus(apr.status, statusFilter)) {
         return false
       }
 
       // Fiscal year filter
-      if (fiscalYearFilter && fiscalYearFilter !== 'all' && apr.fiscalYear !== parseInt(fiscalYearFilter)) {
+      if (fiscalYearFilter && fiscalYearFilter !== 'all' && Number(apr.fiscalYear) !== Number(fiscalYearFilter)) {
         return false
       }
 
