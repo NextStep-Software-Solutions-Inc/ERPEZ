@@ -1,10 +1,10 @@
-import { getMockBiddingDocumentDatabase } from '../../bidding-documents/data/mockBiddingDocumentsData'
 import { useBiddingDocumentsStore } from '../../bidding-documents/store/biddingDocumentsStore'
-import { getMockBiddingScheduleDatabase } from '../../bidding-schedule/data/mockBiddingScheduleData'
 import { useBiddingScheduleStore } from '../../bidding-schedule/store/biddingScheduleStore'
 import { resolveBacExecutionState } from '../utils/bacResolutionWorkflow'
 import type { BacResolution } from '../types'
 import { Badge } from '@/components/ui/badge'
+import { BiddingDocumentRecord } from '../../bidding-documents'
+import { BiddingSchedule } from '../../bidding-schedule'
 
 interface BacResolutionExecutionBadgesProps {
   resolution: BacResolution
@@ -31,13 +31,13 @@ export function BacResolutionExecutionBadges({
   )
   const fallbackSchedule =
     schedule ??
-    getMockBiddingScheduleDatabase().find(
+    ([] as BiddingSchedule[]).find(
       (candidate) => candidate.bacResolutionId === resolution.id,
     ) ??
     null
   const fallbackBiddingDocument =
     biddingDocument ??
-    getMockBiddingDocumentDatabase().find(
+    ([] as BiddingDocumentRecord[]).find(
       (candidate) => candidate.bacResolutionId === resolution.id,
     ) ??
     null
@@ -54,12 +54,20 @@ export function BacResolutionExecutionBadges({
   return (
     <div className="flex flex-wrap items-center gap-1.5">
       {executionState.primaryLabel ? (
-        <Badge variant="outline" color="info" className="text-[10px] px-1.5 py-0">
+        <Badge
+          variant="outline"
+          color="info"
+          className="text-[10px] px-1.5 py-0"
+        >
           {executionState.primaryLabel}
         </Badge>
       ) : null}
       {executionState.secondaryLabel ? (
-        <Badge variant="outline" color="success" className="text-[10px] px-1.5 py-0">
+        <Badge
+          variant="outline"
+          color="success"
+          className="text-[10px] px-1.5 py-0"
+        >
           {executionState.secondaryLabel}
         </Badge>
       ) : null}

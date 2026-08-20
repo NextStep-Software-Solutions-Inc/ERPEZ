@@ -2,8 +2,9 @@ import { useState } from 'react'
 import { ResponsiveDialogDashtail } from '@/components/ResponsiveDialogDashtail'
 import { Button } from '@/components/ui/button'
 import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
-import type { CreateBacResolutionPayload } from '../types'
+import type { CreateBacResolutionPayload } from '../handlers/createBacResolutionRequest'
 import { CreateBacResolutionForm } from '../forms/CreateBacResolutionForm'
+import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 interface CreateBacResolutionDialogProps {
   open: boolean
@@ -18,11 +19,17 @@ export function CreateBacResolutionDialog({
 }: CreateBacResolutionDialogProps) {
   const [isDirty, setIsDirty] = useState(false)
   const [showDiscardWarning, setShowDiscardWarning] = useState(false)
+  const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1)
+  const [canProceed, setCanProceed] = useState(false)
 
   const handleOpenChange = (nextOpen: boolean) => {
     if (!nextOpen && isDirty) {
       setShowDiscardWarning(true)
       return
+    }
+
+    if (!nextOpen) {
+      setCurrentStep(1)
     }
 
     onOpenChange(nextOpen)
@@ -41,28 +48,74 @@ export function CreateBacResolutionDialog({
         showCloseButton
         footer={
           <div className="flex justify-between items-center w-full">
-            <span className="text-xs text-muted-foreground">
-              Step 3 allows submitting the draft after reviewing procurement context.
-            </span>
-            <div className="flex gap-2">
+            <div className="flex items-center gap-2">
+              {currentStep > 1 && (
+                <Button
+                  type="button"
+                  variant="outline"
+                  onClick={() =>
+                    setCurrentStep((prev) => (prev - 1) as 1 | 2)
+                  }
+                  className="gap-1"
+                >
+                  <ChevronLeft className="h-4 w-4" />
+                  Back
+                </Button>
+              )}
               <Button
                 variant="outline"
                 onClick={() => handleOpenChange(false)}
               >
                 Cancel
               </Button>
-              <Button form={formId} type="submit">
-                Create BAC Resolution
-              </Button>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {currentStep === 1 && (
+                <Button
+                  type="button"
+                  onClick={() => setCurrentStep(2)}
+                  disabled={!canProceed}
+                  className="gap-1"
+                >
+                  Next: Pick Source Record
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              )}
+
+              {currentStep === 2 && (
+                <Button
+                  type="button"
+                  onClick={() => setCurrentStep(3)}
+                  disabled={!canProceed}
+                  className="gap-1"
+                >
+                  Next: BAC Details
+                  <ChevronRight className="h-4 w-4" />
+                </Button>
+              )}
+
+              {currentStep === 3 && (
+                <Button form={formId} type="submit">
+                  Create BAC Resolution
+                </Button>
+              )}
             </div>
           </div>
         }
       >
         <CreateBacResolutionForm
           formId={formId}
-          onSubmit={onCreate}
+          onSubmit={async (values) => {
+            await onCreate(values)
+            setCurrentStep(1)
+            onOpenChange(false)
+          }}
           onCancel={() => handleOpenChange(false)}
           onDirtyChange={setIsDirty}
+          currentStep={currentStep}
+          onStepChange={setCurrentStep}
+          onCanProceedChange={setCanProceed}
         />
       </ResponsiveDialogDashtail>
 
@@ -76,6 +129,7 @@ export function CreateBacResolutionDialog({
         onConfirm={() => {
           setShowDiscardWarning(false)
           setIsDirty(false)
+          setCurrentStep(1)
           onOpenChange(false)
         }}
       />

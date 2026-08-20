@@ -1,16 +1,12 @@
 export type BacResolutionStatus =
-  | 'draft'
-  | 'for-approval'
-  | 'returned'
-  | 'approved'
+  'draft' | 'for-approval' | 'returned' | 'approved'
 
 export type BacResolutionRole = 'procurement-staff' | 'bac-chairperson'
 
 export type BacResolutionWorkspaceScope = 'all' | 'public-bidding'
 
 export type BacResolutionListRoutePath =
-  | '/v2/bac-resolutions'
-  | '/v2/bac-resolutions-public-bidding'
+  '/v2/bac-resolutions' | '/v2/bac-resolutions-public-bidding'
 
 export type BacResolutionScheduleRoutePath =
   | '/v2/bac-resolutions/$resolutionId/bidding-schedule'
@@ -19,8 +15,7 @@ export type BacResolutionScheduleRoutePath =
 export type BacResolutionInboxFilter = BacResolutionStatus | 'all'
 
 export type BacResolutionType =
-  | 'award-recommendation'
-  | 'procurement-mode-recommendation'
+  'award-recommendation' | 'procurement-mode-recommendation'
 
 export type BacResolutionAwardRecommendation = {
   winningSupplierName: string
@@ -183,28 +178,6 @@ export type BacResolution = {
 }
 
 export type BacResolutionListItem = BacResolution
-
-export type CreateBacResolutionPayload = {
-  title?: string
-  abc?: number
-  resolutionType?: string
-  bacResolutionNumber: string
-  resolutionDate: string
-  description: string
-  resolvedDateText: string
-  resolvedLocationText: string
-  whereasClauses: BacResolutionClause[]
-  provisionalMembers: BacResolutionProvisionalMember[]
-  signatoryOverrides?: BacResolutionSignatoryOverride
-  workspaceOrigin?: 'public-bidding' | 'standard' | null
-  endUserRepresentativeId?: string | null
-  techRepresentativeId?: string | null
-  // Multi-source procurement payload
-  sourceType?: ProcurementSourceType
-  appItemId?: string | null
-  consolidatedPRId?: string | null
-  procurementProjectContext?: ProcurementProjectContext | null
-}
 
 export type LinkConsolidatedPrsPayload = {
   bacResolutionId: string

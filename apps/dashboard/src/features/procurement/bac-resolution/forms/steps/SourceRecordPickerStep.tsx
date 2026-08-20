@@ -9,7 +9,7 @@ import {
   ChevronRight,
   FileSpreadsheet,
   PackageCheck,
-  Calendar,
+  Loader2,
 } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Badge } from '@/components/ui/badge'
@@ -23,30 +23,29 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import type {
-  AppItemLink,
-  AppRecord,
-  ConsolidatedPrLink,
+  EligibleAppForProcurement,
+  EligibleAppItem,
+  EligibleConsolidatedPR,
   ProcurementSourceType,
 } from '../../types'
 import {
-  getMockAppRecords,
-  getAppItemsByAppNumber,
-} from '../../data/mockAppItemData'
+  useEligibleAppsForProcurement,
+  useEligibleConsolidatedPRs,
+} from '../../handlers/hooks'
 
 interface SourceRecordPickerStepProps {
   sourceType: ProcurementSourceType
-  appItems: AppItemLink[]
-  consolidatedPrs: ConsolidatedPrLink[]
-  selectedAppItem: AppItemLink | null
-  selectedConsolidatedPr: ConsolidatedPrLink | null
-  onSelectAppItem: (item: AppItemLink) => void
-  onSelectConsolidatedPr: (cpr: ConsolidatedPrLink) => void
+  selectedAppItem: EligibleAppItem | null
+  selectedConsolidatedPr: EligibleConsolidatedPR | null
+  onSelectAppItem: (
+    app: EligibleAppForProcurement,
+    item: EligibleAppItem,
+  ) => void
+  onSelectConsolidatedPr: (cpr: EligibleConsolidatedPR) => void
 }
 
 export function SourceRecordPickerStep({
   sourceType,
-  appItems,
-  consolidatedPrs,
   selectedAppItem,
   selectedConsolidatedPr,
   onSelectAppItem,
@@ -54,43 +53,44 @@ export function SourceRecordPickerStep({
 }: SourceRecordPickerStepProps) {
   const [searchTerm, setSearchTerm] = useState('')
   const [officeFilter, setOfficeFilter] = useState('ALL')
-  const [selectedAppRecord, setSelectedAppRecord] = useState<AppRecord | null>(
-    null,
-  )
+  const [selectedAppRecord, setSelectedAppRecord] =
+    useState<EligibleAppForProcurement | null>(null)
 
-  const appRecords = useMemo(() => getMockAppRecords(), [])
+  const { data: appsData, isLoading: isAppsLoading } =
+    useEligibleAppsForProcurement({})
+  const { data: cprsData, isLoading: isCprsLoading } =
+    useEligibleConsolidatedPRs({})
 
   // If there's an already selected app item, ensure its parent APP is active
   useEffect(() => {
-    if (selectedAppItem && !selectedAppRecord) {
-      const parent = appRecords.find(
-        (a) => a.appNumber === selectedAppItem.appNumber,
+    if (
+      selectedAppItem &&
+      !selectedAppRecord &&
+      (appsData?.data || []).length > 0
+    ) {
+      const parent = (appsData?.data || []).find((a) =>
+        a.eligibleItems.some((i) => i.id === selectedAppItem.id),
       )
       if (parent) {
         setSelectedAppRecord(parent)
       }
     }
-  }, [selectedAppItem, selectedAppRecord, appRecords])
+  }, [selectedAppItem, selectedAppRecord, appsData?.data])
 
   const filteredAppRecords = useMemo(() => {
-    return appRecords.filter((app) => {
+    return (appsData?.data || []).filter((app) => {
       const matchesSearch =
         app.appNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        app.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        app.implementingUnit.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        app.fiscalYear.includes(searchTerm)
-      const matchesOffice =
-        officeFilter === 'ALL' || app.implementingUnit === officeFilter
-      return matchesSearch && matchesOffice
+        app.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        app.fiscalYearName.toLowerCase().includes(searchTerm.toLowerCase())
+      return matchesSearch
     })
-  }, [appRecords, searchTerm, officeFilter])
+  }, [appsData?.data, searchTerm])
 
   const currentAppItems = useMemo(() => {
     if (!selectedAppRecord) return []
-    return appItems.filter(
-      (item) => item.appNumber === selectedAppRecord.appNumber,
-    )
-  }, [appItems, selectedAppRecord])
+    return selectedAppRecord.eligibleItems
+  }, [selectedAppRecord])
 
   const filteredChildAppItems = useMemo(() => {
     return currentAppItems.filter((item) => {
@@ -98,7 +98,9 @@ export function SourceRecordPickerStep({
         item.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.itemNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
         item.officeName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.modeOfProcurement.toLowerCase().includes(searchTerm.toLowerCase())
+        item.procurementModeName
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase())
       const matchesOffice =
         officeFilter === 'ALL' || item.officeName === officeFilter
       return matchesSearch && matchesOffice
@@ -106,27 +108,33 @@ export function SourceRecordPickerStep({
   }, [currentAppItems, searchTerm, officeFilter])
 
   const filteredConsolidatedPrs = useMemo(() => {
-    return consolidatedPrs.filter((cpr) => {
+    return (cprsData?.data || []).filter((cpr) => {
       const matchesSearch =
         cpr.prNumber.toLowerCase().includes(searchTerm.toLowerCase()) ||
         cpr.description.toLowerCase().includes(searchTerm.toLowerCase()) ||
         cpr.endUser.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        cpr.modeOfProcurement.toLowerCase().includes(searchTerm.toLowerCase())
+        cpr.modeOfProcurementName
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase())
       const matchesOffice =
         officeFilter === 'ALL' || cpr.endUser === officeFilter
       return matchesSearch && matchesOffice
     })
-  }, [consolidatedPrs, searchTerm, officeFilter])
+  }, [cprsData?.data, searchTerm, officeFilter])
 
   const availableOffices = useMemo(() => {
     if (sourceType === 'APP_ITEM') {
       if (selectedAppRecord) {
-        return Array.from(new Set(currentAppItems.map((i) => i.officeName)))
+        return Array.from(
+          new Set(currentAppItems.map((i) => i.officeName).filter(Boolean)),
+        )
       }
-      return Array.from(new Set(appRecords.map((i) => i.implementingUnit)))
+      return []
     }
-    return Array.from(new Set(consolidatedPrs.map((c) => c.endUser)))
-  }, [sourceType, selectedAppRecord, currentAppItems, appRecords, consolidatedPrs])
+    return Array.from(
+      new Set((cprsData?.data || []).map((c) => c.endUser).filter(Boolean)),
+    )
+  }, [sourceType, selectedAppRecord, currentAppItems, cprsData?.data])
 
   return (
     <div className="space-y-4 py-2">
@@ -173,7 +181,7 @@ export function SourceRecordPickerStep({
               sourceType === 'APP_ITEM'
                 ? selectedAppRecord
                   ? `Search items in ${selectedAppRecord.appNumber} by description, mode, or office...`
-                  : 'Search Annual Procurement Plans by APP #, title, fiscal year, or office...'
+                  : 'Search Annual Procurement Plans by APP #, title, fiscal year...'
                 : 'Search by CPR #, project description, end-user office...'
             }
             value={searchTerm}
@@ -203,14 +211,21 @@ export function SourceRecordPickerStep({
 
       {/* Tables depending on Source Type */}
       {sourceType === 'APP_ITEM' ? (
-        !selectedAppRecord ? (
+        isAppsLoading ? (
+          <div className="flex flex-col items-center justify-center p-12 text-sm text-muted-foreground">
+            <Loader2 className="h-6 w-6 animate-spin text-primary mb-2" />
+            Loading eligible Annual Procurement Plans...
+          </div>
+        ) : !selectedAppRecord ? (
           /* Stage 1: Select Parent APP */
           <div className="space-y-3">
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               {filteredAppRecords.map((app) => {
-                const count = appItems.filter(
-                  (i) => i.appNumber === app.appNumber,
-                ).length
+                const count = app.eligibleItems.length
+                const totalBudget = app.eligibleItems.reduce(
+                  (sum, item) => sum + item.effectiveABC,
+                  0,
+                )
                 return (
                   <div
                     key={app.id}
@@ -218,7 +233,7 @@ export function SourceRecordPickerStep({
                       setSelectedAppRecord(app)
                       setSearchTerm('')
                     }}
-                    className="group relative cursor-pointer rounded-xl border border-default-200 bg-white p-4.5 shadow-xs transition-all hover:border-primary/50 hover:shadow-md hover:bg-primary/5"
+                    className="group relative cursor-pointer rounded-xl border border-default-200 bg-white p-4 shadow-xs transition-all hover:border-primary/50 hover:shadow-md hover:bg-primary/5"
                   >
                     <div className="flex items-start justify-between gap-2">
                       <div className="flex items-center gap-2">
@@ -230,7 +245,7 @@ export function SourceRecordPickerStep({
                             {app.appNumber}
                           </span>
                           <span className="ml-2 inline-flex items-center rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold text-emerald-800">
-                            FY {app.fiscalYear}
+                            {app.fiscalYearName || 'FY 2026'}
                           </span>
                         </div>
                       </div>
@@ -238,7 +253,7 @@ export function SourceRecordPickerStep({
                     </div>
 
                     <p className="mt-2.5 text-xs text-default-700 font-medium line-clamp-2 leading-relaxed">
-                      {app.title}
+                      {app.name}
                     </p>
 
                     <div className="mt-3.5 pt-3 border-t border-default-100 flex items-center justify-between text-[11px] text-muted-foreground">
@@ -248,7 +263,7 @@ export function SourceRecordPickerStep({
                       </span>
                       <span className="font-bold text-emerald-700">
                         ₱
-                        {app.totalBudget.toLocaleString('en-US', {
+                        {totalBudget.toLocaleString('en-US', {
                           minimumFractionDigits: 2,
                         })}
                       </span>
@@ -259,7 +274,7 @@ export function SourceRecordPickerStep({
             </div>
             {filteredAppRecords.length === 0 && (
               <div className="rounded-lg border border-dashed border-default-200 bg-default-50 p-8 text-center text-sm text-muted-foreground">
-                No Annual Procurement Plans match your search criteria.
+                No eligible Annual Procurement Plans match your search criteria.
               </div>
             )}
           </div>
@@ -275,7 +290,7 @@ export function SourceRecordPickerStep({
                 </span>
                 <span className="text-muted-foreground">|</span>
                 <span className="text-default-700 font-medium truncate max-w-[400px]">
-                  {selectedAppRecord.title}
+                  {selectedAppRecord.name}
                 </span>
               </div>
               <Badge
@@ -315,7 +330,9 @@ export function SourceRecordPickerStep({
                       return (
                         <TableRow
                           key={item.id}
-                          onClick={() => onSelectAppItem(item)}
+                          onClick={() =>
+                            onSelectAppItem(selectedAppRecord, item)
+                          }
                           className={`cursor-pointer transition-colors ${
                             isSelected
                               ? 'bg-primary/10 hover:bg-primary/15'
@@ -344,7 +361,7 @@ export function SourceRecordPickerStep({
                           <TableCell className="text-xs text-default-700">
                             <div className="flex items-center gap-1.5">
                               <Building2 className="h-3.5 w-3.5 text-muted-foreground" />
-                              <span>{item.officeName}</span>
+                              <span>{item.officeName || 'N/A'}</span>
                             </div>
                           </TableCell>
                           <TableCell className="text-xs">
@@ -352,20 +369,20 @@ export function SourceRecordPickerStep({
                               variant="outline"
                               className="font-normal text-[11px] bg-blue-50 text-blue-700 border-blue-200"
                             >
-                              {item.modeOfProcurement}
+                              {item.procurementModeName || 'Public Bidding'}
                             </Badge>
                           </TableCell>
                           <TableCell className="text-xs text-default-600">
                             <div className="flex items-center gap-1">
                               <Wallet className="h-3.5 w-3.5 text-muted-foreground" />
                               <span className="truncate max-w-[140px]">
-                                {item.sourceOfFund}
+                                {item.fundSourceName || 'GAA'}
                               </span>
                             </div>
                           </TableCell>
                           <TableCell className="text-right font-semibold text-xs text-emerald-700">
                             ₱
-                            {item.abc.toLocaleString('en-US', {
+                            {item.effectiveABC.toLocaleString('en-US', {
                               minimumFractionDigits: 2,
                             })}
                           </TableCell>
@@ -378,6 +395,11 @@ export function SourceRecordPickerStep({
             </div>
           </div>
         )
+      ) : isCprsLoading ? (
+        <div className="flex flex-col items-center justify-center p-12 text-sm text-muted-foreground">
+          <Loader2 className="h-6 w-6 animate-spin text-primary mb-2" />
+          Loading eligible Consolidated Purchase Requests...
+        </div>
       ) : (
         /* Consolidated PR Table */
         <div className="overflow-hidden rounded-lg border border-default-200 bg-white max-h-[380px] overflow-y-auto">
@@ -453,12 +475,12 @@ export function SourceRecordPickerStep({
                           variant="outline"
                           className="font-normal text-[11px] bg-purple-50 text-purple-700 border-purple-200"
                         >
-                          {cpr.modeOfProcurement}
+                          {cpr.modeOfProcurementName}
                         </Badge>
                       </TableCell>
                       <TableCell className="text-right font-semibold text-xs text-emerald-700">
                         ₱
-                        {cpr.amount.toLocaleString('en-US', {
+                        {cpr.totalAmount.toLocaleString('en-US', {
                           minimumFractionDigits: 2,
                         })}
                       </TableCell>
