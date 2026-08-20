@@ -103,9 +103,41 @@ export type ProcurementProjectContext = {
   projectTitle: string
   officeName: string
   modeOfProcurement: string
+  procurementModeId?: string | null
   sourceOfFund: string
   abc: number
   itemBreakdown?: ProcurementProjectItemBreakdown[]
+}
+
+export type EligibleAppItem = {
+  id: string
+  itemNumber: string
+  description: string
+  officeName: string
+  procurementModeId: string | null
+  procurementModeName: string
+  fundSourceId: string | null
+  fundSourceName: string
+  effectiveABC: number
+}
+
+export type EligibleAppForProcurement = {
+  id: string
+  appNumber: string
+  name: string
+  fiscalYearName: string
+  eligibleItems: EligibleAppItem[]
+}
+
+export type EligibleConsolidatedPR = {
+  id: string
+  prNumber: string
+  description: string
+  endUser: string
+  projectName: string
+  totalAmount: number
+  modeOfProcurementName: string
+  procurementModeId: string | null
 }
 
 export type BacResolutionLogEntry = {

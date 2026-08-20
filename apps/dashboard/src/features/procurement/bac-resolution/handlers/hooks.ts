@@ -18,6 +18,8 @@ import { submitBacResolutionRequest } from './submitBacResolutionRequest'
 import { updateWhereasClauseTemplateRequest } from './updateWhereasClauseTemplateRequest'
 import { updateBacResolutionRequest } from './updateBacResolutionRequest'
 import { deleteBacResolutionRequest } from './deleteBacResolutionRequest'
+import { getEligibleAppsForProcurementRequest } from './getEligibleAppsForProcurementRequest'
+import { getEligibleConsolidatedPRsRequest } from './getEligibleConsolidatedPRsRequest'
 
 const bacResolutionQueryKeys = [['bac-resolutions'], ['bac-resolution']] as const
 const whereasClauseQueryKeys = [['/bac-resolution-whereas-clauses']] as const
@@ -109,6 +111,14 @@ export const useBacResolution = createQueryHookFromTemplate(
 
 export const useBackendProjectDetails = createQueryHookFromTemplate(
   getBackendProjectDetailsRequest,
+)
+
+export const useEligibleAppsForProcurement = createQueryHookFromTemplate(
+  getEligibleAppsForProcurementRequest,
+)
+
+export const useEligibleConsolidatedPRs = createQueryHookFromTemplate(
+  getEligibleConsolidatedPRsRequest,
 )
 
 const useCreateBacResolutionBase = createMutationHookFromTemplate(
