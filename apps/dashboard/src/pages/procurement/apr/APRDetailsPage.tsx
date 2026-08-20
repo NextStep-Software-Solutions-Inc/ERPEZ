@@ -13,6 +13,7 @@ import { useMemo, useState } from 'react'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useQueryClient } from '@tanstack/react-query'
 import { invalidateAPRQueries } from '@/features/procurement/apr/utils/invalidateAPRQueries'
+import { normalizeAPRStatus } from '@/features/procurement/apr/utils'
 import {
   ArrowLeft,
   ChevronLeft,
@@ -372,11 +373,11 @@ export default function APRDetailsPage({ aprId, isReviewerMode }: APRDetailsPage
   }
 
   // Determine available actions based on status
-  const statusLower = (apr.status || '').toLowerCase()
-  const isDraft = statusLower === 'draft'
-  const isSubmitted = statusLower === 'forapproval' || statusLower === 'submitted'
-  const isReturned = statusLower === 'returned'
-  const isApproved = statusLower === 'approved'
+  const statusNorm = normalizeAPRStatus(apr.status)
+  const isDraft = statusNorm === 'DRAFT'
+  const isSubmitted = statusNorm === 'FOR_APPROVAL'
+  const isReturned = statusNorm === 'RETURNED'
+  const isApproved = statusNorm === 'APPROVED'
 
   // Activity events timeline (newest event first)
   const timelineEvents = [
