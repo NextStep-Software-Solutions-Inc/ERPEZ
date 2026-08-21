@@ -68,7 +68,7 @@ import type { CreateBacResolutionPayload } from '../handlers/createBacResolution
 import { CreateEditWhereasClauseDialog } from '../dialogs/CreateEditWhereasClauseDialog'
 
 export const createBacResolutionSchema = z.object({
-  appItemId: z.string().optional(),
+  APPItemId: z.string().optional(),
   consolidatedPRId: z.string().optional(),
   title: z.string().min(1, 'Title is required.'),
   abc: z.number().min(0, 'ABC must be at least 0.'),
@@ -248,7 +248,7 @@ export const CreateBacResolutionForm = forwardRef<
     )}`
 
     const initialFormValues: CreateBacResolutionFormValues = {
-      appItemId: initialValues?.appItemId || undefined,
+      APPItemId: initialValues?.APPItemId || undefined,
       consolidatedPRId: initialValues?.consolidatedPRId || undefined,
       title: initialValues?.title ?? projectContext?.projectTitle ?? '',
       abc: initialValues?.abc ?? projectContext?.abc ?? 0,
@@ -275,19 +275,20 @@ export const CreateBacResolutionForm = forwardRef<
 
         try {
           const payload: CreateBacResolutionPayload = {
-            sourceType: selectedSourceType || (value.appItemId ? 'AppItem' : 'ConsolidatedPr'),
-            appItemId: value.appItemId || undefined,
-            consolidatedPRId: value.consolidatedPRId || undefined,
+            sourceType: selectedSourceType || (selectedAppItem ? 'AppItem' : 'ConsolidatedPr'),
+            APPItemId:
+              selectedSourceType === 'AppItem'
+                ? value.APPItemId || selectedAppItem?.id || undefined
+                : undefined,
+            consolidatedPRId:
+              selectedSourceType === 'ConsolidatedPr'
+                ? value.consolidatedPRId || selectedConsolidatedPr?.id || undefined
+                : undefined,
             title: value.title,
             abc: value.abc,
             resolutionType: value.resolutionType,
-            // bacResolutionNumber: value.resolutionNumber,
             resolutionNumber: value.resolutionNumber,
-            // resolutionDate: value.dateResolved,
             dateResolved: value.dateResolved,
-            // description: value.title,
-            // resolvedDateText: value.dateResolved,
-            // resolvedLocationText: '',
             whereasClauseIds: value.whereasClauseIds,
             endUserRepresentativeId: value.endUserRepresentativeId || undefined,
             techRepresentativeId: value.techRepresentativeId || undefined,
@@ -1331,6 +1332,7 @@ export function UserPickerCombobox({
   placeholder?: string
 }) {
   const [open, setOpen] = useState(false)
+  const [searchQuery, setSearchQuery] = useState('')
 
   const selectedUser = useMemo(
     () => users.find((u) => u.id === value),
@@ -1350,6 +1352,22 @@ export function UserPickerCombobox({
     return user.username || user.email || 'Unnamed User'
   }
 
+  const filteredUsers = useMemo(() => {
+    if (!searchQuery.trim()) return users
+    const q = searchQuery.toLowerCase().trim()
+    return users.filter((u) => {
+      const name = getDisplayName(u).toLowerCase()
+      const emp = (u.employeeNumber || '').toLowerCase()
+      const office = (u.officeName || '').toLowerCase()
+      return name.includes(q) || emp.includes(q) || office.includes(q)
+    })
+  }, [users, searchQuery])
+
+  const handleSelectUser = (userId: string) => {
+    onChange(userId)
+    setOpen(false)
+  }
+
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
@@ -1362,7 +1380,7 @@ export function UserPickerCombobox({
           className="w-full justify-between font-normal text-left bg-white border-default-200 text-default-900 hover:bg-default-50 h-10"
         >
           {selectedUser ? (
-            <span className="truncate">
+            <span className="truncate font-medium">
               {getDisplayName(selectedUser)}
               {selectedUser.employeeNumber
                 ? ` (${selectedUser.employeeNumber})`
@@ -1375,50 +1393,63 @@ export function UserPickerCombobox({
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[350px] p-0" align="start">
-        <Command>
-          <CommandInput placeholder="Search user by name or employee #..." />
-          <CommandList>
-            <CommandEmpty>No user found.</CommandEmpty>
-            <CommandGroup>
-              {users.map((user) => {
-                const displayName = getDisplayName(user)
-                const searchValue = `${displayName} ${
-                  user.employeeNumber || ''
-                } ${user.officeName || ''} ${user.id}`
-                return (
-                  <CommandItem
-                    key={user.id}
-                    value={searchValue}
-                    onSelect={() => {
-                      onChange(user.id)
-                      setOpen(false)
-                    }}
-                    className="cursor-pointer"
-                  >
+        <div className="p-2 border-b border-default-100 bg-default-50/50">
+          <div className="relative">
+            <Search className="absolute left-2.5 top-2.5 h-3.5 w-3.5 text-muted-foreground" />
+            <Input
+              placeholder="Search user by name or employee #..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="pl-8 h-8 text-xs bg-white"
+              autoFocus
+            />
+          </div>
+        </div>
+
+        <div className="max-h-[260px] overflow-y-auto p-1 space-y-0.5">
+          {filteredUsers.length === 0 ? (
+            <div className="py-6 text-center text-xs text-muted-foreground">
+              No user found.
+            </div>
+          ) : (
+            filteredUsers.map((user) => {
+              const displayName = getDisplayName(user)
+              const isSelected = value === user.id
+              return (
+                <button
+                  key={user.id}
+                  type="button"
+                  onClick={() => handleSelectUser(user.id)}
+                  className={cn(
+                    'w-full text-left flex items-center justify-between py-2 px-2.5 rounded-md text-xs transition-colors cursor-pointer',
+                    isSelected
+                      ? 'bg-primary/10 text-primary font-semibold'
+                      : 'hover:bg-default-100 text-default-900',
+                  )}
+                >
+                  <div className="flex items-center gap-2 min-w-0">
                     <Check
                       className={cn(
-                        'mr-2 h-4 w-4 shrink-0',
-                        value === user.id
-                          ? 'opacity-100 text-primary'
-                          : 'opacity-0',
+                        'h-3.5 w-3.5 shrink-0',
+                        isSelected ? 'opacity-100 text-primary' : 'opacity-0',
                       )}
                     />
                     <div className="flex flex-col min-w-0">
-                      <span className="font-medium text-sm text-default-900 truncate">
+                      <span className="font-medium text-xs text-default-900 truncate">
                         {displayName}
                       </span>
                       {user.officeName && (
-                        <span className="text-xs text-muted-foreground truncate">
+                        <span className="text-[11px] text-muted-foreground truncate">
                           {user.officeName}
                         </span>
                       )}
                     </div>
-                  </CommandItem>
-                )
-              })}
-            </CommandGroup>
-          </CommandList>
-        </Command>
+                  </div>
+                </button>
+              )
+            })
+          )}
+        </div>
       </PopoverContent>
     </Popover>
   )

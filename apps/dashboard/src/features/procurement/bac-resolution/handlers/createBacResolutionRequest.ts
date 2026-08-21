@@ -7,7 +7,7 @@ import api from '@/services/api'
 
 export type CreateBacResolutionPayload = {
   sourceType?: ProcurementSourceType
-  appItemId?: string
+  APPItemId?: string
   consolidatedPRId?: string
   title?: string
   abc?: number

@@ -62,13 +62,6 @@ export function CreateBacResolutionDialog({
   }
 
   const handleSubmit = async (values: CreateBacResolutionPayload) => {
-    if (onCreate) {
-      await onCreate(values)
-      setCurrentStep(1)
-      onOpenChange(false)
-      return
-    }
-
     try {
       setIsSubmitting(true)
       await toast.promise(
@@ -83,12 +76,11 @@ export function CreateBacResolutionDialog({
             err instanceof Error ? err.message : 'Failed to create BAC Resolution.',
         },
       )
-      setCurrentStep(1)
       onOpenChange(false)
     } catch {
       // toast.promise handles presentation
     } finally {
-      setIsSubmitting(false)
+
     }
   }
 
