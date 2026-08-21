@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useState, useMemo } from 'react'
 import { useNavigate } from '@tanstack/react-router'
 import {
   ArrowLeft,
@@ -7,7 +7,10 @@ import {
   Search,
   ScrollText,
   FileText,
-  Sparkles,
+  Plus,
+  Scale,
+  Loader2,
+  X,
 } from 'lucide-react'
 import { PageContainerDashtail } from '@/components/v2'
 import { Button } from '@/components/ui/button'
@@ -19,9 +22,15 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
-import { Textarea } from '@/components/ui/textarea'
 import { Badge } from '@/components/ui/badge'
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table'
 import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
 import { toast } from 'sonner'
 import {
@@ -30,110 +39,69 @@ import {
   useUpdateWhereasClauseTemplate,
   useWhereasClauseTemplates,
 } from '../handlers/hooks'
-
-const emptyDraft = {
-  id: '',
-  name: '',
-  body: '',
-}
+import { CreateEditWhereasClauseDialog } from '../dialogs/CreateEditWhereasClauseDialog'
+import type { WhereasClauseTemplate } from '../types'
 
 export function ManageWhereasClausesPage() {
   const navigate = useNavigate()
   const [searchTerm, setSearchTerm] = useState('')
-  const [draft, setDraft] = useState<{
-    id: string
-    name: string
-    body: string
-  }>(emptyDraft)
-  const [selectedTemplateId, setSelectedTemplateId] = useState<string | null>(
-    null,
-  )
+  const [isModalOpen, setIsModalOpen] = useState(false)
+  const [editingTemplate, setEditingTemplate] = useState<WhereasClauseTemplate | null>(null)
   const [deleteTargetId, setDeleteTargetId] = useState<string | null>(null)
-  const [showUpdateConfirm, setShowUpdateConfirm] = useState(false)
-  const [isEditing, setIsEditing] = useState(false)
 
-  const { data: apiTemplates, isLoading: isTemplatesLoading } =
-    useWhereasClauseTemplates({})
-  const templates = [] as any[]
+  const { data: bacResolutionWhereasClauses, isPending } = useWhereasClauseTemplates({
+    pathParams: {},
+    queryParams: {},
+  })
   const createTemplate = useCreateWhereasClauseTemplate()
   const updateTemplate = useUpdateWhereasClauseTemplate()
   const deleteTemplate = useDeleteWhereasClauseTemplate()
 
-  const filteredTemplates = [] as any[]
-
-  const selectedTemplate = useMemo(() => {
-    return templates.find((t) => t.id === selectedTemplateId) || null
-  }, [templates, selectedTemplateId])
-
-  useEffect(() => {
-    if (selectedTemplate) {
-      setDraft({
-        id: selectedTemplate.id,
-        name: selectedTemplate.name,
-        body: selectedTemplate.body,
-      })
+  const templates = useMemo<WhereasClauseTemplate[]>(() => {
+    if (!bacResolutionWhereasClauses) return []
+    if (Array.isArray(bacResolutionWhereasClauses.data)) {
+      return bacResolutionWhereasClauses.data
     }
-  }, [selectedTemplate])
+    if (Array.isArray(bacResolutionWhereasClauses)) {
+      return bacResolutionWhereasClauses
+    }
+    return []
+  }, [bacResolutionWhereasClauses])
 
-  const handleSelectTemplate = (id: string) => {
-    setSelectedTemplateId(id)
-    setIsEditing(true)
+  const filteredTemplates = useMemo(() => {
+    return templates.filter(
+      (t) =>
+        t.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        t.body.toLowerCase().includes(searchTerm.toLowerCase()),
+    )
+  }, [templates, searchTerm])
+
+  const handleOpenCreateModal = () => {
+    setEditingTemplate(null)
+    setIsModalOpen(true)
   }
 
-  const handleSave = async () => {
-    if (!draft.name.trim() || !draft.body.trim()) {
-      toast.error('Template name and clause body are required.')
-      return
-    }
+  const handleOpenEditModal = (template: WhereasClauseTemplate) => {
+    setEditingTemplate(template)
+    setIsModalOpen(true)
+  }
 
-    if (draft.id) {
-      setShowUpdateConfirm(true)
-      return
-    }
 
-    try {
-      const created = await createTemplate.mutateAsync({
+  const handleSaveTemplate = async (name: string, body: string, id?: string) => {
+    if (id) {
+      // Update existing template
+      await updateTemplate.mutateAsync({
+        pathParams: { id },
+        payload: { name, body },
+      })
+      toast.success('WHEREAS Clause template updated successfully.')
+    } else {
+      // Create new template
+      await createTemplate.mutateAsync({
         pathParams: {},
-        payload: {
-          name: draft.name,
-          body: draft.body,
-        },
+        payload: { name, body },
       })
-      setSelectedTemplateId(created.id)
-      toast.success('WHEREAS Clause template created.')
-      setIsEditing(false)
-    } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : 'Failed to create clause template.',
-      )
-    }
-  }
-
-  const confirmUpdate = async () => {
-    if (!draft.id) {
-      setShowUpdateConfirm(false)
-      return
-    }
-
-    try {
-      const updated = await updateTemplate.mutateAsync({
-        pathParams: { id: draft.id },
-        payload: {
-          name: draft.name,
-          body: draft.body,
-        },
-      })
-      setSelectedTemplateId(updated.id)
-      setShowUpdateConfirm(false)
-      toast.success('WHEREAS Clause template updated.')
-    } catch (error) {
-      toast.error(
-        error instanceof Error
-          ? error.message
-          : 'Failed to update clause template.',
-      )
+      toast.success('WHEREAS Clause template created successfully.')
     }
   }
 
@@ -143,10 +111,8 @@ export function ManageWhereasClausesPage() {
       await deleteTemplate.mutateAsync({
         pathParams: { id: deleteTargetId },
       })
-      if (selectedTemplateId === deleteTargetId) {
-        setSelectedTemplateId(null)
-        setDraft(emptyDraft)
-        setIsEditing(false)
+      if (editingTemplate?.id === deleteTargetId) {
+        setEditingTemplate(null)
       }
       setDeleteTargetId(null)
       toast.success('WHEREAS Clause template deleted.')
@@ -160,260 +126,190 @@ export function ManageWhereasClausesPage() {
   }
 
   return (
-    <div className="w-full space-y-6 pb-12">
-      {/* Top Header Card */}
-      <Card className="bg-linear-to-r from-primary/10 to-primary/5 border-primary/20">
-        <CardHeader>
-          <div className="flex items-center justify-between gap-4 flex-wrap">
-            <div className="space-y-1">
-              <div className="flex items-center gap-2">
-                <Button
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => void navigate({ to: '/v2/bac-resolutions' })}
-                  className="h-8 px-2 text-muted-foreground hover:text-foreground gap-1"
-                >
-                  <ArrowLeft className="h-4 w-4" />
-                  Back to BAC Resolutions
-                </Button>
+    <PageContainerDashtail mode="simple" contentType="default">
+      <div className="w-full space-y-6 pb-12">
+        {/* Navigation & Header */}
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-default-200 pb-4">
+          <div className="space-y-1">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => void navigate({ to: '/v2/bac-resolutions' })}
+              className="h-8 px-2 text-muted-foreground hover:text-foreground gap-1.5 -ml-2 mb-1 text-xs"
+            >
+              <ArrowLeft className="h-4 w-4" />
+              Back to BAC Resolutions
+            </Button>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary">
+                <Scale className="h-5 w-5" />
               </div>
-              <CardTitle className="text-3xl">Manage WHEREAS Clauses</CardTitle>
-              <CardDescription className="text-base">
-                Standard legal clause repository and template manager for BAC
-                Resolutions.
-              </CardDescription>
-            </div>
-            <div className="flex items-center gap-2">
-              <Badge
-                variant="outline"
-                className="h-fit px-3 py-1 font-semibold"
-              >
-                <ScrollText className="h-3.5 w-3.5 mr-1.5" /> Clause Repository
-              </Badge>
+              <div>
+                <h1 className="text-2xl font-bold tracking-tight text-foreground">
+                  WHEREAS Clause Repository
+                </h1>
+                <p className="text-xs text-muted-foreground">
+                  Standard legal clause repository and template manager for BAC Resolutions.
+                </p>
+              </div>
             </div>
           </div>
-        </CardHeader>
-      </Card>
 
-      <PageContainerDashtail mode="simple" contentType="default">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
-          {/* Left Column: Clause Library List */}
-          <div className="lg:col-span-5 space-y-4">
-            <Card className="border border-default-200 shadow-sm">
-              <CardHeader className="space-y-3 pb-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="text-base font-semibold flex items-center gap-2">
-                    <FileText className="h-4 w-4 text-primary" />
-                    Clause Templates ({filteredTemplates.length})
-                  </CardTitle>
-                </div>
-                <div className="relative">
-                  <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
-                  <Input
-                    placeholder="Search clause by title or content..."
-                    value={searchTerm}
-                    onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-9 text-sm"
-                  />
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-3 max-h-[600px] overflow-y-auto pr-1">
-                {isTemplatesLoading ? (
-                  <p className="text-sm text-muted-foreground py-4 text-center">
-                    Loading templates...
+          <div className="flex items-center gap-3 self-start sm:self-auto">
+            <Badge variant="outline" className="h-8 px-3 py-1 font-semibold text-xs gap-1.5">
+              <ScrollText className="h-3.5 w-3.5" />
+              {templates.length} Active Templates
+            </Badge>
+            <Button onClick={handleOpenCreateModal} size="sm" className="gap-1.5 shadow-sm">
+              <Plus className="h-4 w-4" />
+              New Clause Template
+            </Button>
+          </div>
+        </div>
+
+        {/* Full-Width Table Card */}
+        <Card className="border border-default-200 shadow-sm">
+          <CardHeader className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 pb-4">
+            <div>
+              <CardTitle className="text-base font-bold flex items-center gap-2">
+                <FileText className="h-4.5 w-4.5 text-primary" />
+                All WHEREAS Clauses
+              </CardTitle>
+              <CardDescription className="text-xs mt-0.5">
+                Browse, search, and manage standard legal clauses available for BAC Resolutions.
+              </CardDescription>
+            </div>
+
+            {/* Search Filter */}
+            <div className="relative w-full sm:w-80">
+              <Search className="absolute left-3 top-2.5 h-4 w-4 text-muted-foreground" />
+              <Input
+                placeholder="Search clause by title or text..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-9 pr-8 text-sm"
+              />
+              {searchTerm && (
+                <button
+                  onClick={() => setSearchTerm('')}
+                  className="absolute right-2.5 top-2.5 text-muted-foreground hover:text-foreground"
+                >
+                  <X className="h-4 w-4" />
+                </button>
+              )}
+            </div>
+          </CardHeader>
+
+          <CardContent className="p-0">
+            {isPending ? (
+              <div className="flex flex-col items-center justify-center py-16 text-sm text-muted-foreground space-y-3">
+                <Loader2 className="h-7 w-7 animate-spin text-primary" />
+                <span>Loading clause repository...</span>
+              </div>
+            ) : filteredTemplates.length === 0 ? (
+              <div className="flex flex-col items-center justify-center p-12 text-center text-sm text-muted-foreground space-y-3">
+                <ScrollText className="h-10 w-10 text-muted-foreground/50" />
+                <div>
+                  <p className="font-semibold text-foreground">
+                    {searchTerm ? 'No matching clause templates' : 'No clause templates found'}
                   </p>
-                ) : filteredTemplates.length === 0 ? (
-                  <div className="rounded-lg border border-dashed border-default-200 bg-default-50 p-6 text-center text-sm text-muted-foreground">
-                    No clause templates match your search query.
-                  </div>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    {searchTerm
+                      ? `No clauses match "${searchTerm}". Try a different keyword.`
+                      : 'Create your first standard legal clause to populate the repository.'}
+                  </p>
+                </div>
+                {searchTerm ? (
+                  <Button variant="outline" size="sm" onClick={() => setSearchTerm('')}>
+                    Clear Search
+                  </Button>
                 ) : (
-                  filteredTemplates.map((template) => {
-                    const isSelected = selectedTemplateId === template.id
-                    return (
-                      <div
-                        key={template.id}
-                        onClick={() => handleSelectTemplate(template.id)}
-                        className={`cursor-pointer rounded-xl border p-4 transition-all ${
-                          isSelected
-                            ? 'border-primary bg-primary/5 shadow-xs ring-1 ring-primary/30'
-                            : 'border-default-200 bg-white hover:border-primary/40 hover:bg-default-50/70'
-                        }`}
-                      >
-                        <div className="flex items-start justify-between gap-2">
-                          <h4 className="font-bold text-sm text-foreground">
-                            {template.name}
-                          </h4>
-                          <div className="flex items-center gap-1">
+                  <Button onClick={handleOpenCreateModal} size="sm" className="gap-1.5">
+                    <Plus className="h-4 w-4" /> Create First Clause
+                  </Button>
+                )}
+              </div>
+            ) : (
+              <div className="overflow-x-auto">
+                <Table>
+                  <TableHeader className="bg-default-50/80">
+                    <TableRow>
+                      <TableHead className="w-[280px]">Clause Title / Reference</TableHead>
+                      <TableHead>Clause Legal Body</TableHead>
+                      <TableHead className="w-[120px] text-right">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredTemplates.map((template) => (
+                      <TableRow key={template.id} className="hover:bg-default-50/60 transition-colors">
+                        <TableCell className="align-top font-bold text-sm text-default-900">
+                          <div className="space-y-1">
+                            <span>{template.name}</span>
+                            <div className="text-[11px] font-normal text-muted-foreground font-mono">
+                              ID: {template.id.slice(0, 8)}...
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell className="align-top">
+                          <p className="font-serif text-xs text-default-700 leading-relaxed line-clamp-3 max-w-3xl">
+                            {template.body}
+                          </p>
+                        </TableCell>
+                        <TableCell className="align-top text-right">
+                          <div className="flex items-center justify-end gap-1">
+
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                handleSelectTemplate(template.id)
-                              }}
-                              className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+                              title="Edit clause"
+                              onClick={() => handleOpenEditModal(template)}
+                              className="h-8 w-8 p-0 text-muted-foreground hover:text-primary"
                             >
                               <Edit3 className="h-3.5 w-3.5" />
                             </Button>
+
                             <Button
                               variant="ghost"
                               size="sm"
-                              onClick={(e) => {
-                                e.stopPropagation()
-                                setDeleteTargetId(template.id)
-                              }}
-                              className="h-7 w-7 p-0 text-destructive/70 hover:text-destructive hover:bg-destructive/10"
+                              title="Delete clause"
+                              onClick={() => setDeleteTargetId(template.id)}
+                              className="h-8 w-8 p-0 text-destructive/70 hover:text-destructive hover:bg-destructive/10"
                             >
                               <Trash2 className="h-3.5 w-3.5" />
                             </Button>
                           </div>
-                        </div>
-                        <p className="mt-2 text-xs text-muted-foreground line-clamp-3 font-serif leading-relaxed">
-                          {template.body}
-                        </p>
-                      </div>
-                    )
-                  })
-                )}
-              </CardContent>
-            </Card>
-          </div>
+                        </TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </div>
+            )}
+          </CardContent>
+        </Card>
 
-          {/* Right Column: Template Editor / Preview */}
-          <div className="lg:col-span-7">
-            <Card className="border border-default-200 shadow-sm sticky top-6">
-              <CardHeader className="border-b border-default-100 pb-4">
-                <div className="flex items-center justify-between">
-                  <div className="space-y-0.5">
-                    <CardTitle className="text-base font-semibold">
-                      {draft.id
-                        ? 'Edit WHEREAS Clause Template'
-                        : 'Create New WHEREAS Clause'}
-                    </CardTitle>
-                    <CardDescription className="text-xs">
-                      {draft.id
-                        ? 'Modify the title and body of this template across future BAC resolutions.'
-                        : 'Define a reusable standard legal clause for BAC resolution documents.'}
-                    </CardDescription>
-                  </div>
-                  {draft.id && (
-                    <Badge
-                      variant="outline"
-                      className="bg-primary/5 text-primary border-primary/20 text-xs"
-                    >
-                      Template ID: {draft.id}
-                    </Badge>
-                  )}
-                </div>
-              </CardHeader>
-              <CardContent className="space-y-5 pt-5">
-                <div className="space-y-2">
-                  <Label
-                    htmlFor="clause-title"
-                    className="text-xs font-bold uppercase tracking-wider text-default-700"
-                  >
-                    Clause Title / Reference Name{' '}
-                    <span className="text-destructive">*</span>
-                  </Label>
-                  <Input
-                    id="clause-title"
-                    placeholder="e.g., WHEREAS, Public Bidding Requirement (RA 9184)"
-                    value={draft.name}
-                    onChange={(e) =>
-                      setDraft((prev) => ({ ...prev, name: e.target.value }))
-                    }
-                    className="text-sm font-medium"
-                  />
-                  <p className="text-[11px] text-muted-foreground">
-                    Descriptive label used when selecting clauses during
-                    resolution creation.
-                  </p>
-                </div>
+        {/* Create / Edit Dialog Modal */}
+        <CreateEditWhereasClauseDialog
+          open={isModalOpen}
+          onOpenChange={setIsModalOpen}
+          template={editingTemplate}
+          onSave={handleSaveTemplate}
+          isSubmitting={createTemplate.isPending || updateTemplate.isPending}
+        />
 
-                <div className="space-y-2">
-                  <Label
-                    htmlFor="clause-body"
-                    className="text-xs font-bold uppercase tracking-wider text-default-700"
-                  >
-                    Clause Body Text <span className="text-destructive">*</span>
-                  </Label>
-                  <Textarea
-                    id="clause-body"
-                    placeholder="Enter the formal legal clause body text here..."
-                    value={draft.body}
-                    onChange={(e) =>
-                      setDraft((prev) => ({ ...prev, body: e.target.value }))
-                    }
-                    rows={8}
-                    className="font-serif text-sm leading-relaxed"
-                  />
-                  <p className="text-[11px] text-muted-foreground">
-                    This exact text will be inserted into the formal printed BAC
-                    Resolution document.
-                  </p>
-                </div>
-
-                {/* Live Preview Box */}
-                {draft.body.trim() && (
-                  <div className="rounded-xl border border-default-200 bg-default-50/50 p-4 space-y-2">
-                    <p className="text-[11px] font-bold uppercase tracking-wider text-muted-foreground">
-                      Document Rendering Preview
-                    </p>
-                    <p className="text-xs font-serif leading-relaxed text-default-800 text-justify">
-                      <span className="font-bold">
-                        {draft.name || 'WHEREAS,'}{' '}
-                      </span>
-                      {draft.body}
-                    </p>
-                  </div>
-                )}
-
-                <div className="flex items-center justify-end gap-3 pt-3 border-t border-default-100">
-                  <Button
-                    variant="outline"
-                    onClick={() => {
-                      setDraft(emptyDraft)
-                      setSelectedTemplateId(null)
-                    }}
-                    disabled={!draft.name && !draft.body}
-                  >
-                    Clear
-                  </Button>
-                  <Button
-                    onClick={handleSave}
-                    disabled={!draft.name.trim() || !draft.body.trim()}
-                    className="gap-1.5"
-                  >
-                    <Sparkles className="h-4 w-4" />
-                    {draft.id ? 'Save Template Changes' : 'Create Template'}
-                  </Button>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </PageContainerDashtail>
-
-      <ConfirmAlertDialog
-        open={showUpdateConfirm}
-        onOpenChange={setShowUpdateConfirm}
-        title="Update WHEREAS Clause Template?"
-        description="Are you sure you want to update this clause template? Changes will take effect for new resolution drafts."
-        confirmLabel="Update Template"
-        cancelLabel="Cancel"
-        onConfirm={confirmUpdate}
-      />
-
-      <ConfirmAlertDialog
-        open={Boolean(deleteTargetId)}
-        onOpenChange={(open) => !open && setDeleteTargetId(null)}
-        title="Delete WHEREAS Clause Template?"
-        description="Are you sure you want to delete this template from the clause repository? This action cannot be undone."
-        confirmLabel="Delete"
-        cancelLabel="Cancel"
-        variant="destructive"
-        onConfirm={handleDelete}
-      />
-    </div>
+        {/* Delete Confirmation Alert Dialog */}
+        <ConfirmAlertDialog
+          open={Boolean(deleteTargetId)}
+          onOpenChange={(open) => !open && setDeleteTargetId(null)}
+          title="Delete WHEREAS Clause Template?"
+          description="Are you sure you want to delete this clause template from the repository? This action cannot be undone."
+          confirmLabel="Delete Template"
+          cancelLabel="Cancel"
+          variant="destructive"
+          onConfirm={handleDelete}
+        />
+      </div>
+    </PageContainerDashtail>
   )
 }
+

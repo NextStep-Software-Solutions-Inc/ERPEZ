@@ -202,8 +202,9 @@ export type WhereasClauseTemplate = {
   id: string
   name: string
   body: string
-  createdAt: string
-  updatedAt: string
+}
+export type WhereasClauseTemplateDetails = WhereasClauseTemplate & {
+
 }
 
 export type WhereasClauseTemplatePayload = {

@@ -197,4 +197,4 @@ const useDeleteBacResolutionBase = createMutationHookFromTemplate(
 )
 export const useDeleteBacResolution = makeMutationWithRefresh(
   useDeleteBacResolutionBase,
-)
+)
