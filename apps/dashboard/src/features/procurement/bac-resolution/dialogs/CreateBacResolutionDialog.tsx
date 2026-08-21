@@ -2,7 +2,9 @@ import { useState, useRef, useEffect } from 'react'
 import { ResponsiveDialogDashtail } from '@/components/ResponsiveDialogDashtail'
 import { Button } from '@/components/ui/button'
 import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
+import { toast } from 'sonner'
 import type { CreateBacResolutionPayload } from '../handlers/createBacResolutionRequest'
+import { useCreateBacResolution } from '../handlers/hooks'
 import {
   CreateBacResolutionForm,
   type CreateBacResolutionWizardRef,
@@ -12,7 +14,7 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 interface CreateBacResolutionDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onCreate: (values: CreateBacResolutionPayload) => Promise<void> | void
+  onCreate?: (values: CreateBacResolutionPayload) => Promise<void> | void
 }
 
 export function CreateBacResolutionDialog({
@@ -25,6 +27,7 @@ export function CreateBacResolutionDialog({
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const wizardRefActual = useRef<CreateBacResolutionWizardRef>(null)
+  const { mutateAsync } = useCreateBacResolution()
 
   useEffect(() => {
     if (open) {
@@ -58,15 +61,34 @@ export function CreateBacResolutionDialog({
     }
   }
 
-  const handleSubmit = async () => {
-    if (wizardRefActual.current) {
+  const handleSubmit = async (values: CreateBacResolutionPayload) => {
+    if (onCreate) {
+      await onCreate(values)
+      setCurrentStep(1)
+      onOpenChange(false)
+      return
+    }
+
+    try {
       setIsSubmitting(true)
-      try {
-        await wizardRefActual.current.submit()
-        setIsSubmitting(false)
-      } catch (error) {
-        setIsSubmitting(false)
-      }
+      await toast.promise(
+        mutateAsync({
+          pathParams: {},
+          payload: values,
+        }),
+        {
+          loading: 'Creating BAC Resolution...',
+          success: 'BAC Resolution created successfully!',
+          error: (err) =>
+            err instanceof Error ? err.message : 'Failed to create BAC Resolution.',
+        },
+      )
+      setCurrentStep(1)
+      onOpenChange(false)
+    } catch {
+      // toast.promise handles presentation
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -105,7 +127,7 @@ export function CreateBacResolutionDialog({
         ) : (
           <Button
             type="button"
-            onClick={handleSubmit}
+            onClick={() => wizardRefActual.current?.submit()}
             disabled={isSubmitting}
           >
             {isSubmitting ? 'Creating...' : 'Create BAC Resolution'}
@@ -130,11 +152,7 @@ export function CreateBacResolutionDialog({
           ref={wizardRefActual}
           currentStep={currentStep}
           setCurrentStep={setCurrentStep}
-          onSubmit={async (values) => {
-            await onCreate(values)
-            setCurrentStep(1)
-            onOpenChange(false)
-          }}
+          onSubmit={handleSubmit}
           onCancel={() => handleOpenChange(false)}
           onDirtyChange={setIsDirty}
         />
@@ -157,4 +175,5 @@ export function CreateBacResolutionDialog({
     </>
   )
 }
+
 

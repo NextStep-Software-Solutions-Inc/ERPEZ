@@ -6,7 +6,21 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import {
+  Command,
+  CommandEmpty,
+  CommandGroup,
+  CommandInput,
+  CommandItem,
+  CommandList,
+} from '@/components/ui/command'
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover'
+import {
   Check,
+  ChevronsUpDown,
   Loader2,
   FileText,
   Layers,
@@ -594,23 +608,13 @@ export const CreateBacResolutionForm = forwardRef<
                           Loading users...
                         </div>
                       ) : (
-                        <select
-                          id={field.name}
-                          value={field.state.value || ''}
-                          onBlur={field.handleBlur}
-                          onChange={(e) => field.handleChange(e.target.value)}
+                        <UserPickerCombobox
+                          value={field.state.value}
+                          onChange={(userId) => field.handleChange(userId)}
+                          users={users}
                           disabled={isSubmitting}
-                          className="h-10 w-full rounded-md border border-default-300 bg-white px-3 py-2 text-sm text-default-900 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
-                        >
-                          <option value="">Select End-User Representative...</option>
-                          {users.map((user) => (
-                            <option key={user.id} value={user.id}>
-                              {getUserDisplayName(user)}
-                              {user.employeeNumber ? ` (${user.employeeNumber})` : ''}
-                              {user.officeName ? ` - ${user.officeName}` : ''}
-                            </option>
-                          ))}
-                        </select>
+                          placeholder="Select End-User Representative..."
+                        />
                       )}
                       <FieldInfo field={field} />
                     </div>
@@ -627,23 +631,13 @@ export const CreateBacResolutionForm = forwardRef<
                           Loading users...
                         </div>
                       ) : (
-                        <select
-                          id={field.name}
-                          value={field.state.value || ''}
-                          onBlur={field.handleBlur}
-                          onChange={(e) => field.handleChange(e.target.value)}
+                        <UserPickerCombobox
+                          value={field.state.value}
+                          onChange={(userId) => field.handleChange(userId)}
+                          users={users}
                           disabled={isSubmitting}
-                          className="h-10 w-full rounded-md border border-default-300 bg-white px-3 py-2 text-sm text-default-900 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
-                        >
-                          <option value="">Select Technical Representative...</option>
-                          {users.map((user) => (
-                            <option key={user.id} value={user.id}>
-                              {getUserDisplayName(user)}
-                              {user.employeeNumber ? ` (${user.employeeNumber})` : ''}
-                              {user.officeName ? ` - ${user.officeName}` : ''}
-                            </option>
-                          ))}
-                        </select>
+                          placeholder="Select Technical Representative..."
+                        />
                       )}
                       <FieldInfo field={field} />
                     </div>
@@ -1320,6 +1314,113 @@ export function SourceRecordPickerStep({
         </div>
       )}
     </div>
+  )
+}
+
+export function UserPickerCombobox({
+  value,
+  onChange,
+  users,
+  disabled = false,
+  placeholder = 'Select representative...',
+}: {
+  value?: string
+  onChange: (userId: string) => void
+  users: User[]
+  disabled?: boolean
+  placeholder?: string
+}) {
+  const [open, setOpen] = useState(false)
+
+  const selectedUser = useMemo(
+    () => users.find((u) => u.id === value),
+    [users, value],
+  )
+
+  const getDisplayName = (user: User) => {
+    if (
+      user.fullName &&
+      user.fullName.trim() &&
+      user.fullName.toLowerCase() !== 'n/a'
+    ) {
+      return user.fullName
+    }
+    const parts = [user.firstName, user.lastName].filter(Boolean)
+    if (parts.length > 0) return parts.join(' ')
+    return user.username || user.email || 'Unnamed User'
+  }
+
+  return (
+    <Popover open={open} onOpenChange={setOpen}>
+      <PopoverTrigger asChild>
+        <Button
+          type="button"
+          variant="outline"
+          role="combobox"
+          aria-expanded={open}
+          disabled={disabled}
+          className="w-full justify-between font-normal text-left bg-white border-default-200 text-default-900 hover:bg-default-50 h-10"
+        >
+          {selectedUser ? (
+            <span className="truncate">
+              {getDisplayName(selectedUser)}
+              {selectedUser.employeeNumber
+                ? ` (${selectedUser.employeeNumber})`
+                : ''}
+            </span>
+          ) : (
+            <span className="text-muted-foreground">{placeholder}</span>
+          )}
+          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+        </Button>
+      </PopoverTrigger>
+      <PopoverContent className="w-[350px] p-0" align="start">
+        <Command>
+          <CommandInput placeholder="Search user by name or employee #..." />
+          <CommandList>
+            <CommandEmpty>No user found.</CommandEmpty>
+            <CommandGroup>
+              {users.map((user) => {
+                const displayName = getDisplayName(user)
+                const searchValue = `${displayName} ${
+                  user.employeeNumber || ''
+                } ${user.officeName || ''} ${user.id}`
+                return (
+                  <CommandItem
+                    key={user.id}
+                    value={searchValue}
+                    onSelect={() => {
+                      onChange(user.id)
+                      setOpen(false)
+                    }}
+                    className="cursor-pointer"
+                  >
+                    <Check
+                      className={cn(
+                        'mr-2 h-4 w-4 shrink-0',
+                        value === user.id
+                          ? 'opacity-100 text-primary'
+                          : 'opacity-0',
+                      )}
+                    />
+                    <div className="flex flex-col min-w-0">
+                      <span className="font-medium text-sm text-default-900 truncate">
+                        {displayName}
+                      </span>
+                      {user.officeName && (
+                        <span className="text-xs text-muted-foreground truncate">
+                          {user.officeName}
+                        </span>
+                      )}
+                    </div>
+                  </CommandItem>
+                )
+              })}
+            </CommandGroup>
+          </CommandList>
+        </Command>
+      </PopoverContent>
+    </Popover>
   )
 }
 
