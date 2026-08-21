@@ -68,7 +68,7 @@ import type { CreateBacResolutionPayload } from '../handlers/createBacResolution
 import { CreateEditWhereasClauseDialog } from '../dialogs/CreateEditWhereasClauseDialog'
 
 export const createBacResolutionSchema = z.object({
-  APPItemId: z.string().optional(),
+  appItemId: z.string().optional(),
   consolidatedPRId: z.string().optional(),
   title: z.string().min(1, 'Title is required.'),
   abc: z.number().min(0, 'ABC must be at least 0.'),
@@ -248,7 +248,7 @@ export const CreateBacResolutionForm = forwardRef<
     )}`
 
     const initialFormValues: CreateBacResolutionFormValues = {
-      APPItemId: initialValues?.APPItemId || undefined,
+      appItemId: initialValues?.appItemId || undefined,
       consolidatedPRId: initialValues?.consolidatedPRId || undefined,
       title: initialValues?.title ?? projectContext?.projectTitle ?? '',
       abc: initialValues?.abc ?? projectContext?.abc ?? 0,
@@ -274,11 +274,23 @@ export const CreateBacResolutionForm = forwardRef<
         setSubmitError(null)
 
         try {
+          const selectedWhereasTemplates = whereasTemplates.filter((t) =>
+            value.whereasClauseIds?.includes(t.id),
+          )
+          const whereasClauseText = selectedWhereasTemplates
+            .map((t) => `${t.name}: ${t.body}`)
+            .join('\n\n')
+
+          const isoDate = value.dateResolved
+            ? new Date(value.dateResolved).toISOString()
+            : new Date().toISOString()
+
           const payload: CreateBacResolutionPayload = {
-            sourceType: selectedSourceType || (selectedAppItem ? 'AppItem' : 'ConsolidatedPr'),
-            APPItemId:
+            sourceType:
+              selectedSourceType === 'AppItem' ? 'APPItem' : 'ConsolidatedPR',
+            appItemId:
               selectedSourceType === 'AppItem'
-                ? value.APPItemId || selectedAppItem?.id || undefined
+                ? value.appItemId || selectedAppItem?.id || undefined
                 : undefined,
             consolidatedPRId:
               selectedSourceType === 'ConsolidatedPr'
@@ -286,9 +298,11 @@ export const CreateBacResolutionForm = forwardRef<
                 : undefined,
             title: value.title,
             abc: value.abc,
+            status: 'Draft',
             resolutionType: value.resolutionType,
             resolutionNumber: value.resolutionNumber,
-            dateResolved: value.dateResolved,
+            dateResolved: isoDate,
+            whereasClause: whereasClauseText,
             whereasClauseIds: value.whereasClauseIds,
             endUserRepresentativeId: value.endUserRepresentativeId || undefined,
             techRepresentativeId: value.techRepresentativeId || undefined,

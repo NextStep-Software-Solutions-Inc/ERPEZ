@@ -6,14 +6,16 @@ import type { BacResolution, ProcurementSourceType } from '../types'
 import api from '@/services/api'
 
 export type CreateBacResolutionPayload = {
-  sourceType?: ProcurementSourceType
-  APPItemId?: string
+  sourceType?: string
+  appItemId?: string
   consolidatedPRId?: string
   title?: string
   abc?: number
+  status?: string
   resolutionType?: string
   resolutionNumber?: string
   dateResolved?: string
+  whereasClause?: string
   whereasClauseIds?: string[]
   endUserRepresentativeId?: string
   techRepresentativeId?: string
