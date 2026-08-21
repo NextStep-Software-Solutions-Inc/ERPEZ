@@ -25,7 +25,7 @@ public class CreateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
                 return ApiResponse<Guid>.Fail("APPItemId is required when SourceType is APPItem.");
             }
 
-            var appItem = await unitOfWork.APPItemRepository.GetByIdAsync(request.APPItemId.Value, cancellationToken);
+            var appItem = await unitOfWork.APPItemRepository.GetWithDetailsAsync(request.APPItemId.Value, cancellationToken);
             if (appItem == null)
             {
                 return ApiResponse<Guid>.Fail($"APP Item with ID '{request.APPItemId.Value}' was not found.");
@@ -46,9 +46,14 @@ public class CreateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
                 ? appItem.Remarks
                 : (appItem.PPMPItem != null && !string.IsNullOrWhiteSpace(appItem.PPMPItem.Name) ? appItem.PPMPItem.Name : (request.Title ?? "APP Procurement Project"));
 
+            var allocQty = appItem.PPMPItem?.PPMPItemAllocations.Where(a => !a.IsDeleted).Sum(a => a.Quantity) ?? 0;
+            var unitPrice = appItem.PPMPItem?.UnitPrice ?? 0;
+            var allocTotal = appItem.PPMPItem?.PPMPItemAllocations.Where(a => !a.IsDeleted).Sum(a => a.Amount) ?? 0;
+            var origBudget = allocTotal > 0 ? allocTotal : ((allocQty > 0 ? allocQty : 1) * unitPrice);
+
             projectABC = appItem.EstimatedBudgetOverride.HasValue && appItem.EstimatedBudgetOverride.Value > 0
                 ? appItem.EstimatedBudgetOverride.Value
-                : (request.ABC ?? 0);
+                : (request.ABC.HasValue && request.ABC.Value > 0 ? request.ABC.Value : origBudget);
 
             procurementModeId = appItem.ProcurementModeId;
         }

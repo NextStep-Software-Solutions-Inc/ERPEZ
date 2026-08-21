@@ -1,9 +1,13 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import { ResponsiveDialogDashtail } from '@/components/ResponsiveDialogDashtail'
 import { Button } from '@/components/ui/button'
 import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
-import type { CreateBacResolutionPayload, BacResolution } from '../types'
-import { CreateBacResolutionForm } from '../forms/CreateBacResolutionForm'
+import type { BacResolution } from '../types'
+import {
+  CreateBacResolutionForm,
+  type CreateBacResolutionWizardRef,
+} from '../forms/CreateBacResolutionForm'
+import { CreateBacResolutionPayload } from '../handlers/createBacResolutionRequest'
 
 interface EditBacResolutionDialogProps {
   open: boolean
@@ -22,6 +26,8 @@ export function EditBacResolutionDialog({
   const [showDiscardWarning, setShowDiscardWarning] = useState(false)
   const [showSaveConfirm, setShowSaveConfirm] = useState(false)
   const [pendingValues, setPendingValues] = useState<CreateBacResolutionPayload | null>(null)
+  const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(3)
+  const wizardRef = useRef<CreateBacResolutionWizardRef>(null)
 
   // Reset dirty status on open change
   useEffect(() => {
@@ -29,6 +35,7 @@ export function EditBacResolutionDialog({
       setIsDirty(false)
       setShowSaveConfirm(false)
       setPendingValues(null)
+      setCurrentStep(3)
     }
   }, [open])
 
@@ -41,9 +48,15 @@ export function EditBacResolutionDialog({
     onOpenChange(nextOpen)
   }
 
-  const handleSubmit = (values: CreateBacResolutionPayload) => {
+  const handleSubmitForm = (values: CreateBacResolutionPayload) => {
     setPendingValues(values)
     setShowSaveConfirm(true)
+  }
+
+  const handleSaveClick = async () => {
+    if (wizardRef.current) {
+      await wizardRef.current.submit()
+    }
   }
 
   const handleConfirmSave = async () => {
@@ -51,10 +64,9 @@ export function EditBacResolutionDialog({
       await onUpdate(resolution.id, pendingValues)
       setShowSaveConfirm(false)
       setPendingValues(null)
+      onOpenChange(false)
     }
   }
-
-  const formId = 'edit-bac-resolution-form'
 
   if (!resolution) return null
 
@@ -62,9 +74,11 @@ export function EditBacResolutionDialog({
   const initialValues: Partial<CreateBacResolutionPayload> = {
     title: resolution.description || '',
     abc: resolution.totalAmount || 0,
-    resolutionType: 'Standard', // Default type
+    resolutionType: resolution.resolutionType || 'award-recommendation',
     bacResolutionNumber: resolution.bacResolutionNumber,
+    resolutionNumber: resolution.bacResolutionNumber,
     resolutionDate: resolution.resolutionDate,
+    dateResolved: resolution.resolutionDate,
     description: resolution.description,
     resolvedDateText: resolution.resolvedDateText,
     resolvedLocationText: resolution.resolvedLocationText,
@@ -80,7 +94,7 @@ export function EditBacResolutionDialog({
         onOpenChange={handleOpenChange}
         title="Edit BAC Resolution"
         description="Update the BAC Resolution draft details."
-        size="lg"
+        size="4xl"
         showCloseButton
         footer={
           <div className="flex justify-end gap-3 w-full">
@@ -90,16 +104,18 @@ export function EditBacResolutionDialog({
             >
               Cancel
             </Button>
-            <Button form={formId} type="submit">
+            <Button type="button" onClick={handleSaveClick}>
               Save Changes
             </Button>
           </div>
         }
       >
         <CreateBacResolutionForm
-          formId={formId}
+          ref={wizardRef}
+          currentStep={currentStep}
+          setCurrentStep={setCurrentStep}
           initialValues={initialValues}
-          onSubmit={handleSubmit}
+          onSubmit={handleSubmitForm}
           onCancel={() => handleOpenChange(false)}
           onDirtyChange={setIsDirty}
         />
@@ -135,3 +151,4 @@ export function EditBacResolutionDialog({
     </>
   )
 }
+

@@ -1,9 +1,12 @@
-import { useState } from 'react'
+import { useState, useRef, useEffect } from 'react'
 import { ResponsiveDialogDashtail } from '@/components/ResponsiveDialogDashtail'
 import { Button } from '@/components/ui/button'
 import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
 import type { CreateBacResolutionPayload } from '../handlers/createBacResolutionRequest'
-import { CreateBacResolutionForm } from '../forms/CreateBacResolutionForm'
+import {
+  CreateBacResolutionForm,
+  type CreateBacResolutionWizardRef,
+} from '../forms/CreateBacResolutionForm'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
 
 interface CreateBacResolutionDialogProps {
@@ -20,7 +23,15 @@ export function CreateBacResolutionDialog({
   const [isDirty, setIsDirty] = useState(false)
   const [showDiscardWarning, setShowDiscardWarning] = useState(false)
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1)
-  const [canProceed, setCanProceed] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
+  const wizardRefActual = useRef<CreateBacResolutionWizardRef>(null)
+
+  useEffect(() => {
+    if (open) {
+      setCurrentStep(1)
+      setIsSubmitting(false)
+    }
+  }, [open])
 
   const handleOpenChange = (nextOpen: boolean) => {
     if (!nextOpen && isDirty) {
@@ -35,7 +46,74 @@ export function CreateBacResolutionDialog({
     onOpenChange(nextOpen)
   }
 
-  const formId = 'create-bac-resolution-form'
+  const handleNextStep = async () => {
+    if (wizardRefActual.current) {
+      await wizardRefActual.current.nextStep()
+    }
+  }
+
+  const handleBackStep = () => {
+    if (wizardRefActual.current) {
+      wizardRefActual.current.backStep()
+    }
+  }
+
+  const handleSubmit = async () => {
+    if (wizardRefActual.current) {
+      setIsSubmitting(true)
+      try {
+        await wizardRefActual.current.submit()
+        setIsSubmitting(false)
+      } catch (error) {
+        setIsSubmitting(false)
+      }
+    }
+  }
+
+  const footer = (
+    <div className="flex justify-between items-center w-full">
+      <Button
+        type="button"
+        variant="outline"
+        onClick={handleBackStep}
+        disabled={currentStep === 1 || isSubmitting}
+        className="gap-1"
+      >
+        <ChevronLeft className="h-4 w-4" />
+        Back
+      </Button>
+
+      <div className="flex items-center gap-2">
+        <Button
+          variant="outline"
+          onClick={() => handleOpenChange(false)}
+          disabled={isSubmitting}
+        >
+          Cancel
+        </Button>
+
+        {currentStep < 3 ? (
+          <Button
+            type="button"
+            onClick={handleNextStep}
+            disabled={isSubmitting}
+            className="gap-1"
+          >
+            Next
+            <ChevronRight className="h-4 w-4" />
+          </Button>
+        ) : (
+          <Button
+            type="button"
+            onClick={handleSubmit}
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? 'Creating...' : 'Create BAC Resolution'}
+          </Button>
+        )}
+      </div>
+    </div>
+  )
 
   return (
     <>
@@ -44,68 +122,14 @@ export function CreateBacResolutionDialog({
         onOpenChange={handleOpenChange}
         title="Create BAC Resolution"
         description="Create a new BAC Resolution originating from an approved APP Item or Consolidated PR."
-        size="xl"
+        size="4xl"
         showCloseButton
-        footer={
-          <div className="flex justify-between items-center w-full">
-            <div className="flex items-center gap-2">
-              {currentStep > 1 && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  onClick={() =>
-                    setCurrentStep((prev) => (prev - 1) as 1 | 2)
-                  }
-                  className="gap-1"
-                >
-                  <ChevronLeft className="h-4 w-4" />
-                  Back
-                </Button>
-              )}
-              <Button
-                variant="outline"
-                onClick={() => handleOpenChange(false)}
-              >
-                Cancel
-              </Button>
-            </div>
-
-            <div className="flex items-center gap-2">
-              {currentStep === 1 && (
-                <Button
-                  type="button"
-                  onClick={() => setCurrentStep(2)}
-                  disabled={!canProceed}
-                  className="gap-1"
-                >
-                  Next: Pick Source Record
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              )}
-
-              {currentStep === 2 && (
-                <Button
-                  type="button"
-                  onClick={() => setCurrentStep(3)}
-                  disabled={!canProceed}
-                  className="gap-1"
-                >
-                  Next: BAC Details
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              )}
-
-              {currentStep === 3 && (
-                <Button form={formId} type="submit">
-                  Create BAC Resolution
-                </Button>
-              )}
-            </div>
-          </div>
-        }
+        footer={footer}
       >
         <CreateBacResolutionForm
-          formId={formId}
+          ref={wizardRefActual}
+          currentStep={currentStep}
+          setCurrentStep={setCurrentStep}
           onSubmit={async (values) => {
             await onCreate(values)
             setCurrentStep(1)
@@ -113,9 +137,6 @@ export function CreateBacResolutionDialog({
           }}
           onCancel={() => handleOpenChange(false)}
           onDirtyChange={setIsDirty}
-          currentStep={currentStep}
-          onStepChange={setCurrentStep}
-          onCanProceedChange={setCanProceed}
         />
       </ResponsiveDialogDashtail>
 
@@ -136,3 +157,4 @@ export function CreateBacResolutionDialog({
     </>
   )
 }
+
