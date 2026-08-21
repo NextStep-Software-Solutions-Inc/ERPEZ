@@ -2,11 +2,11 @@ import type {
   APIResponse,
   MutationBlueprintFromTemplate,
 } from 'erpez-shared-lib'
-import type { BacResolution } from '../types'
+import type { BacResolution, ProcurementSourceType } from '../types'
 import api from '@/services/api'
 
 export type CreateBacResolutionPayload = {
-  sourceType: 'APPItem' | 'ConsolidatedPR'
+  sourceType?: ProcurementSourceType
   appItemId?: string
   consolidatedPRId?: string
   title?: string

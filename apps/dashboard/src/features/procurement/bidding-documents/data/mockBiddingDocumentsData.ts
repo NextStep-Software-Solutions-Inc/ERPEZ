@@ -8,9 +8,7 @@
   BiddingDocumentUploadSlotKey,
 } from '../types'
 import {
-  createEmptyStructuredFieldValues,
   getRequiredStructuredFieldDefinitions,
-  getStructuredFieldDisplayValue,
   getStructuredFieldSections,
   isStructuredFieldComplete,
   normalizeStructuredFieldValues,

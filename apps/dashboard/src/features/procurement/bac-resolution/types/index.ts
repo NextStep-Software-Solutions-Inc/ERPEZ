@@ -58,7 +58,7 @@ export type ConsolidatedPrLink = {
   status: ConsolidatedPrStatus
 }
 
-export type ProcurementSourceType = 'APP_ITEM' | 'CONSOLIDATED_PR'
+export type ProcurementSourceType = 'AppItem' | 'ConsolidatedPr'
 
 export type AppRecord = {
   id: string
