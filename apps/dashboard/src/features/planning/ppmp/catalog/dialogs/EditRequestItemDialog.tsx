@@ -248,196 +248,232 @@ export function EditRequestItemDialog() {
         }}
         className="space-y-6"
       >
-        {/* Item Name */}
-        <form.Field
-          name="name"
-          validators={{
-            onChange: ({ value }) => {
-              if (value && value.length < 3) return 'Minimum 3 characters'
-              if (value && value.length > 100) return 'Maximum 100 characters'
-              return undefined
-            },
-          }}
-        >
-          {(field) => (
-            <div className="space-y-2">
-              <Label htmlFor="name">
-                Item Name <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="name"
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                onBlur={field.handleBlur}
-                disabled={isSubmitting}
-              />
-              {field.state.meta.errors && (
-                <p className="text-xs text-destructive">
-                  {field.state.meta.errors.join(', ')}
-                </p>
-              )}
-            </div>
-          )}
-        </form.Field>
+        {/* ── Section 1: Item Information ── */}
+        <div className="space-y-4">
+          <div>
+            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Item Information
+            </h4>
+          </div>
 
-        {/* Procurement Category */}
-        <form.Field name="procurementCategory">
-          {(field) => (
-            <div className="space-y-2">
-              <Label htmlFor="procCategory">
-                Procurement Category <span className="text-destructive">*</span>
-              </Label>
-              <Select
-                value={field.state.value}
-                onValueChange={(value) => field.handleChange(value as any)}
-                disabled={isSubmitting}
-              >
-                <SelectTrigger id="procCategory">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PROCUREMENT_CATEGORIES.map((cat) => (
-                    <SelectItem key={cat} value={cat}>
-                      {cat}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {field.state.meta.errors && (
-                <p className="text-xs text-destructive">
-                  {field.state.meta.errors.join(', ')}
-                </p>
-              )}
-            </div>
-          )}
-        </form.Field>
-
-        {/* Item Category */}
-        <form.Field name="itemCategory">
-          {(field) => (
-            <div className="space-y-2">
-              <Label htmlFor="itemCategory">
-                Item Category <span className="text-destructive">*</span>
-              </Label>
-              <Select
-                value={field.state.value}
-                onValueChange={(value) => field.handleChange(value)}
-                disabled={!selectedProcCategory || isSubmitting}
-              >
-                <SelectTrigger id="itemCategory">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {itemCategories.map((cat: string) => (
-                    <SelectItem key={cat} value={cat}>
-                      {cat}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {field.state.meta.errors && (
-                <p className="text-xs text-destructive">
-                  {field.state.meta.errors.join(', ')}
-                </p>
-              )}
-            </div>
-          )}
-        </form.Field>
-
-        {/* Unit of Measurement */}
-        <form.Field name="uomId">
-          {(field) => (
-            <div className="space-y-2">
-              <Label htmlFor="uomId">
-                Unit of Measurement <span className="text-destructive">*</span>
-              </Label>
-              <Select
-                value={field.state.value}
-                onValueChange={(value) => field.handleChange(value)}
-                disabled={isSubmitting}
-              >
-                <SelectTrigger id="uomId">
-                  <SelectValue placeholder="Select unit of measurement..." />
-                </SelectTrigger>
-                <SelectContent>
-                  {(uomsResponse?.data || []).map((uom) => (
-                    <SelectItem key={uom.id} value={uom.id}>
-                      {uom.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {field.state.meta.errors && (
-                <p className="text-xs text-destructive">
-                  {field.state.meta.errors.join(', ')}
-                </p>
-              )}
-            </div>
-          )}
-        </form.Field>
-
-        {/* Estimated Unit Cost */}
-        <form.Field name="estimatedUnitCost">
-          {(field) => (
-            <div className="space-y-2">
-              <Label htmlFor="cost">
-                Estimated Unit Cost (₱)
-                <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="cost"
-                type="number"
-                value={field.state.value || ''}
-                onChange={(e) =>
-                  field.handleChange(
-                    e.target.value ? parseFloat(e.target.value) : 0,
-                  )
-                }
-                onBlur={field.handleBlur}
-                disabled={isSubmitting}
-                step="0.01"
-                min="0"
-              />
-              {field.state.meta.errors && (
-                <p className="text-xs text-destructive">
-                  {field.state.meta.errors.join(', ')}
-                </p>
-              )}
-            </div>
-          )}
-        </form.Field>
-
-        {/* Specifications */}
-        <form.Field name="specifications">
-          {(field) => (
-            <div className="space-y-2">
-              <Label htmlFor="specs">
-                Technical Specifications{' '}
-                <span className="text-destructive">*</span>
-              </Label>
-              <Textarea
-                id="specs"
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                onBlur={field.handleBlur}
-                disabled={isSubmitting}
-                rows={4}
-                className="min-h-24"
-              />
-              <div className="text-xs text-muted-foreground">
-                {field.state.value.length}/1000 characters
+          {/* Item Name */}
+          <form.Field
+            name="name"
+            validators={{
+              onChange: ({ value }) => {
+                if (value && value.length < 3) return 'Minimum 3 characters'
+                if (value && value.length > 100) return 'Maximum 100 characters'
+                return undefined
+              },
+            }}
+          >
+            {(field) => (
+              <div className="space-y-2">
+                <Label htmlFor="edit-name">
+                  Item Name <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="edit-name"
+                  placeholder="e.g., Dell Latitude 5000 Series Laptop"
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={field.handleBlur}
+                  disabled={isSubmitting}
+                />
+                {field.state.meta.errors && (
+                  <p className="text-xs text-destructive">
+                    {field.state.meta.errors.join(', ')}
+                  </p>
+                )}
               </div>
-              {field.state.meta.errors && (
-                <p className="text-xs text-destructive">
-                  {field.state.meta.errors.join(', ')}
-                </p>
+            )}
+          </form.Field>
+
+          {/* Procurement & Item Category Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Procurement Category */}
+            <form.Field name="procurementCategory">
+              {(field) => (
+                <div className="space-y-2">
+                  <Label htmlFor="edit-procCategory">
+                    Procurement Category <span className="text-destructive">*</span>
+                  </Label>
+                  <Select
+                    value={field.state.value}
+                    onValueChange={(value) => field.handleChange(value as any)}
+                    disabled={isSubmitting}
+                  >
+                    <SelectTrigger id="edit-procCategory">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PROCUREMENT_CATEGORIES.map((cat) => (
+                        <SelectItem key={cat} value={cat}>
+                          {cat}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {field.state.meta.errors && (
+                    <p className="text-xs text-destructive">
+                      {field.state.meta.errors.join(', ')}
+                    </p>
+                  )}
+                </div>
               )}
-            </div>
-          )}
-        </form.Field>
+            </form.Field>
+
+            {/* Item Category */}
+            <form.Field name="itemCategory">
+              {(field) => (
+                <div className="space-y-2">
+                  <Label htmlFor="edit-itemCategory">
+                    Item Category <span className="text-destructive">*</span>
+                  </Label>
+                  <Select
+                    value={field.state.value}
+                    onValueChange={(value) => field.handleChange(value)}
+                    disabled={!selectedProcCategory || isSubmitting}
+                  >
+                    <SelectTrigger id="edit-itemCategory">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {itemCategories.map((cat: string) => (
+                        <SelectItem key={cat} value={cat}>
+                          {cat}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {field.state.meta.errors && (
+                    <p className="text-xs text-destructive">
+                      {field.state.meta.errors.join(', ')}
+                    </p>
+                  )}
+                </div>
+              )}
+            </form.Field>
+          </div>
+
+          {/* Unit of Measurement */}
+          <form.Field name="uomId">
+            {(field) => (
+              <div className="space-y-2">
+                <Label htmlFor="edit-uomId">
+                  Unit of Measurement <span className="text-destructive">*</span>
+                </Label>
+                <Select
+                  value={field.state.value}
+                  onValueChange={(value) => field.handleChange(value)}
+                  disabled={isSubmitting}
+                >
+                  <SelectTrigger id="edit-uomId">
+                    <SelectValue placeholder="Select unit of measurement..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(uomsResponse?.data || []).map((uom) => (
+                      <SelectItem key={uom.id} value={uom.id}>
+                        {uom.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {field.state.meta.errors && (
+                  <p className="text-xs text-destructive">
+                    {field.state.meta.errors.join(', ')}
+                  </p>
+                )}
+              </div>
+            )}
+          </form.Field>
+        </div>
+
+        <hr className="border-border" />
+
+        {/* ── Section 2: Cost & Justification ── */}
+        <div className="space-y-4">
+          <div>
+            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Cost & Justification
+            </h4>
+          </div>
+
+          {/* Estimated Unit Cost */}
+          <form.Field name="estimatedUnitCost">
+            {(field) => (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="edit-cost">
+                    Estimated Unit Cost (₱)
+                    <span className="text-destructive">*</span>
+                  </Label>
+                  <span className="text-xs text-muted-foreground">
+                    Enter the estimated cost per unit.
+                  </span>
+                </div>
+                <Input
+                  id="edit-cost"
+                  type="number"
+                  placeholder="0.00"
+                  value={field.state.value || ''}
+                  onChange={(e) =>
+                    field.handleChange(
+                      e.target.value ? parseFloat(e.target.value) : 0,
+                    )
+                  }
+                  onBlur={field.handleBlur}
+                  disabled={isSubmitting}
+                  step="0.01"
+                  min="0"
+                />
+                {field.state.meta.errors && (
+                  <p className="text-xs text-destructive">
+                    {field.state.meta.errors.join(', ')}
+                  </p>
+                )}
+              </div>
+            )}
+          </form.Field>
+
+          {/* Specifications */}
+          <form.Field name="specifications">
+            {(field) => (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="edit-specs">
+                    Technical Specifications & Justification{' '}
+                    <span className="text-destructive">*</span>
+                  </Label>
+                  <span className="text-xs text-muted-foreground">
+                    {field.state.value.length}/1000 characters
+                  </span>
+                </div>
+                <p className="text-xs text-muted-foreground">
+                  Provide the technical specifications and explain why the item is needed.
+                </p>
+                <Textarea
+                  id="edit-specs"
+                  placeholder="Describe the item specifications, key features, and intended use..."
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={field.handleBlur}
+                  disabled={isSubmitting}
+                  rows={4}
+                  className="min-h-24"
+                />
+                {field.state.meta.errors && (
+                  <p className="text-xs text-destructive">
+                    {field.state.meta.errors.join(', ')}
+                  </p>
+                )}
+              </div>
+            )}
+          </form.Field>
+        </div>
 
         {/* Form Actions */}
-        <div className="flex gap-3 justify-end pt-4 border-t">
+        <div className="flex items-center justify-end gap-3 pt-4 border-t border-border">
           <Button
             type="button"
             variant="outline"
@@ -447,15 +483,20 @@ export function EditRequestItemDialog() {
             Cancel
           </Button>
           {isReturnedRequest ? (
-            <Button type="submit" disabled={isSubmitting} className="gap-2">
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="gap-2 bg-primary hover:bg-primary/90 min-w-36"
+            >
               {isSubmitting && <Upload className="h-4 w-4 animate-spin" />}
               {isSubmitting ? 'Resubmitting...' : 'Resubmit Request'}
             </Button>
           ) : (
             <Button
               type="button"
+              variant="outline"
               disabled={isSubmitting}
-              className="gap-2"
+              className="gap-2 border-input hover:bg-accent"
               onClick={handleSaveDraft}
             >
               {isSubmitting && <Upload className="h-4 w-4 animate-spin" />}

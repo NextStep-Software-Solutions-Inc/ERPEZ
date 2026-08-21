@@ -1,8 +1,8 @@
 /**
  * AdminRequestsTab
- * Request Queue with approval/return workflow
- * Phase 1/2: Pending Review, Approved, Returned, All tabs
- * Features: Status filtering, category/date/office filtering, approval panel
+ * Request Queue with review/approval workflow for TWG and Admin
+ * Status tabs: Pending Review (Submitted), Approved, Returned, All
+ * Filterable by: Category, Office, Date range, Search
  */
 
 import { useState, useMemo } from 'react'
@@ -37,7 +37,10 @@ export function AdminRequestsTab() {
     pageSize: 100,
     sorts: '-requestDate',
   })
-  const allRequests: ItemRequest[] = useMemo(() => response?.data || [], [response?.data])
+  const allRequests: ItemRequest[] = useMemo(
+    () => response?.data || [],
+    [response?.data],
+  )
   const reviewableRequests = useMemo(
     () => allRequests.filter((req) => req.status !== 'Draft'),
     [allRequests],
@@ -60,11 +63,9 @@ export function AdminRequestsTab() {
       }
 
       // Category filter
-      const category = req.procurementCategoryName || req.procurementCategory || ''
-      if (
-        categoryFilter !== 'All' &&
-        category !== categoryFilter
-      ) {
+      const category =
+        req.procurementCategoryName || req.procurementCategory || ''
+      if (categoryFilter !== 'All' && category !== categoryFilter) {
         return false
       }
 
@@ -121,62 +122,69 @@ export function AdminRequestsTab() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h2 className="text-2xl font-bold">Request Queue</h2>
-        <p className="text-sm text-muted-foreground">
-          {submittedCount} pending review • {approvedCount} approved • {returnedCount}{' '}
-          returned
+        <h2 className="text-xl font-bold tracking-tight text-foreground">
+          Request Queue
+        </h2>
+        <p className="text-xs text-muted-foreground mt-0.5">
+          {submittedCount} pending review • {approvedCount} approved •{' '}
+          {returnedCount} returned
         </p>
       </div>
 
       {/* Status Tabs */}
       <Tabs
         value={selectedStatus}
-        onValueChange={(v) => setSelectedStatus(v as ItemRequest['status'] | 'all')}
+        onValueChange={(v) =>
+          setSelectedStatus(v as ItemRequest['status'] | 'all')
+        }
+        className="w-full space-y-4"
       >
-        <TabsList className="grid w-full max-w-md grid-cols-4">
-          <TabsTrigger value="Submitted" className="relative">
-            Pending Review
+        <TabsList className="grid w-full max-w-md grid-cols-4 p-1 bg-muted/60">
+          <TabsTrigger value="Submitted" className="text-xs">
+            Pending
             {submittedCount > 0 && (
-              <span className="ml-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-blue-100 text-blue-700 text-xs font-bold">
+              <span className="ml-1.5 inline-flex items-center justify-center px-1.5 py-0.5 rounded-full bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-200 text-[10px] font-bold">
                 {submittedCount}
               </span>
             )}
           </TabsTrigger>
-          <TabsTrigger value="Approved">
+          <TabsTrigger value="Approved" className="text-xs">
             Approved
             {approvedCount > 0 && (
-              <span className="ml-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-green-100 text-green-700 text-xs font-bold">
+              <span className="ml-1.5 inline-flex items-center justify-center px-1.5 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900 text-emerald-700 dark:text-emerald-200 text-[10px] font-bold">
                 {approvedCount}
               </span>
             )}
           </TabsTrigger>
-          <TabsTrigger value="Returned">
+          <TabsTrigger value="Returned" className="text-xs">
             Returned
             {returnedCount > 0 && (
-              <span className="ml-1 inline-flex h-5 w-5 items-center justify-center rounded-full bg-red-100 text-red-700 text-xs font-bold">
+              <span className="ml-1.5 inline-flex items-center justify-center px-1.5 py-0.5 rounded-full bg-amber-100 dark:bg-amber-900 text-amber-700 dark:text-amber-200 text-[10px] font-bold">
                 {returnedCount}
               </span>
             )}
           </TabsTrigger>
-          <TabsTrigger value="all">All ({reviewableRequests.length})</TabsTrigger>
+          <TabsTrigger value="all" className="text-xs">
+            All ({reviewableRequests.length})
+          </TabsTrigger>
         </TabsList>
 
-        <TabsContent value={selectedStatus} className="space-y-4 mt-6">
-          {/* Filters */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+        <TabsContent value={selectedStatus} className="space-y-4 mt-0">
+          {/* Filters Bar */}
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 bg-card p-3 rounded-lg border border-border">
             <div className="relative">
               <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
               <Input
                 placeholder="Search requests..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
+                className="pl-9 h-9 text-xs"
               />
             </div>
 
             <Select value={categoryFilter} onValueChange={setCategoryFilter}>
-              <SelectTrigger>
-                <SelectValue />
+              <SelectTrigger className="h-9 text-xs">
+                <SelectValue placeholder="Category..." />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="All">All Categories</SelectItem>
@@ -189,8 +197,8 @@ export function AdminRequestsTab() {
             </Select>
 
             <Select value={officeFilter} onValueChange={setOfficeFilter}>
-              <SelectTrigger>
-                <SelectValue />
+              <SelectTrigger className="h-9 text-xs">
+                <SelectValue placeholder="Office..." />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="All">All Offices</SelectItem>
@@ -202,12 +210,9 @@ export function AdminRequestsTab() {
               </SelectContent>
             </Select>
 
-            <Select
-              value={dateRange}
-              onValueChange={(v: any) => setDateRange(v)}
-            >
-              <SelectTrigger>
-                <SelectValue />
+            <Select value={dateRange} onValueChange={(v: any) => setDateRange(v)}>
+              <SelectTrigger className="h-9 text-xs">
+                <SelectValue placeholder="Date range..." />
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Dates</SelectItem>
@@ -226,15 +231,6 @@ export function AdminRequestsTab() {
           />
         </TabsContent>
       </Tabs>
-
-      {/* Info Box */}
-      {filteredRequests.length === 0 && (
-        <div className="rounded-lg border border-dashed border-border bg-muted/50 p-8 text-center">
-          <p className="text-sm text-muted-foreground">
-            No requests matching current filters
-          </p>
-        </div>
-      )}
 
       {/* Approval Detail Panel */}
       <ApprovalDetailPanel />

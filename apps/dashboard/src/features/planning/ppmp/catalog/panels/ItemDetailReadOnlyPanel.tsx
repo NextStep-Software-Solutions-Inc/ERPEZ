@@ -1,14 +1,11 @@
 /**
  * ItemDetailReadOnlyPanel
- * 40% slide-over for viewing approved and returned catalog items.
- * All fields are read-only.
- * For Returned status, displays the return remarks.
- *
- * Uses requestDetailSelectedIdAtom (Jotai atom for selection).
+ * Slide-over detail panel for viewing approved or returned item requests in the Admin Queue.
+ * All fields are presented in a clean read-only structure.
+ * Displays TWG remarks for Returned requests.
  */
 
-import { useAtom, useSetAtom } from 'jotai'
-import { Button } from '@/components/ui/button'
+import { useAtom } from 'jotai'
 import { Badge } from '@/components/ui/badge'
 import {
   Sheet,
@@ -16,13 +13,10 @@ import {
   SheetHeader,
   SheetTitle,
 } from '@/components/ui/sheet'
+import { CheckCircle2, AlertCircle } from 'lucide-react'
 
 import { STATUS_COLORS } from '../utils/cascadingUacs'
-import {
-  requestDetailSelectedIdAtom,
-  editRequestDialogOpenAtom,
-  editingRequestIdAtom,
-} from '../atoms/requestAtoms'
+import { requestDetailSelectedIdAtom } from '../atoms/requestAtoms'
 import { useItemRequests } from '../hooks/useItemRequestQueries'
 
 export function ItemDetailReadOnlyPanel() {
@@ -30,13 +24,17 @@ export function ItemDetailReadOnlyPanel() {
     requestDetailSelectedIdAtom,
   )
   const { data: response } = useItemRequests({ pageSize: 100 })
-  const setEditDialogOpen = useSetAtom(editRequestDialogOpenAtom)
-  const setEditingRequestId = useSetAtom(editingRequestIdAtom)
 
-  const selectedItem = (response?.data || []).find((item) => item.id === selectedItemId)
+  const selectedItem = (response?.data || []).find(
+    (item) => item.id === selectedItemId,
+  )
 
   const isApprovedOrReturned =
     selectedItem?.status === 'Approved' || selectedItem?.status === 'Returned'
+
+  const handleClose = () => {
+    setSelectedItemId(null)
+  }
 
   // Field display component
   const FieldDisplay = ({
@@ -50,7 +48,7 @@ export function ItemDetailReadOnlyPanel() {
       <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
         {label}
       </p>
-      <p className="text-sm">
+      <p className="text-sm font-medium text-foreground">
         {value || (
           <span className="italic text-muted-foreground text-xs">—</span>
         )}
@@ -58,21 +56,12 @@ export function ItemDetailReadOnlyPanel() {
     </div>
   )
 
-  const Divider = () => <hr className="border-border my-3" />
-
-  const handleClose = () => {
-    setSelectedItemId(null)
-  }
-
-  const handleEditReturnedRequest = () => {
-    if (!selectedItem) return
-    setEditingRequestId(selectedItem.id)
-    setEditDialogOpen(true)
-  }
+  const Divider = () => <hr className="border-border my-4" />
 
   const colors =
-    (STATUS_COLORS as Record<string, string>)[selectedItem?.status ?? 'Submitted'] ||
-    STATUS_COLORS['Submitted']
+    (STATUS_COLORS as Record<string, string>)[
+      selectedItem?.status ?? 'Submitted'
+    ] || STATUS_COLORS['Submitted']
 
   return (
     <Sheet
@@ -86,116 +75,99 @@ export function ItemDetailReadOnlyPanel() {
         className="w-[45%] sm:w-full max-w-2xl bg-background border-l border-border overflow-y-auto"
       >
         <SheetHeader className="space-y-2 pb-4">
-          <SheetTitle className="text-lg">Item Details</SheetTitle>
+          <SheetTitle className="text-lg">Item Request Details</SheetTitle>
         </SheetHeader>
 
         {selectedItem && isApprovedOrReturned && (
           <div className="space-y-5">
-            {/* Item Summary Header */}
+            {/* Header: Title & Status */}
             <div className="space-y-2">
-              <h2 className="text-xl font-bold">{selectedItem.name}</h2>
+              <h2 className="text-xl font-bold text-foreground">
+                {selectedItem.name}
+              </h2>
               <div className="flex items-center gap-2 flex-wrap">
-                <Badge variant="outline" className={colors}>
+                <Badge variant="outline" className={`font-medium ${colors}`}>
                   {selectedItem.status}
                 </Badge>
                 <Badge variant="outline">
-                  {selectedItem.procurementCategoryName || selectedItem.procurementCategory || 'Goods'}
+                  {selectedItem.procurementCategoryName ||
+                    selectedItem.procurementCategory ||
+                    'Goods'}
                 </Badge>
               </div>
             </div>
 
-            {/* Submitter info */}
-            <div className="grid grid-cols-2 gap-3 text-sm bg-muted/50 rounded-lg p-3">
-              <div>
-                <p className="text-xs text-muted-foreground uppercase font-medium">
-                  Submitted By
-                </p>
-                <p className="font-medium">{selectedItem.createdBy || selectedItem.requestingUser || '—'}</p>
+            {/* Status Notice Banner */}
+            {selectedItem.status === 'Approved' && (
+              <div className="flex items-start gap-3 p-3.5 bg-emerald-50/70 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-lg text-xs text-emerald-800 dark:text-emerald-300">
+                <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-semibold">Approved by TWG</p>
+                  <p className="mt-0.5 text-emerald-700 dark:text-emerald-400">
+                    This item request has been approved by the Technical Working Group.
+                  </p>
+                </div>
               </div>
-              <div>
-                <p className="text-xs text-muted-foreground uppercase font-medium">
-                  Office
-                </p>
-                <p className="font-medium">{selectedItem.officeName || selectedItem.requestingOffice || '—'}</p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground uppercase font-medium">
-                  Request Date
-                </p>
-                <p className="font-medium">
-                  {new Date(selectedItem.requestDate).toLocaleDateString(
-                    'en-PH',
-                  )}
-                </p>
-              </div>
-              <div>
-                <p className="text-xs text-muted-foreground uppercase font-medium">
-                  Est. Unit Cost
-                </p>
-                <p className="font-semibold text-primary">
-                  ₱
-                  {selectedItem.estimatedUnitCost.toLocaleString('en-PH', {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
-                </p>
-              </div>
-            </div>
+            )}
 
-            {/* Original Specifications */}
-            <div className="space-y-1">
-              <p className="text-xs text-muted-foreground uppercase font-medium">
-                Submitted Specifications
-              </p>
-              <p className="text-sm leading-relaxed rounded-md bg-muted p-3">
-                {selectedItem.technicalSpecification || selectedItem.specifications || '—'}
-              </p>
-            </div>
+            {selectedItem.status === 'Returned' && (
+              <div className="flex items-start gap-3 p-3.5 bg-amber-50/70 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 rounded-lg text-xs text-amber-800 dark:text-amber-300">
+                <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
+                <div className="space-y-1 w-full">
+                  <p className="font-semibold">Returned to Requesting Office</p>
+                  {(selectedItem.twgRemarks || selectedItem.remarks) && (
+                    <div className="mt-2 p-2.5 bg-background/80 rounded border border-amber-300 dark:border-amber-700 text-foreground font-normal">
+                      <span className="font-semibold text-xs text-muted-foreground block mb-0.5">
+                        TWG Remarks:
+                      </span>
+                      {selectedItem.twgRemarks || selectedItem.remarks}
+                    </div>
+                  )}
+                </div>
+              </div>
+            )}
 
             <Divider />
 
-            {/* Item Details - All Read-Only */}
+            {/* Request Information */}
             <div className="space-y-4">
-              <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                Item Information
-              </p>
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Request Information
+              </h4>
 
-              {/* Name & Item Type */}
               <div className="grid grid-cols-2 gap-4">
-                <FieldDisplay label="Name" value={selectedItem.name} />
                 <FieldDisplay
-                  label="Item Type"
-                  value={selectedItem.procurementCategoryName || selectedItem.procurementCategory || 'Goods'}
+                  label="Office"
+                  value={
+                    selectedItem.officeName ||
+                    selectedItem.requestingOffice ||
+                    '—'
+                  }
+                />
+                <FieldDisplay
+                  label="Submitted By"
+                  value={
+                    selectedItem.createdBy ||
+                    selectedItem.requestingUser ||
+                    'system'
+                  }
                 />
               </div>
 
-              {/* Category & Subcategory */}
               <div className="grid grid-cols-2 gap-4">
                 <FieldDisplay
-                  label="Category"
-                  value={selectedItem.itemCategory}
+                  label="Request Date"
+                  value={new Date(selectedItem.requestDate).toLocaleDateString(
+                    'en-PH',
+                    {
+                      year: 'numeric',
+                      month: 'short',
+                      day: 'numeric',
+                    },
+                  )}
                 />
                 <FieldDisplay
-                  label="Subcategory"
-                  value={selectedItem.itemCategory}
-                />
-              </div>
-
-              {/* UoM & Supplier */}
-              <div className="grid grid-cols-2 gap-4">
-                <FieldDisplay
-                  label="Unit of Measure"
-                  value={selectedItem.unitOfMeasure}
-                />
-                <FieldDisplay label="Supplier" value="—" />
-              </div>
-
-              <Divider />
-
-              {/* Pricing & Status */}
-              <div className="grid grid-cols-2 gap-4">
-                <FieldDisplay
-                  label="Current Unit Price"
+                  label="Estimated Unit Cost"
                   value={`₱${selectedItem.estimatedUnitCost.toLocaleString(
                     'en-PH',
                     {
@@ -204,111 +176,60 @@ export function ItemDetailReadOnlyPanel() {
                     },
                   )}`}
                 />
-                <FieldDisplay label="Status" value={selectedItem.status} />
-              </div>
-
-              <Divider />
-
-              {/* Specification */}
-              {selectedItem.specifications && (
-                <>
-                  <FieldDisplay
-                    label="Specification"
-                    value={
-                      <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
-                        {selectedItem.specifications}
-                      </p>
-                    }
-                  />
-                  <Divider />
-                </>
-              )}
-
-              {/* Requestor Info */}
-              <div className="grid grid-cols-2 gap-4">
-                <FieldDisplay
-                  label="Requesting Office"
-                  value={selectedItem.requestingOffice}
-                />
-                <FieldDisplay
-                  label="Requesting User"
-                  value={selectedItem.requestingUser}
-                />
-              </div>
-
-              <FieldDisplay
-                label="Request Date"
-                value={new Date(selectedItem.requestDate).toLocaleDateString(
-                  'en-PH',
-                )}
-              />
-
-              <Divider />
-
-              {/* Classification Fields - Read-Only */}
-              <div className="space-y-4 bg-blue-50 dark:bg-blue-950 rounded-lg p-4 border border-blue-200 dark:border-blue-800">
-                <p className="text-xs font-semibold text-blue-900 dark:text-blue-300 uppercase tracking-wider">
-                  Classification
-                </p>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <FieldDisplay
-                    label="UACS Code"
-                    value={selectedItem.uacsCode ?? '—'}
-                  />
-                  <FieldDisplay
-                    label="UNSPSC Code"
-                    value={selectedItem.unspscCode ?? '—'}
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <p className="text-xs text-muted-foreground font-medium uppercase tracking-wider">
-                    CSE Item
-                  </p>
-                  <Badge variant={selectedItem.isCSE ? 'soft' : 'outline'}>
-                    {selectedItem.isCSE ? 'Yes' : 'No'}
-                  </Badge>
-                </div>
               </div>
             </div>
 
-            {/* Return Remarks - Only show if Returned */}
-            {selectedItem.status === 'Returned' && (
-              <>
-                <Divider />
-                <div className="space-y-2 bg-amber-50 dark:bg-amber-950 rounded-lg p-4 border border-amber-200 dark:border-amber-800">
-                  <p className="text-xs font-semibold text-amber-900 dark:text-amber-300 uppercase tracking-wider">
-                    Return Remarks
-                  </p>
-                  <p className="text-sm leading-relaxed text-muted-foreground whitespace-pre-wrap">
-                    {selectedItem.remarks ?? '—'}
-                  </p>
-                </div>
-              </>
-            )}
+            <Divider />
 
-            {selectedItem.status === 'Returned' && (
-              <div className="pt-4">
-                <Button
-                  variant="outline"
-                  onClick={handleEditReturnedRequest}
-                  className="w-full gap-2"
-                >
-                  Edit & Resubmit
-                </Button>
+            {/* Item Details */}
+            <div className="space-y-4">
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Item Details
+              </h4>
+
+              <div className="grid grid-cols-2 gap-4">
+                <FieldDisplay
+                  label="Procurement Category"
+                  value={
+                    selectedItem.procurementCategoryName ||
+                    selectedItem.procurementCategory ||
+                    '—'
+                  }
+                />
+                <FieldDisplay
+                  label="Item Category"
+                  value={selectedItem.itemCategory}
+                />
               </div>
-            )}
 
-            {/* Close Button */}
-            <div className="flex gap-3 pt-4 border-t">
-              <Button
-                variant="outline"
-                onClick={handleClose}
-                className="flex-1"
-              >
-                Close
-              </Button>
+              <div className="grid grid-cols-2 gap-4">
+                <FieldDisplay
+                  label="Unit of Measure"
+                  value={
+                    selectedItem.uomName ||
+                    selectedItem.unitOfMeasure ||
+                    '—'
+                  }
+                />
+                <FieldDisplay
+                  label="Current Status"
+                  value={selectedItem.status}
+                />
+              </div>
+            </div>
+
+            <Divider />
+
+            {/* Technical Specifications */}
+            <div className="space-y-2">
+              <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                Technical Specifications & Justification
+              </h4>
+              <div className="text-sm leading-relaxed rounded-md bg-muted/40 p-3.5 border border-border whitespace-pre-wrap text-foreground">
+                {selectedItem.technicalSpecification ||
+                  selectedItem.specifications ||
+                  '—'}
+              </div>
             </div>
           </div>
         )}
