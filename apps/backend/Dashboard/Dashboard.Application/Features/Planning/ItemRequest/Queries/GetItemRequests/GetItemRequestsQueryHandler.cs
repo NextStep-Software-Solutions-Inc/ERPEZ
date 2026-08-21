@@ -44,6 +44,7 @@ public class GetItemRequestsQueryHandler(IUnitOfWork unitOfWork)
                 ReviewedBy = request.ReviewedBy != null ? request.ReviewedBy.ToString() : null,
                 SubmittedAt = request.SubmittedAt,
                 ReviewedAt = request.ReviewedAt,
+                NonCSEItemId = request.NonCSEItems.Select(x => (Guid?)x.Id).FirstOrDefault(),
                 CreatedAt = request.CreatedAt,
                 CreatedBy = request.CreatedBy
             };

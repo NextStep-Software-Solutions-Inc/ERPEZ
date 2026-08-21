@@ -1977,11 +1977,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasMaxLength(100);
 
         modelBuilder.Entity<NonCSEItem>()
-            .Property(n => n.Status)
-            .IsRequired()
-            .HasMaxLength(50);
-
-        modelBuilder.Entity<NonCSEItem>()
             .Property(n => n.CurrentPrice)
             .HasPrecision(18, 2);
 
@@ -2009,15 +2004,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<NonCSEItem>()
             .HasIndex(n => n.Type);
-
-        modelBuilder.Entity<NonCSEItem>()
-            .HasIndex(n => n.Status);
-
-        modelBuilder.Entity<NonCSEItem>()
-            .HasIndex(n => n.IsActive);
-
-        modelBuilder.Entity<NonCSEItem>()
-            .HasIndex(n => new { n.Name, n.IsActive });
 
         // APPItem
         modelBuilder.Entity<APPItem>()

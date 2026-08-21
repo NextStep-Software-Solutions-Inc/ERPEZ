@@ -118,7 +118,6 @@ internal static class PPMPQueryProjection
                 ProductCode = item.NonCSEItem.ProductCode,
                 CurrentPrice = item.NonCSEItem.CurrentPrice,
                 Remarks = item.NonCSEItem.Remarks,
-                IsActive = item.NonCSEItem.IsActive,
                 CreatedAt = item.NonCSEItem.CreatedAt,
                 CreatedBy = item.NonCSEItem.CreatedBy
             }
