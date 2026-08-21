@@ -14,6 +14,7 @@ import {
 } from '@/features/procurement/apr/atoms'
 import { useAPRs, useDeleteAPRMutation } from '@/features/procurement/apr/handlers/hooks'
 import { invalidateAPRQueries } from '@/features/procurement/apr/utils/invalidateAPRQueries'
+import { matchesAPRStatus } from '@/features/procurement/apr/utils'
 import { getAPRsTableColumns } from '@/features/procurement/apr/tables/APRsTableColumns'
 import { APRsTableToolbar } from '@/features/procurement/apr/tables/APRsTableToolbar'
 import { CreateAPRDialog, AddAgencyAPPDialog } from '@/features/procurement/apr/dialogs'
@@ -78,16 +79,12 @@ export function APRListPage() {
       }
 
       // Status filter
-      if (statusFilter !== 'all') {
-        const statusLower = (apr.status || '').toLowerCase()
-        const filterLower = statusFilter.toLowerCase()
-        if (statusLower !== filterLower) {
-          return false
-        }
+      if (!matchesAPRStatus(apr.status, statusFilter)) {
+        return false
       }
 
       // Fiscal year filter
-      if (fiscalYearFilter && apr.fiscalYear && apr.fiscalYear !== fiscalYearFilter) {
+      if (fiscalYearFilter && apr.fiscalYear && Number(apr.fiscalYear) !== Number(fiscalYearFilter)) {
         return false
       }
 
