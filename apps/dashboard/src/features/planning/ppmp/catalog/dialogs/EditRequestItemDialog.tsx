@@ -12,12 +12,9 @@
 import { useEffect, useState } from 'react'
 import { useAtom } from 'jotai'
 import { useForm } from '@tanstack/react-form'
-import { Image as ImageIcon, X, Upload } from 'lucide-react'
+import { Upload } from 'lucide-react'
 
-import {
-  ResponsiveDialogDashtail,
-  //   type ResponsiveDialogDashtailProps,
-} from '@/components/ResponsiveDialogDashtail'
+import { ResponsiveDialogDashtail } from '@/components/ResponsiveDialogDashtail'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -34,28 +31,37 @@ import { toast } from 'sonner'
 import {
   editRequestDialogOpenAtom,
   editingRequestIdAtom,
-  imagePreviewUrlAtom,
-  selectedImageFileAtom,
 } from '../atoms/requestAtoms'
-import { itemRequestsAtom } from '../atoms/catalogAtoms'
-import { updateItemRequest } from '../handlers/requestWorkflow'
+import {
+  useItemRequests,
+  useUpdateItemRequestMutation,
+} from '../hooks/useItemRequestQueries'
+import { getUomsRequest } from '@/components/features/planning/procurement-library/item-master/handlers/getUomsRequest'
+import { getProcurementCategoriesRequest } from '@/lib/fiscal-year-and-policies/requests/getProcurementCategoriesRequest'
+import { useQuery } from '@tanstack/react-query'
 import {
   UACS_CASCADE_MAP,
   getUacsItemCategories,
   PROCUREMENT_CATEGORIES,
 } from '../utils/cascadingUacs'
 
-import type { CreateItemRequestInput } from '../types/catalog.types'
 import type { RequestItemEditFormValues } from '../forms/requestItemFormSchema'
 
 export function EditRequestItemDialog() {
   const [isOpen, setIsOpen] = useAtom(editRequestDialogOpenAtom)
   const [editingRequestId, setEditingRequestId] = useAtom(editingRequestIdAtom)
-  const [imagePreviewUrl, setImagePreviewUrl] = useAtom(imagePreviewUrlAtom)
-  const [selectedImageFile, setSelectedImageFile] = useAtom(
-    selectedImageFileAtom,
-  )
-  const [requests, setRequests] = useAtom(itemRequestsAtom)
+  const { data: response } = useItemRequests({ pageSize: 100 })
+  const { data: uomsResponse } = useQuery({
+    queryKey: ['/uoms'],
+    queryFn: ({ signal }) => getUomsRequest.fetcher({ finalUrl: '/uoms', signal }),
+  })
+  const { data: procurementCategoriesResponse } = useQuery({
+    queryKey: ['/procurement-categories'],
+    queryFn: ({ signal }) =>
+      getProcurementCategoriesRequest.fetcher({ finalUrl: '/procurement-categories', signal }),
+  })
+  const updateMutation = useUpdateItemRequestMutation()
+
   const [selectedProcCategory, setSelectedProcCategory] = useState<
     keyof typeof UACS_CASCADE_MAP | ''
   >('')
@@ -63,24 +69,36 @@ export function EditRequestItemDialog() {
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Get the request being edited
-  const requestToEdit = requests.find((r) => r.id === editingRequestId)
+  const requestToEdit = (response?.data || []).find((r) => r.id === editingRequestId)
   const isDraftRequest = requestToEdit?.status === 'Draft'
   const isReturnedRequest = requestToEdit?.status === 'Returned'
   const canEditRequest = isDraftRequest || isReturnedRequest
+
+  const getMatchedProcurementCategoryId = (catName: string) => {
+    if (!catName) return null
+    const categories = procurementCategoriesResponse?.data || []
+    const matched = categories.find(
+      (c: any) =>
+        c.name?.toLowerCase().includes(catName.toLowerCase()) ||
+        catName.toLowerCase().includes(c.name?.toLowerCase()),
+    )
+    return matched ? matched.id : null
+  }
 
   // TanStack Form setup
   const form = useForm({
     defaultValues: {
       id: editingRequestId || '',
       name: requestToEdit?.name || '',
-      procurementCategory: (requestToEdit?.procurementCategory || 'Goods') as
+      procurementCategory: ((requestToEdit?.procurementCategoryName || requestToEdit?.procurementCategory || 'Goods') as
         | 'Goods'
         | 'Infra'
-        | 'Consulting',
+        | 'Consulting'),
       itemCategory: requestToEdit?.itemCategory || '',
-      unitOfMeasure: requestToEdit?.unitOfMeasure || '',
+      uomId: requestToEdit?.uomId || '',
+      unitOfMeasure: requestToEdit?.uomName || requestToEdit?.unitOfMeasure || '',
       estimatedUnitCost: requestToEdit?.estimatedUnitCost || 0,
-      specifications: requestToEdit?.specifications || '',
+      specifications: requestToEdit?.technicalSpecification || requestToEdit?.specifications || '',
     },
     onSubmit: async ({ value }) => {
       if (isReturnedRequest) {
@@ -104,49 +122,47 @@ export function EditRequestItemDialog() {
     }
   }, [form.getFieldValue('procurementCategory')])
 
-  // Initialize image preview and categories on mount
+  // Initialize categories and form values on mount / open
   useEffect(() => {
     if (isOpen && requestToEdit) {
       const procCat =
-        requestToEdit.procurementCategory as keyof typeof UACS_CASCADE_MAP
+        (requestToEdit.procurementCategoryName || requestToEdit.procurementCategory || 'Goods') as keyof typeof UACS_CASCADE_MAP
       setSelectedProcCategory(procCat)
       const categories = getUacsItemCategories(procCat)
       setItemCategories(categories)
 
-      if (requestToEdit.imageUrl) {
-        setImagePreviewUrl(requestToEdit.imageUrl)
-      }
+      form.setFieldValue('id', requestToEdit.id)
+      form.setFieldValue('name', requestToEdit.name)
+      form.setFieldValue('procurementCategory', procCat as any)
+      form.setFieldValue('itemCategory', requestToEdit.itemCategory)
+      form.setFieldValue('uomId', requestToEdit.uomId || '')
+      form.setFieldValue('estimatedUnitCost', requestToEdit.estimatedUnitCost)
+      form.setFieldValue(
+        'specifications',
+        requestToEdit.technicalSpecification || requestToEdit.specifications || '',
+      )
     }
   }, [isOpen, requestToEdit])
 
   async function handleSubmit(values: RequestItemEditFormValues) {
+    if (!editingRequestId) return
     try {
       setIsSubmitting(true)
-      const requestInput: CreateItemRequestInput = {
-        name: values.name,
-        procurementCategory: values.procurementCategory,
-        itemCategory: values.itemCategory,
-        unitOfMeasure: values.unitOfMeasure,
-        estimatedUnitCost: values.estimatedUnitCost,
-        specifications: values.specifications,
-        imageUrl: imagePreviewUrl,
-      }
+      const procurementCategoryId = getMatchedProcurementCategoryId(values.procurementCategory)
 
-      // Find and update request
-      setRequests((prev) =>
-        prev.map((req) =>
-          req.id === editingRequestId
-            ? updateItemRequest(
-                req,
-                {
-                  ...requestInput,
-                  imageUrl: imagePreviewUrl ?? req.imageUrl ?? null,
-                },
-                'Submitted',
-              )
-            : req,
-        ),
-      )
+      await updateMutation.mutateAsync({
+        id: editingRequestId,
+        payload: {
+          name: values.name,
+          itemCategory: values.itemCategory,
+          status: isReturnedRequest ? 'Submitted' : 'Draft',
+          estimatedUnitCost: Number(values.estimatedUnitCost) || 0,
+          technicalSpecification: values.specifications,
+          uomId: values.uomId || null,
+          procurementCategoryId,
+          uacsCode: null,
+        },
+      })
 
       toast.success(
         isReturnedRequest
@@ -157,12 +173,9 @@ export function EditRequestItemDialog() {
 
       // Reset form and close dialog
       form.reset()
-      setImagePreviewUrl(null)
-      setSelectedImageFile(null)
       setEditingRequestId(null)
       setIsOpen(false)
     } catch (error) {
-      toast.error('Failed to update request. Please try again.')
       console.error('Request update error:', error)
     } finally {
       setIsSubmitting(false)
@@ -170,92 +183,42 @@ export function EditRequestItemDialog() {
   }
 
   async function handleSaveDraft() {
+    if (!editingRequestId) return
     try {
       setIsSubmitting(true)
-
       const values = form.state.values as RequestItemEditFormValues
-      const requestInput: CreateItemRequestInput = {
-        name: values.name,
-        procurementCategory: values.procurementCategory,
-        itemCategory: values.itemCategory,
-        unitOfMeasure: values.unitOfMeasure,
-        estimatedUnitCost: values.estimatedUnitCost,
-        specifications: values.specifications,
-        imageUrl: imagePreviewUrl,
-      }
+      const procurementCategoryId = getMatchedProcurementCategoryId(values.procurementCategory)
 
-      setRequests((prev) =>
-        prev.map((req) =>
-          req.id === editingRequestId
-            ? updateItemRequest(
-                req,
-                {
-                  ...requestInput,
-                  imageUrl: imagePreviewUrl ?? req.imageUrl ?? null,
-                },
-                'Draft',
-              )
-            : req,
-        ),
-      )
+      await updateMutation.mutateAsync({
+        id: editingRequestId,
+        payload: {
+          name: values.name,
+          itemCategory: values.itemCategory,
+          status: 'Draft',
+          estimatedUnitCost: Number(values.estimatedUnitCost) || 0,
+          technicalSpecification: values.specifications,
+          uomId: values.uomId || null,
+          procurementCategoryId,
+          uacsCode: null,
+        },
+      })
 
-      toast.success('Draft updated successfully!', { duration: 4000 })
+      toast.success('Draft saved successfully!', { duration: 4000 })
 
+      // Reset form and close dialog
       form.reset()
-      setImagePreviewUrl(null)
-      setSelectedImageFile(null)
       setEditingRequestId(null)
       setIsOpen(false)
     } catch (error) {
-      toast.error('Failed to update draft. Please try again.')
       console.error('Draft update error:', error)
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  function handleImageChange(file: File | undefined) {
-    if (!file) {
-      setImagePreviewUrl(null)
-      setSelectedImageFile(null)
-      return
-    }
-
-    // Validate file
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image must be less than 5MB')
-      return
-    }
-
-    if (!['image/jpeg', 'image/png'].includes(file.type)) {
-      toast.error('Image must be JPEG or PNG')
-      return
-    }
-
-    // Create preview URL
-    const previewUrl = URL.createObjectURL(file)
-    setImagePreviewUrl(previewUrl)
-    setSelectedImageFile(file)
-  }
-
-  function handleRemoveImage() {
-    if (imagePreviewUrl) {
-      URL.revokeObjectURL(imagePreviewUrl)
-    }
-    setImagePreviewUrl(null)
-    setSelectedImageFile(null)
-  }
-
   function handleClose(open: boolean) {
     if (!open) {
-      // Clean up image URL
-      if (imagePreviewUrl) {
-        URL.revokeObjectURL(imagePreviewUrl)
-      }
-      // Reset form
       form.reset()
-      setImagePreviewUrl(null)
-      setSelectedImageFile(null)
       setEditingRequestId(null)
       setIsOpen(false)
     }
@@ -365,7 +328,7 @@ export function EditRequestItemDialog() {
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {itemCategories.map((cat) => (
+                  {itemCategories.map((cat: string) => (
                     <SelectItem key={cat} value={cat}>
                       {cat}
                     </SelectItem>
@@ -382,19 +345,28 @@ export function EditRequestItemDialog() {
         </form.Field>
 
         {/* Unit of Measurement */}
-        <form.Field name="unitOfMeasure">
+        <form.Field name="uomId">
           {(field) => (
             <div className="space-y-2">
-              <Label htmlFor="uom">
+              <Label htmlFor="uomId">
                 Unit of Measurement <span className="text-destructive">*</span>
               </Label>
-              <Input
-                id="uom"
+              <Select
                 value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                onBlur={field.handleBlur}
+                onValueChange={(value) => field.handleChange(value)}
                 disabled={isSubmitting}
-              />
+              >
+                <SelectTrigger id="uomId">
+                  <SelectValue placeholder="Select unit of measurement..." />
+                </SelectTrigger>
+                <SelectContent>
+                  {(uomsResponse?.data || []).map((uom) => (
+                    <SelectItem key={uom.id} value={uom.id}>
+                      {uom.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
               {field.state.meta.errors && (
                 <p className="text-xs text-destructive">
                   {field.state.meta.errors.join(', ')}
@@ -463,55 +435,6 @@ export function EditRequestItemDialog() {
             </div>
           )}
         </form.Field>
-
-        {/* Image Upload */}
-        <div className="space-y-2">
-          <Label>Item Image (Optional)</Label>
-          {imagePreviewUrl ? (
-            <div className="space-y-2">
-              <div className="relative w-full max-w-xs rounded-lg border border-border overflow-hidden bg-muted">
-                <img
-                  src={imagePreviewUrl}
-                  alt="Preview"
-                  className="w-full h-40 object-cover"
-                />
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  className="absolute top-2 right-2"
-                  onClick={handleRemoveImage}
-                  disabled={isSubmitting}
-                  type="button"
-                >
-                  <X className="h-4 w-4" />
-                </Button>
-              </div>
-              <p className="text-xs text-muted-foreground">
-                {selectedImageFile?.name || 'Image preview'}
-              </p>
-            </div>
-          ) : (
-            <label className="flex flex-col gap-3 items-center justify-center p-6 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-muted transition-colors">
-              <ImageIcon className="h-8 w-8 text-muted-foreground" />
-              <div className="text-center">
-                <p className="text-sm font-medium">Click to upload</p>
-                <p className="text-xs text-muted-foreground">
-                  PNG, JPG up to 5MB
-                </p>
-              </div>
-              <input
-                type="file"
-                accept="image/jpeg,image/png"
-                onChange={(e) => {
-                  const file = e.target.files?.[0]
-                  if (file) handleImageChange(file)
-                }}
-                disabled={isSubmitting}
-                className="hidden"
-              />
-            </label>
-          )}
-        </div>
 
         {/* Form Actions */}
         <div className="flex gap-3 justify-end pt-4 border-t">

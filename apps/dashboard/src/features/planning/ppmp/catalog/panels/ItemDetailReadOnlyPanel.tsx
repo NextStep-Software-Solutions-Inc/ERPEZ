@@ -1,4 +1,4 @@
-﻿/**
+/**
  * ItemDetailReadOnlyPanel
  * 40% slide-over for viewing approved and returned catalog items.
  * All fields are read-only.
@@ -23,17 +23,17 @@ import {
   editRequestDialogOpenAtom,
   editingRequestIdAtom,
 } from '../atoms/requestAtoms'
-import { itemRequestsAtom } from '../atoms/catalogAtoms'
+import { useItemRequests } from '../hooks/useItemRequestQueries'
 
 export function ItemDetailReadOnlyPanel() {
   const [selectedItemId, setSelectedItemId] = useAtom(
     requestDetailSelectedIdAtom,
   )
-  const [itemRequests] = useAtom(itemRequestsAtom)
+  const { data: response } = useItemRequests({ pageSize: 100 })
   const setEditDialogOpen = useSetAtom(editRequestDialogOpenAtom)
   const setEditingRequestId = useSetAtom(editingRequestIdAtom)
 
-  const selectedItem = itemRequests.find((item) => item.id === selectedItemId)
+  const selectedItem = (response?.data || []).find((item) => item.id === selectedItemId)
 
   const isApprovedOrReturned =
     selectedItem?.status === 'Approved' || selectedItem?.status === 'Returned'
@@ -70,7 +70,9 @@ export function ItemDetailReadOnlyPanel() {
     setEditDialogOpen(true)
   }
 
-  const colors = STATUS_COLORS[selectedItem?.status ?? 'Submitted']
+  const colors =
+    (STATUS_COLORS as Record<string, string>)[selectedItem?.status ?? 'Submitted'] ||
+    STATUS_COLORS['Submitted']
 
   return (
     <Sheet
@@ -97,7 +99,7 @@ export function ItemDetailReadOnlyPanel() {
                   {selectedItem.status}
                 </Badge>
                 <Badge variant="outline">
-                  {selectedItem.procurementCategory}
+                  {selectedItem.procurementCategoryName || selectedItem.procurementCategory || 'Goods'}
                 </Badge>
               </div>
             </div>
@@ -108,13 +110,13 @@ export function ItemDetailReadOnlyPanel() {
                 <p className="text-xs text-muted-foreground uppercase font-medium">
                   Submitted By
                 </p>
-                <p className="font-medium">{selectedItem.requestingUser}</p>
+                <p className="font-medium">{selectedItem.createdBy || selectedItem.requestingUser || '—'}</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground uppercase font-medium">
                   Office
                 </p>
-                <p className="font-medium">{selectedItem.requestingOffice}</p>
+                <p className="font-medium">{selectedItem.officeName || selectedItem.requestingOffice || '—'}</p>
               </div>
               <div>
                 <p className="text-xs text-muted-foreground uppercase font-medium">
@@ -146,23 +148,9 @@ export function ItemDetailReadOnlyPanel() {
                 Submitted Specifications
               </p>
               <p className="text-sm leading-relaxed rounded-md bg-muted p-3">
-                {selectedItem.specifications}
+                {selectedItem.technicalSpecification || selectedItem.specifications || '—'}
               </p>
             </div>
-
-            {/* Attached Image */}
-            {selectedItem.imageUrl && (
-              <div className="space-y-1">
-                <p className="text-xs text-muted-foreground uppercase font-medium">
-                  Attached Image
-                </p>
-                <img
-                  src={selectedItem.imageUrl}
-                  alt={selectedItem.name}
-                  className="w-full max-h-40 object-cover rounded-lg border border-border"
-                />
-              </div>
-            )}
 
             <Divider />
 
@@ -172,26 +160,12 @@ export function ItemDetailReadOnlyPanel() {
                 Item Information
               </p>
 
-              {/* Item Image */}
-              {selectedItem.imageUrl && (
-                <>
-                  <div className="aspect-video bg-muted rounded-lg overflow-hidden flex items-center justify-center">
-                    <img
-                      src={selectedItem.imageUrl}
-                      alt={selectedItem.name}
-                      className="w-full h-full object-cover"
-                    />
-                  </div>
-                  <Divider />
-                </>
-              )}
-
               {/* Name & Item Type */}
               <div className="grid grid-cols-2 gap-4">
                 <FieldDisplay label="Name" value={selectedItem.name} />
                 <FieldDisplay
                   label="Item Type"
-                  value={selectedItem.procurementCategory}
+                  value={selectedItem.procurementCategoryName || selectedItem.procurementCategory || 'Goods'}
                 />
               </div>
 

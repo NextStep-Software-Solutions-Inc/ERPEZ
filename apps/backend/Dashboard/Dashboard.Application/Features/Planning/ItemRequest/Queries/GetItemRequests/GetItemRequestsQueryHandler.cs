@@ -27,7 +27,7 @@ public class GetItemRequestsQueryHandler(IUnitOfWork unitOfWork)
             {
                 Id = request.Id,
                 OfficeId = request.OfficeId,
-                OfficeName = request.Office.Name,
+                OfficeName = request.Office != null ? request.Office.Name : string.Empty,
                 Name = request.Name,
                 ItemCategory = request.ItemCategory,
                 Status = request.Status,

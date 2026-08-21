@@ -1,37 +1,25 @@
-﻿/**
- * useUserRequests Hook
- * Filter and retrieve current user's item requests
- */
-
 import { useMemo } from 'react'
 import { useAtomValue } from 'jotai'
 import {
-  itemRequestsAtom,
-  currentUserAtom,
   catalogItemsAtom,
 } from '../atoms/catalogAtoms'
+import { useItemRequests } from './useItemRequestQueries'
 import type { ItemRequest } from '../types/catalog.types'
 
 export function useUserRequests() {
-  const allRequests = useAtomValue(itemRequestsAtom)
-  const currentUser = useAtomValue(currentUserAtom)
+  const { data: response, isLoading } = useItemRequests({
+    pageSize: 100,
+    sorts: '-requestDate',
+  })
 
-  const userRequests = useMemo(() => {
-    return allRequests.filter((req) => req.createdBy === currentUser.email)
-  }, [allRequests, currentUser.email])
-
-  // Sort by request date (newest first)
-  const sortedRequests = useMemo(() => {
-    return [...userRequests].sort(
-      (a, b) =>
-        new Date(b.requestDate).getTime() - new Date(a.requestDate).getTime(),
-    )
-  }, [userRequests])
+  const requests: ItemRequest[] = useMemo(() => {
+    return response?.data || []
+  }, [response?.data])
 
   return {
-    requests: sortedRequests,
-    total: sortedRequests.length,
-    isLoading: false,
+    requests,
+    total: response?.totalRows ?? requests.length,
+    isLoading,
   }
 }
 

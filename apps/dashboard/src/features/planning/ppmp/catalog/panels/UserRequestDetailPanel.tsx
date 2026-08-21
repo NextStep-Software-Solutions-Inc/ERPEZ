@@ -8,7 +8,6 @@
 import { useAtom, useSetAtom } from 'jotai'
 import { Trash2, Edit2, X } from 'lucide-react'
 import { Button } from '@/components/ui/button'
-import { toast } from 'sonner'
 import { Badge } from '@/components/ui/badge'
 import {
   Sheet,
@@ -32,38 +31,48 @@ import {
   editRequestDialogOpenAtom,
   editingRequestIdAtom,
 } from '../atoms/requestAtoms'
-import { itemRequestsAtom } from '../atoms/catalogAtoms'
+import {
+  useItemRequests,
+  useDeleteItemRequestMutation,
+} from '../hooks/useItemRequestQueries'
+import { useMemo } from 'react'
 
 export function UserRequestDetailPanel() {
   const [selectedRequestId, setSelectedRequestId] = useAtom(
     requestDetailSelectedIdAtom,
   )
-  const [itemRequests, setItemRequests] = useAtom(itemRequestsAtom)
+  const { data: response } = useItemRequests({ pageSize: 100 })
+  const deleteMutation = useDeleteItemRequestMutation()
   const setEditDialogOpen = useSetAtom(editRequestDialogOpenAtom)
   const setEditingRequestId = useSetAtom(editingRequestIdAtom)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
-  const selectedRequest = itemRequests.find(
-    (req) => req.id === selectedRequestId,
-  )
+  const selectedRequest = useMemo(() => {
+    return (response?.data || []).find((req) => req.id === selectedRequestId)
+  }, [response?.data, selectedRequestId])
 
   const handleEditRequest = () => {
     setEditingRequestId(selectedRequestId)
     setEditDialogOpen(true)
   }
 
-  const handleDeleteRequest = () => {
-    const updatedRequests = itemRequests.filter(
-      (req) => req.id !== selectedRequestId,
-    )
-    setItemRequests(updatedRequests)
-    setShowDeleteConfirm(false)
-    setSelectedRequestId(null)
-    toast.success('Request deleted')
+  const handleDeleteRequest = async () => {
+    if (!selectedRequestId) return
+    try {
+      await deleteMutation.mutateAsync(selectedRequestId)
+      setShowDeleteConfirm(false)
+      setSelectedRequestId(null)
+    } catch {
+      // Error handled in mutation
+    }
   }
 
-  const isEditable = selectedRequest?.status === 'Draft'
-  const colors = STATUS_COLORS[selectedRequest?.status || 'Submitted']
+  const isEditable =
+    selectedRequest?.status === 'Draft' || selectedRequest?.status === 'Returned'
+  const colors =
+    (STATUS_COLORS as Record<string, string>)[
+      selectedRequest?.status || 'Submitted'
+    ] || STATUS_COLORS['Submitted']
 
   return (
     <>
@@ -116,7 +125,7 @@ export function UserRequestDetailPanel() {
                     {selectedRequest.status}
                   </Badge>
                   <Badge variant="outline">
-                    {selectedRequest.procurementCategory}
+                    {selectedRequest.procurementCategoryName || selectedRequest.procurementCategory || 'Goods'}
                   </Badge>
                 </div>
               </div>
@@ -128,7 +137,7 @@ export function UserRequestDetailPanel() {
                     Unit of Measure
                   </p>
                   <p className="text-sm font-semibold">
-                    {selectedRequest.unitOfMeasure}
+                    {selectedRequest.uomName || selectedRequest.unitOfMeasure || '—'}
                   </p>
                 </div>
                 <div className="space-y-1">
@@ -167,7 +176,7 @@ export function UserRequestDetailPanel() {
                   Specifications & Details
                 </p>
                 <p className="text-sm leading-relaxed rounded-md bg-muted p-3">
-                  {selectedRequest.specifications}
+                  {selectedRequest.technicalSpecification || selectedRequest.specifications || '—'}
                 </p>
               </div>
 
@@ -177,24 +186,24 @@ export function UserRequestDetailPanel() {
                   <p className="text-xs text-muted-foreground font-medium uppercase">
                     Office
                   </p>
-                  <p className="text-sm">{selectedRequest.requestingOffice}</p>
+                  <p className="text-sm">{selectedRequest.officeName || selectedRequest.requestingOffice || '—'}</p>
                 </div>
                 <div className="space-y-1">
                   <p className="text-xs text-muted-foreground font-medium uppercase">
                     Requested By
                   </p>
-                  <p className="text-sm">{selectedRequest.requestingUser}</p>
+                  <p className="text-sm">{selectedRequest.createdBy || selectedRequest.requestingUser || '—'}</p>
                 </div>
               </div>
 
               {/* Remarks (if exists) */}
-              {selectedRequest.remarks && (
+              {(selectedRequest.twgRemarks || selectedRequest.remarks) && (
                 <div className="space-y-2">
                   <p className="text-xs text-muted-foreground font-medium uppercase">
                     Admin Remarks
                   </p>
                   <p className="text-sm leading-relaxed rounded-md bg-muted p-3 border-l-4 border-amber-500">
-                    {selectedRequest.remarks}
+                    {selectedRequest.twgRemarks || selectedRequest.remarks}
                   </p>
                 </div>
               )}

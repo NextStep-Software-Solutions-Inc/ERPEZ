@@ -18,7 +18,8 @@ import {
   requestDetailSelectedIdAtom,
   requestDetailPanelVisibleAtom,
 } from '../atoms/requestAtoms'
-import { itemRequestsAtom, catalogItemsAtom } from '../atoms/catalogAtoms'
+import { catalogItemsAtom } from '../atoms/catalogAtoms'
+import { useItemRequests } from '../hooks/useItemRequestQueries'
 import { cn } from '@/lib/utils'
 import { STATUS_COLORS } from '../utils/cascadingUacs'
 
@@ -27,10 +28,10 @@ export function RequestDetailPanel() {
     requestDetailSelectedIdAtom,
   )
   const [visibleAtom, setVisible] = useAtom(requestDetailPanelVisibleAtom)
-  const itemRequests = useAtomValue(itemRequestsAtom)
+  const { data: response } = useItemRequests({ pageSize: 100 })
   const catalogItems = useAtomValue(catalogItemsAtom)
 
-  const selectedRequest = itemRequests.find(
+  const selectedRequest = (response?.data || []).find(
     (req) => req.id === selectedRequestId,
   )
 
@@ -40,7 +41,9 @@ export function RequestDetailPanel() {
       ? catalogItems.find((item) => item.sourceRequestId === selectedRequest.id)
       : null
 
-  const colors = STATUS_COLORS[selectedRequest?.status ?? 'Submitted']
+  const colors =
+    (STATUS_COLORS as Record<string, string>)[selectedRequest?.status ?? 'Submitted'] ||
+    STATUS_COLORS['Submitted']
 
   const FieldDisplay = ({
     label,
@@ -88,7 +91,7 @@ export function RequestDetailPanel() {
                   {selectedRequest.status}
                 </Badge>
                 <Badge variant="outline">
-                  {selectedRequest.procurementCategory}
+                  {selectedRequest.procurementCategoryName || selectedRequest.procurementCategory || 'Goods'}
                 </Badge>
               </div>
             </div>
@@ -109,7 +112,7 @@ export function RequestDetailPanel() {
                 />
                 <FieldDisplay
                   label="Procurement Category"
-                  value={selectedRequest.procurementCategory}
+                  value={selectedRequest.procurementCategoryName || selectedRequest.procurementCategory || 'Goods'}
                 />
               </div>
 
@@ -129,7 +132,7 @@ export function RequestDetailPanel() {
                 />
                 <FieldDisplay
                   label="Unit of Measure"
-                  value={selectedRequest.unitOfMeasure}
+                  value={selectedRequest.uomName || selectedRequest.unitOfMeasure || '—'}
                 />
               </div>
 
@@ -165,11 +168,11 @@ export function RequestDetailPanel() {
               <div className="grid grid-cols-2 gap-4">
                 <FieldDisplay
                   label="Requesting Office"
-                  value={selectedRequest.requestingOffice}
+                  value={selectedRequest.officeName || selectedRequest.requestingOffice || '—'}
                 />
                 <FieldDisplay
                   label="Requesting User"
-                  value={selectedRequest.requestingUser}
+                  value={selectedRequest.createdBy || selectedRequest.requestingUser || '—'}
                 />
               </div>
             </div>
@@ -187,23 +190,6 @@ export function RequestDetailPanel() {
                     </p>
                   }
                 />
-                <Divider />
-              </>
-            )}
-
-            {/* Attached Image */}
-            {selectedRequest.imageUrl && (
-              <>
-                <div className="space-y-2">
-                  <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
-                    Attached Image
-                  </p>
-                  <img
-                    src={selectedRequest.imageUrl}
-                    alt={selectedRequest.name}
-                    className="w-full max-h-64 object-cover rounded-lg border border-border"
-                  />
-                </div>
                 <Divider />
               </>
             )}

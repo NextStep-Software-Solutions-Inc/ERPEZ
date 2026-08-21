@@ -19,7 +19,7 @@ export function UserRequestsTab() {
     'Submitted',
   )
 
-  const { requests: userRequests, total } = useUserRequests()
+  const { requests: userRequests, total, isLoading } = useUserRequests()
   const draftRequests = userRequests.filter(
     (req: ItemRequest) => req.status === 'Draft',
   )
@@ -40,7 +40,7 @@ export function UserRequestsTab() {
     Returned: returnedRequests,
   }
 
-  const getTableData = (): ItemRequest[] => statusMap[selectedStatus]
+  const getTableData = (): ItemRequest[] => statusMap[selectedStatus] || []
 
   return (
     <div className="space-y-6">
@@ -99,7 +99,7 @@ export function UserRequestsTab() {
           <UserRequestsTable
             data={getTableData()}
             total={total}
-            isLoading={false}
+            isLoading={isLoading}
             selectedStatus={selectedStatus}
           />
         </TabsContent>

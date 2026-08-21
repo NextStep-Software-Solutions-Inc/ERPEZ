@@ -15,6 +15,10 @@ public class UpdateItemRequestCommandHandler(IUnitOfWork unitOfWork)
         if (itemRequest == null)
             throw new NotFoundException("Item Request not found.");
 
+        // Validate existing status - Approved requests cannot be modified via standard update
+        if (string.Equals(itemRequest.Status, "Approved", StringComparison.OrdinalIgnoreCase))
+            throw new ValidationException("Approved item requests cannot be modified.");
+
         // Validate UOM if provided
         if (request.UOMId.HasValue)
         {
@@ -44,7 +48,13 @@ public class UpdateItemRequestCommandHandler(IUnitOfWork unitOfWork)
             itemRequest.ItemCategory = request.ItemCategory;
 
         if (request.Status != null)
+        {
             itemRequest.Status = request.Status;
+            if (string.Equals(request.Status, "Submitted", StringComparison.OrdinalIgnoreCase) && itemRequest.SubmittedAt == null)
+            {
+                itemRequest.SubmittedAt = DateTime.UtcNow;
+            }
+        }
 
         if (request.EstimatedUnitCost.HasValue)
             itemRequest.EstimatedUnitCost = request.EstimatedUnitCost.Value;

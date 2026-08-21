@@ -24,10 +24,10 @@ import { toast } from 'sonner'
 import { STATUS_COLORS } from '../utils/cascadingUacs'
 import { requestDetailSelectedIdAtom } from '../atoms/requestAtoms'
 import {
-  itemRequestsAtom,
   approveItemRequestAtom,
   returnItemRequestAtom,
 } from '../atoms/catalogAtoms'
+import { useItemRequests } from '../hooks/useItemRequestQueries'
 import type { CatalogItemFormValues } from '../forms/CatalogItemFormSchema'
 import type {
   ApproveItemRequestInput,
@@ -38,7 +38,7 @@ export function ApprovalDetailPanel() {
   const [selectedRequestId, setSelectedRequestId] = useAtom(
     requestDetailSelectedIdAtom,
   )
-  const [itemRequests] = useAtom(itemRequestsAtom)
+  const { data: response } = useItemRequests({ pageSize: 100 })
   const approveRequest = useSetAtom(approveItemRequestAtom)
   const returnRequest = useSetAtom(returnItemRequestAtom)
 
@@ -46,7 +46,7 @@ export function ApprovalDetailPanel() {
   const [returnRemarks, setReturnRemarks] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
 
-  const selectedRequest = itemRequests.find(
+  const selectedRequest = (response?.data || []).find(
     (req) => req.id === selectedRequestId,
   )
 
@@ -131,7 +131,9 @@ export function ApprovalDetailPanel() {
     setReturnRemarks('')
   }
 
-  const colors = STATUS_COLORS[selectedRequest?.status ?? 'Submitted']
+  const colors =
+    (STATUS_COLORS as Record<string, string>)[selectedRequest?.status ?? 'Submitted'] ||
+    STATUS_COLORS['Submitted']
 
   return (
     <Sheet
@@ -435,7 +437,7 @@ export function ApprovalDetailPanel() {
 
                       const formData: CatalogItemFormValues = {
                         name: selectedRequest.name,
-                        itemType: selectedRequest.procurementCategory,
+                        itemType: (selectedRequest.procurementCategoryName || selectedRequest.procurementCategory || 'Goods') as 'Goods' | 'Consulting' | 'Infra',
                         category: selectedRequest.itemCategory,
                         subcategory: null,
                         unitOfMeasure:

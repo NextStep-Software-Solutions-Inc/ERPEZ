@@ -6,7 +6,6 @@
  */
 
 import { useState, useMemo } from 'react'
-import { useAtomValue } from 'jotai'
 import { Search } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import {
@@ -21,7 +20,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { UserRequestsTable } from '../tables/UserRequestsTable'
 import { ApprovalDetailPanel } from '../panels/ApprovalDetailPanel.tsx'
 import { ItemDetailReadOnlyPanel } from '../panels/ItemDetailReadOnlyPanel.tsx'
-import { itemRequestsAtom } from '../atoms/catalogAtoms'
+import { useItemRequests } from '../hooks/useItemRequestQueries'
 import { PROCUREMENT_CATEGORIES } from '../utils/cascadingUacs'
 import type { ItemRequest } from '../types/catalog.types'
 
@@ -34,7 +33,11 @@ export function AdminRequestsTab() {
   const [officeFilter, setOfficeFilter] = useState<string>('All')
   const [dateRange, setDateRange] = useState<'all' | '7days' | '30days'>('all')
 
-  const allRequests = useAtomValue(itemRequestsAtom)
+  const { data: response, isLoading } = useItemRequests({
+    pageSize: 100,
+    sorts: '-requestDate',
+  })
+  const allRequests: ItemRequest[] = useMemo(() => response?.data || [], [response?.data])
   const reviewableRequests = useMemo(
     () => allRequests.filter((req) => req.status !== 'Draft'),
     [allRequests],
@@ -47,24 +50,27 @@ export function AdminRequestsTab() {
       if (selectedStatus !== 'all' && req.status !== selectedStatus) return false
 
       // Search filter
+      const specs = req.technicalSpecification || req.specifications || ''
       if (
         searchTerm &&
         !req.name.toLowerCase().includes(searchTerm.toLowerCase()) &&
-        !req.specifications.toLowerCase().includes(searchTerm.toLowerCase())
+        !specs.toLowerCase().includes(searchTerm.toLowerCase())
       ) {
         return false
       }
 
       // Category filter
+      const category = req.procurementCategoryName || req.procurementCategory || ''
       if (
         categoryFilter !== 'All' &&
-        req.procurementCategory !== categoryFilter
+        category !== categoryFilter
       ) {
         return false
       }
 
       // Office filter
-      if (officeFilter !== 'All' && req.requestingOffice !== officeFilter) {
+      const office = req.officeName || req.requestingOffice || ''
+      if (officeFilter !== 'All' && office !== officeFilter) {
         return false
       }
 
@@ -101,7 +107,13 @@ export function AdminRequestsTab() {
   // Get unique offices for filter
   const uniqueOffices = useMemo(
     () =>
-      Array.from(new Set(reviewableRequests.map((r) => r.requestingOffice))).sort(),
+      Array.from(
+        new Set(
+          reviewableRequests
+            .map((r) => r.officeName || r.requestingOffice || '')
+            .filter(Boolean),
+        ),
+      ).sort(),
     [reviewableRequests],
   )
 
@@ -209,6 +221,7 @@ export function AdminRequestsTab() {
           <UserRequestsTable
             data={filteredRequests}
             total={filteredRequests.length}
+            isLoading={isLoading}
             selectedStatus={selectedStatus === 'all' ? undefined : selectedStatus}
           />
         </TabsContent>

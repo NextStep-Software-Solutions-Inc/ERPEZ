@@ -1,4 +1,4 @@
-﻿/**
+/**
  * UserRequestsTable
  * TanStack Table for displaying user's item requests
  * Features: status filtering, sorting, row click → detail panel
@@ -113,7 +113,9 @@ export function UserRequestsTable({
         header: 'Status',
         cell: ({ row }) => {
           const status = row.original.status
-          const colors = STATUS_COLORS[status] || STATUS_COLORS['Submitted']
+          const colors =
+            (STATUS_COLORS as Record<string, string>)[status] ||
+            STATUS_COLORS['Submitted']
           return (
             <Badge variant="outline" className={colors}>
               {status}
