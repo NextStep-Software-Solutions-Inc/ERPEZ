@@ -46,10 +46,6 @@ export const ITEM_REQUEST_STATUS_OPTIONS = [
 
 export type ItemRequestStatus = (typeof ITEM_REQUEST_STATUS_OPTIONS)[number]
 
-export const CATALOG_ITEM_STATUS_OPTIONS = ['Active', 'Inactive'] as const
-
-export type CatalogItemStatus = (typeof CATALOG_ITEM_STATUS_OPTIONS)[number]
-
 /**
  * Item Request - User submission for new Non-CSE items
  * Status flow: Draft → Submitted → Approved/Returned
@@ -110,18 +106,16 @@ export interface NonCSEItem {
   subcategory?: string | null
   unitOfMeasure: string
   currentPrice: number
-  specification: string // Formerly "description"
+  specification: string
   itemType: ProcurementCategory
   supplier?: string | null
   imageUrl?: string | null
-  status: CatalogItemStatus
-  isActive: boolean // Controls visibility in catalogs
   uacsCode?: string | null
-  unspscCode: string // UNSPSC code (required, TWG-assigned)
-  isCSE: boolean // CSE flag (required, TWG-assigned); default: false (future-proof for CSE integration)
+  unspscCode: string
+  isCSE: boolean
   sourceRequestId?: string | null
-  requestingOffice?: string | null // Office that requested this item
-  requestingUser?: string | null // User who requested this item
+  requestingOffice?: string | null
+  requestingUser?: string | null
   createdDate: Date
   lastModified: Date
 }
@@ -155,7 +149,6 @@ export interface CreateCatalogItemInput {
   itemType: ProcurementCategory
   supplier?: string | null
   imageUrl?: string | null
-  isActive?: boolean
   uacsCode?: string | null
   unspscCode: string // Required
   isCSE: boolean // Required

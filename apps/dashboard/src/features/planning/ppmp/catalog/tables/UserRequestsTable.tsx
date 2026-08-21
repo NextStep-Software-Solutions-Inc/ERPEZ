@@ -28,6 +28,7 @@ import { Badge } from '@/components/ui/badge'
 import { requestDetailSelectedIdAtom } from '../atoms/requestAtoms'
 import { STATUS_COLORS } from '../utils/cascadingUacs'
 import type { ItemRequest } from '../types/catalog.types'
+import { formatCurrencyPHP } from '@/utils/formatters'
 
 interface UserRequestsTableProps {
   data: ItemRequest[]
@@ -124,11 +125,7 @@ export function UserRequestsTable({
         ),
         cell: ({ row }) => (
           <span className="font-semibold text-foreground">
-            ₱
-            {row.original.estimatedUnitCost.toLocaleString('en-PH', {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
+            {formatCurrencyPHP(row.original.estimatedUnitCost)}
           </span>
         ),
       },

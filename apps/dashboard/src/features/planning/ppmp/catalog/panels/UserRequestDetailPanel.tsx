@@ -41,6 +41,7 @@ import {
   useDeleteItemRequestMutation,
   useUpdateItemRequestMutation,
 } from '../hooks/useItemRequestQueries'
+import { formatCurrencyPHP } from '@/utils/formatters'
 
 export function UserRequestDetailPanel() {
   const [selectedRequestId, setSelectedRequestId] = useAtom(
@@ -247,13 +248,9 @@ export function UserRequestDetailPanel() {
                 <div className="grid grid-cols-2 gap-4">
                   <FieldDisplay
                     label="Estimated Unit Cost"
-                    value={`₱${selectedRequest.estimatedUnitCost.toLocaleString(
-                      'en-PH',
-                      {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      },
-                    )}`}
+                    value={formatCurrencyPHP(
+                      selectedRequest.estimatedUnitCost,
+                    )}
                   />
                   <FieldDisplay
                     label="Request Date"

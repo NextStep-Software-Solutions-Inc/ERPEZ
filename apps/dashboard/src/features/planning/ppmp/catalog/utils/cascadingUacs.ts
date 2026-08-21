@@ -33,8 +33,8 @@ export const UACS_CASCADE_MAP = {
  */
 export function getUacsItemCategories(
   procurementCategory: keyof typeof UACS_CASCADE_MAP,
-): string[] {
-  return (UACS_CASCADE_MAP[procurementCategory] ?? []) as unknown as string[]
+): readonly string[] {
+  return UACS_CASCADE_MAP[procurementCategory] ?? []
 }
 
 /**

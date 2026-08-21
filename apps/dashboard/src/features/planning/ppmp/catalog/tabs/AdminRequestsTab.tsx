@@ -210,7 +210,7 @@ export function AdminRequestsTab() {
               </SelectContent>
             </Select>
 
-            <Select value={dateRange} onValueChange={(v: any) => setDateRange(v)}>
+            <Select value={dateRange} onValueChange={(v: 'all' | '7days' | '30days') => setDateRange(v)}>
               <SelectTrigger className="h-9 text-xs">
                 <SelectValue placeholder="Date range..." />
               </SelectTrigger>

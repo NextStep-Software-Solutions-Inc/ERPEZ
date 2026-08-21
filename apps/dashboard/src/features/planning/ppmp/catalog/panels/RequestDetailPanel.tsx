@@ -20,7 +20,6 @@ import {
 } from '../atoms/requestAtoms'
 import { catalogItemsAtom } from '../atoms/catalogAtoms'
 import { useItemRequests } from '../hooks/useItemRequestQueries'
-import { cn } from '@/lib/utils'
 import { STATUS_COLORS } from '../utils/cascadingUacs'
 
 export function RequestDetailPanel() {
@@ -294,18 +293,13 @@ export function RequestDetailPanel() {
                       }
                     />
                     <FieldDisplay
-                      label="Catalog Status"
+                      label="Procurement Category"
                       value={
                         <Badge
                           variant="outline"
-                          className={cn(
-                            'text-xs w-fit',
-                            createdCatalogItem.status === 'Active'
-                              ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-400'
-                              : 'bg-gray-50 text-gray-500 border-gray-200 dark:bg-gray-900',
-                          )}
+                          className="text-xs w-fit bg-muted"
                         >
-                          {createdCatalogItem.status}
+                          {createdCatalogItem.category}
                         </Badge>
                       }
                     />

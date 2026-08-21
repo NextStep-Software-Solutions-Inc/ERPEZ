@@ -65,7 +65,7 @@ export function EditRequestItemDialog() {
   const [selectedProcCategory, setSelectedProcCategory] = useState<
     keyof typeof UACS_CASCADE_MAP | ''
   >('')
-  const [itemCategories, setItemCategories] = useState<string[]>([])
+  const [itemCategories, setItemCategories] = useState<readonly string[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Get the request being edited
@@ -78,7 +78,7 @@ export function EditRequestItemDialog() {
     if (!catName) return null
     const categories = procurementCategoriesResponse?.data || []
     const matched = categories.find(
-      (c: any) =>
+      (c) =>
         c.name?.toLowerCase().includes(catName.toLowerCase()) ||
         catName.toLowerCase().includes(c.name?.toLowerCase()),
     )
@@ -126,14 +126,14 @@ export function EditRequestItemDialog() {
   useEffect(() => {
     if (isOpen && requestToEdit) {
       const procCat =
-        (requestToEdit.procurementCategoryName || requestToEdit.procurementCategory || 'Goods') as keyof typeof UACS_CASCADE_MAP
+        ((requestToEdit.procurementCategoryName || requestToEdit.procurementCategory || 'Goods') as 'Goods' | 'Infra' | 'Consulting')
       setSelectedProcCategory(procCat)
       const categories = getUacsItemCategories(procCat)
       setItemCategories(categories)
 
       form.setFieldValue('id', requestToEdit.id)
       form.setFieldValue('name', requestToEdit.name)
-      form.setFieldValue('procurementCategory', procCat as any)
+      form.setFieldValue('procurementCategory', procCat)
       form.setFieldValue('itemCategory', requestToEdit.itemCategory)
       form.setFieldValue('uomId', requestToEdit.uomId || '')
       form.setFieldValue('estimatedUnitCost', requestToEdit.estimatedUnitCost)
@@ -300,7 +300,7 @@ export function EditRequestItemDialog() {
                   </Label>
                   <Select
                     value={field.state.value}
-                    onValueChange={(value) => field.handleChange(value as any)}
+                    onValueChange={(value: RequestItemEditFormValues['procurementCategory']) => field.handleChange(value)}
                     disabled={isSubmitting}
                   >
                     <SelectTrigger id="edit-procCategory">

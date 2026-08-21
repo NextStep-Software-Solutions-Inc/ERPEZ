@@ -1,4 +1,4 @@
-﻿/**
+/**
  * UserCatalogTable
  * TanStack Table for displaying active catalog items
  * Features: sorting, column sizing, row click → detail panel
@@ -14,7 +14,7 @@ import {
   type ColumnDef,
   type SortingState,
 } from '@tanstack/react-table'
-import { ArrowUpDown, ChevronRight } from 'lucide-react'
+import { ArrowUpDown, ChevronRight, Package } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -25,10 +25,11 @@ import {
 } from '@/components/ui/table'
 import { Button } from '@/components/ui/button'
 import { catalogDetailSelectedIdAtom } from '../atoms/requestAtoms'
-import type { NonCSEItem } from '../types/catalog.types'
+import type { NONCSEItem } from '@/features/planning/non-cse-item/types/non-cse.type'
+import { formatCurrencyPHP } from '@/utils/formatters'
 
 interface UserCatalogTableProps {
-  data: NonCSEItem[]
+  data: NONCSEItem[]
   total?: number
   isLoading?: boolean
 }
@@ -42,7 +43,7 @@ export function UserCatalogTable({
     { id: 'name', desc: false },
   ])
 
-  const columns = useMemo<ColumnDef<NonCSEItem>[]>(
+  const columns = useMemo<ColumnDef<NONCSEItem>[]>(
     () => [
       {
         accessorKey: 'name',
@@ -50,7 +51,7 @@ export function UserCatalogTable({
           <Button
             variant="ghost"
             size="sm"
-            className="gap-1"
+            className="gap-1 font-semibold text-xs uppercase"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
           >
             Item Name
@@ -60,26 +61,34 @@ export function UserCatalogTable({
         cell: ({ row }) => (
           <button
             onClick={() => setSelectedItemId(row.original.id)}
-            className="text-primary hover:underline font-medium truncate"
+            className="text-primary hover:underline font-medium text-left truncate max-w-xs block"
           >
-            {row.original.name}
+            {row.original.name || 'Unnamed Item'}
           </button>
         ),
       },
       {
-        accessorKey: 'category',
-        header: 'Category',
+        accessorKey: 'procurementCategoryName',
+        header: () => (
+          <span className="font-semibold text-xs uppercase text-muted-foreground">
+            Category
+          </span>
+        ),
         cell: ({ row }) => (
           <span className="text-sm text-muted-foreground">
-            {row.original.category}
+            {row.original.procurementCategoryName || 'Goods'}
           </span>
         ),
       },
       {
-        accessorKey: 'unitOfMeasure',
-        header: 'UoM',
+        accessorKey: 'uomName',
+        header: () => (
+          <span className="font-semibold text-xs uppercase text-muted-foreground">
+            UoM
+          </span>
+        ),
         cell: ({ row }) => (
-          <span className="text-sm">{row.original.unitOfMeasure}</span>
+          <span className="text-sm">{row.original.uomName || '—'}</span>
         ),
       },
       {
@@ -88,29 +97,29 @@ export function UserCatalogTable({
           <Button
             variant="ghost"
             size="sm"
-            className="gap-1"
+            className="gap-1 font-semibold text-xs uppercase"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
           >
-            Unit Price
+            Est. Unit Price
             <ArrowUpDown className="h-3 w-3" />
           </Button>
         ),
         cell: ({ row }) => (
-          <span className="font-semibold text-primary">
-            ₱
-            {row.original.currentPrice.toLocaleString('en-PH', {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
+          <span className="font-semibold text-foreground">
+            {formatCurrencyPHP(row.original.currentPrice)}
           </span>
         ),
       },
       {
-        accessorKey: 'specification',
-        header: 'Specification',
+        accessorKey: 'description',
+        header: () => (
+          <span className="font-semibold text-xs uppercase text-muted-foreground">
+            Specifications
+          </span>
+        ),
         cell: ({ row }) => (
-          <span className="text-sm text-muted-foreground line-clamp-2">
-            {row.original.specification}
+          <span className="text-sm text-muted-foreground line-clamp-1 max-w-sm">
+            {row.original.description || '—'}
           </span>
         ),
       },
@@ -122,7 +131,7 @@ export function UserCatalogTable({
             variant="ghost"
             size="sm"
             onClick={() => setSelectedItemId(row.original.id)}
-            className="gap-2"
+            className="gap-1 text-xs"
           >
             View
             <ChevronRight className="h-4 w-4" />
@@ -146,9 +155,9 @@ export function UserCatalogTable({
 
   if (isLoading) {
     return (
-      <div className="space-y-2">
+      <div className="space-y-2 p-4 border rounded-lg">
         {[...Array(5)].map((_, i) => (
-          <div key={i} className="h-12 bg-muted rounded animate-pulse" />
+          <div key={i} className="h-10 bg-muted/60 rounded animate-pulse" />
         ))}
       </div>
     )
@@ -156,20 +165,22 @@ export function UserCatalogTable({
 
   if (data.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center gap-2">
-        <p className="text-sm text-muted-foreground">
-          No items in the active catalog yet.
+      <div className="flex flex-col items-center justify-center py-16 text-center border rounded-lg border-dashed">
+        <Package className="h-10 w-10 text-muted-foreground/40 mb-3" />
+        <h3 className="font-semibold text-base">No Catalog Items Found</h3>
+        <p className="text-sm text-muted-foreground max-w-sm mt-1">
+          Items approved through Item Requests will automatically appear in this catalog.
         </p>
       </div>
     )
   }
 
   return (
-    <div className="border border-border rounded-lg overflow-hidden">
+    <div className="border border-border rounded-lg overflow-hidden bg-card">
       <Table>
         <TableHeader>
           {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id}>
+            <TableRow key={headerGroup.id} className="bg-muted/40 hover:bg-muted/40">
               {headerGroup.headers.map((header) => (
                 <TableHead key={header.id}>
                   {header.isPlaceholder
@@ -187,7 +198,8 @@ export function UserCatalogTable({
           {table.getRowModel().rows.map((row) => (
             <TableRow
               key={row.id}
-              className="cursor-pointer hover:bg-muted/50 transition-colors"
+              className="hover:bg-muted/30 cursor-pointer transition-colors"
+              onClick={() => setSelectedItemId(row.original.id)}
             >
               {row.getVisibleCells().map((cell) => (
                 <TableCell key={cell.id}>

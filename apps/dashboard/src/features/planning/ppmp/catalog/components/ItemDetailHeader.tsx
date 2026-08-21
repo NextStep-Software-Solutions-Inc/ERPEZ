@@ -1,17 +1,15 @@
-﻿/**
+/**
  * ItemDetailHeader
- * Top section of the detail panel: item name, code, status badge, lock indicator.
+ * Top section of the detail panel: item name, category badge, and classification.
  */
 
 import { Package } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
-
 import { Skeleton } from '@/components/ui/skeleton'
-import { cn } from '@/lib/utils'
-import type { NonCSEItem } from '../types/catalog.types'
+import type { NONCSEItem } from '@/features/planning/non-cse-item/types/non-cse.type'
 
 interface ItemDetailHeaderProps {
-  item: NonCSEItem | null
+  item: NONCSEItem | null
   isLoading?: boolean
 }
 
@@ -29,58 +27,35 @@ export function ItemDetailHeader({ item, isLoading }: ItemDetailHeaderProps) {
     )
   }
 
-  const isActive = item.status === 'Active'
-
   return (
     <div className="flex flex-col gap-1.5 pb-4 border-b border-border">
-      {/* Top row: name + status */}
+      {/* Top row: name + category */}
       <div className="flex items-start justify-between gap-3">
         <div className="flex items-center gap-2 min-w-0">
           <Package className="h-4 w-4 shrink-0 text-muted-foreground" />
           <h2 className="text-base font-semibold leading-tight truncate">
-            {item.name}
+            {item.name || 'Unnamed Item'}
           </h2>
         </div>
 
-        <Badge
-          variant="outline"
-          className={cn(
-            'shrink-0 text-xs capitalize',
-            isActive
-              ? 'bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-400'
-              : 'bg-gray-50 text-gray-500 border-gray-200 dark:bg-gray-900',
-          )}
-        >
-          {item.status}
+        <Badge variant="outline" className="shrink-0 text-xs bg-muted">
+          {item.procurementCategoryName || 'Goods'}
         </Badge>
       </div>
 
-      {/* UACS Code + UoM */}
+      {/* Product Code + UoM */}
       <div className="flex items-center gap-3">
-        {item.uacsCode && (
+        {item.productCode && (
           <span className="font-mono text-xs text-muted-foreground">
-            {item.uacsCode}
+            {item.productCode}
           </span>
         )}
-        {item.uacsCode && (
+        {item.productCode && (
           <span className="text-muted-foreground/40 text-xs">•</span>
         )}
         <span className="text-xs text-muted-foreground capitalize">
-          {item.unitOfMeasure}
+          {item.uomName || '—'}
         </span>
-      </div>
-
-      {/* Category / subcategory */}
-      <div className="flex items-center gap-1.5">
-        <span className="text-xs text-muted-foreground">{item.category}</span>
-        {item.subcategory && (
-          <>
-            <span className="text-muted-foreground/40 text-xs">›</span>
-            <span className="text-xs text-muted-foreground">
-              {item.subcategory}
-            </span>
-          </>
-        )}
       </div>
     </div>
   )

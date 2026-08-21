@@ -1,4 +1,4 @@
-﻿/**
+/**
  * CatalogTable
  * TanStack Table implementation for Non-CSE catalog items.
  * Features: row selection, sorting, pagination, stale price indicator, locked state.
@@ -148,7 +148,7 @@ function buildColumns() {
       enableHiding: true,
       enableSorting: true,
       cell: (info) => (
-        <span className="text-sm font-mono tabular-nums">
+        <span className="text-sm font-semibold tabular-nums text-foreground">
           {formatPrice(info.getValue())}
         </span>
       ),

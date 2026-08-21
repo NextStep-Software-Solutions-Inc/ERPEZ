@@ -12,6 +12,13 @@ import {
 } from '../handlers/updateItemRequestApiRequest'
 import { deleteItemRequestApiRequest } from '../handlers/deleteItemRequestApiRequest'
 
+function getErrorMessage(error: unknown, fallback: string): string {
+  if (error instanceof Error && error.message) {
+    return error.message
+  }
+  return fallback
+}
+
 export function useItemRequests(params?: {
   filters?: string
   sorts?: string
@@ -25,21 +32,23 @@ export function useItemRequests(params?: {
     pageSize: params?.pageSize ?? 50,
   }
 
+  const queryString = new URLSearchParams(
+    Object.entries(queryParams).reduce(
+      (acc, [key, val]) => {
+        if (val !== undefined && val !== null && val !== '') {
+          acc[key] = String(val)
+        }
+        return acc
+      },
+      {} as Record<string, string>,
+    ),
+  ).toString()
+
   return useQuery({
     queryKey: ['/item-requests', queryParams],
     queryFn: ({ signal }) =>
       getItemRequestsRequest.fetcher({
-        finalUrl: `/item-requests?${new URLSearchParams(
-          Object.entries(queryParams).reduce(
-            (acc, [key, val]) => {
-              if (val !== undefined && val !== null && val !== '') {
-                acc[key] = String(val)
-              }
-              return acc
-            },
-            {} as Record<string, string>,
-          ),
-        ).toString()}`,
+        finalUrl: queryString ? `/item-requests?${queryString}` : '/item-requests',
         signal,
       }),
   })
@@ -68,12 +77,8 @@ export function useCreateItemRequestMutation() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/item-requests'] })
     },
-    onError: (error: any) => {
-      const message =
-        error?.response?.data?.message ||
-        error?.message ||
-        'Failed to create item request.'
-      toast.error(message)
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Failed to create item request.'))
     },
   })
 }
@@ -95,12 +100,8 @@ export function useUpdateItemRequestMutation() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/item-requests'] })
     },
-    onError: (error: any) => {
-      const message =
-        error?.response?.data?.message ||
-        error?.message ||
-        'Failed to update item request.'
-      toast.error(message)
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Failed to update item request.'))
     },
   })
 }
@@ -116,12 +117,8 @@ export function useDeleteItemRequestMutation() {
       queryClient.invalidateQueries({ queryKey: ['/item-requests'] })
       toast.success('Item request deleted successfully.')
     },
-    onError: (error: any) => {
-      const message =
-        error?.response?.data?.message ||
-        error?.message ||
-        'Failed to delete item request.'
-      toast.error(message)
+    onError: (error: unknown) => {
+      toast.error(getErrorMessage(error, 'Failed to delete item request.'))
     },
   })
 }

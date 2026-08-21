@@ -1,10 +1,8 @@
 import { useMemo } from 'react'
 import { useAtomValue } from 'jotai'
-import {
-  catalogItemsAtom,
-} from '../atoms/catalogAtoms'
+import { catalogItemsAtom } from '../atoms/catalogAtoms'
 import { useItemRequests } from './useItemRequestQueries'
-import type { ItemRequest } from '../types/catalog.types'
+import type { ItemRequest, NonCSEItem } from '../types/catalog.types'
 
 export function useUserRequests() {
   const { data: response, isLoading } = useItemRequests({
@@ -25,23 +23,15 @@ export function useUserRequests() {
 
 /**
  * useActiveCatalog Hook
- * Retrieve all active catalog items for user browsing
- * Filters by both status='Active' AND isActive=true
+ * Retrieve catalog items for user browsing
  */
-
 export function useActiveCatalog() {
   const items = useAtomValue(catalogItemsAtom)
 
-  const activeItems = useMemo(() => {
-    return items.filter(
-      (item) => item.status === 'Active' && item.isActive === true,
-    )
-  }, [items])
-
   // Sort by name (A-Z)
   const sortedItems = useMemo(() => {
-    return [...activeItems].sort((a, b) => a.name.localeCompare(b.name))
-  }, [activeItems])
+    return [...items].sort((a, b) => a.name.localeCompare(b.name))
+  }, [items])
 
   return {
     items: sortedItems,
@@ -54,12 +44,11 @@ export function useActiveCatalog() {
  * useFilteredUserRequests Hook
  * Filter user requests by status
  */
-
-export function useFilteredUserRequests(status?: ItemRequest['status']) {
+export function useFilteredUserRequests(status?: ItemRequest['status'] | 'all') {
   const { requests } = useUserRequests()
 
   const filtered = useMemo(() => {
-    if (!status || status === ('all' as any)) return requests
+    if (!status || status === 'all') return requests
     return requests.filter((req) => req.status === status)
   }, [requests, status])
 
@@ -73,7 +62,6 @@ export function useFilteredUserRequests(status?: ItemRequest['status']) {
  * useFilteredCatalog Hook
  * Filter catalog items by search term
  */
-
 export function useFilteredCatalog(searchTerm?: string) {
   const { items } = useActiveCatalog()
 
@@ -81,9 +69,9 @@ export function useFilteredCatalog(searchTerm?: string) {
     if (!searchTerm) return items
     const search = searchTerm.toLowerCase()
     return items.filter(
-      (item: any) =>
+      (item: NonCSEItem) =>
         item.name.toLowerCase().includes(search) ||
-        item.specification.toLowerCase().includes(search) ||
+        item.specification?.toLowerCase().includes(search) ||
         item.category.toLowerCase().includes(search),
     )
   }, [items, searchTerm])
@@ -96,10 +84,8 @@ export function useFilteredCatalog(searchTerm?: string) {
 
 /**
  * useAdminCatalog Hook
- * Retrieve all catalog items for admin (including inactive)
- * Shows both Active and Inactive items
+ * Retrieve all catalog items for admin management
  */
-
 export function useAdminCatalog() {
   const items = useAtomValue(catalogItemsAtom)
 
@@ -117,9 +103,8 @@ export function useAdminCatalog() {
 
 /**
  * useFilteredAdminCatalog Hook
- * Filter admin catalog items by search term (shows all, active and inactive)
+ * Filter admin catalog items by search term
  */
-
 export function useFilteredAdminCatalog(searchTerm?: string) {
   const { items } = useAdminCatalog()
 
@@ -127,9 +112,9 @@ export function useFilteredAdminCatalog(searchTerm?: string) {
     if (!searchTerm) return items
     const search = searchTerm.toLowerCase()
     return items.filter(
-      (item: any) =>
+      (item: NonCSEItem) =>
         item.name.toLowerCase().includes(search) ||
-        item.specification.toLowerCase().includes(search) ||
+        item.specification?.toLowerCase().includes(search) ||
         item.category.toLowerCase().includes(search),
     )
   }, [items, searchTerm])

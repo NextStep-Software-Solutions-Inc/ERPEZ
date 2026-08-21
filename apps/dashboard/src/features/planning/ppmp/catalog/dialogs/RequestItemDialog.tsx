@@ -63,13 +63,13 @@ export function RequestItemDialog() {
   const [selectedProcCategory, setSelectedProcCategory] = useState<
     keyof typeof UACS_CASCADE_MAP | ''
   >('')
-  const [itemCategories, setItemCategories] = useState<string[]>([])
+  const [itemCategories, setItemCategories] = useState<readonly string[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   const form = useForm({
     defaultValues: {
       name: '',
-      procurementCategory: 'Goods' as const,
+      procurementCategory: 'Goods' as RequestItemFormValues['procurementCategory'],
       itemCategory: '',
       uomId: '',
       unitOfMeasure: '',
@@ -104,7 +104,7 @@ export function RequestItemDialog() {
     if (!catName) return null
     const categories = procurementCategoriesResponse?.data || []
     const matched = categories.find(
-      (c: any) =>
+      (c) =>
         c.name?.toLowerCase().includes(catName.toLowerCase()) ||
         catName.toLowerCase().includes(c.name?.toLowerCase()),
     )
@@ -259,8 +259,8 @@ export function RequestItemDialog() {
                   </Label>
                   <Select
                     value={field.state.value}
-                    onValueChange={(value) => {
-                      field.handleChange(value as any)
+                    onValueChange={(value: RequestItemFormValues['procurementCategory']) => {
+                      field.handleChange(value)
                     }}
                     disabled={isSubmitting}
                   >

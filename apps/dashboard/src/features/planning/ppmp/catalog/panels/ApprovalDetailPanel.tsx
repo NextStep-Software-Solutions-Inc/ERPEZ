@@ -39,6 +39,7 @@ import {
   useItemRequests,
   useUpdateItemRequestMutation,
 } from '../hooks/useItemRequestQueries'
+import { formatCurrencyPHP } from '@/utils/formatters'
 
 export function ApprovalDetailPanel() {
   const [selectedRequestId, setSelectedRequestId] = useAtom(
@@ -204,13 +205,9 @@ export function ApprovalDetailPanel() {
                   />
                   <FieldDisplay
                     label="Estimated Unit Cost"
-                    value={`₱${selectedRequest.estimatedUnitCost.toLocaleString(
-                      'en-PH',
-                      {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      },
-                    )}`}
+                    value={formatCurrencyPHP(
+                      selectedRequest.estimatedUnitCost,
+                    )}
                   />
                 </div>
               </div>

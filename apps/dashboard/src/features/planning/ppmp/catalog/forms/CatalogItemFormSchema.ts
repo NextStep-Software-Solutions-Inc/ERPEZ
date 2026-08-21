@@ -8,7 +8,6 @@ import { z } from 'zod'
 import {
   CATALOG_UOM_OPTIONS,
   PROCUREMENT_CATEGORY_OPTIONS,
-  CATALOG_ITEM_STATUS_OPTIONS,
 } from '../types/catalog.types'
 
 export const catalogItemFormSchema = z.object({
@@ -29,9 +28,6 @@ export const catalogItemFormSchema = z.object({
   unspscCode: z.string().min(1, 'UNSPSC code is required'),
   isCSE: z.boolean().default(false),
   imageUrl: z.string().optional().nullable(),
-  status: z
-    .enum(CATALOG_ITEM_STATUS_OPTIONS)
-    .default('Active'),
 })
 
 export type CatalogItemFormValues = z.infer<typeof catalogItemFormSchema>
