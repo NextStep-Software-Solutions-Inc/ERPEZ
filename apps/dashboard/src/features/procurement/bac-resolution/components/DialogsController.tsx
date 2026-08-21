@@ -1,5 +1,4 @@
 import {
-  CreateBacResolutionDialog,
   LinkConsolidatedPrsDialog,
   ApproveBacResolutionDialog,
   ReturnBacResolutionDialog,
@@ -9,18 +8,15 @@ import {
 } from '../dialogs'
 import { BacResolutionDocumentPreviewModal } from '../dialogs/BacResolutionDocumentPreviewModal'
 import { CreatePrFromBacModal } from '../dialogs/CreatePrFromBacModal'
+import { CreateBacResolutionPayload } from '../handlers/createBacResolutionRequest'
 import type {
   BacResolution,
-  CreateBacResolutionPayload,
   LinkConsolidatedPrsPayload,
 } from '../types'
 import type { LinkableConsolidatedPr } from '../utils/bacResolutionWorkflow'
 import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
 
 interface DialogsControllerProps {
-  createOpen: boolean
-  setCreateOpen: (open: boolean) => void
-  onCreate: (payload: CreateBacResolutionPayload) => Promise<void> | void
   editOpen: boolean
   setEditOpen: (open: boolean) => void
   editingResolution?: BacResolution
@@ -64,9 +60,6 @@ interface DialogsControllerProps {
 }
 
 export function DialogsController({
-  createOpen,
-  setCreateOpen,
-  onCreate,
   editOpen,
   setEditOpen,
   editingResolution,
@@ -103,12 +96,6 @@ export function DialogsController({
 }: DialogsControllerProps) {
   return (
     <>
-      <CreateBacResolutionDialog
-        open={createOpen}
-        onOpenChange={setCreateOpen}
-        onCreate={onCreate}
-      />
-
       <EditBacResolutionDialog
         open={editOpen}
         onOpenChange={setEditOpen}

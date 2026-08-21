@@ -15,6 +15,7 @@ import { downloadBacResolutionBlob } from '../utils/downloadBacResolutionBlob'
 import InboxPanel from './InboxPanel'
 import DetailsPanel from './DetailsPanel'
 import DialogsController from './DialogsController'
+import { CreateBacResolutionDialog } from '../dialogs/CreateBacResolutionDialog'
 import type {
   BacResolutionListRoutePath,
   BacResolutionInboxFilter,
@@ -165,15 +166,15 @@ export function BacResolutionWorkspace({
                   ? () => ws.setLinkOpen(true)
                   : undefined
               }
-              onPrint={
-                ws.selectedResolution
-                  ? async () => {
-                      const result = await ws.handlePrint()
-                      if (result)
-                        downloadBacResolutionBlob(result.blob, result.fileName)
-                    }
-                  : undefined
-              }
+              // onPrint={
+              //   ws.selectedResolution
+              //     ? async () => {
+              //         const result = await ws.handlePrint()
+              //         if (result)
+              //           downloadBacResolutionBlob(result.blob, result.fileName)
+              //       }
+              //     : undefined
+              // }
               onSubmit={
                 role === 'procurement-staff' && ws.selectedResolution
                   ? ws.handleSubmit
@@ -191,10 +192,13 @@ export function BacResolutionWorkspace({
           </div>
         </div>
 
-        <DialogsController
-          createOpen={ws.createOpen}
-          setCreateOpen={ws.setCreateOpen}
+        <CreateBacResolutionDialog
+          open={ws.createOpen}
+          onOpenChange={ws.setCreateOpen}
           onCreate={ws.handleCreate}
+        />
+
+        <DialogsController
           editOpen={ws.editOpen}
           setEditOpen={ws.setEditOpen}
           editingResolution={ws.editingResolution ?? undefined}
