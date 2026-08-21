@@ -1,12 +1,5 @@
-/**
- * UserRequestDetailPanel
- * 40% slide-over showing request details with actions
- * For Draft: Edit/Delete buttons
- * For Submitted: View-only
- */
-
 import { useAtom, useSetAtom } from 'jotai'
-import { Trash2, Edit2, X } from 'lucide-react'
+import { Trash2, Edit2, Send } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -25,7 +18,8 @@ import {
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
 import { STATUS_COLORS } from '../utils/cascadingUacs'
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
+import { toast } from 'sonner'
 import {
   requestDetailSelectedIdAtom,
   editRequestDialogOpenAtom,
@@ -34,8 +28,8 @@ import {
 import {
   useItemRequests,
   useDeleteItemRequestMutation,
+  useUpdateItemRequestMutation,
 } from '../hooks/useItemRequestQueries'
-import { useMemo } from 'react'
 
 export function UserRequestDetailPanel() {
   const [selectedRequestId, setSelectedRequestId] = useAtom(
@@ -43,9 +37,11 @@ export function UserRequestDetailPanel() {
   )
   const { data: response } = useItemRequests({ pageSize: 100 })
   const deleteMutation = useDeleteItemRequestMutation()
+  const updateMutation = useUpdateItemRequestMutation()
   const setEditDialogOpen = useSetAtom(editRequestDialogOpenAtom)
   const setEditingRequestId = useSetAtom(editingRequestIdAtom)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
+  const [isSubmittingDraft, setIsSubmittingDraft] = useState(false)
 
   const selectedRequest = useMemo(() => {
     return (response?.data || []).find((req) => req.id === selectedRequestId)
@@ -54,6 +50,27 @@ export function UserRequestDetailPanel() {
   const handleEditRequest = () => {
     setEditingRequestId(selectedRequestId)
     setEditDialogOpen(true)
+  }
+
+  const handleSubmitDraft = async () => {
+    if (!selectedRequestId || !selectedRequest) return
+    try {
+      setIsSubmittingDraft(true)
+      await updateMutation.mutateAsync({
+        id: selectedRequestId,
+        payload: {
+          status: 'Submitted',
+        },
+      })
+      toast.success(
+        'Request submitted successfully! Track its status in the Submitted tab.',
+      )
+      setSelectedRequestId(null)
+    } catch (error) {
+      console.error('Submit error:', error)
+    } finally {
+      setIsSubmittingDraft(false)
+    }
   }
 
   const handleDeleteRequest = async () => {
@@ -69,6 +86,7 @@ export function UserRequestDetailPanel() {
 
   const isEditable =
     selectedRequest?.status === 'Draft' || selectedRequest?.status === 'Returned'
+  const isDraft = selectedRequest?.status === 'Draft'
   const colors =
     (STATUS_COLORS as Record<string, string>)[
       selectedRequest?.status || 'Submitted'
@@ -91,17 +109,7 @@ export function UserRequestDetailPanel() {
           className="w-[40%] sm:w-full max-w-2xl bg-background border-l border-border"
         >
           <SheetHeader className="space-y-2 pb-6">
-            <div className="flex items-start justify-between gap-4">
-              <SheetTitle className="text-lg">Request Details</SheetTitle>
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={() => setSelectedRequestId(null)}
-                className="h-6 w-6"
-              >
-                <X className="h-4 w-4" />
-              </Button>
-            </div>
+            <SheetTitle className="text-lg">Request Details</SheetTitle>
           </SheetHeader>
 
           {selectedRequest ? (
@@ -211,6 +219,16 @@ export function UserRequestDetailPanel() {
               {/* Actions (for Draft / Returned requests only) */}
               {isEditable && (
                 <div className="pt-6 border-t border-border space-y-2">
+                  {isDraft && (
+                    <Button
+                      onClick={handleSubmitDraft}
+                      disabled={isSubmittingDraft}
+                      className="w-full gap-2 bg-primary hover:bg-primary/90"
+                    >
+                      <Send className="h-4 w-4" />
+                      {isSubmittingDraft ? 'Submitting...' : 'Submit Request'}
+                    </Button>
+                  )}
                   <Button
                     onClick={handleEditRequest}
                     className="w-full gap-2"

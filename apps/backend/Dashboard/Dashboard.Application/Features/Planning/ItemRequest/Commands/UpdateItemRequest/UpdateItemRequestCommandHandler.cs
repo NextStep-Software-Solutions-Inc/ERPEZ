@@ -54,6 +54,11 @@ public class UpdateItemRequestCommandHandler(IUnitOfWork unitOfWork)
             {
                 itemRequest.SubmittedAt = DateTime.UtcNow;
             }
+            if (string.Equals(request.Status, "Approved", StringComparison.OrdinalIgnoreCase) || 
+                string.Equals(request.Status, "Returned", StringComparison.OrdinalIgnoreCase))
+            {
+                itemRequest.ReviewedAt = DateTime.UtcNow;
+            }
         }
 
         if (request.EstimatedUnitCost.HasValue)
