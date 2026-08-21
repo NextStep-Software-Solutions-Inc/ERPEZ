@@ -269,16 +269,18 @@ export function PSDBMItemsGrid({
                       {item.lastSyncedAt ? (
                         stock > 0 ? (
                           <Badge
-                            variant="secondary"
-                            className="bg-emerald-50 text-emerald-700 border-emerald-200 text-xs font-semibold px-2 py-0.5 whitespace-nowrap"
+                            variant="soft"
+                            color="success"
+                            className="text-xs font-semibold px-2 py-0.5 whitespace-nowrap"
                           >
                             <CheckCircle2 className="h-3 w-3 mr-1 text-emerald-600" />
                             {stock.toLocaleString()} {item.unit}
                           </Badge>
                         ) : (
                           <Badge
-                            variant="destructive"
-                            className="bg-red-50 text-red-700 border-red-200 text-xs font-semibold px-2 py-0.5"
+                            variant="soft"
+                            color="destructive"
+                            className="text-xs font-semibold px-2 py-0.5"
                           >
                             Out of Stock
                           </Badge>
@@ -286,15 +288,17 @@ export function PSDBMItemsGrid({
                       ) : (
                         item.availability?.toLowerCase() === 'out of stock' ? (
                           <Badge
-                            variant="destructive"
-                            className="bg-red-50 text-red-700 border-red-200 text-xs font-semibold px-2 py-0.5"
+                            variant="soft"
+                            color="destructive"
+                            className="text-xs font-semibold px-2 py-0.5"
                           >
                             Out of Stock
                           </Badge>
                         ) : (
                           <Badge
-                            variant="outline"
-                            className="bg-blue-50/50 text-blue-700 border-blue-200 text-xs font-medium px-2 py-0.5"
+                            variant="soft"
+                            color="info"
+                            className="text-xs font-medium px-2 py-0.5"
                           >
                             {item.availability || 'Available'}
                           </Badge>

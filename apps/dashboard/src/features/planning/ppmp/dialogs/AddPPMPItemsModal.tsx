@@ -14,6 +14,7 @@ import {
   ChevronRight,
   LucidePackage,
   LucidePackageOpen,
+  MapPin,
   Package,
   RefreshCcw,
   Search,
@@ -55,11 +56,12 @@ import { cn } from '@/lib/utils'
 import DocumentViewer from '@/components/DocumentViewer'
 import { FieldDescriptionTooltip } from '../components/FieldDescriptionTooltip'
 
-import { getProcurementItemsRequest } from '@/components/features/planning/procurement-item/handlers/getProcurementItemsRequest'
 import { getProcurementItemRequest } from '@/components/features/planning/procurement-item/handlers/getProcurementItemRequest'
 import { getNONCSEItemsRequest } from '@/features/planning/non-cse-item/handlers/getNONCSEItemsRequest'
 import { getNONCSEItemRequest } from '@/features/planning/non-cse-item/handlers/getNONCSEItemRequest'
 import { getProcurementModesRequest } from '@/lib/fiscal-year-and-policies/requests/getProcurementModesRequest'
+import { usePSDBMItems, usePSDBMDepots } from '@/features/procurement/psdbm/hooks'
+import { PSDBMCatalogMode, type PSDBMItem } from '@/features/procurement/psdbm/types'
 import { createPPMPItemRequest } from '../handlers/createPPMPItemRequest'
 import { createPPMPItemAllocationRequest } from '../handlers/createPPMPItemAllocationRequest'
 import type { AllocationMonth, ProcurementProjectType } from '../types'
@@ -67,9 +69,22 @@ import type { AllocationMonth, ProcurementProjectType } from '../types'
 import type { ProcurementItem } from '@/components/features/planning/procurement-item/types/procurementItem.types'
 import type { NONCSEItem } from '@/features/planning/non-cse-item/types/non-cse.type'
 
-const useProcurementItems = createQueryHookFromTemplate(
-  getProcurementItemsRequest,
-)
+function mapPsdbmToProcurementItem(psdbm: PSDBMItem): ProcurementItem {
+  return {
+    id: psdbm.id || psdbm.itemCode,
+    name: psdbm.description,
+    specifications: psdbm.description,
+    uomName: psdbm.unit,
+    unitPrice: psdbm.unitPrice,
+    hasPrice: true,
+    objectCodeName: psdbm.category || 'General Goods',
+    isCSE: true,
+    isActive: true,
+    productCode: psdbm.itemCode,
+    imageURL: psdbm.imageUrl,
+  } as ProcurementItem
+}
+
 const useProcurementItem = createQueryHookFromTemplate(
   getProcurementItemRequest,
 )
@@ -210,16 +225,46 @@ export default function AddPPMPItemsModal({
     'non-cse': cloneFilters(),
   })
 
-  // Queries
-  const { data: itemsResponse, isLoading: isItemsLoading } =
-    useProcurementItems({
-      pathParams: {},
-      queryParams: {
-        pageNumber: 1,
-        pageSize: 1000,
-      },
-      enabled: isOpen,
-    })
+  // Live CSE Query from PS-DBM
+  const [cseMode, setCseMode] = useState<PSDBMCatalogMode>(
+    PSDBMCatalogMode.REGIONAL,
+  )
+  const [selectedDepot, setSelectedDepot] = useState<string>('')
+
+  const { data: depotsData, isLoading: isDepotsLoading } = usePSDBMDepots({
+    enabled: isOpen && activeTab === 'cse',
+  })
+
+  const depots = useMemo(() => {
+    const allDepots = depotsData?.data || []
+    if (cseMode === PSDBMCatalogMode.REGIONAL) {
+      return allDepots.filter(
+        (d) =>
+          d.mode?.toLowerCase() === 'regional' ||
+          (!d.mode && !d.name.includes('(LGU)') && !d.region?.includes('LGU')),
+      )
+    }
+    if (cseMode === PSDBMCatalogMode.LGU) {
+      return allDepots.filter(
+        (d) =>
+          d.mode?.toLowerCase() === 'lgu' ||
+          (!d.mode && (d.name.includes('(LGU)') || d.region?.includes('LGU'))),
+      )
+    }
+    return allDepots
+  }, [depotsData, cseMode])
+
+  const isDepotRequired = cseMode !== PSDBMCatalogMode.MAIN
+  const isReadyToFetchCse = !isDepotRequired || Boolean(selectedDepot)
+
+  const { data: psdbmItemsResponse, isLoading: isPsdbmLoading } = usePSDBMItems({
+    pathParams: { mode: cseMode },
+    queryParams: {
+      depot: (cseMode !== PSDBMCatalogMode.MAIN && selectedDepot) || undefined,
+      max: 1000,
+    },
+    enabled: isOpen && activeTab === 'cse' && isReadyToFetchCse,
+  })
 
   const { data: nonCseResponse, isLoading: isNonCseLoading } = useNONCSEItems({
     pathParams: {},
@@ -260,8 +305,8 @@ export default function AddPPMPItemsModal({
     detailsItemType === 'cse' ? isCseDetailLoading : isNonCseDetailLoading
 
   const procurementItems = useMemo(
-    () => itemsResponse?.data ?? [],
-    [itemsResponse],
+    () => (psdbmItemsResponse?.data?.items || []).map(mapPsdbmToProcurementItem),
+    [psdbmItemsResponse],
   )
   const nonCseItems = useMemo(
     () => nonCseResponse?.data ?? [],
@@ -274,17 +319,17 @@ export default function AddPPMPItemsModal({
 
   // Partition items into active lists
   const cseFilteredItems = useMemo(() => {
-    return procurementItems.filter((item) => item.isCSE && item.isActive)
+    return procurementItems
   }, [procurementItems])
 
   const nonCseFilteredItems = useMemo(() => {
-    return nonCseItems.filter((item) => item.isActive)
+    return nonCseItems
   }, [nonCseItems])
 
   const currentItems =
     activeTab === 'cse' ? cseFilteredItems : nonCseFilteredItems
   const isCatalogLoading =
-    activeTab === 'cse' ? isItemsLoading : isNonCseLoading
+    activeTab === 'cse' ? isPsdbmLoading : isNonCseLoading
   const currentFilters = filtersByTab[activeTab]
   const normalizedSearch = search.trim().toLowerCase()
 
@@ -988,6 +1033,99 @@ export default function AddPPMPItemsModal({
 
                           {!isFiltersCollapsed ? (
                             <div className="space-y-4 p-4">
+                              {tab === 'cse' && (
+                                <>
+                                  <div className="space-y-2">
+                                    <label className="text-xs font-medium text-muted-foreground">
+                                      PS-DBM Catalog Mode
+                                    </label>
+                                    <div className="grid grid-cols-3 gap-1">
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setCseMode(PSDBMCatalogMode.REGIONAL)
+                                          setSelectedDepot('')
+                                        }}
+                                        className={cn(
+                                          'rounded-md border px-1.5 py-1.5 text-xs font-medium transition-colors text-center truncate',
+                                          cseMode === PSDBMCatalogMode.REGIONAL
+                                            ? 'border-primary bg-primary/10 text-foreground'
+                                            : 'border-border bg-background text-muted-foreground hover:text-foreground',
+                                        )}
+                                        title="Regional Depot"
+                                      >
+                                        Regional
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setCseMode(PSDBMCatalogMode.LGU)
+                                          setSelectedDepot('')
+                                        }}
+                                        className={cn(
+                                          'rounded-md border px-1.5 py-1.5 text-xs font-medium transition-colors text-center truncate',
+                                          cseMode === PSDBMCatalogMode.LGU
+                                            ? 'border-primary bg-primary/10 text-foreground'
+                                            : 'border-border bg-background text-muted-foreground hover:text-foreground',
+                                        )}
+                                        title="LGU Depot"
+                                      >
+                                        LGU
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setCseMode(PSDBMCatalogMode.MAIN)
+                                          setSelectedDepot('')
+                                        }}
+                                        className={cn(
+                                          'rounded-md border px-1.5 py-1.5 text-xs font-medium transition-colors text-center truncate',
+                                          cseMode === PSDBMCatalogMode.MAIN
+                                            ? 'border-primary bg-primary/10 text-foreground'
+                                            : 'border-border bg-background text-muted-foreground hover:text-foreground',
+                                        )}
+                                        title="Main (National Catalog)"
+                                      >
+                                        Main
+                                      </button>
+                                    </div>
+                                  </div>
+
+                                  {isDepotRequired && (
+                                    <div className="space-y-1.5">
+                                      <label className="text-xs font-medium text-muted-foreground">
+                                        {cseMode === PSDBMCatalogMode.REGIONAL
+                                          ? 'Regional Warehouse / Depot'
+                                          : 'LGU Location'}
+                                      </label>
+                                      <Select
+                                        value={selectedDepot}
+                                        onValueChange={setSelectedDepot}
+                                        disabled={isDepotsLoading}
+                                      >
+                                        <SelectTrigger className="h-9 text-xs bg-background">
+                                          <SelectValue placeholder="Choose a depot to load warehouse stocks..." />
+                                        </SelectTrigger>
+                                        <SelectContent className="max-h-56">
+                                          {depots.map((d) => (
+                                            <SelectItem
+                                              key={d.id}
+                                              value={d.name}
+                                              className="text-xs"
+                                            >
+                                              {d.name}{' '}
+                                              {d.region ? `(${d.region})` : ''}
+                                            </SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                    </div>
+                                  )}
+
+                                  <Separator />
+                                </>
+                              )}
+
                               {/* Search Input */}
                               <div className="space-y-2">
                                 <label className="text-xs font-medium text-muted-foreground">
@@ -1139,10 +1277,29 @@ export default function AddPPMPItemsModal({
 
                       {/* Items Grid & Pagination */}
                       <section className="space-y-4 min-w-0">
-                        {isCatalogLoading ? (
+                        {activeTab === 'cse' && !isReadyToFetchCse ? (
+                          <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 px-6 py-14 text-center">
+                            <MapPin className="h-10 w-10 text-muted-foreground/40" />
+                            <p className="mt-3 text-sm font-medium text-foreground">
+                              Depot Selection Required
+                            </p>
+                            <p className="mt-1 max-w-sm text-xs text-muted-foreground">
+                              Please select a{' '}
+                              {cseMode === PSDBMCatalogMode.REGIONAL
+                                ? 'regional warehouse depot'
+                                : 'LGU location'}{' '}
+                              in the side panel to view current stock and
+                              prices, or switch to Main Catalog.
+                            </p>
+                          </div>
+                        ) : isCatalogLoading ? (
                           <div className="flex flex-col items-center justify-center py-20 text-muted-foreground space-y-2">
                             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                            <p className="text-xs">Loading library items...</p>
+                            <p className="text-xs">
+                              {activeTab === 'cse'
+                                ? 'Loading PS-DBM items...'
+                                : 'Loading master catalog items...'}
+                            </p>
                           </div>
                         ) : tabFiltered.length === 0 ? (
                           <EmptyState message="Try clearing filters or checking your search query." />

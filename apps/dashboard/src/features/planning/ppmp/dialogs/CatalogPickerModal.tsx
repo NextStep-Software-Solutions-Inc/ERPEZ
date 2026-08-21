@@ -10,8 +10,10 @@ import { toast } from 'sonner'
 import {
   ChevronLeft,
   ChevronRight,
+  Loader2,
   LucidePackage,
   LucidePackageOpen,
+  MapPin,
   Package,
   RefreshCcw,
   Search,
@@ -25,13 +27,22 @@ import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { ScrollArea } from '@/components/ui/scroll-area'
 import { Separator } from '@/components/ui/separator'
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { cn } from '@/lib/utils'
 import type { CatalogItem, CatalogType } from '../types'
 import { formatCurrency, getSuggestedMoP } from '../lib/ppmpUtils'
-import { mockCseCatalogItems } from '../data/mockPpmpData'
-import { activeCatalogItemsAtom } from '../catalog/atoms/catalogAtoms'
-import type { NonCSEItem } from '../catalog/types/catalog.types'
+import { useNonCSEItems } from '../catalog/hooks/useNonCSEItemQueries'
+import type { NONCSEItem } from '@/features/planning/non-cse-item/types/non-cse.type'
+import { usePSDBMItems, usePSDBMDepots } from '@/features/procurement/psdbm/hooks'
+import { PSDBMCatalogMode } from '@/features/procurement/psdbm/types'
+import type { PSDBMItem } from '@/features/procurement/psdbm/types'
 import {
   catalogPickerModalOpenAtom,
   catalogPickerTabAtom,
@@ -58,7 +69,7 @@ interface CatalogCardItem extends CatalogItem {
   supplier?: string | null
 }
 
-type CatalogSourceItem = CatalogItem | NonCSEItem
+type CatalogSourceItem = CatalogItem | NONCSEItem
 
 interface TabFilters {
   categories: string[]
@@ -107,36 +118,94 @@ function tone(value: string): string {
   return tones[hash(value) % tones.length] ?? tones[0]!
 }
 
+function mapPsdbmItemToCatalogItem(item: PSDBMItem): CatalogItem {
+  const baseItem: CatalogItem = {
+    id: item.itemCode,
+    itemCode: item.itemCode,
+    name: item.description,
+    category: item.category || 'Uncategorized',
+    unitPrice: item.unitPrice,
+    unitOfMeasure: item.unit,
+    catalogType: 'cse',
+    defaultMoP: 'NP-53.5',
+  }
+  return {
+    ...baseItem,
+    defaultMoP: getSuggestedMoP(baseItem, item.unitPrice),
+  }
+}
+
 function normalizeCatalogItem(
   item: CatalogSourceItem,
   catalogType: CatalogType,
 ): CatalogItem {
-  if ('unitPrice' in item) return item
+  if ('catalogType' in item && item.catalogType) return item as CatalogItem
 
-  const unitPrice = item.currentPrice
+  const raw = item as Record<string, unknown>
+  const unitPrice =
+    typeof raw.currentPrice === 'number'
+      ? raw.currentPrice
+      : typeof raw.unitPrice === 'number'
+        ? raw.unitPrice
+        : 0
+
+  const itemName =
+    typeof raw.name === 'string' && raw.name
+      ? raw.name
+      : typeof raw.description === 'string' && raw.description
+        ? raw.description
+        : 'Unnamed Item'
+
+  const category =
+    typeof raw.category === 'string' && raw.category
+      ? raw.category
+      : typeof raw.procurementCategoryName === 'string' &&
+          raw.procurementCategoryName
+        ? raw.procurementCategoryName
+        : typeof raw.remarks === 'string' && raw.remarks
+          ? raw.remarks
+          : 'General Goods'
+
+  const unitOfMeasure =
+    typeof raw.unitOfMeasure === 'string' && raw.unitOfMeasure
+      ? raw.unitOfMeasure
+      : typeof raw.uomName === 'string' && raw.uomName
+        ? raw.uomName
+        : 'unit'
+
+  const itemCode =
+    typeof raw.itemCode === 'string' && raw.itemCode
+      ? raw.itemCode
+      : typeof raw.productCode === 'string' && raw.productCode
+        ? raw.productCode
+        : typeof raw.uacsCode === 'string' && raw.uacsCode
+          ? raw.uacsCode
+          : String(raw.id || '')
+
+  const subtype =
+    typeof raw.subtype === 'string'
+      ? raw.subtype
+      : typeof raw.itemType === 'string'
+        ? raw.itemType
+        : typeof raw.procurementCategoryName === 'string'
+          ? raw.procurementCategoryName
+          : undefined
+
+  const baseItem: CatalogItem = {
+    id: String(raw.id || itemCode),
+    name: itemName,
+    category,
+    unitPrice,
+    unitOfMeasure,
+    catalogType,
+    defaultMoP: catalogType === 'cse' ? 'NP-53.5' : 'NP-53.9',
+    itemCode,
+    subtype,
+  }
 
   return {
-    id: item.id,
-    name: item.name,
-    category: item.category,
-    unitPrice,
-    unitOfMeasure: item.unitOfMeasure,
-    catalogType,
-    defaultMoP: getSuggestedMoP(
-      {
-        id: item.id,
-        name: item.name,
-        category: item.category,
-        unitPrice,
-        unitOfMeasure: item.unitOfMeasure,
-        catalogType,
-        defaultMoP: 'NP-53.9',
-        itemCode: item.uacsCode ?? item.id,
-      },
-      unitPrice,
-    ),
-    itemCode: item.uacsCode ?? item.id,
-    subtype: item.itemType,
+    ...baseItem,
+    defaultMoP: getSuggestedMoP(baseItem, unitPrice),
   }
 }
 
@@ -147,7 +216,10 @@ function buildCards(
   return items.map((item, index) => {
     const normalized = normalizeCatalogItem(item, catalogType)
     const base = normalized.unitPrice
-    const specification = 'specification' in item ? item.specification : null
+    const raw = item as Record<string, unknown>
+    const specification =
+      typeof raw.specification === 'string' ? raw.specification : null
+    const supplier = typeof raw.supplier === 'string' ? raw.supplier : null
     const psDbmPrice =
       catalogType === 'cse' ? base : Math.round(base * 0.97 * 100) / 100
     const agencyPrice =
@@ -159,7 +231,7 @@ function buildCards(
       psDbmPrice,
       agencyPrice,
       specification,
-      supplier: 'supplier' in item ? (item.supplier ?? null) : null,
+      supplier,
       itemCode: normalized.itemCode || `${catalogType}-${index}`,
     }
   })
@@ -218,7 +290,58 @@ export function CatalogPickerModal({
   const [selected, setSelected] = useAtom(selectedCatalogItemsAtom)
   const targetIoEBlockId = useAtomValue(targetIoEBlockIdAtom)
   const clearTarget = useSetAtom(targetIoEBlockIdAtom)
-  const rawNonCseItems = useAtomValue(activeCatalogItemsAtom)
+
+  // Live Non-CSE Query from backend /non-cse-items
+  const { data: nonCseResponse, isLoading: isNonCseLoading } = useNonCSEItems()
+  const rawNonCseItems = useMemo(() => {
+    return nonCseResponse?.data || []
+  }, [nonCseResponse])
+
+  // Live CSE Query from PS-DBM
+  const [cseMode, setCseMode] = useState<PSDBMCatalogMode>(
+    PSDBMCatalogMode.REGIONAL,
+  )
+  const [selectedDepot, setSelectedDepot] = useState<string>('')
+
+  const { data: depotsData, isLoading: isDepotsLoading } = usePSDBMDepots({
+    enabled: open && activeTab === 'cse',
+  })
+
+  const depots = useMemo(() => {
+    const allDepots = depotsData?.data || []
+    if (cseMode === PSDBMCatalogMode.REGIONAL) {
+      return allDepots.filter(
+        (d) =>
+          d.mode?.toLowerCase() === 'regional' ||
+          (!d.mode && !d.name.includes('(LGU)') && !d.region?.includes('LGU')),
+      )
+    }
+    if (cseMode === PSDBMCatalogMode.LGU) {
+      return allDepots.filter(
+        (d) =>
+          d.mode?.toLowerCase() === 'lgu' ||
+          (!d.mode && (d.name.includes('(LGU)') || d.region?.includes('LGU'))),
+      )
+    }
+    return allDepots
+  }, [depotsData, cseMode])
+
+  const isDepotRequired = cseMode !== PSDBMCatalogMode.MAIN
+  const isReadyToFetchCse = !isDepotRequired || Boolean(selectedDepot)
+
+  const { data: psdbmItemsData, isLoading: isPsdbmLoading } = usePSDBMItems({
+    pathParams: { mode: cseMode },
+    queryParams: {
+      depot: (cseMode !== PSDBMCatalogMode.MAIN && selectedDepot) || undefined,
+      max: 1000,
+    },
+    enabled: open && activeTab === 'cse' && isReadyToFetchCse,
+  })
+
+  const cseCatalogItems = useMemo<CatalogItem[]>(() => {
+    const items = psdbmItemsData?.data?.items || []
+    return items.map(mapPsdbmItemToCatalogItem)
+  }, [psdbmItemsData])
 
   const [priceMode, setPriceMode] = useState<PriceMode>('ps-dbm')
   const [isFiltersCollapsed, setIsFiltersCollapsed] = useState(false)
@@ -232,10 +355,10 @@ export function CatalogPickerModal({
 
   const catalogs = useMemo(
     () => ({
-      cse: buildCards(mockCseCatalogItems, 'cse'),
+      cse: buildCards(cseCatalogItems, 'cse'),
       'non-cse': buildCards(rawNonCseItems, 'non-cse'),
     }),
-    [rawNonCseItems],
+    [cseCatalogItems, rawNonCseItems],
   )
 
   const selectedIds = useMemo(
@@ -327,6 +450,7 @@ export function CatalogPickerModal({
     setIsFiltersCollapsed(false)
     setFiltersByTab({ cse: cloneFilters(), 'non-cse': cloneFilters() })
     setActiveTab('cse')
+    setSelectedDepot('')
     setOpen(false)
     clearTarget(null)
   }, [
@@ -356,6 +480,7 @@ export function CatalogPickerModal({
           ppmpId,
           ioEBlockId: targetIoEBlockId,
           catalogItemIds: selected.map((item) => item.id),
+          items: selected,
         },
       })
       toast.success(
@@ -572,6 +697,99 @@ export function CatalogPickerModal({
 
                       {!isFiltersCollapsed ? (
                         <div className="space-y-4 p-4">
+                          {tab === 'cse' && (
+                            <>
+                              <div className="space-y-2">
+                                <label className="text-xs font-medium text-muted-foreground">
+                                  PS-DBM Catalog Mode
+                                </label>
+                                <div className="grid grid-cols-3 gap-1">
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setCseMode(PSDBMCatalogMode.REGIONAL)
+                                      setSelectedDepot('')
+                                    }}
+                                    className={cn(
+                                      'rounded-md border px-1.5 py-1.5 text-xs font-medium transition-colors text-center truncate',
+                                      cseMode === PSDBMCatalogMode.REGIONAL
+                                        ? 'border-primary bg-primary/10 text-foreground'
+                                        : 'border-border bg-background text-muted-foreground hover:text-foreground',
+                                    )}
+                                    title="Regional Depot"
+                                  >
+                                    Regional
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setCseMode(PSDBMCatalogMode.LGU)
+                                      setSelectedDepot('')
+                                    }}
+                                    className={cn(
+                                      'rounded-md border px-1.5 py-1.5 text-xs font-medium transition-colors text-center truncate',
+                                      cseMode === PSDBMCatalogMode.LGU
+                                        ? 'border-primary bg-primary/10 text-foreground'
+                                        : 'border-border bg-background text-muted-foreground hover:text-foreground',
+                                    )}
+                                    title="LGU Depot"
+                                  >
+                                    LGU
+                                  </button>
+                                  <button
+                                    type="button"
+                                    onClick={() => {
+                                      setCseMode(PSDBMCatalogMode.MAIN)
+                                      setSelectedDepot('')
+                                    }}
+                                    className={cn(
+                                      'rounded-md border px-1.5 py-1.5 text-xs font-medium transition-colors text-center truncate',
+                                      cseMode === PSDBMCatalogMode.MAIN
+                                        ? 'border-primary bg-primary/10 text-foreground'
+                                        : 'border-border bg-background text-muted-foreground hover:text-foreground',
+                                    )}
+                                    title="Main (National Catalog)"
+                                  >
+                                    Main
+                                  </button>
+                                </div>
+                              </div>
+
+                              {isDepotRequired && (
+                                <div className="space-y-1.5">
+                                  <label className="text-xs font-medium text-muted-foreground">
+                                    {cseMode === PSDBMCatalogMode.REGIONAL
+                                      ? 'Regional Warehouse / Depot'
+                                      : 'LGU Location'}
+                                  </label>
+                                  <Select
+                                    value={selectedDepot}
+                                    onValueChange={setSelectedDepot}
+                                    disabled={isDepotsLoading}
+                                  >
+                                    <SelectTrigger className="h-9 text-xs bg-background">
+                                      <SelectValue placeholder="Choose a depot to load warehouse stocks..." />
+                                    </SelectTrigger>
+                                    <SelectContent className="max-h-56">
+                                      {depots.map((d) => (
+                                        <SelectItem
+                                          key={d.id}
+                                          value={d.name}
+                                          className="text-xs"
+                                        >
+                                          {d.name}{' '}
+                                          {d.region ? `(${d.region})` : ''}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              )}
+
+                              <Separator />
+                            </>
+                          )}
+
                           <div className="space-y-2">
                             <label className="text-xs font-medium text-muted-foreground">
                               Search
@@ -776,9 +994,45 @@ export function CatalogPickerModal({
                       </div>
                     </div>
 
-                    {(tab === activeTab
-                      ? filteredItems.length
-                      : tabFiltered.length) === 0 ? (
+                    {tab === activeTab && tab === 'cse' && !isReadyToFetchCse ? (
+                      <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 px-6 py-14 text-center">
+                        <MapPin className="h-10 w-10 text-muted-foreground/40" />
+                        <p className="mt-3 text-sm font-medium text-foreground">
+                          Depot Selection Required
+                        </p>
+                        <p className="mt-1 max-w-sm text-xs text-muted-foreground">
+                          Please select a{' '}
+                          {cseMode === PSDBMCatalogMode.REGIONAL
+                            ? 'regional warehouse depot'
+                            : 'LGU location'}{' '}
+                          in the side panel to view current stock and prices, or
+                          switch to Main Catalog.
+                        </p>
+                      </div>
+                    ) : tab === activeTab && tab === 'cse' && isPsdbmLoading ? (
+                      <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 px-6 py-14 text-center">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        <p className="mt-3 text-sm font-medium text-foreground">
+                          Loading PS-DBM Catalog...
+                        </p>
+                        <p className="mt-1 max-w-sm text-xs text-muted-foreground">
+                          Fetching latest items and prices from PS-PhilGEPS
+                          repository.
+                        </p>
+                      </div>
+                    ) : tab === activeTab && tab === 'non-cse' && isNonCseLoading ? (
+                      <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 px-6 py-14 text-center">
+                        <Loader2 className="h-8 w-8 animate-spin text-primary" />
+                        <p className="mt-3 text-sm font-medium text-foreground">
+                          Loading Agency Catalog...
+                        </p>
+                        <p className="mt-1 max-w-sm text-xs text-muted-foreground">
+                          Fetching approved Non-CSE items from master catalog.
+                        </p>
+                      </div>
+                    ) : (tab === activeTab
+                        ? filteredItems.length
+                        : tabFiltered.length) === 0 ? (
                       <EmptyState message="Try widening the price band, clearing a category filter, or changing the search query." />
                     ) : (
                       <>

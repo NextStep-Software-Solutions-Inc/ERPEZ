@@ -459,6 +459,11 @@ export const catalogItemsAtom = atom<NonCSEItem[]>(
 )
 
 /**
+ * Backward-compatible alias for catalogItemsAtom
+ */
+export const activeCatalogItemsAtom = catalogItemsAtom
+
+/**
  * Item Requests Queue (for request workflow)
  * Contains all user submissions at any status
  */
