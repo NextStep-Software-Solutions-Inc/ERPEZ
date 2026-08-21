@@ -1,5 +1,4 @@
-﻿export * from './types'
-export * from './data/mockBacResolutionData'
+export * from './types'
 export * from './handlers'
 export * from './handlers/hooks'
 export * from './components'

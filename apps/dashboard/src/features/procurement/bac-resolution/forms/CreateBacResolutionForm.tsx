@@ -6,21 +6,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command'
-import {
-  Popover,
-  PopoverContent,
-  PopoverTrigger,
-} from '@/components/ui/popover'
-import {
   Check,
-  ChevronsUpDown,
   Loader2,
   FileText,
   Layers,
@@ -33,6 +19,7 @@ import {
   ChevronRight,
   FileSpreadsheet,
   PackageCheck,
+  Plus,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -51,15 +38,20 @@ import type {
   EligibleConsolidatedPR,
   ProcurementProjectContext,
   ProcurementSourceType,
+  WhereasClauseTemplate,
 } from '../types'
 import {
   useEligibleAppsForProcurement,
   useEligibleConsolidatedPRs,
+  useWhereasClauseTemplates,
+  useUsers,
+  useCreateWhereasClauseTemplate,
 } from '../handlers/hooks'
 import FieldInfo from '@/components/FieldInfo'
-import { fetchUsers, type User } from '@/services/api/users'
+import type { User } from '@/services/api/users'
 import { ProcurementProjectPreviewBanner } from '../components/ProcurementProjectPreviewBanner'
 import type { CreateBacResolutionPayload } from '../handlers/createBacResolutionRequest'
+import { CreateEditWhereasClauseDialog } from '../dialogs/CreateEditWhereasClauseDialog'
 
 export const createBacResolutionSchema = z.object({
   appItemId: z.string().optional(),
@@ -80,28 +72,7 @@ export type CreateBacResolutionFormValues = z.infer<
   typeof createBacResolutionSchema
 >
 
-export const MOCK_WHEREAS_CLAUSE_TEMPLATES = [
-  {
-    id: 'whereas-1',
-    name: 'Standard Procurement Requirement Clause',
-    body: 'WHEREAS, the End-User Office submitted a Purchase Request for the procurement of goods/services essential for official operations;',
-  },
-  {
-    id: 'whereas-2',
-    name: 'Annual Procurement Plan (APP) Inclusion Clause',
-    body: 'WHEREAS, the proposed procurement project is included in the approved Annual Procurement Plan (APP) of the agency;',
-  },
-  {
-    id: 'whereas-3',
-    name: 'Certificate of Availability of Funds (CAF) Clause',
-    body: 'WHEREAS, funds for the procurement project are available and duly certified by the Budget Office;',
-  },
-  {
-    id: 'whereas-4',
-    name: 'Alternative Mode of Procurement Recommendation Clause',
-    body: 'WHEREAS, based on the conditions and threshold under Republic Act No. 9184 and its Revised IRR, the BAC recommends the use of Negotiated Procurement / Small Value Procurement;',
-  },
-]
+
 
 export interface CreateBacResolutionWizardRef {
   getFormValues: () => CreateBacResolutionFormValues | null
@@ -126,82 +97,18 @@ interface CreateBacResolutionFormProps {
   onSuccess?: () => void
 }
 
-function UserPickerCombobox({
-  value,
-  onChange,
-  users,
-  disabled,
-  placeholder = 'Select representative...',
-}: {
-  value?: string
-  onChange: (userId: string) => void
-  users: User[]
-  disabled?: boolean
-  placeholder?: string
-}) {
-  const [open, setOpen] = useState(false)
-
-  const selectedUser = useMemo(
-    () => users.find((u) => u.id === value),
-    [users, value],
-  )
-
-  return (
-    <Popover open={open} onOpenChange={setOpen}>
-      <PopoverTrigger asChild>
-        <Button
-          variant="outline"
-          role="combobox"
-          aria-expanded={open}
-          disabled={disabled}
-          className="w-full justify-between font-normal text-left"
-        >
-          {selectedUser
-            ? `${selectedUser.fullName}${selectedUser.employeeNumber
-              ? ` (${selectedUser.employeeNumber})`
-              : ''
-            }`
-            : placeholder}
-          <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
-        </Button>
-      </PopoverTrigger>
-      <PopoverContent className="w-[350px] p-0" align="start">
-        <Command>
-          <CommandInput placeholder="Search user by name or employee #..." />
-          <CommandList>
-            <CommandEmpty>No user found.</CommandEmpty>
-            <CommandGroup>
-              {users.map((user) => (
-                <CommandItem
-                  key={user.id}
-                  value={`${user.fullName} ${user.employeeNumber || ''}`}
-                  onSelect={() => {
-                    onChange(user.id)
-                    setOpen(false)
-                  }}
-                >
-                  <Check
-                    className={cn(
-                      'mr-2 h-4 w-4',
-                      value === user.id ? 'opacity-100' : 'opacity-0',
-                    )}
-                  />
-                  <div className="flex flex-col">
-                    <span className="font-medium text-sm">{user.fullName}</span>
-                    {user.officeName && (
-                      <span className="text-xs text-muted-foreground">
-                        {user.officeName}
-                      </span>
-                    )}
-                  </div>
-                </CommandItem>
-              ))}
-            </CommandGroup>
-          </CommandList>
-        </Command>
-      </PopoverContent>
-    </Popover>
-  )
+function getUserDisplayName(user: User): string {
+  if (
+    user.fullName &&
+    typeof user.fullName === 'string' &&
+    user.fullName.trim() &&
+    user.fullName.toLowerCase() !== 'n/a'
+  ) {
+    return user.fullName
+  }
+  const parts = [user.firstName, user.lastName].filter(Boolean)
+  if (parts.length > 0) return parts.join(' ')
+  return user.username || user.email || 'Unnamed User'
 }
 
 export const CreateBacResolutionForm = forwardRef<
@@ -239,7 +146,23 @@ export const CreateBacResolutionForm = forwardRef<
     const [selectedConsolidatedPr, setSelectedConsolidatedPr] =
       useState<EligibleConsolidatedPR | null>(null)
 
-    // Authoritative Procurement Project Context
+    const { data: bacResolutionWhereasClauses, isPending: isWhereasPending } =
+      useWhereasClauseTemplates({
+        pathParams: {},
+        queryParams: {},
+      })
+
+    const whereasTemplates = useMemo<WhereasClauseTemplate[]>(() => {
+      if (!bacResolutionWhereasClauses) return []
+      if (Array.isArray(bacResolutionWhereasClauses.data)) {
+        return bacResolutionWhereasClauses.data
+      }
+      if (Array.isArray(bacResolutionWhereasClauses)) {
+        return bacResolutionWhereasClauses
+      }
+      return []
+    }, [bacResolutionWhereasClauses])
+
     const projectContext = useMemo<ProcurementProjectContext | null>(() => {
       if (
         selectedSourceType === 'AppItem' &&
@@ -281,17 +204,30 @@ export const CreateBacResolutionForm = forwardRef<
       selectedConsolidatedPr,
     ])
 
-    // Users for representative comboboxes
-    const [users, setUsers] = useState<User[]>([])
-    const [isUsersLoading, setIsUsersLoading] = useState(false)
+    const { data: usersData, isPending: isUsersLoading } = useUsers({
+      pathParams: {},
+      queryParams: { PageSize: 100 },
+    })
 
-    useEffect(() => {
-      setIsUsersLoading(true)
-      fetchUsers()
-        .then(setUsers)
-        .catch((err) => console.error('Failed to load user suggestions:', err))
-        .finally(() => setIsUsersLoading(false))
-    }, [])
+    const users = useMemo<User[]>(() => {
+      if (!usersData) return []
+      if (Array.isArray(usersData.data)) return usersData.data
+      if (Array.isArray(usersData)) return usersData
+      return []
+    }, [usersData])
+
+    const [isCreateWhereasModalOpen, setIsCreateWhereasModalOpen] = useState(false)
+    const createWhereasMutation = useCreateWhereasClauseTemplate()
+
+    const handleCreateCustomWhereas = async (name: string, body: string) => {
+      const created = await createWhereasMutation.mutateAsync({
+        pathParams: {},
+        payload: { name, body },
+      })
+      const currentSelected = form.getFieldValue('whereasClauseIds') || []
+      form.setFieldValue('whereasClauseIds', [...currentSelected, created.id])
+      toast.success('Custom WHEREAS Clause created and added to resolution.')
+    }
 
     const defaultResNumber = `BAC-RES-2026-${Math.floor(
       100 + Math.random() * 900,
@@ -314,7 +250,6 @@ export const CreateBacResolutionForm = forwardRef<
       techRepresentativeId: initialValues?.techRepresentativeId || undefined,
     }
 
-    // Initialize TanStack Form with Zod validation
     const form = useForm({
       defaultValues: initialFormValues,
       validators: {
@@ -322,12 +257,13 @@ export const CreateBacResolutionForm = forwardRef<
       },
       onSubmit: async ({ value }) => {
         setIsSubmitting(true)
+        setSubmitError(null)
+
         try {
           const payload: CreateBacResolutionPayload = {
-            sourceType: selectedSourceType || undefined,
-            appItemId: selectedAppItem?.id || value.appItemId || undefined,
-            consolidatedPRId:
-              selectedConsolidatedPr?.id || value.consolidatedPRId || undefined,
+            sourceType: selectedSourceType || (value.appItemId ? 'AppItem' : 'ConsolidatedPr'),
+            appItemId: value.appItemId || undefined,
+            consolidatedPRId: value.consolidatedPRId || undefined,
             title: value.title,
             abc: value.abc,
             resolutionType: value.resolutionType,
@@ -651,21 +587,32 @@ export const CreateBacResolutionForm = forwardRef<
                 <form.Field name="endUserRepresentativeId">
                   {(field) => (
                     <div className="grid gap-2">
-                      <Label>End-User Representative</Label>
+                      <Label htmlFor={field.name}>End-User Representative</Label>
                       {isUsersLoading ? (
                         <div className="flex items-center text-xs text-muted-foreground">
                           <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
                           Loading users...
                         </div>
                       ) : (
-                        <UserPickerCombobox
-                          value={field.state.value}
-                          onChange={(userId) => field.handleChange(userId)}
-                          users={users}
-                          disabled={isLoading || isSubmitting}
-                          placeholder="Select End-User Representative..."
-                        />
+                        <select
+                          id={field.name}
+                          value={field.state.value || ''}
+                          onBlur={field.handleBlur}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                          disabled={isSubmitting}
+                          className="h-10 w-full rounded-md border border-default-300 bg-white px-3 py-2 text-sm text-default-900 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+                        >
+                          <option value="">Select End-User Representative...</option>
+                          {users.map((user) => (
+                            <option key={user.id} value={user.id}>
+                              {getUserDisplayName(user)}
+                              {user.employeeNumber ? ` (${user.employeeNumber})` : ''}
+                              {user.officeName ? ` - ${user.officeName}` : ''}
+                            </option>
+                          ))}
+                        </select>
                       )}
+                      <FieldInfo field={field} />
                     </div>
                   )}
                 </form.Field>
@@ -673,36 +620,59 @@ export const CreateBacResolutionForm = forwardRef<
                 <form.Field name="techRepresentativeId">
                   {(field) => (
                     <div className="grid gap-2">
-                      <Label>Technical Representative</Label>
+                      <Label htmlFor={field.name}>Technical Representative</Label>
                       {isUsersLoading ? (
                         <div className="flex items-center text-xs text-muted-foreground">
                           <Loader2 className="mr-2 h-3.5 w-3.5 animate-spin" />
                           Loading users...
                         </div>
                       ) : (
-                        <UserPickerCombobox
-                          value={field.state.value}
-                          onChange={(userId) => field.handleChange(userId)}
-                          users={users}
-                          disabled={isLoading || isSubmitting}
-                          placeholder="Select Technical Representative..."
-                        />
+                        <select
+                          id={field.name}
+                          value={field.state.value || ''}
+                          onBlur={field.handleBlur}
+                          onChange={(e) => field.handleChange(e.target.value)}
+                          disabled={isSubmitting}
+                          className="h-10 w-full rounded-md border border-default-300 bg-white px-3 py-2 text-sm text-default-900 focus:border-primary focus:outline-none focus:ring-1 focus:ring-primary disabled:opacity-50"
+                        >
+                          <option value="">Select Technical Representative...</option>
+                          {users.map((user) => (
+                            <option key={user.id} value={user.id}>
+                              {getUserDisplayName(user)}
+                              {user.employeeNumber ? ` (${user.employeeNumber})` : ''}
+                              {user.officeName ? ` - ${user.officeName}` : ''}
+                            </option>
+                          ))}
+                        </select>
                       )}
+                      <FieldInfo field={field} />
                     </div>
                   )}
                 </form.Field>
               </div>
             </div>
 
-            {/* WHEREAS Clauses Section (Hardcoded Mock Templates at Bottom) */}
+            {/* WHEREAS Clauses Section */}
             <div className="rounded-lg border border-default-200 bg-white p-4 space-y-4 shadow-xs">
-              <div>
-                <h4 className="font-bold text-sm text-default-900">
-                  WHEREAS Clause Templates
-                </h4>
-                <p className="text-xs text-muted-foreground mt-0.5">
-                  Select the clause templates to include in this resolution.
-                </p>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-default-200 pb-2">
+                <div>
+                  <h4 className="font-bold text-sm text-default-900">
+                    WHEREAS Clause Templates
+                  </h4>
+                  <p className="text-xs text-muted-foreground mt-0.5">
+                    Select the clause templates to include in this resolution.
+                  </p>
+                </div>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setIsCreateWhereasModalOpen(true)}
+                  className="gap-1.5 text-xs text-primary border-primary/30 hover:bg-primary/5 self-start sm:self-auto"
+                >
+                  <Plus className="h-3.5 w-3.5" />
+                  Create Custom WHEREAS Template
+                </Button>
               </div>
 
               <form.Field name="whereasClauseIds">
@@ -722,37 +692,48 @@ export const CreateBacResolutionForm = forwardRef<
                   return (
                     <div className="space-y-3">
                       <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
-                        {MOCK_WHEREAS_CLAUSE_TEMPLATES.map((template) => {
-                          const isChecked = selectedIds.includes(template.id)
-                          return (
-                            <label
-                              key={template.id}
-                              className={cn(
-                                'flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors',
-                                isChecked
-                                  ? 'border-primary bg-primary/5'
-                                  : 'border-default-200 bg-white hover:border-default-300',
-                              )}
-                            >
-                              <Checkbox
-                                checked={isChecked}
-                                onCheckedChange={() =>
-                                  toggleTemplate(template.id)
-                                }
-                                disabled={isLoading || isSubmitting}
-                                className="mt-0.5"
-                              />
-                              <div className="flex-1 space-y-1 text-xs">
-                                <span className="font-semibold text-default-900">
-                                  {template.name}
-                                </span>
-                                <p className="text-muted-foreground leading-relaxed">
-                                  {template.body}
-                                </p>
-                              </div>
-                            </label>
-                          )
-                        })}
+                        {isWhereasPending ? (
+                          <div className="flex flex-col items-center justify-center p-8 text-xs text-muted-foreground">
+                            <Loader2 className="h-5 w-5 animate-spin text-primary mb-2" />
+                            Loading WHEREAS clause templates...
+                          </div>
+                        ) : whereasTemplates.length === 0 ? (
+                          <div className="rounded-lg border border-dashed border-default-200 bg-default-50 p-6 text-center text-xs text-muted-foreground">
+                            No WHEREAS clause templates found in the repository. Create clause templates in the WHEREAS Clause Repository page to select them here.
+                          </div>
+                        ) : (
+                          whereasTemplates.map((template) => {
+                            const isChecked = selectedIds.includes(template.id)
+                            return (
+                              <label
+                                key={template.id}
+                                className={cn(
+                                  'flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors',
+                                  isChecked
+                                    ? 'border-primary bg-primary/5'
+                                    : 'border-default-200 bg-white hover:border-default-300',
+                                )}
+                              >
+                                <Checkbox
+                                  checked={isChecked}
+                                  onCheckedChange={() =>
+                                    toggleTemplate(template.id)
+                                  }
+                                  disabled={isLoading || isSubmitting}
+                                  className="mt-0.5"
+                                />
+                                <div className="flex-1 space-y-1 text-xs">
+                                  <span className="font-semibold text-default-900">
+                                    {template.name}
+                                  </span>
+                                  <p className="text-muted-foreground leading-relaxed font-serif">
+                                    {template.body}
+                                  </p>
+                                </div>
+                              </label>
+                            )
+                          })
+                        )}
                       </div>
                       <FieldInfo field={field} />
                     </div>
@@ -768,6 +749,13 @@ export const CreateBacResolutionForm = forwardRef<
             )}
           </form>
         )}
+
+        <CreateEditWhereasClauseDialog
+          open={isCreateWhereasModalOpen}
+          onOpenChange={setIsCreateWhereasModalOpen}
+          onSave={handleCreateCustomWhereas}
+          isSubmitting={createWhereasMutation.isPending}
+        />
       </div>
     )
   },
@@ -1177,15 +1165,15 @@ export function SourceRecordPickerStep({
                             onSelectAppItem(selectedAppRecord, item)
                           }
                           className={`cursor-pointer transition-colors ${isSelected
-                              ? 'bg-primary/10 hover:bg-primary/15'
-                              : 'hover:bg-default-50'
+                            ? 'bg-primary/10 hover:bg-primary/15'
+                            : 'hover:bg-default-50'
                             }`}
                         >
                           <TableCell className="text-center">
                             <div
                               className={`mx-auto flex h-5 w-5 items-center justify-center rounded-full border ${isSelected
-                                  ? 'border-primary bg-primary text-white'
-                                  : 'border-default-300 bg-white'
+                                ? 'border-primary bg-primary text-white'
+                                : 'border-default-300 bg-white'
                                 }`}
                             >
                               {isSelected && (
@@ -1273,15 +1261,15 @@ export function SourceRecordPickerStep({
                       key={cpr.id}
                       onClick={() => onSelectConsolidatedPr(cpr)}
                       className={`cursor-pointer transition-colors ${isSelected
-                          ? 'bg-primary/10 hover:bg-primary/15'
-                          : 'hover:bg-default-50'
+                        ? 'bg-primary/10 hover:bg-primary/15'
+                        : 'hover:bg-default-50'
                         }`}
                     >
                       <TableCell className="text-center">
                         <div
                           className={`mx-auto flex h-5 w-5 items-center justify-center rounded-full border ${isSelected
-                              ? 'border-primary bg-primary text-white'
-                              : 'border-default-300 bg-white'
+                            ? 'border-primary bg-primary text-white'
+                            : 'border-default-300 bg-white'
                             }`}
                         >
                           {isSelected && (
