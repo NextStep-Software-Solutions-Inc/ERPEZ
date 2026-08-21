@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -147,35 +147,6 @@ namespace ERPEZ.Infrastructure.Migrations
                 scale: 2,
                 nullable: false,
                 defaultValue: 0m);
-
-            migrationBuilder.AddColumn<string>(
-                name: "ApprovedBy",
-                schema: "procurement",
-                table: "APRs",
-                type: "text",
-                nullable: true);
-
-            migrationBuilder.AddColumn<string>(
-                name: "ReturnRemarks",
-                schema: "procurement",
-                table: "APRs",
-                type: "text",
-                nullable: true);
-
-            migrationBuilder.AddColumn<string>(
-                name: "ReturnedBy",
-                schema: "procurement",
-                table: "APRs",
-                type: "text",
-                nullable: true);
-
-            migrationBuilder.AddColumn<DateTime>(
-                name: "ReturnedDate",
-                schema: "procurement",
-                table: "APRs",
-                type: "timestamp with time zone",
-                nullable: true);
-
             migrationBuilder.AddColumn<DateTime>(
                 name: "ApprovedAt",
                 schema: "procurement",
@@ -443,26 +414,6 @@ namespace ERPEZ.Infrastructure.Migrations
                 name: "TotalPrice",
                 schema: "procurement",
                 table: "SupplierBidItems");
-
-            migrationBuilder.DropColumn(
-                name: "ApprovedBy",
-                schema: "procurement",
-                table: "APRs");
-
-            migrationBuilder.DropColumn(
-                name: "ReturnRemarks",
-                schema: "procurement",
-                table: "APRs");
-
-            migrationBuilder.DropColumn(
-                name: "ReturnedBy",
-                schema: "procurement",
-                table: "APRs");
-
-            migrationBuilder.DropColumn(
-                name: "ReturnedDate",
-                schema: "procurement",
-                table: "APRs");
 
             migrationBuilder.DropColumn(
                 name: "ApprovedAt",

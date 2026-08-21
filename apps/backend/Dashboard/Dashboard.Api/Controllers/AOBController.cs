@@ -18,12 +18,16 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ERPEZ.Api.Controllers;
 
+/// <summary>
+/// Manages Abstract of Bids (AOB) operations and BAC award evaluation workflows
+/// </summary>
 [Route("aobs")]
-[Route("api/procurement/aobs")]
-[Route("procurement/abstract-of-bids-aob")]
 [ApiController]
 public class AOBController(ISender mediator) : ControllerBase
 {
+    /// <summary>
+    /// Get paginated list of AOB records with filtering and sorting
+    /// </summary>
     [HttpGet]
     [ProducesResponseType(typeof(PaginatedApiResponse<AOBResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAOBs([FromQuery] GetAOBsQuery query)
@@ -32,6 +36,9 @@ public class AOBController(ISender mediator) : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>
+    /// Get single AOB details by ID including linked RFQs and awarded items
+    /// </summary>
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(ApiResponse<AOBDetailResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -41,6 +48,9 @@ public class AOBController(ISender mediator) : ControllerBase
         return result.Succeeded ? Ok(result) : NotFound(result);
     }
 
+    /// <summary>
+    /// Create a new AOB in Draft status
+    /// </summary>
     [HttpPost]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -50,6 +60,9 @@ public class AOBController(ISender mediator) : ControllerBase
         return result.Succeeded ? CreatedAtAction(nameof(GetAOBById), new { id = result.Data }, result) : BadRequest(result);
     }
 
+    /// <summary>
+    /// Update header information of an existing Draft/Returned AOB
+    /// </summary>
     [HttpPut("{id}")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -65,6 +78,9 @@ public class AOBController(ISender mediator) : ControllerBase
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 
+    /// <summary>
+    /// Soft-delete an unapproved AOB
+    /// </summary>
     [HttpDelete("{id}")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -74,6 +90,9 @@ public class AOBController(ISender mediator) : ControllerBase
         return result.Succeeded ? Ok(result) : NotFound(result);
     }
 
+    /// <summary>
+    /// Finalize an RFQ for supplier portal bidding
+    /// </summary>
     [HttpPost("rfqs/{id}/finalize")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -92,8 +111,10 @@ public class AOBController(ISender mediator) : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>
+    /// Link closed RFQs to an AOB for consolidated bid canvassing
+    /// </summary>
     [HttpPost("{id}/link-rfqs")]
-    [HttpPost("{id}/link-rfq")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -108,8 +129,10 @@ public class AOBController(ISender mediator) : ControllerBase
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 
+    /// <summary>
+    /// Get the complete bid evaluation matrix including ranked supplier bids per item
+    /// </summary>
     [HttpGet("{id}/matrix")]
-    [HttpGet("{id}/bid-matrix")]
     [ProducesResponseType(typeof(ApiResponse<AOBMatrixResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetAOBMatrix(Guid id)
@@ -118,8 +141,10 @@ public class AOBController(ISender mediator) : ControllerBase
         return result.Succeeded ? Ok(result) : NotFound(result);
     }
 
+    /// <summary>
+    /// Award line items to winning suppliers with justification
+    /// </summary>
     [HttpPost("{id}/award")]
-    [HttpPost("{id}/select-winner")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -129,6 +154,9 @@ public class AOBController(ISender mediator) : ControllerBase
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 
+    /// <summary>
+    /// Submit an AOB for BAC Chairperson review (transitions status to ForApproval)
+    /// </summary>
     [HttpPost("{id}/submit")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -139,6 +167,9 @@ public class AOBController(ISender mediator) : ControllerBase
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 
+    /// <summary>
+    /// BAC Chairperson approves an AOB with optional signed resolution PDF
+    /// </summary>
     [HttpPost("{id}/approve")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -149,6 +180,9 @@ public class AOBController(ISender mediator) : ControllerBase
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 
+    /// <summary>
+    /// BAC Chairperson returns an AOB to BAC Secretariat for revision with remarks
+    /// </summary>
     [HttpPost("{id}/return")]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
@@ -156,15 +190,6 @@ public class AOBController(ISender mediator) : ControllerBase
     public async Task<IActionResult> ReturnAOB(Guid id, [FromBody] ReturnAOBCommand command)
     {
         var result = await mediator.Send(command with { AOBId = id });
-        return result.Succeeded ? Ok(result) : BadRequest(result);
-    }
-
-    [HttpPost("bids/submit")]
-    [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status400BadRequest)]
-    public async Task<IActionResult> SubmitBid([FromBody] SubmitSupplierBidCommand command)
-    {
-        var result = await mediator.Send(command);
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 }

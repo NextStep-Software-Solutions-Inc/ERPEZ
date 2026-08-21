@@ -15,7 +15,7 @@
  * - API-ready with mock data support
  */
 
-import { useState, useMemo, useCallback } from 'react'
+import { useState, useMemo, useCallback, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
@@ -37,9 +37,19 @@ import { AddRFQsAndBidsDialog } from '../dialogs/AddRFQsAndBidsDialog'
 import { ApproveAOBDialog } from '../dialogs/ApproveAOBDialog'
 import { ReturnAOBDialog } from '../dialogs/ReturnAOBDialog'
 import { SelectWinnerDialog } from '../dialogs/SelectWinnerDialog'
-import type { AOB, BidMatrix } from '../types/aobTypes'
+import type { AOB, BidMatrix, AwardItemInputDto } from '../types/aobTypes'
 import { AOBStatus } from '../types/aobTypes'
 import { printAOB } from '../utils/printAOB'
+import { toast } from 'sonner'
+import {
+  createMutationHookFromTemplate,
+  useQueryClient,
+} from 'erpez-shared-lib'
+import { selectWinnerRequest } from '../handlers/selectWinnerRequest'
+import { getAOBDetailRequest } from '../handlers/getAOBDetailRequest'
+import { getBidMatrixRequest } from '../handlers/getBidMatrixRequest'
+
+const useSelectWinner = createMutationHookFromTemplate(selectWinnerRequest)
 
 interface AOBDetailsPageProps {
   aob: AOB
@@ -136,27 +146,74 @@ export function AOBDetailsPage({
   const [showSelectWinnerDialog, setShowSelectWinnerDialog] = useState(false)
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false)
 
+  const queryClient = useQueryClient()
+  const { mutateAsync: awardAOB } = useSelectWinner()
+
+  useEffect(() => {
+    setBidMatrix(initialBidMatrix)
+  }, [initialBidMatrix])
+
   const allItemsAwarded = useMemo(() => areAllItemsAwarded(bidMatrix), [bidMatrix])
 
-  const handleConfirmWinners = useCallback((selections: Record<string, string>) => {
-    setBidMatrix((prev) => {
-      if (!prev) return prev
-      return {
-        ...prev,
-        lineItems: prev.lineItems.map((item) => {
-          const supplierId = selections[item.id]
-          if (!supplierId) return item
-          const winnerBid = item.lineItems?.find((b) => b.supplierId === supplierId) ?? null
-          return {
-            ...item,
-            selectedWinnerId: supplierId,
-            selectedWinnerBid: winnerBid,
-            lineItems: item.lineItems?.map((b) => ({ ...b, isWinner: b.supplierId === supplierId })),
-          }
-        }),
+  const handleConfirmWinners = useCallback(
+    async (selections: Record<string, string>) => {
+      if (!bidMatrix?.lineItems || !aob.id) return
+
+      const awardedItems: AwardItemInputDto[] = []
+      bidMatrix.lineItems.forEach((item) => {
+        const supplierId = selections[item.id]
+        if (supplierId) {
+          const winnerBid = item.lineItems?.find((b) => b.supplierId === supplierId)
+          awardedItems.push({
+            rfqItemId: item.rfqItemId || item.id,
+            winningSupplierId: supplierId,
+            awardedUnitPrice: winnerBid?.unitBid || winnerBid?.unitPrice || 0,
+            awardedQuantity: item.quantity || 1,
+            score: winnerBid?.score || 100,
+            awardReason: winnerBid?.awardReason || 'Lowest calculated responsive quotation',
+          })
+        }
+      })
+
+      try {
+        if (awardedItems.length > 0) {
+          await awardAOB({
+            pathParams: { id: aob.id },
+            payload: { awardedItems },
+          })
+          void queryClient.invalidateQueries({
+            queryKey: [getAOBDetailRequest.endpoint, aob.id],
+          })
+          void queryClient.invalidateQueries({
+            queryKey: [getBidMatrixRequest.endpoint, aob.id],
+          })
+          toast.success('Winning bids saved successfully')
+        }
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : 'Failed to save winning bids'
+        toast.error(msg)
       }
-    })
-  }, [])
+
+      setBidMatrix((prev) => {
+        if (!prev) return prev
+        return {
+          ...prev,
+          lineItems: prev.lineItems.map((item) => {
+            const supplierId = selections[item.id]
+            if (!supplierId) return item
+            const winnerBid = item.lineItems?.find((b) => b.supplierId === supplierId) ?? null
+            return {
+              ...item,
+              selectedWinnerId: supplierId,
+              selectedWinnerBid: winnerBid,
+              lineItems: item.lineItems?.map((b) => ({ ...b, isWinner: b.supplierId === supplierId })),
+            }
+          }),
+        }
+      })
+    },
+    [bidMatrix, aob.id, awardAOB, queryClient]
+  )
 
   const winnerCount = useMemo(
     () => bidMatrix?.lineItems?.filter((item) => item.selectedWinnerId).length ?? 0,

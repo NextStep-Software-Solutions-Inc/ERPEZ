@@ -1,55 +1,44 @@
 /**
- * Select Winner Request Handler
- * Selects the winning supplier for a specific line item
+ * Select Winner / Award AOB Request Handler
+ * Awards line items to winning suppliers with justification
  */
 
 import type { MutationBlueprintFromTemplate } from 'erpez-shared-lib'
-import type { Winner, SelectWinnerPayload } from '../types/aobTypes'
+import type { Winner, SelectWinnerPayload, AwardItemInputDto } from '../types/aobTypes'
 import api from '@/services/api'
-import { mockAOBStore } from '../utils/mockAOBStore'
 
-const endpoint = '/procurement/abstract-of-bids-aob/:id/select-winner'
-
-export interface SelectWinnerParams {
-  id: string
-}
+const endpoint = '/aobs/:id/award' as const
 
 export const selectWinnerRequest: MutationBlueprintFromTemplate<
   typeof endpoint,
   Winner,
-  SelectWinnerParams,
+  undefined,
   Omit<SelectWinnerPayload, 'aobId'>
 > = {
   endpoint,
   fetcher: async ({ finalUrl, payload }) => {
-    try {
-      const response = await api.post<{ data: Winner }>(finalUrl, payload)
-      return response.data.data
-    } catch (error) {
-      // Always throw auth errors (401/403) - never fall back to mock for auth issues
-      if (error instanceof Error) {
-        const errorMessage = error.message
-        if (errorMessage.includes('401') || errorMessage.includes('403') || errorMessage.includes('Unauthorized')) {
-          throw new Error(`Authentication error: ${errorMessage}`)
-        }
-      }
+    const items: AwardItemInputDto[] = payload?.awardedItems || [
+      {
+        rfqItemId: payload?.rfqItemId || payload?.lineItemId || '',
+        winningSupplierId: payload?.winningSupplierId || '',
+        awardedUnitPrice: payload?.awardedUnitPrice || 0,
+        awardedQuantity: payload?.awardedQuantity || 1,
+        score: payload?.score || 100,
+        awardReason: payload?.awardReason || 'Lowest calculated responsive quotation',
+      },
+    ]
 
-      // Only fall back to mock data in development for other errors
-      if (!import.meta.env.DEV) {
-        throw error
-      }
-
-      // Log the actual error for debugging in development
-      console.warn('API error in development mode, falling back to mock select winner:', error)
-      // Extract aobId from finalUrl (format: /.../:id/select-winner)
-      const aobIdMatch = finalUrl.match(/\/(\w+)\/select-winner/)
-      const aobId = aobIdMatch?.[1] || ''
-      return mockAOBStore.selectWinner(
-        aobId,
-        payload?.lineItemId || '',
-        payload?.supplierId || '',
-        payload?.bidId || ''
-      )
-    }
+    await api.post<{ succeeded: boolean; message: string }>(finalUrl, items)
+    return {
+      id: payload?.rfqItemId || payload?.lineItemId || '',
+      lineItemId: payload?.lineItemId || payload?.rfqItemId || '',
+      rfqItemId: payload?.rfqItemId || payload?.lineItemId || '',
+      supplierId: payload?.winningSupplierId || '',
+      winningSupplierId: payload?.winningSupplierId || '',
+      supplierName: '',
+      bidAmount: payload?.awardedUnitPrice || 0,
+      awardReason: payload?.awardReason,
+      selectionDate: new Date().toISOString(),
+    } as Winner
   },
 }

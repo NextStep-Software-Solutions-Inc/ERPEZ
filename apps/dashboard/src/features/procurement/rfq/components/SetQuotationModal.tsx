@@ -7,7 +7,7 @@ import { Label } from '@/components/ui/label'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { useToast } from '@/components/ui/use-toast'
 import { useRFQStore, RFQItem } from '../store/rfqStore'
-import { Pencil, Save, Upload, FileText, X, Send } from 'lucide-react'
+import { Pencil, Save, Upload, FileText, X, Send, Loader2 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import {
   AlertDialog,
@@ -19,11 +19,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
+import { createMutationHookFromTemplate } from 'erpez-shared-lib'
+import { submitSupplierBidRequest } from '@/features/procurement/supplier-portal/handlers/supplierPortalRequests'
+
+const useSubmitSupplierBid = createMutationHookFromTemplate(submitSupplierBidRequest)
 
 interface SetQuotationModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
   rfqId: string
+  supplierId?: string
 }
 
 interface ItemBidSpecModalProps {
@@ -103,8 +108,8 @@ function ItemBidSpecModal({ open, onOpenChange, item, onSave }: ItemBidSpecModal
   )
 }
 
-export function SetQuotationModal({ open, onOpenChange, rfqId }: SetQuotationModalProps) {
-  const { rfqs } = useRFQStore()
+export function SetQuotationModal({ open, onOpenChange, rfqId, supplierId }: SetQuotationModalProps) {
+  const { rfqs, updateRFQ } = useRFQStore()
   const rfq = rfqs.find((r) => r.id === rfqId)
   const { toast } = useToast()
   const [items, setItems] = useState<RFQItem[]>([])
@@ -112,6 +117,8 @@ export function SetQuotationModal({ open, onOpenChange, rfqId }: SetQuotationMod
   const [selectedItem, setSelectedItem] = useState<RFQItem | null>(null)
   const [submitConfirmOpen, setSubmitConfirmOpen] = useState(false)
   const fileInputRefs = useRef<{ [key: string]: HTMLInputElement | null }>({})
+
+  const { mutateAsync: submitBidMutation, isPending: isSubmitting } = useSubmitSupplierBid()
 
   const isSubmitted = rfq?.quotationStatus === 'submitted'
 
@@ -163,7 +170,6 @@ export function SetQuotationModal({ open, onOpenChange, rfqId }: SetQuotationMod
   const createdObjectUrlsRef = useRef<Record<string, string>>({})
   const prevBidUrlsRef = useRef<Record<string, string | undefined>>({})
 
-  // Revoke any created object URLs when modal closes or component unmounts
   useEffect(() => {
     if (!open) {
       Object.values(createdObjectUrlsRef.current).forEach((u) => {
@@ -181,19 +187,16 @@ export function SetQuotationModal({ open, onOpenChange, rfqId }: SetQuotationMod
     }
   }, [open])
 
-  // Keep previous item URLs in sync and revoke when changed/removed
   useEffect(() => {
     const prev = prevBidUrlsRef.current
     items.forEach((it) => {
       const prevUrl = prev[it.id]
       const currUrl = it.bidBrochureUrl
-      // If the previous URL was one we created and it changed (including removed), revoke it
       if (prevUrl && prevUrl !== currUrl && createdObjectUrlsRef.current[it.id] === prevUrl) {
         try { URL.revokeObjectURL(prevUrl) } catch {}
         delete createdObjectUrlsRef.current[it.id]
       }
     })
-    // update prev snapshot
     prevBidUrlsRef.current = items.reduce((acc, it) => {
       acc[it.id] = it.bidBrochureUrl
       return acc
@@ -201,15 +204,12 @@ export function SetQuotationModal({ open, onOpenChange, rfqId }: SetQuotationMod
   }, [items])
 
   const handleBrochureUpload = (itemId: string, file: File) => {
-    // Revoke any previously-created object URL for this item
     const prev = items.find((i) => i.id === itemId)?.bidBrochureUrl
     if (prev && prev.startsWith('blob:') && createdObjectUrlsRef.current[itemId] === prev) {
       try { URL.revokeObjectURL(prev) } catch {}
       delete createdObjectUrlsRef.current[itemId]
     }
 
-    // In a real app, upload to server and get URL
-    // For now, create a local URL and track it for later revocation
     const fileUrl = URL.createObjectURL(file)
     createdObjectUrlsRef.current[itemId] = fileUrl
 
@@ -244,21 +244,48 @@ export function SetQuotationModal({ open, onOpenChange, rfqId }: SetQuotationMod
     })
   }
 
-  const handleSaveDraft = () => {
-    // TODO: Implement save quotation as draft.
-    // This requires a backend endpoint to persist quotation data (items, bids, brochures)
-    // without marking the RFQ quotation as "submitted".
-    // See rfqStore.ts for available endpoints or create POST /rfqs/{id}/quotation endpoint.
-    toast({
-      title: 'Draft saved',
-      description: 'Your quotation has been saved as draft.'
-    })
-    // Close the dialog after saving
-    onOpenChange(false)
+  const handleSaveDraft = async () => {
+    try {
+      const targetSupplierId = supplierId || '00000000-0000-0000-0000-000000000001'
+      await submitBidMutation({
+        pathParams: { rfqId: rfq.id },
+        payload: {
+          rfqId: rfq.id,
+          supplierId: targetSupplierId,
+          submissionType: 'Electronic',
+          status: 'DRAFT',
+          items: items.map((i) => ({
+            rfqItemId: i.id,
+            unitPrice: i.bidUnitPrice || 0,
+            brand: i.bidBrand,
+            model: i.bidModel,
+            color: i.bidColor,
+            brochureFileUrl: i.bidBrochureUrl,
+            isResponsive: true,
+          })),
+        },
+      })
+
+      updateRFQ(rfq.id, {
+        items: items,
+        quotationStatus: 'draft',
+      })
+
+      toast({
+        title: 'Draft saved',
+        description: 'Your quotation has been saved as draft.'
+      })
+      onOpenChange(false)
+    } catch (err: any) {
+      toast({
+        title: 'Save failed',
+        description: err?.message || 'Could not save quotation draft.',
+        variant: 'destructive',
+      })
+    }
   }
 
   const handleSubmitQuotation = () => {
-    // Validate that all items have unit bid price (only required field)
     const incomplete = items.filter(item => 
       !item.bidUnitPrice || item.bidUnitPrice <= 0
     )
@@ -271,22 +298,50 @@ export function SetQuotationModal({ open, onOpenChange, rfqId }: SetQuotationMod
       return
     }
 
-    // Show confirmation dialog
     setSubmitConfirmOpen(true)
   }
 
-  const confirmSubmit = () => {
-    // TODO: Implement submit quotation API call.
-    // This should POST updated items with bid prices and brochure URLs to backend,
-    // then mark RFQ quotationStatus as "submitted".
-    // Suggested endpoint: POST /rfqs/{id}/quotation/submit or PATCH /rfqs/{id}/quotation
-    // Payload should include: items with bidUnitPrice, bidModel, bidBrand, bidColor, bidBrochureUrl
-    toast({
-      title: 'Quotation submitted',
-      description: 'Your quotation has been successfully submitted.'
-    })
-    setSubmitConfirmOpen(false)
-    onOpenChange(false)
+  const confirmSubmit = async () => {
+    try {
+      const targetSupplierId = supplierId || '00000000-0000-0000-0000-000000000001'
+      await submitBidMutation({
+        pathParams: { rfqId: rfq.id },
+        payload: {
+          rfqId: rfq.id,
+          supplierId: targetSupplierId,
+          submissionType: 'Electronic',
+          status: 'SUBMITTED',
+          items: items.map((i) => ({
+            rfqItemId: i.id,
+            unitPrice: i.bidUnitPrice || 0,
+            brand: i.bidBrand,
+            model: i.bidModel,
+            color: i.bidColor,
+            brochureFileUrl: i.bidBrochureUrl,
+            isResponsive: true,
+          })),
+        },
+      })
+
+      updateRFQ(rfq.id, {
+        items: items,
+        quotationStatus: 'submitted',
+        quotationSubmittedAt: new Date().toISOString(),
+      })
+
+      toast({
+        title: 'Quotation submitted',
+        description: 'Your quotation has been successfully submitted.'
+      })
+      setSubmitConfirmOpen(false)
+      onOpenChange(false)
+    } catch (err: any) {
+      toast({
+        title: 'Submission failed',
+        description: err?.message || 'Could not submit quotation.',
+        variant: 'destructive',
+      })
+    }
   }
 
   const totalBidAmount = items.reduce((sum, item) => sum + (item.bidTotalAmount || 0), 0)
@@ -319,62 +374,54 @@ export function SetQuotationModal({ open, onOpenChange, rfqId }: SetQuotationMod
                 <TableBody>
                   {items.map((item) => (
                     <TableRow key={item.id}>
-                      <TableCell className="font-medium">
-                        <div className="flex items-center gap-2">
-                          {item.itemName}
-                          {item.isRequiredBrochure && (
-                            <Badge variant="outline" className="text-xs">Brochure Required</Badge>
-                          )}
-                        </div>
-                      </TableCell>
+                      <TableCell className="font-medium">{item.itemName}</TableCell>
                       <TableCell>{item.quantity}</TableCell>
-                      <TableCell>{item.unitOfMeasure || '—'}</TableCell>
+                      <TableCell>{item.unit}</TableCell>
                       <TableCell>
-                        {item.bidModel && item.bidBrand && item.bidColor ? (
+                        {item.bidModel || item.bidBrand || item.bidColor ? (
                           <div className="text-sm">
-                            <div><strong>Model:</strong> {item.bidModel}</div>
-                            <div><strong>Brand:</strong> {item.bidBrand}</div>
-                            <div><strong>Color:</strong> {item.bidColor}</div>
+                            {item.bidModel && <div>Model: {item.bidModel}</div>}
+                            {item.bidBrand && <div>Brand: {item.bidBrand}</div>}
+                            {item.bidColor && <div>Color: {item.bidColor}</div>}
                           </div>
                         ) : (
-                          <span className="text-muted-foreground text-sm">Not set</span>
+                          <span className="text-muted-foreground text-sm">Not specified</span>
                         )}
                       </TableCell>
                       <TableCell>
                         <Input
                           type="number"
-                          step="0.01"
-                          min="0"
+                          placeholder="0.00"
                           value={item.bidUnitPrice || ''}
                           onChange={(e) => handleUnitBidChange(item.id, e.target.value)}
-                          placeholder="0.00"
-                          className="w-32"
                           disabled={isSubmitted}
+                          className="w-32"
+                          min="0"
+                          step="0.01"
                         />
                       </TableCell>
-                      <TableCell>
-                        <span className="font-medium">
-                          ₱{(item.bidTotalAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </span>
+                      <TableCell className="font-semibold">
+                        ₱{(item.bidTotalAmount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </TableCell>
                       <TableCell>
-                        {item.bidBrochureFileName ? (
+                        {item.bidBrochureUrl ? (
                           <div className="flex items-center gap-2">
-                            <a 
-                              href={item.bidBrochureUrl} 
-                              target="_blank" 
+                            <FileText className="h-4 w-4 text-blue-600" />
+                            <a
+                              href={item.bidBrochureUrl}
+                              target="_blank"
                               rel="noopener noreferrer"
-                              className="flex items-center gap-1 text-sm text-primary hover:underline"
+                              className="text-sm text-blue-600 hover:underline max-w-[120px] truncate block"
+                              title={item.bidBrochureFileName || 'Brochure'}
                             >
-                              <FileText className="h-4 w-4" />
-                              {item.bidBrochureFileName}
+                              {item.bidBrochureFileName || 'View Brochure'}
                             </a>
                             {!isSubmitted && (
                               <Button
                                 variant="ghost"
                                 size="sm"
                                 onClick={() => handleRemoveBrochure(item.id)}
-                                className="h-6 w-6 p-0 text-destructive hover:text-destructive"
+                                className="h-6 w-6 p-0 hover:text-red-600"
                               >
                                 <X className="h-3 w-3" />
                               </Button>
@@ -386,15 +433,13 @@ export function SetQuotationModal({ open, onOpenChange, rfqId }: SetQuotationMod
                               <>
                                 <input
                                   type="file"
-                                  ref={(el) => {
-                                    fileInputRefs.current[item.id] = el
-                                  }}
+                                  ref={(el) => (fileInputRefs.current[item.id] = el)}
                                   onChange={(e) => {
                                     const file = e.target.files?.[0]
                                     if (file) handleBrochureUpload(item.id, file)
                                   }}
                                   className="hidden"
-                                  accept=".pdf,.doc,.docx,.jpg,.jpeg,.png"
+                                  accept=".pdf,.jpg,.jpeg,.png"
                                 />
                                 <Button
                                   variant="outline"
@@ -453,12 +498,12 @@ export function SetQuotationModal({ open, onOpenChange, rfqId }: SetQuotationMod
               </Button>
               {!isSubmitted && (
                 <>
-                  <Button variant="outline" onClick={handleSaveDraft} className="gap-2">
-                    <Save className="h-4 w-4" />
+                  <Button variant="outline" onClick={handleSaveDraft} disabled={isSubmitting} className="gap-2">
+                    {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Save className="h-4 w-4" />}
                     Save Draft
                   </Button>
-                  <Button onClick={handleSubmitQuotation} className="gap-2">
-                    <Send className="h-4 w-4" />
+                  <Button onClick={handleSubmitQuotation} disabled={isSubmitting} className="gap-2">
+                    {isSubmitting ? <Loader2 className="h-4 w-4 animate-spin" /> : <Send className="h-4 w-4" />}
                     Submit Quotation
                   </Button>
                 </>
@@ -486,8 +531,8 @@ export function SetQuotationModal({ open, onOpenChange, rfqId }: SetQuotationMod
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Cancel</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmSubmit}>
-              Yes, Submit
+            <AlertDialogAction onClick={confirmSubmit} disabled={isSubmitting}>
+              {isSubmitting ? 'Submitting...' : 'Yes, Submit'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

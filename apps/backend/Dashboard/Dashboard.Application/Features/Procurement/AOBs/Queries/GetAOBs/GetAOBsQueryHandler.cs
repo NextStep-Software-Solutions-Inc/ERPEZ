@@ -19,10 +19,13 @@ public class GetAOBsQueryHandler(IUnitOfWork unitOfWork, ISieveProcessor sievePr
             .Where(a => !a.IsDeleted)
             .AsQueryable();
 
+        var page = query.PageNumber > 0 ? query.PageNumber : 1;
+        var pageSize = query.PageSize > 0 ? query.PageSize : 10;
+
         var sieveModel = new SieveModel
         {
-            PageSize = query.PageSize,
-            Page = query.PageNumber,
+            PageSize = pageSize,
+            Page = page,
             Filters = query.Filters,
             Sorts = query.Sorts
         };

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * AOB (Abstract of Bids) Feature Types
  * 
  * Comprehensive type definitions for the AOB feature including:
@@ -13,16 +13,19 @@
 
 export enum AOBStatus {
   DRAFT = 'Draft',
-  FOR_APPROVAL = 'For Approval',
+  FOR_APPROVAL = 'ForApproval',
   APPROVED = 'Approved',
-  REJECTED = 'Rejected',
+  RETURNED = 'Returned',
+  REJECTED = 'Returned',
   CANCELLED = 'Cancelled',
 }
 
 export enum AwardCriterion {
   LCRB = 'LCRB', // Lowest Calculated and Responsive Bid
   MEARB = 'MEARB', // Most Economically Advantageous Responsive Bid
-  MARB = 'MARB', // Most Advantageous Responsive Bid
+  MARB = 'MARB_HRRB_SRRB', // Most Advantageous Responsive Bid
+  MARB_HRRB_SRRB = 'MARB_HRRB_SRRB',
+  LCCRB = 'LCCRB', // Lowest Calculated and Responsive Bid for Consulting Services
 }
 
 export enum SubmissionType {
@@ -39,19 +42,22 @@ export interface AOB {
   id: string
   aobNumber: string
   description?: string
-  date: string // ISO date
+  date?: string // ISO date
+  aobDate?: string // ISO date
   openingDate: string // ISO date
-  status: AOBStatus
-  awardCriterion: AwardCriterion
+  status: AOBStatus | string
+  awardCriterion: AwardCriterion | string
 
   // RFQ Linking
   rfqId?: string | null
   rfqNumber?: string
+  rfqIds?: string[]
+  rfqs?: AOBMatrixRFQ[]
   rfqCategories?: string[] // Selected RFQ categories
 
-  // Metadata
-  createdBy: string
-  createdAt: string
+  // Metadata & Approvals
+  createdBy?: string
+  createdAt?: string
   updatedBy?: string
   updatedAt?: string
   submittedBy?: string
@@ -59,6 +65,22 @@ export interface AOB {
   approvedBy?: string
   approvedAt?: string
   signedDocumentUrl?: string // Signed AOB resolution PDF URL
+  remarks?: string
+  awardedItems?: AOBAwardedItemResponse[]
+}
+
+export interface AOBAwardedItemResponse {
+  id: string
+  rfqItemId: string
+  itemName: string
+  winningSupplierId: string
+  winningSupplierName: string
+  awardedUnitPrice: number
+  awardedQuantity: number
+  totalAwardedAmount: number
+  score?: number
+  awardReason?: string
+  purchaseOrderId?: string
 }
 
 // ============================================
@@ -68,12 +90,28 @@ export interface AOB {
 export interface RFQItem {
   id: string
   rfqId: string
-  itemCode: string
-  description: string
+  itemCode?: string
+  description?: string
+  itemName?: string
+  itemNameSnapshot?: string
   quantity: number
-  unit: string
+  unit?: string
+  unitPriceSnapshot?: number
   approvedBudgetForContract: number // ABC
   category?: string
+  fundSource?: string
+  isBrochureRequired?: boolean
+  greenSpecification?: string
+}
+
+export interface AOBMatrixRFQ {
+  id: string
+  rfqNumber: string
+  tracingNumber?: string
+  totalAmount?: number
+  status?: string
+  date?: string
+  deadline?: string
 }
 
 export interface RFQCategory {
@@ -92,26 +130,44 @@ export interface Supplier {
   id: string
   supplierId: string
   supplierName: string
-  submissionType: SubmissionType
-  isResponsive: boolean // Meets minimum requirements
+  name?: string
+  email?: string
+  submissionType?: SubmissionType | string
+  isResponsive?: boolean // Meets minimum requirements
   remarks?: string
   submittedAt?: string
+  deliveryPeriod?: string
+  validityPeriodDays?: number
   brochureUrl?: string // Uploaded brochure/technical docs
 }
 
 export interface SupplierBid {
-  id: string
-  bidMatrixId: string
-  lineItemId: string
+  id?: string
+  bidItemId?: string
+  bidMatrixId?: string
+  lineItemId?: string
+  rfqItemId?: string
   supplierId: string
   supplierName: string
-  itemBid: number | null // Unit price per item
-  unitBid: number | null // Unit price
-  totalBid: number | null // Calculated: quantity Ã— unitBid
+  itemBid?: number | null // Unit price per item
+  unitBid?: number | null // Unit price
+  unitPrice?: number | null
+  totalBid?: number | null // Calculated: quantity * unitBid
+  totalPrice?: number | null
   currency?: string
-  qualityScore?: number // For MEARB/MARB only
+  brand?: string | null
+  model?: string | null
+  color?: string | null
+  brochureFileId?: string | null
+  brochureFileUrl?: string | null
+  isResponsive?: boolean
+  isOverABC?: boolean
+  disqualificationReason?: string | null
+  rank?: number
+  score?: number
+  qualityScore?: number | null // For MEARB/MARB only
   calculatedQualityPriceRatio?: number // For MEARB/MARB only
-  remarks?: string
+  remarks?: string | null
   isWinner?: boolean
   winningReason?: string // Why this bid was selected
   offerDocumentUrl?: string // Supplier's specific bid/offer document for this item
@@ -123,29 +179,50 @@ export interface SupplierBid {
 
 export interface LineItem {
   id: string
-  aobId: string
+  aobId?: string
+  rfqId?: string
   rfqItemId?: string
-  itemCode: string
-  description: string
+  itemCode?: string
+  description?: string
+  itemName?: string
+  name?: string
   quantity: number
-  unit: string
+  unit?: string
   approvedBudgetForContract: number // ABC
+  abcUnitPrice?: number
+  totalABC?: number
   category?: string
+  fundSource?: string
+  isBrochureRequired?: boolean
+  greenSpecification?: string
   brochureUrl?: string // Item specifications/brochure uploaded
   lineItems?: SupplierBid[] // All bids for this item across suppliers
+  bids?: SupplierBid[]
   selectedWinnerId?: string | null // Selected winner supplier ID
   selectedWinnerBid?: SupplierBid | null // The winning bid
+  awardCriterion?: string
 }
 
 export interface BidMatrix {
-  id: string
+  id?: string
   aobId: string
+  aobNumber?: string
+  description?: string
+  awardCriterion?: AwardCriterion | string
+  status?: AOBStatus | string
+  aobDate?: string
+  openingDate?: string
+  isBidsOpened?: boolean
+  hasMinimumCanvassWarning?: boolean
+  remarks?: string
+  linkedRFQs?: AOBMatrixRFQ[]
   suppliers: Supplier[] // All suppliers who submitted bids
+  items?: LineItem[]
   lineItems: LineItem[] // All line items with their bids
-  awardCriterion: AwardCriterion
-  createdAt: string
-  updatedAt: string
-  isDraft: boolean
+  bids?: SupplierBid[]
+  createdAt?: string
+  updatedAt?: string
+  isDraft?: boolean
 }
 
 // ============================================
@@ -153,12 +230,19 @@ export interface BidMatrix {
 // ============================================
 
 export interface Winner {
-  id: string
-  aobId: string
-  lineItemId: string
+  id?: string
+  aobId?: string
+  lineItemId?: string
+  rfqItemId?: string
   supplierId: string
-  supplierName: string
-  bidAmount: number
+  winningSupplierId?: string
+  supplierName?: string
+  winningSupplierName?: string
+  bidAmount?: number
+  awardedUnitPrice?: number
+  awardedQuantity?: number
+  totalAwardedAmount?: number
+  score?: number
   awardReason?: string
   selectionDate?: string
   selectedBy?: string
@@ -187,7 +271,9 @@ export interface BrochureDocument {
 
 export interface AOBApprovalPayload {
   aobId: string
-  signedDocumentUrl: string // Signed AOB resolution PDF
+  approvedBy?: string
+  signedDocumentUrl?: string // Signed AOB resolution PDF
+  remarks?: string
   remarksBy?: string
   approvalDate?: string
 }
@@ -206,22 +292,27 @@ export interface AOBReturnPayload {
 export interface CreateAOBPayload {
   aobNumber: string
   description?: string
-  date: string
+  date?: string
+  aobDate?: string
   openingDate: string
-  awardCriterion?: AwardCriterion
+  awardCriterion?: AwardCriterion | string
+  rfqIds?: string[]
 }
 
 export interface UpdateAOBPayload {
+  id?: string
   aobNumber?: string
   description?: string
   date?: string
+  aobDate?: string
   openingDate?: string
-  awardCriterion?: AwardCriterion
+  awardCriterion?: AwardCriterion | string
 }
 
 export interface LinkRFQPayload {
   aobId: string
-  rfqId: string
+  rfqId?: string
+  rfqIds: string[]
   selectedCategories?: string[] // RFQ category IDs to link
 }
 
@@ -231,19 +322,42 @@ export interface UpdateBidMatrixPayload {
 }
 
 export interface SupplierBidInput {
-  lineItemId: string
+  lineItemId?: string
+  rfqItemId?: string
   supplierId: string
   itemBid?: number | null
   unitBid?: number | null
+  unitPrice?: number | null
+  brand?: string
+  model?: string
+  color?: string
+  brochureFileUrl?: string
   qualityScore?: number
   remarks?: string
 }
 
+export interface AwardItemInputDto {
+  rfqItemId: string
+  winningSupplierId: string
+  awardedUnitPrice: number
+  awardedQuantity?: number
+  totalAwardedAmount?: number
+  score?: number
+  awardReason?: string
+  purchaseOrderId?: string
+}
+
 export interface SelectWinnerPayload {
   aobId: string
-  lineItemId: string
+  lineItemId?: string
+  rfqItemId?: string
   winningSupplierId: string
+  awardedUnitPrice?: number
+  awardedQuantity?: number
+  totalAwardedAmount?: number
+  score?: number
   awardReason?: string
+  awardedItems?: AwardItemInputDto[]
 }
 
 export interface SubmitAOBPayload {
@@ -285,10 +399,12 @@ export interface AOBFormValues {
   date: string
   openingDate: string
   awardCriterion?: AwardCriterion
+  rfqIds?: string[]
 }
 
 export interface AddRFQFormValues {
   rfqId: string
+  rfqIds?: string[]
   selectedCategories: string[]
 }
 

@@ -284,9 +284,6 @@ export function RFQPage() {
                 <SearchIcon className="h-12 w-12 text-muted-foreground mb-4" />
                 <h3 className="text-lg font-semibold">No RFQs found</h3>
                 <p className="text-muted-foreground">Try adjusting your filters or add a new RFQ.</p>
-                <div className="mt-4">
-                  <Button onClick={() => setOpen(true)} size="sm">Create RFQ</Button>
-                </div>
               </div>
             </div>
           ) : (

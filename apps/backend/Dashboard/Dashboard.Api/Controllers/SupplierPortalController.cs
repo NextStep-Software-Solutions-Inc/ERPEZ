@@ -9,11 +9,16 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace ERPEZ.Api.Controllers;
 
+/// <summary>
+/// Manages Supplier Portal operations for viewing RFQ invitations and submitting bids
+/// </summary>
 [Route("api/supplier/rfqs")]
-[Route("supplier/rfqs")]
 [ApiController]
 public class SupplierPortalController(ISender mediator) : ControllerBase
 {
+    /// <summary>
+    /// Get RFQ invitations for a supplier
+    /// </summary>
     [HttpGet]
     [ProducesResponseType(typeof(ApiResponse<List<SupplierRFQDto>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetRFQInvitations([FromQuery] Guid supplierId)
@@ -22,6 +27,9 @@ public class SupplierPortalController(ISender mediator) : ControllerBase
         return Ok(result);
     }
 
+    /// <summary>
+    /// Get detailed RFQ information for bidding
+    /// </summary>
     [HttpGet("{rfqId}")]
     [ProducesResponseType(typeof(ApiResponse<SupplierRFQDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -31,6 +39,9 @@ public class SupplierPortalController(ISender mediator) : ControllerBase
         return result.Succeeded ? Ok(result) : NotFound(result);
     }
 
+    /// <summary>
+    /// Get supplier's submitted bid for an RFQ
+    /// </summary>
     [HttpGet("{rfqId}/my-bid")]
     [ProducesResponseType(typeof(ApiResponse<SupplierBidDetailDto>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -40,6 +51,9 @@ public class SupplierPortalController(ISender mediator) : ControllerBase
         return result.Succeeded ? Ok(result) : NotFound(result);
     }
 
+    /// <summary>
+    /// Submit a supplier bid for an RFQ
+    /// </summary>
     [HttpPost("{rfqId}/bids")]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
