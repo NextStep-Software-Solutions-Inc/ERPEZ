@@ -77,6 +77,9 @@ public class UpdatePPMPItemCommandHandler(IUnitOfWork unitOfWork)
         if (request.UnitPrice.HasValue)
             ppmpItem.UnitPrice = request.UnitPrice.Value;
 
+        if (request.PlannedQuantity.HasValue)
+            ppmpItem.PlannedQuantity = request.PlannedQuantity.Value;
+
         if (request.MOPOverride.HasValue)
             ppmpItem.MOPOverride = request.MOPOverride.Value;
 

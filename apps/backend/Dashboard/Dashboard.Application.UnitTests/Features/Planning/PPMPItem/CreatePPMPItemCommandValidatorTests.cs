@@ -18,6 +18,7 @@ public class CreatePPMPItemCommandValidatorTests
             ProcurementModeId = Guid.NewGuid(),
             CSEItemId = Guid.NewGuid(),
             NonCSEItemId = null,
+            PlannedQuantity = 10,
             ProjectType = ProcurementProjectType.Goods
         };
 
@@ -34,6 +35,7 @@ public class CreatePPMPItemCommandValidatorTests
             ProcurementModeId = Guid.NewGuid(),
             CSEItemId = null,
             NonCSEItemId = Guid.NewGuid(),
+            PlannedQuantity = 50,
             ProjectType = ProcurementProjectType.Goods
         };
 
@@ -53,11 +55,28 @@ public class CreatePPMPItemCommandValidatorTests
             Name = "CLIP, Backfold, 50mm",
             Unit = "Box",
             UnitPrice = 62.66m,
+            PlannedQuantity = 100,
             ProjectType = ProcurementProjectType.Goods
         };
 
         var result = validator.TestValidate(command);
         result.ShouldNotHaveAnyValidationErrors();
+    }
+
+    [Fact]
+    public void Should_Fail_When_PlannedQuantity_Is_Zero_Or_Negative()
+    {
+        var command = new CreatePPMPItemCommand
+        {
+            PPMPExpenditureItemId = Guid.NewGuid(),
+            ProcurementModeId = Guid.NewGuid(),
+            CSEItemId = Guid.NewGuid(),
+            PlannedQuantity = 0,
+            ProjectType = ProcurementProjectType.Goods
+        };
+
+        var result = validator.TestValidate(command);
+        result.ShouldHaveValidationErrorFor(x => x.PlannedQuantity);
     }
 
     [Fact]

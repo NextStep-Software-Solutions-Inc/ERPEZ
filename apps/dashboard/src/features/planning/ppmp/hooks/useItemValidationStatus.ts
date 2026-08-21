@@ -22,6 +22,7 @@ const REQUIRED_ITEM_FIELDS = [
   'name',
   'unit',
   'unitPrice',
+  'plannedQuantity',
   'procurementModeId',
   'projectType',
   'preProcurementConference',
@@ -53,6 +54,7 @@ export function getItemValidationStatus(
   if (!item.name?.trim()) missingFields.push('Item Name')
   if (!item.unit?.trim()) missingFields.push('Unit of Measure')
   if (!item.unitPrice || item.unitPrice <= 0) missingFields.push('Unit Price')
+  if (!item.plannedQuantity || item.plannedQuantity <= 0) missingFields.push('Planned Quantity')
   if (!item.procurementModeId?.trim()) missingFields.push('Procurement Mode')
   if (!item.projectType?.trim()) missingFields.push('Project Type')
   if (
@@ -69,20 +71,32 @@ export function getItemValidationStatus(
   if (!item.expectedDeliveryEnd?.trim())
     missingFields.push('Expected Delivery End')
 
-  // Check if has at least one monthly allocation
+  // Check monthly allocations against planned quantity
+  const totalAllocated = (item.PPMPItemAllocations || []).reduce(
+    (sum, a) => sum + (a.quantity || 0),
+    0,
+  )
+  const plannedQty = item.plannedQuantity ?? 0
+  const isOverAllocated = plannedQty > 0 && totalAllocated > plannedQty
+  if (isOverAllocated) {
+    missingFields.push(`Allocations exceed planned quantity (${totalAllocated}/${plannedQty})`)
+  }
+
   const hasAllocations =
     !!item.PPMPItemAllocations && item.PPMPItemAllocations.length > 0
 
   const isDetailsComplete = missingFields.length === 0
+  // Planned Quantity is authoritative; monthly allocations are optional distribution
+  const isComplete = isDetailsComplete
 
   const completionPercentage = Math.round(
-    ((REQUIRED_ITEM_FIELDS.length - missingFields.length) /
+    ((REQUIRED_ITEM_FIELDS.length - Math.min(missingFields.length, REQUIRED_ITEM_FIELDS.length)) /
       REQUIRED_ITEM_FIELDS.length) *
       100,
   )
 
   return {
-    isComplete: isDetailsComplete && hasAllocations,
+    isComplete,
     isDetailsComplete,
     hasAllocations,
     missingFields,
@@ -103,9 +117,6 @@ export function getRowCompletionClasses(status: ItemValidationStatus): string {
   if (status.isComplete) {
     return 'border-l-4 border-l-emerald-500'
   }
-  if (status.isDetailsComplete) {
-    return 'border-l-4 border-l-amber-500'
-  }
   return 'border-l-4 border-l-red-500'
 }
 
@@ -118,9 +129,6 @@ export function getCompletionBadgeColor(
 ): NonNullable<BadgeProps['color']> {
   if (status.isComplete) {
     return 'success'
-  }
-  if (status.isDetailsComplete) {
-    return 'warning'
   }
   return 'destructive'
 }
@@ -142,9 +150,6 @@ export function getCompletionBadgeLabel(
 ): string {
   if (status.isComplete) {
     return '✓ Complete'
-  }
-  if (status.isDetailsComplete && !status.hasAllocations) {
-    return 'Allocations Required'
   }
   return `${status.completionPercentage ?? 0}% Complete`
 }

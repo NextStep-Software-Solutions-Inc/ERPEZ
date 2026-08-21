@@ -18,6 +18,7 @@ export type UpdatePPMPItemPayload = {
   description?: string
   unit?: string
   unitPrice?: number
+  plannedQuantity?: number
   mopOverride?: boolean
   mopJustification?: string
   projectType?: ProcurementProjectType

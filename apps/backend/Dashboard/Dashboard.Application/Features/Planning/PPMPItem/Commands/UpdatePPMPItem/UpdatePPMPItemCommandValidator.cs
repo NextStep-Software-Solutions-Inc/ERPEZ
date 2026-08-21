@@ -31,6 +31,11 @@ public class UpdatePPMPItemCommandValidator : AbstractValidator<UpdatePPMPItemCo
             .When(x => x.UnitPrice.HasValue)
             .WithMessage("Unit Price must be greater than or equal to 0.");
 
+        RuleFor(x => x.PlannedQuantity)
+            .GreaterThan(0)
+            .When(x => x.PlannedQuantity.HasValue)
+            .WithMessage("Planned Quantity must be greater than 0.");
+
         RuleFor(x => x.MOPJustification)
             .NotEmpty()
             .When(x => x.MOPOverride == true)

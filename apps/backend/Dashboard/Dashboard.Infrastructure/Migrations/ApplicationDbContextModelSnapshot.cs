@@ -3162,9 +3162,6 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasMaxLength(1000)
                         .HasColumnType("character varying(1000)");
 
-                    b.Property<bool>("IsActive")
-                        .HasColumnType("boolean");
-
                     b.Property<bool>("IsDeleted")
                         .HasColumnType("boolean");
 
@@ -3196,11 +3193,6 @@ namespace ERPEZ.Infrastructure.Migrations
                         .HasPrecision(18, 2)
                         .HasColumnType("numeric(18,2)");
 
-                    b.Property<string>("Status")
-                        .IsRequired()
-                        .HasMaxLength(50)
-                        .HasColumnType("character varying(50)");
-
                     b.Property<string>("Type")
                         .IsRequired()
                         .HasMaxLength(100)
@@ -3217,21 +3209,15 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("IsActive");
-
                     b.HasIndex("ItemCategoryId");
 
                     b.HasIndex("ItemRequestId");
 
                     b.HasIndex("Name");
 
-                    b.HasIndex("Status");
-
                     b.HasIndex("Type");
 
                     b.HasIndex("UOMId");
-
-                    b.HasIndex("Name", "IsActive");
 
                     b.ToTable("NonCSEItems", "planning");
                 });
@@ -4782,6 +4768,9 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.Property<Guid>("PPMPExpenditureItemId")
                         .HasColumnType("uuid");
+
+                    b.Property<int>("PlannedQuantity")
+                        .HasColumnType("integer");
 
                     b.Property<bool?>("PreProcurementConference")
                         .HasColumnType("boolean");

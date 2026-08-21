@@ -22,7 +22,13 @@ export const triggerPSDBMSyncRequest: MutationBlueprintFromTemplate<
 > = {
   endpoint,
   fetcher: async ({ finalUrl, payload }) => {
-    const response = await api.post<APIResponse<PSDBMSyncResult>>(finalUrl, payload)
+    const response = await api.post<APIResponse<PSDBMSyncResult>>(
+      finalUrl,
+      payload,
+      {
+        timeout: 300000, // 5 minutes timeout for depot synchronization & web crawling
+      },
+    )
     return response.data
   },
 }

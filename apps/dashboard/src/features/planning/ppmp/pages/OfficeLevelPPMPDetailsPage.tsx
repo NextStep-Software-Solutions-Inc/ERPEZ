@@ -19,7 +19,6 @@ import {
   Trash2,
   Building2,
   Coins,
-  Clock,
   TrendingUp,
   ChevronLeft,
   Pencil,
@@ -30,7 +29,6 @@ import {
   Download,
   Package,
   Image as ImageIcon,
-  Info,
   Eye,
   Circle,
 } from 'lucide-react'
@@ -849,6 +847,18 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
                 <span className="font-semibold text-default-800 mt-0.5 block">{formatCurrency(item.unitPrice)}</span>
               </div>
               <div>
+                <span className="text-[10px] uppercase font-bold text-default-400 block">Planned Quantity</span>
+                <span className="font-semibold text-default-800 mt-0.5 block">
+                  {item.plannedQuantity ? `${item.plannedQuantity} ${displayUnit}` : '—'}
+                </span>
+              </div>
+              <div>
+                <span className="text-[10px] uppercase font-bold text-default-400 block">Estimated Total Cost</span>
+                <span className="font-bold text-primary mt-0.5 block">
+                  {item.plannedQuantity ? formatCurrency(item.plannedQuantity * item.unitPrice) : '—'}
+                </span>
+              </div>
+              <div>
                 <span className="text-[10px] uppercase font-bold text-default-400 block">Project Type</span>
                 <span className="font-semibold text-default-700 mt-0.5 block">{item.projectType || '—'}</span>
               </div>
@@ -1042,8 +1052,25 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
                 />
               </div>
             ) : (
-              <div className="border border-dashed border-default-250 bg-default-50 rounded-xl p-3 text-center text-xs text-default-400 italic">
-                No catalog reference linked.
+              <div className="border border-primary/15 bg-primary/2 rounded-xl p-3 space-y-2 transition-all hover:border-primary/30">
+                <div className="flex items-center justify-between">
+                  <span className="text-[8px] font-bold uppercase tracking-wider text-primary px-1.5 py-0.5 bg-primary/10 rounded-md">
+                    CSE (PS-DBM Catalog)
+                  </span>
+                  {item.papCode && (
+                    <span className="text-[9px] font-mono text-default-450 font-semibold">
+                      PAP: {item.papCode}
+                    </span>
+                  )}
+                </div>
+                <h5 className="text-[11px] font-bold text-default-850 line-clamp-1">
+                  {item.name}
+                </h5>
+                {item.description && (
+                  <p className="text-[10px] text-muted-foreground line-clamp-2">
+                    {item.description}
+                  </p>
+                )}
               </div>
             )}
           </div>
@@ -1158,6 +1185,16 @@ function ItemRow({
   const validationStatus = useItemValidationStatus(item)
   const rowClasses = getRowCompletionClasses(validationStatus)
 
+  const isNonCse = Boolean(
+    item.nonCSEItemId ||
+    (item as Record<string, unknown>).nonCseItemId ||
+    item.projectType === 'ConsultingServices' ||
+    item.projectType === 'Infrastructure' ||
+    (item.name &&
+      (item.name.toLowerCase().includes('consultan') ||
+        item.name.toLowerCase().includes('consulting')))
+  )
+
   const subtleBgClass = validationStatus.isComplete
     ? 'bg-emerald-500/5 hover:bg-emerald-500/8 dark:bg-emerald-500/3'
     : validationStatus.isDetailsComplete
@@ -1189,29 +1226,29 @@ function ItemRow({
             )}
           </button>
         </td>
-        <td className="px-5 py-3 text-sm font-medium text-default-900 min-w-50">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <div
-              className="truncate max-w-50 font-semibold text-default-800"
+        <td className="px-5 py-3 min-w-[280px]">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span
+              className="font-bold text-sm text-foreground hover:text-primary transition-colors max-w-xl truncate"
               title={displayName}
             >
               {displayName}
-            </div>
-            {item.cseItemId ? (
+            </span>
+            {isNonCse ? (
               <Badge
+                className="text-[9px] tracking-wider px-2 py-0.5 bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 uppercase font-bold shrink-0 flex items-center gap-1"
                 variant="soft"
-                className="text-[8px] tracking-wide px-1.5 py-0 bg-primary/10 text-primary border-none uppercase font-bold shrink-0 flex items-center gap-0.5"
               >
-                <Package className="h-2.5 w-2.5" />
-                CSE
+                <Layers className="h-3 w-3" />
+                Non-CSE
               </Badge>
             ) : (
               <Badge
-                className="text-[8px] tracking-wide px-1.5 py-0 bg-amber-500/10 text-amber-700 border-none uppercase font-bold shrink-0 flex items-center gap-0.5"
                 variant="soft"
+                className="text-[9px] tracking-wider px-2 py-0.5 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 uppercase font-bold shrink-0 flex items-center gap-1"
               >
-                <Layers className="h-2.5 w-2.5" />
-                Non-CSE
+                <Package className="h-3 w-3" />
+                CSE
               </Badge>
             )}
             {item.originDepartmentName && (
@@ -1224,12 +1261,12 @@ function ItemRow({
             )}
           </div>
           {item.description && (
-            <div
-              className="text-[10px] text-default-400 truncate max-w-62.5"
+            <p
+              className="text-xs text-muted-foreground max-w-xl truncate mt-0.5"
               title={item.description}
             >
               {item.description}
-            </div>
+            </p>
           )}
         </td>
         <td className="px-5 py-3 text-center">
@@ -1243,15 +1280,38 @@ function ItemRow({
           </Badge>
         </td>
         <td className="px-5 py-3 text-right text-sm text-default-700">
-          {formatCurrency(item.unitPrice)}
+          <div>{formatCurrency(item.unitPrice)}</div>
+          {item.plannedQuantity ? (
+            <div className="text-[10px] text-muted-foreground font-medium">
+              Qty: {item.plannedQuantity} {item.unit || 'units'}
+            </div>
+          ) : null}
         </td>
         <td className="px-5 py-3 text-right text-sm font-bold text-default-900">
-          {formatCurrency(
-            (item.PPMPItemAllocations || []).reduce(
-              (sum: number, a: PPMPItemAllocation) => sum + a.amount,
-              0,
-            ),
-          )}
+          <div>
+            {formatCurrency(
+              (item.plannedQuantity && item.plannedQuantity > 0)
+                ? item.plannedQuantity * item.unitPrice
+                : (item.PPMPItemAllocations || []).reduce(
+                    (sum: number, a: PPMPItemAllocation) => sum + a.amount,
+                    0,
+                  )
+            )}
+          </div>
+          <div className="text-[10px] text-muted-foreground font-normal">
+            {(() => {
+              const planned = item.plannedQuantity ?? 0
+              const totalAlloc = (item.PPMPItemAllocations || []).reduce(
+                (sum: number, a: PPMPItemAllocation) => sum + (a.quantity || 0),
+                0,
+              )
+              const remaining = planned - totalAlloc
+              if (totalAlloc === 0) return 'Not yet distributed'
+              if (remaining > 0) return `${totalAlloc}/${planned} allocated (${remaining} remaining)`
+              if (remaining === 0) return `${totalAlloc}/${planned} allocated (Fully allocated)`
+              return `Over-allocated by ${Math.abs(remaining)}`
+            })()}
+          </div>
         </td>
         <td className="px-5 py-3 text-right">
           <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
@@ -1361,12 +1421,16 @@ function ExpenditureItemGroup({
   const items = itemsResp?.data ?? []
 
   const totalAmount = items.reduce(
-    (sum: number, item: PPMPItem) =>
-      sum +
-      ((item.PPMPItemAllocations || []).reduce(
-        (itemSum: number, a: PPMPItemAllocation) => itemSum + a.amount,
+    (sum: number, item: PPMPItem) => {
+      const allocSum = (item.PPMPItemAllocations || []).reduce(
+        (itemSum: number, a: PPMPItemAllocation) => itemSum + (a.amount || 0),
         0,
-      ) || 0),
+      )
+      const itemCost = (item.plannedQuantity && item.plannedQuantity > 0)
+        ? (item.plannedQuantity * (item.unitPrice || 0))
+        : allocSum
+      return sum + itemCost
+    },
     0,
   )
 
@@ -1400,7 +1464,7 @@ function ExpenditureItemGroup({
               Total Cost
             </div>
             <div className="text-sm font-bold text-default-900">
-              {formatCurrency(group.totalCost || 0)}
+              {formatCurrency(group.totalCost > 0 ? group.totalCost : totalAmount)}
             </div>
             <div className="text-[10px] uppercase font-semibold tracking-wider text-default-400 border-l border-default-250/60 pl-3">
               Total Item Cost
@@ -2542,7 +2606,7 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
                     <TooltipContent side="top" className="max-w-xs bg-slate-900 border-slate-800 text-white p-3 shadow-xl z-50">
                       <div className="space-y-1.5 text-xs">
                         <p className="font-bold text-red-400">Cannot Submit PPMP</p>
-                        <p className="text-slate-300">The following items are incomplete or missing allocations:</p>
+                        <p className="text-slate-300">The following items are incomplete or have validation errors:</p>
                         <ul className="list-disc pl-4 space-y-0.5 max-h-32 overflow-y-auto text-slate-200">
                           {incompleteItems.slice(0, 5).map((item) => (
                             <li key={item.id}>{item.name || 'Unnamed Item'}</li>
@@ -2615,13 +2679,13 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
 
       <div className="space-y-6">
         {incompleteItems.length > 0 && (
-          <div className="rounded-xl border border-amber-300 bg-amber-50/80 dark:bg-amber-950/20 p-4 shadow-sm flex items-start gap-3 border-l-4 border-l-amber-500 text-amber-900 dark:text-amber-200">
-            <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+          <div className="rounded-xl border border-red-300 bg-red-50/80 dark:bg-red-950/20 p-4 shadow-sm flex items-start gap-3 border-l-4 border-l-red-500 text-red-900 dark:text-red-200">
+            <AlertCircle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
             <div className="space-y-0.5">
               <h4 className="text-sm font-extrabold">PPMP Submission Blocked</h4>
-              <p className="text-xs font-semibold text-amber-850/90 dark:text-amber-300">
-                There are {incompleteItems.length} item(s) requiring configuration or monthly allocations.
-                Configure all items (marked with red or amber left borders) before submitting this PPMP.
+              <p className="text-xs font-semibold text-red-850/90 dark:text-red-300">
+                There are {incompleteItems.length} item(s) requiring configuration.
+                Configure all items (marked with red left borders) before submitting this PPMP.
               </p>
             </div>
           </div>

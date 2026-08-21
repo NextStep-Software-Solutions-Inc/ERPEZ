@@ -18,6 +18,7 @@ public record PPMPItemResponse
     public string? Description           { get; init; }
     public string  Unit                  { get; init; } = string.Empty;
     public decimal UnitPrice             { get; init; }
+    public int     PlannedQuantity       { get; init; }
     public bool    MOPOverride           { get; init; }
     public string? MOPJustification      { get; init; }
     public DateTime CreatedAt            { get; init; }

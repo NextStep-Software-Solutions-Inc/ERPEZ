@@ -12,6 +12,7 @@ import { toast } from 'sonner'
 import {
   ChevronLeft,
   ChevronRight,
+  AlertCircle,
   LucidePackage,
   LucidePackageOpen,
   MapPin,
@@ -58,7 +59,12 @@ import { FieldDescriptionTooltip } from '../components/FieldDescriptionTooltip'
 
 import { getNONCSEItemsRequest } from '@/features/planning/non-cse-item/handlers/getNONCSEItemsRequest'
 import { getProcurementModesRequest } from '@/lib/fiscal-year-and-policies/requests/getProcurementModesRequest'
-import { usePSDBMItems, usePSDBMDepots, usePSDBMCategories } from '@/features/procurement/psdbm/hooks'
+import {
+  usePSDBMItems,
+  usePSDBMDepots,
+  usePSDBMCategories,
+  useTriggerPSDBMSync,
+} from '@/features/procurement/psdbm/hooks'
 import { PSDBMCatalogMode, type PSDBMItem } from '@/features/procurement/psdbm/types'
 import { createPPMPItemRequest } from '../handlers/createPPMPItemRequest'
 import { createPPMPItemAllocationRequest } from '../handlers/createPPMPItemAllocationRequest'
@@ -94,9 +100,13 @@ const useCreatePPMPItemAllocation = createMutationHookFromTemplate(
 
 export interface ItemReviewConfig {
   unitPrice: number
+  plannedQuantity?: number
   procurementModeId: string
   projectType:
-    'Goods' | 'Infrastructure' | 'ConsultingServices' | 'GeneralSupportServices'
+    | 'Goods'
+    | 'Infrastructure'
+    | 'ConsultingServices'
+    | 'GeneralSupportServices'
   papCode: string
   preProcurementConference: boolean
   procurementStartDate: string
@@ -259,7 +269,11 @@ export default function AddPPMPItemsModal({
   const currentFilters = filtersByTab[activeTab]
   const normalizedSearch = search.trim().toLowerCase()
 
-  const { data: psdbmItemsResponse, isLoading: isPsdbmLoading } = usePSDBMItems({
+  const {
+    data: psdbmItemsResponse,
+    isLoading: isPsdbmLoading,
+    refetch: refetchPsdbm,
+  } = usePSDBMItems({
     pathParams: { mode: cseMode },
     queryParams: {
       depot: (cseMode !== PSDBMCatalogMode.MAIN && selectedDepot) || undefined,
@@ -273,6 +287,22 @@ export default function AddPPMPItemsModal({
     },
     enabled: isOpen && activeTab === 'cse' && isReadyToFetchCse,
   })
+
+  const { mutateAsync: triggerSync, isPending: isSyncing } =
+    useTriggerPSDBMSync()
+
+  const lastSyncTime = useMemo(() => {
+    const timestamp = psdbmItemsResponse?.data?.lastSynchronizedAt
+    if (!timestamp) return null
+    try {
+      return new Date(timestamp).toLocaleString('en-PH', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      })
+    } catch {
+      return null
+    }
+  }, [psdbmItemsResponse])
 
   const { data: nonCseResponse, isLoading: isNonCseLoading } = useNONCSEItems({
     pathParams: {},
@@ -376,10 +406,8 @@ export default function AddPPMPItemsModal({
     return Array.from(selectedItems.values()).reduce((sum, { item }) => {
       const config = configs[item.id]
       if (!config) return sum
-      const totalQty = config.enableAllocations
-        ? Object.values(config.monthlyQuantities).reduce((a, b) => a + b, 0)
-        : 0
-      return sum + totalQty * config.unitPrice
+      const qty = config.plannedQuantity || 0
+      return sum + qty * config.unitPrice
     }, 0)
   }, [selectedItems, configs])
 
@@ -413,6 +441,50 @@ export default function AddPPMPItemsModal({
     },
     [activeTab],
   )
+
+  const handleSyncDepot = useCallback(async () => {
+    const target =
+      selectedDepot ||
+      (cseMode === PSDBMCatalogMode.MAIN ? 'Main Catalog' : 'Catalog')
+
+    const syncPromise = (async () => {
+      const response = await triggerSync({
+        pathParams: {},
+        payload: {
+          syncMode: 'Full',
+          depots: selectedDepot ? [selectedDepot] : undefined,
+          mode:
+            cseMode === PSDBMCatalogMode.REGIONAL
+              ? 'regional'
+              : cseMode === PSDBMCatalogMode.LGU
+                ? 'lgu'
+                : undefined,
+        },
+      })
+      await refetchPsdbm()
+      updateCurrentFilters({ pageIndex: 0 })
+      return response.data
+    })()
+
+    toast.promise(syncPromise, {
+      loading: `Connecting to PS-PhilGEPS and synchronizing ${target} warehouse stocks...`,
+      success: () =>
+        `Successfully synchronized ${target}! Items and stocks updated.`,
+      error: (err: unknown) => {
+        const errorObj = err as {
+          response?: { data?: { message?: string } }
+          message?: string
+        }
+        return `Sync failed: ${errorObj?.response?.data?.message || errorObj?.message || 'Please check backend logs.'}`
+      },
+    })
+
+    try {
+      await syncPromise
+    } catch (err) {
+      console.error('PSDBM sync error:', err)
+    }
+  }, [selectedDepot, cseMode, triggerSync, refetchPsdbm, updateCurrentFilters])
 
   const resetCurrentFilters = useCallback(() => {
     setSearch('')
@@ -448,6 +520,7 @@ export default function AddPPMPItemsModal({
             ...prevConfigs,
             [item.id]: {
               unitPrice: price,
+              plannedQuantity: undefined,
               procurementModeId: '',
               projectType: 'Goods',
               papCode: '',
@@ -530,10 +603,10 @@ export default function AddPPMPItemsModal({
       return
     }
 
-    const selectedList = Array.from(selectedItems.values())
     const invalidItems = selectedList.filter(({ item }) => {
       const config = configs[item.id]
       if (!config) return true
+      if (!config.plannedQuantity || config.plannedQuantity < 1) return true
       if (!config.procurementModeId) return true
       if (config.unitPrice < 0.01) return true
       if (!config.procurementStartDate || !config.procurementEndDate || config.procurementEndDate < config.procurementStartDate) return true
@@ -544,14 +617,14 @@ export default function AddPPMPItemsModal({
           (a, b) => a + b,
           0,
         )
-        if (totalAllocQty <= 0) return true
+        if (totalAllocQty > (config.plannedQuantity || 0)) return true
       }
       return false
     })
 
     if (invalidItems.length > 0) {
       toast.warning(
-        'All items must have a selected Procurement Mode, a unit price >= ₱0.01, valid procurement and delivery timeline dates, and monthly quantities if allocations are enabled.',
+        'All items must have a Planned Quantity (>= 1), selected Procurement Mode, unit price >= ₱0.01, valid timeline dates, and monthly allocations not exceeding planned quantity.',
       )
       return
     }
@@ -592,6 +665,7 @@ export default function AddPPMPItemsModal({
                 : (item as NONCSEItem).description || '',
             unit: item.uomName || '',
             unitPrice: config.unitPrice,
+            plannedQuantity: config.plannedQuantity || 1,
             procurementModeId: config.procurementModeId,
             cseItemId: undefined,
             nonCseItemId: type === 'non-cse' ? item.id : undefined,
@@ -663,7 +737,7 @@ export default function AddPPMPItemsModal({
             query.queryKey[0].startsWith('/ppmp-expenditure-items') ||
             query.queryKey[0].startsWith('/ppmp')),
       })
-      handleClose()
+      forceClose()
     } catch (globalErr) {
       toast.error('An error occurred during batch creation.')
     } finally {
@@ -1044,6 +1118,40 @@ export default function AddPPMPItemsModal({
                                           ))}
                                         </SelectContent>
                                       </Select>
+                                      {isReadyToFetchCse && (
+                                        <div className="flex items-center justify-between pt-1 text-[11px] text-muted-foreground">
+                                          {lastSyncTime && totalMatchingCount > 0 ? (
+                                            <span
+                                              className="truncate max-w-[125px]"
+                                              title={`Last Synced: ${lastSyncTime}`}
+                                            >
+                                              Synced: {lastSyncTime}
+                                            </span>
+                                          ) : (
+                                            <span>Catalog sync</span>
+                                          )}
+                                          <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={handleSyncDepot}
+                                            disabled={isSyncing}
+                                            className="h-6 px-1.5 text-[10px] font-semibold text-primary hover:bg-primary/10 gap-1"
+                                          >
+                                            {isSyncing ? (
+                                              <>
+                                                <Loader2 className="h-3 w-3 animate-spin" />
+                                                Syncing...
+                                              </>
+                                            ) : (
+                                              <>
+                                                <RefreshCcw className="h-3 w-3" />
+                                                Sync PS-DBM
+                                              </>
+                                            )}
+                                          </Button>
+                                        </div>
+                                      )}
                                     </div>
                                   )}
 
@@ -1228,13 +1336,72 @@ export default function AddPPMPItemsModal({
                             </p>
                           </div>
                         ) : totalMatchingCount === 0 ? (
-                          <EmptyState
-                            message={
-                              activeTab === 'cse' && selectedDepot
-                                ? `No PS-DBM items are available for ${selectedDepot}. Try clearing filters or select another depot.`
-                                : 'Try clearing filters or checking your search query.'
-                            }
-                          />
+                          activeTab === 'cse' &&
+                          isReadyToFetchCse &&
+                          !search.trim() &&
+                          currentFilters.categories.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-16 px-4 text-center border border-dashed rounded-xl bg-muted/10 my-4">
+                              <div className="rounded-full bg-amber-500/10 p-3 mb-3 text-amber-600 dark:text-amber-400">
+                                <AlertCircle className="h-6 w-6" />
+                              </div>
+                              <h4 className="text-sm font-semibold text-foreground">
+                                {selectedDepot
+                                  ? `Warehouse Stocks for ${selectedDepot} Not Synchronized`
+                                  : 'PS-DBM Catalog Not Synchronized'}
+                              </h4>
+                              <p className="mt-1 max-w-md text-xs text-muted-foreground">
+                                {selectedDepot
+                                  ? `No items are available locally for ${selectedDepot}. Click Sync PS-DBM Now to fetch real-time items, stocks, and pricing from PS-PhilGEPS.`
+                                  : 'Click Sync PS-DBM Now to synchronize catalog items and pricing.'}
+                              </p>
+                              <Button
+                                type="button"
+                                size="sm"
+                                onClick={handleSyncDepot}
+                                disabled={isSyncing}
+                                className="mt-4 gap-1.5 h-8 text-xs font-semibold"
+                              >
+                                {isSyncing ? (
+                                  <>
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                    Syncing PS-DBM...
+                                  </>
+                                ) : (
+                                  <>
+                                    <RefreshCcw className="h-3.5 w-3.5" />
+                                    Sync PS-DBM Now
+                                  </>
+                                )}
+                              </Button>
+                            </div>
+                          ) : activeTab === 'cse' &&
+                            (search.trim() ||
+                              currentFilters.categories.length > 0) ? (
+                            <div className="flex flex-col items-center justify-center py-16 px-4 text-center border border-dashed rounded-xl bg-muted/10 my-4">
+                              <div className="rounded-full bg-muted p-3 mb-3 text-muted-foreground">
+                                <Search className="h-6 w-6" />
+                              </div>
+                              <h4 className="text-sm font-semibold text-foreground">
+                                No Matching Items Found
+                              </h4>
+                              <p className="mt-1 max-w-md text-xs text-muted-foreground">
+                                No items match your active search or category
+                                filters. Try adjusting or clearing your filters.
+                              </p>
+                              <Button
+                                type="button"
+                                variant="outline"
+                                size="sm"
+                                onClick={resetCurrentFilters}
+                                className="mt-4 gap-1.5 h-8 text-xs font-semibold"
+                              >
+                                <RefreshCcw className="h-3.5 w-3.5" />
+                                Reset Filters
+                              </Button>
+                            </div>
+                          ) : (
+                            <EmptyState message="Try clearing filters or checking your search query." />
+                          )
                         ) : (
                           <>
                             {/* Top result info */}
@@ -1306,20 +1473,56 @@ export default function AddPPMPItemsModal({
 
                                     {/* Image Area */}
                                     <div
-                                      className="w-full bg-slate-50/50 rounded-xl border border-slate-100 overflow-hidden flex items-center justify-center p-4 relative min-h-40"
+                                      className="w-full bg-slate-50/70 rounded-xl border border-slate-100 overflow-hidden flex items-center justify-center p-3 relative min-h-36"
                                       onClick={(e) => e.stopPropagation()}
                                     >
-                                      <DocumentViewer
-                                        src={(item as ProcurementItem).imageURL}
-                                        alt={item.name}
-                                        size="full"
-                                        aspectRatio="square"
-                                        className="max-h-35 max-w-35 border-none shadow-none bg-transparent hover:shadow-none"
-                                        fallbackInitials={initials(
-                                          item.name || '',
-                                        )}
-                                        fallbackBgClass={bgTone}
-                                      />
+                                      {(item as ProcurementItem).imageURL ? (
+                                        <div className="relative w-full h-32 flex items-center justify-center">
+                                          <img
+                                            src={(item as ProcurementItem).imageURL}
+                                            alt={item.name}
+                                            className="max-h-32 max-w-full object-contain transition-transform duration-300 group-hover:scale-105"
+                                            onError={(e) => {
+                                              e.currentTarget.style.display = 'none'
+                                              const fallback = e.currentTarget
+                                                .nextElementSibling as HTMLElement | null
+                                              if (fallback) fallback.style.display = 'flex'
+                                            }}
+                                          />
+                                          <div
+                                            style={{ display: 'none' }}
+                                            className={cn(
+                                              'flex-col items-center justify-center rounded-xl bg-gradient-to-br shadow-inner w-16 h-16 gap-1 text-slate-700',
+                                              bgTone,
+                                            )}
+                                          >
+                                            {tab === 'cse' ? (
+                                              <LucidePackage className="h-6 w-6 text-primary/70 stroke-[1.5]" />
+                                            ) : (
+                                              <Package className="h-6 w-6 text-amber-600/70 stroke-[1.5]" />
+                                            )}
+                                            <span className="text-[11px] font-bold font-mono tracking-wider">
+                                              {initials(item.name || '')}
+                                            </span>
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        <div
+                                          className={cn(
+                                            'flex flex-col items-center justify-center rounded-xl bg-gradient-to-br shadow-inner w-16 h-16 gap-1 text-slate-700',
+                                            bgTone,
+                                          )}
+                                        >
+                                          {tab === 'cse' ? (
+                                            <LucidePackage className="h-6 w-6 text-primary/70 stroke-[1.5]" />
+                                          ) : (
+                                            <Package className="h-6 w-6 text-amber-600/70 stroke-[1.5]" />
+                                          )}
+                                          <span className="text-[11px] font-bold font-mono tracking-wider">
+                                            {initials(item.name || '')}
+                                          </span>
+                                        </div>
+                                      )}
                                     </div>
 
                                     {/* Details Area */}
@@ -1601,19 +1804,23 @@ export default function AddPPMPItemsModal({
                     }
 
                     const isExpanded = expandedItemId === item.id
-                    const totalQty = config.enableAllocations
+                    const plannedQty = config.plannedQuantity || 0
+                    const allocatedQty = config.enableAllocations
                       ? Object.values(config.monthlyQuantities).reduce(
                           (a, b) => a + b,
                           0,
                         )
                       : 0
-                    const calculatedTotal = totalQty * config.unitPrice
+                    const remainingQty = Math.max(0, plannedQty - allocatedQty)
+                    const calculatedTotal = plannedQty * config.unitPrice
 
+                    const hasQtyError =
+                      !config.plannedQuantity || config.plannedQuantity < 1
                     const hasPriceError =
                       !config.unitPrice || config.unitPrice < 0.01
                     const hasMopError = !config.procurementModeId
                     const hasAllocError =
-                      config.enableAllocations && totalQty <= 0
+                      config.enableAllocations && allocatedQty > plannedQty
                     
                     const hasProcStartError = !config.procurementStartDate
                     const hasProcEndError =
@@ -1630,6 +1837,7 @@ export default function AddPPMPItemsModal({
                         config.expectedDeliveryEnd < config.expectedDeliveryStart)
 
                     const hasAnyError =
+                      hasQtyError ||
                       hasPriceError ||
                       hasMopError ||
                       hasAllocError ||
@@ -1680,15 +1888,15 @@ export default function AddPPMPItemsModal({
                               setExpandedItemId(isExpanded ? null : item.id)
                             }
                           >
-                            {(item as ProcurementItem).imageURL && (
-                              <DocumentViewer
-                                src={(item as ProcurementItem).imageURL}
-                                alt={item.name}
-                                size="xs"
-                                aspectRatio="square"
-                                enableLightbox={false}
-                              />
-                            )}
+                            {((item as ProcurementItem).imageURL || (item as any).imageUrl) ? (
+                              <div className="h-10 w-10 shrink-0 rounded-lg overflow-hidden border border-border bg-slate-50 flex items-center justify-center">
+                                <img
+                                  src={(item as ProcurementItem).imageURL || (item as any).imageUrl}
+                                  alt={item.name}
+                                  className="h-full w-full object-contain"
+                                />
+                              </div>
+                            ) : null}
                             <div className="min-w-0 flex-1 space-y-1">
                               <div className="flex items-center gap-2 flex-wrap">
                                 <span className="text-xs font-semibold text-muted-foreground">
@@ -1719,7 +1927,7 @@ export default function AddPPMPItemsModal({
                                   {specText}
                                 </p>
                               )}
-                              <div className="flex items-center gap-4 text-[10px] text-muted-foreground">
+                              <div className="flex items-center gap-4 text-[10px] text-muted-foreground flex-wrap">
                                 <span>
                                   UOM:{' '}
                                   <strong className="text-foreground">
@@ -1732,11 +1940,17 @@ export default function AddPPMPItemsModal({
                                     {categoryText || 'N/A'}
                                   </strong>
                                 </span>
+                                <span>
+                                  Planned Qty:{' '}
+                                  <strong className="text-foreground">
+                                    {plannedQty > 0 ? plannedQty : '—'}
+                                  </strong>
+                                </span>
                                 {config.enableAllocations && (
                                   <span>
-                                    Total Qty:{' '}
-                                    <strong className="text-foreground">
-                                      {totalQty}
+                                    Allocated Qty:{' '}
+                                    <strong className={cn(hasAllocError ? 'text-red-500 font-bold' : 'text-foreground')}>
+                                      {allocatedQty}
                                     </strong>
                                   </span>
                                 )}
@@ -1805,9 +2019,17 @@ export default function AddPPMPItemsModal({
                                 <div>
                                   <span className="text-[11px] text-muted-foreground block">Planned Quantity</span>
                                   <strong className="text-foreground text-xs">
-                                    {totalQty > 0
-                                      ? `${totalQty} ${item.uomName || 'units'}`
-                                      : `0 ${item.uomName || 'units'}`}
+                                    {plannedQty > 0
+                                      ? `${plannedQty} ${item.uomName || 'units'}`
+                                      : `—`}
+                                  </strong>
+                                </div>
+                                <div>
+                                  <span className="text-[11px] text-muted-foreground block">Monthly Allocation</span>
+                                  <strong className="text-foreground text-xs">
+                                    {allocatedQty > 0
+                                      ? `${allocatedQty} allocated (${remainingQty} remaining)`
+                                      : `Not yet distributed`}
                                   </strong>
                                 </div>
                               </div>
@@ -1819,15 +2041,50 @@ export default function AddPPMPItemsModal({
                                     currency: 'PHP',
                                   }).format(calculatedTotal)}
                                 </div>
-                                {totalQty === 0 && config.enableAllocations && (
-                                  <span className="text-[10px] text-muted-foreground">
-                                    Enter monthly quantities below to calculate total cost.
+                                {hasAllocError && (
+                                  <span className="text-[10px] text-red-500 font-semibold block mt-0.5">
+                                    Allocated ({allocatedQty}) exceeds planned ({plannedQty}).
                                   </span>
                                 )}
                               </div>
                             </div>
 
-                            <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+                            <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
+                              {/* Planned Quantity */}
+                              <div className="space-y-1.5">
+                                <div className="flex items-center gap-1">
+                                  <label
+                                    htmlFor={`qty-${item.id}`}
+                                    className="text-xs font-semibold text-muted-foreground select-none"
+                                  >
+                                    Planned Quantity *
+                                  </label>
+                                  <FieldDescriptionTooltip fieldKey="plannedQuantity" className="h-3.5 w-3.5" />
+                                </div>
+                                <Input
+                                  id={`qty-${item.id}`}
+                                  type="number"
+                                  min="1"
+                                  placeholder="e.g. 100"
+                                  value={config.plannedQuantity ?? ''}
+                                  onChange={(e) =>
+                                    updateConfig(item.id, {
+                                      plannedQuantity:
+                                        e.target.value === ''
+                                          ? undefined
+                                          : Math.max(1, Number.parseInt(e.target.value, 10) || 1),
+                                    })
+                                  }
+                                  className={cn(
+                                    'text-xs h-9 w-full border-default-200 focus-visible:ring-primary/25',
+                                    hasQtyError && 'border-red-500 bg-red-50/20',
+                                  )}
+                                />
+                                {hasQtyError && (
+                                  <p className="text-[10px] text-red-500 mt-0.5">Planned quantity is required (≥ 1)</p>
+                                )}
+                              </div>
+
                               {/* Unit Price */}
                               <div className="space-y-1.5">
                                 <div className="flex items-center gap-1">
@@ -2157,17 +2414,15 @@ export default function AddPPMPItemsModal({
                             {/* Allocations Input Grid */}
                             {config.enableAllocations && (
                               <div className="p-3 bg-muted/30 border border-border/80 rounded-lg space-y-3">
-                                <div className="text-[10px] text-muted-foreground font-semibold flex justify-between items-center">
+                                <div className="text-[10px] text-muted-foreground font-semibold flex justify-between items-center flex-wrap gap-2">
                                   <span>
-                                    Distribute units across fiscal year months
+                                    Planned: <strong className="text-foreground">{plannedQty}</strong> | Allocated: <strong className={cn(hasAllocError ? 'text-red-500 font-bold' : 'text-foreground')}>{allocatedQty}</strong> | Remaining: <strong className="text-foreground">{remainingQty}</strong>
                                   </span>
-                                  <span
-                                    className={cn(
-                                      hasAllocError && 'text-red-500 font-bold',
-                                    )}
-                                  >
-                                    Total Units: {totalQty}
-                                  </span>
+                                  {hasAllocError && (
+                                    <span className="text-red-500 font-bold">
+                                      Exceeds planned quantity by {allocatedQty - plannedQty}
+                                    </span>
+                                  )}
                                 </div>
                                 <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
                                   {MONTH_NAMES.map((month) => {

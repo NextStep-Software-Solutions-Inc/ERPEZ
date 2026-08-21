@@ -165,6 +165,7 @@ export interface CatalogItem {
   catalogType: CatalogType
   defaultMoP: ModeOfProcurement
   itemCode: string
+  imageUrl?: string
   /** Non-CSE only: whether this is a mixed supply+service item */
   isMixed?: boolean
   /** Non-CSE only: subtype label (e.g. 'Service', 'Goods', 'Works') */
@@ -454,6 +455,7 @@ export type PPMPItem = {
   description?: string
   unit?: string
   unitPrice: number
+  plannedQuantity?: number
   mopOverride: boolean
   mopJustification?: string
   createdAt: string

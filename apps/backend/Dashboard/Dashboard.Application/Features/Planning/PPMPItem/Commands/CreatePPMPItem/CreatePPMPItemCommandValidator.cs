@@ -27,6 +27,10 @@ public class CreatePPMPItemCommandValidator : AbstractValidator<CreatePPMPItemCo
             .NotEmpty()
             .WithMessage("Procurement Mode ID is required.");
 
+        RuleFor(x => x.PlannedQuantity)
+            .GreaterThan(0)
+            .WithMessage("Planned quantity must be greater than 0.");
+
         RuleFor(x => x.Name)
             .NotEmpty()
             .WithMessage("Item Name is required.")

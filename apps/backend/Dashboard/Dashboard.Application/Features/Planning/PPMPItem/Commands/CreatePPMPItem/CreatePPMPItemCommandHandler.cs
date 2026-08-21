@@ -63,6 +63,7 @@ public class CreatePPMPItemCommandHandler(IUnitOfWork unitOfWork)
             Description = description,
             Unit = unit,
             UnitPrice = unitPrice,
+            PlannedQuantity = request.PlannedQuantity,
             MOPOverride = request.MOPOverride,
             MOPJustification = request.MOPJustification,
             ProjectType               = request.ProjectType,

@@ -12,6 +12,28 @@ namespace ERPEZ.Application.Features.Planning.PPMP.Queries.Common;
 
 internal static class PPMPQueryProjection
 {
+    private static decimal GetItemEffectiveCost(PPMPItemEntity item)
+    {
+        var activeAllocations = item.PPMPItemAllocations.Where(a => !a.IsDeleted).ToList();
+        if (activeAllocations.Count != 0)
+        {
+            return activeAllocations.Sum(a => a.Amount);
+        }
+
+        if (item.PlannedQuantity > 0)
+        {
+            decimal unitPrice = item.UnitPrice > 0
+                ? item.UnitPrice
+                : (item.CSEItem?.ItemPrices?.OrderByDescending(p => p.FiscalYear?.Year ?? 0).FirstOrDefault()?.UnitPrice
+                   ?? item.NonCSEItem?.CurrentPrice
+                   ?? 0m);
+
+            return item.PlannedQuantity * unitPrice;
+        }
+
+        return 0m;
+    }
+
     internal static PPMPDetailedResponse BuildDetailedResponse(PPMPEntity ppmp)
     {
         var items = GetPPMPItems(ppmp);
@@ -33,7 +55,7 @@ internal static class PPMPQueryProjection
             IsMaster = ppmp.IsMaster,
             Description = ppmp.Description,
             Version = ppmp.Version,
-            TotalEstimatedBudget = allocations.Sum(a => a.Amount),
+            TotalEstimatedBudget = items.Sum(GetItemEffectiveCost),
             Status = ppmp.Status.ToString(),
             SubmittedDate = ppmp.SubmittedDate,
             ApprovedDate = ppmp.ApprovedDate,
@@ -89,6 +111,7 @@ internal static class PPMPQueryProjection
             UnitPrice = item.UnitPrice > 0 
                 ? item.UnitPrice 
                 : (csePrice ?? nonCsePrice ?? (allocations.Any() && allocations.First().Quantity > 0 ? allocations.First().Amount / allocations.First().Quantity : 0)),
+            PlannedQuantity = item.PlannedQuantity,
             MOPOverride = item.MOPOverride,
             // ── New fields ───────────────────────────────────────────────────────
             ProjectType              = item.ProjectType,
@@ -102,7 +125,9 @@ internal static class PPMPQueryProjection
             CreatedAt = item.CreatedAt,
             CreatedBy = item.CreatedBy,
             PPMP = ppmp == null ? null : BuildSummaryResponse(ppmp, false),
-            TotalAllocationAmount = allocations.Sum(x => x.Amount),
+            TotalAllocationAmount = allocations.Count != 0
+                ? allocations.Sum(x => x.Amount)
+                : (item.PlannedQuantity > 0 ? item.PlannedQuantity * (item.UnitPrice > 0 ? item.UnitPrice : (csePrice ?? nonCsePrice ?? 0m)) : 0m),
             PPMPItemAllocations = allocations.Select(BuildAllocationWithoutParents).ToList(),
             CSEItemName = item.CSEItem?.Name,
             NonCSEItemName = item.NonCSEItem?.Name,
@@ -138,7 +163,8 @@ internal static class PPMPQueryProjection
             Amount = allocation.Amount,
             CreatedAt = allocation.CreatedAt,
             CreatedBy = allocation.CreatedBy,
-            PPMPItem = allocation.PPMPItem == null ? null : BuildItemWithoutAllocations(allocation.PPMPItem),            PPMP = ppmp == null ? null : BuildSummaryResponse(ppmp, false)
+            PPMPItem = allocation.PPMPItem == null ? null : BuildItemWithoutAllocations(allocation.PPMPItem),
+            PPMP = ppmp == null ? null : BuildSummaryResponse(ppmp, false)
         };
     }
 
@@ -163,7 +189,7 @@ internal static class PPMPQueryProjection
             IsMaster = ppmp.IsMaster,
             Description = ppmp.Description,
             Version = ppmp.Version,
-            TotalEstimatedBudget = includeCollections ? allocations.Sum(a => a.Amount) : ppmp.TotalEstimatedBudget,
+            TotalEstimatedBudget = includeCollections ? items.Sum(GetItemEffectiveCost) : ppmp.TotalEstimatedBudget,
             Status = ppmp.Status.ToString(),
             SubmittedDate = ppmp.SubmittedDate,
             ApprovedDate = ppmp.ApprovedDate,
@@ -209,8 +235,11 @@ internal static class PPMPQueryProjection
             ActivityCode = string.Empty,
             TotalItems = items.Count,
             TotalItemAllocations = allocations.Count,
-            TotalAllocationQuantity = allocations.Sum(allocation => allocation.Quantity),
-            TotalAllocationAmount = allocations.Sum(allocation => allocation.Amount),
+            TotalAllocationQuantity = items.Sum(i => {
+                var aQty = i.PPMPItemAllocations.Where(a => !a.IsDeleted).Sum(a => a.Quantity);
+                return aQty > 0 ? aQty : i.PlannedQuantity;
+            }),
+            TotalAllocationAmount = items.Sum(GetItemEffectiveCost),
             CreatedAt = activity.CreatedAt,
             PPMPExpenditureItems = activity.PPMPExpenditureItems.Where(x => !x.IsDeleted).Select(BuildExpenditureItemResponse).ToList()
         };
@@ -218,15 +247,18 @@ internal static class PPMPQueryProjection
 
     private static PPMPExpenditureItemResponse BuildExpenditureItemResponse(PPMPExpenditureItemEntity expenditureItem)
     {
+        var expItems = expenditureItem.PPMPItems.Where(x => !x.IsDeleted).ToList();
+        var expCost = expItems.Count > 0 ? expItems.Sum(GetItemEffectiveCost) : expenditureItem.TotalCost;
+
         return new PPMPExpenditureItemResponse
         {
             Id = expenditureItem.Id,
             PPMPActivityId = expenditureItem.PPMPActivityId,
             IsProcurable = expenditureItem.IsProcurable,
-            TotalCost = expenditureItem.TotalCost,
+            TotalCost = expCost,
             CreatedAt = expenditureItem.CreatedAt,
             CreatedBy = expenditureItem.CreatedBy,
-            PPMPItems = expenditureItem.PPMPItems.Where(x => !x.IsDeleted).Select(BuildItemResponse).ToList()
+            PPMPItems = expItems.Select(BuildItemResponse).ToList()
         };
     }
 

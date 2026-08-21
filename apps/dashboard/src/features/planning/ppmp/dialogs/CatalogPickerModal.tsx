@@ -10,6 +10,7 @@ import { toast } from 'sonner'
 import {
   ChevronLeft,
   ChevronRight,
+  AlertCircle,
   Loader2,
   LucidePackage,
   LucidePackageOpen,
@@ -40,7 +41,11 @@ import type { CatalogItem, CatalogType } from '../types'
 import { formatCurrency, getSuggestedMoP } from '../lib/ppmpUtils'
 import { useNonCSEItems } from '../catalog/hooks/useNonCSEItemQueries'
 import type { NONCSEItem } from '@/features/planning/non-cse-item/types/non-cse.type'
-import { usePSDBMItems, usePSDBMDepots } from '@/features/procurement/psdbm/hooks'
+import {
+  usePSDBMItems,
+  usePSDBMDepots,
+  useTriggerPSDBMSync,
+} from '@/features/procurement/psdbm/hooks'
 import { PSDBMCatalogMode } from '@/features/procurement/psdbm/types'
 import type { PSDBMItem } from '@/features/procurement/psdbm/types'
 import {
@@ -128,6 +133,7 @@ function mapPsdbmItemToCatalogItem(item: PSDBMItem): CatalogItem {
     unitOfMeasure: item.unit,
     catalogType: 'cse',
     defaultMoP: 'NP-53.5',
+    imageUrl: item.imageUrl,
   }
   return {
     ...baseItem,
@@ -191,6 +197,13 @@ function normalizeCatalogItem(
           ? raw.procurementCategoryName
           : undefined
 
+  const imageUrl =
+    typeof raw.imageUrl === 'string' && raw.imageUrl
+      ? raw.imageUrl
+      : typeof raw.imageURL === 'string' && raw.imageURL
+        ? raw.imageURL
+        : undefined
+
   const baseItem: CatalogItem = {
     id: String(raw.id || itemCode),
     name: itemName,
@@ -201,6 +214,7 @@ function normalizeCatalogItem(
     defaultMoP: catalogType === 'cse' ? 'NP-53.5' : 'NP-53.9',
     itemCode,
     subtype,
+    imageUrl,
   }
 
   return {
@@ -317,7 +331,11 @@ export function CatalogPickerModal({
   const isDepotRequired = cseMode !== PSDBMCatalogMode.MAIN
   const isReadyToFetchCse = !isDepotRequired || Boolean(selectedDepot)
 
-  const { data: psdbmItemsData, isLoading: isPsdbmLoading } = usePSDBMItems({
+  const {
+    data: psdbmItemsData,
+    isLoading: isPsdbmLoading,
+    refetch: refetchPsdbm,
+  } = usePSDBMItems({
     pathParams: { mode: cseMode },
     queryParams: {
       depot: (cseMode !== PSDBMCatalogMode.MAIN && selectedDepot) || undefined,
@@ -331,6 +349,22 @@ export function CatalogPickerModal({
     },
     enabled: open && activeTab === 'cse' && isReadyToFetchCse,
   })
+
+  const { mutateAsync: triggerSync, isPending: isSyncing } =
+    useTriggerPSDBMSync()
+
+  const lastSyncTime = useMemo(() => {
+    const timestamp = psdbmItemsData?.data?.lastSynchronizedAt
+    if (!timestamp) return null
+    try {
+      return new Date(timestamp).toLocaleString('en-PH', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      })
+    } catch {
+      return null
+    }
+  }, [psdbmItemsData])
 
   const cseCatalogItems = useMemo<CatalogItem[]>(() => {
     const items = psdbmItemsData?.data?.items || []
@@ -394,6 +428,50 @@ export function CatalogPickerModal({
     },
     [activeTab, setFiltersByTab],
   )
+
+  const handleSyncDepot = useCallback(async () => {
+    const target =
+      selectedDepot ||
+      (cseMode === PSDBMCatalogMode.MAIN ? 'Main Catalog' : 'Catalog')
+
+    const syncPromise = (async () => {
+      const response = await triggerSync({
+        pathParams: {},
+        payload: {
+          syncMode: 'Full',
+          depots: selectedDepot ? [selectedDepot] : undefined,
+          mode:
+            cseMode === PSDBMCatalogMode.REGIONAL
+              ? 'regional'
+              : cseMode === PSDBMCatalogMode.LGU
+                ? 'lgu'
+                : undefined,
+        },
+      })
+      await refetchPsdbm()
+      updateCurrentFilters({ pageIndex: 0 })
+      return response.data
+    })()
+
+    toast.promise(syncPromise, {
+      loading: `Connecting to PS-PhilGEPS and synchronizing ${target} warehouse stocks...`,
+      success: () =>
+        `Successfully synchronized ${target}! Items and stocks updated.`,
+      error: (err: unknown) => {
+        const errorObj = err as {
+          response?: { data?: { message?: string } }
+          message?: string
+        }
+        return `Sync failed: ${errorObj?.response?.data?.message || errorObj?.message || 'Please check backend logs.'}`
+      },
+    })
+
+    try {
+      await syncPromise
+    } catch (err) {
+      console.error('PSDBM sync error:', err)
+    }
+  }, [selectedDepot, cseMode, triggerSync, refetchPsdbm, updateCurrentFilters])
 
   const resetCurrentFilters = useCallback(() => {
     setSearch('')
@@ -762,6 +840,40 @@ export function CatalogPickerModal({
                                       ))}
                                     </SelectContent>
                                   </Select>
+                                  {isReadyToFetchCse && (
+                                    <div className="flex items-center justify-between pt-1 text-[11px] text-muted-foreground">
+                                      {lastSyncTime && filteredItems.length > 0 ? (
+                                        <span
+                                          className="truncate max-w-[125px]"
+                                          title={`Last Synced: ${lastSyncTime}`}
+                                        >
+                                          Synced: {lastSyncTime}
+                                        </span>
+                                      ) : (
+                                        <span>Catalog sync</span>
+                                      )}
+                                      <Button
+                                        type="button"
+                                        variant="ghost"
+                                        size="sm"
+                                        onClick={handleSyncDepot}
+                                        disabled={isSyncing}
+                                        className="h-6 px-1.5 text-[10px] font-semibold text-primary hover:bg-primary/10 gap-1"
+                                      >
+                                        {isSyncing ? (
+                                          <>
+                                            <Loader2 className="h-3 w-3 animate-spin" />
+                                            Syncing...
+                                          </>
+                                        ) : (
+                                          <>
+                                            <RefreshCcw className="h-3 w-3" />
+                                            Sync PS-DBM
+                                          </>
+                                        )}
+                                      </Button>
+                                    </div>
+                                  )}
                                 </div>
                               )}
 
@@ -1013,7 +1125,74 @@ export function CatalogPickerModal({
                     ) : (tab === activeTab
                         ? filteredItems.length
                         : tabFiltered.length) === 0 ? (
-                      <EmptyState message="Try widening the price band, clearing a category filter, or changing the search query." />
+                      tab === activeTab &&
+                      tab === 'cse' &&
+                      isReadyToFetchCse &&
+                      !search.trim() &&
+                      currentFilters.categories.length === 0 ? (
+                        <div className="flex flex-col items-center justify-center py-16 px-4 text-center border border-dashed rounded-xl bg-muted/10 my-4">
+                          <div className="rounded-full bg-amber-500/10 p-3 mb-3 text-amber-600 dark:text-amber-400">
+                            <AlertCircle className="h-6 w-6" />
+                          </div>
+                          <h4 className="text-sm font-semibold text-foreground">
+                            {selectedDepot
+                              ? `Warehouse Stocks for ${selectedDepot} Not Synchronized`
+                              : 'PS-DBM Catalog Not Synchronized'}
+                          </h4>
+                          <p className="mt-1 max-w-md text-xs text-muted-foreground">
+                            {selectedDepot
+                              ? `No items are available locally for ${selectedDepot}. Click Sync PS-DBM Now to fetch real-time items, stocks, and pricing from PS-PhilGEPS.`
+                              : 'Click Sync PS-DBM Now to synchronize catalog items and pricing.'}
+                          </p>
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={handleSyncDepot}
+                            disabled={isSyncing}
+                            className="mt-4 gap-1.5 h-8 text-xs font-semibold"
+                          >
+                            {isSyncing ? (
+                              <>
+                                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                Syncing PS-DBM...
+                              </>
+                            ) : (
+                              <>
+                                <RefreshCcw className="h-3.5 w-3.5" />
+                                Sync PS-DBM Now
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                      ) : tab === activeTab &&
+                        tab === 'cse' &&
+                        (search.trim() ||
+                          currentFilters.categories.length > 0) ? (
+                        <div className="flex flex-col items-center justify-center py-16 px-4 text-center border border-dashed rounded-xl bg-muted/10 my-4">
+                          <div className="rounded-full bg-muted p-3 mb-3 text-muted-foreground">
+                            <Search className="h-6 w-6" />
+                          </div>
+                          <h4 className="text-sm font-semibold text-foreground">
+                            No Matching Items Found
+                          </h4>
+                          <p className="mt-1 max-w-md text-xs text-muted-foreground">
+                            No items match your active search or category
+                            filters. Try adjusting or clearing your filters.
+                          </p>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="sm"
+                            onClick={resetCurrentFilters}
+                            className="mt-4 gap-1.5 h-8 text-xs font-semibold"
+                          >
+                            <RefreshCcw className="h-3.5 w-3.5" />
+                            Reset Filters
+                          </Button>
+                        </div>
+                      ) : (
+                        <EmptyState message="Try widening the price band, clearing a category filter, or changing the search query." />
+                      )
                     ) : (
                       <>
                         <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -1048,11 +1227,33 @@ export function CatalogPickerModal({
                                   <div className="flex min-w-0 items-start gap-3">
                                     <div
                                       className={cn(
-                                        'flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-gradient-to-br text-sm font-semibold text-foreground ring-1 ring-border',
+                                        'flex h-14 w-14 shrink-0 items-center justify-center rounded-lg bg-slate-50 text-sm font-semibold text-foreground ring-1 ring-border overflow-hidden relative',
                                         tone(item.id),
                                       )}
                                     >
-                                      <span>{item.thumbnailLabel}</span>
+                                      {item.imageUrl ? (
+                                        <>
+                                          <img
+                                            src={item.imageUrl}
+                                            alt={item.name}
+                                            className="h-full w-full object-contain"
+                                            onError={(e) => {
+                                              e.currentTarget.style.display = 'none'
+                                              const fallback = e.currentTarget
+                                                .nextElementSibling as HTMLElement | null
+                                              if (fallback) fallback.style.display = 'flex'
+                                            }}
+                                          />
+                                          <div
+                                            style={{ display: 'none' }}
+                                            className="h-full w-full flex items-center justify-center"
+                                          >
+                                            <span>{item.thumbnailLabel}</span>
+                                          </div>
+                                        </>
+                                      ) : (
+                                        <span>{item.thumbnailLabel}</span>
+                                      )}
                                     </div>
                                     <div className="min-w-0 space-y-1">
                                       <div className="line-clamp-2 text-sm font-semibold leading-tight text-foreground">
