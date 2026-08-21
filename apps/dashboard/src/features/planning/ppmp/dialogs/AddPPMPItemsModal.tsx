@@ -56,11 +56,9 @@ import { cn } from '@/lib/utils'
 import DocumentViewer from '@/components/DocumentViewer'
 import { FieldDescriptionTooltip } from '../components/FieldDescriptionTooltip'
 
-import { getProcurementItemRequest } from '@/components/features/planning/procurement-item/handlers/getProcurementItemRequest'
 import { getNONCSEItemsRequest } from '@/features/planning/non-cse-item/handlers/getNONCSEItemsRequest'
-import { getNONCSEItemRequest } from '@/features/planning/non-cse-item/handlers/getNONCSEItemRequest'
 import { getProcurementModesRequest } from '@/lib/fiscal-year-and-policies/requests/getProcurementModesRequest'
-import { usePSDBMItems, usePSDBMDepots } from '@/features/procurement/psdbm/hooks'
+import { usePSDBMItems, usePSDBMDepots, usePSDBMCategories } from '@/features/procurement/psdbm/hooks'
 import { PSDBMCatalogMode, type PSDBMItem } from '@/features/procurement/psdbm/types'
 import { createPPMPItemRequest } from '../handlers/createPPMPItemRequest'
 import { createPPMPItemAllocationRequest } from '../handlers/createPPMPItemAllocationRequest'
@@ -85,11 +83,7 @@ function mapPsdbmToProcurementItem(psdbm: PSDBMItem): ProcurementItem {
   } as ProcurementItem
 }
 
-const useProcurementItem = createQueryHookFromTemplate(
-  getProcurementItemRequest,
-)
 const useNONCSEItems = createQueryHookFromTemplate(getNONCSEItemsRequest)
-const useNONCSEItem = createQueryHookFromTemplate(getNONCSEItemRequest)
 const useProcurementModes = createQueryHookFromTemplate(
   getProcurementModesRequest,
 )
@@ -129,7 +123,7 @@ interface TabFilters {
   pageIndex: number
 }
 
-const PAGE_SIZE = 8
+const PAGE_SIZE = 25
 const DEFAULT_FILTERS: TabFilters = {
   categories: [],
   unitOfMeasures: [],
@@ -235,6 +229,11 @@ export default function AddPPMPItemsModal({
     enabled: isOpen && activeTab === 'cse',
   })
 
+  const { data: psdbmCategoriesResponse } = usePSDBMCategories({
+    pathParams: { mode: cseMode },
+    enabled: isOpen && activeTab === 'cse',
+  })
+
   const depots = useMemo(() => {
     const allDepots = depotsData?.data || []
     if (cseMode === PSDBMCatalogMode.REGIONAL) {
@@ -257,11 +256,20 @@ export default function AddPPMPItemsModal({
   const isDepotRequired = cseMode !== PSDBMCatalogMode.MAIN
   const isReadyToFetchCse = !isDepotRequired || Boolean(selectedDepot)
 
+  const currentFilters = filtersByTab[activeTab]
+  const normalizedSearch = search.trim().toLowerCase()
+
   const { data: psdbmItemsResponse, isLoading: isPsdbmLoading } = usePSDBMItems({
     pathParams: { mode: cseMode },
     queryParams: {
       depot: (cseMode !== PSDBMCatalogMode.MAIN && selectedDepot) || undefined,
-      max: 1000,
+      search: normalizedSearch || undefined,
+      category:
+        currentFilters.categories.length > 0
+          ? currentFilters.categories[0]
+          : undefined,
+      pageNumber: currentFilters.pageIndex + 1,
+      pageSize: PAGE_SIZE,
     },
     enabled: isOpen && activeTab === 'cse' && isReadyToFetchCse,
   })
@@ -269,10 +277,15 @@ export default function AddPPMPItemsModal({
   const { data: nonCseResponse, isLoading: isNonCseLoading } = useNONCSEItems({
     pathParams: {},
     queryParams: {
-      pageNumber: 1,
-      pageSize: 1000,
+      search: normalizedSearch || undefined,
+      category:
+        currentFilters.categories.length > 0
+          ? currentFilters.categories[0]
+          : undefined,
+      pageNumber: currentFilters.pageIndex + 1,
+      pageSize: PAGE_SIZE,
     },
-    enabled: isOpen,
+    enabled: isOpen && activeTab === 'non-cse',
   })
 
   const { data: modesResponse } = useProcurementModes({
@@ -282,27 +295,6 @@ export default function AddPPMPItemsModal({
     },
     enabled: isOpen,
   })
-
-  const { data: cseDetailResponse, isLoading: isCseDetailLoading } =
-    useProcurementItem({
-      pathParams: { id: detailsItemId ?? '' },
-      queryParams: {},
-      enabled: !!detailsItemId && detailsItemType === 'cse',
-    })
-
-  const { data: nonCseDetailResponse, isLoading: isNonCseDetailLoading } =
-    useNONCSEItem({
-      pathParams: { id: detailsItemId ?? '' },
-      queryParams: {},
-      enabled: !!detailsItemId && detailsItemType === 'non-cse',
-    })
-
-  const detailData =
-    detailsItemType === 'cse'
-      ? cseDetailResponse?.data
-      : nonCseDetailResponse?.data
-  const isDetailLoading =
-    detailsItemType === 'cse' ? isCseDetailLoading : isNonCseDetailLoading
 
   const procurementItems = useMemo(
     () => (psdbmItemsResponse?.data?.items || []).map(mapPsdbmToProcurementItem),
@@ -317,36 +309,28 @@ export default function AddPPMPItemsModal({
     [modesResponse],
   )
 
-  // Partition items into active lists
-  const cseFilteredItems = useMemo(() => {
-    return procurementItems
-  }, [procurementItems])
-
-  const nonCseFilteredItems = useMemo(() => {
-    return nonCseItems
-  }, [nonCseItems])
-
   const currentItems =
-    activeTab === 'cse' ? cseFilteredItems : nonCseFilteredItems
+    activeTab === 'cse' ? procurementItems : nonCseItems
   const isCatalogLoading =
     activeTab === 'cse' ? isPsdbmLoading : isNonCseLoading
-  const currentFilters = filtersByTab[activeTab]
-  const normalizedSearch = search.trim().toLowerCase()
 
-  // Generate dynamic filters based on active items in tab
+  // Dynamic filter options
   const filterOptions = useMemo(() => {
     if (activeTab === 'cse') {
-      const items = currentItems as ProcurementItem[]
+      const psdbmCats = (psdbmCategoriesResponse?.data || [])
+        .map((c) => c.name)
+        .filter(Boolean)
+      const itemCats = procurementItems
+        .map((item) => item.objectCodeName)
+        .filter(Boolean)
       return {
-        categories: Array.from(
-          new Set(items.map((item) => item.objectCodeName).filter(Boolean)),
-        ).sort() as string[],
+        categories: Array.from(new Set([...psdbmCats, ...itemCats])).sort() as string[],
         units: Array.from(
-          new Set(items.map((item) => item.uomName).filter(Boolean)),
+          new Set(procurementItems.map((item) => item.uomName).filter(Boolean)),
         ).sort() as string[],
       }
     } else {
-      const items = currentItems as NONCSEItem[]
+      const items = nonCseItems
       return {
         categories: Array.from(
           new Set(
@@ -358,97 +342,33 @@ export default function AddPPMPItemsModal({
         ).sort() as string[],
       }
     }
-  }, [currentItems, activeTab])
+  }, [activeTab, psdbmCategoriesResponse, procurementItems, nonCseItems])
 
-  // Local filtering logic depending on item properties
-  const filteredItems = useMemo(() => {
+  // Resolve active item for View Details sheet directly from current/selected catalog data
+  const activeDetailItem = useMemo(() => {
+    if (!detailsItemId) return null
+    const fromCurrent = currentItems.find((i) => i.id === detailsItemId)
+    if (fromCurrent) return fromCurrent
+    const fromSelected = selectedItems.get(detailsItemId)?.item
+    return (fromSelected as ProcurementItem | NONCSEItem) || null
+  }, [detailsItemId, currentItems, selectedItems])
+
+  const detailData = activeDetailItem
+  const isDetailLoading = false
+
+  // Server-driven pagination metadata
+  const totalMatchingCount = useMemo(() => {
     if (activeTab === 'cse') {
-      const items = currentItems as ProcurementItem[]
-      return items.filter((item) => {
-        if (normalizedSearch) {
-          const matchesName = item.name
-            ?.toLowerCase()
-            .includes(normalizedSearch)
-          const matchesSpecs = item.specifications
-            ?.toLowerCase()
-            .includes(normalizedSearch)
-          const matchesObjCode = item.objectCodeName
-            ?.toLowerCase()
-            .includes(normalizedSearch)
-          const matchesUnspsc = item.unspscCodeName
-            ?.toLowerCase()
-            .includes(normalizedSearch)
-          if (
-            !matchesName &&
-            !matchesSpecs &&
-            !matchesObjCode &&
-            !matchesUnspsc
-          )
-            return false
-        }
-
-        if (
-          currentFilters.categories.length > 0 &&
-          (!item.objectCodeName ||
-            !currentFilters.categories.includes(item.objectCodeName))
-        ) {
-          return false
-        }
-
-        if (
-          currentFilters.unitOfMeasures.length > 0 &&
-          (!item.uomName ||
-            !currentFilters.unitOfMeasures.includes(item.uomName))
-        ) {
-          return false
-        }
-
-        return true
-      })
-    } else {
-      const items = currentItems as NONCSEItem[]
-      return items.filter((item) => {
-        if (normalizedSearch) {
-          const matchesName = item.name
-            ?.toLowerCase()
-            .includes(normalizedSearch)
-          const matchesDesc = item.description
-            ?.toLowerCase()
-            .includes(normalizedSearch)
-          const matchesCategory = item.procurementCategoryName
-            ?.toLowerCase()
-            .includes(normalizedSearch)
-          if (!matchesName && !matchesDesc && !matchesCategory) return false
-        }
-
-        if (
-          currentFilters.categories.length > 0 &&
-          (!item.procurementCategoryName ||
-            !currentFilters.categories.includes(item.procurementCategoryName))
-        ) {
-          return false
-        }
-
-        if (
-          currentFilters.unitOfMeasures.length > 0 &&
-          (!item.uomName ||
-            !currentFilters.unitOfMeasures.includes(item.uomName))
-        ) {
-          return false
-        }
-
-        return true
-      })
+      return psdbmItemsResponse?.data?.totalItems ?? 0
     }
-  }, [currentFilters, currentItems, normalizedSearch, activeTab])
+    return (
+      nonCseResponse?.totalRows ?? (nonCseResponse?.data?.length ?? 0)
+    )
+  }, [activeTab, psdbmItemsResponse, nonCseResponse])
 
-  // Pagination details
-  const pageCount = Math.max(1, Math.ceil(filteredItems.length / PAGE_SIZE))
-  const safePageIndex = Math.min(currentFilters.pageIndex, pageCount - 1)
-  const pageItems = filteredItems.slice(
-    safePageIndex * PAGE_SIZE,
-    safePageIndex * PAGE_SIZE + PAGE_SIZE,
-  )
+  const pageCount = Math.max(1, Math.ceil(totalMatchingCount / PAGE_SIZE))
+  const safePageIndex = Math.min(currentFilters.pageIndex, Math.max(0, pageCount - 1))
+  const pageItems = currentItems
 
   const selectedCount = selectedItems.size
 
@@ -931,22 +851,6 @@ export default function AddPPMPItemsModal({
 
               {(['cse', 'non-cse'] as const).map((tab) => {
                 const tabFilters = filtersByTab[tab]
-                const tabItems =
-                  tab === 'cse' ? cseFilteredItems : nonCseFilteredItems
-                const tabFiltered = tab === activeTab ? filteredItems : tabItems
-                const tabPageCount =
-                  tab === activeTab
-                    ? pageCount
-                    : Math.max(1, Math.ceil(tabFiltered.length / PAGE_SIZE))
-                const tabPageIndex =
-                  tab === activeTab ? safePageIndex : tabFilters.pageIndex
-                const tabPageItems =
-                  tab === activeTab
-                    ? pageItems
-                    : tabFiltered.slice(
-                        tabPageIndex * PAGE_SIZE,
-                        tabPageIndex * PAGE_SIZE + PAGE_SIZE,
-                      )
 
                 return (
                   <TabsContent key={tab} value={tab} className="mt-4">
@@ -1301,23 +1205,23 @@ export default function AddPPMPItemsModal({
                                 : 'Loading master catalog items...'}
                             </p>
                           </div>
-                        ) : tabFiltered.length === 0 ? (
+                        ) : totalMatchingCount === 0 ? (
                           <EmptyState message="Try clearing filters or checking your search query." />
                         ) : (
                           <>
                             {/* Top result info */}
                             <div className="flex items-center justify-between border border-border bg-background px-4 py-3 rounded-xl shadow-sm">
                               <div className="text-xs font-semibold text-foreground">
-                                {tabFiltered.length} matching item(s)
+                                {totalMatchingCount} matching item(s)
                               </div>
                               <div className="text-xs text-muted-foreground">
-                                Page {tabPageIndex + 1} of {tabPageCount}
+                                Page {safePageIndex + 1} of {pageCount}
                               </div>
                             </div>
 
                             {/* Grid layout */}
                             <div className="grid gap-3 min-[350px]:grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
-                              {tabPageItems.map((item) => {
+                              {pageItems.map((item) => {
                                 const isSelected = selectedItems.has(item.id)
                                 const bgTone = tone(item.name || item.id)
                                 const categoryText =
@@ -1417,21 +1321,27 @@ export default function AddPPMPItemsModal({
                                           </span>
                                         </div>
 
-                                        {tab === 'non-cse' &&
-                                          (item as NONCSEItem).currentPrice !==
-                                            undefined && (
-                                            <div className="text-xs font-bold text-slate-850 flex items-center justify-between border-t border-slate-100/80 pt-1.5 mt-0.5">
-                                              <span className="text-[10px] text-slate-400 font-normal">
-                                                Catalog Price
-                                              </span>
-                                              <span className="text-primary font-extrabold text-[12px]">
-                                                ₱
-                                                {(
-                                                  item as NONCSEItem
-                                                ).currentPrice?.toFixed(2)}
-                                              </span>
-                                            </div>
-                                          )}
+                                        {((tab === 'cse' &&
+                                          (item as ProcurementItem).unitPrice !==
+                                            undefined) ||
+                                          (tab === 'non-cse' &&
+                                            (item as NONCSEItem).currentPrice !==
+                                              undefined)) && (
+                                          <div className="text-xs font-bold text-slate-850 flex items-center justify-between border-t border-slate-100/80 pt-1.5 mt-0.5">
+                                            <span className="text-[10px] text-slate-400 font-normal">
+                                              Catalog Price
+                                            </span>
+                                            <span className="text-primary font-extrabold text-[12px]">
+                                              ₱
+                                              {(tab === 'cse'
+                                                ? (item as ProcurementItem)
+                                                    .unitPrice ?? 0
+                                                : (item as NONCSEItem)
+                                                    .currentPrice ?? 0
+                                              ).toFixed(2)}
+                                            </span>
+                                          </div>
+                                        )}
 
                                         <div className="flex items-center justify-between border-t border-slate-100/80 pt-2 mt-1">
                                           <button
@@ -1469,23 +1379,25 @@ export default function AddPPMPItemsModal({
                             </div>
 
                             {/* Pagination controls */}
-                            {tabPageCount > 1 && (
+                            {pageCount > 1 && (
                               <div className="flex flex-col sm:flex-row items-center justify-between pt-6 border-t border-slate-100 gap-4 mt-6">
                                 <span className="text-xs text-slate-500 font-medium">
                                   Showing items{' '}
                                   <span className="font-semibold text-slate-800">
-                                    {tabPageIndex * PAGE_SIZE + 1}
-                                  </span>
-                                  –
+                                    {totalMatchingCount === 0
+                                      ? 0
+                                      : safePageIndex * PAGE_SIZE + 1}
+                                  </span>{' '}
+                                  –{' '}
                                   <span className="font-semibold text-slate-800">
                                     {Math.min(
-                                      (tabPageIndex + 1) * PAGE_SIZE,
-                                      tabFiltered.length,
+                                      (safePageIndex + 1) * PAGE_SIZE,
+                                      totalMatchingCount,
                                     )}
                                   </span>{' '}
                                   of{' '}
                                   <span className="font-semibold text-slate-800">
-                                    {tabFiltered.length}
+                                    {totalMatchingCount}
                                   </span>
                                 </span>
 
@@ -1494,10 +1406,10 @@ export default function AddPPMPItemsModal({
                                     type="button"
                                     variant="outline"
                                     size="sm"
-                                    disabled={tabPageIndex === 0}
+                                    disabled={safePageIndex === 0}
                                     onClick={() =>
                                       updateCurrentFilters({
-                                        pageIndex: tabPageIndex - 1,
+                                        pageIndex: safePageIndex - 1,
                                       })
                                     }
                                     className="h-8 text-xs font-semibold px-2.5 rounded-lg border-slate-200 hover:bg-slate-50 transition-colors"
@@ -1507,18 +1419,18 @@ export default function AddPPMPItemsModal({
                                   </Button>
 
                                   {/* Page numbers */}
-                                  {Array.from({ length: tabPageCount }).map(
+                                  {Array.from({ length: pageCount }).map(
                                     (_, idx) => {
-                                      const isCurrent = idx === tabPageIndex
+                                      const isCurrent = idx === safePageIndex
                                       const isNear =
-                                        Math.abs(idx - tabPageIndex) <= 2
+                                        Math.abs(idx - safePageIndex) <= 2
                                       const isEnds =
-                                        idx === 0 || idx === tabPageCount - 1
+                                        idx === 0 || idx === pageCount - 1
 
                                       if (!isNear && !isEnds) {
                                         if (
                                           idx === 1 ||
-                                          idx === tabPageCount - 2
+                                          idx === pageCount - 2
                                         ) {
                                           return (
                                             <span
@@ -1562,10 +1474,10 @@ export default function AddPPMPItemsModal({
                                     type="button"
                                     variant="outline"
                                     size="sm"
-                                    disabled={tabPageIndex === tabPageCount - 1}
+                                    disabled={safePageIndex >= pageCount - 1}
                                     onClick={() =>
                                       updateCurrentFilters({
-                                        pageIndex: tabPageIndex + 1,
+                                        pageIndex: safePageIndex + 1,
                                       })
                                     }
                                     className="h-8 text-xs font-semibold px-2.5 rounded-lg border-slate-200 hover:bg-slate-50 transition-colors"

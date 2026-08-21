@@ -78,7 +78,7 @@ interface TabFilters {
   pageIndex: number
 }
 
-const PAGE_SIZE = 8
+const PAGE_SIZE = 25
 const DEFAULT_FILTERS: TabFilters = {
   categories: [],
   unitOfMeasures: [],
@@ -241,29 +241,6 @@ function priceOf(item: CatalogCardItem, mode: PriceMode): number {
   return mode === 'ps-dbm' ? item.psDbmPrice : item.agencyPrice
 }
 
-function bandMatches(price: number, band: PriceBand): boolean {
-  if (band === 'all') return true
-  if (band === 'under-5k') return price < 5_000
-  if (band === '5k-25k') return price >= 5_000 && price <= 25_000
-  return price > 25_000
-}
-
-function inSearch(item: CatalogCardItem, query: string): boolean {
-  if (!query) return true
-  return [
-    item.name,
-    item.category,
-    item.itemCode,
-    item.unitOfMeasure,
-    item.supplier ?? '',
-    item.specification ?? '',
-    item.subtype ?? '',
-  ]
-    .join(' ')
-    .toLowerCase()
-    .includes(query)
-}
-
 function toggle(values: string[], next: string): string[] {
   return values.includes(next)
     ? values.filter((value) => value !== next)
@@ -290,9 +267,20 @@ export function CatalogPickerModal({
   const [selected, setSelected] = useAtom(selectedCatalogItemsAtom)
   const targetIoEBlockId = useAtomValue(targetIoEBlockIdAtom)
   const clearTarget = useSetAtom(targetIoEBlockIdAtom)
+  const [filtersByTab, setFiltersByTab] = useState<
+    Record<CatalogTab, TabFilters>
+  >({
+    cse: cloneFilters(),
+    'non-cse': cloneFilters(),
+  })
+  const currentFilters = filtersByTab[activeTab]
+  const normalizedSearch = search.trim().toLowerCase()
 
   // Live Non-CSE Query from backend /non-cse-items
-  const { data: nonCseResponse, isLoading: isNonCseLoading } = useNonCSEItems()
+  const { data: nonCseResponse, isLoading: isNonCseLoading } = useNonCSEItems({
+    pageSize: PAGE_SIZE,
+    page: currentFilters.pageIndex + 1,
+  })
   const rawNonCseItems = useMemo(() => {
     return nonCseResponse?.data || []
   }, [nonCseResponse])
@@ -333,7 +321,13 @@ export function CatalogPickerModal({
     pathParams: { mode: cseMode },
     queryParams: {
       depot: (cseMode !== PSDBMCatalogMode.MAIN && selectedDepot) || undefined,
-      max: 1000,
+      search: normalizedSearch || undefined,
+      category:
+        currentFilters.categories.length > 0
+          ? currentFilters.categories[0]
+          : undefined,
+      pageNumber: currentFilters.pageIndex + 1,
+      pageSize: PAGE_SIZE,
     },
     enabled: open && activeTab === 'cse' && isReadyToFetchCse,
   })
@@ -346,12 +340,6 @@ export function CatalogPickerModal({
   const [priceMode, setPriceMode] = useState<PriceMode>('ps-dbm')
   const [isFiltersCollapsed, setIsFiltersCollapsed] = useState(false)
   const [isAdding, setIsAdding] = useState(false)
-  const [filtersByTab, setFiltersByTab] = useState<
-    Record<CatalogTab, TabFilters>
-  >({
-    cse: cloneFilters(),
-    'non-cse': cloneFilters(),
-  })
 
   const catalogs = useMemo(
     () => ({
@@ -366,8 +354,6 @@ export function CatalogPickerModal({
     [selected],
   )
   const currentItems = catalogs[activeTab]
-  const currentFilters = filtersByTab[activeTab]
-  const normalizedSearch = search.trim().toLowerCase()
 
   const filterOptions = useMemo(() => {
     return {
@@ -380,31 +366,17 @@ export function CatalogPickerModal({
     }
   }, [currentItems])
 
-  const filteredItems = useMemo(() => {
-    return currentItems.filter((item) => {
-      if (!inSearch(item, normalizedSearch)) return false
-      if (
-        currentFilters.categories.length &&
-        !currentFilters.categories.includes(item.category)
-      )
-        return false
-      if (
-        currentFilters.unitOfMeasures.length &&
-        !currentFilters.unitOfMeasures.includes(item.unitOfMeasure)
-      )
-        return false
-      if (!bandMatches(priceOf(item, priceMode), currentFilters.priceBand))
-        return false
-      return true
-    })
-  }, [currentFilters, currentItems, normalizedSearch, priceMode])
+  const totalMatchingCount = useMemo(() => {
+    if (activeTab === 'cse') {
+      return psdbmItemsData?.data?.totalItems ?? 0
+    }
+    return nonCseResponse?.totalRows ?? (rawNonCseItems.length ?? 0)
+  }, [activeTab, psdbmItemsData, nonCseResponse, rawNonCseItems])
 
-  const pageCount = Math.max(1, Math.ceil(filteredItems.length / PAGE_SIZE))
-  const safePageIndex = Math.min(currentFilters.pageIndex, pageCount - 1)
-  const pageItems = filteredItems.slice(
-    safePageIndex * PAGE_SIZE,
-    safePageIndex * PAGE_SIZE + PAGE_SIZE,
-  )
+  const pageCount = Math.max(1, Math.ceil(totalMatchingCount / PAGE_SIZE))
+  const safePageIndex = Math.min(currentFilters.pageIndex, Math.max(0, pageCount - 1))
+  const pageItems = currentItems
+  const filteredItems = currentItems
 
   const selectedCount = selected.length
   const updateCurrentFilters = useCallback(
