@@ -372,6 +372,17 @@ export default function AddPPMPItemsModal({
 
   const selectedCount = selectedItems.size
 
+  const totalStep2EstimatedCost = useMemo(() => {
+    return Array.from(selectedItems.values()).reduce((sum, { item }) => {
+      const config = configs[item.id]
+      if (!config) return sum
+      const totalQty = config.enableAllocations
+        ? Object.values(config.monthlyQuantities).reduce((a, b) => a + b, 0)
+        : 0
+      return sum + totalQty * config.unitPrice
+    }, 0)
+  }, [selectedItems, configs])
+
   // Warnings during unload
   useEffect(() => {
     if (!isAdding) return
@@ -582,7 +593,7 @@ export default function AddPPMPItemsModal({
             unit: item.uomName || '',
             unitPrice: config.unitPrice,
             procurementModeId: config.procurementModeId,
-            cseItemId: type === 'cse' ? item.id : undefined,
+            cseItemId: undefined,
             nonCseItemId: type === 'non-cse' ? item.id : undefined,
             projectType: config.projectType,
             papCode: config.papCode || undefined,
@@ -716,7 +727,10 @@ export default function AddPPMPItemsModal({
                     ? selectedCount > 0
                       ? 'Items ready to be configured.'
                       : 'Select one or more items to continue.'
-                    : 'Specify unit prices and procurement mode to finalize.'}
+                    : `Total Planned Cost: ${new Intl.NumberFormat('en-PH', {
+                        style: 'currency',
+                        currency: 'PHP',
+                      }).format(totalStep2EstimatedCost)}`}
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -764,7 +778,7 @@ export default function AddPPMPItemsModal({
                           Adding...
                         </>
                       ) : (
-                        'Add to Workspace'
+                        `Add to Workspace (${selectedCount})`
                       )}
                     </Button>
                   </>
@@ -915,9 +929,10 @@ export default function AddPPMPItemsModal({
                                     size="sm"
                                     onClick={resetCurrentFilters}
                                     className="h-8 gap-1 px-2 text-xs"
+                                    title="Clear search and selected filters"
                                   >
                                     <RefreshCcw className="h-3.5 w-3.5" />
-                                    Reset
+                                    Reset Filters
                                   </Button>
                                   <Button
                                     type="button"
@@ -949,6 +964,7 @@ export default function AddPPMPItemsModal({
                                         onClick={() => {
                                           setCseMode(PSDBMCatalogMode.REGIONAL)
                                           setSelectedDepot('')
+                                          updateCurrentFilters({ pageIndex: 0 })
                                         }}
                                         className={cn(
                                           'rounded-md border px-1.5 py-1.5 text-xs font-medium transition-colors text-center truncate',
@@ -965,6 +981,7 @@ export default function AddPPMPItemsModal({
                                         onClick={() => {
                                           setCseMode(PSDBMCatalogMode.LGU)
                                           setSelectedDepot('')
+                                          updateCurrentFilters({ pageIndex: 0 })
                                         }}
                                         className={cn(
                                           'rounded-md border px-1.5 py-1.5 text-xs font-medium transition-colors text-center truncate',
@@ -981,6 +998,7 @@ export default function AddPPMPItemsModal({
                                         onClick={() => {
                                           setCseMode(PSDBMCatalogMode.MAIN)
                                           setSelectedDepot('')
+                                          updateCurrentFilters({ pageIndex: 0 })
                                         }}
                                         className={cn(
                                           'rounded-md border px-1.5 py-1.5 text-xs font-medium transition-colors text-center truncate',
@@ -1004,7 +1022,10 @@ export default function AddPPMPItemsModal({
                                       </label>
                                       <Select
                                         value={selectedDepot}
-                                        onValueChange={setSelectedDepot}
+                                        onValueChange={(val) => {
+                                          setSelectedDepot(val)
+                                          updateCurrentFilters({ pageIndex: 0 })
+                                        }}
                                         disabled={isDepotsLoading}
                                       >
                                         <SelectTrigger className="h-9 text-xs bg-background">
@@ -1040,9 +1061,10 @@ export default function AddPPMPItemsModal({
                                   <Input
                                     placeholder="Name, description, category…"
                                     value={search}
-                                    onChange={(event) =>
+                                    onChange={(event) => {
                                       setSearch(event.target.value)
-                                    }
+                                      updateCurrentFilters({ pageIndex: 0 })
+                                    }}
                                     className="pl-9 text-xs h-9"
                                   />
                                 </div>
@@ -1206,7 +1228,13 @@ export default function AddPPMPItemsModal({
                             </p>
                           </div>
                         ) : totalMatchingCount === 0 ? (
-                          <EmptyState message="Try clearing filters or checking your search query." />
+                          <EmptyState
+                            message={
+                              activeTab === 'cse' && selectedDepot
+                                ? `No PS-DBM items are available for ${selectedDepot}. Try clearing filters or select another depot.`
+                                : 'Try clearing filters or checking your search query.'
+                            }
+                          />
                         ) : (
                           <>
                             {/* Top result info */}
@@ -1676,9 +1704,13 @@ export default function AddPPMPItemsModal({
                                 >
                                   {type === 'cse' ? 'CSE' : 'Non-CSE'}
                                 </Badge>
-                                {hasAnyError && (
-                                  <Badge className="text-[9px] px-1.5 py-0.5 font-bold bg-red-500/10 text-red-500 border-none animate-pulse">
-                                    Config Required
+                                {hasAnyError ? (
+                                  <Badge className="text-[9px] px-1.5 py-0.5 font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                                    ● Configuration Required
+                                  </Badge>
+                                ) : (
+                                  <Badge className="text-[9px] px-1.5 py-0.5 font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                    ✓ Configuration Complete
                                   </Badge>
                                 )}
                               </div>
@@ -1758,7 +1790,44 @@ export default function AddPPMPItemsModal({
                         {/* Collapsible Content */}
                         {isExpanded && (
                           <div className="grid gap-4 border-t border-border/60 pt-4 mt-2 animate-in fade-in slide-in-from-top-2 duration-200">
-                             <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
+                            {/* Live Cost Summary Box */}
+                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 rounded-lg border border-border/80 bg-muted/20">
+                              <div className="grid grid-cols-2 sm:flex sm:items-center gap-4 text-xs">
+                                <div>
+                                  <span className="text-[11px] text-muted-foreground block">Catalog Unit Price</span>
+                                  <strong className="text-foreground text-xs">
+                                    {new Intl.NumberFormat('en-PH', {
+                                      style: 'currency',
+                                      currency: 'PHP',
+                                    }).format(config.unitPrice)}
+                                  </strong>
+                                </div>
+                                <div>
+                                  <span className="text-[11px] text-muted-foreground block">Planned Quantity</span>
+                                  <strong className="text-foreground text-xs">
+                                    {totalQty > 0
+                                      ? `${totalQty} ${item.uomName || 'units'}`
+                                      : `0 ${item.uomName || 'units'}`}
+                                  </strong>
+                                </div>
+                              </div>
+                              <div className="text-left sm:text-right">
+                                <span className="text-[11px] text-muted-foreground block font-medium">Estimated Total Cost</span>
+                                <div className="text-xs font-bold text-primary">
+                                  {new Intl.NumberFormat('en-PH', {
+                                    style: 'currency',
+                                    currency: 'PHP',
+                                  }).format(calculatedTotal)}
+                                </div>
+                                {totalQty === 0 && config.enableAllocations && (
+                                  <span className="text-[10px] text-muted-foreground">
+                                    Enter monthly quantities below to calculate total cost.
+                                  </span>
+                                )}
+                              </div>
+                            </div>
+
+                            <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
                               {/* Unit Price */}
                               <div className="space-y-1.5">
                                 <div className="flex items-center gap-1">

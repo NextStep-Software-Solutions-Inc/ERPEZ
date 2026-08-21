@@ -647,9 +647,10 @@ export function CatalogPickerModal({
                                 size="sm"
                                 onClick={resetCurrentFilters}
                                 className="h-8 gap-1 px-2 text-xs"
+                                title="Clear search and selected filters"
                               >
                                 <RefreshCcw className="h-3.5 w-3.5" />
-                                Reset
+                                Reset Filters
                               </Button>
                               <Button
                                 type="button"
@@ -681,6 +682,7 @@ export function CatalogPickerModal({
                                     onClick={() => {
                                       setCseMode(PSDBMCatalogMode.REGIONAL)
                                       setSelectedDepot('')
+                                      updateCurrentFilters({ pageIndex: 0 })
                                     }}
                                     className={cn(
                                       'rounded-md border px-1.5 py-1.5 text-xs font-medium transition-colors text-center truncate',
@@ -697,6 +699,7 @@ export function CatalogPickerModal({
                                     onClick={() => {
                                       setCseMode(PSDBMCatalogMode.LGU)
                                       setSelectedDepot('')
+                                      updateCurrentFilters({ pageIndex: 0 })
                                     }}
                                     className={cn(
                                       'rounded-md border px-1.5 py-1.5 text-xs font-medium transition-colors text-center truncate',
@@ -713,6 +716,7 @@ export function CatalogPickerModal({
                                     onClick={() => {
                                       setCseMode(PSDBMCatalogMode.MAIN)
                                       setSelectedDepot('')
+                                      updateCurrentFilters({ pageIndex: 0 })
                                     }}
                                     className={cn(
                                       'rounded-md border px-1.5 py-1.5 text-xs font-medium transition-colors text-center truncate',
@@ -736,7 +740,10 @@ export function CatalogPickerModal({
                                   </label>
                                   <Select
                                     value={selectedDepot}
-                                    onValueChange={setSelectedDepot}
+                                    onValueChange={(val) => {
+                                      setSelectedDepot(val)
+                                      updateCurrentFilters({ pageIndex: 0 })
+                                    }}
                                     disabled={isDepotsLoading}
                                   >
                                     <SelectTrigger className="h-9 text-xs bg-background">
@@ -771,9 +778,10 @@ export function CatalogPickerModal({
                               <Input
                                 placeholder="Name, code, category, supplier…"
                                 value={search}
-                                onChange={(event) =>
+                                onChange={(event) => {
                                   setSearch(event.target.value)
-                                }
+                                  updateCurrentFilters({ pageIndex: 0 })
+                                }}
                                 className="pl-9"
                               />
                             </div>
