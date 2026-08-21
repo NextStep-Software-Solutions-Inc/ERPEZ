@@ -9,7 +9,6 @@ import { createWhereasClauseTemplateRequest } from './createWhereasClauseTemplat
 import { deleteWhereasClauseTemplateRequest } from './deleteWhereasClauseTemplateRequest'
 import { getBacResolutionRequest } from './getBacResolutionRequest'
 import { getBacResolutionsRequest } from './getBacResolutionsRequest'
-import { getBackendProjectDetailsRequest } from './getBackendProjectDetailsRequest'
 import { getWhereasClauseTemplatesRequest } from './getWhereasClauseTemplatesRequest'
 import { linkConsolidatedPrsRequest } from './linkConsolidatedPrsRequest'
 import { printBacResolutionRequest } from './printBacResolutionRequest'
@@ -110,9 +109,7 @@ export const useBacResolution = createQueryHookFromTemplate(
   getBacResolutionRequest,
 )
 
-export const useBackendProjectDetails = createQueryHookFromTemplate(
-  getBackendProjectDetailsRequest,
-)
+
 
 export const useEligibleAppsForProcurement = createQueryHookFromTemplate(
   getEligibleAppsForProcurementRequest,
