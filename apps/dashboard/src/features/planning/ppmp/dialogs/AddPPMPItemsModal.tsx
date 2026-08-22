@@ -821,7 +821,12 @@ export default function AddPPMPItemsModal({
                     </Button>
                     <Button
                       size="sm"
-                      onClick={() => setStep('configure')}
+                      onClick={() => {
+                        setStep('configure')
+                        if (selectedList.length > 0 && !expandedItemId) {
+                          setExpandedItemId(selectedList[0].item.id)
+                        }
+                      }}
                       disabled={selectedCount === 0}
                     >
                       Review Selected ({selectedCount})
@@ -1730,31 +1735,37 @@ export default function AddPPMPItemsModal({
           </div>
         ) : (
           /* Step 2: Review and Batch Configuration */
-          <div className="space-y-4">
-            <div className="rounded-xl border border-border bg-muted/20 p-4 shadow-sm flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-4 font-sans">
+            {/* Header Banner */}
+            <div className="rounded-xl border border-border bg-muted/20 p-4 shadow-xs flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                   <SlidersHorizontal className="h-4 w-4 text-primary" />
-                  Configure Item Details & Allocations
+                  Configure Selected Items
                 </h3>
-                <p className="text-xs text-muted-foreground">
-                  Expand each item below to set its Procurement Mode, Project
-                  Type, and optional monthly quantities.
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Review and configure procurement parameters, delivery timelines, and optional monthly quantity distributions for each selected item.
                 </p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <Badge variant="soft" color="default" className="font-semibold text-xs px-2.5 py-1">
+                  {selectedCount} {selectedCount === 1 ? 'Item' : 'Items'} to Configure
+                </Badge>
               </div>
             </div>
 
-            <div className="border border-border rounded-xl overflow-hidden shadow-sm">
+            {/* Scrollable Items Container */}
+            <div className="border border-border rounded-xl overflow-hidden shadow-xs">
               <div className="bg-muted/30 px-4 py-3 border-b border-border flex justify-between items-center">
                 <span className="text-xs font-bold text-foreground">
-                  Items Preview ({selectedCount})
+                  Selected Items ({selectedCount})
                 </span>
-                <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
-                  Expand to Edit
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
+                  Click any item to expand / edit
                 </span>
               </div>
 
-              <ScrollArea className="max-h-125 overflow-y-auto">
+              <ScrollArea className="max-h-[60vh] overflow-y-auto">
                 <div className="divide-y divide-border">
                   {selectedList.map(({ type, item }, index) => {
                     const isPriceLocked =
@@ -1854,6 +1865,12 @@ export default function AddPPMPItemsModal({
                       type === 'cse'
                         ? (item as ProcurementItem).objectCodeName
                         : (item as NONCSEItem).procurementCategoryName
+                    const productCode =
+                      type === 'cse'
+                        ? (item as ProcurementItem).productCode
+                        : (item as NONCSEItem).productCode
+                    const imgUrl =
+                      (item as ProcurementItem).imageURL || (item as any).imageUrl
 
                     const MONTH_NAMES: AllocationMonth[] = [
                       'January',
@@ -1870,95 +1887,107 @@ export default function AddPPMPItemsModal({
                       'December',
                     ]
 
+                    const formatCurrency = (val: number): string =>
+                      new Intl.NumberFormat('en-PH', {
+                        style: 'currency',
+                        currency: 'PHP',
+                      }).format(val || 0)
+
                     return (
                       <div
                         key={item.id}
                         className={cn(
-                          'p-4 bg-background transition-colors flex flex-col gap-4 border-l-4',
+                          'p-4 sm:p-5 bg-background transition-colors flex flex-col gap-4 border-l-4',
                           hasAnyError
-                            ? 'border-l-red-500 bg-red-500/1.5'
-                            : 'border-l-transparent hover:bg-muted/5',
+                            ? 'border-l-amber-500 bg-amber-500/2'
+                            : 'border-l-emerald-500 bg-emerald-500/2',
                         )}
                       >
-                        {/* Header Summary Row */}
+                        {/* ========================================================= */}
+                        {/* SECTION A: ITEM SUMMARY HEADER                            */}
+                        {/* ========================================================= */}
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                           <div
-                            className="min-w-0 flex-1 flex gap-3 cursor-pointer select-none"
+                            className="min-w-0 flex-1 flex items-start sm:items-center gap-3.5 cursor-pointer select-none"
                             onClick={() =>
                               setExpandedItemId(isExpanded ? null : item.id)
                             }
                           >
-                            {((item as ProcurementItem).imageURL || (item as any).imageUrl) ? (
-                              <div className="h-10 w-10 shrink-0 rounded-lg overflow-hidden border border-border bg-slate-50 flex items-center justify-center">
+                            {/* Item Thumbnail / Avatar */}
+                            <div className="h-12 w-12 shrink-0 rounded-xl overflow-hidden border border-border bg-slate-50 dark:bg-slate-900/50 flex items-center justify-center shadow-2xs">
+                              {imgUrl ? (
                                 <img
-                                  src={(item as ProcurementItem).imageURL || (item as any).imageUrl}
+                                  src={imgUrl}
                                   alt={item.name}
-                                  className="h-full w-full object-contain"
+                                  className="h-full w-full object-contain p-1"
                                 />
-                              </div>
-                            ) : null}
+                              ) : (
+                                <div
+                                  className={cn(
+                                    'h-full w-full flex items-center justify-center bg-linear-to-br font-bold text-xs text-foreground/80',
+                                    tone(item.name || ''),
+                                  )}
+                                >
+                                  {initials(item.name || '')}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Item Title & Metadata Badges */}
                             <div className="min-w-0 flex-1 space-y-1">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-xs font-semibold text-muted-foreground">
+                                <span className="text-xs font-mono font-bold text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded-md">
                                   #{index + 1}
                                 </span>
-                                <span className="text-xs font-bold text-foreground truncate max-w-50 sm:max-w-xs">
+                                <h4 className="text-xs sm:text-sm font-bold text-foreground truncate max-w-50 sm:max-w-md">
                                   {item.name}
-                                </span>
+                                </h4>
                                 <Badge
                                   variant="soft"
                                   color={type === 'cse' ? 'success' : 'info'}
-                                  className="text-[9px] px-1 py-0 font-medium"
+                                  className="text-[9px] px-2 py-0.5 font-bold uppercase tracking-wider"
                                 >
                                   {type === 'cse' ? 'CSE' : 'Non-CSE'}
                                 </Badge>
                                 {hasAnyError ? (
-                                  <Badge className="text-[9px] px-1.5 py-0.5 font-bold bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20">
+                                  <Badge className="text-[9px] px-2 py-0.5 font-bold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/25">
                                     ● Configuration Required
                                   </Badge>
                                 ) : (
-                                  <Badge className="text-[9px] px-1.5 py-0.5 font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                                  <Badge className="text-[9px] px-2 py-0.5 font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25">
                                     ✓ Configuration Complete
                                   </Badge>
                                 )}
                               </div>
+
                               {specText && (
-                                <p className="text-[11px] text-muted-foreground truncate pr-4 max-w-lg">
+                                <p className="text-[11px] text-muted-foreground truncate max-w-xl">
                                   {specText}
                                 </p>
                               )}
-                              <div className="flex items-center gap-4 text-[10px] text-muted-foreground flex-wrap">
-                                <span>
-                                  UOM:{' '}
-                                  <strong className="text-foreground">
-                                    {item.uomName || 'pcs'}
-                                  </strong>
-                                </span>
-                                <span>
-                                  Category:{' '}
-                                  <strong className="text-foreground">
-                                    {categoryText || 'N/A'}
-                                  </strong>
-                                </span>
-                                <span>
-                                  Planned Qty:{' '}
-                                  <strong className="text-foreground">
-                                    {plannedQty > 0 ? plannedQty : '—'}
-                                  </strong>
-                                </span>
-                                {config.enableAllocations && (
-                                  <span>
-                                    Allocated Qty:{' '}
-                                    <strong className={cn(hasAllocError ? 'text-red-500 font-bold' : 'text-foreground')}>
-                                      {allocatedQty}
-                                    </strong>
+
+                              {/* Attributes strip */}
+                              <div className="flex items-center gap-3 text-[11px] text-muted-foreground flex-wrap pt-0.5">
+                                {productCode && (
+                                  <span className="font-mono text-[10px] bg-muted/50 px-1.5 py-0.5 rounded border border-border/50">
+                                    Code: <strong className="text-foreground">{productCode}</strong>
                                   </span>
                                 )}
+                                <span>
+                                  Category: <strong className="text-foreground">{categoryText || 'General Goods'}</strong>
+                                </span>
+                                <span>
+                                  UOM: <strong className="text-foreground">{item.uomName || 'pcs'}</strong>
+                                </span>
+                                <span>
+                                  Planned: <strong className="text-foreground">{plannedQty > 0 ? plannedQty : '—'}</strong>
+                                </span>
                               </div>
                             </div>
                           </div>
 
-                          <div className="shrink-0 flex items-center gap-3">
+                          {/* Quick Summary Strip & Expand Toggle */}
+                          <div className="shrink-0 flex items-center justify-between sm:justify-end gap-3.5 border-t sm:border-t-0 pt-2 sm:pt-0 border-border/60">
                             <Button
                               type="button"
                               variant="ghost"
@@ -1968,21 +1997,20 @@ export default function AddPPMPItemsModal({
                                 setDetailsItemId(item.id)
                                 setDetailsItemType(type)
                               }}
-                              className="h-8 text-[11px] font-semibold text-primary rounded-lg px-2 hover:bg-muted/50"
+                              className="h-8 text-[11px] font-semibold text-primary rounded-lg px-2.5 hover:bg-primary/5"
                             >
                               View Details
                             </Button>
-                            <div className="text-right">
-                              <div className="text-[10px] text-muted-foreground uppercase font-bold">
+                            
+                            <div className="text-right pl-2 border-l border-border/60">
+                              <div className="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">
                                 Estimated Cost
                               </div>
-                              <div className="text-xs font-bold text-foreground flex items-center justify-end">
-                                {new Intl.NumberFormat('en-PH', {
-                                  style: 'currency',
-                                  currency: 'PHP',
-                                }).format(calculatedTotal)}
+                              <div className="text-xs sm:text-sm font-extrabold text-primary">
+                                {formatCurrency(calculatedTotal)}
                               </div>
                             </div>
+
                             <Button
                               type="button"
                               variant="ghost"
@@ -1990,7 +2018,8 @@ export default function AddPPMPItemsModal({
                               onClick={() =>
                                 setExpandedItemId(isExpanded ? null : item.id)
                               }
-                              className="h-8 w-8 text-default-550 rounded-lg"
+                              className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted/60"
+                              aria-label={isExpanded ? 'Collapse item configuration' : 'Expand item configuration'}
                             >
                               {isExpanded ? (
                                 <ChevronUp className="h-4 w-4" />
@@ -2001,465 +2030,512 @@ export default function AddPPMPItemsModal({
                           </div>
                         </div>
 
-                        {/* Collapsible Content */}
+                        {/* ========================================================= */}
+                        {/* COLLAPSIBLE CONFIGURATION CONTENT                         */}
+                        {/* ========================================================= */}
                         {isExpanded && (
-                          <div className="grid gap-4 border-t border-border/60 pt-4 mt-2 animate-in fade-in slide-in-from-top-2 duration-200">
-                            {/* Live Cost Summary Box */}
-                            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 p-3 rounded-lg border border-border/80 bg-muted/20">
-                              <div className="grid grid-cols-2 sm:flex sm:items-center gap-4 text-xs">
-                                <div>
-                                  <span className="text-[11px] text-muted-foreground block">Catalog Unit Price</span>
-                                  <strong className="text-foreground text-xs">
-                                    {new Intl.NumberFormat('en-PH', {
-                                      style: 'currency',
-                                      currency: 'PHP',
-                                    }).format(config.unitPrice)}
-                                  </strong>
-                                </div>
-                                <div>
-                                  <span className="text-[11px] text-muted-foreground block">Planned Quantity</span>
-                                  <strong className="text-foreground text-xs">
-                                    {plannedQty > 0
-                                      ? `${plannedQty} ${item.uomName || 'units'}`
-                                      : `—`}
-                                  </strong>
-                                </div>
-                                <div>
-                                  <span className="text-[11px] text-muted-foreground block">Monthly Allocation</span>
-                                  <strong className="text-foreground text-xs">
-                                    {allocatedQty > 0
-                                      ? `${allocatedQty} allocated (${remainingQty} remaining)`
-                                      : `Not yet distributed`}
-                                  </strong>
-                                </div>
+                          <div className="space-y-4 border-t border-border/70 pt-4 mt-1 animate-in fade-in slide-in-from-top-1 duration-200">
+                            {/* Live Cost & Quantity Hero Strip */}
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 rounded-xl border border-border/70 bg-muted/20 shadow-2xs">
+                              <div className="space-y-0.5">
+                                <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground block">
+                                  Catalog Unit Price
+                                </span>
+                                <strong className="text-xs font-bold text-foreground">
+                                  {formatCurrency(config.unitPrice)}
+                                </strong>
                               </div>
-                              <div className="text-left sm:text-right">
-                                <span className="text-[11px] text-muted-foreground block font-medium">Estimated Total Cost</span>
-                                <div className="text-xs font-bold text-primary">
-                                  {new Intl.NumberFormat('en-PH', {
-                                    style: 'currency',
-                                    currency: 'PHP',
-                                  }).format(calculatedTotal)}
-                                </div>
-                                {hasAllocError && (
-                                  <span className="text-[10px] text-red-500 font-semibold block mt-0.5">
-                                    Allocated ({allocatedQty}) exceeds planned ({plannedQty}).
-                                  </span>
-                                )}
+                              <div className="space-y-0.5">
+                                <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground block">
+                                  Planned Quantity
+                                </span>
+                                <strong className="text-xs font-bold text-foreground">
+                                  {plannedQty > 0 ? `${plannedQty} ${item.uomName || 'units'}` : '—'}
+                                </strong>
+                              </div>
+                              <div className="space-y-0.5">
+                                <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground block">
+                                  Monthly Allocation
+                                </span>
+                                <strong className="text-xs font-bold text-foreground">
+                                  {allocatedQty > 0
+                                    ? `${allocatedQty} / ${plannedQty || 0} allocated (${remainingQty} rem)`
+                                    : 'Not yet distributed'}
+                                </strong>
+                              </div>
+                              <div className="space-y-0.5 sm:text-right">
+                                <span className="text-[10px] uppercase font-bold tracking-wider text-primary block">
+                                  Estimated Total Cost
+                                </span>
+                                <strong className="text-sm font-extrabold text-primary">
+                                  {formatCurrency(calculatedTotal)}
+                                </strong>
                               </div>
                             </div>
 
-                            <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-4">
-                              {/* Planned Quantity */}
-                              <div className="space-y-1.5">
-                                <div className="flex items-center gap-1">
-                                  <label
-                                    htmlFor={`qty-${item.id}`}
-                                    className="text-xs font-semibold text-muted-foreground select-none"
-                                  >
-                                    Planned Quantity *
-                                  </label>
-                                  <FieldDescriptionTooltip fieldKey="plannedQuantity" className="h-3.5 w-3.5" />
+                            {/* ========================================================= */}
+                            {/* SECTION B: PROCUREMENT CONFIGURATION                      */}
+                            {/* ========================================================= */}
+                            <div className="rounded-xl border border-border/70 bg-card p-4 space-y-4 shadow-2xs">
+                              <div className="flex items-center justify-between pb-2 border-b border-border/60">
+                                <div className="flex items-center gap-2">
+                                  <SlidersHorizontal className="h-4 w-4 text-primary" />
+                                  <h4 className="text-xs font-bold uppercase tracking-wider text-foreground">
+                                    Procurement Configuration
+                                  </h4>
                                 </div>
-                                <Input
-                                  id={`qty-${item.id}`}
-                                  type="number"
-                                  min="1"
-                                  placeholder="e.g. 100"
-                                  value={config.plannedQuantity ?? ''}
-                                  onChange={(e) =>
-                                    updateConfig(item.id, {
-                                      plannedQuantity:
-                                        e.target.value === ''
-                                          ? undefined
-                                          : Math.max(1, Number.parseInt(e.target.value, 10) || 1),
-                                    })
-                                  }
-                                  className={cn(
-                                    'text-xs h-9 w-full border-default-200 focus-visible:ring-primary/25',
-                                    hasQtyError && 'border-red-500 bg-red-50/20',
-                                  )}
-                                />
-                                {hasQtyError && (
-                                  <p className="text-[10px] text-red-500 mt-0.5">Planned quantity is required (≥ 1)</p>
-                                )}
+                                <span className="text-[10px] text-muted-foreground">
+                                  * Indicates required field
+                                </span>
                               </div>
 
-                              {/* Unit Price */}
-                              <div className="space-y-1.5">
-                                <div className="flex items-center gap-1">
-                                  <label
-                                    htmlFor={`price-${item.id}`}
-                                    className="text-xs font-semibold text-muted-foreground select-none"
-                                  >
-                                    Unit Price *
-                                  </label>
-                                  <FieldDescriptionTooltip fieldKey="unitPrice" className="h-3.5 w-3.5" />
-                                </div>
-                                <div className="relative w-full">
-                                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-semibold">
-                                    ₱
-                                  </span>
+                              {/* Row 1: Core Parameters */}
+                              <div className="grid gap-3.5 sm:grid-cols-2 md:grid-cols-4">
+                                {/* Planned Quantity */}
+                                <div className="space-y-1.5">
+                                  <div className="flex items-center gap-1">
+                                    <label
+                                      htmlFor={`qty-${item.id}`}
+                                      className="text-xs font-semibold text-foreground select-none"
+                                    >
+                                      Planned Quantity *
+                                    </label>
+                                    <FieldDescriptionTooltip fieldKey="plannedQuantity" className="h-3.5 w-3.5" />
+                                  </div>
                                   <Input
-                                    id={`price-${item.id}`}
+                                    id={`qty-${item.id}`}
                                     type="number"
-                                    step="0.01"
-                                    placeholder="0.00"
-                                    value={config.unitPrice || ''}
-                                    disabled={isPriceLocked}
+                                    min="1"
+                                    placeholder="e.g. 100"
+                                    value={config.plannedQuantity ?? ''}
                                     onChange={(e) =>
                                       updateConfig(item.id, {
-                                        unitPrice: Math.max(
-                                          0,
-                                          Number.parseFloat(e.target.value) ||
-                                            0,
-                                        ),
+                                        plannedQuantity:
+                                          e.target.value === ''
+                                            ? undefined
+                                            : Math.max(1, Number.parseInt(e.target.value, 10) || 1),
                                       })
                                     }
                                     className={cn(
-                                      'pl-6 text-xs h-9 w-full border-default-200 focus-visible:ring-primary/25',
-                                      isPriceLocked &&
-                                        'bg-default-100/60 cursor-not-allowed font-semibold text-default-600',
-                                      hasPriceError &&
-                                        'border-red-500 focus-visible:ring-red-500/25 bg-red-50/20',
+                                      'text-xs h-9 w-full border-default-200 focus-visible:ring-primary/25',
+                                      hasQtyError && 'border-red-500 bg-red-50/20',
                                     )}
                                   />
+                                  {hasQtyError && (
+                                    <p className="text-[10px] text-red-500 font-medium mt-0.5">Planned quantity is required (≥ 1)</p>
+                                  )}
                                 </div>
-                                {isPriceLocked && (
-                                  <p className="text-[10px] text-default-450 italic">
-                                    Inherited locked catalog price
-                                  </p>
+
+                                {/* Unit Price */}
+                                <div className="space-y-1.5">
+                                  <div className="flex items-center gap-1">
+                                    <label
+                                      htmlFor={`price-${item.id}`}
+                                      className="text-xs font-semibold text-foreground select-none"
+                                    >
+                                      Unit Price *
+                                    </label>
+                                    <FieldDescriptionTooltip fieldKey="unitPrice" className="h-3.5 w-3.5" />
+                                  </div>
+                                  <div className="relative w-full">
+                                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-semibold">
+                                      ₱
+                                    </span>
+                                    <Input
+                                      id={`price-${item.id}`}
+                                      type="number"
+                                      step="0.01"
+                                      placeholder="0.00"
+                                      value={config.unitPrice || ''}
+                                      disabled={isPriceLocked}
+                                      onChange={(e) =>
+                                        updateConfig(item.id, {
+                                          unitPrice: Math.max(
+                                            0,
+                                            Number.parseFloat(e.target.value) ||
+                                              0,
+                                          ),
+                                        })
+                                      }
+                                      className={cn(
+                                        'pl-6 text-xs h-9 w-full border-default-200 focus-visible:ring-primary/25',
+                                        isPriceLocked &&
+                                          'bg-default-100/60 cursor-not-allowed font-semibold text-default-600',
+                                        hasPriceError &&
+                                          'border-red-500 focus-visible:ring-red-500/25 bg-red-50/20',
+                                      )}
+                                    />
+                                  </div>
+                                  {isPriceLocked && (
+                                    <p className="text-[10px] text-default-450 italic">
+                                      Inherited locked catalog price
+                                    </p>
+                                  )}
+                                </div>
+
+                                {/* Procurement Mode */}
+                                <div className="space-y-1.5">
+                                  <div className="flex items-center gap-1">
+                                    <label className="text-xs font-semibold text-foreground">
+                                      Procurement Mode *
+                                    </label>
+                                    <FieldDescriptionTooltip fieldKey="procurementModeId" className="h-3.5 w-3.5" />
+                                  </div>
+                                  <Select
+                                    value={config.procurementModeId}
+                                    onValueChange={(val) =>
+                                      updateConfig(item.id, {
+                                        procurementModeId: val,
+                                      })
+                                    }
+                                  >
+                                    <SelectTrigger
+                                      className={cn(
+                                        'w-full border-default-200 text-xs h-9 focus:ring-primary/25',
+                                        hasMopError &&
+                                          'border-red-500 bg-red-50/20',
+                                      )}
+                                    >
+                                      <SelectValue placeholder="Select Mode *" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {procurementModes.map((m) => (
+                                        <SelectItem
+                                          key={m.id}
+                                          value={m.id}
+                                          className="text-xs"
+                                        >
+                                          {m.name}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+
+                                {/* Project Type */}
+                                <div className="space-y-1.5">
+                                  <div className="flex items-center gap-1">
+                                    <label className="text-xs font-semibold text-foreground">
+                                      Project Type
+                                    </label>
+                                    <FieldDescriptionTooltip fieldKey="projectType" className="h-3.5 w-3.5" />
+                                  </div>
+                                  <Select
+                                    value={config.projectType}
+                                    onValueChange={(
+                                      val: ProcurementProjectType,
+                                    ) =>
+                                      updateConfig(item.id, { projectType: val })
+                                    }
+                                  >
+                                    <SelectTrigger className="w-full border-default-200 text-xs h-9">
+                                      <SelectValue placeholder="Select Project Type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem
+                                        value="Goods"
+                                        className="text-xs"
+                                      >
+                                        Goods
+                                      </SelectItem>
+                                      <SelectItem
+                                        value="Infrastructure"
+                                        className="text-xs"
+                                      >
+                                        Infrastructure
+                                      </SelectItem>
+                                      <SelectItem
+                                        value="ConsultingServices"
+                                        className="text-xs"
+                                      >
+                                        Consulting Services
+                                      </SelectItem>
+                                      <SelectItem
+                                        value="GeneralSupportServices"
+                                        className="text-xs"
+                                      >
+                                        General Support Services
+                                      </SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              </div>
+
+                              {/* Row 2: Timeline Schedules */}
+                              <div className="grid gap-3.5 sm:grid-cols-2">
+                                {/* Procurement Schedule */}
+                                <div className="p-3 rounded-lg border border-border/70 bg-muted/10 space-y-2">
+                                  <div className="flex items-center gap-1">
+                                    <label className="text-xs font-semibold text-foreground">
+                                      Procurement Schedule *
+                                    </label>
+                                    <FieldDescriptionTooltip fieldKey="procurementStartDate" className="h-3.5 w-3.5" />
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <div>
+                                      <span className="text-[10px] text-muted-foreground block mb-1">Start Date</span>
+                                      <Input
+                                        type="date"
+                                        value={config.procurementStartDate || ''}
+                                        onChange={(e) =>
+                                          updateConfig(item.id, {
+                                            procurementStartDate: e.target.value,
+                                          })
+                                        }
+                                        className={cn(
+                                          'text-xs h-9 border-default-200 w-full',
+                                          hasProcStartError && 'border-red-500 bg-red-50/20'
+                                        )}
+                                        placeholder="Start"
+                                      />
+                                      {hasProcStartError && (
+                                        <p className="text-[10px] text-red-500 font-medium mt-0.5">Start date is required</p>
+                                      )}
+                                    </div>
+                                    <div>
+                                      <span className="text-[10px] text-muted-foreground block mb-1">End Date</span>
+                                      <Input
+                                        type="date"
+                                        value={config.procurementEndDate || ''}
+                                        onChange={(e) =>
+                                          updateConfig(item.id, {
+                                            procurementEndDate: e.target.value,
+                                          })
+                                        }
+                                        className={cn(
+                                          'text-xs h-9 border-default-200 w-full',
+                                          hasProcEndError && 'border-red-500 bg-red-50/20'
+                                        )}
+                                        placeholder="End"
+                                      />
+                                      {config.procurementEndDate && config.procurementStartDate && config.procurementEndDate < config.procurementStartDate ? (
+                                        <p className="text-[10px] text-red-500 font-medium mt-0.5">Cannot be before start date</p>
+                                      ) : !config.procurementEndDate ? (
+                                        <p className="text-[10px] text-red-500 font-medium mt-0.5">End date is required</p>
+                                      ) : null}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Expected Delivery Window */}
+                                <div className="p-3 rounded-lg border border-border/70 bg-muted/10 space-y-2">
+                                  <div className="flex items-center gap-1">
+                                    <label className="text-xs font-semibold text-foreground">
+                                      Expected Delivery Window *
+                                    </label>
+                                    <FieldDescriptionTooltip fieldKey="expectedDeliveryStart" className="h-3.5 w-3.5" />
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <div>
+                                      <span className="text-[10px] text-muted-foreground block mb-1">Start Date</span>
+                                      <Input
+                                        type="date"
+                                        value={config.expectedDeliveryStart || ''}
+                                        onChange={(e) =>
+                                          updateConfig(item.id, {
+                                            expectedDeliveryStart: e.target.value,
+                                          })
+                                        }
+                                        className={cn(
+                                          'text-xs h-9 border-default-200 w-full',
+                                          hasDelivStartError && 'border-red-500 bg-red-50/20'
+                                        )}
+                                        placeholder="Start"
+                                      />
+                                      {config.expectedDeliveryStart && config.procurementStartDate && config.expectedDeliveryStart < config.procurementStartDate ? (
+                                        <p className="text-[10px] text-red-500 font-medium mt-0.5">Cannot be before procurement start</p>
+                                      ) : !config.expectedDeliveryStart ? (
+                                        <p className="text-[10px] text-red-500 font-medium mt-0.5">Start date is required</p>
+                                      ) : null}
+                                    </div>
+                                    <div>
+                                      <span className="text-[10px] text-muted-foreground block mb-1">End Date</span>
+                                      <Input
+                                        type="date"
+                                        value={config.expectedDeliveryEnd || ''}
+                                        onChange={(e) =>
+                                          updateConfig(item.id, {
+                                            expectedDeliveryEnd: e.target.value,
+                                          })
+                                        }
+                                        className={cn(
+                                          'text-xs h-9 border-default-200 w-full',
+                                          hasDelivEndError && 'border-red-500 bg-red-50/20'
+                                        )}
+                                        placeholder="End"
+                                      />
+                                      {config.expectedDeliveryEnd && config.expectedDeliveryStart && config.expectedDeliveryEnd < config.expectedDeliveryStart ? (
+                                        <p className="text-[10px] text-red-500 font-medium mt-0.5">Cannot be before start date</p>
+                                      ) : !config.expectedDeliveryEnd ? (
+                                        <p className="text-[10px] text-red-500 font-medium mt-0.5">End date is required</p>
+                                      ) : null}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Row 3: PAP Code & Conference */}
+                              <div className="grid gap-3.5 sm:grid-cols-3 sm:items-end">
+                                <div className="space-y-1.5 sm:col-span-2">
+                                  <div className="flex items-center gap-1">
+                                    <label className="text-xs font-semibold text-foreground">
+                                      PAP Code
+                                    </label>
+                                    <FieldDescriptionTooltip fieldKey="papCode" className="h-3.5 w-3.5" />
+                                  </div>
+                                  <Input
+                                    value={config.papCode || ''}
+                                    placeholder="e.g. 5020301000"
+                                    onChange={(e) =>
+                                      updateConfig(item.id, {
+                                        papCode: e.target.value,
+                                      })
+                                    }
+                                    className="text-xs h-9 border-default-200"
+                                  />
+                                </div>
+
+                                <div className="flex items-center gap-2.5 p-2.5 rounded-lg border border-border/70 bg-muted/15 hover:bg-muted/30 cursor-pointer transition-colors">
+                                  <Checkbox
+                                    id={`conf-${item.id}`}
+                                    checked={config.preProcurementConference}
+                                    onCheckedChange={(checked) =>
+                                      updateConfig(item.id, {
+                                        preProcurementConference: !!checked,
+                                      })
+                                    }
+                                  />
+                                  <label
+                                    htmlFor={`conf-${item.id}`}
+                                    className="text-xs text-foreground cursor-pointer select-none font-semibold"
+                                  >
+                                    Pre-procurement Conference
+                                  </label>
+                                </div>
+                              </div>
+
+                              {/* Row 4: Remarks */}
+                              <div className="space-y-1.5">
+                                <div className="flex items-center gap-1">
+                                  <label className="text-xs font-semibold text-foreground">
+                                    Remarks / Notes
+                                  </label>
+                                  <FieldDescriptionTooltip fieldKey="remarks" className="h-3.5 w-3.5" />
+                                </div>
+                                <Textarea
+                                  placeholder="Any specific comments or justifications..."
+                                  value={config.remarks || ''}
+                                  onChange={(e) =>
+                                    updateConfig(item.id, {
+                                      remarks: e.target.value,
+                                    })
+                                  }
+                                  className="text-xs min-h-14 border-default-200"
+                                />
+                              </div>
+                            </div>
+
+                            {/* ========================================================= */}
+                            {/* SECTION C: MONTHLY QUANTITY DISTRIBUTION                  */}
+                            {/* ========================================================= */}
+                            <div className="rounded-xl border border-border/70 bg-card p-4 space-y-3.5 shadow-2xs">
+                              <div className="flex items-center justify-between pb-2 border-b border-border/60 flex-wrap gap-2">
+                                <div className="flex items-center gap-2.5">
+                                  <Checkbox
+                                    id={`alloc-${item.id}`}
+                                    checked={config.enableAllocations}
+                                    onCheckedChange={(checked) =>
+                                      updateConfig(item.id, {
+                                        enableAllocations: !!checked,
+                                      })
+                                    }
+                                  />
+                                  <label
+                                    htmlFor={`alloc-${item.id}`}
+                                    className="text-xs font-bold text-foreground cursor-pointer select-none flex items-center gap-1.5"
+                                  >
+                                    Monthly Quantity Distribution
+                                    <span className="text-[11px] font-normal text-muted-foreground">(Optional schedule)</span>
+                                  </label>
+                                </div>
+
+                                {config.enableAllocations && (
+                                  <div className="flex items-center gap-2">
+                                    {hasAllocError ? (
+                                      <Badge variant="soft" className="text-[10px] px-2 py-0.5 font-bold bg-red-500/10 text-red-600 border border-red-500/20">
+                                        ⚠ Over-allocated by {allocatedQty - plannedQty}
+                                      </Badge>
+                                    ) : allocatedQty === plannedQty && plannedQty > 0 ? (
+                                      <Badge variant="soft" className="text-[10px] px-2 py-0.5 font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                                        ✓ Fully allocated ({allocatedQty} / {plannedQty})
+                                      </Badge>
+                                    ) : allocatedQty > 0 ? (
+                                      <Badge variant="soft" className="text-[10px] px-2 py-0.5 font-bold bg-sky-500/10 text-sky-600 border border-sky-500/20">
+                                        {allocatedQty} / {plannedQty} allocated ({remainingQty} remaining)
+                                      </Badge>
+                                    ) : (
+                                      <Badge variant="soft" className="text-[10px] px-2 py-0.5 font-medium text-muted-foreground bg-muted/40">
+                                        Not yet distributed
+                                      </Badge>
+                                    )}
+                                  </div>
                                 )}
                               </div>
 
-                              {/* Procurement Mode */}
-                              <div className="space-y-1.5">
-                                <div className="flex items-center gap-1">
-                                  <label className="text-xs font-semibold text-muted-foreground">
-                                    Procurement Mode *
-                                  </label>
-                                  <FieldDescriptionTooltip fieldKey="procurementModeId" className="h-3.5 w-3.5" />
-                                </div>
-                                <Select
-                                  value={config.procurementModeId}
-                                  onValueChange={(val) =>
-                                    updateConfig(item.id, {
-                                      procurementModeId: val,
-                                    })
-                                  }
-                                >
-                                  <SelectTrigger
-                                    className={cn(
-                                      'w-full border-default-200 text-xs h-9 focus:ring-primary/25',
-                                      hasMopError &&
-                                        'border-red-500 bg-red-50/20',
-                                    )}
-                                  >
-                                    <SelectValue placeholder="Select Mode *" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {procurementModes.map((m) => (
-                                      <SelectItem
-                                        key={m.id}
-                                        value={m.id}
-                                        className="text-xs"
-                                      >
-                                        {m.name}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-
-                              {/* Project Type */}
-                              <div className="space-y-1.5">
-                                <div className="flex items-center gap-1">
-                                  <label className="text-xs font-semibold text-muted-foreground">
-                                    Project Type
-                                  </label>
-                                  <FieldDescriptionTooltip fieldKey="projectType" className="h-3.5 w-3.5" />
-                                </div>
-                                <Select
-                                  value={config.projectType}
-                                  onValueChange={(
-                                    val: ProcurementProjectType,
-                                  ) =>
-                                    updateConfig(item.id, { projectType: val })
-                                  }
-                                >
-                                  <SelectTrigger className="w-full border-default-200 text-xs h-9">
-                                    <SelectValue placeholder="Select Project Type" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem
-                                      value="Goods"
-                                      className="text-xs"
-                                    >
-                                      Goods
-                                    </SelectItem>
-                                    <SelectItem
-                                      value="Infrastructure"
-                                      className="text-xs"
-                                    >
-                                      Infrastructure
-                                    </SelectItem>
-                                    <SelectItem
-                                      value="ConsultingServices"
-                                      className="text-xs"
-                                    >
-                                      Consulting Services
-                                    </SelectItem>
-                                    <SelectItem
-                                      value="GeneralSupportServices"
-                                      className="text-xs"
-                                    >
-                                      General Support Services
-                                    </SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            </div>
-
-                            <div className="grid gap-4 sm:grid-cols-2">
-                              {/* Milestone Dates */}
-                              <div className="space-y-1.5">
-                                <div className="flex items-center gap-1">
-                                  <label className="text-xs font-semibold text-muted-foreground">
-                                    Procurement Schedule *
-                                  </label>
-                                  <FieldDescriptionTooltip fieldKey="procurementStartDate" className="h-3.5 w-3.5" />
-                                </div>
-                                <div className="grid grid-cols-2 gap-2">
-                                  <div>
-                                    <Input
-                                      type="date"
-                                      value={config.procurementStartDate || ''}
-                                      onChange={(e) =>
-                                        updateConfig(item.id, {
-                                          procurementStartDate: e.target.value,
-                                        })
-                                      }
-                                      className={cn(
-                                        'text-xs h-9 border-default-200 w-full',
-                                        hasProcStartError && 'border-red-500 bg-red-50/20'
-                                      )}
-                                      placeholder="Start"
-                                    />
-                                    {hasProcStartError && (
-                                      <p className="text-[10px] text-red-500 mt-0.5">Start date is required</p>
+                              {config.enableAllocations && (
+                                <div className="space-y-3 pt-1 animate-in fade-in duration-200">
+                                  <div className="flex items-center justify-between p-2.5 rounded-lg border border-border/60 bg-muted/20 text-xs text-muted-foreground font-medium flex-wrap gap-2">
+                                    <div className="flex items-center gap-3">
+                                      <span>Planned: <strong className="text-foreground">{plannedQty}</strong></span>
+                                      <span>·</span>
+                                      <span>Allocated: <strong className={cn(hasAllocError ? 'text-red-500 font-bold' : 'text-foreground')}>{allocatedQty}</strong></span>
+                                      <span>·</span>
+                                      <span>Remaining: <strong className="text-foreground">{remainingQty}</strong></span>
+                                    </div>
+                                    {hasAllocError && (
+                                      <span className="text-red-500 font-bold text-xs">
+                                        ⚠ Exceeds planned quantity by {allocatedQty - plannedQty}
+                                      </span>
                                     )}
                                   </div>
-                                  <div>
-                                    <Input
-                                      type="date"
-                                      value={config.procurementEndDate || ''}
-                                      onChange={(e) =>
-                                        updateConfig(item.id, {
-                                          procurementEndDate: e.target.value,
-                                        })
-                                      }
-                                      className={cn(
-                                        'text-xs h-9 border-default-200 w-full',
-                                        hasProcEndError && 'border-red-500 bg-red-50/20'
-                                      )}
-                                      placeholder="End"
-                                    />
-                                    {config.procurementEndDate && config.procurementStartDate && config.procurementEndDate < config.procurementStartDate && (
-                                      <p className="text-[10px] text-red-500 mt-0.5">Cannot be before start date</p>
-                                    )}
-                                    {!config.procurementEndDate && (
-                                      <p className="text-[10px] text-red-500 mt-0.5">End date is required</p>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
 
-                              <div className="space-y-1.5">
-                                <div className="flex items-center gap-1">
-                                  <label className="text-xs font-semibold text-muted-foreground">
-                                    Expected Delivery Window *
-                                  </label>
-                                  <FieldDescriptionTooltip fieldKey="expectedDeliveryStart" className="h-3.5 w-3.5" />
-                                </div>
-                                <div className="grid grid-cols-2 gap-2">
-                                  <div>
-                                    <Input
-                                      type="date"
-                                      value={config.expectedDeliveryStart || ''}
-                                      onChange={(e) =>
-                                        updateConfig(item.id, {
-                                          expectedDeliveryStart: e.target.value,
-                                        })
-                                      }
-                                      className={cn(
-                                        'text-xs h-9 border-default-200 w-full',
-                                        hasDelivStartError && 'border-red-500 bg-red-50/20'
-                                      )}
-                                      placeholder="Start"
-                                    />
-                                    {config.expectedDeliveryStart && config.procurementStartDate && config.expectedDeliveryStart < config.procurementStartDate && (
-                                      <p className="text-[10px] text-red-500 mt-0.5">Cannot be before procurement start</p>
-                                    )}
-                                    {!config.expectedDeliveryStart && (
-                                      <p className="text-[10px] text-red-500 mt-0.5">Start date is required</p>
-                                    )}
-                                  </div>
-                                  <div>
-                                    <Input
-                                      type="date"
-                                      value={config.expectedDeliveryEnd || ''}
-                                      onChange={(e) =>
-                                        updateConfig(item.id, {
-                                          expectedDeliveryEnd: e.target.value,
-                                        })
-                                      }
-                                      className={cn(
-                                        'text-xs h-9 border-default-200 w-full',
-                                        hasDelivEndError && 'border-red-500 bg-red-50/20'
-                                      )}
-                                      placeholder="End"
-                                    />
-                                    {config.expectedDeliveryEnd && config.expectedDeliveryStart && config.expectedDeliveryEnd < config.expectedDeliveryStart && (
-                                      <p className="text-[10px] text-red-500 mt-0.5">Cannot be before start date</p>
-                                    )}
-                                    {!config.expectedDeliveryEnd && (
-                                      <p className="text-[10px] text-red-500 mt-0.5">End date is required</p>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="grid gap-4 sm:grid-cols-3 sm:items-center">
-                              {/* PAP Code */}
-                              <div className="space-y-1.5 sm:col-span-2">
-                                <div className="flex items-center gap-1">
-                                  <label className="text-xs font-semibold text-muted-foreground">
-                                    PAP Code
-                                  </label>
-                                  <FieldDescriptionTooltip fieldKey="papCode" className="h-3.5 w-3.5" />
-                                </div>
-                                <Input
-                                  value={config.papCode || ''}
-                                  placeholder="e.g. 5020301000"
-                                  onChange={(e) =>
-                                    updateConfig(item.id, {
-                                      papCode: e.target.value,
-                                    })
-                                  }
-                                  className="text-xs h-9 border-default-200"
-                                />
-                              </div>
-
-                              {/* Pre-procurement Conference */}
-                              <div className="flex items-center gap-2 pt-4 sm:pt-6">
-                                <Checkbox
-                                  id={`conf-${item.id}`}
-                                  checked={config.preProcurementConference}
-                                  onCheckedChange={(checked) =>
-                                    updateConfig(item.id, {
-                                      preProcurementConference: !!checked,
-                                    })
-                                  }
-                                />
-                                <label
-                                  htmlFor={`conf-${item.id}`}
-                                  className="text-xs text-foreground cursor-pointer select-none font-semibold"
-                                >
-                                  Pre-procurement Conference
-                                </label>
-                              </div>
-                            </div>
-
-                            {/* Remarks */}
-                            <div className="space-y-1.5">
-                              <div className="flex items-center gap-1">
-                                <label className="text-xs font-semibold text-muted-foreground">
-                                  Remarks
-                                </label>
-                                <FieldDescriptionTooltip fieldKey="remarks" className="h-3.5 w-3.5" />
-                              </div>
-                              <Textarea
-                                placeholder="Any specific comments or justifications..."
-                                value={config.remarks || ''}
-                                onChange={(e) =>
-                                  updateConfig(item.id, {
-                                    remarks: e.target.value,
-                                  })
-                                }
-                                className="text-xs min-h-15 border-default-200"
-                              />
-                            </div>
-
-                            {/* Allocations Checkbox */}
-                            <div className="flex items-center gap-2 pt-3 border-t border-border/40">
-                              <Checkbox
-                                id={`alloc-${item.id}`}
-                                checked={config.enableAllocations}
-                                onCheckedChange={(checked) =>
-                                  updateConfig(item.id, {
-                                    enableAllocations: !!checked,
-                                  })
-                                }
-                              />
-                              <label
-                                htmlFor={`alloc-${item.id}`}
-                                className="text-xs font-bold text-foreground cursor-pointer select-none"
-                              >
-                                Configure Monthly Quantity Distributions (Jan -
-                                Dec)
-                              </label>
-                            </div>
-
-                            {/* Allocations Input Grid */}
-                            {config.enableAllocations && (
-                              <div className="p-3 bg-muted/30 border border-border/80 rounded-lg space-y-3">
-                                <div className="text-[10px] text-muted-foreground font-semibold flex justify-between items-center flex-wrap gap-2">
-                                  <span>
-                                    Planned: <strong className="text-foreground">{plannedQty}</strong> | Allocated: <strong className={cn(hasAllocError ? 'text-red-500 font-bold' : 'text-foreground')}>{allocatedQty}</strong> | Remaining: <strong className="text-foreground">{remainingQty}</strong>
-                                  </span>
-                                  {hasAllocError && (
-                                    <span className="text-red-500 font-bold">
-                                      Exceeds planned quantity by {allocatedQty - plannedQty}
-                                    </span>
-                                  )}
-                                </div>
-                                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
-                                  {MONTH_NAMES.map((month) => {
-                                    const val =
-                                      config.monthlyQuantities[month] || ''
-                                    return (
-                                      <div key={month} className="space-y-1">
-                                        <span className="text-[9px] uppercase font-bold text-muted-foreground block text-center">
-                                          {month.substring(0, 3)}
-                                        </span>
-                                        <Input
-                                          type="number"
-                                          min="0"
-                                          placeholder="0"
-                                          value={val}
-                                          onChange={(e) => {
-                                            const qty = Math.max(
-                                              0,
-                                              Number.parseInt(e.target.value) ||
+                                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                                    {MONTH_NAMES.map((month) => {
+                                      const val =
+                                        config.monthlyQuantities[month] || ''
+                                      return (
+                                        <div key={month} className="space-y-1">
+                                          <span className="text-[9px] uppercase font-bold text-muted-foreground block text-center">
+                                            {month.substring(0, 3)}
+                                          </span>
+                                          <Input
+                                            type="number"
+                                            min="0"
+                                            placeholder="0"
+                                            value={val}
+                                            onChange={(e) => {
+                                              const qty = Math.max(
                                                 0,
-                                            )
-                                            const monthlyQuantities = {
-                                              ...config.monthlyQuantities,
-                                              [month]: qty,
-                                            }
-                                            updateConfig(item.id, {
-                                              monthlyQuantities,
-                                            })
-                                          }}
-                                          className="text-xs h-8 text-center border-default-200"
-                                        />
-                                      </div>
-                                    )
-                                  })}
+                                                Number.parseInt(e.target.value) ||
+                                                  0,
+                                              )
+                                              const monthlyQuantities = {
+                                                ...config.monthlyQuantities,
+                                                [month]: qty,
+                                              }
+                                              updateConfig(item.id, {
+                                                monthlyQuantities,
+                                              })
+                                            }}
+                                            className="text-xs h-8 text-center border-default-200 focus-visible:ring-primary/20"
+                                          />
+                                        </div>
+                                      )
+                                    })}
+                                  </div>
                                 </div>
-                              </div>
-                            )}
+                              )}
+                            </div>
                           </div>
                         )}
                       </div>
