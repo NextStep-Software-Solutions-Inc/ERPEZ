@@ -65,6 +65,12 @@ public class APPItem : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public bool IsRevised { get; set; }
     
+    [Sieve(CanFilter = true, CanSort = true)]
+    public decimal OriginalPPMPBudget => PPMPItem?.PPMPItemAllocations.Where(a => !a.IsDeleted).Sum(a => a.Amount) ?? 0;
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public decimal EffectiveABC => EstimatedBudgetOverride ?? OriginalPPMPBudget;
+    
     // Navigation properties
     public virtual APP APP { get; set; } = null!;
     public virtual PPMPItem PPMPItem { get; set; } = null!;
