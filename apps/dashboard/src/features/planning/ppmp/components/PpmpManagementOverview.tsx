@@ -7,7 +7,11 @@ import { Card, CardContent } from '@/components/ui/card'
 import { Progress } from '@/components/ui/progress'
 import { cn } from '@/lib/utils'
 import type { LineItemBudget, PPMP } from '../types'
-import { computePpmpManagementOverview, formatCurrency } from '../lib/ppmpUtils'
+import {
+  computePpmpManagementOverview,
+  formatCurrency,
+  type PpmpManagementOverviewSummary,
+} from '../lib/ppmpUtils'
 
 interface PpmpManagementOverviewProps {
   summary?: PpmpManagementOverviewSummary
