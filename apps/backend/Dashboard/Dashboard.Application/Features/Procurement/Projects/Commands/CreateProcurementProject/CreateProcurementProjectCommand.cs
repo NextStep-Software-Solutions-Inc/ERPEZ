@@ -18,6 +18,7 @@ public record CreateProcurementProjectCommand : IRequest<ApiResponse<Guid>>
     public string ResolutionNumber { get; init; } = string.Empty;
     public DateTime DateResolved { get; init; } = DateTime.UtcNow;
     public string? WhereasClause { get; init; }
+    public List<Guid>? WhereasClauseIds { get; init; }
     public Guid? EndUserRepresentativeId { get; init; }
     public Guid? TechRepresentativeId { get; init; }
 }

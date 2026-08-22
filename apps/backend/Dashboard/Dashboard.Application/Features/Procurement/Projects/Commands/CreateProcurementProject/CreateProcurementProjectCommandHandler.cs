@@ -105,6 +105,25 @@ public class CreateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
             WhereasClause = request.WhereasClause
         };
 
+        if (request.WhereasClauseIds != null && request.WhereasClauseIds.Count > 0)
+        {
+            for (int i = 0; i < request.WhereasClauseIds.Count; i++)
+            {
+                var clauseId = request.WhereasClauseIds[i];
+                var clause = await unitOfWork.BACResolutionWhereasClauseRepository.GetByIdAsync(clauseId, cancellationToken);
+                if (clause == null)
+                {
+                    return ApiResponse<Guid>.Fail($"BAC Resolution Whereas Clause with ID '{clauseId}' was not found.");
+                }
+
+                resolution.WhereasClauseItems.Add(new BACResolutionWhereasClauseItem
+                {
+                    BACResolutionWhereasClauseId = clauseId,
+                    Order = i
+                });
+            }
+        }
+
         project.BACResolutions.Add(resolution);
 
         await unitOfWork.ProcurementProjectRepository.AddAsync(project, cancellationToken);

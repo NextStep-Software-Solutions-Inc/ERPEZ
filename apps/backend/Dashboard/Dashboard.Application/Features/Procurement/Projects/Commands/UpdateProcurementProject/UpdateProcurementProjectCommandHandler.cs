@@ -14,6 +14,7 @@ public class UpdateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
     {
         var project = await unitOfWork.ProcurementProjectRepository.Query()
             .Include(p => p.BACResolutions)
+                .ThenInclude(r => r.WhereasClauseItems)
             .FirstOrDefaultAsync(p => p.Id == request.Id, cancellationToken);
 
         if (project == null)
@@ -50,6 +51,27 @@ public class UpdateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
             resolution.ResolutionNumber = request.UpdateRequest.ResolutionNumber;
             resolution.DateResolved = request.UpdateRequest.DateResolved;
             resolution.WhereasClause = request.UpdateRequest.WhereasClause;
+        }
+
+        if (request.UpdateRequest.WhereasClauseIds != null)
+        {
+            resolution.WhereasClauseItems.Clear();
+            for (int i = 0; i < request.UpdateRequest.WhereasClauseIds.Count; i++)
+            {
+                var clauseId = request.UpdateRequest.WhereasClauseIds[i];
+                var clause = await unitOfWork.BACResolutionWhereasClauseRepository.GetByIdAsync(clauseId, cancellationToken);
+                if (clause == null)
+                {
+                    return ApiResponse<Unit>.Fail($"BAC Resolution Whereas Clause with ID '{clauseId}' was not found.");
+                }
+
+                resolution.WhereasClauseItems.Add(new BACResolutionWhereasClauseItem
+                {
+                    BACResolutionId = resolution.Id,
+                    BACResolutionWhereasClauseId = clauseId,
+                    Order = i
+                });
+            }
         }
 
         unitOfWork.ProcurementProjectRepository.Update(project);
