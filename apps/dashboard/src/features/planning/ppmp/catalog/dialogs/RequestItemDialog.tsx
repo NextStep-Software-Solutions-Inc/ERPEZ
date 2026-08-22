@@ -13,7 +13,7 @@
 import { useEffect, useState } from 'react'
 import { useAtom } from 'jotai'
 import { useForm } from '@tanstack/react-form'
-import { Upload } from 'lucide-react'
+import { Upload, FileText } from 'lucide-react'
 
 import { ResponsiveDialogDashtail } from '@/components/ResponsiveDialogDashtail'
 import { Button } from '@/components/ui/button'
@@ -43,8 +43,41 @@ import {
 
 import type { RequestItemFormValues } from '../forms/requestItemFormSchema'
 
-export function RequestItemDialog() {
-  const [isOpen, setIsOpen] = useAtom(requestItemDialogOpenAtom)
+export interface PPMPContextInfo {
+  ppmpId?: string
+  ppmpTitle?: string
+  fiscalYear?: number | string
+  officeId?: string
+  officeName?: string
+  expenditureItemTitle?: string
+}
+
+export interface RequestItemDialogProps {
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  initialOfficeId?: string
+  ppmpContext?: PPMPContextInfo
+  onSuccess?: () => void
+}
+
+export function RequestItemDialog({
+  open: controlledOpen,
+  onOpenChange: controlledOnOpenChange,
+  initialOfficeId,
+  ppmpContext,
+  onSuccess,
+}: RequestItemDialogProps = {}) {
+  const [atomOpen, setAtomOpen] = useAtom(requestItemDialogOpenAtom)
+  const isControlled = controlledOpen !== undefined
+  const isOpen = isControlled ? controlledOpen : atomOpen
+  const setIsOpen = (next: boolean) => {
+    if (isControlled) {
+      controlledOnOpenChange?.(next)
+    } else {
+      setAtomOpen(next)
+    }
+  }
+
   const createMutation = useCreateItemRequestMutation()
   const { data: officesResponse } = useQuery({
     queryKey: ['/offices'],
@@ -96,6 +129,8 @@ export function RequestItemDialog() {
   }, [form.getFieldValue('procurementCategory')])
 
   const getMatchedOfficeId = () => {
+    if (initialOfficeId) return initialOfficeId
+    if (ppmpContext?.officeId) return ppmpContext.officeId
     const offices = officesResponse?.data || []
     return offices.length > 0 ? offices[0].id : '00000000-0000-0000-0000-000000000000'
   }
@@ -138,6 +173,7 @@ export function RequestItemDialog() {
 
       form.reset()
       setIsOpen(false)
+      onSuccess?.()
     } catch (error) {
       console.error('Request submission error:', error)
     } finally {
@@ -170,6 +206,7 @@ export function RequestItemDialog() {
 
       form.reset()
       setIsOpen(false)
+      onSuccess?.()
     } catch (error) {
       console.error('Draft save error:', error)
     } finally {
@@ -199,6 +236,43 @@ export function RequestItemDialog() {
         }}
         className="space-y-6"
       >
+        {/* ── Context Box when opened from PPMP ── */}
+        {ppmpContext && (
+          <div className="rounded-xl border border-primary/20 bg-primary/5 p-3.5 space-y-2 text-xs">
+            <div className="flex items-center gap-1.5 font-semibold text-primary">
+              <FileText className="h-4 w-4" />
+              <span>PPMP Planning Context</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5 pt-1 text-[11px]">
+              {ppmpContext.officeName && (
+                <div>
+                  <span className="text-muted-foreground block text-[10px] uppercase font-bold">Requesting Office</span>
+                  <span className="font-semibold text-foreground">{ppmpContext.officeName}</span>
+                </div>
+              )}
+              {ppmpContext.fiscalYear && (
+                <div>
+                  <span className="text-muted-foreground block text-[10px] uppercase font-bold">Fiscal Year</span>
+                  <span className="font-semibold text-foreground">
+                    {String(ppmpContext.fiscalYear).toUpperCase().startsWith('FY')
+                      ? ppmpContext.fiscalYear
+                      : `FY ${ppmpContext.fiscalYear}`}
+                  </span>
+                </div>
+              )}
+              {ppmpContext.ppmpTitle && (
+                <div>
+                  <span className="text-muted-foreground block text-[10px] uppercase font-bold">PPMP Plan</span>
+                  <span className="font-semibold text-foreground truncate block">{ppmpContext.ppmpTitle}</span>
+                </div>
+              )}
+            </div>
+            <p className="text-[10px] text-muted-foreground italic pt-1 border-t border-primary/10">
+              Note: Submitting this request does not automatically insert an item into your PPMP. Once evaluated and approved by the Technical Working Group, it will become selectable in the Non-CSE catalog.
+            </p>
+          </div>
+        )}
+
         {/* ── Section 1: Item Information ── */}
         <div className="space-y-4">
           <div>

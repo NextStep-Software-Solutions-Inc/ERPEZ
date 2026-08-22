@@ -24,6 +24,9 @@ import {
   Loader2,
   ChevronDown,
   ChevronUp,
+  Plus,
+  HelpCircle,
+  Sparkles,
 } from 'lucide-react'
 import {
   createQueryHookFromTemplate,
@@ -56,6 +59,7 @@ import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 import DocumentViewer from '@/components/DocumentViewer'
 import { FieldDescriptionTooltip } from '../components/FieldDescriptionTooltip'
+import { RequestItemDialog } from '../catalog/dialogs/RequestItemDialog'
 
 import { getNONCSEItemsRequest } from '@/features/planning/non-cse-item/handlers/getNONCSEItemsRequest'
 import { getProcurementModesRequest } from '@/lib/fiscal-year-and-policies/requests/getProcurementModesRequest'
@@ -122,6 +126,11 @@ interface AddPPMPItemsModalProps {
   isOpen: boolean
   onOpenChange: (open: boolean) => void
   ppmpExpenditureItemId: string
+  officeId?: string
+  officeName?: string
+  fiscalYear?: number | string
+  ppmpTitle?: string
+  expenditureItemTitle?: string
   onSuccess?: () => void
 }
 
@@ -173,12 +182,25 @@ function tone(value: string): string {
   return tones[valHash % tones.length] ?? tones[0]!
 }
 
-function EmptyState({ message }: { message: string }) {
+function EmptyState({ message, onRequestItem }: { message: string; onRequestItem?: () => void }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 px-6 py-14 text-center">
-      <Package className="h-10 w-10 text-muted-foreground/40" />
-      <p className="mt-3 text-sm font-medium text-foreground">No items found</p>
+    <div className="flex flex-col items-center justify-center rounded-2xl border border-primary/25 bg-linear-to-b from-primary/5 via-muted/15 to-transparent px-6 py-12 text-center shadow-xs">
+      <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mb-1">
+        <Package className="h-6 w-6 text-primary" />
+      </div>
+      <p className="mt-2 text-sm font-semibold text-foreground">No items found</p>
       <p className="mt-1 max-w-sm text-xs text-muted-foreground">{message}</p>
+      {onRequestItem && (
+        <Button
+          type="button"
+          size="sm"
+          onClick={onRequestItem}
+          className="mt-4 gap-1.5 text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs transition-all hover:scale-[1.02] active:scale-[0.98]"
+        >
+          <Plus className="h-3.5 w-3.5" />
+          Create Item Request
+        </Button>
+      )}
     </div>
   )
 }
@@ -190,6 +212,11 @@ export default function AddPPMPItemsModal({
   isOpen,
   onOpenChange,
   ppmpExpenditureItemId,
+  officeId,
+  officeName,
+  fiscalYear,
+  ppmpTitle,
+  expenditureItemTitle,
   onSuccess,
 }: AddPPMPItemsModalProps) {
   const queryClient = useQueryClient()
@@ -206,6 +233,9 @@ export default function AddPPMPItemsModal({
     Map<string, SelectedItemWrapper>
   >(new Map())
   const [isFiltersCollapsed, setIsFiltersCollapsed] = useState(false)
+
+  // Request Item Dialog state
+  const [requestItemDialogOpen, setRequestItemDialogOpen] = useState(false)
 
   // Configure step inputs
   const [configs, setConfigs] = useState<Record<string, ItemReviewConfig>>({})
@@ -1382,30 +1412,44 @@ export default function AddPPMPItemsModal({
                           ) : activeTab === 'cse' &&
                             (search.trim() ||
                               currentFilters.categories.length > 0) ? (
-                            <div className="flex flex-col items-center justify-center py-16 px-4 text-center border border-dashed rounded-xl bg-muted/10 my-4">
+                            <div className="flex flex-col items-center justify-center py-14 px-4 text-center border border-dashed rounded-2xl bg-muted/15 my-4">
                               <div className="rounded-full bg-muted p-3 mb-3 text-muted-foreground">
                                 <Search className="h-6 w-6" />
                               </div>
                               <h4 className="text-sm font-semibold text-foreground">
-                                No Matching Items Found
+                                No Matching CSE Items Found
                               </h4>
                               <p className="mt-1 max-w-md text-xs text-muted-foreground">
-                                No items match your active search or category
-                                filters. Try adjusting or clearing your filters.
+                                No items match your active search or filters. If the required item is not available in the CSE catalog, you can create a Non-CSE item request.
                               </p>
-                              <Button
-                                type="button"
-                                variant="outline"
-                                size="sm"
-                                onClick={resetCurrentFilters}
-                                className="mt-4 gap-1.5 h-8 text-xs font-semibold"
-                              >
-                                <RefreshCcw className="h-3.5 w-3.5" />
-                                Reset Filters
-                              </Button>
+                              <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={resetCurrentFilters}
+                                  className="gap-1.5 h-8 text-xs font-semibold"
+                                >
+                                  <RefreshCcw className="h-3.5 w-3.5" />
+                                  Reset Filters
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="default"
+                                  size="sm"
+                                  onClick={() => setRequestItemDialogOpen(true)}
+                                  className="gap-1.5 h-8 text-xs font-semibold bg-primary hover:bg-primary/95 text-white shadow-2xs"
+                                >
+                                  <Plus className="h-3.5 w-3.5" />
+                                  Create Item Request
+                                </Button>
+                              </div>
                             </div>
                           ) : (
-                            <EmptyState message="Try clearing filters or checking your search query." />
+                            <EmptyState
+                              message="Try clearing filters or checking your search query."
+                              onRequestItem={() => setRequestItemDialogOpen(true)}
+                            />
                           )
                         ) : (
                           <>
@@ -1533,7 +1577,7 @@ export default function AddPPMPItemsModal({
                                     {/* Details Area */}
                                     <div className="mt-3.5 space-y-2 flex-1 flex flex-col justify-between">
                                       <div className="space-y-1">
-                                        <h4 className="line-clamp-2 text-xs font-bold text-slate-800 leading-snug group-hover:text-primary transition-colors">
+                                        <h4 className="line-clamp-2 text-xs font-semibold text-slate-800 leading-snug group-hover:text-primary transition-colors">
                                           {item.name || 'Unnamed Item'}
                                         </h4>
                                         <p className="text-[10px] tracking-wide text-slate-400 font-mono">
@@ -1726,6 +1770,38 @@ export default function AddPPMPItemsModal({
                             )}
                           </>
                         )}
+
+                        {/* Persistent "Can't find the item you need?" Highlighted Context Strip */}
+                        <div className="mt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5 p-4 rounded-2xl border border-primary/25 bg-linear-to-r from-primary/8 via-primary/4 to-transparent shadow-xs transition-all hover:border-primary/40">
+                          <div className="flex items-center gap-3">
+                            <div className="h-9 w-9 rounded-xl bg-primary/15 text-primary flex items-center justify-center shrink-0 shadow-2xs">
+                              <HelpCircle className="h-4.5 w-4.5" />
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <p className="text-xs font-semibold text-foreground">
+                                  Can't find the item you need?
+                                </p>
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-semibold">
+                                  <Sparkles className="h-2.5 w-2.5" />
+                                  New Request
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-muted-foreground mt-0.5">
+                                Request a new item not currently available in the catalog for Technical Working Group evaluation.
+                              </p>
+                            </div>
+                          </div>
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => setRequestItemDialogOpen(true)}
+                            className="gap-1.5 text-xs shrink-0 font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs transition-all hover:scale-[1.02] active:scale-[0.98] h-8.5 px-3.5"
+                          >
+                            <Plus className="h-3.5 w-3.5" />
+                            Create Item Request
+                          </Button>
+                        </div>
                       </section>
                     </div>
                   </TabsContent>
@@ -1939,7 +2015,7 @@ export default function AddPPMPItemsModal({
                                 <span className="text-xs font-mono font-bold text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded-md">
                                   #{index + 1}
                                 </span>
-                                <h4 className="text-xs sm:text-sm font-bold text-foreground truncate max-w-50 sm:max-w-md">
+                                <h4 className="text-xs sm:text-sm font-semibold text-foreground truncate max-w-50 sm:max-w-md">
                                   {item.name}
                                 </h4>
                                 <Badge
@@ -2718,6 +2794,21 @@ export default function AddPPMPItemsModal({
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Contextual Request Item Dialog */}
+      <RequestItemDialog
+        open={requestItemDialogOpen}
+        onOpenChange={setRequestItemDialogOpen}
+        initialOfficeId={officeId}
+        ppmpContext={{
+          ppmpId: ppmpExpenditureItemId,
+          ppmpTitle,
+          fiscalYear,
+          officeId,
+          officeName,
+          expenditureItemTitle,
+        }}
+      />
     </>
   )
 }

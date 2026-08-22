@@ -997,7 +997,7 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
                     Code: {cseItem?.productCode || '—'}
                   </span>
                 </div>
-                <h5 className="text-[11px] font-bold text-default-850 line-clamp-1">
+                <h5 className="text-[11px] font-semibold text-default-850 line-clamp-1">
                   {isLoadingCse ? 'Loading catalog item...' : (cseItem?.name || item.name)}
                 </h5>
                 {!isLoadingCse && cseItem && (
@@ -1029,7 +1029,7 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
                     Code: {nonCseItem?.productCode || '—'}
                   </span>
                 </div>
-                <h5 className="text-[11px] font-bold text-default-850 line-clamp-1">
+                <h5 className="text-[11px] font-semibold text-default-850 line-clamp-1">
                   {isLoadingNonCse ? 'Loading catalog item...' : (nonCseItem?.name || item.name)}
                 </h5>
                 {!isLoadingNonCse && nonCseItem && (
@@ -1063,7 +1063,7 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
                     </span>
                   )}
                 </div>
-                <h5 className="text-[11px] font-bold text-default-850 line-clamp-1">
+                <h5 className="text-[11px] font-semibold text-default-850 line-clamp-1">
                   {item.name}
                 </h5>
                 {item.description && (
@@ -1229,7 +1229,7 @@ function ItemRow({
         <td className="px-5 py-3 min-w-[280px]">
           <div className="flex items-center gap-2 flex-wrap">
             <span
-              className="font-bold text-sm text-foreground hover:text-primary transition-colors max-w-xl truncate"
+              className="font-semibold text-sm text-foreground hover:text-primary transition-colors max-w-xl truncate"
               title={displayName}
             >
               {displayName}
@@ -3018,6 +3018,10 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
         isOpen={itemsPickerOpen}
         onOpenChange={setItemsPickerOpen}
         ppmpExpenditureItemId={itemDialogGroupId}
+        officeId={ppmp?.officeId}
+        officeName={ppmp?.officeName}
+        fiscalYear={ppmp?.fiscalYear?.year || ppmp?.fiscalYearName}
+        ppmpTitle={ppmp?.documentName || ppmp?.ppmpNumber}
       />
 
       <EditPPMPItemAllocationsDialog
