@@ -60,12 +60,6 @@ public class GetEligibleAppsForProcurementQueryHandler(IUnitOfWork unitOfWork)
                         ? item.PPMPItem.Name
                         : $"Procurement Line Item {itemIndex}");
 
-                var allocQty = item.PPMPItem?.PPMPItemAllocations.Where(a => !a.IsDeleted).Sum(a => a.Quantity) ?? 0;
-                var unitPrice = item.PPMPItem?.UnitPrice ?? 0;
-                var allocTotal = item.PPMPItem?.PPMPItemAllocations.Where(a => !a.IsDeleted).Sum(a => a.Amount) ?? 0;
-                var origBudget = allocTotal > 0 ? allocTotal : ((allocQty > 0 ? allocQty : 1) * unitPrice);
-                decimal abc = item.EstimatedBudgetOverride ?? origBudget;
-
                 eligibleItems.Add(new EligibleAppItemDto
                 {
                     Id = item.Id,
@@ -76,7 +70,7 @@ public class GetEligibleAppsForProcurementQueryHandler(IUnitOfWork unitOfWork)
                     ProcurementModeName = item.ProcurementMode?.Name ?? "Public Bidding",
                     FundSourceId = item.FundSourceId,
                     FundSourceName = item.FundSource?.Name ?? "GAA (General Appropriations Act)",
-                    EffectiveABC = abc
+                    EffectiveABC = item.EffectiveABC
                 });
 
                 itemIndex++;
