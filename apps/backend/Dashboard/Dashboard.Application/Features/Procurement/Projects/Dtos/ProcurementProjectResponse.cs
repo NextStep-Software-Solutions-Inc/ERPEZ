@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using ERPEZ.Application.Features.Planning.BACResolutionWhereasClause.Dtos;
 using ERPEZ.Domain.Entities.Procurement;
 
 namespace ERPEZ.Application.Features.Procurement.Projects.Dtos;
@@ -66,7 +67,15 @@ public record ProcurementProjectResponse
             ResolutionNumber = r.ResolutionNumber,
             DateResolved = r.DateResolved,
             Status = r.Status,
-            WhereasClause = r.WhereasClause
+            WhereasClause = r.WhereasClause,
+            WhereasClauses = r.WhereasClauseItems
+                .OrderBy(item => item.Order)
+                .Select(item => new BACResolutionWhereasClauseResponse
+                {
+                    Id = item.BACResolutionWhereasClause.Id,
+                    Name = item.BACResolutionWhereasClause.Name,
+                    Body = item.BACResolutionWhereasClause.Body
+                }).ToList()
         }).ToList(),
         BiddingActivitySchedules = c.BiddingActivitySchedules.Select(s => new BiddingActivityScheduleResponse
         {
