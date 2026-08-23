@@ -46,13 +46,14 @@ public class CreateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
                 ? appItem.Remarks
                 : (appItem.PPMPItem != null && !string.IsNullOrWhiteSpace(appItem.PPMPItem.Name) ? appItem.PPMPItem.Name : (request.Title ?? "APP Procurement Project"));
 
-            decimal inheritedAbc = appItem.EstimatedBudgetOverride.HasValue
-                ? appItem.EstimatedBudgetOverride.Value
-                : appItem.EffectiveABC;
+            decimal inheritedAbc = appItem.EffectiveABC;
 
-            projectABC = request.ABC.HasValue && request.ABC.Value > 0
-                ? request.ABC.Value
-                : inheritedAbc;
+            if (request.ABC.HasValue && request.ABC.Value > 0 && request.ABC.Value != inheritedAbc)
+            {
+                return ApiResponse<Guid>.Fail($"Approved Budget (ABC) cannot be overridden. Provided: {request.ABC.Value:N2}, Expected: {inheritedAbc:N2}.");
+            }
+
+            projectABC = inheritedAbc;
 
             procurementModeId = appItem.ProcurementModeId;
         }
@@ -84,7 +85,13 @@ public class CreateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
                 ? consolidatedPr.Description
                 : (!string.IsNullOrWhiteSpace(consolidatedPr.CPRNumber) ? consolidatedPr.CPRNumber : (request.Title ?? "Consolidated PR Project"));
 
-            projectABC = consolidatedPr.TotalAmount > 0 ? consolidatedPr.TotalAmount : (request.ABC ?? 0);
+            decimal expectedCprAbc = consolidatedPr.TotalAmount;
+            if (request.ABC.HasValue && request.ABC.Value > 0 && request.ABC.Value != expectedCprAbc)
+            {
+                return ApiResponse<Guid>.Fail($"Approved Budget (ABC) cannot be overridden. Provided: {request.ABC.Value:N2}, Expected: {expectedCprAbc:N2}.");
+            }
+
+            projectABC = expectedCprAbc;
         }
 
         var project = new ProcurementProject

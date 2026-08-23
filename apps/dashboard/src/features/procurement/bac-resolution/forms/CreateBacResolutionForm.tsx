@@ -50,7 +50,6 @@ import type {
   EligibleAppForProcurement,
   EligibleAppItem,
   EligibleConsolidatedPR,
-  ProcurementProjectContext,
   ProcurementSourceType,
   WhereasClauseTemplate,
 } from '../types'
@@ -63,7 +62,6 @@ import {
 } from '../handlers/hooks'
 import FieldInfo from '@/components/FieldInfo'
 import type { User } from '@/services/api/users'
-import { ProcurementProjectPreviewBanner } from '../components/ProcurementProjectPreviewBanner'
 import type { CreateBacResolutionPayload } from '../handlers/createBacResolutionRequest'
 import { CreateEditWhereasClauseDialog } from '../dialogs/CreateEditWhereasClauseDialog'
 
@@ -177,46 +175,28 @@ export const CreateBacResolutionForm = forwardRef<
       return []
     }, [bacResolutionWhereasClauses])
 
-    const projectContext = useMemo<ProcurementProjectContext | null>(() => {
-      if (
-        selectedSourceType === 'AppItem' &&
-        selectedAppItem &&
-        selectedAppParent
-      ) {
-        return {
-          sourceType: 'AppItem',
-          sourceRef: `${selectedAppParent.appNumber} / ${selectedAppItem.itemNumber}`,
-          projectTitle: selectedAppItem.description,
-          officeName: selectedAppItem.officeName,
-          modeOfProcurement: selectedAppItem.procurementModeName,
-          procurementModeId: selectedAppItem.procurementModeId,
-          sourceOfFund: selectedAppItem.fundSourceName,
-          abc: selectedAppItem.effectiveABC,
-        }
+    const derivedTitle = useMemo(() => {
+      if (selectedSourceType === 'AppItem' && selectedAppItem) {
+        return selectedAppItem.description
       }
-
       if (selectedSourceType === 'ConsolidatedPr' && selectedConsolidatedPr) {
-        return {
-          sourceType: 'ConsolidatedPr',
-          sourceRef: selectedConsolidatedPr.prNumber,
-          projectTitle:
-            selectedConsolidatedPr.projectName ||
-            selectedConsolidatedPr.description,
-          officeName: selectedConsolidatedPr.endUser,
-          modeOfProcurement: selectedConsolidatedPr.modeOfProcurementName,
-          procurementModeId: selectedConsolidatedPr.procurementModeId,
-          sourceOfFund: 'General Appropriations Act (GAA)',
-          abc: selectedConsolidatedPr.totalAmount,
-        }
+        return (
+          selectedConsolidatedPr.projectName ||
+          selectedConsolidatedPr.description
+        )
       }
+      return ''
+    }, [selectedSourceType, selectedAppItem, selectedConsolidatedPr])
 
-      return null
-    }, [
-      selectedSourceType,
-      selectedAppItem,
-      selectedAppParent,
-      selectedConsolidatedPr,
-    ])
+    const inheritedAbc = useMemo(() => {
+      if (selectedSourceType === 'AppItem' && selectedAppItem) {
+        return selectedAppItem.effectiveABC
+      }
+      if (selectedSourceType === 'ConsolidatedPr' && selectedConsolidatedPr) {
+        return selectedConsolidatedPr.totalAmount
+      }
+      return 0
+    }, [selectedSourceType, selectedAppItem, selectedConsolidatedPr])
 
     const { data: usersData, isPending: isUsersLoading } = useUsers({
       pathParams: {},
@@ -250,8 +230,8 @@ export const CreateBacResolutionForm = forwardRef<
     const initialFormValues: CreateBacResolutionFormValues = {
       appItemId: initialValues?.appItemId || undefined,
       consolidatedPRId: initialValues?.consolidatedPRId || undefined,
-      title: initialValues?.title ?? projectContext?.projectTitle ?? '',
-      abc: initialValues?.abc ?? projectContext?.abc ?? 0,
+      title: initialValues?.title ?? derivedTitle ?? '',
+      abc: initialValues?.abc ?? inheritedAbc ?? 0,
       resolutionType: initialValues?.resolutionType ?? 'award-recommendation',
       resolutionNumber:
         initialValues?.resolutionNumber ??
@@ -323,13 +303,13 @@ export const CreateBacResolutionForm = forwardRef<
       },
     })
 
-    // Sync title & ABC when projectContext changes
+    // Sync title & ABC when source selection changes
     useEffect(() => {
-      if (projectContext) {
-        form.setFieldValue('title', projectContext.projectTitle)
-        form.setFieldValue('abc', projectContext.abc)
+      if (derivedTitle) {
+        form.setFieldValue('title', derivedTitle)
       }
-    }, [projectContext, form])
+      form.setFieldValue('abc', inheritedAbc)
+    }, [derivedTitle, inheritedAbc, form])
 
     // Update parent canProceed status based on step requirements
     useEffect(() => {
@@ -488,11 +468,6 @@ export const CreateBacResolutionForm = forwardRef<
             }}
             className="space-y-6"
           >
-            {/* Read-Only Procurement Project Preview Banner */}
-            {projectContext && (
-              <ProcurementProjectPreviewBanner context={projectContext} />
-            )}
-
             {/* BAC Resolution Main Information */}
             <div className="rounded-lg border border-default-200 bg-white p-4 space-y-5 shadow-xs">
               <h4 className="font-bold text-sm text-default-900 border-b border-default-200 pb-2">
@@ -530,14 +505,11 @@ export const CreateBacResolutionForm = forwardRef<
                           type="number"
                           step="0.01"
                           value={field.state.value}
-                          onBlur={field.handleBlur}
-                          onChange={(e) =>
-                            field.handleChange(parseFloat(e.target.value) || 0)
-                          }
-                          disabled={isLoading || isSubmitting}
+                          disabled={true}
+                          className="bg-default-100 font-semibold cursor-not-allowed text-default-700"
                         />
                         <p className="text-[11px] text-muted-foreground">
-                          Derived from source record. Adjust if formally revised.
+                          Read-only budget inherited directly from source record.
                         </p>
                         <FieldInfo field={field} />
                       </div>

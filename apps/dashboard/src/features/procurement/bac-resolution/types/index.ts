@@ -83,27 +83,6 @@ export type AppItemLink = {
   status: 'eligible' | 'linked'
 }
 
-export type ProcurementProjectItemBreakdown = {
-  itemNumber: string
-  description: string
-  officeName: string
-  modeOfProcurement: string
-  sourceOfFund: string
-  estimatedBudget: number
-}
-
-export type ProcurementProjectContext = {
-  sourceType: ProcurementSourceType
-  sourceRef: string // e.g. "APP-2026-001 / Item 03" or "CPR-2026-001"
-  projectTitle: string
-  officeName: string
-  modeOfProcurement: string
-  procurementModeId?: string | null
-  sourceOfFund: string
-  abc: number
-  itemBreakdown?: ProcurementProjectItemBreakdown[]
-}
-
 export type EligibleAppItem = {
   id: string
   itemNumber: string
@@ -172,7 +151,6 @@ export type BacResolution = {
   sourceType?: ProcurementSourceType
   appItemId?: string | null
   consolidatedPRId?: string | null
-  procurementProjectContext?: ProcurementProjectContext | null
   isPrCreated?: boolean
   createdPrNumber?: string | null
 }

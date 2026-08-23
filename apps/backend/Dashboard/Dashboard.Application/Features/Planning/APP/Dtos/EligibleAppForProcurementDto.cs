@@ -1,5 +1,4 @@
-using System;
-using System.Collections.Generic;
+using ERPEZ.Application.Features.Planning.APPItem.Dtos;
 
 namespace ERPEZ.Application.Features.Planning.APP.Dtos;
 
@@ -12,15 +11,8 @@ public class EligibleAppForProcurementDto
     public List<EligibleAppItemDto> EligibleItems { get; set; } = [];
 }
 
-public class EligibleAppItemDto
+public record EligibleAppItemDto : APPItemResponse
 {
-    public Guid Id { get; set; }
-    public string ItemNumber { get; set; } = string.Empty;
-    public string Description { get; set; } = string.Empty;
-    public string OfficeName { get; set; } = string.Empty;
-    public Guid? ProcurementModeId { get; set; }
-    public string ProcurementModeName { get; set; } = string.Empty;
-    public Guid? FundSourceId { get; set; }
-    public string FundSourceName { get; set; } = string.Empty;
-    public decimal EffectiveABC { get; set; }
+    public string ItemNumber { get; init; } = string.Empty;
+    public string Description { get; init; } = string.Empty;
 }

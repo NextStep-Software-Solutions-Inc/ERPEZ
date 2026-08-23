@@ -67,7 +67,7 @@ public class CreateProcurementProjectCommandHandlerTests
     }
 
     [Fact]
-    public async Task Handle_AppItemSource_WithAbcPayloadOverride_UsesPayloadValue()
+    public async Task Handle_AppItemSource_WithConflictingAbcPayloadOverride_FailsValidation()
     {
         var appItemId = Guid.NewGuid();
         var appItem = new APPItem
@@ -85,12 +85,6 @@ public class CreateProcurementProjectCommandHandlerTests
             .Setup(r => r.FindAsync(It.IsAny<Expression<Func<ProcurementProject, bool>>>(), It.IsAny<CancellationToken>()))
             .ReturnsAsync((ProcurementProject?)null);
 
-        ProcurementProject? savedProject = null;
-        mockProjectRepo
-            .Setup(r => r.AddAsync(It.IsAny<ProcurementProject>(), It.IsAny<CancellationToken>()))
-            .Callback<ProcurementProject, CancellationToken>((p, _) => savedProject = p)
-            .Returns(Task.CompletedTask);
-
         var handler = new CreateProcurementProjectCommandHandler(mockUnitOfWork.Object);
         var command = new CreateProcurementProjectCommand
         {
@@ -102,9 +96,8 @@ public class CreateProcurementProjectCommandHandlerTests
 
         var response = await handler.Handle(command, CancellationToken.None);
 
-        Assert.True(response.Succeeded);
-        Assert.NotNull(savedProject);
-        Assert.Equal(300000m, savedProject!.ABC);
+        Assert.False(response.Succeeded);
+        Assert.Contains("Approved Budget (ABC) cannot be overridden", response.Message);
     }
 
     [Fact]

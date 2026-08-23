@@ -66,10 +66,41 @@ public class APPItem : BaseEntity
     public bool IsRevised { get; set; }
     
     [Sieve(CanFilter = true, CanSort = true)]
-    public decimal OriginalPPMPBudget => PPMPItem?.PPMPItemAllocations.Where(a => !a.IsDeleted).Sum(a => a.Amount) ?? 0;
+    public decimal OriginalPPMPBudget
+    {
+        get
+        {
+            if (PPMPItem == null) return 0;
+
+            // Resolve effective unit price from PPMPItem, NonCSEItem, or CSEItem.ItemPrices
+            decimal resolvedUnitPrice = PPMPItem.UnitPrice;
+            if (resolvedUnitPrice <= 0 && PPMPItem.NonCSEItem != null && PPMPItem.NonCSEItem.CurrentPrice > 0)
+            {
+                resolvedUnitPrice = PPMPItem.NonCSEItem.CurrentPrice;
+            }
+            if (resolvedUnitPrice <= 0 && PPMPItem.CSEItem != null && PPMPItem.CSEItem.ItemPrices != null)
+            {
+                var priceObj = PPMPItem.CSEItem.ItemPrices.FirstOrDefault(p => !p.IsDeleted && p.UnitPrice > 0);
+                if (priceObj != null)
+                {
+                    resolvedUnitPrice = priceObj.UnitPrice;
+                }
+            }
+
+            var allocSum = PPMPItem.PPMPItemAllocations != null && PPMPItem.PPMPItemAllocations.Any(a => !a.IsDeleted)
+                ? PPMPItem.PPMPItemAllocations.Where(a => !a.IsDeleted).Sum(a => a.Amount > 0 ? a.Amount : a.Quantity * resolvedUnitPrice)
+                : 0;
+
+            if (allocSum > 0) return allocSum;
+
+            return resolvedUnitPrice;
+        }
+    }
 
     [Sieve(CanFilter = true, CanSort = true)]
-    public decimal EffectiveABC => EstimatedBudgetOverride ?? OriginalPPMPBudget;
+    public decimal EffectiveABC => (EstimatedBudgetOverride.HasValue && EstimatedBudgetOverride.Value > 0)
+        ? EstimatedBudgetOverride.Value
+        : OriginalPPMPBudget;
     
     // Navigation properties
     public virtual APP APP { get; set; } = null!;
