@@ -46,9 +46,13 @@ public class CreateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
                 ? appItem.Remarks
                 : (appItem.PPMPItem != null && !string.IsNullOrWhiteSpace(appItem.PPMPItem.Name) ? appItem.PPMPItem.Name : (request.Title ?? "APP Procurement Project"));
 
+            decimal inheritedAbc = appItem.EstimatedBudgetOverride.HasValue
+                ? appItem.EstimatedBudgetOverride.Value
+                : appItem.EffectiveABC;
+
             projectABC = request.ABC.HasValue && request.ABC.Value > 0
                 ? request.ABC.Value
-                : appItem.EffectiveABC;
+                : inheritedAbc;
 
             procurementModeId = appItem.ProcurementModeId;
         }
