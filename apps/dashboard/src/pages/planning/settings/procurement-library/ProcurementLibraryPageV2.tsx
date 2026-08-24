@@ -136,8 +136,8 @@ export default function ProcurementLibraryPageV2() {
         <CardContent>
           <Tabs value={tab} onValueChange={setActiveTab} className="w-full">
             {/* Tab Navigation */}
-            <div className="w-full overflow-x-auto pb-1 mb-6">
-              <TabsList className="inline-flex h-auto w-auto min-w-full justify-start gap-1.5 bg-muted/50 p-1.5 rounded-lg">
+            <div className="w-full overflow-x-auto scrollbar-hide mb-6">
+              <TabsList className="inline-flex h-auto w-auto min-w-full justify-start gap-1.5 bg-muted/50 p-1.5 rounded-lg scrollbar-hide">
                 {TAB_CONFIG.map((tab) => (
                   <TabsTrigger 
                     key={tab.id} 
@@ -151,6 +151,7 @@ export default function ProcurementLibraryPageV2() {
                 ))}
               </TabsList>
             </div>
+
 
             {/* Tab Contents */}
             {TAB_CONFIG.map((tab) => {

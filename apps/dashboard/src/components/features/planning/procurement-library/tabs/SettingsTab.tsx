@@ -539,7 +539,7 @@ export function SettingsTab() {
       </div>
 
       {/* Sub-tabs */}
-      <div className="flex items-center gap-2 sm:gap-4 border-b overflow-x-auto pb-px">
+      <div className="flex items-center gap-2 sm:gap-4 border-b overflow-x-auto scrollbar-hide pb-px">
         <button
           onClick={() => setActiveTab('categories')}
           className={`shrink-0 px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
