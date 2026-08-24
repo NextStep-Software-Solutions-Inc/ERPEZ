@@ -30,15 +30,7 @@ export type BacResolutionClause = {
   body: string
 }
 
-export type BacResolutionProvisionalMemberRole = 'End-user Rep' | 'Tech Rep'
 
-export type BacResolutionProvisionalMember = {
-  id: string
-  role: BacResolutionProvisionalMemberRole
-  name: string
-  position: string
-  userId?: string | null
-}
 
 export type BacResolutionSignatoryOverride = {
   chairperson?: string
@@ -131,7 +123,6 @@ export type BacResolution = {
   resolvedDateText: string
   resolvedLocationText: string
   whereasClauses: BacResolutionClause[]
-  provisionalMembers: BacResolutionProvisionalMember[]
   signatoryOverrides?: BacResolutionSignatoryOverride
   status: BacResolutionStatus
   createdBy: string
