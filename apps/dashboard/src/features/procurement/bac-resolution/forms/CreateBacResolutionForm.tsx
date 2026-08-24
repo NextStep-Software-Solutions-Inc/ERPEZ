@@ -1,7 +1,6 @@
 import { useEffect, useMemo, useState, forwardRef, useImperativeHandle } from 'react'
 import { useForm } from '@tanstack/react-form'
 import { z } from 'zod'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
@@ -21,7 +20,6 @@ import {
   Filter,
   Building2,
   Wallet,
-  ArrowLeft,
   ChevronRight,
   ChevronUp,
   ChevronDown,
@@ -29,8 +27,6 @@ import {
   PackageCheck,
   Plus,
   Trash2,
-  CheckCheck,
-  RotateCcw,
   GripVertical,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
@@ -143,8 +139,7 @@ export const CreateBacResolutionForm = forwardRef<
 
     const [selectedAppItem, setSelectedAppItem] =
       useState<EligibleAppItem | null>(null)
-    const [selectedAppParent, setSelectedAppParent] =
-      useState<EligibleAppForProcurement | null>(null)
+
     const [selectedConsolidatedPr, setSelectedConsolidatedPr] =
       useState<EligibleConsolidatedPR | null>(null)
 
@@ -434,7 +429,6 @@ export const CreateBacResolutionForm = forwardRef<
             onSelectSourceType={(type) => {
               setSelectedSourceType(type)
               setSelectedAppItem(null)
-              setSelectedAppParent(null)
               setSelectedConsolidatedPr(null)
             }}
           />
@@ -447,7 +441,6 @@ export const CreateBacResolutionForm = forwardRef<
             selectedAppItem={selectedAppItem}
             selectedConsolidatedPr={selectedConsolidatedPr}
             onSelectAppItem={(parent, item) => {
-              setSelectedAppParent(parent)
               setSelectedAppItem(item)
             }}
             onSelectConsolidatedPr={setSelectedConsolidatedPr}
@@ -1114,21 +1107,6 @@ export function SourceRecordPickerStep({
               : 'Only approved Consolidated PRs available for BAC resolution are listed.'}
           </p>
         </div>
-
-        {sourceType === 'AppItem' && selectedAppRecord && (
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => {
-              setSelectedAppRecord(null)
-              setSearchTerm('')
-            }}
-            className="gap-1.5 self-start sm:self-auto text-xs"
-          >
-            <ArrowLeft className="h-3.5 w-3.5" />
-            Switch Parent APP
-          </Button>
-        )}
       </div>
 
       {/* Filter and Search Bar */}
