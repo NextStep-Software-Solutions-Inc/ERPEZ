@@ -11,6 +11,7 @@ public record BACResolutionResponse
     public string ResolutionType { get; init; } = string.Empty;
     public string ResolutionNumber { get; init; } = string.Empty;
     public DateTime DateResolved { get; init; }
+    public string? ResolvedLocation { get; init; }
     public string Status { get; init; } = string.Empty;
     public string? WhereasClause { get; init; }
     public List<BACResolutionWhereasClauseResponse> WhereasClauses { get; init; } = [];

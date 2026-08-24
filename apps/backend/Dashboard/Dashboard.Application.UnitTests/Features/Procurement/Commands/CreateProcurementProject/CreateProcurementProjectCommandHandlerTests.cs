@@ -139,7 +139,12 @@ public class CreateProcurementProjectCommandHandlerTests
             SourceType = ProcurementProjectSourceType.APPItem,
             APPItemId = appItemId,
             ResolutionNumber = "BAC-RES-2026-003",
-            WhereasClauseIds = new List<Guid> { clauseId1, clauseId2 }
+            ResolvedLocation = "BAC Conference Room",
+            WhereasClauses = new List<WhereasClauseItemInputDto>
+            {
+                new(clauseId1, 1),
+                new(clauseId2, 2)
+            }
         };
 
         var response = await handler.Handle(command, CancellationToken.None);
@@ -147,11 +152,12 @@ public class CreateProcurementProjectCommandHandlerTests
         Assert.True(response.Succeeded);
         Assert.NotNull(savedProject);
         var res = Assert.Single(savedProject!.BACResolutions);
+        Assert.Equal("BAC Conference Room", res.ResolvedLocation);
         Assert.Equal(2, res.WhereasClauseItems.Count);
         var items = new List<BACResolutionWhereasClauseItem>(res.WhereasClauseItems);
         Assert.Equal(clauseId1, items[0].BACResolutionWhereasClauseId);
-        Assert.Equal(0, items[0].Order);
+        Assert.Equal(1, items[0].Order);
         Assert.Equal(clauseId2, items[1].BACResolutionWhereasClauseId);
-        Assert.Equal(1, items[1].Order);
+        Assert.Equal(2, items[1].Order);
     }
 }

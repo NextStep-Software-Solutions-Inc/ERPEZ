@@ -4,16 +4,28 @@ using System.Linq;
 using System.Linq.Expressions;
 using ERPEZ.Application.Features.Planning.BACResolutionWhereasClause.Dtos;
 using ERPEZ.Domain.Entities.Procurement;
+using ERPEZ.Domain.Enums;
 
 namespace ERPEZ.Application.Features.Procurement.Projects.Dtos;
 
 public record ProcurementProjectResponse
 {
     public Guid Id { get; init; }
+    public ProcurementProjectSourceType SourceType { get; init; }
+    public Guid? APPItemId { get; init; }
+    public Guid? ConsolidatedPRId { get; init; }
     public string Title { get; init; } = string.Empty;
     public ConsolidatedPRSummaryResponse? ConsolidatedPR { get; init; }
     public decimal ABC { get; init; }
     public string Status { get; init; } = string.Empty;
+
+    // Top-level flattened resolution properties
+    public string? ResolutionType { get; init; }
+    public string? ResolutionNumber { get; init; }
+    public DateTime? DateResolved { get; init; }
+    public string? ResolvedLocation { get; init; }
+    public List<WhereasClauseItemResponse> WhereasClauses { get; init; } = [];
+
     public List<BACResolutionResponse> BACResolutions { get; init; } = [];
     public List<BiddingActivityScheduleResponse> BiddingActivitySchedules { get; init; } = [];
     public Guid? EndUserRepresentativeId { get; init; }
@@ -25,6 +37,9 @@ public record ProcurementProjectResponse
     public static Expression<Func<ProcurementProject, ProcurementProjectResponse>> Projection => c => new ProcurementProjectResponse
     {
         Id = c.Id,
+        SourceType = c.SourceType,
+        APPItemId = c.APPItemId,
+        ConsolidatedPRId = c.ConsolidatedPRId,
         Title = c.Title,
         ConsolidatedPR = c.ConsolidatedPR != null ? new ConsolidatedPRSummaryResponse
         {
@@ -42,6 +57,19 @@ public record ProcurementProjectResponse
         } : null,
         ABC = c.ABC,
         Status = c.Status,
+        ResolutionType = c.BACResolutions.Select(r => r.ResolutionType).FirstOrDefault(),
+        ResolutionNumber = c.BACResolutions.Select(r => r.ResolutionNumber).FirstOrDefault(),
+        DateResolved = c.BACResolutions.Select(r => (DateTime?)r.DateResolved).FirstOrDefault(),
+        ResolvedLocation = c.BACResolutions.Select(r => r.ResolvedLocation).FirstOrDefault(),
+        WhereasClauses = c.BACResolutions.SelectMany(r => r.WhereasClauseItems)
+            .OrderBy(item => item.Order)
+            .Select(item => new WhereasClauseItemResponse
+            {
+                WhereasClauseId = item.BACResolutionWhereasClause.Id,
+                Order = item.Order,
+                Name = item.BACResolutionWhereasClause.Name,
+                Body = item.BACResolutionWhereasClause.Body
+            }).ToList(),
         EndUserRepresentativeId = c.EndUserRepresentativeId,
         EndUserRepresentative = c.EndUserRepresentative != null ? new ProjectUserResponse
         {
@@ -66,6 +94,7 @@ public record ProcurementProjectResponse
             ResolutionType = r.ResolutionType,
             ResolutionNumber = r.ResolutionNumber,
             DateResolved = r.DateResolved,
+            ResolvedLocation = r.ResolvedLocation,
             Status = r.Status,
             WhereasClause = r.WhereasClause,
             WhereasClauses = r.WhereasClauseItems
@@ -90,6 +119,14 @@ public record ProcurementProjectResponse
             Remarks = s.Remarks
         }).ToList()
     };
+}
+
+public record WhereasClauseItemResponse
+{
+    public Guid WhereasClauseId { get; init; }
+    public int Order { get; init; }
+    public string Name { get; init; } = string.Empty;
+    public string Body { get; init; } = string.Empty;
 }
 
 public record ConsolidatedPRSummaryResponse
