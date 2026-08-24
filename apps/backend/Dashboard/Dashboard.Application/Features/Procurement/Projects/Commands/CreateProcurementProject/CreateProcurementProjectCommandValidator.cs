@@ -37,16 +37,39 @@ public class CreateProcurementProjectCommandValidator : AbstractValidator<Create
             .NotEmpty()
             .WithMessage("BAC Resolution Number is required.");
 
-        RuleForEach(x => x.WhereasClauses)
-            .ChildRules(clause =>
-            {
-                clause.RuleFor(c => c.WhereasClauseId)
-                    .NotEmpty()
-                    .WithMessage("WhereasClauseId is required.");
-                clause.RuleFor(c => c.Order)
-                    .GreaterThanOrEqualTo(0)
-                    .WithMessage("Order must be non-negative.");
-            })
-            .When(x => x.WhereasClauses != null);
+        When(x => x.WhereasClauses != null, () =>
+        {
+            RuleForEach(x => x.WhereasClauses)
+                .ChildRules(clause =>
+                {
+                    clause.RuleFor(c => c.WhereasClauseId)
+                        .NotEmpty()
+                        .WithMessage("WhereasClauseId is required.");
+                    clause.RuleFor(c => c.Order)
+                        .GreaterThanOrEqualTo(0)
+                        .WithMessage("Order must be non-negative.");
+                });
+
+            RuleFor(x => x.WhereasClauses!)
+                .Must(clauses => clauses.Select(c => c.WhereasClauseId).Distinct().Count() == clauses.Count)
+                .WithMessage("Whereas clauses must not contain duplicate WhereasClauseId values.");
+
+            RuleFor(x => x.WhereasClauses!)
+                .Must(clauses => clauses.Select(c => c.Order).Distinct().Count() == clauses.Count)
+                .WithMessage("Whereas clauses must not contain duplicate Order values.");
+
+            RuleFor(x => x.WhereasClauses!)
+                .Must(clauses =>
+                {
+                    if (clauses.Count == 0) return true;
+                    var sortedOrders = clauses.Select(c => c.Order).OrderBy(o => o).ToList();
+                    for (int i = 0; i < sortedOrders.Count; i++)
+                    {
+                        if (sortedOrders[i] != i) return false;
+                    }
+                    return true;
+                })
+                .WithMessage("Whereas clause Order values must be sequential numbers starting from 0 to N-1.");
+        });
     }
 }

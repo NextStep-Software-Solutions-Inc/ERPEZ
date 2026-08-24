@@ -110,4 +110,92 @@ public class CreateProcurementProjectCommandValidatorTests
         var result = validator.TestValidate(command);
         result.ShouldHaveValidationErrorFor(x => x.ResolutionNumber);
     }
+
+    [Fact]
+    public void Validate_WhereasClauses_ValidSequential_PassesValidation()
+    {
+        var command = new CreateProcurementProjectCommand
+        {
+            SourceType = ProcurementProjectSourceType.APPItem,
+            APPItemId = Guid.NewGuid(),
+            ResolutionNumber = "BAC-RES-2026-001",
+            Title = "Test Title",
+            ABC = 100000,
+            WhereasClauses = new List<WhereasClauseItemInputDto>
+            {
+                new(Guid.NewGuid(), 0),
+                new(Guid.NewGuid(), 1)
+            }
+        };
+
+        var result = validator.TestValidate(command);
+        result.ShouldNotHaveAnyValidationErrors();
+    }
+
+    [Fact]
+    public void Validate_WhereasClauses_DuplicateWhereasClauseId_FailsValidation()
+    {
+        var sameId = Guid.NewGuid();
+        var command = new CreateProcurementProjectCommand
+        {
+            SourceType = ProcurementProjectSourceType.APPItem,
+            APPItemId = Guid.NewGuid(),
+            ResolutionNumber = "BAC-RES-2026-001",
+            Title = "Test Title",
+            ABC = 100000,
+            WhereasClauses = new List<WhereasClauseItemInputDto>
+            {
+                new(sameId, 0),
+                new(sameId, 1)
+            }
+        };
+
+        var result = validator.TestValidate(command);
+        result.ShouldHaveValidationErrorFor(x => x.WhereasClauses)
+            .WithErrorMessage("Whereas clauses must not contain duplicate WhereasClauseId values.");
+    }
+
+    [Fact]
+    public void Validate_WhereasClauses_DuplicateOrder_FailsValidation()
+    {
+        var command = new CreateProcurementProjectCommand
+        {
+            SourceType = ProcurementProjectSourceType.APPItem,
+            APPItemId = Guid.NewGuid(),
+            ResolutionNumber = "BAC-RES-2026-001",
+            Title = "Test Title",
+            ABC = 100000,
+            WhereasClauses = new List<WhereasClauseItemInputDto>
+            {
+                new(Guid.NewGuid(), 0),
+                new(Guid.NewGuid(), 0)
+            }
+        };
+
+        var result = validator.TestValidate(command);
+        result.ShouldHaveValidationErrorFor(x => x.WhereasClauses)
+            .WithErrorMessage("Whereas clauses must not contain duplicate Order values.");
+    }
+
+    [Fact]
+    public void Validate_WhereasClauses_NonSequentialOrder_FailsValidation()
+    {
+        var command = new CreateProcurementProjectCommand
+        {
+            SourceType = ProcurementProjectSourceType.APPItem,
+            APPItemId = Guid.NewGuid(),
+            ResolutionNumber = "BAC-RES-2026-001",
+            Title = "Test Title",
+            ABC = 100000,
+            WhereasClauses = new List<WhereasClauseItemInputDto>
+            {
+                new(Guid.NewGuid(), 1),
+                new(Guid.NewGuid(), 2)
+            }
+        };
+
+        var result = validator.TestValidate(command);
+        result.ShouldHaveValidationErrorFor(x => x.WhereasClauses)
+            .WithErrorMessage("Whereas clause Order values must be sequential numbers starting from 0 to N-1.");
+    }
 }

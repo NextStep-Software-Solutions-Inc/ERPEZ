@@ -22,4 +22,7 @@ public record CreateProcurementProjectCommand : IRequest<ApiResponse<Guid>>
     public Guid? TechRepresentativeId { get; init; }
 }
 
-public record WhereasClauseItemInputDto(Guid WhereasClauseId, int Order);
+public record WhereasClauseItemInputDto(Guid WhereasClauseId, int Order)
+{
+    public WhereasClauseItemInputDto() : this(Guid.Empty, 0) { }
+}

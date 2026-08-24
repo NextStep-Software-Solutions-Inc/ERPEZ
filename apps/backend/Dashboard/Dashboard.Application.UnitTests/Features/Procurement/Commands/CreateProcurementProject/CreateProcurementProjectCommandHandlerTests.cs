@@ -142,8 +142,8 @@ public class CreateProcurementProjectCommandHandlerTests
             ResolvedLocation = "BAC Conference Room",
             WhereasClauses = new List<WhereasClauseItemInputDto>
             {
-                new(clauseId1, 1),
-                new(clauseId2, 2)
+                new(clauseId1, 0),
+                new(clauseId2, 1)
             }
         };
 
@@ -156,8 +156,8 @@ public class CreateProcurementProjectCommandHandlerTests
         Assert.Equal(2, res.WhereasClauseItems.Count);
         var items = new List<BACResolutionWhereasClauseItem>(res.WhereasClauseItems);
         Assert.Equal(clauseId1, items[0].BACResolutionWhereasClauseId);
-        Assert.Equal(1, items[0].Order);
+        Assert.Equal(0, items[0].Order);
         Assert.Equal(clauseId2, items[1].BACResolutionWhereasClauseId);
-        Assert.Equal(2, items[1].Order);
+        Assert.Equal(1, items[1].Order);
     }
 }
