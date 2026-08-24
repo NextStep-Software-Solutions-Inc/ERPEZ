@@ -34,6 +34,7 @@ import {
 } from 'lucide-react'
 import { getProcurementItemRequest } from '@/components/features/planning/procurement-item/handlers/getProcurementItemRequest'
 import { getUOMRequest } from '@/components/features/planning/procurement-library/unit-of-measurement/handlers/getUOMRequest'
+import { getObjectCodesRequest } from '@/components/features/planning/procurement-library/item-master/handlers/getObjectCodesRequest'
 import { getNONCSEItemRequest } from '@/features/planning/non-cse-item/handlers/getNONCSEItemRequest'
 import { ResponsiveDialogDashtail } from '@/components/ResponsiveDialogDashtail'
 import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
@@ -73,6 +74,7 @@ import {
   EditPPMPItemAllocationsDialog,
   MasterPPMPViewerModal,
 } from '../dialogs'
+import { resolveTypeOfExpenditure } from '../forms/AddPPMPItemExpenditureForm'
 import { PPMPGuidelinesModal } from '../dialogs/PPMPGuidelinesModal'
 import { ConsolidationWorkspaceSheet } from '../dialogs/ConsolidationWorkspaceSheet'
 import { DeptConsolidationSheet } from '../dialogs/DeptConsolidationSheet'
@@ -142,6 +144,7 @@ const usePPMPExpenditureItems = createQueryHookFromTemplate(
   getPPMPExpenditureItemsRequest,
 )
 const usePPMPItems = createQueryHookFromTemplate(getPPMPItemsRequest)
+const useObjectCodesQuery = createQueryHookFromTemplate(getObjectCodesRequest)
 const useProcurementItem = createQueryHookFromTemplate(getProcurementItemRequest)
 const useUOM = createQueryHookFromTemplate(getUOMRequest)
 const useNONCSEItem = createQueryHookFromTemplate(getNONCSEItemRequest)
@@ -1434,28 +1437,94 @@ function ExpenditureItemGroup({
     0,
   )
 
+  // Object code lookup for Type and Item of Expenditure
+  const { data: objectCodesResponse } = useObjectCodesQuery({
+    pathParams: {},
+    queryParams: { pageSize: 1000 },
+  })
+
+  const { typeOfExpenditure, itemOfExpenditure } = useMemo(() => {
+    if (!group.objectId) {
+      return {
+        typeOfExpenditure: { name: 'General Expenditures', code: '' },
+        itemOfExpenditure: {
+          name: group.ppmpActivityName || 'Expenditure Item',
+          code: '',
+        },
+      }
+    }
+
+    const objectInfo = objectCodesResponse?.data?.find(
+      (item) => item.id === group.objectId,
+    )
+
+    const itemName = objectInfo?.name || group.ppmpActivityName || 'Expenditure Item'
+    const itemCode = objectInfo?.code || ''
+
+    const typeOfExp = resolveTypeOfExpenditure(
+      group.objectId,
+      itemName,
+      itemCode,
+      objectInfo?.parent as any,
+    )
+
+    return {
+      typeOfExpenditure: {
+        name: typeOfExp.name,
+        code: typeOfExp.code,
+      },
+      itemOfExpenditure: {
+        name: itemName,
+        code: itemCode,
+      },
+    }
+  }, [group.objectId, group.ppmpActivityName, objectCodesResponse?.data])
+
   return (
     <div className="overflow-hidden rounded-xl border border-default-200 bg-white shadow-sm">
-      <div className="flex items-center justify-between border-b border-default-200 bg-default-50/30 px-5 py-4 flex-wrap gap-3">
-        <div className="flex items-center gap-3">
-          <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-          <h4 className="text-sm font-semibold text-default-900">
-            {group.isProcurable ? 'Procurable Items' : 'Non-Procurable Items'}
-          </h4>
-          <Badge
-            variant="soft"
-            className={cn(
-              'text-[10px] font-semibold border-none rounded-full px-2.5 py-0.5',
-              group.isProcurable
-                ? 'bg-success/10 text-success'
-                : 'bg-warning/10 text-warning',
+      <div className="flex items-center justify-between border-b border-default-200 bg-default-50/30 px-5 py-3.5 flex-wrap gap-3">
+        <div className="flex flex-col gap-1 text-left">
+          {/* Level 1: Type of Expenditure (Parent Classification) */}
+          <div className="flex items-center gap-1.5 text-xs text-default-500 font-medium">
+            <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
+              Type of Expenditure:
+            </span>
+            <span className="font-semibold text-default-700">
+              {typeOfExpenditure.name}
+            </span>
+            {typeOfExpenditure.code && (
+              <span className="font-mono text-[11px] text-default-400">
+                · {typeOfExpenditure.code}
+              </span>
             )}
-          >
-            {group.isProcurable ? 'Procurable' : 'Non-Procurable'}
-          </Badge>
-          {isItemsLoading && (
-            <div className="h-3 w-3 animate-spin rounded-full border-2 border-default-300 border-t-primary" />
-          )}
+          </div>
+
+          {/* Level 2: Item of Expenditure (Leaf Object) */}
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
+            <h4 className="text-sm font-bold text-default-900">
+              {itemOfExpenditure.name}
+            </h4>
+            {itemOfExpenditure.code && (
+              <span className="font-mono text-xs font-semibold text-default-500 bg-default-100/80 px-2 py-0.5 rounded border border-default-200">
+                {itemOfExpenditure.code}
+              </span>
+            )}
+            <Badge
+              variant="soft"
+              className={cn(
+                'text-[10px] font-semibold border-none rounded-full px-2.5 py-0.5',
+                group.isProcurable
+                  ? 'bg-success/10 text-success'
+                  : 'bg-warning/10 text-warning',
+              )}
+            >
+              {group.isProcurable ? 'Procurable' : 'Non-Procurable'}
+            </Badge>
+            {isItemsLoading && (
+              <div className="h-3 w-3 animate-spin rounded-full border-2 border-default-300 border-t-primary" />
+            )}
+          </div>
         </div>
 
         <div className="flex items-center gap-4">
@@ -2159,6 +2228,21 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
     () => activities.find((a) => a.id === selectedActivityId) ?? null,
     [activities, selectedActivityId],
   )
+
+  // Fetch current activity's expenditure items to filter out already added objects from the Add dialog
+  const { data: currentActivityExpItemsResp } = usePPMPExpenditureItems({
+    pathParams: {},
+    queryParams: selectedActivityId
+      ? { filters: `ppmpActivityId==${selectedActivityId}` }
+      : {},
+    enabled: !!selectedActivityId,
+  })
+
+  const existingObjectIds = useMemo(() => {
+    return (currentActivityExpItemsResp?.data ?? [])
+      .filter((item) => item.objectId && item.id !== groupDialogEditGroup?.id)
+      .map((item) => item.objectId!)
+  }, [currentActivityExpItemsResp?.data, groupDialogEditGroup])
 
   // Current PPMP budget context for progress bars
   const totalPpmpBudget = useMemo(() => {
@@ -3052,6 +3136,7 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
         ppmpActivityId={selectedActivityId || ''}
         libActivityId={selectedActivity?.libActivityId}
         groupToEdit={groupDialogEditGroup}
+        existingObjectIds={existingObjectIds}
       />
 
       <ConfirmAlertDialog

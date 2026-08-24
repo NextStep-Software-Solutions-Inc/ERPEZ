@@ -26,6 +26,7 @@ interface AddPPMPItemExpenditureDialogProps {
   ppmpActivityId: string
   libActivityId?: string
   groupToEdit?: PPMPExpenditureItem | null
+  existingObjectIds?: string[]
 }
 
 export default function AddPPMPItemExpenditureDialog({
@@ -35,6 +36,7 @@ export default function AddPPMPItemExpenditureDialog({
   ppmpActivityId,
   libActivityId,
   groupToEdit,
+  existingObjectIds,
 }: AddPPMPItemExpenditureDialogProps) {
   const queryClient = useQueryClient()
   const { mutateAsync: createGroup, isPending: isCreating } =
@@ -159,6 +161,7 @@ export default function AddPPMPItemExpenditureDialog({
           formId="add-ppmp-expenditure-form"
           initialValues={initialValues}
           libActivityId={libActivityId}
+          existingObjectIds={existingObjectIds}
           onSubmit={handleSubmit}
           isLoading={isLoading}
         />

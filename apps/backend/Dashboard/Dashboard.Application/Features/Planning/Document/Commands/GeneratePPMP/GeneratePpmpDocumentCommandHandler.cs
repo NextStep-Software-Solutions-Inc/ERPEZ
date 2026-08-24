@@ -88,8 +88,22 @@ public class GeneratePpmpDocumentCommandHandler(
     private static PpmpRowDto MapToRow(PpmpItemEntity item, PpmpEntity ppmp)
     {
         var allocations   = item.PPMPItemAllocations.Where(a => !a.IsDeleted).ToList();
-        var totalQuantity = allocations.Sum(a => a.Quantity);
-        var totalAmount   = allocations.Sum(a => a.Amount);
+        var allocQuantity = allocations.Sum(a => a.Quantity);
+        var allocAmount   = allocations.Sum(a => a.Amount);
+
+        var totalQuantity = allocQuantity > 0
+            ? allocQuantity
+            : (item.PlannedQuantity > 0 ? item.PlannedQuantity : 0);
+
+        var unitPrice = item.UnitPrice > 0
+            ? item.UnitPrice
+            : (item.CSEItem?.ItemPrices?.OrderByDescending(p => p.FiscalYear?.Year ?? 0).FirstOrDefault()?.UnitPrice
+               ?? item.NonCSEItem?.CurrentPrice
+               ?? 0m);
+
+        var totalAmount = allocAmount > 0
+            ? allocAmount
+            : (totalQuantity * unitPrice);
 
         // Col 1 — General Description
         var description = string.IsNullOrWhiteSpace(item.Description)
