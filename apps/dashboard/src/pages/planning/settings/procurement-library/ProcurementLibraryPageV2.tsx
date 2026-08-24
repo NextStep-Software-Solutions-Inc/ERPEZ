@@ -136,19 +136,21 @@ export default function ProcurementLibraryPageV2() {
         <CardContent>
           <Tabs value={tab} onValueChange={setActiveTab} className="w-full">
             {/* Tab Navigation */}
-            <TabsList className="grid w-full grid-cols-2 lg:grid-cols-4 xl:grid-cols-8 gap-2 bg-muted/50 p-2 mb-6">
-              {TAB_CONFIG.map((tab) => (
-                <TabsTrigger 
-                  key={tab.id} 
-                  value={tab.id}
-                  className="whitespace-nowrap text-xs sm:text-sm"
-                  title={tab.description}
-                >
-                  <span className="hidden sm:inline mr-1">{tab.icon}</span>
-                  {tab.label}
-                </TabsTrigger>
-              ))}
-            </TabsList>
+            <div className="w-full overflow-x-auto pb-1 mb-6">
+              <TabsList className="inline-flex h-auto w-auto min-w-full justify-start gap-1.5 bg-muted/50 p-1.5 rounded-lg">
+                {TAB_CONFIG.map((tab) => (
+                  <TabsTrigger 
+                    key={tab.id} 
+                    value={tab.id}
+                    className="shrink-0 px-3.5 py-2 text-xs sm:text-sm font-medium whitespace-nowrap rounded-md"
+                    title={tab.description}
+                  >
+                    <span className="mr-1.5">{tab.icon}</span>
+                    {tab.label}
+                  </TabsTrigger>
+                ))}
+              </TabsList>
+            </div>
 
             {/* Tab Contents */}
             {TAB_CONFIG.map((tab) => {
