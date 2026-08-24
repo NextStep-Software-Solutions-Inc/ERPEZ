@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import {
   Search,
   Inbox,
@@ -6,6 +6,7 @@ import {
   X,
   RotateCcw,
   ArrowUpDown,
+  Loader2,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
@@ -18,12 +19,13 @@ import {
 } from '@/components/ui/popover'
 import { BacResolutionCard } from './BacResolutionCard'
 import type {
-  BacResolution,
+  BacProject,
   BacResolutionInboxFilter,
   BacResolutionListRoutePath,
   BacResolutionRole,
   BacResolutionWorkspaceScope,
 } from '../types'
+import { useBacResolutions } from '../handlers/hooks'
 import { cn } from '@/lib/utils'
 
 interface InboxPanelProps {
@@ -32,11 +34,8 @@ interface InboxPanelProps {
     label: string
     count: number
   }[]
-  isLoading: boolean
-  resolutions: BacResolution[]
-  filteredResolutions: BacResolution[]
-  selectedResolutionId: string | null
-  setSelectedResolutionId: (id: string) => void
+  selectedId: string | null
+  onSelectId: (id: string) => void
   searchValue: string
   setSearchValue: (v: string) => void
   filter: BacResolutionInboxFilter
@@ -57,18 +56,15 @@ interface InboxPanelProps {
   role: BacResolutionRole
   workspaceScope: BacResolutionWorkspaceScope
   bacListRoutePath: BacResolutionListRoutePath
-  onEdit?: (resolution: BacResolution) => void
+  onEdit?: (resolution: BacProject) => void
   onDelete?: (id: string) => void
   onViewDetails?: (id: string) => void
 }
 
 export function InboxPanel({
   inboxCards,
-  isLoading,
-  resolutions,
-  filteredResolutions,
-  selectedResolutionId,
-  setSelectedResolutionId,
+  selectedId,
+  onSelectId,
   searchValue,
   setSearchValue,
   filter,
@@ -92,6 +88,70 @@ export function InboxPanel({
   onViewDetails,
 }: InboxPanelProps) {
   const [filterPopoverOpen, setFilterPopoverOpen] = useState(false)
+
+  // Fetch real list from API
+  const { data: responseData, isPending: isLoading } = useBacResolutions({
+    queryParams: {},
+  })
+
+  const rawProjects = useMemo<BacProject[]>(() => {
+    if (!responseData) return []
+    if (Array.isArray(responseData)) return responseData
+    if (Array.isArray((responseData as any).data)) return (responseData as any).data
+    if (Array.isArray((responseData as any).items)) return (responseData as any).items
+    return []
+  }, [responseData])
+
+  // Client-side filtering & sorting
+  const filteredResolutions = useMemo(() => {
+    return rawProjects
+      .filter((item) => {
+        // Status filter
+        if (filter !== 'all') {
+          const itemStatus = (item.status || 'draft').toLowerCase()
+          if (itemStatus !== filter.toLowerCase()) return false
+        }
+        // Source type filter
+        if (sourceTypeFilter !== 'all') {
+          if (sourceTypeFilter === 'APP_ITEM' && item.sourceType !== 'APPItem') return false
+          if (sourceTypeFilter === 'CONSOLIDATED_PR' && item.sourceType !== 'ConsolidatedPR') return false
+        }
+        // Budget tier filter
+        const abc = item.abc || 0
+        if (budgetTier === 'under-1m' && abc >= 1000000) return false
+        if (budgetTier === '1m-5m' && (abc < 1000000 || abc > 5000000)) return false
+        if (budgetTier === 'above-5m' && abc <= 5000000) return false
+        if (budgetTier === 'custom') {
+          if (customMinBudget !== null && customMinBudget !== undefined && abc < customMinBudget) return false
+          if (customMaxBudget !== null && customMaxBudget !== undefined && abc > customMaxBudget) return false
+        }
+        // Search text
+        if (searchValue.trim()) {
+          const term = searchValue.toLowerCase()
+          const titleMatch = (item.title || '').toLowerCase().includes(term)
+          const numMatch = (item.resolutionNumber || '').toLowerCase().includes(term)
+          const appMatch = (item.APPItem?.ppmpItemName || '').toLowerCase().includes(term)
+          const prMatch = (item.consolidatedPR?.projectName || '').toLowerCase().includes(term)
+          if (!titleMatch && !numMatch && !appMatch && !prMatch) return false
+        }
+        return true
+      })
+      .sort((a, b) => {
+        if (sortBy === 'amount-desc') return (b.abc || 0) - (a.abc || 0)
+        if (sortBy === 'amount-asc') return (a.abc || 0) - (b.abc || 0)
+        // newest/oldest (default newest)
+        return 0
+      })
+  }, [
+    rawProjects,
+    filter,
+    sourceTypeFilter,
+    budgetTier,
+    customMinBudget,
+    customMaxBudget,
+    searchValue,
+    sortBy,
+  ])
 
   // Count active non-default filters
   const activeFiltersCount =
@@ -139,7 +199,7 @@ export function InboxPanel({
             BAC-Resolutions
           </CardTitle>
           <span className="text-[11px] font-semibold text-muted-foreground bg-default-100 px-2 py-0.5 rounded-full">
-            {filteredResolutions.length} of {resolutions.length}
+            {filteredResolutions.length} of {rawProjects.length}
           </span>
         </div>
 
@@ -228,16 +288,6 @@ export function InboxPanel({
                         )}
                       >
                         <span className="truncate">{card.label}</span>
-                        <span
-                          className={cn(
-                            'text-[10px] px-1.5 py-0.2 rounded-full font-bold',
-                            isSelected
-                              ? 'bg-primary text-white'
-                              : 'bg-default-200 text-default-700',
-                          )}
-                        >
-                          {card.count}
-                        </span>
                       </button>
                     )
                   })}
@@ -445,9 +495,9 @@ export function InboxPanel({
       </CardHeader>
 
       <CardContent className="flex-1 space-y-2 overflow-y-auto max-h-[750px] p-3.5 pt-0">
-        {isLoading && resolutions.length === 0 ? (
+        {isLoading ? (
           <div className="py-12 text-center text-xs text-muted-foreground space-y-2">
-            <div className="h-4 w-4 animate-spin rounded-full border-2 border-primary border-t-transparent mx-auto" />
+            <Loader2 className="h-5 w-5 animate-spin text-primary mx-auto" />
             <p>Loading BAC Resolutions...</p>
           </div>
         ) : filteredResolutions.length === 0 ? (
@@ -469,13 +519,13 @@ export function InboxPanel({
           </div>
         ) : (
           filteredResolutions.map((resolution) => {
-            const isActive = resolution.id === selectedResolutionId
+            const isActive = resolution.id === selectedId
             return (
               <BacResolutionCard
                 key={resolution.id}
                 resolution={resolution}
                 isActive={isActive}
-                onSelect={() => setSelectedResolutionId(resolution.id)}
+                onSelect={() => onSelectId(resolution.id)}
                 role={role}
                 workspaceScope={workspaceScope}
                 bacListRoutePath={bacListRoutePath}

@@ -161,6 +161,7 @@ import { Route as V2planningWfpObjectiveWfpObjectiveIdIndexRouteImport } from '.
 import { Route as V2planningWfpWfpIdIndexRouteImport } from './routes/v2/(planning)/wfp/$wfpId/index'
 import { Route as V2planningWfpWfpIdActivityRouteImport } from './routes/v2/(planning)/wfp/$wfpId/activity'
 import { Route as V2planningWfpWfpIdGanttChartRouteImport } from './routes/v2/(planning)/wfp/$wfpId/gantt-chart'
+import { Route as V2procurementBacResolutionsResolutionIdIndexRouteImport } from './routes/v2/(procurement)/bac-resolutions/$resolutionId/index'
 import { Route as V2procurementBacResolutionsClausesIndexRouteImport } from './routes/v2/(procurement)/bac-resolutions/clauses/index'
 import { Route as V2procurementBiddingDocumentsBacResolutionIdIndexRouteImport } from './routes/v2/(procurement)/bidding-documents/$bacResolutionId/index'
 import { Route as V2procurementManageNoaNoaIdIndexRouteImport } from './routes/v2/(procurement)/manage-noa/$noaId/index'
@@ -1104,6 +1105,12 @@ const V2planningWfpWfpIdGanttChartRoute =
     path: '/gantt-chart',
     getParentRoute: () => V2planningWfpWfpIdRoute,
   } as any)
+const V2procurementBacResolutionsResolutionIdIndexRoute =
+  V2procurementBacResolutionsResolutionIdIndexRouteImport.update({
+    id: '/(procurement)/bac-resolutions/$resolutionId/',
+    path: '/bac-resolutions/$resolutionId/',
+    getParentRoute: () => V2Route,
+  } as any)
 const V2procurementBacResolutionsClausesIndexRoute =
   V2procurementBacResolutionsClausesIndexRouteImport.update({
     id: '/(procurement)/bac-resolutions/clauses/',
@@ -1418,6 +1425,7 @@ export interface FileRoutesByFullPath {
   '/v2/wfp-expenditure/$wfpObjectiveActivityId/': typeof V2planningWfpExpenditureWfpObjectiveActivityIdIndexRoute
   '/v2/wfp-objective/$wfpObjectiveId/': typeof V2planningWfpObjectiveWfpObjectiveIdIndexRoute
   '/v2/wfp/$wfpId/': typeof V2planningWfpWfpIdIndexRoute
+  '/v2/bac-resolutions/$resolutionId/': typeof V2procurementBacResolutionsResolutionIdIndexRoute
   '/v2/bac-resolutions/clauses/': typeof V2procurementBacResolutionsClausesIndexRoute
   '/v2/bidding-documents/$bacResolutionId/': typeof V2procurementBiddingDocumentsBacResolutionIdIndexRoute
   '/v2/manage-noa/$noaId/': typeof V2procurementManageNoaNoaIdIndexRoute
@@ -1582,6 +1590,7 @@ export interface FileRoutesByTo {
   '/v2/wfp-expenditure/$wfpObjectiveActivityId': typeof V2planningWfpExpenditureWfpObjectiveActivityIdIndexRoute
   '/v2/wfp-objective/$wfpObjectiveId': typeof V2planningWfpObjectiveWfpObjectiveIdIndexRoute
   '/v2/wfp/$wfpId': typeof V2planningWfpWfpIdIndexRoute
+  '/v2/bac-resolutions/$resolutionId': typeof V2procurementBacResolutionsResolutionIdIndexRoute
   '/v2/bac-resolutions/clauses': typeof V2procurementBacResolutionsClausesIndexRoute
   '/v2/bidding-documents/$bacResolutionId': typeof V2procurementBiddingDocumentsBacResolutionIdIndexRoute
   '/v2/manage-noa/$noaId': typeof V2procurementManageNoaNoaIdIndexRoute
@@ -1764,6 +1773,7 @@ export interface FileRoutesById {
   '/v2/(planning)/wfp-expenditure/$wfpObjectiveActivityId/': typeof V2planningWfpExpenditureWfpObjectiveActivityIdIndexRoute
   '/v2/(planning)/wfp-objective/$wfpObjectiveId/': typeof V2planningWfpObjectiveWfpObjectiveIdIndexRoute
   '/v2/(planning)/wfp/$wfpId/': typeof V2planningWfpWfpIdIndexRoute
+  '/v2/(procurement)/bac-resolutions/$resolutionId/': typeof V2procurementBacResolutionsResolutionIdIndexRoute
   '/v2/(procurement)/bac-resolutions/clauses/': typeof V2procurementBacResolutionsClausesIndexRoute
   '/v2/(procurement)/bidding-documents/$bacResolutionId/': typeof V2procurementBiddingDocumentsBacResolutionIdIndexRoute
   '/v2/(procurement)/manage-noa/$noaId/': typeof V2procurementManageNoaNoaIdIndexRoute
@@ -1947,6 +1957,7 @@ export interface FileRouteTypes {
     | '/v2/wfp-expenditure/$wfpObjectiveActivityId/'
     | '/v2/wfp-objective/$wfpObjectiveId/'
     | '/v2/wfp/$wfpId/'
+    | '/v2/bac-resolutions/$resolutionId/'
     | '/v2/bac-resolutions/clauses/'
     | '/v2/bidding-documents/$bacResolutionId/'
     | '/v2/manage-noa/$noaId/'
@@ -2111,6 +2122,7 @@ export interface FileRouteTypes {
     | '/v2/wfp-expenditure/$wfpObjectiveActivityId'
     | '/v2/wfp-objective/$wfpObjectiveId'
     | '/v2/wfp/$wfpId'
+    | '/v2/bac-resolutions/$resolutionId'
     | '/v2/bac-resolutions/clauses'
     | '/v2/bidding-documents/$bacResolutionId'
     | '/v2/manage-noa/$noaId'
@@ -2292,6 +2304,7 @@ export interface FileRouteTypes {
     | '/v2/(planning)/wfp-expenditure/$wfpObjectiveActivityId/'
     | '/v2/(planning)/wfp-objective/$wfpObjectiveId/'
     | '/v2/(planning)/wfp/$wfpId/'
+    | '/v2/(procurement)/bac-resolutions/$resolutionId/'
     | '/v2/(procurement)/bac-resolutions/clauses/'
     | '/v2/(procurement)/bidding-documents/$bacResolutionId/'
     | '/v2/(procurement)/manage-noa/$noaId/'
@@ -3412,6 +3425,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof V2planningWfpWfpIdGanttChartRouteImport
       parentRoute: typeof V2planningWfpWfpIdRoute
     }
+    '/v2/(procurement)/bac-resolutions/$resolutionId/': {
+      id: '/v2/(procurement)/bac-resolutions/$resolutionId/'
+      path: '/bac-resolutions/$resolutionId'
+      fullPath: '/v2/bac-resolutions/$resolutionId/'
+      preLoaderRoute: typeof V2procurementBacResolutionsResolutionIdIndexRouteImport
+      parentRoute: typeof V2Route
+    }
     '/v2/(procurement)/bac-resolutions/clauses/': {
       id: '/v2/(procurement)/bac-resolutions/clauses/'
       path: '/bac-resolutions/clauses'
@@ -4091,6 +4111,7 @@ interface V2RouteChildren {
   V2planningMarketScopingManageActivitiesRoute: typeof V2planningMarketScopingManageActivitiesRoute
   V2planningMarketScopingManageParametersRoute: typeof V2planningMarketScopingManageParametersRoute
   V2planningAppConsolidationSupplementalIndexRoute: typeof V2planningAppConsolidationSupplementalIndexRoute
+  V2procurementBacResolutionsResolutionIdIndexRoute: typeof V2procurementBacResolutionsResolutionIdIndexRoute
   V2procurementBacResolutionsClausesIndexRoute: typeof V2procurementBacResolutionsClausesIndexRoute
   V2procurementBiddingDocumentsBacResolutionIdIndexRoute: typeof V2procurementBiddingDocumentsBacResolutionIdIndexRoute
   V2procurementManageNoaNoaIdIndexRoute: typeof V2procurementManageNoaNoaIdIndexRoute
@@ -4219,6 +4240,8 @@ const V2RouteChildren: V2RouteChildren = {
     V2planningMarketScopingManageParametersRoute,
   V2planningAppConsolidationSupplementalIndexRoute:
     V2planningAppConsolidationSupplementalIndexRoute,
+  V2procurementBacResolutionsResolutionIdIndexRoute:
+    V2procurementBacResolutionsResolutionIdIndexRoute,
   V2procurementBacResolutionsClausesIndexRoute:
     V2procurementBacResolutionsClausesIndexRoute,
   V2procurementBiddingDocumentsBacResolutionIdIndexRoute:

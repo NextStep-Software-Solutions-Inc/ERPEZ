@@ -28,7 +28,7 @@ interface BacResolutionWorkspaceProps {
   title: string
   description: string
   defaultFilter?: BacResolutionInboxFilter
-  initialSelectedResolutionId?: string
+  selectedId?: string
   workspaceScope?: BacResolutionWorkspaceScope
   bacListRoutePath?: BacResolutionListRoutePath
 }
@@ -38,7 +38,7 @@ export function BacResolutionWorkspace({
   title,
   description,
   defaultFilter = 'all',
-  initialSelectedResolutionId,
+  selectedId,
   workspaceScope = 'all',
   bacListRoutePath = '/v2/bac-resolutions',
 }: BacResolutionWorkspaceProps) {
@@ -47,9 +47,9 @@ export function BacResolutionWorkspace({
   const [docPreviewOpen, setDocPreviewOpen] = useState(false)
   const [createPrModalOpen, setCreatePrModalOpen] = useState(false)
 
-  const { ws, isLoading } = useBacResolutionService(
+  const { ws } = useBacResolutionService(
     defaultFilter,
-    initialSelectedResolutionId,
+    selectedId,
     workspaceScope,
   )
 
@@ -92,7 +92,6 @@ export function BacResolutionWorkspace({
               {role === 'procurement-staff' && (
                 <Button
                   onClick={() => ws.setCreateOpen(true)}
-                  disabled={isLoading}
                   className="gap-1.5 text-xs h-9 shadow-xs"
                 >
                   <Plus className="h-4 w-4" />
@@ -116,11 +115,13 @@ export function BacResolutionWorkspace({
           <div className="lg:col-span-4">
             <InboxPanel
               inboxCards={ws.inboxCards}
-              isLoading={ws.isBacResolutionsLoading}
-              resolutions={ws.resolutions}
-              filteredResolutions={[]}
-              selectedResolutionId={ws.selectedResolutionId}
-              setSelectedResolutionId={ws.setSelectedResolutionId}
+              selectedId={selectedId ?? null}
+              onSelectId={(id) =>
+                void navigate({
+                  to: '/v2/bac-resolutions/$resolutionId',
+                  params: { resolutionId: id },
+                })
+              }
               searchValue={ws.searchValue}
               setSearchValue={ws.setSearchValue}
               filter={ws.filter}
@@ -140,7 +141,7 @@ export function BacResolutionWorkspace({
               workspaceScope={workspaceScope}
               bacListRoutePath={bacListRoutePath}
               onEdit={(res) => {
-                ws.setEditingResolution(res)
+                ws.setEditingResolution(res as any)
                 ws.setEditOpen(true)
               }}
               onDelete={ws.handleDelete}
@@ -154,38 +155,23 @@ export function BacResolutionWorkspace({
           {/* Right Column: Workbench Details Pane (8 cols on desktop) */}
           <div className="lg:col-span-8">
             <DetailsPanel
-              selectedResolution={ws.selectedResolution}
+              selectedId={selectedId ?? null}
               role={role}
               workspaceScope={workspaceScope}
               bacListRoutePath={bacListRoutePath}
               handleViewConsolidatedPrDetails={ws.handleViewConsolidatedPrDetails}
-              isLoading={isLoading}
               onLinkPrs={
-                role === 'procurement-staff' && ws.selectedResolution
+                role === 'procurement-staff' && selectedId
                   ? () => ws.setLinkOpen(true)
                   : undefined
               }
-              // onPrint={
-              //   ws.selectedResolution
-              //     ? async () => {
-              //         const result = await ws.handlePrint()
-              //         if (result)
-              //           downloadBacResolutionBlob(result.blob, result.fileName)
-              //       }
-              //     : undefined
-              // }
               onSubmit={
-                role === 'procurement-staff' && ws.selectedResolution
+                role === 'procurement-staff' && selectedId
                   ? ws.handleSubmit
                   : undefined
               }
               onViewDocument={
-                ws.selectedResolution ? () => setDocPreviewOpen(true) : undefined
-              }
-              onCreatePr={
-                ws.selectedResolution && ws.selectedResolution.status === 'approved'
-                  ? () => setCreatePrModalOpen(true)
-                  : undefined
+                selectedId ? () => setDocPreviewOpen(true) : undefined
               }
             />
           </div>
@@ -194,7 +180,6 @@ export function BacResolutionWorkspace({
         <CreateBacResolutionDialog
           open={ws.createOpen}
           onOpenChange={ws.setCreateOpen}
-
         />
 
         <DialogsController
@@ -213,8 +198,7 @@ export function BacResolutionWorkspace({
           viewConsolidatedPrId={ws.viewConsolidatedPrId}
           linkOpen={ws.linkOpen}
           setLinkOpen={ws.setLinkOpen}
-          selectedResolution={ws.selectedResolution ?? undefined}
-          availablePrs={ws.availablePrs}
+          availablePrs={[]}
           onLink={ws.handleLink}
           onViewConsolidatedPr={ws.handleViewConsolidatedPrDetails}
           approveOpen={ws.approveOpen}
