@@ -1,41 +1,30 @@
 import { useState } from 'react'
 import {
-  AlertTriangle,
   FileText,
   ScrollText,
-  CalendarDays,
-  History,
   ShieldCheck,
-  CheckCircle2,
   Users,
   Send,
-  Link2,
   Printer,
   Sparkles,
   Layers,
   FilePlus,
   Loader2,
 } from 'lucide-react'
-import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { BacResolutionStatusBadge } from './index'
 import type {
-  BacResolutionListRoutePath,
   BacResolutionRole,
-  BacResolutionWorkspaceScope,
+
 } from '../types'
 import { useBacResolution } from '../handlers/hooks'
-import { useNavigate } from '@tanstack/react-router'
 
 interface DetailsPanelProps {
   selectedId: string | null
   role: BacResolutionRole
-  workspaceScope?: BacResolutionWorkspaceScope
-  bacListRoutePath?: BacResolutionListRoutePath
-  handleViewConsolidatedPrDetails: (id: string) => void
   isLoading?: boolean
   onLinkPrs?: () => void
   onPrint?: () => void | Promise<void>
@@ -47,16 +36,12 @@ interface DetailsPanelProps {
 export function DetailsPanel({
   selectedId,
   role,
-  bacListRoutePath = '/v2/bac-resolutions',
-  handleViewConsolidatedPrDetails,
   isLoading = false,
-  onLinkPrs,
   onPrint,
   onSubmit,
   onViewDocument,
   onCreatePr,
 }: DetailsPanelProps) {
-  const navigate = useNavigate()
   const [activeTab, setActiveTab] = useState('overview')
 
   const { data: responseData, isPending: isFetching } = useBacResolution(

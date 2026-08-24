@@ -10,6 +10,7 @@ import {
   type CreateBacResolutionWizardRef,
 } from '../forms/CreateBacResolutionForm'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
+import { useQueryClient } from 'erpez-shared-lib'
 
 interface CreateBacResolutionDialogProps {
   open: boolean
@@ -21,6 +22,7 @@ export function CreateBacResolutionDialog({
   open,
   onOpenChange,
 }: CreateBacResolutionDialogProps) {
+  const queryClient = useQueryClient()
   const [isDirty, setIsDirty] = useState(false)
   const [showDiscardWarning, setShowDiscardWarning] = useState(false)
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1)
@@ -67,6 +69,14 @@ export function CreateBacResolutionDialog({
         mutateAsync({
           pathParams: {},
           payload: values,
+        }, {
+          onSuccess: async () => {
+            void queryClient.invalidateQueries({
+              predicate: (query) =>
+                typeof query.queryKey[0] === 'string' &&
+                query.queryKey[0].startsWith('/bac/projects'),
+            })
+          }
         }),
         {
           loading: 'Creating BAC Resolution...',
