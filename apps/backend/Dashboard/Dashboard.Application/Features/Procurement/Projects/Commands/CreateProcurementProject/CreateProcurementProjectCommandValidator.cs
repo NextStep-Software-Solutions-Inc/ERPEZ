@@ -36,5 +36,17 @@ public class CreateProcurementProjectCommandValidator : AbstractValidator<Create
         RuleFor(x => x.ResolutionNumber)
             .NotEmpty()
             .WithMessage("BAC Resolution Number is required.");
+
+        RuleForEach(x => x.WhereasClauses)
+            .ChildRules(clause =>
+            {
+                clause.RuleFor(c => c.WhereasClauseId)
+                    .NotEmpty()
+                    .WithMessage("WhereasClauseId is required.");
+                clause.RuleFor(c => c.Order)
+                    .GreaterThanOrEqualTo(0)
+                    .WithMessage("Order must be non-negative.");
+            })
+            .When(x => x.WhereasClauses != null);
     }
 }

@@ -102,7 +102,7 @@ public class CreateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
             Title = projectTitle,
             ABC = projectABC,
             ProcurementModeId = procurementModeId,
-            Status = string.IsNullOrWhiteSpace(request.Status) ? "Draft" : request.Status,
+            Status = "Draft",
             EndUserRepresentativeId = request.EndUserRepresentativeId,
             TechRepresentativeId = request.TechRepresentativeId
         };
@@ -112,25 +112,24 @@ public class CreateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
             ResolutionType = string.IsNullOrWhiteSpace(request.ResolutionType) ? "Recommend Mode of Procurement" : request.ResolutionType,
             ResolutionNumber = request.ResolutionNumber,
             DateResolved = request.DateResolved,
-            Status = "Draft",
-            WhereasClause = request.WhereasClause
+            ResolvedLocation = request.ResolvedLocation,
+            Status = "Draft"
         };
 
-        if (request.WhereasClauseIds != null && request.WhereasClauseIds.Count > 0)
+        if (request.WhereasClauses != null && request.WhereasClauses.Count > 0)
         {
-            for (int i = 0; i < request.WhereasClauseIds.Count; i++)
+            foreach (var item in request.WhereasClauses)
             {
-                var clauseId = request.WhereasClauseIds[i];
-                var clause = await unitOfWork.BACResolutionWhereasClauseRepository.GetByIdAsync(clauseId, cancellationToken);
+                var clause = await unitOfWork.BACResolutionWhereasClauseRepository.GetByIdAsync(item.WhereasClauseId, cancellationToken);
                 if (clause == null)
                 {
-                    return ApiResponse<Guid>.Fail($"BAC Resolution Whereas Clause with ID '{clauseId}' was not found.");
+                    return ApiResponse<Guid>.Fail($"BAC Resolution Whereas Clause with ID '{item.WhereasClauseId}' was not found.");
                 }
 
                 resolution.WhereasClauseItems.Add(new BACResolutionWhereasClauseItem
                 {
-                    BACResolutionWhereasClauseId = clauseId,
-                    Order = i
+                    BACResolutionWhereasClauseId = item.WhereasClauseId,
+                    Order = item.Order
                 });
             }
         }
