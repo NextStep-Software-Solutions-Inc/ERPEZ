@@ -20,6 +20,7 @@ import { toast } from 'sonner'
 
 import { getLIBActivitiesRequest } from '@/features/planning/line-item-budgeting/line-item-budget/handlers/getLIBActivitiesRequest'
 import { createPPMPActivityRequest } from '@/features/planning/ppmp/handlers/createPPMPActivityRequest'
+import { getPPMPActivitiesRequest } from '@/features/planning/ppmp/handlers/getPPMPActivitiesRequest'
 import SubmitButton from '@/components/SubmitButton'
 
 const useCreatePPMPActivity = createMutationHookFromTemplate(
@@ -27,6 +28,7 @@ const useCreatePPMPActivity = createMutationHookFromTemplate(
 )
 
 const useLIBActivities = createQueryHookFromTemplate(getLIBActivitiesRequest)
+const usePPMPActivities = createQueryHookFromTemplate(getPPMPActivitiesRequest)
 
 const createPpmpActivitySchema = z.object({
   libActivityId: z.string().min(1, 'Select activity'),
@@ -39,6 +41,7 @@ interface AddPPMPActivityDialogProps {
   onOpenChange: (open: boolean) => void
   ppmpId: string
   libId?: string
+  existingLibActivityIds?: string[]
   onCreated?: () => void
 }
 
@@ -47,6 +50,7 @@ export default function AddPPMPActivityDialog({
   onOpenChange,
   ppmpId,
   libId,
+  existingLibActivityIds,
   onCreated,
 }: AddPPMPActivityDialogProps) {
   const queryClient = useQueryClient()
@@ -55,11 +59,31 @@ export default function AddPPMPActivityDialog({
   const { data: libActivitiesResp, isLoading: isLibActsLoading } =
     useLIBActivities({
       pathParams: {},
-      queryParams: libId ? { filters: `lineItemBudgetId==${libId}` } : {},
+      queryParams: libId ? { filters: `lineItemBudgetId==${libId}`, pageSize: 1000 } : {},
       enabled: !!libId && isOpen,
     })
 
+  const { data: existingPpmpActsResp } = usePPMPActivities({
+    pathParams: {},
+    queryParams: {
+      filters: `ppmpId==${ppmpId}`,
+      pageSize: 1000,
+    },
+    enabled: !existingLibActivityIds && !!ppmpId && isOpen,
+  })
+
   const libActivities = libActivitiesResp?.data ?? []
+
+  const availableLibActivities = (function () {
+    const existingIds =
+      existingLibActivityIds ??
+      (existingPpmpActsResp?.data ?? [])
+        .filter((a: any) => a.libActivityId)
+        .map((a: any) => a.libActivityId)
+
+    const existingSet = new Set(existingIds)
+    return libActivities.filter((a: any) => !existingSet.has(a.id))
+  })()
 
   const form = useForm({
     defaultValues: { libActivityId: '' } as z.input<
@@ -164,22 +188,24 @@ export default function AddPPMPActivityDialog({
                   value={field.state.value}
                   onValueChange={field.handleChange}
                   disabled={
-                    isLibActsLoading || isPending || libActivities.length === 0
+                    isLibActsLoading ||
+                    isPending ||
+                    availableLibActivities.length === 0
                   }
                 >
-                  <SelectTrigger id={field.name} className="w-full">
+                  <SelectTrigger id={field.name} className="w-full text-left">
                     <SelectValue
                       placeholder={
                         isLibActsLoading
                           ? 'Loading activities...'
-                          : libActivities.length === 0
-                            ? 'No activities available'
+                          : availableLibActivities.length === 0
+                            ? 'All LIB activities have already been added'
                             : 'Select activity'
                       }
                     />
                   </SelectTrigger>
                   <SelectContent>
-                    {libActivities.map((a: any) => (
+                    {availableLibActivities.map((a: any) => (
                       <SelectItem key={a.id} value={a.id}>
                         {a.name || a.id}
                       </SelectItem>

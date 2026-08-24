@@ -2244,6 +2244,12 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
       .map((item) => item.objectId!)
   }, [currentActivityExpItemsResp?.data, groupDialogEditGroup])
 
+  const existingLibActivityIds = useMemo(() => {
+    return activities
+      .filter((a) => a.ppmpId === ppmp.id && a.libActivityId)
+      .map((a) => a.libActivityId!)
+  }, [activities, ppmp.id])
+
   // Current PPMP budget context for progress bars
   const totalPpmpBudget = useMemo(() => {
     if (!ppmp) return 0
@@ -3071,6 +3077,7 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
         onOpenChange={setAddDialogOpen}
         ppmpId={ppmp.id}
         libId={ppmp.libId}
+        existingLibActivityIds={existingLibActivityIds}
         onCreated={() => {
           /* no-op: queries invalidated inside dialog */
         }}
