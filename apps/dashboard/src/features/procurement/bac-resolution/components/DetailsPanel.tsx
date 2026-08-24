@@ -60,8 +60,12 @@ export function DetailsPanel({
   const [activeTab, setActiveTab] = useState('overview')
 
   const { data: responseData, isPending: isFetching } = useBacResolution(
-    { pathParams: { id: selectedId || '' } },
-    { enabled: !!selectedId },
+    {
+      pathParams: { id: selectedId || '' },
+      queryParams: {},
+      enabled: !!selectedId
+    },
+
   )
 
   if (!selectedId) {

@@ -1,10 +1,18 @@
 import { createFileRoute } from '@tanstack/react-router'
+import { z } from 'zod'
 import { BacResolutionsPage } from '@/features/procurement/bac-resolution/pages'
 
+const searchSchema = z.object({
+  id: z.string().optional(),
+})
+
 export const Route = createFileRoute('/v2/(procurement)/bac-resolutions/')({
+  validateSearch: searchSchema,
   component: BacResolutionsRoute,
 })
 
 function BacResolutionsRoute() {
-  return <BacResolutionsPage />
+  const search = Route.useSearch()
+
+  return <BacResolutionsPage selectedId={search.id} />
 }

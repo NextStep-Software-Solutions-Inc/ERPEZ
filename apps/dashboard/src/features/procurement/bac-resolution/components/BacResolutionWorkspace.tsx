@@ -118,8 +118,8 @@ export function BacResolutionWorkspace({
               selectedId={selectedId ?? null}
               onSelectId={(id) =>
                 void navigate({
-                  to: '/v2/bac-resolutions/$resolutionId',
-                  params: { resolutionId: id },
+                  search: (prev: any) => ({ ...prev, id }),
+                  replace: true,
                 })
               }
               searchValue={ws.searchValue}

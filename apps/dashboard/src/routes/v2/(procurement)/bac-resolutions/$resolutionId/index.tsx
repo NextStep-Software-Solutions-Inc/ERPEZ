@@ -1,5 +1,5 @@
 import { createFileRoute } from '@tanstack/react-router'
-import { BacResolutionsPage } from '@/features/procurement/bac-resolution/pages'
+import DetailsPanel from '@/features/procurement/bac-resolution/components/DetailsPanel'
 
 export const Route = createFileRoute(
   '/v2/(procurement)/bac-resolutions/$resolutionId/',
@@ -10,5 +10,11 @@ export const Route = createFileRoute(
 function BacResolutionDetailRoute() {
   const { resolutionId } = Route.useParams()
 
-  return <BacResolutionsPage selectedId={resolutionId} />
+  return (
+    <DetailsPanel
+      selectedId={resolutionId}
+      role="procurement-staff"
+      handleViewConsolidatedPrDetails={() => {}}
+    />
+  )
 }
