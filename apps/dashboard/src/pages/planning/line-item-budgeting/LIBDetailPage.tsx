@@ -43,7 +43,6 @@ import {
   WFPObjectiveActivity,
   WFPObjectiveActivityExpenditure,
 } from '@/features/planning/wfp/types/type.wfp'
-import OrphanLineItemsView from '@/features/planning/line-item-budgeting/line-item-budget-details/components/OrphanLineItemsView'
 import GroupedExpenditureItemsView from '@/features/planning/line-item-budgeting/line-item-budget-details/components/GroupedExpenditureItemsView'
 import { groupExpenditureItems } from '@/features/planning/line-item-budgeting/line-item-budget-details/utils/groupExpenditureData'
 import type { LineItemBudgetDetails } from '@/features/planning/line-item-budgeting/line-item-budget-details/types/types'
@@ -58,7 +57,8 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { LIBSummaryDialog } from './dialogs/LIBSummaryDialog'
 import { LIBHistoryDialog } from './dialogs/LIBHistoryDialog'
-import { LayoutDashboard, History } from 'lucide-react'
+import { LIBApprovalDialog } from '@/features/planning/line-item-budgeting/line-item-budget/components/LIBApprovalDialog'
+import { LayoutDashboard, History, RotateCcw } from 'lucide-react'
 
 
 // ============================================================================
@@ -141,6 +141,9 @@ export default function LIBDetailPage({
   const isSubmitting = isLibSubmitting
   const [isExporting, setIsExporting] = useState<boolean>(false)
   const [isSubmitConfirmOpen, setIsSubmitConfirmOpen] = useState<boolean>(false)
+  const [approvalDialogOpen, setApprovalDialogOpen] = useState<boolean>(false)
+  const [approvalAction, setApprovalAction] = useState<'approve' | 'return' | 'reject'>('approve')
+  const [isApprovalLoading, setIsApprovalLoading] = useState<boolean>(false)
   const [showSummary, setShowSummary] = useState<boolean>(false)
   const [showHistory, setShowHistory] = useState<boolean>(false)
   const [deletingOrphanItemId, setDeletingOrphanItemId] = useState<
@@ -351,30 +354,6 @@ export default function LIBDetailPage({
     )
   }
 
-  // Handler for deleting orphan line items
-  const handleDeleteOrphanItem = async (item: OrphanLineItemDetail) => {
-    setDeletingOrphanItemId(item.id)
-    try {
-      await deleteLineItemBudgetDetails(
-        {
-          pathParams: { id: item.id },
-        },
-        {
-          onSuccess: async () => {
-            toast.success('Orphan line item deleted successfully!')
-            void refetch()
-          },
-        },
-      )
-    } catch (err) {
-      const message =
-        err instanceof Error ? err.message : 'Failed to delete line item'
-      toast.error(message)
-    } finally {
-      setDeletingOrphanItemId(null)
-    }
-  }
-
   // Handler for submitting LIB
   const handleSubmitLIB = async () => {
     try {
@@ -401,6 +380,54 @@ export default function LIBDetailPage({
       const message =
         err instanceof Error ? err.message : 'Failed to submit LIB'
       toast.error(message)
+    }
+  }
+
+  const handleApproveLIB = () => {
+    setApprovalAction('approve')
+    setApprovalDialogOpen(true)
+  }
+
+  const handleReturnLIB = () => {
+    setApprovalAction('return')
+    setApprovalDialogOpen(true)
+  }
+
+  const handleConfirmApproval = async () => {
+    if (!lib) return
+    setIsApprovalLoading(true)
+
+    try {
+      const newStatus = approvalAction === 'approve' ? 'Approved' : 'Returned'
+      await updateLIBStatus(
+        {
+          pathParams: { id: lib.id },
+          queryParams: {},
+          payload: { status: newStatus },
+        },
+        {
+          onSuccess: async () => {
+            const actionLabel =
+              approvalAction === 'approve' ? 'approved' : 'returned'
+            toast.success(`LIB "${lib.name}" has been ${actionLabel}!`)
+            await refetch()
+            await queryClient.invalidateQueries({
+              predicate: (query) =>
+                typeof query.queryKey[0] === 'string' &&
+                (query.queryKey[0].startsWith('/libs') ||
+                  query.queryKey[0].startsWith('/line-item-budget')),
+            })
+            setApprovalDialogOpen(false)
+          },
+        },
+      )
+    } catch (err) {
+      const errorMessage =
+        err instanceof Error ? err.message : 'Failed to update LIB status'
+      toast.error(errorMessage)
+      setApprovalDialogOpen(false)
+    } finally {
+      setIsApprovalLoading(false)
     }
   }
 
@@ -557,30 +584,81 @@ export default function LIBDetailPage({
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Ready for Submission Banner */}
-        {isReadyForSubmission && lib?.status === 'Draft' && (
-          <div className="bg-green-50 border-l-4 border-green-500 rounded-lg p-4 mb-8 flex items-start justify-between">
+        {isReadyForSubmission && (lib?.status === 'Draft' || lib?.status === 'Returned') && (
+          <div className="bg-emerald-50/80 border-l-4 border-emerald-500 rounded-xl p-4 mb-8 flex items-center justify-between shadow-xs">
             <div className="flex items-start gap-3">
-              <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
+              <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
               <div>
-
-                <h3 className="font-semibold text-green-800 text-sm">
+                <h3 className="font-semibold text-emerald-900 text-sm">
                   Ready for Submission
                 </h3>
-                <p className="text-green-700 text-sm mt-1">
-                  Total expenditures ({formatCurrencyPHP(totalActivitiesDetailBudget)}) have met or
-                  exceeded the total budget. You can now submit this LIB.
+                <p className="text-emerald-700 text-sm mt-0.5">
+                  Total expenditures ({formatCurrencyPHP(totalActivitiesDetailBudget)}) have met the budget ceiling. You can now submit this Line-Item Budget for review.
                 </p>
               </div>
             </div>
             <Button
               onClick={() => setIsSubmitConfirmOpen(true)}
               disabled={isSubmitting}
-              className="bg-green-600 hover:bg-green-700 text-white flex-shrink-0 ml-4"
               size="sm"
+              className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium gap-1.5 shadow-xs flex-shrink-0 ml-4"
             >
-              <Send className="w-5 h-5 text-white flex-shrink-0 mr-2" />
+              <Send className="w-4 h-4" />
               {isSubmitting ? 'Submitting...' : 'Submit LIB'}
             </Button>
+          </div>
+        )}
+
+        {/* Pending Approval Banner */}
+        {lib?.status === 'Submitted' && (
+          <div className="bg-amber-50/80 border-l-4 border-amber-500 rounded-xl p-4 mb-8 flex items-center justify-between shadow-xs">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-semibold text-amber-900 text-sm">
+                  Pending Approval
+                </h3>
+                <p className="text-amber-700 text-sm mt-0.5">
+                  This Line-Item Budget has been submitted and is awaiting review. Review the budget allocation and activities below.
+                </p>
+              </div>
+            </div>
+            <div className="flex items-center gap-2.5 flex-shrink-0 ml-4">
+              <Button
+                onClick={handleReturnLIB}
+                variant="outline"
+                size="sm"
+                className="gap-1.5 border-amber-300 text-amber-800 bg-white hover:bg-amber-100/60 font-medium shadow-xs"
+              >
+                <RotateCcw className="w-4 h-4 text-amber-700" />
+                Return
+              </Button>
+              <Button
+                onClick={handleApproveLIB}
+                size="sm"
+                className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-xs"
+              >
+                <CheckCircle className="w-4 h-4" />
+                Approve LIB
+              </Button>
+            </div>
+          </div>
+        )}
+
+        {/* Returned for Revision Notice */}
+        {lib?.status === 'Returned' && !isReadyForSubmission && (
+          <div className="bg-amber-50/80 border-l-4 border-amber-500 rounded-xl p-4 mb-8 flex items-center justify-between shadow-xs">
+            <div className="flex items-start gap-3">
+              <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
+              <div>
+                <h3 className="font-semibold text-amber-900 text-sm">
+                  Returned for Revision
+                </h3>
+                <p className="text-amber-700 text-sm mt-0.5">
+                  This Line-Item Budget was returned for revision. Update the activity details or line items to match the budget ceiling, then resubmit.
+                </p>
+              </div>
+            </div>
           </div>
         )}
 
@@ -983,6 +1061,18 @@ export default function LIBDetailPage({
           </Card>
         </div>
       )}
+
+      {/* LIB Approval/Rejection Dialog */}
+      {lib && (
+        <LIBApprovalDialog
+          open={approvalDialogOpen}
+          libName={lib.name || ''}
+          action={approvalAction}
+          onConfirm={handleConfirmApproval}
+          onCancel={() => setApprovalDialogOpen(false)}
+          isLoading={isApprovalLoading}
+        />
+      )}
     </div>
   )
 }
@@ -1095,112 +1185,3 @@ function StatsCard({
     </Card>
   )
 }
-
-// {lib.sourceType === 'OPCR' ? (
-//         <></>
-//       ) : (
-//         <>
-//           {wfpData?.data.wfpObjectives?.map((objective) => (
-//             <Card key={objective.id} className="mb-6">
-//               <CardHeader>
-//                 <CardTitle>Objective</CardTitle>
-
-//                 <CardDescription className="space-y-2">
-//                   <p>{objective.description}</p>
-
-//                   <div className="flex gap-2">
-//                     <Badge variant="secondary">
-//                       Weight: {objective.weight}%
-//                     </Badge>
-
-//                     <Badge>
-//                       {objective?.wfpObjectiveActivities?.length}{' '}
-//                       Activities
-//                     </Badge>
-//                   </div>
-
-//                   {objective.outcome && (
-//                     <p>
-//                       <span className="font-medium">Outcome:</span>{' '}
-//                       {objective.outcome}
-//                     </p>
-//                   )}
-//                 </CardDescription>
-//               </CardHeader>
-
-//               <CardContent className="space-y-4">
-//                 {objective?.wfpObjectiveActivities?.map((activity) => (
-//                   <Card key={activity.id}>
-//                     <CardHeader className="pb-3">
-//                       <CardTitle className="text-base">
-//                         {activity.activityName}
-//                       </CardTitle>
-
-//                       <CardDescription>
-//                         Indicator: {activity.indicator}
-//                       </CardDescription>
-
-//                       <Badge className="w-fit">
-//                         Weight: {activity.weight}%
-//                       </Badge>
-//                     </CardHeader>
-
-//                     <CardContent className="space-y-4">
-//                       {/* Timelines */}
-//                       <div>
-//                         <h4 className="mb-2 font-medium">Timelines</h4>
-
-//                         <div className="flex flex-wrap gap-2">
-//                           {activity?.wfpObjectiveTimelines?.map(
-//                             (timeline) => (
-//                               <Badge key={timeline.id} variant="outline">
-//                                 {timeline.timelineType} •{' '}
-//                                 {timeline.targetValue}
-//                               </Badge>
-//                             ),
-//                           )}
-//                         </div>
-//                       </div>
-
-//                       <Separator />
-
-//                       {/* Expenditures */}
-//                       <div>
-//                         <h4 className="mb-2 font-medium">Expenditures</h4>
-
-//                         <div className="space-y-2">
-//                           {activity?.wfpObjectiveActivityExpenditures?.map(
-//                             (expense) => (
-//                               <div
-//                                 key={expense.id}
-//                                 className="rounded-md border p-3"
-//                               >
-//                                 <p className="font-medium">
-//                                   {expense.object.name}
-//                                 </p>
-
-//                                 <p className="text-sm text-muted-foreground">
-//                                   {expense.itemDescription}
-//                                 </p>
-
-//                                 <div className="mt-2 flex gap-4 text-sm">
-//                                   <span>Qty: {expense.quantity}</span>
-
-//                                   <span>
-//                                     Unit Cost: ₱
-//                                     {expense.unitCost.toLocaleString()}
-//                                   </span>
-//                                 </div>
-//                               </div>
-//                             ),
-//                           )}
-//                         </div>
-//                       </div>
-//                     </CardContent>
-//                   </Card>
-//                 ))}
-//               </CardContent>
-//             </Card>
-//           ))}
-//         </>
-//       )}

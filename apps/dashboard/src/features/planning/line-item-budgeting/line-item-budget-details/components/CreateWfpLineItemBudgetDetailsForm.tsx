@@ -19,7 +19,6 @@ import { z } from 'zod'
 import { createLineItemBudgetDetailsRequest } from '../handlers/createLineItemBudgetDetailsRequest'
 import FieldInfo from '@/components/FieldInfo'
 import { getObjectsRequest } from '@/features/planning/object/handlers/getObjectsRequest'
-import { getWFPObjectiveActivityRequest } from '../../line-item-budget/handlers/getWFPObjectiveActivityRequest'
 import { getLIBRequest } from '../../line-item-budget/handlers/getLIBRequest'
 import { getWFPRequest } from '@/components/features/planning/wfp/wfp/handlers/getWFPRequest'
 import { Button } from '@/components/ui/button'
@@ -32,9 +31,6 @@ import {
 } from '../utils/periodAllocationHelpers'
 import type { WFPDetails } from '@/components/features/planning/wfp/wfp/table/types'
 
-const useWfpObjectiveActivity = createQueryHookFromTemplate(
-  getWFPObjectiveActivityRequest,
-)
 const useGetObjects = createQueryHookFromTemplate(getObjectsRequest)
 const useGetLIB = createQueryHookFromTemplate(getLIBRequest)
 const useGetWFP = createQueryHookFromTemplate(getWFPRequest)
@@ -45,7 +41,9 @@ const useGetChildObjects = (parentId: string | null) => {
     pathParams: {},
     queryParams: {
       filters: parentId ? `parentId==${parentId}` : 'parentId==null',
+      pageSize: 1000,
     },
+    enabled: !!parentId,
   })
 }
 
@@ -149,7 +147,7 @@ const useCreateLineItemBudgetDetails = createMutationHookFromTemplate(
 export default function CreateWfpLineItemBudgetDetailsForm({
   libId,
   libActivityId,
-  wfpObjectiveActivityId: wfpObjectiveActivityIdProp,
+  wfpObjectiveActivityId: _wfpObjectiveActivityId,
   onCreated,
   onClose,
   setForm,
@@ -373,33 +371,27 @@ export default function CreateWfpLineItemBudgetDetailsForm({
     isSubmittingAll,
   ])
 
-  const finalWfpObjectiveActivityId = wfpObjectiveActivityIdProp
-
-  const { data: wfpObjectiveActivityData } = useWfpObjectiveActivity({
-    pathParams: { id: finalWfpObjectiveActivityId || '' },
-    queryParams: {},
-    enabled: !!finalWfpObjectiveActivityId,
-  })
-
   const { data: rootObjectsResponse, isLoading: isLoadingRootObjects } =
     useGetObjects({
       pathParams: {},
       queryParams: {
         filters: `parentId==null`,
+        pageSize: 1000,
       },
     })
 
-  // Locate the Expenses root object
+  // Locate the Expenses root container object if one exists
   const expensesRootObject = useMemo(() => {
     return rootObjectsResponse?.data?.find(
       (item) =>
         item.code === 'CLS:Expenses' ||
         item.name?.toLowerCase() === 'expenses' ||
-        item.code?.startsWith('5'),
+        item.code === '50000000' ||
+        item.code === '5000000000',
     )
   }, [rootObjectsResponse?.data])
 
-  // Fetch expenditure types (children of Expenses)
+  // Fetch expenditure types (children of Expenses, if an Expenses container exists)
   const {
     data: expenditureTypesResponse,
     isLoading: isLoadingExpenditureTypes,
@@ -408,40 +400,36 @@ export default function CreateWfpLineItemBudgetDetailsForm({
     queryParams: {
       filters: expensesRootObject
         ? `parentId==${expensesRootObject.id}`
-        : 'parentId==null',
+        : undefined,
+      pageSize: 1000,
     },
+    enabled: !!expensesRootObject,
   })
 
   const expenditureTypes = useMemo(() => {
-    if (expensesRootObject && expenditureTypesResponse?.data) {
+    // If an Expenses root container exists and has children, use those children (PS, MOOE, CO, etc.)
+    if (
+      expensesRootObject &&
+      expenditureTypesResponse?.data &&
+      expenditureTypesResponse.data.length > 0
+    ) {
       return expenditureTypesResponse.data
     }
-    return []
-  }, [expensesRootObject, expenditureTypesResponse?.data])
+    // Otherwise, the root objects themselves (parentId==null) are the expenditure types (e.g. PS, MOOE, CO)
+    return (rootObjectsResponse?.data ?? []).filter(
+      (item) => item.id !== expensesRootObject?.id,
+    )
+  }, [
+    expensesRootObject,
+    expenditureTypesResponse?.data,
+    rootObjectsResponse?.data,
+  ])
 
   const [selectedParentId, setSelectedParentId] = useState<string | null>(null)
 
   // Fetch child objects based on parent selection
   const { data: childObjectsResponse, isLoading: isLoadingChildObjects } =
     useGetChildObjects(selectedParentId)
-
-  // Create a lookup map of expenditures by ID for auto-populating inherited fields
-  const expendituresLookup = useMemo(() => {
-    const lookup: Record<
-      string,
-      { quantity: number; unitCost: number; itemDescription: string | null }
-    > = {}
-    wfpObjectiveActivityData?.data?.wfpObjectiveActivityExpenditures?.forEach(
-      (expenditure) => {
-        lookup[expenditure.id] = {
-          quantity: expenditure.quantity,
-          unitCost: expenditure.unitCost,
-          itemDescription: expenditure.itemDescription || null,
-        }
-      },
-    )
-    return lookup
-  }, [wfpObjectiveActivityData?.data?.wfpObjectiveActivityExpenditures])
 
   const lineItemDefaults: LineItemBudgetDetailsDefaults = {
     objectId: '',
@@ -589,7 +577,7 @@ export default function CreateWfpLineItemBudgetDetailsForm({
 
     const selectedParent = expenditureTypes?.find((item) => item.id === parentId)
     if (selectedParent && (!selectedParent.childObjectCount || selectedParent.childObjectCount === 0)) {
-      setAutoInheritedName(selectedParent.name)
+      setAutoInheritedName(selectedParent.name || null)
     } else {
       setAutoInheritedName(null)
     }
@@ -716,7 +704,7 @@ export default function CreateWfpLineItemBudgetDetailsForm({
                       (item) => item.id === val,
                     )
                     if (child) {
-                      setAutoInheritedName(child.name)
+                      setAutoInheritedName(child.name || null)
                     }
                   }}
                   disabled={

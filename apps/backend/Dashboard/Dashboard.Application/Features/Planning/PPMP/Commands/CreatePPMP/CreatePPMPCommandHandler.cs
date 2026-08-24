@@ -32,8 +32,18 @@ public class CreatePPMPCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<
         // Validate LIB if provided
         if (request.LIBId.HasValue)
         {
-            _ = await unitOfWork.LineItemBudgetRepository.GetByIdAsync(request.LIBId.Value, cancellationToken: cancellationToken)
+            var lib = await unitOfWork.LineItemBudgetRepository.GetByIdAsync(request.LIBId.Value, cancellationToken: cancellationToken)
                 ?? throw new NotFoundException($"Line Item Budget with ID {request.LIBId.Value} not found.");
+
+            if (lib.OfficeId.HasValue && lib.OfficeId.Value != request.OfficeId)
+            {
+                throw new ValidationException("The selected Line-Item Budget does not belong to the selected office.");
+            }
+
+            if (lib.FiscalYearId.HasValue && lib.FiscalYearId.Value != request.FiscalYearId)
+            {
+                throw new ValidationException("The selected Line-Item Budget does not belong to the selected fiscal year.");
+            }
         }
 
         // Validate the target master PPMP if this is a department PPMP being linked

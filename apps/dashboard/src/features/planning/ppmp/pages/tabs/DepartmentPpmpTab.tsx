@@ -140,8 +140,8 @@ export default function DepartmentPpmpTab({
           onCreateNew={() => setCreateOpen(true)}
           searchParams={searchParams}
           handleUpdateSearch={handleUpdateSearch}
-          pageCount={ppmps?.totalPageNumber ?? 1}
-          totalRows={ppmps?.totalRows ?? 0}
+          pageCount={ppmps?.totalPages ?? ppmps?.totalPageNumber ?? 1}
+          totalRows={ppmps?.totalCount ?? ppmps?.totalRows ?? 0}
           offices={offices}
           fiscalYears={fiscalYears}
           libs={libs}

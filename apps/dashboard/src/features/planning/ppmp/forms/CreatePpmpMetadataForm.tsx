@@ -84,6 +84,7 @@ export function CreatePpmpMetadataForm({
     },
   })
 
+  const officeId = useStore(form.store, (state) => state.values.officeId)
   const fiscalYearId = useStore(
     form.store,
     (state) => state.values.fiscalYearId,
@@ -94,10 +95,25 @@ export function CreatePpmpMetadataForm({
   const isDirty = useStore(form.store, (state) => state.isDirty)
 
   const { availableLibs, fullyPlannedLibs } = useMemo(() => {
+    // If no office is selected, no LIBs should be shown
+    if (!officeId) {
+      return { availableLibs: [], fullyPlannedLibs: [] }
+    }
+
     const latestMap = new Map<string, (typeof libs)[0]>()
     for (const lib of libs) {
       const isApproved = !lib.status || lib.status.toLowerCase() === 'approved'
       if (!isApproved) continue
+
+      // Filter by selected Office
+      const libOfficeId = lib.officeId || lib.office?.id
+      if (libOfficeId !== officeId) continue
+
+      // Filter by selected Fiscal Year if selected
+      if (fiscalYearId) {
+        const libFiscalYearId = lib.fiscalYearId || lib.fiscalYear?.id
+        if (libFiscalYearId && libFiscalYearId !== fiscalYearId) continue
+      }
 
       const key = lib.libNumber || lib.name
       const existing = latestMap.get(key)
@@ -117,7 +133,14 @@ export function CreatePpmpMetadataForm({
       if (!hasCurrent) {
         const found = libs.find((lib) => lib.id === currentLibId)
         if (found) {
-          latestLibs.push(found)
+          const foundOfficeId = found.officeId || found.office?.id
+          const foundFiscalYearId = found.fiscalYearId || found.fiscalYear?.id
+          if (
+            foundOfficeId === officeId &&
+            (!fiscalYearId || !foundFiscalYearId || foundFiscalYearId === fiscalYearId)
+          ) {
+            latestLibs.push(found)
+          }
         }
       }
     }
@@ -166,6 +189,8 @@ export function CreatePpmpMetadataForm({
 
     return { availableLibs: available, fullyPlannedLibs: fullyPlanned }
   }, [
+    officeId,
+    fiscalYearId,
     libs,
     ppmps,
     libActivities,
@@ -173,6 +198,18 @@ export function CreatePpmpMetadataForm({
     initialValues?.libId,
     formLibId,
   ])
+
+  // Clear selected libId if it is no longer valid under the selected office + fiscal year
+  useEffect(() => {
+    if (formLibId) {
+      const isEligible =
+        availableLibs.some((lib) => lib.id === formLibId) ||
+        fullyPlannedLibs.some((lib) => lib.id === formLibId)
+      if (!isEligible) {
+        form.setFieldValue('libId', '')
+      }
+    }
+  }, [officeId, fiscalYearId, availableLibs, fullyPlannedLibs, formLibId, form])
 
   const selectedFiscalYear = useMemo(
     () => fiscalYears.find((fy) => fy.id === fiscalYearId),
@@ -252,7 +289,11 @@ export function CreatePpmpMetadataForm({
             <Label htmlFor={field.name}>Office</Label>
             <Select
               value={field.state.value}
-              onValueChange={field.handleChange}
+              onValueChange={(val) => {
+                field.handleChange(val)
+                // Clear existing LIB selection when Office changes
+                form.setFieldValue('libId', '')
+              }}
               disabled={isLoading || isFormDataLoading}
             >
               <SelectTrigger size="md">
@@ -277,7 +318,11 @@ export function CreatePpmpMetadataForm({
             <Label htmlFor={field.name}>Fiscal Year</Label>
             <Select
               value={field.state.value}
-              onValueChange={field.handleChange}
+              onValueChange={(val) => {
+                field.handleChange(val)
+                // Clear existing LIB selection when Fiscal Year changes
+                form.setFieldValue('libId', '')
+              }}
               disabled={isLoading || isFormDataLoading}
             >
               <SelectTrigger size="md">
@@ -368,6 +413,7 @@ export function CreatePpmpMetadataForm({
               disabled={
                 isLoading ||
                 isFormDataLoading ||
+                !officeId ||
                 (availableLibs.length === 0 && fullyPlannedLibs.length === 0)
               }
             >
@@ -376,11 +422,15 @@ export function CreatePpmpMetadataForm({
                   placeholder={
                     isFormDataLoading
                       ? 'Loading Line-Item Budgets...'
-                      : availableLibs.length === 0 && fullyPlannedLibs.length === 0
-                        ? 'No approved Line-Item Budgets found'
-                        : availableLibs.length === 0
-                          ? 'All approved Line-Item Budgets are fully planned'
-                          : 'Select a LIB...'
+                      : !officeId
+                        ? 'Select an office first...'
+                        : !fiscalYearId
+                          ? 'Select a fiscal year...'
+                          : availableLibs.length === 0 && fullyPlannedLibs.length === 0
+                            ? 'No approved Line-Item Budgets found for this office'
+                            : availableLibs.length === 0
+                              ? 'All approved Line-Item Budgets for this office are fully planned'
+                              : 'Select a LIB...'
                   }
                 />
               </SelectTrigger>

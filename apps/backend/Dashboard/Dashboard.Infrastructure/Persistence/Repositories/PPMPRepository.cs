@@ -92,6 +92,11 @@ public class PPMPRepository : Repository<PPMP>, IPPMPRepository
             );
         }
 
+        if (string.IsNullOrWhiteSpace(sieveModel.Sorts))
+        {
+            query = query.OrderByDescending(p => p.CreatedAt);
+        }
+
         var filteredQuery = sieveProcessor.Apply(sieveModel, query, applyPagination: false);
         var totalCount = await filteredQuery.CountAsync(cancellationToken);
         var pagedQuery = sieveProcessor.Apply(sieveModel, filteredQuery, applyFiltering: false, applySorting: false);
