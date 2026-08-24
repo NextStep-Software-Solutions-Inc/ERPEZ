@@ -73,6 +73,7 @@ export const createBacResolutionSchema = z.object({
   resolutionType: z.string().min(1, 'Resolution type is required.'),
   resolutionNumber: z.string().min(1, 'Resolution number is required.'),
   dateResolved: z.string().min(1, 'Date resolved is required.'),
+  resolvedLocation: z.string().optional(),
   whereasClauseIds: z
     .array(z.string())
     .min(1, 'At least one WHEREAS clause must be selected.'),
@@ -109,19 +110,6 @@ interface CreateBacResolutionFormProps {
   onSuccess?: () => void
 }
 
-function getUserDisplayName(user: User): string {
-  if (
-    user.fullName &&
-    typeof user.fullName === 'string' &&
-    user.fullName.trim() &&
-    user.fullName.toLowerCase() !== 'n/a'
-  ) {
-    return user.fullName
-  }
-  const parts = [user.firstName, user.lastName].filter(Boolean)
-  if (parts.length > 0) return parts.join(' ')
-  return user.username || user.email || 'Unnamed User'
-}
 
 export const CreateBacResolutionForm = forwardRef<
   CreateBacResolutionWizardRef,
@@ -177,7 +165,12 @@ export const CreateBacResolutionForm = forwardRef<
 
     const derivedTitle = useMemo(() => {
       if (selectedSourceType === 'AppItem' && selectedAppItem) {
-        return selectedAppItem.description
+        return (
+          selectedAppItem.ppmpItemName ||
+          selectedAppItem.description ||
+          selectedAppItem.remarks ||
+          ''
+        )
       }
       if (selectedSourceType === 'ConsolidatedPr' && selectedConsolidatedPr) {
         return (
@@ -265,6 +258,10 @@ export const CreateBacResolutionForm = forwardRef<
             ? new Date(value.dateResolved).toISOString()
             : new Date().toISOString()
 
+          const uniqueClauseIds = Array.from(
+            new Set((value.whereasClauseIds || []).filter(Boolean)),
+          )
+
           const payload: CreateBacResolutionPayload = {
             sourceType:
               selectedSourceType === 'AppItem' ? 'APPItem' : 'ConsolidatedPR',
@@ -283,7 +280,10 @@ export const CreateBacResolutionForm = forwardRef<
             resolutionNumber: value.resolutionNumber,
             dateResolved: isoDate,
             whereasClause: whereasClauseText,
-            whereasClauseIds: value.whereasClauseIds,
+            whereasClauses: uniqueClauseIds.map((id, index) => ({
+              whereasClauseId: id,
+              order: index,
+            })),
             endUserRepresentativeId: value.endUserRepresentativeId || undefined,
             techRepresentativeId: value.techRepresentativeId || undefined,
           }
@@ -1166,7 +1166,7 @@ export function SourceRecordPickerStep({
                             {item.itemNumber}
                           </TableCell>
                           <TableCell className="font-medium text-xs text-default-900 max-w-[260px] truncate">
-                            {item.description}
+                            {item.ppmpItemName || item.description}
                           </TableCell>
                           <TableCell className="text-xs text-default-700">
                             <div className="flex items-center gap-1.5">

@@ -1,3 +1,6 @@
+import { APPItem } from "@/features/planning/annual-performance-planning/types/appItem.type"
+import { ConsolidatedPR } from "../../consolidated-pr/store/consolidatedPRStore"
+
 export type BacResolutionStatus =
   'draft' | 'for-approval' | 'returned' | 'approved'
 
@@ -79,6 +82,8 @@ export type EligibleAppItem = {
   id: string
   itemNumber: string
   description: string
+  ppmpItemName?: string
+  remarks?: string
   officeName: string
   procurementModeId: string | null
   procurementModeName: string
@@ -114,6 +119,35 @@ export type BacResolutionLogEntry = {
   note?: string | null
 }
 
+
+export type BacProject = {
+  id: string
+  sourceType: "APPItem" | "ConsolidatedPR"
+  appItemId?: string,
+  consolidatedPRId?: string,
+  APPItem: APPItem
+  consolidatedPR: ConsolidatedPR
+  title?: string
+  abc: number
+  status?: string
+  resolutionType?: string
+  resolutionNumber?: string
+  dateResolved?: string
+  resolvedLocation?: string
+
+
+}
+
+export type BacProjectDetails = BacProject & {
+  bacResolutions?: BacResolution[]
+  biddingActivitySchedules?: {}[]
+  endUserRepresentativeId?: string
+  endUserRepresentative?: { id: string, firstName: string, lastName: string, email: string }
+  techRepresentativeId?: string
+  techRepresentative?: { id: string, firstName: string, lastName: string, email: string }
+  approvalAttachmentFileId?: string
+
+}
 export type BacResolution = {
   id: string
   bacResolutionNumber: string
