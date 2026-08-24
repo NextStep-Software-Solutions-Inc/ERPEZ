@@ -5,13 +5,13 @@ import type {
 import type { BacResolution, ProcurementSourceType } from '../types'
 import api from '@/services/api'
 
-export type WhereasClauseItemInput = {
+export type WhereasClauses = {
   whereasClauseId: string
   order: number
 }
 
 export type CreateBacResolutionPayload = {
-  sourceType?: string
+  sourceType?: 'APPItem' | 'ConsolidatedPR' | string
   appItemId?: string
   consolidatedPRId?: string
   title?: string
@@ -20,7 +20,7 @@ export type CreateBacResolutionPayload = {
   resolutionNumber?: string
   dateResolved?: string
   resolvedLocation?: string
-  whereasClauses?: WhereasClauseItemInput[]
+  whereasClauses?: WhereasClauses[]
   endUserRepresentativeId?: string
   techRepresentativeId?: string
 }

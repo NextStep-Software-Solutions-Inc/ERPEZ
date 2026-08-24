@@ -1,10 +1,9 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useMemo, useState } from 'react'
 import { toast } from 'sonner'
 import type {
   BacResolution,
   BacResolutionInboxFilter,
   BacResolutionWorkspaceScope,
-  LinkConsolidatedPrsPayload,
 } from '../types'
 import {
   buildLinkableConsolidatedPrs,
@@ -15,7 +14,6 @@ import {
   createQueryHookFromTemplate,
 } from 'erpez-shared-lib'
 import {
-  CreateBacResolutionPayload,
   createBacResolutionRequest,
 } from '../handlers/createBacResolutionRequest'
 import { updateBacResolutionRequest } from '../handlers/updateBacResolutionRequest'
@@ -38,9 +36,9 @@ function formatInboxFilterLabel(status: BacResolutionInboxFilter) {
   return status === 'all'
     ? 'All'
     : status
-        .split('-')
-        .map((part) => part[0].toUpperCase() + part.slice(1))
-        .join(' ')
+      .split('-')
+      .map((part) => part[0].toUpperCase() + part.slice(1))
+      .join(' ')
 }
 
 const useCreateBacResolutionMutation = createMutationHookFromTemplate(
@@ -78,11 +76,10 @@ export function useBacResolutionWorkspaceState(
     data: serverResolutions,
     isLoading: isBacResolutionsLoading,
     isFetching: isBacResolutionsFetching,
-    isError,
+
   } = useBacResolutionsQuery({ enabled: false })
 
-  // Mutations
-  const createMutation = useCreateBacResolutionMutation()
+
   const updateMutation = useUpdateBacResolutionMutation()
   const deleteMutation = useDeleteBacResolutionMutation()
   const linkMutation = useLinkConsolidatedPrMutation()
@@ -91,7 +88,7 @@ export function useBacResolutionWorkspaceState(
   const returnMutation = useReturnBacResolutionMutation()
 
   const isMutating =
-    createMutation.isPending ||
+
     updateMutation.isPending ||
     deleteMutation.isPending ||
     linkMutation.isPending ||
@@ -171,105 +168,8 @@ export function useBacResolutionWorkspaceState(
     [resolutions, workspaceScope],
   )
 
-  const filteredResolutions = useMemo(() => {
-    let result = scopedResolutions
-      // 1. Status filter
-      .filter((item) => (filter === 'all' ? true : item.status === filter))
-      // 2. Source Type filter
-      .filter((item) => {
-        if (sourceTypeFilter === 'all') return true
-        return item.sourceType === sourceTypeFilter
-      })
-      // 3. Budget range filter
-      .filter((item) => {
-        const amount =
-          item.procurementProjectContext?.abc || item.totalAmount || 0
-        if (budgetTier === 'under-1m') return amount < 1000000
-        if (budgetTier === '1m-5m')
-          return amount >= 1000000 && amount <= 5000000
-        if (budgetTier === 'above-5m') return amount > 5000000
-        if (budgetTier === 'custom') {
-          if (customMinBudget !== null && amount < customMinBudget) return false
-          if (customMaxBudget !== null && amount > customMaxBudget) return false
-          return true
-        }
-        return true
-      })
-      // 4. Search query
-      .filter((item) => {
-        if (!searchValue.trim()) return true
 
-        const needle = searchValue.toLowerCase()
-        const contextTitle = item.procurementProjectContext?.projectTitle || ''
-        const office = item.procurementProjectContext?.officeName || ''
-        return [
-          item.bacResolutionNumber,
-          item.description,
-          contextTitle,
-          office,
-          item.createdBy,
-          ...item.linkedConsolidatedPrs.map((pr) => pr.prNumber),
-        ]
-          .join(' ')
-          .toLowerCase()
-          .includes(needle)
-      })
 
-    // 5. Sorting
-    result = [...result].sort((a, b) => {
-      const amountA = a.procurementProjectContext?.abc || a.totalAmount || 0
-      const amountB = b.procurementProjectContext?.abc || b.totalAmount || 0
-      const dateA = new Date(a.createdAt || a.resolutionDate).getTime()
-      const dateB = new Date(b.createdAt || b.resolutionDate).getTime()
-
-      switch (sortBy) {
-        case 'oldest':
-          return dateA - dateB
-        case 'amount-desc':
-          return amountB - amountA
-        case 'amount-asc':
-          return amountA - amountB
-        case 'newest':
-        default:
-          return dateB - dateA
-      }
-    })
-
-    return result
-  }, [
-    filter,
-    sourceTypeFilter,
-    budgetTier,
-    customMinBudget,
-    customMaxBudget,
-    sortBy,
-    scopedResolutions,
-    searchValue,
-  ])
-
-  useEffect(() => {
-    if (
-      initialSelectedResolutionId &&
-      filteredResolutions.some(
-        (item) => item.id === initialSelectedResolutionId,
-      )
-    ) {
-      setSelectedResolutionId(initialSelectedResolutionId)
-      return
-    }
-
-    if (filteredResolutions.length === 0) {
-      setSelectedResolutionId(null)
-      return
-    }
-
-    if (
-      !selectedResolutionId ||
-      !filteredResolutions.some((item) => item.id === selectedResolutionId)
-    ) {
-      setSelectedResolutionId(filteredResolutions[0].id)
-    }
-  }, [filteredResolutions, initialSelectedResolutionId, selectedResolutionId])
 
   const selectedResolution = useMemo(
     () =>
@@ -295,9 +195,9 @@ export function useBacResolutionWorkspaceState(
 
   // --- CRUD HANDLERS WITH API MUTATION & LOCAL FALLBACK ---
 
-  const handleCreate = () => {}
+  const handleCreate = () => { }
 
-  const handleUpdate = () => {}
+  const handleUpdate = () => { }
 
   const handleDelete = (id: string) => {
     setResolutionToDeleteId(id)
@@ -332,7 +232,7 @@ export function useBacResolutionWorkspaceState(
     )
   }
 
-  const handleLink = () => {}
+  const handleLink = () => { }
 
   const handleSubmit = () => {
     if (!selectedResolution) return
@@ -532,7 +432,6 @@ export function useBacResolutionWorkspaceState(
     setReturnOpen,
     submitConfirmOpen,
     setSubmitConfirmOpen,
-    filteredResolutions,
     selectedResolution,
     availablePrs,
     isBacResolutionsLoading,

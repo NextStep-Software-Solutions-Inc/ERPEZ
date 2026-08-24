@@ -11,7 +11,6 @@ import { Button } from '@/components/ui/button'
 import { useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { ScrollText, Plus, BookOpen } from 'lucide-react'
-import { downloadBacResolutionBlob } from '../utils/downloadBacResolutionBlob'
 import InboxPanel from './InboxPanel'
 import DetailsPanel from './DetailsPanel'
 import DialogsController from './DialogsController'
@@ -119,7 +118,7 @@ export function BacResolutionWorkspace({
               inboxCards={ws.inboxCards}
               isLoading={ws.isBacResolutionsLoading}
               resolutions={ws.resolutions}
-              filteredResolutions={ws.filteredResolutions}
+              filteredResolutions={[]}
               selectedResolutionId={ws.selectedResolutionId}
               setSelectedResolutionId={ws.setSelectedResolutionId}
               searchValue={ws.searchValue}
@@ -195,7 +194,7 @@ export function BacResolutionWorkspace({
         <CreateBacResolutionDialog
           open={ws.createOpen}
           onOpenChange={ws.setCreateOpen}
-          onCreate={ws.handleCreate}
+
         />
 
         <DialogsController

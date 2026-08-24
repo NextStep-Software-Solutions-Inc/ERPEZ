@@ -14,13 +14,12 @@ import { ChevronLeft, ChevronRight } from 'lucide-react'
 interface CreateBacResolutionDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  onCreate?: (values: CreateBacResolutionPayload) => Promise<void> | void
+
 }
 
 export function CreateBacResolutionDialog({
   open,
   onOpenChange,
-  onCreate,
 }: CreateBacResolutionDialogProps) {
   const [isDirty, setIsDirty] = useState(false)
   const [showDiscardWarning, setShowDiscardWarning] = useState(false)

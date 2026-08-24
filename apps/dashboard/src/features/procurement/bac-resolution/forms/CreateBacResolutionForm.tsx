@@ -6,14 +6,6 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Button } from '@/components/ui/button'
 import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from '@/components/ui/command'
-import {
   Popover,
   PopoverContent,
   PopoverTrigger,
@@ -31,6 +23,8 @@ import {
   Wallet,
   ArrowLeft,
   ChevronRight,
+  ChevronUp,
+  ChevronDown,
   FileSpreadsheet,
   PackageCheck,
   Plus,
@@ -62,7 +56,7 @@ import {
 } from '../handlers/hooks'
 import FieldInfo from '@/components/FieldInfo'
 import type { User } from '@/services/api/users'
-import type { CreateBacResolutionPayload } from '../handlers/createBacResolutionRequest'
+import type { CreateBacResolutionPayload, WhereasClauses } from '../handlers/createBacResolutionRequest'
 import { CreateEditWhereasClauseDialog } from '../dialogs/CreateEditWhereasClauseDialog'
 
 export const createBacResolutionSchema = z.object({
@@ -74,8 +68,11 @@ export const createBacResolutionSchema = z.object({
   resolutionNumber: z.string().min(1, 'Resolution number is required.'),
   dateResolved: z.string().min(1, 'Date resolved is required.'),
   resolvedLocation: z.string().optional(),
-  whereasClauseIds: z
-    .array(z.string())
+  whereasClauses: z
+    .array(z.object({
+      whereasClauseId: z.string(),
+      order: z.number(),
+    }))
     .min(1, 'At least one WHEREAS clause must be selected.'),
   endUserRepresentativeId: z.string().optional(),
   techRepresentativeId: z.string().optional(),
@@ -211,8 +208,11 @@ export const CreateBacResolutionForm = forwardRef<
         pathParams: {},
         payload: { name, body },
       })
-      const currentSelected = form.getFieldValue('whereasClauseIds') || []
-      form.setFieldValue('whereasClauseIds', [...currentSelected, created.id])
+      const currentSelected: WhereasClauses[] = form.getFieldValue('whereasClauses') || []
+      form.setFieldValue('whereasClauses', [
+        ...currentSelected,
+        { whereasClauseId: created.id, order: currentSelected.length },
+      ])
       toast.success('Custom WHEREAS Clause created and added to resolution.')
     }
 
@@ -232,7 +232,8 @@ export const CreateBacResolutionForm = forwardRef<
       dateResolved:
         initialValues?.dateResolved ??
         new Date().toISOString().split('T')[0],
-      whereasClauseIds: initialValues?.whereasClauseIds || [],
+      resolvedLocation: initialValues?.resolvedLocation || '',
+      whereasClauses: initialValues?.whereasClauses || [],
       endUserRepresentativeId: initialValues?.endUserRepresentativeId || undefined,
       techRepresentativeId: initialValues?.techRepresentativeId || undefined,
     }
@@ -247,20 +248,16 @@ export const CreateBacResolutionForm = forwardRef<
         setSubmitError(null)
 
         try {
-          const selectedWhereasTemplates = whereasTemplates.filter((t) =>
-            value.whereasClauseIds?.includes(t.id),
+          const selectedClauseIds = (value.whereasClauses || []).map(
+            (c) => c.whereasClauseId,
           )
-          const whereasClauseText = selectedWhereasTemplates
-            .map((t) => `${t.name}: ${t.body}`)
-            .join('\n\n')
+          const selectedWhereasTemplates = whereasTemplates.filter((t) =>
+            selectedClauseIds.includes(t.id),
+          )
 
           const isoDate = value.dateResolved
             ? new Date(value.dateResolved).toISOString()
             : new Date().toISOString()
-
-          const uniqueClauseIds = Array.from(
-            new Set((value.whereasClauseIds || []).filter(Boolean)),
-          )
 
           const payload: CreateBacResolutionPayload = {
             sourceType:
@@ -275,13 +272,12 @@ export const CreateBacResolutionForm = forwardRef<
                 : undefined,
             title: value.title,
             abc: value.abc,
-            status: 'Draft',
             resolutionType: value.resolutionType,
             resolutionNumber: value.resolutionNumber,
             dateResolved: isoDate,
-            whereasClause: whereasClauseText,
-            whereasClauses: uniqueClauseIds.map((id, index) => ({
-              whereasClauseId: id,
+            resolvedLocation: value.resolvedLocation || undefined,
+            whereasClauses: (value.whereasClauses || []).map((item, index) => ({
+              whereasClauseId: item.whereasClauseId,
               order: index,
             })),
             endUserRepresentativeId: value.endUserRepresentativeId || undefined,
@@ -518,8 +514,8 @@ export const CreateBacResolutionForm = forwardRef<
                 </div>
               </div>
 
-              {/* Resolution Number, Type, & Date Resolved */}
-              <div className="grid gap-5 md:grid-cols-3">
+              {/* Resolution Number, Type, Date Resolved, & Resolved Location */}
+              <div className="grid gap-5 md:grid-cols-2 lg:grid-cols-4">
                 <form.Field name="resolutionNumber">
                   {(field) => (
                     <div className="grid gap-2">
@@ -570,6 +566,23 @@ export const CreateBacResolutionForm = forwardRef<
                         value={field.state.value}
                         onBlur={field.handleBlur}
                         onChange={(e) => field.handleChange(e.target.value)}
+                        disabled={isLoading || isSubmitting}
+                      />
+                      <FieldInfo field={field} />
+                    </div>
+                  )}
+                </form.Field>
+
+                <form.Field name="resolvedLocation">
+                  {(field) => (
+                    <div className="grid gap-2">
+                      <Label htmlFor={field.name}>Resolved Location</Label>
+                      <Input
+                        id={field.name}
+                        value={field.state.value || ''}
+                        onBlur={field.handleBlur}
+                        onChange={(e) => field.handleChange(e.target.value)}
+                        placeholder="e.g. BAC Conference Room, Main Bldg"
                         disabled={isLoading || isSubmitting}
                       />
                       <FieldInfo field={field} />
@@ -656,23 +669,61 @@ export const CreateBacResolutionForm = forwardRef<
                 </Button>
               </div>
 
-              <form.Field name="whereasClauseIds">
+              <form.Field name="whereasClauses">
                 {(field) => {
-                  const selectedIds = field.state.value || []
+                  const currentItems: WhereasClauses[] = field.state.value || []
+                  const selectedIds = currentItems.map((c) => c.whereasClauseId)
 
                   const toggleTemplate = (templateId: string) => {
                     if (selectedIds.includes(templateId)) {
-                      field.handleChange(
-                        selectedIds.filter((id: string) => id !== templateId),
-                      )
+                      const nextItems = currentItems
+                        .filter((c) => c.whereasClauseId !== templateId)
+                        .map((c, idx) => ({
+                          whereasClauseId: c.whereasClauseId,
+                          order: idx,
+                        }))
+                      field.handleChange(nextItems)
                     } else {
-                      field.handleChange([...selectedIds, templateId])
+                      const nextItems = [
+                        ...currentItems,
+                        {
+                          whereasClauseId: templateId,
+                          order: currentItems.length,
+                        },
+                      ]
+                      field.handleChange(nextItems)
                     }
                   }
 
+                  const moveUp = (index: number) => {
+                    if (index <= 0) return
+                    const newArr = [...currentItems]
+                    const temp = newArr[index - 1]
+                    newArr[index - 1] = newArr[index]
+                    newArr[index] = temp
+                    const reindexed = newArr.map((item, idx) => ({
+                      ...item,
+                      order: idx,
+                    }))
+                    field.handleChange(reindexed)
+                  }
+
+                  const moveDown = (index: number) => {
+                    if (index >= currentItems.length - 1) return
+                    const newArr = [...currentItems]
+                    const temp = newArr[index + 1]
+                    newArr[index + 1] = newArr[index]
+                    newArr[index] = temp
+                    const reindexed = newArr.map((item, idx) => ({
+                      ...item,
+                      order: idx,
+                    }))
+                    field.handleChange(reindexed)
+                  }
+
                   return (
-                    <div className="space-y-3">
-                      <div className="space-y-2 max-h-[300px] overflow-y-auto pr-1">
+                    <div className="space-y-4">
+                      <div className="space-y-2 max-h-[260px] overflow-y-auto pr-1">
                         {isWhereasPending ? (
                           <div className="flex flex-col items-center justify-center p-8 text-xs text-muted-foreground">
                             <Loader2 className="h-5 w-5 animate-spin text-primary mb-2" />
@@ -716,6 +767,73 @@ export const CreateBacResolutionForm = forwardRef<
                           })
                         )}
                       </div>
+
+                      {/* Selected Clauses Sequence & Reordering UI */}
+                      {currentItems.length > 0 && (
+                        <div className="mt-4 space-y-2.5 border-t border-default-200 pt-4">
+                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+                            <h5 className="font-semibold text-xs text-default-900 flex items-center gap-1.5">
+                              <Badge variant="secondary" className="px-2 py-0.5 text-[11px] font-bold bg-primary/10 text-primary border-primary/20">
+                                {currentItems.length} Selected
+                              </Badge>
+                              Clause Sequence & Reordering
+                            </h5>
+                            <span className="text-[11px] text-muted-foreground">
+                              Use Up/Down arrows to adjust execution order
+                            </span>
+                          </div>
+
+                          <div className="space-y-2">
+                            {currentItems.map((item, index: number) => {
+                              const template = whereasTemplates.find((t) => t.id === item.whereasClauseId)
+                              if (!template) return null
+                              return (
+                                <div
+                                  key={item.whereasClauseId}
+                                  className="flex items-center gap-3 rounded-lg border border-primary/30 bg-primary/5 p-2.5 text-xs transition-colors shadow-2xs"
+                                >
+                                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-white font-bold text-[11px]">
+                                    {index + 1}
+                                  </div>
+                                  <div className="flex-1 min-w-0">
+                                    <div className="font-semibold text-default-900 truncate">
+                                      {template.name}
+                                    </div>
+                                    <div className="text-[11px] text-muted-foreground truncate font-serif">
+                                      {template.body}
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-1 shrink-0">
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="icon"
+                                      disabled={index === 0 || isLoading || isSubmitting}
+                                      onClick={() => moveUp(index)}
+                                      className="h-7 w-7 border-default-300 bg-white text-default-700 hover:bg-default-100 disabled:opacity-30"
+                                      title="Move Up"
+                                    >
+                                      <ChevronUp className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      variant="outline"
+                                      size="icon"
+                                      disabled={index === currentItems.length - 1 || isLoading || isSubmitting}
+                                      onClick={() => moveDown(index)}
+                                      className="h-7 w-7 border-default-300 bg-white text-default-700 hover:bg-default-100 disabled:opacity-30"
+                                      title="Move Down"
+                                    >
+                                      <ChevronDown className="h-4 w-4" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              )
+                            })}
+                          </div>
+                        </div>
+                      )}
+
                       <FieldInfo field={field} />
                     </div>
                   )
