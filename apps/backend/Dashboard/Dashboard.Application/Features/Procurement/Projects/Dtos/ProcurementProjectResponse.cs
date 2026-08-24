@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
+using ERPEZ.Application.Features.Planning.APPItem.Dtos;
 using ERPEZ.Application.Features.Planning.BACResolutionWhereasClause.Dtos;
 using ERPEZ.Domain.Entities.Procurement;
 using ERPEZ.Domain.Enums;
@@ -15,7 +16,7 @@ public record ProcurementProjectResponse
     public Guid? APPItemId { get; init; }
     public Guid? ConsolidatedPRId { get; init; }
     public string Title { get; init; } = string.Empty;
-    public APPItemSummaryResponse? APPItem { get; init; }
+    public APPItemResponse? APPItem { get; init; }
     public ConsolidatedPRSummaryResponse? ConsolidatedPR { get; init; }
     public decimal ABC { get; init; }
     public string Status { get; init; } = string.Empty;
@@ -26,14 +27,6 @@ public record ProcurementProjectResponse
     public DateTime? DateResolved { get; init; }
     public string? ResolvedLocation { get; init; }
 
-    public List<BACResolutionResponse> BACResolutions { get; init; } = [];
-    public List<BiddingActivityScheduleResponse> BiddingActivitySchedules { get; init; } = [];
-    public Guid? EndUserRepresentativeId { get; init; }
-    public ProjectUserResponse? EndUserRepresentative { get; init; }
-    public Guid? TechRepresentativeId { get; init; }
-    public ProjectUserResponse? TechRepresentative { get; init; }
-    public Guid? ApprovalAttachmentFileId { get; init; }
-
     public static Expression<Func<ProcurementProject, ProcurementProjectResponse>> Projection => c => new ProcurementProjectResponse
     {
         Id = c.Id,
@@ -41,15 +34,205 @@ public record ProcurementProjectResponse
         APPItemId = c.APPItemId,
         ConsolidatedPRId = c.ConsolidatedPRId,
         Title = c.Title,
-        APPItem = c.APPItem != null ? new APPItemSummaryResponse
+        APPItem = c.APPItem != null ? new APPItemResponse
         {
             Id = c.APPItem.Id,
-            PAPCode = c.APPItem.PAPCode,
+            APPId = c.APPItem.APPId,
+            PPMPItemId = c.APPItem.PPMPItemId,
             PPMPItemName = c.APPItem.PPMPItem != null ? c.APPItem.PPMPItem.Name : string.Empty,
-            EffectiveABC = c.APPItem.EffectiveABC,
+            ProcurementModeId = c.APPItem.ProcurementModeId,
             ProcurementModeName = c.APPItem.ProcurementMode != null ? c.APPItem.ProcurementMode.Name : string.Empty,
+            FundSourceId = c.APPItem.FundSourceId,
             FundSourceName = c.APPItem.FundSource != null ? c.APPItem.FundSource.Name : string.Empty,
-            OfficeName = c.APPItem.Office != null ? c.APPItem.Office.Name : string.Empty
+            OfficeId = c.APPItem.OfficeId,
+            OfficeName = c.APPItem.Office != null ? c.APPItem.Office.Name : string.Empty,
+            PAPCode = c.APPItem.PAPCode,
+            Remarks = c.APPItem.Remarks,
+            IsEarlyProcurementActivity = c.APPItem.IsEarlyProcurementActivity,
+            IsOutsourced = c.APPItem.IsOutsourced,
+            BidEvaluationCriteria = c.APPItem.BidEvaluationCriteria,
+            ProcurementStrategies = c.APPItem.ProcurementStrategies,
+            CreatedAt = c.APPItem.CreatedAt,
+            CreatedBy = c.APPItem.CreatedBy,
+            UpdatedAt = c.APPItem.UpdatedAt,
+            UpdatedBy = c.APPItem.UpdatedBy,
+            EffectiveStartOfProcurement = c.APPItem.StartOfProcurementOverride ?? (c.APPItem.PPMPItem != null && c.APPItem.PPMPItem.ProcurementStartDate.HasValue ? c.APPItem.PPMPItem.ProcurementStartDate.Value.ToDateTime(TimeOnly.MinValue) : null),
+            EffectiveEndOfProcurement = c.APPItem.EndOfProcurementOverride ?? (c.APPItem.PPMPItem != null && c.APPItem.PPMPItem.ProcurementEndDate.HasValue ? c.APPItem.PPMPItem.ProcurementEndDate.Value.ToDateTime(TimeOnly.MinValue) : null),
+            StartOfProcurementOverride = c.APPItem.StartOfProcurementOverride,
+            EndOfProcurementOverride = c.APPItem.EndOfProcurementOverride,
+            EstimatedBudgetOverride = c.APPItem.EstimatedBudgetOverride,
+            OriginalPPMPBudget = c.APPItem.OriginalPPMPBudget,
+            EffectiveABC = c.APPItem.EffectiveABC,
+            IsABCOverridden = c.APPItem.EstimatedBudgetOverride.HasValue,
+            IsStartProcurementOverridden = c.APPItem.StartOfProcurementOverride.HasValue,
+            IsEndProcurementOverridden = c.APPItem.EndOfProcurementOverride.HasValue,
+            IsNew = c.APPItem.IsNew,
+            IsRevised = c.APPItem.IsRevised,
+            APP = c.APPItem.APP != null ? new APPItemAPPResponse
+            {
+                Id = c.APPItem.APP.Id,
+                APPNumber = c.APPItem.APP.APPNumber,
+                Name = c.APPItem.APP.Name
+            } : null,
+            PPMPItem = c.APPItem.PPMPItem != null ? new APPItemPPMPItemResponse
+            {
+                Id = c.APPItem.PPMPItem.Id,
+                PAPCode = c.APPItem.PPMPItem.PAPCode,
+                Name = c.APPItem.PPMPItem.Name,
+                Description = c.APPItem.PPMPItem.Description,
+                Unit = c.APPItem.PPMPItem.Unit,
+                UnitPrice = c.APPItem.PPMPItem.UnitPrice
+            } : null,
+            ProcurementMode = c.APPItem.ProcurementMode != null ? new APPItemProcurementModeResponse
+            {
+                Id = c.APPItem.ProcurementMode.Id,
+                Name = c.APPItem.ProcurementMode.Name,
+                Description = c.APPItem.ProcurementMode.Description
+            } : null,
+            FundSource = c.APPItem.FundSource != null ? new APPItemFundSourceResponse
+            {
+                Id = c.APPItem.FundSource.Id,
+                Name = c.APPItem.FundSource.Name,
+                Code = c.APPItem.FundSource.Code
+            } : null,
+            Office = c.APPItem.Office != null ? new APPItemOfficeResponse
+            {
+                Id = c.APPItem.Office.Id,
+                Name = c.APPItem.Office.Name,
+                Code = c.APPItem.Office.Code
+            } : null,
+            Schedules = c.APPItem.PPMPItem != null && c.APPItem.PPMPItem.APPProcurementSchedules != null
+                ? c.APPItem.PPMPItem.APPProcurementSchedules
+                    .Where(schedule => !schedule.IsDeleted)
+                    .Select(schedule => new APPItemScheduleReferenceResponse
+                    {
+                        Id = schedule.Id,
+                        ProcurementActivityTypeId = schedule.ProcurementActivityTypeId,
+                        ProcurementActivityTypeName = schedule.ProcurementActivityType != null ? schedule.ProcurementActivityType.Name : string.Empty,
+                        ScheduledDate = schedule.ScheduledDate,
+                        CustomDateText = schedule.CustomDateText
+                    }).ToList()
+                : new List<APPItemScheduleReferenceResponse>()
+        } : null,
+        ConsolidatedPR = c.ConsolidatedPR != null ? new ConsolidatedPRSummaryResponse
+        {
+            Id = c.ConsolidatedPR.Id,
+            CPRNumber = c.ConsolidatedPR.CPRNumber,
+            Description = c.ConsolidatedPR.Description ?? string.Empty,
+            ModeOfProcurementId = c.ConsolidatedPR.ConsolidatedPRItems
+                .Where(ci => ci.ProcurementModeId != null)
+                .Select(ci => ci.ProcurementModeId)
+                .FirstOrDefault(),
+            ModeOfProcurementName = c.ConsolidatedPR.ConsolidatedPRItems
+                .Where(ci => ci.ProcurementMode != null)
+                .Select(ci => ci.ProcurementMode!.Name)
+                .FirstOrDefault() ?? string.Empty
+        } : null,
+        ABC = c.ABC,
+        Status = c.Status,
+        ResolutionType = c.BACResolutions.Select(r => r.ResolutionType).FirstOrDefault(),
+        ResolutionNumber = c.BACResolutions.Select(r => r.ResolutionNumber).FirstOrDefault(),
+        DateResolved = c.BACResolutions.Select(r => (DateTime?)r.DateResolved).FirstOrDefault(),
+        ResolvedLocation = c.BACResolutions.Select(r => r.ResolvedLocation).FirstOrDefault()
+    };
+}
+
+public record ProcurementProjectDetailResponse : ProcurementProjectResponse
+{
+    public List<BACResolutionResponse> BACResolutions { get; init; } = new();
+    public List<BiddingActivityScheduleResponse> BiddingActivitySchedules { get; init; } = new();
+    public Guid? EndUserRepresentativeId { get; init; }
+    public ProjectUserResponse? EndUserRepresentative { get; init; }
+    public Guid? TechRepresentativeId { get; init; }
+    public ProjectUserResponse? TechRepresentative { get; init; }
+    public Guid? ApprovalAttachmentFileId { get; init; }
+
+    public static Expression<Func<ProcurementProject, ProcurementProjectDetailResponse>> DetailProjection => c => new ProcurementProjectDetailResponse
+    {
+        Id = c.Id,
+        SourceType = c.SourceType,
+        APPItemId = c.APPItemId,
+        ConsolidatedPRId = c.ConsolidatedPRId,
+        Title = c.Title,
+        APPItem = c.APPItem != null ? new APPItemResponse
+        {
+            Id = c.APPItem.Id,
+            APPId = c.APPItem.APPId,
+            PPMPItemId = c.APPItem.PPMPItemId,
+            PPMPItemName = c.APPItem.PPMPItem != null ? c.APPItem.PPMPItem.Name : string.Empty,
+            ProcurementModeId = c.APPItem.ProcurementModeId,
+            ProcurementModeName = c.APPItem.ProcurementMode != null ? c.APPItem.ProcurementMode.Name : string.Empty,
+            FundSourceId = c.APPItem.FundSourceId,
+            FundSourceName = c.APPItem.FundSource != null ? c.APPItem.FundSource.Name : string.Empty,
+            OfficeId = c.APPItem.OfficeId,
+            OfficeName = c.APPItem.Office != null ? c.APPItem.Office.Name : string.Empty,
+            PAPCode = c.APPItem.PAPCode,
+            Remarks = c.APPItem.Remarks,
+            IsEarlyProcurementActivity = c.APPItem.IsEarlyProcurementActivity,
+            IsOutsourced = c.APPItem.IsOutsourced,
+            BidEvaluationCriteria = c.APPItem.BidEvaluationCriteria,
+            ProcurementStrategies = c.APPItem.ProcurementStrategies,
+            CreatedAt = c.APPItem.CreatedAt,
+            CreatedBy = c.APPItem.CreatedBy,
+            UpdatedAt = c.APPItem.UpdatedAt,
+            UpdatedBy = c.APPItem.UpdatedBy,
+            EffectiveStartOfProcurement = c.APPItem.StartOfProcurementOverride ?? (c.APPItem.PPMPItem != null && c.APPItem.PPMPItem.ProcurementStartDate.HasValue ? c.APPItem.PPMPItem.ProcurementStartDate.Value.ToDateTime(TimeOnly.MinValue) : null),
+            EffectiveEndOfProcurement = c.APPItem.EndOfProcurementOverride ?? (c.APPItem.PPMPItem != null && c.APPItem.PPMPItem.ProcurementEndDate.HasValue ? c.APPItem.PPMPItem.ProcurementEndDate.Value.ToDateTime(TimeOnly.MinValue) : null),
+            StartOfProcurementOverride = c.APPItem.StartOfProcurementOverride,
+            EndOfProcurementOverride = c.APPItem.EndOfProcurementOverride,
+            EstimatedBudgetOverride = c.APPItem.EstimatedBudgetOverride,
+            OriginalPPMPBudget = c.APPItem.OriginalPPMPBudget,
+            EffectiveABC = c.APPItem.EffectiveABC,
+            IsABCOverridden = c.APPItem.EstimatedBudgetOverride.HasValue,
+            IsStartProcurementOverridden = c.APPItem.StartOfProcurementOverride.HasValue,
+            IsEndProcurementOverridden = c.APPItem.EndOfProcurementOverride.HasValue,
+            IsNew = c.APPItem.IsNew,
+            IsRevised = c.APPItem.IsRevised,
+            APP = c.APPItem.APP != null ? new APPItemAPPResponse
+            {
+                Id = c.APPItem.APP.Id,
+                APPNumber = c.APPItem.APP.APPNumber,
+                Name = c.APPItem.APP.Name
+            } : null,
+            PPMPItem = c.APPItem.PPMPItem != null ? new APPItemPPMPItemResponse
+            {
+                Id = c.APPItem.PPMPItem.Id,
+                PAPCode = c.APPItem.PPMPItem.PAPCode,
+                Name = c.APPItem.PPMPItem.Name,
+                Description = c.APPItem.PPMPItem.Description,
+                Unit = c.APPItem.PPMPItem.Unit,
+                UnitPrice = c.APPItem.PPMPItem.UnitPrice
+            } : null,
+            ProcurementMode = c.APPItem.ProcurementMode != null ? new APPItemProcurementModeResponse
+            {
+                Id = c.APPItem.ProcurementMode.Id,
+                Name = c.APPItem.ProcurementMode.Name,
+                Description = c.APPItem.ProcurementMode.Description
+            } : null,
+            FundSource = c.APPItem.FundSource != null ? new APPItemFundSourceResponse
+            {
+                Id = c.APPItem.FundSource.Id,
+                Name = c.APPItem.FundSource.Name,
+                Code = c.APPItem.FundSource.Code
+            } : null,
+            Office = c.APPItem.Office != null ? new APPItemOfficeResponse
+            {
+                Id = c.APPItem.Office.Id,
+                Name = c.APPItem.Office.Name,
+                Code = c.APPItem.Office.Code
+            } : null,
+            Schedules = c.APPItem.PPMPItem != null && c.APPItem.PPMPItem.APPProcurementSchedules != null
+                ? c.APPItem.PPMPItem.APPProcurementSchedules
+                    .Where(schedule => !schedule.IsDeleted)
+                    .Select(schedule => new APPItemScheduleReferenceResponse
+                    {
+                        Id = schedule.Id,
+                        ProcurementActivityTypeId = schedule.ProcurementActivityTypeId,
+                        ProcurementActivityTypeName = schedule.ProcurementActivityType != null ? schedule.ProcurementActivityType.Name : string.Empty,
+                        ScheduledDate = schedule.ScheduledDate,
+                        CustomDateText = schedule.CustomDateText
+                    }).ToList()
+                : new List<APPItemScheduleReferenceResponse>()
         } : null,
         ConsolidatedPR = c.ConsolidatedPR != null ? new ConsolidatedPRSummaryResponse
         {
@@ -97,7 +280,6 @@ public record ProcurementProjectResponse
             DateResolved = r.DateResolved,
             ResolvedLocation = r.ResolvedLocation,
             Status = r.Status,
-            WhereasClause = r.WhereasClause,
             WhereasClauses = r.WhereasClauseItems
                 .OrderBy(item => item.Order)
                 .Select(item => new BACResolutionWhereasClauseItemResponse
@@ -151,16 +333,6 @@ public record ProcurementProjectResponse
     };
 }
 
-public record APPItemSummaryResponse
-{
-    public Guid Id { get; init; }
-    public string PAPCode { get; init; } = string.Empty;
-    public string PPMPItemName { get; init; } = string.Empty;
-    public decimal EffectiveABC { get; init; }
-    public string ProcurementModeName { get; init; } = string.Empty;
-    public string FundSourceName { get; init; } = string.Empty;
-    public string OfficeName { get; init; } = string.Empty;
-}
 
 public record WhereasClauseItemResponse
 {

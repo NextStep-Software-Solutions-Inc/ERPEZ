@@ -43,7 +43,7 @@ public class BACProjectController(ISender mediator) : ControllerBase
 
     //[Authorize(Roles = "BAC_Officer")]
     [HttpGet("projects/{id}")]
-    [ProducesResponseType(typeof(ApiResponse<ProcurementProjectResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<ProcurementProjectDetailResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetProjectById(Guid id)
     {
