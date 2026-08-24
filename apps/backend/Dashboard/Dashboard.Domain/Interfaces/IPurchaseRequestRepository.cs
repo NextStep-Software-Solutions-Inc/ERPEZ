@@ -17,7 +17,7 @@ public interface IPurchaseRequestRepository : IRepository<PurchaseRequest>
 
     Task<(IReadOnlyList<PurchaseRequest> Entities, int TotalCount)> GetDetailedPagedAsync(
         SieveModel sieveModel, CancellationToken cancellationToken = default);
-    Task<decimal> GetTotalApprovedPPMPBudgetAsync(Guid officeId, PRType prType, CancellationToken cancellationToken = default);
+    Task<decimal> GetTotalApprovedPPMPBudgetAsync(Guid? officeId, PRType prType, CancellationToken cancellationToken = default);
     Task<(IReadOnlyList<TDto> Entities, int TotalCount)> GetPRsWithDetailsAsync<TDto>(
         SieveModel sieveModel,
         Expression<Func<PurchaseRequest, TDto>> projection,

@@ -1026,11 +1026,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         //Supplier - Merchant Registry
         modelBuilder.Entity<Supplier>()
             .HasIndex(s => s.BusinessPermitNo)
-            .IsUnique();
+            .IsUnique()
+            .HasFilter("\"IsDeleted\" = false");
 
         modelBuilder.Entity<Supplier>()
             .HasIndex(s => s.TINNumber)
-            .IsUnique();
+            .IsUnique()
+            .HasFilter("\"IsDeleted\" = false");
 
         modelBuilder.Entity<Supplier>()
             .HasIndex(s => s.Email);
@@ -1047,7 +1049,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         //SupplierCategory
         modelBuilder.Entity<SupplierCategory>()
             .HasIndex(sc => sc.Name)
-            .IsUnique();
+            .IsUnique()
+            .HasFilter("\"IsDeleted\" = false");
 
         //SupplierRequirement
         modelBuilder.Entity<SupplierRequirement>()

@@ -4,7 +4,7 @@
  * Mirrors Performance Review and Procurement Library patterns
  */
 
-import { useEffect, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import {
   Card,
   CardContent,
@@ -40,35 +40,41 @@ export default function PurchaseRequestPageV2() {
       : new URL('http://localhost').searchParams
   const initialTabFromUrl = urlParams.get('tab') ?? undefined
 
-  const TAB_CONFIG = isManagePrsRoute
-    ? [
-        {
-          id: 'manage-pr',
-          label: 'Manage PR',
-          description: 'Review and approve submitted PRs',
-          icon: '✅',
-          role: 'approving-authority',
-        },
-      ]
-    : [
-        {
-          id: 'non-cse',
-          label: 'Non-CSE Items',
-          description: 'PR for Non-CSE items from approved PPMP',
-          icon: '📝',
-          role: 'office-staff',
-        },
-        {
-          id: 'out-of-stock',
-          label: 'Out-of-Stock Items',
-          description: 'PR for CSE out-of-stock items from approved APR',
-          icon: '📦',
-          role: 'procurement-staff',
-        },
-      ]
+  const TAB_CONFIG = useMemo(
+    () =>
+      isManagePrsRoute
+        ? [
+            {
+              id: 'manage-pr',
+              label: 'Manage PR',
+              description: 'Review and approve submitted PRs',
+              icon: '✅',
+              role: 'approving-authority',
+            },
+          ]
+        : [
+            {
+              id: 'non-cse',
+              label: 'Non-CSE Items',
+              description: 'PR for Non-CSE items from approved PPMP',
+              icon: '📝',
+              role: 'office-staff',
+            },
+            {
+              id: 'out-of-stock',
+              label: 'Out-of-Stock Items',
+              description: 'PR for CSE out-of-stock items from approved APR',
+              icon: '📦',
+              role: 'procurement-staff',
+            },
+          ],
+    [isManagePrsRoute],
+  )
 
-  const { purchaseRequests, setMetrics, setActivePR, ppmpItems } =
-    usePurchaseRequestStore()
+  const purchaseRequests = usePurchaseRequestStore((s) => s.purchaseRequests)
+  const setMetrics = usePurchaseRequestStore((s) => s.setMetrics)
+  const setActivePR = usePurchaseRequestStore((s) => s.setActivePR)
+  const ppmpItems = usePurchaseRequestStore((s) => s.ppmpItems)
 
   // Helper: displayStatus prefers 'returned' when remarks exist to keep metrics consistent
   const getDisplayStatus = (p: PurchaseRequest) => {
