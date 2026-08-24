@@ -11,11 +11,16 @@ import { getFundSourcesRequest } from '@/components/features/planning/fund-recei
 import { getLIBsRequest } from '../../line-item-budgeting/line-item-budget/handlers/getLIBsRequest'
 import { getPPMPsRequest } from '../handlers/getPpmpsRequest'
 
+import { getLIBActivitiesRequest } from '../../line-item-budgeting/line-item-budget/handlers/getLIBActivitiesRequest'
+import { getPPMPActivitiesRequest } from '../handlers/getPPMPActivitiesRequest'
+
 const useOffices = createQueryHookFromTemplate(getOfficesRequest)
 const useFiscalYears = createQueryHookFromTemplate(getFiscalYearsRequest)
 const useFundSources = createQueryHookFromTemplate(getFundSourcesRequest)
 const useLibs = createQueryHookFromTemplate(getLIBsRequest)
 const usePpmps = createQueryHookFromTemplate(getPPMPsRequest)
+const useLibActivities = createQueryHookFromTemplate(getLIBActivitiesRequest)
+const usePpmpActivities = createQueryHookFromTemplate(getPPMPActivitiesRequest)
 
 interface UsePpmpFormDataOptions {
   enabled?: boolean
@@ -58,13 +63,29 @@ export function usePpmpFormData({
     enabled,
   })
 
+  const { data: libActivities, isLoading: isLibActivitiesLoading } =
+    useLibActivities({
+      pathParams: {},
+      queryParams: { pageSize: 1000 },
+      enabled,
+    })
+
+  const { data: ppmpActivities, isLoading: isPpmpActivitiesLoading } =
+    usePpmpActivities({
+      pathParams: {},
+      queryParams: { pageSize: 1000 },
+      enabled,
+    })
+
   const isLoading =
     enabled &&
     (isOfficesLoading ||
       isFiscalYearsLoading ||
       isLibsLoading ||
       isFundSourcesLoading ||
-      isPpmpsLoading)
+      isPpmpsLoading ||
+      isLibActivitiesLoading ||
+      isPpmpActivitiesLoading)
 
   return {
     offices: offices?.data ?? [],
@@ -74,6 +95,8 @@ export function usePpmpFormData({
       (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' })
     ),
     ppmps: ppmps?.data ?? [],
+    libActivities: libActivities?.data ?? [],
+    ppmpActivities: ppmpActivities?.data ?? [],
     isLoading,
   }
 }

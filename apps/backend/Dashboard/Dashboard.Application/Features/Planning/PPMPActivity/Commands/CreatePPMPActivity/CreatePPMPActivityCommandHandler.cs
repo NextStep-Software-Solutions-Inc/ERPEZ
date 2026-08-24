@@ -23,12 +23,26 @@ public class CreatePPMPActivityCommandHandler(IUnitOfWork unitOfWork)
         if (ppmp.LIBId == null || libActivity.LineItemBudgetId != ppmp.LIBId)
             throw new BadRequestException("The selected LIB Activity does not belong to the LIB linked to this PPMP.");
 
-        var existing = await unitOfWork.PPMPActivityRepository.FindAsync(
+        var existingInThisPpmp = await unitOfWork.PPMPActivityRepository.FindAsync(
             x => x.PPMPId == request.PPMPId && x.LIBActivityId == request.LIBActivityId,
             cancellationToken);
 
-        if (existing != null)
-            throw new ConflictException("PPMP Activity already exists for this PPMP and LIB Activity.");
+        if (existingInThisPpmp != null)
+            throw new ConflictException("This LIB Activity is already included in this PPMP.");
+
+        var existingInOtherPpmp = await unitOfWork.PPMPActivityRepository.FindAsync(
+            x => x.LIBActivityId == request.LIBActivityId 
+                 && x.PPMPId != request.PPMPId
+                 && x.PPMP.FiscalYearId == ppmp.FiscalYearId
+                 && x.PPMP.OfficeId == ppmp.OfficeId
+                 && x.PPMP.Status != Domain.Enums.StatusEnum.Archived
+                 && x.PPMP.Status != Domain.Enums.StatusEnum.Failed
+                 && (ppmp.ParentId == null || x.PPMPId != ppmp.ParentId)
+                 && (x.PPMP.ParentId == null || x.PPMP.ParentId != request.PPMPId),
+            cancellationToken);
+
+        if (existingInOtherPpmp != null)
+            throw new ConflictException("This LIB Activity is already included in another active PPMP for this office.");
 
         var entity = new Domain.Entities.Planning.PPMPActivity
         {
