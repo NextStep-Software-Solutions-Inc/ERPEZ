@@ -28,6 +28,10 @@ import {
   FileSpreadsheet,
   PackageCheck,
   Plus,
+  Trash2,
+  CheckCheck,
+  RotateCcw,
+  GripVertical,
 } from 'lucide-react'
 import { Badge } from '@/components/ui/badge'
 import {
@@ -58,6 +62,7 @@ import FieldInfo from '@/components/FieldInfo'
 import type { User } from '@/services/api/users'
 import type { CreateBacResolutionPayload, WhereasClauses } from '../handlers/createBacResolutionRequest'
 import { CreateEditWhereasClauseDialog } from '../dialogs/CreateEditWhereasClauseDialog'
+import { WhereasClausePickerModal } from '../dialogs/WhereasClausePickerModal'
 
 export const createBacResolutionSchema = z.object({
   appItemId: z.string().optional(),
@@ -148,6 +153,9 @@ export const CreateBacResolutionForm = forwardRef<
         pathParams: {},
         queryParams: {},
       })
+
+    const [isWhereasPickerOpen, setIsWhereasPickerOpen] = useState(false)
+    const [draggedIndex, setDraggedIndex] = useState<number | null>(null)
 
     const whereasTemplates = useMemo<WhereasClauseTemplate[]>(() => {
       if (!bacResolutionWhereasClauses) return []
@@ -248,13 +256,6 @@ export const CreateBacResolutionForm = forwardRef<
         setSubmitError(null)
 
         try {
-          const selectedClauseIds = (value.whereasClauses || []).map(
-            (c) => c.whereasClauseId,
-          )
-          const selectedWhereasTemplates = whereasTemplates.filter((t) =>
-            selectedClauseIds.includes(t.id),
-          )
-
           const isoDate = value.dateResolved
             ? new Date(value.dateResolved).toISOString()
             : new Date().toISOString()
@@ -646,53 +647,54 @@ export const CreateBacResolutionForm = forwardRef<
               </div>
             </div>
 
-            {/* WHEREAS Clauses Section */}
+            {/* WHEREAS Clauses Preview & Selection Panel */}
             <div className="rounded-lg border border-default-200 bg-white p-4 space-y-4 shadow-xs">
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-default-200 pb-2">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-default-200 pb-3">
                 <div>
-                  <h4 className="font-bold text-sm text-default-900">
-                    WHEREAS Clause Templates
+                  <h4 className="font-bold text-sm text-default-900 flex items-center gap-2">
+                    <FileText className="h-4 w-4 text-primary" />
+                    WHEREAS Clauses
                   </h4>
                   <p className="text-xs text-muted-foreground mt-0.5">
-                    Select the clause templates to include in this resolution.
+                    Legal clause sequence for this resolution document.
                   </p>
                 </div>
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setIsCreateWhereasModalOpen(true)}
-                  className="gap-1.5 text-xs text-primary border-primary/30 hover:bg-primary/5 self-start sm:self-auto"
-                >
-                  <Plus className="h-3.5 w-3.5" />
-                  Create Custom WHEREAS Template
-                </Button>
+                <div className="flex items-center gap-2 self-start sm:self-auto">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setIsCreateWhereasModalOpen(true)}
+                    className="gap-1.5 text-xs text-default-700 border-default-300 hover:bg-default-100"
+                  >
+                    <Plus className="h-3.5 w-3.5" />
+                    Create Custom Template
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="default"
+                    size="sm"
+                    onClick={() => setIsWhereasPickerOpen(true)}
+                    className="gap-1.5 text-xs font-semibold"
+                  >
+                    <FileText className="h-3.5 w-3.5" />
+                    Select WHEREAS Clauses
+                  </Button>
+                </div>
               </div>
 
               <form.Field name="whereasClauses">
                 {(field) => {
                   const currentItems: WhereasClauses[] = field.state.value || []
-                  const selectedIds = currentItems.map((c) => c.whereasClauseId)
 
-                  const toggleTemplate = (templateId: string) => {
-                    if (selectedIds.includes(templateId)) {
-                      const nextItems = currentItems
-                        .filter((c) => c.whereasClauseId !== templateId)
-                        .map((c, idx) => ({
-                          whereasClauseId: c.whereasClauseId,
-                          order: idx,
-                        }))
-                      field.handleChange(nextItems)
-                    } else {
-                      const nextItems = [
-                        ...currentItems,
-                        {
-                          whereasClauseId: templateId,
-                          order: currentItems.length,
-                        },
-                      ]
-                      field.handleChange(nextItems)
-                    }
+                  const removeItem = (templateId: string) => {
+                    const nextItems = currentItems
+                      .filter((c) => c.whereasClauseId !== templateId)
+                      .map((c, idx) => ({
+                        whereasClauseId: c.whereasClauseId,
+                        order: idx,
+                      }))
+                    field.handleChange(nextItems)
                   }
 
                   const moveUp = (index: number) => {
@@ -721,65 +723,58 @@ export const CreateBacResolutionForm = forwardRef<
                     field.handleChange(reindexed)
                   }
 
-                  return (
-                    <div className="space-y-4">
-                      <div className="space-y-2 max-h-[260px] overflow-y-auto pr-1">
-                        {isWhereasPending ? (
-                          <div className="flex flex-col items-center justify-center p-8 text-xs text-muted-foreground">
-                            <Loader2 className="h-5 w-5 animate-spin text-primary mb-2" />
-                            Loading WHEREAS clause templates...
-                          </div>
-                        ) : whereasTemplates.length === 0 ? (
-                          <div className="rounded-lg border border-dashed border-default-200 bg-default-50 p-6 text-center text-xs text-muted-foreground">
-                            No WHEREAS clause templates found in the repository. Create clause templates in the WHEREAS Clause Repository page to select them here.
-                          </div>
-                        ) : (
-                          whereasTemplates.map((template) => {
-                            const isChecked = selectedIds.includes(template.id)
-                            return (
-                              <label
-                                key={template.id}
-                                className={cn(
-                                  'flex cursor-pointer items-start gap-3 rounded-lg border p-3 transition-colors',
-                                  isChecked
-                                    ? 'border-primary bg-primary/5'
-                                    : 'border-default-200 bg-white hover:border-default-300',
-                                )}
-                              >
-                                <Checkbox
-                                  checked={isChecked}
-                                  onCheckedChange={() =>
-                                    toggleTemplate(template.id)
-                                  }
-                                  disabled={isLoading || isSubmitting}
-                                  className="mt-0.5"
-                                />
-                                <div className="flex-1 space-y-1 text-xs">
-                                  <span className="font-semibold text-default-900">
-                                    {template.name}
-                                  </span>
-                                  <p className="text-muted-foreground leading-relaxed font-serif">
-                                    {template.body}
-                                  </p>
-                                </div>
-                              </label>
-                            )
-                          })
-                        )}
-                      </div>
+                  const handleDragStart = (e: React.DragEvent, index: number) => {
+                    e.dataTransfer.setData('text/plain', index.toString())
+                    setDraggedIndex(index)
+                  }
 
-                      {/* Selected Clauses Sequence & Reordering UI */}
-                      {currentItems.length > 0 && (
-                        <div className="mt-4 space-y-2.5 border-t border-default-200 pt-4">
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
-                            <h5 className="font-semibold text-xs text-default-900 flex items-center gap-1.5">
-                              <Badge variant="secondary" className="px-2 py-0.5 text-[11px] font-bold bg-primary/10 text-primary border-primary/20">
-                                {currentItems.length} Selected
-                              </Badge>
-                              Clause Sequence & Reordering
-                            </h5>
+                  const handleDragOver = (e: React.DragEvent) => {
+                    e.preventDefault()
+                  }
+
+                  const handleDrop = (e: React.DragEvent, targetIndex: number) => {
+                    e.preventDefault()
+                    const sourceIndexStr = e.dataTransfer.getData('text/plain')
+                    const sourceIndex = sourceIndexStr ? parseInt(sourceIndexStr, 10) : draggedIndex
+                    if (sourceIndex === null || sourceIndex === undefined || isNaN(sourceIndex) || sourceIndex === targetIndex) {
+                      setDraggedIndex(null)
+                      return
+                    }
+
+                    const updated = [...currentItems]
+                    const [removed] = updated.splice(sourceIndex, 1)
+                    updated.splice(targetIndex, 0, removed)
+                    const reindexed = updated.map((item, idx) => ({ ...item, order: idx }))
+                    field.handleChange(reindexed)
+                    setDraggedIndex(null)
+                  }
+
+                  return (
+                    <div className="space-y-3">
+                      {currentItems.length === 0 ? (
+                        <div
+                          onClick={() => setIsWhereasPickerOpen(true)}
+                          className="flex flex-col items-center justify-center p-8 text-center cursor-pointer rounded-lg border-2 border-dashed border-default-200 bg-default-50/50 hover:border-primary/50 hover:bg-primary/5 transition-all group"
+                        >
+                          <div className="flex h-10 w-10 items-center justify-center rounded-full bg-white border border-default-200 text-default-400 group-hover:text-primary group-hover:border-primary/30 mb-2 shadow-2xs transition-colors">
+                            <Plus className="h-5 w-5" />
+                          </div>
+                          <p className="font-semibold text-xs text-default-800 group-hover:text-primary transition-colors">
+                            No WHEREAS clauses added yet
+                          </p>
+                          <p className="text-[11.5px] text-muted-foreground mt-0.5 max-w-sm">
+                            Click here to open the selection modal and add legal clause templates to this resolution.
+                          </p>
+                        </div>
+                      ) : (
+                        <div className="space-y-2.5">
+                          <div className="flex items-center justify-between">
+                            <Badge color="default" variant="soft" className="px-2.5 py-0.5 text-xs font-bold gap-1">
+                              <CheckCircle2 className="h-3.5 w-3.5 text-primary" />
+                              {currentItems.length} Clause{currentItems.length > 1 ? 's' : ''} in Resolution Sequence
+                            </Badge>
                             <span className="text-[11px] text-muted-foreground">
-                              Use Up/Down arrows to adjust execution order
+                              Drag rows or use arrows to adjust position
                             </span>
                           </div>
 
@@ -787,12 +782,25 @@ export const CreateBacResolutionForm = forwardRef<
                             {currentItems.map((item, index: number) => {
                               const template = whereasTemplates.find((t) => t.id === item.whereasClauseId)
                               if (!template) return null
+                              const isBeingDragged = draggedIndex === index
+
                               return (
                                 <div
                                   key={item.whereasClauseId}
-                                  className="flex items-center gap-3 rounded-lg border border-primary/30 bg-primary/5 p-2.5 text-xs transition-colors shadow-2xs"
+                                  draggable
+                                  onDragStart={(e) => handleDragStart(e, index)}
+                                  onDragOver={handleDragOver}
+                                  onDrop={(e) => handleDrop(e, index)}
+                                  onDragEnd={() => setDraggedIndex(null)}
+                                  className={cn(
+                                    'flex items-center gap-3 rounded-lg border border-default-200 bg-white p-2.5 text-xs transition-all hover:border-primary/40 hover:shadow-xs group',
+                                    isBeingDragged && 'opacity-40 border-primary border-dashed bg-primary/5',
+                                  )}
                                 >
-                                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-white font-bold text-[11px]">
+                                  <div className="cursor-grab active:cursor-grabbing text-default-400 hover:text-primary p-0.5">
+                                    <GripVertical className="h-4 w-4" />
+                                  </div>
+                                  <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-primary text-primary-foreground font-bold text-[11px] shadow-2xs">
                                     {index + 1}
                                   </div>
                                   <div className="flex-1 min-w-0">
@@ -810,7 +818,7 @@ export const CreateBacResolutionForm = forwardRef<
                                       size="icon"
                                       disabled={index === 0 || isLoading || isSubmitting}
                                       onClick={() => moveUp(index)}
-                                      className="h-7 w-7 border-default-300 bg-white text-default-700 hover:bg-default-100 disabled:opacity-30"
+                                      className="h-7 w-7 border-default-200 bg-white text-default-700 hover:bg-primary/5 hover:text-primary disabled:opacity-25"
                                       title="Move Up"
                                     >
                                       <ChevronUp className="h-4 w-4" />
@@ -821,10 +829,21 @@ export const CreateBacResolutionForm = forwardRef<
                                       size="icon"
                                       disabled={index === currentItems.length - 1 || isLoading || isSubmitting}
                                       onClick={() => moveDown(index)}
-                                      className="h-7 w-7 border-default-300 bg-white text-default-700 hover:bg-default-100 disabled:opacity-30"
+                                      className="h-7 w-7 border-default-200 bg-white text-default-700 hover:bg-primary/5 hover:text-primary disabled:opacity-25"
                                       title="Move Down"
                                     >
                                       <ChevronDown className="h-4 w-4" />
+                                    </Button>
+                                    <Button
+                                      type="button"
+                                      variant="ghost"
+                                      size="icon"
+                                      disabled={isLoading || isSubmitting}
+                                      onClick={() => removeItem(item.whereasClauseId)}
+                                      className="h-7 w-7 text-muted-foreground hover:text-destructive hover:bg-destructive/10"
+                                      title="Remove from sequence"
+                                    >
+                                      <Trash2 className="h-3.5 w-3.5" />
                                     </Button>
                                   </div>
                                 </div>
@@ -835,6 +854,16 @@ export const CreateBacResolutionForm = forwardRef<
                       )}
 
                       <FieldInfo field={field} />
+
+                      <WhereasClausePickerModal
+                        open={isWhereasPickerOpen}
+                        onOpenChange={setIsWhereasPickerOpen}
+                        templates={whereasTemplates}
+                        initialSelected={currentItems}
+                        onApply={(updatedItems) => field.handleChange(updatedItems)}
+                        onCreateCustom={() => setIsCreateWhereasModalOpen(true)}
+                        isPending={isWhereasPending}
+                      />
                     </div>
                   )
                 }}
