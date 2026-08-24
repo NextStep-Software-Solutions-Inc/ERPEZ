@@ -2245,10 +2245,17 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
   }, [currentActivityExpItemsResp?.data, groupDialogEditGroup])
 
   const existingLibActivityIds = useMemo(() => {
+    if (!ppmp) return []
     return activities
       .filter((a) => a.ppmpId === ppmp.id && a.libActivityId)
       .map((a) => a.libActivityId!)
-  }, [activities, ppmp.id])
+  }, [activities, ppmp?.id])
+
+  const isEditable = useMemo(() => {
+    if (!ppmp || ppmp.consolidatedIntoId) return false
+    const status = (ppmp.status ?? '').toLowerCase().trim()
+    return status === 'draft' || status === 'rejected'
+  }, [ppmp])
 
   // Current PPMP budget context for progress bars
   const totalPpmpBudget = useMemo(() => {
@@ -3013,15 +3020,12 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
             expandedIds={expandedActivityIds}
             onToggleExpand={toggleExpandActivity}
             onAdd={
-              activeTab === 'overview' &&
-                !ppmp.consolidatedIntoId &&
-                (ppmp.status?.toLowerCase() === 'draft' ||
-                  ppmp.status?.toLowerCase() === 'rejected')
+              activeTab === 'overview' && isEditable
                 ? () => setAddDialogOpen(true)
                 : undefined
             }
             onRequestDelete={
-              !ppmp.consolidatedIntoId ? requestDeleteActivity : undefined
+              isEditable ? requestDeleteActivity : undefined
             }
             totalPpmpBudget={totalPpmpBudget}
             masterPpmpId={ppmp.id}
@@ -3033,37 +3037,37 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
             <RightPane
               activity={selectedActivity}
               onAddItem={
-                selectedActivity?.ppmpId === ppmp.id && !ppmp.consolidatedIntoId
+                selectedActivity?.ppmpId === ppmp.id && isEditable
                   ? handleAddItem
                   : undefined
               }
               onEditItem={
-                selectedActivity?.ppmpId === ppmp.id && !ppmp.consolidatedIntoId
+                selectedActivity?.ppmpId === ppmp.id && isEditable
                   ? handleEditItem
                   : undefined
               }
               onDeleteItem={
-                selectedActivity?.ppmpId === ppmp.id && !ppmp.consolidatedIntoId
+                selectedActivity?.ppmpId === ppmp.id && isEditable
                   ? handleDeleteItem
                   : undefined
               }
               onAddGroup={
-                selectedActivity?.ppmpId === ppmp.id && !ppmp.consolidatedIntoId
+                selectedActivity?.ppmpId === ppmp.id && isEditable
                   ? handleAddGroup
                   : undefined
               }
               onEditGroup={
-                selectedActivity?.ppmpId === ppmp.id && !ppmp.consolidatedIntoId
+                selectedActivity?.ppmpId === ppmp.id && isEditable
                   ? handleEditGroup
                   : undefined
               }
               onDeleteGroup={
-                selectedActivity?.ppmpId === ppmp.id && !ppmp.consolidatedIntoId
+                selectedActivity?.ppmpId === ppmp.id && isEditable
                   ? handleDeleteGroup
                   : undefined
               }
               onEditAllocations={
-                selectedActivity?.ppmpId === ppmp.id && !ppmp.consolidatedIntoId
+                selectedActivity?.ppmpId === ppmp.id && isEditable
                   ? handleEditAllocations
                   : undefined
               }

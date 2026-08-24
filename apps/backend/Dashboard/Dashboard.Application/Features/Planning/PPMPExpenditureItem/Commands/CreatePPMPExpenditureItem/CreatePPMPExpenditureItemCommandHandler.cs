@@ -14,6 +14,9 @@ public class CreatePPMPExpenditureItemCommandHandler(IUnitOfWork unitOfWork)
         var ppmp = await unitOfWork.PPMPRepository.GetByIdAsync(request.PPMPId, cancellationToken)
             ?? throw new NotFoundException("PPMP not found.");
 
+        if (ppmp.Status is StatusEnum.Submitted or StatusEnum.Approved or StatusEnum.ForApproval)
+            throw new BadRequestException($"Cannot add expenditure items when PPMP status is {ppmp.Status}.");
+
         if (!ppmp.LIBId.HasValue)
             throw new ValidationException("This PPMP has no LIB linked.");
 

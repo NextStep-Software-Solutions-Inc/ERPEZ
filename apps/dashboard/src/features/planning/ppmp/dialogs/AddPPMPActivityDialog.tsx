@@ -169,7 +169,7 @@ export default function AddPPMPActivityDialog({
         </div>
       }
     >
-      <div className="p-3">
+      <div className="p-1 text-left">
         <form
           id="add-ppmp-activity-form"
           onSubmit={(e) => {
@@ -177,13 +177,15 @@ export default function AddPPMPActivityDialog({
             e.stopPropagation()
             form.handleSubmit()
           }}
-          className="space-y-4"
+          className="space-y-4 text-left"
         >
           <form.Field
             name="libActivityId"
             children={(field) => (
-              <div className="space-y-2">
-                <Label htmlFor={field.name}>LIB Activity</Label>
+              <div className="space-y-2 text-left">
+                <Label htmlFor={field.name} className="text-left block text-xs font-semibold text-slate-700">
+                  LIB Activity
+                </Label>
                 <Select
                   value={field.state.value}
                   onValueChange={field.handleChange}
@@ -193,7 +195,7 @@ export default function AddPPMPActivityDialog({
                     availableLibActivities.length === 0
                   }
                 >
-                  <SelectTrigger id={field.name} className="w-full text-left">
+                  <SelectTrigger id={field.name} className="w-full text-left justify-between [&>span]:text-left [&>span]:truncate [&>span]:block">
                     <SelectValue
                       placeholder={
                         isLibActsLoading
@@ -204,10 +206,10 @@ export default function AddPPMPActivityDialog({
                       }
                     />
                   </SelectTrigger>
-                  <SelectContent>
+                  <SelectContent align="start" className="text-left">
                     {availableLibActivities.map((a: any) => (
-                      <SelectItem key={a.id} value={a.id}>
-                        {a.name || a.id}
+                      <SelectItem key={a.id} value={a.id} className="text-left justify-start cursor-pointer">
+                        <span className="text-left truncate">{a.name || a.id}</span>
                       </SelectItem>
                     ))}
                   </SelectContent>

@@ -13,6 +13,9 @@ public class CreatePPMPActivityCommandHandler(IUnitOfWork unitOfWork)
         var ppmp = await unitOfWork.PPMPRepository.GetByIdAsync(request.PPMPId, cancellationToken)
             ?? throw new NotFoundException("PPMP not found.");
 
+        if (ppmp.Status is Domain.Enums.StatusEnum.Submitted or Domain.Enums.StatusEnum.Approved or Domain.Enums.StatusEnum.ForApproval)
+            throw new BadRequestException($"Cannot add activities when PPMP status is {ppmp.Status}.");
+
         var libActivity = await unitOfWork.LineItemBudgetActivityRepository.GetByIdAsync(request.LIBActivityId, cancellationToken)
             ?? throw new NotFoundException("LIB Activity not found.");
 
