@@ -3,21 +3,20 @@ import { ResponsiveDialogDashtail } from '@/components/ResponsiveDialogDashtail'
 import { Button } from '@/components/ui/button'
 import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
 import { toast } from 'sonner'
-import type { CreateBacResolutionPayload } from '../handlers/createBacResolutionRequest'
-import { useCreateBacResolution } from '../handlers/hooks'
+import { createBacResolutionRequest, type CreateBacResolutionPayload } from '../handlers/createBacResolutionRequest'
 import {
   CreateBacResolutionForm,
   type CreateBacResolutionWizardRef,
 } from '../forms/CreateBacResolutionForm'
 import { ChevronLeft, ChevronRight } from 'lucide-react'
-import { useQueryClient } from 'erpez-shared-lib'
+import { createMutationHookFromTemplate, useQueryClient } from 'erpez-shared-lib'
 
 interface CreateBacResolutionDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
 
 }
-
+const useCreateBacResolution = createMutationHookFromTemplate(createBacResolutionRequest)
 export function CreateBacResolutionDialog({
   open,
   onOpenChange,

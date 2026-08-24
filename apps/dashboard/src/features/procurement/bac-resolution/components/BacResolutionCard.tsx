@@ -42,7 +42,7 @@ export function BacResolutionCard({
   const title =
     resolution.title ||
     resolution.APPItem?.ppmpItemName ||
-    resolution.consolidatedPR?.projectName ||
+    resolution.consolidatedPR?.description ||
     'Procurement Project'
   const totalAmount = resolution.abc || 0
   const status = resolution.status || 'draft'
@@ -120,7 +120,7 @@ export function BacResolutionCard({
                   Edit Draft
                 </DropdownMenuItem>
               )}
-              {status === 'draft' && onDelete && (
+              {onDelete && (
                 <DropdownMenuItem
                   onClick={(e) => {
                     e.stopPropagation()
@@ -129,7 +129,7 @@ export function BacResolutionCard({
                   className="cursor-pointer text-destructive focus:text-destructive gap-2"
                 >
                   <Trash className="h-4 w-4" />
-                  Delete Draft
+                  Delete
                 </DropdownMenuItem>
               )}
             </DropdownMenuContent>
