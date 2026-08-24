@@ -1,17 +1,19 @@
-import type { QueryBlueprintFromTemplate } from 'erpez-shared-lib'
-import type { BacResolutionListItem } from '../types'
+import type { PaginationResponse, QueryBlueprintFromTemplate, QueryKey, QueryParams } from 'erpez-shared-lib'
+import type { BacProject } from '../types'
 import api from '@/services/api'
 
 const endpoint = '/bac/projects'
 
 export const getBacResolutionsRequest: QueryBlueprintFromTemplate<
   typeof endpoint,
-  BacResolutionListItem[]
+  PaginationResponse<BacProject>,
+  QueryParams,
+  QueryKey
 > = {
   endpoint,
-  key: ({ url }) => ['bac-resolutions', url] as const,
+  key: ({ url }) => [url],
   fetcher: async ({ finalUrl, signal }) => {
-    const response = await api.get<BacResolutionListItem[]>(finalUrl, {
+    const response = await api.get<PaginationResponse<BacProject>>(finalUrl, {
       signal,
     })
     return response.data

@@ -180,7 +180,6 @@ export type BacResolution = {
   createdPrNumber?: string | null
 }
 
-export type BacResolutionListItem = BacResolution
 
 export type LinkConsolidatedPrsPayload = {
   bacResolutionId: string
