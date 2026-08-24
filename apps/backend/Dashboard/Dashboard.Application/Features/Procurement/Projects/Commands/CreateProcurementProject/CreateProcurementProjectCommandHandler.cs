@@ -42,9 +42,9 @@ public class CreateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
             }
 
             // Authoritative Hydration from DB
-            projectTitle = !string.IsNullOrWhiteSpace(appItem.Remarks)
-                ? appItem.Remarks
-                : (appItem.PPMPItem != null && !string.IsNullOrWhiteSpace(appItem.PPMPItem.Name) ? appItem.PPMPItem.Name : (request.Title ?? "APP Procurement Project"));
+            projectTitle = (appItem.PPMPItem != null && !string.IsNullOrWhiteSpace(appItem.PPMPItem.Name))
+                ? appItem.PPMPItem.Name
+                : (!string.IsNullOrWhiteSpace(request.Title) ? request.Title : (!string.IsNullOrWhiteSpace(appItem.Remarks) ? appItem.Remarks : "APP Procurement Project"));
 
             decimal inheritedAbc = appItem.EffectiveABC;
 
