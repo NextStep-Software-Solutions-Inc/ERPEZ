@@ -22,6 +22,15 @@ import { cn } from '@/lib/utils'
 import { fetchUsers, type User } from '@/services/api/users'
 import api from '@/services/api'
 
+interface ScopingActivityOption {
+  id: string
+  name: string
+  budget: number
+  lineItemBudgetId?: string
+  isScoped?: boolean
+  scopedMsfCode?: string
+}
+
 interface ProjectOverviewFormProps {
   libActivities?: readonly { readonly id: string; readonly name: string; readonly budget: number }[]
   userProfile?: {

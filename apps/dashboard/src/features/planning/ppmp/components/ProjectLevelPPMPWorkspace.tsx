@@ -81,16 +81,16 @@ export function ProjectLevelPPMPWorkspace({
       <div className="sticky top-0 z-10 bg-white/95 px-5 py-4 border-b border-default-200 flex flex-col md:flex-row md:items-center justify-between gap-3 backdrop-blur">
         <div>
           <div className="flex items-center gap-2">
-            <h3 className="text-sm font-bold text-default-900 tracking-tight">
+            <h3 className="text-base font-semibold text-default-900 tracking-tight">
               {ppmp.libName || lib?.name || 'Project-Level Procurement Plan'}
             </h3>
-            <span className="text-[10px] font-bold uppercase tracking-wider px-2 py-0.5 rounded-full bg-primary/10 text-primary">
+            <span className="text-[10px] font-medium uppercase tracking-wide px-2.5 py-0.5 rounded-full bg-primary/10 text-primary">
               Project Scope
             </span>
           </div>
           <p className="text-xs text-default-500 mt-0.5">
             Allocated Budget:{' '}
-            <span className="font-bold text-default-800">
+            <span className="font-semibold text-default-800">
               {formatCurrency(allocatedBudget)}
             </span>
           </p>
@@ -102,9 +102,9 @@ export function ProjectLevelPPMPWorkspace({
             type="button"
             onClick={() => setActiveTab('items')}
             className={cn(
-              'px-3 py-1.5 text-xs font-semibold rounded-md transition-all',
+              'px-3 py-1.5 text-xs font-medium rounded-md transition-all',
               activeTab === 'items'
-                ? 'bg-white text-default-950 shadow-sm'
+                ? 'bg-white text-default-900 shadow-sm font-semibold'
                 : 'text-default-500 hover:text-default-700',
             )}
           >
@@ -114,50 +114,14 @@ export function ProjectLevelPPMPWorkspace({
             type="button"
             onClick={() => setActiveTab('schedule')}
             className={cn(
-              'px-3 py-1.5 text-xs font-semibold rounded-md transition-all',
+              'px-3 py-1.5 text-xs font-medium rounded-md transition-all',
               activeTab === 'schedule'
-                ? 'bg-white text-default-950 shadow-sm'
+                ? 'bg-white text-default-900 shadow-sm font-semibold'
                 : 'text-default-500 hover:text-default-700',
             )}
           >
             Monthly Schedule
           </button>
-        </div>
-      </div>
-
-      {/* Hero Metadata Strip */}
-      <div className="px-5 py-4 bg-default-50/60 border-b border-default-200 grid grid-cols-2 md:grid-cols-4 gap-4 shrink-0">
-        <div>
-          <span className="text-[10px] font-bold text-default-400 uppercase tracking-wider block">
-            Allocated Budget
-          </span>
-          <span className="text-sm font-bold text-default-900 mt-0.5 block">
-            {formatCurrency(allocatedBudget)}
-          </span>
-        </div>
-        <div>
-          <span className="text-[10px] font-bold text-default-400 uppercase tracking-wider block">
-            Items Cost (Fetched)
-          </span>
-          <span className="text-sm font-bold text-default-950 mt-0.5 block">
-            {formatCurrency(serverFetchedCost)}
-          </span>
-        </div>
-        <div>
-          <span className="text-[10px] font-bold text-default-400 uppercase tracking-wider block">
-            Expenditure Items
-          </span>
-          <span className="text-sm font-bold text-default-900 mt-0.5 block">
-            {expenditureItems.length} items
-          </span>
-        </div>
-        <div>
-          <span className="text-[10px] font-bold text-default-400 tracking-wider uppercase block">
-            Item Capacity
-          </span>
-          <span className="text-sm font-bold text-default-900 mt-0.5 block">
-            {totalRegisteredItems} registered
-          </span>
         </div>
       </div>
 
