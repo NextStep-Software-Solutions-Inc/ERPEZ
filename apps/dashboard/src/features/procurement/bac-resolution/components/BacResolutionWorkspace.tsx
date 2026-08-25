@@ -25,9 +25,12 @@ import type {
 import { ClauseTemplateManagerDialog } from './ClauseTemplateManagerDialog'
 import { createMutationHookFromTemplate, useQueryClient } from 'erpez-shared-lib'
 import { deleteBacResolutionRequest } from '../handlers/deleteBacResolutionRequest'
+import { updateBacResolutionRequest } from '../handlers/updateBacResolutionRequest'
+import { CreateBacResolutionPayload } from '../handlers/createBacResolutionRequest'
 import { toast } from 'sonner'
 
 const useDeleteBacResolution = createMutationHookFromTemplate(deleteBacResolutionRequest)
+const useUpdateBacResolution = createMutationHookFromTemplate(updateBacResolutionRequest)
 
 interface BacResolutionWorkspaceProps {
   role: BacResolutionRole
@@ -70,6 +73,7 @@ export function BacResolutionWorkspace({
   })
   const queryClient = useQueryClient()
   const { mutateAsync: deleteBacProject } = useDeleteBacResolution()
+  const { mutateAsync: updateBacProject } = useUpdateBacResolution()
 
   // Filter & Queue Search States
   const [searchValue, setSearchValue] = useState('')
@@ -167,7 +171,32 @@ export function BacResolutionWorkspace({
     }
   }
 
-  const handleUpdate = () => { }
+  const handleUpdate = async (id: string, payload: CreateBacResolutionPayload) => {
+    try {
+      await toast.promise(
+        updateBacProject(
+          { pathParams: { id }, payload },
+          {
+            onSuccess: async () => {
+              void queryClient.invalidateQueries({
+                predicate: (query) =>
+                  typeof query.queryKey[0] === 'string' &&
+                  query.queryKey[0].startsWith('/bac/projects'),
+              })
+            },
+          },
+        ),
+        {
+          loading: 'Updating BAC Project...',
+          success: 'BAC Project updated successfully!',
+          error: (err) =>
+            err instanceof Error ? err.message : 'Failed to update BAC Project.',
+        },
+      )
+    } catch {
+      // toast handles presentation
+    }
+  }
   const handleLink = (_payload: LinkConsolidatedPrsPayload) => { }
   const handleSubmit = () => { setSubmitConfirmOpen(true) }
   const handleConfirmSubmit = () => { setSubmitConfirmOpen(false) }

@@ -2,7 +2,7 @@ import { useState, useEffect, useRef } from 'react'
 import { ResponsiveDialogDashtail } from '@/components/ResponsiveDialogDashtail'
 import { Button } from '@/components/ui/button'
 import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
-import type { BacResolution } from '../types'
+import type { BacResolution, BacProject } from '../types'
 import {
   CreateBacResolutionForm,
   type CreateBacResolutionWizardRef,
@@ -12,7 +12,7 @@ import { CreateBacResolutionPayload } from '../handlers/createBacResolutionReque
 interface EditBacResolutionDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  resolution?: BacResolution
+  resolution?: BacProject
   onUpdate: (id: string, values: CreateBacResolutionPayload) => Promise<void> | void
 }
 
@@ -70,21 +70,16 @@ export function EditBacResolutionDialog({
 
   if (!resolution) return null
 
-  // Map BacResolution back to the edit payload fields
+  // Map BacProject or BacResolution back to edit form payload fields
   const initialValues: Partial<CreateBacResolutionPayload> = {
-    title: resolution.description || '',
-    abc: resolution.totalAmount || 0,
-    resolutionType: resolution.resolutionType || 'award-recommendation',
-    bacResolutionNumber: resolution.bacResolutionNumber,
-    resolutionNumber: resolution.bacResolutionNumber,
-    resolutionDate: resolution.resolutionDate,
-    dateResolved: resolution.resolutionDate,
-    description: resolution.description,
-    resolvedDateText: resolution.resolvedDateText,
-    resolvedLocationText: resolution.resolvedLocationText,
-    whereasClauses: resolution.whereasClauses,
-    provisionalMembers: resolution.provisionalMembers,
-    signatoryOverrides: resolution.signatoryOverrides,
+    title: resolution.title,
+    resolutionType: resolution.resolutionType,
+    resolutionNumber: resolution.resolutionNumber,
+    dateResolved: resolution.dateResolved,
+    resolvedLocation: resolution.resolvedLocation,
+    whereasClauses: (resolution). || [],
+    endUserRepresentativeId: (resolution as any).endUserRepresentativeId || null,
+    techRepresentativeId: (resolution as any).techRepresentativeId || null,
   }
 
   return (
