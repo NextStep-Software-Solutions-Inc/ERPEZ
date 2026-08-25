@@ -2,18 +2,22 @@ import { useState, useEffect, useRef } from 'react'
 import { ResponsiveDialogDashtail } from '@/components/ResponsiveDialogDashtail'
 import { Button } from '@/components/ui/button'
 import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
-import type { BacResolution, BacProject } from '../types'
+import type { BacProject, BacProjectDetails } from '../types'
 import {
-  CreateBacResolutionForm,
-  type CreateBacResolutionWizardRef,
-} from '../forms/CreateBacResolutionForm'
-import { CreateBacResolutionPayload } from '../handlers/createBacResolutionRequest'
+  EditBacResolutionForm,
+  type EditBacResolutionFormRef,
+} from '../forms/EditBacResolutionForm'
+import { createQueryHookFromTemplate } from 'erpez-shared-lib'
+import { getBacResolutionRequest } from '../handlers/getBacResolutionRequest'
+import { UpdateBacProjectPayload } from '../handlers/updateBacResolutionRequest'
+
+const useBacResolution = createQueryHookFromTemplate(getBacResolutionRequest)
 
 interface EditBacResolutionDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  resolution?: BacProject
-  onUpdate: (id: string, values: CreateBacResolutionPayload) => Promise<void> | void
+  resolution?: BacProject | BacProjectDetails
+  onUpdate: (id: string, values: UpdateBacProjectPayload) => Promise<void> | void
 }
 
 export function EditBacResolutionDialog({
@@ -25,9 +29,14 @@ export function EditBacResolutionDialog({
   const [isDirty, setIsDirty] = useState(false)
   const [showDiscardWarning, setShowDiscardWarning] = useState(false)
   const [showSaveConfirm, setShowSaveConfirm] = useState(false)
-  const [pendingValues, setPendingValues] = useState<CreateBacResolutionPayload | null>(null)
-  const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(3)
-  const wizardRef = useRef<CreateBacResolutionWizardRef>(null)
+  const [pendingValues, setPendingValues] = useState<UpdateBacProjectPayload | null>(null)
+  const formRef = useRef<EditBacResolutionFormRef>(null)
+
+  const { data: detailsData } = useBacResolution({
+    pathParams: { id: resolution?.id || '' },
+    queryParams: {},
+    enabled: open && !!resolution?.id
+  })
 
   // Reset dirty status on open change
   useEffect(() => {
@@ -35,7 +44,6 @@ export function EditBacResolutionDialog({
       setIsDirty(false)
       setShowSaveConfirm(false)
       setPendingValues(null)
-      setCurrentStep(3)
     }
   }, [open])
 
@@ -48,14 +56,14 @@ export function EditBacResolutionDialog({
     onOpenChange(nextOpen)
   }
 
-  const handleSubmitForm = (values: CreateBacResolutionPayload) => {
+  const handleSubmitForm = (values: UpdateBacProjectPayload) => {
     setPendingValues(values)
     setShowSaveConfirm(true)
   }
 
   const handleSaveClick = async () => {
-    if (wizardRef.current) {
-      await wizardRef.current.submit()
+    if (formRef.current) {
+      await formRef.current.submit()
     }
   }
 
@@ -70,16 +78,31 @@ export function EditBacResolutionDialog({
 
   if (!resolution) return null
 
-  // Map BacProject or BacResolution back to edit form payload fields
-  const initialValues: Partial<CreateBacResolutionPayload> = {
-    title: resolution.title,
-    resolutionType: resolution.resolutionType,
-    resolutionNumber: resolution.resolutionNumber,
-    dateResolved: resolution.dateResolved,
-    resolvedLocation: resolution.resolvedLocation,
-    whereasClauses: (resolution). || [],
-    endUserRepresentativeId: (resolution as any).endUserRepresentativeId || null,
-    techRepresentativeId: (resolution as any).techRepresentativeId || null,
+  // Extract inner BACResolution if present on full project response or resolution object
+  const fullProject = detailsData?.data || (resolution as BacProjectDetails)
+  const resDetail = fullProject.bacResolutions?.[0]
+
+  // Map existing resolution & project details to edit form initial values
+  const rawWhereas = fullProject.whereasClauses || resDetail?.whereasClauses || []
+  const prepopulatedClauses = rawWhereas
+    .map((c: Record<string, unknown>, idx: number) => ({
+      whereasClauseId: String(c.whereasClauseId || c.id || ''),
+      order: typeof c.order === 'number' ? c.order : idx,
+      name: (c.name || c.title || '') as string,
+      body: (c.body || c.content || '') as string,
+    }))
+    .filter((c) => !!c.whereasClauseId)
+
+  const initialValues: Partial<UpdateBacProjectPayload & { abc?: number }> = {
+    title: fullProject.title || fullProject.appItem?.ppmpItemName || fullProject.consolidatedPR?.description || '',
+    abc: fullProject.abc,
+    resolutionType: fullProject.resolutionType || resDetail?.resolutionType || 'award-recommendation',
+    resolutionNumber: fullProject.resolutionNumber || resDetail?.resolutionNumber || '',
+    dateResolved: fullProject.dateResolved || resDetail?.dateResolved || '',
+    resolvedLocation: fullProject.resolvedLocation || resDetail?.resolvedLocation || '',
+    whereasClauses: prepopulatedClauses,
+    endUserRepresentativeId: fullProject.endUserRepresentativeId || fullProject.endUserRepresentative?.id || undefined,
+    techRepresentativeId: fullProject.techRepresentativeId || fullProject.techRepresentative?.id || undefined,
   }
 
   return (
@@ -105,10 +128,8 @@ export function EditBacResolutionDialog({
           </div>
         }
       >
-        <CreateBacResolutionForm
-          ref={wizardRef}
-          currentStep={currentStep}
-          setCurrentStep={setCurrentStep}
+        <EditBacResolutionForm
+          ref={formRef}
           initialValues={initialValues}
           onSubmit={handleSubmitForm}
           onCancel={() => handleOpenChange(false)}

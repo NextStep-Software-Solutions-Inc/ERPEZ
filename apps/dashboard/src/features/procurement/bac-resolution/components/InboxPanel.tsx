@@ -101,8 +101,11 @@ export function InboxPanel({
   const rawProjects = useMemo<BacProject[]>(() => {
     if (!responseData) return []
     if (Array.isArray(responseData)) return responseData
-    if (Array.isArray((responseData as any).data)) return (responseData as any).data
-    if (Array.isArray((responseData as any).items)) return (responseData as any).items
+    if (typeof responseData === 'object' && responseData !== null) {
+      const record = responseData as Record<string, unknown>
+      if (Array.isArray(record.data)) return record.data as BacProject[]
+      if (Array.isArray(record.items)) return record.items as BacProject[]
+    }
     return []
   }, [responseData])
 
@@ -134,7 +137,7 @@ export function InboxPanel({
           const term = searchValue.toLowerCase()
           const titleMatch = (item.title || '').toLowerCase().includes(term)
           const numMatch = (item.resolutionNumber || '').toLowerCase().includes(term)
-          const appMatch = (item.APPItem?.ppmpItemName || '').toLowerCase().includes(term)
+          const appMatch = (item.appItem?.ppmpItemName || '').toLowerCase().includes(term)
           const prMatch = (item.consolidatedPR?.description || '').toLowerCase().includes(term)
           if (!titleMatch && !numMatch && !appMatch && !prMatch) return false
         }

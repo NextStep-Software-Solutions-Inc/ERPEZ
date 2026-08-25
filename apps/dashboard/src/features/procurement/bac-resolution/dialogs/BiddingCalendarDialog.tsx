@@ -301,7 +301,7 @@ export function BiddingCalendarDialog({
                 <ArrowUpDown className="h-4 w-4 text-muted-foreground shrink-0" />
                 <select
                   value={sortBy}
-                  onChange={(e) => setSortBy(e.target.value as any)}
+                  onChange={(e) => setSortBy(e.target.value as 'date-asc' | 'date-desc' | 'title-asc' | 'title-desc')}
                   className="flex h-10 rounded-md border border-input bg-background px-3 py-2 text-sm focus-visible:outline-hidden focus-visible:ring-2 focus-visible:ring-ring"
                 >
                   <option value="date-asc">Date (Oldest First)</option>

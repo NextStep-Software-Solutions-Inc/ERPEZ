@@ -7,12 +7,18 @@ interface BacResolutionExecutionBadgesProps {
   helperTextClassName?: string
 }
 
+type ExecutionState = {
+  label?: string
+  secondaryLabel?: string
+  helperText?: string
+} | null
+
 export function BacResolutionExecutionBadges({
-  resolution,
+  resolution: _resolution,
   showHelperText = false,
   helperTextClassName = 'text-xs text-muted-foreground',
 }: BacResolutionExecutionBadgesProps) {
-  const executionState = {} as any
+  const executionState: ExecutionState = null
   return (
     <div className="flex flex-wrap items-center gap-1.5">
       {executionState ? (

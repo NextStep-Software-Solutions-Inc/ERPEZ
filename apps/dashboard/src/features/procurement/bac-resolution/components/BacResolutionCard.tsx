@@ -41,11 +41,16 @@ export function BacResolutionCard({
 }: BacResolutionCardProps) {
   const title =
     resolution.title ||
-    resolution.APPItem?.ppmpItemName ||
+    resolution.appItem?.ppmpItemName ||
     resolution.consolidatedPR?.description ||
     'Procurement Project'
   const totalAmount = resolution.abc || 0
   const status = resolution.status || 'draft'
+  const isEditable =
+    status === 'draft' ||
+    status === 'returned' ||
+    (status as string).toLowerCase() === 'draft' ||
+    (status as string).toLowerCase() === 'returned'
   const resNumber = resolution.resolutionNumber || 'Unassigned'
 
   const handleKeyDown = (event: KeyboardEvent<HTMLDivElement>) => {
@@ -82,7 +87,7 @@ export function BacResolutionCard({
         </span>
 
         <div className="flex items-center gap-1.5 shrink-0">
-          <BacResolutionStatusBadge status={status as any} />
+          <BacResolutionStatusBadge status={status} />
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button
@@ -95,7 +100,10 @@ export function BacResolutionCard({
                 <span className="sr-only">Actions</span>
               </Button>
             </DropdownMenuTrigger>
-            <DropdownMenuContent align="end" onClick={(e) => e.stopPropagation()}>
+            <DropdownMenuContent
+              align="end"
+              onClick={(e) => e.stopPropagation()}
+            >
               <DropdownMenuItem
                 onClick={(e) => {
                   e.stopPropagation()
@@ -108,7 +116,7 @@ export function BacResolutionCard({
                 <Eye className="h-4 w-4" />
                 View Full Details
               </DropdownMenuItem>
-              {status === 'draft' && onEdit && (
+              {onEdit && isEditable && (
                 <DropdownMenuItem
                   onClick={(e) => {
                     e.stopPropagation()
@@ -117,7 +125,7 @@ export function BacResolutionCard({
                   className="cursor-pointer gap-2"
                 >
                   <Edit className="h-4 w-4" />
-                  Edit Draft
+                  Edit Resolution
                 </DropdownMenuItem>
               )}
               {onDelete && (
@@ -166,3 +174,4 @@ export function BacResolutionCard({
 }
 
 export default BacResolutionCard
+

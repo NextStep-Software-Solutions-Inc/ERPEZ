@@ -56,11 +56,11 @@ export function ClauseTemplateManagerDialog({
     throw new Error('Function not implemented.')
   }
 
-  function setDeleteTargetId(id: any) {
+  function setDeleteTargetId(id: string | null) {
     throw new Error('Function not implemented.')
   }
 
-  function removeTemplate(deleteTargetId: any): void {
+  function removeTemplate(deleteTargetId: string | null): void {
     throw new Error('Function not implemented.')
   }
 

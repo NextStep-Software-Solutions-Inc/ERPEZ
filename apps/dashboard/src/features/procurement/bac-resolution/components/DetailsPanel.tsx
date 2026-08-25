@@ -17,13 +17,19 @@ import {
   Link as LinkIcon,
   CheckCircle2,
   Clock,
+  Edit,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { BacResolutionStatusBadge } from './index'
-import type { BacResolutionRole, BacResolutionWhereasClause, BacResolutionLogEntry } from '../types'
+import type {
+  BacResolutionRole,
+  BacResolutionWhereasClause,
+  BacResolutionLogEntry,
+  BacProjectDetails,
+} from '../types'
 import { createQueryHookFromTemplate } from 'erpez-shared-lib'
 import { getBacResolutionRequest } from '../handlers/getBacResolutionRequest'
 
@@ -33,6 +39,7 @@ interface DetailsPanelProps {
   selectedId: string | null
   role: BacResolutionRole
   isLoading?: boolean
+  onEdit?: (project?: BacProjectDetails) => void
   onLinkPrs?: () => void
   onPrint?: () => void | Promise<void>
   onSubmit?: () => void | Promise<void>
@@ -45,6 +52,7 @@ export function DetailsPanel({
   selectedId,
   role,
   isLoading = false,
+  onEdit,
   onLinkPrs,
   onPrint,
   onSubmit,
@@ -109,12 +117,12 @@ export function DetailsPanel({
   // Real Data Extraction & Mapping from Backend Response
   const sourceType =
     selectedProject.sourceType ||
-    (selectedProject.APPItem ? 'APPItem' : 'ConsolidatedPR')
+    (selectedProject.appItem ? 'APPItem' : 'ConsolidatedPR')
   const isAppItemSource = sourceType === 'APPItem'
 
   const title =
     selectedProject.title ||
-    selectedProject.APPItem?.ppmpItemName ||
+    selectedProject.appItem?.ppmpItemName ||
     selectedProject.consolidatedPR?.description
 
 
@@ -129,29 +137,17 @@ export function DetailsPanel({
   const isReturned = status === 'returned'
 
   const officeName =
-    selectedProject.APPItem?.Office?.name ||
-    selectedProject.APPItem?.officeName ||
-    selectedProject.consolidatedPR?.selectedPRItems?.[0]?.prOffice ||
-    selectedProject.consolidatedPR?.purpose ||
-    'N/A'
+    selectedProject.appItem?.Office?.name
 
   const procurementMode =
-    selectedProject.APPItem?.ProcurementMode?.name ||
-    selectedProject.APPItem?.procurementModeName ||
-    (selectedProject.consolidatedPR?.itemMOPs
-      ? Object.values(selectedProject.consolidatedPR.itemMOPs)[0]?.mop
-      : null) ||
-    'N/A'
-
+    selectedProject.appItem?.ProcurementMode?.name
   const fundSource =
-    selectedProject.APPItem?.FundSource?.name ||
-    selectedProject.APPItem?.fundSourceName ||
-    selectedProject.consolidatedPR?.selectedPRItems?.[0]?.fund ||
-    'General Fund'
+    selectedProject.appItem?.FundSource?.name
+  // 'General Fund'
 
   const endUserRep = selectedProject.endUserRepresentative
     ? `${selectedProject.endUserRepresentative.firstName} ${selectedProject.endUserRepresentative.lastName}`
-    : selectedProject.APPItem?.Office?.name || officeName
+    : selectedProject.appItem?.Office?.name || officeName
 
   const techRep = selectedProject.techRepresentative
     ? `${selectedProject.techRepresentative.firstName} ${selectedProject.techRepresentative.lastName}`
@@ -205,6 +201,18 @@ export function DetailsPanel({
 
             {/* Quick Actions in Header Banner */}
             <div className="flex flex-wrap items-center gap-2">
+              {onEdit && (isDraft || isReturned) && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => onEdit(selectedProject)}
+                  disabled={isLoading}
+                  className="gap-1.5 text-xs border-amber-300 text-amber-700 hover:bg-amber-50 dark:border-amber-700 dark:text-amber-400 dark:hover:bg-amber-950/50"
+                >
+                  <Edit className="h-3.5 w-3.5" />
+                  Edit
+                </Button>
+              )}
               {isApproved && onCreatePr && (
                 <Button
                   size="sm"

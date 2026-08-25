@@ -12,15 +12,20 @@ import { Badge } from '@/components/ui/badge'
 import { ScrollText, Plus, BookOpen } from 'lucide-react'
 import InboxPanel from './InboxPanel'
 import DetailsPanel from './DetailsPanel'
-import DialogsController from './DialogsController'
 import { CreateBacResolutionDialog } from '../dialogs/CreateBacResolutionDialog'
+import { EditBacResolutionDialog } from '../dialogs/EditBacResolutionDialog'
+import { ViewBacResolutionDetailsDialog } from '../dialogs/ViewBacResolutionDetailsDialog'
+import { ViewConsolidatedPrDetailsDialog } from '../dialogs/ViewConsolidatedPrDetailsDialog'
+import { BacResolutionDocumentPreviewModal } from '../dialogs/BacResolutionDocumentPreviewModal'
+import { CreatePrFromBacModal } from '../dialogs/CreatePrFromBacModal'
+import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
 import type {
   BacResolutionListRoutePath,
   BacResolutionInboxFilter,
   BacResolutionRole,
   BacResolutionWorkspaceScope,
   BacProject,
-  LinkConsolidatedPrsPayload,
+  BacProjectDetails,
 } from '../types'
 import { ClauseTemplateManagerDialog } from './ClauseTemplateManagerDialog'
 import { createMutationHookFromTemplate, useQueryClient } from 'erpez-shared-lib'
@@ -103,10 +108,7 @@ export function BacResolutionWorkspace({
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [detailsResolutionId, setDetailsResolutionId] = useState<string | null>(null)
   const [viewConsolidatedPrOpen, setViewConsolidatedPrOpen] = useState(false)
-  const [viewConsolidatedPrId, setViewConsolidatedPrId] = useState<string | null>(null)
-  const [linkOpen, setLinkOpen] = useState(false)
-  const [approveOpen, setApproveOpen] = useState(false)
-  const [returnOpen, setReturnOpen] = useState(false)
+
   const [submitConfirmOpen, setSubmitConfirmOpen] = useState(false)
   const [docPreviewOpen, setDocPreviewOpen] = useState(false)
   const [createPrModalOpen, setCreatePrModalOpen] = useState(false)
@@ -122,10 +124,6 @@ export function BacResolutionWorkspace({
   }, [])
 
   // Handlers
-  const handleViewConsolidatedPrDetails = (consolidatedPrId: string) => {
-    setViewConsolidatedPrId(consolidatedPrId)
-    setViewConsolidatedPrOpen(true)
-  }
 
   const handleDelete = (id: string) => {
     setResolutionToDeleteId(id)
@@ -175,7 +173,10 @@ export function BacResolutionWorkspace({
     try {
       await toast.promise(
         updateBacProject(
-          { pathParams: { id }, payload },
+          {
+            pathParams: { id }, queryParams: {},
+            payload
+          },
           {
             onSuccess: async () => {
               void queryClient.invalidateQueries({
@@ -197,11 +198,8 @@ export function BacResolutionWorkspace({
       // toast handles presentation
     }
   }
-  const handleLink = (_payload: LinkConsolidatedPrsPayload) => { }
   const handleSubmit = () => { setSubmitConfirmOpen(true) }
   const handleConfirmSubmit = () => { setSubmitConfirmOpen(false) }
-  const handleApprove = (_payload: { bacResolutionId: string; signedDocument: File }) => { setApproveOpen(false) }
-  const handleReturn = (_payload: { bacResolutionId: string; reason: string }) => { setReturnOpen(false) }
 
   return (
     <div className="w-full space-y-6 pb-12">
@@ -307,10 +305,18 @@ export function BacResolutionWorkspace({
             <DetailsPanel
               selectedId={selectedId ?? null}
               role={role}
-              onLinkPrs={
-                role === 'procurement-staff' && selectedId
-                  ? () => setLinkOpen(true)
+              onEdit={
+                selectedId
+                  ? (project?: BacProjectDetails) => {
+                    if (project) {
+                      setEditingResolution(project)
+                    }
+                    setEditOpen(true)
+                  }
                   : undefined
+              }
+              onLinkPrs={
+                () => { }
               }
               onSubmit={
                 role === 'procurement-staff' && selectedId
@@ -332,38 +338,59 @@ export function BacResolutionWorkspace({
           onOpenChange={setCreateOpen}
         />
 
-        <DialogsController
-          editOpen={editOpen}
-          setEditOpen={setEditOpen}
-          // editingResolution={editingResolution}
+        <EditBacResolutionDialog
+          open={editOpen}
+          onOpenChange={setEditOpen}
+          resolution={editingResolution ?? undefined}
           onUpdate={handleUpdate}
-          deleteConfirmOpen={deleteConfirmOpen}
-          setDeleteConfirmOpen={setDeleteConfirmOpen}
-          onConfirmDelete={handleConfirmDelete}
-          detailsOpen={detailsOpen}
-          setDetailsOpen={setDetailsOpen}
-          detailsResolutionId={detailsResolutionId}
-          viewConsolidatedPrOpen={viewConsolidatedPrOpen}
-          setViewConsolidatedPrOpen={setViewConsolidatedPrOpen}
-          viewConsolidatedPrId={viewConsolidatedPrId}
-          linkOpen={linkOpen}
-          setLinkOpen={setLinkOpen}
-          availablePrs={[]}
-          onLink={handleLink}
-          onViewConsolidatedPr={handleViewConsolidatedPrDetails}
-          approveOpen={approveOpen}
-          setApproveOpen={setApproveOpen}
-          onApprove={handleApprove}
-          returnOpen={returnOpen}
-          setReturnOpen={setReturnOpen}
-          onReturn={handleReturn}
-          submitConfirmOpen={submitConfirmOpen}
-          setSubmitConfirmOpen={setSubmitConfirmOpen}
-          onConfirmSubmit={handleConfirmSubmit}
-          docPreviewOpen={docPreviewOpen}
-          setDocPreviewOpen={setDocPreviewOpen}
-          createPrOpen={createPrModalOpen}
-          setCreatePrOpen={setCreatePrModalOpen}
+        />
+
+        <ConfirmAlertDialog
+          open={deleteConfirmOpen}
+          onOpenChange={setDeleteConfirmOpen}
+          title="Delete BAC Resolution Draft?"
+          description="Are you sure you want to delete this BAC Resolution draft? This action cannot be undone."
+          confirmLabel="Delete"
+          cancelLabel="Cancel"
+          onConfirm={handleConfirmDelete}
+        />
+
+        <ConfirmAlertDialog
+          open={submitConfirmOpen}
+          onOpenChange={setSubmitConfirmOpen}
+          title="Submit BAC Resolution?"
+          description="Are you sure you want to submit this BAC Resolution for approval?"
+          confirmLabel="Submit"
+          cancelLabel="Cancel"
+          onConfirm={handleConfirmSubmit}
+        />
+
+        <ViewBacResolutionDetailsDialog
+          open={detailsOpen}
+          onOpenChange={setDetailsOpen}
+          resolutionId={detailsResolutionId}
+          onCreatePr={() => {
+            setDetailsOpen(false)
+            setCreatePrModalOpen(true)
+          }}
+        />
+
+        <ViewConsolidatedPrDetailsDialog
+          open={viewConsolidatedPrOpen}
+          onOpenChange={setViewConsolidatedPrOpen}
+          consolidatedPrId={""}
+        />
+
+        <BacResolutionDocumentPreviewModal
+          open={docPreviewOpen}
+          onOpenChange={setDocPreviewOpen}
+          resolution={null}
+        />
+
+        <CreatePrFromBacModal
+          open={createPrModalOpen}
+          onOpenChange={setCreatePrModalOpen}
+          resolution={null}
         />
 
         <ClauseTemplateManagerDialog
