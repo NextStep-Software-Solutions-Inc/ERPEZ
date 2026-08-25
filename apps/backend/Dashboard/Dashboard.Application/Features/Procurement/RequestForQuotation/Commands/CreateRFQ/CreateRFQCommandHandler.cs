@@ -22,6 +22,12 @@ public class CreateRFQCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<C
             return ApiResponse<Guid>.Fail("Tracing Number already exists.");
         }
  
+        // Business rule: at least 3 suppliers are required.
+        if (request.SupplierIds == null || request.SupplierIds.Distinct().Count() < 3)
+        {
+            return ApiResponse<Guid>.Fail("Please select at least 3 prospective suppliers.");
+        }
+
         // Business rule: every invited supplier must exist, not be blocked, and be Approved.
         foreach (var supplierId in request.SupplierIds.Distinct())
         {

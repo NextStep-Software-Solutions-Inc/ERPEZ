@@ -1,11 +1,10 @@
 using ERPEZ.Domain.Common;
-using ERPEZ.Domain.Entities.Planning;
 using Sieve.Attributes;
 
 namespace ERPEZ.Domain.Entities.Procurement;
 
 /// <summary>
-/// Line Items for a Supplier's Bid/Quotation linked to an APPItem (acting as RFQ Item).
+/// Line Item for a Supplier's Bid/Quotation linked to an RFQItem.
 /// </summary>
 public class SupplierBidItem : BaseEntity
 {
@@ -13,10 +12,15 @@ public class SupplierBidItem : BaseEntity
     public Guid SupplierBidId { get; set; }
 
     [Sieve(CanFilter = true, CanSort = true)]
-    public Guid APPItemId { get; set; }
+    public Guid RFQItemId { get; set; }
 
     [Sieve(CanFilter = true, CanSort = true)]
     public decimal UnitPrice { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public decimal TotalPrice { get; set; }
+
+    public Guid? BrochureFileId { get; set; }
 
     public string? BrochureFileUrl { get; set; }
 
@@ -32,7 +36,13 @@ public class SupplierBidItem : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public bool IsResponsive { get; set; } = true;
 
+    [Sieve(CanFilter = true, CanSort = true)]
+    public string? DisqualificationReason { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public decimal? QualityScore { get; set; }
+
     // Navigation properties
     public virtual SupplierBid SupplierBid { get; set; } = null!;
-    public virtual APPItem APPItem { get; set; } = null!;
+    public virtual RFQItem RFQItem { get; set; } = null!;
 }

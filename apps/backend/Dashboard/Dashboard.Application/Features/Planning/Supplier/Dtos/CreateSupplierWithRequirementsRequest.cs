@@ -15,10 +15,25 @@ public record CreateSupplierWithRequirementsRequest
     public string? PhilGEPSNumber { get; init; }
     public Guid SupplierCategoryId { get; init; }
     
+    private List<SupplierRequirementRequestDto> requirements = [];
+
     /// <summary>
     /// Array of supplier requirements/compliance documents to be attached.
     /// </summary>
-    public List<SupplierRequirementRequestDto> Requirements { get; init; } = [];
+    public List<SupplierRequirementRequestDto> Requirements
+    {
+        get => requirements;
+        init => requirements = value;
+    }
+
+    /// <summary>
+    /// Alias for Requirements to support payloads sent with "supplierRequirements"
+    /// </summary>
+    public List<SupplierRequirementRequestDto> SupplierRequirements
+    {
+        get => requirements;
+        init => requirements = value;
+    }
 }
 
 /// <summary>

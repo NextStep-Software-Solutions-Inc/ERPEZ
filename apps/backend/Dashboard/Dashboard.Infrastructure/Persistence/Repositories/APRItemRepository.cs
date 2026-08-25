@@ -26,4 +26,21 @@ public class APRItemRepository : Repository<APRItem>, IAPRItemRepository
                 .ThenInclude(m => m.ProcurementActivityType)
             .ToListAsync(cancellationToken);
     }
+
+    public async Task<List<Guid>> GetAllocatedAPPItemIdsAsync(Guid? excludeAprId = null, CancellationToken cancellationToken = default)
+    {
+        var query = context.Set<APRItem>()
+            .AsNoTracking()
+            .Where(i => !i.IsDeleted && i.APPItemId.HasValue && !i.APR.IsDeleted);
+
+        if (excludeAprId.HasValue && excludeAprId.Value != Guid.Empty)
+        {
+            query = query.Where(i => i.APRId != excludeAprId.Value);
+        }
+
+        return await query
+            .Select(i => i.APPItemId!.Value)
+            .Distinct()
+            .ToListAsync(cancellationToken);
+    }
 }

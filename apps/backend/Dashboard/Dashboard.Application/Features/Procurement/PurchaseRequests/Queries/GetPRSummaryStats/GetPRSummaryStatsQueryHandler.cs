@@ -1,9 +1,12 @@
 using ERPEZ.Application.Features.Procurement.PurchaseRequests.Dtos;
+using ERPEZ.Domain.Entities.Procurement;
 using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
+
+using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.Application.Features.Procurement.PurchaseRequests.Queries.GetPRSummaryStats;
 
@@ -13,11 +16,24 @@ public class GetPRSummaryStatsQueryHandler(IUnitOfWork unitOfWork)
     public async Task<ApiResponse<PRSummaryStatsResponse>> Handle(
         GetPRSummaryStatsQuery query, CancellationToken cancellationToken)
     {
-        _ = await unitOfWork.OfficeRepository.GetByIdAsync(query.OfficeId, cancellationToken)
-            ?? throw new NotFoundException($"Office with ID {query.OfficeId} not found.");
+        if (query.OfficeId.HasValue && query.OfficeId.Value != Guid.Empty)
+        {
+            _ = await unitOfWork.OfficeRepository.GetByIdAsync(query.OfficeId.Value, cancellationToken)
+                ?? throw new NotFoundException($"Office with ID {query.OfficeId.Value} not found.");
+        }
 
-        var allPRs = await unitOfWork.PurchaseRequestRepository
-            .GetByOfficeAsync(query.OfficeId, query.PRType, cancellationToken);
+        List<PurchaseRequest> allPRs;
+        if (query.OfficeId.HasValue && query.OfficeId.Value != Guid.Empty)
+        {
+            allPRs = await unitOfWork.PurchaseRequestRepository
+                .GetByOfficeAsync(query.OfficeId.Value, query.PRType, cancellationToken);
+        }
+        else
+        {
+            allPRs = await unitOfWork.PurchaseRequestRepository
+                .Query(pr => !pr.IsDeleted && pr.PRType == query.PRType)
+                .ToListAsync(cancellationToken);
+        }
 
         var activePRs = allPRs.Where(pr => !pr.IsDeleted).ToList();
 

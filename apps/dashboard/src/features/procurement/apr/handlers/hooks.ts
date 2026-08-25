@@ -20,9 +20,11 @@ import { returnAPRRequest } from './returnAPRRequest'
 import { deleteAPRRequest } from './deleteAPRRequest'
 import { updateAPRRequest } from './updateAPRRequest'
 import { addItemsToAPRRequest } from './addItemsToAPRRequest'
+import { deleteAPRItemRequest } from './deleteAPRItemRequest'
 import { getApprovedAPPsRequest } from './getApprovedAPPsRequest'
 import { getAPPByIdRequest } from './getAPPByIdRequest'
 import { getFiscalYearsRequest } from './getFiscalYearsRequest'
+import { getAllocatedAPPItemIdsRequest } from './getAllocatedAPPItemIdsRequest'
 
 // ─── Query hooks ─────────────────────────────────────────────────────────────
 
@@ -40,6 +42,9 @@ export const useAPPById = createQueryHookFromTemplate(getAPPByIdRequest)
 
 /** List of active and available Fiscal Years. */
 export const useFiscalYears = createQueryHookFromTemplate(getFiscalYearsRequest)
+
+/** List of APP Item IDs already allocated in active APRs. Pass `{ queryParams: { excludeAprId } }`. */
+export const useAllocatedAPPItemIds = createQueryHookFromTemplate(getAllocatedAPPItemIdsRequest)
 
 // ─── Mutation hooks ──────────────────────────────────────────────────────────
 
@@ -63,3 +68,6 @@ export const useUpdateAPRMutation = createMutationHookFromTemplate(updateAPRRequ
 
 /** Add catalog items to draft APR */
 export const useAddCatalogItemsToAPRMutation = createMutationHookFromTemplate(addItemsToAPRRequest)
+
+/** Remove item from draft APR */
+export const useRemoveAPRItemMutation = createMutationHookFromTemplate(deleteAPRItemRequest)

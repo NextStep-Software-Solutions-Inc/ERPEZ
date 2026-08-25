@@ -63,7 +63,7 @@ export function APRsTableToolbar({
           <SelectContent>
             <SelectItem value="all">All Status</SelectItem>
             <SelectItem value="DRAFT">Draft</SelectItem>
-            <SelectItem value="FOR_APPROVAL">For Approval</SelectItem>
+            <SelectItem value="SUBMITTED">Submitted</SelectItem>
             <SelectItem value="APPROVED">Approved</SelectItem>
             <SelectItem value="RETURNED">Returned</SelectItem>
           </SelectContent>

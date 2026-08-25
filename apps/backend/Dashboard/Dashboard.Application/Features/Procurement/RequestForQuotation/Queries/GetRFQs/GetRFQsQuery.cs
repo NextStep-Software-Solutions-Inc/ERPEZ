@@ -7,8 +7,8 @@ using Sieve.Models;
 namespace ERPEZ.Application.Features.Procurement.RequestForQuotation.Queries.GetRFQs;
 
 public record GetRFQsQuery(
-    int PageNumber,
-    int PageSize,
-    string? Filters,
-    string? Sorts
+    int PageNumber = 1,
+    int PageSize = 10,
+    string? Filters = null,
+    string? Sorts = null
 ) : IRequest<PaginatedApiResponse<RFQListItemDto>>;

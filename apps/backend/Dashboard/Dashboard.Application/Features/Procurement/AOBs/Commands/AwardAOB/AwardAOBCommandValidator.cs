@@ -16,9 +16,9 @@ public class AwardAOBCommandValidator : AbstractValidator<AwardAOBCommand>
 
         RuleForEach(x => x.AwardedItems).ChildRules(item =>
         {
-            item.RuleFor(i => i.APPItemId)
+            item.RuleFor(i => i.RFQItemId)
                 .NotEmpty()
-                .WithMessage("APP Item ID is required.");
+                .WithMessage("RFQ Item ID is required.");
 
             item.RuleFor(i => i.WinningSupplierId)
                 .NotEmpty()

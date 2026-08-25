@@ -54,6 +54,7 @@ public class PPMPExpenditureItemController(ISender mediator) : ControllerBase
         {
             Id = id,
             PPMPActivityId = dto.PPMPActivityId,
+            ObjectId = dto.ObjectId,
             IsProcurable = dto.IsProcurable,
             TotalCost = dto.TotalCost
         };

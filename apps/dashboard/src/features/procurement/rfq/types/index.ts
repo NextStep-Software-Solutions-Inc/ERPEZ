@@ -150,5 +150,9 @@ export type ConsolidatedPRItem = {
   unitCost?: number
   totalAmount?: number
   procurementModeName?: string
+  hasBACResolution?: boolean
+  bacResolutionStatus?: string
+  bacResolutionNumber?: string
+  bacResolutionId?: string
   [key: string]: any
 }

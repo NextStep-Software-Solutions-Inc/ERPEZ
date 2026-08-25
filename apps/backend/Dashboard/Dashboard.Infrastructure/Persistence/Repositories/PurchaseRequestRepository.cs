@@ -265,31 +265,43 @@ public class PurchaseRequestRepository : Repository<PurchaseRequest>, IPurchaseR
             .ToListAsync(cancellationToken);
     }
     public async Task<decimal> GetTotalApprovedPPMPBudgetAsync(
-        Guid officeId, PRType prType, CancellationToken cancellationToken = default)
+        Guid? officeId, PRType prType, CancellationToken cancellationToken = default)
     {
         if (prType == PRType.NonCSE)
         {
-            var items = await context.Set<PPMPItem>()
+            var query = context.Set<PPMPItem>()
                 .Include(pi => pi.PPMPItemAllocations)
                 .Where(pi =>
                     !pi.IsDeleted &&
                     pi.CSEItemId == null &&
-                    pi!.PPMPExpenditureItem!.PPMPActivity!.PPMP.OfficeId == officeId &&
-                    pi.PPMPExpenditureItem.PPMPActivity.PPMP.Status   == StatusEnum.Approved &&
-                    !pi.PPMPExpenditureItem.PPMPActivity.PPMP.IsDeleted)
-                .ToListAsync(cancellationToken);
+                    pi.PPMPExpenditureItem != null &&
+                    pi.PPMPExpenditureItem.PPMPActivity != null &&
+                    pi.PPMPExpenditureItem.PPMPActivity.PPMP.Status == StatusEnum.Approved &&
+                    !pi.PPMPExpenditureItem.PPMPActivity.PPMP.IsDeleted);
+
+            if (officeId.HasValue && officeId.Value != Guid.Empty)
+            {
+                query = query.Where(pi => pi!.PPMPExpenditureItem!.PPMPActivity!.PPMP.OfficeId == officeId.Value);
+            }
+
+            var items = await query.ToListAsync(cancellationToken);
 
             return items.Sum(pi => pi.UnitPrice * pi.PPMPItemAllocations.Sum(a => a.Quantity));
         }
         else if (prType == PRType.OutOfStockCSE)
         {
-            var aprItems = await context.Set<APRItem>()
+            var query = context.Set<APRItem>()
                 .Where(ai =>
                     !ai.IsDeleted &&
-                    ai.APR.OfficeId == officeId &&
                     ai.APR.Status == StatusEnum.Approved &&
-                    !ai.APR.IsDeleted)
-                .ToListAsync(cancellationToken);
+                    !ai.APR.IsDeleted);
+
+            if (officeId.HasValue && officeId.Value != Guid.Empty)
+            {
+                query = query.Where(ai => ai.APR.OfficeId == officeId.Value);
+            }
+
+            var aprItems = await query.ToListAsync(cancellationToken);
 
             return aprItems.Sum(ai => ai.UnitCost * ai.QuantityRequested);
         }

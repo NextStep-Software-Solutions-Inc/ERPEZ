@@ -1,4 +1,4 @@
-﻿export type SupplierCategoryInfo = {
+export type SupplierCategoryInfo = {
   id: string
   name: string | null
   description: string | null
@@ -9,9 +9,11 @@
 export type SupplierRequirementInfo = {
   supplierRequirementId: string
   requirementName: string | null
-  fileId: string | null
+  url?: string | null
+  fileId?: string | null
   isVerified: boolean
   createdAt: string
+  updatedAt?: string | null
 }
 
 export type SupplierListItem = {
@@ -90,7 +92,17 @@ export type CreateSupplierPayload = {
   tinNumber?: string | null
   philGEPSNumber?: string | null
   supplierCategoryId: string
+  requirements?: SupplierRequirement[] | null
   supplierRequirements?: SupplierRequirement[] | null
+}
+
+export type SupplierRequirementVerificationItem = {
+  supplierRequirementId: string
+  isVerified: boolean
+}
+
+export type VerifySupplierRequirementsPayload = {
+  requirements: SupplierRequirementVerificationItem[]
 }
 
 export type UpdateSupplierPayload = {

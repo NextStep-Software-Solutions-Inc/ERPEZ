@@ -1,7 +1,3 @@
-using System;
-using System.Linq;
-using System.Threading;
-using System.Threading.Tasks;
 using ERPEZ.Application.Features.Procurement.AOBs.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
@@ -26,24 +22,37 @@ public class GetAOBByIdQueryHandler(IUnitOfWork unitOfWork)
                 AOBDate = a.AOBDate,
                 OpeningDate = a.OpeningDate,
                 Status = a.Status,
-                ProcurementProjects = a.AOBProcurementProjectMappings
-                    .Where(m => m.ProcurementProject != null)
-                    .Select(m => new AOBProjectDetailResponse
+                SubmittedBy = a.SubmittedBy,
+                SubmittedAt = a.SubmittedAt,
+                ApprovedBy = a.ApprovedBy,
+                ApprovedAt = a.ApprovedAt,
+                SignedDocumentUrl = a.SignedDocumentUrl,
+                Remarks = a.Remarks,
+                RFQs = a.AOBRFQMappings
+                    .Where(m => m.RFQ != null)
+                    .Select(m => new AOBRFQDetailResponse
                     {
-                        Id = m.ProcurementProjectId,
-                        Title = m.ProcurementProject.Title,
-                        ABC = m.ProcurementProject.ABC,
-                        Status = m.ProcurementProject.Status
+                        Id = m.RFQId,
+                        RFQNumber = m.RFQ.RFQNumber,
+                        TracingNumber = m.RFQ.TracingNumber,
+                        TotalAmount = m.RFQ.TotalAmount,
+                        Status = m.RFQ.Status,
+                        Date = m.RFQ.Date,
+                        Deadline = m.RFQ.Deadline
                     }).ToList(),
                 AwardedItems = a.AOBAwardedItems.Select(ai => new AOBAwardedItemResponse
                 {
                     Id = ai.Id,
-                    APPItemId = ai.APPItemId,
-                    APPItemName = ai.APPItem != null && ai.APPItem.PPMPItem != null ? ai.APPItem.PPMPItem.Name : string.Empty,
+                    RFQItemId = ai.RFQItemId,
+                    ItemName = ai.RFQItem != null ? ai.RFQItem.ItemNameSnapshot : string.Empty,
                     WinningSupplierId = ai.WinningSupplierId,
                     WinningSupplierName = ai.WinningSupplier != null ? ai.WinningSupplier.Name : string.Empty,
                     AwardedUnitPrice = ai.AwardedUnitPrice,
-                    Score = ai.Score
+                    AwardedQuantity = ai.AwardedQuantity,
+                    TotalAwardedAmount = ai.TotalAwardedAmount,
+                    Score = ai.Score,
+                    AwardReason = ai.AwardReason,
+                    PurchaseOrderId = ai.PurchaseOrderId
                 }).ToList()
             })
             .FirstOrDefaultAsync(cancellationToken);

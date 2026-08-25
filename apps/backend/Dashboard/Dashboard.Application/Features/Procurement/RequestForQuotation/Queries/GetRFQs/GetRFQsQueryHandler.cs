@@ -11,10 +11,13 @@ public class GetRFQsQueryHandler(IUnitOfWork unitOfWork)
 {
     public async Task<PaginatedApiResponse<RFQListItemDto>> Handle(GetRFQsQuery request, CancellationToken cancellationToken)
     {
+        var page = request.PageNumber > 0 ? request.PageNumber : 1;
+        var pageSize = request.PageSize > 0 ? request.PageSize : 10;
+
         var sieveModel = new SieveModel
         {
-            Page = request.PageNumber,
-            PageSize = request.PageSize,
+            Page = page,
+            PageSize = pageSize,
             Filters = request.Filters,
             Sorts = request.Sorts
         };
@@ -33,6 +36,6 @@ public class GetRFQsQueryHandler(IUnitOfWork unitOfWork)
             Status = r.Status
         }).ToList();
 
-        return new PaginatedApiResponse<RFQListItemDto>(items, request.PageNumber, request.PageSize, totalCount);
+        return new PaginatedApiResponse<RFQListItemDto>(items, page, pageSize, totalCount);
     }
 }

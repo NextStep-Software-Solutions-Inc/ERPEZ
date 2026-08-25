@@ -6,6 +6,7 @@
 
 import { useState, useMemo } from 'react'
 import { useNavigate } from '@tanstack/react-router'
+import { useQueryClient } from '@tanstack/react-query'
 import { ClipboardList, Loader2, AlertCircle } from 'lucide-react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
@@ -22,6 +23,8 @@ import {
   useApproveAPRMutation,
   useReturnAPRMutation,
 } from '@/features/procurement/apr/handlers/hooks'
+import { invalidateAPRQueries } from '@/features/procurement/apr/utils/invalidateAPRQueries'
+import { normalizeAPRStatus } from '@/features/procurement/apr/utils'
 
 /**
  * Calculate live statistics from live APR data
@@ -47,24 +50,28 @@ function calculateStatistics(aprList: any[]): APRStatistics {
   }
 
   aprList.forEach((apr) => {
-    const status = (apr.status || '').toLowerCase()
+    const status = normalizeAPRStatus(apr.status)
     const amount = Number(apr.totalAmount) || 0
     stats.totalBudgetRequested += amount
 
-    if (status === 'approved') {
+    if (status === 'APPROVED') {
       stats.totalApproved += 1
       stats.totalBudgetApproved += amount
       stats.statisticsByStatus.APPROVED = (stats.statisticsByStatus.APPROVED || 0) + 1
-    } else if (status === 'forapproval' || status === 'submitted') {
+    } else if (status === 'FOR_APPROVAL') {
       stats.totalPending += 1
       stats.totalSubmitted += 1
       stats.statisticsByStatus.FOR_APPROVAL = (stats.statisticsByStatus.FOR_APPROVAL || 0) + 1
-    } else if (status === 'returned') {
+    } else if (status === 'RETURNED') {
       stats.totalReturned += 1
       stats.statisticsByStatus.RETURNED = (stats.statisticsByStatus.RETURNED || 0) + 1
-    } else if (status === 'draft') {
+    } else if (status === 'DRAFT') {
       stats.totalDraft += 1
       stats.statisticsByStatus.DRAFT = (stats.statisticsByStatus.DRAFT || 0) + 1
+    } else if (status === 'PARTIALLY_AVAILABLE') {
+      stats.statisticsByStatus.PARTIALLY_AVAILABLE = (stats.statisticsByStatus.PARTIALLY_AVAILABLE || 0) + 1
+    } else if (status === 'OUT_OF_STOCK') {
+      stats.statisticsByStatus.OUT_OF_STOCK = (stats.statisticsByStatus.OUT_OF_STOCK || 0) + 1
     }
 
     const fy = apr.fiscalYear || new Date().getFullYear()
@@ -106,9 +113,8 @@ export function ManageAPRsAdminPage() {
   const handleViewAPR = (apr: any) => {
     setSelectedAPR(apr)
     navigate({
-      to: '/v2/agency-purchase-requests-apr/$aprId',
+      to: '/v2/manage-aprs/$aprId',
       params: { aprId: apr.id },
-      search: { from: 'manage-aprs' },
     })
   }
 
@@ -121,6 +127,8 @@ export function ManageAPRsAdminPage() {
     setSelectedAPR(apr)
     setReturnDialogOpen(true)
   }
+
+  const queryClient = useQueryClient()
 
   const handleConfirmApprove = async (file?: File) => {
     if (!selectedAPR) return
@@ -136,6 +144,7 @@ export function ManageAPRsAdminPage() {
       } as any)
 
       toast.success(`APR ${selectedAPR.aprNumber} has been approved successfully`)
+      invalidateAPRQueries(queryClient)
       setApproveDialogOpen(false)
       setSelectedAPR(null)
       refetch()
@@ -160,6 +169,7 @@ export function ManageAPRsAdminPage() {
       } as any)
 
       toast.success(`APR ${selectedAPR.aprNumber} has been returned for revisions`)
+      invalidateAPRQueries(queryClient)
       setReturnDialogOpen(false)
       setSelectedAPR(null)
       refetch()

@@ -49,6 +49,11 @@ public class CreateAPRCommandHandler : IRequestHandler<CreateAPRCommand, ApiResp
         if (selectedAppItems.Count != appItemIds.Count)
             return ApiResponse<Guid>.Fail("One or more selected line items could not be found.");
 
+        var allocatedItemIds = await unitOfWork.APRItemRepository.GetAllocatedAPPItemIdsAsync(null, cancellationToken);
+        var conflictingIds = appItemIds.Intersect(allocatedItemIds).ToList();
+        if (conflictingIds.Count > 0)
+            return ApiResponse<Guid>.Fail("One or more selected line items have already been added to another APR.");
+
         static (decimal qty, decimal amount) GetTotals(APPItem appItem)
         {
             var allocations = appItem.PPMPItem?.PPMPItemAllocations ?? [];

@@ -1,4 +1,4 @@
-﻿/**
+/**
  * APR Stats Grid Component
  * Matches the updated multi-accent 4-card metric strip
  */
@@ -12,6 +12,20 @@ interface APRStatsGridProps {
   totalAmount: number
   consolidatedCount: number
   approvalStatus: string
+  isReviewer?: boolean
+}
+
+function getFormattedStatus(status: string, isReviewer?: boolean): string {
+  const s = String(status || 'Draft').toUpperCase().replace(/[\s-_]/g, '')
+  if (s === 'FORAPPROVAL' || s === 'SUBMITTED') {
+    return isReviewer ? 'For Approval' : 'Submitted'
+  }
+  if (s === 'DRAFT') return 'Draft'
+  if (s === 'RETURNED') return 'Returned'
+  if (s === 'APPROVED') return 'Approved'
+  if (s === 'PARTIALLYAVAILABLE') return 'Partially Available'
+  if (s === 'OUTOFSTOCK') return 'Out of Stock'
+  return status || 'Draft'
 }
 
 export function APRStatsGrid({
@@ -19,7 +33,10 @@ export function APRStatsGrid({
   totalAmount,
   consolidatedCount,
   approvalStatus,
+  isReviewer = false,
 }: APRStatsGridProps) {
+  const displayStatus = getFormattedStatus(approvalStatus, isReviewer)
+
   const stats = [
     {
       label: 'TOTAL ITEMS',
@@ -53,7 +70,7 @@ export function APRStatsGrid({
     },
     {
       label: 'STATUS',
-      value: approvalStatus || 'Draft',
+      value: displayStatus,
       icon: Activity,
       labelColor: 'text-amber-700',
       valueColor: 'text-gray-900',

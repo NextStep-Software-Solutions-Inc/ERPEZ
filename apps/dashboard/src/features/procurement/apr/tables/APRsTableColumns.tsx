@@ -5,7 +5,6 @@
 
 import { createColumnHelper } from '@tanstack/react-table'
 import { format } from 'date-fns'
-import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -16,26 +15,9 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { MoreVertical, Eye, Trash2 } from 'lucide-react'
 import type { APRListItemDto } from '../types'
+import { APRStatusBadge } from '../components/APRStatusBadge'
 
 const columnHelper = createColumnHelper<APRListItemDto | any>()
-
-// Status badge variants
-const statusVariants: Record<string, string> = {
-  Draft: 'bg-gray-100 text-gray-800 border-gray-300',
-  DRAFT: 'bg-gray-100 text-gray-800 border-gray-300',
-  ForApproval: 'bg-blue-100 text-blue-800 border-blue-300',
-  FOR_APPROVAL: 'bg-blue-100 text-blue-800 border-blue-300',
-  Submitted: 'bg-blue-100 text-blue-800 border-blue-300',
-  SUBMITTED: 'bg-blue-100 text-blue-800 border-blue-300',
-  Returned: 'bg-red-100 text-red-800 border-red-300',
-  RETURNED: 'bg-red-100 text-red-800 border-red-300',
-  Approved: 'bg-green-100 text-green-800 border-green-300',
-  APPROVED: 'bg-green-100 text-green-800 border-green-300',
-  PartiallyAvailable: 'bg-yellow-100 text-yellow-800 border-yellow-300',
-  PARTIALLY_AVAILABLE: 'bg-yellow-100 text-yellow-800 border-yellow-300',
-  OutOfStock: 'bg-orange-100 text-orange-800 border-orange-300',
-  OUT_OF_STOCK: 'bg-orange-100 text-orange-800 border-orange-300',
-}
 
 interface ColumnsProps {
   onView: (apr: any) => void
@@ -96,13 +78,7 @@ export function getAPRsTableColumns({ onView, onDelete }: ColumnsProps) {
       id: 'status',
       header: 'Status',
       cell: (info) => {
-        const status = info.getValue() || 'Draft'
-        const variantClass = statusVariants[status] || 'bg-gray-100 text-gray-800'
-        return (
-          <Badge variant="outline" className={variantClass}>
-            {String(status).replace(/_/g, ' ')}
-          </Badge>
-        )
+        return <APRStatusBadge status={info.getValue() || 'Draft'} context="user" />
       },
     }),
 

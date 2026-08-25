@@ -355,4 +355,237 @@ public static class LineItemBudgetValidationRules
         }
         return true;
     }
+
+    /// <summary>
+    /// Determines whether a WFP-sourced LIB is for a multi-year project based on loaded WFP entities or LIBNumber format.
+    /// </summary>
+    public static bool IsMultiYearWfp(ERPEZ.Domain.Entities.Planning.LineItemBudget lib)
+    {
+        if (lib == null || string.IsNullOrWhiteSpace(lib.SourceType) ||
+            !lib.SourceType.Equals("WFP", StringComparison.OrdinalIgnoreCase))
+        {
+            return false;
+        }
+
+        // 1. Check navigation property chain if loaded
+        var wfp = lib.LineItemBudgetActivities?
+            .Select(a => a.WFPObjectiveActivity?.WFPObjective?.WFP)
+            .FirstOrDefault(w => w != null);
+
+        if (wfp != null)
+        {
+            return wfp.ProjectStartDate.Year != wfp.ProjectEndDate.Year;
+        }
+
+        // 2. Check LIBNumber convention: LIB-{Office}-WFP-{StartYear}-{EndYear}-{SourceId}
+        if (!string.IsNullOrWhiteSpace(lib.LIBNumber))
+        {
+            var match = System.Text.RegularExpressions.Regex.Match(
+                lib.LIBNumber,
+                @"WFP-(\d{4})-(\d{4})",
+                System.Text.RegularExpressions.RegexOptions.IgnoreCase);
+
+            if (match.Success)
+            {
+                var startYear = int.Parse(match.Groups[1].Value);
+                var endYear = int.Parse(match.Groups[2].Value);
+                return startYear != endYear;
+            }
+        }
+
+        return false;
+    }
+
+    /// <summary>
+    /// Validates complete readiness of an LIB for submission to approval workflow.
+    /// Checks metadata completeness, activity requirements, line-item configurations, and non-zero budgets.
+    /// </summary>
+    public static (bool IsValid, List<string> Errors, List<string> PassedChecks) ValidateSubmissionCompleteness(
+        ERPEZ.Domain.Entities.Planning.LineItemBudget lib)
+    {
+        var errors = new List<string>();
+        var passedChecks = new List<string>();
+
+        if (lib == null)
+        {
+            errors.Add("Line Item Budget not found.");
+            return (false, errors, passedChecks);
+        }
+
+        // 1. Scope & Multi-Year determination
+        var isProjectScope = !string.IsNullOrWhiteSpace(lib.Scope) &&
+            (lib.Scope.Equals("Project", StringComparison.OrdinalIgnoreCase) ||
+             lib.Scope.Equals("ProjectLevel", StringComparison.OrdinalIgnoreCase));
+
+        var isMultiYearWfp = IsMultiYearWfp(lib);
+
+        // 2. Metadata Checks
+        var hasMetadata = true;
+
+        // Fiscal Year Requirement:
+        // - Required for: OPCR-sourced LIBs, Single-Year WFP LIBs, and Single-Year Independent Activity LIBs.
+        // - Optional for: Multi-Year WFP LIBs (where project dates span multiple years) and Project-Scope LIBs.
+        var requiresFiscalYear = !isProjectScope && !isMultiYearWfp;
+
+        if (requiresFiscalYear && (!lib.FiscalYearId.HasValue || lib.FiscalYearId.Value == Guid.Empty))
+        {
+            errors.Add("Fiscal Year is required.");
+            hasMetadata = false;
+        }
+
+        if ((!lib.FundSourceId.HasValue || lib.FundSourceId.Value == Guid.Empty) &&
+            (!lib.AgencyMasterBudgetId.HasValue || lib.AgencyMasterBudgetId.Value == Guid.Empty))
+        {
+            errors.Add("Fund Source or Agency Master Budget is required.");
+            hasMetadata = false;
+        }
+
+        if (!lib.OfficeId.HasValue || lib.OfficeId.Value == Guid.Empty)
+        {
+            errors.Add("Responsible Office is required.");
+            hasMetadata = false;
+        }
+
+        if (string.IsNullOrWhiteSpace(lib.SourceType))
+        {
+            errors.Add("Source Type (OPCR, WFP, or Independent) is required.");
+            hasMetadata = false;
+        }
+        else if (lib.SourceType.Equals("OPCR", StringComparison.OrdinalIgnoreCase) ||
+                 lib.SourceType.Equals("WFP", StringComparison.OrdinalIgnoreCase))
+        {
+            if (!lib.SourceId.HasValue || lib.SourceId.Value == Guid.Empty)
+            {
+                errors.Add($"Source ID is required for {lib.SourceType} sourced LIB.");
+                hasMetadata = false;
+            }
+        }
+
+        if (hasMetadata)
+        {
+            passedChecks.Add("LIB information and source metadata complete.");
+        }
+
+        // 3. Scope & Activity Checks
+
+        var activities = (lib.LineItemBudgetActivities ?? []).Where(a => !a.IsDeleted).ToList();
+        var allDetails = new List<LineItemBudgetDetail>();
+
+        if (!isProjectScope)
+        {
+            // Activity-scoped: requires at least one activity
+            if (activities.Count == 0)
+            {
+                errors.Add("At least one LIB Activity is required.");
+            }
+            else
+            {
+                passedChecks.Add($"Activities configured ({activities.Count} activity{(activities.Count > 1 ? "ies" : "")}).");
+
+                var incompleteActivities = 0;
+                foreach (var activity in activities)
+                {
+                    var activityDetails = (activity.LineItemBudgetDetails ?? [])
+                        .Where(d => !d.IsDeleted)
+                        .ToList();
+
+                    if (activityDetails.Count == 0)
+                    {
+                        errors.Add($"Activity \"{activity.Name}\" has no expenditure line items.");
+                        incompleteActivities++;
+                    }
+                    else
+                    {
+                        allDetails.AddRange(activityDetails);
+                    }
+                }
+
+                if (incompleteActivities == 0)
+                {
+                    passedChecks.Add("All activities have configured expenditure line items.");
+                }
+            }
+        }
+        else
+        {
+            // Project-scoped: details can be in activities or standalone (orphan) details
+            foreach (var activity in activities)
+            {
+                allDetails.AddRange((activity.LineItemBudgetDetails ?? []).Where(d => !d.IsDeleted));
+            }
+
+            var orphanDetails = (lib.LineItemBudgetDetails ?? [])
+                .Where(d => !d.IsDeleted && !d.LineItemBudgetActivityId.HasValue)
+                .ToList();
+            allDetails.AddRange(orphanDetails);
+
+            if (allDetails.Count == 0)
+            {
+                errors.Add("At least one expenditure line item is required.");
+            }
+            else
+            {
+                passedChecks.Add($"Expenditure line items configured ({allDetails.Count} item{(allDetails.Count > 1 ? "s" : "")}).");
+            }
+        }
+
+        // 3. Line-Item Detail Validity
+        if (allDetails.Count > 0)
+        {
+            var invalidObjects = 0;
+            var invalidAmounts = 0;
+            var invalidDates = 0;
+
+            foreach (var detail in allDetails)
+            {
+                if (detail.ObjectId == Guid.Empty)
+                {
+                    invalidObjects++;
+                }
+
+                if (detail.Budget <= 0)
+                {
+                    invalidAmounts++;
+                }
+
+                if (detail.StartDate.HasValue && detail.EndDate.HasValue && detail.EndDate.Value < detail.StartDate.Value)
+                {
+                    invalidDates++;
+                }
+            }
+
+            if (invalidObjects > 0)
+            {
+                errors.Add($"{invalidObjects} line item(s) are missing a valid UACS expenditure object.");
+            }
+
+            if (invalidAmounts > 0)
+            {
+                errors.Add($"{invalidAmounts} line item(s) have an invalid or zero budget amount.");
+            }
+
+            if (invalidDates > 0)
+            {
+                errors.Add($"{invalidDates} line item(s) have invalid timeline dates (end date before start date).");
+            }
+
+            if (invalidObjects == 0 && invalidAmounts == 0 && invalidDates == 0)
+            {
+                passedChecks.Add("All expenditure items have valid UACS codes, positive budgets, and valid timelines.");
+            }
+        }
+
+        // 4. Total Budget
+        var totalBudget = allDetails.Sum(d => d.Budget);
+        if (totalBudget <= 0)
+        {
+            errors.Add("Total LIB amount must be greater than ₱0.00.");
+        }
+        else
+        {
+            passedChecks.Add($"Total budget allocated: ₱{totalBudget:N2}.");
+        }
+
+        return (errors.Count == 0, errors, passedChecks);
+    }
 }

@@ -1,4 +1,5 @@
 using ERPEZ.Domain.Entities.Procurement;
+using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
@@ -14,7 +15,7 @@ public class AwardAOBCommandHandler(IUnitOfWork unitOfWork)
         // 1. Verify AOB exists
         var aob = await unitOfWork.AOBRepository.Query()
             .Include(a => a.AOBAwardedItems)
-            .FirstOrDefaultAsync(a => a.Id == request.AOBId, cancellationToken);
+            .FirstOrDefaultAsync(a => a.Id == request.AOBId && !a.IsDeleted, cancellationToken);
 
         if (aob == null)
         {
@@ -22,9 +23,9 @@ public class AwardAOBCommandHandler(IUnitOfWork unitOfWork)
         }
 
         // Status guard before awarding
-        if (string.Equals(aob.Status, "APPROVED", StringComparison.OrdinalIgnoreCase))
+        if (aob.Status == StatusEnum.Approved)
         {
-            return ApiResponse<Unit>.Fail("This Abstract of Bids (AOB) has already been approved and awarded.");
+            return ApiResponse<Unit>.Fail("This Abstract of Bids (AOB) has already been approved and cannot be re-awarded.");
         }
 
         // 2. Validate suppliers exist
@@ -38,15 +39,16 @@ public class AwardAOBCommandHandler(IUnitOfWork unitOfWork)
             return ApiResponse<Unit>.Fail("One or more winning suppliers do not exist.");
         }
 
-        // 3. Validate APP items exist
-        var appItemIds = request.AwardedItems.Select(x => x.APPItemId).Distinct().ToList();
-        var existingItemsCount = await unitOfWork.APPItemRepository.Query()
-            .Where(i => appItemIds.Contains(i.Id))
-            .CountAsync(cancellationToken);
+        // 3. Validate RFQ items exist
+        var rfqItemIds = request.AwardedItems.Select(x => x.RFQItemId).Distinct().ToList();
+        var rfqItems = await unitOfWork.RFQRepository.Query()
+            .SelectMany(r => r.RFQItems)
+            .Where(i => rfqItemIds.Contains(i.Id))
+            .ToDictionaryAsync(i => i.Id, cancellationToken);
 
-        if (existingItemsCount != appItemIds.Count)
+        if (rfqItems.Count != rfqItemIds.Count)
         {
-            return ApiResponse<Unit>.Fail("One or more APP items do not exist.");
+            return ApiResponse<Unit>.Fail("One or more RFQ items do not exist.");
         }
 
         // 4. Clear existing awards
@@ -56,20 +58,29 @@ public class AwardAOBCommandHandler(IUnitOfWork unitOfWork)
         // 5. Add new awards
         foreach (var item in request.AwardedItems)
         {
+            var rfqItem = rfqItems[item.RFQItemId];
+            var qty = item.AwardedQuantity > 0 ? item.AwardedQuantity : rfqItem.Quantity;
+            var totalAmount = item.TotalAwardedAmount > 0 ? item.TotalAwardedAmount : (item.AwardedUnitPrice * qty);
+
             aob.AOBAwardedItems.Add(new AOBAwardedItem
             {
-                APPItemId = item.APPItemId,
+                RFQItemId = item.RFQItemId,
                 WinningSupplierId = item.WinningSupplierId,
                 AwardedUnitPrice = item.AwardedUnitPrice,
-                Score = item.Score
+                AwardedQuantity = qty,
+                TotalAwardedAmount = totalAmount,
+                Score = item.Score,
+                AwardReason = item.AwardReason,
+                PurchaseOrderId = item.PurchaseOrderId
             });
         }
 
-        aob.Status = "APPROVED";
+        aob.UpdatedAt = DateTime.UtcNow;
+        aob.UpdatedBy = "System";
 
         unitOfWork.AOBRepository.Update(aob);
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
-        return ApiResponse<Unit>.Success(Unit.Value, "AOB winners selected and stored successfully. AOB status updated to APPROVED.");
+        return ApiResponse<Unit>.Success(Unit.Value, "AOB winners selected and stored successfully.");
     }
 }

@@ -6,9 +6,9 @@ public class SubmitSupplierBidCommandValidator : AbstractValidator<SubmitSupplie
 {
     public SubmitSupplierBidCommandValidator()
     {
-        RuleFor(x => x.ProcurementProjectId)
+        RuleFor(x => x.RFQId)
             .NotEmpty()
-            .WithMessage("Procurement Project ID is required.");
+            .WithMessage("RFQ ID is required.");
 
         RuleFor(x => x.SupplierId)
             .NotEmpty()
@@ -21,9 +21,9 @@ public class SubmitSupplierBidCommandValidator : AbstractValidator<SubmitSupplie
 
         RuleForEach(x => x.Items).ChildRules(item =>
         {
-            item.RuleFor(i => i.APPItemId)
+            item.RuleFor(i => i.RFQItemId)
                 .NotEmpty()
-                .WithMessage("APP Item ID is required for bid items.");
+                .WithMessage("RFQ Item ID is required for bid items.");
 
             item.RuleFor(i => i.UnitPrice)
                 .GreaterThan(0)

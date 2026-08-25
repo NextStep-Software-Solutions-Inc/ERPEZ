@@ -5,6 +5,7 @@
 
 import { useMemo, useState, useCallback } from 'react'
 import { useNavigate } from '@tanstack/react-router'
+import { useQueryClient } from '@tanstack/react-query'
 import { useAtom } from 'jotai'
 import { toast } from 'sonner'
 import {
@@ -12,6 +13,8 @@ import {
   aprListFilterAtom,
 } from '@/features/procurement/apr/atoms'
 import { useAPRs, useDeleteAPRMutation } from '@/features/procurement/apr/handlers/hooks'
+import { invalidateAPRQueries } from '@/features/procurement/apr/utils/invalidateAPRQueries'
+import { matchesAPRStatus } from '@/features/procurement/apr/utils'
 import { getAPRsTableColumns } from '@/features/procurement/apr/tables/APRsTableColumns'
 import { APRsTableToolbar } from '@/features/procurement/apr/tables/APRsTableToolbar'
 import { CreateAPRDialog, AddAgencyAPPDialog } from '@/features/procurement/apr/dialogs'
@@ -76,16 +79,12 @@ export function APRListPage() {
       }
 
       // Status filter
-      if (statusFilter !== 'all') {
-        const statusLower = (apr.status || '').toLowerCase()
-        const filterLower = statusFilter.toLowerCase()
-        if (statusLower !== filterLower) {
-          return false
-        }
+      if (!matchesAPRStatus(apr.status, statusFilter)) {
+        return false
       }
 
       // Fiscal year filter
-      if (fiscalYearFilter && apr.fiscalYear && apr.fiscalYear !== fiscalYearFilter) {
+      if (fiscalYearFilter && apr.fiscalYear && Number(apr.fiscalYear) !== Number(fiscalYearFilter)) {
         return false
       }
 
@@ -108,6 +107,8 @@ export function APRListPage() {
     setAprToDelete(apr)
   }, [])
 
+  const queryClient = useQueryClient()
+
   const handleConfirmDelete = async () => {
     if (!aprToDelete) return
     try {
@@ -115,7 +116,9 @@ export function APRListPage() {
         pathParams: { aprId: aprToDelete.id },
       } as any)
       toast.success(`APR ${aprToDelete.aprNumber} deleted successfully`)
+      invalidateAPRQueries(queryClient)
       setAprToDelete(null)
+      refetch()
     } catch (err: any) {
       const msg = err?.response?.data?.message || err?.message || 'Failed to delete APR'
       toast.error(msg)
