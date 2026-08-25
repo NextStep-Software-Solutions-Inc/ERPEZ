@@ -163,7 +163,6 @@ import { Route as V2planningWfpWfpIdActivityRouteImport } from './routes/v2/(pla
 import { Route as V2planningWfpWfpIdGanttChartRouteImport } from './routes/v2/(planning)/wfp/$wfpId/gantt-chart'
 import { Route as V2procurementBacResolutionsResolutionIdIndexRouteImport } from './routes/v2/(procurement)/bac-resolutions/$resolutionId/index'
 import { Route as V2procurementBacResolutionsClausesIndexRouteImport } from './routes/v2/(procurement)/bac-resolutions/clauses/index'
-import { Route as V2procurementBiddingDocumentsBacResolutionIdIndexRouteImport } from './routes/v2/(procurement)/bidding-documents/$bacResolutionId/index'
 import { Route as V2procurementManageNoaNoaIdIndexRouteImport } from './routes/v2/(procurement)/manage-noa/$noaId/index'
 import { Route as V2procurementNoticeOfAwardNoaNoaIdIndexRouteImport } from './routes/v2/(procurement)/notice-of-award-noa/$noaId/index'
 import { Route as V2procurementPoPurchaseOrderIdIndexRouteImport } from './routes/v2/(procurement)/po/$purchaseOrderId/index'
@@ -1117,12 +1116,6 @@ const V2procurementBacResolutionsClausesIndexRoute =
     path: '/bac-resolutions/clauses/',
     getParentRoute: () => V2Route,
   } as any)
-const V2procurementBiddingDocumentsBacResolutionIdIndexRoute =
-  V2procurementBiddingDocumentsBacResolutionIdIndexRouteImport.update({
-    id: '/(procurement)/bidding-documents/$bacResolutionId/',
-    path: '/bidding-documents/$bacResolutionId/',
-    getParentRoute: () => V2Route,
-  } as any)
 const V2procurementManageNoaNoaIdIndexRoute =
   V2procurementManageNoaNoaIdIndexRouteImport.update({
     id: '/(procurement)/manage-noa/$noaId/',
@@ -1427,7 +1420,6 @@ export interface FileRoutesByFullPath {
   '/v2/wfp/$wfpId/': typeof V2planningWfpWfpIdIndexRoute
   '/v2/bac-resolutions/$resolutionId/': typeof V2procurementBacResolutionsResolutionIdIndexRoute
   '/v2/bac-resolutions/clauses/': typeof V2procurementBacResolutionsClausesIndexRoute
-  '/v2/bidding-documents/$bacResolutionId/': typeof V2procurementBiddingDocumentsBacResolutionIdIndexRoute
   '/v2/manage-noa/$noaId/': typeof V2procurementManageNoaNoaIdIndexRoute
   '/v2/notice-of-award-noa/$noaId/': typeof V2procurementNoticeOfAwardNoaNoaIdIndexRoute
   '/v2/po/$purchaseOrderId/': typeof V2procurementPoPurchaseOrderIdIndexRoute
@@ -1592,7 +1584,6 @@ export interface FileRoutesByTo {
   '/v2/wfp/$wfpId': typeof V2planningWfpWfpIdIndexRoute
   '/v2/bac-resolutions/$resolutionId': typeof V2procurementBacResolutionsResolutionIdIndexRoute
   '/v2/bac-resolutions/clauses': typeof V2procurementBacResolutionsClausesIndexRoute
-  '/v2/bidding-documents/$bacResolutionId': typeof V2procurementBiddingDocumentsBacResolutionIdIndexRoute
   '/v2/manage-noa/$noaId': typeof V2procurementManageNoaNoaIdIndexRoute
   '/v2/notice-of-award-noa/$noaId': typeof V2procurementNoticeOfAwardNoaNoaIdIndexRoute
   '/v2/po/$purchaseOrderId': typeof V2procurementPoPurchaseOrderIdIndexRoute
@@ -1775,7 +1766,6 @@ export interface FileRoutesById {
   '/v2/(planning)/wfp/$wfpId/': typeof V2planningWfpWfpIdIndexRoute
   '/v2/(procurement)/bac-resolutions/$resolutionId/': typeof V2procurementBacResolutionsResolutionIdIndexRoute
   '/v2/(procurement)/bac-resolutions/clauses/': typeof V2procurementBacResolutionsClausesIndexRoute
-  '/v2/(procurement)/bidding-documents/$bacResolutionId/': typeof V2procurementBiddingDocumentsBacResolutionIdIndexRoute
   '/v2/(procurement)/manage-noa/$noaId/': typeof V2procurementManageNoaNoaIdIndexRoute
   '/v2/(procurement)/notice-of-award-noa/$noaId/': typeof V2procurementNoticeOfAwardNoaNoaIdIndexRoute
   '/v2/(procurement)/po/$purchaseOrderId/': typeof V2procurementPoPurchaseOrderIdIndexRoute
@@ -1959,7 +1949,6 @@ export interface FileRouteTypes {
     | '/v2/wfp/$wfpId/'
     | '/v2/bac-resolutions/$resolutionId/'
     | '/v2/bac-resolutions/clauses/'
-    | '/v2/bidding-documents/$bacResolutionId/'
     | '/v2/manage-noa/$noaId/'
     | '/v2/notice-of-award-noa/$noaId/'
     | '/v2/po/$purchaseOrderId/'
@@ -2124,7 +2113,6 @@ export interface FileRouteTypes {
     | '/v2/wfp/$wfpId'
     | '/v2/bac-resolutions/$resolutionId'
     | '/v2/bac-resolutions/clauses'
-    | '/v2/bidding-documents/$bacResolutionId'
     | '/v2/manage-noa/$noaId'
     | '/v2/notice-of-award-noa/$noaId'
     | '/v2/po/$purchaseOrderId'
@@ -2306,7 +2294,6 @@ export interface FileRouteTypes {
     | '/v2/(planning)/wfp/$wfpId/'
     | '/v2/(procurement)/bac-resolutions/$resolutionId/'
     | '/v2/(procurement)/bac-resolutions/clauses/'
-    | '/v2/(procurement)/bidding-documents/$bacResolutionId/'
     | '/v2/(procurement)/manage-noa/$noaId/'
     | '/v2/(procurement)/notice-of-award-noa/$noaId/'
     | '/v2/(procurement)/po/$purchaseOrderId/'
@@ -3439,13 +3426,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof V2procurementBacResolutionsClausesIndexRouteImport
       parentRoute: typeof V2Route
     }
-    '/v2/(procurement)/bidding-documents/$bacResolutionId/': {
-      id: '/v2/(procurement)/bidding-documents/$bacResolutionId/'
-      path: '/bidding-documents/$bacResolutionId'
-      fullPath: '/v2/bidding-documents/$bacResolutionId/'
-      preLoaderRoute: typeof V2procurementBiddingDocumentsBacResolutionIdIndexRouteImport
-      parentRoute: typeof V2Route
-    }
     '/v2/(procurement)/manage-noa/$noaId/': {
       id: '/v2/(procurement)/manage-noa/$noaId/'
       path: '/manage-noa/$noaId'
@@ -4113,7 +4093,6 @@ interface V2RouteChildren {
   V2planningAppConsolidationSupplementalIndexRoute: typeof V2planningAppConsolidationSupplementalIndexRoute
   V2procurementBacResolutionsResolutionIdIndexRoute: typeof V2procurementBacResolutionsResolutionIdIndexRoute
   V2procurementBacResolutionsClausesIndexRoute: typeof V2procurementBacResolutionsClausesIndexRoute
-  V2procurementBiddingDocumentsBacResolutionIdIndexRoute: typeof V2procurementBiddingDocumentsBacResolutionIdIndexRoute
   V2procurementManageNoaNoaIdIndexRoute: typeof V2procurementManageNoaNoaIdIndexRoute
   V2procurementNoticeOfAwardNoaNoaIdIndexRoute: typeof V2procurementNoticeOfAwardNoaNoaIdIndexRoute
   V2procurementPoPurchaseOrderIdIndexRoute: typeof V2procurementPoPurchaseOrderIdIndexRoute
@@ -4244,8 +4223,6 @@ const V2RouteChildren: V2RouteChildren = {
     V2procurementBacResolutionsResolutionIdIndexRoute,
   V2procurementBacResolutionsClausesIndexRoute:
     V2procurementBacResolutionsClausesIndexRoute,
-  V2procurementBiddingDocumentsBacResolutionIdIndexRoute:
-    V2procurementBiddingDocumentsBacResolutionIdIndexRoute,
   V2procurementManageNoaNoaIdIndexRoute: V2procurementManageNoaNoaIdIndexRoute,
   V2procurementNoticeOfAwardNoaNoaIdIndexRoute:
     V2procurementNoticeOfAwardNoaNoaIdIndexRoute,

@@ -1,34 +1,30 @@
-import { Badge } from '@/components/ui/badge'
+import { StatusBadge, type StatusConfig } from '@/components/StatusBadge'
 import type { BacResolutionStatus } from '../types'
-
 
 interface BacResolutionStatusBadgeProps {
   status?: BacResolutionStatus | string | null
+  className?: string
+  showDot?: boolean
 }
 
-const statusClasses: Record<string, string> = {
-  draft: 'bg-slate-100 text-slate-700 border-slate-200',
-  'for-approval': 'bg-amber-100 text-amber-800 border-amber-200',
-  returned: 'bg-rose-100 text-rose-700 border-rose-200',
-  approved: 'bg-emerald-100 text-emerald-700 border-emerald-200',
-}
-
-function formatStatusLabel(status?: string | null) {
-  if (!status) return 'Draft'
-  return status
-    .split('-')
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(' ')
+const bacResolutionStatusMap: Record<string, StatusConfig> = {
+  draft: { color: 'secondary', variant: 'soft', label: 'Draft' },
+  'for-approval': { color: 'warning', variant: 'soft', label: 'For Approval' },
+  returned: { color: 'destructive', variant: 'soft', label: 'Returned' },
+  approved: { color: 'success', variant: 'soft', label: 'Approved' },
 }
 
 export function BacResolutionStatusBadge({
   status = 'draft',
+  className,
+  showDot,
 }: BacResolutionStatusBadgeProps) {
-  const currentStatus = status || 'draft'
-  const badgeClass = statusClasses[currentStatus] || statusClasses.draft
   return (
-    <Badge variant="outline" className={badgeClass}>
-      {formatStatusLabel(currentStatus)}
-    </Badge>
+    <StatusBadge
+      status={status || 'draft'}
+      statusMap={bacResolutionStatusMap}
+      className={className}
+      showDot={showDot}
+    />
   )
 }
