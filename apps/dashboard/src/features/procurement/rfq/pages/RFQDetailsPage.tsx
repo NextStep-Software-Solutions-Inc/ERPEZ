@@ -770,16 +770,23 @@ export function RFQDetailsPage({
       toast({
         title: 'Submission Failed',
         description: 'Add at least one item before submitting.',
+        variant: 'destructive',
       })
       return
     }
 
-    await submitRFQ(rfqId)
-    toast({
-      title: 'RFQ Submitted',
-      description: `${rfq.rfqNumber} has been submitted.`,
-    })
-    loadRFQ()
+    try {
+      const success = await submitRFQ(rfqId)
+      if (success) {
+        toast({
+          title: 'RFQ Submitted',
+          description: `${rfq.rfqNumber} has been submitted successfully for BAC review.`,
+        })
+        loadRFQ()
+      }
+    } catch (e: any) {
+      console.error('Failed to submit RFQ:', e)
+    }
   }
 
   return (

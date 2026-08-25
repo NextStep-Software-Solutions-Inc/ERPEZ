@@ -2,6 +2,7 @@ using ERPEZ.Shared.Common;
 using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
  
 namespace ERPEZ.Application.Features.Procurement.RequestForQuotation.Commands.SubmitRFQ;
  
@@ -35,6 +36,50 @@ public class SubmitRFQCommandHandler(IUnitOfWork unitOfWork)
         if (mode is null)
         {
             return ApiResponse<bool>.Fail("Procurement mode not found.");
+        }
+
+        // BAC Resolution Rule: An Approved BAC Resolution linked to the RFQ's Consolidated PR is required.
+        var cprId = rfq.ConsolidatedPRId 
+            ?? rfq.RFQItems.FirstOrDefault(i => i.CPRItem != null)?.CPRItem?.ConsolidatedPRId;
+
+        if (cprId.HasValue)
+        {
+            var project = await unitOfWork.ProcurementProjectRepository.Query()
+                .Include(p => p.BACResolutions)
+                .FirstOrDefaultAsync(p => p.ConsolidatedPRId == cprId.Value && !p.IsDeleted, cancellationToken);
+
+            var resolution = project?.BACResolutions.FirstOrDefault(r => !r.IsDeleted);
+
+            var cprNumber = rfq.ConsolidatedPR?.CPRNumber;
+            if (string.IsNullOrEmpty(cprNumber))
+            {
+                var cpr = await unitOfWork.ConsolidatedPRRepository.GetByIdAsync(cprId.Value, cancellationToken);
+                cprNumber = cpr?.CPRNumber ?? cprId.Value.ToString();
+            }
+
+            if (project == null && resolution == null)
+            {
+                return ApiResponse<bool>.Fail(
+                    $"Cannot submit RFQ: No BAC Resolution found for Consolidated PR '{cprNumber}'. " +
+                    "An approved BAC Resolution recommending the mode of procurement is required before submission.");
+            }
+
+            var status = !string.IsNullOrEmpty(resolution?.Status) ? resolution.Status : project?.Status;
+            var isApproved = string.Equals(status, nameof(StatusEnum.Approved), StringComparison.OrdinalIgnoreCase) ||
+                             string.Equals(status, "Approved", StringComparison.OrdinalIgnoreCase);
+
+            if (!isApproved)
+            {
+                var resNumber = !string.IsNullOrEmpty(resolution?.ResolutionNumber)
+                    ? resolution.ResolutionNumber
+                    : (!string.IsNullOrEmpty(project?.Title) ? project.Title : "In-Progress Resolution");
+
+                var displayStatus = !string.IsNullOrEmpty(status) ? status : "Draft";
+
+                return ApiResponse<bool>.Fail(
+                    $"Cannot submit RFQ: The linked BAC Resolution ({resNumber}) is currently in '{displayStatus}' status and pending approval. " +
+                    "An approved BAC Resolution is required before submitting this RFQ.");
+            }
         }
  
         // GPPB Rule 1: threshold check.

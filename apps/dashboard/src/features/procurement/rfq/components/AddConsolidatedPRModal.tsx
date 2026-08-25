@@ -16,8 +16,9 @@ import {
   TableHeader,
   TableRow,
 } from '@/components/ui/table'
-import { Search, ChevronDown, ChevronRight } from 'lucide-react'
+import { Search, ChevronDown, ChevronRight, CheckCircle2, Clock, AlertCircle } from 'lucide-react'
 import { ScrollArea } from '@/components/ui/scroll-area'
+import { Badge } from '@/components/ui/badge'
 import type { RFQItem } from '../store/rfqStore'
 import { useRFQStore } from '../store/rfqStore'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
@@ -69,6 +70,10 @@ export function AddConsolidatedPRModal({ open, onOpenChange, onAdd }: AddConsoli
           description: `Consolidated PR for ${item.procurementModeName || 'RFQ'}`,
           purpose: `Consolidated PR for ${item.procurementModeName || 'RFQ'}`,
           status: 'APPROVED/FOR BAC UTILIZATION',
+          hasBACResolution: item.hasBACResolution,
+          bacResolutionStatus: item.bacResolutionStatus,
+          bacResolutionNumber: item.bacResolutionNumber,
+          bacResolutionId: item.bacResolutionId,
           selectedPRItems: [],
         })
       }
@@ -303,9 +308,14 @@ export function AddConsolidatedPRModal({ open, onOpenChange, onAdd }: AddConsoli
                 filteredPRs.map((pr) => {
                     const isExpanded = expandedPRs.has(pr.id)
                     const prItems = pr.selectedPRItems || []
-                    const linkedResolution = getMockBacResolutionDatabase().find((res: any) =>
+                    const mockRes = getMockBacResolutionDatabase().find((res: any) =>
                       res.linkedConsolidatedPrs.some((link: any) => link.id === pr.id || link.prNumber === pr.prNumber)
                     )
+                    const hasBacRes = pr.hasBACResolution ?? !!mockRes
+                    const bacResStatus = pr.bacResolutionStatus || (mockRes ? 'approved' : undefined)
+                    const bacResNum = pr.bacResolutionNumber || mockRes?.bacResolutionNumber
+                    const isApproved = hasBacRes && (bacResStatus?.toLowerCase() === 'approved')
+                    const isInProgress = hasBacRes && !isApproved
 
                   return (
                     <div key={pr.id} className="border rounded-lg bg-white shadow-sm">
@@ -324,17 +334,30 @@ export function AddConsolidatedPRModal({ open, onOpenChange, onAdd }: AddConsoli
                           )}
                         </Button>
                         <div className="flex-1">
-                            <div className="flex items-center gap-3">
+                          <div className="flex items-center gap-3 flex-wrap">
                             <span className="font-semibold">{pr.prNumber || pr.id}</span>
+                            {isApproved ? (
+                              <Badge variant="outline" className="bg-emerald-50 text-emerald-700 border-emerald-300 font-medium text-[11px] py-0.5 px-2">
+                                <CheckCircle2 className="h-3 w-3 mr-1 text-emerald-600 inline" />
+                                BAC Res: {bacResNum || 'Approved'} • Approved
+                              </Badge>
+                            ) : isInProgress ? (
+                              <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-300 font-medium text-[11px] py-0.5 px-2">
+                                <Clock className="h-3 w-3 mr-1 text-amber-600 inline" />
+                                BAC Res: {bacResNum || 'In Progress'} • {bacResStatus || 'Draft / In Progress'}
+                              </Badge>
+                            ) : (
+                              <Badge variant="outline" className="bg-slate-100 text-slate-600 border-slate-300 font-normal text-[11px] py-0.5 px-2">
+                                <AlertCircle className="h-3 w-3 mr-1 text-slate-500 inline" />
+                                No BAC Res Linked
+                              </Badge>
+                            )}
                           </div>
                           <div className="text-sm text-muted-foreground mt-1">
                             {pr.description || pr.purpose || 'No description'}
                           </div>
                         </div>
                         <div className="text-sm text-muted-foreground text-right">
-                          {linkedResolution && (
-                            <div className="text-xs text-primary font-medium">PR Reso No: {String(linkedResolution.bacResolutionNumber || '').replace(/^BAC-RES/i, 'PR-RES')}</div>
-                          )}
                           <div>{prItems.length} item(s) • ₱{prItems.reduce((sum: number, item: any) => sum + item.totalAmount, 0).toLocaleString()}</div>
                         </div>
                       </div>
