@@ -1,5 +1,4 @@
 import { useNavigate } from '@tanstack/react-router'
-import useBacResolutionService from '../hooks/useBacResolutionService'
 import { PageContainerDashtail } from '@/components/v2'
 import {
   Card,
@@ -8,7 +7,7 @@ import {
   CardTitle,
 } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
-import { useState } from 'react'
+import { useMemo, useState } from 'react'
 import { Badge } from '@/components/ui/badge'
 import { ScrollText, Plus, BookOpen } from 'lucide-react'
 import InboxPanel from './InboxPanel'
@@ -20,8 +19,15 @@ import type {
   BacResolutionInboxFilter,
   BacResolutionRole,
   BacResolutionWorkspaceScope,
+  BacProject,
+  LinkConsolidatedPrsPayload,
 } from '../types'
 import { ClauseTemplateManagerDialog } from './ClauseTemplateManagerDialog'
+import { createMutationHookFromTemplate, useQueryClient } from 'erpez-shared-lib'
+import { deleteBacResolutionRequest } from '../handlers/deleteBacResolutionRequest'
+import { toast } from 'sonner'
+
+const useDeleteBacResolution = createMutationHookFromTemplate(deleteBacResolutionRequest)
 
 interface BacResolutionWorkspaceProps {
   role: BacResolutionRole
@@ -33,6 +39,23 @@ interface BacResolutionWorkspaceProps {
   bacListRoutePath?: BacResolutionListRoutePath
 }
 
+const statusOptions: BacResolutionInboxFilter[] = [
+  'all',
+  'draft',
+  'for-approval',
+  'returned',
+  'approved',
+]
+
+function formatInboxFilterLabel(status: BacResolutionInboxFilter) {
+  return status === 'all'
+    ? 'All'
+    : status
+      .split('-')
+      .map((part) => part[0].toUpperCase() + part.slice(1))
+      .join(' ')
+}
+
 export function BacResolutionWorkspace({
   role,
   title,
@@ -42,16 +65,114 @@ export function BacResolutionWorkspace({
   workspaceScope = 'all',
   bacListRoutePath = '/v2/bac-resolutions',
 }: BacResolutionWorkspaceProps) {
-  const navigate = useNavigate()
-  const [clauseManagerOpen, setClauseManagerOpen] = useState(false)
+  const navigate = useNavigate({
+    from: '/v2/bac-resolutions/'
+  })
+  const queryClient = useQueryClient()
+  const { mutateAsync: deleteBacProject } = useDeleteBacResolution()
+
+  // Filter & Queue Search States
+  const [searchValue, setSearchValue] = useState('')
+  const [filter, setFilter] = useState<BacResolutionInboxFilter>(defaultFilter)
+  const [sourceTypeFilter, setSourceTypeFilter] = useState<'all' | 'APP_ITEM' | 'CONSOLIDATED_PR'>('all')
+  const [budgetTier, setBudgetTier] = useState<'all' | 'under-1m' | '1m-5m' | 'above-5m' | 'custom'>('all')
+  const [customMinBudget, setCustomMinBudget] = useState<number | null>(null)
+  const [customMaxBudget, setCustomMaxBudget] = useState<number | null>(null)
+  const [sortBy, setSortBy] = useState<'newest' | 'oldest' | 'amount-desc' | 'amount-asc'>('newest')
+
+  const resetAllFilters = () => {
+    setSearchValue('')
+    setFilter('all')
+    setSourceTypeFilter('all')
+    setBudgetTier('all')
+    setCustomMinBudget(null)
+    setCustomMaxBudget(null)
+    setSortBy('newest')
+  }
+
+  // Modals & Dialog States
+  const [createOpen, setCreateOpen] = useState(false)
+  const [editOpen, setEditOpen] = useState(false)
+  const [editingResolution, setEditingResolution] = useState<BacProject | undefined>(undefined)
+  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
+  const [resolutionToDeleteId, setResolutionToDeleteId] = useState<string | null>(null)
+  const [detailsOpen, setDetailsOpen] = useState(false)
+  const [detailsResolutionId, setDetailsResolutionId] = useState<string | null>(null)
+  const [viewConsolidatedPrOpen, setViewConsolidatedPrOpen] = useState(false)
+  const [viewConsolidatedPrId, setViewConsolidatedPrId] = useState<string | null>(null)
+  const [linkOpen, setLinkOpen] = useState(false)
+  const [approveOpen, setApproveOpen] = useState(false)
+  const [returnOpen, setReturnOpen] = useState(false)
+  const [submitConfirmOpen, setSubmitConfirmOpen] = useState(false)
   const [docPreviewOpen, setDocPreviewOpen] = useState(false)
   const [createPrModalOpen, setCreatePrModalOpen] = useState(false)
+  const [clauseManagerOpen, setClauseManagerOpen] = useState(false)
 
-  const { ws } = useBacResolutionService(
-    defaultFilter,
-    selectedId,
-    workspaceScope,
-  )
+  // Inbox cards definition
+  const inboxCards = useMemo(() => {
+    return statusOptions.map((status) => ({
+      status,
+      label: formatInboxFilterLabel(status),
+      count: 0,
+    }))
+  }, [])
+
+  // Handlers
+  const handleViewConsolidatedPrDetails = (consolidatedPrId: string) => {
+    setViewConsolidatedPrId(consolidatedPrId)
+    setViewConsolidatedPrOpen(true)
+  }
+
+  const handleDelete = (id: string) => {
+    setResolutionToDeleteId(id)
+    setDeleteConfirmOpen(true)
+  }
+
+  const handleConfirmDelete = async () => {
+    if (!resolutionToDeleteId) return
+    const idToDelete = resolutionToDeleteId
+
+    try {
+      await toast.promise(
+        deleteBacProject(
+          { pathParams: { id: idToDelete } },
+          {
+            onSuccess: async () => {
+              void queryClient.invalidateQueries({
+                predicate: (query) =>
+                  typeof query.queryKey[0] === 'string' &&
+                  query.queryKey[0].startsWith('/bac/projects'),
+              })
+              if (selectedId === idToDelete) {
+                void navigate({
+                  search: (prev: Record<string, unknown>) => ({ ...prev, id: undefined }),
+                  replace: true,
+                })
+              }
+            },
+          },
+        ),
+        {
+          loading: 'Deleting BAC Project...',
+          success: 'BAC Project deleted successfully!',
+          error: (err) =>
+            err instanceof Error ? err.message : 'Failed to delete BAC Project.',
+        },
+      )
+    } catch {
+      // toast handles presentation
+    } finally {
+      setDeleteConfirmOpen(false)
+      setResolutionToDeleteId(null)
+    }
+  }
+
+  const handleUpdate = () => { }
+  const handleLink = (_payload: LinkConsolidatedPrsPayload) => { }
+  const handleSubmit = () => { setSubmitConfirmOpen(true) }
+  const handleConfirmSubmit = () => { setSubmitConfirmOpen(false) }
+  const handleApprove = (_payload: { bacResolutionId: string; signedDocument: File }) => { setApproveOpen(false) }
+  const handleReturn = (_payload: { bacResolutionId: string; reason: string }) => { setReturnOpen(false) }
 
   return (
     <div className="w-full space-y-6 pb-12">
@@ -91,7 +212,7 @@ export function BacResolutionWorkspace({
 
               {role === 'procurement-staff' && (
                 <Button
-                  onClick={() => ws.setCreateOpen(true)}
+                  onClick={() => setCreateOpen(true)}
                   className="gap-1.5 text-xs h-9 shadow-xs"
                 >
                   <Plus className="h-4 w-4" />
@@ -114,40 +235,40 @@ export function BacResolutionWorkspace({
           {/* Left Column: Master Queue (4 cols on desktop) */}
           <div className="lg:col-span-4">
             <InboxPanel
-              inboxCards={ws.inboxCards}
+              inboxCards={inboxCards}
               selectedId={selectedId ?? null}
               onSelectId={(id) =>
                 void navigate({
-                  search: (prev: any) => ({ ...prev, id }),
+                  search: (prev: Record<string, unknown>) => ({ ...prev, id }),
                   replace: true,
                 })
               }
-              searchValue={ws.searchValue}
-              setSearchValue={ws.setSearchValue}
-              filter={ws.filter}
-              setFilter={ws.setFilter}
-              sourceTypeFilter={ws.sourceTypeFilter}
-              setSourceTypeFilter={ws.setSourceTypeFilter}
-              budgetTier={ws.budgetTier}
-              setBudgetTier={ws.setBudgetTier}
-              customMinBudget={ws.customMinBudget}
-              setCustomMinBudget={ws.setCustomMinBudget}
-              customMaxBudget={ws.customMaxBudget}
-              setCustomMaxBudget={ws.setCustomMaxBudget}
-              sortBy={ws.sortBy}
-              setSortBy={ws.setSortBy}
-              resetAllFilters={ws.resetAllFilters}
+              searchValue={searchValue}
+              setSearchValue={setSearchValue}
+              filter={filter}
+              setFilter={setFilter}
+              sourceTypeFilter={sourceTypeFilter}
+              setSourceTypeFilter={setSourceTypeFilter}
+              budgetTier={budgetTier}
+              setBudgetTier={setBudgetTier}
+              customMinBudget={customMinBudget}
+              setCustomMinBudget={setCustomMinBudget}
+              customMaxBudget={customMaxBudget}
+              setCustomMaxBudget={setCustomMaxBudget}
+              sortBy={sortBy}
+              setSortBy={setSortBy}
+              resetAllFilters={resetAllFilters}
               role={role}
               workspaceScope={workspaceScope}
               bacListRoutePath={bacListRoutePath}
-              onEdit={(res) => {
-                ws.setEditingResolution(res as any)
-                ws.setEditOpen(true)
+              onEdit={(res: BacProject) => {
+                setEditingResolution(res)
+                setEditOpen(true)
               }}
-              onDelete={ws.handleDelete}
+              onDelete={handleDelete}
               onViewDetails={(id) => {
-                ws.setDetailsResolutionId(id)
-                ws.setDetailsOpen(true)
+                setDetailsResolutionId(id)
+                setDetailsOpen(true)
               }}
             />
           </div>
@@ -157,59 +278,59 @@ export function BacResolutionWorkspace({
             <DetailsPanel
               selectedId={selectedId ?? null}
               role={role}
-              workspaceScope={workspaceScope}
-              bacListRoutePath={bacListRoutePath}
-              handleViewConsolidatedPrDetails={ws.handleViewConsolidatedPrDetails}
               onLinkPrs={
                 role === 'procurement-staff' && selectedId
-                  ? () => ws.setLinkOpen(true)
+                  ? () => setLinkOpen(true)
                   : undefined
               }
               onSubmit={
                 role === 'procurement-staff' && selectedId
-                  ? ws.handleSubmit
+                  ? handleSubmit
                   : undefined
               }
               onViewDocument={
                 selectedId ? () => setDocPreviewOpen(true) : undefined
+              }
+              onDelete={
+                selectedId ? () => handleDelete(selectedId) : undefined
               }
             />
           </div>
         </div>
 
         <CreateBacResolutionDialog
-          open={ws.createOpen}
-          onOpenChange={ws.setCreateOpen}
+          open={createOpen}
+          onOpenChange={setCreateOpen}
         />
 
         <DialogsController
-          editOpen={ws.editOpen}
-          setEditOpen={ws.setEditOpen}
-          editingResolution={ws.editingResolution ?? undefined}
-          onUpdate={ws.handleUpdate}
-          deleteConfirmOpen={ws.deleteConfirmOpen}
-          setDeleteConfirmOpen={ws.setDeleteConfirmOpen}
-          onConfirmDelete={ws.handleConfirmDelete}
-          detailsOpen={ws.detailsOpen}
-          setDetailsOpen={ws.setDetailsOpen}
-          detailsResolutionId={ws.detailsResolutionId}
-          viewConsolidatedPrOpen={ws.viewConsolidatedPrOpen}
-          setViewConsolidatedPrOpen={ws.setViewConsolidatedPrOpen}
-          viewConsolidatedPrId={ws.viewConsolidatedPrId}
-          linkOpen={ws.linkOpen}
-          setLinkOpen={ws.setLinkOpen}
+          editOpen={editOpen}
+          setEditOpen={setEditOpen}
+          // editingResolution={editingResolution}
+          onUpdate={handleUpdate}
+          deleteConfirmOpen={deleteConfirmOpen}
+          setDeleteConfirmOpen={setDeleteConfirmOpen}
+          onConfirmDelete={handleConfirmDelete}
+          detailsOpen={detailsOpen}
+          setDetailsOpen={setDetailsOpen}
+          detailsResolutionId={detailsResolutionId}
+          viewConsolidatedPrOpen={viewConsolidatedPrOpen}
+          setViewConsolidatedPrOpen={setViewConsolidatedPrOpen}
+          viewConsolidatedPrId={viewConsolidatedPrId}
+          linkOpen={linkOpen}
+          setLinkOpen={setLinkOpen}
           availablePrs={[]}
-          onLink={ws.handleLink}
-          onViewConsolidatedPr={ws.handleViewConsolidatedPrDetails}
-          approveOpen={ws.approveOpen}
-          setApproveOpen={ws.setApproveOpen}
-          onApprove={ws.handleApprove}
-          returnOpen={ws.returnOpen}
-          setReturnOpen={ws.setReturnOpen}
-          onReturn={ws.handleReturn}
-          submitConfirmOpen={ws.submitConfirmOpen}
-          setSubmitConfirmOpen={ws.setSubmitConfirmOpen}
-          onConfirmSubmit={ws.handleConfirmSubmit}
+          onLink={handleLink}
+          onViewConsolidatedPr={handleViewConsolidatedPrDetails}
+          approveOpen={approveOpen}
+          setApproveOpen={setApproveOpen}
+          onApprove={handleApprove}
+          returnOpen={returnOpen}
+          setReturnOpen={setReturnOpen}
+          onReturn={handleReturn}
+          submitConfirmOpen={submitConfirmOpen}
+          setSubmitConfirmOpen={setSubmitConfirmOpen}
+          onConfirmSubmit={handleConfirmSubmit}
           docPreviewOpen={docPreviewOpen}
           setDocPreviewOpen={setDocPreviewOpen}
           createPrOpen={createPrModalOpen}

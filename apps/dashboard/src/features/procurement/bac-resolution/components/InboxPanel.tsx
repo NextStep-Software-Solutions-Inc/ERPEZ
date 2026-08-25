@@ -498,7 +498,7 @@ export function InboxPanel({
         )}
       </CardHeader>
 
-      <CardContent className="flex-1 space-y-2 overflow-y-auto max-h-[750px] p-3.5 pt-0">
+      <CardContent className="flex-1 space-y-2 overflow-y-auto max-h-[750px] p-3.5 ">
         {isLoading ? (
           <div className="py-12 text-center text-xs text-muted-foreground space-y-2">
             <Loader2 className="h-5 w-5 animate-spin text-primary mx-auto" />

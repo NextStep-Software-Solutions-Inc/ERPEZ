@@ -6,23 +6,13 @@ import type {
   BacResolutionWorkspaceScope,
 } from '../types'
 import {
-  buildLinkableConsolidatedPrs,
-  isBacResolutionInPublicBiddingScope,
-} from '../utils/bacResolutionWorkflow'
-import {
   createMutationHookFromTemplate,
-  createQueryHookFromTemplate,
 } from 'erpez-shared-lib'
-import {
-  createBacResolutionRequest,
-} from '../handlers/createBacResolutionRequest'
 import { updateBacResolutionRequest } from '../handlers/updateBacResolutionRequest'
-import { deleteBacResolutionRequest } from '../handlers/deleteBacResolutionRequest'
 import { linkConsolidatedPrsRequest } from '../handlers/linkConsolidatedPrsRequest'
 import { submitBacResolutionRequest } from '../handlers/submitBacResolutionRequest'
 import { approveBacResolutionRequest } from '../handlers/approveBacResolutionRequest'
 import { returnBacResolutionRequest } from '../handlers/returnBacResolutionRequest'
-import { getBacResolutionsRequest } from '../handlers/getBacResolutionsRequest'
 
 const statusOptions: BacResolutionInboxFilter[] = [
   'all',
@@ -41,14 +31,8 @@ function formatInboxFilterLabel(status: BacResolutionInboxFilter) {
       .join(' ')
 }
 
-const useCreateBacResolutionMutation = createMutationHookFromTemplate(
-  createBacResolutionRequest,
-)
 const useUpdateBacResolutionMutation = createMutationHookFromTemplate(
   updateBacResolutionRequest,
-)
-const useDeleteBacResolutionMutation = createMutationHookFromTemplate(
-  deleteBacResolutionRequest,
 )
 const useLinkConsolidatedPrMutation = createMutationHookFromTemplate(
   linkConsolidatedPrsRequest,
@@ -68,26 +52,18 @@ export function useBacResolutionWorkspaceState(
   initialSelectedResolutionId?: string,
   workspaceScope: BacResolutionWorkspaceScope = 'all',
 ) {
-  // Query backend APIs via TanStack Query
-
-
   const updateMutation = useUpdateBacResolutionMutation()
-  const deleteMutation = useDeleteBacResolutionMutation()
   const linkMutation = useLinkConsolidatedPrMutation()
   const submitMutation = useSubmitBacResolutionMutation()
   const approveMutation = useApproveBacResolutionMutation()
   const returnMutation = useReturnBacResolutionMutation()
 
   const isMutating =
-
     updateMutation.isPending ||
-    deleteMutation.isPending ||
     linkMutation.isPending ||
     submitMutation.isPending ||
     approveMutation.isPending ||
     returnMutation.isPending
-
-
 
   const [selectedResolutionId, setSelectedResolutionId] = useState<
     string | null
@@ -121,10 +97,6 @@ export function useBacResolutionWorkspaceState(
   const [editOpen, setEditOpen] = useState(false)
   const [editingResolution, setEditingResolution] =
     useState<BacResolution | null>(null)
-  const [deleteConfirmOpen, setDeleteConfirmOpen] = useState(false)
-  const [resolutionToDeleteId, setResolutionToDeleteId] = useState<
-    string | null
-  >(null)
   const [detailsOpen, setDetailsOpen] = useState(false)
   const [detailsResolutionId, setDetailsResolutionId] = useState<string | null>(
     null,
@@ -138,64 +110,22 @@ export function useBacResolutionWorkspaceState(
   const [returnOpen, setReturnOpen] = useState(false)
   const [submitConfirmOpen, setSubmitConfirmOpen] = useState(false)
 
-
-
   const handleViewConsolidatedPrDetails = (consolidatedPrId: string) => {
     setViewConsolidatedPrId(consolidatedPrId)
     setViewConsolidatedPrOpen(true)
   }
 
-  // --- CRUD HANDLERS WITH API MUTATION & LOCAL FALLBACK ---
-
   const handleCreate = () => { }
 
   const handleUpdate = () => { }
 
-  const handleDelete = (id: string) => {
-    setResolutionToDeleteId(id)
-    setDeleteConfirmOpen(true)
-  }
-
-  const handleConfirmDelete = () => {
-    if (!resolutionToDeleteId) return
-
-    deleteMutation.mutate(
-      { pathParams: { id: resolutionToDeleteId } },
-      {
-        onSuccess: () => {
-          if (selectedResolutionId === resolutionToDeleteId) {
-            setSelectedResolutionId(null)
-          }
-          setDeleteConfirmOpen(false)
-          setResolutionToDeleteId(null)
-        },
-        onError: () => {
-
-          if (selectedResolutionId === resolutionToDeleteId) {
-            setSelectedResolutionId(null)
-          }
-          toast.success('BAC Resolution draft deleted.')
-          setDeleteConfirmOpen(false)
-          setResolutionToDeleteId(null)
-        },
-      },
-    )
-  }
-
   const handleLink = () => { }
 
-  const handleSubmit = () => {
+  const handleSubmit = () => { }
 
+  const handleConfirmSubmit = () => { }
 
-  }
-
-  const handleConfirmSubmit = () => {
-
-
-  }
-
-  const handlePrint = () => {
-  }
+  const handlePrint = () => { }
 
   const handleApprove = (payload: {
     bacResolutionId: string
@@ -213,8 +143,7 @@ export function useBacResolutionWorkspaceState(
         onSuccess: () => {
           setApproveOpen(false)
         },
-        onError: () => {
-        }
+        onError: () => { }
       },
     )
   }
@@ -236,7 +165,6 @@ export function useBacResolutionWorkspaceState(
           setReturnOpen(false)
         },
         onError: () => {
-
           toast.success('BAC Resolution returned for revision.')
           setReturnOpen(false)
         },
@@ -244,8 +172,7 @@ export function useBacResolutionWorkspaceState(
     )
   }
 
-  const countByStatus = () => {
-  }
+  const countByStatus = () => { }
 
   const inboxCards = statusOptions.map((status) => ({
     status,
@@ -277,8 +204,6 @@ export function useBacResolutionWorkspaceState(
     setEditOpen,
     editingResolution,
     setEditingResolution,
-    deleteConfirmOpen,
-    setDeleteConfirmOpen,
     detailsOpen,
     setDetailsOpen,
     detailsResolutionId,
@@ -298,8 +223,6 @@ export function useBacResolutionWorkspaceState(
     isMutating,
     handleCreate,
     handleUpdate,
-    handleDelete,
-    handleConfirmDelete,
     handleLink,
     handleSubmit,
     handleConfirmSubmit,

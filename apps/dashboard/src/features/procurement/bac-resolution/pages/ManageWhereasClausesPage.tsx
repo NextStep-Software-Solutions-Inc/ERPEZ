@@ -34,11 +34,18 @@ import {
 import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
 import { toast } from 'sonner'
 import {
-  useCreateWhereasClauseTemplate,
-  useDeleteWhereasClauseTemplate,
-  useUpdateWhereasClauseTemplate,
-  useWhereasClauseTemplates,
-} from '../handlers/hooks'
+  createQueryHookFromTemplate,
+  createMutationHookFromTemplate,
+} from 'erpez-shared-lib'
+import { getWhereasClauseTemplatesRequest } from '../handlers/getWhereasClauseTemplatesRequest'
+import { createWhereasClauseTemplateRequest } from '../handlers/createWhereasClauseTemplateRequest'
+import { updateWhereasClauseTemplateRequest } from '../handlers/updateWhereasClauseTemplateRequest'
+import { deleteWhereasClauseTemplateRequest } from '../handlers/deleteWhereasClauseTemplateRequest'
+
+const useWhereasClauseTemplates = createQueryHookFromTemplate(getWhereasClauseTemplatesRequest)
+const useCreateWhereasClauseTemplate = createMutationHookFromTemplate(createWhereasClauseTemplateRequest)
+const useUpdateWhereasClauseTemplate = createMutationHookFromTemplate(updateWhereasClauseTemplateRequest)
+const useDeleteWhereasClauseTemplate = createMutationHookFromTemplate(deleteWhereasClauseTemplateRequest)
 import { CreateEditWhereasClauseDialog } from '../dialogs/CreateEditWhereasClauseDialog'
 import type { WhereasClauseTemplate } from '../types'
 
