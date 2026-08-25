@@ -23,7 +23,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { BacResolutionStatusBadge } from './index'
-import type { BacResolutionRole, BacResolutionClause, BacResolutionLogEntry } from '../types'
+import type { BacResolutionRole, BacResolutionWhereasClause, BacResolutionLogEntry } from '../types'
 import { createQueryHookFromTemplate } from 'erpez-shared-lib'
 import { getBacResolutionRequest } from '../handlers/getBacResolutionRequest'
 
@@ -132,21 +132,26 @@ export function DetailsPanel({
     selectedProject.APPItem?.Office?.name ||
     selectedProject.APPItem?.officeName ||
     selectedProject.consolidatedPR?.selectedPRItems?.[0]?.prOffice ||
-    selectedProject.consolidatedPR
+    selectedProject.consolidatedPR?.purpose ||
+    'N/A'
 
   const procurementMode =
     selectedProject.APPItem?.ProcurementMode?.name ||
     selectedProject.APPItem?.procurementModeName ||
-    selectedProject.consolidatedPR
+    (selectedProject.consolidatedPR?.itemMOPs
+      ? Object.values(selectedProject.consolidatedPR.itemMOPs)[0]?.mop
+      : null) ||
+    'N/A'
 
   const fundSource =
     selectedProject.APPItem?.FundSource?.name ||
     selectedProject.APPItem?.fundSourceName ||
-    selectedProject.consolidatedPR
+    selectedProject.consolidatedPR?.selectedPRItems?.[0]?.fund ||
+    'General Fund'
 
   const endUserRep = selectedProject.endUserRepresentative
     ? `${selectedProject.endUserRepresentative.firstName} ${selectedProject.endUserRepresentative.lastName}`
-    : selectedProject.APPItem?.Office?.name
+    : selectedProject.APPItem?.Office?.name || officeName
 
   const techRep = selectedProject.techRepresentative
     ? `${selectedProject.techRepresentative.firstName} ${selectedProject.techRepresentative.lastName}`
@@ -160,15 +165,16 @@ export function DetailsPanel({
   const approvedBy = selectedProject.approvedBy
   const approvedAt = selectedProject.approvedAt
 
-  const whereasClauses: BacResolutionClause[] =
-    selectedProject.bacResolutions?.map((item) => {
-      return {
-        id: item.id,
-        body: item.whereasClauses,
-        name: item.whereasClauses
-      }
-    })
-    || []
+  const whereasClauses: BacResolutionWhereasClause[] =
+    selectedProject.bacResolutions?.flatMap((item) =>
+      Array.isArray(item.whereasClauses)
+        ? item.whereasClauses.map((clause) => ({
+          id: clause.id,
+          name: clause.name || 'Whereas Clause',
+          body: clause.body || '',
+        }))
+        : [],
+    ) || []
 
   const activityLog: BacResolutionLogEntry[] =
     []

@@ -203,19 +203,8 @@ export type ApproveBacResolutionPayload = {
   signedDocument: File
 }
 
-export type WhereasClauseTemplate = {
-  id: string
-  name: string
-  body: string
-}
-export type WhereasClauseTemplateDetails = WhereasClauseTemplate & {
 
-}
 
-export type WhereasClauseTemplatePayload = {
-  name: string
-  body: string
-}
 
 export type PrintBacResolutionResult = {
   fileName: string
