@@ -17,4 +17,10 @@ public interface IProcurementProjectRepository : IRepository<ProcurementProject>
     /// </summary>
     Task<ProcurementProject?> GetForApplicationSubmissionAsync(
         Guid id, CancellationToken cancellationToken = default);
+
+    /// <summary>
+    /// Load project with associated BAC Resolutions and Whereas Clause Items.
+    /// </summary>
+    Task<ProcurementProject?> GetWithBACResolutionsAsync(
+        Guid id, CancellationToken cancellationToken = default);
 }

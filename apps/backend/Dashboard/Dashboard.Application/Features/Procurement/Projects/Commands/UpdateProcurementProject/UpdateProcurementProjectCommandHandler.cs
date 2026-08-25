@@ -1,9 +1,9 @@
+using System.Linq;
 using ERPEZ.Domain.Entities.Procurement;
 using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.Application.Features.Procurement.Projects.Commands.UpdateProcurementProject;
 
@@ -12,10 +12,7 @@ public class UpdateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
 {
     public async Task<ApiResponse<Unit>> Handle(UpdateProcurementProjectCommand request, CancellationToken cancellationToken)
     {
-        var project = await unitOfWork.ProcurementProjectRepository.Query()
-            .Include(p => p.BACResolutions)
-                .ThenInclude(r => r.WhereasClauseItems)
-            .FirstOrDefaultAsync(p => p.Id == request.Id, cancellationToken);
+        var project = await unitOfWork.ProcurementProjectRepository.GetWithBACResolutionsAsync(request.Id, cancellationToken);
 
         if (project == null)
         {
@@ -27,9 +24,16 @@ public class UpdateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
             return ApiResponse<Unit>.Fail("Only procurement projects in 'Draft' status can be updated.");
         }
 
-        project.Title = request.UpdateRequest.Title;
-        project.ABC = request.UpdateRequest.ABC;
-        project.Status = request.UpdateRequest.Status;
+        if (request.UpdateRequest.Title != null)
+        {
+            project.Title = request.UpdateRequest.Title;
+        }
+
+        if (!string.IsNullOrEmpty(request.UpdateRequest.Status))
+        {
+            project.Status = request.UpdateRequest.Status;
+        }
+
         project.EndUserRepresentativeId = request.UpdateRequest.EndUserRepresentativeId;
         project.TechRepresentativeId = request.UpdateRequest.TechRepresentativeId;
 
@@ -38,38 +42,41 @@ public class UpdateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
         {
             resolution = new BACResolution
             {
-                ResolutionType = request.UpdateRequest.ResolutionType,
-                ResolutionNumber = request.UpdateRequest.ResolutionNumber,
-                DateResolved = request.UpdateRequest.DateResolved,
-                WhereasClause = request.UpdateRequest.WhereasClause
+                ResolutionType = request.UpdateRequest.ResolutionType ?? string.Empty,
+                ResolutionNumber = request.UpdateRequest.ResolutionNumber ?? string.Empty,
+                DateResolved = request.UpdateRequest.DateResolved ?? DateTime.UtcNow,
+                ResolvedLocation = request.UpdateRequest.ResolvedLocation
             };
             project.BACResolutions.Add(resolution);
         }
         else
         {
-            resolution.ResolutionType = request.UpdateRequest.ResolutionType;
-            resolution.ResolutionNumber = request.UpdateRequest.ResolutionNumber;
-            resolution.DateResolved = request.UpdateRequest.DateResolved;
-            resolution.WhereasClause = request.UpdateRequest.WhereasClause;
+            if (request.UpdateRequest.ResolutionType != null)
+                resolution.ResolutionType = request.UpdateRequest.ResolutionType;
+            if (request.UpdateRequest.ResolutionNumber != null)
+                resolution.ResolutionNumber = request.UpdateRequest.ResolutionNumber;
+            if (request.UpdateRequest.DateResolved.HasValue)
+                resolution.DateResolved = request.UpdateRequest.DateResolved.Value;
+            if (request.UpdateRequest.ResolvedLocation != null)
+                resolution.ResolvedLocation = request.UpdateRequest.ResolvedLocation;
         }
 
-        if (request.UpdateRequest.WhereasClauseIds != null)
+        if (request.UpdateRequest.WhereasClauses != null)
         {
             resolution.WhereasClauseItems.Clear();
-            for (int i = 0; i < request.UpdateRequest.WhereasClauseIds.Count; i++)
+            foreach (var clauseDto in request.UpdateRequest.WhereasClauses)
             {
-                var clauseId = request.UpdateRequest.WhereasClauseIds[i];
-                var clause = await unitOfWork.BACResolutionWhereasClauseRepository.GetByIdAsync(clauseId, cancellationToken);
+                var clause = await unitOfWork.BACResolutionWhereasClauseRepository.GetByIdAsync(clauseDto.WhereasClauseId, cancellationToken);
                 if (clause == null)
                 {
-                    return ApiResponse<Unit>.Fail($"BAC Resolution Whereas Clause with ID '{clauseId}' was not found.");
+                    return ApiResponse<Unit>.Fail($"BAC Resolution Whereas Clause with ID '{clauseDto.WhereasClauseId}' was not found.");
                 }
 
                 resolution.WhereasClauseItems.Add(new BACResolutionWhereasClauseItem
                 {
                     BACResolutionId = resolution.Id,
-                    BACResolutionWhereasClauseId = clauseId,
-                    Order = i
+                    BACResolutionWhereasClauseId = clauseDto.WhereasClauseId,
+                    Order = clauseDto.Order
                 });
             }
         }

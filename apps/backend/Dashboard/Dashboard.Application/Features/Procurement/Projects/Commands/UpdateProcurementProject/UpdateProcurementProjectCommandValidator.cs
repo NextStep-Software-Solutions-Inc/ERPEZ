@@ -1,3 +1,4 @@
+using System.Linq;
 using FluentValidation;
 
 namespace ERPEZ.Application.Features.Procurement.Projects.Commands.UpdateProcurementProject;
@@ -11,21 +12,15 @@ public class UpdateProcurementProjectCommandValidator : AbstractValidator<Update
             .WithMessage("Project Id is required.");
 
         RuleFor(x => x.UpdateRequest.Title)
-            .NotEmpty()
             .MaximumLength(500)
-            .WithMessage("Project title is required and cannot exceed 500 characters.");
+            .WithMessage("Project title cannot exceed 500 characters.")
+            .When(x => !string.IsNullOrEmpty(x.UpdateRequest.Title));
 
-
-
-        RuleFor(x => x.UpdateRequest.ABC)
-            .GreaterThan(0)
-            .WithMessage("Approved Budget for the Contract (ABC) must be greater than zero.");
-
-        RuleFor(x => x.UpdateRequest.WhereasClauseIds)
-            .Must(ids => ids == null || ids.Distinct().Count() == ids.Count)
-            .WithMessage("WhereasClauseIds must not contain duplicate values.")
-            .Must(ids => ids == null || !ids.Contains(System.Guid.Empty))
-            .WithMessage("WhereasClauseIds must not contain empty GUIDs.")
-            .When(x => x.UpdateRequest.WhereasClauseIds != null);
+        RuleFor(x => x.UpdateRequest.WhereasClauses)
+            .Must(clauses => clauses == null || clauses.Select(c => c.WhereasClauseId).Distinct().Count() == clauses.Count)
+            .WithMessage("WhereasClauses must not contain duplicate clause IDs.")
+            .Must(clauses => clauses == null || !clauses.Any(c => c.WhereasClauseId == System.Guid.Empty))
+            .WithMessage("WhereasClauses must not contain empty GUIDs.")
+            .When(x => x.UpdateRequest.WhereasClauses != null);
     }
 }

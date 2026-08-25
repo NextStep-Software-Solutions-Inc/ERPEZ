@@ -40,4 +40,14 @@ public class ProcurementProjectRepository : Repository<ProcurementProject>, IPro
                 .ThenInclude(s => s.ProcurementActivityType)
             .FirstOrDefaultAsync(cancellationToken);
     }
+
+    public async Task<ProcurementProject?> GetWithBACResolutionsAsync(
+        Guid id, CancellationToken cancellationToken = default)
+    {
+        return await context.Set<ProcurementProject>()
+            .Where(p => p.Id == id && !p.IsDeleted)
+            .Include(p => p.BACResolutions)
+                .ThenInclude(r => r.WhereasClauseItems)
+            .FirstOrDefaultAsync(cancellationToken);
+    }
 }
