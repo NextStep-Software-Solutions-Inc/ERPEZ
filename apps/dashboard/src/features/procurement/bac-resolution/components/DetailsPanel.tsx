@@ -201,7 +201,7 @@ export function DetailsPanel({
 
             {/* Quick Actions in Header Banner */}
             <div className="flex flex-wrap items-center gap-2">
-              {onEdit && (isDraft || isReturned) && (
+              {onEdit && (
                 <Button
                   size="sm"
                   variant="outline"
