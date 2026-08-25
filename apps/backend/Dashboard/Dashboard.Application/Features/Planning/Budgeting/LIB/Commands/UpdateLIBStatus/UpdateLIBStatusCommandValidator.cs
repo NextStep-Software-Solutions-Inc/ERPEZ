@@ -13,7 +13,7 @@ public class UpdateLIBStatusCommandValidator : AbstractValidator<UpdateLIBStatus
         RuleFor(x => x.Status)
             .NotEmpty()
             .WithMessage("{PropertyName} is required.")
-            .Must(v => Enum.TryParse<LIBStatusEnum>(v, true, out _))
-            .WithMessage("{PropertyName} must be a valid LIB status value (Draft, Submitted, Approved, Returned, Consolidated, Proposed, PendingCeilingApproval).");
+            .Must(v => string.Equals(v, "Rejected", StringComparison.OrdinalIgnoreCase) || Enum.TryParse<LIBStatusEnum>(v, true, out _))
+            .WithMessage("{PropertyName} must be a valid LIB status value (Draft, Submitted, Approved, Returned, Rejected, Consolidated, Proposed, PendingCeilingApproval).");
     }
 }

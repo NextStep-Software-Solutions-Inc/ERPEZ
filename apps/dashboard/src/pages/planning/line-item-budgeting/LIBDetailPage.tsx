@@ -58,7 +58,8 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { LIBSummaryDialog } from './dialogs/LIBSummaryDialog'
 import { LIBHistoryDialog } from './dialogs/LIBHistoryDialog'
-import { LayoutDashboard, History } from 'lucide-react'
+import { LayoutDashboard, History, Check, X } from 'lucide-react'
+import { LIBApprovalDialog, LIBReadinessCard } from '@/features/planning/line-item-budgeting/line-item-budget/components'
 
 
 // ============================================================================
@@ -143,6 +144,17 @@ export default function LIBDetailPage({
   const [isSubmitConfirmOpen, setIsSubmitConfirmOpen] = useState<boolean>(false)
   const [showSummary, setShowSummary] = useState<boolean>(false)
   const [showHistory, setShowHistory] = useState<boolean>(false)
+  const [approvalDialogState, setApprovalDialogState] = useState<{
+    open: boolean
+    action: 'approve' | 'reject'
+    libId: string | null
+    libName: string
+  }>({
+    open: false,
+    action: 'approve',
+    libId: null,
+    libName: '',
+  })
   const [deletingOrphanItemId, setDeletingOrphanItemId] = useState<
     string | null
   >(null)
@@ -377,16 +389,17 @@ export default function LIBDetailPage({
 
   // Handler for submitting LIB
   const handleSubmitLIB = async () => {
+    if (!libId) return
     try {
       await updateLIBStatus(
         {
-          pathParams: { id: libId || '' },
+          pathParams: { id: libId },
           queryParams: {},
           payload: { status: 'Submitted' },
         },
         {
           onSuccess: async () => {
-            toast.success('LIB submitted successfully!')
+            toast.success('LIB submitted for approval successfully!')
             setIsSubmitConfirmOpen(false)
             void refetch()
             void queryClient.invalidateQueries({
@@ -400,6 +413,66 @@ export default function LIBDetailPage({
     } catch (err) {
       const message =
         err instanceof Error ? err.message : 'Failed to submit LIB'
+      toast.error(message)
+    }
+  }
+
+  // Handler for approving LIB
+  const handleApproveLIB = (id: string, name?: string) => {
+    setApprovalDialogState({
+      open: true,
+      action: 'approve',
+      libId: id,
+      libName: name || lib?.name || 'Line-Item Budget',
+    })
+  }
+
+  // Handler for rejecting / returning LIB
+  const handleRejectLIB = (id: string, name?: string) => {
+    setApprovalDialogState({
+      open: true,
+      action: 'reject',
+      libId: id,
+      libName: name || lib?.name || 'Line-Item Budget',
+    })
+  }
+
+  const handleConfirmApproval = async () => {
+    if (!approvalDialogState.libId) return
+    try {
+      const targetStatus =
+        approvalDialogState.action === 'approve' ? 'Approved' : 'Returned'
+      await updateLIBStatus(
+        {
+          pathParams: { id: approvalDialogState.libId },
+          queryParams: {},
+          payload: { status: targetStatus },
+        },
+        {
+          onSuccess: async () => {
+            const actionLabel =
+              approvalDialogState.action === 'approve'
+                ? 'approved'
+                : 'returned for revision'
+            toast.success(`LIB "${approvalDialogState.libName}" has been ${actionLabel}!`)
+            setApprovalDialogState({
+              open: false,
+              action: 'approve',
+              libId: null,
+              libName: '',
+            })
+            void refetch()
+            await queryClient.invalidateQueries({
+              predicate: (query) =>
+                typeof query.queryKey[0] === 'string' &&
+                query.queryKey[0].startsWith('/libs'),
+            })
+          },
+        },
+      )
+    } catch (err) {
+      const message =
+        err instanceof Error ? err.message : 'Failed to update LIB status'
       toast.error(message)
     }
   }
@@ -556,33 +629,27 @@ export default function LIBDetailPage({
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-8">
-        {/* Ready for Submission Banner */}
-        {isReadyForSubmission && lib?.status === 'Draft' && (
-          <div className="bg-green-50 border-l-4 border-green-500 rounded-lg p-4 mb-8 flex items-start justify-between">
-            <div className="flex items-start gap-3">
-              <CheckCircle className="w-5 h-5 text-green-600 flex-shrink-0 mt-0.5" />
-              <div>
-
-                <h3 className="font-semibold text-green-800 text-sm">
-                  Ready for Submission
-                </h3>
-                <p className="text-green-700 text-sm mt-1">
-                  Total expenditures ({formatCurrencyPHP(totalActivitiesDetailBudget)}) have met or
-                  exceeded the total budget. You can now submit this LIB.
-                </p>
-              </div>
-            </div>
-            <Button
-              onClick={() => setIsSubmitConfirmOpen(true)}
-              disabled={isSubmitting}
-              className="bg-green-600 hover:bg-green-700 text-white flex-shrink-0 ml-4"
-              size="sm"
-            >
-              <Send className="w-5 h-5 text-white flex-shrink-0 mr-2" />
-              {isSubmitting ? 'Submitting...' : 'Submit LIB'}
-            </Button>
-          </div>
-        )}
+        {/* Workflow & Submission Readiness Persistent Card */}
+        <LIBReadinessCard
+          lib={lib}
+          isLoading={
+            isLoading ||
+            (lib?.sourceType === 'OPCR'
+              ? isOPCRLoading
+              : lib?.sourceType === 'WFP'
+                ? isWFPLoading
+                : false) ||
+            isLIBActivitiesLoading
+          }
+          onOpenSubmit={() => setIsSubmitConfirmOpen(true)}
+          onOpenApprove={
+            lib?.status === 'Submitted' ? () => handleApproveLIB(lib.id, lib.name) : undefined
+          }
+          onOpenReject={
+            lib?.status === 'Submitted' ? () => handleRejectLIB(lib.id, lib.name) : undefined
+          }
+          isSubmitting={isSubmitting}
+        />
 
         {/* Stats Cards */}
         <div className="grid grid-cols-1 gap-4 mb-8 md:grid-cols-3">
@@ -944,45 +1011,65 @@ export default function LIBDetailPage({
       />
 
       {/* Submission Confirmation Dialog */}
-      {isSubmitConfirmOpen && lib.status === 'Draft' && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-md">
-            <CardContent className="pt-6">
-              <div className="flex items-start gap-4">
-                <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-green-100">
-                  <CheckCircle className="h-6 w-6 text-green-600" />
+      {isSubmitConfirmOpen &&
+        (lib?.status === 'Draft' ||
+          lib?.status === 'Returned' ||
+          lib?.status === 'Proposed') && (
+          <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+            <Card className="w-full max-w-md">
+              <CardContent className="pt-6">
+                <div className="flex items-start gap-4">
+                  <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg bg-green-100">
+                    <CheckCircle className="h-6 w-6 text-green-600" />
+                  </div>
+                  <div className="flex-1">
+                    <h3 className="font-semibold text-gray-900">
+                      Submit LIB for Review?
+                    </h3>
+                    <p className="text-sm text-gray-600 mt-2">
+                      Once submitted, this LIB will be sent for review and approval
+                      by the Budget Office.
+                    </p>
+                  </div>
                 </div>
-                <div className="flex-1">
-                  <h3 className="font-semibold text-gray-900">
-                    Submit LIB for Review?
-                  </h3>
-                  <p className="text-sm text-gray-600 mt-2">
-                    Once submitted, this LIB will be sent for approval. You can
-                    view its status in the dashboard.
-                  </p>
-                </div>
-              </div>
 
-              <div className="flex gap-3 mt-6 justify-end">
-                <Button
-                  variant="outline"
-                  onClick={() => setIsSubmitConfirmOpen(false)}
-                  disabled={isSubmitting}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleSubmitLIB}
-                  disabled={isSubmitting}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  {isSubmitting ? 'Submitting...' : 'Submit LIB'}
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
+                <div className="flex gap-3 mt-6 justify-end">
+                  <Button
+                    variant="outline"
+                    onClick={() => setIsSubmitConfirmOpen(false)}
+                    disabled={isSubmitting}
+                  >
+                    Cancel
+                  </Button>
+                  <Button
+                    onClick={handleSubmitLIB}
+                    disabled={isSubmitting}
+                    className="bg-green-600 hover:bg-green-700"
+                  >
+                    {isSubmitting ? 'Submitting...' : 'Submit LIB'}
+                  </Button>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
+      {/* Approval / Rejection Dialog */}
+      <LIBApprovalDialog
+        open={approvalDialogState.open}
+        libName={approvalDialogState.libName}
+        action={approvalDialogState.action}
+        onConfirm={handleConfirmApproval}
+        onCancel={() =>
+          setApprovalDialogState({
+            open: false,
+            action: 'approve',
+            libId: null,
+            libName: '',
+          })
+        }
+        isLoading={isLibSubmitting}
+      />
     </div>
   )
 }

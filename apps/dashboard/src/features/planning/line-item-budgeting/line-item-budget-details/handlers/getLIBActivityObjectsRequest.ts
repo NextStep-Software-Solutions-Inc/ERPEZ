@@ -6,12 +6,20 @@ import {
 } from 'erpez-shared-lib'
 import api from '@/services/api'
 
-export type LIBActivityObjectResponse = {
-  objectId: string
-  objectCode: string
-  objectName: string
+export type LIBActivityObjectItemResponse = {
+  id: string
+  code: string
+  name: string
   totalBudget: number
 }
+
+export type LIBActivityObjectResponse = {
+  parentObjectId: string
+  parentObjectCode: string
+  parentObjectName: string
+  items: LIBActivityObjectItemResponse[]
+}
+
 export type GetLIBActivityObjectsQueryParams = QueryParams & {
   LIBActivityId: string
 }
