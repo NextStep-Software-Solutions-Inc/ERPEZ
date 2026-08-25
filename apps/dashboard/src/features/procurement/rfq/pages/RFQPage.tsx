@@ -374,35 +374,35 @@ export function RFQPage() {
                                 <Eye className="h-4 w-4 mr-2" />
                                 View Details
                               </DropdownMenuItem>
+                              {(normalizeStatus(r) === 'draft' || normalizeStatus(r) === 'returned') && (
+                                <DropdownMenuItem onClick={() => handleEditClick(r.id)}>
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Edit
+                                </DropdownMenuItem>
+                              )}
                               {normalizeStatus(r) === 'draft' && (
-                                <>
-                                  <DropdownMenuItem onClick={() => handleEditClick(r.id)}>
-                                    <Edit className="h-4 w-4 mr-2" />
-                                    Edit
-                                  </DropdownMenuItem>
-                                  <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                      <DropdownMenuItem>
-                                        <Trash2 className="h-4 w-4 mr-2 text-destructive" />
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <DropdownMenuItem>
+                                      <Trash2 className="h-4 w-4 mr-2 text-destructive" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Delete RFQ</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Are you sure you want to delete this RFQ? This action cannot be undone.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction onClick={() => removeRFQ(r.id)}>
                                         Delete
-                                      </DropdownMenuItem>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                      <AlertDialogHeader>
-                                        <AlertDialogTitle>Delete RFQ</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                          Are you sure you want to delete this RFQ? This action cannot be undone.
-                                        </AlertDialogDescription>
-                                      </AlertDialogHeader>
-                                      <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => removeRFQ(r.id)}>
-                                          Delete
-                                        </AlertDialogAction>
-                                      </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                  </AlertDialog>
-                                </>
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
                               )}
                             </DropdownMenuContent>
                           </DropdownMenu>

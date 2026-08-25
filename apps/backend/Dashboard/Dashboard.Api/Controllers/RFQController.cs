@@ -125,7 +125,7 @@ public class RFQController(ISender mediator) : ControllerBase
     }
 
     /// <summary>
-    /// Edit an RFQ's header fields and invited suppliers. Only allowed while Status == Draft.
+    /// Edit an RFQ's header fields and invited suppliers. Allowed while Status is Draft or Returned.
     /// </summary>
     [HttpPut("{id}")]
     [ProducesResponseType(typeof(ApiResponse<bool>), StatusCodes.Status200OK)]

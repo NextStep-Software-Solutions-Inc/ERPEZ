@@ -22,7 +22,9 @@ public class CreateRFQCommandValidator : AbstractValidator<CreateRFQCommand>
         RuleFor(x => x.Date).NotEmpty();
  
         RuleFor(x => x.SupplierIds)
-            .NotEmpty()
-            .WithMessage("Please select at least one prospective supplier.");
+            .NotNull()
+            .WithMessage("Please select at least 3 prospective suppliers.")
+            .Must(x => x != null && x.Distinct().Count() >= 3)
+            .WithMessage("Please select at least 3 prospective suppliers.");
     }
 }

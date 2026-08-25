@@ -2574,7 +2574,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<PurchaseRequest>()
             .HasIndex(pr => pr.PRNumber)
-            .IsUnique();
+            .IsUnique()
+            .HasFilter("\"IsDeleted\" = false");
 
         modelBuilder.Entity<PurchaseRequest>()
             .HasIndex(pr => pr.OfficeId);
@@ -2628,7 +2629,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<ConsolidatedPR>()
             .HasIndex(cpr => cpr.CPRNumber)
-            .IsUnique();
+            .IsUnique()
+            .HasFilter("\"IsDeleted\" = false");
 
         modelBuilder.Entity<ConsolidatedPR>()
             .Property(cpr => cpr.TotalAmount)
@@ -2995,7 +2997,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         // ConsolidatedPR.CPRNumber convention — no sequence/lock table exists in this codebase).
         modelBuilder.Entity<APR>()
             .HasIndex(e => e.APRNumber)
-            .IsUnique();
+            .IsUnique()
+            .HasFilter("\"IsDeleted\" = false");
 
         modelBuilder.Entity<APR>()
             .HasIndex(e => e.APPId);

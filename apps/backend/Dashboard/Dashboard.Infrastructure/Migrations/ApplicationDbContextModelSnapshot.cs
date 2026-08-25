@@ -7658,7 +7658,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("APPId");
 
                     b.HasIndex("APRNumber")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("\"IsDeleted\" = false");
 
                     b.HasIndex("FiscalYearId");
 
@@ -8099,7 +8100,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CPRNumber")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("\"IsDeleted\" = false");
 
                     b.ToTable("ConsolidatedPRs", "procurement");
                 });
@@ -9396,7 +9398,8 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.HasIndex("PPMPId");
 
                     b.HasIndex("PRNumber")
-                        .IsUnique();
+                        .IsUnique()
+                        .HasFilter("\"IsDeleted\" = false");
 
                     b.HasIndex("ProcurementCategoryId");
 

@@ -274,6 +274,8 @@ public class PurchaseRequestRepository : Repository<PurchaseRequest>, IPurchaseR
                 .Where(pi =>
                     !pi.IsDeleted &&
                     pi.CSEItemId == null &&
+                    pi.PPMPExpenditureItem != null &&
+                    pi.PPMPExpenditureItem.PPMPActivity != null &&
                     pi.PPMPExpenditureItem.PPMPActivity.PPMP.Status == StatusEnum.Approved &&
                     !pi.PPMPExpenditureItem.PPMPActivity.PPMP.IsDeleted);
 

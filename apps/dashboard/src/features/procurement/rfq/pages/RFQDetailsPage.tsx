@@ -50,6 +50,7 @@ import {
   Tag,
   Shield,
   Loader2,
+  Edit,
 } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
 import {
@@ -62,6 +63,7 @@ import {
 import DebouncedInput from '@/components/DebouncedInput'
 import { AddConsolidatedPRModal } from '../components/AddConsolidatedPRModal'
 import { SetQuotationModal } from '../components/SetQuotationModal'
+import { CreateRFQModal } from '../components/CreateRFQModal'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Input } from '@/components/ui/input'
 import {
@@ -98,6 +100,7 @@ export function RFQDetailsPage({
   const [searchTerm, setSearchTerm] = useState('')
   const [showAddPRModal, setShowAddPRModal] = useState(false)
   const [showQuotationModal, setShowQuotationModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
   const [showExportDialog, setShowExportDialog] = useState(false)
   const [viewingSupplier, setViewingSupplier] = useState<string | null>(null)
   const [viewingSupplierDetail, setViewingSupplierDetail] = useState<SupplierDetail | null>(null)
@@ -222,7 +225,8 @@ export function RFQDetailsPage({
   }
 
   const totalAmount = rfq.items.reduce((s: number, it: any) => s + (it.totalAmount || 0), 0)
-  const canSubmit = rfq?.status === 'draft' && (rfq?.items?.length || 0) > 0
+  const canEdit = !isSupplierPortal && (rfq?.status === 'draft' || rfq?.status === 'returned')
+  const canSubmit = canEdit && (rfq?.items?.length || 0) > 0
 
   // Supplier portal quotation state helpers
   const quotationIsPending =
@@ -404,7 +408,7 @@ export function RFQDetailsPage({
           <RadioGroup
             value={it.isRequiredBrochure ? 'yes' : 'no'}
             onValueChange={(value) => toggleBrochure(it.id, value === 'yes')}
-            disabled={rfq.status !== 'draft'}
+            disabled={!canEdit}
             className="flex gap-4"
           >
             <div className="flex items-center space-x-2">
@@ -428,7 +432,7 @@ export function RFQDetailsPage({
           </RadioGroup>
         </TableCell>
         <TableCell>
-          {rfq.status === 'draft' ? (
+          {canEdit ? (
             <Input
               value={greenSpecs[it.id] !== undefined ? greenSpecs[it.id] : (it.greenSpecification || '')}
               onChange={(e) =>
@@ -453,7 +457,7 @@ export function RFQDetailsPage({
           )}
         </TableCell>
         <TableCell>
-          {rfq.status === 'draft' && (
+          {canEdit && (
             <Button
               variant="ghost"
               size="sm"
@@ -751,6 +755,18 @@ export function RFQDetailsPage({
                 Export
               </Button>
 
+              {!isSupplierPortal && canEdit && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowEditModal(true)}
+                  className="gap-2"
+                >
+                  <Edit className="w-4 h-4" />
+                  Edit RFQ
+                </Button>
+              )}
+
               {!isSupplierPortal && canSubmit && (
                 <Button
                   size="sm"
@@ -758,7 +774,7 @@ export function RFQDetailsPage({
                   onClick={handleSubmitRFQ}
                 >
                   <Send className="w-4 h-4" />
-                  Submit RFQ
+                  {rfq?.status === 'returned' ? 'Re-submit RFQ' : 'Submit RFQ'}
                 </Button>
               )}
             </div>
@@ -901,8 +917,23 @@ export function RFQDetailsPage({
       {!isSupplierPortal && (
         <Card>
           <CardHeader>
-            <CardTitle>Suppliers</CardTitle>
-            <CardDescription>Suppliers invited for this RFQ</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Suppliers</CardTitle>
+                <CardDescription>Suppliers invited for this RFQ</CardDescription>
+              </div>
+              {canEdit && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowEditModal(true)}
+                  className="gap-1.5 text-xs h-8"
+                >
+                  <Edit className="w-3.5 h-3.5" />
+                  Manage Suppliers
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -1008,7 +1039,7 @@ export function RFQDetailsPage({
             </Select>
 
             <div className="ml-auto flex items-center gap-2">
-              {rfq.status === 'draft' && (
+              {canEdit && (
                 <Button
                   size="sm"
                   className="bg-gradient-to-r from-primary to-indigo-500 text-white hover:opacity-95"
@@ -1246,6 +1277,17 @@ export function RFQDetailsPage({
         open={showExportDialog}
         onOpenChange={setShowExportDialog}
         entityLabel="RFQ details"
+      />
+
+      {/* Edit RFQ Modal */}
+      <CreateRFQModal
+        open={showEditModal}
+        onOpenChange={setShowEditModal}
+        initialRFQ={rfq}
+        onSuccess={() => {
+          setShowEditModal(false)
+          loadRFQ()
+        }}
       />
     </div>
   )
