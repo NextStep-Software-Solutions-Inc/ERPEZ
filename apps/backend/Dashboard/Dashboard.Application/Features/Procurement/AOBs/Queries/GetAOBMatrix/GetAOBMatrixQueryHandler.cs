@@ -1,4 +1,4 @@
-using ERPEZ.Domain.Entities.Planning;
+using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
@@ -12,7 +12,7 @@ public class GetAOBMatrixQueryHandler(IUnitOfWork unitOfWork)
     public async Task<ApiResponse<AOBMatrixResponse>> Handle(GetAOBMatrixQuery request, CancellationToken cancellationToken)
     {
         var aob = await unitOfWork.AOBRepository.Query()
-            .Include(a => a.AOBProcurementProjectMappings)
+            .Include(a => a.AOBRFQMappings)
             .FirstOrDefaultAsync(a => a.Id == request.AOBId && !a.IsDeleted, cancellationToken);
 
         if (aob == null)
@@ -20,29 +20,32 @@ public class GetAOBMatrixQueryHandler(IUnitOfWork unitOfWork)
             return ApiResponse<AOBMatrixResponse>.Fail("Abstract of Bids (AOB) not found.");
         }
 
-        var projectIds = aob.AOBProcurementProjectMappings.Select(m => m.ProcurementProjectId).ToList();
+        var rfqIds = aob.AOBRFQMappings.Select(m => m.RFQId).ToList();
 
-        // Load Projects
-        var projects = await unitOfWork.ProcurementProjectRepository.Query()
-            .Where(p => projectIds.Contains(p.Id))
+        // 1. Load Linked RFQs with their items
+        var rfqs = await unitOfWork.RFQRepository.Query()
+            .Include(r => r.RFQItems)
+            .Where(r => rfqIds.Contains(r.Id))
             .ToListAsync(cancellationToken);
 
-        // Load Submitted Bids
+        var allRfqItems = rfqs.SelectMany(r => r.RFQItems).ToList();
+        var rfqItemIds = allRfqItems.Select(i => i.Id).ToList();
+
+        // 2. Load Submitted Bids for these RFQs
         var bids = await unitOfWork.SupplierBidRepository.Query()
             .Include(sb => sb.Supplier)
             .Include(sb => sb.SupplierBidItems)
-            .Where(sb => projectIds.Contains(sb.ProcurementProjectId) && sb.Status == "SUBMITTED")
+            .Where(sb => rfqIds.Contains(sb.RFQId) && sb.Status == "SUBMITTED")
             .ToListAsync(cancellationToken);
 
-        // Get distinct APPItemIds from all bids
-        var appItemIds = bids.SelectMany(b => b.SupplierBidItems).Select(bi => bi.APPItemId).Distinct().ToList();
+        // 3. Opening Date check
+        var isBidsOpened = DateTime.UtcNow >= aob.OpeningDate;
 
-        // Load APPItems
-        var appItems = await unitOfWork.APPItemRepository.Query()
-            .Include(ai => ai.PPMPItem)
-                .ThenInclude(pi => pi.PPMPItemAllocations)
-            .Where(ai => appItemIds.Contains(ai.Id))
-            .ToListAsync(cancellationToken);
+        // Distinct Suppliers who submitted bids
+        var distinctSuppliers = bids
+            .GroupBy(b => b.SupplierId)
+            .Select(g => g.First())
+            .ToList();
 
         var response = new AOBMatrixResponse
         {
@@ -53,62 +56,54 @@ public class GetAOBMatrixQueryHandler(IUnitOfWork unitOfWork)
             Status = aob.Status,
             AOBDate = aob.AOBDate,
             OpeningDate = aob.OpeningDate,
-            LinkedProjects = projects.Select(p => new AOBProjectDto
+            IsBidsOpened = isBidsOpened,
+            HasMinimumCanvassWarning = distinctSuppliers.Count < 3,
+            Remarks = aob.Remarks,
+            LinkedRFQs = rfqs.Select(r => new AOBMatrixRFQDto
             {
-                Id = p.Id,
-                Title = p.Title,
-                ABC = p.ABC,
-                Status = p.Status
+                Id = r.Id,
+                RFQNumber = r.RFQNumber,
+                TracingNumber = r.TracingNumber,
+                TotalAmount = r.TotalAmount,
+                Status = r.Status,
+                Date = r.Date,
+                Deadline = r.Deadline
+            }).ToList(),
+            Suppliers = distinctSuppliers.Select(b => new AOBMatrixSupplierDto
+            {
+                SupplierId = b.SupplierId,
+                Name = b.Supplier?.Name ?? "Unknown Supplier",
+                Email = b.Supplier?.Email ?? string.Empty,
+                SubmissionType = b.SubmissionType,
+                SubmittedAt = b.SubmittedAt,
+                DeliveryPeriod = b.DeliveryPeriod,
+                ValidityPeriodDays = b.ValidityPeriodDays
+            }).ToList(),
+            Items = allRfqItems.Select(item => new AOBMatrixItemDto
+            {
+                RFQItemId = item.Id,
+                RFQId = item.RFQId,
+                Name = item.ItemNameSnapshot,
+                Category = item.CategorySnapshot,
+                FundSource = item.FundSnapshot,
+                ABCUnitPrice = item.UnitPriceSnapshot,
+                Quantity = item.Quantity,
+                TotalABC = item.Quantity * item.UnitPriceSnapshot,
+                IsBrochureRequired = item.IsBrochureRequired,
+                GreenSpecification = item.GreenSpecification
             }).ToList()
         };
 
-        // Distinct Suppliers who submitted bids
-        var suppliersList = bids.Select(b => b.Supplier)
-            .GroupBy(s => s.Id)
-            .Select(g => g.First())
-            .ToList();
-
-        response.Suppliers = suppliersList.Select(s => new AOBMatrixSupplierDto
-        {
-            SupplierId = s.Id,
-            Name = s.Name,
-            Email = s.Email
-        }).ToList();
-
-        // Map items
-        var itemDtos = new List<AOBMatrixItemDto>();
-        foreach (var appItem in appItems)
-        {
-            var ppmpItem = appItem.PPMPItem;
-            var totalQty = ppmpItem?.PPMPItemAllocations.Sum(a => a.Quantity) ?? 0;
-            if (totalQty == 0) totalQty = 1;
-
-            var abcUnitPrice = ppmpItem?.UnitPrice ?? 0;
-
-            itemDtos.Add(new AOBMatrixItemDto
-            {
-                APPItemId = appItem.Id,
-                Name = ppmpItem?.Name ?? "Unknown Item",
-                Description = ppmpItem?.Description,
-                PAPCode = appItem.PAPCode,
-                ABCUnitPrice = abcUnitPrice,
-                TotalQuantity = totalQty,
-                TotalABC = totalQty * abcUnitPrice
-            });
-        }
-        response.Items = itemDtos;
-
-        // Map and rank bids
+        // 4. Map and rank bids per line item
         var cellDtos = new List<AOBMatrixBidCellDto>();
 
         foreach (var itemDto in response.Items)
         {
             var itemBids = new List<AOBMatrixBidCellDto>();
 
-            // Collect bids for this item
             foreach (var bid in bids)
             {
-                var bidItem = bid.SupplierBidItems.FirstOrDefault(bi => bi.APPItemId == itemDto.APPItemId);
+                var bidItem = bid.SupplierBidItems.FirstOrDefault(bi => bi.RFQItemId == itemDto.RFQItemId);
                 if (bidItem != null)
                 {
                     var isOverABC = bidItem.UnitPrice > itemDto.ABCUnitPrice;
@@ -117,48 +112,62 @@ public class GetAOBMatrixQueryHandler(IUnitOfWork unitOfWork)
                     {
                         BidItemId = bidItem.Id,
                         SupplierId = bid.SupplierId,
-                        APPItemId = itemDto.APPItemId,
-                        UnitPrice = bidItem.UnitPrice,
-                        Brand = bidItem.Brand,
-                        Model = bidItem.Model,
-                        Color = bidItem.Color,
-                        BrochureFileUrl = bidItem.BrochureFileUrl,
+                        SupplierName = bid.Supplier?.Name ?? string.Empty,
+                        RFQItemId = itemDto.RFQItemId,
+                        UnitPrice = isBidsOpened ? bidItem.UnitPrice : 0,
+                        TotalPrice = isBidsOpened ? (bidItem.UnitPrice * itemDto.Quantity) : 0,
+                        Brand = isBidsOpened ? bidItem.Brand : null,
+                        Model = isBidsOpened ? bidItem.Model : null,
+                        Color = isBidsOpened ? bidItem.Color : null,
+                        BrochureFileId = isBidsOpened ? bidItem.BrochureFileId : null,
+                        BrochureFileUrl = isBidsOpened ? bidItem.BrochureFileUrl : null,
                         IsResponsive = bidItem.IsResponsive,
+                        DisqualificationReason = bidItem.DisqualificationReason,
                         IsOverABC = isOverABC,
+                        QualityScore = isBidsOpened ? bidItem.QualityScore : null,
                         Rank = 0,
                         Score = 0
                     });
                 }
             }
 
-            // Rank and Score the responsive, not-over-ABC bids for this item
-            var eligibleBids = itemBids
-                .Where(b => b.IsResponsive && !b.IsOverABC)
-                .OrderBy(b => b.UnitPrice)
-                .ToList();
-
-            if (eligibleBids.Count > 0)
+            // Rank and Score eligible bids if bids are opened
+            if (isBidsOpened)
             {
-                var lowestPrice = eligibleBids.First().UnitPrice;
+                var eligibleBids = itemBids
+                    .Where(b => b.IsResponsive && !b.IsOverABC && b.UnitPrice > 0)
+                    .OrderBy(b => b.UnitPrice)
+                    .ToList();
 
-                for (int i = 0; i < eligibleBids.Count; i++)
+                if (eligibleBids.Count > 0)
                 {
-                    var eligibleBid = eligibleBids[i];
-                    eligibleBid.Rank = i + 1;
+                    var lowestPrice = eligibleBids.First().UnitPrice;
 
-                    // Score calculation: (Lowest Price / Supplier Price) * 100
-                    if (eligibleBid.UnitPrice > 0)
+                    for (int i = 0; i < eligibleBids.Count; i++)
                     {
-                        eligibleBid.Score = Math.Round((lowestPrice / eligibleBid.UnitPrice) * 100, 2);
-                    }
-                    else
-                    {
-                        eligibleBid.Score = 0;
+                        var eligibleBid = eligibleBids[i];
+                        eligibleBid.Rank = i + 1;
+
+                        if (aob.AwardCriterion == BidEvaluationCriteria.LCRB)
+                        {
+                            // LCRB Score: (Lowest Price / Supplier Price) * 100
+                            eligibleBid.Score = Math.Round((lowestPrice / eligibleBid.UnitPrice) * 100, 2);
+                        }
+                        else if (aob.AwardCriterion == BidEvaluationCriteria.MEARB)
+                        {
+                            // MEARB: Weighted Price (60%) + Quality Score (40%) if present, else standard ratio
+                            var priceScore = (lowestPrice / eligibleBid.UnitPrice) * 60;
+                            var qualityScore = (eligibleBid.QualityScore ?? 100) * 0.4m;
+                            eligibleBid.Score = Math.Round(priceScore + qualityScore, 2);
+                        }
+                        else
+                        {
+                            eligibleBid.Score = Math.Round((lowestPrice / eligibleBid.UnitPrice) * 100, 2);
+                        }
                     }
                 }
             }
 
-            // Add all (both eligible and ineligible) back to cells list
             cellDtos.AddRange(itemBids);
         }
 

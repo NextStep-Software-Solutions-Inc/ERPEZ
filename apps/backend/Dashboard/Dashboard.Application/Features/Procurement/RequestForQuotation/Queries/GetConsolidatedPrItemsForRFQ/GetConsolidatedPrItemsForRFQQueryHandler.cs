@@ -2,6 +2,7 @@ using ERPEZ.Application.Features.Procurement.RequestForQuotation.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.Application.Features.Procurement.RequestForQuotation.Queries.GetConsolidatedPrItemsForRFQ;
 
@@ -12,13 +13,29 @@ public class GetConsolidatedPrItemsForRFQQueryHandler(IUnitOfWork unitOfWork)
         GetConsolidatedPrItemsForRFQQuery request, CancellationToken cancellationToken)
     {
         // Only CPRs that are Approved are eligible to be sourced into an RFQ.
-        // Requires ConsolidatedPRRepository.GetAllApprovedWithDetailsAsync() from the earlier patch.
         var approvedCprs = await unitOfWork.ConsolidatedPRRepository.GetAllApprovedWithDetailsAsync(cancellationToken);
+
+        var cprIds = approvedCprs.Select(c => c.Id).ToList();
+        var projects = await unitOfWork.ProcurementProjectRepository.Query()
+            .Include(p => p.BACResolutions)
+            .Where(p => p.ConsolidatedPRId.HasValue && cprIds.Contains(p.ConsolidatedPRId.Value) && !p.IsDeleted)
+            .ToListAsync(cancellationToken);
+
+        var projectByCprId = projects
+            .GroupBy(p => p.ConsolidatedPRId!.Value)
+            .ToDictionary(g => g.Key, g => g.First());
 
         var result = new List<ConsolidatedPrItemForRFQDto>();
 
         foreach (var cpr in approvedCprs)
         {
+            projectByCprId.TryGetValue(cpr.Id, out var project);
+            var resolution = project?.BACResolutions.FirstOrDefault(r => !r.IsDeleted);
+            var hasBacRes = resolution != null || project != null;
+            var bacStatus = !string.IsNullOrEmpty(resolution?.Status) ? resolution.Status : project?.Status;
+            var bacNumber = !string.IsNullOrEmpty(resolution?.ResolutionNumber) ? resolution.ResolutionNumber : null;
+            var bacId = resolution?.Id ?? project?.Id;
+
             foreach (var cprItem in cpr.ConsolidatedPRItems.Where(i => !i.IsDeleted))
             {
                 var prItem = cprItem.PRItem;
@@ -50,7 +67,11 @@ public class GetConsolidatedPrItemsForRFQQueryHandler(IUnitOfWork unitOfWork)
                     RequestedQuantity = prItem.RequestedQuantity,
                     AlreadySourcedQuantity = alreadySourced,
                     ProcurementModeId = cprItem.ProcurementModeId ?? Guid.Empty,
-                    ProcurementModeName = cprItem.ProcurementMode?.Name
+                    ProcurementModeName = cprItem.ProcurementMode?.Name,
+                    HasBACResolution = hasBacRes,
+                    BACResolutionStatus = bacStatus,
+                    BACResolutionNumber = bacNumber,
+                    BACResolutionId = bacId
                 });
             }
         }

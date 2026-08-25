@@ -5,7 +5,7 @@ using Sieve.Attributes;
 namespace ERPEZ.Domain.Entities.Procurement;
 
 /// <summary>
-/// Stores the awarded/winning supplier details for each item in the AOB.
+/// Stores the awarded/winning supplier details for each RFQ line item in the AOB.
 /// </summary>
 public class AOBAwardedItem : BaseEntity
 {
@@ -13,7 +13,7 @@ public class AOBAwardedItem : BaseEntity
     public Guid AOBId { get; set; }
 
     [Sieve(CanFilter = true, CanSort = true)]
-    public Guid APPItemId { get; set; }
+    public Guid RFQItemId { get; set; }
 
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid WinningSupplierId { get; set; }
@@ -22,10 +22,23 @@ public class AOBAwardedItem : BaseEntity
     public decimal AwardedUnitPrice { get; set; }
 
     [Sieve(CanFilter = true, CanSort = true)]
+    public int AwardedQuantity { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public decimal TotalAwardedAmount { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
     public decimal Score { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public string? AwardReason { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public Guid? PurchaseOrderId { get; set; }
 
     // Navigation properties
     public virtual AOB AOB { get; set; } = null!;
-    public virtual APPItem APPItem { get; set; } = null!;
+    public virtual RFQItem RFQItem { get; set; } = null!;
     public virtual Supplier WinningSupplier { get; set; } = null!;
+    public virtual PurchaseOrder? PurchaseOrder { get; set; }
 }

@@ -1,4 +1,4 @@
-﻿import { useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useQueryClient } from '@tanstack/react-query'
 import { createMutationHookFromTemplate } from 'erpez-shared-lib'
 import { toast } from 'sonner'
@@ -270,6 +270,7 @@ export function SupplierRegistryForm({
         tinNumber: toNullable(formData.tinNumber),
         philGEPSNumber: toNullable(formData.philGEPSNumber),
         supplierCategoryId: formData.supplierCategoryId,
+        requirements: uploadedRequirements,
         supplierRequirements: uploadedRequirements,
       }
 

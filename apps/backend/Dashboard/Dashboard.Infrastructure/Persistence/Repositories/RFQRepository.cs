@@ -39,13 +39,29 @@ public class RFQRepository : Repository<RFQ>, IRFQRepository
         SieveModel sieveModel,
         CancellationToken cancellationToken = default)
     {
+        var validatedPage = sieveModel.Page.GetValueOrDefault(1);
+        if (validatedPage < 1)
+            validatedPage = 1;
+
+        var validatedPageSize = sieveModel.PageSize.GetValueOrDefault(10);
+        if (validatedPageSize <= 0)
+            validatedPageSize = 10;
+
+        var normalizedSieveModel = new SieveModel
+        {
+            Filters = sieveModel.Filters,
+            Sorts = sieveModel.Sorts,
+            Page = validatedPage,
+            PageSize = validatedPageSize
+        };
+
         var query = BuildDetailedQuery(context.Set<RFQ>()
             .AsNoTracking()
             .Where(r => !r.IsDeleted));
 
-        var filteredQuery = sieveProcessor.Apply(sieveModel, query, applyPagination: false);
+        var filteredQuery = sieveProcessor.Apply(normalizedSieveModel, query, applyPagination: false);
         var totalCount = await filteredQuery.CountAsync(cancellationToken);
-        var entities = await sieveProcessor.Apply(sieveModel, filteredQuery).ToListAsync(cancellationToken);
+        var entities = await sieveProcessor.Apply(normalizedSieveModel, filteredQuery, applyFiltering: false, applySorting: false).ToListAsync(cancellationToken);
 
         return (entities, totalCount);
     }

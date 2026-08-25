@@ -1,7 +1,9 @@
 using ERPEZ.Domain.Entities.Procurement;
+using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
+using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.Application.Features.Procurement.AOBs.Commands.CreateAOB;
 
@@ -17,18 +19,17 @@ public class CreateAOBCommandHandler(IUnitOfWork unitOfWork)
             return ApiResponse<Guid>.Fail($"An Abstract of Bids (AOB) with number '{request.AOBNumber}' already exists.");
         }
 
-        if (request.ProcurementProjectIds != null && request.ProcurementProjectIds.Count > 0)
+        if (request.RFQIds != null && request.RFQIds.Count > 0)
         {
-            // Verify all referenced procurement projects exist
-            var query = unitOfWork.ProcurementProjectRepository.Query()
-                .Where(p => request.ProcurementProjectIds.Contains(p.Id))
-                .Select(p => p.Id);
-            var existingProjectIds = await unitOfWork.ProcurementProjectRepository.ToListAsync(query, cancellationToken);
+            var existingRfqIds = await unitOfWork.RFQRepository.Query()
+                .Where(r => request.RFQIds.Contains(r.Id))
+                .Select(r => r.Id)
+                .ToListAsync(cancellationToken);
 
-            var missingIds = request.ProcurementProjectIds.Except(existingProjectIds).ToList();
+            var missingIds = request.RFQIds.Except(existingRfqIds).ToList();
             if (missingIds.Count > 0)
             {
-                return ApiResponse<Guid>.Fail($"The following Procurement Project ID(s) do not exist: {string.Join(", ", missingIds)}");
+                return ApiResponse<Guid>.Fail($"The following RFQ ID(s) do not exist: {string.Join(", ", missingIds)}");
             }
         }
 
@@ -39,18 +40,18 @@ public class CreateAOBCommandHandler(IUnitOfWork unitOfWork)
             AwardCriterion = request.AwardCriterion,
             AOBDate = request.AOBDate,
             OpeningDate = DateTime.SpecifyKind(request.OpeningDate, DateTimeKind.Utc),
-            Status = "DRAFT",
+            Status = StatusEnum.Draft,
             CreatedAt = DateTime.UtcNow,
             CreatedBy = "System"
         };
 
-        if (request.ProcurementProjectIds != null)
+        if (request.RFQIds != null)
         {
-            foreach (var projectId in request.ProcurementProjectIds)
+            foreach (var rfqId in request.RFQIds)
             {
-                aob.AOBProcurementProjectMappings.Add(new AOBProcurementProjectMapping
+                aob.AOBRFQMappings.Add(new AOBRFQMapping
                 {
-                    ProcurementProjectId = projectId
+                    RFQId = rfqId
                 });
             }
         }

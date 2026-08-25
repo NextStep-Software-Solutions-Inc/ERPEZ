@@ -1,10 +1,13 @@
 using ERPEZ.Domain.Common;
+using ERPEZ.Domain.Enums;
 using Sieve.Attributes;
 
 namespace ERPEZ.Domain.Entities.Procurement;
 
 /// <summary>
 /// Abstract of Bids (AOB) Header.
+/// Used for Alternative Methods of Procurement (Shopping, Small Value Procurement, etc.)
+/// and Bidding comparative matrix evaluations per GPPB rules.
 /// </summary>
 public class AOB : BaseEntity
 {
@@ -15,7 +18,7 @@ public class AOB : BaseEntity
     public string? Description { get; set; }
 
     [Sieve(CanFilter = true, CanSort = true)]
-    public string AwardCriterion { get; set; } = "LCRB"; // E.g., LCRB, MEARB, MARB
+    public BidEvaluationCriteria AwardCriterion { get; set; } = BidEvaluationCriteria.LCRB;
 
     [Sieve(CanFilter = true, CanSort = true)]
     public DateOnly AOBDate { get; set; }
@@ -24,9 +27,25 @@ public class AOB : BaseEntity
     public DateTime OpeningDate { get; set; }
 
     [Sieve(CanFilter = true, CanSort = true)]
-    public string Status { get; set; } = "DRAFT"; // DRAFT, FOR_APPROVAL, APPROVED
+    public StatusEnum Status { get; set; } = StatusEnum.Draft;
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public Guid? SubmittedBy { get; set; }
+
+    public DateTime? SubmittedAt { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public Guid? ApprovedBy { get; set; }
+
+    public DateTime? ApprovedAt { get; set; }
+
+    public string? SignedDocumentUrl { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public string? Remarks { get; set; }
 
     // Navigation properties
-    public virtual List<AOBProcurementProjectMapping> AOBProcurementProjectMappings { get; set; } = [];
+    public virtual List<AOBRFQMapping> AOBRFQMappings { get; set; } = [];
     public virtual List<AOBAwardedItem> AOBAwardedItems { get; set; } = [];
 }
+

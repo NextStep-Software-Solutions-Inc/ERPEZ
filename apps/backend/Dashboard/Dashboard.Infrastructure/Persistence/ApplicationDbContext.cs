@@ -122,6 +122,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<SupplierBid>? SupplierBids { get; set; }
     public DbSet<SupplierBidItem>? SupplierBidItems { get; set; }
     public DbSet<AOB>? AOBs { get; set; }
+    public DbSet<AOBRFQMapping>? AOBRFQMappings { get; set; }
     public DbSet<AOBProcurementProjectMapping>? AOBProcurementProjectMappings { get; set; }
     public DbSet<AOBAwardedItem>? AOBAwardedItems { get; set; }
     public DbSet<UOM>? UOMs { get; set; }
@@ -1025,11 +1026,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         //Supplier - Merchant Registry
         modelBuilder.Entity<Supplier>()
             .HasIndex(s => s.BusinessPermitNo)
-            .IsUnique();
+            .IsUnique()
+            .HasFilter("\"IsDeleted\" = false");
 
         modelBuilder.Entity<Supplier>()
             .HasIndex(s => s.TINNumber)
-            .IsUnique();
+            .IsUnique()
+            .HasFilter("\"IsDeleted\" = false");
 
         modelBuilder.Entity<Supplier>()
             .HasIndex(s => s.Email);
@@ -1046,7 +1049,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         //SupplierCategory
         modelBuilder.Entity<SupplierCategory>()
             .HasIndex(sc => sc.Name)
-            .IsUnique();
+            .IsUnique()
+            .HasFilter("\"IsDeleted\" = false");
 
         //SupplierRequirement
         modelBuilder.Entity<SupplierRequirement>()
@@ -2407,15 +2411,18 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<SupplierBid>(e =>
         {
-            e.HasOne(sb => sb.ProcurementProject)
+            e.HasOne(sb => sb.RFQ)
                 .WithMany()
-                .HasForeignKey(sb => sb.ProcurementProjectId)
+                .HasForeignKey(sb => sb.RFQId)
                 .OnDelete(DeleteBehavior.Cascade);
 
             e.HasOne(sb => sb.Supplier)
                 .WithMany()
                 .HasForeignKey(sb => sb.SupplierId)
                 .OnDelete(DeleteBehavior.Cascade);
+
+            e.Property(sb => sb.TotalAmount)
+                .HasPrecision(18, 2);
         });
 
         modelBuilder.Entity<SupplierBidItem>(e =>
@@ -2425,13 +2432,49 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .HasForeignKey(sbi => sbi.SupplierBidId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            e.HasOne(sbi => sbi.APPItem)
+            e.HasOne(sbi => sbi.RFQItem)
                 .WithMany()
-                .HasForeignKey(sbi => sbi.APPItemId)
+                .HasForeignKey(sbi => sbi.RFQItemId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             e.Property(sbi => sbi.UnitPrice)
                 .HasPrecision(18, 2);
+
+            e.Property(sbi => sbi.TotalPrice)
+                .HasPrecision(18, 2);
+
+            e.Property(sbi => sbi.QualityScore)
+                .HasPrecision(18, 4);
+        });
+
+        modelBuilder.Entity<AOB>(e =>
+        {
+            e.HasIndex(a => a.AOBNumber)
+                .IsUnique();
+
+            e.Property(a => a.AwardCriterion)
+                .HasConversion<string>();
+
+            e.Property(a => a.Status)
+                .HasConversion<string>();
+        });
+
+        modelBuilder.Entity<AOBRFQMapping>(e =>
+        {
+            e.HasKey(m => m.Id);
+
+            e.HasOne(m => m.AOB)
+                .WithMany(a => a.AOBRFQMappings)
+                .HasForeignKey(m => m.AOBId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            e.HasOne(m => m.RFQ)
+                .WithMany()
+                .HasForeignKey(m => m.RFQId)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            e.HasIndex(m => new { m.AOBId, m.RFQId })
+                .IsUnique();
         });
 
         modelBuilder.Entity<AOBProcurementProjectMapping>(e =>
@@ -2439,7 +2482,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             e.HasKey(m => m.Id);
 
             e.HasOne(m => m.AOB)
-                .WithMany(a => a.AOBProcurementProjectMappings)
+                .WithMany()
                 .HasForeignKey(m => m.AOBId)
                 .OnDelete(DeleteBehavior.Cascade);
 
@@ -2456,9 +2499,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .HasForeignKey(ai => ai.AOBId)
                 .OnDelete(DeleteBehavior.Cascade);
 
-            e.HasOne(ai => ai.APPItem)
+            e.HasOne(ai => ai.RFQItem)
                 .WithMany()
-                .HasForeignKey(ai => ai.APPItemId)
+                .HasForeignKey(ai => ai.RFQItemId)
                 .OnDelete(DeleteBehavior.Restrict);
 
             e.HasOne(ai => ai.WinningSupplier)
@@ -2466,7 +2509,15 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .HasForeignKey(ai => ai.WinningSupplierId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            e.HasOne(ai => ai.PurchaseOrder)
+                .WithMany()
+                .HasForeignKey(ai => ai.PurchaseOrderId)
+                .OnDelete(DeleteBehavior.SetNull);
+
             e.Property(ai => ai.AwardedUnitPrice)
+                .HasPrecision(18, 2);
+
+            e.Property(ai => ai.TotalAwardedAmount)
                 .HasPrecision(18, 2);
 
             e.Property(ai => ai.Score)
@@ -2523,7 +2574,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<PurchaseRequest>()
             .HasIndex(pr => pr.PRNumber)
-            .IsUnique();
+            .IsUnique()
+            .HasFilter("\"IsDeleted\" = false");
 
         modelBuilder.Entity<PurchaseRequest>()
             .HasIndex(pr => pr.OfficeId);
@@ -2577,7 +2629,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<ConsolidatedPR>()
             .HasIndex(cpr => cpr.CPRNumber)
-            .IsUnique();
+            .IsUnique()
+            .HasFilter("\"IsDeleted\" = false");
 
         modelBuilder.Entity<ConsolidatedPR>()
             .Property(cpr => cpr.TotalAmount)
@@ -2944,7 +2997,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         // ConsolidatedPR.CPRNumber convention — no sequence/lock table exists in this codebase).
         modelBuilder.Entity<APR>()
             .HasIndex(e => e.APRNumber)
-            .IsUnique();
+            .IsUnique()
+            .HasFilter("\"IsDeleted\" = false");
 
         modelBuilder.Entity<APR>()
             .HasIndex(e => e.APPId);

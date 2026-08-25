@@ -50,6 +50,7 @@ import {
   Tag,
   Shield,
   Loader2,
+  Edit,
 } from 'lucide-react'
 import { useToast } from '@/components/ui/use-toast'
 import {
@@ -62,6 +63,7 @@ import {
 import DebouncedInput from '@/components/DebouncedInput'
 import { AddConsolidatedPRModal } from '../components/AddConsolidatedPRModal'
 import { SetQuotationModal } from '../components/SetQuotationModal'
+import { CreateRFQModal } from '../components/CreateRFQModal'
 import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Input } from '@/components/ui/input'
 import {
@@ -81,12 +83,14 @@ import type { SupplierDetail } from '../types'
 
 interface RFQDetailsPageProps {
   rfqId: string
+  supplierId?: string
   onBack?: () => void
   isSupplierPortal?: boolean
 }
 
 export function RFQDetailsPage({
   rfqId,
+  supplierId,
   onBack,
   isSupplierPortal = false,
 }: RFQDetailsPageProps) {
@@ -98,6 +102,7 @@ export function RFQDetailsPage({
   const [searchTerm, setSearchTerm] = useState('')
   const [showAddPRModal, setShowAddPRModal] = useState(false)
   const [showQuotationModal, setShowQuotationModal] = useState(false)
+  const [showEditModal, setShowEditModal] = useState(false)
   const [showExportDialog, setShowExportDialog] = useState(false)
   const [viewingSupplier, setViewingSupplier] = useState<string | null>(null)
   const [viewingSupplierDetail, setViewingSupplierDetail] = useState<SupplierDetail | null>(null)
@@ -109,6 +114,71 @@ export function RFQDetailsPage({
 
   const loadRFQ = async () => {
     setIsLoading(true)
+    if (isSupplierPortal && supplierId) {
+      try {
+        const [rfqRes, bidRes] = await Promise.allSettled([
+          api.get<{ data: any }>(`/api/supplier/rfqs/${rfqId}?supplierId=${supplierId}`),
+          api.get<{ data: any }>(`/api/supplier/rfqs/${rfqId}/my-bid?supplierId=${supplierId}`),
+        ])
+
+        const rfqData = rfqRes.status === 'fulfilled' ? rfqRes.value.data.data : null
+        const bidData = bidRes.status === 'fulfilled' ? bidRes.value.data.data : null
+
+        if (rfqData) {
+          const bidItemMap = new Map((bidData?.items || []).map((b: any) => [b.rfqItemId, b]))
+
+          setRfq({
+            id: rfqData.id,
+            rfqNumber: rfqData.rfqNumber,
+            prNumber: rfqData.tracingNumber || '',
+            department: 'Procurement Division',
+            date: rfqData.date,
+            deadline: rfqData.deadline || '',
+            status: rfqData.status || 'approved',
+            description: rfqData.description,
+            purpose: rfqData.purpose,
+            deliveryPeriod: rfqData.deliveryPeriod,
+            totalAmount: rfqData.totalAmount,
+            quotationStatus: bidData?.status ? bidData.status.toLowerCase() : rfqData.hasSubmittedBid ? 'submitted' : 'draft',
+            quotationSubmittedAt: bidData?.submittedAt,
+            items: (rfqData.items || []).map((it: any) => {
+              const existingBidItem: any = bidItemMap.get(it.id)
+              return {
+                id: it.id,
+                itemCode: it.id.substring(0, 8),
+                itemName: it.itemName,
+                description: it.itemName,
+                quantity: it.quantity,
+                unit: 'pcs',
+                unitPrice: it.unitPriceSnapshot,
+                totalAmount: it.totalABC,
+                category: it.category || 'General',
+                fund: it.fund || 'General Fund',
+                isRequiredBrochure: it.isBrochureRequired,
+                greenSpecification: it.greenSpecification,
+                month: it.month,
+                monthlyAllocations: (it.monthlyAllocations || []).map((m: any) => ({
+                  month: m.month,
+                  quantity: m.quantity,
+                })),
+                bidUnitPrice: existingBidItem?.unitPrice,
+                bidTotalAmount: existingBidItem?.totalPrice,
+                bidBrand: existingBidItem?.brand,
+                bidModel: existingBidItem?.model,
+                bidColor: existingBidItem?.color,
+                bidBrochureUrl: existingBidItem?.brochureFileUrl,
+              }
+            }),
+            invitedSuppliers: [],
+          })
+          setIsLoading(false)
+          return
+        }
+      } catch (e) {
+        console.error('Failed to load supplier RFQ details', e)
+      }
+    }
+
     const res = await fetchRFQById(rfqId)
     setRfq(res)
     setIsLoading(false)
@@ -116,7 +186,7 @@ export function RFQDetailsPage({
 
   useEffect(() => {
     loadRFQ()
-  }, [])
+  }, [rfqId, supplierId])
 
   // Fetch the real supplier detail from the API when a supplier is selected for
   // viewing. This previously used getSupplierById() against a local mock dataset
@@ -222,7 +292,8 @@ export function RFQDetailsPage({
   }
 
   const totalAmount = rfq.items.reduce((s: number, it: any) => s + (it.totalAmount || 0), 0)
-  const canSubmit = rfq?.status === 'draft' && (rfq?.items?.length || 0) > 0
+  const canEdit = !isSupplierPortal && (rfq?.status === 'draft' || rfq?.status === 'returned')
+  const canSubmit = canEdit && (rfq?.items?.length || 0) > 0
 
   // Supplier portal quotation state helpers
   const quotationIsPending =
@@ -257,29 +328,66 @@ export function RFQDetailsPage({
   )
 
   const getMonthIndexForItem = (it: RFQItem, _idx: number): number | null => {
-    // Prefer explicit month field in format "YYYY-MM" or numeric month index
-    if ((it as any).month) {
-      const monthVal = (it as any).month
-      if (typeof monthVal === 'number') {
-        const mn = monthVal
+    const monthNames = [
+      'january', 'february', 'march', 'april', 'may', 'june',
+      'july', 'august', 'september', 'october', 'november', 'december'
+    ]
+    const shortMonthNames = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
+
+    const parseMonthVal = (val: any): number | null => {
+      if (val === undefined || val === null || val === '') return null
+      if (typeof val === 'number') {
+        if (val >= 0 && val <= 11) return val
+        if (val >= 1 && val <= 12) return val - 1
+        return null
+      }
+      const str = String(val).trim().toLowerCase()
+      const fullIdx = monthNames.indexOf(str)
+      if (fullIdx !== -1) return fullIdx
+      const shortIdx = shortMonthNames.indexOf(str)
+      if (shortIdx !== -1) return shortIdx
+
+      const num = parseInt(str, 10)
+      if (!isNaN(num)) {
+        if (num >= 0 && num <= 11) return num
+        if (num >= 1 && num <= 12) return num - 1
+      }
+
+      const parts = str.split('-')
+      if (parts.length === 2) {
+        const mn = parseInt(parts[1], 10)
         if (!isNaN(mn) && mn >= 1 && mn <= 12) return mn - 1
-      } else {
-        const parts = String(monthVal).split('-')
-        if (parts.length === 2) {
-          const mn = parseInt(parts[1], 10)
-          if (!isNaN(mn) && mn >= 1 && mn <= 12) return mn - 1
-        }
+      }
+
+      const mMatch = str.match(/-m(\d{2})/)
+      if (mMatch && mMatch[1]) {
+        const mn = parseInt(mMatch[1], 10)
+        if (!isNaN(mn) && mn >= 1 && mn <= 12) return mn - 1
+      }
+
+      return null
+    }
+
+    // Check monthlyAllocations first
+    if ((it as any).monthlyAllocations && (it as any).monthlyAllocations.length > 0) {
+      for (const alloc of (it as any).monthlyAllocations) {
+        const parsed = parseMonthVal(alloc.month)
+        if (parsed !== null) return parsed
       }
     }
+
+    // Prefer explicit month field
+    if ((it as any).month !== undefined && (it as any).month !== null) {
+      const parsed = parseMonthVal((it as any).month)
+      if (parsed !== null) return parsed
+    }
+
     // Try PR id like CPR-2026-M02
     if (it.prId) {
-      const m = String(it.prId).match(/-M(\d{2})/)
-      if (m && m[1]) {
-        const mn = parseInt(m[1], 10)
-        if (!isNaN(mn) && mn >= 1 && mn <= 12) return mn - 1
-      }
+      const parsed = parseMonthVal(it.prId)
+      if (parsed !== null) return parsed
     }
-    // Unknown month — return null instead of deriving from row index to avoid misleading UI
+
     return null
   }
 
@@ -338,15 +446,31 @@ export function RFQDetailsPage({
       )
 
     if (it.monthlyAllocations && it.monthlyAllocations.length > 0) {
-      const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December']
+      const monthNames = ['january', 'february', 'march', 'april', 'may', 'june', 'july', 'august', 'september', 'october', 'november', 'december']
+      const shortMonthNames = ['jan', 'feb', 'mar', 'apr', 'may', 'jun', 'jul', 'aug', 'sep', 'oct', 'nov', 'dec']
       const newMonthlyQty = new Array(12).fill(0)
       it.monthlyAllocations.forEach((alloc: any) => {
-        const idx = monthNames.indexOf(alloc.month)
-        if (idx !== -1) {
-          newMonthlyQty[idx] = alloc.quantity
+        if (alloc.month !== undefined && alloc.month !== null) {
+          const str = String(alloc.month).trim().toLowerCase()
+          let foundIdx = monthNames.indexOf(str)
+          if (foundIdx === -1) {
+            foundIdx = shortMonthNames.indexOf(str)
+          }
+          if (foundIdx === -1) {
+            const num = parseInt(str, 10)
+            if (!isNaN(num)) {
+              if (num >= 0 && num <= 11) foundIdx = num
+              else if (num >= 1 && num <= 12) foundIdx = num - 1
+            }
+          }
+          if (foundIdx !== -1) {
+            newMonthlyQty[foundIdx] = alloc.quantity || it.quantity || 0
+          }
         }
       })
-      monthlyQty = newMonthlyQty
+      if (newMonthlyQty.some(q => q > 0)) {
+        monthlyQty = newMonthlyQty
+      }
     }
 
     return (
@@ -404,7 +528,7 @@ export function RFQDetailsPage({
           <RadioGroup
             value={it.isRequiredBrochure ? 'yes' : 'no'}
             onValueChange={(value) => toggleBrochure(it.id, value === 'yes')}
-            disabled={rfq.status !== 'draft'}
+            disabled={!canEdit}
             className="flex gap-4"
           >
             <div className="flex items-center space-x-2">
@@ -428,7 +552,7 @@ export function RFQDetailsPage({
           </RadioGroup>
         </TableCell>
         <TableCell>
-          {rfq.status === 'draft' ? (
+          {canEdit ? (
             <Input
               value={greenSpecs[it.id] !== undefined ? greenSpecs[it.id] : (it.greenSpecification || '')}
               onChange={(e) =>
@@ -453,7 +577,7 @@ export function RFQDetailsPage({
           )}
         </TableCell>
         <TableCell>
-          {rfq.status === 'draft' && (
+          {canEdit && (
             <Button
               variant="ghost"
               size="sm"
@@ -646,16 +770,23 @@ export function RFQDetailsPage({
       toast({
         title: 'Submission Failed',
         description: 'Add at least one item before submitting.',
+        variant: 'destructive',
       })
       return
     }
 
-    await submitRFQ(rfqId)
-    toast({
-      title: 'RFQ Submitted',
-      description: `${rfq.rfqNumber} has been submitted.`,
-    })
-    loadRFQ()
+    try {
+      const success = await submitRFQ(rfqId)
+      if (success) {
+        toast({
+          title: 'RFQ Submitted',
+          description: `${rfq.rfqNumber} has been submitted successfully for BAC review.`,
+        })
+        loadRFQ()
+      }
+    } catch (e: any) {
+      console.error('Failed to submit RFQ:', e)
+    }
   }
 
   return (
@@ -751,6 +882,18 @@ export function RFQDetailsPage({
                 Export
               </Button>
 
+              {!isSupplierPortal && canEdit && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowEditModal(true)}
+                  className="gap-2"
+                >
+                  <Edit className="w-4 h-4" />
+                  Edit RFQ
+                </Button>
+              )}
+
               {!isSupplierPortal && canSubmit && (
                 <Button
                   size="sm"
@@ -758,7 +901,7 @@ export function RFQDetailsPage({
                   onClick={handleSubmitRFQ}
                 >
                   <Send className="w-4 h-4" />
-                  Submit RFQ
+                  {rfq?.status === 'returned' ? 'Re-submit RFQ' : 'Submit RFQ'}
                 </Button>
               )}
             </div>
@@ -901,8 +1044,23 @@ export function RFQDetailsPage({
       {!isSupplierPortal && (
         <Card>
           <CardHeader>
-            <CardTitle>Suppliers</CardTitle>
-            <CardDescription>Suppliers invited for this RFQ</CardDescription>
+            <div className="flex items-center justify-between">
+              <div>
+                <CardTitle>Suppliers</CardTitle>
+                <CardDescription>Suppliers invited for this RFQ</CardDescription>
+              </div>
+              {canEdit && (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => setShowEditModal(true)}
+                  className="gap-1.5 text-xs h-8"
+                >
+                  <Edit className="w-3.5 h-3.5" />
+                  Manage Suppliers
+                </Button>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
@@ -1008,7 +1166,7 @@ export function RFQDetailsPage({
             </Select>
 
             <div className="ml-auto flex items-center gap-2">
-              {rfq.status === 'draft' && (
+              {canEdit && (
                 <Button
                   size="sm"
                   className="bg-gradient-to-r from-primary to-indigo-500 text-white hover:opacity-95"
@@ -1215,6 +1373,12 @@ export function RFQDetailsPage({
         open={showQuotationModal}
         onOpenChange={setShowQuotationModal}
         rfqId={rfqId}
+        supplierId={supplierId}
+        initialRFQ={rfq}
+        onSuccess={() => {
+          setShowQuotationModal(false)
+          loadRFQ()
+        }}
       />
 
       {/* Delete Confirmation Dialog */}
@@ -1246,6 +1410,17 @@ export function RFQDetailsPage({
         open={showExportDialog}
         onOpenChange={setShowExportDialog}
         entityLabel="RFQ details"
+      />
+
+      {/* Edit RFQ Modal */}
+      <CreateRFQModal
+        open={showEditModal}
+        onOpenChange={setShowEditModal}
+        initialRFQ={rfq}
+        onSuccess={() => {
+          setShowEditModal(false)
+          loadRFQ()
+        }}
       />
     </div>
   )

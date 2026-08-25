@@ -18,4 +18,8 @@ public record ConsolidatedPrItemForRFQDto
     public int RemainingQuantity => RequestedQuantity - AlreadySourcedQuantity;
     public Guid ProcurementModeId { get; init; }
     public string? ProcurementModeName { get; init; }
+    public bool HasBACResolution { get; init; }
+    public string? BACResolutionStatus { get; init; }
+    public string? BACResolutionNumber { get; init; }
+    public Guid? BACResolutionId { get; init; }
 }

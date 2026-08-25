@@ -54,7 +54,7 @@ public class PurchaseRequestController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<PRSummaryStatsResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetPRSummaryStats(
-        [FromQuery] Guid officeId,
+        [FromQuery] Guid? officeId,
         [FromQuery] PRType prType,
         CancellationToken cancellationToken)
     {
@@ -96,7 +96,7 @@ public class PurchaseRequestController(ISender mediator) : ControllerBase
         CancellationToken cancellationToken)
     {
         var result = await mediator.Send(
-            new UpdatePRStatusCommand(id, dto.NewStatus.ToString()), cancellationToken);
+            new UpdatePRStatusCommand(id, dto.NewStatus), cancellationToken);
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 

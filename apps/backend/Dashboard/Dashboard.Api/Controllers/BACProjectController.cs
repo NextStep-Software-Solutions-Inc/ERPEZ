@@ -168,4 +168,36 @@ public class BACProjectController(ISender mediator) : ControllerBase
         });
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
+
+    /// <summary>
+    /// Get supplier applications and documents for a procurement project
+    /// </summary>
+    [HttpGet("projects/{projectId}/applications")]
+    [ProducesResponseType(typeof(ApiResponse<List<ERPEZ.Application.Features.Procurement.Projects.Queries.GetProjectSupplierApplications.ProjectSupplierApplicationDto>>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetProjectApplications(Guid projectId)
+    {
+        var result = await mediator.Send(new ERPEZ.Application.Features.Procurement.Projects.Queries.GetProjectSupplierApplications.GetProjectSupplierApplicationsQuery(projectId));
+        return Ok(result);
+    }
+
+    /// <summary>
+    /// Evaluate a supplier application (Passed / Failed with remarks)
+    /// </summary>
+    [HttpPatch("projects/{projectId}/applications/{applicationId}/evaluation")]
+    [ProducesResponseType(typeof(ApiResponse<ERPEZ.Application.Features.Procurement.Projects.Queries.GetProjectSupplierApplications.ProjectSupplierApplicationDto>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
+    public async Task<IActionResult> EvaluateApplication(
+        Guid projectId, 
+        Guid applicationId, 
+        [FromBody] ERPEZ.Application.Features.Procurement.Projects.Commands.EvaluateSupplierApplication.EvaluateSupplierApplicationRequest request)
+    {
+        var result = await mediator.Send(new ERPEZ.Application.Features.Procurement.Projects.Commands.EvaluateSupplierApplication.EvaluateSupplierApplicationCommand
+        {
+            ProjectId = projectId,
+            ApplicationId = applicationId,
+            Request = request
+        });
+        return result.Succeeded ? Ok(result) : BadRequest(result);
+    }
 }

@@ -77,9 +77,18 @@ export function PRDashboardTab({ prType, onCreateClick, onViewDetails }: PRDashb
     },
   })
 
+  const isGuid = (val?: string): boolean =>
+    !!val && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val)
+
+  const tempOfficeId = import.meta.env.VITE_TEMP_OFFICE_ID
+  const validOfficeId = isGuid(tempOfficeId) ? tempOfficeId : undefined
+
   const { data: statsResponse } = usePurchaseRequestStats({
     pathParams: {},
-    queryParams: { prType: apiPrType, officeId: import.meta.env.VITE_TEMP_OFFICE_ID || '' },
+    queryParams: {
+      prType: apiPrType,
+      ...(validOfficeId ? { officeId: validOfficeId } : {}),
+    },
   })
 
   // Map API list items to the minimal PurchaseRequest shape the table expects

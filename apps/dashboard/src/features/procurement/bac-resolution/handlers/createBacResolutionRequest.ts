@@ -48,6 +48,8 @@ export const createBacResolutionRequest: MutationBlueprintFromTemplate<
       resolutionType: payload.resolutionType || 'Standard',
       resolutionNumber: payload.bacResolutionNumber,
       whereasClause: whereasClauseText,
+      consolidatedPRId: payload.consolidatedPRId || null,
+      procurementModeId: payload.procurementModeId || null,
       endUserRepresentativeId: payload.endUserRepresentativeId || null,
       techRepresentativeId: payload.techRepresentativeId || null,
     }

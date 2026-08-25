@@ -284,9 +284,6 @@ export function RFQPage() {
                 <SearchIcon className="h-12 w-12 text-muted-foreground mb-4" />
                 <h3 className="text-lg font-semibold">No RFQs found</h3>
                 <p className="text-muted-foreground">Try adjusting your filters or add a new RFQ.</p>
-                <div className="mt-4">
-                  <Button onClick={() => setOpen(true)} size="sm">Create RFQ</Button>
-                </div>
               </div>
             </div>
           ) : (
@@ -377,35 +374,35 @@ export function RFQPage() {
                                 <Eye className="h-4 w-4 mr-2" />
                                 View Details
                               </DropdownMenuItem>
+                              {(normalizeStatus(r) === 'draft' || normalizeStatus(r) === 'returned') && (
+                                <DropdownMenuItem onClick={() => handleEditClick(r.id)}>
+                                  <Edit className="h-4 w-4 mr-2" />
+                                  Edit
+                                </DropdownMenuItem>
+                              )}
                               {normalizeStatus(r) === 'draft' && (
-                                <>
-                                  <DropdownMenuItem onClick={() => handleEditClick(r.id)}>
-                                    <Edit className="h-4 w-4 mr-2" />
-                                    Edit
-                                  </DropdownMenuItem>
-                                  <AlertDialog>
-                                    <AlertDialogTrigger asChild>
-                                      <DropdownMenuItem>
-                                        <Trash2 className="h-4 w-4 mr-2 text-destructive" />
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <DropdownMenuItem>
+                                      <Trash2 className="h-4 w-4 mr-2 text-destructive" />
+                                      Delete
+                                    </DropdownMenuItem>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Delete RFQ</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Are you sure you want to delete this RFQ? This action cannot be undone.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Cancel</AlertDialogCancel>
+                                      <AlertDialogAction onClick={() => removeRFQ(r.id)}>
                                         Delete
-                                      </DropdownMenuItem>
-                                    </AlertDialogTrigger>
-                                    <AlertDialogContent>
-                                      <AlertDialogHeader>
-                                        <AlertDialogTitle>Delete RFQ</AlertDialogTitle>
-                                        <AlertDialogDescription>
-                                          Are you sure you want to delete this RFQ? This action cannot be undone.
-                                        </AlertDialogDescription>
-                                      </AlertDialogHeader>
-                                      <AlertDialogFooter>
-                                        <AlertDialogCancel>Cancel</AlertDialogCancel>
-                                        <AlertDialogAction onClick={() => removeRFQ(r.id)}>
-                                          Delete
-                                        </AlertDialogAction>
-                                      </AlertDialogFooter>
-                                    </AlertDialogContent>
-                                  </AlertDialog>
-                                </>
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
                               )}
                             </DropdownMenuContent>
                           </DropdownMenu>
