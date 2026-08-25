@@ -27,11 +27,6 @@ export type BacResolutionAwardRecommendation = {
   postQualificationDate?: string | null
 }
 
-export type BacResolutionClause = {
-  id?: string | null
-  name: string
-  body: string
-}
 
 
 
@@ -129,13 +124,17 @@ export type BacProject = {
   consolidatedPR: ConsolidatedPR
   title?: string
   abc: number
-  status?: string
+  status?: BacResolutionStatus
   resolutionType?: string
   resolutionNumber?: string
   dateResolved?: string
   resolvedLocation?: string
-
-
+  createdBy?: string
+  createdAt?: string
+  updatedAt?: string
+  updatedBy?: string
+  approvedBy?: string
+  approvedAt?: string
 }
 
 export type BacProjectDetails = BacProject & {
@@ -156,7 +155,7 @@ export type BacResolution = {
   description: string
   resolvedDateText: string
   resolvedLocationText: string
-  whereasClauses: BacResolutionClause[]
+  whereasClauses: BacResolutionWhereasClause[]
   signatoryOverrides?: BacResolutionSignatoryOverride
   status: BacResolutionStatus
   createdBy: string
@@ -180,7 +179,11 @@ export type BacResolution = {
   createdPrNumber?: string | null
 }
 
-
+export type BacResolutionWhereasClause = {
+  id: string
+  body?: string
+  name?: string
+}
 export type LinkConsolidatedPrsPayload = {
   bacResolutionId: string
   consolidatedPRId: string

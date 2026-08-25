@@ -16,6 +16,7 @@ import {
   History,
   Link as LinkIcon,
   CheckCircle2,
+  Clock,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -93,7 +94,7 @@ export function DetailsPanel({
     )
   }
 
-  const selectedProject = responseData?.data || (responseData as any)
+  const selectedProject = responseData?.data
 
   if (!selectedProject) {
     return (
@@ -105,61 +106,71 @@ export function DetailsPanel({
     )
   }
 
-  // Data Extraction with API mapping
+  // Real Data Extraction & Mapping from Backend Response
+  const sourceType =
+    selectedProject.sourceType ||
+    (selectedProject.APPItem ? 'APPItem' : 'ConsolidatedPR')
+  const isAppItemSource = sourceType === 'APPItem'
+
   const title =
     selectedProject.title ||
     selectedProject.APPItem?.ppmpItemName ||
-    selectedProject.consolidatedPR?.projectName ||
-    selectedProject.consolidatedPR?.description ||
-    'Procurement of High-Performance Servers and Networking Infrastructure'
+    selectedProject.consolidatedPR?.description
 
-  const status = selectedProject.status || 'approved'
+
+  const status = selectedProject.status
   const resolutionNumber =
-    selectedProject.resolutionNumber ||
-    selectedProject.bacResolutionNumber ||
-    selectedProject.APPItem?.appNumber ||
-    'BAC-RES-2026-APP01'
-
-  const abc = selectedProject.abc || selectedProject.totalAmount || 0
+    selectedProject.resolutionNumber
+  const abc =
+    selectedProject.abc
 
   const isDraft = status === 'draft'
   const isApproved = status === 'approved'
   const isReturned = status === 'returned'
 
-  const rawOfficeName =
+  const officeName =
+    selectedProject.APPItem?.Office?.name ||
     selectedProject.APPItem?.officeName ||
-    selectedProject.consolidatedPR?.endUser
-  const officeName = rawOfficeName || null
+    selectedProject.consolidatedPR?.selectedPRItems?.[0]?.prOffice ||
+    selectedProject.consolidatedPR
 
-  const rawProcurementMode =
+  const procurementMode =
+    selectedProject.APPItem?.ProcurementMode?.name ||
     selectedProject.APPItem?.procurementModeName ||
-    selectedProject.consolidatedPR?.modeOfProcurementName ||
-    selectedProject.consolidatedPR?.modeOfProcurement
-  const procurementMode = rawProcurementMode || null
+    selectedProject.consolidatedPR
 
-  const rawFundSource = selectedProject.APPItem?.fundSourceName
-  const fundSource = rawFundSource || null
+  const fundSource =
+    selectedProject.APPItem?.FundSource?.name ||
+    selectedProject.APPItem?.fundSourceName ||
+    selectedProject.consolidatedPR
 
   const endUserRep = selectedProject.endUserRepresentative
     ? `${selectedProject.endUserRepresentative.firstName} ${selectedProject.endUserRepresentative.lastName}`
+    : selectedProject.APPItem?.Office?.name
+
+  const techRep = selectedProject.techRepresentative
+    ? `${selectedProject.techRepresentative.firstName} ${selectedProject.techRepresentative.lastName}`
     : null
 
-  const resolutionType = selectedProject.resolutionType || null
-  const dateResolved = selectedProject.dateResolved || selectedProject.resolutionDate || null
-  const resolvedLocation = selectedProject.resolvedLocation || selectedProject.resolvedLocationText || null
-  const createdBy = selectedProject.createdBy || null
-  const createdAt = selectedProject.createdAt || null
-  const approvedBy = selectedProject.approvedBy || null
-  const approvedAt = selectedProject.approvedAt || null
+  const resolutionType = selectedProject.resolutionType
+  const dateResolved = selectedProject.dateResolved
+  const resolvedLocation = selectedProject.resolvedLocation
+  const createdBy = selectedProject.createdBy
+  const createdAt = selectedProject.createdAt
+  const approvedBy = selectedProject.approvedBy
+  const approvedAt = selectedProject.approvedAt
 
   const whereasClauses: BacResolutionClause[] =
-    selectedProject.whereasClauses ||
-    (selectedProject.bacResolutions?.[0]?.whereasClauses) ||
-    []
+    selectedProject.bacResolutions?.map((item) => {
+      return {
+        id: item.id,
+        body: item.whereasClauses,
+        name: item.whereasClauses
+      }
+    })
+    || []
 
   const activityLog: BacResolutionLogEntry[] =
-    selectedProject.activityLog ||
-    (selectedProject.bacResolutions?.[0]?.activityLog) ||
     []
 
   return (
@@ -174,10 +185,12 @@ export function DetailsPanel({
                   <FileText className="h-4 w-4" />
                   {resolutionNumber}
                 </span>
-                <BacResolutionStatusBadge status={status as any} />
-                <span className="inline-flex items-center px-2  rounded-full text-xs font-medium border border-teal-400 text-teal-600 bg-teal-50/70">
-                  Ready for Scheduling
-                </span>
+                <BacResolutionStatusBadge status={status} />
+                {isApproved && (
+                  <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border border-teal-400 text-teal-600 bg-teal-50/70">
+                    Ready for Scheduling
+                  </span>
+                )}
               </div>
               <h2 className="text-lg font-bold text-foreground line-clamp-2">
                 {title}
@@ -266,49 +279,39 @@ export function DetailsPanel({
               <span className="text-muted-foreground block text-[10px] uppercase font-semibold">
                 IMPLEMENTING UNIT
               </span>
-              {officeName ? (
-                <span className="font-medium text-foreground truncate block">{officeName}</span>
-              ) : (
-                <span className="font-medium text-red-600 truncate block">ICT Center</span>
-              )}
+              <span className="font-medium text-foreground truncate block">{officeName}</span>
             </div>
 
             <div>
               <span className="text-muted-foreground block text-[10px] uppercase font-semibold">
                 PROCUREMENT MODE
               </span>
-              {procurementMode ? (
-                <span className="font-semibold text-purple-600 truncate block">{procurementMode}</span>
-              ) : (
-                <span className="font-semibold text-red-600 truncate block">Public Bidding</span>
-              )}
+              <span className="font-semibold text-purple-600 truncate block">{procurementMode}</span>
             </div>
 
             <div>
               <span className="text-muted-foreground block text-[10px] uppercase font-semibold">
                 SOURCE OF FUND
               </span>
-              {fundSource ? (
-                <span className="font-medium text-foreground truncate block">{fundSource}</span>
-              ) : (
-                <span className="font-medium text-red-600 truncate block">General Appropriations Act (GAA)</span>
-              )}
+              <span className="font-medium text-foreground truncate block">{fundSource}</span>
             </div>
           </div>
         </CardHeader>
       </Card>
 
       {/* Amber Alert Banner */}
-      <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-3.5 flex items-center gap-3 text-xs text-amber-900 shadow-2xs">
-        <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
-        <span className="font-medium">
-          Link exactly one Consolidated PR to keep this BAC Resolution in the Public Bidding scheduling flow.
-        </span>
-      </div>
+      {isAppItemSource && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-3.5 flex items-center gap-3 text-xs text-amber-900 shadow-2xs">
+          <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
+          <span className="font-medium">
+            Link exactly one Consolidated PR to keep this BAC Resolution in the Public Bidding scheduling flow.
+          </span>
+        </div>
+      )}
 
-      {/* 5 Structured Tabs Bar */}
+      {/* Structured Tabs Bar */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid grid-cols-2 md:grid-cols-5 w-full bg-default-100/80 p-1 rounded-xl h-auto">
+        <TabsList className={isAppItemSource ? "grid grid-cols-2 md:grid-cols-4 w-full bg-default-100/80 p-1 rounded-xl h-auto" : "grid grid-cols-2 md:grid-cols-5 w-full bg-default-100/80 p-1 rounded-xl h-auto"}>
           <TabsTrigger value="overview" className="gap-1.5 text-xs py-2">
             <Sparkles className="h-3.5 w-3.5" />
             Overview & Actions
@@ -321,10 +324,12 @@ export function DetailsPanel({
             <FileText className="h-3.5 w-3.5" />
             WHEREAS Clauses
           </TabsTrigger>
-          <TabsTrigger value="linked" className="gap-1.5 text-xs py-2">
-            <Calendar className="h-3.5 w-3.5" />
-            Linked PRs & Sched
-          </TabsTrigger>
+          {!isAppItemSource && (
+            <TabsTrigger value="linked" className="gap-1.5 text-xs py-2">
+              <Calendar className="h-3.5 w-3.5" />
+              Linked PRs & Sched
+            </TabsTrigger>
+          )}
           <TabsTrigger value="audit" className="gap-1.5 text-xs py-2">
             <History className="h-3.5 w-3.5" />
             Audit Trail
@@ -350,37 +355,30 @@ export function DetailsPanel({
                   </div>
                   <div>
                     <span className="text-muted-foreground block text-[11px]">Resolution Type</span>
-                    <Badge className="bg-purple-600 hover:bg-purple-700 text-white text-[10px] rounded-full px-2.5 ">
-                      {resolutionType || 'procurement-mode-recommendation'}
+                    <Badge className="bg-purple-600 hover:bg-purple-700 text-white text-[10px] rounded-full px-2.5">
+                      {resolutionType}
                     </Badge>
                   </div>
                 </div>
 
                 <div className="space-y-1">
                   <span className="text-muted-foreground block text-[11px]">Resolved Date & Location</span>
-                  {dateResolved || resolvedLocation ? (
-                    <p className="font-medium text-foreground">
-                      {dateResolved ? new Date(dateResolved).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : ''}{' '}
-                      at {resolvedLocation || 'BAC Office'}
-                    </p>
-                  ) : (
-                    <p className="font-medium text-red-600">
-                      Sunday, May 10, 2026 at University of Science and Technology of Southern Philippines, Cagayan de Oro City
-                    </p>
-                  )}
+                  <p className="font-medium text-foreground">
+                    {dateResolved
+                      ? new Date(dateResolved).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })
+                      : 'Pending Resolution Date'}{' '}
+                    at {resolvedLocation || 'BAC Office'}
+                  </p>
                 </div>
 
                 <div className="space-y-1 pt-2 border-t border-default-100">
                   <span className="text-muted-foreground block text-[11px]">Created By & Timestamp</span>
-                  {createdBy || createdAt ? (
-                    <p className="font-medium text-foreground">
-                      {createdBy || 'Procurement Staff'} on {createdAt ? new Date(createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''}
-                    </p>
-                  ) : (
-                    <p className="font-medium text-red-600">
-                      Procurement Staff Demo on May 21, 2026
-                    </p>
-                  )}
+                  <p className="font-medium text-foreground">
+                    {createdBy}{' '}
+                    {createdAt
+                      ? `on ${new Date(createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+                      : ''}
+                  </p>
                 </div>
               </CardContent>
             </Card>
@@ -399,12 +397,17 @@ export function DetailsPanel({
                   {approvedBy || approvedAt ? (
                     <div className="flex items-center gap-1.5 font-medium text-emerald-700">
                       <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                      Approved by {approvedBy} on {approvedAt ? new Date(approvedAt).toLocaleDateString('en-US') : ''}
+                      Approved by {approvedBy} {approvedAt ? `on ${new Date(approvedAt).toLocaleDateString('en-US')}` : ''}
+                    </div>
+                  ) : isApproved ? (
+                    <div className="flex items-center gap-1.5 font-medium text-emerald-700">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                      Approved by HOPE
                     </div>
                   ) : (
-                    <div className="flex items-center gap-1.5 font-medium text-red-600">
-                      <CheckCircle2 className="h-4 w-4 text-emerald-600" />
-                      Approved by Chairperson Demo on 5/21/2026
+                    <div className="flex items-center gap-1.5 font-medium text-amber-700">
+                      <Clock className="h-4 w-4 text-amber-600" />
+                      Pending Approval
                     </div>
                   )}
                 </div>
@@ -412,18 +415,15 @@ export function DetailsPanel({
                 <div className="space-y-1.5 pt-1">
                   <span className="text-muted-foreground block text-[11px]">Provisional BAC Representatives</span>
                   <div className="flex items-center justify-between text-xs pt-1">
-                    {endUserRep ? (
-                      <>
-                        <span className="text-muted-foreground">End-user Rep:</span>
-                        <span className="font-medium text-foreground">{endUserRep}</span>
-                      </>
-                    ) : (
-                      <>
-                        <span className="text-red-600">End-user Rep:</span>
-                        <span className="font-medium text-red-600">Jane Doe</span>
-                      </>
-                    )}
+                    <span className="text-muted-foreground">End-user Rep:</span>
+                    <span className="font-medium text-foreground">{endUserRep}</span>
                   </div>
+                  {techRep && (
+                    <div className="flex items-center justify-between text-xs pt-1">
+                      <span className="text-muted-foreground">Tech Rep:</span>
+                      <span className="font-medium text-foreground">{techRep}</span>
+                    </div>
+                  )}
                 </div>
               </CardContent>
             </Card>
@@ -439,8 +439,8 @@ export function DetailsPanel({
                   <Layers className="h-4 w-4 text-primary" />
                   Authoritative Procurement Source Information
                 </CardTitle>
-                <Badge className="bg-purple-600 text-white text-[10px] rounded-full px-3 ">
-                  Path A: {selectedProject.sourceType === 'ConsolidatedPR' ? 'Consolidated PR' : 'APP Item'}
+                <Badge className="bg-purple-600 text-white text-[10px] rounded-full px-3">
+                  Path A: {isAppItemSource ? 'APP Item' : 'Consolidated PR'}
                 </Badge>
               </div>
             </CardHeader>
@@ -448,29 +448,17 @@ export function DetailsPanel({
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 rounded-xl bg-default-50 border border-default-200">
                 <div>
                   <span className="text-muted-foreground block text-[10px] font-semibold uppercase">OFFICE / UNIT</span>
-                  {officeName ? (
-                    <span className="font-semibold text-foreground text-sm">{officeName}</span>
-                  ) : (
-                    <span className="font-semibold text-red-600 text-sm">ICT Center</span>
-                  )}
+                  <span className="font-semibold text-foreground text-sm">{officeName}</span>
                 </div>
 
                 <div>
                   <span className="text-muted-foreground block text-[10px] font-semibold uppercase">PROCUREMENT MODE</span>
-                  {procurementMode ? (
-                    <span className="font-semibold text-purple-600 text-sm">{procurementMode}</span>
-                  ) : (
-                    <span className="font-semibold text-red-600 text-sm">Public Bidding</span>
-                  )}
+                  <span className="font-semibold text-purple-600 text-sm">{procurementMode}</span>
                 </div>
 
                 <div>
                   <span className="text-muted-foreground block text-[10px] font-semibold uppercase">SOURCE OF FUND</span>
-                  {fundSource ? (
-                    <span className="font-semibold text-foreground text-sm">{fundSource}</span>
-                  ) : (
-                    <span className="font-semibold text-red-600 text-sm">General Appropriations Act (GAA)</span>
-                  )}
+                  <span className="font-semibold text-foreground text-sm">{fundSource}</span>
                 </div>
 
                 <div>
@@ -502,7 +490,7 @@ export function DetailsPanel({
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
                 <FileText className="h-4 w-4 text-primary" />
-                Configured WHEREAS Clauses ({whereasClauses.length > 0 ? whereasClauses.length : 1})
+                Configured WHEREAS Clauses ({whereasClauses.length})
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-xs">
@@ -514,11 +502,8 @@ export function DetailsPanel({
                   </div>
                 ))
               ) : (
-                <div className="p-3.5 rounded-xl border border-default-200 bg-white space-y-1">
-                  <span className="text-red-600 font-bold block text-xs">Legal Basis</span>
-                  <p className="text-red-600 text-xs font-serif leading-relaxed">
-                    WHEREAS, Section 12 of R.A. 9184 IRR authorizes APP-driven procurement for priority ICT infrastructure;
-                  </p>
+                <div className="rounded-xl border border-dashed border-default-300 bg-default-50/50 p-6 text-center text-xs text-muted-foreground">
+                  No custom WHEREAS clauses configured for this resolution.
                 </div>
               )}
             </CardContent>
@@ -534,27 +519,18 @@ export function DetailsPanel({
             <CardContent className="space-y-3 text-xs">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                 <div className="p-3.5 rounded-xl bg-default-50 border border-default-200">
-                  <p className="font-bold text-default-900 text-xs">BAC CHAIRPERSON DEMO</p>
+                  <p className="font-bold text-default-900 text-xs">BAC CHAIRPERSON</p>
                   <p className="text-muted-foreground text-[11px]">Chairperson, BAC</p>
                 </div>
 
                 <div className="p-3.5 rounded-xl bg-default-50 border border-default-200">
-                  <p className="font-bold text-default-900 text-xs">BAC VICE-CHAIRPERSON DEMO</p>
+                  <p className="font-bold text-default-900 text-xs">BAC VICE-CHAIRPERSON</p>
                   <p className="text-muted-foreground text-[11px]">Vice-Chairperson, BAC</p>
                 </div>
 
                 <div className="p-3.5 rounded-xl bg-default-50 border border-default-200">
-                  {endUserRep ? (
-                    <>
-                      <p className="font-bold text-default-900 text-xs">{endUserRep}</p>
-                      <p className="text-muted-foreground text-[11px]">Chief Information Officer (End-user Rep)</p>
-                    </>
-                  ) : (
-                    <>
-                      <p className="font-bold text-red-600 text-xs">Jane Doe</p>
-                      <p className="text-red-600 text-[11px]">Chief Information Officer (End-user Rep)</p>
-                    </>
-                  )}
+                  <p className="font-bold text-default-900 text-xs">{endUserRep}</p>
+                  <p className="text-muted-foreground text-[11px]">End-user Representative ({officeName})</p>
                 </div>
               </div>
             </CardContent>
@@ -562,34 +538,36 @@ export function DetailsPanel({
         </TabsContent>
 
         {/* TAB 4: LINKED PRS & SCHED */}
-        <TabsContent value="linked" className="space-y-4">
-          <Card className="border border-default-200 shadow-sm">
-            <CardHeader className="pb-3">
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-sm font-semibold flex items-center gap-2">
-                  <LinkIcon className="h-4 w-4 text-primary" />
-                  Linked Consolidated PRs (0)
-                </CardTitle>
-                {onLinkPrs && (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={onLinkPrs}
-                    className="gap-1.5 text-xs border-purple-300 text-purple-600 hover:bg-purple-50 h-8"
-                  >
-                    <LinkIcon className="h-3.5 w-3.5 text-purple-600" />
-                    Manage Linkage
-                  </Button>
-                )}
-              </div>
-            </CardHeader>
-            <CardContent className="p-6">
-              <div className="rounded-xl border border-dashed border-default-300 bg-default-50/50 p-8 text-center text-xs text-muted-foreground">
-                No Consolidated PRs linked to this BAC resolution.
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+        {!isAppItemSource && (
+          <TabsContent value="linked" className="space-y-4">
+            <Card className="border border-default-200 shadow-sm">
+              <CardHeader className="pb-3">
+                <div className="flex items-center justify-between">
+                  <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                    <LinkIcon className="h-4 w-4 text-primary" />
+                    Linked Consolidated PRs (0)
+                  </CardTitle>
+                  {onLinkPrs && (
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={onLinkPrs}
+                      className="gap-1.5 text-xs border-purple-300 text-purple-600 hover:bg-purple-50 h-8"
+                    >
+                      <LinkIcon className="h-3.5 w-3.5 text-purple-600" />
+                      Manage Linkage
+                    </Button>
+                  )}
+                </div>
+              </CardHeader>
+              <CardContent className="p-6">
+                <div className="rounded-xl border border-dashed border-default-300 bg-default-50/50 p-8 text-center text-xs text-muted-foreground">
+                  No Consolidated PRs linked to this BAC resolution.
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
 
         {/* TAB 5: AUDIT TRAIL */}
         <TabsContent value="audit" className="space-y-4">
@@ -615,11 +593,15 @@ export function DetailsPanel({
               ) : (
                 <div className="p-3.5 rounded-xl border border-default-200 bg-white flex items-start justify-between">
                   <div className="space-y-1">
-                    <span className="text-red-600 font-bold block text-xs">Approved by HOPE</span>
-                    <span className="text-red-600 text-[11px] block">By Chairperson Demo</span>
-                    <p className="text-red-600 text-xs">Approved for Public Bidding PR Creation.</p>
+                    <span className="font-bold text-foreground block text-xs">Project Created</span>
+                    <span className="text-muted-foreground text-[11px] block">By {createdBy}</span>
+                    <p className="text-muted-foreground text-xs">BAC Resolution initialized in system.</p>
                   </div>
-                  <span className="text-red-600 text-[11px] font-mono">5/21/2026, 5:00:00 PM</span>
+                  {createdAt && (
+                    <span className="text-muted-foreground text-[11px] font-mono">
+                      {new Date(createdAt).toLocaleDateString('en-US')}
+                    </span>
+                  )}
                 </div>
               )}
             </CardContent>
