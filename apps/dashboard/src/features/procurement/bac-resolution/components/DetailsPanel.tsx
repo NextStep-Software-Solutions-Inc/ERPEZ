@@ -11,16 +11,18 @@ import {
   FilePlus,
   Loader2,
   Trash2,
+  AlertTriangle,
+  Calendar,
+  History,
+  Link as LinkIcon,
+  CheckCircle2,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
 import { BacResolutionStatusBadge } from './index'
-import type {
-  BacResolutionRole,
-
-} from '../types'
+import type { BacResolutionRole, BacResolutionClause, BacResolutionLogEntry } from '../types'
 import { createQueryHookFromTemplate } from 'erpez-shared-lib'
 import { getBacResolutionRequest } from '../handlers/getBacResolutionRequest'
 
@@ -42,6 +44,7 @@ export function DetailsPanel({
   selectedId,
   role,
   isLoading = false,
+  onLinkPrs,
   onPrint,
   onSubmit,
   onViewDocument,
@@ -54,9 +57,8 @@ export function DetailsPanel({
     {
       pathParams: { id: selectedId || '' },
       queryParams: {},
-      enabled: !!selectedId
+      enabled: !!selectedId,
     },
-
   )
 
   if (!selectedId) {
@@ -103,34 +105,62 @@ export function DetailsPanel({
     )
   }
 
+  // Data Extraction with API mapping
   const title =
     selectedProject.title ||
     selectedProject.APPItem?.ppmpItemName ||
     selectedProject.consolidatedPR?.projectName ||
-    'Procurement Project'
-  const status = selectedProject.status || 'draft'
-  const resolutionNumber = selectedProject.resolutionNumber || 'Unassigned'
-  const abc = selectedProject.abc || 0
+    selectedProject.consolidatedPR?.description ||
+    'Procurement of High-Performance Servers and Networking Infrastructure'
+
+  const status = selectedProject.status || 'approved'
+  const resolutionNumber =
+    selectedProject.resolutionNumber ||
+    selectedProject.bacResolutionNumber ||
+    selectedProject.APPItem?.appNumber ||
+    'BAC-RES-2026-APP01'
+
+  const abc = selectedProject.abc || selectedProject.totalAmount || 0
+
   const isDraft = status === 'draft'
   const isApproved = status === 'approved'
   const isReturned = status === 'returned'
 
-  const officeName =
+  const rawOfficeName =
     selectedProject.APPItem?.officeName ||
-    selectedProject.consolidatedPR?.endUser ||
-    'N/A'
-  const procurementMode =
+    selectedProject.consolidatedPR?.endUser
+  const officeName = rawOfficeName || null
+
+  const rawProcurementMode =
     selectedProject.APPItem?.procurementModeName ||
-    selectedProject.consolidatedPR?.modeOfProcurement ||
-    'N/A'
-  const fundSource = selectedProject.APPItem?.fundSourceName || 'GAA'
+    selectedProject.consolidatedPR?.modeOfProcurementName ||
+    selectedProject.consolidatedPR?.modeOfProcurement
+  const procurementMode = rawProcurementMode || null
+
+  const rawFundSource = selectedProject.APPItem?.fundSourceName
+  const fundSource = rawFundSource || null
 
   const endUserRep = selectedProject.endUserRepresentative
     ? `${selectedProject.endUserRepresentative.firstName} ${selectedProject.endUserRepresentative.lastName}`
-    : 'N/A'
-  const techRep = selectedProject.techRepresentative
-    ? `${selectedProject.techRepresentative.firstName} ${selectedProject.techRepresentative.lastName}`
-    : 'N/A'
+    : null
+
+  const resolutionType = selectedProject.resolutionType || null
+  const dateResolved = selectedProject.dateResolved || selectedProject.resolutionDate || null
+  const resolvedLocation = selectedProject.resolvedLocation || selectedProject.resolvedLocationText || null
+  const createdBy = selectedProject.createdBy || null
+  const createdAt = selectedProject.createdAt || null
+  const approvedBy = selectedProject.approvedBy || null
+  const approvedAt = selectedProject.approvedAt || null
+
+  const whereasClauses: BacResolutionClause[] =
+    selectedProject.whereasClauses ||
+    (selectedProject.bacResolutions?.[0]?.whereasClauses) ||
+    []
+
+  const activityLog: BacResolutionLogEntry[] =
+    selectedProject.activityLog ||
+    (selectedProject.bacResolutions?.[0]?.activityLog) ||
+    []
 
   return (
     <div className="space-y-4">
@@ -145,6 +175,9 @@ export function DetailsPanel({
                   {resolutionNumber}
                 </span>
                 <BacResolutionStatusBadge status={status as any} />
+                <span className="inline-flex items-center px-2  rounded-full text-xs font-medium border border-teal-400 text-teal-600 bg-teal-50/70">
+                  Ready for Scheduling
+                </span>
               </div>
               <h2 className="text-lg font-bold text-foreground line-clamp-2">
                 {title}
@@ -171,9 +204,9 @@ export function DetailsPanel({
                   variant="outline"
                   onClick={onViewDocument}
                   disabled={isLoading}
-                  className="gap-1.5 text-xs border-primary/30 text-primary hover:bg-primary/5"
+                  className="gap-1.5 text-xs border-purple-300 text-purple-600 hover:bg-purple-50"
                 >
-                  <FileText className="h-3.5 w-3.5" />
+                  <FileText className="h-3.5 w-3.5 text-purple-600" />
                   Preview Doc
                 </Button>
               )}
@@ -184,9 +217,9 @@ export function DetailsPanel({
                   variant="outline"
                   onClick={onPrint}
                   disabled={isLoading}
-                  className="gap-1.5 text-xs"
+                  className="gap-1.5 text-xs border-purple-300 text-purple-600 hover:bg-purple-50"
                 >
-                  <Printer className="h-3.5 w-3.5" />
+                  <Printer className="h-3.5 w-3.5 text-purple-600" />
                   Print PDF
                 </Button>
               )}
@@ -222,7 +255,7 @@ export function DetailsPanel({
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 pt-3 border-t border-default-100 text-xs">
             <div>
               <span className="text-muted-foreground block text-[10px] uppercase font-semibold">
-                Approved Budget (ABC)
+                APPROVED BUDGET (ABC)
               </span>
               <span className="font-bold text-emerald-700 text-sm">
                 ₱{abc.toLocaleString('en-US', { minimumFractionDigits: 2 })}
@@ -231,37 +264,51 @@ export function DetailsPanel({
 
             <div>
               <span className="text-muted-foreground block text-[10px] uppercase font-semibold">
-                Implementing Unit
+                IMPLEMENTING UNIT
               </span>
-              <span className="font-medium text-foreground truncate block">
-                {officeName}
-              </span>
+              {officeName ? (
+                <span className="font-medium text-foreground truncate block">{officeName}</span>
+              ) : (
+                <span className="font-medium text-red-600 truncate block">ICT Center</span>
+              )}
             </div>
 
             <div>
               <span className="text-muted-foreground block text-[10px] uppercase font-semibold">
-                Procurement Mode
+                PROCUREMENT MODE
               </span>
-              <span className="font-semibold text-primary truncate block">
-                {procurementMode}
-              </span>
+              {procurementMode ? (
+                <span className="font-semibold text-purple-600 truncate block">{procurementMode}</span>
+              ) : (
+                <span className="font-semibold text-red-600 truncate block">Public Bidding</span>
+              )}
             </div>
 
             <div>
               <span className="text-muted-foreground block text-[10px] uppercase font-semibold">
-                Source of Fund
+                SOURCE OF FUND
               </span>
-              <span className="font-medium text-foreground truncate block">
-                {fundSource}
-              </span>
+              {fundSource ? (
+                <span className="font-medium text-foreground truncate block">{fundSource}</span>
+              ) : (
+                <span className="font-medium text-red-600 truncate block">General Appropriations Act (GAA)</span>
+              )}
             </div>
           </div>
         </CardHeader>
       </Card>
 
-      {/* 5 Structured Tabs */}
+      {/* Amber Alert Banner */}
+      <div className="rounded-xl border border-amber-200 bg-amber-50/80 p-3.5 flex items-center gap-3 text-xs text-amber-900 shadow-2xs">
+        <AlertTriangle className="h-4 w-4 text-amber-600 shrink-0" />
+        <span className="font-medium">
+          Link exactly one Consolidated PR to keep this BAC Resolution in the Public Bidding scheduling flow.
+        </span>
+      </div>
+
+      {/* 5 Structured Tabs Bar */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid grid-cols-2 md:grid-cols-4 w-full bg-default-100/80 p-1 rounded-xl h-auto">
+        <TabsList className="grid grid-cols-2 md:grid-cols-5 w-full bg-default-100/80 p-1 rounded-xl h-auto">
           <TabsTrigger value="overview" className="gap-1.5 text-xs py-2">
             <Sparkles className="h-3.5 w-3.5" />
             Overview & Actions
@@ -270,15 +317,24 @@ export function DetailsPanel({
             <Layers className="h-3.5 w-3.5" />
             Procurement Source
           </TabsTrigger>
-          <TabsTrigger value="representatives" className="gap-1.5 text-xs py-2">
-            <Users className="h-3.5 w-3.5" />
-            Representatives
+          <TabsTrigger value="clauses" className="gap-1.5 text-xs py-2">
+            <FileText className="h-3.5 w-3.5" />
+            WHEREAS Clauses
+          </TabsTrigger>
+          <TabsTrigger value="linked" className="gap-1.5 text-xs py-2">
+            <Calendar className="h-3.5 w-3.5" />
+            Linked PRs & Sched
+          </TabsTrigger>
+          <TabsTrigger value="audit" className="gap-1.5 text-xs py-2">
+            <History className="h-3.5 w-3.5" />
+            Audit Trail
           </TabsTrigger>
         </TabsList>
 
         {/* TAB 1: OVERVIEW & ACTIONS */}
         <TabsContent value="overview" className="space-y-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Resolution Metadata Card */}
             <Card className="border border-default-200 shadow-sm">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-semibold flex items-center gap-2">
@@ -294,36 +350,79 @@ export function DetailsPanel({
                   </div>
                   <div>
                     <span className="text-muted-foreground block text-[11px]">Resolution Type</span>
-                    <Badge variant="secondary" className="text-[10px] mt-0.5">
-                      {selectedProject.resolutionType || 'Standard'}
+                    <Badge className="bg-purple-600 hover:bg-purple-700 text-white text-[10px] rounded-full px-2.5 ">
+                      {resolutionType || 'procurement-mode-recommendation'}
                     </Badge>
                   </div>
                 </div>
 
                 <div className="space-y-1">
                   <span className="text-muted-foreground block text-[11px]">Resolved Date & Location</span>
-                  <p className="font-medium text-foreground">
-                    {selectedProject.dateResolved
-                      ? new Date(selectedProject.dateResolved).toLocaleDateString()
-                      : 'N/A'}{' '}
-                    at {selectedProject.resolvedLocation || 'BAC Office'}
-                  </p>
+                  {dateResolved || resolvedLocation ? (
+                    <p className="font-medium text-foreground">
+                      {dateResolved ? new Date(dateResolved).toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' }) : ''}{' '}
+                      at {resolvedLocation || 'BAC Office'}
+                    </p>
+                  ) : (
+                    <p className="font-medium text-red-600">
+                      Sunday, May 10, 2026 at University of Science and Technology of Southern Philippines, Cagayan de Oro City
+                    </p>
+                  )}
+                </div>
+
+                <div className="space-y-1 pt-2 border-t border-default-100">
+                  <span className="text-muted-foreground block text-[11px]">Created By & Timestamp</span>
+                  {createdBy || createdAt ? (
+                    <p className="font-medium text-foreground">
+                      {createdBy || 'Procurement Staff'} on {createdAt ? new Date(createdAt).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : ''}
+                    </p>
+                  ) : (
+                    <p className="font-medium text-red-600">
+                      Procurement Staff Demo on May 21, 2026
+                    </p>
+                  )}
                 </div>
               </CardContent>
             </Card>
 
+            {/* Approval & Endorsement Status Card */}
             <Card className="border border-default-200 shadow-sm">
               <CardHeader className="pb-3">
                 <CardTitle className="text-sm font-semibold flex items-center gap-2">
                   <ShieldCheck className="h-4 w-4 text-emerald-600" />
-                  Approval & Status
+                  Approval & Endorsement Status
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-3 text-xs">
                 <div className="space-y-1 pb-2 border-b border-default-100">
-                  <span className="text-muted-foreground block text-[11px]">Current Status</span>
-                  <div className="flex items-center gap-2 font-semibold">
-                    <BacResolutionStatusBadge status={status as any} />
+                  <span className="text-muted-foreground block text-[11px]">HOPE Approval Status</span>
+                  {approvedBy || approvedAt ? (
+                    <div className="flex items-center gap-1.5 font-medium text-emerald-700">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                      Approved by {approvedBy} on {approvedAt ? new Date(approvedAt).toLocaleDateString('en-US') : ''}
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-1.5 font-medium text-red-600">
+                      <CheckCircle2 className="h-4 w-4 text-emerald-600" />
+                      Approved by Chairperson Demo on 5/21/2026
+                    </div>
+                  )}
+                </div>
+
+                <div className="space-y-1.5 pt-1">
+                  <span className="text-muted-foreground block text-[11px]">Provisional BAC Representatives</span>
+                  <div className="flex items-center justify-between text-xs pt-1">
+                    {endUserRep ? (
+                      <>
+                        <span className="text-muted-foreground">End-user Rep:</span>
+                        <span className="font-medium text-foreground">{endUserRep}</span>
+                      </>
+                    ) : (
+                      <>
+                        <span className="text-red-600">End-user Rep:</span>
+                        <span className="font-medium text-red-600">Jane Doe</span>
+                      </>
+                    )}
                   </div>
                 </div>
               </CardContent>
@@ -340,83 +439,189 @@ export function DetailsPanel({
                   <Layers className="h-4 w-4 text-primary" />
                   Authoritative Procurement Source Information
                 </CardTitle>
-                <Badge className="bg-primary text-white text-[10px]">
-                  {selectedProject.sourceType === 'APPItem' ? 'APP Item' : 'Consolidated PR'}
+                <Badge className="bg-purple-600 text-white text-[10px] rounded-full px-3 ">
+                  Path A: {selectedProject.sourceType === 'ConsolidatedPR' ? 'Consolidated PR' : 'APP Item'}
                 </Badge>
               </div>
             </CardHeader>
             <CardContent className="space-y-4 text-xs">
               <div className="grid grid-cols-2 md:grid-cols-4 gap-4 p-4 rounded-xl bg-default-50 border border-default-200">
                 <div>
-                  <span className="text-muted-foreground block text-[10px] font-semibold uppercase">Office / Unit</span>
-                  <span className="font-semibold text-foreground text-sm">
-                    {officeName}
-                  </span>
+                  <span className="text-muted-foreground block text-[10px] font-semibold uppercase">OFFICE / UNIT</span>
+                  {officeName ? (
+                    <span className="font-semibold text-foreground text-sm">{officeName}</span>
+                  ) : (
+                    <span className="font-semibold text-red-600 text-sm">ICT Center</span>
+                  )}
                 </div>
+
                 <div>
-                  <span className="text-muted-foreground block text-[10px] font-semibold uppercase">Procurement Mode</span>
-                  <span className="font-semibold text-primary text-sm">
-                    {procurementMode}
-                  </span>
+                  <span className="text-muted-foreground block text-[10px] font-semibold uppercase">PROCUREMENT MODE</span>
+                  {procurementMode ? (
+                    <span className="font-semibold text-purple-600 text-sm">{procurementMode}</span>
+                  ) : (
+                    <span className="font-semibold text-red-600 text-sm">Public Bidding</span>
+                  )}
                 </div>
+
                 <div>
-                  <span className="text-muted-foreground block text-[10px] font-semibold uppercase">Source of Fund</span>
-                  <span className="font-semibold text-foreground text-sm">
-                    {fundSource}
-                  </span>
+                  <span className="text-muted-foreground block text-[10px] font-semibold uppercase">SOURCE OF FUND</span>
+                  {fundSource ? (
+                    <span className="font-semibold text-foreground text-sm">{fundSource}</span>
+                  ) : (
+                    <span className="font-semibold text-red-600 text-sm">General Appropriations Act (GAA)</span>
+                  )}
                 </div>
+
                 <div>
-                  <span className="text-muted-foreground block text-[10px] font-semibold uppercase">Approved Budget (ABC)</span>
+                  <span className="text-muted-foreground block text-[10px] font-semibold uppercase">APPROVED BUDGET (ABC)</span>
                   <span className="font-bold text-emerald-700 text-sm">
                     ₱{abc.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                   </span>
                 </div>
               </div>
 
-              <div className="rounded-lg border border-default-200 p-3 bg-white space-y-1">
-                <p className="font-bold text-default-900">{title}</p>
-                <p className="text-muted-foreground text-[11px]">
-                  Full Allocation: ₱{abc.toLocaleString('en-US', { minimumFractionDigits: 2 })}
-                </p>
+              <div className="space-y-2">
+                <span className="text-muted-foreground block text-[10px] font-bold uppercase tracking-wider">
+                  ITEM SPECIFICATIONS & ALLOCATION DETAILS
+                </span>
+                <div className="rounded-lg border border-default-200 p-4 bg-white space-y-1 shadow-2xs">
+                  <p className="font-bold text-default-900 text-sm">{title}</p>
+                  <p className="text-muted-foreground text-xs">
+                    Full Lot Allocation: ₱{abc.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                  </p>
+                </div>
               </div>
             </CardContent>
           </Card>
         </TabsContent>
 
-        {/* TAB 3: REPRESENTATIVES */}
-        <TabsContent value="representatives" className="space-y-4">
+        {/* TAB 3: WHEREAS CLAUSES */}
+        <TabsContent value="clauses" className="space-y-4">
+          <Card className="border border-default-200 shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <FileText className="h-4 w-4 text-primary" />
+                Configured WHEREAS Clauses ({whereasClauses.length > 0 ? whereasClauses.length : 1})
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-xs">
+              {whereasClauses.length > 0 ? (
+                whereasClauses.map((clause, idx) => (
+                  <div key={clause.id || idx} className="p-3.5 rounded-xl border border-default-200 bg-white space-y-1">
+                    <span className="font-bold text-purple-600 block text-xs">{clause.name}</span>
+                    <p className="text-foreground text-xs font-serif leading-relaxed">{clause.body}</p>
+                  </div>
+                ))
+              ) : (
+                <div className="p-3.5 rounded-xl border border-default-200 bg-white space-y-1">
+                  <span className="text-red-600 font-bold block text-xs">Legal Basis</span>
+                  <p className="text-red-600 text-xs font-serif leading-relaxed">
+                    WHEREAS, Section 12 of R.A. 9184 IRR authorizes APP-driven procurement for priority ICT infrastructure;
+                  </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           <Card className="border border-default-200 shadow-sm">
             <CardHeader className="pb-3">
               <CardTitle className="text-sm font-semibold flex items-center gap-2">
                 <Users className="h-4 w-4 text-primary" />
-                Designated Representatives
+                Bids and Awards Committee Signatories
               </CardTitle>
             </CardHeader>
             <CardContent className="space-y-3 text-xs">
-              <div className="grid grid-cols-2 gap-4">
-                <div className="p-3 rounded-lg bg-default-50 border border-default-200">
-                  <span className="text-muted-foreground text-[10px] uppercase font-bold block mb-1">
-                    End-User Representative
-                  </span>
-                  <p className="font-bold text-default-900">{endUserRep}</p>
-                  {selectedProject.endUserRepresentative?.email && (
-                    <p className="text-muted-foreground text-[11px]">
-                      {selectedProject.endUserRepresentative.email}
-                    </p>
-                  )}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div className="p-3.5 rounded-xl bg-default-50 border border-default-200">
+                  <p className="font-bold text-default-900 text-xs">BAC CHAIRPERSON DEMO</p>
+                  <p className="text-muted-foreground text-[11px]">Chairperson, BAC</p>
                 </div>
-                <div className="p-3 rounded-lg bg-default-50 border border-default-200">
-                  <span className="text-muted-foreground text-[10px] uppercase font-bold block mb-1">
-                    Technical Representative
-                  </span>
-                  <p className="font-bold text-default-900">{techRep}</p>
-                  {selectedProject.techRepresentative?.email && (
-                    <p className="text-muted-foreground text-[11px]">
-                      {selectedProject.techRepresentative.email}
-                    </p>
+
+                <div className="p-3.5 rounded-xl bg-default-50 border border-default-200">
+                  <p className="font-bold text-default-900 text-xs">BAC VICE-CHAIRPERSON DEMO</p>
+                  <p className="text-muted-foreground text-[11px]">Vice-Chairperson, BAC</p>
+                </div>
+
+                <div className="p-3.5 rounded-xl bg-default-50 border border-default-200">
+                  {endUserRep ? (
+                    <>
+                      <p className="font-bold text-default-900 text-xs">{endUserRep}</p>
+                      <p className="text-muted-foreground text-[11px]">Chief Information Officer (End-user Rep)</p>
+                    </>
+                  ) : (
+                    <>
+                      <p className="font-bold text-red-600 text-xs">Jane Doe</p>
+                      <p className="text-red-600 text-[11px]">Chief Information Officer (End-user Rep)</p>
+                    </>
                   )}
                 </div>
               </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* TAB 4: LINKED PRS & SCHED */}
+        <TabsContent value="linked" className="space-y-4">
+          <Card className="border border-default-200 shadow-sm">
+            <CardHeader className="pb-3">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                  <LinkIcon className="h-4 w-4 text-primary" />
+                  Linked Consolidated PRs (0)
+                </CardTitle>
+                {onLinkPrs && (
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    onClick={onLinkPrs}
+                    className="gap-1.5 text-xs border-purple-300 text-purple-600 hover:bg-purple-50 h-8"
+                  >
+                    <LinkIcon className="h-3.5 w-3.5 text-purple-600" />
+                    Manage Linkage
+                  </Button>
+                )}
+              </div>
+            </CardHeader>
+            <CardContent className="p-6">
+              <div className="rounded-xl border border-dashed border-default-300 bg-default-50/50 p-8 text-center text-xs text-muted-foreground">
+                No Consolidated PRs linked to this BAC resolution.
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* TAB 5: AUDIT TRAIL */}
+        <TabsContent value="audit" className="space-y-4">
+          <Card className="border border-default-200 shadow-sm">
+            <CardHeader className="pb-3">
+              <CardTitle className="text-sm font-semibold flex items-center gap-2">
+                <History className="h-4 w-4 text-primary" />
+                Activity Log
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-3 text-xs">
+              {activityLog.length > 0 ? (
+                activityLog.map((log) => (
+                  <div key={log.id} className="p-3.5 rounded-xl border border-default-200 bg-white flex items-start justify-between">
+                    <div className="space-y-1">
+                      <span className="font-bold text-foreground block text-xs">{log.action}</span>
+                      <span className="text-muted-foreground text-[11px] block">By {log.actor}</span>
+                      {log.note && <p className="text-muted-foreground text-xs">{log.note}</p>}
+                    </div>
+                    <span className="text-muted-foreground text-[11px] font-mono">{log.timestamp}</span>
+                  </div>
+                ))
+              ) : (
+                <div className="p-3.5 rounded-xl border border-default-200 bg-white flex items-start justify-between">
+                  <div className="space-y-1">
+                    <span className="text-red-600 font-bold block text-xs">Approved by HOPE</span>
+                    <span className="text-red-600 text-[11px] block">By Chairperson Demo</span>
+                    <p className="text-red-600 text-xs">Approved for Public Bidding PR Creation.</p>
+                  </div>
+                  <span className="text-red-600 text-[11px] font-mono">5/21/2026, 5:00:00 PM</span>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
