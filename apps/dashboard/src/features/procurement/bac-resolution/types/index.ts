@@ -115,13 +115,18 @@ export type BacResolutionLogEntry = {
 }
 
 
+export type WhereasClauses = {
+  whereasClauseId: string
+  order: number
+}
+
 export type BacProject = {
   id: string
   sourceType: "APPItem" | "ConsolidatedPR"
-  appItemId?: string,
-  consolidatedPRId?: string,
-  APPItem: APPItem
-  consolidatedPR: ConsolidatedPR
+  appItemId?: string
+  consolidatedPRId?: string
+  appItem?: APPItem
+  consolidatedPR?: ConsolidatedPR
   title?: string
   abc: number
   status?: BacResolutionStatus
@@ -129,6 +134,9 @@ export type BacProject = {
   resolutionNumber?: string
   dateResolved?: string
   resolvedLocation?: string
+  whereasClauses?: WhereasClauses[]
+  endUserRepresentativeId?: string
+  techRepresentativeId?: string
   createdBy?: string
   createdAt?: string
   updatedAt?: string
@@ -149,34 +157,19 @@ export type BacProjectDetails = BacProject & {
 }
 export type BacResolution = {
   id: string
-  bacResolutionNumber: string
-  resolutionType?: BacResolutionType | null
-  resolutionDate: string
-  description: string
-  resolvedDateText: string
-  resolvedLocationText: string
+  procurementProjectId: string
+  resolutionType?: string
+  resolutionNumber?: string
+  dateResolved: string
+  resolvedLocation?: string
+  status: string
   whereasClauses: BacResolutionWhereasClause[]
-  signatoryOverrides?: BacResolutionSignatoryOverride
-  status: BacResolutionStatus
-  createdBy: string
-  createdAt: string
-  updatedAt: string
-  totalAmount: number
-  awardRecommendation?: BacResolutionAwardRecommendation | null
-  linkedConsolidatedPrs: ConsolidatedPrLink[]
-  activityLog: BacResolutionLogEntry[]
-  returnReason?: string | null
-  approvedBy?: string | null
-  approvedAt?: string | null
-  signedDocumentFileName?: string | null
-  printFileName?: string | null
-  workspaceOrigin?: 'public-bidding' | 'standard' | null
-  // Multi-source procurement project extensions
-  sourceType?: ProcurementSourceType
-  appItemId?: string | null
-  consolidatedPRId?: string | null
-  isPrCreated?: boolean
-  createdPrNumber?: string | null
+  biddingActivitySchedules: {}[]
+  endUserRepresentativeId?: string
+  endUserRepresentative: { id: string, firstName: string, lastName: string, email: string } | null
+  techRepresentativeId?: string
+  techRepresentative: { id: string, firstName: string, lastName: string, email: string } | null
+
 }
 
 export type BacResolutionWhereasClause = {

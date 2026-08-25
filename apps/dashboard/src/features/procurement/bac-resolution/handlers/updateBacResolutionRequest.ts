@@ -1,11 +1,23 @@
 import type { APIResponse, MutationBlueprintFromTemplate, QueryParams } from 'erpez-shared-lib'
-import type { BacProject, BacResolution, CreateBacResolutionPayload } from '../types'
+import type { BacProject } from '../types'
 import api from '@/services/api'
+
+import type { WhereasClauses } from './createBacResolutionRequest'
 
 const endpoint = '/bac/projects/:id'
 export type UpdateBacProjectPayload = {
-
+  title?: string
+  status?: string
+  resolutionType?: string
+  resolutionNumber?: string
+  dateResolved?: string
+  resolvedLocation?: string
+  whereasClauses?: WhereasClauses[]
+  endUserRepresentativeId?: string
+  techRepresentativeId?: string
 }
+
+
 export const updateBacResolutionRequest: MutationBlueprintFromTemplate<
   typeof endpoint,
   APIResponse<BacProject>,

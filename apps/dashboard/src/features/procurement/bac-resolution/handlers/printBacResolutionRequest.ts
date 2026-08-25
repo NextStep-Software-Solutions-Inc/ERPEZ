@@ -10,7 +10,7 @@ export const printBacResolutionRequest: MutationBlueprintFromTemplate<
 > = {
   endpoint,
   fetcher: async ({ finalUrl, payload }) => {
-    const response = await api.post<any>(finalUrl, payload)
+    const response = await api.post<PrintBacResolutionResult>(finalUrl, payload)
     return response.data
   },
 }
