@@ -25,8 +25,11 @@ import type {
   BacResolutionRole,
   BacResolutionWorkspaceScope,
 } from '../types'
-import { useBacResolutions } from '../handlers/hooks'
+import { createQueryHookFromTemplate } from 'erpez-shared-lib'
+import { getBacResolutionsRequest } from '../handlers/getBacResolutionsRequest'
 import { cn } from '@/lib/utils'
+
+const useBacResolutions = createQueryHookFromTemplate(getBacResolutionsRequest)
 
 interface InboxPanelProps {
   inboxCards: {
@@ -91,6 +94,7 @@ export function InboxPanel({
 
   // Fetch real list from API
   const { data: responseData, isPending: isLoading } = useBacResolutions({
+    pathParams: {},
     queryParams: {},
   })
 
@@ -131,7 +135,7 @@ export function InboxPanel({
           const titleMatch = (item.title || '').toLowerCase().includes(term)
           const numMatch = (item.resolutionNumber || '').toLowerCase().includes(term)
           const appMatch = (item.APPItem?.ppmpItemName || '').toLowerCase().includes(term)
-          const prMatch = (item.consolidatedPR?.projectName || '').toLowerCase().includes(term)
+          const prMatch = (item.consolidatedPR?.description || '').toLowerCase().includes(term)
           if (!titleMatch && !numMatch && !appMatch && !prMatch) return false
         }
         return true
@@ -414,7 +418,7 @@ export function InboxPanel({
                     onChange={(e) =>
                       setSortBy(
                         e.target.value as
-                          'newest' | 'oldest' | 'amount-desc' | 'amount-asc',
+                        'newest' | 'oldest' | 'amount-desc' | 'amount-asc',
                       )
                     }
                     className="w-full h-8 rounded-lg border border-default-200 bg-default-50 px-2.5 py-1 text-xs text-default-800 focus:outline-none focus:border-primary"

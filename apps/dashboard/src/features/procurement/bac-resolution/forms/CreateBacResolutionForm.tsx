@@ -48,12 +48,20 @@ import type {
   WhereasClauseTemplate,
 } from '../types'
 import {
-  useEligibleAppsForProcurement,
-  useEligibleConsolidatedPRs,
-  useWhereasClauseTemplates,
-  useUsers,
-  useCreateWhereasClauseTemplate,
-} from '../handlers/hooks'
+  createQueryHookFromTemplate,
+  createMutationHookFromTemplate,
+} from 'erpez-shared-lib'
+import { getEligibleAppsForProcurementRequest } from '../handlers/getEligibleAppsForProcurementRequest'
+import { getEligibleConsolidatedPRsRequest } from '../handlers/getEligibleConsolidatedPRsRequest'
+import { getWhereasClauseTemplatesRequest } from '../handlers/getWhereasClauseTemplatesRequest'
+import { createWhereasClauseTemplateRequest } from '../handlers/createWhereasClauseTemplateRequest'
+import { getUsersRequest } from '@/features/planning/market-scoping/handlers/getUsersRequest'
+
+const useEligibleAppsForProcurement = createQueryHookFromTemplate(getEligibleAppsForProcurementRequest)
+const useEligibleConsolidatedPRs = createQueryHookFromTemplate(getEligibleConsolidatedPRsRequest)
+const useWhereasClauseTemplates = createQueryHookFromTemplate(getWhereasClauseTemplatesRequest)
+const useCreateWhereasClauseTemplate = createMutationHookFromTemplate(createWhereasClauseTemplateRequest)
+const useUsers = createQueryHookFromTemplate(getUsersRequest)
 import FieldInfo from '@/components/FieldInfo'
 import type { User } from '@/services/api/users'
 import type { CreateBacResolutionPayload, WhereasClauses } from '../handlers/createBacResolutionRequest'

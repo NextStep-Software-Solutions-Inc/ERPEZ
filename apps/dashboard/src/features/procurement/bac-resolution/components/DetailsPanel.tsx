@@ -10,6 +10,7 @@ import {
   Layers,
   FilePlus,
   Loader2,
+  Trash2,
 } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
@@ -20,7 +21,10 @@ import type {
   BacResolutionRole,
 
 } from '../types'
-import { useBacResolution } from '../handlers/hooks'
+import { createQueryHookFromTemplate } from 'erpez-shared-lib'
+import { getBacResolutionRequest } from '../handlers/getBacResolutionRequest'
+
+const useBacResolution = createQueryHookFromTemplate(getBacResolutionRequest)
 
 interface DetailsPanelProps {
   selectedId: string | null
@@ -31,6 +35,7 @@ interface DetailsPanelProps {
   onSubmit?: () => void | Promise<void>
   onViewDocument?: () => void
   onCreatePr?: () => void
+  onDelete?: () => void
 }
 
 export function DetailsPanel({
@@ -41,6 +46,7 @@ export function DetailsPanel({
   onSubmit,
   onViewDocument,
   onCreatePr,
+  onDelete,
 }: DetailsPanelProps) {
   const [activeTab, setActiveTab] = useState('overview')
 
@@ -194,6 +200,19 @@ export function DetailsPanel({
                 >
                   <Send className="h-3.5 w-3.5" />
                   Submit for Approval
+                </Button>
+              )}
+
+              {onDelete && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={onDelete}
+                  disabled={isLoading}
+                  className="gap-1.5 text-xs text-destructive border-destructive/30 hover:bg-destructive/10 hover:border-destructive/50"
+                >
+                  <Trash2 className="h-3.5 w-3.5" />
+                  Delete
                 </Button>
               )}
             </div>
