@@ -11,7 +11,7 @@
  * Reference: parseItemsFromHTML.ts, convertToAPRItem.ts
  */
 
-import type { PSDBMItem, PSDBMItemAvailability } from '../types'
+import type { PSDBMItem } from '../types'
 
 /**
  * Comprehensive office supplies catalog from PSDBM

@@ -1981,11 +1981,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasMaxLength(100);
 
         modelBuilder.Entity<NonCSEItem>()
-            .Property(n => n.Status)
-            .IsRequired()
-            .HasMaxLength(50);
-
-        modelBuilder.Entity<NonCSEItem>()
             .Property(n => n.CurrentPrice)
             .HasPrecision(18, 2);
 
@@ -2013,15 +2008,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<NonCSEItem>()
             .HasIndex(n => n.Type);
-
-        modelBuilder.Entity<NonCSEItem>()
-            .HasIndex(n => n.Status);
-
-        modelBuilder.Entity<NonCSEItem>()
-            .HasIndex(n => n.IsActive);
-
-        modelBuilder.Entity<NonCSEItem>()
-            .HasIndex(n => new { n.Name, n.IsActive });
 
         // APPItem
         modelBuilder.Entity<APPItem>()
@@ -2299,6 +2285,40 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .WithMany(msas => msas.MarketScopingActivities)
             .HasForeignKey(msa => msa.ActivitySettingsId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // ── MarketScoping target relationship configurations ──────────────────
+
+        // MarketScoping → LineItemBudget (project-level scope FK)
+        modelBuilder.Entity<MarketScoping>()
+            .HasOne(ms => ms.TargetLineItemBudget)
+            .WithMany()
+            .HasForeignKey(ms => ms.TargetLineItemBudgetId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // MarketScoping → LineItemBudgetActivity (activity-level scope FK — previously convention-inferred)
+        modelBuilder.Entity<MarketScoping>()
+            .HasOne(ms => ms.TargetLineItemBudgetActivity)
+            .WithMany()
+            .HasForeignKey(ms => ms.TargetLineItemBudgetActivityId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // DB CHECK constraint: mutual exclusivity — an MSF cannot target both a LIB and a LIB Activity simultaneously.
+        modelBuilder.Entity<MarketScoping>()
+            .ToTable(t => t.HasCheckConstraint(
+                "CK_MarketScoping_SingleTarget",
+                "\"TargetLineItemBudgetId\" IS NULL OR \"TargetLineItemBudgetActivityId\" IS NULL"));
+
+        // Filtered unique index: at most 1 active MSF per project-scoped LIB
+        modelBuilder.Entity<MarketScoping>()
+            .HasIndex(ms => ms.TargetLineItemBudgetId)
+            .HasFilter("\"TargetLineItemBudgetId\" IS NOT NULL AND \"IsDeleted\" = false")
+            .IsUnique();
+
+        // Filtered unique index: at most 1 active MSF per LIB Activity
+        modelBuilder.Entity<MarketScoping>()
+            .HasIndex(ms => ms.TargetLineItemBudgetActivityId)
+            .HasFilter("\"TargetLineItemBudgetActivityId\" IS NOT NULL AND \"IsDeleted\" = false")
+            .IsUnique();
 
         modelBuilder.Entity<Agency>(e =>
         {

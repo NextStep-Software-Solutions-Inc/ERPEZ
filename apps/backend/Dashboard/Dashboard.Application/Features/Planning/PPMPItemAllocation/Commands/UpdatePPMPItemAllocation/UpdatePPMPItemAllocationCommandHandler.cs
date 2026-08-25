@@ -32,7 +32,22 @@ public class UpdatePPMPItemAllocationCommandHandler(IUnitOfWork unitOfWork)
             allocation.AllocationMonth = request.AllocationMonth.Value;
 
         if (request.Quantity.HasValue)
+        {
+            var ppmpItem = await unitOfWork.PPMPItemRepository.GetByIdAsync(allocation.PPMPItemId, cancellationToken);
+            if (ppmpItem != null && ppmpItem.PlannedQuantity > 0)
+            {
+                var allocations = await unitOfWork.PPMPItemAllocationRepository.FindAllAsync(
+                    a => a.PPMPItemId == allocation.PPMPItemId && a.Id != allocation.Id, cancellationToken);
+                var currentAllocatedSum = allocations.Sum(a => a.Quantity);
+
+                if (currentAllocatedSum + request.Quantity.Value > ppmpItem.PlannedQuantity)
+                {
+                    throw new ValidationException(
+                        $"Allocated quantity ({currentAllocatedSum + request.Quantity.Value}) cannot exceed planned quantity ({ppmpItem.PlannedQuantity}).");
+                }
+            }
             allocation.Quantity = request.Quantity.Value;
+        }
 
         allocation.Amount = await PPMPItemAllocationAmountCalculator.CalculateAmountAsync(
             unitOfWork,

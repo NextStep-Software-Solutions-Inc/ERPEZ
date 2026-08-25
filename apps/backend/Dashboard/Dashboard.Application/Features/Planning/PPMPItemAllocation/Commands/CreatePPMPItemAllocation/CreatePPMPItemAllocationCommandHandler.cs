@@ -24,6 +24,19 @@ public class CreatePPMPItemAllocationCommandHandler(IUnitOfWork unitOfWork)
         if (existingAllocation != null)
             throw new ConflictException($"Allocation for {request.AllocationMonth} already exists for this PPMP Item.");
 
+        if (ppmpItem.PlannedQuantity > 0)
+        {
+            var allocations = await unitOfWork.PPMPItemAllocationRepository.FindAllAsync(
+                a => a.PPMPItemId == request.PPMPItemId, cancellationToken);
+            var currentAllocatedSum = allocations.Sum(a => a.Quantity);
+
+            if (currentAllocatedSum + request.Quantity > ppmpItem.PlannedQuantity)
+            {
+                throw new ValidationException(
+                    $"Allocated quantity ({currentAllocatedSum + request.Quantity}) cannot exceed planned quantity ({ppmpItem.PlannedQuantity}).");
+            }
+        }
+
         var computedAmount = await PPMPItemAllocationAmountCalculator.CalculateAmountAsync(
             unitOfWork,
             request.PPMPItemId,

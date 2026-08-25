@@ -42,6 +42,7 @@ public class ItemRequestRepository : Repository<ItemRequest>, IItemRequestReposi
             .Include(ir => ir.Office)
             .Include(ir => ir.UOM)
             .Include(ir => ir.ProcurementCategory)
+            .Include(ir => ir.NonCSEItems)
             .FirstOrDefaultAsync(ir => ir.Id == id && !ir.IsDeleted, cancellationToken);
     }
 }

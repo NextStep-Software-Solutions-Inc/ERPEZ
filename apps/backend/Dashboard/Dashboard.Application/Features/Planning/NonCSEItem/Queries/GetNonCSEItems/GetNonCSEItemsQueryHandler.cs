@@ -34,7 +34,6 @@ public class GetNonCSEItemsQueryHandler(IUnitOfWork unitOfWork)
                 ProductCode = item.ProductCode,
                 CurrentPrice = item.CurrentPrice,
                 Remarks = item.Remarks,
-                IsActive = item.IsActive,
                 CreatedAt = item.CreatedAt,
                 CreatedBy = item.CreatedBy
             };

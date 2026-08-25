@@ -12,12 +12,9 @@
 import { useEffect, useState } from 'react'
 import { useAtom } from 'jotai'
 import { useForm } from '@tanstack/react-form'
-import { Image as ImageIcon, X, Upload } from 'lucide-react'
+import { Upload } from 'lucide-react'
 
-import {
-  ResponsiveDialogDashtail,
-  //   type ResponsiveDialogDashtailProps,
-} from '@/components/ResponsiveDialogDashtail'
+import { ResponsiveDialogDashtail } from '@/components/ResponsiveDialogDashtail'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -34,53 +31,74 @@ import { toast } from 'sonner'
 import {
   editRequestDialogOpenAtom,
   editingRequestIdAtom,
-  imagePreviewUrlAtom,
-  selectedImageFileAtom,
 } from '../atoms/requestAtoms'
-import { itemRequestsAtom } from '../atoms/catalogAtoms'
-import { updateItemRequest } from '../handlers/requestWorkflow'
+import {
+  useItemRequests,
+  useUpdateItemRequestMutation,
+} from '../hooks/useItemRequestQueries'
+import { getUomsRequest } from '@/components/features/planning/procurement-library/item-master/handlers/getUomsRequest'
+import { getProcurementCategoriesRequest } from '@/lib/fiscal-year-and-policies/requests/getProcurementCategoriesRequest'
+import { useQuery } from '@tanstack/react-query'
 import {
   UACS_CASCADE_MAP,
   getUacsItemCategories,
   PROCUREMENT_CATEGORIES,
 } from '../utils/cascadingUacs'
 
-import type { CreateItemRequestInput } from '../types/catalog.types'
 import type { RequestItemEditFormValues } from '../forms/requestItemFormSchema'
 
 export function EditRequestItemDialog() {
   const [isOpen, setIsOpen] = useAtom(editRequestDialogOpenAtom)
   const [editingRequestId, setEditingRequestId] = useAtom(editingRequestIdAtom)
-  const [imagePreviewUrl, setImagePreviewUrl] = useAtom(imagePreviewUrlAtom)
-  const [selectedImageFile, setSelectedImageFile] = useAtom(
-    selectedImageFileAtom,
-  )
-  const [requests, setRequests] = useAtom(itemRequestsAtom)
+  const { data: response } = useItemRequests({ pageSize: 100 })
+  const { data: uomsResponse } = useQuery({
+    queryKey: ['/uoms'],
+    queryFn: ({ signal }) => getUomsRequest.fetcher({ finalUrl: '/uoms', signal }),
+  })
+  const { data: procurementCategoriesResponse } = useQuery({
+    queryKey: ['/procurement-categories'],
+    queryFn: ({ signal }) =>
+      getProcurementCategoriesRequest.fetcher({ finalUrl: '/procurement-categories', signal }),
+  })
+  const updateMutation = useUpdateItemRequestMutation()
+
   const [selectedProcCategory, setSelectedProcCategory] = useState<
     keyof typeof UACS_CASCADE_MAP | ''
   >('')
-  const [itemCategories, setItemCategories] = useState<string[]>([])
+  const [itemCategories, setItemCategories] = useState<readonly string[]>([])
   const [isSubmitting, setIsSubmitting] = useState(false)
 
   // Get the request being edited
-  const requestToEdit = requests.find((r) => r.id === editingRequestId)
+  const requestToEdit = (response?.data || []).find((r) => r.id === editingRequestId)
   const isDraftRequest = requestToEdit?.status === 'Draft'
   const isReturnedRequest = requestToEdit?.status === 'Returned'
   const canEditRequest = isDraftRequest || isReturnedRequest
+
+  const getMatchedProcurementCategoryId = (catName: string) => {
+    if (!catName) return null
+    const categories = procurementCategoriesResponse?.data || []
+    const matched = categories.find(
+      (c) =>
+        c.name?.toLowerCase().includes(catName.toLowerCase()) ||
+        catName.toLowerCase().includes(c.name?.toLowerCase()),
+    )
+    return matched ? matched.id : null
+  }
 
   // TanStack Form setup
   const form = useForm({
     defaultValues: {
       id: editingRequestId || '',
       name: requestToEdit?.name || '',
-      procurementCategory: (requestToEdit?.procurementCategory || 'Goods') as
+      procurementCategory: ((requestToEdit?.procurementCategoryName || requestToEdit?.procurementCategory || 'Goods') as
         | 'Goods'
         | 'Infra'
-        | 'Consulting',
+        | 'Consulting'),
       itemCategory: requestToEdit?.itemCategory || '',
-      unitOfMeasure: requestToEdit?.unitOfMeasure || '',
+      uomId: requestToEdit?.uomId || '',
+      unitOfMeasure: requestToEdit?.uomName || requestToEdit?.unitOfMeasure || '',
       estimatedUnitCost: requestToEdit?.estimatedUnitCost || 0,
-      specifications: requestToEdit?.specifications || '',
+      specifications: requestToEdit?.technicalSpecification || requestToEdit?.specifications || '',
     },
     onSubmit: async ({ value }) => {
       if (isReturnedRequest) {
@@ -104,49 +122,47 @@ export function EditRequestItemDialog() {
     }
   }, [form.getFieldValue('procurementCategory')])
 
-  // Initialize image preview and categories on mount
+  // Initialize categories and form values on mount / open
   useEffect(() => {
     if (isOpen && requestToEdit) {
       const procCat =
-        requestToEdit.procurementCategory as keyof typeof UACS_CASCADE_MAP
+        ((requestToEdit.procurementCategoryName || requestToEdit.procurementCategory || 'Goods') as 'Goods' | 'Infra' | 'Consulting')
       setSelectedProcCategory(procCat)
       const categories = getUacsItemCategories(procCat)
       setItemCategories(categories)
 
-      if (requestToEdit.imageUrl) {
-        setImagePreviewUrl(requestToEdit.imageUrl)
-      }
+      form.setFieldValue('id', requestToEdit.id)
+      form.setFieldValue('name', requestToEdit.name)
+      form.setFieldValue('procurementCategory', procCat)
+      form.setFieldValue('itemCategory', requestToEdit.itemCategory)
+      form.setFieldValue('uomId', requestToEdit.uomId || '')
+      form.setFieldValue('estimatedUnitCost', requestToEdit.estimatedUnitCost)
+      form.setFieldValue(
+        'specifications',
+        requestToEdit.technicalSpecification || requestToEdit.specifications || '',
+      )
     }
   }, [isOpen, requestToEdit])
 
   async function handleSubmit(values: RequestItemEditFormValues) {
+    if (!editingRequestId) return
     try {
       setIsSubmitting(true)
-      const requestInput: CreateItemRequestInput = {
-        name: values.name,
-        procurementCategory: values.procurementCategory,
-        itemCategory: values.itemCategory,
-        unitOfMeasure: values.unitOfMeasure,
-        estimatedUnitCost: values.estimatedUnitCost,
-        specifications: values.specifications,
-        imageUrl: imagePreviewUrl,
-      }
+      const procurementCategoryId = getMatchedProcurementCategoryId(values.procurementCategory)
 
-      // Find and update request
-      setRequests((prev) =>
-        prev.map((req) =>
-          req.id === editingRequestId
-            ? updateItemRequest(
-                req,
-                {
-                  ...requestInput,
-                  imageUrl: imagePreviewUrl ?? req.imageUrl ?? null,
-                },
-                'Submitted',
-              )
-            : req,
-        ),
-      )
+      await updateMutation.mutateAsync({
+        id: editingRequestId,
+        payload: {
+          name: values.name,
+          itemCategory: values.itemCategory,
+          status: isReturnedRequest ? 'Submitted' : 'Draft',
+          estimatedUnitCost: Number(values.estimatedUnitCost) || 0,
+          technicalSpecification: values.specifications,
+          uomId: values.uomId || null,
+          procurementCategoryId,
+          uacsCode: null,
+        },
+      })
 
       toast.success(
         isReturnedRequest
@@ -157,12 +173,9 @@ export function EditRequestItemDialog() {
 
       // Reset form and close dialog
       form.reset()
-      setImagePreviewUrl(null)
-      setSelectedImageFile(null)
       setEditingRequestId(null)
       setIsOpen(false)
     } catch (error) {
-      toast.error('Failed to update request. Please try again.')
       console.error('Request update error:', error)
     } finally {
       setIsSubmitting(false)
@@ -170,92 +183,42 @@ export function EditRequestItemDialog() {
   }
 
   async function handleSaveDraft() {
+    if (!editingRequestId) return
     try {
       setIsSubmitting(true)
-
       const values = form.state.values as RequestItemEditFormValues
-      const requestInput: CreateItemRequestInput = {
-        name: values.name,
-        procurementCategory: values.procurementCategory,
-        itemCategory: values.itemCategory,
-        unitOfMeasure: values.unitOfMeasure,
-        estimatedUnitCost: values.estimatedUnitCost,
-        specifications: values.specifications,
-        imageUrl: imagePreviewUrl,
-      }
+      const procurementCategoryId = getMatchedProcurementCategoryId(values.procurementCategory)
 
-      setRequests((prev) =>
-        prev.map((req) =>
-          req.id === editingRequestId
-            ? updateItemRequest(
-                req,
-                {
-                  ...requestInput,
-                  imageUrl: imagePreviewUrl ?? req.imageUrl ?? null,
-                },
-                'Draft',
-              )
-            : req,
-        ),
-      )
+      await updateMutation.mutateAsync({
+        id: editingRequestId,
+        payload: {
+          name: values.name,
+          itemCategory: values.itemCategory,
+          status: 'Draft',
+          estimatedUnitCost: Number(values.estimatedUnitCost) || 0,
+          technicalSpecification: values.specifications,
+          uomId: values.uomId || null,
+          procurementCategoryId,
+          uacsCode: null,
+        },
+      })
 
-      toast.success('Draft updated successfully!', { duration: 4000 })
+      toast.success('Draft saved successfully!', { duration: 4000 })
 
+      // Reset form and close dialog
       form.reset()
-      setImagePreviewUrl(null)
-      setSelectedImageFile(null)
       setEditingRequestId(null)
       setIsOpen(false)
     } catch (error) {
-      toast.error('Failed to update draft. Please try again.')
       console.error('Draft update error:', error)
     } finally {
       setIsSubmitting(false)
     }
   }
 
-  function handleImageChange(file: File | undefined) {
-    if (!file) {
-      setImagePreviewUrl(null)
-      setSelectedImageFile(null)
-      return
-    }
-
-    // Validate file
-    if (file.size > 5 * 1024 * 1024) {
-      toast.error('Image must be less than 5MB')
-      return
-    }
-
-    if (!['image/jpeg', 'image/png'].includes(file.type)) {
-      toast.error('Image must be JPEG or PNG')
-      return
-    }
-
-    // Create preview URL
-    const previewUrl = URL.createObjectURL(file)
-    setImagePreviewUrl(previewUrl)
-    setSelectedImageFile(file)
-  }
-
-  function handleRemoveImage() {
-    if (imagePreviewUrl) {
-      URL.revokeObjectURL(imagePreviewUrl)
-    }
-    setImagePreviewUrl(null)
-    setSelectedImageFile(null)
-  }
-
   function handleClose(open: boolean) {
     if (!open) {
-      // Clean up image URL
-      if (imagePreviewUrl) {
-        URL.revokeObjectURL(imagePreviewUrl)
-      }
-      // Reset form
       form.reset()
-      setImagePreviewUrl(null)
-      setSelectedImageFile(null)
       setEditingRequestId(null)
       setIsOpen(false)
     }
@@ -285,236 +248,232 @@ export function EditRequestItemDialog() {
         }}
         className="space-y-6"
       >
-        {/* Item Name */}
-        <form.Field
-          name="name"
-          validators={{
-            onChange: ({ value }) => {
-              if (value && value.length < 3) return 'Minimum 3 characters'
-              if (value && value.length > 100) return 'Maximum 100 characters'
-              return undefined
-            },
-          }}
-        >
-          {(field) => (
-            <div className="space-y-2">
-              <Label htmlFor="name">
-                Item Name <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="name"
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                onBlur={field.handleBlur}
-                disabled={isSubmitting}
-              />
-              {field.state.meta.errors && (
-                <p className="text-xs text-destructive">
-                  {field.state.meta.errors.join(', ')}
-                </p>
-              )}
-            </div>
-          )}
-        </form.Field>
+        {/* ── Section 1: Item Information ── */}
+        <div className="space-y-4">
+          <div>
+            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Item Information
+            </h4>
+          </div>
 
-        {/* Procurement Category */}
-        <form.Field name="procurementCategory">
-          {(field) => (
-            <div className="space-y-2">
-              <Label htmlFor="procCategory">
-                Procurement Category <span className="text-destructive">*</span>
-              </Label>
-              <Select
-                value={field.state.value}
-                onValueChange={(value) => field.handleChange(value as any)}
-                disabled={isSubmitting}
-              >
-                <SelectTrigger id="procCategory">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {PROCUREMENT_CATEGORIES.map((cat) => (
-                    <SelectItem key={cat} value={cat}>
-                      {cat}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {field.state.meta.errors && (
-                <p className="text-xs text-destructive">
-                  {field.state.meta.errors.join(', ')}
-                </p>
-              )}
-            </div>
-          )}
-        </form.Field>
-
-        {/* Item Category */}
-        <form.Field name="itemCategory">
-          {(field) => (
-            <div className="space-y-2">
-              <Label htmlFor="itemCategory">
-                Item Category <span className="text-destructive">*</span>
-              </Label>
-              <Select
-                value={field.state.value}
-                onValueChange={(value) => field.handleChange(value)}
-                disabled={!selectedProcCategory || isSubmitting}
-              >
-                <SelectTrigger id="itemCategory">
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {itemCategories.map((cat) => (
-                    <SelectItem key={cat} value={cat}>
-                      {cat}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-              {field.state.meta.errors && (
-                <p className="text-xs text-destructive">
-                  {field.state.meta.errors.join(', ')}
-                </p>
-              )}
-            </div>
-          )}
-        </form.Field>
-
-        {/* Unit of Measurement */}
-        <form.Field name="unitOfMeasure">
-          {(field) => (
-            <div className="space-y-2">
-              <Label htmlFor="uom">
-                Unit of Measurement <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="uom"
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                onBlur={field.handleBlur}
-                disabled={isSubmitting}
-              />
-              {field.state.meta.errors && (
-                <p className="text-xs text-destructive">
-                  {field.state.meta.errors.join(', ')}
-                </p>
-              )}
-            </div>
-          )}
-        </form.Field>
-
-        {/* Estimated Unit Cost */}
-        <form.Field name="estimatedUnitCost">
-          {(field) => (
-            <div className="space-y-2">
-              <Label htmlFor="cost">
-                Estimated Unit Cost (₱)
-                <span className="text-destructive">*</span>
-              </Label>
-              <Input
-                id="cost"
-                type="number"
-                value={field.state.value || ''}
-                onChange={(e) =>
-                  field.handleChange(
-                    e.target.value ? parseFloat(e.target.value) : 0,
-                  )
-                }
-                onBlur={field.handleBlur}
-                disabled={isSubmitting}
-                step="0.01"
-                min="0"
-              />
-              {field.state.meta.errors && (
-                <p className="text-xs text-destructive">
-                  {field.state.meta.errors.join(', ')}
-                </p>
-              )}
-            </div>
-          )}
-        </form.Field>
-
-        {/* Specifications */}
-        <form.Field name="specifications">
-          {(field) => (
-            <div className="space-y-2">
-              <Label htmlFor="specs">
-                Technical Specifications{' '}
-                <span className="text-destructive">*</span>
-              </Label>
-              <Textarea
-                id="specs"
-                value={field.state.value}
-                onChange={(e) => field.handleChange(e.target.value)}
-                onBlur={field.handleBlur}
-                disabled={isSubmitting}
-                rows={4}
-                className="min-h-24"
-              />
-              <div className="text-xs text-muted-foreground">
-                {field.state.value.length}/1000 characters
-              </div>
-              {field.state.meta.errors && (
-                <p className="text-xs text-destructive">
-                  {field.state.meta.errors.join(', ')}
-                </p>
-              )}
-            </div>
-          )}
-        </form.Field>
-
-        {/* Image Upload */}
-        <div className="space-y-2">
-          <Label>Item Image (Optional)</Label>
-          {imagePreviewUrl ? (
-            <div className="space-y-2">
-              <div className="relative w-full max-w-xs rounded-lg border border-border overflow-hidden bg-muted">
-                <img
-                  src={imagePreviewUrl}
-                  alt="Preview"
-                  className="w-full h-40 object-cover"
-                />
-                <Button
-                  size="sm"
-                  variant="destructive"
-                  className="absolute top-2 right-2"
-                  onClick={handleRemoveImage}
+          {/* Item Name */}
+          <form.Field
+            name="name"
+            validators={{
+              onChange: ({ value }) => {
+                if (value && value.length < 3) return 'Minimum 3 characters'
+                if (value && value.length > 100) return 'Maximum 100 characters'
+                return undefined
+              },
+            }}
+          >
+            {(field) => (
+              <div className="space-y-2">
+                <Label htmlFor="edit-name">
+                  Item Name <span className="text-destructive">*</span>
+                </Label>
+                <Input
+                  id="edit-name"
+                  placeholder="e.g., Dell Latitude 5000 Series Laptop"
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={field.handleBlur}
                   disabled={isSubmitting}
-                  type="button"
+                />
+                {field.state.meta.errors && (
+                  <p className="text-xs text-destructive">
+                    {field.state.meta.errors.join(', ')}
+                  </p>
+                )}
+              </div>
+            )}
+          </form.Field>
+
+          {/* Procurement & Item Category Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Procurement Category */}
+            <form.Field name="procurementCategory">
+              {(field) => (
+                <div className="space-y-2">
+                  <Label htmlFor="edit-procCategory">
+                    Procurement Category <span className="text-destructive">*</span>
+                  </Label>
+                  <Select
+                    value={field.state.value}
+                    onValueChange={(value: RequestItemEditFormValues['procurementCategory']) => field.handleChange(value)}
+                    disabled={isSubmitting}
+                  >
+                    <SelectTrigger id="edit-procCategory">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {PROCUREMENT_CATEGORIES.map((cat) => (
+                        <SelectItem key={cat} value={cat}>
+                          {cat}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {field.state.meta.errors && (
+                    <p className="text-xs text-destructive">
+                      {field.state.meta.errors.join(', ')}
+                    </p>
+                  )}
+                </div>
+              )}
+            </form.Field>
+
+            {/* Item Category */}
+            <form.Field name="itemCategory">
+              {(field) => (
+                <div className="space-y-2">
+                  <Label htmlFor="edit-itemCategory">
+                    Item Category <span className="text-destructive">*</span>
+                  </Label>
+                  <Select
+                    value={field.state.value}
+                    onValueChange={(value) => field.handleChange(value)}
+                    disabled={!selectedProcCategory || isSubmitting}
+                  >
+                    <SelectTrigger id="edit-itemCategory">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {itemCategories.map((cat: string) => (
+                        <SelectItem key={cat} value={cat}>
+                          {cat}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  {field.state.meta.errors && (
+                    <p className="text-xs text-destructive">
+                      {field.state.meta.errors.join(', ')}
+                    </p>
+                  )}
+                </div>
+              )}
+            </form.Field>
+          </div>
+
+          {/* Unit of Measurement */}
+          <form.Field name="uomId">
+            {(field) => (
+              <div className="space-y-2">
+                <Label htmlFor="edit-uomId">
+                  Unit of Measurement <span className="text-destructive">*</span>
+                </Label>
+                <Select
+                  value={field.state.value}
+                  onValueChange={(value) => field.handleChange(value)}
+                  disabled={isSubmitting}
                 >
-                  <X className="h-4 w-4" />
-                </Button>
+                  <SelectTrigger id="edit-uomId">
+                    <SelectValue placeholder="Select unit of measurement..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {(uomsResponse?.data || []).map((uom) => (
+                      <SelectItem key={uom.id} value={uom.id}>
+                        {uom.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                {field.state.meta.errors && (
+                  <p className="text-xs text-destructive">
+                    {field.state.meta.errors.join(', ')}
+                  </p>
+                )}
               </div>
-              <p className="text-xs text-muted-foreground">
-                {selectedImageFile?.name || 'Image preview'}
-              </p>
-            </div>
-          ) : (
-            <label className="flex flex-col gap-3 items-center justify-center p-6 border-2 border-dashed border-border rounded-lg cursor-pointer hover:bg-muted transition-colors">
-              <ImageIcon className="h-8 w-8 text-muted-foreground" />
-              <div className="text-center">
-                <p className="text-sm font-medium">Click to upload</p>
+            )}
+          </form.Field>
+        </div>
+
+        <hr className="border-border" />
+
+        {/* ── Section 2: Cost & Justification ── */}
+        <div className="space-y-4">
+          <div>
+            <h4 className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+              Cost & Justification
+            </h4>
+          </div>
+
+          {/* Estimated Unit Cost */}
+          <form.Field name="estimatedUnitCost">
+            {(field) => (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="edit-cost">
+                    Estimated Unit Cost (₱)
+                    <span className="text-destructive">*</span>
+                  </Label>
+                  <span className="text-xs text-muted-foreground">
+                    Enter the estimated cost per unit.
+                  </span>
+                </div>
+                <Input
+                  id="edit-cost"
+                  type="number"
+                  placeholder="0.00"
+                  value={field.state.value || ''}
+                  onChange={(e) =>
+                    field.handleChange(
+                      e.target.value ? parseFloat(e.target.value) : 0,
+                    )
+                  }
+                  onBlur={field.handleBlur}
+                  disabled={isSubmitting}
+                  step="0.01"
+                  min="0"
+                />
+                {field.state.meta.errors && (
+                  <p className="text-xs text-destructive">
+                    {field.state.meta.errors.join(', ')}
+                  </p>
+                )}
+              </div>
+            )}
+          </form.Field>
+
+          {/* Specifications */}
+          <form.Field name="specifications">
+            {(field) => (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <Label htmlFor="edit-specs">
+                    Technical Specifications & Justification{' '}
+                    <span className="text-destructive">*</span>
+                  </Label>
+                  <span className="text-xs text-muted-foreground">
+                    {field.state.value.length}/1000 characters
+                  </span>
+                </div>
                 <p className="text-xs text-muted-foreground">
-                  PNG, JPG up to 5MB
+                  Provide the technical specifications and explain why the item is needed.
                 </p>
+                <Textarea
+                  id="edit-specs"
+                  placeholder="Describe the item specifications, key features, and intended use..."
+                  value={field.state.value}
+                  onChange={(e) => field.handleChange(e.target.value)}
+                  onBlur={field.handleBlur}
+                  disabled={isSubmitting}
+                  rows={4}
+                  className="min-h-24"
+                />
+                {field.state.meta.errors && (
+                  <p className="text-xs text-destructive">
+                    {field.state.meta.errors.join(', ')}
+                  </p>
+                )}
               </div>
-              <input
-                type="file"
-                accept="image/jpeg,image/png"
-                onChange={(e) => {
-                  const file = e.target.files?.[0]
-                  if (file) handleImageChange(file)
-                }}
-                disabled={isSubmitting}
-                className="hidden"
-              />
-            </label>
-          )}
+            )}
+          </form.Field>
         </div>
 
         {/* Form Actions */}
-        <div className="flex gap-3 justify-end pt-4 border-t">
+        <div className="flex items-center justify-end gap-3 pt-4 border-t border-border">
           <Button
             type="button"
             variant="outline"
@@ -524,15 +483,20 @@ export function EditRequestItemDialog() {
             Cancel
           </Button>
           {isReturnedRequest ? (
-            <Button type="submit" disabled={isSubmitting} className="gap-2">
+            <Button
+              type="submit"
+              disabled={isSubmitting}
+              className="gap-2 bg-primary hover:bg-primary/90 min-w-36"
+            >
               {isSubmitting && <Upload className="h-4 w-4 animate-spin" />}
               {isSubmitting ? 'Resubmitting...' : 'Resubmit Request'}
             </Button>
           ) : (
             <Button
               type="button"
+              variant="outline"
               disabled={isSubmitting}
-              className="gap-2"
+              className="gap-2 border-input hover:bg-accent"
               onClick={handleSaveDraft}
             >
               {isSubmitting && <Upload className="h-4 w-4 animate-spin" />}

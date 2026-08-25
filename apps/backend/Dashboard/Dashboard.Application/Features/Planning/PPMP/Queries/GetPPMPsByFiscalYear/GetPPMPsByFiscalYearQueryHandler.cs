@@ -12,6 +12,6 @@ public class GetPPMPsByFiscalYearQueryHandler(IUnitOfWork unitOfWork) : IRequest
     {
         var ppmps = await unitOfWork.PPMPRepository.GetDetailedByFiscalYearAsync(query.FiscalYearId, cancellationToken);
 
-        return ApiResponse<List<PPMPDetailedResponse>>.Success(ppmps.Select(PPMPQueryProjection.BuildDetailedResponse).ToList());
+        return ApiResponse<List<PPMPDetailedResponse>>.Success(ppmps.Select(p => PPMPQueryProjection.BuildDetailedResponse(p)).ToList());
     }
 }

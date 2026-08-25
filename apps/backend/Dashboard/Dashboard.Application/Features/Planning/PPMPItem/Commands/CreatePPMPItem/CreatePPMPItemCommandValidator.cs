@@ -12,14 +12,24 @@ public class CreatePPMPItemCommandValidator : AbstractValidator<CreatePPMPItemCo
             .WithMessage("PPMP Expenditure Item ID is required.");
 
         RuleFor(x => x)
-            .Must(x => x.CSEItemId.HasValue || x.NonCSEItemId.HasValue)
-            .WithMessage("Either CSE Item ID or Non-CSE Item ID must be provided.")
+            .Must(x =>
+                (x.CSEItemId.HasValue && !x.NonCSEItemId.HasValue) ||
+                (!x.CSEItemId.HasValue && x.NonCSEItemId.HasValue) ||
+                (!x.CSEItemId.HasValue && !x.NonCSEItemId.HasValue &&
+                 !string.IsNullOrWhiteSpace(x.Name) &&
+                 !string.IsNullOrWhiteSpace(x.Unit) &&
+                 x.UnitPrice > 0))
+            .WithMessage("A valid item reference (CSE Item ID or Non-CSE Item ID) or complete item snapshot details (Name, Unit, and Unit Price > 0) must be provided.")
             .Must(x => !(x.CSEItemId.HasValue && x.NonCSEItemId.HasValue))
             .WithMessage("Cannot have both CSE Item ID and Non-CSE Item ID. They are mutually exclusive.");
 
         RuleFor(x => x.ProcurementModeId)
             .NotEmpty()
             .WithMessage("Procurement Mode ID is required.");
+
+        RuleFor(x => x.PlannedQuantity)
+            .GreaterThan(0)
+            .WithMessage("Planned quantity must be greater than 0.");
 
         RuleFor(x => x.Name)
             .NotEmpty()

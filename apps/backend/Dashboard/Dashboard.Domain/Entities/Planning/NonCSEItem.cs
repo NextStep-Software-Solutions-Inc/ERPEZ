@@ -47,12 +47,6 @@ public class NonCSEItem : BaseEntity
     public string Type { get; set; } = string.Empty;
     
     [Sieve(CanFilter = true, CanSort = true)]
-    public string Status { get; set; } = string.Empty;
-    
-    [Sieve(CanFilter = true, CanSort = true)]
-    public bool IsActive { get; set; }
-    
-    [Sieve(CanFilter = true, CanSort = true)]
     public string? Remarks { get; set; }
     
     [Sieve(CanFilter = true, CanSort = true)]

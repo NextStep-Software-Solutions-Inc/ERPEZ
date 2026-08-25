@@ -28,7 +28,6 @@ public class GetNonCSEItemByIdQueryHandler(IUnitOfWork unitOfWork)
             ProductCode = nonCseItem.ProductCode,
             CurrentPrice = nonCseItem.CurrentPrice,
             Remarks = nonCseItem.Remarks,
-            IsActive = nonCseItem.IsActive,
             CreatedAt = nonCseItem.CreatedAt,
             CreatedBy = nonCseItem.CreatedBy
         };

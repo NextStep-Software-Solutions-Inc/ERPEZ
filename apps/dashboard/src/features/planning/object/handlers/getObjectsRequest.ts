@@ -1,4 +1,4 @@
-﻿import type {
+import type {
   QueryBlueprintFromTemplate,
   QueryKey,
   QueryParams,
@@ -16,7 +16,7 @@ export const getObjectsRequest: QueryBlueprintFromTemplate<
   QueryKey
 > = {
   endpoint,
-  key: ({ url }) => [url],
+  key: ({ url, queryParams }) => [url, queryParams],
   fetcher: async ({ finalUrl, signal }) => {
     const response = await api.get<PaginationResponse<Object>>(finalUrl, {
       signal,

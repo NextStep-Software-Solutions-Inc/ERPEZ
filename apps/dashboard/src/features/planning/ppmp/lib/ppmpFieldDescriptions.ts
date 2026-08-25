@@ -1,4 +1,4 @@
-﻿/**
+/**
  * PPMP Field Descriptions
  * Comprehensive helper text and tooltips for all PPMP item fields
  */
@@ -29,6 +29,12 @@ export const PPMP_FIELD_DESCRIPTIONS = {
     description:
       'The cost per unit of measure. This is the basic price for one unit before quantity multiplication. Use this for budget planning and comparison.',
     examples: 'e.g., 3434, 250.50, 1500.75',
+  },
+  plannedQuantity: {
+    label: 'Planned Quantity',
+    description:
+      'The total requirement quantity you plan to procure for this item across the entire fiscal year. Monthly allocations can optionally distribute this quantity.',
+    examples: 'e.g., 100, 500, 1200',
   },
   procurementModeId: {
     label: 'Mode of Procurement',

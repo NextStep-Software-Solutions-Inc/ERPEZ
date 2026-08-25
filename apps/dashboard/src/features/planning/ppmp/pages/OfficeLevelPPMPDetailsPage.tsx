@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
+import { useNavigate } from '@tanstack/react-router'
 import AddPPMPActivityDialog from '@/features/planning/ppmp/dialogs/AddPPMPActivityDialog'
 import {
   createQueryHookFromTemplate,
@@ -19,7 +20,6 @@ import {
   Trash2,
   Building2,
   Coins,
-  Clock,
   TrendingUp,
   ChevronLeft,
   Pencil,
@@ -30,12 +30,13 @@ import {
   Download,
   Package,
   Image as ImageIcon,
-  Info,
   Eye,
   Circle,
+  Link2,
 } from 'lucide-react'
 import { getProcurementItemRequest } from '@/components/features/planning/procurement-item/handlers/getProcurementItemRequest'
 import { getUOMRequest } from '@/components/features/planning/procurement-library/unit-of-measurement/handlers/getUOMRequest'
+import { getObjectCodesRequest } from '@/components/features/planning/procurement-library/item-master/handlers/getObjectCodesRequest'
 import { getNONCSEItemRequest } from '@/features/planning/non-cse-item/handlers/getNONCSEItemRequest'
 import { ResponsiveDialogDashtail } from '@/components/ResponsiveDialogDashtail'
 import { ConfirmAlertDialog } from '@/components/ConfirmAlertDialog'
@@ -51,6 +52,8 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { selectedPpmpForEditAtom } from '../atoms'
 import { deletePPMPActivityRequest } from '../handlers/deletePPMPActivityRequest'
+import { unlinkMarketScopingRequest } from '@/features/planning/market-scoping/handlers/unlinkMarketScopingRequest'
+import AssociateMarketScopingDialog from '@/features/planning/ppmp/dialogs/AssociateMarketScopingDialog'
 import type {
   PPMPDetails,
   PPMPActivity,
@@ -75,12 +78,15 @@ import {
   EditPPMPItemAllocationsDialog,
   MasterPPMPViewerModal,
 } from '../dialogs'
+import { resolveTypeOfExpenditure } from '../forms/AddPPMPItemExpenditureForm'
 import { PPMPGuidelinesModal } from '../dialogs/PPMPGuidelinesModal'
 import { ConsolidationWorkspaceSheet } from '../dialogs/ConsolidationWorkspaceSheet'
 import { DeptConsolidationSheet } from '../dialogs/DeptConsolidationSheet'
 import { updatePPMPStatusRequest } from '../handlers/updatePPMPStatusRequest'
 import { generatePPMPDocumentRequest } from '../handlers/generatePPMPDocumentRequest'
 import { downloadLIBDocumentRequest } from '@/features/planning/line-item-budgeting/line-item-budget/handlers/downloadLIBDocumentRequest'
+import { getLIBRequest } from '@/features/planning/line-item-budgeting/line-item-budget/handlers/getLIBRequest'
+import { ProjectLevelPPMPWorkspace } from '../components/ProjectLevelPPMPWorkspace'
 import { useKeycloak } from '@/providers/KeycloakProvider'
 import {
   useItemValidationStatus,
@@ -136,6 +142,7 @@ interface PPMPActivityForDisplay extends PPMPActivity {
 }
 
 const usePPMP = createQueryHookFromTemplate(getPPMPRequest)
+const useLIB = createQueryHookFromTemplate(getLIBRequest)
 const usePPMPActivities = createQueryHookFromTemplate(getPPMPActivitiesRequest)
 const useDeletePPMPActivity = createMutationHookFromTemplate(
   deletePPMPActivityRequest,
@@ -144,6 +151,7 @@ const usePPMPExpenditureItems = createQueryHookFromTemplate(
   getPPMPExpenditureItemsRequest,
 )
 const usePPMPItems = createQueryHookFromTemplate(getPPMPItemsRequest)
+const useObjectCodesQuery = createQueryHookFromTemplate(getObjectCodesRequest)
 const useProcurementItem = createQueryHookFromTemplate(getProcurementItemRequest)
 const useUOM = createQueryHookFromTemplate(getUOMRequest)
 const useNONCSEItem = createQueryHookFromTemplate(getNONCSEItemRequest)
@@ -155,6 +163,9 @@ const useGeneratePPMPDocument = createMutationHookFromTemplate(
 )
 const useDownloadDocument = createMutationHookFromTemplate(
   downloadLIBDocumentRequest,
+)
+const useUnlinkMarketScoping = createMutationHookFromTemplate(
+  unlinkMarketScopingRequest,
 )
 // ============================
 // Utility Formatting
@@ -193,25 +204,35 @@ function MetadataGrid({
   ppmp,
   activityCount,
   itemCount,
+  onOpenAssociateMsf,
+  onUnlinkMsf,
+  isUnlinkingMsf,
+  isProjectScope,
 }: {
   ppmp: PPMPDetails
   activityCount: number
   itemCount: number
+  onOpenAssociateMsf?: () => void
+  onUnlinkMsf?: (msfId: string) => void
+  isUnlinkingMsf?: boolean
+  isProjectScope?: boolean
 }) {
+  const navigate = useNavigate()
+
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
       {/* Total Budget Card */}
       <Card className="border-default-200 bg-white shadow-sm overflow-hidden relative group hover:shadow-md transition-all">
         <CardContent className="p-5 flex items-center justify-between">
           <div className="space-y-1">
-            <span className="text-[10px] text-default-400 font-semibold uppercase tracking-wider">
+            <span className="text-xs text-default-500 font-medium">
               Total Estimated Budget
             </span>
-            <div className="text-2xl font-bold text-default-900 ">
+            <div className="text-2xl font-semibold text-default-900">
               {formatCurrency(ppmp.totalEstimatedBudget ?? 0)}
             </div>
             <div className="text-xs text-default-500 flex items-center gap-1">
-              <TrendingUp className="h-3.5 w-3.5 text-success" />
+              <TrendingUp className="h-3.5 w-3.5 text-success shrink-0" />
               <span>Budget for FY {ppmp.fiscalYearName}</span>
             </div>
           </div>
@@ -225,17 +246,17 @@ function MetadataGrid({
       <Card className="border-default-200 bg-white shadow-sm overflow-hidden relative group hover:shadow-md transition-all">
         <CardContent className="p-5 flex items-center justify-between">
           <div className="space-y-1 min-w-0">
-            <span className="text-[10px] text-default-400 font-semibold uppercase tracking-wider">
+            <span className="text-xs text-default-500 font-medium">
               Procurement Library
             </span>
             <div
-              className="text-sm font-bold text-default-900 truncate max-w-42.5"
+              className="text-sm font-semibold text-default-800 truncate max-w-42.5"
               title={ppmp.libName || '—'}
             >
               {ppmp.libName || '—'}
             </div>
             <div className="text-xs text-default-500 flex items-center gap-1">
-              <Layers className="h-3.5 w-3.5 text-info" />
+              <Layers className="h-3.5 w-3.5 text-info shrink-0" />
               <span>
                 {activityCount} Activities / {itemCount} Items
               </span>
@@ -251,11 +272,11 @@ function MetadataGrid({
       <Card className="border-default-200 bg-white shadow-sm overflow-hidden relative group hover:shadow-md transition-all">
         <CardContent className="p-5 flex items-center justify-between">
           <div className="space-y-1 min-w-0">
-            <span className="text-[10px] text-default-400 font-semibold uppercase tracking-wider">
+            <span className="text-xs text-default-500 font-medium">
               Fund Source
             </span>
             <div
-              className="text-sm font-bold text-default-900 truncate max-w-42.5"
+              className="text-sm font-semibold text-default-800 truncate max-w-42.5"
               title={ppmp.fundSourceName || '—'}
             >
               {ppmp.fundSourceName || 'General Fund'}
@@ -274,22 +295,22 @@ function MetadataGrid({
       <Card className="border-default-200 bg-white shadow-sm overflow-hidden relative group hover:shadow-md transition-all">
         <CardContent className="p-5 flex items-center justify-between">
           <div className="space-y-1">
-            <span className="text-[10px] text-default-400 font-semibold uppercase tracking-wider">
+            <span className="text-xs text-default-500 font-medium">
               Timeline Details
             </span>
-            <div className="text-xs text-default-700 flex items-center gap-1.5">
-              <span className="font-semibold text-default-400 uppercase text-[9px] w-12">
+            <div className="text-xs text-default-600 flex items-center gap-1.5">
+              <span className="font-normal text-default-400 text-[11px] w-16">
                 Submitted:
               </span>
-              <span className="font-medium">
+              <span className="font-medium text-default-700">
                 {formatDate(ppmp.submittedDate)}
               </span>
             </div>
-            <div className="text-xs text-default-700 flex items-center gap-1.5 mt-0.5">
-              <span className="font-semibold text-default-400 uppercase text-[9px] w-12">
+            <div className="text-xs text-default-600 flex items-center gap-1.5 mt-0.5">
+              <span className="font-normal text-default-400 text-[11px] w-16">
                 Approved:
               </span>
-              <span className="font-medium">
+              <span className="font-medium text-default-700">
                 {formatDate(ppmp.approvedDate)}
               </span>
             </div>
@@ -299,6 +320,97 @@ function MetadataGrid({
           </div>
         </CardContent>
       </Card>
+
+      {/* Linked Market Scoping Form — shown only for project-scope PPMPs */}
+      {isProjectScope && ppmp.libId && (
+        <div className="sm:col-span-2 lg:col-span-4">
+          {ppmp.LinkedMarketScoping ? (
+            <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                  <FileText className="h-5 w-5" />
+                </div>
+                <div className="min-w-0 space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-xs text-primary font-semibold">
+                      Linked Market Scoping Form (Project Scope)
+                    </span>
+                    <Badge
+                      variant="soft"
+                      className={
+                        ppmp.LinkedMarketScoping.status === 'Approved'
+                          ? 'bg-success/15 text-success text-[10px] font-medium px-2 py-0.5'
+                          : 'bg-warning/15 text-warning text-[10px] font-medium px-2 py-0.5'
+                      }
+                    >
+                      {ppmp.LinkedMarketScoping.status}
+                    </Badge>
+                  </div>
+                  <div className="text-sm font-semibold text-default-800 truncate">
+                    {ppmp.LinkedMarketScoping.projectName}
+                  </div>
+                  <div className="text-xs text-default-500">
+                    Estimated Budget:{' '}
+                    <strong className="font-semibold text-default-800">
+                      {formatCurrency(ppmp.LinkedMarketScoping.estimatedBudget)}
+                    </strong>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    ppmp.LinkedMarketScoping &&
+                    navigate({
+                      to: '/v2/market-scoping/$id',
+                      params: { id: ppmp.LinkedMarketScoping.id },
+                    })
+                  }
+                  className="h-8 text-xs font-medium text-primary hover:text-primary hover:bg-primary/5 border-primary/30 gap-1.5"
+                >
+                  <Eye className="h-3.5 w-3.5" />
+                  View MSF
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isUnlinkingMsf}
+                  onClick={() =>
+                    ppmp.LinkedMarketScoping &&
+                    onUnlinkMsf?.(ppmp.LinkedMarketScoping.id)
+                  }
+                  className="h-8 text-xs font-medium text-destructive hover:text-destructive hover:bg-destructive/5 border-destructive/30 gap-1.5"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  Unlink MSF
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-default-50/50 border border-dashed border-default-200 rounded-xl p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <FileText className="h-4 w-4 text-default-400 shrink-0" />
+                <span className="text-xs font-normal text-default-500">
+                  No Market Scoping Form associated with this Line-Item Budget.
+                </span>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onOpenAssociateMsf}
+                className="h-8 text-xs font-medium gap-1.5 border-primary/30 text-primary hover:bg-primary/5 shrink-0 self-end sm:self-auto"
+              >
+                <Link2 className="h-3.5 w-3.5" />
+                Associate Market Scoping
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -314,6 +426,7 @@ interface ActivityCardProps {
   onSelect: () => void
   onToggleExpand: () => void
   onRequestDelete?: () => void
+  onOpenAssociateMsf?: (activity: PPMPActivityForDisplay) => void
   totalPpmpBudget: number
   shouldThrob?: boolean
   dimmed?: boolean
@@ -326,6 +439,7 @@ function ActivityCard({
   onSelect,
   onToggleExpand,
   onRequestDelete,
+  onOpenAssociateMsf,
   totalPpmpBudget,
   shouldThrob = false,
   dimmed = false,
@@ -360,11 +474,14 @@ function ActivityCard({
           onClick={onSelect}
           className="flex-1 min-w-0 text-left"
         >
-          <h3 className="text-sm font-semibold text-default-900 group-hover:text-primary transition-colors leading-tight truncate">
+          <h3
+            className="text-sm font-semibold text-default-900 group-hover:text-primary transition-colors leading-snug line-clamp-2"
+            title={activity.activityName || 'Unnamed'}
+          >
             {activity.activityName || 'Unnamed'}
           </h3>
-          <div className="mt-1.5 flex items-baseline gap-1 text-xs text-default-500">
-            <span className="text-sm font-bold text-default-800">
+          <div className="mt-1 flex items-baseline gap-1 text-xs text-default-500">
+            <span className="text-sm font-semibold text-default-900">
               {activity.totalAllocationAmount
                 ? formatCurrency(activity.totalAllocationAmount)
                 : '—'}
@@ -372,10 +489,10 @@ function ActivityCard({
           </div>
 
           {/* Progress bar of total budget */}
-          <div className="mt-3 space-y-1">
-            <div className="flex items-center justify-between text-[10px] text-default-400 font-medium">
-              <span>PPMP Budget Share</span>
-              <span className="font-semibold text-default-600">
+          <div className="mt-2.5 space-y-1">
+            <div className="flex items-center justify-between text-xs text-default-500">
+              <span className="font-normal">PPMP Budget Share</span>
+              <span className="font-medium text-default-600">
                 {budgetPct.toFixed(1)}%
               </span>
             </div>
@@ -406,24 +523,53 @@ function ActivityCard({
 
       {/* Right side (expanded details - sideward) */}
       {expanded && (
-        <div className="w-40 border-l border-default-150 bg-default-50/30 flex flex-col justify-between p-3 shrink-0">
-          <div className="space-y-2 text-[10px] text-default-600 font-medium">
+        <div className="w-44 border-l border-default-150 bg-default-50/30 flex flex-col justify-between p-3 shrink-0">
+          <div className="space-y-2 text-xs text-default-600">
             <div>
-              <div className="text-default-400 mb-0.5 uppercase tracking-wider text-[8px] font-bold">
+              <div className="text-default-400 mb-0.5 uppercase tracking-wide text-[10px] font-medium">
                 Procurement Items
               </div>
-              <div className="font-bold text-default-800 flex items-center gap-1">
-                <Layers className="h-3 w-3 text-primary/70" />
+              <div className="font-semibold text-default-800 flex items-center gap-1">
+                <Layers className="h-3.5 w-3.5 text-primary/70 shrink-0" />
                 {totalItems} items
               </div>
             </div>
             <div>
-              <div className="text-default-400 mb-0.5 uppercase tracking-wider text-[8px] font-bold">
+              <div className="text-default-400 mb-0.5 uppercase tracking-wide text-[10px] font-medium">
                 Total Allocation
               </div>
-              <div className="font-bold text-default-800">
+              <div className="font-semibold text-default-800">
                 {formatCurrency(activity.totalAllocationAmount || 0)}
               </div>
+            </div>
+            <div>
+              <div className="text-default-400 mb-0.5 uppercase tracking-wide text-[10px] font-medium">
+                Market Scoping
+              </div>
+              {(() => {
+                const msf = activity.LinkedMarketScoping || (activity as any).linkedMarketScoping
+                return msf ? (
+                  <div
+                    className="font-medium text-default-800 flex items-center gap-1 text-xs truncate text-success"
+                    title={msf.projectName}
+                  >
+                    <FileText className="h-3.5 w-3.5 shrink-0" />
+                    <span className="truncate">{msf.projectName}</span>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onOpenAssociateMsf?.(activity)
+                    }}
+                    className="text-xs text-primary hover:underline font-medium flex items-center gap-0.5 mt-0.5"
+                  >
+                    <Link2 className="h-3 w-3 shrink-0" />
+                    Associate MSF
+                  </button>
+                )
+              })()}
             </div>
           </div>
 
@@ -436,9 +582,9 @@ function ActivityCard({
                 e.stopPropagation()
                 onRequestDelete?.()
               }}
-              className="h-7 text-[10px] px-2 text-destructive hover:text-destructive hover:bg-destructive/5 rounded-lg font-semibold flex items-center gap-1"
+              className="h-7 text-xs px-2 text-destructive hover:text-destructive hover:bg-destructive/5 rounded-lg font-medium flex items-center gap-1"
             >
-              <Trash2 className="h-3 w-3" />
+              <Trash2 className="h-3.5 w-3.5" />
               Delete
             </Button>
           </div>
@@ -456,6 +602,7 @@ interface ActivitiesPaneProps {
   onToggleExpand: (id: string) => void
   onAdd?: () => void
   onRequestDelete?: (id: string) => void
+  onOpenAssociateMsf?: (activity: PPMPActivityForDisplay) => void
   totalPpmpBudget: number
   masterPpmpId?: string
   isLoading?: boolean
@@ -469,6 +616,7 @@ function ActivitiesPane({
   onToggleExpand,
   onAdd,
   onRequestDelete,
+  onOpenAssociateMsf,
   totalPpmpBudget,
   masterPpmpId,
   isLoading,
@@ -575,6 +723,7 @@ function ActivitiesPane({
                             ? () => onRequestDelete(act.id)
                             : undefined
                         }
+                        onOpenAssociateMsf={onOpenAssociateMsf}
                         totalPpmpBudget={totalPpmpBudget}
                         shouldThrob={!anySelected || isSelected}
                         dimmed={anySelected && !isSelected}
@@ -834,35 +983,47 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
           <div className="space-y-3">
             <div className="flex items-center gap-1.5 pb-2 border-b border-default-100">
               <Layers className="h-4 w-4 text-primary" />
-              <h4 className="text-xs font-bold uppercase tracking-wider text-default-800">
+              <h4 className="text-xs font-semibold text-default-800">
                 Overview & Specifications
               </h4>
             </div>
 
             <div className="grid grid-cols-2 gap-3 text-xs">
               <div>
-                <span className="text-[10px] uppercase font-bold text-default-400 block">Unit</span>
-                <span className="font-semibold text-default-700 mt-0.5 block">{displayUnit}</span>
+                <span className="text-[10px] uppercase font-medium tracking-wide text-default-400 block">Unit</span>
+                <span className="font-normal text-default-700 mt-0.5 block">{displayUnit}</span>
               </div>
               <div>
-                <span className="text-[10px] uppercase font-bold text-default-400 block">Unit Price</span>
-                <span className="font-semibold text-default-800 mt-0.5 block">{formatCurrency(item.unitPrice)}</span>
+                <span className="text-[10px] uppercase font-medium tracking-wide text-default-400 block">Unit Price</span>
+                <span className="font-normal text-default-700 mt-0.5 block">{formatCurrency(item.unitPrice)}</span>
               </div>
               <div>
-                <span className="text-[10px] uppercase font-bold text-default-400 block">Project Type</span>
-                <span className="font-semibold text-default-700 mt-0.5 block">{item.projectType || '—'}</span>
+                <span className="text-[10px] uppercase font-medium tracking-wide text-default-400 block">Planned Quantity</span>
+                <span className="font-normal text-default-700 mt-0.5 block">
+                  {item.plannedQuantity ? `${item.plannedQuantity} ${displayUnit}` : '—'}
+                </span>
               </div>
               <div>
-                <span className="text-[10px] uppercase font-bold text-default-400 block">PAP Code</span>
-                <span className="font-mono text-default-700 mt-0.5 block">{item.papCode || '—'}</span>
+                <span className="text-[10px] uppercase font-medium tracking-wide text-default-400 block">Estimated Total Cost</span>
+                <span className="font-semibold text-primary mt-0.5 block">
+                  {item.plannedQuantity ? formatCurrency(item.plannedQuantity * item.unitPrice) : '—'}
+                </span>
+              </div>
+              <div>
+                <span className="text-[10px] uppercase font-medium tracking-wide text-default-400 block">Project Type</span>
+                <span className="font-normal text-default-700 mt-0.5 block">{item.projectType || '—'}</span>
+              </div>
+              <div>
+                <span className="text-[10px] uppercase font-medium tracking-wide text-default-400 block">PAP Code</span>
+                <span className="font-mono text-default-600 mt-0.5 block">{item.papCode || '—'}</span>
               </div>
             </div>
 
             <div className="border-t border-default-100 pt-3">
-              <span className="text-[10px] uppercase font-bold text-default-400 block mb-1">
+              <span className="text-[10px] uppercase font-medium tracking-wide text-default-400 block mb-1">
                 Specifications
               </span>
-              <p className="text-xs text-default-600 leading-relaxed max-h-24 overflow-y-auto pr-1 whitespace-pre-wrap">
+              <p className="text-xs text-default-600 leading-relaxed max-h-24 overflow-y-auto pr-1 whitespace-pre-wrap font-normal">
                 {item.description || 'No specifications provided.'}
               </p>
             </div>
@@ -870,7 +1031,7 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
 
           {item.remarks && (
             <div className="bg-default-50 p-2.5 rounded-lg border border-default-150/60 mt-2 text-xs italic text-default-600">
-              <span className="font-bold not-italic text-default-750 block text-[9px] uppercase tracking-wider mb-0.5">Remarks</span>
+              <span className="font-medium not-italic text-default-700 block text-[10px] uppercase tracking-wide mb-0.5">Remarks</span>
               "{item.remarks}"
             </div>
           )}
@@ -880,7 +1041,7 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
         <div className="space-y-4 bg-white p-4.5 rounded-xl border border-default-200/80 shadow-sm flex flex-col">
           <div className="flex items-center gap-1.5 pb-2 border-b border-default-100">
             <CalendarDays className="h-4 w-4 text-indigo-500" />
-            <h4 className="text-xs font-bold uppercase tracking-wider text-default-800">
+            <h4 className="text-xs font-semibold text-default-800">
               Timeline & Milestones
             </h4>
           </div>
@@ -890,10 +1051,10 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
             <div className="relative">
               <Circle className="h-4 w-4 text-indigo-600 absolute -left-[32px] top-0.5 bg-indigo-50 rounded-full" />
               <div>
-                <span className="text-[10px] uppercase font-bold text-default-400 block">
+                <span className="text-[10px] uppercase font-medium tracking-wide text-default-400 block">
                   Procurement Schedule
                 </span>
-                <p className="text-xs text-default-805 font-semibold mt-0.5">
+                <p className="text-xs text-default-700 font-medium mt-0.5">
                   {formatDateDisplay(item.procurementStartDate)} – {formatDateDisplay(item.procurementEndDate)}
                 </p>
               </div>
@@ -903,10 +1064,10 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
             <div className="relative">
               <Circle className="h-4 w-4 text-emerald-600 absolute -left-[32px] top-0.5 bg-emerald-50 rounded-full" />
               <div>
-                <span className="text-[10px] uppercase font-bold text-default-400 block">
+                <span className="text-[10px] uppercase font-medium tracking-wide text-default-400 block">
                   Expected Delivery Window
                 </span>
-                <p className="text-xs text-default-805 font-semibold mt-0.5">
+                <p className="text-xs text-default-700 font-medium mt-0.5">
                   {formatDateDisplay(item.expectedDeliveryStart)} – {formatDateDisplay(item.expectedDeliveryEnd)}
                 </p>
               </div>
@@ -914,11 +1075,11 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
           </div>
 
           <div className="pt-3 border-t border-default-100 flex items-center justify-between text-xs">
-            <span className="text-default-505 font-medium">Pre-Procurement Conference:</span>
+            <span className="text-default-500 font-normal">Pre-Procurement Conference:</span>
             <Badge
               variant={item.preProcurementConference ? 'soft' : 'outline'}
               className={cn(
-                'text-[10px] font-bold py-0.5 px-2.5 rounded-full',
+                'text-[10px] font-medium py-0.5 px-2.5 rounded-full',
                 item.preProcurementConference
                   ? 'bg-rose-500/10 text-rose-700 border-none'
                   : 'text-slate-500'
@@ -934,7 +1095,7 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
           <div className="space-y-4 w-full">
             <div className="flex items-center gap-1.5 pb-2 border-b border-default-100">
               <Package className="h-4 w-4 text-amber-500" />
-              <h4 className="text-xs font-bold uppercase tracking-wider text-default-800">
+              <h4 className="text-xs font-semibold text-default-800">
                 Catalog & Mode of Procurement
               </h4>
             </div>
@@ -942,17 +1103,17 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
             {/* Procurement Mode */}
             <div className="flex items-center justify-between gap-2">
               <div>
-                <span className="text-[10px] uppercase font-bold text-default-400 block">
+                <span className="text-[10px] uppercase font-medium tracking-wide text-default-400 block">
                   Mode of Procurement
                 </span>
-                <span className="text-xs font-bold text-default-850 mt-0.5 block">
+                <span className="text-xs font-medium text-default-800 mt-0.5 block">
                   {item.procurementModeName || '—'}
                 </span>
               </div>
               <Badge
                 variant={item.mopOverride ? 'soft' : 'outline'}
                 className={cn(
-                  'text-[9px] font-bold px-2 py-0.5 rounded-full',
+                  'text-[10px] font-medium px-2 py-0.5 rounded-full',
                   item.mopOverride ? 'bg-amber-500/10 text-amber-700 border-none' : 'text-default-400'
                 )}
               >
@@ -963,7 +1124,7 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
             {/* MOP Override Justification */}
             {item.mopOverride && item.mopJustification && (
               <div className="bg-amber-500/5 border border-amber-500/15 rounded-lg p-2.5 text-xs text-amber-800 leading-normal">
-                <span className="font-extrabold text-[9px] uppercase tracking-wider text-amber-750 block mb-0.5">
+                <span className="font-medium text-[10px] uppercase tracking-wide text-amber-700 block mb-0.5">
                   Justification
                 </span>
                 "{item.mopJustification}"
@@ -973,21 +1134,21 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
 
           {/* Linked Catalog Reference */}
           <div className="border-t border-default-100 pt-3.5 mt-2">
-            <span className="text-[10px] uppercase font-bold text-default-400 block mb-2">
+            <span className="text-[10px] uppercase font-medium tracking-wide text-default-400 block mb-2">
               Linked Catalog Reference
             </span>
 
             {item.cseItemId ? (
               <div className="border border-primary/15 bg-primary/2 rounded-xl p-3 space-y-2 transition-all hover:border-primary/30">
                 <div className="flex items-center justify-between">
-                  <span className="text-[8px] font-bold uppercase tracking-wider text-primary px-1.5 py-0.5 bg-primary/10 rounded-md">
+                  <span className="text-[10px] font-medium uppercase tracking-wide text-primary px-1.5 py-0.5 bg-primary/10 rounded-md">
                     CSE Catalog
                   </span>
-                  <span className="text-[9px] font-mono text-default-450 font-semibold">
+                  <span className="text-xs font-mono text-default-500">
                     Code: {cseItem?.productCode || '—'}
                   </span>
                 </div>
-                <h5 className="text-[11px] font-bold text-default-850 line-clamp-1">
+                <h5 className="text-xs font-medium text-default-800 line-clamp-1">
                   {isLoadingCse ? 'Loading catalog item...' : (cseItem?.name || item.name)}
                 </h5>
                 {!isLoadingCse && cseItem && (
@@ -996,9 +1157,9 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
                     variant="link"
                     size="sm"
                     onClick={() => setModalOpen(true)}
-                    className="h-5 text-[10px] font-semibold text-primary hover:text-primary-active p-0 flex items-center gap-1 shrink-0"
+                    className="h-5 text-xs font-medium text-primary hover:text-primary-active p-0 flex items-center gap-1 shrink-0"
                   >
-                    <Eye className="h-3 w-3" />
+                    <Eye className="h-3.5 w-3.5" />
                     View specifications & image
                   </Button>
                 )}
@@ -1012,14 +1173,14 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
             ) : item.nonCSEItemId ? (
               <div className="border border-amber-500/15 bg-amber-500/2 rounded-xl p-3 space-y-2 transition-all hover:border-amber-500/30">
                 <div className="flex items-center justify-between">
-                  <span className="text-[8px] font-bold uppercase tracking-wider text-amber-700 px-1.5 py-0.5 bg-amber-500/10 rounded-md">
+                  <span className="text-[10px] font-medium uppercase tracking-wide text-amber-700 px-1.5 py-0.5 bg-amber-500/10 rounded-md">
                     Non-CSE Catalog
                   </span>
-                  <span className="text-[9px] font-mono text-default-450 font-semibold">
+                  <span className="text-xs font-mono text-default-500">
                     Code: {nonCseItem?.productCode || '—'}
                   </span>
                 </div>
-                <h5 className="text-[11px] font-bold text-default-850 line-clamp-1">
+                <h5 className="text-xs font-medium text-default-800 line-clamp-1">
                   {isLoadingNonCse ? 'Loading catalog item...' : (nonCseItem?.name || item.name)}
                 </h5>
                 {!isLoadingNonCse && nonCseItem && (
@@ -1028,9 +1189,9 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
                     variant="link"
                     size="sm"
                     onClick={() => setModalOpen(true)}
-                    className="h-5 text-[10px] font-semibold text-amber-700 hover:text-amber-800 p-0 flex items-center gap-1 shrink-0"
+                    className="h-5 text-xs font-medium text-amber-700 hover:text-amber-800 p-0 flex items-center gap-1 shrink-0"
                   >
-                    <Eye className="h-3 w-3" />
+                    <Eye className="h-3.5 w-3.5" />
                     View specifications
                   </Button>
                 )}
@@ -1042,8 +1203,25 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
                 />
               </div>
             ) : (
-              <div className="border border-dashed border-default-250 bg-default-50 rounded-xl p-3 text-center text-xs text-default-400 italic">
-                No catalog reference linked.
+              <div className="border border-primary/15 bg-primary/2 rounded-xl p-3 space-y-2 transition-all hover:border-primary/30">
+                <div className="flex items-center justify-between">
+                  <span className="text-[10px] font-medium uppercase tracking-wide text-primary px-1.5 py-0.5 bg-primary/10 rounded-md">
+                    CSE (PS-DBM Catalog)
+                  </span>
+                  {item.papCode && (
+                    <span className="text-xs font-mono text-default-500">
+                      PAP: {item.papCode}
+                    </span>
+                  )}
+                </div>
+                <h5 className="text-xs font-medium text-default-800 line-clamp-1">
+                  {item.name}
+                </h5>
+                {item.description && (
+                  <p className="text-xs text-muted-foreground line-clamp-2">
+                    {item.description}
+                  </p>
+                )}
               </div>
             )}
           </div>
@@ -1054,7 +1232,7 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
       <div className="border-t border-default-100 pt-4">
         <div className="flex items-center justify-between mb-2.5">
           <div className="flex items-center gap-1">
-            <span className="text-[10px] uppercase font-bold tracking-wider text-default-400">
+            <span className="text-xs font-medium text-default-500">
               Item Monthly Distribution Schedule
             </span>
             <FieldDescriptionTooltip
@@ -1083,7 +1261,7 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
                 variant="outline"
                 size="sm"
                 onClick={() => onEditAllocations(item)}
-                className="h-8 text-xs font-semibold flex items-center gap-1.5 border-primary/20 hover:bg-primary/5 text-primary rounded-lg mt-1"
+                className="h-8 text-xs font-medium flex items-center gap-1.5 border-primary/20 hover:bg-primary/5 text-primary rounded-lg mt-1"
               >
                 <Plus className="h-3.5 w-3.5" />
                 Add Monthly Allocations
@@ -1099,15 +1277,15 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
                 <div
                   key={m}
                   className={cn(
-                    'rounded-lg border p-2.5 text-center flex flex-col justify-between min-h-[76px] transition-all',
+                    'rounded-lg border p-2.5 text-center flex flex-col justify-between min-h-[72px] transition-all',
                     hasVal
-                      ? 'bg-primary/2 border-primary/20 shadow-sm'
+                      ? 'bg-primary/2 border-primary/20 shadow-xs'
                       : 'bg-default-100/20 border-default-100 text-default-400',
                   )}
                 >
                   <div
                     className={cn(
-                      'text-[10px] font-bold uppercase tracking-wider',
+                      'text-[10px] font-medium uppercase tracking-wide',
                       hasVal ? 'text-primary' : 'text-default-400',
                     )}
                   >
@@ -1115,15 +1293,15 @@ function ItemDetail({ item, onEditAllocations }: ItemDetailProps) {
                   </div>
                   {hasVal ? (
                     <div className="mt-1 flex flex-col items-center justify-center gap-0.5">
-                      <div className="text-xs font-bold text-default-800">
+                      <div className="text-xs font-semibold text-default-800">
                         {formatCurrency(amt)}
                       </div>
-                      <div className="text-[10px] font-medium text-default-400">
+                      <div className="text-xs font-normal text-default-500">
                         Qty: {qty}
                       </div>
                     </div>
                   ) : (
-                    <div className="text-[10px] text-default-300 mt-1.5 font-medium">
+                    <div className="text-xs text-default-300 mt-1 font-normal">
                       —
                     </div>
                   )}
@@ -1158,6 +1336,16 @@ function ItemRow({
   const validationStatus = useItemValidationStatus(item)
   const rowClasses = getRowCompletionClasses(validationStatus)
 
+  const isNonCse = Boolean(
+    item.nonCSEItemId ||
+    (item as Record<string, unknown>).nonCseItemId ||
+    item.projectType === 'ConsultingServices' ||
+    item.projectType === 'Infrastructure' ||
+    (item.name &&
+      (item.name.toLowerCase().includes('consultan') ||
+        item.name.toLowerCase().includes('consulting')))
+  )
+
   const subtleBgClass = validationStatus.isComplete
     ? 'bg-emerald-500/5 hover:bg-emerald-500/8 dark:bg-emerald-500/3'
     : validationStatus.isDetailsComplete
@@ -1189,53 +1377,53 @@ function ItemRow({
             )}
           </button>
         </td>
-        <td className="px-5 py-3 text-sm font-medium text-default-900 min-w-50">
-          <div className="flex items-center gap-1.5 flex-wrap">
-            <div
-              className="truncate max-w-50 font-semibold text-default-800"
+        <td className="px-5 py-3 min-w-[280px]">
+          <div className="flex items-center gap-2 flex-wrap">
+            <span
+              className="font-medium text-sm text-foreground hover:text-primary transition-colors max-w-xl truncate"
               title={displayName}
             >
               {displayName}
-            </div>
-            {item.cseItemId ? (
+            </span>
+            {isNonCse ? (
               <Badge
+                className="text-[10px] tracking-wide px-2 py-0.5 bg-amber-500/10 text-amber-700 dark:text-amber-400 border border-amber-500/20 uppercase font-medium shrink-0 flex items-center gap-1"
                 variant="soft"
-                className="text-[8px] tracking-wide px-1.5 py-0 bg-primary/10 text-primary border-none uppercase font-bold shrink-0 flex items-center gap-0.5"
               >
-                <Package className="h-2.5 w-2.5" />
-                CSE
+                <Layers className="h-3 w-3" />
+                Non-CSE
               </Badge>
             ) : (
               <Badge
-                className="text-[8px] tracking-wide px-1.5 py-0 bg-amber-500/10 text-amber-700 border-none uppercase font-bold shrink-0 flex items-center gap-0.5"
                 variant="soft"
+                className="text-[10px] tracking-wide px-2 py-0.5 bg-emerald-500/10 text-emerald-700 dark:text-emerald-400 border border-emerald-500/20 uppercase font-medium shrink-0 flex items-center gap-1"
               >
-                <Layers className="h-2.5 w-2.5" />
-                Non-CSE
+                <Package className="h-3 w-3" />
+                CSE
               </Badge>
             )}
             {item.originDepartmentName && (
               <Badge
                 variant="outline"
-                className="text-[9px] px-1.5 py-0 bg-blue-50 text-blue-700 border-blue-200 uppercase font-bold shrink-0"
+                className="text-[10px] px-2 py-0.5 bg-blue-50 text-blue-700 border-blue-200 uppercase font-medium shrink-0"
               >
                 {item.originDepartmentName}
               </Badge>
             )}
           </div>
           {item.description && (
-            <div
-              className="text-[10px] text-default-400 truncate max-w-62.5"
+            <p
+              className="text-xs text-muted-foreground max-w-xl truncate mt-0.5"
               title={item.description}
             >
               {item.description}
-            </div>
+            </p>
           )}
         </td>
         <td className="px-5 py-3 text-center">
           <Badge
             className={cn(
-              'text-[10px] py-0.5 px-2 rounded-full font-semibold border-none',
+              'text-[10px] py-0.5 px-2 rounded-full font-medium border-none',
               getProjectTypeStyle(item.projectType || 'Goods'),
             )}
           >
@@ -1243,15 +1431,38 @@ function ItemRow({
           </Badge>
         </td>
         <td className="px-5 py-3 text-right text-sm text-default-700">
-          {formatCurrency(item.unitPrice)}
+          <div className="font-normal">{formatCurrency(item.unitPrice)}</div>
+          {item.plannedQuantity ? (
+            <div className="text-xs text-muted-foreground">
+              Qty: {item.plannedQuantity} {item.unit || 'units'}
+            </div>
+          ) : null}
         </td>
-        <td className="px-5 py-3 text-right text-sm font-bold text-default-900">
-          {formatCurrency(
-            (item.PPMPItemAllocations || []).reduce(
-              (sum: number, a: PPMPItemAllocation) => sum + a.amount,
-              0,
-            ),
-          )}
+        <td className="px-5 py-3 text-right text-sm font-semibold text-default-900">
+          <div>
+            {formatCurrency(
+              (item.plannedQuantity && item.plannedQuantity > 0)
+                ? item.plannedQuantity * item.unitPrice
+                : (item.PPMPItemAllocations || []).reduce(
+                    (sum: number, a: PPMPItemAllocation) => sum + a.amount,
+                    0,
+                  )
+            )}
+          </div>
+          <div className="text-xs text-muted-foreground font-normal">
+            {(() => {
+              const planned = item.plannedQuantity ?? 0
+              const totalAlloc = (item.PPMPItemAllocations || []).reduce(
+                (sum: number, a: PPMPItemAllocation) => sum + (a.quantity || 0),
+                0,
+              )
+              const remaining = planned - totalAlloc
+              if (totalAlloc === 0) return 'Not yet distributed'
+              if (remaining > 0) return `${totalAlloc}/${planned} allocated (${remaining} remaining)`
+              if (remaining === 0) return `${totalAlloc}/${planned} allocated (Fully allocated)`
+              return `Over-allocated by ${Math.abs(remaining)}`
+            })()}
+          </div>
         </td>
         <td className="px-5 py-3 text-right">
           <div className="flex items-center justify-end gap-2" onClick={(e) => e.stopPropagation()}>
@@ -1328,7 +1539,7 @@ function ItemRow({
   )
 }
 
-interface ExpenditureItemGroupProps {
+export interface ExpenditureItemGroupProps {
   group: PPMPExpenditureItem
   expandedItemIds: Set<string>
   onToggleItem: (id: string) => void
@@ -1340,7 +1551,7 @@ interface ExpenditureItemGroupProps {
   onEditAllocations?: (item: PPMPItem) => void
 }
 
-function ExpenditureItemGroup({
+export function ExpenditureItemGroup({
   group,
   expandedItemIds,
   onToggleItem,
@@ -1361,51 +1572,121 @@ function ExpenditureItemGroup({
   const items = itemsResp?.data ?? []
 
   const totalAmount = items.reduce(
-    (sum: number, item: PPMPItem) =>
-      sum +
-      ((item.PPMPItemAllocations || []).reduce(
-        (itemSum: number, a: PPMPItemAllocation) => itemSum + a.amount,
+    (sum: number, item: PPMPItem) => {
+      const allocSum = (item.PPMPItemAllocations || []).reduce(
+        (itemSum: number, a: PPMPItemAllocation) => itemSum + (a.amount || 0),
         0,
-      ) || 0),
+      )
+      const itemCost = (item.plannedQuantity && item.plannedQuantity > 0)
+        ? (item.plannedQuantity * (item.unitPrice || 0))
+        : allocSum
+      return sum + itemCost
+    },
     0,
   )
 
+  // Object code lookup for Type and Item of Expenditure
+  const { data: objectCodesResponse } = useObjectCodesQuery({
+    pathParams: {},
+    queryParams: { pageSize: 1000 },
+  })
+
+  const { typeOfExpenditure, itemOfExpenditure } = useMemo(() => {
+    if (!group.objectId) {
+      return {
+        typeOfExpenditure: { name: 'General Expenditures', code: '' },
+        itemOfExpenditure: {
+          name: group.ppmpActivityName || 'Expenditure Item',
+          code: '',
+        },
+      }
+    }
+
+    const objectInfo = objectCodesResponse?.data?.find(
+      (item) => item.id === group.objectId,
+    )
+
+    const itemName = objectInfo?.name || group.ppmpActivityName || 'Expenditure Item'
+    const itemCode = objectInfo?.code || ''
+
+    const typeOfExp = resolveTypeOfExpenditure(
+      group.objectId,
+      itemName,
+      itemCode,
+      objectInfo?.parent as any,
+    )
+
+    return {
+      typeOfExpenditure: {
+        name: typeOfExp.name,
+        code: typeOfExp.code,
+      },
+      itemOfExpenditure: {
+        name: itemName,
+        code: itemCode,
+      },
+    }
+  }, [group.objectId, group.ppmpActivityName, objectCodesResponse?.data])
+
   return (
     <div className="overflow-hidden rounded-xl border border-default-200 bg-white shadow-sm">
-      <div className="flex items-center justify-between border-b border-default-200 bg-default-50/30 px-5 py-4 flex-wrap gap-3">
-        <div className="flex items-center gap-3">
-          <span className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-          <h4 className="text-sm font-semibold text-default-900">
-            {group.isProcurable ? 'Procurable Items' : 'Non-Procurable Items'}
-          </h4>
-          <Badge
-            variant="soft"
-            className={cn(
-              'text-[10px] font-semibold border-none rounded-full px-2.5 py-0.5',
-              group.isProcurable
-                ? 'bg-success/10 text-success'
-                : 'bg-warning/10 text-warning',
+      <div className="flex items-center justify-between border-b border-default-200 bg-default-50/30 px-5 py-3.5 flex-wrap gap-3">
+        <div className="flex flex-col gap-1 text-left">
+          {/* Level 1: Type of Expenditure (Parent Classification) */}
+          <div className="flex items-center gap-1.5 text-xs text-default-500 font-medium">
+            <span className="text-[10px] uppercase font-medium tracking-wide text-default-500">
+              Type of Expenditure:
+            </span>
+            <span className="font-medium text-default-700">
+              {typeOfExpenditure.name}
+            </span>
+            {typeOfExpenditure.code && (
+              <span className="font-mono text-xs text-default-400">
+                · {typeOfExpenditure.code}
+              </span>
             )}
-          >
-            {group.isProcurable ? 'Procurable' : 'Non-Procurable'}
-          </Badge>
-          {isItemsLoading && (
-            <div className="h-3 w-3 animate-spin rounded-full border-2 border-default-300 border-t-primary" />
-          )}
+          </div>
+
+          {/* Level 2: Item of Expenditure (Leaf Object) */}
+          <div className="flex items-center gap-2.5 flex-wrap">
+            <span className="h-2 w-2 rounded-full bg-primary" />
+            <h4 className="text-sm font-semibold text-default-800">
+              {itemOfExpenditure.name}
+            </h4>
+            {itemOfExpenditure.code && (
+              <span className="font-mono text-xs text-default-500 bg-default-100/80 px-2 py-0.5 rounded border border-default-200">
+                {itemOfExpenditure.code}
+              </span>
+            )}
+            <Badge
+              variant="soft"
+              className={cn(
+                'text-[10px] font-medium border-none rounded-full px-2 py-0.5',
+                group.isProcurable
+                  ? 'bg-success/10 text-success'
+                  : 'bg-warning/10 text-warning',
+              )}
+            >
+              {group.isProcurable ? 'Procurable' : 'Non-Procurable'}
+            </Badge>
+            {isItemsLoading && (
+              <div className="h-3 w-3 animate-spin rounded-full border-2 border-default-300 border-t-primary" />
+            )}
+          </div>
         </div>
 
         <div className="flex items-center gap-4">
-          <div className="text-right flex flex-row gap-2 items-center justify-center">
-            <div className="text-[10px] uppercase font-semibold tracking-wider text-default-400">
+          <div className="text-right flex flex-row gap-2.5 items-center justify-center">
+            <div className="text-[10px] uppercase font-medium tracking-wide text-default-400">
               Total Cost
             </div>
-            <div className="text-sm font-bold text-default-900">
-              {formatCurrency(group.totalCost || 0)}
+            <div className="text-sm font-semibold text-default-800">
+              {formatCurrency(group.totalCost > 0 ? group.totalCost : totalAmount)}
             </div>
-            <div className="text-[10px] uppercase font-semibold tracking-wider text-default-400 border-l border-default-250/60 pl-3">
+            <div className="text-[10px] uppercase font-medium tracking-wide text-default-400 border-l border-default-250/60 pl-3">
               Total Item Cost
             </div>
-            <div className="text-sm font-bold text-default-900">
+            <div className="text-sm font-semibold text-default-800">
               {formatCurrency(totalAmount || 0)}
             </div>
           </div>
@@ -1415,7 +1696,7 @@ function ExpenditureItemGroup({
               variant="outline"
               size="sm"
               onClick={() => onAddItem(group.id)}
-              className="h-8 text-xs font-semibold flex items-center gap-1.5 border-primary/20 hover:bg-primary/5 text-primary rounded-lg"
+              className="h-8 text-xs font-medium flex items-center gap-1.5 border-primary/20 hover:bg-primary/5 text-primary rounded-lg"
             >
               <Plus className="h-3.5 w-3.5" />
               Add Item
@@ -1451,7 +1732,7 @@ function ExpenditureItemGroup({
       <div className="overflow-x-auto">
         <table className="w-full border-collapse text-left text-sm">
           <thead>
-            <tr className="border-b border-default-200 bg-default-50/10 text-xs font-semibold text-default-500 uppercase tracking-wider">
+            <tr className="border-b border-default-200 bg-default-50/10 text-xs font-medium text-default-500 uppercase tracking-wide">
               <th className="w-12 px-5 py-3 text-center" />
               <th className="px-5 py-3">Item Name</th>
               <th className="px-5 py-3 text-center">Type</th>
@@ -1635,6 +1916,9 @@ interface RightPaneProps {
   onEditGroup?: (group: PPMPExpenditureItem) => void
   onDeleteGroup?: (group: PPMPExpenditureItem) => void
   onEditAllocations?: (item: PPMPItem) => void
+  onOpenAssociateMsf?: (activity: PPMPActivityForDisplay) => void
+  onUnlinkMsf?: (msfId: string) => void
+  isUnlinkingMsf?: boolean
 }
 
 function RightPane({
@@ -1646,7 +1930,11 @@ function RightPane({
   onEditGroup,
   onDeleteGroup,
   onEditAllocations,
+  onOpenAssociateMsf,
+  onUnlinkMsf,
+  isUnlinkingMsf,
 }: RightPaneProps) {
+  const navigate = useNavigate()
   const [rightPaneTab, setRightPaneTab] = useState<'items' | 'schedule'>(
     'items',
   )
@@ -1703,12 +1991,12 @@ function RightPane({
       {/* Tab Header with selected Activity Name and Action Tabs */}
       <div className="sticky top-0 z-10 bg-white/95 px-5 py-4 border-b border-default-200 flex flex-col md:flex-row md:items-center justify-between gap-3 backdrop-blur">
         <div>
-          <h3 className="text-sm font-bold text-default-900 tracking-tight">
+          <h3 className="text-base font-semibold text-default-900 tracking-tight">
             {activity.activityName}
           </h3>
           <p className="text-xs text-default-500 mt-0.5">
             Allocated Budget:{' '}
-            <span className="font-bold text-default-800">
+            <span className="font-semibold text-default-800">
               {formatCurrency(activity.totalAllocationAmount || 0)}
             </span>
           </p>
@@ -1720,9 +2008,9 @@ function RightPane({
             type="button"
             onClick={() => setRightPaneTab('items')}
             className={cn(
-              'px-3 py-1.5 text-xs font-semibold rounded-md transition-all',
+              'px-3 py-1.5 text-xs font-medium rounded-md transition-all',
               rightPaneTab === 'items'
-                ? 'bg-white text-default-950 shadow-sm'
+                ? 'bg-white text-default-900 shadow-sm font-semibold'
                 : 'text-default-500 hover:text-default-700',
             )}
           >
@@ -1732,9 +2020,9 @@ function RightPane({
             type="button"
             onClick={() => setRightPaneTab('schedule')}
             className={cn(
-              'px-3 py-1.5 text-xs font-semibold rounded-md transition-all',
+              'px-3 py-1.5 text-xs font-medium rounded-md transition-all',
               rightPaneTab === 'schedule'
-                ? 'bg-white text-default-950 shadow-sm'
+                ? 'bg-white text-default-900 shadow-sm font-semibold'
                 : 'text-default-500 hover:text-default-700',
             )}
           >
@@ -1743,41 +2031,95 @@ function RightPane({
         </div>
       </div>
 
-      {/* Visual Hero Metadata Strip */}
-      <div className="px-5 py-4 bg-default-50/60 border-b border-default-200 grid grid-cols-2 md:grid-cols-4 gap-4 shrink-0">
-        <div>
-          <span className="text-[10px] font-bold text-default-400 uppercase tracking-wider block">
-            Allocated Budget
-          </span>
-          <span className="text-sm font-bold text-default-900 mt-0.5 block">
-            {formatCurrency(activity.totalAllocationAmount || 0)}
-          </span>
-        </div>
-        <div>
-          <span className="text-[10px] font-bold text-default-400 uppercase tracking-wider block">
-            Items Cost (Fetched)
-          </span>
-          <span className="text-sm font-bold text-default-950 mt-0.5 block">
-            {formatCurrency(serverFetchedCost)}
-          </span>
-        </div>
-        <div>
-          <span className="text-[10px] font-bold text-default-400 uppercase tracking-wider block">
-            Expenditure Items
-          </span>
-          <span className="text-sm font-bold text-default-900 mt-0.5 block">
-            {expenditureItems.length} items
-          </span>
-        </div>
-        <div>
-          <span className="text-[10px] font-bold text-default-400 tracking-wider uppercase block">
-            Item Capacity
-          </span>
-          <span className="text-sm font-bold text-default-900 mt-0.5 block">
-            {activity.totalItems || 0} registered
-          </span>
-        </div>
-      </div>
+      {/* Market Scoping Form Banner for Selected Activity */}
+      {(() => {
+        const msf = activity.LinkedMarketScoping || (activity as any).linkedMarketScoping
+        return (
+          <div className="px-5 pt-4">
+            {msf ? (
+              <div className="bg-primary/5 border border-primary/20 rounded-xl p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                    <FileText className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0 space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-primary font-semibold">
+                        Linked Market Scoping Form
+                      </span>
+                      <Badge
+                        variant="soft"
+                        className={
+                          msf.status === 'Approved'
+                            ? 'bg-success/15 text-success text-[10px] font-medium px-2 py-0.5'
+                            : 'bg-warning/15 text-warning text-[10px] font-medium px-2 py-0.5'
+                        }
+                      >
+                        {msf.status}
+                      </Badge>
+                    </div>
+                    <div className="text-sm font-semibold text-default-800 truncate">
+                      {msf.projectName}
+                    </div>
+                    <div className="text-xs text-default-500">
+                      Estimated Budget:{' '}
+                      <strong className="font-semibold text-default-800">
+                        {formatCurrency(msf.estimatedBudget)}
+                      </strong>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      navigate({
+                        to: '/v2/market-scoping/$id',
+                        params: { id: msf.id },
+                      })
+                    }
+                    className="h-8 text-xs font-medium text-primary hover:text-primary hover:bg-primary/5 border-primary/30 gap-1.5"
+                  >
+                    <Eye className="h-3.5 w-3.5" />
+                    View MSF
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={isUnlinkingMsf}
+                    onClick={() => onUnlinkMsf?.(msf.id)}
+                    className="h-8 text-xs font-medium text-destructive hover:text-destructive hover:bg-destructive/5 border-destructive/30 gap-1.5"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                    Unlink MSF
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-default-50/50 border border-dashed border-default-200 rounded-xl p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-default-400 shrink-0" />
+                  <span className="text-xs font-normal text-default-500">
+                    No Market Scoping Form associated with this Activity.
+                  </span>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onOpenAssociateMsf?.(activity)}
+                  className="h-8 text-xs font-medium gap-1.5 border-primary/30 text-primary hover:bg-primary/5 shrink-0 self-end sm:self-auto"
+                >
+                  <Link2 className="h-3.5 w-3.5" />
+                  Associate Market Scoping
+                </Button>
+              </div>
+            )}
+          </div>
+        )
+      })()}
 
       {/* Tab Content */}
       <div className="flex-1 overflow-y-auto p-5 bg-default-50/10">
@@ -1965,6 +2307,18 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
   const ppmp: PPMPDetails | null = ppmpResp?.data ?? null
   const isDeptMode = ppmp ? !ppmp.isMaster : false
 
+  const { data: libResp } = useLIB({
+    pathParams: { id: ppmp?.libId || '' },
+    queryParams: {},
+    enabled: !!ppmp?.libId,
+  })
+  const lib = libResp?.data
+
+  const isProjectScope =
+    lib?.scope === 'Project' ||
+    (lib as any)?.scope === 'ProjectLevel' ||
+    (lib as any)?.scopeLevel === 'Project'
+
   // State management
   const [activeTab, setActiveTab] = useState<string>('overview')
   const [selectedActivityId, setSelectedActivityId] = useState<string | null>(
@@ -1996,6 +2350,53 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
     useUpdatePPMPStatus()
   const { mutateAsync: generatePPMPDocument } = useGeneratePPMPDocument()
   const { mutateAsync: downloadDocument } = useDownloadDocument()
+
+  // Market Scoping Association State
+  const [associateMsfOpen, setAssociateMsfOpen] = useState(false)
+  const [associateMsfTarget, setAssociateMsfTarget] = useState<{
+    type: 'project' | 'activity'
+    targetLineItemBudgetId?: string
+    targetLineItemBudgetActivityId?: string
+    targetName?: string
+  }>({
+    type: 'project',
+  })
+
+  const { mutate: unlinkMsf, isPending: isUnlinkingMsf } = useUnlinkMarketScoping()
+
+  const handleUnlinkMsf = (msfId: string) => {
+    unlinkMsf(
+      { pathParams: { id: msfId }, queryParams: {} },
+      {
+        onSuccess: () => {
+          toast.success('Market Scoping Form unlinked successfully.')
+          queryClient.invalidateQueries({ queryKey: ['/ppmps'] })
+          queryClient.invalidateQueries({ queryKey: ['/market-scopings'] })
+        },
+        onError: (err: any) => {
+          toast.error(err?.message || 'Failed to unlink Market Scoping Form.')
+        },
+      }
+    )
+  }
+
+  const handleOpenProjectAssociateMsf = () => {
+    setAssociateMsfTarget({
+      type: 'project',
+      targetLineItemBudgetId: ppmp?.libId,
+      targetName: ppmp?.libName || 'this Line-Item Budget',
+    })
+    setAssociateMsfOpen(true)
+  }
+
+  const handleOpenActivityAssociateMsf = (activity: PPMPActivityForDisplay) => {
+    setAssociateMsfTarget({
+      type: 'activity',
+      targetLineItemBudgetActivityId: activity.libActivityId,
+      targetName: activity.activityName || 'this Activity',
+    })
+    setAssociateMsfOpen(true)
+  }
 
   // Delete activity mutation + confirmation (hooks must run unconditionally)
   const queryClient = useQueryClient()
@@ -2090,11 +2491,44 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
     })
   }, [rawActivities, ppmp, ppmpId])
 
-  // Get selected activity
+  // Get selected activity (default to first activity if none explicitly selected)
   const selectedActivity = useMemo(
-    () => activities.find((a) => a.id === selectedActivityId) ?? null,
+    () =>
+      (selectedActivityId
+        ? activities.find((a) => a.id === selectedActivityId)
+        : activities[0]) ?? null,
     [activities, selectedActivityId],
   )
+
+  // Fetch current activity/project's expenditure items to filter out already added objects from the Add dialog
+  const { data: currentActivityExpItemsResp } = usePPMPExpenditureItems({
+    pathParams: {},
+    queryParams: isProjectScope
+      ? (ppmpId ? { filters: `ppmpId==${ppmpId}` } : {})
+      : selectedActivityId
+        ? { filters: `ppmpActivityId==${selectedActivityId}` }
+        : {},
+    enabled: isProjectScope ? !!ppmpId : !!selectedActivityId,
+  })
+
+  const existingObjectIds = useMemo(() => {
+    return (currentActivityExpItemsResp?.data ?? [])
+      .filter((item) => item.objectId && item.id !== groupDialogEditGroup?.id)
+      .map((item) => item.objectId!)
+  }, [currentActivityExpItemsResp?.data, groupDialogEditGroup])
+
+  const existingLibActivityIds = useMemo(() => {
+    if (!ppmp) return []
+    return activities
+      .filter((a) => a.ppmpId === ppmp.id && a.libActivityId)
+      .map((a) => a.libActivityId!)
+  }, [activities, ppmp?.id])
+
+  const isEditable = useMemo(() => {
+    if (!ppmp || ppmp.consolidatedIntoId) return false
+    const status = (ppmp.status ?? '').toLowerCase().trim()
+    return status === 'draft' || status === 'rejected'
+  }, [ppmp])
 
   // Current PPMP budget context for progress bars
   const totalPpmpBudget = useMemo(() => {
@@ -2419,12 +2853,12 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
         <div className="flex items-center gap-2">
           {/* Mode badge */}
           {isDeptMode ? (
-            <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-bold shadow-sm uppercase tracking-wider border-amber-200 bg-amber-50 text-amber-700">
+            <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium border-amber-200 bg-amber-50 text-amber-700">
               <span className="h-1.5 w-1.5 rounded-full bg-amber-500" />
               Department PPMP
             </span>
           ) : (
-            <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-bold shadow-sm uppercase tracking-wider border-primary/20 bg-primary/5 text-primary">
+            <span className="inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium border-primary/20 bg-primary/5 text-primary">
               <span className="h-1.5 w-1.5 rounded-full bg-primary" />
               Master PPMP
             </span>
@@ -2433,34 +2867,34 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
           {ppmp.status && (
             <span
               className={cn(
-                'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[10px] font-bold shadow-sm uppercase tracking-wider transition-all duration-300',
+                'inline-flex items-center gap-1.5 rounded-full border px-2.5 py-0.5 text-xs font-medium transition-all duration-300',
                 ppmp.status.toLowerCase() === 'approved'
-                  ? 'border-emerald-200 bg-emerald-50 text-emerald-700 ring-4 ring-emerald-500/5'
+                  ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
                   : ppmp.status.toLowerCase() === 'submitted' ||
                     ppmp.status.toLowerCase() === 'pending_review' ||
                     ppmp.status.toLowerCase() === 'pending review'
-                    ? 'border-blue-200 bg-blue-50 text-blue-700 ring-4 ring-blue-500/5'
+                    ? 'border-blue-200 bg-blue-50 text-blue-700'
                     : ppmp.status.toLowerCase() === 'rejected'
-                      ? 'border-rose-200 bg-rose-50 text-rose-700 ring-4 ring-rose-500/5'
-                      : 'border-slate-200 bg-slate-50 text-slate-700 ring-4 ring-slate-500/5',
+                      ? 'border-rose-200 bg-rose-50 text-rose-700'
+                      : 'border-slate-200 bg-slate-50 text-slate-700',
               )}
             >
-              <span className="h-1.5 w-1.5 rounded-full bg-current animate-pulse" />
+              <span className="h-1.5 w-1.5 rounded-full bg-current" />
               {ppmp.status}
             </span>
           )}
         </div>
       }
       metadata={
-        <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-slate-500 dark:text-slate-400">
+        <div className="flex flex-wrap items-center gap-x-5 gap-y-1.5 text-slate-500 dark:text-slate-400 text-xs">
           <span className="flex items-center gap-1.5">
-            <Building2 className="h-3.5 w-3.5 text-primary/80" />
-            <span>{ppmp.officeName}</span>
+            <Building2 className="h-3.5 w-3.5 text-primary/70 shrink-0" />
+            <span className="text-slate-600 dark:text-slate-300 font-medium">{ppmp.officeName}</span>
           </span>
           <span className="h-3 w-px bg-slate-200 dark:bg-slate-700 hidden sm:inline" />
           <span className="flex items-center gap-1.5">
-            <CalendarDays className="h-3.5 w-3.5 text-primary/80" />
-            <span>Fiscal Year {ppmp.fiscalYearName}</span>
+            <CalendarDays className="h-3.5 w-3.5 text-primary/70 shrink-0" />
+            <span>Fiscal Year <strong className="font-medium text-slate-600 dark:text-slate-300">{ppmp.fiscalYearName}</strong></span>
           </span>
         </div>
       }
@@ -2542,7 +2976,7 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
                     <TooltipContent side="top" className="max-w-xs bg-slate-900 border-slate-800 text-white p-3 shadow-xl z-50">
                       <div className="space-y-1.5 text-xs">
                         <p className="font-bold text-red-400">Cannot Submit PPMP</p>
-                        <p className="text-slate-300">The following items are incomplete or missing allocations:</p>
+                        <p className="text-slate-300">The following items are incomplete or have validation errors:</p>
                         <ul className="list-disc pl-4 space-y-0.5 max-h-32 overflow-y-auto text-slate-200">
                           {incompleteItems.slice(0, 5).map((item) => (
                             <li key={item.id}>{item.name || 'Unnamed Item'}</li>
@@ -2615,13 +3049,13 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
 
       <div className="space-y-6">
         {incompleteItems.length > 0 && (
-          <div className="rounded-xl border border-amber-300 bg-amber-50/80 dark:bg-amber-950/20 p-4 shadow-sm flex items-start gap-3 border-l-4 border-l-amber-500 text-amber-900 dark:text-amber-200">
-            <AlertCircle className="h-5 w-5 text-amber-600 shrink-0 mt-0.5" />
+          <div className="rounded-xl border border-red-300 bg-red-50/80 dark:bg-red-950/20 p-4 shadow-sm flex items-start gap-3 border-l-4 border-l-red-500 text-red-900 dark:text-red-200">
+            <AlertCircle className="h-5 w-5 text-red-600 shrink-0 mt-0.5" />
             <div className="space-y-0.5">
               <h4 className="text-sm font-extrabold">PPMP Submission Blocked</h4>
-              <p className="text-xs font-semibold text-amber-850/90 dark:text-amber-300">
-                There are {incompleteItems.length} item(s) requiring configuration or monthly allocations.
-                Configure all items (marked with red or amber left borders) before submitting this PPMP.
+              <p className="text-xs font-semibold text-red-850/90 dark:text-red-300">
+                There are {incompleteItems.length} item(s) requiring configuration.
+                Configure all items (marked with red left borders) before submitting this PPMP.
               </p>
             </div>
           </div>
@@ -2662,6 +3096,10 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
           ppmp={activeChildPpmp || ppmp}
           activityCount={activityCount}
           itemCount={itemCount}
+          onOpenAssociateMsf={handleOpenProjectAssociateMsf}
+          onUnlinkMsf={handleUnlinkMsf}
+          isUnlinkingMsf={isUnlinkingMsf}
+          isProjectScope={isProjectScope}
         />
 
         {/* Consolidated Child PPMP Tabs (Only for Master PPMP with children) */}
@@ -2850,72 +3288,88 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
           )}
 
         {/* Single-column workspace layout */}
-        <div className="space-y-6">
-          {/* Top horizontal scroller activities pane */}
-          <ActivitiesPane
-            activities={activities}
-            selectedId={selectedActivityId}
-            onSelect={setSelectedActivityId}
-            expandedIds={expandedActivityIds}
-            onToggleExpand={toggleExpandActivity}
-            onAdd={
-              activeTab === 'overview' &&
-                !ppmp.consolidatedIntoId &&
-                (ppmp.status?.toLowerCase() === 'draft' ||
-                  ppmp.status?.toLowerCase() === 'rejected')
-                ? () => setAddDialogOpen(true)
-                : undefined
-            }
-            onRequestDelete={
-              !ppmp.consolidatedIntoId ? requestDeleteActivity : undefined
-            }
-            totalPpmpBudget={totalPpmpBudget}
-            masterPpmpId={ppmp.id}
-            isLoading={isLoadingActivities}
+        {isProjectScope ? (
+          <ProjectLevelPPMPWorkspace
+            ppmp={activeChildPpmp || ppmp}
+            lib={lib}
+            isEditable={isEditable}
+            onAddItem={handleAddItem}
+            onEditItem={handleEditItem}
+            onDeleteItem={handleDeleteItem}
+            onAddGroup={handleAddGroup}
+            onEditGroup={handleEditGroup}
+            onDeleteGroup={handleDeleteGroup}
+            onEditAllocations={handleEditAllocations}
           />
-
-          {/* Bottom detail pane (expanded full width) */}
-          <div className="min-w-0">
-            <RightPane
-              activity={selectedActivity}
-              onAddItem={
-                selectedActivity?.ppmpId === ppmp.id && !ppmp.consolidatedIntoId
-                  ? handleAddItem
+        ) : (
+          <div className="space-y-6">
+            {/* Top horizontal scroller activities pane */}
+            <ActivitiesPane
+              activities={activities}
+              selectedId={selectedActivityId}
+              onSelect={setSelectedActivityId}
+              expandedIds={expandedActivityIds}
+              onToggleExpand={toggleExpandActivity}
+              onAdd={
+                activeTab === 'overview' && isEditable
+                  ? () => setAddDialogOpen(true)
                   : undefined
               }
-              onEditItem={
-                selectedActivity?.ppmpId === ppmp.id && !ppmp.consolidatedIntoId
-                  ? handleEditItem
-                  : undefined
+              onRequestDelete={
+                isEditable ? requestDeleteActivity : undefined
               }
-              onDeleteItem={
-                selectedActivity?.ppmpId === ppmp.id && !ppmp.consolidatedIntoId
-                  ? handleDeleteItem
-                  : undefined
-              }
-              onAddGroup={
-                selectedActivity?.ppmpId === ppmp.id && !ppmp.consolidatedIntoId
-                  ? handleAddGroup
-                  : undefined
-              }
-              onEditGroup={
-                selectedActivity?.ppmpId === ppmp.id && !ppmp.consolidatedIntoId
-                  ? handleEditGroup
-                  : undefined
-              }
-              onDeleteGroup={
-                selectedActivity?.ppmpId === ppmp.id && !ppmp.consolidatedIntoId
-                  ? handleDeleteGroup
-                  : undefined
-              }
-              onEditAllocations={
-                selectedActivity?.ppmpId === ppmp.id && !ppmp.consolidatedIntoId
-                  ? handleEditAllocations
-                  : undefined
-              }
+              onOpenAssociateMsf={handleOpenActivityAssociateMsf}
+              totalPpmpBudget={totalPpmpBudget}
+              masterPpmpId={ppmp.id}
+              isLoading={isLoadingActivities}
             />
+
+            {/* Bottom detail pane (expanded full width) */}
+            <div className="min-w-0">
+              <RightPane
+                activity={selectedActivity}
+                onAddItem={
+                  selectedActivity?.ppmpId === ppmp.id && isEditable
+                    ? handleAddItem
+                    : undefined
+                }
+                onEditItem={
+                  selectedActivity?.ppmpId === ppmp.id && isEditable
+                    ? handleEditItem
+                    : undefined
+                }
+                onDeleteItem={
+                  selectedActivity?.ppmpId === ppmp.id && isEditable
+                    ? handleDeleteItem
+                    : undefined
+                }
+                onAddGroup={
+                  selectedActivity?.ppmpId === ppmp.id && isEditable
+                    ? handleAddGroup
+                    : undefined
+                }
+                onEditGroup={
+                  selectedActivity?.ppmpId === ppmp.id && isEditable
+                    ? handleEditGroup
+                    : undefined
+                }
+                onDeleteGroup={
+                  selectedActivity?.ppmpId === ppmp.id && isEditable
+                    ? handleDeleteGroup
+                    : undefined
+                }
+                onEditAllocations={
+                  selectedActivity?.ppmpId === ppmp.id && isEditable
+                    ? handleEditAllocations
+                    : undefined
+                }
+                onOpenAssociateMsf={handleOpenActivityAssociateMsf}
+                onUnlinkMsf={handleUnlinkMsf}
+                isUnlinkingMsf={isUnlinkingMsf}
+              />
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       <AddPPMPActivityDialog
@@ -2923,6 +3377,7 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
         onOpenChange={setAddDialogOpen}
         ppmpId={ppmp.id}
         libId={ppmp.libId}
+        existingLibActivityIds={existingLibActivityIds}
         onCreated={() => {
           /* no-op: queries invalidated inside dialog */
         }}
@@ -2954,6 +3409,10 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
         isOpen={itemsPickerOpen}
         onOpenChange={setItemsPickerOpen}
         ppmpExpenditureItemId={itemDialogGroupId}
+        officeId={ppmp?.officeId}
+        officeName={ppmp?.officeName}
+        fiscalYear={ppmp?.fiscalYear?.year || ppmp?.fiscalYearName}
+        ppmpTitle={ppmp?.documentName || ppmp?.ppmpNumber}
       />
 
       <EditPPMPItemAllocationsDialog
@@ -2981,9 +3440,11 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
         isOpen={groupDialogOpen}
         onOpenChange={setGroupDialogOpen}
         ppmpId={ppmpId}
-        ppmpActivityId={selectedActivityId || ''}
+        ppmpActivityId={selectedActivityId || undefined}
         libActivityId={selectedActivity?.libActivityId}
+        orphanDetails={lib?.orphanDetails}
         groupToEdit={groupDialogEditGroup}
+        existingObjectIds={existingObjectIds}
       />
 
       <ConfirmAlertDialog
@@ -3064,6 +3525,21 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
           masterPpmpId={ppmp.consolidatedIntoId}
         />
       )}
+
+      <AssociateMarketScopingDialog
+        open={associateMsfOpen}
+        onOpenChange={setAssociateMsfOpen}
+        targetType={associateMsfTarget.type}
+        targetLineItemBudgetId={associateMsfTarget.targetLineItemBudgetId}
+        targetLineItemBudgetActivityId={
+          associateMsfTarget.targetLineItemBudgetActivityId
+        }
+        targetName={associateMsfTarget.targetName}
+        officeId={ppmp.officeId}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['/ppmps'] })
+        }}
+      />
     </PageContainerDashtail>
   )
 }

@@ -12,8 +12,10 @@ import { toast } from 'sonner'
 import {
   ChevronLeft,
   ChevronRight,
+  AlertCircle,
   LucidePackage,
   LucidePackageOpen,
+  MapPin,
   Package,
   RefreshCcw,
   Search,
@@ -22,6 +24,9 @@ import {
   Loader2,
   ChevronDown,
   ChevronUp,
+  Plus,
+  HelpCircle,
+  Sparkles,
 } from 'lucide-react'
 import {
   createQueryHookFromTemplate,
@@ -54,12 +59,17 @@ import { Textarea } from '@/components/ui/textarea'
 import { cn } from '@/lib/utils'
 import DocumentViewer from '@/components/DocumentViewer'
 import { FieldDescriptionTooltip } from '../components/FieldDescriptionTooltip'
+import { RequestItemDialog } from '../catalog/dialogs/RequestItemDialog'
 
-import { getProcurementItemsRequest } from '@/components/features/planning/procurement-item/handlers/getProcurementItemsRequest'
-import { getProcurementItemRequest } from '@/components/features/planning/procurement-item/handlers/getProcurementItemRequest'
 import { getNONCSEItemsRequest } from '@/features/planning/non-cse-item/handlers/getNONCSEItemsRequest'
-import { getNONCSEItemRequest } from '@/features/planning/non-cse-item/handlers/getNONCSEItemRequest'
 import { getProcurementModesRequest } from '@/lib/fiscal-year-and-policies/requests/getProcurementModesRequest'
+import {
+  usePSDBMItems,
+  usePSDBMDepots,
+  usePSDBMCategories,
+  useTriggerPSDBMSync,
+} from '@/features/procurement/psdbm/hooks'
+import { PSDBMCatalogMode, type PSDBMItem } from '@/features/procurement/psdbm/types'
 import { createPPMPItemRequest } from '../handlers/createPPMPItemRequest'
 import { createPPMPItemAllocationRequest } from '../handlers/createPPMPItemAllocationRequest'
 import type { AllocationMonth, ProcurementProjectType } from '../types'
@@ -67,14 +77,23 @@ import type { AllocationMonth, ProcurementProjectType } from '../types'
 import type { ProcurementItem } from '@/components/features/planning/procurement-item/types/procurementItem.types'
 import type { NONCSEItem } from '@/features/planning/non-cse-item/types/non-cse.type'
 
-const useProcurementItems = createQueryHookFromTemplate(
-  getProcurementItemsRequest,
-)
-const useProcurementItem = createQueryHookFromTemplate(
-  getProcurementItemRequest,
-)
+function mapPsdbmToProcurementItem(psdbm: PSDBMItem): ProcurementItem {
+  return {
+    id: psdbm.id || psdbm.itemCode,
+    name: psdbm.description,
+    specifications: psdbm.description,
+    uomName: psdbm.unit,
+    unitPrice: psdbm.unitPrice,
+    hasPrice: true,
+    objectCodeName: psdbm.category || 'General Goods',
+    isCSE: true,
+    isActive: true,
+    productCode: psdbm.itemCode,
+    imageURL: psdbm.imageUrl,
+  } as ProcurementItem
+}
+
 const useNONCSEItems = createQueryHookFromTemplate(getNONCSEItemsRequest)
-const useNONCSEItem = createQueryHookFromTemplate(getNONCSEItemRequest)
 const useProcurementModes = createQueryHookFromTemplate(
   getProcurementModesRequest,
 )
@@ -85,9 +104,13 @@ const useCreatePPMPItemAllocation = createMutationHookFromTemplate(
 
 export interface ItemReviewConfig {
   unitPrice: number
+  plannedQuantity?: number
   procurementModeId: string
   projectType:
-    'Goods' | 'Infrastructure' | 'ConsultingServices' | 'GeneralSupportServices'
+    | 'Goods'
+    | 'Infrastructure'
+    | 'ConsultingServices'
+    | 'GeneralSupportServices'
   papCode: string
   preProcurementConference: boolean
   procurementStartDate: string
@@ -103,6 +126,11 @@ interface AddPPMPItemsModalProps {
   isOpen: boolean
   onOpenChange: (open: boolean) => void
   ppmpExpenditureItemId: string
+  officeId?: string
+  officeName?: string
+  fiscalYear?: number | string
+  ppmpTitle?: string
+  expenditureItemTitle?: string
   onSuccess?: () => void
 }
 
@@ -114,7 +142,7 @@ interface TabFilters {
   pageIndex: number
 }
 
-const PAGE_SIZE = 8
+const PAGE_SIZE = 25
 const DEFAULT_FILTERS: TabFilters = {
   categories: [],
   unitOfMeasures: [],
@@ -154,12 +182,25 @@ function tone(value: string): string {
   return tones[valHash % tones.length] ?? tones[0]!
 }
 
-function EmptyState({ message }: { message: string }) {
+function EmptyState({ message, onRequestItem }: { message: string; onRequestItem?: () => void }) {
   return (
-    <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 px-6 py-14 text-center">
-      <Package className="h-10 w-10 text-muted-foreground/40" />
-      <p className="mt-3 text-sm font-medium text-foreground">No items found</p>
+    <div className="flex flex-col items-center justify-center rounded-2xl border border-primary/25 bg-linear-to-b from-primary/5 via-muted/15 to-transparent px-6 py-12 text-center shadow-xs">
+      <div className="h-12 w-12 rounded-2xl bg-primary/10 flex items-center justify-center text-primary mb-1">
+        <Package className="h-6 w-6 text-primary" />
+      </div>
+      <p className="mt-2 text-sm font-semibold text-foreground">No items found</p>
       <p className="mt-1 max-w-sm text-xs text-muted-foreground">{message}</p>
+      {onRequestItem && (
+        <Button
+          type="button"
+          size="sm"
+          onClick={onRequestItem}
+          className="mt-4 gap-1.5 text-xs font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs transition-all hover:scale-[1.02] active:scale-[0.98]"
+        >
+          <Plus className="h-3.5 w-3.5" />
+          Create Item Request
+        </Button>
+      )}
     </div>
   )
 }
@@ -171,6 +212,11 @@ export default function AddPPMPItemsModal({
   isOpen,
   onOpenChange,
   ppmpExpenditureItemId,
+  officeId,
+  officeName,
+  fiscalYear,
+  ppmpTitle,
+  expenditureItemTitle,
   onSuccess,
 }: AddPPMPItemsModalProps) {
   const queryClient = useQueryClient()
@@ -187,6 +233,9 @@ export default function AddPPMPItemsModal({
     Map<string, SelectedItemWrapper>
   >(new Map())
   const [isFiltersCollapsed, setIsFiltersCollapsed] = useState(false)
+
+  // Request Item Dialog state
+  const [requestItemDialogOpen, setRequestItemDialogOpen] = useState(false)
 
   // Configure step inputs
   const [configs, setConfigs] = useState<Record<string, ItemReviewConfig>>({})
@@ -211,24 +260,93 @@ export default function AddPPMPItemsModal({
     'non-cse': cloneFilters(),
   })
 
-  // Queries
-  const { data: itemsResponse, isLoading: isItemsLoading } =
-    useProcurementItems({
-      pathParams: {},
-      queryParams: {
-        pageNumber: 1,
-        pageSize: 1000,
-      },
-      enabled: isOpen,
-    })
+  // Live CSE Query from PS-DBM
+  const [cseMode, setCseMode] = useState<PSDBMCatalogMode>(
+    PSDBMCatalogMode.REGIONAL,
+  )
+  const [selectedDepot, setSelectedDepot] = useState<string>('')
+
+  const { data: depotsData, isLoading: isDepotsLoading } = usePSDBMDepots({
+    enabled: isOpen && activeTab === 'cse',
+  })
+
+  const { data: psdbmCategoriesResponse } = usePSDBMCategories({
+    pathParams: { mode: cseMode },
+    enabled: isOpen && activeTab === 'cse',
+  })
+
+  const depots = useMemo(() => {
+    const allDepots = depotsData?.data || []
+    if (cseMode === PSDBMCatalogMode.REGIONAL) {
+      return allDepots.filter(
+        (d) =>
+          d.mode?.toLowerCase() === 'regional' ||
+          (!d.mode && !d.name.includes('(LGU)') && !d.region?.includes('LGU')),
+      )
+    }
+    if (cseMode === PSDBMCatalogMode.LGU) {
+      return allDepots.filter(
+        (d) =>
+          d.mode?.toLowerCase() === 'lgu' ||
+          (!d.mode && (d.name.includes('(LGU)') || d.region?.includes('LGU'))),
+      )
+    }
+    return allDepots
+  }, [depotsData, cseMode])
+
+  const isDepotRequired = cseMode !== PSDBMCatalogMode.MAIN
+  const isReadyToFetchCse = !isDepotRequired || Boolean(selectedDepot)
+
+  const currentFilters = filtersByTab[activeTab]
+  const normalizedSearch = search.trim().toLowerCase()
+
+  const {
+    data: psdbmItemsResponse,
+    isLoading: isPsdbmLoading,
+    refetch: refetchPsdbm,
+  } = usePSDBMItems({
+    pathParams: { mode: cseMode },
+    queryParams: {
+      depot: (cseMode !== PSDBMCatalogMode.MAIN && selectedDepot) || undefined,
+      search: normalizedSearch || undefined,
+      category:
+        currentFilters.categories.length > 0
+          ? currentFilters.categories[0]
+          : undefined,
+      pageNumber: currentFilters.pageIndex + 1,
+      pageSize: PAGE_SIZE,
+    },
+    enabled: isOpen && activeTab === 'cse' && isReadyToFetchCse,
+  })
+
+  const { mutateAsync: triggerSync, isPending: isSyncing } =
+    useTriggerPSDBMSync()
+
+  const lastSyncTime = useMemo(() => {
+    const timestamp = psdbmItemsResponse?.data?.lastSynchronizedAt
+    if (!timestamp) return null
+    try {
+      return new Date(timestamp).toLocaleString('en-PH', {
+        dateStyle: 'medium',
+        timeStyle: 'short',
+      })
+    } catch {
+      return null
+    }
+  }, [psdbmItemsResponse])
 
   const { data: nonCseResponse, isLoading: isNonCseLoading } = useNONCSEItems({
     pathParams: {},
     queryParams: {
-      pageNumber: 1,
-      pageSize: 1000,
+      search: normalizedSearch || undefined,
+      category:
+        currentFilters.categories.length > 0
+          ? currentFilters.categories[0]
+          : undefined,
+      pageNumber: currentFilters.pageIndex + 1,
+      pageSize: PAGE_SIZE,
     },
-    enabled: isOpen,
+    enabled: isOpen && activeTab === 'non-cse',
   })
 
   const { data: modesResponse } = useProcurementModes({
@@ -239,30 +357,9 @@ export default function AddPPMPItemsModal({
     enabled: isOpen,
   })
 
-  const { data: cseDetailResponse, isLoading: isCseDetailLoading } =
-    useProcurementItem({
-      pathParams: { id: detailsItemId ?? '' },
-      queryParams: {},
-      enabled: !!detailsItemId && detailsItemType === 'cse',
-    })
-
-  const { data: nonCseDetailResponse, isLoading: isNonCseDetailLoading } =
-    useNONCSEItem({
-      pathParams: { id: detailsItemId ?? '' },
-      queryParams: {},
-      enabled: !!detailsItemId && detailsItemType === 'non-cse',
-    })
-
-  const detailData =
-    detailsItemType === 'cse'
-      ? cseDetailResponse?.data
-      : nonCseDetailResponse?.data
-  const isDetailLoading =
-    detailsItemType === 'cse' ? isCseDetailLoading : isNonCseDetailLoading
-
   const procurementItems = useMemo(
-    () => itemsResponse?.data ?? [],
-    [itemsResponse],
+    () => (psdbmItemsResponse?.data?.items || []).map(mapPsdbmToProcurementItem),
+    [psdbmItemsResponse],
   )
   const nonCseItems = useMemo(
     () => nonCseResponse?.data ?? [],
@@ -273,36 +370,28 @@ export default function AddPPMPItemsModal({
     [modesResponse],
   )
 
-  // Partition items into active lists
-  const cseFilteredItems = useMemo(() => {
-    return procurementItems.filter((item) => item.isCSE && item.isActive)
-  }, [procurementItems])
-
-  const nonCseFilteredItems = useMemo(() => {
-    return nonCseItems.filter((item) => item.isActive)
-  }, [nonCseItems])
-
   const currentItems =
-    activeTab === 'cse' ? cseFilteredItems : nonCseFilteredItems
+    activeTab === 'cse' ? procurementItems : nonCseItems
   const isCatalogLoading =
-    activeTab === 'cse' ? isItemsLoading : isNonCseLoading
-  const currentFilters = filtersByTab[activeTab]
-  const normalizedSearch = search.trim().toLowerCase()
+    activeTab === 'cse' ? isPsdbmLoading : isNonCseLoading
 
-  // Generate dynamic filters based on active items in tab
+  // Dynamic filter options
   const filterOptions = useMemo(() => {
     if (activeTab === 'cse') {
-      const items = currentItems as ProcurementItem[]
+      const psdbmCats = (psdbmCategoriesResponse?.data || [])
+        .map((c) => c.name)
+        .filter(Boolean)
+      const itemCats = procurementItems
+        .map((item) => item.objectCodeName)
+        .filter(Boolean)
       return {
-        categories: Array.from(
-          new Set(items.map((item) => item.objectCodeName).filter(Boolean)),
-        ).sort() as string[],
+        categories: Array.from(new Set([...psdbmCats, ...itemCats])).sort() as string[],
         units: Array.from(
-          new Set(items.map((item) => item.uomName).filter(Boolean)),
+          new Set(procurementItems.map((item) => item.uomName).filter(Boolean)),
         ).sort() as string[],
       }
     } else {
-      const items = currentItems as NONCSEItem[]
+      const items = nonCseItems
       return {
         categories: Array.from(
           new Set(
@@ -314,99 +403,44 @@ export default function AddPPMPItemsModal({
         ).sort() as string[],
       }
     }
-  }, [currentItems, activeTab])
+  }, [activeTab, psdbmCategoriesResponse, procurementItems, nonCseItems])
 
-  // Local filtering logic depending on item properties
-  const filteredItems = useMemo(() => {
+  // Resolve active item for View Details sheet directly from current/selected catalog data
+  const activeDetailItem = useMemo(() => {
+    if (!detailsItemId) return null
+    const fromCurrent = currentItems.find((i) => i.id === detailsItemId)
+    if (fromCurrent) return fromCurrent
+    const fromSelected = selectedItems.get(detailsItemId)?.item
+    return (fromSelected as ProcurementItem | NONCSEItem) || null
+  }, [detailsItemId, currentItems, selectedItems])
+
+  const detailData = activeDetailItem
+  const isDetailLoading = false
+
+  // Server-driven pagination metadata
+  const totalMatchingCount = useMemo(() => {
     if (activeTab === 'cse') {
-      const items = currentItems as ProcurementItem[]
-      return items.filter((item) => {
-        if (normalizedSearch) {
-          const matchesName = item.name
-            ?.toLowerCase()
-            .includes(normalizedSearch)
-          const matchesSpecs = item.specifications
-            ?.toLowerCase()
-            .includes(normalizedSearch)
-          const matchesObjCode = item.objectCodeName
-            ?.toLowerCase()
-            .includes(normalizedSearch)
-          const matchesUnspsc = item.unspscCodeName
-            ?.toLowerCase()
-            .includes(normalizedSearch)
-          if (
-            !matchesName &&
-            !matchesSpecs &&
-            !matchesObjCode &&
-            !matchesUnspsc
-          )
-            return false
-        }
-
-        if (
-          currentFilters.categories.length > 0 &&
-          (!item.objectCodeName ||
-            !currentFilters.categories.includes(item.objectCodeName))
-        ) {
-          return false
-        }
-
-        if (
-          currentFilters.unitOfMeasures.length > 0 &&
-          (!item.uomName ||
-            !currentFilters.unitOfMeasures.includes(item.uomName))
-        ) {
-          return false
-        }
-
-        return true
-      })
-    } else {
-      const items = currentItems as NONCSEItem[]
-      return items.filter((item) => {
-        if (normalizedSearch) {
-          const matchesName = item.name
-            ?.toLowerCase()
-            .includes(normalizedSearch)
-          const matchesDesc = item.description
-            ?.toLowerCase()
-            .includes(normalizedSearch)
-          const matchesCategory = item.procurementCategoryName
-            ?.toLowerCase()
-            .includes(normalizedSearch)
-          if (!matchesName && !matchesDesc && !matchesCategory) return false
-        }
-
-        if (
-          currentFilters.categories.length > 0 &&
-          (!item.procurementCategoryName ||
-            !currentFilters.categories.includes(item.procurementCategoryName))
-        ) {
-          return false
-        }
-
-        if (
-          currentFilters.unitOfMeasures.length > 0 &&
-          (!item.uomName ||
-            !currentFilters.unitOfMeasures.includes(item.uomName))
-        ) {
-          return false
-        }
-
-        return true
-      })
+      return psdbmItemsResponse?.data?.totalItems ?? 0
     }
-  }, [currentFilters, currentItems, normalizedSearch, activeTab])
+    return (
+      nonCseResponse?.totalRows ?? (nonCseResponse?.data?.length ?? 0)
+    )
+  }, [activeTab, psdbmItemsResponse, nonCseResponse])
 
-  // Pagination details
-  const pageCount = Math.max(1, Math.ceil(filteredItems.length / PAGE_SIZE))
-  const safePageIndex = Math.min(currentFilters.pageIndex, pageCount - 1)
-  const pageItems = filteredItems.slice(
-    safePageIndex * PAGE_SIZE,
-    safePageIndex * PAGE_SIZE + PAGE_SIZE,
-  )
+  const pageCount = Math.max(1, Math.ceil(totalMatchingCount / PAGE_SIZE))
+  const safePageIndex = Math.min(currentFilters.pageIndex, Math.max(0, pageCount - 1))
+  const pageItems = currentItems
 
   const selectedCount = selectedItems.size
+
+  const totalStep2EstimatedCost = useMemo(() => {
+    return Array.from(selectedItems.values()).reduce((sum, { item }) => {
+      const config = configs[item.id]
+      if (!config) return sum
+      const qty = config.plannedQuantity || 0
+      return sum + qty * config.unitPrice
+    }, 0)
+  }, [selectedItems, configs])
 
   // Warnings during unload
   useEffect(() => {
@@ -445,6 +479,50 @@ export default function AddPPMPItemsModal({
     [activeTab],
   )
 
+  const handleSyncDepot = useCallback(async () => {
+    const target =
+      selectedDepot ||
+      (cseMode === PSDBMCatalogMode.MAIN ? 'Main Catalog' : 'Catalog')
+
+    const syncPromise = (async () => {
+      const response = await triggerSync({
+        pathParams: {},
+        payload: {
+          syncMode: 'Full',
+          depots: selectedDepot ? [selectedDepot] : undefined,
+          mode:
+            cseMode === PSDBMCatalogMode.REGIONAL
+              ? 'regional'
+              : cseMode === PSDBMCatalogMode.LGU
+                ? 'lgu'
+                : undefined,
+        },
+      })
+      await refetchPsdbm()
+      updateCurrentFilters({ pageIndex: 0 })
+      return response.data
+    })()
+
+    toast.promise(syncPromise, {
+      loading: `Connecting to PS-PhilGEPS and synchronizing ${target} warehouse stocks...`,
+      success: () =>
+        `Successfully synchronized ${target}! Items and stocks updated.`,
+      error: (err: unknown) => {
+        const errorObj = err as {
+          response?: { data?: { message?: string } }
+          message?: string
+        }
+        return `Sync failed: ${errorObj?.response?.data?.message || errorObj?.message || 'Please check backend logs.'}`
+      },
+    })
+
+    try {
+      await syncPromise
+    } catch (err) {
+      console.error('PSDBM sync error:', err)
+    }
+  }, [selectedDepot, cseMode, triggerSync, refetchPsdbm, updateCurrentFilters])
+
   const resetCurrentFilters = useCallback(() => {
     setSearch('')
     setFiltersByTab((prev) => ({ ...prev, [activeTab]: cloneFilters() }))
@@ -479,6 +557,7 @@ export default function AddPPMPItemsModal({
             ...prevConfigs,
             [item.id]: {
               unitPrice: price,
+              plannedQuantity: undefined,
               procurementModeId: '',
               projectType: 'Goods',
               papCode: '',
@@ -569,10 +648,10 @@ export default function AddPPMPItemsModal({
       return
     }
 
-    const selectedList = Array.from(selectedItems.values())
     const invalidItems = selectedList.filter(({ item }) => {
       const config = configs[item.id]
       if (!config) return true
+      if (!config.plannedQuantity || config.plannedQuantity < 1) return true
       if (!config.procurementModeId) return true
       if (config.unitPrice < 0.01) return true
       if (!config.procurementStartDate || !config.procurementEndDate || config.procurementEndDate < config.procurementStartDate) return true
@@ -583,14 +662,14 @@ export default function AddPPMPItemsModal({
           (a, b) => a + b,
           0,
         )
-        if (totalAllocQty <= 0) return true
+        if (totalAllocQty > (config.plannedQuantity || 0)) return true
       }
       return false
     })
 
     if (invalidItems.length > 0) {
       toast.warning(
-        'All items must have a selected Procurement Mode, a unit price >= ₱0.01, valid procurement and delivery timeline dates, and monthly quantities if allocations are enabled.',
+        'All items must have a Planned Quantity (>= 1), selected Procurement Mode, unit price >= ₱0.01, valid timeline dates, and monthly allocations not exceeding planned quantity.',
       )
       return
     }
@@ -633,8 +712,9 @@ export default function AddPPMPItemsModal({
                 : (item as NONCSEItem).description || '',
             unit: item.uomName || '',
             unitPrice: config.unitPrice,
+            plannedQuantity: config.plannedQuantity || 1,
             procurementModeId: config.procurementModeId,
-            cseItemId: type === 'cse' ? item.id : undefined,
+            cseItemId: undefined,
             nonCseItemId: type === 'non-cse' ? item.id : undefined,
             projectType: config.projectType,
             papCode: config.papCode || undefined,
@@ -727,9 +807,7 @@ export default function AddPPMPItemsModal({
       // If all items succeeded, mark committed and close cleanly
       if (failedCount === 0 && successCount > 0) {
         isCommittedRef.current = true
-        setConfirmCloseOpen(false)
-        handleReset()
-        onOpenChange(false)
+        forceClose()
       }
     } catch (globalErr) {
       toast.error('An error occurred during batch creation.')
@@ -798,7 +876,10 @@ export default function AddPPMPItemsModal({
                     ? selectedCount > 0
                       ? 'Items ready to be configured.'
                       : 'Select one or more items to continue.'
-                    : 'Specify unit prices and procurement mode to finalize.'}
+                    : `Total Planned Cost: ${new Intl.NumberFormat('en-PH', {
+                        style: 'currency',
+                        currency: 'PHP',
+                      }).format(totalStep2EstimatedCost)}`}
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -815,7 +896,12 @@ export default function AddPPMPItemsModal({
                     </Button>
                     <Button
                       size="sm"
-                      onClick={() => setStep('configure')}
+                      onClick={() => {
+                        setStep('configure')
+                        if (selectedList.length > 0 && !expandedItemId) {
+                          setExpandedItemId(selectedList[0].item.id)
+                        }
+                      }}
                       disabled={selectedCount === 0}
                     >
                       Review Selected ({selectedCount})
@@ -846,7 +932,7 @@ export default function AddPPMPItemsModal({
                           Adding...
                         </>
                       ) : (
-                        'Add to Workspace'
+                        `Add to Workspace (${selectedCount})`
                       )}
                     </Button>
                   </>
@@ -933,22 +1019,6 @@ export default function AddPPMPItemsModal({
 
               {(['cse', 'non-cse'] as const).map((tab) => {
                 const tabFilters = filtersByTab[tab]
-                const tabItems =
-                  tab === 'cse' ? cseFilteredItems : nonCseFilteredItems
-                const tabFiltered = tab === activeTab ? filteredItems : tabItems
-                const tabPageCount =
-                  tab === activeTab
-                    ? pageCount
-                    : Math.max(1, Math.ceil(tabFiltered.length / PAGE_SIZE))
-                const tabPageIndex =
-                  tab === activeTab ? safePageIndex : tabFilters.pageIndex
-                const tabPageItems =
-                  tab === activeTab
-                    ? pageItems
-                    : tabFiltered.slice(
-                        tabPageIndex * PAGE_SIZE,
-                        tabPageIndex * PAGE_SIZE + PAGE_SIZE,
-                      )
 
                 return (
                   <TabsContent key={tab} value={tab} className="mt-4">
@@ -1013,9 +1083,10 @@ export default function AddPPMPItemsModal({
                                     size="sm"
                                     onClick={resetCurrentFilters}
                                     className="h-8 gap-1 px-2 text-xs"
+                                    title="Clear search and selected filters"
                                   >
                                     <RefreshCcw className="h-3.5 w-3.5" />
-                                    Reset
+                                    Reset Filters
                                   </Button>
                                   <Button
                                     type="button"
@@ -1035,6 +1106,139 @@ export default function AddPPMPItemsModal({
 
                           {!isFiltersCollapsed ? (
                             <div className="space-y-4 p-4">
+                              {tab === 'cse' && (
+                                <>
+                                  <div className="space-y-2">
+                                    <label className="text-xs font-medium text-muted-foreground">
+                                      PS-DBM Catalog Mode
+                                    </label>
+                                    <div className="grid grid-cols-3 gap-1">
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setCseMode(PSDBMCatalogMode.REGIONAL)
+                                          setSelectedDepot('')
+                                          updateCurrentFilters({ pageIndex: 0 })
+                                        }}
+                                        className={cn(
+                                          'rounded-md border px-1.5 py-1.5 text-xs font-medium transition-colors text-center truncate',
+                                          cseMode === PSDBMCatalogMode.REGIONAL
+                                            ? 'border-primary bg-primary/10 text-foreground'
+                                            : 'border-border bg-background text-muted-foreground hover:text-foreground',
+                                        )}
+                                        title="Regional Depot"
+                                      >
+                                        Regional
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setCseMode(PSDBMCatalogMode.LGU)
+                                          setSelectedDepot('')
+                                          updateCurrentFilters({ pageIndex: 0 })
+                                        }}
+                                        className={cn(
+                                          'rounded-md border px-1.5 py-1.5 text-xs font-medium transition-colors text-center truncate',
+                                          cseMode === PSDBMCatalogMode.LGU
+                                            ? 'border-primary bg-primary/10 text-foreground'
+                                            : 'border-border bg-background text-muted-foreground hover:text-foreground',
+                                        )}
+                                        title="LGU Depot"
+                                      >
+                                        LGU
+                                      </button>
+                                      <button
+                                        type="button"
+                                        onClick={() => {
+                                          setCseMode(PSDBMCatalogMode.MAIN)
+                                          setSelectedDepot('')
+                                          updateCurrentFilters({ pageIndex: 0 })
+                                        }}
+                                        className={cn(
+                                          'rounded-md border px-1.5 py-1.5 text-xs font-medium transition-colors text-center truncate',
+                                          cseMode === PSDBMCatalogMode.MAIN
+                                            ? 'border-primary bg-primary/10 text-foreground'
+                                            : 'border-border bg-background text-muted-foreground hover:text-foreground',
+                                        )}
+                                        title="Main (National Catalog)"
+                                      >
+                                        Main
+                                      </button>
+                                    </div>
+                                  </div>
+
+                                  {isDepotRequired && (
+                                    <div className="space-y-1.5">
+                                      <label className="text-xs font-medium text-muted-foreground">
+                                        {cseMode === PSDBMCatalogMode.REGIONAL
+                                          ? 'Regional Warehouse / Depot'
+                                          : 'LGU Location'}
+                                      </label>
+                                      <Select
+                                        value={selectedDepot}
+                                        onValueChange={(val) => {
+                                          setSelectedDepot(val)
+                                          updateCurrentFilters({ pageIndex: 0 })
+                                        }}
+                                        disabled={isDepotsLoading}
+                                      >
+                                        <SelectTrigger className="h-9 text-xs bg-background">
+                                          <SelectValue placeholder="Choose a depot to load warehouse stocks..." />
+                                        </SelectTrigger>
+                                        <SelectContent className="max-h-56">
+                                          {depots.map((d) => (
+                                            <SelectItem
+                                              key={d.id}
+                                              value={d.name}
+                                              className="text-xs"
+                                            >
+                                              {d.name}{' '}
+                                              {d.region ? `(${d.region})` : ''}
+                                            </SelectItem>
+                                          ))}
+                                        </SelectContent>
+                                      </Select>
+                                      {isReadyToFetchCse && (
+                                        <div className="flex items-center justify-between pt-1 text-[11px] text-muted-foreground">
+                                          {lastSyncTime && totalMatchingCount > 0 ? (
+                                            <span
+                                              className="truncate max-w-[125px]"
+                                              title={`Last Synced: ${lastSyncTime}`}
+                                            >
+                                              Synced: {lastSyncTime}
+                                            </span>
+                                          ) : (
+                                            <span>Catalog sync</span>
+                                          )}
+                                          <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="sm"
+                                            onClick={handleSyncDepot}
+                                            disabled={isSyncing}
+                                            className="h-6 px-1.5 text-[10px] font-semibold text-primary hover:bg-primary/10 gap-1"
+                                          >
+                                            {isSyncing ? (
+                                              <>
+                                                <Loader2 className="h-3 w-3 animate-spin" />
+                                                Syncing...
+                                              </>
+                                            ) : (
+                                              <>
+                                                <RefreshCcw className="h-3 w-3" />
+                                                Sync PS-DBM
+                                              </>
+                                            )}
+                                          </Button>
+                                        </div>
+                                      )}
+                                    </div>
+                                  )}
+
+                                  <Separator />
+                                </>
+                              )}
+
                               {/* Search Input */}
                               <div className="space-y-2">
                                 <label className="text-xs font-medium text-muted-foreground">
@@ -1045,9 +1249,10 @@ export default function AddPPMPItemsModal({
                                   <Input
                                     placeholder="Name, description, category…"
                                     value={search}
-                                    onChange={(event) =>
+                                    onChange={(event) => {
                                       setSearch(event.target.value)
-                                    }
+                                      updateCurrentFilters({ pageIndex: 0 })
+                                    }}
                                     className="pl-9 text-xs h-9"
                                   />
                                 </div>
@@ -1186,28 +1391,126 @@ export default function AddPPMPItemsModal({
 
                       {/* Items Grid & Pagination */}
                       <section className="space-y-4 min-w-0">
-                        {isCatalogLoading ? (
+                        {activeTab === 'cse' && !isReadyToFetchCse ? (
+                          <div className="flex flex-col items-center justify-center rounded-xl border border-dashed border-border bg-muted/20 px-6 py-14 text-center">
+                            <MapPin className="h-10 w-10 text-muted-foreground/40" />
+                            <p className="mt-3 text-sm font-medium text-foreground">
+                              Depot Selection Required
+                            </p>
+                            <p className="mt-1 max-w-sm text-xs text-muted-foreground">
+                              Please select a{' '}
+                              {cseMode === PSDBMCatalogMode.REGIONAL
+                                ? 'regional warehouse depot'
+                                : 'LGU location'}{' '}
+                              in the side panel to view current stock and
+                              prices, or switch to Main Catalog.
+                            </p>
+                          </div>
+                        ) : isCatalogLoading ? (
                           <div className="flex flex-col items-center justify-center py-20 text-muted-foreground space-y-2">
                             <Loader2 className="h-8 w-8 animate-spin text-primary" />
-                            <p className="text-xs">Loading library items...</p>
+                            <p className="text-xs">
+                              {activeTab === 'cse'
+                                ? 'Loading PS-DBM items...'
+                                : 'Loading master catalog items...'}
+                            </p>
                           </div>
-                        ) : tabFiltered.length === 0 ? (
-                          <EmptyState message="Try clearing filters or checking your search query." />
+                        ) : totalMatchingCount === 0 ? (
+                          activeTab === 'cse' &&
+                          isReadyToFetchCse &&
+                          !search.trim() &&
+                          currentFilters.categories.length === 0 ? (
+                            <div className="flex flex-col items-center justify-center py-16 px-4 text-center border border-dashed rounded-xl bg-muted/10 my-4">
+                              <div className="rounded-full bg-amber-500/10 p-3 mb-3 text-amber-600 dark:text-amber-400">
+                                <AlertCircle className="h-6 w-6" />
+                              </div>
+                              <h4 className="text-sm font-semibold text-foreground">
+                                {selectedDepot
+                                  ? `Warehouse Stocks for ${selectedDepot} Not Synchronized`
+                                  : 'PS-DBM Catalog Not Synchronized'}
+                              </h4>
+                              <p className="mt-1 max-w-md text-xs text-muted-foreground">
+                                {selectedDepot
+                                  ? `No items are available locally for ${selectedDepot}. Click Sync PS-DBM Now to fetch real-time items, stocks, and pricing from PS-PhilGEPS.`
+                                  : 'Click Sync PS-DBM Now to synchronize catalog items and pricing.'}
+                              </p>
+                              <Button
+                                type="button"
+                                size="sm"
+                                onClick={handleSyncDepot}
+                                disabled={isSyncing}
+                                className="mt-4 gap-1.5 h-8 text-xs font-semibold"
+                              >
+                                {isSyncing ? (
+                                  <>
+                                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                                    Syncing PS-DBM...
+                                  </>
+                                ) : (
+                                  <>
+                                    <RefreshCcw className="h-3.5 w-3.5" />
+                                    Sync PS-DBM Now
+                                  </>
+                                )}
+                              </Button>
+                            </div>
+                          ) : activeTab === 'cse' &&
+                            (search.trim() ||
+                              currentFilters.categories.length > 0) ? (
+                            <div className="flex flex-col items-center justify-center py-14 px-4 text-center border border-dashed rounded-2xl bg-muted/15 my-4">
+                              <div className="rounded-full bg-muted p-3 mb-3 text-muted-foreground">
+                                <Search className="h-6 w-6" />
+                              </div>
+                              <h4 className="text-sm font-semibold text-foreground">
+                                No Matching CSE Items Found
+                              </h4>
+                              <p className="mt-1 max-w-md text-xs text-muted-foreground">
+                                No items match your active search or filters. If the required item is not available in the CSE catalog, you can create a Non-CSE item request.
+                              </p>
+                              <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+                                <Button
+                                  type="button"
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={resetCurrentFilters}
+                                  className="gap-1.5 h-8 text-xs font-semibold"
+                                >
+                                  <RefreshCcw className="h-3.5 w-3.5" />
+                                  Reset Filters
+                                </Button>
+                                <Button
+                                  type="button"
+                                  variant="default"
+                                  size="sm"
+                                  onClick={() => setRequestItemDialogOpen(true)}
+                                  className="gap-1.5 h-8 text-xs font-semibold bg-primary hover:bg-primary/95 text-white shadow-2xs"
+                                >
+                                  <Plus className="h-3.5 w-3.5" />
+                                  Create Item Request
+                                </Button>
+                              </div>
+                            </div>
+                          ) : (
+                            <EmptyState
+                              message="Try clearing filters or checking your search query."
+                              onRequestItem={() => setRequestItemDialogOpen(true)}
+                            />
+                          )
                         ) : (
                           <>
                             {/* Top result info */}
                             <div className="flex items-center justify-between border border-border bg-background px-4 py-3 rounded-xl shadow-sm">
                               <div className="text-xs font-semibold text-foreground">
-                                {tabFiltered.length} matching item(s)
+                                {totalMatchingCount} matching item(s)
                               </div>
                               <div className="text-xs text-muted-foreground">
-                                Page {tabPageIndex + 1} of {tabPageCount}
+                                Page {safePageIndex + 1} of {pageCount}
                               </div>
                             </div>
 
                             {/* Grid layout */}
                             <div className="grid gap-3 min-[350px]:grid-cols-2 sm:grid-cols-3 md:grid-cols-4">
-                              {tabPageItems.map((item) => {
+                              {pageItems.map((item) => {
                                 const isSelected = selectedItems.has(item.id)
                                 const bgTone = tone(item.name || item.id)
                                 const categoryText =
@@ -1264,26 +1567,62 @@ export default function AddPPMPItemsModal({
 
                                     {/* Image Area */}
                                     <div
-                                      className="w-full bg-slate-50/50 rounded-xl border border-slate-100 overflow-hidden flex items-center justify-center p-4 relative min-h-40"
+                                      className="w-full bg-slate-50/70 rounded-xl border border-slate-100 overflow-hidden flex items-center justify-center p-3 relative min-h-36"
                                       onClick={(e) => e.stopPropagation()}
                                     >
-                                      <DocumentViewer
-                                        src={(item as ProcurementItem).imageURL}
-                                        alt={item.name}
-                                        size="full"
-                                        aspectRatio="square"
-                                        className="max-h-35 max-w-35 border-none shadow-none bg-transparent hover:shadow-none"
-                                        fallbackInitials={initials(
-                                          item.name || '',
-                                        )}
-                                        fallbackBgClass={bgTone}
-                                      />
+                                      {(item as ProcurementItem).imageURL ? (
+                                        <div className="relative w-full h-32 flex items-center justify-center">
+                                          <img
+                                            src={(item as ProcurementItem).imageURL}
+                                            alt={item.name}
+                                            className="max-h-32 max-w-full object-contain transition-transform duration-300 group-hover:scale-105"
+                                            onError={(e) => {
+                                              e.currentTarget.style.display = 'none'
+                                              const fallback = e.currentTarget
+                                                .nextElementSibling as HTMLElement | null
+                                              if (fallback) fallback.style.display = 'flex'
+                                            }}
+                                          />
+                                          <div
+                                            style={{ display: 'none' }}
+                                            className={cn(
+                                              'flex-col items-center justify-center rounded-xl bg-gradient-to-br shadow-inner w-16 h-16 gap-1 text-slate-700',
+                                              bgTone,
+                                            )}
+                                          >
+                                            {tab === 'cse' ? (
+                                              <LucidePackage className="h-6 w-6 text-primary/70 stroke-[1.5]" />
+                                            ) : (
+                                              <Package className="h-6 w-6 text-amber-600/70 stroke-[1.5]" />
+                                            )}
+                                            <span className="text-[11px] font-bold font-mono tracking-wider">
+                                              {initials(item.name || '')}
+                                            </span>
+                                          </div>
+                                        </div>
+                                      ) : (
+                                        <div
+                                          className={cn(
+                                            'flex flex-col items-center justify-center rounded-xl bg-gradient-to-br shadow-inner w-16 h-16 gap-1 text-slate-700',
+                                            bgTone,
+                                          )}
+                                        >
+                                          {tab === 'cse' ? (
+                                            <LucidePackage className="h-6 w-6 text-primary/70 stroke-[1.5]" />
+                                          ) : (
+                                            <Package className="h-6 w-6 text-amber-600/70 stroke-[1.5]" />
+                                          )}
+                                          <span className="text-[11px] font-bold font-mono tracking-wider">
+                                            {initials(item.name || '')}
+                                          </span>
+                                        </div>
+                                      )}
                                     </div>
 
                                     {/* Details Area */}
                                     <div className="mt-3.5 space-y-2 flex-1 flex flex-col justify-between">
                                       <div className="space-y-1">
-                                        <h4 className="line-clamp-2 text-xs font-bold text-slate-800 leading-snug group-hover:text-primary transition-colors">
+                                        <h4 className="line-clamp-2 text-xs font-semibold text-slate-800 leading-snug group-hover:text-primary transition-colors">
                                           {item.name || 'Unnamed Item'}
                                         </h4>
                                         <p className="text-[10px] tracking-wide text-slate-400 font-mono">
@@ -1307,21 +1646,27 @@ export default function AddPPMPItemsModal({
                                           </span>
                                         </div>
 
-                                        {tab === 'non-cse' &&
-                                          (item as NONCSEItem).currentPrice !==
-                                            undefined && (
-                                            <div className="text-xs font-bold text-slate-850 flex items-center justify-between border-t border-slate-100/80 pt-1.5 mt-0.5">
-                                              <span className="text-[10px] text-slate-400 font-normal">
-                                                Catalog Price
-                                              </span>
-                                              <span className="text-primary font-extrabold text-[12px]">
-                                                ₱
-                                                {(
-                                                  item as NONCSEItem
-                                                ).currentPrice?.toFixed(2)}
-                                              </span>
-                                            </div>
-                                          )}
+                                        {((tab === 'cse' &&
+                                          (item as ProcurementItem).unitPrice !==
+                                            undefined) ||
+                                          (tab === 'non-cse' &&
+                                            (item as NONCSEItem).currentPrice !==
+                                              undefined)) && (
+                                          <div className="text-xs font-bold text-slate-850 flex items-center justify-between border-t border-slate-100/80 pt-1.5 mt-0.5">
+                                            <span className="text-[10px] text-slate-400 font-normal">
+                                              Catalog Price
+                                            </span>
+                                            <span className="text-primary font-extrabold text-[12px]">
+                                              ₱
+                                              {(tab === 'cse'
+                                                ? (item as ProcurementItem)
+                                                    .unitPrice ?? 0
+                                                : (item as NONCSEItem)
+                                                    .currentPrice ?? 0
+                                              ).toFixed(2)}
+                                            </span>
+                                          </div>
+                                        )}
 
                                         <div className="flex items-center justify-between border-t border-slate-100/80 pt-2 mt-1">
                                           <button
@@ -1359,23 +1704,25 @@ export default function AddPPMPItemsModal({
                             </div>
 
                             {/* Pagination controls */}
-                            {tabPageCount > 1 && (
+                            {pageCount > 1 && (
                               <div className="flex flex-col sm:flex-row items-center justify-between pt-6 border-t border-slate-100 gap-4 mt-6">
                                 <span className="text-xs text-slate-500 font-medium">
                                   Showing items{' '}
                                   <span className="font-semibold text-slate-800">
-                                    {tabPageIndex * PAGE_SIZE + 1}
-                                  </span>
-                                  –
+                                    {totalMatchingCount === 0
+                                      ? 0
+                                      : safePageIndex * PAGE_SIZE + 1}
+                                  </span>{' '}
+                                  –{' '}
                                   <span className="font-semibold text-slate-800">
                                     {Math.min(
-                                      (tabPageIndex + 1) * PAGE_SIZE,
-                                      tabFiltered.length,
+                                      (safePageIndex + 1) * PAGE_SIZE,
+                                      totalMatchingCount,
                                     )}
                                   </span>{' '}
                                   of{' '}
                                   <span className="font-semibold text-slate-800">
-                                    {tabFiltered.length}
+                                    {totalMatchingCount}
                                   </span>
                                 </span>
 
@@ -1384,10 +1731,10 @@ export default function AddPPMPItemsModal({
                                     type="button"
                                     variant="outline"
                                     size="sm"
-                                    disabled={tabPageIndex === 0}
+                                    disabled={safePageIndex === 0}
                                     onClick={() =>
                                       updateCurrentFilters({
-                                        pageIndex: tabPageIndex - 1,
+                                        pageIndex: safePageIndex - 1,
                                       })
                                     }
                                     className="h-8 text-xs font-semibold px-2.5 rounded-lg border-slate-200 hover:bg-slate-50 transition-colors"
@@ -1397,18 +1744,18 @@ export default function AddPPMPItemsModal({
                                   </Button>
 
                                   {/* Page numbers */}
-                                  {Array.from({ length: tabPageCount }).map(
+                                  {Array.from({ length: pageCount }).map(
                                     (_, idx) => {
-                                      const isCurrent = idx === tabPageIndex
+                                      const isCurrent = idx === safePageIndex
                                       const isNear =
-                                        Math.abs(idx - tabPageIndex) <= 2
+                                        Math.abs(idx - safePageIndex) <= 2
                                       const isEnds =
-                                        idx === 0 || idx === tabPageCount - 1
+                                        idx === 0 || idx === pageCount - 1
 
                                       if (!isNear && !isEnds) {
                                         if (
                                           idx === 1 ||
-                                          idx === tabPageCount - 2
+                                          idx === pageCount - 2
                                         ) {
                                           return (
                                             <span
@@ -1452,10 +1799,10 @@ export default function AddPPMPItemsModal({
                                     type="button"
                                     variant="outline"
                                     size="sm"
-                                    disabled={tabPageIndex === tabPageCount - 1}
+                                    disabled={safePageIndex >= pageCount - 1}
                                     onClick={() =>
                                       updateCurrentFilters({
-                                        pageIndex: tabPageIndex + 1,
+                                        pageIndex: safePageIndex + 1,
                                       })
                                     }
                                     className="h-8 text-xs font-semibold px-2.5 rounded-lg border-slate-200 hover:bg-slate-50 transition-colors"
@@ -1468,6 +1815,38 @@ export default function AddPPMPItemsModal({
                             )}
                           </>
                         )}
+
+                        {/* Persistent "Can't find the item you need?" Highlighted Context Strip */}
+                        <div className="mt-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3.5 p-4 rounded-2xl border border-primary/25 bg-linear-to-r from-primary/8 via-primary/4 to-transparent shadow-xs transition-all hover:border-primary/40">
+                          <div className="flex items-center gap-3">
+                            <div className="h-9 w-9 rounded-xl bg-primary/15 text-primary flex items-center justify-center shrink-0 shadow-2xs">
+                              <HelpCircle className="h-4.5 w-4.5" />
+                            </div>
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <p className="text-xs font-semibold text-foreground">
+                                  Can't find the item you need?
+                                </p>
+                                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-primary/10 text-primary text-[10px] font-semibold">
+                                  <Sparkles className="h-2.5 w-2.5" />
+                                  New Request
+                                </span>
+                              </div>
+                              <p className="text-[11px] text-muted-foreground mt-0.5">
+                                Request a new item not currently available in the catalog for Technical Working Group evaluation.
+                              </p>
+                            </div>
+                          </div>
+                          <Button
+                            type="button"
+                            size="sm"
+                            onClick={() => setRequestItemDialogOpen(true)}
+                            className="gap-1.5 text-xs shrink-0 font-semibold bg-primary hover:bg-primary/90 text-primary-foreground shadow-xs transition-all hover:scale-[1.02] active:scale-[0.98] h-8.5 px-3.5"
+                          >
+                            <Plus className="h-3.5 w-3.5" />
+                            Create Item Request
+                          </Button>
+                        </div>
                       </section>
                     </div>
                   </TabsContent>
@@ -1477,31 +1856,37 @@ export default function AddPPMPItemsModal({
           </div>
         ) : (
           /* Step 2: Review and Batch Configuration */
-          <div className="space-y-4">
-            <div className="rounded-xl border border-border bg-muted/20 p-4 shadow-sm flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+          <div className="space-y-4 font-sans">
+            {/* Header Banner */}
+            <div className="rounded-xl border border-border bg-muted/20 p-4 shadow-xs flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
               <div>
                 <h3 className="text-sm font-semibold text-foreground flex items-center gap-2">
                   <SlidersHorizontal className="h-4 w-4 text-primary" />
-                  Configure Item Details & Allocations
+                  Configure Selected Items
                 </h3>
-                <p className="text-xs text-muted-foreground">
-                  Expand each item below to set its Procurement Mode, Project
-                  Type, and optional monthly quantities.
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Review and configure procurement parameters, delivery timelines, and optional monthly quantity distributions for each selected item.
                 </p>
+              </div>
+              <div className="flex items-center gap-2 shrink-0">
+                <Badge variant="soft" color="default" className="font-semibold text-xs px-2.5 py-1">
+                  {selectedCount} {selectedCount === 1 ? 'Item' : 'Items'} to Configure
+                </Badge>
               </div>
             </div>
 
-            <div className="border border-border rounded-xl overflow-hidden shadow-sm">
+            {/* Scrollable Items Container */}
+            <div className="border border-border rounded-xl overflow-hidden shadow-xs">
               <div className="bg-muted/30 px-4 py-3 border-b border-border flex justify-between items-center">
                 <span className="text-xs font-bold text-foreground">
-                  Items Preview ({selectedCount})
+                  Selected Items ({selectedCount})
                 </span>
-                <span className="text-[10px] text-muted-foreground uppercase tracking-wider">
-                  Expand to Edit
+                <span className="text-[10px] text-muted-foreground uppercase tracking-wider font-semibold">
+                  Click any item to expand / edit
                 </span>
               </div>
 
-              <ScrollArea className="max-h-125 overflow-y-auto">
+              <ScrollArea className="max-h-[60vh] overflow-y-auto">
                 <div className="divide-y divide-border">
                   {selectedList.map(({ type, item }, index) => {
                     const isPriceLocked =
@@ -1551,19 +1936,23 @@ export default function AddPPMPItemsModal({
                     }
 
                     const isExpanded = expandedItemId === item.id
-                    const totalQty = config.enableAllocations
+                    const plannedQty = config.plannedQuantity || 0
+                    const allocatedQty = config.enableAllocations
                       ? Object.values(config.monthlyQuantities).reduce(
                           (a, b) => a + b,
                           0,
                         )
                       : 0
-                    const calculatedTotal = totalQty * config.unitPrice
+                    const remainingQty = Math.max(0, plannedQty - allocatedQty)
+                    const calculatedTotal = plannedQty * config.unitPrice
 
+                    const hasQtyError =
+                      !config.plannedQuantity || config.plannedQuantity < 1
                     const hasPriceError =
                       !config.unitPrice || config.unitPrice < 0.01
                     const hasMopError = !config.procurementModeId
                     const hasAllocError =
-                      config.enableAllocations && totalQty <= 0
+                      config.enableAllocations && allocatedQty > plannedQty
                     
                     const hasProcStartError = !config.procurementStartDate
                     const hasProcEndError =
@@ -1580,6 +1969,7 @@ export default function AddPPMPItemsModal({
                         config.expectedDeliveryEnd < config.expectedDeliveryStart)
 
                     const hasAnyError =
+                      hasQtyError ||
                       hasPriceError ||
                       hasMopError ||
                       hasAllocError ||
@@ -1596,6 +1986,12 @@ export default function AddPPMPItemsModal({
                       type === 'cse'
                         ? (item as ProcurementItem).objectCodeName
                         : (item as NONCSEItem).procurementCategoryName
+                    const productCode =
+                      type === 'cse'
+                        ? (item as ProcurementItem).productCode
+                        : (item as NONCSEItem).productCode
+                    const imgUrl =
+                      (item as ProcurementItem).imageURL || (item as any).imageUrl
 
                     const MONTH_NAMES: AllocationMonth[] = [
                       'January',
@@ -1612,85 +2008,107 @@ export default function AddPPMPItemsModal({
                       'December',
                     ]
 
+                    const formatCurrency = (val: number): string =>
+                      new Intl.NumberFormat('en-PH', {
+                        style: 'currency',
+                        currency: 'PHP',
+                      }).format(val || 0)
+
                     return (
                       <div
                         key={item.id}
                         className={cn(
-                          'p-4 bg-background transition-colors flex flex-col gap-4 border-l-4',
+                          'p-4 sm:p-5 bg-background transition-colors flex flex-col gap-4 border-l-4',
                           hasAnyError
-                            ? 'border-l-red-500 bg-red-500/1.5'
-                            : 'border-l-transparent hover:bg-muted/5',
+                            ? 'border-l-amber-500 bg-amber-500/2'
+                            : 'border-l-emerald-500 bg-emerald-500/2',
                         )}
                       >
-                        {/* Header Summary Row */}
+                        {/* ========================================================= */}
+                        {/* SECTION A: ITEM SUMMARY HEADER                            */}
+                        {/* ========================================================= */}
                         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
                           <div
-                            className="min-w-0 flex-1 flex gap-3 cursor-pointer select-none"
+                            className="min-w-0 flex-1 flex items-start sm:items-center gap-3.5 cursor-pointer select-none"
                             onClick={() =>
                               setExpandedItemId(isExpanded ? null : item.id)
                             }
                           >
-                            {(item as ProcurementItem).imageURL && (
-                              <DocumentViewer
-                                src={(item as ProcurementItem).imageURL}
-                                alt={item.name}
-                                size="xs"
-                                aspectRatio="square"
-                                enableLightbox={false}
-                              />
-                            )}
+                            {/* Item Thumbnail / Avatar */}
+                            <div className="h-12 w-12 shrink-0 rounded-xl overflow-hidden border border-border bg-slate-50 dark:bg-slate-900/50 flex items-center justify-center shadow-2xs">
+                              {imgUrl ? (
+                                <img
+                                  src={imgUrl}
+                                  alt={item.name}
+                                  className="h-full w-full object-contain p-1"
+                                />
+                              ) : (
+                                <div
+                                  className={cn(
+                                    'h-full w-full flex items-center justify-center bg-linear-to-br font-bold text-xs text-foreground/80',
+                                    tone(item.name || ''),
+                                  )}
+                                >
+                                  {initials(item.name || '')}
+                                </div>
+                              )}
+                            </div>
+
+                            {/* Item Title & Metadata Badges */}
                             <div className="min-w-0 flex-1 space-y-1">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <span className="text-xs font-semibold text-muted-foreground">
+                                <span className="text-xs font-mono font-bold text-muted-foreground bg-muted/60 px-1.5 py-0.5 rounded-md">
                                   #{index + 1}
                                 </span>
-                                <span className="text-xs font-bold text-foreground truncate max-w-50 sm:max-w-xs">
+                                <h4 className="text-xs sm:text-sm font-semibold text-foreground truncate max-w-50 sm:max-w-md">
                                   {item.name}
-                                </span>
+                                </h4>
                                 <Badge
                                   variant="soft"
                                   color={type === 'cse' ? 'success' : 'info'}
-                                  className="text-[9px] px-1 py-0 font-medium"
+                                  className="text-[9px] px-2 py-0.5 font-bold uppercase tracking-wider"
                                 >
                                   {type === 'cse' ? 'CSE' : 'Non-CSE'}
                                 </Badge>
-                                {hasAnyError && (
-                                  <Badge className="text-[9px] px-1.5 py-0.5 font-bold bg-red-500/10 text-red-500 border-none animate-pulse">
-                                    Config Required
+                                {hasAnyError ? (
+                                  <Badge className="text-[9px] px-2 py-0.5 font-bold bg-amber-500/10 text-amber-700 dark:text-amber-300 border border-amber-500/25">
+                                    ● Configuration Required
+                                  </Badge>
+                                ) : (
+                                  <Badge className="text-[9px] px-2 py-0.5 font-bold bg-emerald-500/10 text-emerald-700 dark:text-emerald-300 border border-emerald-500/25">
+                                    ✓ Configuration Complete
                                   </Badge>
                                 )}
                               </div>
+
                               {specText && (
-                                <p className="text-[11px] text-muted-foreground truncate pr-4 max-w-lg">
+                                <p className="text-[11px] text-muted-foreground truncate max-w-xl">
                                   {specText}
                                 </p>
                               )}
-                              <div className="flex items-center gap-4 text-[10px] text-muted-foreground">
-                                <span>
-                                  UOM:{' '}
-                                  <strong className="text-foreground">
-                                    {item.uomName || 'pcs'}
-                                  </strong>
-                                </span>
-                                <span>
-                                  Category:{' '}
-                                  <strong className="text-foreground">
-                                    {categoryText || 'N/A'}
-                                  </strong>
-                                </span>
-                                {config.enableAllocations && (
-                                  <span>
-                                    Total Qty:{' '}
-                                    <strong className="text-foreground">
-                                      {totalQty}
-                                    </strong>
+
+                              {/* Attributes strip */}
+                              <div className="flex items-center gap-3 text-[11px] text-muted-foreground flex-wrap pt-0.5">
+                                {productCode && (
+                                  <span className="font-mono text-[10px] bg-muted/50 px-1.5 py-0.5 rounded border border-border/50">
+                                    Code: <strong className="text-foreground">{productCode}</strong>
                                   </span>
                                 )}
+                                <span>
+                                  Category: <strong className="text-foreground">{categoryText || 'General Goods'}</strong>
+                                </span>
+                                <span>
+                                  UOM: <strong className="text-foreground">{item.uomName || 'pcs'}</strong>
+                                </span>
+                                <span>
+                                  Planned: <strong className="text-foreground">{plannedQty > 0 ? plannedQty : '—'}</strong>
+                                </span>
                               </div>
                             </div>
                           </div>
 
-                          <div className="shrink-0 flex items-center gap-3">
+                          {/* Quick Summary Strip & Expand Toggle */}
+                          <div className="shrink-0 flex items-center justify-between sm:justify-end gap-3.5 border-t sm:border-t-0 pt-2 sm:pt-0 border-border/60">
                             <Button
                               type="button"
                               variant="ghost"
@@ -1700,21 +2118,20 @@ export default function AddPPMPItemsModal({
                                 setDetailsItemId(item.id)
                                 setDetailsItemType(type)
                               }}
-                              className="h-8 text-[11px] font-semibold text-primary rounded-lg px-2 hover:bg-muted/50"
+                              className="h-8 text-[11px] font-semibold text-primary rounded-lg px-2.5 hover:bg-primary/5"
                             >
                               View Details
                             </Button>
-                            <div className="text-right">
-                              <div className="text-[10px] text-muted-foreground uppercase font-bold">
+                            
+                            <div className="text-right pl-2 border-l border-border/60">
+                              <div className="text-[9px] text-muted-foreground uppercase font-bold tracking-wider">
                                 Estimated Cost
                               </div>
-                              <div className="text-xs font-bold text-foreground flex items-center justify-end">
-                                {new Intl.NumberFormat('en-PH', {
-                                  style: 'currency',
-                                  currency: 'PHP',
-                                }).format(calculatedTotal)}
+                              <div className="text-xs sm:text-sm font-extrabold text-primary">
+                                {formatCurrency(calculatedTotal)}
                               </div>
                             </div>
+
                             <Button
                               type="button"
                               variant="ghost"
@@ -1722,7 +2139,8 @@ export default function AddPPMPItemsModal({
                               onClick={() =>
                                 setExpandedItemId(isExpanded ? null : item.id)
                               }
-                              className="h-8 w-8 text-default-550 rounded-lg"
+                              className="h-8 w-8 text-muted-foreground hover:text-foreground rounded-lg hover:bg-muted/60"
+                              aria-label={isExpanded ? 'Collapse item configuration' : 'Expand item configuration'}
                             >
                               {isExpanded ? (
                                 <ChevronUp className="h-4 w-4" />
@@ -1733,387 +2151,512 @@ export default function AddPPMPItemsModal({
                           </div>
                         </div>
 
-                        {/* Collapsible Content */}
+                        {/* ========================================================= */}
+                        {/* COLLAPSIBLE CONFIGURATION CONTENT                         */}
+                        {/* ========================================================= */}
                         {isExpanded && (
-                          <div className="grid gap-4 border-t border-border/60 pt-4 mt-2 animate-in fade-in slide-in-from-top-2 duration-200">
-                             <div className="grid gap-4 sm:grid-cols-2 md:grid-cols-3">
-                              {/* Unit Price */}
-                              <div className="space-y-1.5">
-                                <div className="flex items-center gap-1">
-                                  <label
-                                    htmlFor={`price-${item.id}`}
-                                    className="text-xs font-semibold text-muted-foreground select-none"
-                                  >
-                                    Unit Price *
-                                  </label>
-                                  <FieldDescriptionTooltip fieldKey="unitPrice" className="h-3.5 w-3.5" />
+                          <div className="space-y-4 border-t border-border/70 pt-4 mt-1 animate-in fade-in slide-in-from-top-1 duration-200">
+                            {/* Live Cost & Quantity Hero Strip */}
+                            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 p-3.5 rounded-xl border border-border/70 bg-muted/20 shadow-2xs">
+                              <div className="space-y-0.5">
+                                <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground block">
+                                  Catalog Unit Price
+                                </span>
+                                <strong className="text-xs font-bold text-foreground">
+                                  {formatCurrency(config.unitPrice)}
+                                </strong>
+                              </div>
+                              <div className="space-y-0.5">
+                                <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground block">
+                                  Planned Quantity
+                                </span>
+                                <strong className="text-xs font-bold text-foreground">
+                                  {plannedQty > 0 ? `${plannedQty} ${item.uomName || 'units'}` : '—'}
+                                </strong>
+                              </div>
+                              <div className="space-y-0.5">
+                                <span className="text-[10px] uppercase font-bold tracking-wider text-muted-foreground block">
+                                  Monthly Allocation
+                                </span>
+                                <strong className="text-xs font-bold text-foreground">
+                                  {allocatedQty > 0
+                                    ? `${allocatedQty} / ${plannedQty || 0} allocated (${remainingQty} rem)`
+                                    : 'Not yet distributed'}
+                                </strong>
+                              </div>
+                              <div className="space-y-0.5 sm:text-right">
+                                <span className="text-[10px] uppercase font-bold tracking-wider text-primary block">
+                                  Estimated Total Cost
+                                </span>
+                                <strong className="text-sm font-extrabold text-primary">
+                                  {formatCurrency(calculatedTotal)}
+                                </strong>
+                              </div>
+                            </div>
+
+                            {/* ========================================================= */}
+                            {/* SECTION B: PROCUREMENT CONFIGURATION                      */}
+                            {/* ========================================================= */}
+                            <div className="rounded-xl border border-border/70 bg-card p-4 space-y-4 shadow-2xs">
+                              <div className="flex items-center justify-between pb-2 border-b border-border/60">
+                                <div className="flex items-center gap-2">
+                                  <SlidersHorizontal className="h-4 w-4 text-primary" />
+                                  <h4 className="text-xs font-bold uppercase tracking-wider text-foreground">
+                                    Procurement Configuration
+                                  </h4>
                                 </div>
-                                <div className="relative w-full">
-                                  <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-semibold">
-                                    ₱
-                                  </span>
+                                <span className="text-[10px] text-muted-foreground">
+                                  * Indicates required field
+                                </span>
+                              </div>
+
+                              {/* Row 1: Core Parameters */}
+                              <div className="grid gap-3.5 sm:grid-cols-2 md:grid-cols-4">
+                                {/* Planned Quantity */}
+                                <div className="space-y-1.5">
+                                  <div className="flex items-center gap-1">
+                                    <label
+                                      htmlFor={`qty-${item.id}`}
+                                      className="text-xs font-semibold text-foreground select-none"
+                                    >
+                                      Planned Quantity *
+                                    </label>
+                                    <FieldDescriptionTooltip fieldKey="plannedQuantity" className="h-3.5 w-3.5" />
+                                  </div>
                                   <Input
-                                    id={`price-${item.id}`}
+                                    id={`qty-${item.id}`}
                                     type="number"
-                                    step="0.01"
-                                    placeholder="0.00"
-                                    value={config.unitPrice || ''}
-                                    disabled={isPriceLocked}
+                                    min="1"
+                                    placeholder="e.g. 100"
+                                    value={config.plannedQuantity ?? ''}
                                     onChange={(e) =>
                                       updateConfig(item.id, {
-                                        unitPrice: Math.max(
-                                          0,
-                                          Number.parseFloat(e.target.value) ||
-                                            0,
-                                        ),
+                                        plannedQuantity:
+                                          e.target.value === ''
+                                            ? undefined
+                                            : Math.max(1, Number.parseInt(e.target.value, 10) || 1),
                                       })
                                     }
                                     className={cn(
-                                      'pl-6 text-xs h-9 w-full border-default-200 focus-visible:ring-primary/25',
-                                      isPriceLocked &&
-                                        'bg-default-100/60 cursor-not-allowed font-semibold text-default-600',
-                                      hasPriceError &&
-                                        'border-red-500 focus-visible:ring-red-500/25 bg-red-50/20',
+                                      'text-xs h-9 w-full border-default-200 focus-visible:ring-primary/25',
+                                      hasQtyError && 'border-red-500 bg-red-50/20',
                                     )}
                                   />
+                                  {hasQtyError && (
+                                    <p className="text-[10px] text-red-500 font-medium mt-0.5">Planned quantity is required (≥ 1)</p>
+                                  )}
                                 </div>
-                                {isPriceLocked && (
-                                  <p className="text-[10px] text-default-450 italic">
-                                    Inherited locked catalog price
-                                  </p>
+
+                                {/* Unit Price */}
+                                <div className="space-y-1.5">
+                                  <div className="flex items-center gap-1">
+                                    <label
+                                      htmlFor={`price-${item.id}`}
+                                      className="text-xs font-semibold text-foreground select-none"
+                                    >
+                                      Unit Price *
+                                    </label>
+                                    <FieldDescriptionTooltip fieldKey="unitPrice" className="h-3.5 w-3.5" />
+                                  </div>
+                                  <div className="relative w-full">
+                                    <span className="absolute left-2.5 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-semibold">
+                                      ₱
+                                    </span>
+                                    <Input
+                                      id={`price-${item.id}`}
+                                      type="number"
+                                      step="0.01"
+                                      placeholder="0.00"
+                                      value={config.unitPrice || ''}
+                                      disabled={isPriceLocked}
+                                      onChange={(e) =>
+                                        updateConfig(item.id, {
+                                          unitPrice: Math.max(
+                                            0,
+                                            Number.parseFloat(e.target.value) ||
+                                              0,
+                                          ),
+                                        })
+                                      }
+                                      className={cn(
+                                        'pl-6 text-xs h-9 w-full border-default-200 focus-visible:ring-primary/25',
+                                        isPriceLocked &&
+                                          'bg-default-100/60 cursor-not-allowed font-semibold text-default-600',
+                                        hasPriceError &&
+                                          'border-red-500 focus-visible:ring-red-500/25 bg-red-50/20',
+                                      )}
+                                    />
+                                  </div>
+                                  {isPriceLocked && (
+                                    <p className="text-[10px] text-default-450 italic">
+                                      Inherited locked catalog price
+                                    </p>
+                                  )}
+                                </div>
+
+                                {/* Procurement Mode */}
+                                <div className="space-y-1.5">
+                                  <div className="flex items-center gap-1">
+                                    <label className="text-xs font-semibold text-foreground">
+                                      Procurement Mode *
+                                    </label>
+                                    <FieldDescriptionTooltip fieldKey="procurementModeId" className="h-3.5 w-3.5" />
+                                  </div>
+                                  <Select
+                                    value={config.procurementModeId}
+                                    onValueChange={(val) =>
+                                      updateConfig(item.id, {
+                                        procurementModeId: val,
+                                      })
+                                    }
+                                  >
+                                    <SelectTrigger
+                                      className={cn(
+                                        'w-full border-default-200 text-xs h-9 focus:ring-primary/25',
+                                        hasMopError &&
+                                          'border-red-500 bg-red-50/20',
+                                      )}
+                                    >
+                                      <SelectValue placeholder="Select Mode *" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      {procurementModes.map((m) => (
+                                        <SelectItem
+                                          key={m.id}
+                                          value={m.id}
+                                          className="text-xs"
+                                        >
+                                          {m.name}
+                                        </SelectItem>
+                                      ))}
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+
+                                {/* Project Type */}
+                                <div className="space-y-1.5">
+                                  <div className="flex items-center gap-1">
+                                    <label className="text-xs font-semibold text-foreground">
+                                      Project Type
+                                    </label>
+                                    <FieldDescriptionTooltip fieldKey="projectType" className="h-3.5 w-3.5" />
+                                  </div>
+                                  <Select
+                                    value={config.projectType}
+                                    onValueChange={(
+                                      val: ProcurementProjectType,
+                                    ) =>
+                                      updateConfig(item.id, { projectType: val })
+                                    }
+                                  >
+                                    <SelectTrigger className="w-full border-default-200 text-xs h-9">
+                                      <SelectValue placeholder="Select Project Type" />
+                                    </SelectTrigger>
+                                    <SelectContent>
+                                      <SelectItem
+                                        value="Goods"
+                                        className="text-xs"
+                                      >
+                                        Goods
+                                      </SelectItem>
+                                      <SelectItem
+                                        value="Infrastructure"
+                                        className="text-xs"
+                                      >
+                                        Infrastructure
+                                      </SelectItem>
+                                      <SelectItem
+                                        value="ConsultingServices"
+                                        className="text-xs"
+                                      >
+                                        Consulting Services
+                                      </SelectItem>
+                                      <SelectItem
+                                        value="GeneralSupportServices"
+                                        className="text-xs"
+                                      >
+                                        General Support Services
+                                      </SelectItem>
+                                    </SelectContent>
+                                  </Select>
+                                </div>
+                              </div>
+
+                              {/* Row 2: Timeline Schedules */}
+                              <div className="grid gap-3.5 sm:grid-cols-2">
+                                {/* Procurement Schedule */}
+                                <div className="p-3 rounded-lg border border-border/70 bg-muted/10 space-y-2">
+                                  <div className="flex items-center gap-1">
+                                    <label className="text-xs font-semibold text-foreground">
+                                      Procurement Schedule *
+                                    </label>
+                                    <FieldDescriptionTooltip fieldKey="procurementStartDate" className="h-3.5 w-3.5" />
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <div>
+                                      <span className="text-[10px] text-muted-foreground block mb-1">Start Date</span>
+                                      <Input
+                                        type="date"
+                                        value={config.procurementStartDate || ''}
+                                        onChange={(e) =>
+                                          updateConfig(item.id, {
+                                            procurementStartDate: e.target.value,
+                                          })
+                                        }
+                                        className={cn(
+                                          'text-xs h-9 border-default-200 w-full',
+                                          hasProcStartError && 'border-red-500 bg-red-50/20'
+                                        )}
+                                        placeholder="Start"
+                                      />
+                                      {hasProcStartError && (
+                                        <p className="text-[10px] text-red-500 font-medium mt-0.5">Start date is required</p>
+                                      )}
+                                    </div>
+                                    <div>
+                                      <span className="text-[10px] text-muted-foreground block mb-1">End Date</span>
+                                      <Input
+                                        type="date"
+                                        value={config.procurementEndDate || ''}
+                                        onChange={(e) =>
+                                          updateConfig(item.id, {
+                                            procurementEndDate: e.target.value,
+                                          })
+                                        }
+                                        className={cn(
+                                          'text-xs h-9 border-default-200 w-full',
+                                          hasProcEndError && 'border-red-500 bg-red-50/20'
+                                        )}
+                                        placeholder="End"
+                                      />
+                                      {config.procurementEndDate && config.procurementStartDate && config.procurementEndDate < config.procurementStartDate ? (
+                                        <p className="text-[10px] text-red-500 font-medium mt-0.5">Cannot be before start date</p>
+                                      ) : !config.procurementEndDate ? (
+                                        <p className="text-[10px] text-red-500 font-medium mt-0.5">End date is required</p>
+                                      ) : null}
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Expected Delivery Window */}
+                                <div className="p-3 rounded-lg border border-border/70 bg-muted/10 space-y-2">
+                                  <div className="flex items-center gap-1">
+                                    <label className="text-xs font-semibold text-foreground">
+                                      Expected Delivery Window *
+                                    </label>
+                                    <FieldDescriptionTooltip fieldKey="expectedDeliveryStart" className="h-3.5 w-3.5" />
+                                  </div>
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <div>
+                                      <span className="text-[10px] text-muted-foreground block mb-1">Start Date</span>
+                                      <Input
+                                        type="date"
+                                        value={config.expectedDeliveryStart || ''}
+                                        onChange={(e) =>
+                                          updateConfig(item.id, {
+                                            expectedDeliveryStart: e.target.value,
+                                          })
+                                        }
+                                        className={cn(
+                                          'text-xs h-9 border-default-200 w-full',
+                                          hasDelivStartError && 'border-red-500 bg-red-50/20'
+                                        )}
+                                        placeholder="Start"
+                                      />
+                                      {config.expectedDeliveryStart && config.procurementStartDate && config.expectedDeliveryStart < config.procurementStartDate ? (
+                                        <p className="text-[10px] text-red-500 font-medium mt-0.5">Cannot be before procurement start</p>
+                                      ) : !config.expectedDeliveryStart ? (
+                                        <p className="text-[10px] text-red-500 font-medium mt-0.5">Start date is required</p>
+                                      ) : null}
+                                    </div>
+                                    <div>
+                                      <span className="text-[10px] text-muted-foreground block mb-1">End Date</span>
+                                      <Input
+                                        type="date"
+                                        value={config.expectedDeliveryEnd || ''}
+                                        onChange={(e) =>
+                                          updateConfig(item.id, {
+                                            expectedDeliveryEnd: e.target.value,
+                                          })
+                                        }
+                                        className={cn(
+                                          'text-xs h-9 border-default-200 w-full',
+                                          hasDelivEndError && 'border-red-500 bg-red-50/20'
+                                        )}
+                                        placeholder="End"
+                                      />
+                                      {config.expectedDeliveryEnd && config.expectedDeliveryStart && config.expectedDeliveryEnd < config.expectedDeliveryStart ? (
+                                        <p className="text-[10px] text-red-500 font-medium mt-0.5">Cannot be before start date</p>
+                                      ) : !config.expectedDeliveryEnd ? (
+                                        <p className="text-[10px] text-red-500 font-medium mt-0.5">End date is required</p>
+                                      ) : null}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Row 3: PAP Code & Conference */}
+                              <div className="grid gap-3.5 sm:grid-cols-3 sm:items-end">
+                                <div className="space-y-1.5 sm:col-span-2">
+                                  <div className="flex items-center gap-1">
+                                    <label className="text-xs font-semibold text-foreground">
+                                      PAP Code
+                                    </label>
+                                    <FieldDescriptionTooltip fieldKey="papCode" className="h-3.5 w-3.5" />
+                                  </div>
+                                  <Input
+                                    value={config.papCode || ''}
+                                    placeholder="e.g. 5020301000"
+                                    onChange={(e) =>
+                                      updateConfig(item.id, {
+                                        papCode: e.target.value,
+                                      })
+                                    }
+                                    className="text-xs h-9 border-default-200"
+                                  />
+                                </div>
+
+                                <div className="flex items-center gap-2.5 p-2.5 rounded-lg border border-border/70 bg-muted/15 hover:bg-muted/30 cursor-pointer transition-colors">
+                                  <Checkbox
+                                    id={`conf-${item.id}`}
+                                    checked={config.preProcurementConference}
+                                    onCheckedChange={(checked) =>
+                                      updateConfig(item.id, {
+                                        preProcurementConference: !!checked,
+                                      })
+                                    }
+                                  />
+                                  <label
+                                    htmlFor={`conf-${item.id}`}
+                                    className="text-xs text-foreground cursor-pointer select-none font-semibold"
+                                  >
+                                    Pre-procurement Conference
+                                  </label>
+                                </div>
+                              </div>
+
+                              {/* Row 4: Remarks */}
+                              <div className="space-y-1.5">
+                                <div className="flex items-center gap-1">
+                                  <label className="text-xs font-semibold text-foreground">
+                                    Remarks / Notes
+                                  </label>
+                                  <FieldDescriptionTooltip fieldKey="remarks" className="h-3.5 w-3.5" />
+                                </div>
+                                <Textarea
+                                  placeholder="Any specific comments or justifications..."
+                                  value={config.remarks || ''}
+                                  onChange={(e) =>
+                                    updateConfig(item.id, {
+                                      remarks: e.target.value,
+                                    })
+                                  }
+                                  className="text-xs min-h-14 border-default-200"
+                                />
+                              </div>
+                            </div>
+
+                            {/* ========================================================= */}
+                            {/* SECTION C: MONTHLY QUANTITY DISTRIBUTION                  */}
+                            {/* ========================================================= */}
+                            <div className="rounded-xl border border-border/70 bg-card p-4 space-y-3.5 shadow-2xs">
+                              <div className="flex items-center justify-between pb-2 border-b border-border/60 flex-wrap gap-2">
+                                <div className="flex items-center gap-2.5">
+                                  <Checkbox
+                                    id={`alloc-${item.id}`}
+                                    checked={config.enableAllocations}
+                                    onCheckedChange={(checked) =>
+                                      updateConfig(item.id, {
+                                        enableAllocations: !!checked,
+                                      })
+                                    }
+                                  />
+                                  <label
+                                    htmlFor={`alloc-${item.id}`}
+                                    className="text-xs font-bold text-foreground cursor-pointer select-none flex items-center gap-1.5"
+                                  >
+                                    Monthly Quantity Distribution
+                                    <span className="text-[11px] font-normal text-muted-foreground">(Optional schedule)</span>
+                                  </label>
+                                </div>
+
+                                {config.enableAllocations && (
+                                  <div className="flex items-center gap-2">
+                                    {hasAllocError ? (
+                                      <Badge variant="soft" className="text-[10px] px-2 py-0.5 font-bold bg-red-500/10 text-red-600 border border-red-500/20">
+                                        ⚠ Over-allocated by {allocatedQty - plannedQty}
+                                      </Badge>
+                                    ) : allocatedQty === plannedQty && plannedQty > 0 ? (
+                                      <Badge variant="soft" className="text-[10px] px-2 py-0.5 font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                                        ✓ Fully allocated ({allocatedQty} / {plannedQty})
+                                      </Badge>
+                                    ) : allocatedQty > 0 ? (
+                                      <Badge variant="soft" className="text-[10px] px-2 py-0.5 font-bold bg-sky-500/10 text-sky-600 border border-sky-500/20">
+                                        {allocatedQty} / {plannedQty} allocated ({remainingQty} remaining)
+                                      </Badge>
+                                    ) : (
+                                      <Badge variant="soft" className="text-[10px] px-2 py-0.5 font-medium text-muted-foreground bg-muted/40">
+                                        Not yet distributed
+                                      </Badge>
+                                    )}
+                                  </div>
                                 )}
                               </div>
 
-                              {/* Procurement Mode */}
-                              <div className="space-y-1.5">
-                                <div className="flex items-center gap-1">
-                                  <label className="text-xs font-semibold text-muted-foreground">
-                                    Procurement Mode *
-                                  </label>
-                                  <FieldDescriptionTooltip fieldKey="procurementModeId" className="h-3.5 w-3.5" />
-                                </div>
-                                <Select
-                                  value={config.procurementModeId}
-                                  onValueChange={(val) =>
-                                    updateConfig(item.id, {
-                                      procurementModeId: val,
-                                    })
-                                  }
-                                >
-                                  <SelectTrigger
-                                    className={cn(
-                                      'w-full border-default-200 text-xs h-9 focus:ring-primary/25',
-                                      hasMopError &&
-                                        'border-red-500 bg-red-50/20',
-                                    )}
-                                  >
-                                    <SelectValue placeholder="Select Mode *" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    {procurementModes.map((m) => (
-                                      <SelectItem
-                                        key={m.id}
-                                        value={m.id}
-                                        className="text-xs"
-                                      >
-                                        {m.name}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-
-                              {/* Project Type */}
-                              <div className="space-y-1.5">
-                                <div className="flex items-center gap-1">
-                                  <label className="text-xs font-semibold text-muted-foreground">
-                                    Project Type
-                                  </label>
-                                  <FieldDescriptionTooltip fieldKey="projectType" className="h-3.5 w-3.5" />
-                                </div>
-                                <Select
-                                  value={config.projectType}
-                                  onValueChange={(
-                                    val: ProcurementProjectType,
-                                  ) =>
-                                    updateConfig(item.id, { projectType: val })
-                                  }
-                                >
-                                  <SelectTrigger className="w-full border-default-200 text-xs h-9">
-                                    <SelectValue placeholder="Select Project Type" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem
-                                      value="Goods"
-                                      className="text-xs"
-                                    >
-                                      Goods
-                                    </SelectItem>
-                                    <SelectItem
-                                      value="Infrastructure"
-                                      className="text-xs"
-                                    >
-                                      Infrastructure
-                                    </SelectItem>
-                                    <SelectItem
-                                      value="ConsultingServices"
-                                      className="text-xs"
-                                    >
-                                      Consulting Services
-                                    </SelectItem>
-                                    <SelectItem
-                                      value="GeneralSupportServices"
-                                      className="text-xs"
-                                    >
-                                      General Support Services
-                                    </SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                            </div>
-
-                            <div className="grid gap-4 sm:grid-cols-2">
-                              {/* Milestone Dates */}
-                              <div className="space-y-1.5">
-                                <div className="flex items-center gap-1">
-                                  <label className="text-xs font-semibold text-muted-foreground">
-                                    Procurement Schedule *
-                                  </label>
-                                  <FieldDescriptionTooltip fieldKey="procurementStartDate" className="h-3.5 w-3.5" />
-                                </div>
-                                <div className="grid grid-cols-2 gap-2">
-                                  <div>
-                                    <Input
-                                      type="date"
-                                      value={config.procurementStartDate || ''}
-                                      onChange={(e) =>
-                                        updateConfig(item.id, {
-                                          procurementStartDate: e.target.value,
-                                        })
-                                      }
-                                      className={cn(
-                                        'text-xs h-9 border-default-200 w-full',
-                                        hasProcStartError && 'border-red-500 bg-red-50/20'
-                                      )}
-                                      placeholder="Start"
-                                    />
-                                    {hasProcStartError && (
-                                      <p className="text-[10px] text-red-500 mt-0.5">Start date is required</p>
+                              {config.enableAllocations && (
+                                <div className="space-y-3 pt-1 animate-in fade-in duration-200">
+                                  <div className="flex items-center justify-between p-2.5 rounded-lg border border-border/60 bg-muted/20 text-xs text-muted-foreground font-medium flex-wrap gap-2">
+                                    <div className="flex items-center gap-3">
+                                      <span>Planned: <strong className="text-foreground">{plannedQty}</strong></span>
+                                      <span>·</span>
+                                      <span>Allocated: <strong className={cn(hasAllocError ? 'text-red-500 font-bold' : 'text-foreground')}>{allocatedQty}</strong></span>
+                                      <span>·</span>
+                                      <span>Remaining: <strong className="text-foreground">{remainingQty}</strong></span>
+                                    </div>
+                                    {hasAllocError && (
+                                      <span className="text-red-500 font-bold text-xs">
+                                        ⚠ Exceeds planned quantity by {allocatedQty - plannedQty}
+                                      </span>
                                     )}
                                   </div>
-                                  <div>
-                                    <Input
-                                      type="date"
-                                      value={config.procurementEndDate || ''}
-                                      onChange={(e) =>
-                                        updateConfig(item.id, {
-                                          procurementEndDate: e.target.value,
-                                        })
-                                      }
-                                      className={cn(
-                                        'text-xs h-9 border-default-200 w-full',
-                                        hasProcEndError && 'border-red-500 bg-red-50/20'
-                                      )}
-                                      placeholder="End"
-                                    />
-                                    {config.procurementEndDate && config.procurementStartDate && config.procurementEndDate < config.procurementStartDate && (
-                                      <p className="text-[10px] text-red-500 mt-0.5">Cannot be before start date</p>
-                                    )}
-                                    {!config.procurementEndDate && (
-                                      <p className="text-[10px] text-red-500 mt-0.5">End date is required</p>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
 
-                              <div className="space-y-1.5">
-                                <div className="flex items-center gap-1">
-                                  <label className="text-xs font-semibold text-muted-foreground">
-                                    Expected Delivery Window *
-                                  </label>
-                                  <FieldDescriptionTooltip fieldKey="expectedDeliveryStart" className="h-3.5 w-3.5" />
-                                </div>
-                                <div className="grid grid-cols-2 gap-2">
-                                  <div>
-                                    <Input
-                                      type="date"
-                                      value={config.expectedDeliveryStart || ''}
-                                      onChange={(e) =>
-                                        updateConfig(item.id, {
-                                          expectedDeliveryStart: e.target.value,
-                                        })
-                                      }
-                                      className={cn(
-                                        'text-xs h-9 border-default-200 w-full',
-                                        hasDelivStartError && 'border-red-500 bg-red-50/20'
-                                      )}
-                                      placeholder="Start"
-                                    />
-                                    {config.expectedDeliveryStart && config.procurementStartDate && config.expectedDeliveryStart < config.procurementStartDate && (
-                                      <p className="text-[10px] text-red-500 mt-0.5">Cannot be before procurement start</p>
-                                    )}
-                                    {!config.expectedDeliveryStart && (
-                                      <p className="text-[10px] text-red-500 mt-0.5">Start date is required</p>
-                                    )}
-                                  </div>
-                                  <div>
-                                    <Input
-                                      type="date"
-                                      value={config.expectedDeliveryEnd || ''}
-                                      onChange={(e) =>
-                                        updateConfig(item.id, {
-                                          expectedDeliveryEnd: e.target.value,
-                                        })
-                                      }
-                                      className={cn(
-                                        'text-xs h-9 border-default-200 w-full',
-                                        hasDelivEndError && 'border-red-500 bg-red-50/20'
-                                      )}
-                                      placeholder="End"
-                                    />
-                                    {config.expectedDeliveryEnd && config.expectedDeliveryStart && config.expectedDeliveryEnd < config.expectedDeliveryStart && (
-                                      <p className="text-[10px] text-red-500 mt-0.5">Cannot be before start date</p>
-                                    )}
-                                    {!config.expectedDeliveryEnd && (
-                                      <p className="text-[10px] text-red-500 mt-0.5">End date is required</p>
-                                    )}
-                                  </div>
-                                </div>
-                              </div>
-                            </div>
-
-                            <div className="grid gap-4 sm:grid-cols-3 sm:items-center">
-                              {/* PAP Code */}
-                              <div className="space-y-1.5 sm:col-span-2">
-                                <div className="flex items-center gap-1">
-                                  <label className="text-xs font-semibold text-muted-foreground">
-                                    PAP Code
-                                  </label>
-                                  <FieldDescriptionTooltip fieldKey="papCode" className="h-3.5 w-3.5" />
-                                </div>
-                                <Input
-                                  value={config.papCode || ''}
-                                  placeholder="e.g. 5020301000"
-                                  onChange={(e) =>
-                                    updateConfig(item.id, {
-                                      papCode: e.target.value,
-                                    })
-                                  }
-                                  className="text-xs h-9 border-default-200"
-                                />
-                              </div>
-
-                              {/* Pre-procurement Conference */}
-                              <div className="flex items-center gap-2 pt-4 sm:pt-6">
-                                <Checkbox
-                                  id={`conf-${item.id}`}
-                                  checked={config.preProcurementConference}
-                                  onCheckedChange={(checked) =>
-                                    updateConfig(item.id, {
-                                      preProcurementConference: !!checked,
-                                    })
-                                  }
-                                />
-                                <label
-                                  htmlFor={`conf-${item.id}`}
-                                  className="text-xs text-foreground cursor-pointer select-none font-semibold"
-                                >
-                                  Pre-procurement Conference
-                                </label>
-                              </div>
-                            </div>
-
-                            {/* Remarks */}
-                            <div className="space-y-1.5">
-                              <div className="flex items-center gap-1">
-                                <label className="text-xs font-semibold text-muted-foreground">
-                                  Remarks
-                                </label>
-                                <FieldDescriptionTooltip fieldKey="remarks" className="h-3.5 w-3.5" />
-                              </div>
-                              <Textarea
-                                placeholder="Any specific comments or justifications..."
-                                value={config.remarks || ''}
-                                onChange={(e) =>
-                                  updateConfig(item.id, {
-                                    remarks: e.target.value,
-                                  })
-                                }
-                                className="text-xs min-h-15 border-default-200"
-                              />
-                            </div>
-
-                            {/* Allocations Checkbox */}
-                            <div className="flex items-center gap-2 pt-3 border-t border-border/40">
-                              <Checkbox
-                                id={`alloc-${item.id}`}
-                                checked={config.enableAllocations}
-                                onCheckedChange={(checked) =>
-                                  updateConfig(item.id, {
-                                    enableAllocations: !!checked,
-                                  })
-                                }
-                              />
-                              <label
-                                htmlFor={`alloc-${item.id}`}
-                                className="text-xs font-bold text-foreground cursor-pointer select-none"
-                              >
-                                Configure Monthly Quantity Distributions (Jan -
-                                Dec)
-                              </label>
-                            </div>
-
-                            {/* Allocations Input Grid */}
-                            {config.enableAllocations && (
-                              <div className="p-3 bg-muted/30 border border-border/80 rounded-lg space-y-3">
-                                <div className="text-[10px] text-muted-foreground font-semibold flex justify-between items-center">
-                                  <span>
-                                    Distribute units across fiscal year months
-                                  </span>
-                                  <span
-                                    className={cn(
-                                      hasAllocError && 'text-red-500 font-bold',
-                                    )}
-                                  >
-                                    Total Units: {totalQty}
-                                  </span>
-                                </div>
-                                <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
-                                  {MONTH_NAMES.map((month) => {
-                                    const val =
-                                      config.monthlyQuantities[month] || ''
-                                    return (
-                                      <div key={month} className="space-y-1">
-                                        <span className="text-[9px] uppercase font-bold text-muted-foreground block text-center">
-                                          {month.substring(0, 3)}
-                                        </span>
-                                        <Input
-                                          type="number"
-                                          min="0"
-                                          placeholder="0"
-                                          value={val}
-                                          onChange={(e) => {
-                                            const qty = Math.max(
-                                              0,
-                                              Number.parseInt(e.target.value) ||
+                                  <div className="grid grid-cols-3 sm:grid-cols-4 md:grid-cols-6 gap-2">
+                                    {MONTH_NAMES.map((month) => {
+                                      const val =
+                                        config.monthlyQuantities[month] || ''
+                                      return (
+                                        <div key={month} className="space-y-1">
+                                          <span className="text-[9px] uppercase font-bold text-muted-foreground block text-center">
+                                            {month.substring(0, 3)}
+                                          </span>
+                                          <Input
+                                            type="number"
+                                            min="0"
+                                            placeholder="0"
+                                            value={val}
+                                            onChange={(e) => {
+                                              const qty = Math.max(
                                                 0,
-                                            )
-                                            const monthlyQuantities = {
-                                              ...config.monthlyQuantities,
-                                              [month]: qty,
-                                            }
-                                            updateConfig(item.id, {
-                                              monthlyQuantities,
-                                            })
-                                          }}
-                                          className="text-xs h-8 text-center border-default-200"
-                                        />
-                                      </div>
-                                    )
-                                  })}
+                                                Number.parseInt(e.target.value) ||
+                                                  0,
+                                              )
+                                              const monthlyQuantities = {
+                                                ...config.monthlyQuantities,
+                                                [month]: qty,
+                                              }
+                                              updateConfig(item.id, {
+                                                monthlyQuantities,
+                                              })
+                                            }}
+                                            className="text-xs h-8 text-center border-default-200 focus-visible:ring-primary/20"
+                                          />
+                                        </div>
+                                      )
+                                    })}
+                                  </div>
                                 </div>
-                              </div>
-                            )}
+                              )}
+                            </div>
                           </div>
                         )}
                       </div>
@@ -2296,6 +2839,21 @@ export default function AddPPMPItemsModal({
           )}
         </SheetContent>
       </Sheet>
+
+      {/* Contextual Request Item Dialog */}
+      <RequestItemDialog
+        open={requestItemDialogOpen}
+        onOpenChange={setRequestItemDialogOpen}
+        initialOfficeId={officeId}
+        ppmpContext={{
+          ppmpId: ppmpExpenditureItemId,
+          ppmpTitle,
+          fiscalYear,
+          officeId,
+          officeName,
+          expenditureItemTitle,
+        }}
+      />
     </>
   )
 }

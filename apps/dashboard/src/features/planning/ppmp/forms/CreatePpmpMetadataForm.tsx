@@ -60,6 +60,8 @@ export function CreatePpmpMetadataForm({
     libs,
     fundSources,
     ppmps,
+    libActivities,
+    ppmpActivities,
     isLoading: isFormDataLoading,
   } = usePpmpFormData({ enabled: true })
 
@@ -82,6 +84,7 @@ export function CreatePpmpMetadataForm({
     },
   })
 
+  const officeId = useStore(form.store, (state) => state.values.officeId)
   const fiscalYearId = useStore(
     form.store,
     (state) => state.values.fiscalYearId,
@@ -89,40 +92,124 @@ export function CreatePpmpMetadataForm({
   const ppmpNumber = useStore(form.store, (state) => state.values.ppmpNumber)
   const values = useStore(form.store, (state) => state.values)
   const formLibId = useStore(form.store, (state) => state.values.libId)
-  const isSubmitting = useStore(form.store, (state) => state.isSubmitting)
   const isDirty = useStore(form.store, (state) => state.isDirty)
 
-  const filteredLibs = useMemo(() => {
-    const latestMap = new Map<string, typeof libs[0]>()
+  const { availableLibs, fullyPlannedLibs } = useMemo(() => {
+    // If no office is selected, no LIBs should be shown
+    if (!officeId) {
+      return { availableLibs: [], fullyPlannedLibs: [] }
+    }
+
+    const latestMap = new Map<string, (typeof libs)[0]>()
     for (const lib of libs) {
       const isApproved = !lib.status || lib.status.toLowerCase() === 'approved'
       if (!isApproved) continue
-      
+
+      // Filter by selected Office
+      const libOfficeId = lib.officeId || lib.office?.id
+      if (libOfficeId !== officeId) continue
+
+      // Filter by selected Fiscal Year if selected
+      if (fiscalYearId) {
+        const libFiscalYearId = lib.fiscalYearId || lib.fiscalYear?.id
+        if (libFiscalYearId && libFiscalYearId !== fiscalYearId) continue
+      }
+
       const key = lib.libNumber || lib.name
       const existing = latestMap.get(key)
       if (
-        !existing || 
-        (lib.version !== undefined && (existing.version === undefined || lib.version > existing.version))
+        !existing ||
+        (lib.version !== undefined &&
+          (existing.version === undefined || lib.version > existing.version))
       ) {
         latestMap.set(key, lib)
       }
     }
-    
-    const result = Array.from(latestMap.values())
-    
+
+    const latestLibs = Array.from(latestMap.values())
     const currentLibId = initialValues?.libId || formLibId
     if (currentLibId) {
-      const hasCurrent = result.some(lib => lib.id === currentLibId)
+      const hasCurrent = latestLibs.some((lib) => lib.id === currentLibId)
       if (!hasCurrent) {
-        const found = libs.find(lib => lib.id === currentLibId)
+        const found = libs.find((lib) => lib.id === currentLibId)
         if (found) {
-          result.push(found)
+          const foundOfficeId = found.officeId || found.office?.id
+          const foundFiscalYearId = found.fiscalYearId || found.fiscalYear?.id
+          if (
+            foundOfficeId === officeId &&
+            (!fiscalYearId || !foundFiscalYearId || foundFiscalYearId === fiscalYearId)
+          ) {
+            latestLibs.push(found)
+          }
         }
       }
     }
-    
-    return result
-  }, [libs, initialValues?.libId, formLibId])
+
+    const activePpmpActivitySet = new Set(
+      ppmpActivities
+        .filter((pa: any) => pa.libActivityId)
+        .map((pa: any) => pa.libActivityId),
+    )
+
+    const available: (typeof libs)[0][] = []
+    const fullyPlanned: (typeof libs)[0][] = []
+
+    for (const lib of latestLibs) {
+      if (currentLibId && lib.id === currentLibId) {
+        available.push(lib)
+        continue
+      }
+
+      if (lib.scope === 'Project') {
+        const isLinkedToPpmp = ppmps.some(
+          (p: any) =>
+            p.libId === lib.id &&
+            !p.isDeleted &&
+            p.status?.toLowerCase() !== 'archived',
+        )
+        if (isLinkedToPpmp) {
+          fullyPlanned.push(lib)
+        } else {
+          available.push(lib)
+        }
+      } else {
+        const acts = libActivities.filter(
+          (a: any) => a.lineItemBudgetId === lib.id,
+        )
+        if (
+          acts.length > 0 &&
+          acts.every((a: any) => activePpmpActivitySet.has(a.id))
+        ) {
+          fullyPlanned.push(lib)
+        } else {
+          available.push(lib)
+        }
+      }
+    }
+
+    return { availableLibs: available, fullyPlannedLibs: fullyPlanned }
+  }, [
+    officeId,
+    fiscalYearId,
+    libs,
+    ppmps,
+    libActivities,
+    ppmpActivities,
+    initialValues?.libId,
+    formLibId,
+  ])
+
+  // Clear selected libId if it is no longer valid under the selected office + fiscal year
+  useEffect(() => {
+    if (formLibId) {
+      const isEligible =
+        availableLibs.some((lib) => lib.id === formLibId) ||
+        fullyPlannedLibs.some((lib) => lib.id === formLibId)
+      if (!isEligible) {
+        form.setFieldValue('libId', '')
+      }
+    }
+  }, [officeId, fiscalYearId, availableLibs, fullyPlannedLibs, formLibId, form])
 
   const selectedFiscalYear = useMemo(
     () => fiscalYears.find((fy) => fy.id === fiscalYearId),
@@ -202,7 +289,11 @@ export function CreatePpmpMetadataForm({
             <Label htmlFor={field.name}>Office</Label>
             <Select
               value={field.state.value}
-              onValueChange={field.handleChange}
+              onValueChange={(val) => {
+                field.handleChange(val)
+                // Clear existing LIB selection when Office changes
+                form.setFieldValue('libId', '')
+              }}
               disabled={isLoading || isFormDataLoading}
             >
               <SelectTrigger size="md">
@@ -227,7 +318,11 @@ export function CreatePpmpMetadataForm({
             <Label htmlFor={field.name}>Fiscal Year</Label>
             <Select
               value={field.state.value}
-              onValueChange={field.handleChange}
+              onValueChange={(val) => {
+                field.handleChange(val)
+                // Clear existing LIB selection when Fiscal Year changes
+                form.setFieldValue('libId', '')
+              }}
               disabled={isLoading || isFormDataLoading}
             >
               <SelectTrigger size="md">
@@ -310,20 +405,53 @@ export function CreatePpmpMetadataForm({
 
       <form.Field name="libId">
         {(field) => (
-          <div className="space-y-2">
+          <div className="space-y-2 text-left">
             <Label htmlFor={field.name}>Line-Item Budget</Label>
             <Select
               value={field.state.value}
               onValueChange={field.handleChange}
-              disabled={isLoading || isFormDataLoading}
+              disabled={
+                isLoading ||
+                isFormDataLoading ||
+                !officeId ||
+                (availableLibs.length === 0 && fullyPlannedLibs.length === 0)
+              }
             >
-              <SelectTrigger size="md">
-                <SelectValue placeholder="Select a LIB..." />
+              <SelectTrigger size="md" className="w-full text-left justify-between [&>span]:text-left [&>span]:truncate [&>span]:block">
+                <SelectValue
+                  placeholder={
+                    isFormDataLoading
+                      ? 'Loading Line-Item Budgets...'
+                      : !officeId
+                        ? 'Select an office first...'
+                        : !fiscalYearId
+                          ? 'Select a fiscal year...'
+                          : availableLibs.length === 0 && fullyPlannedLibs.length === 0
+                            ? 'No approved Line-Item Budgets found for this office'
+                            : availableLibs.length === 0
+                              ? 'All approved Line-Item Budgets for this office are fully planned'
+                              : 'Select a LIB...'
+                  }
+                />
               </SelectTrigger>
-              <SelectContent>
-                {filteredLibs.map((lib) => (
-                  <SelectItem key={lib.id} value={lib.id}>
-                    {lib.name}
+              <SelectContent align="start" className="text-left">
+                {availableLibs.map((lib) => (
+                  <SelectItem key={lib.id} value={lib.id} className="text-left justify-start cursor-pointer">
+                    <span className="text-left truncate">{lib.name || lib.libNumber}</span>
+                  </SelectItem>
+                ))}
+                {fullyPlannedLibs.map((lib) => (
+                  <SelectItem
+                    key={lib.id}
+                    value={lib.id}
+                    disabled
+                    className="text-left justify-start opacity-60 cursor-not-allowed bg-slate-50 dark:bg-slate-800/50"
+                  >
+                    <span className="text-left truncate text-slate-500 flex items-center gap-1.5">
+                      <Lock className="h-3 w-3 inline shrink-0 text-slate-400" />
+                      <span>{lib.name || lib.libNumber}</span>
+                      <span className="text-[10px] text-muted-foreground italic">(Fully Planned)</span>
+                    </span>
                   </SelectItem>
                 ))}
               </SelectContent>

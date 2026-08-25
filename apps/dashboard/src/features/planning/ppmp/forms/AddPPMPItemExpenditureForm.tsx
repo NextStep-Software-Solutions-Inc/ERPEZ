@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useForm } from '@tanstack/react-form'
 import { z } from 'zod'
 import { createQueryHookFromTemplate } from 'erpez-shared-lib'
@@ -30,12 +30,102 @@ export type PPMPExpenditureItemFormValues = z.infer<
   typeof ppmpExpenditureItemSchema
 >
 
+import type { OrphanLineItemDetail } from '@/features/planning/line-item-budgeting/line-item-budget/types'
+
 interface AddPPMPItemExpenditureFormProps {
   formId?: string
   initialValues?: Partial<PPMPExpenditureItemFormValues>
   libActivityId?: string
+  orphanDetails?: OrphanLineItemDetail[]
+  existingObjectIds?: string[]
   onSubmit: (values: PPMPExpenditureItemFormValues) => void
   isLoading?: boolean
+}
+
+export interface ParentObjectInfo {
+  id: string
+  name: string
+  code: string
+  parent?: ParentObjectInfo | null
+}
+
+export function resolveTypeOfExpenditure(
+  objId: string,
+  objName: string,
+  objCode: string,
+  parentHierarchy?: ParentObjectInfo | null,
+): { id: string; name: string; code: string } {
+  // 1. If parent hierarchy is present, traverse to highest non-root ancestor
+  if (parentHierarchy && parentHierarchy.name) {
+    let curr: ParentObjectInfo | null = parentHierarchy
+    let highest: ParentObjectInfo = parentHierarchy
+
+    while (curr) {
+      const pName = curr.name.toLowerCase()
+      const pCode = curr.code || ''
+      if (
+        pName === 'expenses' ||
+        pCode === 'cls:expenses' ||
+        pCode === '50000000' ||
+        pCode.startsWith('50000000')
+      ) {
+        break
+      }
+      highest = curr
+      curr = curr.parent ?? null
+    }
+
+    if (highest && highest.name) {
+      return {
+        id: highest.id || highest.code || highest.name,
+        name: highest.name,
+        code: highest.code,
+      }
+    }
+  }
+
+  // 2. Authoritative UACS standard expense class mapping by Code prefix
+  const cleanCode = (objCode || '').replace(/[-:]/g, '').trim()
+  if (cleanCode.startsWith('501') || cleanCode.startsWith('51')) {
+    return {
+      id: 'type-ps',
+      name: 'Personnel Services (PS)',
+      code: '5010000000',
+    }
+  }
+  if (cleanCode.startsWith('502') || cleanCode.startsWith('52')) {
+    return {
+      id: 'type-mooe',
+      name: 'Maintenance and Other Operating Expenses (MOOE)',
+      code: '5020000000',
+    }
+  }
+  if (cleanCode.startsWith('503') || cleanCode.startsWith('53')) {
+    return {
+      id: 'type-fe',
+      name: 'Financial Expenses (FE)',
+      code: '5030000000',
+    }
+  }
+  if (
+    cleanCode.startsWith('506') ||
+    cleanCode.startsWith('56') ||
+    cleanCode.startsWith('106') ||
+    cleanCode.startsWith('16') ||
+    cleanCode.startsWith('107')
+  ) {
+    return {
+      id: 'type-co',
+      name: 'Capital Outlays (CO)',
+      code: '5060000000',
+    }
+  }
+
+  return {
+    id: objId,
+    name: objName || 'General Expenditures',
+    code: objCode || '',
+  }
 }
 
 /**
@@ -69,9 +159,12 @@ export function AddPPMPItemExpenditureForm({
   formId = 'add-ppmp-expenditure-form',
   initialValues,
   libActivityId,
+  orphanDetails,
+  existingObjectIds,
   onSubmit,
   isLoading = false,
 }: AddPPMPItemExpenditureFormProps) {
+  // 1. Strict eligible object query for the selected LIB activity
   const { data: activityObjectsResponse, isLoading: isActivityObjectsLoading } =
     useLIBActivityObjectsQuery({
       pathParams: {},
@@ -79,23 +172,32 @@ export function AddPPMPItemExpenditureForm({
       enabled: !!libActivityId,
     })
 
-  const parentGroups = useMemo(() => {
-    return activityObjectsResponse?.data ?? []
-  }, [activityObjectsResponse?.data])
+  // Filter parent groups and their child items against existingObjectIds
+  const filteredParentGroups = useMemo(() => {
+    const rawGroups = activityObjectsResponse?.data ?? []
+    return rawGroups
+      .map((group) => ({
+        ...group,
+        items: group.items.filter(
+          (item) => !existingObjectIds || !existingObjectIds.includes(item.id),
+        ),
+      }))
+      .filter((group) => group.items.length > 0)
+  }, [activityObjectsResponse?.data, existingObjectIds])
 
   // Derive initial parent ID if an initial objectId was passed (edit mode)
   const resolvedInitialParentId = useMemo(() => {
     if (initialValues?.typeOfExpenditureId) {
       return initialValues.typeOfExpenditureId
     }
-    if (initialValues?.objectId && parentGroups.length > 0) {
-      const match = parentGroups.find((g) =>
+    if (initialValues?.objectId && filteredParentGroups.length > 0) {
+      const match = filteredParentGroups.find((g) =>
         g.items.some((item) => item.id === initialValues.objectId),
       )
       if (match) return match.parentObjectId
     }
     return ''
-  }, [initialValues?.typeOfExpenditureId, initialValues?.objectId, parentGroups])
+  }, [initialValues?.typeOfExpenditureId, initialValues?.objectId, filteredParentGroups])
 
   const form = useForm({
     defaultValues: {
@@ -116,6 +218,13 @@ export function AddPPMPItemExpenditureForm({
       objectId: initialValues?.objectId ?? '',
     } as PPMPExpenditureItemFormValues)
   }, [initialValues, resolvedInitialParentId, form])
+
+  // Auto-select type and object if only 1 type and 1 item available
+  useEffect(() => {
+    if (filteredParentGroups.length === 1 && !form.getFieldValue('typeOfExpenditureId')) {
+      form.setFieldValue('typeOfExpenditureId', filteredParentGroups[0].parentObjectId)
+    }
+  }, [filteredParentGroups, form])
 
   return (
     <form
@@ -156,12 +265,14 @@ export function AddPPMPItemExpenditureForm({
                       ? 'Loading types of expenditure...'
                       : !libActivityId
                         ? 'No LIB Activity selected'
-                        : 'Select Type of Expenditure'
+                        : filteredParentGroups.length === 0
+                          ? 'All items already added'
+                          : 'Select Type of Expenditure'
                   }
                 />
               </SelectTrigger>
               <SelectContent>
-                {parentGroups.map((group) => (
+                {filteredParentGroups.map((group) => (
                   <SelectItem
                     key={group.parentObjectId}
                     value={group.parentObjectId}
@@ -185,7 +296,7 @@ export function AddPPMPItemExpenditureForm({
         name="objectId"
         children={(field) => {
           const selectedParentId = form.getFieldValue('typeOfExpenditureId')
-          const selectedGroup = parentGroups.find(
+          const selectedGroup = filteredParentGroups.find(
             (g) => g.parentObjectId === selectedParentId,
           )
           const childOptions = selectedGroup?.items ?? []

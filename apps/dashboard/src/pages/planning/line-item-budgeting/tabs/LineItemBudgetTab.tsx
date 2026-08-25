@@ -89,9 +89,9 @@ export function LineItemBudgetTab({
 
   // Approval Dialog State
   const [approvalDialogOpen, setApprovalDialogOpen] = useState(false)
-  const [approvalAction, setApprovalAction] = useState<'approve' | 'reject'>(
-    'approve',
-  )
+  const [approvalAction, setApprovalAction] = useState<
+    'approve' | 'return' | 'reject'
+  >('approve')
   const [selectedLibForApproval, setSelectedLibForApproval] = useState<{
     id: string
     name: string
@@ -189,7 +189,7 @@ export function LineItemBudgetTab({
     const lib = libs?.data.find((l) => l.id === libraryId)
     if (lib) {
       setSelectedLibForApproval({ id: libraryId, name: lib.name })
-      setApprovalAction('reject')
+      setApprovalAction('return')
       setApprovalDialogOpen(true)
     }
   }
@@ -200,7 +200,7 @@ export function LineItemBudgetTab({
     setIsApprovalLoading(true)
 
     try {
-      const newStatus = approvalAction === 'approve' ? 'Approved' : 'Rejected'
+      const newStatus = approvalAction === 'approve' ? 'Approved' : 'Returned'
 
       await updateStatusAsync(
         {
@@ -211,7 +211,7 @@ export function LineItemBudgetTab({
         {
           onSuccess: async () => {
             const actionLabel =
-              approvalAction === 'approve' ? 'approved' : 'rejected'
+              approvalAction === 'approve' ? 'approved' : 'returned'
             toast.success(
               `LIB "${selectedLibForApproval.name}" has been ${actionLabel}!`,
             )

@@ -29,6 +29,15 @@ public class MarketScoping : BaseEntity
     [Sieve(CanFilter = true, CanSort = true)]
     public DateTime DeliveryDate { get; set; }
 
+    /// <summary>
+    /// Project-level MSF target: the LIB this MSF scopes (mutually exclusive with TargetLineItemBudgetActivityId).
+    /// </summary>
+    [Sieve(CanFilter = true, CanSort = true)]
+    public Guid? TargetLineItemBudgetId { get; set; }
+
+    /// <summary>
+    /// Activity-level MSF target: the LIB Activity this MSF scopes (mutually exclusive with TargetLineItemBudgetId).
+    /// </summary>
     [Sieve(CanFilter = true, CanSort = true)]
     public Guid? TargetLineItemBudgetActivityId { get; set; }
 
@@ -39,6 +48,7 @@ public class MarketScoping : BaseEntity
 
     // Navigation properties
     public virtual User User { get; set; } = null!;
+    public virtual LineItemBudget? TargetLineItemBudget { get; set; }
     public virtual LineItemBudgetActivity? TargetLineItemBudgetActivity { get; set; }
     public virtual List<MarketScopingActivity> ActivitiesConducted { get; set; } = [];
     public virtual List<MarketScopingParameter> ParameterEvaluations { get; set; } = [];

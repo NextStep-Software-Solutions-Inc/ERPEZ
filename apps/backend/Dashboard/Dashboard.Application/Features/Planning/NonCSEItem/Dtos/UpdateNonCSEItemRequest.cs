@@ -9,5 +9,4 @@ public record UpdateNonCSEItemRequest
     public string? ProductCode { get; init; }
     public decimal? CurrentPrice { get; init; }
     public string? Remarks { get; init; }
-    public bool? IsActive { get; init; }
 }

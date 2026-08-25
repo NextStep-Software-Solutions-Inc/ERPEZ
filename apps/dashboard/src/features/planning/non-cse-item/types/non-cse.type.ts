@@ -10,7 +10,6 @@ export type NONCSEItem = {
     productCode?: string
     currentPrice?: number
     remarks?: string
-    isActive: boolean
     createdAt: string
     createdBy?: string
 }

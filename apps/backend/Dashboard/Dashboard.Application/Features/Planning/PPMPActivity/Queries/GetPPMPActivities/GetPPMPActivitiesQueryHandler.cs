@@ -54,6 +54,34 @@ public class GetPPMPActivitiesQueryHandler(IUnitOfWork unitOfWork)
             projection,
             cancellationToken);
 
-        return new PaginatedApiResponse<PPMPActivityResponse>(items.ToList(), totalCount, query.PageNumber, query.PageSize);
+        // ── Batch-load linked MSFs for all returned activities ─────────────────
+        // One DB round-trip regardless of how many activities are returned.
+        var libActivityIds = items.Select(a => a.LIBActivityId).Distinct().ToList();
+        Dictionary<Guid, PPMPActivityMSFSummary> msfMap = [];
+        if (libActivityIds.Count > 0)
+        {
+            var msfByActivity = await unitOfWork.MarketScopingRepository
+                .GetByTargetLineItemBudgetActivityIdsAsync(libActivityIds, cancellationToken);
+
+            msfMap = msfByActivity.ToDictionary(
+                kvp => kvp.Key,
+                kvp => new PPMPActivityMSFSummary
+                {
+                    Id = kvp.Value.Id,
+                    ProjectName = kvp.Value.ProjectName,
+                    EstimatedBudget = kvp.Value.EstimatedBudget,
+                    Status = kvp.Value.Status.ToString(),
+                });
+        }
+
+        // Merge LinkedMarketScoping into each activity response
+        var enriched = items
+            .Select(a => a with
+            {
+                LinkedMarketScoping = msfMap.TryGetValue(a.LIBActivityId, out var msf) ? msf : null
+            })
+            .ToList();
+
+        return new PaginatedApiResponse<PPMPActivityResponse>(enriched, totalCount, query.PageNumber, query.PageSize);
     }
 }

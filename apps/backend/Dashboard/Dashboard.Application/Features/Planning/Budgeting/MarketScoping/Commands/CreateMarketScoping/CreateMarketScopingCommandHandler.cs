@@ -1,5 +1,6 @@
 using ERPEZ.Application.Interfaces;
 using ERPEZ.Application.Features.Planning.Budgeting.MarketScoping.Dtos;
+using ERPEZ.Application.Features.Planning.Budgeting.MarketScoping.Validators;
 using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
@@ -17,14 +18,18 @@ public class CreateMarketScopingCommandHandler(
     {
         var request = command.Request;
 
-        _ = await unitOfWork.UserRepository.GetByIdAsync(request.UserId, cancellationToken)
+        var user = await unitOfWork.UserRepository.GetByIdAsync(request.UserId, cancellationToken)
             ?? throw new NotFoundException($"User with ID {request.UserId} not found.");
 
-        if (request.TargetLineItemBudgetActivityId.HasValue)
-        {
-            _ = await unitOfWork.LineItemBudgetActivityRepository.GetByIdAsync(request.TargetLineItemBudgetActivityId.Value, cancellationToken)
-                ?? throw new NotFoundException($"Line Item Budget Activity with ID {request.TargetLineItemBudgetActivityId.Value} not found.");
-        }
+        var effectiveOfficeId = user.OfficeId ?? (request.OfficeId != Guid.Empty ? request.OfficeId : (Guid?)null);
+
+        // Validate mutual exclusivity, LIB scope, and office compatibility
+        await MarketScopingTargetValidator.ValidateAsync(
+            request.TargetLineItemBudgetId,
+            request.TargetLineItemBudgetActivityId,
+            effectiveOfficeId,
+            unitOfWork,
+            cancellationToken);
 
         var marketScoping = new Domain.Entities.Planning.MarketScoping
         {
@@ -35,6 +40,7 @@ public class CreateMarketScopingCommandHandler(
             PeriodFrom = request.PeriodFrom,
             PeriodTo = request.PeriodTo,
             DeliveryDate = request.DeliveryDate,
+            TargetLineItemBudgetId = request.TargetLineItemBudgetId,
             TargetLineItemBudgetActivityId = request.TargetLineItemBudgetActivityId,
             CreatedAt = DateTime.UtcNow,
         };

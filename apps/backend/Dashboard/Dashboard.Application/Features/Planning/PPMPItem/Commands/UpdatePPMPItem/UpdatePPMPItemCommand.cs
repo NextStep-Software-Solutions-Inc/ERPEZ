@@ -15,6 +15,7 @@ public record UpdatePPMPItemCommand : IRequest<ApiResponse<Guid>>
     public string? Description { get; init; }
     public string? Unit { get; init; }
     public decimal? UnitPrice { get; init; }
+    public int? PlannedQuantity { get; init; }
     public bool? MOPOverride { get; init; }
     public string? MOPJustification { get; init; }
     

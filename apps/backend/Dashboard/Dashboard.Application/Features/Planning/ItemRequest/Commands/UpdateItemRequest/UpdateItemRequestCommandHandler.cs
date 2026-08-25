@@ -15,6 +15,10 @@ public class UpdateItemRequestCommandHandler(IUnitOfWork unitOfWork)
         if (itemRequest == null)
             throw new NotFoundException("Item Request not found.");
 
+        // Validate existing status - Approved requests cannot be modified via standard update
+        if (string.Equals(itemRequest.Status, "Approved", StringComparison.OrdinalIgnoreCase))
+            throw new ValidationException("Approved item requests cannot be modified.");
+
         // Validate UOM if provided
         if (request.UOMId.HasValue)
         {
@@ -44,7 +48,18 @@ public class UpdateItemRequestCommandHandler(IUnitOfWork unitOfWork)
             itemRequest.ItemCategory = request.ItemCategory;
 
         if (request.Status != null)
+        {
             itemRequest.Status = request.Status;
+            if (string.Equals(request.Status, "Submitted", StringComparison.OrdinalIgnoreCase) && itemRequest.SubmittedAt == null)
+            {
+                itemRequest.SubmittedAt = DateTime.UtcNow;
+            }
+            if (string.Equals(request.Status, "Approved", StringComparison.OrdinalIgnoreCase) || 
+                string.Equals(request.Status, "Returned", StringComparison.OrdinalIgnoreCase))
+            {
+                itemRequest.ReviewedAt = DateTime.UtcNow;
+            }
+        }
 
         if (request.EstimatedUnitCost.HasValue)
             itemRequest.EstimatedUnitCost = request.EstimatedUnitCost.Value;
@@ -64,6 +79,46 @@ public class UpdateItemRequestCommandHandler(IUnitOfWork unitOfWork)
         itemRequest.UpdatedAt = DateTime.UtcNow;
 
         unitOfWork.ItemRequestRepository.Update(itemRequest);
+
+        // If approved, create corresponding NonCSEItem catalog record if not already created
+        if (string.Equals(itemRequest.Status, "Approved", StringComparison.OrdinalIgnoreCase))
+        {
+            var existingNonCseItem = await unitOfWork.NonCSEItemRepository.FindAsync(
+                x => x.ItemRequestId == itemRequest.Id, cancellationToken);
+
+            if (existingNonCseItem == null)
+            {
+                string itemType = "Goods";
+                if (itemRequest.ProcurementCategoryId.HasValue)
+                {
+                    var procCat = await unitOfWork.ProcurementCategoryRepository.GetByIdAsync(
+                        itemRequest.ProcurementCategoryId.Value, cancellationToken);
+                    if (procCat != null && !string.IsNullOrWhiteSpace(procCat.Name))
+                    {
+                        itemType = procCat.Name;
+                    }
+                }
+
+                var nonCseItem = new Domain.Entities.Planning.NonCSEItem
+                {
+                    Id = Guid.NewGuid(),
+                    Name = itemRequest.Name,
+                    Description = itemRequest.TechnicalSpecification,
+                    UOMId = itemRequest.UOMId,
+                    ItemRequestId = itemRequest.Id,
+                    CurrentPrice = itemRequest.EstimatedUnitCost,
+                    BaseCost = itemRequest.EstimatedUnitCost,
+                    SellingPrice = itemRequest.EstimatedUnitCost,
+                    Margin = 0m,
+                    Type = itemType,
+                    Remarks = itemRequest.TWGRemarks,
+                    CreatedAt = DateTime.UtcNow
+                };
+
+                await unitOfWork.NonCSEItemRepository.AddAsync(nonCseItem, cancellationToken);
+            }
+        }
+
         await unitOfWork.SaveChangesAsync(cancellationToken);
 
         return ApiResponse<Guid>.Success(itemRequest.Id, "Item Request updated successfully.");

@@ -120,6 +120,7 @@ export default function AddPPMPItemDialog({
     description: itemToEdit?.description ?? '',
     unit: itemToEdit?.unit ?? 'pcs',
     unitPrice: itemToEdit?.unitPrice ?? 0,
+    plannedQuantity: itemToEdit?.plannedQuantity ?? 1,
     procurementModeId: itemToEdit?.procurementModeId ?? '',
     papCode: itemToEdit?.papCode ?? '',
     projectType: (itemToEdit?.projectType as any) ?? 'Goods',

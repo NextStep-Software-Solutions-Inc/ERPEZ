@@ -49,7 +49,9 @@ const useGetChildObjects = (parentId: string | null) => {
     pathParams: {},
     queryParams: {
       filters: parentId ? `parentId==${parentId}` : 'parentId==null',
+      pageSize: 1000,
     },
+    enabled: !!parentId,
   })
 }
 
@@ -163,33 +165,41 @@ export default function CreateLineItemBudgetDetailsForm({
     pathParams: {},
     queryParams: {
       filters: `parentId==null`,
+      pageSize: 1000,
     },
   })
 
-  // Locate the Expenses root object
+  // Locate the Expenses root container object if one exists
   const expensesRootObject = useMemo(() => {
     return rootObjectsResponse?.data?.find(
       (item) =>
         item.code === 'CLS:Expenses' ||
         item.name?.toLowerCase() === 'expenses' ||
-        item.code?.startsWith('5'),
+        item.code === '50000000' ||
+        item.code === '5000000000',
     )
   }, [rootObjectsResponse?.data])
 
-  // Fetch expenditure types (children of Expenses)
+  // Fetch expenditure types (children of Expenses, if an Expenses container exists)
   const { data: expenditureTypesResponse, isLoading: isLoadingExpenditureTypes } = useGetObjects({
     pathParams: {},
     queryParams: {
-      filters: expensesRootObject ? `parentId==${expensesRootObject.id}` : 'parentId==null',
+      filters: expensesRootObject ? `parentId==${expensesRootObject.id}` : undefined,
+      pageSize: 1000,
     },
+    enabled: !!expensesRootObject,
   })
 
   const expenditureTypes = useMemo(() => {
-    if (expensesRootObject && expenditureTypesResponse?.data) {
+    // If an Expenses root container exists and has children, use those children (PS, MOOE, CO, etc.)
+    if (expensesRootObject && expenditureTypesResponse?.data && expenditureTypesResponse.data.length > 0) {
       return expenditureTypesResponse.data
     }
-    return []
-  }, [expensesRootObject, expenditureTypesResponse?.data])
+    // Otherwise, the root objects themselves (parentId==null) are the expenditure types (e.g. PS, MOOE, CO)
+    return (rootObjectsResponse?.data ?? []).filter(
+      (item) => item.id !== expensesRootObject?.id,
+    )
+  }, [expensesRootObject, expenditureTypesResponse?.data, rootObjectsResponse?.data])
 
   // Period allocation state
   const [periodAllocation, setPeriodAllocation] = useState<
@@ -453,8 +463,8 @@ export default function CreateLineItemBudgetDetailsForm({
                   const matchesAnyObjName = expenditureTypes.some((i) => i.name === currentDesc)
 
                   if (isEmpty || matchesPreviousAuto || matchesAnyObjName) {
-                    form.setFieldValue('description', selectedParent.name)
-                    setAutoInheritedName(selectedParent.name)
+                    form.setFieldValue('description', selectedParent.name || '')
+                    setAutoInheritedName(selectedParent.name || null)
                   }
                 }
               }}
@@ -509,8 +519,8 @@ export default function CreateLineItemBudgetDetailsForm({
 
                     // Rule A (Empty) or Rule B (Default Match): update Description
                     if (isEmpty || matchesPreviousAuto || matchesAnyObjName) {
-                      form.setFieldValue('description', selectedChild.name)
-                      setAutoInheritedName(selectedChild.name)
+                      form.setFieldValue('description', selectedChild.name || '')
+                      setAutoInheritedName(selectedChild.name || null)
                     }
                     // Rule C (Custom Edit): If user manually edited description, do NOT overwrite it!
                   }

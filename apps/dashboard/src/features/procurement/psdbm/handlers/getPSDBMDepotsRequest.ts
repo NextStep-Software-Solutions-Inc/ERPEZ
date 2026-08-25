@@ -15,7 +15,6 @@ import type {
 } from 'erpez-shared-lib'
 import api from '@/services/api'
 import type { PSDBMDepot } from '../types'
-import { getMockDepotsFallback } from '../utils/psdbmFallback'
 
 const endpoint = '/api/psdbm/depots' as const
 
@@ -26,23 +25,10 @@ export const getPSDBMDepotsRequest: QueryBlueprintFromTemplate<
   QueryKey
 > = {
   endpoint,
-  key: () => [endpoint] as const,
+  key: ({ url }) => [url] as const,
   fetcher: async ({ finalUrl, signal }) => {
-    // Backend proxy endpoint: /api/psdbm/depots
-    // Uses configured VITE_ERPEZ_BACKEND_URL from environment
-    try {
-      const response = await api.get<APIResponse<PSDBMDepot[]>>(finalUrl, { signal })
-      return response.data
-    } catch (error) {
-      // Fallback: If URL doesn't return data, return mock depots
-      console.warn('[PSDBM Depots] API request failed, using mock data fallback', error)
-      return {
-        succeeded: true,
-        message: 'Using fallback mock data',
-        data: getMockDepotsFallback(),
-        errors: {},
-      }
-    }
+    const response = await api.get<APIResponse<PSDBMDepot[]>>(finalUrl, { signal })
+    return response.data
   },
 
   // Cache for entire session - depots don't change during user session

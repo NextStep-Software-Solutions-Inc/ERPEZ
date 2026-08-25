@@ -47,15 +47,18 @@ export type LIB = {
   scopeLevel?: 'Activity' | 'Project'
   scope?: 'Activity' | 'Project'
   level?: 'Office' | 'Department'
-  fiscalYear: FiscalYear
+  fiscalYearId?: string
+  fiscalYear?: FiscalYear
   totalAmount: number
   status: LIBStatus
   createdAt: string
   activities: LIBActivity[]
   version: number
   previousVersionId?: string
-  fundSource: FundSource
-  office: Office
+  fundSourceId?: string
+  fundSource?: FundSource
+  officeId?: string
+  office?: Office
 }
 
 export type LIBDetails = {

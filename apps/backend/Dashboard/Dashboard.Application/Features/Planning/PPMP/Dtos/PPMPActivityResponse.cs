@@ -12,5 +12,7 @@ public record PPMPActivityResponse
     public int TotalAllocationQuantity { get; init; }
     public decimal TotalAllocationAmount { get; init; }
     public DateTime CreatedAt { get; init; }
+    /// <summary>MSF linked through PPMPActivity.LIBActivityId (activity-scope). Null if no MSF is associated.</summary>
+    public MSFSummaryResponse? LinkedMarketScoping { get; init; }
     public List<PPMPExpenditureItemResponse> PPMPExpenditureItems { get; init; } = [];
 }

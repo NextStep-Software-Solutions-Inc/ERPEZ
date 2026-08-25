@@ -32,6 +32,10 @@ public record PPMPDetailedResponse
 
     [JsonPropertyName("ParentPPMP")]
     public PPMPResponse? ParentPPMP { get; init; }
+
+    /// <summary>MSF linked through PPMP.LIBId (project-scope). Null if no MSF is associated.</summary>
+    [JsonPropertyName("LinkedMarketScoping")]
+    public MSFSummaryResponse? LinkedMarketScoping { get; init; }
     
     [JsonPropertyName("PPMPItems")]
     public List<PPMPItemResponse> PPMPItems { get; init; } = [];

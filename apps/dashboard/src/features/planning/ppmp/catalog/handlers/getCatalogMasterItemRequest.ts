@@ -1,25 +1,26 @@
-﻿/**
- * Handler: Get a single Non-CSE Catalog Item by ID (full detail)
- */
+import type {
+  APIResponse,
+  QueryBlueprintFromTemplate,
+  QueryKey,
+  QueryParams,
+} from 'erpez-shared-lib'
+import type { NONCSEItem } from '@/features/planning/non-cse-item/types/non-cse.type'
+import api from '@/services/api'
 
-import { getMockNonCseItems } from '../utils/catalogMockData'
-import type { NonCseCatalogItem } from '../types'
+const endpoint = '/non-cse-items/:id'
 
-type HandlerParams = {
-  finalUrl: string
-  itemId: string
-}
-
-export const getCatalogMasterItemRequest = {
-  endpoint: '/catalog/master/items/:id',
-  key: ({ itemId }: { itemId: string }) =>
-    ['catalog-master-item', itemId] as const,
-  fetcher: async ({ itemId }: HandlerParams): Promise<NonCseCatalogItem> => {
-    await new Promise((r) => setTimeout(r, 250))
-
-    const item = getMockNonCseItems().find((i) => i.id === itemId)
-    if (!item) throw new Error(`Catalog item not found: ${itemId}`)
-
-    return item
+export const getCatalogMasterItemRequest: QueryBlueprintFromTemplate<
+  typeof endpoint,
+  APIResponse<NONCSEItem>,
+  QueryParams,
+  QueryKey
+> = {
+  endpoint,
+  key: ({ url }) => [url],
+  fetcher: async ({ finalUrl, signal }) => {
+    const response = await api.get<APIResponse<NONCSEItem>>(finalUrl, {
+      signal,
+    })
+    return response.data
   },
 }

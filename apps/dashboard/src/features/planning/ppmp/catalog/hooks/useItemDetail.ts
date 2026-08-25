@@ -1,6 +1,6 @@
-﻿/**
+/**
  * useItemDetail
- * Fetches full details for the currently selected catalog item.
+ * Fetches full details for the currently selected catalog item from the backend API.
  * Triggered when selectedItemIdAtom is set.
  */
 
@@ -19,12 +19,15 @@ export function useItemDetail() {
 
   const query = useQuery({
     queryKey: itemId
-      ? getCatalogMasterItemRequest.key({ itemId })
-      : ['catalog-master-item', null],
-    queryFn: () =>
+      ? getCatalogMasterItemRequest.key({
+          url: `/non-cse-items/${itemId}`,
+          pathParams: { id: itemId },
+        })
+      : ['/non-cse-items', null],
+    queryFn: ({ signal }) =>
       getCatalogMasterItemRequest.fetcher({
-        finalUrl: getCatalogMasterItemRequest.endpoint,
-        itemId: itemId!,
+        finalUrl: `/non-cse-items/${itemId}`,
+        signal,
       }),
     enabled: !!itemId,
     staleTime: 1000 * 60 * 5,
@@ -32,8 +35,8 @@ export function useItemDetail() {
 
   // Sync fetched data into the Jotai atom for non-hook access
   useEffect(() => {
-    if (query.data) {
-      setItemData(query.data as any)
+    if (query.data?.data) {
+      setItemData(query.data.data)
     } else if (!itemId) {
       setItemData(null)
     }
