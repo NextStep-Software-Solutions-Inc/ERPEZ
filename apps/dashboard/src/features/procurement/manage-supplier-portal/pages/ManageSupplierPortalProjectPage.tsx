@@ -1,7 +1,6 @@
 import { useState, useCallback } from 'react'
 import { Button } from '@/components/ui/button'
 import { ArrowLeft, Download, Loader2 } from 'lucide-react'
-import { mockProjects } from '../mocks/mockData'
 import { useNavigate } from '@tanstack/react-router'
 import { useToast } from '@/components/ui/use-toast'
 import { ApplicantList } from '../components/ApplicantList'
@@ -9,15 +8,28 @@ import { ReviewWorkspace } from '../components/ReviewWorkspace'
 import { useSupplierEvaluation } from '../hooks/useSupplierEvaluation'
 import { UnsavedChangesDialog } from '../dialogs/UnsavedChangesDialog'
 import { bulkDownloadDocuments } from '../utils/bulkDownload'
+import { createQueryHookFromTemplate } from 'erpez-shared-lib'
+import { getBackendProjectDetailsRequest } from '@/features/procurement/bac-resolution/handlers/getBackendProjectDetailsRequest'
+
+const useProjectDetails = createQueryHookFromTemplate(getBackendProjectDetailsRequest)
+
+const isValidGuid = (id: string) =>
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id)
 
 export default function ManageSupplierPortalProjectPage({ projectId }: { projectId: string }) {
   const navigate = useNavigate()
   const { toast } = useToast()
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false)
   const [isDownloading, setIsDownloading] = useState(false)
-  
-  const project = mockProjects.find(p => p.id === projectId)
-  
+
+  const isGuid = isValidGuid(projectId)
+
+  const { data: project, isLoading: isLoadingProject } = useProjectDetails({
+    pathParams: { id: projectId },
+    queryParams: {},
+    enabled: Boolean(projectId && isGuid),
+  })
+
   const {
     bids,
     selectedBid,
@@ -27,25 +39,16 @@ export default function ManageSupplierPortalProjectPage({ projectId }: { project
     setEvalStatus,
     setEvalRemarks,
     handleSelectBid,
-    handleSaveEvaluation
+    handleSaveEvaluation,
+    isLoading: isLoadingBids,
+    isSaving,
   } = useSupplierEvaluation(projectId)
 
-    const bidStats = {
+  const bidStats = {
     totalApplicants: bids.length,
     pending: bids.filter((bid) => bid.status === 'Pending').length,
     passed: bids.filter((bid) => bid.status === 'Passed').length,
     failed: bids.filter((bid) => bid.status === 'Failed').length,
-  }
-  
-  if (!project) {
-    return (
-      <div className="p-8 text-center">
-        <h2 className="text-2xl font-bold">Project not found</h2>
-        <Button className="mt-4" onClick={() => navigate({ to: '/v2/manage-supplier-portal' })}>
-          Back to Portal
-        </Button>
-      </div>
-    )
   }
 
   const handleBulkDownload = useCallback(async () => {
@@ -61,13 +64,13 @@ export default function ManageSupplierPortalProjectPage({ projectId }: { project
     try {
       setIsDownloading(true)
       await bulkDownloadDocuments(
-        selectedBid.documents.map(doc => ({
+        selectedBid.documents.map((doc) => ({
           name: doc.name,
           url: doc.url,
         })),
-        `${project.title.replace(/\s+/g, '_')}_${selectedBid.supplierName.replace(/\s+/g, '_')}`
+        `${(project?.title || 'Project').replace(/\s+/g, '_')}_${selectedBid.supplierName.replace(/\s+/g, '_')}`,
       )
-      
+
       toast({
         title: 'Download Started',
         description: `Downloading ${selectedBid.documents.length} documents for ${selectedBid.supplierName}.`,
@@ -77,21 +80,21 @@ export default function ManageSupplierPortalProjectPage({ projectId }: { project
       toast({
         title: 'Download Failed',
         description: 'There was an error downloading the documents. Please try again.',
-        color: 'destructive',
+        variant: 'destructive',
       })
     } finally {
       setIsDownloading(false)
     }
-  }, [selectedBid, project.title, toast])
+  }, [selectedBid, project?.title, toast])
 
   const handleAllProjectDocumentsDownload = useCallback(async () => {
     try {
       setIsDownloading(true)
-      const allDocuments = bids.flatMap(bid => 
-        bid.documents.map(doc => ({
+      const allDocuments = bids.flatMap((bid) =>
+        bid.documents.map((doc) => ({
           name: `${bid.supplierName}_${doc.name}`,
           url: doc.url,
-        }))
+        })),
       )
 
       if (allDocuments.length === 0) {
@@ -105,9 +108,9 @@ export default function ManageSupplierPortalProjectPage({ projectId }: { project
 
       await bulkDownloadDocuments(
         allDocuments,
-        `${project.title.replace(/\s+/g, '_')}_all_documents`
+        `${(project?.title || 'Project').replace(/\s+/g, '_')}_all_documents`,
       )
-      
+
       toast({
         title: 'Download Started',
         description: `Downloading ${allDocuments.length} total documents from all applicants.`,
@@ -117,12 +120,46 @@ export default function ManageSupplierPortalProjectPage({ projectId }: { project
       toast({
         title: 'Download Failed',
         description: 'There was an error downloading the documents. Please try again.',
-        color: 'destructive',
+        variant: 'destructive',
       })
     } finally {
       setIsDownloading(false)
     }
-  }, [bids, project.title, toast])
+  }, [bids, project?.title, toast])
+
+  if (!isGuid) {
+    return (
+      <div className="p-8 text-center space-y-3">
+        <h2 className="text-2xl font-bold">Invalid Project ID</h2>
+        <p className="text-muted-foreground max-w-md mx-auto">
+          The project ID <code className="bg-muted px-1.5 py-0.5 rounded text-sm">{projectId}</code> is not a valid UUID format. Please select an active project from the Manage Supplier Portal list.
+        </p>
+        <Button className="mt-4" onClick={() => navigate({ to: '/v2/manage-supplier-portal' })}>
+          Back to Projects List
+        </Button>
+      </div>
+    )
+  }
+
+  if (isLoadingProject) {
+    return (
+      <div className="flex items-center justify-center py-20 text-muted-foreground gap-2">
+        <Loader2 className="h-6 w-6 animate-spin" />
+        <span>Loading project details...</span>
+      </div>
+    )
+  }
+
+  if (!project) {
+    return (
+      <div className="p-8 text-center">
+        <h2 className="text-2xl font-bold">Project not found</h2>
+        <Button className="mt-4" onClick={() => navigate({ to: '/v2/manage-supplier-portal' })}>
+          Back to Portal
+        </Button>
+      </div>
+    )
+  }
 
   return (
     <div className="w-full space-y-6 pb-10">
@@ -132,14 +169,17 @@ export default function ManageSupplierPortalProjectPage({ projectId }: { project
         </Button>
         <div>
           <h1 className="text-2xl font-bold">{project.title}</h1>
-          <p className="text-muted-foreground">{project.id} • {project.type} • ABC: ₱{project.abc.toLocaleString()}</p>
+          <p className="text-muted-foreground">
+            {project.id} • {project.modeOfProcurementName || 'Procurement Project'} • ABC: ₱
+            {project.abc.toLocaleString()}
+          </p>
         </div>
         <div className="ml-auto flex gap-2">
-          <Button 
-            onClick={handleAllProjectDocumentsDownload} 
-            variant="outline" 
+          <Button
+            onClick={handleAllProjectDocumentsDownload}
+            variant="outline"
             className="gap-2"
-            disabled={isDownloading}
+            disabled={isDownloading || bids.length === 0}
           >
             {isDownloading ? (
               <>
@@ -179,23 +219,30 @@ export default function ManageSupplierPortalProjectPage({ projectId }: { project
         </div>
       </div>
 
-      <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start h-[calc(100vh-220px)]">
-        <ApplicantList 
-          bids={bids} 
-          selectedBidId={selectedBidId} 
-          onSelectBid={handleSelectBid} 
-        />
-        <ReviewWorkspace 
-          selectedBid={selectedBid} 
-          evalStatus={evalStatus}
-          evalRemarks={evalRemarks}
-          onEvalStatusChange={setEvalStatus}
-          onEvalRemarksChange={setEvalRemarks}
-          onSaveEvaluation={handleSaveEvaluation}
-          onBulkDownload={handleBulkDownload}
-          isDownloading={isDownloading}
-        />
-      </div>
+      {isLoadingBids ? (
+        <div className="flex items-center justify-center py-16 text-muted-foreground gap-2">
+          <Loader2 className="h-5 w-5 animate-spin" />
+          <span>Loading applicant bids...</span>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-12 gap-6 items-start h-[calc(100vh-220px)]">
+          <ApplicantList
+            bids={bids}
+            selectedBidId={selectedBidId}
+            onSelectBid={handleSelectBid}
+          />
+          <ReviewWorkspace
+            selectedBid={selectedBid}
+            evalStatus={evalStatus}
+            evalRemarks={evalRemarks}
+            onEvalStatusChange={setEvalStatus}
+            onEvalRemarksChange={setEvalRemarks}
+            onSaveEvaluation={handleSaveEvaluation}
+            onBulkDownload={handleBulkDownload}
+            isDownloading={isDownloading || isSaving}
+          />
+        </div>
+      )}
 
       <UnsavedChangesDialog
         open={showUnsavedDialog}

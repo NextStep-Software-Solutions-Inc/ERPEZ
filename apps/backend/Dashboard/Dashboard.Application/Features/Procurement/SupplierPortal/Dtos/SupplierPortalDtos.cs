@@ -1,3 +1,4 @@
+using ERPEZ.Application.Features.Procurement.RequestForQuotation.Dtos;
 using ERPEZ.Domain.Enums;
 
 namespace ERPEZ.Application.Features.Procurement.SupplierPortal.Dtos;
@@ -26,11 +27,14 @@ public record SupplierRFQItemDto
     public Guid RFQId { get; init; }
     public string ItemName { get; init; } = string.Empty;
     public string? Category { get; init; }
+    public string? Fund { get; init; }
     public int Quantity { get; init; }
     public decimal UnitPriceSnapshot { get; init; }
     public decimal TotalABC { get; init; }
     public bool IsBrochureRequired { get; init; }
     public string? GreenSpecification { get; init; }
+    public string? Month { get; init; }
+    public List<MonthlyAllocationDto> MonthlyAllocations { get; init; } = [];
 }
 
 public record SupplierBidDetailDto

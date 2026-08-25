@@ -29,22 +29,24 @@ interface SetQuotationModalProps {
   onOpenChange: (open: boolean) => void
   rfqId: string
   supplierId?: string
+  initialRFQ?: any
+  onSuccess?: () => void
 }
 
 interface ItemBidSpecModalProps {
   open: boolean
   onOpenChange: (open: boolean) => void
-  item: RFQItem
+  item: RFQItem | null
   onSave: (itemId: string, model: string, brand: string, color: string) => void
 }
 
 function ItemBidSpecModal({ open, onOpenChange, item, onSave }: ItemBidSpecModalProps) {
-  const [model, setModel] = useState(item.bidModel || '')
-  const [brand, setBrand] = useState(item.bidBrand || '')
-  const [color, setColor] = useState(item.bidColor || '')
+  const [model, setModel] = useState('')
+  const [brand, setBrand] = useState('')
+  const [color, setColor] = useState('')
 
   useEffect(() => {
-    if (open) {
+    if (open && item) {
       setModel(item.bidModel || '')
       setBrand(item.bidBrand || '')
       setColor(item.bidColor || '')
@@ -52,17 +54,19 @@ function ItemBidSpecModal({ open, onOpenChange, item, onSave }: ItemBidSpecModal
   }, [open, item])
 
   const handleSave = () => {
-    onSave(item.id, model, brand, color)
+    if (item) {
+      onSave(item.id, model, brand, color)
+    }
     onOpenChange(false)
   }
 
   return (
-    <Dialog open={open} onOpenChange={onOpenChange}>
+    <Dialog open={open && Boolean(item)} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-md">
         <DialogHeader>
           <DialogTitle>Item Bid Specification</DialogTitle>
           <DialogDescription>
-            Enter the specifications for {item.itemName}
+            Enter the specifications for {item?.itemName || 'Item'}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-4 py-4">
@@ -108,9 +112,16 @@ function ItemBidSpecModal({ open, onOpenChange, item, onSave }: ItemBidSpecModal
   )
 }
 
-export function SetQuotationModal({ open, onOpenChange, rfqId, supplierId }: SetQuotationModalProps) {
-  const { rfqs, updateRFQ } = useRFQStore()
-  const rfq = rfqs.find((r) => r.id === rfqId)
+export function SetQuotationModal({
+  open,
+  onOpenChange,
+  rfqId,
+  supplierId,
+  initialRFQ,
+  onSuccess,
+}: SetQuotationModalProps) {
+  const { rfqs } = useRFQStore()
+  const rfq = initialRFQ || rfqs.find((r) => r.id === rfqId)
   const { toast } = useToast()
   const [items, setItems] = useState<RFQItem[]>([])
   const [specModalOpen, setSpecModalOpen] = useState(false)
@@ -120,15 +131,37 @@ export function SetQuotationModal({ open, onOpenChange, rfqId, supplierId }: Set
 
   const { mutateAsync: submitBidMutation, isPending: isSubmitting } = useSubmitSupplierBid()
 
-  const isSubmitted = rfq?.quotationStatus === 'submitted'
+  const isSubmitted = rfq?.quotationStatus === 'submitted' && rfq?.quotationApprovalStatus !== 'returned'
 
   useEffect(() => {
     if (rfq && open) {
-      setItems(rfq.items.map(item => ({ ...item })))
+      setItems(
+        (rfq.items || []).map((item: any) => ({
+          ...item,
+          bidUnitPrice: item.bidUnitPrice !== undefined ? item.bidUnitPrice : (item.supplierUnitPrice || 0),
+          bidTotalAmount: item.bidTotalAmount !== undefined ? item.bidTotalAmount : ((item.bidUnitPrice ?? item.supplierUnitPrice ?? 0) * (item.quantity || 1)),
+          bidBrand: item.bidBrand || item.brand || '',
+          bidModel: item.bidModel || item.model || '',
+          bidColor: item.bidColor || item.color || '',
+          bidBrochureUrl: item.bidBrochureUrl || item.brochureFileUrl,
+          bidBrochureFileName: item.bidBrochureFileName,
+        }))
+      )
     }
   }, [rfq, open])
 
-  if (!rfq) return null
+  if (!rfq) {
+    return (
+      <ResponsiveDialog
+        open={open}
+        onOpenChange={onOpenChange}
+        title="Set Quotation"
+        description="Loading quotation details..."
+      >
+        <div className="p-8 text-center text-muted-foreground">Loading quotation details...</div>
+      </ResponsiveDialog>
+    )
+  }
 
   const handleBidSpecClick = (item: RFQItem) => {
     if (isSubmitted) {
@@ -266,16 +299,12 @@ export function SetQuotationModal({ open, onOpenChange, rfqId, supplierId }: Set
         },
       })
 
-      updateRFQ(rfq.id, {
-        items: items,
-        quotationStatus: 'draft',
-      })
-
       toast({
         title: 'Draft saved',
         description: 'Your quotation has been saved as draft.'
       })
       onOpenChange(false)
+      onSuccess?.()
     } catch (err: any) {
       toast({
         title: 'Save failed',
@@ -323,18 +352,13 @@ export function SetQuotationModal({ open, onOpenChange, rfqId, supplierId }: Set
         },
       })
 
-      updateRFQ(rfq.id, {
-        items: items,
-        quotationStatus: 'submitted',
-        quotationSubmittedAt: new Date().toISOString(),
-      })
-
       toast({
         title: 'Quotation submitted',
         description: 'Your quotation has been successfully submitted.'
       })
       setSubmitConfirmOpen(false)
       onOpenChange(false)
+      onSuccess?.()
     } catch (err: any) {
       toast({
         title: 'Submission failed',
@@ -512,14 +536,12 @@ export function SetQuotationModal({ open, onOpenChange, rfqId, supplierId }: Set
           </div>
         </ResponsiveDialog>
 
-      {selectedItem && (
-        <ItemBidSpecModal
-          open={specModalOpen}
-          onOpenChange={setSpecModalOpen}
-          item={selectedItem}
-          onSave={handleSaveBidSpec}
-        />
-      )}
+      <ItemBidSpecModal
+        open={specModalOpen}
+        onOpenChange={setSpecModalOpen}
+        item={selectedItem}
+        onSave={handleSaveBidSpec}
+      />
 
       <AlertDialog open={submitConfirmOpen} onOpenChange={setSubmitConfirmOpen}>
         <AlertDialogContent>

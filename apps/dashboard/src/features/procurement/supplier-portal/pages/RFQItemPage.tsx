@@ -1,73 +1,78 @@
-import { useState, useMemo } from 'react'
+import { useState, useMemo, useEffect } from 'react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { useRFQStore } from '@/features/procurement/rfq/store/rfqStore'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { RFQDetailsPage } from '@/features/procurement/rfq/pages/RFQDetailsPage'
-import { Eye, FileText, CheckCircle2, Send, Search as SearchIcon, Calendar, ShoppingBag, XCircle, Loader2 } from 'lucide-react'
+import { Eye, Calendar, ShoppingBag, Loader2, UserCheck, AlertCircle } from 'lucide-react'
 import { Checkbox } from '@/components/ui/checkbox'
-import type { RFQ } from '@/features/procurement/rfq/store/rfqStore'
 import { createQueryHookFromTemplate } from 'erpez-shared-lib'
 import { getSupplierRFQInvitationsRequest } from '../handlers/supplierPortalRequests'
+import { useSuppliers } from '@/components/features/planning/procurement-library/suppliers/useSuppliers'
 
 const useSupplierRFQInvitations = createQueryHookFromTemplate(getSupplierRFQInvitationsRequest)
 
 export function RFQItemPage() {
-  const { rfqs } = useRFQStore()
   const [viewing, setViewing] = useState<string | null>(null)
   const [selectedIds, setSelectedIds] = useState<string[]>([])
   const [page, setPage] = useState(1)
   const pageSize = 5
 
-  const currentSupplierId = '00000000-0000-0000-0000-000000000001'
+  // 1. Fetch registered suppliers from API
+  const { data: suppliersData, isLoading: isLoadingSuppliers } = useSuppliers({
+    pathParams: {},
+    queryParams: {},
+  })
+  const registeredSuppliers = suppliersData?.data ?? []
 
-  const { data: apiRfqs, isLoading } = useSupplierRFQInvitations({
+  // 2. Active Supplier ID: Priority is .env -> user selection -> first registered supplier
+  const envSupplierId = (import.meta.env.VITE_TEST_SUPPLIER_ID as string) || ''
+  const [activeSupplierId, setActiveSupplierId] = useState<string>(envSupplierId)
+
+  useEffect(() => {
+    if (!activeSupplierId && registeredSuppliers.length > 0) {
+      setActiveSupplierId(registeredSuppliers[0].id)
+    }
+  }, [registeredSuppliers, activeSupplierId])
+
+  // 3. Fetch invited RFQs for this supplier directly from backend API
+  const { data: apiRfqs, isLoading: isLoadingRfqs } = useSupplierRFQInvitations({
     pathParams: {},
     queryParams: {
-      supplierId: currentSupplierId,
+      supplierId: activeSupplierId,
     },
+    enabled: Boolean(activeSupplierId),
   })
 
-  const normalizeStatus = (r: RFQ) => {
-    const st = String(r.status || '').toLowerCase()
-    if (st === 'issued') return 'submitted'
-    if (st === 'closed') return 'approved'
-    return st
-  }
+  const supplierViewRFQs = useMemo(() => {
+    if (!apiRfqs) return []
 
-  const supplierViewRFQs: RFQ[] = useMemo(() => {
-    if (apiRfqs && apiRfqs.length > 0) {
-      return apiRfqs.map((r) => ({
-        id: r.id,
-        rfqNumber: r.rfqNumber,
-        prNumber: r.tracingNumber || '',
-        department: 'Procurement Division',
-        date: r.date,
-        deadline: r.deadline || '',
-        status: (r.status || 'approved') as any,
-        items: (r.items || []).map((it) => ({
-          id: it.id,
-          itemCode: it.id.substring(0, 8),
-          itemName: it.itemName,
-          description: it.itemName,
-          quantity: it.quantity,
-          unit: 'pcs',
-          unitPrice: it.unitPriceSnapshot,
-          totalAmount: it.totalABC,
-          category: it.category || 'General',
-          fund: 'General Fund',
-        })),
-        invitedSuppliers: [],
-        quotationStatus: r.hasSubmittedBid ? 'submitted' : 'draft',
-      }))
-    }
-
-    return rfqs.filter((r) => {
-      const s = normalizeStatus(r)
-      return s === 'approved' || s === 'submitted'
-    })
-  }, [apiRfqs, rfqs])
+    return apiRfqs.map((r) => ({
+      id: r.id,
+      rfqNumber: r.rfqNumber,
+      prNumber: r.tracingNumber || '',
+      department: 'Procurement Division',
+      date: r.date,
+      deadline: r.deadline || '',
+      status: r.status || 'approved',
+      items: (r.items || []).map((it) => ({
+        id: it.id,
+        itemCode: it.id.substring(0, 8),
+        itemName: it.itemName,
+        description: it.itemName,
+        quantity: it.quantity,
+        unit: 'pcs',
+        unitPrice: it.unitPriceSnapshot,
+        totalAmount: it.totalABC,
+        category: it.category || 'General',
+        fund: 'General Fund',
+      })),
+      invitedSuppliers: [],
+      quotationStatus: r.hasSubmittedBid ? 'submitted' : 'draft',
+      quotationApprovalStatus: r.bidStatus?.toLowerCase(),
+    }))
+  }, [apiRfqs])
 
   const totalPages = Math.max(1, Math.ceil(supplierViewRFQs.length / pageSize))
   const pagedRFQs = supplierViewRFQs.slice((page - 1) * pageSize, page * pageSize)
@@ -92,13 +97,22 @@ export function RFQItemPage() {
     pending: supplierViewRFQs.filter((r) => !r.quotationStatus || r.quotationStatus === 'draft').length,
   }
 
+  const selectedSupplierObj = registeredSuppliers.find((s) => s.id === activeSupplierId)
+
   if (viewing) {
-    return <RFQDetailsPage rfqId={viewing} onBack={() => setViewing(null)} isSupplierPortal={true} />
+    return (
+      <RFQDetailsPage
+        rfqId={viewing}
+        supplierId={activeSupplierId}
+        onBack={() => setViewing(null)}
+        isSupplierPortal={true}
+      />
+    )
   }
 
   return (
     <div className="w-full space-y-6 pb-10">
-      {/* Module Header (purple) */}
+      {/* Module Header with Supplier Switcher */}
       <Card className="bg-gradient-to-r from-violet-50 via-purple-50 to-indigo-50 border-violet-200 shadow-sm">
         <CardHeader>
           <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -108,14 +122,36 @@ export function RFQItemPage() {
                 Supplier-facing portal for viewing RFQs and submitting quotations
               </CardDescription>
             </div>
-            <Badge variant="outline" className="h-fit px-3 py-1 font-semibold">
-              <ShoppingBag className="h-3.5 w-3.5 mr-1.5" /> Supplier Portal
-            </Badge>
+            <div className="flex items-center gap-3 flex-wrap">
+              <div className="flex items-center gap-2 bg-white/80 border border-violet-200 rounded-lg px-3 py-1.5 shadow-sm">
+                <UserCheck className="h-4 w-4 text-violet-700" />
+                <span className="text-xs font-semibold text-violet-900">Acting as:</span>
+                {isLoadingSuppliers ? (
+                  <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                ) : (
+                  <Select value={activeSupplierId} onValueChange={setActiveSupplierId}>
+                    <SelectTrigger className="h-8 border-violet-200 bg-white text-xs w-[220px]">
+                      <SelectValue placeholder="Select a supplier..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {registeredSuppliers.map((sup) => (
+                        <SelectItem key={sup.id} value={sup.id} className="text-xs">
+                          {sup.name || 'Unnamed Supplier'} ({sup.status || 'Active'})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
+              </div>
+              <Badge variant="outline" className="h-fit px-3 py-1 font-semibold border-violet-300 bg-violet-100 text-violet-800">
+                <ShoppingBag className="h-3.5 w-3.5 mr-1.5" /> Supplier Portal
+              </Badge>
+            </div>
           </div>
         </CardHeader>
       </Card>
 
-      {/* Main Content Card with orange sub-header and all content inside */}
+      {/* Main Content Card */}
       <Card>
         <CardHeader className="bg-gradient-to-r from-orange-50 via-amber-50 to-yellow-50 border-orange-200 shadow-sm">
           <div className="flex items-start gap-4">
@@ -126,11 +162,11 @@ export function RFQItemPage() {
               <div className="flex items-center gap-3 flex-wrap">
                 <CardTitle className="text-3xl text-orange-900">RFQ Item</CardTitle>
                 <Badge variant="outline" className="bg-orange-100 text-orange-700 border-orange-300 h-fit">
-                  Supplier Portal
+                  {selectedSupplierObj?.name || 'Selected Supplier'}
                 </Badge>
               </div>
               <CardDescription className="text-orange-700 text-sm mt-1 leading-relaxed">
-                View approved RFQs and submit your quotations. All RFQs listed below are open for bidding.
+                View RFQs for which this supplier was invited and submit quotations.
               </CardDescription>
             </div>
           </div>
@@ -181,17 +217,24 @@ export function RFQItemPage() {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {isLoading ? (
+                {isLoadingRfqs ? (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center py-8">
                       <Loader2 className="h-6 w-6 animate-spin mx-auto text-muted-foreground" />
                       <div className="text-sm text-muted-foreground mt-2">Loading invited RFQs...</div>
                     </TableCell>
                   </TableRow>
+                ) : !activeSupplierId ? (
+                  <TableRow>
+                    <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
+                      <AlertCircle className="h-6 w-6 text-amber-500 mx-auto mb-2" />
+                      Please select a supplier from the dropdown above.
+                    </TableCell>
+                  </TableRow>
                 ) : pagedRFQs.length === 0 ? (
                   <TableRow>
                     <TableCell colSpan={7} className="text-center py-8 text-muted-foreground">
-                      No RFQs available for bidding at this time.
+                      No RFQs available for this supplier at this time.
                     </TableCell>
                   </TableRow>
                 ) : (

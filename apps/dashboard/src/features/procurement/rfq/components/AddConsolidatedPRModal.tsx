@@ -203,9 +203,11 @@ export function AddConsolidatedPRModal({ open, onOpenChange, onAdd }: AddConsoli
       totalAmount: item.totalAmount || 0,
       isRequiredBrochure: false,
       requiresGreenSpecification: false,
-      // preserve category and fund from consolidated PR item so RFQ shows them
+      // preserve category, fund, and month from consolidated PR item so RFQ shows them
       category: item.category,
       fund: item.fund,
+      month: item.month,
+      monthlyAllocations: item.month ? [{ month: String(item.month), quantity: item.qty ?? 0 }] : [],
     }))
 
     onAdd(rfqItems)

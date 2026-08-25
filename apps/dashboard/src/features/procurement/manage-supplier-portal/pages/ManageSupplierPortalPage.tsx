@@ -1,48 +1,94 @@
-import React, { useState } from 'react'
+import React, { useState, useMemo } from 'react'
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { FileText, Layers, ShoppingCart, Users } from 'lucide-react'
-import { mockProjects } from '../mocks/mockData'
+import { FileText, Layers, ShoppingCart, Users, Loader2 } from 'lucide-react'
 import { useNavigate } from '@tanstack/react-router'
 import { TemplateTable } from '@/components/TemplateTable'
 import { getManageSupplierPortalTableColumns } from '../tables/ManageSupplierPortalTableColumns'
 import { ManageSupplierPortalTableToolbar } from '../tables/ManageSupplierPortalTableToolbar'
 import { Project } from '../types'
+import { createQueryHookFromTemplate } from 'erpez-shared-lib'
+import { getProjectsRequest } from '../handlers/getProjectsRequest'
+
+const useProjects = createQueryHookFromTemplate(getProjectsRequest)
 
 export default function ManageSupplierPortalPage() {
   const [globalFilter, setGlobalFilter] = useState('')
   const [typeFilter, setTypeFilter] = useState<'all' | 'SVP' | 'Public Bidding'>('all')
   const navigate = useNavigate()
 
+  const { data: projectsResponse, isLoading } = useProjects({
+    pathParams: {},
+    queryParams: {
+      pageSize: 100,
+    },
+  })
+
+  const rawProjects = projectsResponse?.data ?? []
+
+  const projects: Project[] = useMemo(() => {
+    return rawProjects.map((p: any) => {
+      const mopName = p.consolidatedPR?.modeOfProcurementName || ''
+      const isSvp =
+        mopName.toLowerCase().includes('svp') ||
+        mopName.toLowerCase().includes('small value')
+      const projectType: 'SVP' | 'Public Bidding' = isSvp ? 'SVP' : 'Public Bidding'
+
+      const schedules = p.biddingActivitySchedules || []
+      const latestSchedule = schedules.length > 0 ? schedules[schedules.length - 1] : null
+      const datePosted = schedules[0]?.startDate || new Date().toISOString()
+      const deadline = latestSchedule?.endDate || latestSchedule?.startDate || ''
+
+      return {
+        id: p.id,
+        title: p.title || 'Untitled Project',
+        status: (p.status || 'Active') as any,
+        type: projectType,
+        datePosted,
+        deadline,
+        abc: p.abc || 0,
+        applicantCount: p.applicantCount,
+      }
+    })
+  }, [rawProjects])
+
   const handleViewBids = (projectId: string) => {
     navigate({ to: `/v2/manage-supplier-portal/${projectId}` })
   }
 
-  const columns = React.useMemo(() => getManageSupplierPortalTableColumns({
-    onViewBids: handleViewBids
-  }), [navigate])
+  const columns = React.useMemo(
+    () =>
+      getManageSupplierPortalTableColumns({
+        onViewBids: handleViewBids,
+      }),
+    [navigate],
+  )
 
-  const filteredProjects = mockProjects.filter((project) => {
-    if (typeFilter !== 'all' && project.type !== typeFilter) {
-      return false
+  const filteredProjects = useMemo(() => {
+    return projects.filter((project) => {
+      if (typeFilter !== 'all' && project.type !== typeFilter) {
+        return false
+      }
+
+      const query = globalFilter.trim().toLowerCase()
+      if (!query) return true
+
+      return (
+        project.title.toLowerCase().includes(query) ||
+        project.id.toLowerCase().includes(query) ||
+        project.type.toLowerCase().includes(query)
+      )
+    })
+  }, [projects, typeFilter, globalFilter])
+
+  const stats = useMemo(() => {
+    return {
+      totalProjects: projects.length,
+      svpProjects: projects.filter((p) => p.type === 'SVP').length,
+      publicBiddingProjects: projects.filter((p) => p.type === 'Public Bidding').length,
+      totalApplicants: projects.reduce((count, p) => count + (p.applicantCount ?? 0), 0),
     }
-
-    const query = globalFilter.trim().toLowerCase()
-    if (!query) return true
-
-    return (
-      project.title.toLowerCase().includes(query) ||
-      project.id.toLowerCase().includes(query) ||
-      project.type.toLowerCase().includes(query)
-    )
-  })
-
-  const stats = {
-    totalProjects: mockProjects.length,
-    svpProjects: mockProjects.filter((project) => project.type === 'SVP').length,
-    publicBiddingProjects: mockProjects.filter((project) => project.type === 'Public Bidding').length,
-    totalApplicants: mockProjects.reduce((count, project) => count + (project.applicantCount ?? 0), 0),
-  }
+  }, [projects])
 
   return (
     <div className="w-full space-y-6 pb-10">
@@ -119,23 +165,30 @@ export default function ManageSupplierPortalPage() {
           <CardDescription>Select a project to review applicant bids</CardDescription>
         </CardHeader>
         <CardContent>
-          <TemplateTable<Project>
-            columns={columns}
-            data={filteredProjects}
-            actions={['read', 'write']}
-            toolbar={() => (
-              <ManageSupplierPortalTableToolbar 
-                searchTerm={globalFilter}
-                typeFilter={typeFilter}
-                onSearchChange={setGlobalFilter}
-                onTypeFilterChange={setTypeFilter}
-              />
-            )}
-            readonly={false}
-            meta={{
-              onViewBids: handleViewBids,
-            }}
-          />
+          {isLoading ? (
+            <div className="flex items-center justify-center py-12 text-muted-foreground gap-2">
+              <Loader2 className="h-5 w-5 animate-spin" />
+              <span>Loading projects...</span>
+            </div>
+          ) : (
+            <TemplateTable<Project>
+              columns={columns}
+              data={filteredProjects}
+              actions={['read', 'write']}
+              toolbar={() => (
+                <ManageSupplierPortalTableToolbar
+                  searchTerm={globalFilter}
+                  typeFilter={typeFilter}
+                  onSearchChange={setGlobalFilter}
+                  onTypeFilterChange={setTypeFilter}
+                />
+              )}
+              readonly={false}
+              meta={{
+                onViewBids: handleViewBids,
+              }}
+            />
+          )}
         </CardContent>
       </Card>
     </div>

@@ -1,3 +1,4 @@
+using ERPEZ.Application.Features.Procurement.RequestForQuotation.Dtos;
 using ERPEZ.Application.Features.Procurement.SupplierPortal.Dtos;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
@@ -15,6 +16,8 @@ public class GetSupplierRFQDetailsQueryHandler(IUnitOfWork unitOfWork)
     {
         var rfq = await unitOfWork.RFQRepository.Query()
             .Include(r => r.RFQItems)
+                .ThenInclude(i => i.CPRItem)
+                    .ThenInclude(c => c.PRItem)
             .Include(r => r.RFQSuppliers)
             .FirstOrDefaultAsync(r => r.Id == request.RFQId && !r.IsDeleted, cancellationToken);
 
@@ -53,11 +56,16 @@ public class GetSupplierRFQDetailsQueryHandler(IUnitOfWork unitOfWork)
                 RFQId = i.RFQId,
                 ItemName = i.ItemNameSnapshot,
                 Category = i.CategorySnapshot,
+                Fund = i.FundSnapshot,
                 Quantity = i.Quantity,
                 UnitPriceSnapshot = i.UnitPriceSnapshot,
                 TotalABC = i.Quantity * i.UnitPriceSnapshot,
                 IsBrochureRequired = i.IsBrochureRequired,
-                GreenSpecification = i.GreenSpecification
+                GreenSpecification = i.GreenSpecification,
+                Month = i.CPRItem?.PRItem?.RequestedMonth.ToString(),
+                MonthlyAllocations = i.CPRItem?.PRItem != null
+                    ? new List<MonthlyAllocationDto> { new(i.CPRItem.PRItem.RequestedMonth.ToString(), i.Quantity) }
+                    : new List<MonthlyAllocationDto>()
             }).ToList()
         };
 

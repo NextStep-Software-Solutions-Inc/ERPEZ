@@ -17,9 +17,13 @@ public class PublicSupplierApplication : BaseEntity
     public string TinNumber       { get; set; } = string.Empty;
     public string BusinessAddress { get; set; } = string.Empty;
 
-    /// <summary>Submitted | UnderEvaluation | Disqualified | Responsive</summary>
+    /// <summary>Submitted | UnderEvaluation | Disqualified | Responsive | Passed | Failed</summary>
     public string   Status      { get; set; } = "Submitted";
     public DateTime SubmittedAt { get; set; }
+
+    public string? Remarks { get; set; }
+    public string? EvaluatedBy { get; set; }
+    public DateTime? EvaluatedAt { get; set; }
 
     // Navigation properties
     public virtual ProcurementProject                ProcurementProject { get; set; } = null!;
