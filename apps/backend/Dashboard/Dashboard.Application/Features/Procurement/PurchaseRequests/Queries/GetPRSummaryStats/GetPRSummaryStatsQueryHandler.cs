@@ -6,6 +6,8 @@ using ERPEZ.Shared.Common;
 using ERPEZ.Shared.Exceptions;
 using MediatR;
 
+using Microsoft.EntityFrameworkCore;
+
 namespace ERPEZ.Application.Features.Procurement.PurchaseRequests.Queries.GetPRSummaryStats;
 
 public class GetPRSummaryStatsQueryHandler(IUnitOfWork unitOfWork)
@@ -28,9 +30,9 @@ public class GetPRSummaryStatsQueryHandler(IUnitOfWork unitOfWork)
         }
         else
         {
-            var (prs, _) = await unitOfWork.PurchaseRequestRepository
-                .GetDetailedPagedAsync(new Sieve.Models.SieveModel { Filters = $"prType=={query.PRType}", PageSize = int.MaxValue }, cancellationToken);
-            allPRs = prs.ToList();
+            allPRs = await unitOfWork.PurchaseRequestRepository
+                .Query(pr => !pr.IsDeleted && pr.PRType == query.PRType)
+                .ToListAsync(cancellationToken);
         }
 
         var activePRs = allPRs.Where(pr => !pr.IsDeleted).ToList();
