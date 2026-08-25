@@ -1,3 +1,4 @@
+using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
@@ -11,7 +12,7 @@ public class DeleteAOBCommandHandler(IUnitOfWork unitOfWork)
     public async Task<ApiResponse<Unit>> Handle(DeleteAOBCommand request, CancellationToken cancellationToken)
     {
         var aob = await unitOfWork.AOBRepository.Query()
-            .Include(a => a.AOBProcurementProjectMappings)
+            .Include(a => a.AOBRFQMappings)
             .Include(a => a.AOBAwardedItems)
             .FirstOrDefaultAsync(a => a.Id == request.Id && !a.IsDeleted, cancellationToken);
 
@@ -20,11 +21,16 @@ public class DeleteAOBCommandHandler(IUnitOfWork unitOfWork)
             return ApiResponse<Unit>.Fail("Abstract of Bids (AOB) not found.");
         }
 
+        if (aob.Status == StatusEnum.Approved)
+        {
+            return ApiResponse<Unit>.Fail("Approved Abstract of Bids (AOB) cannot be deleted.");
+        }
+
         // Remove linked mappings
-        var mappings = aob.AOBProcurementProjectMappings.ToList();
+        var mappings = aob.AOBRFQMappings.ToList();
         foreach (var mapping in mappings)
         {
-            unitOfWork.AOBProcurementProjectMappingRepository.Remove(mapping, hardDelete: true);
+            unitOfWork.AOBRFQMappingRepository.Remove(mapping, hardDelete: true);
         }
 
         // Remove linked awarded items

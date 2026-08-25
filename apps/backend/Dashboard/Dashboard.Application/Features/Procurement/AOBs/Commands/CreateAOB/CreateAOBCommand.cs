@@ -1,3 +1,4 @@
+using ERPEZ.Domain.Enums;
 using ERPEZ.Shared.Common;
 using MediatR;
 
@@ -7,8 +8,8 @@ public record CreateAOBCommand : IRequest<ApiResponse<Guid>>
 {
     public required string AOBNumber { get; init; }
     public string? Description { get; init; }
-    public string AwardCriterion { get; init; } = "LCRB"; // LCRB, MEARB, MARB
+    public BidEvaluationCriteria AwardCriterion { get; init; } = BidEvaluationCriteria.LCRB;
     public DateOnly AOBDate { get; init; }
     public DateTime OpeningDate { get; init; }
-    public List<Guid> ProcurementProjectIds { get; init; } = [];
+    public List<Guid> RFQIds { get; init; } = [];
 }

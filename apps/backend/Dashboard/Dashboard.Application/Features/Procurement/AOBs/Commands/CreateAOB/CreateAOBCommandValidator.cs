@@ -13,8 +13,7 @@ public class CreateAOBCommandValidator : AbstractValidator<CreateAOBCommand>
             .WithMessage("AOB Number cannot exceed 100 characters.");
 
         RuleFor(x => x.AwardCriterion)
-            .NotEmpty()
-            .Must(c => c == "LCRB" || c == "MEARB" || c == "MARB")
-            .WithMessage("Award Criterion must be either LCRB, MEARB, or MARB.");
+            .IsInEnum()
+            .WithMessage("Valid Award Criterion is required (e.g. LCRB, MEARB).");
     }
 }

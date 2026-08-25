@@ -11,18 +11,19 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/ui/select'
-import { getObjectCodesRequest } from '@/components/features/planning/procurement-library/item-master/handlers/getObjectCodesRequest'
 import { getLIBActivityObjectsRequest } from '@/features/planning/line-item-budgeting/line-item-budget-details/handlers/getLIBActivityObjectsRequest'
 import FieldInfo from '@/components/FieldInfo'
 
-const useObjectCodesQuery = createQueryHookFromTemplate(getObjectCodesRequest)
 const useLIBActivityObjectsQuery = createQueryHookFromTemplate(
   getLIBActivityObjectsRequest,
 )
 
 export const ppmpExpenditureItemSchema = z.object({
   isProcurable: z.boolean(),
-  objectId: z.string().min(1, 'Item of expenditure is required'),
+  typeOfExpenditureId: z
+    .string()
+    .min(1, 'Type of Expenditure is required'),
+  objectId: z.string().min(1, 'Item of Expenditure is required'),
 })
 
 export type PPMPExpenditureItemFormValues = z.infer<
@@ -127,6 +128,33 @@ export function resolveTypeOfExpenditure(
   }
 }
 
+/**
+ * Formats expenditure labels to remove redundant category prefixes (e.g., "SC:", "GRP:")
+ * and avoids duplicating code and name if they are identical.
+ */
+export function formatExpenditureDisplayName(name?: string, code?: string): string {
+  const safeName = name?.trim() || ''
+  const safeCode = code?.trim() || ''
+
+  if (!safeName && !safeCode) return ''
+  if (!safeCode) return safeName
+  if (!safeName) return safeCode
+
+  // Remove prefixes like "SC:", "GRP:", "CAT:"
+  const cleanCode = safeCode.replace(/^(SC|GRP|CAT):\s*/i, '').trim()
+
+  // If code duplicates name or is identical, display just the clean name
+  if (
+    cleanCode.toLowerCase() === safeName.toLowerCase() ||
+    safeCode.toLowerCase() === safeName.toLowerCase()
+  ) {
+    return safeName
+  }
+
+  // If code is numeric (e.g. standard UACS code "50205030"), display "50205030 - Cloud Compute Subscriptions"
+  return `${safeCode} - ${safeName}`
+}
+
 export function AddPPMPItemExpenditureForm({
   formId = 'add-ppmp-expenditure-form',
   initialValues,
@@ -144,233 +172,28 @@ export function AddPPMPItemExpenditureForm({
       enabled: !!libActivityId,
     })
 
-  // 2. Comprehensive UACS object lookup containing parent hierarchy
-  const { data: objectCodesResponse, isLoading: isObjectCodesLoading } =
-    useObjectCodesQuery({
-      pathParams: {},
-      queryParams: { pageSize: 1000 },
-    })
+  const parentGroups = useMemo(() => {
+    return activityObjectsResponse?.data ?? []
+  }, [activityObjectsResponse?.data])
 
-  // Fast map to resolve object details and parent hierarchy
-  const objectMap = useMemo(() => {
-    const map = new Map<
-      string,
-      {
-        id: string
-        name: string
-        code: string
-        parent: ParentObjectInfo | null
-      }
-    >()
-
-    objectCodesResponse?.data?.forEach((item) => {
-      const parentRaw = item.parent as
-        | { id?: string; name?: string; code?: string; parent?: any }
-        | null
-        | undefined
-
-      const parentInfo: ParentObjectInfo | null =
-        parentRaw && parentRaw.name
-          ? {
-              id: parentRaw.id || '',
-              name: parentRaw.name,
-              code: parentRaw.code || '',
-              parent: parentRaw.parent ?? null,
-            }
-          : null
-
-      map.set(item.id, {
-        id: item.id,
-        name: item.name,
-        code: item.code,
-        parent: parentInfo,
-      })
-    })
-
-    return map
-  }, [objectCodesResponse?.data])
-
-  const [selectedParentId, setSelectedParentId] = useState<string | null>(null)
-
-  const isEditing = !!initialValues?.objectId
-
-  // Derive available Parent Objects (Types of Expenditure: PS, MOOE, CO, FE)
-  const parentOptions = useMemo(() => {
-    const parentsMap = new Map<string, { id: string; name: string; code: string }>()
-
-    if (libActivityId && activityObjectsResponse?.data) {
-      activityObjectsResponse.data.forEach((item) => {
-        // Exclude objects already added to this activity (unless currently editing)
-        if (!isEditing && existingObjectIds?.includes(item.objectId)) {
-          return
-        }
-        const resolved = objectMap.get(item.objectId)
-        const typeOfExp = resolveTypeOfExpenditure(
-          item.objectId,
-          item.objectName,
-          item.objectCode,
-          resolved?.parent,
-        )
-
-        parentsMap.set(typeOfExp.id, typeOfExp)
-      })
-    } else if (orphanDetails && orphanDetails.length > 0) {
-      orphanDetails.forEach((item) => {
-        if (!isEditing && existingObjectIds?.includes(item.objectId)) {
-          return
-        }
-        const resolved = objectMap.get(item.objectId)
-        const typeOfExp = resolveTypeOfExpenditure(
-          item.objectId,
-          item.object?.name || resolved?.name || '',
-          item.object?.code || resolved?.code || '',
-          resolved?.parent,
-        )
-
-        parentsMap.set(typeOfExp.id, typeOfExp)
-      })
-    } else {
-      objectCodesResponse?.data
-        ?.filter((item) => {
-          if (!item.isActive) return false
-          if (!isEditing && existingObjectIds?.includes(item.id)) return false
-          return true
-        })
-        .forEach((item) => {
-          const resolved = objectMap.get(item.id)
-          const typeOfExp = resolveTypeOfExpenditure(
-            item.id,
-            item.name,
-            item.code,
-            resolved?.parent,
-          )
-
-          parentsMap.set(typeOfExp.id, typeOfExp)
-        })
+  // Derive initial parent ID if an initial objectId was passed (edit mode)
+  const resolvedInitialParentId = useMemo(() => {
+    if (initialValues?.typeOfExpenditureId) {
+      return initialValues.typeOfExpenditureId
     }
-
-    return Array.from(parentsMap.values())
-  }, [
-    libActivityId,
-    orphanDetails,
-    activityObjectsResponse?.data,
-    objectCodesResponse?.data,
-    objectMap,
-    existingObjectIds,
-    isEditing,
-  ])
-
-  // Automatically select parent if there is only 1 available or initialize from initialValues
-  useEffect(() => {
-    if (initialValues?.objectId) {
-      const resolved = objectMap.get(initialValues.objectId)
-      const typeOfExp = resolveTypeOfExpenditure(
-        initialValues.objectId,
-        resolved?.name || '',
-        resolved?.code || '',
-        resolved?.parent,
+    if (initialValues?.objectId && parentGroups.length > 0) {
+      const match = parentGroups.find((g) =>
+        g.items.some((item) => item.id === initialValues.objectId),
       )
-      if (typeOfExp?.id) {
-        setSelectedParentId(typeOfExp.id)
-        return
-      }
+      if (match) return match.parentObjectId
     }
-
-    if (parentOptions.length === 1 && !selectedParentId) {
-      setSelectedParentId(parentOptions[0].id)
-    }
-  }, [parentOptions, selectedParentId, initialValues?.objectId, objectMap])
-
-  // Derive child items (Items of Expenditure) under the selected Type of Expenditure
-  const childOptions = useMemo(() => {
-    if (!selectedParentId) return []
-
-    if (libActivityId && activityObjectsResponse?.data) {
-      return activityObjectsResponse.data
-        .filter((item) => {
-          // Exclude objects already added to this activity (unless currently editing)
-          if (!isEditing && existingObjectIds?.includes(item.objectId)) {
-            return false
-          }
-          const resolved = objectMap.get(item.objectId)
-          const typeOfExp = resolveTypeOfExpenditure(
-            item.objectId,
-            item.objectName,
-            item.objectCode,
-            resolved?.parent,
-          )
-          return typeOfExp.id === selectedParentId
-        })
-        .map((item) => ({
-          id: item.objectId,
-          label: `${item.objectCode} - ${item.objectName}`,
-        }))
-    }
-
-    if (orphanDetails && orphanDetails.length > 0) {
-      return orphanDetails
-        .filter((item) => {
-          if (!isEditing && existingObjectIds?.includes(item.objectId)) {
-            return false
-          }
-          const resolved = objectMap.get(item.objectId)
-          const typeOfExp = resolveTypeOfExpenditure(
-            item.objectId,
-            item.object?.name || resolved?.name || '',
-            item.object?.code || resolved?.code || '',
-            resolved?.parent,
-          )
-          return typeOfExp.id === selectedParentId
-        })
-        .map((item) => {
-          const resolved = objectMap.get(item.objectId)
-          const code = item.object?.code || resolved?.code || ''
-          const name = item.object?.name || resolved?.name || ''
-          return {
-            id: item.objectId,
-            label: code ? `${code} - ${name}` : name,
-          }
-        })
-    }
-
-    return (
-      objectCodesResponse?.data
-        ?.filter((item) => {
-          if (!isEditing && existingObjectIds?.includes(item.id)) {
-            return false
-          }
-          const resolved = objectMap.get(item.id)
-          const typeOfExp = resolveTypeOfExpenditure(
-            item.id,
-            item.name,
-            item.code,
-            resolved?.parent,
-          )
-          return typeOfExp.id === selectedParentId
-        })
-        .map((item) => ({
-          id: item.id,
-          label: `${item.code} - ${item.name}`,
-        })) ?? []
-    )
-  }, [
-    selectedParentId,
-    libActivityId,
-    orphanDetails,
-    activityObjectsResponse?.data,
-    objectCodesResponse?.data,
-    objectMap,
-    existingObjectIds,
-    isEditing,
-  ])
-
-  const isOptionsLoading = libActivityId
-    ? isActivityObjectsLoading || isObjectCodesLoading
-    : isObjectCodesLoading
+    return ''
+  }, [initialValues?.typeOfExpenditureId, initialValues?.objectId, parentGroups])
 
   const form = useForm({
     defaultValues: {
       isProcurable: initialValues?.isProcurable ?? true,
+      typeOfExpenditureId: resolvedInitialParentId,
       objectId: initialValues?.objectId ?? '',
     } as PPMPExpenditureItemFormValues,
     validators: { onChange: ppmpExpenditureItemSchema },
@@ -382,16 +205,10 @@ export function AddPPMPItemExpenditureForm({
   useEffect(() => {
     form.reset({
       isProcurable: initialValues?.isProcurable ?? true,
+      typeOfExpenditureId: resolvedInitialParentId,
       objectId: initialValues?.objectId ?? '',
     } as PPMPExpenditureItemFormValues)
-  }, [initialValues, form])
-
-  // If childOptions has only 1 item, auto-select it if none selected
-  useEffect(() => {
-    if (childOptions.length === 1 && !form.getFieldValue('objectId')) {
-      form.setFieldValue('objectId', childOptions[0].id)
-    }
-  }, [childOptions, form])
+  }, [initialValues, resolvedInitialParentId, form])
 
   return (
     <form
@@ -401,72 +218,52 @@ export function AddPPMPItemExpenditureForm({
         e.stopPropagation()
         form.handleSubmit()
       }}
-      className="space-y-4 font-sans"
+      className="space-y-4 font-sans text-left"
     >
-      {/* 1. Type of Expenditure (Parent Object) Selection */}
-      <div className="space-y-1.5 text-left">
-        <Label htmlFor="type-of-expenditure" className="text-xs font-semibold text-default-700 block">
-          Type of Expenditure <span className="text-destructive">*</span>
-        </Label>
-        <Select
-          value={selectedParentId || ''}
-          onValueChange={(val) => {
-            setSelectedParentId(val)
-            form.setFieldValue('objectId', '')
-          }}
-          disabled={isLoading || isOptionsLoading}
-        >
-          <SelectTrigger id="type-of-expenditure" className="w-full text-xs text-left justify-between">
-            <SelectValue
-              placeholder={
-                isOptionsLoading
-                  ? 'Loading types of expenditure...'
-                  : 'Select Type of Expenditure'
-              }
-            />
-          </SelectTrigger>
-          <SelectContent className="max-h-[300px]">
-            {parentOptions.map((parent) => (
-              <SelectItem key={parent.id} value={parent.id} className="text-xs text-left">
-                {parent.name} {parent.code ? `(${parent.code})` : ''}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* 2. Item of Expenditure / Child Object Selection */}
+      {/* 1. Type of Expenditure */}
       <form.Field
-        name="objectId"
+        name="typeOfExpenditureId"
         children={(field) => (
-          <div className="space-y-1.5 text-left ml-3 pl-3 border-l-2 border-default-200">
-            <Label htmlFor={field.name} className="text-xs font-semibold text-default-700 block">
-              Item of Expenditure <span className="text-destructive">*</span>
+          <div className="space-y-1.5 text-left">
+            <Label
+              htmlFor={field.name}
+              className="text-xs font-semibold text-foreground block text-left"
+            >
+              Type of Expenditure <span className="text-destructive">*</span>
             </Label>
             <Select
               value={field.state.value}
-              onValueChange={(val) => field.handleChange(val)}
-              disabled={
-                isLoading || isOptionsLoading || !selectedParentId || childOptions.length === 0
-              }
+              onValueChange={(val) => {
+                field.handleChange(val)
+                form.setFieldValue('objectId', '')
+              }}
+              disabled={isLoading || isActivityObjectsLoading || !libActivityId}
             >
-              <SelectTrigger id={field.name} className="w-full text-xs text-left justify-between">
+              <SelectTrigger
+                id={field.name}
+                className="w-full h-10 px-3 text-xs text-left justify-between items-center [&>span]:truncate [&>span]:text-left [&>span]:block [&>span]:flex-1 [&>span]:min-w-0"
+              >
                 <SelectValue
                   placeholder={
-                    !selectedParentId
-                      ? 'Select Type of Expenditure first'
-                      : isOptionsLoading
-                        ? 'Loading items...'
-                        : childOptions.length === 0
-                          ? 'No items available'
-                          : 'Select Item of Expenditure'
+                    isActivityObjectsLoading
+                      ? 'Loading types of expenditure...'
+                      : !libActivityId
+                        ? 'No LIB Activity selected'
+                        : 'Select Type of Expenditure'
                   }
                 />
               </SelectTrigger>
-              <SelectContent className="max-h-[300px]">
-                {childOptions.map((item) => (
-                  <SelectItem key={item.id} value={item.id} className="text-xs text-left">
-                    {item.label}
+              <SelectContent>
+                {parentGroups.map((group) => (
+                  <SelectItem
+                    key={group.parentObjectId}
+                    value={group.parentObjectId}
+                    className="text-xs text-left"
+                  >
+                    {formatExpenditureDisplayName(
+                      group.parentObjectName,
+                      group.parentObjectCode,
+                    )}
                   </SelectItem>
                 ))}
               </SelectContent>
@@ -476,34 +273,99 @@ export function AddPPMPItemExpenditureForm({
         )}
       />
 
-      {/* 3. Procurement Type Radio */}
+      {/* 2. Item of Expenditure */}
+      <form.Field
+        name="objectId"
+        children={(field) => {
+          const selectedParentId = form.getFieldValue('typeOfExpenditureId')
+          const selectedGroup = parentGroups.find(
+            (g) => g.parentObjectId === selectedParentId,
+          )
+          const childOptions = selectedGroup?.items ?? []
+          const isChildDisabled =
+            isLoading ||
+            isActivityObjectsLoading ||
+            !selectedParentId ||
+            childOptions.length === 0
+
+          return (
+            <div className="space-y-1.5 text-left">
+              <Label
+                htmlFor={field.name}
+                className="text-xs font-semibold text-foreground block text-left"
+              >
+                Item of Expenditure <span className="text-destructive">*</span>
+              </Label>
+              <Select
+                value={field.state.value}
+                onValueChange={(val) => field.handleChange(val)}
+                disabled={isChildDisabled}
+              >
+                <SelectTrigger
+                  id={field.name}
+                  className="w-full h-10 px-3 text-xs text-left justify-between items-center [&>span]:truncate [&>span]:text-left [&>span]:block [&>span]:flex-1 [&>span]:min-w-0"
+                >
+                  <SelectValue
+                    placeholder={
+                      !selectedParentId
+                        ? 'Select Type of Expenditure first'
+                        : childOptions.length === 0
+                          ? 'No items configured under this type'
+                          : 'Select Item of Expenditure'
+                    }
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  {childOptions.map((item) => (
+                    <SelectItem
+                      key={item.id}
+                      value={item.id}
+                      className="text-xs text-left"
+                    >
+                      {formatExpenditureDisplayName(item.name, item.code)}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+              {selectedParentId && childOptions.length === 0 && (
+                <p className="text-[11px] text-destructive font-medium mt-1 text-left">
+                  No expenditure items are configured under this type for the selected LIB Activity.
+                </p>
+              )}
+              <FieldInfo field={field} />
+            </div>
+          )
+        }}
+      />
+
+      {/* 3. Procurement Type */}
       <form.Field
         name="isProcurable"
         children={(field) => (
-          <div className="space-y-2 pt-2 text-left">
-            <Label className="text-xs font-semibold text-default-700 block">
+          <div className="space-y-2 pt-1 text-left">
+            <Label className="text-xs font-semibold text-foreground block text-left">
               Procurement Type <span className="text-destructive">*</span>
             </Label>
             <RadioGroup
               value={field.state.value ? 'true' : 'false'}
               onValueChange={(val) => field.handleChange(val === 'true')}
               disabled={isLoading}
-              className="flex flex-col gap-2.5 items-start"
+              className="flex flex-col gap-2.5 pt-0.5"
             >
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center space-x-2.5 text-left">
                 <RadioGroupItem value="true" id="procurable-true" />
                 <Label
                   htmlFor="procurable-true"
-                  className="text-xs font-medium text-default-800 cursor-pointer"
+                  className="text-xs font-normal text-foreground cursor-pointer select-none text-left"
                 >
                   Procurable Group (CSE/Non-CSE Catalog)
                 </Label>
               </div>
-              <div className="flex items-center gap-2.5">
+              <div className="flex items-center space-x-2.5 text-left">
                 <RadioGroupItem value="false" id="procurable-false" />
                 <Label
                   htmlFor="procurable-false"
-                  className="text-xs font-medium text-default-800 cursor-pointer"
+                  className="text-xs font-normal text-foreground cursor-pointer select-none text-left"
                 >
                   Non-Procurable Group
                 </Label>
@@ -515,3 +377,4 @@ export function AddPPMPItemExpenditureForm({
     </form>
   )
 }
+

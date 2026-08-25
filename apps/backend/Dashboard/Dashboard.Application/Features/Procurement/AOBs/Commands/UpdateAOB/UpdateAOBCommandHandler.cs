@@ -1,4 +1,5 @@
 using ERPEZ.Domain.Entities.Procurement;
+using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
@@ -12,7 +13,7 @@ public class UpdateAOBCommandHandler(IUnitOfWork unitOfWork)
     public async Task<ApiResponse<Unit>> Handle(UpdateAOBCommand request, CancellationToken cancellationToken)
     {
         var aob = await unitOfWork.AOBRepository.Query()
-            .Include(a => a.AOBProcurementProjectMappings)
+            .Include(a => a.AOBRFQMappings)
             .FirstOrDefaultAsync(a => a.Id == request.Id && !a.IsDeleted, cancellationToken);
 
         if (aob == null)
@@ -20,20 +21,25 @@ public class UpdateAOBCommandHandler(IUnitOfWork unitOfWork)
             return ApiResponse<Unit>.Fail("Abstract of Bids (AOB) not found.");
         }
 
-        var procurementProjectIds = request.ProcurementProjectIds ?? [];
-
-        if (procurementProjectIds.Count > 0)
+        // Modifications allowed only in Draft or Returned
+        if (aob.Status != StatusEnum.Draft && aob.Status != StatusEnum.Returned)
         {
-            // Verify all referenced procurement projects exist
-            var existingProjectIds = await unitOfWork.ProcurementProjectRepository.Query()
-                .Where(p => procurementProjectIds.Contains(p.Id))
-                .Select(p => p.Id)
+            return ApiResponse<Unit>.Fail($"AOB in status '{aob.Status}' cannot be modified. Only Draft or Returned AOBs can be updated.");
+        }
+
+        var rfqIds = request.RFQIds ?? [];
+
+        if (rfqIds.Count > 0)
+        {
+            var existingRfqIds = await unitOfWork.RFQRepository.Query()
+                .Where(r => rfqIds.Contains(r.Id))
+                .Select(r => r.Id)
                 .ToListAsync(cancellationToken);
 
-            var missingIds = procurementProjectIds.Except(existingProjectIds).ToList();
+            var missingIds = rfqIds.Except(existingRfqIds).ToList();
             if (missingIds.Count > 0)
             {
-                return ApiResponse<Unit>.Fail($"The following Procurement Project ID(s) do not exist: {string.Join(", ", missingIds)}");
+                return ApiResponse<Unit>.Fail($"The following RFQ ID(s) do not exist: {string.Join(", ", missingIds)}");
             }
         }
 
@@ -42,37 +48,37 @@ public class UpdateAOBCommandHandler(IUnitOfWork unitOfWork)
         aob.AwardCriterion = request.AwardCriterion;
         aob.AOBDate = request.AOBDate;
         aob.OpeningDate = DateTime.SpecifyKind(request.OpeningDate, DateTimeKind.Utc);
-        aob.Status = request.Status;
+        aob.Remarks = request.Remarks;
         aob.UpdatedAt = DateTime.UtcNow;
         aob.UpdatedBy = "System";
 
-        // Sync procurement project mappings
+        // Sync RFQ mappings
         // 1. Remove mappings that are no longer in request
-        var mappingsToRemove = aob.AOBProcurementProjectMappings
-            .Where(m => !procurementProjectIds.Contains(m.ProcurementProjectId))
+        var mappingsToRemove = aob.AOBRFQMappings
+            .Where(m => !rfqIds.Contains(m.RFQId))
             .ToList();
 
         foreach (var mapping in mappingsToRemove)
         {
-            aob.AOBProcurementProjectMappings.Remove(mapping);
-            unitOfWork.AOBProcurementProjectMappingRepository.Remove(mapping, hardDelete: true);
+            aob.AOBRFQMappings.Remove(mapping);
+            unitOfWork.AOBRFQMappingRepository.Remove(mapping, hardDelete: true);
         }
 
         // 2. Add new mappings
-        var existingMappedProjectIds = aob.AOBProcurementProjectMappings
-            .Select(m => m.ProcurementProjectId)
+        var existingMappedRfqIds = aob.AOBRFQMappings
+            .Select(m => m.RFQId)
             .ToList();
 
-        var projectIdsToAdd = procurementProjectIds
-            .Except(existingMappedProjectIds)
+        var rfqIdsToAdd = rfqIds
+            .Except(existingMappedRfqIds)
             .ToList();
 
-        foreach (var projectId in projectIdsToAdd)
+        foreach (var rfqId in rfqIdsToAdd)
         {
-            aob.AOBProcurementProjectMappings.Add(new AOBProcurementProjectMapping
+            aob.AOBRFQMappings.Add(new AOBRFQMapping
             {
                 AOBId = aob.Id,
-                ProcurementProjectId = projectId
+                RFQId = rfqId
             });
         }
 

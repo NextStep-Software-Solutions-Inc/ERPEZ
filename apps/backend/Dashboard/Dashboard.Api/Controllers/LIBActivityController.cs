@@ -4,6 +4,8 @@ using ERPEZ.Application.Features.Planning.Budgeting.LIBActivity.Commands.UpdateL
 using ERPEZ.Application.Features.Planning.Budgeting.LIBActivity.Dtos;
 using ERPEZ.Application.Features.Planning.Budgeting.LIBActivity.Queries.GetLIBActivities;
 using ERPEZ.Application.Features.Planning.Budgeting.LIBActivity.Queries.GetLIBActivityById;
+using ERPEZ.Application.Features.Planning.Budgeting.LineItemBudgetDetail.Dtos;
+using ERPEZ.Application.Features.Planning.Budgeting.LineItemBudgetDetail.Queries.GetLIBActivityObjects;
 using ERPEZ.Shared.Common;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
@@ -40,6 +42,14 @@ public class LIBActivityController(ISender mediator) : ControllerBase
     {
         var result = await mediator.Send(new GetLIBActivityByIdQuery(id));
         return result.Succeeded ? Ok(result) : NotFound(result);
+    }
+
+    [HttpGet("{id}/expenditure-items")]
+    [ProducesResponseType(typeof(ApiResponse<List<LIBActivityObjectResponse>>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetLIBActivityExpenditureItems(Guid id)
+    {
+        var result = await mediator.Send(new GetLIBActivityObjectsQuery(id));
+        return Ok(result);
     }
 
     [HttpPut("{id}")]

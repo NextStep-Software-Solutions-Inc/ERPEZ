@@ -17,11 +17,11 @@ public class UpdateRFQCommandHandler(IUnitOfWork unitOfWork)
             return ApiResponse<bool>.Fail("RFQ not found.");
         }
 
-        // Lock: only Draft RFQs can be edited. Returned RFQs must go through Reopen first.
-        if (rfq.Status != StatusEnum.Draft)
+        // Lock: only Draft or Returned RFQs can be edited.
+        if (rfq.Status != StatusEnum.Draft && rfq.Status != StatusEnum.Returned)
         {
             return ApiResponse<bool>.Fail(
-                $"Only RFQs in Draft status can be edited. Current status: {rfq.Status}.");
+                $"Only RFQs in Draft or Returned status can be edited. Current status: {rfq.Status}.");
         }
 
         // Uniqueness checks, excluding this RFQ's own current values.
@@ -35,6 +35,12 @@ public class UpdateRFQCommandHandler(IUnitOfWork unitOfWork)
             && await unitOfWork.RFQRepository.HasTracingNumberAsync(request.TracingNumber, cancellationToken))
         {
             return ApiResponse<bool>.Fail("Tracing Number already exists.");
+        }
+
+        // Business rule: at least 3 suppliers are required.
+        if (request.SupplierIds == null || request.SupplierIds.Distinct().Count() < 3)
+        {
+            return ApiResponse<bool>.Fail("Please select at least 3 prospective suppliers.");
         }
 
         // Supplier eligibility, same rule as CreateRFQCommand.

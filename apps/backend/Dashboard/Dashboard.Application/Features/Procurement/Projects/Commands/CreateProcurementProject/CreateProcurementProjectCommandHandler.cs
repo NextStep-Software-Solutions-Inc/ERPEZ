@@ -15,6 +15,8 @@ public class CreateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
             Title = request.Title,
             ABC = request.ABC,
             Status = request.Status,
+            ConsolidatedPRId = request.ConsolidatedPRId,
+            ProcurementModeId = request.ProcurementModeId,
             EndUserRepresentativeId = request.EndUserRepresentativeId,
             TechRepresentativeId = request.TechRepresentativeId
         };
@@ -24,6 +26,7 @@ public class CreateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
             ResolutionType = request.ResolutionType,
             ResolutionNumber = request.ResolutionNumber,
             DateResolved = request.DateResolved,
+            Status = request.Status,
             WhereasClause = request.WhereasClause
         };
 

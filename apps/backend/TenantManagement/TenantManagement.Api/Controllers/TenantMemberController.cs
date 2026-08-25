@@ -17,7 +17,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
     public class TenantMembersController(ISender mediator) : ControllerBase
     {
         [HttpPost]
-        [Authorize]
+        //[Authorize]
         [ProducesResponseType(typeof(ApiResponse<TenantMember>), StatusCodes.Status201Created)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         public async Task<IActionResult> CreateTenantMember([FromBody] CreateTenantMemberCommand command)
@@ -31,7 +31,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         }
 
         [HttpGet]
-        [Authorize]
+        //[Authorize]
         [ProducesResponseType(typeof(PaginatedApiResponse<TenantMember>), StatusCodes.Status200OK)]
         public async Task<IActionResult> GetTenantMembers([FromQuery] GetTenantMembersQuery query)
         {
@@ -40,7 +40,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         }
 
         [HttpGet("{id}")]
-        [Authorize]
+        //[Authorize]
         [ProducesResponseType(typeof(ApiResponse<TenantMember>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> GetTenantMemberById(Guid id)
@@ -52,7 +52,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         }
 
         [HttpPut("{id}")]
-        [Authorize]
+        //[Authorize]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
@@ -69,7 +69,7 @@ namespace ERPEZ.TenantManagement.Api.Controllers
         }
 
         [HttpDelete("{id}")]
-        [Authorize]
+        //[Authorize]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
         public async Task<IActionResult> DeleteTenantMember(Guid id)

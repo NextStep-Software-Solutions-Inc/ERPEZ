@@ -11,11 +11,15 @@ public class SubmitSupplierBidCommandHandler(IUnitOfWork unitOfWork)
 {
     public async Task<ApiResponse<Guid>> Handle(SubmitSupplierBidCommand request, CancellationToken cancellationToken)
     {
-        // 1. Verify project exists
-        var project = await unitOfWork.ProcurementProjectRepository.GetByIdAsync(request.ProcurementProjectId, cancellationToken);
-        if (project == null)
+        // 1. Verify RFQ exists
+        var rfq = await unitOfWork.RFQRepository.Query()
+            .Include(r => r.RFQItems)
+            .Include(r => r.RFQSuppliers)
+            .FirstOrDefaultAsync(r => r.Id == request.RFQId && !r.IsDeleted, cancellationToken);
+
+        if (rfq == null)
         {
-            return ApiResponse<Guid>.Fail("Procurement project (RFQ) not found.");
+            return ApiResponse<Guid>.Fail("Request for Quotation (RFQ) not found.");
         }
 
         // 2. Verify supplier exists
@@ -25,39 +29,74 @@ public class SubmitSupplierBidCommandHandler(IUnitOfWork unitOfWork)
             return ApiResponse<Guid>.Fail("Supplier not found.");
         }
 
-        // Validate Status
+        // 3. Validate Status
         var normalizedStatus = request.Status.ToUpperInvariant();
         if (normalizedStatus != "DRAFT" && normalizedStatus != "SUBMITTED")
         {
             return ApiResponse<Guid>.Fail("Status must be DRAFT or SUBMITTED.");
         }
 
-        // 3. Check for existing bid
+        // 4. Validate RFQ Items exist in this RFQ
+        var rfqItemDict = rfq.RFQItems.ToDictionary(i => i.Id);
+        foreach (var item in request.Items)
+        {
+            if (!rfqItemDict.ContainsKey(item.RFQItemId))
+            {
+                return ApiResponse<Guid>.Fail($"RFQ item '{item.RFQItemId}' does not belong to the specified RFQ.");
+            }
+        }
+
+        // Calculate total amount
+        decimal totalBidAmount = 0;
+        var processedBidItems = new List<SupplierBidItem>();
+
+        foreach (var item in request.Items)
+        {
+            var rfqItem = rfqItemDict[item.RFQItemId];
+            var lineTotal = item.UnitPrice * rfqItem.Quantity;
+            totalBidAmount += lineTotal;
+
+            processedBidItems.Add(new SupplierBidItem
+            {
+                RFQItemId = item.RFQItemId,
+                UnitPrice = item.UnitPrice,
+                TotalPrice = lineTotal,
+                Brand = item.Brand,
+                Model = item.Model,
+                Color = item.Color,
+                BrochureFileId = item.BrochureFileId,
+                BrochureFileUrl = item.BrochureFileUrl,
+                IsResponsive = item.IsResponsive,
+                DisqualificationReason = item.DisqualificationReason,
+                QualityScore = item.QualityScore
+            });
+        }
+
+        // 5. Check for existing bid
         var existingBid = await unitOfWork.SupplierBidRepository.Query()
             .Include(sb => sb.SupplierBidItems)
-            .FirstOrDefaultAsync(sb => sb.ProcurementProjectId == request.ProcurementProjectId && sb.SupplierId == request.SupplierId, cancellationToken);
+            .FirstOrDefaultAsync(sb => sb.RFQId == request.RFQId && sb.SupplierId == request.SupplierId, cancellationToken);
 
         if (existingBid != null)
         {
+            existingBid.SubmissionType = request.SubmissionType;
             existingBid.Status = normalizedStatus;
-            existingBid.SubmittedAt = normalizedStatus == "SUBMITTED" ? DateTime.UtcNow : null;
+            existingBid.ValidityPeriodDays = request.ValidityPeriodDays;
+            existingBid.DeliveryPeriod = request.DeliveryPeriod;
+            existingBid.PaymentTerms = request.PaymentTerms;
+            existingBid.WarrantyTerms = request.WarrantyTerms;
+            existingBid.Remarks = request.Remarks;
+            existingBid.TotalAmount = totalBidAmount;
+            existingBid.SubmittedAt = normalizedStatus == "SUBMITTED" ? DateTime.UtcNow : existingBid.SubmittedAt;
+            existingBid.UpdatedAt = DateTime.UtcNow;
 
-            // Clear old items and add new ones (or update)
+            // Replace line items
             unitOfWork.SupplierBidItemRepository.RemoveRange(existingBid.SupplierBidItems);
             existingBid.SupplierBidItems.Clear();
 
-            foreach (var item in request.Items)
+            foreach (var bidItem in processedBidItems)
             {
-                existingBid.SupplierBidItems.Add(new SupplierBidItem
-                {
-                    APPItemId = item.APPItemId,
-                    UnitPrice = item.UnitPrice,
-                    Brand = item.Brand,
-                    Model = item.Model,
-                    Color = item.Color,
-                    BrochureFileUrl = item.BrochureFileUrl,
-                    IsResponsive = item.IsResponsive
-                });
+                existingBid.SupplierBidItems.Add(bidItem);
             }
 
             unitOfWork.SupplierBidRepository.Update(existingBid);
@@ -69,24 +108,24 @@ public class SubmitSupplierBidCommandHandler(IUnitOfWork unitOfWork)
         {
             var newBid = new SupplierBid
             {
-                ProcurementProjectId = request.ProcurementProjectId,
+                RFQId = request.RFQId,
                 SupplierId = request.SupplierId,
+                SubmissionType = request.SubmissionType,
                 Status = normalizedStatus,
-                SubmittedAt = normalizedStatus == "SUBMITTED" ? DateTime.UtcNow : null
+                ValidityPeriodDays = request.ValidityPeriodDays,
+                DeliveryPeriod = request.DeliveryPeriod,
+                PaymentTerms = request.PaymentTerms,
+                WarrantyTerms = request.WarrantyTerms,
+                Remarks = request.Remarks,
+                TotalAmount = totalBidAmount,
+                SubmittedAt = normalizedStatus == "SUBMITTED" ? DateTime.UtcNow : null,
+                CreatedAt = DateTime.UtcNow,
+                CreatedBy = "System"
             };
 
-            foreach (var item in request.Items)
+            foreach (var bidItem in processedBidItems)
             {
-                newBid.SupplierBidItems.Add(new SupplierBidItem
-                {
-                    APPItemId = item.APPItemId,
-                    UnitPrice = item.UnitPrice,
-                    Brand = item.Brand,
-                    Model = item.Model,
-                    Color = item.Color,
-                    BrochureFileUrl = item.BrochureFileUrl,
-                    IsResponsive = item.IsResponsive
-                });
+                newBid.SupplierBidItems.Add(bidItem);
             }
 
             await unitOfWork.SupplierBidRepository.AddAsync(newBid, cancellationToken);

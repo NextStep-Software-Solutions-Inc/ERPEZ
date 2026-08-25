@@ -5,8 +5,8 @@ using System.Text.Json.Serialization;
 namespace ERPEZ.Application.Features.Procurement.RequestForQuotation.Commands.UpdateRFQ;
 
 /// <summary>
-/// Edits an RFQ's header fields and invited supplier list. Only permitted while
-/// Status == Draft — Submitted/Approved/Returned RFQs must go through Reopen first.
+/// Edits an RFQ's header fields and invited supplier list. Permitted while
+/// Status is Draft or Returned.
 /// </summary>
 public class UpdateRFQCommand : IRequest<ApiResponse<bool>>
 {

@@ -134,6 +134,7 @@ public interface IUnitOfWork
     IAOBRepository AOBRepository { get; }
     IAOBAwardedItemRepository AOBAwardedItemRepository { get; }
     IAOBProcurementProjectMappingRepository AOBProcurementProjectMappingRepository { get; }
+    IAOBRFQMappingRepository AOBRFQMappingRepository { get; }
     IDirectContractingRepository DirectContractingRepository { get; }
     IDirectContractingProposalRepository DirectContractingProposalRepository { get; }
     IDirectContractingProposalItemRepository DirectContractingProposalItemRepository { get; }

@@ -60,9 +60,8 @@ interface RFQStore {
     purpose?: string
     supplierIds: string[]
   }) => Promise<string>
-  // Edits an RFQ's header fields + invited supplier list. Backend only permits
-  // this while Status == Draft (PUT /rfqs/{id} — see UpdateRFQCommand).
-  // Returned RFQs must be reopened first via reopenRFQ().
+  // Edits an RFQ's header fields + invited supplier list. Backend permits
+  // this while Status is Draft or Returned (PUT /rfqs/{id} — see UpdateRFQCommand).
   updateRFQ: (
     id: string,
     data: {

@@ -17,17 +17,7 @@ public class UpdateAOBCommandValidator : AbstractValidator<UpdateAOBCommand>
             .WithMessage("AOB Number cannot exceed 100 characters.");
 
         RuleFor(x => x.AwardCriterion)
-            .NotEmpty()
-            .Must(c => c == "LCRB" || c == "MEARB" || c == "MARB")
-            .WithMessage("Award Criterion must be either LCRB, MEARB, or MARB.");
-
-        RuleFor(x => x.Status)
-            .NotEmpty()
-            .Must(s => s == "DRAFT" || s == "FOR_APPROVAL" || s == "APPROVED")
-            .WithMessage("Status must be either DRAFT, FOR_APPROVAL, or APPROVED.");
-
-        RuleFor(x => x.ProcurementProjectIds)
-            .NotEmpty()
-            .WithMessage("At least one Procurement Project ID must be specified.");
+            .IsInEnum()
+            .WithMessage("Valid Award Criterion is required.");
     }
 }

@@ -49,7 +49,8 @@ public class CreatePPMPExpenditureItemCommandHandler(IUnitOfWork unitOfWork)
             // Validate Object belongs to this LIBActivity
             var objectExistsInActivity = await unitOfWork.LineItemBudgetDetailRepository.FindAsync(
                 x => x.LineItemBudgetActivityId == ppmpActivity.LIBActivityId
-                && x.ObjectId == request.ObjectId,
+                && x.ObjectId == request.ObjectId
+                && !x.IsDeleted,
                 cancellationToken);
 
             if (objectExistsInActivity == null)
@@ -63,7 +64,8 @@ public class CreatePPMPExpenditureItemCommandHandler(IUnitOfWork unitOfWork)
             // Validate Object belongs to this Project-Level LIB
             var objectExistsInLib = await unitOfWork.LineItemBudgetDetailRepository.FindAsync(
                 x => x.LineItemBudgetId == lib.Id
-                && x.ObjectId == request.ObjectId,
+                && x.ObjectId == request.ObjectId
+                && !x.IsDeleted,
                 cancellationToken);
 
             if (objectExistsInLib == null)
@@ -74,7 +76,8 @@ public class CreatePPMPExpenditureItemCommandHandler(IUnitOfWork unitOfWork)
         var existing = await unitOfWork.PPMPExpenditureItemRepository.FindAsync(
             x => x.PPMPId == request.PPMPId
             && x.PPMPActivityId == request.PPMPActivityId
-            && x.ObjectId == request.ObjectId,
+            && x.ObjectId == request.ObjectId
+            && !x.IsDeleted,
             cancellationToken);
 
         if (existing != null)
