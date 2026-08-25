@@ -12,6 +12,6 @@ public class GetPPMPsByOfficeQueryHandler(IUnitOfWork unitOfWork) : IRequestHand
     {
         var ppmps = await unitOfWork.PPMPRepository.GetDetailedByOfficeAsync(query.OfficeId, cancellationToken);
 
-        return ApiResponse<List<PPMPDetailedResponse>>.Success(ppmps.Select(PPMPQueryProjection.BuildDetailedResponse).ToList());
+        return ApiResponse<List<PPMPDetailedResponse>>.Success(ppmps.Select(p => PPMPQueryProjection.BuildDetailedResponse(p)).ToList());
     }
 }

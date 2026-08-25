@@ -34,7 +34,10 @@ internal static class PPMPQueryProjection
         return 0m;
     }
 
-    internal static PPMPDetailedResponse BuildDetailedResponse(PPMPEntity ppmp)
+    internal static PPMPDetailedResponse BuildDetailedResponse(
+        PPMPEntity ppmp,
+        MSFSummaryResponse? linkedMarketScoping = null,
+        Dictionary<Guid, MSFSummaryResponse>? activityMsfMap = null)
     {
         var items = GetPPMPItems(ppmp);
         var allocations = items.SelectMany(item => item.PPMPItemAllocations.Where(alloc => !alloc.IsDeleted)).ToList();
@@ -64,10 +67,12 @@ internal static class PPMPQueryProjection
             CreatedBy = ppmp.CreatedBy,
             UpdatedAt = ppmp.UpdatedAt,
             UpdatedBy = ppmp.UpdatedBy,
+            LinkedMarketScoping = linkedMarketScoping,
             ParentPPMP = ppmp.ParentPPMP == null ? null : BuildSummaryResponse(ppmp.ParentPPMP, true),
             PPMPItems = items.Select(BuildItemResponse).ToList(),
             PPMPItemAllocations = allocations.Select(BuildAllocationResponse).ToList(),
-            PPMPActivities = ppmp.PPMPActivities.Where(x => !x.IsDeleted).Select(BuildActivityResponse).ToList(),
+            PPMPActivities = ppmp.PPMPActivities.Where(x => !x.IsDeleted)
+                .Select(a => BuildActivityResponse(a, activityMsfMap)).ToList(),
             ApprovalEvents = ppmp.ApprovalEvents.Where(x => !x.IsDeleted).OrderByDescending(x => x.Timestamp).Select(x => new ApprovalEventResponse
             {
                 Id = x.Id,
@@ -200,7 +205,7 @@ internal static class PPMPQueryProjection
             UpdatedBy = ppmp.UpdatedBy,
             PPMPItems = includeCollections ? items.Select(BuildItemResponse).ToList() : [],
             PPMPItemAllocations = includeCollections ? allocations.Select(BuildAllocationResponse).ToList() : [],
-            PPMPActivities = includeCollections ? ppmp.PPMPActivities.Where(x => !x.IsDeleted).Select(BuildActivityResponse).ToList() : [],
+            PPMPActivities = includeCollections ? ppmp.PPMPActivities.Where(x => !x.IsDeleted).Select(a => BuildActivityResponse(a)).ToList() : [],
             ApprovalEvents = includeCollections ? ppmp.ApprovalEvents.Where(x => !x.IsDeleted).OrderByDescending(x => x.Timestamp).Select(x => new ApprovalEventResponse
             {
                 Id = x.Id,
@@ -216,7 +221,9 @@ internal static class PPMPQueryProjection
         };
     }
 
-    private static PPMPActivityResponse BuildActivityResponse(PPMPActivityEntity activity)
+    private static PPMPActivityResponse BuildActivityResponse(
+        PPMPActivityEntity activity,
+        Dictionary<Guid, MSFSummaryResponse>? activityMsfMap = null)
     {
         var items = activity.PPMPExpenditureItems
             .Where(expenditureItem => !expenditureItem.IsDeleted)
@@ -225,6 +232,8 @@ internal static class PPMPQueryProjection
         var allocations = items
             .SelectMany(item => item.PPMPItemAllocations.Where(allocation => !allocation.IsDeleted))
             .ToList();
+
+        activityMsfMap?.TryGetValue(activity.LIBActivityId, out var linkedMsf);
 
         return new PPMPActivityResponse
         {
@@ -241,6 +250,9 @@ internal static class PPMPQueryProjection
             }),
             TotalAllocationAmount = items.Sum(GetItemEffectiveCost),
             CreatedAt = activity.CreatedAt,
+            LinkedMarketScoping = activityMsfMap != null
+                ? (activityMsfMap.TryGetValue(activity.LIBActivityId, out var msf) ? msf : null)
+                : null,
             PPMPExpenditureItems = activity.PPMPExpenditureItems.Where(x => !x.IsDeleted).Select(BuildExpenditureItemResponse).ToList()
         };
     }

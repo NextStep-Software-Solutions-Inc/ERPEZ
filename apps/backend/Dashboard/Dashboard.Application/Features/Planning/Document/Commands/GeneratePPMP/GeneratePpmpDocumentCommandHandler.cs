@@ -62,11 +62,16 @@ public class GeneratePpmpDocumentCommandHandler(
 
     private static PpmpDataDto MapToDataDto(PpmpEntity ppmp)
     {
-        var allItems = ppmp.PPMPActivities
+        var activityItems = ppmp.PPMPActivities
             .Where(a => !a.IsDeleted)
             .SelectMany(a => a.PPMPExpenditureItems.Where(e => !e.IsDeleted))
-            .SelectMany(e => e.PPMPItems.Where(i => !i.IsDeleted))
-            .ToList();
+            .SelectMany(e => e.PPMPItems.Where(i => !i.IsDeleted));
+
+        var projectItems = ppmp.PPMPExpenditureItems
+            .Where(e => !e.IsDeleted && e.PPMPActivityId == null)
+            .SelectMany(e => e.PPMPItems.Where(i => !i.IsDeleted));
+
+        var allItems = activityItems.Concat(projectItems).DistinctBy(i => i.Id).ToList();
 
         var rows        = allItems.Select(item => MapToRow(item, ppmp)).ToList();
         var totalBudget = rows.Sum(r => r.EstimatedBudget);
