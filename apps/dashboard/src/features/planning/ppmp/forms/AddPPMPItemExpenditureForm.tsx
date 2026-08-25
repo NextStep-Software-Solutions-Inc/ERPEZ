@@ -172,23 +172,32 @@ export function AddPPMPItemExpenditureForm({
       enabled: !!libActivityId,
     })
 
-  const parentGroups = useMemo(() => {
-    return activityObjectsResponse?.data ?? []
-  }, [activityObjectsResponse?.data])
+  // Filter parent groups and their child items against existingObjectIds
+  const filteredParentGroups = useMemo(() => {
+    const rawGroups = activityObjectsResponse?.data ?? []
+    return rawGroups
+      .map((group) => ({
+        ...group,
+        items: group.items.filter(
+          (item) => !existingObjectIds || !existingObjectIds.includes(item.id),
+        ),
+      }))
+      .filter((group) => group.items.length > 0)
+  }, [activityObjectsResponse?.data, existingObjectIds])
 
   // Derive initial parent ID if an initial objectId was passed (edit mode)
   const resolvedInitialParentId = useMemo(() => {
     if (initialValues?.typeOfExpenditureId) {
       return initialValues.typeOfExpenditureId
     }
-    if (initialValues?.objectId && parentGroups.length > 0) {
-      const match = parentGroups.find((g) =>
+    if (initialValues?.objectId && filteredParentGroups.length > 0) {
+      const match = filteredParentGroups.find((g) =>
         g.items.some((item) => item.id === initialValues.objectId),
       )
       if (match) return match.parentObjectId
     }
     return ''
-  }, [initialValues?.typeOfExpenditureId, initialValues?.objectId, parentGroups])
+  }, [initialValues?.typeOfExpenditureId, initialValues?.objectId, filteredParentGroups])
 
   const form = useForm({
     defaultValues: {
@@ -209,6 +218,13 @@ export function AddPPMPItemExpenditureForm({
       objectId: initialValues?.objectId ?? '',
     } as PPMPExpenditureItemFormValues)
   }, [initialValues, resolvedInitialParentId, form])
+
+  // Auto-select type and object if only 1 type and 1 item available
+  useEffect(() => {
+    if (filteredParentGroups.length === 1 && !form.getFieldValue('typeOfExpenditureId')) {
+      form.setFieldValue('typeOfExpenditureId', filteredParentGroups[0].parentObjectId)
+    }
+  }, [filteredParentGroups, form])
 
   return (
     <form
@@ -249,12 +265,14 @@ export function AddPPMPItemExpenditureForm({
                       ? 'Loading types of expenditure...'
                       : !libActivityId
                         ? 'No LIB Activity selected'
-                        : 'Select Type of Expenditure'
+                        : filteredParentGroups.length === 0
+                          ? 'All items already added'
+                          : 'Select Type of Expenditure'
                   }
                 />
               </SelectTrigger>
               <SelectContent>
-                {parentGroups.map((group) => (
+                {filteredParentGroups.map((group) => (
                   <SelectItem
                     key={group.parentObjectId}
                     value={group.parentObjectId}
@@ -278,7 +296,7 @@ export function AddPPMPItemExpenditureForm({
         name="objectId"
         children={(field) => {
           const selectedParentId = form.getFieldValue('typeOfExpenditureId')
-          const selectedGroup = parentGroups.find(
+          const selectedGroup = filteredParentGroups.find(
             (g) => g.parentObjectId === selectedParentId,
           )
           const childOptions = selectedGroup?.items ?? []
