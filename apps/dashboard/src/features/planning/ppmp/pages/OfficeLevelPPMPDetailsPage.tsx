@@ -1,4 +1,5 @@
 import { useState, useMemo, useEffect, useCallback } from 'react'
+import { useNavigate } from '@tanstack/react-router'
 import AddPPMPActivityDialog from '@/features/planning/ppmp/dialogs/AddPPMPActivityDialog'
 import {
   createQueryHookFromTemplate,
@@ -31,6 +32,7 @@ import {
   Image as ImageIcon,
   Eye,
   Circle,
+  Link2,
 } from 'lucide-react'
 import { getProcurementItemRequest } from '@/components/features/planning/procurement-item/handlers/getProcurementItemRequest'
 import { getUOMRequest } from '@/components/features/planning/procurement-library/unit-of-measurement/handlers/getUOMRequest'
@@ -50,6 +52,8 @@ import {
 } from '@/components/ui/dropdown-menu'
 import { selectedPpmpForEditAtom } from '../atoms'
 import { deletePPMPActivityRequest } from '../handlers/deletePPMPActivityRequest'
+import { unlinkMarketScopingRequest } from '@/features/planning/market-scoping/handlers/unlinkMarketScopingRequest'
+import AssociateMarketScopingDialog from '@/features/planning/ppmp/dialogs/AssociateMarketScopingDialog'
 import type {
   PPMPDetails,
   PPMPActivity,
@@ -81,6 +85,8 @@ import { DeptConsolidationSheet } from '../dialogs/DeptConsolidationSheet'
 import { updatePPMPStatusRequest } from '../handlers/updatePPMPStatusRequest'
 import { generatePPMPDocumentRequest } from '../handlers/generatePPMPDocumentRequest'
 import { downloadLIBDocumentRequest } from '@/features/planning/line-item-budgeting/line-item-budget/handlers/downloadLIBDocumentRequest'
+import { getLIBRequest } from '@/features/planning/line-item-budgeting/line-item-budget/handlers/getLIBRequest'
+import { ProjectLevelPPMPWorkspace } from '../components/ProjectLevelPPMPWorkspace'
 import { useKeycloak } from '@/providers/KeycloakProvider'
 import {
   useItemValidationStatus,
@@ -136,6 +142,7 @@ interface PPMPActivityForDisplay extends PPMPActivity {
 }
 
 const usePPMP = createQueryHookFromTemplate(getPPMPRequest)
+const useLIB = createQueryHookFromTemplate(getLIBRequest)
 const usePPMPActivities = createQueryHookFromTemplate(getPPMPActivitiesRequest)
 const useDeletePPMPActivity = createMutationHookFromTemplate(
   deletePPMPActivityRequest,
@@ -156,6 +163,9 @@ const useGeneratePPMPDocument = createMutationHookFromTemplate(
 )
 const useDownloadDocument = createMutationHookFromTemplate(
   downloadLIBDocumentRequest,
+)
+const useUnlinkMarketScoping = createMutationHookFromTemplate(
+  unlinkMarketScopingRequest,
 )
 // ============================
 // Utility Formatting
@@ -194,11 +204,21 @@ function MetadataGrid({
   ppmp,
   activityCount,
   itemCount,
+  onOpenAssociateMsf,
+  onUnlinkMsf,
+  isUnlinkingMsf,
+  isProjectScope,
 }: {
   ppmp: PPMPDetails
   activityCount: number
   itemCount: number
+  onOpenAssociateMsf?: () => void
+  onUnlinkMsf?: (msfId: string) => void
+  isUnlinkingMsf?: boolean
+  isProjectScope?: boolean
 }) {
+  const navigate = useNavigate()
+
   return (
     <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4 mb-6">
       {/* Total Budget Card */}
@@ -300,6 +320,97 @@ function MetadataGrid({
           </div>
         </CardContent>
       </Card>
+
+      {/* Linked Market Scoping Form — shown only for project-scope PPMPs */}
+      {isProjectScope && ppmp.libId && (
+        <div className="sm:col-span-2 lg:col-span-4">
+          {ppmp.LinkedMarketScoping ? (
+            <div className="bg-primary/5 border border-primary/20 rounded-xl p-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+              <div className="flex items-center gap-3 min-w-0">
+                <div className="h-10 w-10 rounded-xl bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                  <FileText className="h-5 w-5" />
+                </div>
+                <div className="min-w-0 space-y-0.5">
+                  <div className="flex items-center gap-2">
+                    <span className="text-[10px] text-primary font-bold uppercase tracking-wider">
+                      Linked Market Scoping Form (Project Scope)
+                    </span>
+                    <Badge
+                      variant="soft"
+                      className={
+                        ppmp.LinkedMarketScoping.status === 'Approved'
+                          ? 'bg-success/15 text-success text-[10px]'
+                          : 'bg-warning/15 text-warning text-[10px]'
+                      }
+                    >
+                      {ppmp.LinkedMarketScoping.status}
+                    </Badge>
+                  </div>
+                  <div className="text-sm font-bold text-default-900 truncate">
+                    {ppmp.LinkedMarketScoping.projectName}
+                  </div>
+                  <div className="text-xs text-default-500">
+                    Estimated Budget:{' '}
+                    <strong className="font-semibold text-default-700">
+                      {formatCurrency(ppmp.LinkedMarketScoping.estimatedBudget)}
+                    </strong>
+                  </div>
+                </div>
+              </div>
+              <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  onClick={() =>
+                    ppmp.LinkedMarketScoping &&
+                    navigate({
+                      to: '/v2/market-scoping/$id',
+                      params: { id: ppmp.LinkedMarketScoping.id },
+                    })
+                  }
+                  className="h-8 text-xs text-primary hover:text-primary hover:bg-primary/5 border-primary/30 gap-1.5"
+                >
+                  <Eye className="h-3.5 w-3.5" />
+                  View MSF
+                </Button>
+                <Button
+                  type="button"
+                  variant="outline"
+                  size="sm"
+                  disabled={isUnlinkingMsf}
+                  onClick={() =>
+                    ppmp.LinkedMarketScoping &&
+                    onUnlinkMsf?.(ppmp.LinkedMarketScoping.id)
+                  }
+                  className="h-8 text-xs text-destructive hover:text-destructive hover:bg-destructive/5 border-destructive/30 gap-1.5"
+                >
+                  <X className="h-3.5 w-3.5" />
+                  Unlink MSF
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="bg-default-50/50 border border-dashed border-default-200 rounded-xl p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+              <div className="flex items-center gap-2.5">
+                <FileText className="h-4 w-4 text-default-400 shrink-0" />
+                <span className="text-xs text-default-600">
+                  No Market Scoping Form associated with this Line-Item Budget.
+                </span>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={onOpenAssociateMsf}
+                className="h-7 text-xs gap-1.5 border-primary/30 text-primary hover:bg-primary/5 shrink-0 self-end sm:self-auto"
+              >
+                <Link2 className="h-3.5 w-3.5" />
+                Associate Market Scoping
+              </Button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   )
 }
@@ -315,6 +426,7 @@ interface ActivityCardProps {
   onSelect: () => void
   onToggleExpand: () => void
   onRequestDelete?: () => void
+  onOpenAssociateMsf?: (activity: PPMPActivityForDisplay) => void
   totalPpmpBudget: number
   shouldThrob?: boolean
   dimmed?: boolean
@@ -327,6 +439,7 @@ function ActivityCard({
   onSelect,
   onToggleExpand,
   onRequestDelete,
+  onOpenAssociateMsf,
   totalPpmpBudget,
   shouldThrob = false,
   dimmed = false,
@@ -408,7 +521,7 @@ function ActivityCard({
       {/* Right side (expanded details - sideward) */}
       {expanded && (
         <div className="w-40 border-l border-default-150 bg-default-50/30 flex flex-col justify-between p-3 shrink-0">
-          <div className="space-y-2 text-[10px] text-default-600 font-medium">
+          <div className="space-y-1.5 text-[10px] text-default-600 font-medium">
             <div>
               <div className="text-default-400 mb-0.5 uppercase tracking-wider text-[8px] font-bold">
                 Procurement Items
@@ -425,6 +538,35 @@ function ActivityCard({
               <div className="font-bold text-default-800">
                 {formatCurrency(activity.totalAllocationAmount || 0)}
               </div>
+            </div>
+            <div>
+              <div className="text-default-400 mb-0.5 uppercase tracking-wider text-[8px] font-bold">
+                Market Scoping
+              </div>
+              {(() => {
+                const msf = activity.LinkedMarketScoping || (activity as any).linkedMarketScoping
+                return msf ? (
+                  <div
+                    className="font-bold text-default-800 flex items-center gap-1 text-[10px] truncate text-success"
+                    title={msf.projectName}
+                  >
+                    <FileText className="h-3 w-3 shrink-0" />
+                    <span className="truncate">{msf.projectName}</span>
+                  </div>
+                ) : (
+                  <button
+                    type="button"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      onOpenAssociateMsf?.(activity)
+                    }}
+                    className="text-[9px] text-primary hover:underline font-semibold flex items-center gap-0.5 mt-0.5"
+                  >
+                    <Link2 className="h-2.5 w-2.5" />
+                    Associate MSF
+                  </button>
+                )
+              })()}
             </div>
           </div>
 
@@ -457,6 +599,7 @@ interface ActivitiesPaneProps {
   onToggleExpand: (id: string) => void
   onAdd?: () => void
   onRequestDelete?: (id: string) => void
+  onOpenAssociateMsf?: (activity: PPMPActivityForDisplay) => void
   totalPpmpBudget: number
   masterPpmpId?: string
   isLoading?: boolean
@@ -470,6 +613,7 @@ function ActivitiesPane({
   onToggleExpand,
   onAdd,
   onRequestDelete,
+  onOpenAssociateMsf,
   totalPpmpBudget,
   masterPpmpId,
   isLoading,
@@ -576,6 +720,7 @@ function ActivitiesPane({
                             ? () => onRequestDelete(act.id)
                             : undefined
                         }
+                        onOpenAssociateMsf={onOpenAssociateMsf}
                         totalPpmpBudget={totalPpmpBudget}
                         shouldThrob={!anySelected || isSelected}
                         dimmed={anySelected && !isSelected}
@@ -1391,7 +1536,7 @@ function ItemRow({
   )
 }
 
-interface ExpenditureItemGroupProps {
+export interface ExpenditureItemGroupProps {
   group: PPMPExpenditureItem
   expandedItemIds: Set<string>
   onToggleItem: (id: string) => void
@@ -1403,7 +1548,7 @@ interface ExpenditureItemGroupProps {
   onEditAllocations?: (item: PPMPItem) => void
 }
 
-function ExpenditureItemGroup({
+export function ExpenditureItemGroup({
   group,
   expandedItemIds,
   onToggleItem,
@@ -1768,6 +1913,9 @@ interface RightPaneProps {
   onEditGroup?: (group: PPMPExpenditureItem) => void
   onDeleteGroup?: (group: PPMPExpenditureItem) => void
   onEditAllocations?: (item: PPMPItem) => void
+  onOpenAssociateMsf?: (activity: PPMPActivityForDisplay) => void
+  onUnlinkMsf?: (msfId: string) => void
+  isUnlinkingMsf?: boolean
 }
 
 function RightPane({
@@ -1779,7 +1927,11 @@ function RightPane({
   onEditGroup,
   onDeleteGroup,
   onEditAllocations,
+  onOpenAssociateMsf,
+  onUnlinkMsf,
+  isUnlinkingMsf,
 }: RightPaneProps) {
+  const navigate = useNavigate()
   const [rightPaneTab, setRightPaneTab] = useState<'items' | 'schedule'>(
     'items',
   )
@@ -1875,6 +2027,96 @@ function RightPane({
           </button>
         </div>
       </div>
+
+      {/* Market Scoping Form Banner for Selected Activity */}
+      {(() => {
+        const msf = activity.LinkedMarketScoping || (activity as any).linkedMarketScoping
+        return (
+          <div className="px-5 pt-4">
+            {msf ? (
+              <div className="bg-primary/5 border border-primary/20 rounded-xl p-3.5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-xs">
+                <div className="flex items-center gap-3 min-w-0">
+                  <div className="h-9 w-9 rounded-lg bg-primary/10 flex items-center justify-center text-primary shrink-0">
+                    <FileText className="h-4 w-4" />
+                  </div>
+                  <div className="min-w-0 space-y-0.5">
+                    <div className="flex items-center gap-2">
+                      <span className="text-[10px] text-primary font-bold uppercase tracking-wider">
+                        Linked Market Scoping Form
+                      </span>
+                      <Badge
+                        variant="soft"
+                        className={
+                          msf.status === 'Approved'
+                            ? 'bg-success/15 text-success text-[10px]'
+                            : 'bg-warning/15 text-warning text-[10px]'
+                        }
+                      >
+                        {msf.status}
+                      </Badge>
+                    </div>
+                    <div className="text-sm font-bold text-default-900 truncate">
+                      {msf.projectName}
+                    </div>
+                    <div className="text-xs text-default-500">
+                      Estimated Budget:{' '}
+                      <strong className="font-semibold text-default-700">
+                        {formatCurrency(msf.estimatedBudget)}
+                      </strong>
+                    </div>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2 shrink-0 self-end sm:self-auto">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() =>
+                      navigate({
+                        to: '/v2/market-scoping/$id',
+                        params: { id: msf.id },
+                      })
+                    }
+                    className="h-8 text-xs text-primary hover:text-primary hover:bg-primary/5 border-primary/30 gap-1.5"
+                  >
+                    <Eye className="h-3.5 w-3.5" />
+                    View MSF
+                  </Button>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    disabled={isUnlinkingMsf}
+                    onClick={() => onUnlinkMsf?.(msf.id)}
+                    className="h-8 text-xs text-destructive hover:text-destructive hover:bg-destructive/5 border-destructive/30 gap-1.5"
+                  >
+                    <X className="h-3.5 w-3.5" />
+                    Unlink MSF
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="bg-default-50/50 border border-dashed border-default-200 rounded-xl p-3 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-2.5">
+                <div className="flex items-center gap-2">
+                  <FileText className="h-4 w-4 text-default-400 shrink-0" />
+                  <span className="text-xs text-default-600">
+                    No Market Scoping Form associated with this Activity.
+                  </span>
+                </div>
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => onOpenAssociateMsf?.(activity)}
+                  className="h-7 text-xs gap-1.5 border-primary/30 text-primary hover:bg-primary/5 shrink-0 self-end sm:self-auto"
+                >
+                  <Link2 className="h-3.5 w-3.5" />
+                  Associate Market Scoping
+                </Button>
+              </div>
+            )}
+          </div>
+        )
+      })()}
 
       {/* Visual Hero Metadata Strip */}
       <div className="px-5 py-4 bg-default-50/60 border-b border-default-200 grid grid-cols-2 md:grid-cols-4 gap-4 shrink-0">
@@ -2098,6 +2340,18 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
   const ppmp: PPMPDetails | null = ppmpResp?.data ?? null
   const isDeptMode = ppmp ? !ppmp.isMaster : false
 
+  const { data: libResp } = useLIB({
+    pathParams: { id: ppmp?.libId || '' },
+    queryParams: {},
+    enabled: !!ppmp?.libId,
+  })
+  const lib = libResp?.data
+
+  const isProjectScope =
+    lib?.scope === 'Project' ||
+    lib?.scope === 'ProjectLevel' ||
+    lib?.scopeLevel === 'Project'
+
   // State management
   const [activeTab, setActiveTab] = useState<string>('overview')
   const [selectedActivityId, setSelectedActivityId] = useState<string | null>(
@@ -2129,6 +2383,53 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
     useUpdatePPMPStatus()
   const { mutateAsync: generatePPMPDocument } = useGeneratePPMPDocument()
   const { mutateAsync: downloadDocument } = useDownloadDocument()
+
+  // Market Scoping Association State
+  const [associateMsfOpen, setAssociateMsfOpen] = useState(false)
+  const [associateMsfTarget, setAssociateMsfTarget] = useState<{
+    type: 'project' | 'activity'
+    targetLineItemBudgetId?: string
+    targetLineItemBudgetActivityId?: string
+    targetName?: string
+  }>({
+    type: 'project',
+  })
+
+  const { mutate: unlinkMsf, isPending: isUnlinkingMsf } = useUnlinkMarketScoping()
+
+  const handleUnlinkMsf = (msfId: string) => {
+    unlinkMsf(
+      { params: { id: msfId } },
+      {
+        onSuccess: () => {
+          toast.success('Market Scoping Form unlinked successfully.')
+          queryClient.invalidateQueries({ queryKey: ['/ppmps'] })
+          queryClient.invalidateQueries({ queryKey: ['/market-scopings'] })
+        },
+        onError: (err: any) => {
+          toast.error(err?.message || 'Failed to unlink Market Scoping Form.')
+        },
+      }
+    )
+  }
+
+  const handleOpenProjectAssociateMsf = () => {
+    setAssociateMsfTarget({
+      type: 'project',
+      targetLineItemBudgetId: ppmp?.libId,
+      targetName: ppmp?.libName || 'this Line-Item Budget',
+    })
+    setAssociateMsfOpen(true)
+  }
+
+  const handleOpenActivityAssociateMsf = (activity: PPMPActivityForDisplay) => {
+    setAssociateMsfTarget({
+      type: 'activity',
+      targetLineItemBudgetActivityId: activity.libActivityId,
+      targetName: activity.activityName || 'this Activity',
+    })
+    setAssociateMsfOpen(true)
+  }
 
   // Delete activity mutation + confirmation (hooks must run unconditionally)
   const queryClient = useQueryClient()
@@ -2223,19 +2524,24 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
     })
   }, [rawActivities, ppmp, ppmpId])
 
-  // Get selected activity
+  // Get selected activity (default to first activity if none explicitly selected)
   const selectedActivity = useMemo(
-    () => activities.find((a) => a.id === selectedActivityId) ?? null,
+    () =>
+      (selectedActivityId
+        ? activities.find((a) => a.id === selectedActivityId)
+        : activities[0]) ?? null,
     [activities, selectedActivityId],
   )
 
-  // Fetch current activity's expenditure items to filter out already added objects from the Add dialog
+  // Fetch current activity/project's expenditure items to filter out already added objects from the Add dialog
   const { data: currentActivityExpItemsResp } = usePPMPExpenditureItems({
     pathParams: {},
-    queryParams: selectedActivityId
-      ? { filters: `ppmpActivityId==${selectedActivityId}` }
-      : {},
-    enabled: !!selectedActivityId,
+    queryParams: isProjectScope
+      ? (ppmpId ? { filters: `ppmpId==${ppmpId}` } : {})
+      : selectedActivityId
+        ? { filters: `ppmpActivityId==${selectedActivityId}` }
+        : {},
+    enabled: isProjectScope ? !!ppmpId : !!selectedActivityId,
   })
 
   const existingObjectIds = useMemo(() => {
@@ -2823,6 +3129,10 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
           ppmp={activeChildPpmp || ppmp}
           activityCount={activityCount}
           itemCount={itemCount}
+          onOpenAssociateMsf={handleOpenProjectAssociateMsf}
+          onUnlinkMsf={handleUnlinkMsf}
+          isUnlinkingMsf={isUnlinkingMsf}
+          isProjectScope={isProjectScope}
         />
 
         {/* Consolidated Child PPMP Tabs (Only for Master PPMP with children) */}
@@ -3011,69 +3321,88 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
           )}
 
         {/* Single-column workspace layout */}
-        <div className="space-y-6">
-          {/* Top horizontal scroller activities pane */}
-          <ActivitiesPane
-            activities={activities}
-            selectedId={selectedActivityId}
-            onSelect={setSelectedActivityId}
-            expandedIds={expandedActivityIds}
-            onToggleExpand={toggleExpandActivity}
-            onAdd={
-              activeTab === 'overview' && isEditable
-                ? () => setAddDialogOpen(true)
-                : undefined
-            }
-            onRequestDelete={
-              isEditable ? requestDeleteActivity : undefined
-            }
-            totalPpmpBudget={totalPpmpBudget}
-            masterPpmpId={ppmp.id}
-            isLoading={isLoadingActivities}
+        {isProjectScope ? (
+          <ProjectLevelPPMPWorkspace
+            ppmp={activeChildPpmp || ppmp}
+            lib={lib}
+            isEditable={isEditable}
+            onAddItem={handleAddItem}
+            onEditItem={handleEditItem}
+            onDeleteItem={handleDeleteItem}
+            onAddGroup={handleAddGroup}
+            onEditGroup={handleEditGroup}
+            onDeleteGroup={handleDeleteGroup}
+            onEditAllocations={handleEditAllocations}
           />
-
-          {/* Bottom detail pane (expanded full width) */}
-          <div className="min-w-0">
-            <RightPane
-              activity={selectedActivity}
-              onAddItem={
-                selectedActivity?.ppmpId === ppmp.id && isEditable
-                  ? handleAddItem
+        ) : (
+          <div className="space-y-6">
+            {/* Top horizontal scroller activities pane */}
+            <ActivitiesPane
+              activities={activities}
+              selectedId={selectedActivityId}
+              onSelect={setSelectedActivityId}
+              expandedIds={expandedActivityIds}
+              onToggleExpand={toggleExpandActivity}
+              onAdd={
+                activeTab === 'overview' && isEditable
+                  ? () => setAddDialogOpen(true)
                   : undefined
               }
-              onEditItem={
-                selectedActivity?.ppmpId === ppmp.id && isEditable
-                  ? handleEditItem
-                  : undefined
+              onRequestDelete={
+                isEditable ? requestDeleteActivity : undefined
               }
-              onDeleteItem={
-                selectedActivity?.ppmpId === ppmp.id && isEditable
-                  ? handleDeleteItem
-                  : undefined
-              }
-              onAddGroup={
-                selectedActivity?.ppmpId === ppmp.id && isEditable
-                  ? handleAddGroup
-                  : undefined
-              }
-              onEditGroup={
-                selectedActivity?.ppmpId === ppmp.id && isEditable
-                  ? handleEditGroup
-                  : undefined
-              }
-              onDeleteGroup={
-                selectedActivity?.ppmpId === ppmp.id && isEditable
-                  ? handleDeleteGroup
-                  : undefined
-              }
-              onEditAllocations={
-                selectedActivity?.ppmpId === ppmp.id && isEditable
-                  ? handleEditAllocations
-                  : undefined
-              }
+              onOpenAssociateMsf={handleOpenActivityAssociateMsf}
+              totalPpmpBudget={totalPpmpBudget}
+              masterPpmpId={ppmp.id}
+              isLoading={isLoadingActivities}
             />
+
+            {/* Bottom detail pane (expanded full width) */}
+            <div className="min-w-0">
+              <RightPane
+                activity={selectedActivity}
+                onAddItem={
+                  selectedActivity?.ppmpId === ppmp.id && isEditable
+                    ? handleAddItem
+                    : undefined
+                }
+                onEditItem={
+                  selectedActivity?.ppmpId === ppmp.id && isEditable
+                    ? handleEditItem
+                    : undefined
+                }
+                onDeleteItem={
+                  selectedActivity?.ppmpId === ppmp.id && isEditable
+                    ? handleDeleteItem
+                    : undefined
+                }
+                onAddGroup={
+                  selectedActivity?.ppmpId === ppmp.id && isEditable
+                    ? handleAddGroup
+                    : undefined
+                }
+                onEditGroup={
+                  selectedActivity?.ppmpId === ppmp.id && isEditable
+                    ? handleEditGroup
+                    : undefined
+                }
+                onDeleteGroup={
+                  selectedActivity?.ppmpId === ppmp.id && isEditable
+                    ? handleDeleteGroup
+                    : undefined
+                }
+                onEditAllocations={
+                  selectedActivity?.ppmpId === ppmp.id && isEditable
+                    ? handleEditAllocations
+                    : undefined
+                }
+                onOpenAssociateMsf={handleOpenActivityAssociateMsf}
+                onUnlinkMsf={handleUnlinkMsf}
+                isUnlinkingMsf={isUnlinkingMsf}
+              />
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       <AddPPMPActivityDialog
@@ -3144,8 +3473,9 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
         isOpen={groupDialogOpen}
         onOpenChange={setGroupDialogOpen}
         ppmpId={ppmpId}
-        ppmpActivityId={selectedActivityId || ''}
+        ppmpActivityId={selectedActivityId || undefined}
         libActivityId={selectedActivity?.libActivityId}
+        orphanDetails={lib?.orphanDetails}
         groupToEdit={groupDialogEditGroup}
         existingObjectIds={existingObjectIds}
       />
@@ -3228,6 +3558,21 @@ export function OfficeLevelPPMPDetailsPage({ ppmpId }: { ppmpId: string }) {
           masterPpmpId={ppmp.consolidatedIntoId}
         />
       )}
+
+      <AssociateMarketScopingDialog
+        open={associateMsfOpen}
+        onOpenChange={setAssociateMsfOpen}
+        targetType={associateMsfTarget.type}
+        targetLineItemBudgetId={associateMsfTarget.targetLineItemBudgetId}
+        targetLineItemBudgetActivityId={
+          associateMsfTarget.targetLineItemBudgetActivityId
+        }
+        targetName={associateMsfTarget.targetName}
+        officeId={ppmp.officeId}
+        onSuccess={() => {
+          queryClient.invalidateQueries({ queryKey: ['/ppmps'] })
+        }}
+      />
     </PageContainerDashtail>
   )
 }

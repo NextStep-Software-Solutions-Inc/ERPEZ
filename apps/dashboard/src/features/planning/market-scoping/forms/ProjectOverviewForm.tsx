@@ -117,9 +117,13 @@ export function ProjectOverviewForm({
   // Real Line Item Budgets (LIBs) state fetched from backend GET /libs API
   interface RealLibItem {
     id: string
+    name: string
     title: string
+    libNumber?: string
     fiscalYear: string
     officeName?: string
+    scope?: string
+    totalAmount?: number
   }
 
   const [realLibs, setRealLibs] = useState<RealLibItem[]>([])
@@ -127,7 +131,7 @@ export function ProjectOverviewForm({
   useEffect(() => {
     const fetchRealLibs = async () => {
       try {
-        const res = await api.get('/libs')
+        const res = await api.get('/libs', { params: { pageSize: 1000 } })
         const items = res.data?.data?.items || res.data?.data || res.data?.items || res.data || []
         if (Array.isArray(items)) {
           interface RawLib {
@@ -137,6 +141,8 @@ export function ProjectOverviewForm({
             libNumber?: string
             version?: number | string
             status?: string
+            scope?: string
+            totalAmount?: number
             fiscalYear?: string | number | { year?: string | number }
             fiscalYearEntity?: { year?: string | number }
             office?: { name?: string }
@@ -169,15 +175,20 @@ export function ProjectOverviewForm({
             const versionStr = ` (v${versionNum}.0)`
 
             const libNumTag = item.libNumber ? ` [${item.libNumber}]` : ''
+            const scopeTag = item.scope === 'Project' || item.scope === 'ProjectLevel' ? ' (Project Scope)' : ''
             const fullTitle = baseName.startsWith('FY') 
-              ? `${baseName}${versionStr}${libNumTag}` 
-              : `FY ${fy} ${baseName}${versionStr}${libNumTag}`
+              ? `${baseName}${versionStr}${libNumTag}${scopeTag}` 
+              : `FY ${fy} ${baseName}${versionStr}${libNumTag}${scopeTag}`
 
             mappedLibs.push({
               id: item.id,
+              name: baseName,
               title: fullTitle,
+              libNumber: item.libNumber,
               fiscalYear: fy,
               officeName: item.office?.name || item.officeName || '',
+              scope: item.scope || (item.name?.toLowerCase().includes('project') ? 'Project' : 'Activity'),
+              totalAmount: item.totalAmount || 0,
             })
           }
 
@@ -205,11 +216,14 @@ export function ProjectOverviewForm({
 
   // Real LIB activities state fetched from backend GET /lib-activities API
   const [realLibActivities, setRealLibActivities] = useState<{ id: string; name: string; budget: number; lineItemBudgetId: string }[]>([])
+  const [selectedLibActivities, setSelectedLibActivities] = useState<ScopingActivityOption[]>([])
+  const [selectedLibDetail, setSelectedLibDetail] = useState<any>(null)
+  const [isLoadingLibActivities, setIsLoadingLibActivities] = useState(false)
 
   useEffect(() => {
     const fetchRealLibActivities = async () => {
       try {
-        const res = await api.get('/lib-activities')
+        const res = await api.get('/lib-activities', { params: { pageSize: 1000 } })
         const items = res.data?.data?.items || res.data?.data || res.data?.items || []
         
         interface RawLibActivity {
@@ -242,23 +256,90 @@ export function ProjectOverviewForm({
     fetchRealLibActivities()
   }, [])
 
-  interface ScopingActivityOption {
-    id: string
-    name: string
-    budget: number
-    lineItemBudgetId?: string
-    isScoped?: boolean
-    scopedMsfCode?: string
-  }
+  // Existing market scopings to guard against duplicate MSFs for same activity/LIB
+  const [existingMarketScopings, setExistingMarketScopings] = useState<
+    { id: string; targetLineItemBudgetId?: string; targetLineItemBudgetActivityId?: string; projectName?: string }[]
+  >([])
 
-  // Combine passed props libActivities with real activities, filtering by selected LIB
-  const availableActivities = useMemo<ScopingActivityOption[]>(() => {
-    if (realLibActivities.length > 0) {
-      const filtered = realLibActivities.filter(act => act.lineItemBudgetId === selectedLibId)
-      if (filtered.length > 0) return filtered as ScopingActivityOption[]
+  useEffect(() => {
+    const fetchExistingMarketScopings = async () => {
+      try {
+        const res = await api.get('/market-scopings', { params: { pageSize: 1000 } })
+        const items = res.data?.data?.items || res.data?.data || res.data?.items || res.data || []
+        if (Array.isArray(items)) {
+          setExistingMarketScopings(
+            items.map((ms: any) => ({
+              id: ms.id,
+              targetLineItemBudgetId: ms.targetLineItemBudgetId,
+              targetLineItemBudgetActivityId: ms.targetLineItemBudgetActivityId,
+              projectName: ms.projectName,
+            }))
+          )
+        }
+      } catch (err) {
+        console.warn('Failed to load existing market scopings for duplicate guard:', err)
+      }
     }
-    return libActivities as ScopingActivityOption[]
-  }, [realLibActivities, selectedLibId, libActivities])
+    fetchExistingMarketScopings()
+  }, [])
+
+  const scopedActivityMap = useMemo(() => {
+    const map = new Map<string, { msfId: string; projectName?: string }>()
+    existingMarketScopings.forEach((ms) => {
+      if (ms.targetLineItemBudgetActivityId) {
+        map.set(ms.targetLineItemBudgetActivityId, {
+          msfId: ms.id,
+          projectName: ms.projectName,
+        })
+      }
+    })
+    return map
+  }, [existingMarketScopings])
+
+  const scopedLibMap = useMemo(() => {
+    const map = new Map<string, { msfId: string; projectName?: string }>()
+    existingMarketScopings.forEach((ms) => {
+      if (ms.targetLineItemBudgetId) {
+        map.set(ms.targetLineItemBudgetId, {
+          msfId: ms.id,
+          projectName: ms.projectName,
+        })
+      }
+    })
+    return map
+  }, [existingMarketScopings])
+
+  // Combine directly loaded activities for selected LIB, cached real activities, and passed props
+  const availableActivities = useMemo<ScopingActivityOption[]>(() => {
+    let list: ScopingActivityOption[] = []
+    if (selectedLibActivities.length > 0) {
+      list = selectedLibActivities
+    } else if (realLibActivities.length > 0) {
+      const filtered = realLibActivities.filter(act => act.lineItemBudgetId === selectedLibId)
+      if (filtered.length > 0) list = filtered as ScopingActivityOption[]
+    } else if (libActivities && libActivities.length > 0) {
+      list = libActivities as ScopingActivityOption[]
+    }
+
+    return list.map((act) => {
+      const scopedInfo = scopedActivityMap.get(act.id)
+      return {
+        ...act,
+        isScoped: Boolean(scopedInfo),
+        scopedMsfCode: scopedInfo?.projectName,
+      }
+    })
+  }, [selectedLibActivities, realLibActivities, selectedLibId, libActivities, scopedActivityMap])
+
+  const selectedLib = useMemo(() => {
+    return realLibs.find((lib) => lib.id === selectedLibId)
+  }, [realLibs, selectedLibId])
+
+  const isProjectScopeLib =
+    selectedLib?.scope === 'Project' ||
+    selectedLib?.scope === 'ProjectLevel' ||
+    selectedLibDetail?.scope === 'Project' ||
+    selectedLibDetail?.scope === 'ProjectLevel'
 
   const form = useForm({
     defaultValues: {
@@ -268,6 +349,7 @@ export function ProjectOverviewForm({
       periodFrom: formatIsoToMmYyyy(draft?.periodFrom),
       periodTo: formatIsoToMmYyyy(draft?.periodTo),
       expectedDeliveryDate: formatIsoToMmYyyy(draft?.expectedDeliveryDate),
+      targetLineItemBudgetId: (draft?.targetLineItemBudgetId || undefined) as string | undefined,
       linkedLibActivityId: (draft?.linkedLibActivityId || undefined) as string | undefined,
     },
     onSubmit: async (values) => {
@@ -319,6 +401,87 @@ export function ProjectOverviewForm({
       onNext(completeData)
     },
   })
+
+  const handleSelectLib = async (libId: string) => {
+    setSelectedLibId(libId)
+    setSelectedLibActivities([])
+    setSelectedLibDetail(null)
+    setIsLoadingLibActivities(true)
+
+    const matched = realLibs.find((l) => l.id === libId)
+    if (!matched) {
+      setIsLoadingLibActivities(false)
+      return
+    }
+
+    try {
+      const res = await api.get(`/libs/${libId}`)
+      const detail = res.data?.data || res.data
+      setSelectedLibDetail(detail)
+
+      const rawActivities = detail?.activities || []
+      const mappedActivities: ScopingActivityOption[] = rawActivities.map((act: any) => ({
+        id: act.id,
+        name: act.wfpObjectiveActivity?.activityName || act.opcrActivity?.name || act.name || 'LIB Activity',
+        budget: (act.details || []).reduce((sum: number, d: any) => sum + (d.budget ?? ((d.unitQuantity ?? 0) * (d.unitCost ?? 0))), 0) || act.budget || 0,
+        lineItemBudgetId: libId,
+      }))
+      setSelectedLibActivities(mappedActivities)
+
+      const isProject =
+        detail?.scope === 'Project' ||
+        detail?.scope === 'ProjectLevel' ||
+        matched.scope === 'Project' ||
+        matched.scope === 'ProjectLevel'
+
+      if (isProject) {
+        if (scopedLibMap.has(libId)) {
+          toast.warning('Line Item Budget Already Scoped', {
+            description: 'A Market Scoping Form has already been created for this Project-Level Line Item Budget.',
+          })
+          setSelectedLibId('')
+          return
+        }
+
+        const orphanTotal = (detail?.orphanDetails || []).reduce(
+          (sum: number, d: { budget?: number; unitQuantity?: number; unitCost?: number }) =>
+            sum + (d.budget ?? ((d.unitQuantity ?? 0) * (d.unitCost ?? 0))),
+          0
+        )
+        const budget = orphanTotal > 0 ? orphanTotal : (detail?.totalAmount ?? matched.totalAmount ?? 0)
+        const projectName = detail?.name || matched.name || matched.title
+
+        form.setFieldValue('targetLineItemBudgetId', libId)
+        form.setFieldValue('linkedLibActivityId', undefined)
+        form.setFieldValue('projectName', projectName)
+        if (budget > 0) {
+          form.setFieldValue('estimatedBudget', budget)
+        }
+
+        toast.success('Project-Level LIB Linked', {
+          description: `Auto-filled Project Name ("${projectName}") and Estimated Budget (₱${budget.toLocaleString()}). You can customize these fields if needed.`,
+        })
+      } else {
+        form.setFieldValue('targetLineItemBudgetId', undefined)
+        form.setFieldValue('linkedLibActivityId', undefined)
+      }
+    } catch (err) {
+      console.warn('Failed to fetch detailed LIB:', err)
+      if (matched.scope === 'Project' || matched.scope === 'ProjectLevel') {
+        form.setFieldValue('targetLineItemBudgetId', libId)
+        form.setFieldValue('linkedLibActivityId', undefined)
+        form.setFieldValue('projectName', matched.name)
+        if (matched.totalAmount && matched.totalAmount > 0) {
+          form.setFieldValue('estimatedBudget', matched.totalAmount)
+        }
+      } else {
+        form.setFieldValue('targetLineItemBudgetId', undefined)
+        form.setFieldValue('linkedLibActivityId', undefined)
+      }
+    } finally {
+      setIsLoadingLibActivities(false)
+    }
+  }
 
   useEffect(() => {
     setCurrentStep(1)
@@ -486,6 +649,15 @@ export function ProjectOverviewForm({
                 )}
               </form.Field>
 
+              <form.Field name="targetLineItemBudgetId">
+                {(field) => (
+                  <input
+                    type="hidden"
+                    value={field.state.value || ''}
+                  />
+                )}
+              </form.Field>
+
               {/* Explicit Mode Selector Cards */}
               <div className="mb-6 space-y-2">
                 <Label className="text-sm font-semibold text-slate-900">
@@ -506,10 +678,10 @@ export function ProjectOverviewForm({
                       <span className={cn('w-4 h-4 rounded-full border flex items-center justify-center', scopingMode === 'lib' ? 'border-primary bg-primary text-white' : 'border-slate-300')}>
                         {scopingMode === 'lib' && <span className="w-1.5 h-1.5 rounded-full bg-white" />}
                       </span>
-                      Link to LIB Activity
+                      Link to Line Item Budget
                     </div>
                     <p className="text-xs text-slate-500 mt-1 pl-6">
-                      Connect to an approved LIB Activity line item to auto-fill project name & budget.
+                      Connect to a Project-level or Activity-level Line Item Budget to auto-fill project name & budget.
                     </p>
                   </button>
 
@@ -517,6 +689,7 @@ export function ProjectOverviewForm({
                     type="button"
                     onClick={() => {
                       setScopingMode('standalone')
+                      form.setFieldValue('targetLineItemBudgetId', undefined)
                       form.setFieldValue('linkedLibActivityId', undefined)
                     }}
                     className={cn(
@@ -563,6 +736,7 @@ export function ProjectOverviewForm({
                       <Select value={targetFiscalYear} onValueChange={(fy) => {
                         setTargetFiscalYear(fy)
                         setSelectedLibId('')
+                        form.setFieldValue('targetLineItemBudgetId', undefined)
                         form.setFieldValue('linkedLibActivityId', undefined)
                       }}>
                         <SelectTrigger id="fySelect" className="h-8 text-xs bg-white w-32 font-medium">
@@ -587,10 +761,7 @@ export function ProjectOverviewForm({
                     <Select
                       value={selectedLibId}
                       disabled={!selectedUser}
-                      onValueChange={(libId) => {
-                        setSelectedLibId(libId)
-                        form.setFieldValue('linkedLibActivityId', undefined)
-                      }}
+                      onValueChange={handleSelectLib}
                     >
                       <SelectTrigger id="libSelect" className="bg-white text-sm">
                         <SelectValue placeholder={selectedUser ? `Select an approved LIB for ${selectedUser.officeName || 'office'} (${targetFiscalYear})...` : 'Select a representative first'} />
@@ -605,87 +776,133 @@ export function ProjectOverviewForm({
                             No approved LIBs found for {selectedUser.officeName || 'office'} in FY {targetFiscalYear}
                           </div>
                         ) : (
-                          filteredLibs.map((lib) => (
-                            <SelectItem key={lib.id} value={lib.id}>
-                              {lib.title}
-                            </SelectItem>
-                          ))
+                          filteredLibs.map((lib) => {
+                            const isLibScoped = (lib.scope === 'Project' || lib.scope === 'ProjectLevel') && scopedLibMap.has(lib.id)
+                            return (
+                              <SelectItem
+                                key={lib.id}
+                                value={lib.id}
+                                disabled={isLibScoped}
+                                className={cn(isLibScoped && 'opacity-50 cursor-not-allowed bg-slate-50 text-slate-400')}
+                              >
+                                <div className="flex items-center justify-between w-full gap-2">
+                                  <span>{lib.title}</span>
+                                  {isLibScoped && (
+                                    <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                                      🔒 Already Scoped
+                                    </span>
+                                  )}
+                                </div>
+                              </SelectItem>
+                            )
+                          })
                         )}
                       </SelectContent>
                     </Select>
                   </div>
 
-                  {/* Dropdown 2: Select Target LIB Activity (API) */}
-                  <form.Field name="linkedLibActivityId">
-                    {(field) => {
-                      const selectedLibActivity = availableActivities.find((a) => a.id === field.state.value)
+                  {/* Dropdown 2 or Project-Scope Indicator */}
+                  {selectedLibId && isProjectScopeLib ? (
+                    <div className="space-y-1.5 pt-2 border-t border-slate-200/80">
+                      <div className="flex items-center justify-between p-3 bg-emerald-50 border border-emerald-200 rounded-lg">
+                        <div className="flex items-center gap-2">
+                          <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                            ✓ Project Scope Linked
+                          </span>
+                          <span className="text-xs text-emerald-900 font-medium">
+                            Project-level Line Item Budget (no activity selection required)
+                          </span>
+                        </div>
+                        <span className="text-xs font-bold text-emerald-700">
+                          Budget: ₱{(form.getFieldValue('estimatedBudget') || 0).toLocaleString()}
+                        </span>
+                      </div>
+                    </div>
+                  ) : (
+                    <form.Field name="linkedLibActivityId">
+                      {(field) => {
+                        const selectedLibActivity = availableActivities.find((a) => a.id === field.state.value)
 
-                      return (
-                        <div className="space-y-1.5 pt-2 border-t border-slate-200/80">
-                          <div className="flex items-center justify-between">
-                            <Label htmlFor={field.name} className="text-xs font-semibold text-slate-900">
-                              2. Select Target LIB Activity (API) *
-                            </Label>
+                        return (
+                          <div className="space-y-1.5 pt-2 border-t border-slate-200/80">
+                            <div className="flex items-center justify-between">
+                              <Label htmlFor={field.name} className="text-xs font-semibold text-slate-900">
+                                2. Select Target LIB Activity (API) *
+                              </Label>
+                              {selectedLibActivity && (
+                                <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
+                                  ✓ Activity Linked
+                                </span>
+                              )}
+                            </div>
+                            <Select
+                              disabled={!selectedLibId && filteredLibs.length > 0}
+                              value={field.state.value || ''}
+                              onValueChange={(val) => {
+                                const matched = availableActivities.find((a) => a.id === val)
+                                if (matched?.isScoped) {
+                                  toast.warning('Activity Already Scoped', {
+                                    description: 'A Market Scoping Form has already been created for this LIB Activity.',
+                                  })
+                                  return
+                                }
+                                field.handleChange(val)
+                                form.setFieldValue('targetLineItemBudgetId', undefined)
+                                if (matched) {
+                                  form.setFieldValue('projectName', matched.name)
+                                  form.setFieldValue('estimatedBudget', matched.budget)
+                                  toast.success('LIB Activity Linked', {
+                                    description: `Auto-filled Project Name ("${matched.name}") and Approved Budget (₱${matched.budget.toLocaleString()}). You can adjust these if needed.`,
+                                  })
+                                }
+                              }}
+                            >
+                              <SelectTrigger id={field.name} className="bg-white text-sm">
+                                <SelectValue placeholder={
+                                  isLoadingLibActivities
+                                    ? "Loading activities..."
+                                    : selectedLibId
+                                      ? "Select an activity under this LIB..."
+                                      : "Please select an LIB first"
+                                } />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {availableActivities.map((activity) => {
+                                  const isScoped = activity.isScoped === true
+                                  const msfCode = activity.scopedMsfCode
+                                  return (
+                                    <SelectItem
+                                      key={activity.id}
+                                      value={activity.id}
+                                      disabled={isScoped}
+                                      className={cn(
+                                        isScoped && "opacity-50 cursor-not-allowed bg-slate-50 text-slate-400"
+                                      )}
+                                    >
+                                      <div className="flex items-center justify-between w-full gap-2">
+                                        <span>{activity.name} — ₱{activity.budget.toLocaleString()}</span>
+                                        {isScoped && (
+                                          <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
+                                            🔒 {msfCode ? `Already Scoped (${msfCode})` : 'Already Scoped'}
+                                          </span>
+                                        )}
+                                      </div>
+                                    </SelectItem>
+                                  )
+                                })}
+                              </SelectContent>
+                            </Select>
                             {selectedLibActivity && (
-                              <span className="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-semibold bg-emerald-100 text-emerald-800 border border-emerald-200">
-                                ✓ Activity Linked
-                              </span>
+                              <div className="mt-2 pt-2 flex items-center justify-between text-xs text-slate-600 bg-white p-2 rounded border border-emerald-200">
+                                <span>Allocated API Budget Ceiling:</span>
+                                <span className="font-bold text-emerald-700">₱{selectedLibActivity.budget.toLocaleString()}</span>
+                              </div>
                             )}
                           </div>
-                          <Select
-                            disabled={!selectedLibId && filteredLibs.length > 0}
-                            value={field.state.value || ''}
-                            onValueChange={(val) => {
-                              field.handleChange(val)
-                              const matched = availableActivities.find((a) => a.id === val)
-                              if (matched) {
-                                form.setFieldValue('projectName', matched.name)
-                                form.setFieldValue('estimatedBudget', matched.budget)
-                                toast.success('LIB Activity Linked', {
-                                  description: `Auto-filled Project Name ("${matched.name}") and Approved Budget (₱${matched.budget.toLocaleString()}).`,
-                                })
-                              }
-                            }}
-                          >
-                            <SelectTrigger id={field.name} className="bg-white text-sm">
-                              <SelectValue placeholder={selectedLibId ? "Select an activity under this LIB..." : "Please select an LIB first"} />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {availableActivities.map((activity) => {
-                                const isScoped = activity.isScoped === true
-                                const msfCode = activity.scopedMsfCode
-                                return (
-                                  <SelectItem
-                                    key={activity.id}
-                                    value={activity.id}
-                                    disabled={isScoped}
-                                    className={cn(
-                                      isScoped && "opacity-50 cursor-not-allowed bg-slate-50 text-slate-400"
-                                    )}
-                                  >
-                                    <div className="flex items-center justify-between w-full gap-2">
-                                      <span>{activity.name} — ₱{activity.budget.toLocaleString()}</span>
-                                      {isScoped && (
-                                        <span className="ml-2 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-amber-100 text-amber-800 border border-amber-200">
-                                          🔒 {msfCode ? `Already Scoped (${msfCode})` : 'Already Scoped'}
-                                        </span>
-                                      )}
-                                    </div>
-                                  </SelectItem>
-                                )
-                              })}
-                            </SelectContent>
-                          </Select>
-                          {selectedLibActivity && (
-                            <div className="mt-2 pt-2 flex items-center justify-between text-xs text-slate-600 bg-white p-2 rounded border border-emerald-200">
-                              <span>Allocated API Budget Ceiling:</span>
-                              <span className="font-bold text-emerald-700">₱{selectedLibActivity.budget.toLocaleString()}</span>
-                            </div>
-                          )}
-                        </div>
-                      )
-                    }}
-                  </form.Field>
+                        )
+                      }}
+                    </form.Field>
+                  )}
                 </div>
               )}
 

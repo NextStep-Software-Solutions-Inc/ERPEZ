@@ -1,4 +1,5 @@
 import { FiscalYear } from '../../fiscal-year-and-policies/fiscal-year-management/types/types'
+import type { MSFSummary } from '../../market-scoping/types/marketScopingApiTypes'
 
 export enum PPMPState {
   DRAFT = 'draft',
@@ -410,6 +411,8 @@ export type PPMP = {
   isFinal?: boolean
   finalizedAt?: string
   finalizedBy?: string
+  /** MSF linked through PPMP.libId (project-scope). Populated by the backend; null if no MSF is associated. */
+  LinkedMarketScoping?: MSFSummary | null
 }
 export type PPMPDetails = PPMP & {
   ChildPPMPs?: PPMPDetails[]
@@ -534,6 +537,8 @@ export type PPMPActivity = {
   createdAt: string
   createdBy?: string
   PPMPExpenditureItems?: PPMPExpenditureItem[]
+  /** MSF linked through PPMPActivity.libActivityId (activity-scope). Populated by the backend; null if not associated. */
+  LinkedMarketScoping?: MSFSummary | null
 }
 
 /// ─── PPMP Expenditure Items ─────────────────────────────────────────────────────────

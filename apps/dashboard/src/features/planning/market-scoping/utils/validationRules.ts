@@ -41,6 +41,8 @@ export const projectOverviewSchema = z.object({
   expectedDeliveryDate: monthYearFormat,
 
   linkedLibActivityId: z.string().optional(),
+  targetLineItemBudgetId: z.string().optional(),
+  targetLineItemBudgetActivityId: z.string().optional(),
   representativeName: z.string().optional(),
   representativeDesignation: z.string().optional(),
   departmentUnit: z.string().optional(),

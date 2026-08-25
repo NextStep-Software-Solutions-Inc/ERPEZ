@@ -86,6 +86,8 @@ const getStatusBadgeColor = (status: string) => {
       return 'bg-yellow-100 text-yellow-700'
     case 'Returned':
       return 'bg-orange-100 text-orange-700'
+    case 'Proposed':
+      return 'bg-blue-100 text-blue-700'
     default:
       return 'bg-gray-100 text-gray-700'
   }
@@ -281,7 +283,9 @@ export default function LIBDetailPage({
   const isReadyForSubmission =
     totalBudgetFromSource !== undefined && totalBudgetFromSource > 0
       ? proposedLibTotalBudget >= totalBudgetFromSource
-      : proposedLibTotalBudget > 0 || (lib?.activities && lib.activities.length > 0)
+      : proposedLibTotalBudget > 0 ||
+        (lib?.activities && lib.activities.length > 0) ||
+        (lib?.orphanDetails && lib.orphanDetails.length > 0)
 
   const activityCount = lib?.activities?.length ?? 0
   const opcrActivityCount = opcrData?.data?.activityCount
@@ -584,16 +588,29 @@ export default function LIBDetailPage({
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Ready for Submission Banner */}
-        {isReadyForSubmission && (lib?.status === 'Draft' || lib?.status === 'Returned') && (
+        {isReadyForSubmission &&
+          (lib?.status === 'Draft' ||
+            lib?.status === 'Proposed' ||
+            lib?.status === 'Returned') && (
           <div className="bg-emerald-50/80 border-l-4 border-emerald-500 rounded-xl p-4 mb-8 flex items-center justify-between shadow-xs">
             <div className="flex items-start gap-3">
               <CheckCircle className="w-5 h-5 text-emerald-600 flex-shrink-0 mt-0.5" />
               <div>
                 <h3 className="font-semibold text-emerald-900 text-sm">
-                  Ready for Submission
+                  {lib?.status === 'Proposed'
+                    ? 'Proposed LIB Ready for Submission'
+                    : lib?.status === 'Returned'
+                    ? 'Ready for Resubmission'
+                    : 'Ready for Submission'}
                 </h3>
                 <p className="text-emerald-700 text-sm mt-0.5">
-                  Total expenditures ({formatCurrencyPHP(totalActivitiesDetailBudget)}) have met the budget ceiling. You can now submit this Line-Item Budget for review.
+                  {lib?.status === 'Proposed'
+                    ? `Total proposed expenditures (${formatCurrencyPHP(totalActivitiesDetailBudget)}) have been configured. You can now submit this proposed Line-Item Budget for review.`
+                    : lib?.status === 'Returned'
+                    ? `Total expenditures (${formatCurrencyPHP(totalActivitiesDetailBudget)}) have been revised. You can now resubmit this Line-Item Budget for review.`
+                    : totalBudgetFromSource && totalBudgetFromSource > 0
+                    ? `Total expenditures (${formatCurrencyPHP(totalActivitiesDetailBudget)}) have met the budget ceiling (${formatCurrencyPHP(totalBudgetFromSource)}). You can now submit this Line-Item Budget for review.`
+                    : `Total expenditures (${formatCurrencyPHP(totalActivitiesDetailBudget)}) have been configured. You can now submit this Line-Item Budget for review.`}
                 </p>
               </div>
             </div>
@@ -604,7 +621,13 @@ export default function LIBDetailPage({
               className="bg-emerald-600 hover:bg-emerald-700 text-white font-medium gap-1.5 shadow-xs flex-shrink-0 ml-4"
             >
               <Send className="w-4 h-4" />
-              {isSubmitting ? 'Submitting...' : 'Submit LIB'}
+              {isSubmitting
+                ? 'Submitting...'
+                : lib?.status === 'Proposed'
+                ? 'Submit Proposed LIB'
+                : lib?.status === 'Returned'
+                ? 'Resubmit LIB'
+                : 'Submit LIB'}
             </Button>
           </div>
         )}
@@ -1022,7 +1045,10 @@ export default function LIBDetailPage({
       />
 
       {/* Submission Confirmation Dialog */}
-      {isSubmitConfirmOpen && lib.status === 'Draft' && (
+      {isSubmitConfirmOpen &&
+        (lib.status === 'Draft' ||
+          lib.status === 'Proposed' ||
+          lib.status === 'Returned') && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
           <Card className="w-full max-w-md">
             <CardContent className="pt-6">
@@ -1032,11 +1058,18 @@ export default function LIBDetailPage({
                 </div>
                 <div className="flex-1">
                   <h3 className="font-semibold text-gray-900">
-                    Submit LIB for Review?
+                    {lib.status === 'Proposed'
+                      ? 'Submit Proposed LIB for Review?'
+                      : lib.status === 'Returned'
+                      ? 'Resubmit LIB for Review?'
+                      : 'Submit LIB for Review?'}
                   </h3>
                   <p className="text-sm text-gray-600 mt-2">
-                    Once submitted, this LIB will be sent for approval. You can
-                    view its status in the dashboard.
+                    {lib.status === 'Proposed'
+                      ? `Once submitted, this proposed Line-Item Budget with total expenditures of ${formatCurrencyPHP(totalActivitiesDetailBudget)} will be forwarded for review and ceiling allocation.`
+                      : lib.status === 'Returned'
+                      ? `Once resubmitted, this revised Line-Item Budget will be sent for review and approval.`
+                      : 'Once submitted, this LIB will be sent for approval. You can view its status in the dashboard.'}
                   </p>
                 </div>
               </div>
@@ -1054,7 +1087,13 @@ export default function LIBDetailPage({
                   disabled={isSubmitting}
                   className="bg-green-600 hover:bg-green-700"
                 >
-                  {isSubmitting ? 'Submitting...' : 'Submit LIB'}
+                  {isSubmitting
+                    ? 'Submitting...'
+                    : lib.status === 'Proposed'
+                    ? 'Submit Proposed LIB'
+                    : lib.status === 'Returned'
+                    ? 'Resubmit LIB'
+                    : 'Submit LIB'}
                 </Button>
               </div>
             </CardContent>

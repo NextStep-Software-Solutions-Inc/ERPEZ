@@ -29,10 +29,13 @@ export type PPMPExpenditureItemFormValues = z.infer<
   typeof ppmpExpenditureItemSchema
 >
 
+import type { OrphanLineItemDetail } from '@/features/planning/line-item-budgeting/line-item-budget/types'
+
 interface AddPPMPItemExpenditureFormProps {
   formId?: string
   initialValues?: Partial<PPMPExpenditureItemFormValues>
   libActivityId?: string
+  orphanDetails?: OrphanLineItemDetail[]
   existingObjectIds?: string[]
   onSubmit: (values: PPMPExpenditureItemFormValues) => void
   isLoading?: boolean
@@ -128,6 +131,7 @@ export function AddPPMPItemExpenditureForm({
   formId = 'add-ppmp-expenditure-form',
   initialValues,
   libActivityId,
+  orphanDetails,
   existingObjectIds,
   onSubmit,
   isLoading = false,
@@ -210,6 +214,21 @@ export function AddPPMPItemExpenditureForm({
 
         parentsMap.set(typeOfExp.id, typeOfExp)
       })
+    } else if (orphanDetails && orphanDetails.length > 0) {
+      orphanDetails.forEach((item) => {
+        if (!isEditing && existingObjectIds?.includes(item.objectId)) {
+          return
+        }
+        const resolved = objectMap.get(item.objectId)
+        const typeOfExp = resolveTypeOfExpenditure(
+          item.objectId,
+          item.object?.name || resolved?.name || '',
+          item.object?.code || resolved?.code || '',
+          resolved?.parent,
+        )
+
+        parentsMap.set(typeOfExp.id, typeOfExp)
+      })
     } else {
       objectCodesResponse?.data
         ?.filter((item) => {
@@ -233,6 +252,7 @@ export function AddPPMPItemExpenditureForm({
     return Array.from(parentsMap.values())
   }, [
     libActivityId,
+    orphanDetails,
     activityObjectsResponse?.data,
     objectCodesResponse?.data,
     objectMap,
@@ -287,6 +307,32 @@ export function AddPPMPItemExpenditureForm({
         }))
     }
 
+    if (orphanDetails && orphanDetails.length > 0) {
+      return orphanDetails
+        .filter((item) => {
+          if (!isEditing && existingObjectIds?.includes(item.objectId)) {
+            return false
+          }
+          const resolved = objectMap.get(item.objectId)
+          const typeOfExp = resolveTypeOfExpenditure(
+            item.objectId,
+            item.object?.name || resolved?.name || '',
+            item.object?.code || resolved?.code || '',
+            resolved?.parent,
+          )
+          return typeOfExp.id === selectedParentId
+        })
+        .map((item) => {
+          const resolved = objectMap.get(item.objectId)
+          const code = item.object?.code || resolved?.code || ''
+          const name = item.object?.name || resolved?.name || ''
+          return {
+            id: item.objectId,
+            label: code ? `${code} - ${name}` : name,
+          }
+        })
+    }
+
     return (
       objectCodesResponse?.data
         ?.filter((item) => {
@@ -310,6 +356,7 @@ export function AddPPMPItemExpenditureForm({
   }, [
     selectedParentId,
     libActivityId,
+    orphanDetails,
     activityObjectsResponse?.data,
     objectCodesResponse?.data,
     objectMap,
