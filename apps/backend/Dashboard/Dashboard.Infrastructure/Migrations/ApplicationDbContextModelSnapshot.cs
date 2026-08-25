@@ -2767,6 +2767,9 @@ namespace ERPEZ.Infrastructure.Migrations
                     b.Property<Guid?>("TargetLineItemBudgetActivityId")
                         .HasColumnType("uuid");
 
+                    b.Property<Guid?>("TargetLineItemBudgetId")
+                        .HasColumnType("uuid");
+
                     b.Property<DateTime?>("UpdatedAt")
                         .HasColumnType("timestamp with time zone");
 
@@ -2778,11 +2781,20 @@ namespace ERPEZ.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
-                    b.HasIndex("TargetLineItemBudgetActivityId");
+                    b.HasIndex("TargetLineItemBudgetActivityId")
+                        .IsUnique()
+                        .HasFilter("\"TargetLineItemBudgetActivityId\" IS NOT NULL AND \"IsDeleted\" = false");
+
+                    b.HasIndex("TargetLineItemBudgetId")
+                        .IsUnique()
+                        .HasFilter("\"TargetLineItemBudgetId\" IS NOT NULL AND \"IsDeleted\" = false");
 
                     b.HasIndex("UserId");
 
-                    b.ToTable("MarketScopings", "planning");
+                    b.ToTable("MarketScopings", "planning", t =>
+                        {
+                            t.HasCheckConstraint("CK_MarketScoping_SingleTarget", "\"TargetLineItemBudgetId\" IS NULL OR \"TargetLineItemBudgetActivityId\" IS NULL");
+                        });
                 });
 
             modelBuilder.Entity("ERPEZ.Domain.Entities.Planning.MarketScopingActivity", b =>
@@ -10352,13 +10364,21 @@ namespace ERPEZ.Infrastructure.Migrations
                 {
                     b.HasOne("ERPEZ.Domain.Entities.Planning.LineItemBudgetActivity", "TargetLineItemBudgetActivity")
                         .WithMany()
-                        .HasForeignKey("TargetLineItemBudgetActivityId");
+                        .HasForeignKey("TargetLineItemBudgetActivityId")
+                        .OnDelete(DeleteBehavior.Restrict);
+
+                    b.HasOne("ERPEZ.Domain.Entities.Planning.LineItemBudget", "TargetLineItemBudget")
+                        .WithMany()
+                        .HasForeignKey("TargetLineItemBudgetId")
+                        .OnDelete(DeleteBehavior.Restrict);
 
                     b.HasOne("ERPEZ.Domain.Entities.Planning.User", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("TargetLineItemBudget");
 
                     b.Navigation("TargetLineItemBudgetActivity");
 

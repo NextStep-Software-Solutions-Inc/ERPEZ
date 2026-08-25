@@ -2282,6 +2282,40 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasForeignKey(msa => msa.ActivitySettingsId)
             .OnDelete(DeleteBehavior.Restrict);
 
+        // ── MarketScoping target relationship configurations ──────────────────
+
+        // MarketScoping → LineItemBudget (project-level scope FK)
+        modelBuilder.Entity<MarketScoping>()
+            .HasOne(ms => ms.TargetLineItemBudget)
+            .WithMany()
+            .HasForeignKey(ms => ms.TargetLineItemBudgetId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // MarketScoping → LineItemBudgetActivity (activity-level scope FK — previously convention-inferred)
+        modelBuilder.Entity<MarketScoping>()
+            .HasOne(ms => ms.TargetLineItemBudgetActivity)
+            .WithMany()
+            .HasForeignKey(ms => ms.TargetLineItemBudgetActivityId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // DB CHECK constraint: mutual exclusivity — an MSF cannot target both a LIB and a LIB Activity simultaneously.
+        modelBuilder.Entity<MarketScoping>()
+            .ToTable(t => t.HasCheckConstraint(
+                "CK_MarketScoping_SingleTarget",
+                "\"TargetLineItemBudgetId\" IS NULL OR \"TargetLineItemBudgetActivityId\" IS NULL"));
+
+        // Filtered unique index: at most 1 active MSF per project-scoped LIB
+        modelBuilder.Entity<MarketScoping>()
+            .HasIndex(ms => ms.TargetLineItemBudgetId)
+            .HasFilter("\"TargetLineItemBudgetId\" IS NOT NULL AND \"IsDeleted\" = false")
+            .IsUnique();
+
+        // Filtered unique index: at most 1 active MSF per LIB Activity
+        modelBuilder.Entity<MarketScoping>()
+            .HasIndex(ms => ms.TargetLineItemBudgetActivityId)
+            .HasFilter("\"TargetLineItemBudgetActivityId\" IS NOT NULL AND \"IsDeleted\" = false")
+            .IsUnique();
+
         modelBuilder.Entity<Agency>(e =>
         {
             e.HasKey(x => x.Id);
