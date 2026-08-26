@@ -119,6 +119,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ProcurementProject>? ProcurementProjects { get; set; }
     public DbSet<BACResolution>? BACResolutions { get; set; }
     public DbSet<BACResolutionWhereasClauseItem>? BACResolutionWhereasClauseItems { get; set; }
+    public DbSet<BACMember>? BACMembers { get; set; }
     public DbSet<BiddingActivitySchedule>? BiddingActivitySchedules { get; set; }
     public DbSet<SupplierBid>? SupplierBids { get; set; }
     public DbSet<SupplierBidItem>? SupplierBidItems { get; set; }
