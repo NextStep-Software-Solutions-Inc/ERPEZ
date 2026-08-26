@@ -18,13 +18,27 @@ function generateCostItemId() {
 function cloneCostItem(item: CostItemMaster): CostItemMaster {
   return {
     ...item,
+    source: item.source ?? 'predefined',
     createdDate: new Date(item.createdDate),
     lastModified: new Date(item.lastModified),
   }
 }
 
-export const costMasterItemsAtom = atom<CostItemMaster[]>(
-  MOCK_COST_MASTER_ITEMS.map(cloneCostItem),
+export const costMasterItemsAtom = atom<CostItemMaster[]>([])
+
+export const nonCseOverridesAtom = atom<Record<string, { isActive?: boolean }>>({})
+
+export const toggleNonCseActiveAtom = atom(
+  null,
+  (get, set, itemId: string) => {
+    const current = get(nonCseOverridesAtom)
+    const existing = current[itemId]
+    const nextActive = existing?.isActive !== undefined ? !existing.isActive : false
+    set(nonCseOverridesAtom, {
+      ...current,
+      [itemId]: { ...existing, isActive: nextActive },
+    })
+  },
 )
 
 export const activeCostMasterItemsAtom = atom((get) =>

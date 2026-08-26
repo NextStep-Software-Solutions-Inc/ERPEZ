@@ -30,6 +30,8 @@ public class GetNonCSEItemsQueryHandler(IUnitOfWork unitOfWork)
                 Description = item.Description,
                 UOMId = item.UOMId,
                 UOMName = item.UOM != null ? item.UOM.Name : null,
+                ProcurementCategoryId = item.ItemRequest != null ? item.ItemRequest.ProcurementCategoryId : null,
+                ProcurementCategoryName = item.ItemRequest != null && item.ItemRequest.ProcurementCategory != null ? item.ItemRequest.ProcurementCategory.Name : (!string.IsNullOrEmpty(item.Type) ? item.Type : null),
                 ItemRequestId = item.ItemRequestId,
                 ProductCode = item.ProductCode,
                 CurrentPrice = item.CurrentPrice,
