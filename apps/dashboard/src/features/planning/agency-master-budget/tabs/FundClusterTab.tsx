@@ -466,16 +466,16 @@ export function FundClusterTab() {
                             </TableCell>
                             <TableCell className="text-slate-700">{budget.fiscalYear.year}</TableCell>
                             <TableCell className="text-slate-700">{fundSourceLabel}</TableCell>
-                            <TableCell className="font-mono text-slate-700">
+                            <TableCell className="text-slate-700">
                               ₱{budget.psAmount.toLocaleString()}
                             </TableCell>
-                            <TableCell className="font-mono text-slate-700">
+                            <TableCell className="text-slate-700">
                               ₱{budget.mooeAmount.toLocaleString()}
                             </TableCell>
-                            <TableCell className="font-mono text-slate-700">
+                            <TableCell className="text-slate-700">
                               ₱{budget.coAmount.toLocaleString()}
                             </TableCell>
-                            <TableCell className="font-mono font-bold text-slate-900">
+                            <TableCell className="font-bold text-slate-900">
                               ₱{grandTotal.toLocaleString()}
                             </TableCell>
                             <TableCell className="text-sm">

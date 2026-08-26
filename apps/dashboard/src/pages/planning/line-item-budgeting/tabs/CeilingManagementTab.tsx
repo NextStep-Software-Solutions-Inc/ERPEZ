@@ -814,16 +814,16 @@ export function CeilingManagementTab() {
                             </p>
                           </div>
                         </TableCell>
-                        <TableCell className="font-mono text-sm min-w-[120px]">
+                        <TableCell className="text-sm min-w-[120px]">
                           ₱{row.ps.toLocaleString()}
                         </TableCell>
-                        <TableCell className="font-mono text-sm min-w-[120px]">
+                        <TableCell className="text-sm min-w-[120px]">
                           ₱{row.mooe.toLocaleString()}
                         </TableCell>
-                        <TableCell className="font-mono text-sm min-w-[120px]">
+                        <TableCell className="text-sm min-w-[120px]">
                           ₱{row.co.toLocaleString()}
                         </TableCell>
-                        <TableCell className="font-bold font-mono min-w-[140px] text-base">
+                        <TableCell className="font-bold min-w-[140px] text-base">
                           ₱{row.total.toLocaleString()}
                         </TableCell>
                         <TableCell className="min-w-[100px]">

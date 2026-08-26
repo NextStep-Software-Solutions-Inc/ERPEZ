@@ -8,8 +8,7 @@
  */
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
-import { Badge } from '@/components/ui/badge'
-import { AlertTriangle, AlertCircle, CheckCircle2, ArrowRight } from 'lucide-react'
+import { CheckCircle2, ArrowRight } from 'lucide-react'
 import type { AttentionItem } from '../types'
 
 interface PlanningAttentionRequiredProps {
