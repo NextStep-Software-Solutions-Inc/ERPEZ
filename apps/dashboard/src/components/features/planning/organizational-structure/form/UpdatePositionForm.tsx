@@ -108,29 +108,31 @@ export function UpdatePositionForm({
   const position: Position | null = positionProp ?? positionQuery.data ?? null
   const updateMutation = useUpdatePosition()
 
-  const { data: positionTypesResponse } = usePositionTypes({ pathParams: {}, queryParams: { pageSize: 1000 } })
+  const { data: positionTypesResponse } = usePositionTypes({ pathParams: {}, queryParams: { pageSize: 1000, sorts: 'name' } })
   const positionTypes = positionTypesResponse?.data ?? []
 
   type PositionOption = { id: string; name: string }
-  const positionOptions: PositionOption[] =
+  const positionOptions: PositionOption[] = (
     positionTypes.length > 0
       ? positionTypes.map((pt) => ({ id: pt.id, name: pt.name }))
       : positionConfig.positionTypes.map((p) => ({ id: p.value, name: p.label }))
+  ).sort((a, b) => a.name.localeCompare(b.name))
 
-  const { data: plantillaTypesResponse } = usePlantillaTypes({ pathParams: {}, queryParams: { pageSize: 1000 } })
+  const { data: plantillaTypesResponse } = usePlantillaTypes({ pathParams: {}, queryParams: { pageSize: 1000, sorts: 'name' } })
   const plantillaTypes = plantillaTypesResponse?.data ?? []
 
   type PlantillaTypeOption = { id: string; label: string }
-  const plantillaTypeOptions: PlantillaTypeOption[] =
+  const plantillaTypeOptions: PlantillaTypeOption[] = (
     plantillaTypes.length > 0
       ? plantillaTypes.map((pt) => ({ id: pt.id, label: pt.name }))
       : positionConfig.plantillaTypes.map((p) => ({ id: p.value, label: p.label }))
+  ).sort((a, b) => a.label.localeCompare(b.label))
 
-  const { data: salaryGradesResponse } = useSalaryGrades({ pathParams: {}, queryParams: { pageSize: 1000 } })
+  const { data: salaryGradesResponse } = useSalaryGrades({ pathParams: {}, queryParams: { pageSize: 1000, sorts: 'gradeNumber' } })
   const salaryGrades = salaryGradesResponse?.data ?? []
 
   type SalaryGradeOption = { id: string; value: number; label: string }
-  const salaryGradeOptions: SalaryGradeOption[] =
+  const salaryGradeOptions: SalaryGradeOption[] = (
     salaryGrades.length > 0
       ? salaryGrades.map((sg) => ({
           id: sg.id,
@@ -138,12 +140,13 @@ export function UpdatePositionForm({
           label: sg.name,
         }))
       : positionConfig.salaryGrades.map((sg) => ({ id: sg.value.toString(), value: sg.value, label: sg.label }))
+  ).sort((a, b) => a.value - b.value)
 
-  const { data: stepsResponse } = useSteps({ pathParams: {}, queryParams: { pageSize: 1000 } })
+  const { data: stepsResponse } = useSteps({ pathParams: {}, queryParams: { pageSize: 1000, sorts: 'stepNumber' } })
   const steps = stepsResponse?.data ?? []
 
   type StepOption = { id: string; value: number; label: string }
-  const stepOptions: StepOption[] =
+  const stepOptions: StepOption[] = (
     steps.length > 0
       ? steps.map((s) => ({
           id: s.id,
@@ -151,9 +154,10 @@ export function UpdatePositionForm({
           label: s.name,
         }))
       : positionConfig.steps.map((s) => ({ id: s.value.toString(), value: s.value, label: s.label }))
+  ).sort((a, b) => a.value - b.value)
 
-  const { data: orgUnitsResponse } = useOffices({ pathParams: {}, queryParams: { pageSize: 1000 } })
-  const fetchedOrgUnits = orgUnitsResponse?.data ?? []
+  const { data: orgUnitsResponse } = useOffices({ pathParams: {}, queryParams: { pageSize: 1000, sorts: 'name' } })
+  const fetchedOrgUnits = [...(orgUnitsResponse?.data ?? [])].sort((a, b) => a.name.localeCompare(b.name))
 
   const initialGradeNumber = resolveGradeNumber(position?.salaryGrade, salaryGrades)
   const initialStepNumber = resolveStepNumber(position?.step, steps)
