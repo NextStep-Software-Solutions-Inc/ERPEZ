@@ -280,15 +280,17 @@ public record ProcurementProjectDetailResponse : ProcurementProjectResponse
             DateResolved = r.DateResolved,
             ResolvedLocation = r.ResolvedLocation,
             Status = r.Status,
-            WhereasClauses = r.WhereasClauseItems
-                .OrderBy(item => item.Order)
-                .Select(item => new BACResolutionWhereasClauseItemResponse
-                {
-                    Id = item.BACResolutionWhereasClause.Id,
-                    Name = item.BACResolutionWhereasClause.Name,
-                    Body = item.BACResolutionWhereasClause.Body,
-                    Order = item.Order
-                }).ToList(),
+            WhereasClauses = r.WhereasClauseItems != null
+                ? r.WhereasClauseItems
+                    .OrderBy(item => item.Order)
+                    .Select(item => new BACResolutionWhereasClauseItemResponse
+                    {
+                        Id = item.BACResolutionWhereasClause != null ? item.BACResolutionWhereasClause.Id : item.BACResolutionWhereasClauseId,
+                        Name = item.BACResolutionWhereasClause != null ? item.BACResolutionWhereasClause.Name : string.Empty,
+                        Body = item.BACResolutionWhereasClause != null ? item.BACResolutionWhereasClause.Body : string.Empty,
+                        Order = item.Order
+                    }).ToList()
+                : new List<BACResolutionWhereasClauseItemResponse>(),
             BiddingActivitySchedules = c.BiddingActivitySchedules.Select(s => new BiddingActivityScheduleResponse
             {
                 Id = s.Id,

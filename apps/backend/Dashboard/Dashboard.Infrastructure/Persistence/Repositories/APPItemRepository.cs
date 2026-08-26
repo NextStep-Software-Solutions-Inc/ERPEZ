@@ -45,6 +45,15 @@ public class APPItemRepository : Repository<APPItem>, IAPPItemRepository
             .FirstOrDefaultAsync(cancellationToken);
     }
 
+    public async Task<List<APPItem>> FindAllWithDetailsAsync(
+        Expression<Func<APPItem, bool>> predicate,
+        CancellationToken cancellationToken = default)
+    {
+        return await BuildDetailedQuery(context.Set<APPItem>().Where(predicate))
+            .AsSplitQuery()
+            .ToListAsync(cancellationToken);
+    }
+
     public async Task<(IReadOnlyList<APPItem> Entities, int TotalCount)> GetAllWithDetailsAsync(
         SieveModel sieveModel,
         CancellationToken cancellationToken = default)

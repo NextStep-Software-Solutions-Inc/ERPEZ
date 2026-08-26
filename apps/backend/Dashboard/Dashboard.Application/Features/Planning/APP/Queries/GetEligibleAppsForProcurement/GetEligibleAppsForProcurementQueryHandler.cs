@@ -8,7 +8,6 @@ using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.Application.Features.Planning.APP.Queries.GetEligibleAppsForProcurement;
 
@@ -20,43 +19,14 @@ public class GetEligibleAppsForProcurementQueryHandler(IUnitOfWork unitOfWork)
         CancellationToken cancellationToken)
     {
         // 1. Find all active procurement projects linked to an APPItem
-        var activeAppItemIds = await unitOfWork.ProcurementProjectRepository
-            .Query(p => p.APPItemId.HasValue && p.Status != "Cancelled")
-            .Select(p => p.APPItemId!.Value)
-            .ToListAsync(cancellationToken);
+        var activeProjects = await unitOfWork.ProcurementProjectRepository
+            .FindAllAsync(p => p.APPItemId.HasValue && p.Status != "Cancelled", cancellationToken);
 
-        var activeItemSet = activeAppItemIds.ToHashSet();
+        var activeItemSet = activeProjects.Select(p => p.APPItemId!.Value).ToHashSet();
 
         // 2. Query eligible APPItems with full details matching APPItemRepository
         var eligibleAppItems = await unitOfWork.APPItemRepository
-            .Query(i => !i.IsDeleted && i.APP.Status == StatusEnum.Approved)
-            .Include(i => i.APP)
-                .ThenInclude(a => a.FiscalYear)
-            .Include(i => i.ProcurementMode)
-            .Include(i => i.FundSource)
-            .Include(i => i.Office)
-            .Include(i => i.PPMPItem)
-                .ThenInclude(pi => pi.PPMPItemAllocations)
-            .Include(i => i.PPMPItem)
-                .ThenInclude(pi => pi.ProcurementMode)
-            .Include(i => i.PPMPItem)
-                .ThenInclude(pi => pi.APPProcurementSchedules)
-                    .ThenInclude(s => s.ProcurementActivityType)
-            .Include(i => i.PPMPItem)
-                .ThenInclude(pi => pi.PPMPExpenditureItem)
-                    .ThenInclude(pei => pei.PPMPActivity)
-                        .ThenInclude(pa => pa!.LIBActivity)
-                            .ThenInclude(la => la.LineItemBudgetDetails)
-                                .ThenInclude(ld => ld.Object)
-                                    .ThenInclude(o => o.ObjectExpenseClasses)
-                                        .ThenInclude(oec => oec.ExpenseClass)
-            .Include(i => i.PPMPItem)
-                .ThenInclude(pi => pi.NonCSEItem)
-            .Include(i => i.PPMPItem)
-                .ThenInclude(pi => pi.CSEItem)
-                    .ThenInclude(ci => ci!.ItemPrices)
-            .AsSplitQuery()
-            .ToListAsync(cancellationToken);
+            .FindAllWithDetailsAsync(i => !i.IsDeleted && i.APP.Status == StatusEnum.Approved, cancellationToken);
 
         var result = new List<EligibleAppForProcurementDto>();
 

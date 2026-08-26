@@ -7,7 +7,6 @@ using ERPEZ.Domain.Enums;
 using ERPEZ.Domain.Interfaces;
 using ERPEZ.Shared.Common;
 using MediatR;
-using Microsoft.EntityFrameworkCore;
 
 namespace ERPEZ.Application.Features.Procurement.PurchaseRequests.Queries.GetEligibleConsolidatedPRs;
 
@@ -19,22 +18,14 @@ public class GetEligibleConsolidatedPRsQueryHandler(IUnitOfWork unitOfWork)
         CancellationToken cancellationToken)
     {
         // 1. Find all active procurement projects linked to a ConsolidatedPR
-        var activeCprIds = await unitOfWork.ProcurementProjectRepository
-            .Query(p => p.ConsolidatedPRId.HasValue && p.Status != "Cancelled")
-            .Select(p => p.ConsolidatedPRId!.Value)
-            .ToListAsync(cancellationToken);
+        var activeProjects = await unitOfWork.ProcurementProjectRepository
+            .FindAllAsync(p => p.ConsolidatedPRId.HasValue && p.Status != "Cancelled", cancellationToken);
 
-        var activeCprSet = activeCprIds.ToHashSet();
+        var activeCprSet = activeProjects.Select(p => p.ConsolidatedPRId!.Value).ToHashSet();
 
         // 2. Query approved Consolidated PRs
         var approvedCprs = await unitOfWork.ConsolidatedPRRepository
-            .Query(c => c.Status == StatusEnum.Approved)
-            .Include(c => c.ConsolidatedPRItems)
-                .ThenInclude(item => item.PurchaseRequest)
-                    .ThenInclude(pr => pr.Office)
-            .Include(c => c.ConsolidatedPRItems)
-                .ThenInclude(item => item.ProcurementMode)
-            .ToListAsync(cancellationToken);
+            .GetAllApprovedWithDetailsAsync(cancellationToken);
 
         var result = new List<EligibleConsolidatedPRDto>();
 
