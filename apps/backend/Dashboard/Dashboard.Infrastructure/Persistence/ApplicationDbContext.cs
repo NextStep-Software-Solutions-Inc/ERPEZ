@@ -194,6 +194,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         // Apply default conventions for all entities
         modelBuilder.ConfigureDefaultEntityConventions();
 
+        // User
+        modelBuilder.Entity<User>()
+            .HasIndex(u => u.ExternalIdentityId)
+            .IsUnique();
+
         //KPI
         modelBuilder.Entity<KPI>()
         .HasIndex(k => new { k.Name });

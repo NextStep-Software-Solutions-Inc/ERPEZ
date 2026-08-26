@@ -8,9 +8,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     : DbContext(options)
 {
     public DbSet<Tenant>? Tenants { get; set; }
+    public DbSet<TenantMember>? TenantMembers { get; set; }
     public DbSet<Module>? Modules { get; set; }
     public DbSet<TenantSetting>? TenantSettings { get; set; }
     public DbSet<TenantSubscription>? TenantSubscriptions { get; set; }
+    public DbSet<Role>? Roles { get; set; }
+    public DbSet<Permission>? Permissions { get; set; }
+    public DbSet<RolePermission>? RolePermissions { get; set; }
+    public DbSet<TenantMemberRoleAssignment>? TenantMemberRoleAssignments { get; set; }
 
     protected override void OnModelCreating(ModelBuilder modelBuilder)
     {
@@ -52,15 +57,21 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasIndex(ts => new { ts.TenantId, ts.StartDate, ts.EndDate })
             .IsUnique();
 
-        //TenantMember
+        // TenantMember
         modelBuilder.Entity<TenantMember>()
-            .HasIndex(tm => new { tm.TenantId, tm.UserId })
+            .HasIndex(tm => new { tm.ExternalIdentityId, tm.TenantId })
             .IsUnique();
 
         modelBuilder.Entity<TenantMember>()
             .HasOne(tm => tm.Tenant)
             .WithMany(t => t.TenantMembers)
             .HasForeignKey(tm => tm.TenantId);
+
+        modelBuilder.Entity<TenantMember>()
+            .HasMany(tm => tm.RoleAssignments)
+            .WithOne(ra => ra.TenantMember)
+            .HasForeignKey(ra => ra.TenantMemberId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         // Persist TenantMember enums as strings
         modelBuilder.Entity<TenantMember>()
@@ -70,6 +81,48 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         modelBuilder.Entity<TenantMember>()
             .Property(tm => tm.Status)
             .HasConversion<string>();
+
+        // Role
+        modelBuilder.Entity<Role>()
+            .HasIndex(r => new { r.TenantId, r.NormalizedName })
+            .IsUnique();
+
+        modelBuilder.Entity<Role>()
+            .HasOne(r => r.Tenant)
+            .WithMany()
+            .HasForeignKey(r => r.TenantId)
+            .OnDelete(DeleteBehavior.SetNull);
+
+        modelBuilder.Entity<Role>()
+            .HasMany(r => r.RolePermissions)
+            .WithOne(rp => rp.Role)
+            .HasForeignKey(rp => rp.RoleId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        modelBuilder.Entity<Role>()
+            .HasMany(r => r.MemberAssignments)
+            .WithOne(ma => ma.Role)
+            .HasForeignKey(ma => ma.RoleId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // Permission
+        modelBuilder.Entity<Permission>()
+            .HasIndex(p => p.Key)
+            .IsUnique();
+
+        modelBuilder.Entity<Permission>()
+            .HasMany(p => p.RolePermissions)
+            .WithOne(rp => rp.Permission)
+            .HasForeignKey(rp => rp.PermissionId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        // RolePermission composite key
+        modelBuilder.Entity<RolePermission>()
+            .HasKey(rp => new { rp.RoleId, rp.PermissionId });
+
+        // TenantMemberRoleAssignment composite key
+        modelBuilder.Entity<TenantMemberRoleAssignment>()
+            .HasKey(ra => new { ra.TenantMemberId, ra.RoleId });
 
         base.OnModelCreating(modelBuilder);
     }

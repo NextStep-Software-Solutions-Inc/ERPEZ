@@ -5,6 +5,11 @@ namespace ERPEZ.Domain.Interfaces;
 public interface IUserRepository : IRepository<User>
 {
     /// <summary>
+    /// Gets a user by external identity ID (Keycloak sub claim).
+    /// </summary>
+    Task<User?> GetByExternalIdentityIdAsync(string externalIdentityId, CancellationToken cancellationToken = default);
+
+    /// <summary>
     /// Gets a user by username.
     /// </summary>
     Task<User?> GetByUsernameAsync(string username, CancellationToken cancellationToken = default);

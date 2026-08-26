@@ -4,6 +4,7 @@ using ERPEZ.Shared.Services;
 using ERPEZ.TenantManagement.Domain.Interfaces;
 using ERPEZ.TenantManagement.Infrastructure.Persistence;
 using ERPEZ.TenantManagement.Infrastructure.Persistence.Repositories;
+using ERPEZ.TenantManagement.Infrastructure.Services;
 using Hangfire;
 using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.Builder;
@@ -22,9 +23,12 @@ public static class DependencyInjection
         var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
 
         services.AddHttpContextAccessor();
+        services.AddMemoryCache();
 
-        // Register current user service and interceptor BEFORE DbContext
+        // Register current user and tenant context services
         services.AddScoped<ICurrentUserService, CurrentUserService>();
+        services.AddScoped<ITenantContextService, TenantContextService>();
+        services.AddScoped<IUserAuthorizationService, UserAuthorizationService>();
         services.AddScoped<AuditingInterceptor>();
 
         services.AddDbContext<ApplicationDbContext>((sp, options) =>
@@ -41,7 +45,6 @@ public static class DependencyInjection
         services.AddScoped<ITenantSubscriptionRepository, TenantSubscriptionRepository>();
         services.AddScoped<ITenantMemberRepository, TenantMemberRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
-        services.AddHttpContextAccessor();
 
         // Add Hangfire
         services.AddHangfire(config => config
@@ -59,6 +62,11 @@ public static class DependencyInjection
             var seeders = scope.ServiceProvider.GetServices<IBaseSeeder>();
             foreach (var seeder in seeders)
                 seeder.SeedAsync().GetAwaiter().GetResult();
+
+            // Run RBAC Seeders & Migration
+            PermissionCatalogSeeder.SeedAsync(dbContext).GetAwaiter().GetResult();
+            RoleSeeder.SeedAsync(dbContext).GetAwaiter().GetResult();
+            TenantMemberMigrationSeeder.MigrateLegacyRolesAsync(dbContext).GetAwaiter().GetResult();
         }
         return builder;
     }

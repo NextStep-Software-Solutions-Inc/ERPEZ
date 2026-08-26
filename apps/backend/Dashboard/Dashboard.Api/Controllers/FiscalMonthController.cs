@@ -3,7 +3,9 @@ using ERPEZ.Application.Features.Planning.FiscalMonth.Commands.UnlockFiscalMonth
 using ERPEZ.Application.Features.Planning.FiscalMonth.Dtos;
 using ERPEZ.Application.Features.Planning.FiscalMonth.Queries.GetFiscalMonthById;
 using ERPEZ.Application.Features.Planning.FiscalMonth.Queries.GetFiscalMonths;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -32,8 +34,10 @@ public class FiscalMonthController(ISender mediator) : ControllerBase
     }
 
     [HttpPost("{id}/lock")]
+    [HasPermission(Permissions.Finance.fiscalMonthLockUnlock)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> LockFiscalMonth(Guid id)
     {
         var command = new LockFiscalMonthCommand(id);
@@ -43,8 +47,10 @@ public class FiscalMonthController(ISender mediator) : ControllerBase
     }
 
     [HttpPost("{id}/unlock")]
+    [HasPermission(Permissions.Finance.fiscalMonthLockUnlock)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> UnlockFiscalMonth(Guid id)
     {
         var command = new UnlockFiscalMonthCommand(id);
