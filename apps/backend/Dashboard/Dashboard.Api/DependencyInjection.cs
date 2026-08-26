@@ -9,6 +9,7 @@ using ERPEZ.Shared.Services;
 using ERPEZ.TenantManagement.Infrastructure.Services;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using System.Text.Json.Serialization;
 using TenantDbContext = ERPEZ.TenantManagement.Infrastructure.Persistence.ApplicationDbContext;
 
@@ -20,6 +21,7 @@ public static class DependencyInjection
     {
         var services = builder.Services;
         var configuration = builder.Configuration;
+        var env = builder.Environment;
         
         // 1. Bind the AzureBlobStorage section to the Options class
         services.Configure<AzureBlobStorageOptions>(options => 
@@ -42,6 +44,12 @@ public static class DependencyInjection
         {
             options.UseNpgsql(connectionString);
             options.AddInterceptors(sp.GetRequiredService<AuditingInterceptor>());
+
+            if (env != null && env.IsDevelopment())
+            {
+                options.ConfigureWarnings(w =>
+                    w.Ignore(RelationalEventId.PendingModelChangesWarning));
+            }
         });
 
         services.AddMemoryCache();

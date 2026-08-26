@@ -182,6 +182,13 @@ public static class DependencyInjection
                     "CREATE SCHEMA IF NOT EXISTS planning; " +
                     "CREATE SCHEMA IF NOT EXISTS procurement;");
                 await dbContext.Database.MigrateAsync();
+
+                // ── Seeders (dev only) ──────────────────────────────────────────────
+                var unitOfWork = scope.ServiceProvider.GetRequiredService<IUnitOfWork>();
+                await ERPEZ.Infrastructure.Persistence.Seeders.ProcurementActivityTypeSeeder.SeedAsync(unitOfWork);
+                await ERPEZ.Infrastructure.Persistence.Seeders.ItemCategorySeeder.SeedAsync(dbContext);
+                await ERPEZ.Infrastructure.Persistence.Seeders.FundSourceSeeder.SeedAsync(dbContext);
+                await ERPEZ.Infrastructure.Persistence.Seeders.OrganizationStructureSeeder.SeedAsync(dbContext);
             }
             catch (InvalidOperationException ex)
             {

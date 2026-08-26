@@ -74,9 +74,11 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .OnDelete(DeleteBehavior.Cascade);
 
         // Persist TenantMember enums as strings
+#pragma warning disable CS0618 // Legacy enum mapping for backwards compatibility
         modelBuilder.Entity<TenantMember>()
             .Property(tm => tm.Role)
             .HasConversion<string>();
+#pragma warning restore CS0618
 
         modelBuilder.Entity<TenantMember>()
             .Property(tm => tm.Status)

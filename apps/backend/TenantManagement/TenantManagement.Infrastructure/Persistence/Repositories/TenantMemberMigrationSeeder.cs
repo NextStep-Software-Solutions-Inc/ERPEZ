@@ -31,9 +31,11 @@ public static class TenantMemberMigrationSeeder
 
         foreach (var member in unassignedMembers)
         {
+#pragma warning disable CS0618 // Legacy migration read
             var targetRoleId = member.Role == TenantMemberRole.Admin
                 ? adminRole.Id
                 : endUserRole.Id;
+#pragma warning restore CS0618
 
             member.RoleAssignments.Add(new TenantMemberRoleAssignment
             {

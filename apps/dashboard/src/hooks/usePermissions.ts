@@ -1,22 +1,29 @@
 import { useQuery } from '@tanstack/react-query'
 import api from '@/services/api'
-import keycloak from '@/auth/keycloak'
+import { useKeycloak } from '@/providers/KeycloakProvider'
 
 /**
  * Hook for resolving functional permissions assigned to the current user.
  */
 export function usePermissions() {
-  const { data: permissions = [], isLoading } = useQuery<string[]>({
-    queryKey: ['my-permissions', keycloak.token],
+  const { token, isAuthenticated, activeDevUser } = useKeycloak()
+
+  const { data: permissions = [], isLoading, refetch } = useQuery<string[]>({
+    queryKey: ['my-permissions', token, activeDevUser],
     queryFn: async () => {
-      if (!keycloak.authenticated) {
+      if (!isAuthenticated || !token) {
         return []
       }
-      const res = await api.get('/auth/me/permissions')
-      return res.data?.data || []
+      try {
+        const res = await api.get('/auth/me/permissions')
+        return res.data?.data || []
+      } catch (err) {
+        console.warn('Failed to fetch user permissions:', err)
+        return []
+      }
     },
-    staleTime: 5 * 60 * 1000, // 5 minutes cache
-    enabled: !!keycloak.authenticated,
+    staleTime: 60 * 1000,
+    enabled: typeof window !== 'undefined' && !!isAuthenticated && !!token,
   })
 
   const hasPermission = (permission: string): boolean => {
@@ -27,5 +34,5 @@ export function usePermissions() {
     return perms.some((p) => permissions.includes(p))
   }
 
-  return { permissions, hasPermission, hasAnyPermission, isLoading }
+  return { permissions, hasPermission, hasAnyPermission, isLoading, refetch }
 }

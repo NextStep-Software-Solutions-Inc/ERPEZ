@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react'
-import { useForm } from '@tanstack/react-form'
+import { useEffect } from 'react'
+import { useForm, useStore } from '@tanstack/react-form'
 import { positionConfig } from '@/config/position.config'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -39,7 +39,7 @@ interface CreatePositionFormProps {
 
 export function CreatePositionForm({ onCreated, onClose, selectedOrgUnitId, isDirtyCallback }: CreatePositionFormProps) {
   const createMutation = useCreatePosition()
-  const { data: positionTypesResponse } = usePositionTypes({ pathParams: {}, queryParams: {} })
+  const { data: positionTypesResponse } = usePositionTypes({ pathParams: {}, queryParams: { pageSize: 1000 } })
   const positionTypes = positionTypesResponse?.data ?? []
 
   type PositionOption = { id: string; name: string }
@@ -49,7 +49,7 @@ export function CreatePositionForm({ onCreated, onClose, selectedOrgUnitId, isDi
       : positionConfig.positionTypes.map((p) => ({ id: p.value, name: p.label }))
 
 
-  const { data: plantillaTypesResponse } = usePlantillaTypes({ pathParams: {}, queryParams: {} })
+  const { data: plantillaTypesResponse } = usePlantillaTypes({ pathParams: {}, queryParams: { pageSize: 1000 } })
   const plantillaTypes = plantillaTypesResponse?.data ?? []
 
   type PlantillaTypeOption = { id: string; label: string }
@@ -58,7 +58,7 @@ export function CreatePositionForm({ onCreated, onClose, selectedOrgUnitId, isDi
       ? plantillaTypes.map((pt) => ({ id: pt.id, label: pt.name }))
       : positionConfig.plantillaTypes.map((p) => ({ id: p.value, label: p.label }))
 
-  const { data: salaryGradesResponse } = useSalaryGrades({ pathParams: {}, queryParams: {} })
+  const { data: salaryGradesResponse } = useSalaryGrades({ pathParams: {}, queryParams: { pageSize: 1000 } })
   const salaryGrades = salaryGradesResponse?.data ?? []
 
   type SalaryGradeOption = { id: string; value: number; label: string }
@@ -71,7 +71,7 @@ export function CreatePositionForm({ onCreated, onClose, selectedOrgUnitId, isDi
         }))
       : positionConfig.salaryGrades.map((sg) => ({ id: sg.value.toString(), value: sg.value, label: sg.label }))
 
-  const { data: stepsResponse } = useSteps({ pathParams: {}, queryParams: {} })
+  const { data: stepsResponse } = useSteps({ pathParams: {}, queryParams: { pageSize: 1000 } })
   const steps = stepsResponse?.data ?? []
 
 
@@ -80,7 +80,7 @@ export function CreatePositionForm({ onCreated, onClose, selectedOrgUnitId, isDi
     steps.length > 0
       ? steps.map((s) => ({ 
           id: s.id,
-          value: Number(s.name.replace('Step ', '')) || 0,
+          value: (s as any).stepNumber ?? (Number(s.name.replace('Step ', '')) || 0),
           label: s.name,
         }))
       : positionConfig.steps.map((s) => ({ id: s.value.toString(), value: s.value, label: s.label }))
@@ -110,6 +110,7 @@ export function CreatePositionForm({ onCreated, onClose, selectedOrgUnitId, isDi
         title: value.title,
         functionalTitle: value.functionalTitle || '',
         code: value.code,
+        itemNumber: value.plantillaItem || '',
         jobDescription: value.jobDescription || '',
         qualifications: value.preferredQualifications || '',
         fte: value.authorizedFTE || 0,
@@ -120,6 +121,7 @@ export function CreatePositionForm({ onCreated, onClose, selectedOrgUnitId, isDi
         stepId:
           steps
             .find((st) =>
+              (st as any).stepNumber === value.step ||
               Number(st.name.replace('Step ', '')) === value.step
             )
             ?.id || '',
@@ -135,55 +137,51 @@ export function CreatePositionForm({ onCreated, onClose, selectedOrgUnitId, isDi
     },
   })
 
-  // track validity separately since form.state.isValid isn't configured
-  const [isFormValid, setIsFormValid] = useState(false)
-  // compute validity manually based on required fields and simple rules.
-  // each input that displays a "*" icon must be non‑empty/within bounds.
-  useEffect(() => {
-    const v = form.state.values as any
-    const hasTitle = typeof v.title === 'string' && v.title.trim() !== ''
-    const hasCode = typeof v.code === 'string' && v.code.trim() !== ''
-    const hasType = typeof v.type === 'string' && v.type !== ''
-    const hasPlantillaType = typeof v.plantillaType === 'string' && v.plantillaType !== ''
-    const needsPlantillaItem =
-      hasPlantillaType &&
-      !positionConfig.optionalPlantillaTypes.includes(v.plantillaType)
-    const hasPlantillaItem =
-      !needsPlantillaItem ||
-      (typeof v.plantillaItem === 'string' && v.plantillaItem.trim() !== '')
-    const hasSalaryGrade =
-      typeof v.salaryGrade === 'number' && v.salaryGrade >= 1 && v.salaryGrade <= 33
-    const hasStep = typeof v.step === 'number' && v.step >= 1 && v.step <= 8
-    const hasFTE =
-      typeof v.authorizedFTE === 'number' && v.authorizedFTE >= 0.5 && v.authorizedFTE <= 2
-    const hasOffice = typeof v.officeId === 'string' && v.officeId !== ''
-    const hasFunctional =
-      typeof v.functionalTitle === 'string' && v.functionalTitle.trim() !== ''
-    const hasJobDesc =
-      typeof v.jobDescription === 'string' && v.jobDescription.trim() !== ''
-    const hasQualifications =
-      typeof v.preferredQualifications === 'string' && v.preferredQualifications.trim() !== ''
-
-    setIsFormValid(
-      hasTitle &&
-      hasCode &&
-      hasType &&
-      hasPlantillaType &&
-      hasPlantillaItem &&
-      hasSalaryGrade &&
-      hasStep &&
-      hasFTE &&
-      hasOffice &&
-      hasFunctional &&
-      hasJobDesc &&
-      hasQualifications
-    )
-  }, [form.state.values])
+  const formValues = useStore(form.store, (state) => state.values as any)
+  const isDirty = useStore(form.store, (state) => state.isDirty)
 
   // Notify parent when form dirty state changes
   useEffect(() => {
-    isDirtyCallback?.(form.state.isDirty)
-  }, [form.state.isDirty, isDirtyCallback])
+    isDirtyCallback?.(isDirty)
+  }, [isDirty, isDirtyCallback])
+
+  const hasTitle = typeof formValues.title === 'string' && formValues.title.trim() !== ''
+  const hasCode = typeof formValues.code === 'string' && formValues.code.trim() !== ''
+  const hasType = typeof formValues.type === 'string' && formValues.type !== ''
+  const hasPlantillaType = typeof formValues.plantillaType === 'string' && formValues.plantillaType !== ''
+  const needsPlantillaItem =
+    hasPlantillaType &&
+    !positionConfig.optionalPlantillaTypes.includes(formValues.plantillaType)
+  const hasPlantillaItem =
+    !needsPlantillaItem ||
+    (typeof formValues.plantillaItem === 'string' && formValues.plantillaItem.trim() !== '')
+  const hasSalaryGrade =
+    typeof formValues.salaryGrade === 'number' && formValues.salaryGrade >= 1 && formValues.salaryGrade <= 33
+  const hasStep = typeof formValues.step === 'number' && formValues.step >= 1 && formValues.step <= 8
+  const hasFTE =
+    typeof formValues.authorizedFTE === 'number' && formValues.authorizedFTE >= 0.5 && formValues.authorizedFTE <= 2
+  const hasOffice = typeof formValues.officeId === 'string' && formValues.officeId !== ''
+  const hasFunctional =
+    typeof formValues.functionalTitle === 'string' && formValues.functionalTitle.trim() !== ''
+  const hasJobDesc =
+    typeof formValues.jobDescription === 'string' && formValues.jobDescription.trim() !== ''
+  const hasQualifications =
+    typeof formValues.preferredQualifications === 'string' && formValues.preferredQualifications.trim() !== ''
+
+  const isFormValid = Boolean(
+    hasTitle &&
+    hasCode &&
+    hasType &&
+    hasPlantillaType &&
+    hasPlantillaItem &&
+    hasSalaryGrade &&
+    hasStep &&
+    hasFTE &&
+    hasOffice &&
+    hasFunctional &&
+    hasJobDesc &&
+    hasQualifications
+  )
 
   return (
     <form

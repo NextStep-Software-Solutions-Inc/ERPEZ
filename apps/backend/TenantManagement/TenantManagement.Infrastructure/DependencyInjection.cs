@@ -9,9 +9,11 @@ using Hangfire;
 using Hangfire.PostgreSql;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore.Diagnostics;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Logging;
 
 namespace ERPEZ.TenantManagement.Infrastructure;
 
@@ -21,6 +23,7 @@ public static class DependencyInjection
     {
         var services = builder.Services;
         var connectionString = builder.Configuration.GetConnectionString("DefaultConnection");
+        var env = builder.Environment;
 
         services.AddHttpContextAccessor();
         services.AddMemoryCache();
@@ -35,6 +38,12 @@ public static class DependencyInjection
         {
             options.UseNpgsql(connectionString);
             options.AddInterceptors(sp.GetRequiredService<AuditingInterceptor>());
+
+            if (env != null && env.IsDevelopment())
+            {
+                options.ConfigureWarnings(w =>
+                    w.Ignore(RelationalEventId.PendingModelChangesWarning));
+            }
         });
 
         // Register repositories and Unit of Work
@@ -44,6 +53,7 @@ public static class DependencyInjection
         services.AddScoped<ITenantSettingRepository, TenantSettingRepository>();
         services.AddScoped<ITenantSubscriptionRepository, TenantSubscriptionRepository>();
         services.AddScoped<ITenantMemberRepository, TenantMemberRepository>();
+        services.AddScoped<IRoleRepository, RoleRepository>();
         services.AddScoped<IUnitOfWork, UnitOfWork>();
 
         // Add Hangfire
@@ -57,7 +67,21 @@ public static class DependencyInjection
         {
             using var scope = services.BuildServiceProvider().CreateScope();
             var dbContext = scope.ServiceProvider.GetRequiredService<ApplicationDbContext>();
-            dbContext.Database.Migrate();
+            var loggerFactory = scope.ServiceProvider.GetService<ILoggerFactory>();
+            var logger = loggerFactory?.CreateLogger(nameof(DependencyInjection));
+
+            try
+            {
+                dbContext.Database.Migrate();
+            }
+            catch (InvalidOperationException ex)
+            {
+                logger?.LogWarning(ex, "Database migration skipped due to pending model changes.");
+            }
+            catch (Exception ex)
+            {
+                logger?.LogWarning(ex, "Database migration encountered an exception.");
+            }
 
             var seeders = scope.ServiceProvider.GetServices<IBaseSeeder>();
             foreach (var seeder in seeders)
@@ -67,6 +91,7 @@ public static class DependencyInjection
             PermissionCatalogSeeder.SeedAsync(dbContext).GetAwaiter().GetResult();
             RoleSeeder.SeedAsync(dbContext).GetAwaiter().GetResult();
             TenantMemberMigrationSeeder.MigrateLegacyRolesAsync(dbContext).GetAwaiter().GetResult();
+            DevTenantAndMemberSeeder.SeedAsync(dbContext).GetAwaiter().GetResult();
         }
         return builder;
     }

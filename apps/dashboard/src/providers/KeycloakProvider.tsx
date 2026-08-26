@@ -1,7 +1,17 @@
-import { createContext, useContext, useEffect, useState } from 'react'
+import { createContext, useContext, useEffect, useState, useCallback } from 'react'
 import type { ReactNode } from 'react'
 import type Keycloak from 'keycloak-js'
 import keycloak from '@/auth/keycloak'
+
+export interface DevUser {
+  userId: string
+  externalIdentityId: string
+  displayName: string
+  email: string
+  roles: string[]
+  tenantId: string
+  isSuperAdmin: boolean
+}
 
 interface KeycloakContextType {
   keycloak: Keycloak | null
@@ -13,10 +23,16 @@ interface KeycloakContextType {
   email: string | null
   firstName: string | null
   lastName: string | null
+  role: string | null
+  roles: string[]
+  tenantId: string | null
+  isSuperAdmin: boolean
+  activeDevUser: string
   login: () => void
   logout: () => void
   register: () => void
   updateToken: (minValidity?: number) => Promise<boolean>
+  switchDevUser: (username: string) => Promise<void>
 }
 
 const KeycloakContext = createContext<KeycloakContextType | undefined>(
@@ -50,184 +66,135 @@ export function KeycloakProvider({
   onInitialized,
   onAuthError,
 }: KeycloakProviderProps) {
-  const [isInitialized, setIsInitialized] = useState(false)
-  const [isAuthenticated, setIsAuthenticated] = useState(false)
-  const [token, setToken] = useState<string | null>(null)
+  const [isInitialized, setIsInitialized] = useState(true)
+  const [isAuthenticated, setIsAuthenticated] = useState(true)
+  const [token, setToken] = useState<string | null>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const stored = localStorage.getItem('erpez_auth_token')
+        if (stored && stored.startsWith('ey')) {
+          if (keycloak) {
+            ;(keycloak as any).token = stored
+            ;(keycloak as any).authenticated = true
+          }
+          return stored
+        }
+      } catch {
+        // Ignore
+      }
+    }
+    return null
+  })
   const [refreshToken, setRefreshToken] = useState<string | null>(null)
-  const [userName, setUserName] = useState<string | null>(null)
-  const [email, setEmail] = useState<string | null>(null)
-  const [firstName, setFirstName] = useState<string | null>(null)
-  const [lastName, setLastName] = useState<string | null>(null)
+  const [userName, setUserName] = useState<string | null>('dev_planner')
+  const [email, setEmail] = useState<string | null>('dev_planner@erpez.dev')
+  const [firstName, setFirstName] = useState<string | null>('Planning Officer')
+  const [lastName, setLastName] = useState<string | null>('')
+  const [roles, setRoles] = useState<string[]>(['Planning Officer'])
+  const [tenantId, setTenantId] = useState<string | null>('00000000-0000-0000-0000-000000000001')
+  const [isSuperAdmin, setIsSuperAdmin] = useState(false)
+  const [activeDevUser, setActiveDevUser] = useState<string>('dev_planner')
+
+  const backendUrl = import.meta.env.VITE_ERPEZ_BACKEND_URL || 'http://localhost:5245'
+
+  const loginAsDevUser = useCallback(async (username: string) => {
+    if (typeof window === 'undefined') return false
+
+    try {
+      const response = await fetch(`${backendUrl}/auth/dev/login`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          username,
+          tenantId: '00000000-0000-0000-0000-000000000001',
+        }),
+      })
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`)
+      }
+
+      const json = await response.json()
+      const authData = json?.data
+      if (authData?.token) {
+        const jwtToken = authData.token
+        const user = authData.user
+
+        setToken(jwtToken)
+        setIsAuthenticated(true)
+        setUserName(user.userId)
+        setEmail(user.email)
+        setFirstName(user.displayName)
+        setLastName('')
+        setRoles(user.roles || [])
+        setTenantId(user.tenantId || '00000000-0000-0000-0000-000000000001')
+        setIsSuperAdmin(Boolean(user.isSuperAdmin))
+        setActiveDevUser(user.userId)
+
+        // Store in localStorage & sync keycloak instance
+        try {
+          localStorage.setItem('erpez_dev_user', user.userId)
+          localStorage.setItem('erpez_auth_token', jwtToken)
+          localStorage.setItem('erpez_tenant_id', user.tenantId || '00000000-0000-0000-0000-000000000001')
+        } catch {
+          // Ignore storage errors
+        }
+
+        if (keycloak) {
+          ;(keycloak as any).token = jwtToken
+          ;(keycloak as any).authenticated = true
+        }
+        return true
+      }
+    } catch (error) {
+      console.warn('Dev login error:', error)
+      try {
+        const stored = localStorage.getItem('erpez_auth_token')
+        if (stored && !stored.startsWith('ey')) {
+          localStorage.removeItem('erpez_auth_token')
+        }
+      } catch {
+        // Ignore
+      }
+    }
+    return false
+  }, [backendUrl])
 
   useEffect(() => {
-    // Temporary bypass Keycloak authentication
-    setIsInitialized(true)
-    setIsAuthenticated(true)
-    setUserName('Dev User')
-    setEmail('dev@example.com')
-    setFirstName('Dev')
-    setLastName('User')
-    setToken('mock-token')
-
-    return () => { }
-    /* 
-    let tokenRefreshInterval: ReturnType<typeof setInterval> | undefined
-    // Track if Keycloak has already been initialized
-    // let alreadyInitialized = (keycloak as any)._erpez_initialized || false
-    const alreadyInitialized = (keycloak as any)._erpez_initialized || false
-    // const alreadyInitialized = true
-
-    const initKeycloak = async () => {
-      if (alreadyInitialized) {
-        setIsInitialized(true)
-        return
-      }
+    if (typeof window === 'undefined') return
+    const init = async () => {
+      let savedUser = 'dev_planner'
       try {
-        const authenticated = await keycloak.init(initOptions)
-
-        setIsAuthenticated(authenticated)
-        setToken(keycloak.token || null)
-        setRefreshToken(keycloak.refreshToken || null)
-        setIsInitialized(true)
-        setUserName(keycloak.tokenParsed?.preferred_username || null)
-        setEmail(keycloak.tokenParsed?.email || null)
-        setFirstName(keycloak.tokenParsed?.given_name || null)
-        setLastName(keycloak.tokenParsed?.family_name || null)
-
-        // Set up token refresh
-        if (authenticated) {
-          // Refresh token every 5 minutes
-          tokenRefreshInterval = setInterval(async () => {
-            try {
-              const refreshed = await keycloak.updateToken(70) // Refresh if token expires in 70 seconds
-              if (refreshed) {
-                setToken(keycloak.token || null)
-                setRefreshToken(keycloak.refreshToken || null)
-              }
-            } catch (error) {
-              if (onAuthError) {
-                onAuthError(error)
-              }
-            }
-          }, 300000) // 5 minutes
-        }
-
-        // Event listeners
-        keycloak.onAuthSuccess = () => {
-          setIsAuthenticated(true)
-          setToken(keycloak.token || null)
-          setRefreshToken(keycloak.refreshToken || null)
-        }
-
-        keycloak.onAuthError = (error) => {
-          setIsAuthenticated(false)
-          setToken(null)
-          setRefreshToken(null)
-          if (onAuthError) {
-            onAuthError(error)
-          }
-        }
-
-        keycloak.onAuthRefreshSuccess = () => {
-          setToken(keycloak.token || null)
-          setRefreshToken(keycloak.refreshToken || null)
-        }
-
-        keycloak.onAuthRefreshError = () => {
-          setIsAuthenticated(false)
-          setToken(null)
-          setRefreshToken(null)
-        }
-
-        keycloak.onAuthLogout = () => {
-          setIsAuthenticated(false)
-          setToken(null)
-          setRefreshToken(null)
-        }
-
-        keycloak.onTokenExpired = () => {
-          keycloak.updateToken(30).catch((error) => {
-            if (onAuthError) {
-              onAuthError(error)
-            }
-          })
-        }
-
-        if (onInitialized) {
-          onInitialized(authenticated)
-        }
-        // Mark as initialized to prevent double init
-        ;(keycloak as any)._erpez_initialized = true
-      } catch (error) {
-        // Ensure initialization doesn't leave the app stuck in a loading state.
-        console.error(error)
-        setIsAuthenticated(false)
-        setToken(null)
-        setRefreshToken(null)
-        setIsInitialized(true)
-
-        if (onAuthError) {
-          try {
-            onAuthError(error)
-          } catch (cbError) {
-            console.error(cbError)
-          }
-        }
+        savedUser = localStorage.getItem('erpez_dev_user') || 'dev_planner'
+      } catch {
+        // Fallback
       }
+      await loginAsDevUser(savedUser)
+      setIsInitialized(true)
+      if (onInitialized) onInitialized(true)
     }
 
-    // Only initialize on the client side
-    if (typeof window !== 'undefined') {
-      initKeycloak()
-    }
+    init()
+  }, [loginAsDevUser, onInitialized])
 
-    return () => {
-      if (tokenRefreshInterval) {
-        clearInterval(tokenRefreshInterval)
-      }
-    }
-    */
-  }, [initOptions, onInitialized, onAuthError])
+  const switchDevUser = async (username: string) => {
+    await loginAsDevUser(username)
+  }
 
   const login = () => {
-    keycloak.login()
+    keycloak?.login?.()
   }
 
   const logout = () => {
-    keycloak.logout()
+    keycloak?.logout?.()
   }
 
   const register = () => {
-    keycloak.register()
+    keycloak?.register?.()
   }
 
-  const updateToken = async (minValidity = 5): Promise<boolean> => {
-    try {
-      const refreshed = await keycloak.updateToken(minValidity)
-      if (refreshed) {
-        setToken(keycloak.token || null)
-        setRefreshToken(keycloak.refreshToken || null)
-      }
-      return refreshed
-    } catch (error) {
-      console.error('Failed to update token', error)
-      return false
-    }
-  }
-
-  // Show loading component while initializing
-  if (!isInitialized) {
-    if (LoadingComponent) {
-      return <LoadingComponent />
-    }
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <div className="inline-block h-8 w-8 animate-spin rounded-full border-4 border-solid border-current border-r-transparent motion-reduce:animate-[spin_1.5s_linear_infinite]" />
-          <p className="mt-4 text-lg">Initializing authentication...</p>
-        </div>
-      </div>
-    )
+  const updateToken = async (_minValidity = 5): Promise<boolean> => {
+    return true
   }
 
   return (
@@ -242,10 +209,16 @@ export function KeycloakProvider({
         email,
         firstName,
         lastName,
+        role: roles[0] || null,
+        roles,
+        tenantId,
+        isSuperAdmin,
+        activeDevUser,
         login,
         logout,
         register,
         updateToken,
+        switchDevUser,
       }}
     >
       {children}

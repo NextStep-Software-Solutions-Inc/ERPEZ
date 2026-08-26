@@ -15,11 +15,31 @@ const WHITELISTED_METHODS = ['post', 'put', 'patch', 'delete']
 export const api = createAxiosInstance(import.meta.env.VITE_ERPEZ_BACKEND_URL)
 api.defaults.timeout = 30000 // 30s timeout to allow database operations and debugging without premature frontend timeouts
 
-// Request interceptor to add Keycloak token
+// Request interceptor to add Keycloak/Dev token and Tenant ID
 api.interceptors.request.use(
   (config) => {
-    if (keycloak.token) {
-      config.headers.Authorization = `Bearer ${keycloak.token}`
+    let token: string | null = keycloak?.token || null
+    let tenantId = '00000000-0000-0000-0000-000000000001'
+
+    if (typeof window !== 'undefined') {
+      try {
+        const storedToken = localStorage.getItem('erpez_auth_token')
+        if (storedToken && storedToken.startsWith('ey')) {
+          token = token || storedToken
+        } else if (storedToken) {
+          localStorage.removeItem('erpez_auth_token')
+        }
+        tenantId = localStorage.getItem('erpez_tenant_id') || tenantId
+      } catch {
+        // Ignore localStorage access errors
+      }
+    }
+
+    if (token && token.startsWith('ey')) {
+      config.headers.Authorization = `Bearer ${token}`
+    }
+    if (tenantId) {
+      config.headers['X-Tenant-Id'] = tenantId
     }
     return config
   },

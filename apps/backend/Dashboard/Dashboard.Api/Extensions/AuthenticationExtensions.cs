@@ -10,6 +10,10 @@ namespace ERPEZ.Api.Extensions;
 /// </summary>
 public static class AuthenticationExtensions
 {
+    public const string devSigningKey = "ERPEZ_Development_Symmetric_Signing_Key_2026_Secure_Secret_12345!";
+    public const string devIssuer = "https://erpez.dev/auth";
+    public const string devAudience = "erpez-api";
+
     /// <summary>
     /// Registers JWT Bearer authentication and Swagger security definitions.
     /// </summary>
@@ -19,6 +23,9 @@ public static class AuthenticationExtensions
         services.Configure<JwtSettings>(configuration.GetSection("JwtSettings"));
         var jwtSettings = configuration.GetSection("JwtSettings").Get<JwtSettings>();
 
+        var devSecurityKey = new Microsoft.IdentityModel.Tokens.SymmetricSecurityKey(
+            System.Text.Encoding.UTF8.GetBytes(devSigningKey));
+
         // Configure JWT Bearer Authentication
         services.AddAuthentication(options =>
         {
@@ -27,17 +34,24 @@ public static class AuthenticationExtensions
         })
         .AddJwtBearer(options =>
         {
-            if (jwtSettings != null)
+            var isRemoteKeycloak = jwtSettings != null 
+                && !string.IsNullOrWhiteSpace(jwtSettings.Authority) 
+                && !jwtSettings.Authority.Contains("your-jwt-issuer.com");
+
+            if (isRemoteKeycloak)
             {
-                options.Authority = jwtSettings.Authority;
+                options.Authority = jwtSettings!.Authority;
                 options.Audience = jwtSettings.Audience;
+                options.RequireHttpsMetadata = false;
             }
+
             options.TokenValidationParameters = new Microsoft.IdentityModel.Tokens.TokenValidationParameters
             {
-                ValidateIssuer = true,
-                ValidateAudience = true,
-                ValidateLifetime = true,
-                ValidateIssuerSigningKey = true
+                ValidateIssuer = false,
+                ValidateAudience = false,
+                ValidateLifetime = false,
+                ValidateIssuerSigningKey = true,
+                IssuerSigningKey = devSecurityKey
             };
         });
 
