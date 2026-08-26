@@ -95,22 +95,49 @@ export function KPIClassification({ data, isLoading }: KPIClassificationProps) {
   return (
     <Card className="h-full flex flex-col justify-between border border-gray-100 shadow-sm bg-white">
       <CardHeader className="pb-2">
-        <div className="flex items-center justify-between gap-2 flex-wrap">
-          <CardTitle className="text-sm font-semibold text-gray-900">
-            KPI Classification &amp; Office Allocation
-          </CardTitle>
-          <div className="flex items-center gap-1.5 text-xs">
-            <span className="font-medium text-blue-700 bg-blue-50/70 border border-blue-100 px-2 py-0.5 rounded text-[11px]">
-              {data.total} Active KPIs
-            </span>
-            <span className="text-gray-400 font-normal text-[11px]">
-              FY {data.fiscalYear}
-            </span>
+        <div className="flex items-start justify-between gap-4">
+          <div>
+            <CardTitle className="text-sm font-semibold text-gray-900">
+              KPI Classification &amp; Office Allocation
+            </CardTitle>
+            <CardDescription className="text-xs text-gray-500 font-normal mt-0.5">
+              Distribution of institutional indicators across Strategic, Core, and Support functions
+            </CardDescription>
+          </div>
+
+          <div className="text-right flex-shrink-0">
+            <div className="flex items-center justify-end gap-1.5 text-xs">
+              <span className="font-medium text-blue-700 bg-blue-50/70 border border-blue-100 px-2 py-0.5 rounded text-[11px]">
+                {data.total} Active KPIs
+              </span>
+              <span className="text-gray-400 font-normal text-[11px]">
+                FY {data.fiscalYear}
+              </span>
+            </div>
+            <div className="text-[10px] text-gray-400 font-normal mt-1">
+              Institutional distribution
+            </div>
           </div>
         </div>
-        <CardDescription className="text-xs text-gray-500 font-normal">
-          Distribution of institutional indicators across Strategic, Core, and Support functions
-        </CardDescription>
+
+        {/* ── Classification Category Chips sub-bar matching OPCR header line ─── */}
+        <div className="flex items-center flex-wrap gap-x-3.5 gap-y-1.5 pt-2 text-[11px] text-gray-600 font-normal border-t border-gray-100">
+          <div className="flex items-center gap-1.5">
+            <span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: '#2563eb' }} />
+            <span>Strategic ({data.items.find((i) => i.label.toLowerCase().includes('strategic'))?.count ?? 0})</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: '#10b981' }} />
+            <span>Core ({data.items.find((i) => i.label.toLowerCase().includes('core'))?.count ?? 0})</span>
+          </div>
+          <div className="flex items-center gap-1.5">
+            <span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: '#f59e0b' }} />
+            <span>Support ({data.items.find((i) => i.label.toLowerCase().includes('support'))?.count ?? 0})</span>
+          </div>
+          <div className="flex items-center gap-1 text-gray-400 ml-auto sm:ml-0 text-[10px]">
+            <span>{data.total} Total Indicators</span>
+          </div>
+        </div>
       </CardHeader>
 
       <CardContent className="pt-2 pb-4">

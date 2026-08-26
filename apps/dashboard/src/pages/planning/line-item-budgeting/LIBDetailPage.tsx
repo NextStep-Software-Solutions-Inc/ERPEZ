@@ -633,41 +633,7 @@ export default function LIBDetailPage({
           isSubmitting={isSubmitting}
         />
 
-        {/* Pending Approval Banner */}
-        {lib?.status === 'Submitted' && (
-          <div className="bg-amber-50/80 border-l-4 border-amber-500 rounded-xl p-4 mb-8 flex items-center justify-between shadow-xs">
-            <div className="flex items-start gap-3">
-              <AlertCircle className="w-5 h-5 text-amber-600 flex-shrink-0 mt-0.5" />
-              <div>
-                <h3 className="font-semibold text-amber-900 text-sm">
-                  Pending Approval
-                </h3>
-                <p className="text-amber-700 text-sm mt-0.5">
-                  This Line-Item Budget has been submitted and is awaiting review. Review the budget allocation and activities below.
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-2.5 flex-shrink-0 ml-4">
-              <Button
-                onClick={handleReturnLIB}
-                variant="outline"
-                size="sm"
-                className="gap-1.5 border-amber-300 text-amber-800 bg-white hover:bg-amber-100/60 font-medium shadow-xs"
-              >
-                <RotateCcw className="w-4 h-4 text-amber-700" />
-                Return
-              </Button>
-              <Button
-                onClick={handleApproveLIB}
-                size="sm"
-                className="gap-1.5 bg-emerald-600 hover:bg-emerald-700 text-white font-medium shadow-xs"
-              >
-                <CheckCircle className="w-4 h-4" />
-                Approve LIB
-              </Button>
-            </div>
-          </div>
-        )}
+
 
         {/* Returned for Revision Notice */}
         {lib?.status === 'Returned' && !isReadyForSubmission && (

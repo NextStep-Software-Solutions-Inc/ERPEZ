@@ -139,7 +139,7 @@ export function OPCRLineChart({ data, isLoading }: OPCRLineChartProps) {
         </div>
 
         {/* ── Performance Band Legend ─────────────────────────────────── */}
-        <div className="flex items-center flex-wrap gap-x-3.5 gap-y-1.5 pt-2 text-[11px] text-gray-600 font-normal border-t border-gray-50">
+        <div className="flex items-center flex-wrap gap-x-3.5 gap-y-1.5 pt-2 text-[11px] text-gray-600 font-normal border-t border-gray-100">
           <div className="flex items-center gap-1.5">
             <span className="inline-block w-2.5 h-2.5 rounded-sm" style={{ backgroundColor: '#1baf7a' }} />
             <span>≥ 100% — target met</span>

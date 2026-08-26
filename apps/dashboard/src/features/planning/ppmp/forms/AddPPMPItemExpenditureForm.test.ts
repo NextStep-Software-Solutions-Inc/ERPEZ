@@ -137,5 +137,22 @@ describe('AddPPMPItemExpenditureForm schema and hierarchy resolution', () => {
       expect(formatExpenditureDisplayName('Personnel Services', '')).toBe('Personnel Services')
       expect(formatExpenditureDisplayName('Personnel Services', 'Personnel Services')).toBe('Personnel Services')
     })
+
+    it('returns clean category name without code for parent expense types', () => {
+      expect(
+        formatExpenditureDisplayName(
+          'Maintenance and Other Operating Expenses',
+          '5020000000',
+          true,
+        ),
+      ).toBe('Maintenance and Other Operating Expenses')
+
+      expect(
+        formatExpenditureDisplayName(
+          'Maintenance and Other Operating Expenses',
+          '5020000000',
+        ),
+      ).toBe('Maintenance and Other Operating Expenses')
+    })
   })
 })
