@@ -74,6 +74,8 @@ public class GenerateBacResolutionDocumentCommandHandler(
             .GetByIdAsync(bacResolution.ProcurementProjectId, cancellationToken)
             ?? throw new NotFoundException("Associated Procurement Project was not found.");
 
+        var fullResolution = project.BACResolutions.FirstOrDefault(r => r.Id == request.BacResolutionId) ?? bacResolution;
+
         // 3. Hydrate source metadata
         string prNumber = "N/A";
         string officeName = "General Office";
@@ -128,9 +130,9 @@ public class GenerateBacResolutionDocumentCommandHandler(
 
         // Hydrate WHEREAS clauses
         var whereasClauses = new List<BacResolutionWhereasClauseDto>();
-        if (bacResolution.WhereasClauseItems != null && bacResolution.WhereasClauseItems.Any())
+        if (fullResolution.WhereasClauseItems != null && fullResolution.WhereasClauseItems.Any())
         {
-            foreach (var item in bacResolution.WhereasClauseItems.OrderBy(i => i.Order))
+            foreach (var item in fullResolution.WhereasClauseItems.OrderBy(i => i.Order))
             {
                 var clause = item.BACResolutionWhereasClause ?? await unitOfWork.BACResolutionWhereasClauseRepository.GetByIdAsync(item.BACResolutionWhereasClauseId, cancellationToken);
                 if (clause != null)

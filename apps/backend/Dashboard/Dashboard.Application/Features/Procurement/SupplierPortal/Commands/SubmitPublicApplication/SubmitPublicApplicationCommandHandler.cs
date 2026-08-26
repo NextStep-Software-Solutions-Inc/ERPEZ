@@ -18,7 +18,7 @@ public class SubmitPublicApplicationCommandHandler(
     {
         // ── 1. LOAD PROJECT (with schedules + PBD gate) ───────────────────────────
         var project = await unitOfWork.ProcurementProjectRepository
-            .GetForApplicationSubmissionAsync(request.ProjectId, cancellationToken)
+            .GetByIdAsync(request.ProjectId, cancellationToken)
             ?? throw new NotFoundException("Project not found.");
 
         if (project.BiddingDocument is null || project.BiddingDocument.Status != "Posted")

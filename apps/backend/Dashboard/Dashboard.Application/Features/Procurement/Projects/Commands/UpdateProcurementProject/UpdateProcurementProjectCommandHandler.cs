@@ -12,7 +12,7 @@ public class UpdateProcurementProjectCommandHandler(IUnitOfWork unitOfWork)
 {
     public async Task<ApiResponse<Unit>> Handle(UpdateProcurementProjectCommand request, CancellationToken cancellationToken)
     {
-        var project = await unitOfWork.ProcurementProjectRepository.GetWithBACResolutionsAsync(request.Id, cancellationToken);
+        var project = await unitOfWork.ProcurementProjectRepository.GetByIdAsync(request.Id, cancellationToken);
 
         if (project == null)
         {
