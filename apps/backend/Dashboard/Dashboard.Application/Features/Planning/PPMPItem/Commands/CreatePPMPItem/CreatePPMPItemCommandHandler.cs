@@ -16,6 +16,10 @@ public class CreatePPMPItemCommandHandler(IUnitOfWork unitOfWork)
         if (expenditureItem == null)
             throw new NotFoundException("PPMP Expenditure Item not found.");
 
+        var ppmp = await unitOfWork.PPMPRepository.GetByIdAsync(expenditureItem.PPMPId, cancellationToken);
+        if (ppmp != null && ppmp.Status is Domain.Enums.StatusEnum.Submitted or Domain.Enums.StatusEnum.Approved or Domain.Enums.StatusEnum.ForApproval)
+            throw new BadRequestException($"Cannot add items when PPMP status is {ppmp.Status}.");
+
         // Validate CSE Item exists if provided
         Domain.Entities.Planning.ProcurementItem? procurementItem = null;
         if (request.CSEItemId.HasValue)
@@ -63,6 +67,7 @@ public class CreatePPMPItemCommandHandler(IUnitOfWork unitOfWork)
             Description = description,
             Unit = unit,
             UnitPrice = unitPrice,
+            PlannedQuantity = request.PlannedQuantity,
             MOPOverride = request.MOPOverride,
             MOPJustification = request.MOPJustification,
             ProjectType               = request.ProjectType,

@@ -28,6 +28,7 @@ public class PPMPRepository : Repository<PPMP>, IPPMPRepository
             .Include(p => p.FiscalYear)
             .Include(p => p.FundSource)
             .Include(p => p.LineItemBudget)
+                .ThenInclude(lib => lib!.FundSource)
             .Include(p => p.ParentPPMP)
                 .ThenInclude(parent => parent!.Office)
             .Include(p => p.ParentPPMP)
@@ -36,8 +37,16 @@ public class PPMPRepository : Repository<PPMP>, IPPMPRepository
                 .ThenInclude(parent => parent!.FundSource)
             .Include(p => p.ParentPPMP)
                 .ThenInclude(parent => parent!.LineItemBudget)
+                    .ThenInclude(lib => lib!.FundSource)
             .Include(p => p.PPMPActivities)
                 .ThenInclude(pa => pa.LIBActivity)
+                    .ThenInclude(la => la.LineItemBudget)
+                        .ThenInclude(lib => lib.FundSource)
+            .Include(p => p.PPMPActivities)
+                .ThenInclude(pa => pa.PPMPExpenditureItems)
+                    .ThenInclude(pei => pei.Object)
+                        .ThenInclude(o => o.ObjectExpenseClasses)
+                            .ThenInclude(oec => oec.ExpenseClass)
             .Include(p => p.PPMPActivities)
                 .ThenInclude(pa => pa.PPMPExpenditureItems)
                     .ThenInclude(pei => pei.PPMPItems)
@@ -55,6 +64,23 @@ public class PPMPRepository : Repository<PPMP>, IPPMPRepository
                 .ThenInclude(pa => pa.PPMPExpenditureItems)
                     .ThenInclude(pei => pei.PPMPItems)
                         .ThenInclude(pi => pi.CSEItem)
+            .Include(p => p.PPMPExpenditureItems)
+                .ThenInclude(pei => pei.Object)
+                    .ThenInclude(o => o.ObjectExpenseClasses)
+                        .ThenInclude(oec => oec.ExpenseClass)
+            .Include(p => p.PPMPExpenditureItems)
+                .ThenInclude(pei => pei.PPMPItems)
+                    .ThenInclude(pi => pi.PPMPItemAllocations)
+            .Include(p => p.PPMPExpenditureItems)
+                .ThenInclude(pei => pei.PPMPItems)
+                    .ThenInclude(pi => pi.ProcurementMode)
+            .Include(p => p.PPMPExpenditureItems)
+                .ThenInclude(pei => pei.PPMPItems)
+                    .ThenInclude(pi => pi.NonCSEItem)
+                        .ThenInclude(n => n!.UOM)
+            .Include(p => p.PPMPExpenditureItems)
+                .ThenInclude(pei => pei.PPMPItems)
+                    .ThenInclude(pi => pi.CSEItem)
             .Include(p => p.ApprovalEvents.OrderByDescending(ae => ae.Timestamp))
             .Include(p => p.ChildPPMPs)
                 .ThenInclude(child => child.Office)
@@ -90,6 +116,11 @@ public class PPMPRepository : Repository<PPMP>, IPPMPRepository
                 (p.LineItemBudget != null && p.LineItemBudget.Name != null && p.LineItemBudget.Name.ToLower().Contains(searchLower)) ||
                 (p.LineItemBudget != null && p.LineItemBudget.LIBNumber.ToLower().Contains(searchLower))
             );
+        }
+
+        if (string.IsNullOrWhiteSpace(sieveModel.Sorts))
+        {
+            query = query.OrderByDescending(p => p.CreatedAt);
         }
 
         var filteredQuery = sieveProcessor.Apply(sieveModel, query, applyPagination: false);

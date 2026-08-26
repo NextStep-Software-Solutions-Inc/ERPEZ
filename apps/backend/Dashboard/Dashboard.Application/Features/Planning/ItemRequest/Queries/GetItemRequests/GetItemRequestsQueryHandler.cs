@@ -27,7 +27,7 @@ public class GetItemRequestsQueryHandler(IUnitOfWork unitOfWork)
             {
                 Id = request.Id,
                 OfficeId = request.OfficeId,
-                OfficeName = request.Office.Name,
+                OfficeName = request.Office != null ? request.Office.Name : string.Empty,
                 Name = request.Name,
                 ItemCategory = request.ItemCategory,
                 Status = request.Status,
@@ -44,6 +44,7 @@ public class GetItemRequestsQueryHandler(IUnitOfWork unitOfWork)
                 ReviewedBy = request.ReviewedBy != null ? request.ReviewedBy.ToString() : null,
                 SubmittedAt = request.SubmittedAt,
                 ReviewedAt = request.ReviewedAt,
+                NonCSEItemId = request.NonCSEItems.Select(x => (Guid?)x.Id).FirstOrDefault(),
                 CreatedAt = request.CreatedAt,
                 CreatedBy = request.CreatedBy
             };

@@ -16,6 +16,8 @@ export interface MarketScopingForm {
   periodTo: string; // mm/yyyy format
   expectedDeliveryDate: string; // mm/yyyy format
   linkedLibActivityId?: string; // Optional reference to LIB Activity
+  targetLineItemBudgetId?: string; // Optional reference to Project-level LIB
+  targetLineItemBudgetActivityId?: string; // Optional reference to Activity-level LIB Activity
   agencyName: string;
   departmentUnit: string;
   representativeName: string;

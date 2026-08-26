@@ -14,6 +14,14 @@ public class DeleteItemRequestCommandHandler(IUnitOfWork unitOfWork)
         if (itemRequest == null)
             throw new NotFoundException("Item Request not found.");
 
+        // Check if there is an associated NonCSEItem (catalog item)
+        var linkedCatalogItem = await unitOfWork.NonCSEItemRepository.FindAsync(
+            n => n.ItemRequestId == request.Id,
+            cancellationToken);
+
+        if (linkedCatalogItem != null)
+            throw new ValidationException("Cannot delete Item Request because it is already linked to an existing catalog item.");
+
         // Soft delete
         itemRequest.IsDeleted = true;
         itemRequest.DeletedAt = DateTime.UtcNow;

@@ -68,9 +68,6 @@ public static class PPMPItemAllocationAmountCalculator
             if (nonCseItem == null)
                 throw new NotFoundException("Non-CSE Item not found.");
 
-            if (!nonCseItem.IsActive)
-                throw new ConflictException("Selected Non-CSE item is inactive.");
-
             var effectivePrice = nonCseItem.CurrentPrice > 0 ? nonCseItem.CurrentPrice : itemContext.UnitPrice;
             if (effectivePrice <= 0)
                 throw new ConflictException("Unit price is not configured for the selected Non-CSE item.");

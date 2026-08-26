@@ -19,13 +19,17 @@ const useUpdatePPMPExpenditureItem = createMutationHookFromTemplate(
   updatePPMPExpenditureItemRequest,
 )
 
+import type { OrphanLineItemDetail } from '@/features/planning/line-item-budgeting/line-item-budget/types'
+
 interface AddPPMPItemExpenditureDialogProps {
   isOpen: boolean
   onOpenChange: (open: boolean) => void
   ppmpId: string
-  ppmpActivityId: string
-  libActivityId: string
+  ppmpActivityId?: string
+  libActivityId?: string
+  orphanDetails?: OrphanLineItemDetail[]
   groupToEdit?: PPMPExpenditureItem | null
+  existingObjectIds?: string[]
 }
 
 export default function AddPPMPItemExpenditureDialog({
@@ -34,7 +38,9 @@ export default function AddPPMPItemExpenditureDialog({
   ppmpId,
   ppmpActivityId,
   libActivityId,
+  orphanDetails,
   groupToEdit,
+  existingObjectIds,
 }: AddPPMPItemExpenditureDialogProps) {
   const queryClient = useQueryClient()
   const { mutateAsync: createGroup, isPending: isCreating } =
@@ -162,8 +168,10 @@ export default function AddPPMPItemExpenditureDialog({
       <div className="p-4">
         <AddPPMPItemExpenditureForm
           formId="add-ppmp-expenditure-form"
-          libActivityId={libActivityId}
           initialValues={initialValues}
+          libActivityId={libActivityId}
+          orphanDetails={orphanDetails}
+          existingObjectIds={existingObjectIds}
           onSubmit={handleSubmit}
           isLoading={isLoading}
         />

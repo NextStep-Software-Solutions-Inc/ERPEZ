@@ -1,4 +1,5 @@
 import { FiscalYear } from '../../fiscal-year-and-policies/fiscal-year-management/types/types'
+import type { MSFSummary } from '../../market-scoping/types/marketScopingApiTypes'
 
 export enum PPMPState {
   DRAFT = 'draft',
@@ -165,6 +166,7 @@ export interface CatalogItem {
   catalogType: CatalogType
   defaultMoP: ModeOfProcurement
   itemCode: string
+  imageUrl?: string
   /** Non-CSE only: whether this is a mixed supply+service item */
   isMixed?: boolean
   /** Non-CSE only: subtype label (e.g. 'Service', 'Goods', 'Works') */
@@ -409,6 +411,8 @@ export type PPMP = {
   isFinal?: boolean
   finalizedAt?: string
   finalizedBy?: string
+  /** MSF linked through PPMP.libId (project-scope). Populated by the backend; null if no MSF is associated. */
+  LinkedMarketScoping?: MSFSummary | null
 }
 export type PPMPDetails = PPMP & {
   ChildPPMPs?: PPMPDetails[]
@@ -454,6 +458,7 @@ export type PPMPItem = {
   description?: string
   unit?: string
   unitPrice: number
+  plannedQuantity?: number
   mopOverride: boolean
   mopJustification?: string
   createdAt: string
@@ -532,6 +537,8 @@ export type PPMPActivity = {
   createdAt: string
   createdBy?: string
   PPMPExpenditureItems?: PPMPExpenditureItem[]
+  /** MSF linked through PPMPActivity.libActivityId (activity-scope). Populated by the backend; null if not associated. */
+  LinkedMarketScoping?: MSFSummary | null
 }
 
 /// ─── PPMP Expenditure Items ─────────────────────────────────────────────────────────

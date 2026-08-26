@@ -59,6 +59,9 @@ public class PPMPItem : BaseEntity
     
     [Sieve(CanFilter = true, CanSort = true)]
     public decimal UnitPrice { get; set; }
+
+    [Sieve(CanFilter = true, CanSort = true)]
+    public int PlannedQuantity { get; set; }
     
     [Sieve(CanFilter = true, CanSort = true)]
     public bool MOPOverride { get; set; }

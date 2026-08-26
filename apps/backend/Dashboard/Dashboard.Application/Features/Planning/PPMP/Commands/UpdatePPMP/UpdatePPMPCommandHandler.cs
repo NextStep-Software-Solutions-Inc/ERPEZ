@@ -56,8 +56,20 @@ public class UpdatePPMPCommandHandler(IUnitOfWork unitOfWork) : IRequestHandler<
             // Validate LIB if provided
             if (request.Dto.LIBId.HasValue)
             {
-                _ = await unitOfWork.LineItemBudgetRepository.GetByIdAsync(request.Dto.LIBId.Value, cancellationToken: cancellationToken)
+                var targetOfficeId = request.Dto.OfficeId ?? ppmp.OfficeId;
+                var targetFiscalYearId = request.Dto.FiscalYearId ?? ppmp.FiscalYearId;
+                var lib = await unitOfWork.LineItemBudgetRepository.GetByIdAsync(request.Dto.LIBId.Value, cancellationToken: cancellationToken)
                     ?? throw new NotFoundException($"Line Item Budget with ID {request.Dto.LIBId.Value} not found.");
+
+                if (lib.OfficeId.HasValue && lib.OfficeId.Value != targetOfficeId)
+                {
+                    throw new ValidationException("The selected Line-Item Budget does not belong to the selected office.");
+                }
+
+                if (lib.FiscalYearId.HasValue && lib.FiscalYearId.Value != targetFiscalYearId)
+                {
+                    throw new ValidationException("The selected Line-Item Budget does not belong to the selected fiscal year.");
+                }
             }
 
             // Update PPMP properties

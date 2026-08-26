@@ -20,7 +20,7 @@ public class NonCSEItemRepository : Repository<NonCSEItem>, INonCSEItemRepositor
         return await context.Set<NonCSEItem>()
             .Include(n => n.UOM)
             .Include(n => n.ItemRequest)
-            .Where(n => n.IsActive && !n.IsDeleted)
+            .Where(n => !n.IsDeleted)
             .OrderBy(n => n.Name)
             .ToListAsync(cancellationToken);
     }

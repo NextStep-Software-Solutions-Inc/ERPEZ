@@ -12,4 +12,18 @@ public record PPMPActivityResponse
     public decimal TotalAllocationAmount { get; init; }
     public DateTime CreatedAt { get; init; }
     public string CreatedBy { get; init; } = string.Empty;
+
+    /// <summary>
+    /// MSF linked to this activity (via MarketScoping.TargetLineItemBudgetActivityId == LIBActivityId).
+    /// Null if no MSF is associated with this activity.
+    /// </summary>
+    public PPMPActivityMSFSummary? LinkedMarketScoping { get; init; }
+}
+
+public record PPMPActivityMSFSummary
+{
+    public Guid Id { get; init; }
+    public string ProjectName { get; init; } = string.Empty;
+    public decimal EstimatedBudget { get; init; }
+    public string Status { get; init; } = string.Empty;
 }

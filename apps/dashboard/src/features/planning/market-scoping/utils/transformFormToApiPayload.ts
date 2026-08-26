@@ -57,11 +57,18 @@ export async function transformFormToApiPayload(
   formData: MarketScopingForm,
   fallbackUserId: string
 ): Promise<CreateMarketScopingRequest> {
-  const isLinkedLibValidGuid =
-    formData.linkedLibActivityId &&
-    GUID_REGEX.test(formData.linkedLibActivityId) &&
-    !formData.linkedLibActivityId.startsWith("11111111") &&
-    !formData.linkedLibActivityId.startsWith("22222222");
+  const targetLibActivityId = formData.targetLineItemBudgetActivityId || formData.linkedLibActivityId;
+  const isLinkedLibActivityValidGuid =
+    targetLibActivityId &&
+    GUID_REGEX.test(targetLibActivityId) &&
+    !targetLibActivityId.startsWith("11111111") &&
+    !targetLibActivityId.startsWith("22222222");
+
+  const isTargetLibValidGuid =
+    formData.targetLineItemBudgetId &&
+    GUID_REGEX.test(formData.targetLineItemBudgetId) &&
+    !formData.targetLineItemBudgetId.startsWith("11111111") &&
+    !formData.targetLineItemBudgetId.startsWith("22222222");
 
   const activitiesConducted = await Promise.all(
     (formData.activities || [])
@@ -107,7 +114,8 @@ export async function transformFormToApiPayload(
     periodFrom: convertMonthYearToISO(formData.periodFrom),
     periodTo: convertMonthYearToISO(formData.periodTo),
     deliveryDate: convertMonthYearToISO(formData.expectedDeliveryDate),
-    ...(isLinkedLibValidGuid ? { targetLineItemBudgetActivityId: formData.linkedLibActivityId } : {}),
+    ...(isTargetLibValidGuid ? { targetLineItemBudgetId: formData.targetLineItemBudgetId } : {}),
+    ...(isLinkedLibActivityValidGuid ? { targetLineItemBudgetActivityId: targetLibActivityId } : {}),
     activitiesConducted,
     parameterEvaluations,
   };

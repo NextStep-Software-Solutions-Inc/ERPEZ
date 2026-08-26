@@ -27,6 +27,7 @@ export const ppmpItemSchema = z.object({
   description: z.string().default(''),
   unit: z.string().min(1, 'Unit of measure is required'),
   unitPrice: z.number().min(0.01, 'Unit price must be greater than 0'),
+  plannedQuantity: z.number().int().min(1, 'Planned quantity must be at least 1'),
   procurementModeId: z.string().min(1, 'Procurement mode is required'),
   papCode: z.string().default(''),
   projectType: z
@@ -97,6 +98,7 @@ export function AddPPMPItemForm({
       description: initialValues?.description ?? '',
       unit: initialValues?.unit ?? 'pcs',
       unitPrice: initialValues?.unitPrice ?? 0,
+      plannedQuantity: initialValues?.plannedQuantity ?? 1,
       procurementModeId: initialValues?.procurementModeId ?? '',
       papCode: initialValues?.papCode ?? '',
       projectType: (initialValues?.projectType as any) ?? 'Goods',
@@ -152,6 +154,7 @@ export function AddPPMPItemForm({
       description: initialValues?.description ?? '',
       unit: initialValues?.unit ?? 'pcs',
       unitPrice: initialValues?.unitPrice ?? 0,
+      plannedQuantity: initialValues?.plannedQuantity ?? 1,
       procurementModeId: initialValues?.procurementModeId ?? '',
       papCode: initialValues?.papCode ?? '',
       projectType: (initialValues?.projectType as any) ?? 'Goods',
@@ -268,38 +271,36 @@ export function AddPPMPItemForm({
         />
 
         <form.Field
-          name="projectType"
+          name="plannedQuantity"
+          validators={{
+            onChange: ({ value }) => {
+              if (!value || value <= 0)
+                return 'Planned quantity must be at least 1'
+              return undefined
+            },
+          }}
           children={(field) => (
             <div className="space-y-1.5">
               <div className="flex items-center gap-1">
-                <Label htmlFor={field.name}>Project Type</Label>
+                <Label htmlFor={field.name}>Planned Quantity *</Label>
                 <FieldDescriptionTooltip
-                  fieldKey="projectType"
+                  fieldKey="plannedQuantity"
                   className="h-4 w-4"
                 />
               </div>
-              <Select
-                value={field.state.value}
-                onValueChange={(value) => field.handleChange(value as any)}
+              <Input
+                id={field.name}
+                type="number"
+                step="1"
+                min="1"
+                placeholder="1"
+                value={field.state.value || ''}
+                onChange={(e) =>
+                  field.handleChange(Number.parseInt(e.target.value, 10) || 0)
+                }
                 disabled={isLoading}
-              >
-                <SelectTrigger
-                  id={field.name}
-                  className="w-full h-9 border-default-250"
-                >
-                  <SelectValue placeholder="Select type" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="Goods">Goods</SelectItem>
-                  <SelectItem value="Infrastructure">Infrastructure</SelectItem>
-                  <SelectItem value="ConsultingServices">
-                    Consulting Services
-                  </SelectItem>
-                  <SelectItem value="GeneralSupportServices">
-                    General Support Services
-                  </SelectItem>
-                </SelectContent>
-              </Select>
+                className="border-default-250 focus-visible:ring-primary/20 text-xs"
+              />
               <FieldInfo field={field} />
             </div>
           )}
@@ -358,6 +359,48 @@ export function AddPPMPItemForm({
           )}
         />
 
+        <form.Field
+          name="projectType"
+          children={(field) => (
+            <div className="space-y-1.5">
+              <div className="flex items-center gap-1">
+                <Label htmlFor={field.name}>Project Type</Label>
+                <FieldDescriptionTooltip
+                  fieldKey="projectType"
+                  className="h-4 w-4"
+                />
+              </div>
+              <Select
+                value={field.state.value}
+                onValueChange={(value) => field.handleChange(value as any)}
+                disabled={isLoading}
+              >
+                <SelectTrigger
+                  id={field.name}
+                  className="w-full h-9 border-default-250"
+                >
+                  <SelectValue
+                    placeholder="Select type"
+                  />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="Goods">Goods</SelectItem>
+                  <SelectItem value="Infrastructure">Infrastructure</SelectItem>
+                  <SelectItem value="ConsultingServices">
+                    Consulting Services
+                  </SelectItem>
+                  <SelectItem value="GeneralSupportServices">
+                    General Support Services
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <FieldInfo field={field} />
+            </div>
+          )}
+        />
+      </div>
+
+      <div>
         <form.Field
           name="papCode"
           children={(field) => (

@@ -62,6 +62,7 @@ public class PPMPItemController(ISender mediator) : ControllerBase
             Description = dto.Description,
             Unit = dto.Unit,
             UnitPrice = dto.UnitPrice,
+            PlannedQuantity = dto.PlannedQuantity,
             MOPOverride = dto.MOPOverride,
             MOPJustification = dto.MOPJustification,
             ProjectType = dto.ProjectType,
