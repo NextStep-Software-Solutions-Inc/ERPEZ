@@ -1,6 +1,7 @@
-﻿import { getKpiAssignmentRequest } from '@/components/features/planning/kpi-assignment-for-du/handlers/getKpiAssignmentRequest'
+import { getKpiAssignmentRequest } from '@/components/features/planning/kpi-assignment-for-du/handlers/getKpiAssignmentRequest'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
+import { Skeleton } from '@/components/ui/skeleton'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { createQueryHookFromTemplate } from 'erpez-shared-lib'
 import {
@@ -29,14 +30,38 @@ export function OPCRKPIDetails({
   kpiAssignmentId: string
   source?: 'kpiassignment' | 'strategicTarget' | 'opcr'
 }) {
-  const navigation = useNavigate({ from: '/v2/commitments' })
+  const navigation = useNavigate({ from: '/v2/commitments/' })
   const searchParams = useSearch({ from: '/v2/commitments/' })
-  const { data: kpiAssignmentData } = useKPIAssignment({
+  const { data: kpiAssignmentData, isPending } = useKPIAssignment({
     pathParams: { id: kpiAssignmentId },
     queryParams: {},
   })
   // The hook returns APIResponse<KPIAssignmentDetails>, so data is KPIAssignmentDetails
   const kpiData: KPIAssignmentDetails | undefined = kpiAssignmentData?.data
+
+  if (isPending || !kpiData) {
+    return (
+      <div className="min-h-screen bg-white p-6 space-y-6" data-source={source}>
+        <div className="max-w-7xl mx-auto space-y-6">
+          <div className="flex items-center justify-between border-b pb-4">
+            <div className="space-y-2">
+              <Skeleton className="h-8 w-80" />
+              <Skeleton className="h-4 w-40" />
+            </div>
+            <div className="flex gap-2">
+              <Skeleton className="h-6 w-24" />
+              <Skeleton className="h-6 w-20" />
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <Skeleton className="h-48 col-span-2 rounded-xl" />
+            <Skeleton className="h-48 col-span-1 rounded-xl" />
+          </div>
+          <Skeleton className="h-64 w-full rounded-xl" />
+        </div>
+      </div>
+    )
+  }
 
   // console.log({ kpiData: kpiData?. })
   return (
