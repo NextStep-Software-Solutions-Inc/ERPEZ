@@ -43,6 +43,15 @@ public class ConsolidatedPRController(ISender mediator) : ControllerBase
         return Ok(result);
     }
 
+    [HttpGet("eligible-for-procurement")]
+    [ProducesResponseType(typeof(ApiResponse<List<EligibleConsolidatedPRDto>>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetEligibleConsolidatedPRs(CancellationToken cancellationToken)
+    {
+        var query = new ERPEZ.Application.Features.Procurement.PurchaseRequests.Queries.GetEligibleConsolidatedPRs.GetEligibleConsolidatedPRsQuery();
+        var result = await mediator.Send(query, cancellationToken);
+        return Ok(result);
+    }
+
     [HttpGet("{id}")]
     [ProducesResponseType(typeof(ApiResponse<ConsolidatedPRDetailResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]

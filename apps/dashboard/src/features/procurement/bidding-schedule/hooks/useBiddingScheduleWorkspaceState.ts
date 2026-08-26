@@ -13,19 +13,13 @@ import {
   DEFAULT_MOCK_GATES,
   MOCK_INTERVAL_CONFIGS,
 } from '../data/mockBiddingScheduleData'
-import { getMockBacResolutionById } from '../../bac-resolution/data/mockBacResolutionData'
-import {
-  hasExactlyOneLinkedConsolidatedPr,
-  isBacResolutionPublicBiddingEligible,
-} from '../../bac-resolution/utils/bacResolutionWorkflow'
 import type {
   BiddingMilestone,
   MockPrerequisiteGates,
-  PrerequisiteGateResult,
   SetMilestoneCompletionPayload,
   UpdateMilestonePayload,
 } from '../types'
-import type { GenerateScheduleFormValues } from '../forms/GenerateScheduleForm'
+import { BacResolution } from '../../bac-resolution'
 
 // ─── Shared mock identity ─────────────────────────────────────────────────────
 
@@ -37,10 +31,7 @@ export const MOCK_CURRENT_USER = 'current-user'
 export function useBiddingScheduleWorkspaceState(bacResolutionId: string) {
   // ── BAC Resolution ─────────────────────────────────────────────────────────
   // Stabilize the lookup so downstream memos don't churn on every render.
-  const bacResolution = useMemo(
-    () => getMockBacResolutionById(bacResolutionId) ?? null,
-    [bacResolutionId],
-  )
+  const bacResolution = [] as BacResolution[]
 
   // ── Schedule query ─────────────────────────────────────────────────────────
   const { data: scheduleData, isLoading: isScheduleLoading } =
@@ -71,67 +62,6 @@ export function useBiddingScheduleWorkspaceState(bacResolutionId: string) {
     },
     [bacResolutionId, toggleMockGate],
   )
-
-  // ── Prerequisite gate derivation ───────────────────────────────────────────
-  // Reconciliation rule:
-  //   - Actual BAC approval and PR linkage are hard floors — they must be true
-  //     in the real data regardless of what the dev mock toggles say.
-  //   - Mock toggles can only further restrict readiness (they are ANDed with
-  //     the actual state), never inflate a failing real gate to passing.
-  const gates = useMemo((): PrerequisiteGateResult => {
-    const actualBacApproved = bacResolution?.status === 'approved'
-    const actualPrLinked = bacResolution
-      ? hasExactlyOneLinkedConsolidatedPr(bacResolution)
-      : false
-    const actualPublicBidding = bacResolution
-      ? isBacResolutionPublicBiddingEligible(bacResolution)
-      : false
-    const actualBacIssued = Boolean(bacResolution?.approvedAt)
-    // In PB draft mode (draft BAC with PB CPR linked), the approval/issued
-    // gates are replaced by a single "PB CPR Linked" gate.
-    const isDraftPbMode =
-      bacResolution?.status === 'draft' && actualPublicBidding && actualPrLinked
-
-    const consolidatedPrLinked =
-      mockGates.consolidatedPrLinked && actualPrLinked
-    const bacResolutionApproved = isDraftPbMode
-      ? true
-      : mockGates.bacResolutionApproved && actualBacApproved
-    const bacResolutionPublicBidding =
-      mockGates.bacResolutionPublicBidding && actualPublicBidding
-    const bacResolutionIssued = isDraftPbMode
-      ? true
-      : mockGates.bacResolutionIssued && actualBacIssued
-    const pbCprLinked = isDraftPbMode
-      ? (mockGates.pbCprLinked ?? true) && actualPrLinked && actualPublicBidding
-      : true
-    const intervalConfigExists = mockGates.intervalConfigExists
-    const holidaysTableExists = mockGates.holidaysTableExists
-
-    const allPassed = isDraftPbMode
-      ? consolidatedPrLinked &&
-        pbCprLinked &&
-        bacResolutionPublicBidding &&
-        intervalConfigExists &&
-        holidaysTableExists
-      : consolidatedPrLinked &&
-        bacResolutionApproved &&
-        bacResolutionPublicBidding &&
-        bacResolutionIssued &&
-        intervalConfigExists &&
-        holidaysTableExists
-
-    return {
-      consolidatedPrLinked,
-      bacResolutionApproved,
-      bacResolutionPublicBidding,
-      bacResolutionIssued,
-      pbCprLinked,
-      intervalConfigExists,
-      holidaysTableExists,
-      allPassed,
-    }
-  }, [bacResolution, mockGates])
 
   // ── Dialog open state ──────────────────────────────────────────────────────
   const [generateOpen, setGenerateOpen] = useState(false)
@@ -191,53 +121,9 @@ export function useBiddingScheduleWorkspaceState(bacResolutionId: string) {
 
   // ── Mutation handlers ──────────────────────────────────────────────────────
 
-  const handleCreateSchedule = useCallback(
-    async (values: GenerateScheduleFormValues) => {
-      if (!bacResolution) return
-      try {
-        await createSchedule({
-          bacResolutionId,
-          bacResolutionNumber: bacResolution.bacResolutionNumber,
-          procurementCategory: values.procurementCategory,
-          ibPostingDate: values.ibPostingDate,
-          createdBy: MOCK_CURRENT_USER,
-        })
-        toast.success('Bidding schedule generated.')
-        setGenerateOpen(false)
-      } catch (error) {
-        toast.error(
-          error instanceof Error
-            ? error.message
-            : 'Failed to generate bidding schedule.',
-        )
-      }
-    },
-    [bacResolution, bacResolutionId, createSchedule],
-  )
+  const handleCreateSchedule = () => {}
 
-  const handleRegenerateSchedule = useCallback(
-    async (values: GenerateScheduleFormValues) => {
-      if (!bacResolution) return
-      try {
-        await regenerateSchedule({
-          bacResolutionId,
-          bacResolutionNumber: bacResolution.bacResolutionNumber,
-          procurementCategory: values.procurementCategory,
-          ibPostingDate: values.ibPostingDate,
-          createdBy: MOCK_CURRENT_USER,
-        })
-        toast.success('Bidding schedule regenerated.')
-        setGenerateOpen(false)
-      } catch (error) {
-        toast.error(
-          error instanceof Error
-            ? error.message
-            : 'Failed to regenerate bidding schedule.',
-        )
-      }
-    },
-    [bacResolution, bacResolutionId, regenerateSchedule],
-  )
+  const handleRegenerateSchedule = () => {}
 
   const handleUpdateMilestone = useCallback(
     async (payload: UpdateMilestonePayload) => {
@@ -310,19 +196,10 @@ export function useBiddingScheduleWorkspaceState(bacResolutionId: string) {
   return {
     // Resolution — null signals the page should redirect (no placeholder invented)
     bacResolution,
-
-    // Schedule
     schedule,
     isScheduleLoading,
-
-    // Gates
-    gates,
     mockGates,
     handleToggleMockGate,
-    isDraftPbMode:
-      bacResolution?.status === 'draft' &&
-      isBacResolutionPublicBiddingEligible(bacResolution) &&
-      hasExactlyOneLinkedConsolidatedPr(bacResolution),
 
     // Dialog open state
     generateOpen,

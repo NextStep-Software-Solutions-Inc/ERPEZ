@@ -16,7 +16,7 @@ public class GetPublicProjectDetailQueryHandler(IUnitOfWork unitOfWork)
         GetPublicProjectDetailQuery request, CancellationToken cancellationToken)
     {
         var project = await unitOfWork.ProcurementProjectRepository
-            .GetPublicDetailByIdAsync(request.Id, cancellationToken)
+            .GetByIdAsync(request.Id, cancellationToken)
             ?? throw new NotFoundException("Project not found.");
 
         // Visibility gate: prefer BiddingDocument.Status once TC-02 has created one

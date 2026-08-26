@@ -49,9 +49,6 @@ public class GetAPPByIdQueryHandler(IUnitOfWork unitOfWork)
             {
                 var allocQty = item.PPMPItem?.PPMPItemAllocations.Where(a => !a.IsDeleted).Sum(a => a.Quantity) ?? 0;
                 var unitPrice = item.PPMPItem?.UnitPrice ?? 0;
-                var allocTotal = item.PPMPItem?.PPMPItemAllocations.Where(a => !a.IsDeleted).Sum(a => a.Amount) ?? 0;
-                var origBudget = allocTotal > 0 ? allocTotal : ((allocQty > 0 ? allocQty : 1) * unitPrice);
-                var totalAmount = item.EstimatedBudgetOverride ?? origBudget;
                 var effectiveStart = item.StartOfProcurementOverride ?? (item.PPMPItem?.ProcurementStartDate.HasValue == true ? item.PPMPItem.ProcurementStartDate.Value.ToDateTime(TimeOnly.MinValue) : null);
                 var effectiveEnd = item.EndOfProcurementOverride ?? (item.PPMPItem?.ProcurementEndDate.HasValue == true ? item.PPMPItem.ProcurementEndDate.Value.ToDateTime(TimeOnly.MinValue) : null);
 
@@ -64,9 +61,9 @@ public class GetAPPByIdQueryHandler(IUnitOfWork unitOfWork)
                     Unit = item.PPMPItem?.Unit ?? string.Empty,
                     Quantity = allocQty,
                     UnitCost = unitPrice,
-                    TotalAmount = totalAmount,
-                    OriginalPPMPBudget = origBudget,
-                    EffectiveABC = totalAmount,
+                    TotalAmount = item.EffectiveABC,
+                    OriginalPPMPBudget = item.OriginalPPMPBudget,
+                    EffectiveABC = item.EffectiveABC,
                     EffectiveStartOfProcurement = effectiveStart,
                     EffectiveEndOfProcurement = effectiveEnd,
                     IsABCOverridden = item.EstimatedBudgetOverride.HasValue,

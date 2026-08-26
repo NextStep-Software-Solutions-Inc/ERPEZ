@@ -9,7 +9,6 @@ import { createWhereasClauseTemplateRequest } from './createWhereasClauseTemplat
 import { deleteWhereasClauseTemplateRequest } from './deleteWhereasClauseTemplateRequest'
 import { getBacResolutionRequest } from './getBacResolutionRequest'
 import { getBacResolutionsRequest } from './getBacResolutionsRequest'
-import { getBackendProjectDetailsRequest } from './getBackendProjectDetailsRequest'
 import { getWhereasClauseTemplatesRequest } from './getWhereasClauseTemplatesRequest'
 import { linkConsolidatedPrsRequest } from './linkConsolidatedPrsRequest'
 import { printBacResolutionRequest } from './printBacResolutionRequest'
@@ -18,6 +17,9 @@ import { submitBacResolutionRequest } from './submitBacResolutionRequest'
 import { updateWhereasClauseTemplateRequest } from './updateWhereasClauseTemplateRequest'
 import { updateBacResolutionRequest } from './updateBacResolutionRequest'
 import { deleteBacResolutionRequest } from './deleteBacResolutionRequest'
+import { getEligibleAppsForProcurementRequest } from './getEligibleAppsForProcurementRequest'
+import { getEligibleConsolidatedPRsRequest } from './getEligibleConsolidatedPRsRequest'
+import { getUsersRequest } from '@/features/planning/market-scoping/handlers/getUsersRequest'
 
 const bacResolutionQueryKeys = [['bac-resolutions'], ['bac-resolution']] as const
 const whereasClauseQueryKeys = [['/bac-resolution-whereas-clauses']] as const
@@ -107,9 +109,17 @@ export const useBacResolution = createQueryHookFromTemplate(
   getBacResolutionRequest,
 )
 
-export const useBackendProjectDetails = createQueryHookFromTemplate(
-  getBackendProjectDetailsRequest,
+
+
+export const useEligibleAppsForProcurement = createQueryHookFromTemplate(
+  getEligibleAppsForProcurementRequest,
 )
+
+export const useEligibleConsolidatedPRs = createQueryHookFromTemplate(
+  getEligibleConsolidatedPRsRequest,
+)
+
+export const useUsers = createQueryHookFromTemplate(getUsersRequest)
 
 const useCreateBacResolutionBase = createMutationHookFromTemplate(
   createBacResolutionRequest,
@@ -187,4 +197,4 @@ const useDeleteBacResolutionBase = createMutationHookFromTemplate(
 )
 export const useDeleteBacResolution = makeMutationWithRefresh(
   useDeleteBacResolutionBase,
-)
+)

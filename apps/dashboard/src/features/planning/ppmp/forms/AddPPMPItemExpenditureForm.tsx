@@ -20,9 +20,7 @@ const useLIBActivityObjectsQuery = createQueryHookFromTemplate(
 
 export const ppmpExpenditureItemSchema = z.object({
   isProcurable: z.boolean(),
-  typeOfExpenditureId: z
-    .string()
-    .min(1, 'Type of Expenditure is required'),
+  typeOfExpenditureId: z.string().min(1, 'Type of Expenditure is required'),
   objectId: z.string().min(1, 'Item of Expenditure is required'),
 })
 
@@ -132,7 +130,10 @@ export function resolveTypeOfExpenditure(
  * Formats expenditure labels to remove redundant category prefixes (e.g., "SC:", "GRP:")
  * and avoids duplicating code and name if they are identical.
  */
-export function formatExpenditureDisplayName(name?: string, code?: string): string {
+export function formatExpenditureDisplayName(
+  name?: string,
+  code?: string,
+): string {
   const safeName = name?.trim() || ''
   const safeCode = code?.trim() || ''
 
@@ -197,7 +198,11 @@ export function AddPPMPItemExpenditureForm({
       if (match) return match.parentObjectId
     }
     return ''
-  }, [initialValues?.typeOfExpenditureId, initialValues?.objectId, filteredParentGroups])
+  }, [
+    initialValues?.typeOfExpenditureId,
+    initialValues?.objectId,
+    filteredParentGroups,
+  ])
 
   const form = useForm({
     defaultValues: {
@@ -221,8 +226,14 @@ export function AddPPMPItemExpenditureForm({
 
   // Auto-select type and object if only 1 type and 1 item available
   useEffect(() => {
-    if (filteredParentGroups.length === 1 && !form.getFieldValue('typeOfExpenditureId')) {
-      form.setFieldValue('typeOfExpenditureId', filteredParentGroups[0].parentObjectId)
+    if (
+      filteredParentGroups.length === 1 &&
+      !form.getFieldValue('typeOfExpenditureId')
+    ) {
+      form.setFieldValue(
+        'typeOfExpenditureId',
+        filteredParentGroups[0].parentObjectId,
+      )
     }
   }, [filteredParentGroups, form])
 
@@ -347,7 +358,8 @@ export function AddPPMPItemExpenditureForm({
               </Select>
               {selectedParentId && childOptions.length === 0 && (
                 <p className="text-[11px] text-destructive font-medium mt-1 text-left">
-                  No expenditure items are configured under this type for the selected LIB Activity.
+                  No expenditure items are configured under this type for the
+                  selected LIB Activity.
                 </p>
               )}
               <FieldInfo field={field} />
@@ -395,4 +407,3 @@ export function AddPPMPItemExpenditureForm({
     </form>
   )
 }
-

@@ -40,6 +40,18 @@ public class APPController(ISender mediator) : ControllerBase
     }
 
     /// <summary>
+    /// Get all approved APPs and their unlinked APP items eligible for procurement project creation
+    /// </summary>
+    [HttpGet("eligible-for-procurement")]
+    [ProducesResponseType(typeof(ApiResponse<List<EligibleAppForProcurementDto>>), StatusCodes.Status200OK)]
+    public async Task<IActionResult> GetEligibleAppsForProcurement()
+    {
+        var query = new ERPEZ.Application.Features.Planning.APP.Queries.GetEligibleAppsForProcurement.GetEligibleAppsForProcurementQuery();
+        var result = await mediator.Send(query);
+        return Ok(result);
+    }
+
+    /// <summary>
     /// Get all APPs with filtering, sorting, and pagination
     /// </summary>
     [HttpGet]

@@ -13,7 +13,9 @@ export function SourceTypeSelectorStep({
   return (
     <div className="space-y-6 py-2">
       <div>
-        <h3 className="text-lg font-semibold text-default-900">Select Procurement Source</h3>
+        <h3 className="text-lg font-semibold text-default-900">
+          Select Procurement Source
+        </h3>
         <p className="text-sm text-muted-foreground">
           Choose the authoritative source from which this BAC Resolution originates. A Procurement Project context will be automatically created.
         </p>
@@ -45,7 +47,9 @@ export function SourceTypeSelectorStep({
                   Path A — APP Driven
                 </span>
               </div>
-              <h4 className="mt-2 font-bold text-base text-default-900">From APP Item</h4>
+              <h4 className="mt-2 font-bold text-base text-default-900">
+                From APP Item
+              </h4>
               <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
                 Create a BAC Resolution directly from an approved Annual Procurement Plan (APP) item without passing through PR Consolidation.
               </p>
@@ -53,7 +57,7 @@ export function SourceTypeSelectorStep({
           </div>
 
           <div className="mt-4 rounded-lg bg-default-100 p-2.5 text-xs text-default-600">
-            <span className="font-semibold text-default-700">Workflow:</span> APP Item → Procurement Project → BAC Resolution → PR
+            <span className="font-semibold text-default-700">Workflow:</span> APP → APP Item → ProcurementProject → BAC Resolution → PR → Procurement Execution
           </div>
         </div>
 
@@ -82,7 +86,9 @@ export function SourceTypeSelectorStep({
                   Path B — Consolidated PR Driven
                 </span>
               </div>
-              <h4 className="mt-2 font-bold text-base text-default-900">From Consolidated PR</h4>
+              <h4 className="mt-2 font-bold text-base text-default-900">
+                From Consolidated PR
+              </h4>
               <p className="mt-1 text-xs text-muted-foreground leading-relaxed">
                 Create a BAC Resolution from an approved Consolidated Purchase Request (CPR) containing multiple combined PR items.
               </p>
@@ -90,7 +96,7 @@ export function SourceTypeSelectorStep({
           </div>
 
           <div className="mt-4 rounded-lg bg-default-100 p-2.5 text-xs text-default-600">
-            <span className="font-semibold text-default-700">Workflow:</span> APP → PR → Consolidated PR → Procurement Project → BAC Resolution
+            <span className="font-semibold text-default-700">Workflow:</span> APP → APP Item → PR → Consolidated PR → ProcurementProject → BAC Resolution → Procurement Execution
           </div>
         </div>
       </div>

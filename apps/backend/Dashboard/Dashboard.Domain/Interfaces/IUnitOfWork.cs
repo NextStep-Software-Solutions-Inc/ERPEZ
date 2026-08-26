@@ -120,6 +120,7 @@ public interface IUnitOfWork
     IOPCRConsolidationRepository OPCRConsolidationRepository { get; }
     IProcurementProjectRepository ProcurementProjectRepository { get; }
     IBACResolutionRepository BACResolutionRepository { get; }
+    IRepository<ERPEZ.Domain.Entities.Procurement.BACMember> BACMemberRepository { get; }
     IBiddingActivityScheduleRepository BiddingActivityScheduleRepository { get; }
     IMasterDocumentTypeRepository    MasterDocumentTypeRepository    { get; }
     IDocumentProfileRepository       DocumentProfileRepository       { get; }

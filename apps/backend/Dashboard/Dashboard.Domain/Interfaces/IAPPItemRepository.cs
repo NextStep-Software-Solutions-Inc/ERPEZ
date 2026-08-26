@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using ERPEZ.Domain.Entities.Planning;
 using Sieve.Models;
 
@@ -13,6 +14,10 @@ public interface IAPPItemRepository : IRepository<APPItem>
     Task<List<APPItem>> GetAPPItemsWithDetailsAsync(Guid appId, CancellationToken cancellationToken = default);
 
     Task<APPItem?> GetWithDetailsAsync(Guid id, CancellationToken cancellationToken = default);
+
+    Task<List<APPItem>> FindAllWithDetailsAsync(
+        Expression<Func<APPItem, bool>> predicate,
+        CancellationToken cancellationToken = default);
 
     Task<(IReadOnlyList<APPItem> Entities, int TotalCount)> GetAllWithDetailsAsync(
         SieveModel sieveModel,

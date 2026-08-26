@@ -69,7 +69,7 @@ namespace ERPEZ.Infrastructure.Migrations
                 UPDATE planning.""PPMPExpenditureItems"" pei
                 SET ""ObjectId"" = sub.object_id
                 FROM (
-                    SELECT pa.""Id"" AS activity_id, MAX(libd.""ObjectId"") AS object_id
+                    SELECT pa.""Id"" AS activity_id, MAX(libd.""ObjectId""::text)::uuid AS object_id
                     FROM planning.""PPMPActivities"" pa
                     JOIN planning.""LineItemBudgetDetails"" libd ON libd.""LineItemBudgetActivityId"" = pa.""LIBActivityId""
                     WHERE NOT libd.""IsDeleted""
