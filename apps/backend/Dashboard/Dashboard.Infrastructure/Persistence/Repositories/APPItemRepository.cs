@@ -1,3 +1,4 @@
+using System.Linq.Expressions;
 using ERPEZ.Domain.Entities.Planning;
 using ERPEZ.Domain.Interfaces;
 using Microsoft.EntityFrameworkCore;
@@ -43,6 +44,15 @@ public class APPItemRepository : Repository<APPItem>, IAPPItemRepository
     {
         return await BuildDetailedQuery(context.Set<APPItem>().Where(a => a.Id == id && !a.IsDeleted))
             .FirstOrDefaultAsync(cancellationToken);
+    }
+
+    public async Task<List<APPItem>> FindAllWithDetailsAsync(
+        Expression<Func<APPItem, bool>> predicate,
+        CancellationToken cancellationToken = default)
+    {
+        return await BuildDetailedQuery(context.Set<APPItem>().Where(predicate))
+            .AsSplitQuery()
+            .ToListAsync(cancellationToken);
     }
 
     public async Task<(IReadOnlyList<APPItem> Entities, int TotalCount)> GetAllWithDetailsAsync(

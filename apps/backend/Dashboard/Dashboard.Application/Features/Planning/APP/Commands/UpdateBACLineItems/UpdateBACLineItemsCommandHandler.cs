@@ -44,13 +44,8 @@ public class UpdateBACLineItemsCommandHandler(IUnitOfWork unitOfWork)
             // In an Updated APP, inherited items (IsNew == false) modified during revision are marked as IsRevised
             if (string.Equals(app.APPType, "Updated", StringComparison.OrdinalIgnoreCase) && !appItem.IsNew)
             {
-                var allocQty = appItem.PPMPItem?.PPMPItemAllocations.Where(a => !a.IsDeleted).Sum(a => a.Quantity) ?? 0;
-                var unitPrice = appItem.PPMPItem?.UnitPrice ?? 0;
-                var allocTotal = appItem.PPMPItem?.PPMPItemAllocations.Where(a => !a.IsDeleted).Sum(a => a.Amount) ?? 0;
-                var origBudget = allocTotal > 0 ? allocTotal : ((allocQty > 0 ? allocQty : 1) * unitPrice);
-
-                var oldEffectiveABC = appItem.EstimatedBudgetOverride ?? origBudget;
-                var newEffectiveABC = entry.EstimatedBudgetOverride ?? origBudget;
+                var oldEffectiveABC = appItem.EffectiveABC;
+                var newEffectiveABC = entry.EstimatedBudgetOverride ?? appItem.OriginalPPMPBudget;
 
                 var oldEffectiveStart = appItem.StartOfProcurementOverride ?? (appItem.PPMPItem?.ProcurementStartDate.HasValue == true ? appItem.PPMPItem.ProcurementStartDate.Value.ToDateTime(TimeOnly.MinValue) : null);
                 var newEffectiveStart = entry.StartOfProcurementOverride ?? (appItem.PPMPItem?.ProcurementStartDate.HasValue == true ? appItem.PPMPItem.ProcurementStartDate.Value.ToDateTime(TimeOnly.MinValue) : null);

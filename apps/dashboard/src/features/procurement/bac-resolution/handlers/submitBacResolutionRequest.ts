@@ -1,5 +1,5 @@
-import type { MutationBlueprintFromTemplate } from 'erpez-shared-lib'
-import type { BacResolution } from '../types'
+import type { APIResponse, MutationBlueprintFromTemplate } from 'erpez-shared-lib'
+import type { BacResolution, BacProjectDetails } from '../types'
 import type { SubmitBacResolutionPayload } from '../types'
 import api from '@/services/api'
 
@@ -23,7 +23,7 @@ export const submitBacResolutionRequest: MutationBlueprintFromTemplate<
     })
 
     // Fetch the updated details to return the correct object to the react-query mutation
-    const projectResponse = await api.get<{ succeeded: boolean; data: any }>(`/bac/projects/${payload.bacResolutionId}`)
+    const projectResponse = await api.get<APIResponse<BacProjectDetails>>(`/bac/projects/${payload.bacResolutionId}`)
     const project = projectResponse.data?.data
 
     if (!project) {

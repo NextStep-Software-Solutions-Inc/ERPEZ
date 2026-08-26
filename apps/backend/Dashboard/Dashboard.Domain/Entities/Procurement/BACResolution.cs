@@ -25,7 +25,9 @@ public class BACResolution : BaseEntity
     public string Status { get; set; } = string.Empty;
 
     public string? WhereasClause { get; set; }
+    public string? ResolvedLocation { get; set; }
 
     // Navigation properties
     public virtual ProcurementProject ProcurementProject { get; set; } = null!;
+    public virtual ICollection<BACResolutionWhereasClauseItem> WhereasClauseItems { get; set; } = new List<BACResolutionWhereasClauseItem>();
 }

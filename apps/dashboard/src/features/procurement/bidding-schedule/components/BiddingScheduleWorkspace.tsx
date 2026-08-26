@@ -5,10 +5,8 @@ import { BiddingScheduleConflictPreview } from './BiddingScheduleConflictPreview
 import { BiddingScheduleLockedBanner } from './BiddingScheduleLockedBanner'
 import { BiddingScheduleMilestoneTable } from './BiddingScheduleMilestoneTable'
 import { BiddingSchedulePrerequisiteChecklist } from './BiddingSchedulePrerequisiteChecklist'
-import { BiddingScheduleResolutionBanner } from './BiddingScheduleResolutionBanner'
 import { DialogsController } from './DialogsController'
 import type { UseBiddingScheduleService } from '../hooks/useBiddingScheduleService'
-import { getMockBiddingScheduleDatabase } from '../data/mockBiddingScheduleData'
 import { useBiddingScheduleStore } from '../store/biddingScheduleStore'
 import { buildScheduleConflictPreview } from '../utils/buildScheduleConflictPreview'
 import type { BacResolutionListRoutePath } from '../../bac-resolution/types'
@@ -51,22 +49,21 @@ export function BiddingScheduleWorkspace({
     return null
   }
 
-  const allSchedules =
-    liveSchedules.length > 0 ? liveSchedules : getMockBiddingScheduleDatabase()
+  const allSchedules = liveSchedules
   const conflictPreview = schedule
     ? buildScheduleConflictPreview({
-        schedule,
-        otherSchedules: allSchedules.filter(
-          (candidate) =>
-            candidate.id !== schedule.id &&
-            (candidate.status === 'confirmed' || candidate.status === 'locked'),
-        ),
-      })
+      schedule,
+      otherSchedules: allSchedules.filter(
+        (candidate) =>
+          candidate.id !== schedule.id &&
+          (candidate.status === 'confirmed' || candidate.status === 'locked'),
+      ),
+    })
     : null
 
   return (
     <div className="space-y-4">
-      <BiddingScheduleResolutionBanner bacResolution={bacResolution} />
+      {/* <BiddingScheduleResolutionBanner bacResolution={bacResolution} /> */}
 
       <BiddingSchedulePrerequisiteChecklist
         gates={gates}
@@ -128,21 +125,21 @@ export function BiddingScheduleWorkspace({
           <CardContent className="space-y-4">
             {(schedule.status === 'confirmed' ||
               schedule.status === 'locked') && (
-              <Alert variant="outline" color="success">
-                <div>
-                  <AlertTitle>Schedule confirmed</AlertTitle>
-                  <AlertDescription>
-                    Schedule confirmed on{' '}
-                    {schedule.confirmedAt
-                      ? formatDateTimeLabel(schedule.confirmedAt)
-                      : '—'}{' '}
-                    by {schedule.confirmedBy ?? '—'}. PBD finalization is now
-                    unblocked, and posting from the PBD workspace will lock this
-                    schedule.
-                  </AlertDescription>
-                </div>
-              </Alert>
-            )}
+                <Alert variant="outline" color="success">
+                  <div>
+                    <AlertTitle>Schedule confirmed</AlertTitle>
+                    <AlertDescription>
+                      Schedule confirmed on{' '}
+                      {schedule.confirmedAt
+                        ? formatDateTimeLabel(schedule.confirmedAt)
+                        : '—'}{' '}
+                      by {schedule.confirmedBy ?? '—'}. PBD finalization is now
+                      unblocked, and posting from the PBD workspace will lock this
+                      schedule.
+                    </AlertDescription>
+                  </div>
+                </Alert>
+              )}
 
             {schedule.status === 'draft' && conflictPreview ? (
               <BiddingScheduleConflictPreview

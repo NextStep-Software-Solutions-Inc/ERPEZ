@@ -204,7 +204,7 @@ export default function CreateLineItemBudgetForm({
     pathParams: {},
     queryParams: {
       ...(canFetchWfps && {
-        filters: `officeId==${officeIdValue},fiscalYear==${selectedYear},status==Approved`,
+        filters: `officeId==${officeIdValue},status==Approved`,
       }),
     },
     enabled: canFetchWfps,

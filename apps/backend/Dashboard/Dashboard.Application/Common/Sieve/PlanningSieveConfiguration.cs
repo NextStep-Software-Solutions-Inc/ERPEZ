@@ -25,5 +25,15 @@ public class PlanningSieveConfiguration : ISieveConfiguration
         mapper.Property<FundSource>(p => p.FiscalYearId)
             .CanSort()
             .CanFilter();
+
+        mapper.Property<WFP>(p => p.ProjectStartDate.Year)
+            .CanSort()
+            .CanFilter()
+            .HasName("fiscalYear");
+
+        mapper.Property<WFP>(p => p.OPCR!.FiscalYearId)
+            .CanSort()
+            .CanFilter()
+            .HasName("fiscalYearId");
     }
 }

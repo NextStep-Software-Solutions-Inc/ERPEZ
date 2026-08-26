@@ -4,13 +4,7 @@ import {
   DEFAULT_MOCK_GATES,
   MOCK_HOLIDAYS_2026,
   MOCK_INTERVAL_CONFIGS,
-  getMockBiddingScheduleDatabase,
 } from '../data/mockBiddingScheduleData'
-import { getMockBacResolutionById } from '../../bac-resolution/data/mockBacResolutionData'
-import {
-  hasExactlyOneLinkedConsolidatedPr,
-  isBacResolutionPublicBiddingEligible,
-} from '../../bac-resolution/utils/bacResolutionWorkflow'
 import { computeMilestones } from '../utils/computeMilestones'
 import { cascadeRecalculate } from '../utils/cascadeRecalculate'
 import type {
@@ -24,6 +18,7 @@ import type {
   SetMilestoneCompletionPayload,
   UpdateMilestonePayload,
 } from '../types'
+import { BacResolution } from '../../bac-resolution'
 
 type BiddingScheduleState = {
   schedules: Array<BiddingSchedule>
@@ -58,40 +53,11 @@ const PERSIST_KEY =
     : 'bidding-schedule-store'
 
 function assertEligibleOwnedConsolidatedPr(bacResolutionId: string) {
-  const bacResolution = getMockBacResolutionById(bacResolutionId)
+  const bacResolution = [] as BacResolution[]
 
   if (!bacResolution) {
     throw new Error(
       `BAC Resolution "${bacResolutionId}" could not be found for bidding schedule generation.`,
-    )
-  }
-
-  if (!hasExactlyOneLinkedConsolidatedPr(bacResolution)) {
-    throw new Error(
-      'Bidding schedules require exactly one linked Consolidated PR on the owning BAC Resolution.',
-    )
-  }
-
-  const isDraftPbEligible =
-    bacResolution.status === 'draft' &&
-    isBacResolutionPublicBiddingEligible(bacResolution) &&
-    hasExactlyOneLinkedConsolidatedPr(bacResolution)
-
-  if (
-    !isDraftPbEligible &&
-    (bacResolution.status !== 'approved' || !bacResolution.approvedAt)
-  ) {
-    throw new Error(
-      'Only issued and approved BAC Resolutions can generate a bidding schedule.',
-    )
-  }
-
-  if (
-    !isDraftPbEligible &&
-    !isBacResolutionPublicBiddingEligible(bacResolution)
-  ) {
-    throw new Error(
-      'The owning Consolidated PR must include a Public Bidding or Limited Bidding item before schedule generation is allowed.',
     )
   }
 
@@ -103,7 +69,7 @@ export const useBiddingScheduleStore = create<
 >()(
   persist(
     (set, get) => ({
-      schedules: getMockBiddingScheduleDatabase(),
+      schedules: [],
       mockGates: {},
 
       getScheduleByResolutionId(bacResolutionId) {
@@ -376,8 +342,7 @@ export const useBiddingScheduleStore = create<
       name: PERSIST_KEY,
       merge: (persistedState, currentState) => {
         const typedPersistedState = persistedState as
-          | Partial<BiddingScheduleState>
-          | undefined
+          Partial<BiddingScheduleState> | undefined
         const persistedSchedules = typedPersistedState?.schedules ?? []
         const mergedSchedules =
           persistedSchedules.length > 0

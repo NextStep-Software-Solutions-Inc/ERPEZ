@@ -74,8 +74,14 @@ public class PPMPItem : BaseEntity
     
     // Navigation properties
     public virtual PPMPExpenditureItem PPMPExpenditureItem { get; set; } = null!;
+    
+    [System.ComponentModel.DataAnnotations.Schema.ForeignKey(nameof(CSEItemId))]
     public virtual ProcurementItem? CSEItem { get; set; }
+
+    [System.ComponentModel.DataAnnotations.Schema.ForeignKey(nameof(NonCSEItemId))]
     public virtual NonCSEItem? NonCSEItem { get; set; }
+
+    [System.ComponentModel.DataAnnotations.Schema.ForeignKey(nameof(ProcurementModeId))]
     public virtual ProcurementMode ProcurementMode { get; set; } = null!;
     public virtual List<PPMPItemAllocation> PPMPItemAllocations { get; set; } = [];
     public virtual List<APPItem> APPItems { get; set; } = [];

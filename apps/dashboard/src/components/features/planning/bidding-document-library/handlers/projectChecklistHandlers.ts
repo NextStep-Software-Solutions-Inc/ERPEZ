@@ -132,22 +132,4 @@ export const resetChecklistRequest: MutationBlueprintFromTemplate<
     )
     return response.data
   },
-}
-
-export const getBACProjectsRequest: QueryBlueprintFromTemplate<
-  '/bac/projects',
-  APIResponse<BACProjectListItem[]>,
-  Record<string, string | number>,
-  QueryKey
-> = {
-  endpoint: '/bac/projects',
-  key: ({ url }) => [url],
-  fetcher: async ({ finalUrl, signal }) => {
-    const response = await api.get<APIResponse<BACProjectListItem[]>>(
-      finalUrl,
-      { signal }
-    )
-    return response.data
-  },
-}
-
+} 

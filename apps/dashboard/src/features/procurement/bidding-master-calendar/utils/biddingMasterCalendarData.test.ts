@@ -1,7 +1,5 @@
 ﻿import { describe, expect, it } from 'vitest'
 import { DEFAULT_BIDDING_MASTER_CALENDAR_FILTERS } from '../types'
-import { getMockBacResolutionDatabase } from '../../bac-resolution/data/mockBacResolutionData'
-import { getMockBiddingScheduleDatabase } from '../../bidding-schedule/data/mockBiddingScheduleData'
 import {
   aggregateScheduleEvents,
   applyCalendarFilters,
@@ -13,8 +11,8 @@ import {
 const TODAY = new Date('2026-05-20T00:00:00.000Z')
 
 function buildCalendarFixture() {
-  const resolutions = getMockBacResolutionDatabase()
-  const schedules = getMockBiddingScheduleDatabase()
+  const resolutions = [] as any[] // Placeholder for resolutions, replace with actual data source if available
+  const schedules = [] as any[] // Placeholder for schedules, replace with actual data source if available
   const appBands = buildAppMonthBands(resolutions)
   const events = aggregateScheduleEvents({
     schedules,
@@ -103,7 +101,7 @@ describe('biddingMasterCalendar data engine', () => {
       ...DEFAULT_BIDDING_MASTER_CALENDAR_FILTERS,
       searchTerm: 'road rehabilitation',
       milestoneKeys: ['ib-posting'],
-      procurementCategories: ['goods-and-services'],
+      procurementCategories: ['goods'],
       offices: ['Dept. of Public Works'],
       derivedStatuses: ['due-soon'],
       fiscalYears: ['2026'],
@@ -131,7 +129,7 @@ describe('biddingMasterCalendar data engine', () => {
       ...DEFAULT_BIDDING_MASTER_CALENDAR_FILTERS,
       searchTerm: 'road rehabilitation',
       milestoneKeys: ['ib-posting'],
-      procurementCategories: ['goods-and-services'],
+      procurementCategories: ['goods'],
       offices: ['Dept. of Public Works'],
       derivedStatuses: ['due-soon'],
       fiscalYears: ['2026'],

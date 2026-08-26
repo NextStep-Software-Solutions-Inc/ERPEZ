@@ -1,14 +1,18 @@
+using System;
+using System.Collections.Generic;
+using ERPEZ.Application.Features.Procurement.Projects.Commands.CreateProcurementProject;
+
 namespace ERPEZ.Application.Features.Procurement.Projects.Commands.UpdateProcurementProject;
 
 public record UpdateProcurementProjectRequest
 {
-    public required string Title { get; init; }
-    public required decimal ABC { get; init; }
-    public string Status { get; init; } = "Draft";
-    public string ResolutionType { get; init; } = "Recommend Mode of Procurement";
-    public string ResolutionNumber { get; init; } = string.Empty;
-    public DateTime DateResolved { get; init; } = DateTime.UtcNow;
-    public string? WhereasClause { get; init; }
+    public string? Title { get; init; }
+    public string? Status { get; init; }
+    public string? ResolutionType { get; init; }
+    public string? ResolutionNumber { get; init; }
+    public DateTime? DateResolved { get; init; }
+    public string? ResolvedLocation { get; init; }
+    public List<WhereasClauseItemInputDto>? WhereasClauses { get; init; }
     public Guid? EndUserRepresentativeId { get; init; }
     public Guid? TechRepresentativeId { get; init; }
 }

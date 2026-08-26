@@ -118,6 +118,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ProcurementModeThreshold>? ProcurementModeThresholds { get; set; }
     public DbSet<ProcurementProject>? ProcurementProjects { get; set; }
     public DbSet<BACResolution>? BACResolutions { get; set; }
+    public DbSet<BACResolutionWhereasClauseItem>? BACResolutionWhereasClauseItems { get; set; }
+    public DbSet<BACMember>? BACMembers { get; set; }
     public DbSet<BiddingActivitySchedule>? BiddingActivitySchedules { get; set; }
     public DbSet<SupplierBid>? SupplierBids { get; set; }
     public DbSet<SupplierBidItem>? SupplierBidItems { get; set; }
@@ -2940,6 +2942,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .HasForeignKey<ProcurementProject>(p => p.ConsolidatedPRId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            e.HasIndex(p => p.APPItemId);
+
+            e.HasOne(p => p.APPItem)
+                .WithMany()
+                .HasForeignKey(p => p.APPItemId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             e.HasOne(p => p.EndUserRepresentative)
                 .WithMany()
                 .HasForeignKey(p => p.EndUserRepresentativeId)
@@ -2949,6 +2958,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .WithMany()
                 .HasForeignKey(p => p.TechRepresentativeId)
                 .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<PurchaseRequest>(e =>
+        {
+            e.HasOne(pr => pr.ProcurementProject)
+                .WithMany()
+                .HasForeignKey(pr => pr.ProcurementProjectId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         base.OnModelCreating(modelBuilder);
@@ -3215,6 +3232,22 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
             entity.HasIndex(e => e.StartedAt);
             entity.HasIndex(e => e.Status);
+        });
+
+        // BACResolutionWhereasClauseItem
+        modelBuilder.Entity<BACResolutionWhereasClauseItem>(entity =>
+        {
+            entity.ToTable("BACResolutionWhereasClauseItems", "procurement");
+
+            entity.HasOne(item => item.BACResolution)
+                .WithMany(res => res.WhereasClauseItems)
+                .HasForeignKey(item => item.BACResolutionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(item => item.BACResolutionWhereasClause)
+                .WithMany()
+                .HasForeignKey(item => item.BACResolutionWhereasClauseId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 
