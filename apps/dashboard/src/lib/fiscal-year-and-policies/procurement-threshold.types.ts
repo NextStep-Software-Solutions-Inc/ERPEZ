@@ -23,7 +23,7 @@ export type ProcurementMode = {
   procurementCategory: {
     id: string
     name: string | null
-  }
+  } | null
   createdAt: string
   updatedAt: string | null
 }

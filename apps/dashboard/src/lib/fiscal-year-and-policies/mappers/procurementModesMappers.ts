@@ -34,8 +34,8 @@ export function mapProcurementModeToDisplay(
     maxThreshold: mode.maxThreshold,
     isArchived: mode.isArchived,
     isActive: mode.isActive,
-    categoryId: mode.procurementCategory.id,
-    categoryName: mode.procurementCategory.name,
+    categoryId: mode.procurementCategory?.id ?? '',
+    categoryName: mode.procurementCategory?.name ?? 'Uncategorized',
     createdAt: mode.createdAt,
     updatedAt: mode.updatedAt,
   }
