@@ -7,7 +7,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { KPICombination } from '../types'
+import type { KPICombination } from '../types'
 
 interface KPIActionsProps {
   kpi: KPICombination
