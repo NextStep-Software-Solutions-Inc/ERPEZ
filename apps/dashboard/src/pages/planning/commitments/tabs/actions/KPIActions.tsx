@@ -1,4 +1,4 @@
-import { MoreHorizontal, Eye, Edit, Plus } from 'lucide-react'
+import { MoreHorizontal, Eye, Edit, ListPlus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -7,7 +7,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import type { KPICombination } from '../CommitmentsOPCRAccordion'
+import { KPICombination } from '../types'
 
 interface KPIActionsProps {
   kpi: KPICombination
@@ -17,7 +17,13 @@ interface KPIActionsProps {
   onAddActivity?: (kpi: KPICombination) => void
 }
 
-export function KPIActions({ kpi, hasTargets = false, onView, onEditTarget, onAddActivity }: KPIActionsProps) {
+export function KPIActions({
+  kpi,
+  hasTargets = false,
+  onView,
+  onEditTarget,
+  onAddActivity,
+}: KPIActionsProps) {
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -31,21 +37,31 @@ export function KPIActions({ kpi, hasTargets = false, onView, onEditTarget, onAd
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-[180px]">
-        <DropdownMenuItem onClick={() => onView?.(kpi)} className="gap-2 cursor-pointer">
+        <DropdownMenuItem
+          onClick={() => onView?.(kpi)}
+          className="gap-2 cursor-pointer"
+        >
           <Eye className="h-4 w-4" />
           View Details
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => onEditTarget?.(kpi)} className="gap-2 cursor-pointer">
+        <DropdownMenuItem
+          onClick={() => onEditTarget?.(kpi)}
+          className="gap-2 cursor-pointer"
+        >
           <Edit className="h-4 w-4" />
-          {kpi.status === 'Shopped' 
-            ? (hasTargets ? 'Edit Target' : 'Set Target')
-            : 'Edit Target'
-          }
+          {kpi.status === 'Shopped'
+            ? hasTargets
+              ? 'Edit Target'
+              : 'Set Target'
+            : 'Edit Target'}
         </DropdownMenuItem>
         <DropdownMenuSeparator />
-        <DropdownMenuItem onClick={() => onAddActivity?.(kpi)} className="gap-2 cursor-pointer">
-          <Plus className="h-4 w-4" />
+        <DropdownMenuItem
+          onClick={() => onAddActivity?.(kpi)}
+          className="gap-2 cursor-pointer"
+        >
+          <ListPlus className="h-4 w-4" />
           Add Activity
         </DropdownMenuItem>
       </DropdownMenuContent>

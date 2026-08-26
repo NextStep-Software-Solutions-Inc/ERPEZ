@@ -1,4 +1,4 @@
-import { MoreHorizontal, Eye, Edit, Plus } from 'lucide-react'
+import { MoreHorizontal, Eye, Edit, ListPlus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import {
   DropdownMenu,
@@ -7,7 +7,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import type { SubKPI, KPICombination } from '../CommitmentsOPCRAccordion'
+import type { SubKPI, KPICombination } from '../types'
 
 interface SubKPIActionsProps {
   subKpi: SubKPI
@@ -46,7 +46,7 @@ export function SubKPIActions({ subKpi, kpiCombination, hasTargets = false, onVi
         </DropdownMenuItem>
         <DropdownMenuSeparator />
         <DropdownMenuItem onClick={() => onAddActivity?.(kpiCombination, subKpi)} className="gap-2 cursor-pointer">
-          <Plus className="h-4 w-4" />
+          <ListPlus className="h-4 w-4" />
           Add Activity
         </DropdownMenuItem>
       </DropdownMenuContent>
