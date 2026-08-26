@@ -25,6 +25,12 @@ public class GetDashboardTasksQueryHandler(
         if (!query.TaskType.HasValue || query.TaskType == TaskType.WFP || query.TaskType == TaskType.WFPExternal)
             tasks.AddRange(await GetWFPTasksAsync(officeId, query.TaskType, cancellationToken));
 
+        if (!query.TaskType.HasValue || query.TaskType == TaskType.Budget)
+            tasks.AddRange(await GetBudgetTasksAsync(query.FiscalYearId, officeId, cancellationToken));
+
+        if (!query.TaskType.HasValue || query.TaskType == TaskType.Procurement)
+            tasks.AddRange(await GetProcurementTasksAsync(query.FiscalYearId, officeId, cancellationToken));
+
         if (query.Priority.HasValue)
             tasks = tasks.Where(t => t.Priority == query.Priority.Value).ToList();
 
@@ -38,6 +44,140 @@ public class GetDashboardTasksQueryHandler(
             .ToList();
 
         return ApiResponse<List<SmartTaskCardResponse>>.Success(ordered);
+    }
+
+    private async Task<List<SmartTaskCardResponse>> GetBudgetTasksAsync(
+        Guid fiscalYearId, Guid? officeId, CancellationToken cancellationToken)
+    {
+        var libQuery = unitOfWork.LineItemBudgetRepository.Query()
+            .Where(l => !l.IsDeleted
+                && l.FiscalYearId == fiscalYearId
+                && (l.Status == "Submitted" || l.Status == "Returned" || l.Status == "PendingCeilingApproval"));
+
+        if (officeId.HasValue)
+            libQuery = libQuery.Where(l => l.OfficeId == officeId.Value);
+
+        var libs = await unitOfWork.LineItemBudgetRepository.ToListAsync(libQuery, cancellationToken);
+        var libIds = libs.Select(l => l.Id).ToList();
+        var officeIds = libs.Where(l => l.OfficeId.HasValue).Select(l => l.OfficeId!.Value).Distinct().ToList();
+
+        var officeNames = await unitOfWork.OfficeRepository.ToListAsync(
+            unitOfWork.OfficeRepository.Query()
+                .Where(o => officeIds.Contains(o.Id))
+                .Select(o => new { o.Id, o.Name }),
+            cancellationToken);
+        var officeNameLookup = officeNames.ToDictionary(x => x.Id, x => x.Name);
+
+        var details = await unitOfWork.LineItemBudgetDetailRepository.ToListAsync(
+            unitOfWork.LineItemBudgetDetailRepository.Query()
+                .Where(d => !d.IsDeleted && libIds.Contains(d.LineItemBudgetId))
+                .Select(d => new { d.LineItemBudgetId, d.Budget, ObjectCode = d.Object.Code, ObjectName = d.Object.Name }),
+            cancellationToken);
+
+        var detailsByLib = details.GroupBy(d => d.LineItemBudgetId).ToDictionary(g => g.Key, g => g.ToList());
+
+        var cards = new List<SmartTaskCardResponse>();
+        foreach (var lib in libs)
+        {
+            var libDetails = detailsByLib.GetValueOrDefault(lib.Id, []);
+            var total = libDetails.Sum(d => d.Budget);
+            var officeName = lib.OfficeId.HasValue ? officeNameLookup.GetValueOrDefault(lib.OfficeId.Value, "Office") : "Office";
+            var dueDate = lib.CreatedAt.AddDays(7);
+            var firstDetail = libDetails.FirstOrDefault();
+
+            cards.Add(new SmartTaskCardResponse
+            {
+                TaskId = lib.Id,
+                Priority = DeterminePriority(dueDate, lib.Status),
+                DueDate = dueDate,
+                AssignedToUserId = Guid.Empty,
+                AssignedToUserName = "Budget Approver",
+                TaskType = TaskType.Budget,
+                ActionTitle = lib.Status.Equals("Submitted", StringComparison.OrdinalIgnoreCase)
+                    ? $"Approve Line-Item Budget - {officeName}"
+                    : $"Review LIB ({lib.Status}) - {officeName}",
+                Description = $"LIB for {officeName} - {lib.LIBNumber}",
+                RelatedEntityId = lib.Id,
+                RelatedEntityType = "LineItemBudget",
+                ContextStatistics = new TaskContextStatistics
+                {
+                    BudgetContext = new BudgetTaskContext
+                    {
+                        UACSCode = firstDetail?.ObjectCode ?? "5-02",
+                        LineItemDescription = firstDetail?.ObjectName ?? (lib.Name ?? "Line Item Budget"),
+                        AllocatedAmount = total,
+                        UtilizedAmount = total,
+                        UtilizationPercentage = 100m,
+                        WarningLevel = "Normal"
+                    }
+                },
+                CreatedAt = lib.CreatedAt,
+                Status = lib.Status
+            });
+        }
+
+        return cards;
+    }
+
+    private async Task<List<SmartTaskCardResponse>> GetProcurementTasksAsync(
+        Guid fiscalYearId, Guid? officeId, CancellationToken cancellationToken)
+    {
+        var ppmpQuery = unitOfWork.PPMPRepository.Query()
+            .Where(p => !p.IsDeleted
+                && p.FiscalYearId == fiscalYearId
+                && (p.Status == StatusEnum.Submitted || p.Status == StatusEnum.Returned));
+
+        if (officeId.HasValue)
+            ppmpQuery = ppmpQuery.Where(p => p.OfficeId == officeId.Value);
+
+        var ppmps = await unitOfWork.PPMPRepository.ToListAsync(ppmpQuery, cancellationToken);
+        var officeIds = ppmps.Select(p => p.OfficeId).Distinct().ToList();
+
+        var officeNames = await unitOfWork.OfficeRepository.ToListAsync(
+            unitOfWork.OfficeRepository.Query()
+                .Where(o => officeIds.Contains(o.Id))
+                .Select(o => new { o.Id, o.Name }),
+            cancellationToken);
+        var officeNameLookup = officeNames.ToDictionary(x => x.Id, x => x.Name);
+
+        var cards = new List<SmartTaskCardResponse>();
+        foreach (var ppmp in ppmps)
+        {
+            var officeName = officeNameLookup.GetValueOrDefault(ppmp.OfficeId, "Office");
+            var dueDate = ppmp.SubmittedDate?.AddDays(7) ?? ppmp.CreatedAt.AddDays(7);
+            var isSubmitted = ppmp.Status == StatusEnum.Submitted;
+
+            cards.Add(new SmartTaskCardResponse
+            {
+                TaskId = ppmp.Id,
+                Priority = DeterminePriority(dueDate, ppmp.Status.ToString()),
+                DueDate = dueDate,
+                AssignedToUserId = Guid.Empty,
+                AssignedToUserName = "BAC Secretariat",
+                TaskType = TaskType.Procurement,
+                ActionTitle = isSubmitted
+                    ? $"Review PPMP Submission - {officeName}"
+                    : $"Review Returned PPMP - {officeName}",
+                Description = $"PPMP {ppmp.PPMPNumber} for {officeName}",
+                RelatedEntityId = ppmp.Id,
+                RelatedEntityType = "PPMP",
+                ContextStatistics = new TaskContextStatistics
+                {
+                    ProcurementContext = new ProcurementTaskContext
+                    {
+                        TotalItems = 1,
+                        ConsolidatedItems = ppmp.ConsolidatedIntoId != null ? 1 : 0,
+                        ConsolidationProgress = ppmp.ConsolidatedIntoId != null ? 100m : 0m,
+                        PendingItems = ppmp.ConsolidatedIntoId == null ? 1 : 0,
+                        Status = ppmp.Status.ToString()
+                    }
+                },
+                CreatedAt = ppmp.CreatedAt,
+                Status = ppmp.Status.ToString()
+            });
+        }
+
+        return cards;
     }
 
     private async Task<List<SmartTaskCardResponse>> GetOPCRTasksAsync(
