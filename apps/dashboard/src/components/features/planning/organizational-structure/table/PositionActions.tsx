@@ -17,13 +17,13 @@ import PermissionCheck from '@/components/PermissionCheck'
 interface PositionActionsProps {
   data: Position
   readonly?: boolean
-  actions: MetaActions
+  actions?: MetaActions
 }
 
 export default function PositionActions({
   data,
   readonly = false,
-  actions = [],
+  actions = ['read', 'write', 'delete'],
 }: PositionActionsProps) {
   if (readonly) return null
 
@@ -37,10 +37,10 @@ export default function PositionActions({
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
         <div className="p-2 flex flex-col gap-2">
-          <PermissionCheck action="write" actions={actions}>
+          <PermissionCheck action="write" actions={actions} allowWhenActionsEmpty>
             <EditLink data={data} />
           </PermissionCheck>
-          <PermissionCheck action="delete" actions={actions}>
+          <PermissionCheck action="delete" actions={actions} allowWhenActionsEmpty>
             <DeleteLink id={data.id} />
           </PermissionCheck>
         </div>

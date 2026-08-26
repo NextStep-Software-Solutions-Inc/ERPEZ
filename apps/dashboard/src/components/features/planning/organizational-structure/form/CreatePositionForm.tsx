@@ -149,9 +149,14 @@ export function CreatePositionForm({ onCreated, onClose, selectedOrgUnitId, isDi
   const hasCode = typeof formValues.code === 'string' && formValues.code.trim() !== ''
   const hasType = typeof formValues.type === 'string' && formValues.type !== ''
   const hasPlantillaType = typeof formValues.plantillaType === 'string' && formValues.plantillaType !== ''
-  const needsPlantillaItem =
-    hasPlantillaType &&
-    !positionConfig.optionalPlantillaTypes.includes(formValues.plantillaType)
+  const selectedPlantillaType = plantillaTypes.find((pt) => pt.id === formValues.plantillaType)
+  const plantillaTypeName = selectedPlantillaType?.name?.toLowerCase() || ''
+  const isPlantillaTypeOptional =
+    positionConfig.optionalPlantillaTypes.includes(formValues.plantillaType) ||
+    plantillaTypeName.includes('job order') ||
+    plantillaTypeName.includes('cos') ||
+    plantillaTypeName.includes('contract of service')
+  const needsPlantillaItem = hasPlantillaType && !isPlantillaTypeOptional
   const hasPlantillaItem =
     !needsPlantillaItem ||
     (typeof formValues.plantillaItem === 'string' && formValues.plantillaItem.trim() !== '')
@@ -293,7 +298,13 @@ export function CreatePositionForm({ onCreated, onClose, selectedOrgUnitId, isDi
           name="plantillaItem"
           children={(field) => {
             const plantillaType = form.getFieldValue('plantillaType')
-            const isOptional = positionConfig.optionalPlantillaTypes.includes(plantillaType as string)
+            const selectedType = plantillaTypes.find((pt) => pt.id === plantillaType)
+            const typeName = selectedType?.name?.toLowerCase() || ''
+            const isOptional =
+              positionConfig.optionalPlantillaTypes.includes(plantillaType as string) ||
+              typeName.includes('job order') ||
+              typeName.includes('cos') ||
+              typeName.includes('contract of service')
             const isDisabled = isOptional
             return (
               <div className="space-y-2">
