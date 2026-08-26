@@ -10,7 +10,7 @@
  * - Create new form button via dialog
  */
 
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { useAtom, useSetAtom, useAtomValue } from 'jotai'
 import { useNavigate } from '@tanstack/react-router'
 import { useQueryClient } from '@tanstack/react-query'
@@ -58,18 +58,34 @@ export default function MarketScopingDashboardPage() {
     pageSize: 10,
   })
 
-  // Fetch market scoping forms from API
+  // Construct Sieve filter string for backend database search
+  const sieveFilters = useMemo(() => {
+    const parts: string[] = []
+    if (filter.searchTerm.trim()) {
+      parts.push(`ProjectName@=${filter.searchTerm.trim()}`)
+    }
+    if (filter.statusFilter && filter.statusFilter !== 'all') {
+      parts.push(`Status==${filter.statusFilter}`)
+    }
+    return parts.length > 0 ? parts.join(',') : undefined
+  }, [filter.searchTerm, filter.statusFilter])
+
+  // Reset pagination to page 1 whenever global search or status filter changes
+  useEffect(() => {
+    setPagination((prev) => ({ ...prev, pageIndex: 0 }))
+  }, [sieveFilters])
+
+  // Fetch paginated market scoping forms from API with server-side pagination & filters
   const { data: apiResponse, isLoading, error } = useMarketScopings({
     pathParams: {},
     queryParams: {
       pageNumber: pagination.pageIndex + 1,
       pageSize: pagination.pageSize,
+      filters: sieveFilters,
     },
   })
 
   // Transform API response to component data
-  // The API response is APIResponse<ListMarketScopingResponse>.
-  // Its data property contains ListMarketScopingResponse, which has data (the forms array) and pagination.
   const forms = useMemo(() => {
     if (!apiResponse?.data) return []
     if (Array.isArray(apiResponse.data)) {
@@ -81,35 +97,36 @@ export default function MarketScopingDashboardPage() {
     return []
   }, [apiResponse])
 
-  const pageCount = useMemo(() => {
-    if (!apiResponse) return 0
-    const rawData = (apiResponse as unknown) as Record<string, unknown>
-    if ('pagination' in rawData && rawData.pagination && typeof rawData.pagination === 'object') {
-      const pag = rawData.pagination as Record<string, unknown>
-      if (typeof pag.totalPages === 'number') {
-        return pag.totalPages
-      }
-    }
-    if ('totalPages' in rawData && typeof rawData.totalPages === 'number') {
-      return rawData.totalPages
-    }
-    return 1
-  }, [apiResponse])
-
   const totalCount = useMemo(() => {
     if (!apiResponse) return 0
     const rawData = (apiResponse as unknown) as Record<string, unknown>
     if ('pagination' in rawData && rawData.pagination && typeof rawData.pagination === 'object') {
       const pag = rawData.pagination as Record<string, unknown>
-      if (typeof pag.total === 'number') {
-        return pag.total
-      }
+      if (typeof pag.total === 'number') return pag.total
+      if (typeof pag.totalCount === 'number') return pag.totalCount
     }
     if ('totalCount' in rawData && typeof rawData.totalCount === 'number') {
       return rawData.totalCount
     }
+    if ('total' in rawData && typeof rawData.total === 'number') {
+      return rawData.total
+    }
     return forms.length
-  }, [apiResponse, forms])
+  }, [apiResponse, forms.length])
+
+  const pageCount = useMemo(() => {
+    if (!apiResponse) return 1
+    const rawData = (apiResponse as unknown) as Record<string, unknown>
+    if ('pagination' in rawData && rawData.pagination && typeof rawData.pagination === 'object') {
+      const pag = rawData.pagination as Record<string, unknown>
+      if (typeof pag.totalPages === 'number') return pag.totalPages
+      if (typeof pag.pageCount === 'number') return pag.pageCount
+    }
+    if ('totalPages' in rawData && typeof rawData.totalPages === 'number') {
+      return rawData.totalPages
+    }
+    return Math.ceil(totalCount / pagination.pageSize) || 1
+  }, [apiResponse, totalCount, pagination.pageSize])
 
   const actions: MetaActions = ['write', 'delete']
 
@@ -161,23 +178,6 @@ export default function MarketScopingDashboardPage() {
     }
   }, [forms])
 
-  // Apply filters from atom-managed state
-  const filteredForms = useMemo(() => {
-    let rows = forms
-    if (filter.statusFilter !== 'all') {
-      rows = rows.filter((f) => f.status === filter.statusFilter)
-    }
-    if (filter.searchTerm.trim()) {
-      const q = filter.searchTerm.toLowerCase()
-      rows = rows.filter(
-        (f) =>
-          f.projectName.toLowerCase().includes(q) ||
-          f.departmentUnit.toLowerCase().includes(q),
-      )
-    }
-    return rows
-  }, [forms, filter])
-
   // Create columns using the factory function
   const columns = useMemo(
     () =>
@@ -189,8 +189,8 @@ export default function MarketScopingDashboardPage() {
     [navigate],
   )
 
-  // Show loading state
-  if (isLoading) {
+  // Show initial loading state only when no data has loaded yet
+  if (isLoading && !apiResponse) {
     return (
       <div className="space-y-6">
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden p-8">
@@ -353,7 +353,7 @@ export default function MarketScopingDashboardPage() {
         <div className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden">
           <TemplateTable
             columns={columns}
-            data={filteredForms}
+            data={forms}
             actions={actions}
             readonly={false}
             toolbar={(table) => <MarketScopingTableToolbar table={table} />}
@@ -371,13 +371,13 @@ export default function MarketScopingDashboardPage() {
             <MarketScopingTableToolbar />
           </div>
           
-          {filteredForms.length === 0 ? (
+          {forms.length === 0 ? (
             <div className="bg-white dark:bg-slate-950/20 rounded-xl border border-gray-200 dark:border-slate-800 p-12 text-center shadow-xs">
               <p className="text-slate-500 text-sm font-semibold">No market scoping forms found matching the filters.</p>
             </div>
           ) : (
             <MarketScopingCardView
-              data={filteredForms}
+              data={forms}
               onViewDetails={handleViewDetails}
               onEdit={handleEdit}
               onDelete={handleDeleteClick}

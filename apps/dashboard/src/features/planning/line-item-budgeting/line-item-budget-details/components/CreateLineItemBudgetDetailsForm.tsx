@@ -49,7 +49,9 @@ const useGetChildObjects = (parentId: string | null) => {
     pathParams: {},
     queryParams: {
       filters: parentId ? `parentId==${parentId}` : 'parentId==null',
+      pageSize: 1000,
     },
+    enabled: !!parentId,
   })
 }
 
@@ -157,12 +159,47 @@ export default function CreateLineItemBudgetDetailsForm({
 }: CreateLineItemBudgetDetailsFormProps) {
   const queryClient = useQueryClient()
   const { mutateAsync, isPending } = useCreateLineItemBudgetDetails()
-  const { data: objectsResponse, isLoading: isLoadingObjects } = useGetObjects({
+
+  // Fetch root objects (parentId==null) to locate the Expenses root object
+  const { data: rootObjectsResponse, isLoading: isLoadingRootObjects } = useGetObjects({
     pathParams: {},
     queryParams: {
       filters: `parentId==null`,
+      pageSize: 1000,
     },
   })
+
+  // Locate the Expenses root container object if one exists
+  const expensesRootObject = useMemo(() => {
+    return rootObjectsResponse?.data?.find(
+      (item) =>
+        item.code === 'CLS:Expenses' ||
+        item.name?.toLowerCase() === 'expenses' ||
+        item.code === '50000000' ||
+        item.code === '5000000000',
+    )
+  }, [rootObjectsResponse?.data])
+
+  // Fetch expenditure types (children of Expenses, if an Expenses container exists)
+  const { data: expenditureTypesResponse, isLoading: isLoadingExpenditureTypes } = useGetObjects({
+    pathParams: {},
+    queryParams: {
+      filters: expensesRootObject ? `parentId==${expensesRootObject.id}` : undefined,
+      pageSize: 1000,
+    },
+    enabled: !!expensesRootObject,
+  })
+
+  const expenditureTypes = useMemo(() => {
+    // If an Expenses root container exists and has children, use those children (PS, MOOE, CO, etc.)
+    if (expensesRootObject && expenditureTypesResponse?.data && expenditureTypesResponse.data.length > 0) {
+      return expenditureTypesResponse.data
+    }
+    // Otherwise, the root objects themselves (parentId==null) are the expenditure types (e.g. PS, MOOE, CO)
+    return (rootObjectsResponse?.data ?? []).filter(
+      (item) => item.id !== expensesRootObject?.id,
+    )
+  }, [expensesRootObject, expenditureTypesResponse?.data, rootObjectsResponse?.data])
 
   // Period allocation state
   const [periodAllocation, setPeriodAllocation] = useState<
@@ -177,6 +214,7 @@ export default function CreateLineItemBudgetDetailsForm({
     useState<ConcurrentSubmissionOutcome | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [selectedParentId, setSelectedParentId] = useState<string | null>(null)
+  const [autoInheritedName, setAutoInheritedName] = useState<string | null>(null)
 
   const lineItemDefaults: LineItemBudgetDetailsDefaults = {
     objectId: '',
@@ -208,7 +246,7 @@ export default function CreateLineItemBudgetDetailsForm({
         const finalObjectId = value.itemOfExpenditureId || value.objectId
 
         // Get the selected parent object to check if it has children
-        const parentObject = objectsResponse?.data?.find(
+        const parentObject = expenditureTypes?.find(
           (item) => item.id === value.objectId,
         )
 
@@ -361,7 +399,7 @@ export default function CreateLineItemBudgetDetailsForm({
       periodAllocation,
       activityStartDate,
       activityEndDate,
-      objectsResponse?.data,
+      expenditureTypes,
     ],
   )
 
@@ -377,9 +415,9 @@ export default function CreateLineItemBudgetDetailsForm({
 
   // Get the selected parent object details
   const selectedParentObject = useMemo(() => {
-    if (!objectsResponse?.data) return undefined
-    return objectsResponse.data.find((item) => item.id === selectedParentId)
-  }, [selectedParentId, objectsResponse?.data])
+    if (!expenditureTypes) return undefined
+    return expenditureTypes.find((item) => item.id === selectedParentId)
+  }, [selectedParentId, expenditureTypes])
 
   // Fetch child objects only when parent is selected and has children
   const { data: childObjectsResponse, isLoading: isLoadingChildObjects } =
@@ -388,6 +426,7 @@ export default function CreateLineItemBudgetDetailsForm({
   const currentTimelineType = form.getFieldValue('timelineType')
   const isPeriodTimeline = PERIOD_TIMELINE_TYPES.includes(currentTimelineType)
   const isLoading = isPending || isSubmitting
+  const isLoadingTypes = isLoadingRootObjects || isLoadingExpenditureTypes
 
   return (
     <form
@@ -397,13 +436,13 @@ export default function CreateLineItemBudgetDetailsForm({
         e.stopPropagation()
         form.handleSubmit()
       }}
-      className="space-y-6"
+      className="space-y-3.5"
     >
       {/* Type of Expenditure Selection */}
       <form.Field
         name="objectId"
         children={(field) => (
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor={field.name} className="font-medium">
               Type of Expenditure
             </Label>
@@ -414,25 +453,39 @@ export default function CreateLineItemBudgetDetailsForm({
                 setSelectedParentId(value)
                 // Reset child selection when parent changes
                 form.setFieldValue('itemOfExpenditureId', '')
+
+                // Smart description inheritance if category has no child items
+                const selectedParent = expenditureTypes.find((item) => item.id === value)
+                if (selectedParent && (!selectedParent.childObjectCount || selectedParent.childObjectCount === 0)) {
+                  const currentDesc = form.getFieldValue('description') as string | undefined
+                  const isEmpty = !currentDesc || currentDesc.trim() === ''
+                  const matchesPreviousAuto = autoInheritedName && currentDesc === autoInheritedName
+                  const matchesAnyObjName = expenditureTypes.some((i) => i.name === currentDesc)
+
+                  if (isEmpty || matchesPreviousAuto || matchesAnyObjName) {
+                    form.setFieldValue('description', selectedParent.name || '')
+                    setAutoInheritedName(selectedParent.name || null)
+                  }
+                }
               }}
-              disabled={isLoading || isLoadingObjects}
+              disabled={isLoading || isLoadingTypes}
             >
               <SelectTrigger id={field.name} className="w-full">
                 <SelectValue
                   placeholder={
-                    isLoadingObjects
-                      ? 'Loading items...'
+                    isLoadingTypes
+                      ? 'Loading types of expenditure...'
                       : 'Select type of expenditure'
                   }
                 />
               </SelectTrigger>
               <SelectContent>
-                {objectsResponse?.data?.map((item) => (
+                {expenditureTypes.map((item) => (
                   <SelectItem key={item.id} value={item.id}>
                     {item.name}
                     {item.code ? ` (${item.code})` : ''}
                   </SelectItem>
-                )) || []}
+                ))}
               </SelectContent>
             </Select>
             <FieldInfo field={field} />
@@ -445,13 +498,33 @@ export default function CreateLineItemBudgetDetailsForm({
         <form.Field
           name="itemOfExpenditureId"
           children={(field) => (
-            <div className="space-y-2">
+            <div className="space-y-1.5">
               <Label htmlFor={field.name} className="font-medium">
                 Select Item of Expenditure
               </Label>
               <Select
                 value={field.state.value || ''}
-                onValueChange={field.handleChange}
+                onValueChange={(val) => {
+                  field.handleChange(val)
+
+                  // Smart Description Inheritance Logic
+                  const children = childObjectsResponse?.data || []
+                  const selectedChild = children.find((item) => item.id === val)
+
+                  if (selectedChild) {
+                    const currentDesc = form.getFieldValue('description') as string | undefined
+                    const isEmpty = !currentDesc || currentDesc.trim() === ''
+                    const matchesPreviousAuto = autoInheritedName && currentDesc === autoInheritedName
+                    const matchesAnyObjName = children.some((i) => i.name === currentDesc)
+
+                    // Rule A (Empty) or Rule B (Default Match): update Description
+                    if (isEmpty || matchesPreviousAuto || matchesAnyObjName) {
+                      form.setFieldValue('description', selectedChild.name || '')
+                      setAutoInheritedName(selectedChild.name || null)
+                    }
+                    // Rule C (Custom Edit): If user manually edited description, do NOT overwrite it!
+                  }
+                }}
                 disabled={isLoading || isLoadingChildObjects}
               >
                 <SelectTrigger id={field.name} className="w-full">
@@ -482,10 +555,17 @@ export default function CreateLineItemBudgetDetailsForm({
       <form.Field
         name="description"
         children={(field) => (
-          <div className="space-y-2">
-            <Label htmlFor={field.name} className="font-medium">
-              Description
-            </Label>
+          <div className="space-y-1.5">
+            <div className="flex items-center justify-between">
+              <Label htmlFor={field.name} className="font-medium">
+                Description
+              </Label>
+              {autoInheritedName && field.state.value === autoInheritedName && (
+                <span className="text-[10px] font-semibold bg-blue-50 text-blue-700 border border-blue-200 px-2 py-0.5 rounded-full">
+                  Auto-inherited
+                </span>
+              )}
+            </div>
             <Input
               id={field.name}
               type="text"
@@ -504,7 +584,7 @@ export default function CreateLineItemBudgetDetailsForm({
       <form.Field
         name="timelineType"
         children={(field) => (
-          <div className="space-y-2">
+          <div className="space-y-1.5">
             <Label htmlFor={field.name} className="font-medium">
               Timeline Type
             </Label>

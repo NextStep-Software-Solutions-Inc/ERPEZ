@@ -1,6 +1,3 @@
-import { getMockBiddingDocumentDatabase } from '../../bidding-documents/data/mockBiddingDocumentsData'
-import { useBiddingDocumentsStore } from '../../bidding-documents/store/biddingDocumentsStore'
-import { getMockBiddingScheduleDatabase } from '../../bidding-schedule/data/mockBiddingScheduleData'
 import type { BiddingSchedule } from '../../bidding-schedule/types'
 import { useBiddingScheduleStore } from '../../bidding-schedule/store/biddingScheduleStore'
 import { useConsolidatedPRStore } from '../../consolidated-pr/store/consolidatedPRStore'
@@ -13,9 +10,7 @@ import type {
 } from '../types'
 
 export type BacExecutionPrimaryLabel =
-  | 'Ready for Scheduling'
-  | 'Scheduled'
-  | 'Completed'
+  'Ready for Scheduling' | 'Scheduled' | 'Completed'
 
 export type BacExecutionState = {
   primaryLabel: BacExecutionPrimaryLabel | null
@@ -224,7 +219,7 @@ export function getBacResolutionScheduleById(bacResolutionId: string) {
     scheduleStoreSchedules.find(
       (candidate) => candidate.bacResolutionId === bacResolutionId,
     ) ??
-    getMockBiddingScheduleDatabase().find(
+    ([] as BiddingSchedule[]).find(
       (candidate) => candidate.bacResolutionId === bacResolutionId,
     ) ??
     null
@@ -233,7 +228,6 @@ export function getBacResolutionScheduleById(bacResolutionId: string) {
 
 export function resolveBacScheduleEntryState({
   resolution,
-  role,
 }: {
   resolution: BacResolution
   role: BacResolutionRole
@@ -283,25 +277,4 @@ export function getBacResolutionScheduleRoutePath(
       ? '/v2/bac-resolutions-public-bidding/$resolutionId/bidding-schedule'
       : '/v2/bac-resolutions/$resolutionId/bidding-schedule'
   ) as BacResolutionScheduleRoutePath
-}
-
-export function getBacExecutionStateForResolution(resolution: BacResolution) {
-  const documentStoreRecords = useBiddingDocumentsStore.getState().documents
-
-  const schedule = getBacResolutionScheduleById(resolution.id)
-
-  const biddingDocument =
-    documentStoreRecords.find(
-      (candidate) => candidate.bacResolutionId === resolution.id,
-    ) ??
-    getMockBiddingDocumentDatabase().find(
-      (candidate) => candidate.bacResolutionId === resolution.id,
-    ) ??
-    null
-
-  return resolveBacExecutionState({
-    resolution,
-    schedule,
-    biddingDocumentStatus: biddingDocument?.status ?? null,
-  })
 }

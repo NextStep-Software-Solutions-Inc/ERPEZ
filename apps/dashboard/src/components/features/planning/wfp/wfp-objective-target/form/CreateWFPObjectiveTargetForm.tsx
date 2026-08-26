@@ -1,10 +1,8 @@
 import { useForm } from '@tanstack/react-form'
 import { z } from 'zod'
 import { Loader2 } from 'lucide-react'
-import { useAtom } from 'jotai'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { toast } from 'sonner'
-import { createFormDataAtom } from '../atoms'
 import {
   MONTH_ABBREVIATIONS,
   QUARTER_LABELS,
@@ -54,7 +52,6 @@ export default function CreateWFPObjectiveTargetForm({
   wfpData,
   initialValues = {}
 }: CreateWFPObjectiveTargetFormProps) {
-  const [formData, setFormData] = useAtom(createFormDataAtom)
   const initialTimelineType = initialValues.dates && initialValues.dates.length > 0
     ? initialValues.dates[0].timelineType
     : 'Monthly'
@@ -195,10 +192,10 @@ export default function CreateWFPObjectiveTargetForm({
   }, [selectedType, wfpData])
   const form = useForm({
     defaultValues: {
-      activityName: initialValues.activityName || formData.activityName || '',
-      indicator: initialValues.indicator || formData.indicator || '',
-      weight: initialValues.weight ?? formData.weight ?? 0,
-      dates: initialValues.dates || formData.dates || [],
+      activityName: initialValues.activityName || '',
+      indicator: initialValues.indicator || '',
+      weight: initialValues.weight ?? 0,
+      dates: initialValues.dates || [],
       wfpObjectiveId,
     } as CreateWFPObjectiveTargetValues,
     validators: {
@@ -229,21 +226,6 @@ export default function CreateWFPObjectiveTargetForm({
     const dates = buildDates()
     form.setFieldValue('dates', dates)
   }, [buildDates, form])
-
-  // Sync form state to Jotai atom for persistence
-  useEffect(() => {
-    const unsubscribe = form.store.subscribe(() => {
-      const values = form.state.values;
-      setFormData({
-        wfpObjectiveId: values.wfpObjectiveId,
-        activityName: values.activityName,
-        indicator: values.indicator,
-        weight: values.weight,
-        dates: values.dates,
-      });
-    });
-    return unsubscribe;
-  }, [form.store, setFormData])
 
   // Reset form when onCancel is called
   const handleCancel = () => {

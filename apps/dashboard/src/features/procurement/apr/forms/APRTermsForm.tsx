@@ -12,6 +12,8 @@ import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 
+import { ModeOfDelivery, InsufficientFundsAction } from '../types'
+
 interface APRTermsFormProps {
   /** TanStack Form instance from useForm<APRTermsFormSchema> */
   form: {
@@ -40,14 +42,14 @@ export function APRTermsForm({ form }: APRTermsFormProps) {
                   onValueChange={field.handleChange}
                 >
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="FAST_LANE" id="fast-lane" />
+                    <RadioGroupItem value={ModeOfDelivery.FAST_LANE} id="fast-lane" />
                     <Label htmlFor="fast-lane" className="cursor-pointer">
                       Fast Lane
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2">
                     <RadioGroupItem
-                      value="SCHEDULED_PICKUP"
+                      value={ModeOfDelivery.SCHEDULED_PICKUP}
                       id="scheduled-pickup"
                     />
                     <Label htmlFor="scheduled-pickup" className="cursor-pointer">
@@ -55,7 +57,7 @@ export function APRTermsForm({ form }: APRTermsFormProps) {
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="DOOR_TO_DOOR" id="door-to-door" />
+                    <RadioGroupItem value={ModeOfDelivery.DOOR_TO_DOOR} id="door-to-door" />
                     <Label htmlFor="door-to-door" className="cursor-pointer">
                       Door-to-Door
                     </Label>
@@ -90,19 +92,19 @@ export function APRTermsForm({ form }: APRTermsFormProps) {
                   onValueChange={field.handleChange}
                 >
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="REDUCE_QUANTITY" id="reduce" />
+                    <RadioGroupItem value={InsufficientFundsAction.REDUCE_QUANTITY} id="reduce" />
                     <Label htmlFor="reduce" className="cursor-pointer">
                       Reduce Quantity
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="BILL_US" id="bill" />
+                    <RadioGroupItem value={InsufficientFundsAction.BILL_US} id="bill" />
                     <Label htmlFor="bill" className="cursor-pointer">
                       Bill Us
                     </Label>
                   </div>
                   <div className="flex items-center space-x-2">
-                    <RadioGroupItem value="CHARGE_TO_DEPOSIT" id="charge" />
+                    <RadioGroupItem value={InsufficientFundsAction.CHARGE_TO_DEPOSIT} id="charge" />
                     <Label htmlFor="charge" className="cursor-pointer">
                       Charge to Unutilized Deposit
                     </Label>

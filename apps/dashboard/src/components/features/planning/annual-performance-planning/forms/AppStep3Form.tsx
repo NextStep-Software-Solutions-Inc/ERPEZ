@@ -234,10 +234,17 @@ export default function AppStep3Form({
       }
       
       // Invalidate queries so UI state updates seamlessly
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['fy-active-kpis'] }),
-        queryClient.invalidateQueries({ queryKey: ['active-kpis'] }),
-      ])
+      await queryClient.invalidateQueries({
+        predicate: (query) =>
+          query.queryKey.some(
+            (key) =>
+              typeof key === 'string' &&
+              (key.includes('kpi-assignments') ||
+                key.includes('fy-active-kpis') ||
+                key.includes('active-kpis') ||
+                key.includes('/kpis')),
+          ),
+      })
       
       toast.success('KPI base targets updated successfully')
     } catch (error: any) {
@@ -384,11 +391,17 @@ export default function AppStep3Form({
       await api.post('/kpi-assignments/bulk', payload)
 
       // 4. Invalidate React Query cache to refresh active state indicators without page reload
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['kpi-assignments'] }),
-        queryClient.invalidateQueries({ queryKey: ['fy-active-kpis'] }),
-        queryClient.invalidateQueries({ queryKey: ['active-kpis'] }),
-      ])
+      await queryClient.invalidateQueries({
+        predicate: (query) =>
+          query.queryKey.some(
+            (key) =>
+              typeof key === 'string' &&
+              (key.includes('kpi-assignments') ||
+                key.includes('fy-active-kpis') ||
+                key.includes('active-kpis') ||
+                key.includes('/kpis')),
+          ),
+      })
 
       // Transform KPI office assignments into KPITarget format for saving/notifying parent
       const targets: KPITarget[] = []

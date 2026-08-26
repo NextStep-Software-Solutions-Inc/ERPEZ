@@ -49,9 +49,9 @@ export function BACWorkspaceItemEditor({
   return (
     <Tabs value={activeTab} onValueChange={setActiveTab}>
       <TabsList className="grid w-full grid-cols-5 gap-1 h-auto p-1">
-        <TabsTrigger value="mop" className="text-xs px-2 py-1.5 whitespace-nowrap">MoP</TabsTrigger>
+        <TabsTrigger value="mop" className="text-xs px-2 py-1.5 whitespace-nowrap">Procurement Details</TabsTrigger>
         <TabsTrigger value="milestones" className="text-xs px-2 py-1.5 whitespace-nowrap">Milestones</TabsTrigger>
-        <TabsTrigger value="strategy" className="text-xs px-2 py-1.5 whitespace-nowrap">Strategy</TabsTrigger>
+        <TabsTrigger value="strategy" className="text-xs px-2 py-1.5 whitespace-nowrap">Strategy & Evaluation</TabsTrigger>
         <TabsTrigger value="remarks" className="text-xs px-2 py-1.5 whitespace-nowrap">Remarks</TabsTrigger>
         <TabsTrigger value="epa" className="text-xs px-2 py-1.5 whitespace-nowrap">EPA</TabsTrigger>
       </TabsList>

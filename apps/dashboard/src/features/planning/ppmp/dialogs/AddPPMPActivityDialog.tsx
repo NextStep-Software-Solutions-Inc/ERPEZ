@@ -1,7 +1,8 @@
-import { useEffect } from 'react'
+import { useEffect, useMemo } from 'react'
 import { useForm } from '@tanstack/react-form'
 import { z } from 'zod'
 import { Label } from '@/components/ui/label'
+import { Lock } from 'lucide-react'
 import {
   Select,
   SelectTrigger,
@@ -20,6 +21,7 @@ import { toast } from 'sonner'
 
 import { getLIBActivitiesRequest } from '@/features/planning/line-item-budgeting/line-item-budget/handlers/getLIBActivitiesRequest'
 import { createPPMPActivityRequest } from '@/features/planning/ppmp/handlers/createPPMPActivityRequest'
+import { getPPMPActivitiesRequest } from '@/features/planning/ppmp/handlers/getPPMPActivitiesRequest'
 import SubmitButton from '@/components/SubmitButton'
 
 const useCreatePPMPActivity = createMutationHookFromTemplate(
@@ -27,6 +29,7 @@ const useCreatePPMPActivity = createMutationHookFromTemplate(
 )
 
 const useLIBActivities = createQueryHookFromTemplate(getLIBActivitiesRequest)
+const usePPMPActivities = createQueryHookFromTemplate(getPPMPActivitiesRequest)
 
 const createPpmpActivitySchema = z.object({
   libActivityId: z.string().min(1, 'Select activity'),
@@ -39,6 +42,7 @@ interface AddPPMPActivityDialogProps {
   onOpenChange: (open: boolean) => void
   ppmpId: string
   libId?: string
+  existingLibActivityIds?: string[]
   onCreated?: () => void
 }
 
@@ -47,6 +51,7 @@ export default function AddPPMPActivityDialog({
   onOpenChange,
   ppmpId,
   libId,
+  existingLibActivityIds,
   onCreated,
 }: AddPPMPActivityDialogProps) {
   const queryClient = useQueryClient()
@@ -55,11 +60,67 @@ export default function AddPPMPActivityDialog({
   const { data: libActivitiesResp, isLoading: isLibActsLoading } =
     useLIBActivities({
       pathParams: {},
-      queryParams: libId ? { filters: `lineItemBudgetId==${libId}` } : {},
+      queryParams: libId ? { filters: `lineItemBudgetId==${libId}`, pageSize: 1000 } : {},
       enabled: !!libId && isOpen,
     })
 
+  const { data: existingPpmpActsResp } = usePPMPActivities({
+    pathParams: {},
+    queryParams: {
+      filters: `ppmpId==${ppmpId}`,
+      pageSize: 1000,
+    },
+    enabled: !existingLibActivityIds && !!ppmpId && isOpen,
+  })
+
+  const { data: allPpmpActsResp } = usePPMPActivities({
+    pathParams: {},
+    queryParams: {
+      pageSize: 1000,
+    },
+    enabled: isOpen,
+  })
+
   const libActivities = libActivitiesResp?.data ?? []
+
+  const { availableActivities, otherAssignedActivities } = useMemo(() => {
+    const currentPpmpExistingSet = new Set(
+      existingLibActivityIds ??
+        (existingPpmpActsResp?.data ?? [])
+          .filter((a: any) => a.ppmpId === ppmpId && a.libActivityId)
+          .map((a: any) => a.libActivityId),
+    )
+
+    const otherPpmpActivitySet = new Set(
+      (allPpmpActsResp?.data ?? [])
+        .filter((a: any) => a.ppmpId !== ppmpId && a.libActivityId)
+        .map((a: any) => a.libActivityId),
+    )
+
+    // Filter out activities already in THIS ppmp
+    const remaining = libActivities.filter(
+      (a: any) => !currentPpmpExistingSet.has(a.id),
+    )
+
+    const available: any[] = []
+    const otherAssigned: any[] = []
+
+    for (const a of remaining) {
+      if (otherPpmpActivitySet.has(a.id)) {
+        otherAssigned.push(a)
+      } else {
+        available.push(a)
+      }
+    }
+
+    return { availableActivities: available, otherAssignedActivities: otherAssigned }
+  }, [
+    libActivities,
+    existingLibActivityIds,
+    existingPpmpActsResp?.data,
+    allPpmpActsResp?.data,
+    ppmpId,
+  ])
 
   const form = useForm({
     defaultValues: { libActivityId: '' } as z.input<
@@ -145,7 +206,7 @@ export default function AddPPMPActivityDialog({
         </div>
       }
     >
-      <div className="p-3">
+      <div className="p-1 text-left">
         <form
           id="add-ppmp-activity-form"
           onSubmit={(e) => {
@@ -153,35 +214,53 @@ export default function AddPPMPActivityDialog({
             e.stopPropagation()
             form.handleSubmit()
           }}
-          className="space-y-4"
+          className="space-y-4 text-left"
         >
           <form.Field
             name="libActivityId"
             children={(field) => (
-              <div className="space-y-2">
-                <Label htmlFor={field.name}>LIB Activity</Label>
+              <div className="space-y-2 text-left">
+                <Label htmlFor={field.name} className="text-left block text-xs font-semibold text-slate-700">
+                  LIB Activity
+                </Label>
                 <Select
                   value={field.state.value}
                   onValueChange={field.handleChange}
                   disabled={
-                    isLibActsLoading || isPending || libActivities.length === 0
+                    isLibActsLoading ||
+                    isPending ||
+                    availableActivities.length === 0
                   }
                 >
-                  <SelectTrigger id={field.name} className="w-full">
+                  <SelectTrigger id={field.name} className="w-full text-left justify-between [&>span]:text-left [&>span]:truncate [&>span]:block">
                     <SelectValue
                       placeholder={
                         isLibActsLoading
                           ? 'Loading activities...'
-                          : libActivities.length === 0
-                            ? 'No activities available'
+                          : availableActivities.length === 0
+                            ? 'All eligible LIB activities have already been assigned'
                             : 'Select activity'
                       }
                     />
                   </SelectTrigger>
-                  <SelectContent>
-                    {libActivities.map((a: any) => (
-                      <SelectItem key={a.id} value={a.id}>
-                        {a.name || a.id}
+                  <SelectContent align="start" className="text-left">
+                    {availableActivities.map((a: any) => (
+                      <SelectItem key={a.id} value={a.id} className="text-left justify-start cursor-pointer">
+                        <span className="text-left truncate">{a.name || a.id}</span>
+                      </SelectItem>
+                    ))}
+                    {otherAssignedActivities.map((a: any) => (
+                      <SelectItem
+                        key={a.id}
+                        value={a.id}
+                        disabled
+                        className="text-left justify-start opacity-60 cursor-not-allowed bg-slate-50 dark:bg-slate-800/50"
+                      >
+                        <span className="text-left truncate text-slate-500 flex items-center gap-1.5">
+                          <Lock className="h-3 w-3 inline shrink-0 text-slate-400" />
+                          <span>{a.name || a.id}</span>
+                          <span className="text-[10px] text-muted-foreground italic">(Already included in another PPMP)</span>
+                        </span>
                       </SelectItem>
                     ))}
                   </SelectContent>

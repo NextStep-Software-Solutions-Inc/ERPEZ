@@ -103,16 +103,21 @@ export default function UpdateWFPForm({
     enabled: opcrModeSelected,
   })
 
-  // Fetch fund sources - always enabled
+  // Fetch fund sources (max 2000 items) - always enabled
   const { data: fundSourcesResponse, isLoading: fundSourcesLoading } = useFundSources({
     pathParams: {},
-    queryParams: {},
+    queryParams: { pageSize: 2000 },
   })
 
   // Extract data from responses
   const offices = officesResponse?.data || []
   const opcrs = opcrsResponse?.data || []
-  const fundSources = fundSourcesResponse?.data || []
+  const fundSources = useMemo(() => {
+    const list = fundSourcesResponse?.data || []
+    return [...list].sort((a: any, b: any) =>
+      (a.name || '').localeCompare(b.name || '', undefined, { sensitivity: 'base' })
+    )
+  }, [fundSourcesResponse?.data])
 
   const defaultValues = useMemo(() => {
     const apiData = initialValues || {}

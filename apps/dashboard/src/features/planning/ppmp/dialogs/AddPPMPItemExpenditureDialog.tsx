@@ -19,18 +19,28 @@ const useUpdatePPMPExpenditureItem = createMutationHookFromTemplate(
   updatePPMPExpenditureItemRequest,
 )
 
+import type { OrphanLineItemDetail } from '@/features/planning/line-item-budgeting/line-item-budget/types'
+
 interface AddPPMPItemExpenditureDialogProps {
   isOpen: boolean
   onOpenChange: (open: boolean) => void
-  ppmpActivityId: string
+  ppmpId: string
+  ppmpActivityId?: string
+  libActivityId?: string
+  orphanDetails?: OrphanLineItemDetail[]
   groupToEdit?: PPMPExpenditureItem | null
+  existingObjectIds?: string[]
 }
 
 export default function AddPPMPItemExpenditureDialog({
   isOpen,
   onOpenChange,
+  ppmpId,
   ppmpActivityId,
+  libActivityId,
+  orphanDetails,
   groupToEdit,
+  existingObjectIds,
 }: AddPPMPItemExpenditureDialogProps) {
   const queryClient = useQueryClient()
   const { mutateAsync: createGroup, isPending: isCreating } =
@@ -42,19 +52,19 @@ export default function AddPPMPItemExpenditureDialog({
   const isLoading = isCreating || isUpdating
 
   const handleSubmit = async (values: PPMPExpenditureItemFormValues) => {
-    const payload = {
-      ...values,
-      ppmpActivityId,
-    }
-
     try {
       if (isEdit && groupToEdit) {
+        const updatePayload = {
+          objectId: values.objectId,
+          isProcurable: values.isProcurable,
+          ppmpActivityId,
+        }
         await toast.promise(
           updateGroup(
             {
               pathParams: { id: groupToEdit.id },
               queryParams: {},
-              payload,
+              payload: updatePayload,
             },
             {
               onSuccess: () => {
@@ -78,11 +88,17 @@ export default function AddPPMPItemExpenditureDialog({
           },
         )
       } else {
+        const createPayload = {
+          ppmpId,
+          ppmpActivityId,
+          objectId: values.objectId,
+          isProcurable: values.isProcurable,
+        }
         await toast.promise(
           createGroup(
             {
               pathParams: {},
-              payload,
+              payload: createPayload,
             },
             {
               onSuccess: () => {
@@ -109,6 +125,7 @@ export default function AddPPMPItemExpenditureDialog({
 
   const initialValues: Partial<PPMPExpenditureItemFormValues> = {
     isProcurable: groupToEdit?.isProcurable ?? true,
+    objectId: groupToEdit?.objectId ?? '',
   }
 
   return (
@@ -124,7 +141,7 @@ export default function AddPPMPItemExpenditureDialog({
       size="md"
       trigger={null}
       footer={
-        <div className="flex justify-end gap-3 w-full">
+        <div className="flex justify-end items-center gap-3 w-full">
           <Button
             type="button"
             variant="outline"
@@ -137,7 +154,7 @@ export default function AddPPMPItemExpenditureDialog({
           <SubmitButton
             form="add-ppmp-expenditure-form"
             loading={isLoading}
-            className="bg-primary hover:bg-primary/95 text-white"
+            className="bg-primary hover:bg-primary/95 text-white h-9 px-4 text-xs font-semibold"
           >
             {isLoading
               ? 'Saving...'
@@ -152,6 +169,9 @@ export default function AddPPMPItemExpenditureDialog({
         <AddPPMPItemExpenditureForm
           formId="add-ppmp-expenditure-form"
           initialValues={initialValues}
+          libActivityId={libActivityId}
+          orphanDetails={orphanDetails}
+          existingObjectIds={existingObjectIds}
           onSubmit={handleSubmit}
           isLoading={isLoading}
         />

@@ -1,4 +1,4 @@
-﻿import { useState } from 'react'
+import { useState } from 'react'
 import { Plus } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { ResponsiveDialogDashtail } from '@/components/ResponsiveDialogDashtail'
@@ -56,7 +56,7 @@ export default function CreateLineItemBudgetDetailsDialog({
       }
       size="3xl"
       trigger={
-        <Button className="bg-linear-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white shadow-md transition-all hover:scale-105 active:scale-95">
+        <Button className="bg-linear-to-r shadow-md transition-all hover:scale-105 active:scale-95">
           <Plus className="w-4 h-4 mr-2" />
           {isWFP ? 'Add Line Items' : 'Add Line Item'}
         </Button>
@@ -100,6 +100,7 @@ export default function CreateLineItemBudgetDetailsDialog({
             <>
               <CreateWfpLineItemBudgetDetailsForm
                 libId={libId}
+                libActivityId={libActivityId}
                 scope={scope}
                 onClose={() => setOpen(false)}
                 onCreated={() => {

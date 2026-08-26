@@ -1,10 +1,4 @@
-/**
- * Add RFQs & Bids Dialog
- * Allows users to link RFQs and import/generate supplier bids
- * Generates bid matrix from selected RFQs and supplier data
- */
-
-import { useState } from 'react'
+import { useState, useMemo } from 'react'
 import { toast } from 'sonner'
 import { ResponsiveDialog } from '@/components/ResponsiveDialog'
 import { Button } from '@/components/ui/button'
@@ -19,19 +13,23 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from '@/components/ui/alert-dialog'
-import { AlertCircle, CheckCircle, Plus } from 'lucide-react'
+import { AlertCircle, CheckCircle, Plus, Loader2 } from 'lucide-react'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Label } from '@/components/ui/label'
-import { MOCK_BID_MATRIX, MOCK_SUPPLIERS } from '../__mocks__/mockData'
 import type { BidMatrix } from '../types/aobTypes'
+import {
+  createQueryHookFromTemplate,
+  createMutationHookFromTemplate,
+  useQueryClient,
+} from 'erpez-shared-lib'
+import { getRFQListRequest } from '../handlers/getRFQListRequest'
+import { linkRFQRequest } from '../handlers/linkRFQRequest'
+import { getAOBDetailRequest } from '../handlers/getAOBDetailRequest'
+import { getBidMatrixRequest } from '../handlers/getBidMatrixRequest'
 
-// Mock RFQ list for selection
-const MOCK_RFQS = [
-  { id: 'rfq-001', number: 'RFQ-2024-001', description: 'Office Supplies & Equipment' },
-  { id: 'rfq-002', number: 'RFQ-2024-002', description: 'IT Hardware & Software' },
-  { id: 'rfq-003', number: 'RFQ-2024-003', description: 'Maintenance Services' },
-]
+const useRFQList = createQueryHookFromTemplate(getRFQListRequest)
+const useLinkRFQ = createMutationHookFromTemplate(linkRFQRequest)
 
 interface AddRFQsAndBidsDialogProps {
   open: boolean
@@ -52,6 +50,17 @@ export function AddRFQsAndBidsDialog({
   const [apiError, setApiError] = useState<string>('')
   const [showUnsavedDialog, setShowUnsavedDialog] = useState(false)
 
+  const queryClient = useQueryClient()
+  const { data: rfqsResponse, isLoading: isLoadingRFQs } = useRFQList({
+    pathParams: {},
+    queryParams: { pageNumber: 1, pageSize: 50 },
+  })
+  const { mutateAsync: linkRFQs } = useLinkRFQ()
+
+  const availableRfqs = useMemo(() => {
+    return rfqsResponse?.data || []
+  }, [rfqsResponse])
+
   // Track if there are unsaved changes
   const hasUnsavedChanges = JSON.stringify(selectedRFQs) !== JSON.stringify(initialSelections)
 
@@ -69,29 +78,32 @@ export function AddRFQsAndBidsDialog({
       return
     }
 
+    if (!aobId) {
+      setApiError('AOB ID is required')
+      return
+    }
+
     try {
       setIsProcessing(true)
 
-      // Simulate API call to link RFQs and fetch supplier bids
-      await new Promise((resolve) => setTimeout(resolve, 1500))
+      await linkRFQs({
+        pathParams: { id: aobId },
+        payload: {
+          rfqIds: selectedRFQs,
+        },
+      })
 
-      // In a real scenario, this would:
-      // 1. Call API to link RFQs to AOB
-      // 2. Fetch supplier bids from API
-      // 3. Generate bid matrix
-      //
-      // For now, we use mock bid matrix
-
-      const generatedBidMatrix = {
-        ...MOCK_BID_MATRIX,
-        aobId: aobId || 'aob-001',
-      }
+      void queryClient.invalidateQueries({
+        queryKey: [getAOBDetailRequest.endpoint, aobId],
+      })
+      void queryClient.invalidateQueries({
+        queryKey: [getBidMatrixRequest.endpoint, aobId],
+      })
 
       toast.success(
-        `Successfully linked ${selectedRFQs.length} RFQ(s) and imported supplier bids`
+        `Successfully linked ${selectedRFQs.length} RFQ(s)`
       )
 
-      onBidMatrixGenerated?.(generatedBidMatrix)
       setSelectedRFQs([])
       onOpenChange(false)
     } catch (err) {
@@ -143,42 +155,51 @@ export function AddRFQsAndBidsDialog({
                 Select RFQs to link to this AOB. Their line items will be imported.
               </CardDescription>
             </CardHeader>
-            <CardContent className="space-y-3">
-              {MOCK_RFQS.map((rfq) => (
-                <div key={rfq.id} className="flex items-start gap-3 p-3 rounded border">
-                  <Checkbox
-                    id={rfq.id}
-                    checked={selectedRFQs.includes(rfq.id)}
-                    onCheckedChange={() => handleRFQToggle(rfq.id)}
-                    disabled={isProcessing}
-                  />
-                  <div className="flex-1">
-                    <Label
-                      htmlFor={rfq.id}
-                      className="text-sm font-medium cursor-pointer block"
-                    >
-                      {rfq.number}
-                    </Label>
-                    <p className="text-xs text-gray-600 mt-1">{rfq.description}</p>
-                  </div>
+            <CardContent className="space-y-3 max-h-60 overflow-y-auto">
+              {isLoadingRFQs ? (
+                <div className="flex items-center justify-center py-6 gap-2 text-sm text-muted-foreground">
+                  <Loader2 className="w-4 h-4 animate-spin" />
+                  Loading available RFQs...
                 </div>
-              ))}
+              ) : availableRfqs.length === 0 ? (
+                <p className="text-xs text-muted-foreground py-4 text-center">No available RFQs found</p>
+              ) : (
+                availableRfqs.map((rfq) => (
+                  <div key={rfq.id} className="flex items-start gap-3 p-3 rounded border">
+                    <Checkbox
+                      id={rfq.id}
+                      checked={selectedRFQs.includes(rfq.id)}
+                      onCheckedChange={() => handleRFQToggle(rfq.id)}
+                      disabled={isProcessing}
+                    />
+                    <div className="flex-1">
+                      <Label
+                        htmlFor={rfq.id}
+                        className="text-sm font-medium cursor-pointer block"
+                      >
+                        {rfq.rfqNumber}
+                      </Label>
+                      <p className="text-xs text-gray-600 mt-1">{rfq.description || rfq.tracingNumber || '-'}</p>
+                    </div>
+                  </div>
+                ))
+              )}
             </CardContent>
           </Card>
 
-          {/* Supplier Bids Info */}
+          {/* Selection Info */}
           <Card className="bg-blue-50 border-blue-200">
             <CardContent className="pt-4">
               <div className="flex items-start gap-3">
                 <CheckCircle className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
                 <div className="text-sm">
                   <p className="font-medium text-blue-900">
-                    {MOCK_SUPPLIERS.length} Suppliers Ready
+                    {selectedRFQs.length} RFQ(s) Selected
                   </p>
                   <p className="text-xs text-blue-800 mt-1">
                     {selectedRFQs.length > 0
-                      ? `${selectedRFQs.length} RFQ(s) selected with ${MOCK_SUPPLIERS.length} responsive supplier bids`
-                      : 'Select RFQs to see supplier bid details'}
+                      ? 'Linked RFQs and their supplier bids will be compiled into the evaluation matrix'
+                      : 'Select one or more RFQs to link to this Abstract of Bids'}
                   </p>
                 </div>
               </div>

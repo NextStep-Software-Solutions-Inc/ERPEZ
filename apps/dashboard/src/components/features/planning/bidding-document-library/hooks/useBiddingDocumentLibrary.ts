@@ -23,7 +23,6 @@ import {
   deleteChecklistItemRequest,
   confirmChecklistRequest,
   resetChecklistRequest,
-  getBACProjectsRequest,
 } from '../handlers/projectChecklistHandlers'
 
 // Master Documents
@@ -68,9 +67,6 @@ export const useConfirmChecklist = createMutationHookFromTemplate(
 )
 export const useResetChecklist = createMutationHookFromTemplate(
   resetChecklistRequest
-)
-export const useBACProjects = createQueryHookFromTemplate(
-  getBACProjectsRequest
 )
 export const useProfileById = createQueryHookFromTemplate(
   getProfileByIdRequest

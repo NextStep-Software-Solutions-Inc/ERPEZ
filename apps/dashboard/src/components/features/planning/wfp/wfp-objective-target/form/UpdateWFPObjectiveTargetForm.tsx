@@ -1,9 +1,19 @@
 import { useForm } from '@tanstack/react-form'
 import { z } from 'zod'
 import { Loader2 } from 'lucide-react'
-import { useAtom } from 'jotai'
-import { useEffect } from 'react'
-import { updateFormDataAtom } from '../atoms'
+import { useCallback, useEffect, useMemo, useState } from 'react'
+import {
+  MONTH_ABBREVIATIONS,
+  QUARTER_LABELS,
+  getDayOfWeek,
+  getPeriodDateObjects,
+  getPeriodDates,
+  getPeriods
+} from './constants'
+import { TimelineTypeSelector } from './TimelineTypeSelector'
+import { TimelineGrid } from './TimelineGrid'
+import { SelectedPeriodsSummary } from './SelectedPeriodsSummary'
+import type { WFPDetails } from '../..'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
@@ -13,7 +23,13 @@ export const updateWFPObjectiveSchema = z.object({
   activityName: z.string().min(1, 'Activity name is required'),
   weight: z.number().min(0.01).max(100, 'Weight must be between 0 and 100'),
   indicator: z.string().min(1, 'Indicator is required'),
-});
+  dates: z.array(z.object({
+    timelineType: z.enum(['Daily', 'Weekly', 'Monthly', 'Quarterly', 'Annual']),
+    startDate: z.string(),
+    endDate: z.string(),
+    value: z.number().min(0.01, 'Target value must be greater than 0'),
+  })).optional(),
+})
 
 export type UpdateWFPObjectiveTargetValues = z.infer<typeof updateWFPObjectiveSchema>
 
@@ -22,52 +38,153 @@ interface UpdateWFPObjectiveTargetFormProps {
   onCancel: () => void
   isLoading?: boolean
   wfpObjectiveId: string
+  wfpData?: WFPDetails
   initialValues: Partial<UpdateWFPObjectiveTargetValues>
 }
 
 export default function UpdateWFPObjectiveTargetForm({ 
   onSubmit, 
   onCancel, 
-  isLoading = false,
+  isLoading = false, 
   wfpObjectiveId,
+  wfpData,
   initialValues
 }: UpdateWFPObjectiveTargetFormProps) {
-  const [formData, setFormData] = useAtom(updateFormDataAtom)
-  
+  const initialTimelineType = initialValues.dates && initialValues.dates.length > 0
+    ? initialValues.dates[0].timelineType
+    : 'Quarterly'
+
+  const [selectedType, setSelectedType] = useState(initialTimelineType)
+
+  // Initialize targetValues mapping from initial dates
+  const [targetValues, setTargetValues] = useState<Record<string, string>>(() => {
+    const map: Record<string, string> = {}
+    if (initialValues.dates && initialValues.dates.length > 0) {
+      initialValues.dates.forEach((d, idx) => {
+        const year = d.startDate ? new Date(d.startDate).getFullYear() : 2026
+        const month = d.startDate ? new Date(d.startDate).getMonth() : idx * 3
+        const qNum = Math.floor(month / 3) + 1
+        const key = selectedType === 'Quarterly' ? `Q${qNum} ${year}` : `Q${idx + 1} ${year}`
+        map[key] = String(d.value)
+      })
+    }
+    return map
+  })
+
+  const [activeInput, setActiveInput] = useState<string | null>(null)
+
+  const buildDates = useCallback(() => {
+    const formatDate = (date: Date) => date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: '2-digit',
+      day: '2-digit',
+    }).replace(/(\d{2})\/(\d{2})\/(\d{4})/, '$3-$1-$2')
+
+    return Object.entries(targetValues).map(([period, val]) => {
+      const { startDate, endDate } = getPeriodDateObjects(period, selectedType, wfpData?.projectStartDate)
+      return {
+        timelineType: selectedType as 'Daily' | 'Weekly' | 'Monthly' | 'Quarterly' | 'Annual',
+        startDate: formatDate(startDate),
+        endDate: formatDate(endDate),
+        value: parseFloat(val) || 0
+      }
+    })
+  }, [targetValues, selectedType, wfpData])
+
+  const handleTargetChange = (period: string, val: string) => {
+    setTargetValues(prev => {
+      const newVals = { ...prev, [period]: val }
+      if (val === '') delete newVals[period]
+      return newVals
+    })
+  }
+
+  const selectedCount = Object.keys(targetValues).length
+
+  const getPeriodsForType = useCallback((type: string): ReadonlyArray<string> => {
+    if (!wfpData?.projectStartDate || !wfpData?.projectEndDate) {
+      return getPeriods(type)
+    }
+    const projectStart = new Date(wfpData.projectStartDate)
+    const projectEnd = new Date(wfpData.projectEndDate)
+    if (type === 'Quarterly') {
+      const startQuarter = Math.floor(projectStart.getMonth() / 3)
+      const endQuarter = Math.floor(projectEnd.getMonth() / 3)
+      const startYear = projectStart.getFullYear()
+      const endYear = projectEnd.getFullYear()
+
+      if (startYear === endYear) {
+        return QUARTER_LABELS.slice(startQuarter, endQuarter + 1).map(q => `${q} ${startYear}`)
+      } else {
+        const periodsArr: Array<string> = []
+        let currentYear = startYear
+        let currentQuarter = startQuarter
+        while (currentYear < endYear || (currentYear === endYear && currentQuarter <= endQuarter)) {
+          periodsArr.push(`${QUARTER_LABELS[currentQuarter]} ${currentYear}`)
+          currentQuarter++
+          if (currentQuarter > 3) {
+            currentQuarter = 0
+            currentYear++
+          }
+        }
+        return periodsArr
+      }
+    }
+    return getPeriods(type)
+  }, [wfpData])
+
+  const periods = useMemo(() => {
+    return getPeriodsForType(selectedType)
+  }, [selectedType, getPeriodsForType])
+
   const form = useForm({
     defaultValues: {
       wfpObjectiveId,
-      activityName: formData.activityName || initialValues.activityName || '',
-      indicator: formData.indicator || initialValues.indicator || '',
-      weight: formData.weight ?? initialValues.weight ?? 0,
+      activityName: initialValues.activityName || '',
+      indicator: initialValues.indicator || '',
+      weight: initialValues.weight ?? 0,
+      dates: initialValues.dates || [],
     } as UpdateWFPObjectiveTargetValues,
     validators: {
       onChange: updateWFPObjectiveSchema,
     },
     onSubmit: ({ value }) => {
-      // Explicitly pick properties to avoid passing legacy data
+      const dates = buildDates()
       const payload: UpdateWFPObjectiveTargetValues = {
         wfpObjectiveId: value.wfpObjectiveId,
         activityName: value.activityName,
         indicator: value.indicator,
         weight: value.weight,
+        dates: dates.length > 0 ? dates : undefined,
       }
       onSubmit(payload)
-      setFormData({})
     },
   })
 
-  // Sync form with initialValues when they change (e.g. after API fetch)
+  // Sync form with initialValues when they change
   useEffect(() => {
-    if (initialValues.activityName || initialValues.indicator || initialValues.weight) {
+    if (initialValues.activityName || initialValues.indicator || initialValues.weight || initialValues.dates) {
       form.reset({
         wfpObjectiveId,
-        activityName: formData.activityName || initialValues.activityName || '',
-        indicator: formData.indicator || initialValues.indicator || '',
-        weight: formData.weight ?? initialValues.weight ?? 0,
+        activityName: initialValues.activityName || '',
+        indicator: initialValues.indicator || '',
+        weight: initialValues.weight ?? 0,
+        dates: initialValues.dates || [],
       } as UpdateWFPObjectiveTargetValues)
+
+      if (initialValues.dates && initialValues.dates.length > 0) {
+        const map: Record<string, string> = {}
+        initialValues.dates.forEach((d, idx) => {
+          const year = d.startDate ? new Date(d.startDate).getFullYear() : 2026
+          const month = d.startDate ? new Date(d.startDate).getMonth() : idx * 3
+          const qNum = Math.floor(month / 3) + 1
+          const key = `Q${qNum} ${year}`
+          map[key] = String(d.value)
+        })
+        setTargetValues(map)
+      }
     }
-  }, [initialValues, wfpObjectiveId, formData, form])
+  }, [initialValues, wfpObjectiveId, form])
 
   return (
     <form
@@ -162,11 +279,38 @@ export default function UpdateWFPObjectiveTargetForm({
         )}
       />
 
+      {/* Timeline Type Selector */}
+      <TimelineTypeSelector
+        selectedType={selectedType}
+        onTypeChange={setSelectedType}
+      />
+
+      {/* Selection Grid */}
+      <TimelineGrid
+        selectedType={selectedType}
+        periods={periods}
+        targetValues={targetValues}
+        activeInput={activeInput}
+        setActiveInput={setActiveInput}
+        handleTargetChange={handleTargetChange}
+        getDayOfWeek={(period, type, projectStart) => getDayOfWeek(period, type, projectStart)}
+        projectStart={wfpData?.projectStartDate}
+      />
+
+      {/* Selected Periods Summary */}
+      <SelectedPeriodsSummary
+        selectedCount={selectedCount}
+        targetValues={targetValues}
+        selectedType={selectedType}
+        getPeriodDates={getPeriodDates}
+        projectStart={wfpData?.projectStartDate}
+      />
 
       {/* Footer Buttons */}
       <div className="flex justify-end gap-3 pt-6 border-t">
         <Button 
           variant="outline" 
+          type="button"
           onClick={() => {
             setFormData({})
             onCancel()

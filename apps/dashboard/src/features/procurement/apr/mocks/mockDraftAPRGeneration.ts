@@ -66,7 +66,14 @@ export function transformAPPItemsToAPRItems(
       budgetVariancePercent: 0,
       
       // Procurement Milestones from BAC
-      bacMilestones: bacItem.milestones,
+      bacMilestones: bacItem.milestones
+        ? {
+            advertisementDate: typeof bacItem.milestones.advertisementDate === 'string' ? bacItem.milestones.advertisementDate : undefined,
+            submissionDate: typeof bacItem.milestones.submissionDate === 'string' ? bacItem.milestones.submissionDate : undefined,
+            noticeOfAwardDate: typeof bacItem.milestones.noticeOfAwardDate === 'string' ? bacItem.milestones.noticeOfAwardDate : undefined,
+            contractSigningDate: typeof bacItem.milestones.contractSigningDate === 'string' ? bacItem.milestones.contractSigningDate : undefined,
+          }
+        : undefined,
       
       // PSDBM Catalog Integration
       psdbmMatches: psdbmMatches.slice(0, 3), // Top 3 matching catalog items

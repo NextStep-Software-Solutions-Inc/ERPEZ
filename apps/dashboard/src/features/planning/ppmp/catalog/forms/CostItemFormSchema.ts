@@ -16,7 +16,7 @@ export const costItemFormSchema = z.object({
     .max(100, 'Category must not exceed 100 characters'),
   subcategory: z.string().optional().nullable(),
   standardUnitCost: z
-    .number({ invalid_type_error: 'Standard unit cost must be a number' })
+    .number()
     .positive('Standard unit cost must be greater than 0'),
   unitOfMeasure: z
     .string()

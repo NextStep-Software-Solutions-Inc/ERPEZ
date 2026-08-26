@@ -86,6 +86,7 @@ export interface PageContainerDashtailProps {
   isLoadingTab?: boolean
   /** Content to render after tabs (right side, for secondary navigation) */
   afterTabs?: ReactNode
+  breadcrumbs?: ReactNode
   /** Action elements for header (right side) */
   actions?: ReactNode
   /** Header presentation variant */
@@ -134,6 +135,7 @@ export function PageContainerDashtail({
   animateTabs = true,
   isLoadingTab = false,
   afterTabs,
+  breadcrumbs,
   actions,
   headerVariant = 'default',
   actionButtonVariant = 'default',
@@ -333,7 +335,9 @@ export function PageContainerDashtail({
   const headerSection = (
     <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
       <div className="min-w-0 flex-1">
-        {backTo && (
+        {breadcrumbs ? (
+          <div className="mb-3">{breadcrumbs}</div>
+        ) : backTo ? (
           <div className="mb-4 flex items-center">
             <Button
               variant="outline"
@@ -366,7 +370,7 @@ export function PageContainerDashtail({
               )}
             </Button>
           </div>
-        )}
+        ) : null}
         <div className="flex items-start gap-4">
           {titleIcon && (
             <div

@@ -110,7 +110,12 @@ export interface CreateMarketScopingRequest {
   periodFrom: string; // ISO 8601 date-time
   periodTo: string; // ISO 8601 date-time
   deliveryDate: string; // ISO 8601 date-time
+  /** Project-level target LIB. Mutually exclusive with targetLineItemBudgetActivityId. */
+  targetLineItemBudgetId?: string;
+  /** Activity-level target LIB Activity. Mutually exclusive with targetLineItemBudgetId. */
   targetLineItemBudgetActivityId?: string; // UUID reference to LIB activity
+  /** Office context for authorization. Future: derived from auth token. */
+  officeId: string;
   activitiesConducted: ActivityConducted[];
   parameterEvaluations: ParameterEvaluationPayload[];
 }
@@ -127,7 +132,12 @@ export interface UpdateMarketScopingRequest {
   expectedDeliveryDate?: string;
   deliveryDate?: string;
   linkedLibActivityId?: string;
+  /** Project-level target LIB. Mutually exclusive with targetLineItemBudgetActivityId. */
+  targetLineItemBudgetId?: string;
+  /** Activity-level target LIB Activity. Mutually exclusive with targetLineItemBudgetId. */
   targetLineItemBudgetActivityId?: string;
+  /** Office context for authorization. Future: derived from auth token. */
+  officeId?: string;
   representativeName?: string;
   representativeDesignation?: string;
   activitiesConducted?: ActivityConducted[];
@@ -291,4 +301,28 @@ export interface PersonnelPosition {
     officeId: string;
     officeName: string;
   };
+}
+
+/**
+ * Minimal MSF summary embedded inside PPMPDetailedResponse and PPMPActivityResponse.
+ * Contains only the fields needed by the PPMP UI to display and navigate to the MSF.
+ */
+export interface MSFSummary {
+  id: string;
+  projectName: string;
+  estimatedBudget: number;
+  status: string;
+}
+
+/**
+ * Request body for PATCH /market-scopings/{id}/link
+ * Exactly one of the two target fields should be populated (mutually exclusive).
+ */
+export interface LinkMarketScopingRequest {
+  /** Project-level target LIB. Mutually exclusive with targetLineItemBudgetActivityId. */
+  targetLineItemBudgetId?: string;
+  /** Activity-level target LIB Activity. Mutually exclusive with targetLineItemBudgetId. */
+  targetLineItemBudgetActivityId?: string;
+  /** Office context for authorization. Future: derived from auth token. */
+  officeId: string;
 }

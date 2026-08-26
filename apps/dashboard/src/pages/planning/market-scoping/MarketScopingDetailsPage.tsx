@@ -67,7 +67,11 @@ export default function MarketScopingDetailsPage({ id: propId }: MarketScopingDe
   }
 
   const handleBack = () => {
-    navigate({ to: '/v2/market-scoping' })
+    if (window.history.length > 1) {
+      window.history.back()
+    } else {
+      navigate({ to: '/v2/market-scoping' })
+    }
   }
 
   const handleGeneratePdf = async () => {
@@ -338,6 +342,7 @@ export default function MarketScopingDetailsPage({ id: propId }: MarketScopingDe
       <CreateMarketScopingDialog
         title="Edit Market Scoping Form"
         description="Update the details in the 4-step wizard to edit the draft form."
+        onSuccess={refetch}
       />
     </div>
   )

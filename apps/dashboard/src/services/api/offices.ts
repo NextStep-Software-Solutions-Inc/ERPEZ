@@ -94,6 +94,7 @@ function mapOfficeToOrgUnit(office: OfficeApiResponse): OrgUnit {
     organizationName: orgName || undefined,
     parentOfficeName: parentName || undefined,
     administrativeLevelName: adminLevelName || undefined,
+    categoryName: categoryName || undefined,
     createdAt: office.createdAt || undefined,
     createdBy: office.createdBy || undefined,
     region: region || undefined,

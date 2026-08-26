@@ -1,10 +1,10 @@
-﻿/**
+/**
  * Selected Item & Detail Panel Atoms
  * Controls which item is open in the slide-over detail panel.
  */
 
 import { atom } from 'jotai'
-import type { NonCSEItem } from '../types/catalog.types'
+import type { NONCSEItem } from '@/features/planning/non-cse-item/types/non-cse.type'
 
 /** ID of the item currently open in the detail panel (null = closed) */
 export const selectedItemIdAtom = atom<string | null>(null)
@@ -15,7 +15,7 @@ export const isDetailPanelOpenAtom = atom(
 )
 
 /** Full item data currently loaded in the detail panel */
-export const selectedItemDataAtom = atom<NonCSEItem | null>(null)
+export const selectedItemDataAtom = atom<NONCSEItem | null>(null)
 
 /** Active tab in the detail panel */
 export const detailPanelActiveTabAtom = atom<

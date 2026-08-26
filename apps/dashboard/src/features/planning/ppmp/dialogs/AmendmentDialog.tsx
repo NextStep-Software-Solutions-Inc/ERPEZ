@@ -1,4 +1,4 @@
-﻿/**
+/**
  * AmendmentDialog
  * Dialog for starting a mid-year amendment on an Approved PPMP.
  * Requires a reason (20–500 chars), then clones PPMP as v2 in Amending state.
@@ -41,10 +41,11 @@ export function AmendmentDialog({ onSuccess }: AmendmentDialogProps) {
       setOpen(false)
       // store the created amendment so the workspace can use it immediately
       setSelected(amendment)
-      const route = amendment.isMasterOffice
-        ? '/v2/ppmp/office-level/$ppmpId'
-        : '/v2/ppmp/department-level/$ppmpId'
-      navigate({ to: route, params: { ppmpId: amendment.id } })
+      navigate({
+        to: '/v2/ppmp/$ppmpId',
+        params: { ppmpId: amendment.id },
+        search: {},
+      })
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : 'Failed to create amendment.',

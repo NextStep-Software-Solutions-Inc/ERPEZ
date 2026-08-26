@@ -1,13 +1,13 @@
 /**
  * PSDBM Items Grid Component
  * 
- * Displays PSDBM catalog items in a table format
- * Allows selection with checkboxes and quantity adjustment
- * 
- * Reference: Used in AddItemDialog refactored version
+ * Displays PSDBM catalog items in a structured table format
+ * Displays authoritative Available Stock on Hand and Remaining Delivery Qty
+ * Prevents selection of out-of-stock items
+ * Allows item selection and quantity adjustment for available items
  */
 
-import { useCallback, useMemo } from 'react'
+import { useCallback, useMemo, useState } from 'react'
 import {
   Table,
   TableBody,
@@ -17,10 +17,18 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Checkbox } from '@/components/ui/checkbox'
-import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
-import { AlertCircle, Image as ImageIcon } from 'lucide-react'
+import { Badge } from '@/components/ui/badge'
+import {
+  AlertCircle,
+  Image as ImageIcon,
+  FileText,
+  CheckCircle2,
+  Clock,
+  ZoomIn,
+} from 'lucide-react'
 import type { PSDBMItem, PSDBMItemWithQuantity } from '../types'
+import { APRImageViewerModal } from '@/features/procurement/apr/components/APRImageViewerModal'
 
 interface PSDBMItemsGridProps {
   items: PSDBMItem[]
@@ -30,6 +38,17 @@ interface PSDBMItemsGridProps {
   onSelectAll: (selected: boolean) => void
   isLoading?: boolean
   error?: string | null
+  emptyMessage?: string
+}
+
+export function isItemOutOfStock(item: PSDBMItem): boolean {
+  if (item.lastSyncedAt) {
+    return (item.availableStock ?? 0) <= 0
+  }
+  return (
+    item.availability?.toLowerCase() === 'out of stock' ||
+    (item.availableStock !== undefined && item.availableStock <= 0)
+  )
 }
 
 export function PSDBMItemsGrid({
@@ -40,12 +59,20 @@ export function PSDBMItemsGrid({
   onSelectAll,
   isLoading = false,
   error = null,
+  emptyMessage = 'No items found matching your filter criteria.',
 }: PSDBMItemsGridProps) {
-  // Calculate if all items are selected
+  const [previewItem, setPreviewItem] = useState<PSDBMItem | null>(null)
+
+  // Only items that are in stock are selectable
+  const selectableItems = useMemo(() => {
+    return items.filter((item) => !isItemOutOfStock(item))
+  }, [items])
+
+  // Calculate if all selectable items are selected
   const allSelected = useMemo(() => {
-    if (items.length === 0) return false
-    return items.every((item) => selectedItems.has(item.itemCode))
-  }, [items, selectedItems])
+    if (selectableItems.length === 0) return false
+    return selectableItems.every((item) => selectedItems.has(item.itemCode))
+  }, [selectableItems, selectedItems])
 
   // Handle select all toggle
   const handleSelectAllChange = useCallback(
@@ -58,6 +85,7 @@ export function PSDBMItemsGrid({
   // Handle individual item selection
   const handleItemChange = useCallback(
     (item: PSDBMItem, checked: boolean) => {
+      if (isItemOutOfStock(item) && checked) return
       onItemSelect(item, checked)
     },
     [onItemSelect]
@@ -74,9 +102,9 @@ export function PSDBMItemsGrid({
 
   if (error) {
     return (
-      <div className="border rounded-lg p-8 bg-red-50">
+      <div className="border rounded-lg p-6 bg-red-50">
         <div className="flex items-center gap-3">
-          <AlertCircle className="h-5 w-5 text-red-600" />
+          <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
           <div>
             <p className="text-sm font-medium text-red-900">Error loading items</p>
             <p className="text-sm text-red-700">{error}</p>
@@ -88,55 +116,73 @@ export function PSDBMItemsGrid({
 
   if (isLoading) {
     return (
-      <div className="border rounded-lg p-8">
-        <div className="flex justify-center items-center h-32">
+      <div className="border rounded-lg p-12">
+        <div className="flex flex-col justify-center items-center gap-3">
           <div className="animate-spin">
-            <div className="h-8 w-8 border-4 border-gray-200 border-t-blue-500 rounded-full" />
+            <div className="h-8 w-8 border-4 border-gray-200 border-t-primary rounded-full" />
           </div>
+          <p className="text-sm text-muted-foreground">Loading catalog items and stock availability...</p>
         </div>
       </div>
     )
   }
 
   return (
-    <div className="border rounded-lg overflow-hidden">
+    <div className="border rounded-lg overflow-hidden bg-card shadow-sm">
       <Table>
         <TableHeader>
-          <TableRow className="bg-gray-50">
-            <TableHead className="w-12">
+          <TableRow className="bg-muted/50 select-none">
+            <TableHead className="w-10">
               <Checkbox
-                checked={allSelected && items.length > 0}
+                checked={allSelected && selectableItems.length > 0}
+                disabled={selectableItems.length === 0}
                 onCheckedChange={handleSelectAllChange}
-                aria-label="Select all items"
+                aria-label="Select all available items"
               />
             </TableHead>
-            <TableHead className="w-24">Image</TableHead>
-            <TableHead>Code</TableHead>
-            <TableHead>Description</TableHead>
-            <TableHead className="text-right">Price</TableHead>
-            <TableHead>Unit</TableHead>
-            <TableHead className="w-20 text-center">Qty</TableHead>
-            <TableHead className="text-right">Total</TableHead>
+            <TableHead className="w-16">Image</TableHead>
+            <TableHead className="w-32">Item Code</TableHead>
+            <TableHead>Description & Specifications</TableHead>
+            <TableHead className="w-28 text-right">Unit Price</TableHead>
+            <TableHead className="w-20">UOM</TableHead>
+            <TableHead className="w-36 text-center">Warehouse Stock</TableHead>
+            <TableHead className="w-28 text-center">Delivery</TableHead>
+            <TableHead className="w-24 text-center">Req. Qty</TableHead>
+            <TableHead className="w-28 text-right">Subtotal</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {items.length > 0 ? (
             items.map((item) => {
+              const outOfStock = isItemOutOfStock(item)
               const selected = selectedItems.has(item.itemCode)
               const selectedItem = selectedItems.get(item.itemCode)
               const quantity = selectedItem?.quantity ?? 1
               const total = item.unitPrice * quantity
+              const stock = item.availableStock ?? 0
+              const pendingDelivery = item.remainingQtyForDelivery ?? 0
 
               return (
-                <TableRow key={item.itemCode} className={selected ? 'bg-blue-50' : ''}>
+                <TableRow
+                  key={item.itemCode}
+                  className={`transition-colors hover:bg-muted/30 ${
+                    outOfStock ? 'opacity-65 bg-muted/15' : ''
+                  } ${selected ? 'bg-primary/5 font-medium' : ''}`}
+                >
                   {/* Checkbox */}
                   <TableCell>
                     <Checkbox
                       checked={selected}
+                      disabled={outOfStock}
                       onCheckedChange={(checked) =>
                         handleItemChange(item, checked as boolean)
                       }
-                      aria-label={`Select ${item.description}`}
+                      aria-label={
+                        outOfStock
+                          ? `${item.description} is out of stock and cannot be added`
+                          : `Select ${item.description}`
+                      }
+                      title={outOfStock ? 'Out of stock items cannot be added to APR' : undefined}
                     />
                   </TableCell>
 
@@ -144,34 +190,68 @@ export function PSDBMItemsGrid({
                   <TableCell>
                     <div className="flex items-center justify-center">
                       {item.imageUrl ? (
-                        <img
-                          src={item.imageUrl}
-                          alt={item.description}
-                          className="h-16 w-16 object-cover rounded border"
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none'
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setPreviewItem(item)
                           }}
-                        />
+                          className="relative group rounded border overflow-hidden bg-background focus:outline-hidden focus:ring-2 focus:ring-primary"
+                          title="Click to view full image"
+                        >
+                          <img
+                            src={item.imageUrl}
+                            alt={item.description}
+                            className="h-12 w-12 object-cover transition-transform group-hover:scale-110"
+                            onError={(e) => {
+                              e.currentTarget.style.display = 'none'
+                            }}
+                          />
+                          <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center text-white">
+                            <ZoomIn className="w-4 h-4" />
+                          </div>
+                        </button>
                       ) : (
-                        <div className="h-16 w-16 bg-gray-100 rounded border flex items-center justify-center">
-                          <ImageIcon className="h-6 w-6 text-gray-400" />
+                        <div className="h-12 w-12 bg-muted rounded border flex items-center justify-center">
+                          <ImageIcon className="h-5 w-5 text-muted-foreground" />
                         </div>
                       )}
                     </div>
                   </TableCell>
 
                   {/* Item Code */}
-                  <TableCell className="font-mono text-sm font-semibold">
+                  <TableCell className="font-mono text-xs font-semibold text-foreground">
                     {item.itemCode}
                   </TableCell>
 
-                  {/* Description */}
-                  <TableCell className="max-w-xs">
-                    <p className="text-sm line-clamp-2">{item.description}</p>
+                  {/* Description & Category & Tech Specs */}
+                  <TableCell className="max-w-md">
+                    <div className="space-y-1">
+                      <p className="text-sm leading-snug line-clamp-2">{item.description}</p>
+                      <div className="flex flex-wrap items-center gap-1.5 pt-0.5">
+                        {item.category && (
+                          <Badge variant="outline" className="text-[10px] px-1.5 py-0">
+                            {item.category}
+                          </Badge>
+                        )}
+                        {item.technicalSpecificationUrl && (
+                          <a
+                            href={item.technicalSpecificationUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1 text-[11px] text-blue-600 hover:text-blue-800 hover:underline"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <FileText className="h-3 w-3" />
+                            <span>Tech Specs</span>
+                          </a>
+                        )}
+                      </div>
+                    </div>
                   </TableCell>
 
-                  {/* Price */}
-                  <TableCell className="text-right font-medium">
+                  {/* Unit Price */}
+                  <TableCell className="text-right font-medium text-sm">
                     ₱{item.unitPrice.toLocaleString('en-PH', {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
@@ -179,8 +259,64 @@ export function PSDBMItemsGrid({
                   </TableCell>
 
                   {/* Unit */}
-                  <TableCell className="text-sm text-gray-600">
+                  <TableCell className="text-xs text-muted-foreground font-medium">
                     {item.unit}
+                  </TableCell>
+
+                  {/* Warehouse Stock on Hand */}
+                  <TableCell className="text-center">
+                    <div className="flex flex-col items-center gap-1">
+                      {item.lastSyncedAt ? (
+                        stock > 0 ? (
+                          <Badge
+                            variant="soft"
+                            color="success"
+                            className="text-xs font-semibold px-2 py-0.5 whitespace-nowrap"
+                          >
+                            <CheckCircle2 className="h-3 w-3 mr-1 text-emerald-600" />
+                            {stock.toLocaleString()} {item.unit}
+                          </Badge>
+                        ) : (
+                          <Badge
+                            variant="soft"
+                            color="destructive"
+                            className="text-xs font-semibold px-2 py-0.5"
+                          >
+                            Out of Stock
+                          </Badge>
+                        )
+                      ) : (
+                        item.availability?.toLowerCase() === 'out of stock' ? (
+                          <Badge
+                            variant="soft"
+                            color="destructive"
+                            className="text-xs font-semibold px-2 py-0.5"
+                          >
+                            Out of Stock
+                          </Badge>
+                        ) : (
+                          <Badge
+                            variant="soft"
+                            color="info"
+                            className="text-xs font-medium px-2 py-0.5"
+                          >
+                            {item.availability || 'Available'}
+                          </Badge>
+                        )
+                      )}
+                    </div>
+                  </TableCell>
+
+                  {/* Pending Deliveries */}
+                  <TableCell className="text-center">
+                    {pendingDelivery > 0 ? (
+                      <span className="inline-flex items-center text-[11px] text-amber-700 font-semibold bg-amber-50 px-2 py-0.5 rounded border border-amber-200 whitespace-nowrap">
+                        <Clock className="h-3 w-3 mr-1" />
+                        {pendingDelivery.toLocaleString()}
+                      </span>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">-</span>
+                    )}
                   </TableCell>
 
                   {/* Quantity Input */}
@@ -193,25 +329,25 @@ export function PSDBMItemsGrid({
                         onChange={(e) =>
                           handleQuantityChange(item.itemCode, e.target.value)
                         }
-                        className="w-16 text-center h-8"
+                        className="w-16 text-center h-8 mx-auto"
                         onClick={(e) => e.stopPropagation()}
                       />
                     ) : (
-                      <span className="text-gray-400 text-sm">-</span>
+                      <div className="text-center text-muted-foreground text-xs">-</div>
                     )}
                   </TableCell>
 
-                  {/* Total Amount */}
-                  <TableCell className="text-right font-semibold">
+                  {/* Subtotal */}
+                  <TableCell className="text-right font-semibold text-sm">
                     {selected ? (
-                      <span className="text-blue-600">
+                      <span className="text-primary font-mono">
                         ₱{total.toLocaleString('en-PH', {
                           minimumFractionDigits: 2,
                           maximumFractionDigits: 2,
                         })}
                       </span>
                     ) : (
-                      <span className="text-gray-400 text-sm">-</span>
+                      <span className="text-muted-foreground text-xs font-mono">-</span>
                     )}
                   </TableCell>
                 </TableRow>
@@ -219,13 +355,25 @@ export function PSDBMItemsGrid({
             })
           ) : (
             <TableRow>
-              <TableCell colSpan={8} className="text-center py-8">
-                <p className="text-gray-500">No items found</p>
+              <TableCell colSpan={10} className="text-center py-12">
+                <p className="text-sm text-muted-foreground">{emptyMessage}</p>
               </TableCell>
             </TableRow>
           )}
         </TableBody>
       </Table>
+
+      {/* Image Preview Modal */}
+      {previewItem && (
+        <APRImageViewerModal
+          isOpen={!!previewItem}
+          onClose={() => setPreviewItem(null)}
+          imageUrl={previewItem.imageUrl}
+          itemTitle={previewItem.description}
+          itemCode={previewItem.itemCode}
+          unitPrice={previewItem.unitPrice}
+        />
+      )}
     </div>
   )
 }

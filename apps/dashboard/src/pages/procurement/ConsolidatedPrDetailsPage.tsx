@@ -37,8 +37,6 @@ import {
 } from '@/features/procurement/consolidated-pr/handlers/hooks'
 import type { EligiblePr } from '@/features/procurement/consolidated-pr/types/apiTypes'
 import { BacResolutionStatusBadge } from '@/features/procurement/bac-resolution/components'
-import { BacResolutionExecutionBadges } from '@/features/procurement/bac-resolution/components'
-import { getMockBacResolutionDatabase } from '@/features/procurement/bac-resolution'
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -107,16 +105,7 @@ export function ConsolidatedPrDetailsPage({
 
   const linkedBacResolutions = useMemo(() => {
     if (!consolidatedPr) return []
-    return getMockBacResolutionDatabase()
-      .filter((resolution) =>
-        resolution.linkedConsolidatedPrs.some(
-          (item) =>
-            item.id === consolidatedPr.id ||
-            item.prNumber === consolidatedPr.cprNumber,
-        ),
-      )
-      .slice()
-      .sort((a, b) => b.updatedAt.localeCompare(a.updatedAt))
+    return []
   }, [consolidatedPr])
 
   const owningBacResolution = linkedBacResolutions[0] ?? null
@@ -346,12 +335,10 @@ export function ConsolidatedPrDetailsPage({
               Owning BAC Resolution
             </p>
             <p className="mt-2 font-medium">
-              {owningBacResolution?.bacResolutionNumber ?? 'Not linked yet'}
+              {'Not linked yet'}
             </p>
             <p className="mt-1 text-xs text-muted-foreground">
-              {owningBacResolution
-                ? owningBacResolution.description
-                : 'This Consolidated PR has not been assigned to a BAC Resolution.'}
+              {'This Consolidated PR has not been assigned to a BAC Resolution.'}
             </p>
           </div>
 
@@ -390,9 +377,8 @@ export function ConsolidatedPrDetailsPage({
           </CardHeader>
           <CardContent className="space-y-3">
             <div className="flex flex-wrap items-center gap-2">
-              <BacResolutionStatusBadge status={owningBacResolution.status} />
+              <BacResolutionStatusBadge status={consolidatedPr.status} />
             </div>
-            <BacResolutionExecutionBadges resolution={owningBacResolution} />
           </CardContent>
         </Card>
       )}
@@ -583,24 +569,24 @@ export function ConsolidatedPrDetailsPage({
             </p>
           ) : (
             linkedBacResolutions.map((resolution, index) => (
-              <div key={resolution.id}>
+              <div key={index}>
                 {index > 0 && <Separator className="mb-4" />}
                 <div className="flex flex-wrap items-start justify-between gap-3">
                   <div className="space-y-1">
                     <p className="font-medium">
-                      {resolution.bacResolutionNumber}
+                      {resolution}
                     </p>
                     <p className="text-sm text-muted-foreground">
-                      {resolution.description}
+                      {resolution}
                     </p>
                     <p className="text-xs text-muted-foreground">
-                      Resolution date: {resolution.resolutionDate}
+                      Resolution date: {resolution}
                     </p>
                   </div>
                   <div className="flex flex-col items-end gap-2">
-                    <BacResolutionStatusBadge status={resolution.status} />
+                    <BacResolutionStatusBadge status={resolution} />
                     <Badge variant="outline">
-                      ₱{resolution.totalAmount.toLocaleString('en-PH')}
+                      ₱{resolution}
                     </Badge>
                   </div>
                 </div>

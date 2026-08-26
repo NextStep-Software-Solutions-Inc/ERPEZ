@@ -50,9 +50,6 @@ import { Route as V2FiscalYearAndPoliciesIndexRouteImport } from './routes/v2/fi
 import { Route as V2KpiLibraryIndexRouteImport } from './routes/v2/kpi-library/index'
 import { Route as V2NtpIndexRouteImport } from './routes/v2/ntp/index'
 import { Route as V2NtpNtpIdRouteImport } from './routes/v2/ntp/$ntpId'
-import { Route as V2PpmpIndexRouteImport } from './routes/v2/ppmp/index'
-import { Route as V2PpmpPpmpDetailRouteImport } from './routes/v2/ppmp/_ppmp-detail'
-import { Route as V2PpmpCatalogRouteImport } from './routes/v2/ppmp/catalog'
 import { Route as V1PlanningFiscalYearIndexRouteImport } from './routes/v1/planning/fiscal-year/index'
 import { Route as V1PlanningFundReceiveIndexRouteImport } from './routes/v1/planning/fund-receive/index'
 import { Route as V1PlanningFundReceiveFundSourceIdRouteImport } from './routes/v1/planning/fund-receive/$fundSourceId'
@@ -62,7 +59,6 @@ import { Route as V1PlanningFundFundIdRouteImport } from './routes/v1/planning/f
 import { Route as V1PlanningKpiAssignmentForDuIndexRouteImport } from './routes/v1/planning/kpi-assignment-for-du/index'
 import { Route as V1PlanningKpiIndexRouteImport } from './routes/v1/planning/kpi/index'
 import { Route as V1PlanningOfficeIndexRouteImport } from './routes/v1/planning/office/index'
-import { Route as V1PlanningOpcrIndexRouteImport } from './routes/v1/planning/opcr/index'
 import { Route as V1PlanningWfpExpenditureIndexRouteImport } from './routes/v1/planning/wfp-expenditure/index'
 import { Route as V1PlanningWfpExpenditureWfpObjectiveActivityIdRouteImport } from './routes/v1/planning/wfp-expenditure/$wfpObjectiveActivityId'
 import { Route as V1PlanningWfpObjectiveIndexRouteImport } from './routes/v1/planning/wfp-objective/index'
@@ -74,6 +70,9 @@ import { Route as V2planningMarketScopingIndexRouteImport } from './routes/v2/(p
 import { Route as V2planningMarketScopingIdRouteImport } from './routes/v2/(planning)/market-scoping/$id'
 import { Route as V2planningMarketScopingCreateRouteImport } from './routes/v2/(planning)/market-scoping/create'
 import { Route as V2planningMarketScopingSettingsRouteImport } from './routes/v2/(planning)/market-scoping/settings'
+import { Route as V2planningPpmpIndexRouteImport } from './routes/v2/(planning)/ppmp/index'
+import { Route as V2planningPpmpPpmpIdRouteImport } from './routes/v2/(planning)/ppmp/$ppmpId'
+import { Route as V2planningPpmpCatalogRouteImport } from './routes/v2/(planning)/ppmp/catalog'
 import { Route as V2planningUacsLibraryIndexRouteImport } from './routes/v2/(planning)/uacs-library/index'
 import { Route as V2planningWfpExpenditureIndexRouteImport } from './routes/v2/(planning)/wfp-expenditure/index'
 import { Route as V2planningWfpExpenditureWfpObjectiveActivityIdRouteImport } from './routes/v2/(planning)/wfp-expenditure/$wfpObjectiveActivityId'
@@ -97,6 +96,7 @@ import { Route as V2procurementDirectContractingRequestIndexRouteImport } from '
 import { Route as V2procurementManageAobIndexRouteImport } from './routes/v2/(procurement)/manage-aob/index'
 import { Route as V2procurementManageAobAobIdRouteImport } from './routes/v2/(procurement)/manage-aob/$aobId'
 import { Route as V2procurementManageAprsIndexRouteImport } from './routes/v2/(procurement)/manage-aprs/index'
+import { Route as V2procurementManageAprsAprIdRouteImport } from './routes/v2/(procurement)/manage-aprs/$aprId'
 import { Route as V2procurementManageBacResolutionsIndexRouteImport } from './routes/v2/(procurement)/manage-bac-resolutions/index'
 import { Route as V2procurementManageContractsIndexRouteImport } from './routes/v2/(procurement)/manage-contracts/index'
 import { Route as V2procurementManageDirectAcquisitionIndexRouteImport } from './routes/v2/(procurement)/manage-direct-acquisition/index'
@@ -124,7 +124,6 @@ import { Route as V2procurementRequestForQuotationRfqIndexRouteImport } from './
 import { Route as V2PlanningOrganizationIndexRouteImport } from './routes/v2/_planning/organization/index'
 import { Route as V2PlanningOrganizationLayoutRouteImport } from './routes/v2/_planning/organization/layout'
 import { Route as V2BacDocumentDocIdRouteImport } from './routes/v2/bac/document.$docId'
-import { Route as V2PpmpMasterOfficeIndexRouteImport } from './routes/v2/ppmp/master-office/index'
 import { Route as V1PlanningDeliveryUnitIdWfpIndexRouteImport } from './routes/v1/planning/$deliveryUnitId/wfp/index'
 import { Route as V1PlanningDeliveryUnitIdWfpWfpIdRouteImport } from './routes/v1/planning/$deliveryUnitId/wfp/$wfpId'
 import { Route as V1PlanningFiscalYearFiscalYearIdIndexRouteImport } from './routes/v1/planning/fiscal-year/$fiscalYearId/index'
@@ -163,7 +162,8 @@ import { Route as V2planningWfpObjectiveWfpObjectiveIdIndexRouteImport } from '.
 import { Route as V2planningWfpWfpIdIndexRouteImport } from './routes/v2/(planning)/wfp/$wfpId/index'
 import { Route as V2planningWfpWfpIdActivityRouteImport } from './routes/v2/(planning)/wfp/$wfpId/activity'
 import { Route as V2planningWfpWfpIdGanttChartRouteImport } from './routes/v2/(planning)/wfp/$wfpId/gantt-chart'
-import { Route as V2procurementBiddingDocumentsBacResolutionIdIndexRouteImport } from './routes/v2/(procurement)/bidding-documents/$bacResolutionId/index'
+import { Route as V2procurementBacResolutionsResolutionIdIndexRouteImport } from './routes/v2/(procurement)/bac-resolutions/$resolutionId/index'
+import { Route as V2procurementBacResolutionsClausesIndexRouteImport } from './routes/v2/(procurement)/bac-resolutions/clauses/index'
 import { Route as V2procurementManageNoaNoaIdIndexRouteImport } from './routes/v2/(procurement)/manage-noa/$noaId/index'
 import { Route as V2procurementNoticeOfAwardNoaNoaIdIndexRouteImport } from './routes/v2/(procurement)/notice-of-award-noa/$noaId/index'
 import { Route as V2procurementPoPurchaseOrderIdIndexRouteImport } from './routes/v2/(procurement)/po/$purchaseOrderId/index'
@@ -200,12 +200,6 @@ const V2KpiLibraryMasterKpiKpiIdLazyRouteImport = createFileRoute(
 )()
 const V2KpiLibraryRatingScalesIndexLazyRouteImport = createFileRoute(
   '/v2/kpi-library/rating-scales/',
-)()
-const V2PpmpDepartmentLevelPpmpIdLazyRouteImport = createFileRoute(
-  '/v2/ppmp/department-level/$ppmpId',
-)()
-const V2PpmpOfficeLevelPpmpIdLazyRouteImport = createFileRoute(
-  '/v2/ppmp/office-level/$ppmpId',
 )()
 
 const IndexRoute = IndexRouteImport.update({
@@ -409,21 +403,6 @@ const V2NtpNtpIdRoute = V2NtpNtpIdRouteImport.update({
   path: '/ntp/$ntpId',
   getParentRoute: () => V2Route,
 } as any)
-const V2PpmpIndexRoute = V2PpmpIndexRouteImport.update({
-  id: '/ppmp/',
-  path: '/ppmp/',
-  getParentRoute: () => V2Route,
-} as any)
-const V2PpmpPpmpDetailRoute = V2PpmpPpmpDetailRouteImport.update({
-  id: '/ppmp/_ppmp-detail',
-  path: '/ppmp',
-  getParentRoute: () => V2Route,
-} as any)
-const V2PpmpCatalogRoute = V2PpmpCatalogRouteImport.update({
-  id: '/ppmp/catalog',
-  path: '/ppmp/catalog',
-  getParentRoute: () => V2Route,
-} as any)
 const V1PlanningFiscalYearIndexRoute =
   V1PlanningFiscalYearIndexRouteImport.update({
     id: '/',
@@ -473,11 +452,6 @@ const V1PlanningOfficeIndexRoute = V1PlanningOfficeIndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => V1PlanningOfficeRouteRoute,
-} as any)
-const V1PlanningOpcrIndexRoute = V1PlanningOpcrIndexRouteImport.update({
-  id: '/opcr/',
-  path: '/opcr/',
-  getParentRoute: () => V1PlanningRouteRoute,
 } as any)
 const V1PlanningWfpExpenditureIndexRoute =
   V1PlanningWfpExpenditureIndexRouteImport.update({
@@ -545,6 +519,21 @@ const V2planningMarketScopingSettingsRoute =
     path: '/market-scoping/settings',
     getParentRoute: () => V2Route,
   } as any)
+const V2planningPpmpIndexRoute = V2planningPpmpIndexRouteImport.update({
+  id: '/(planning)/ppmp/',
+  path: '/ppmp/',
+  getParentRoute: () => V2Route,
+} as any)
+const V2planningPpmpPpmpIdRoute = V2planningPpmpPpmpIdRouteImport.update({
+  id: '/(planning)/ppmp/$ppmpId',
+  path: '/ppmp/$ppmpId',
+  getParentRoute: () => V2Route,
+} as any)
+const V2planningPpmpCatalogRoute = V2planningPpmpCatalogRouteImport.update({
+  id: '/(planning)/ppmp/catalog',
+  path: '/ppmp/catalog',
+  getParentRoute: () => V2Route,
+} as any)
 const V2planningUacsLibraryIndexRoute =
   V2planningUacsLibraryIndexRouteImport.update({
     id: '/',
@@ -689,6 +678,12 @@ const V2procurementManageAprsIndexRoute =
   V2procurementManageAprsIndexRouteImport.update({
     id: '/(procurement)/manage-aprs/',
     path: '/manage-aprs/',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2procurementManageAprsAprIdRoute =
+  V2procurementManageAprsAprIdRouteImport.update({
+    id: '/(procurement)/manage-aprs/$aprId',
+    path: '/manage-aprs/$aprId',
     getParentRoute: () => V2Route,
   } as any)
 const V2procurementManageBacResolutionsIndexRoute =
@@ -890,29 +885,6 @@ const V2KpiLibraryRatingScalesIndexLazyRoute =
     import('./routes/v2/kpi-library/rating-scales/index.lazy').then(
       (d) => d.Route,
     ),
-  )
-const V2PpmpDepartmentLevelPpmpIdLazyRoute =
-  V2PpmpDepartmentLevelPpmpIdLazyRouteImport.update({
-    id: '/ppmp/department-level/$ppmpId',
-    path: '/ppmp/department-level/$ppmpId',
-    getParentRoute: () => V2Route,
-  } as any).lazy(() =>
-    import('./routes/v2/ppmp/department-level/$ppmpId.lazy').then(
-      (d) => d.Route,
-    ),
-  )
-const V2PpmpMasterOfficeIndexRoute = V2PpmpMasterOfficeIndexRouteImport.update({
-  id: '/ppmp/master-office/',
-  path: '/ppmp/master-office/',
-  getParentRoute: () => V2Route,
-} as any)
-const V2PpmpOfficeLevelPpmpIdLazyRoute =
-  V2PpmpOfficeLevelPpmpIdLazyRouteImport.update({
-    id: '/ppmp/office-level/$ppmpId',
-    path: '/ppmp/office-level/$ppmpId',
-    getParentRoute: () => V2Route,
-  } as any).lazy(() =>
-    import('./routes/v2/ppmp/office-level/$ppmpId.lazy').then((d) => d.Route),
   )
 const V1PlanningDeliveryUnitIdWfpIndexRoute =
   V1PlanningDeliveryUnitIdWfpIndexRouteImport.update({
@@ -1139,10 +1111,16 @@ const V2planningWfpWfpIdGanttChartRoute =
     path: '/gantt-chart',
     getParentRoute: () => V2planningWfpWfpIdRoute,
   } as any)
-const V2procurementBiddingDocumentsBacResolutionIdIndexRoute =
-  V2procurementBiddingDocumentsBacResolutionIdIndexRouteImport.update({
-    id: '/(procurement)/bidding-documents/$bacResolutionId/',
-    path: '/bidding-documents/$bacResolutionId/',
+const V2procurementBacResolutionsResolutionIdIndexRoute =
+  V2procurementBacResolutionsResolutionIdIndexRouteImport.update({
+    id: '/(procurement)/bac-resolutions/$resolutionId/',
+    path: '/bac-resolutions/$resolutionId/',
+    getParentRoute: () => V2Route,
+  } as any)
+const V2procurementBacResolutionsClausesIndexRoute =
+  V2procurementBacResolutionsClausesIndexRouteImport.update({
+    id: '/(procurement)/bac-resolutions/clauses/',
+    path: '/bac-resolutions/clauses/',
     getParentRoute: () => V2Route,
   } as any)
 const V2procurementManageNoaNoaIdIndexRoute =
@@ -1324,8 +1302,6 @@ export interface FileRoutesByFullPath {
   '/v2/dashboard': typeof V2planningDashboardRoute
   '/v2/uacs-library': typeof V2planningUacsLibraryRouteWithChildren
   '/v2/ntp/$ntpId': typeof V2NtpNtpIdRoute
-  '/v2/ppmp': typeof V2PpmpPpmpDetailRoute
-  '/v2/ppmp/catalog': typeof V2PpmpCatalogRoute
   '/v1/finance/': typeof V1FinanceIndexRoute
   '/v1/planning/': typeof V1PlanningIndexRoute
   '/v2/bac/': typeof V2BacIndexRoute
@@ -1333,7 +1309,6 @@ export interface FileRoutesByFullPath {
   '/v2/fiscal-year-and-policies/': typeof V2FiscalYearAndPoliciesIndexRoute
   '/v2/kpi-library/': typeof V2KpiLibraryIndexRoute
   '/v2/ntp/': typeof V2NtpIndexRoute
-  '/v2/ppmp/': typeof V2PpmpIndexRoute
   '/v1/planning/fund-receive/$fundSourceId': typeof V1PlanningFundReceiveFundSourceIdRouteWithChildren
   '/v1/planning/fund/$budgetAllocationId': typeof V1PlanningFundBudgetAllocationIdRouteWithChildren
   '/v1/planning/fund/$fundId': typeof V1PlanningFundFundIdRouteWithChildren
@@ -1343,12 +1318,15 @@ export interface FileRoutesByFullPath {
   '/v2/market-scoping/$id': typeof V2planningMarketScopingIdRoute
   '/v2/market-scoping/create': typeof V2planningMarketScopingCreateRoute
   '/v2/market-scoping/settings': typeof V2planningMarketScopingSettingsRoute
+  '/v2/ppmp/$ppmpId': typeof V2planningPpmpPpmpIdRoute
+  '/v2/ppmp/catalog': typeof V2planningPpmpCatalogRoute
   '/v2/wfp-expenditure/$wfpObjectiveActivityId': typeof V2planningWfpExpenditureWfpObjectiveActivityIdRouteWithChildren
   '/v2/wfp-objective/$wfpObjectiveId': typeof V2planningWfpObjectiveWfpObjectiveIdRouteWithChildren
   '/v2/wfp/$wfpId': typeof V2planningWfpWfpIdRouteWithChildren
   '/v2/abstract-of-bids-aob/$aobId': typeof V2procurementAbstractOfBidsAobAobIdRoute
   '/v2/agency-purchase-requests-apr/$aprId': typeof V2procurementAgencyPurchaseRequestsAprAprIdRoute
   '/v2/manage-aob/$aobId': typeof V2procurementManageAobAobIdRoute
+  '/v2/manage-aprs/$aprId': typeof V2procurementManageAprsAprIdRoute
   '/v2/manage-ntp/$ntpId': typeof V2procurementManageNtpNtpIdRoute
   '/v2/manage-supplier-portal/$projectId': typeof V2procurementManageSupplierPortalProjectIdRoute
   '/v2/notice-to-proceed-ntp/$ntpId': typeof V2procurementNoticeToProceedNtpNtpIdRoute
@@ -1356,20 +1334,18 @@ export interface FileRoutesByFullPath {
   '/v2/bac/document/$docId': typeof V2BacDocumentDocIdRoute
   '/v2/consolidate-prs/$consolidatedPrId': typeof V2procurementConsolidatePrsConsolidatedPrIdLazyRoute
   '/v2/kpi-library/master-kpi/$kpiId': typeof V2KpiLibraryMasterKpiKpiIdLazyRoute
-  '/v2/ppmp/department-level/$ppmpId': typeof V2PpmpDepartmentLevelPpmpIdLazyRoute
-  '/v2/ppmp/office-level/$ppmpId': typeof V2PpmpOfficeLevelPpmpIdLazyRoute
   '/v1/planning/fiscal-year/': typeof V1PlanningFiscalYearIndexRoute
   '/v1/planning/fund-receive/': typeof V1PlanningFundReceiveIndexRoute
   '/v1/planning/fund/': typeof V1PlanningFundIndexRoute
   '/v1/planning/kpi-assignment-for-du/': typeof V1PlanningKpiAssignmentForDuIndexRoute
   '/v1/planning/kpi/': typeof V1PlanningKpiIndexRoute
   '/v1/planning/office/': typeof V1PlanningOfficeIndexRoute
-  '/v1/planning/opcr/': typeof V1PlanningOpcrIndexRoute
   '/v1/planning/wfp-expenditure/': typeof V1PlanningWfpExpenditureIndexRoute
   '/v1/planning/wfp-objective/': typeof V1PlanningWfpObjectiveIndexRoute
   '/v2/annual-performance-planning/': typeof V2planningAnnualPerformancePlanningIndexRoute
   '/v2/app-consolidation/': typeof V2planningAppConsolidationIndexRoute
   '/v2/market-scoping/': typeof V2planningMarketScopingIndexRoute
+  '/v2/ppmp/': typeof V2planningPpmpIndexRoute
   '/v2/uacs-library/': typeof V2planningUacsLibraryIndexRoute
   '/v2/wfp-expenditure/': typeof V2planningWfpExpenditureIndexRoute
   '/v2/wfp-objective/': typeof V2planningWfpObjectiveIndexRoute
@@ -1409,7 +1385,6 @@ export interface FileRoutesByFullPath {
   '/v2/purchase-requests-pr/': typeof V2procurementPurchaseRequestsPrIndexRoute
   '/v2/request-for-quotation-rfq/': typeof V2procurementRequestForQuotationRfqIndexRoute
   '/v2/organization/': typeof V2PlanningOrganizationIndexRoute
-  '/v2/ppmp/master-office/': typeof V2PpmpMasterOfficeIndexRoute
   '/v2/kpi-library/kpi-measurement-configurator/': typeof V2KpiLibraryKpiMeasurementConfiguratorIndexLazyRoute
   '/v2/kpi-library/master-kpi/': typeof V2KpiLibraryMasterKpiIndexLazyRoute
   '/v2/kpi-library/rating-scales/': typeof V2KpiLibraryRatingScalesIndexLazyRoute
@@ -1451,7 +1426,8 @@ export interface FileRoutesByFullPath {
   '/v2/wfp-expenditure/$wfpObjectiveActivityId/': typeof V2planningWfpExpenditureWfpObjectiveActivityIdIndexRoute
   '/v2/wfp-objective/$wfpObjectiveId/': typeof V2planningWfpObjectiveWfpObjectiveIdIndexRoute
   '/v2/wfp/$wfpId/': typeof V2planningWfpWfpIdIndexRoute
-  '/v2/bidding-documents/$bacResolutionId/': typeof V2procurementBiddingDocumentsBacResolutionIdIndexRoute
+  '/v2/bac-resolutions/$resolutionId/': typeof V2procurementBacResolutionsResolutionIdIndexRoute
+  '/v2/bac-resolutions/clauses/': typeof V2procurementBacResolutionsClausesIndexRoute
   '/v2/manage-noa/$noaId/': typeof V2procurementManageNoaNoaIdIndexRoute
   '/v2/notice-of-award-noa/$noaId/': typeof V2procurementNoticeOfAwardNoaNoaIdIndexRoute
   '/v2/po/$purchaseOrderId/': typeof V2procurementPoPurchaseOrderIdIndexRoute
@@ -1500,8 +1476,6 @@ export interface FileRoutesByTo {
   '/v1/planning/settings': typeof V1PlanningSettingsRoute
   '/v2/dashboard': typeof V2planningDashboardRoute
   '/v2/ntp/$ntpId': typeof V2NtpNtpIdRoute
-  '/v2/ppmp': typeof V2PpmpIndexRoute
-  '/v2/ppmp/catalog': typeof V2PpmpCatalogRoute
   '/v1/finance': typeof V1FinanceIndexRoute
   '/v1/planning': typeof V1PlanningIndexRoute
   '/v2/bac': typeof V2BacIndexRoute
@@ -1513,9 +1487,12 @@ export interface FileRoutesByTo {
   '/v2/market-scoping/$id': typeof V2planningMarketScopingIdRoute
   '/v2/market-scoping/create': typeof V2planningMarketScopingCreateRoute
   '/v2/market-scoping/settings': typeof V2planningMarketScopingSettingsRoute
+  '/v2/ppmp/$ppmpId': typeof V2planningPpmpPpmpIdRoute
+  '/v2/ppmp/catalog': typeof V2planningPpmpCatalogRoute
   '/v2/abstract-of-bids-aob/$aobId': typeof V2procurementAbstractOfBidsAobAobIdRoute
   '/v2/agency-purchase-requests-apr/$aprId': typeof V2procurementAgencyPurchaseRequestsAprAprIdRoute
   '/v2/manage-aob/$aobId': typeof V2procurementManageAobAobIdRoute
+  '/v2/manage-aprs/$aprId': typeof V2procurementManageAprsAprIdRoute
   '/v2/manage-ntp/$ntpId': typeof V2procurementManageNtpNtpIdRoute
   '/v2/manage-supplier-portal/$projectId': typeof V2procurementManageSupplierPortalProjectIdRoute
   '/v2/notice-to-proceed-ntp/$ntpId': typeof V2procurementNoticeToProceedNtpNtpIdRoute
@@ -1523,20 +1500,18 @@ export interface FileRoutesByTo {
   '/v2/bac/document/$docId': typeof V2BacDocumentDocIdRoute
   '/v2/consolidate-prs/$consolidatedPrId': typeof V2procurementConsolidatePrsConsolidatedPrIdLazyRoute
   '/v2/kpi-library/master-kpi/$kpiId': typeof V2KpiLibraryMasterKpiKpiIdLazyRoute
-  '/v2/ppmp/department-level/$ppmpId': typeof V2PpmpDepartmentLevelPpmpIdLazyRoute
-  '/v2/ppmp/office-level/$ppmpId': typeof V2PpmpOfficeLevelPpmpIdLazyRoute
   '/v1/planning/fiscal-year': typeof V1PlanningFiscalYearIndexRoute
   '/v1/planning/fund-receive': typeof V1PlanningFundReceiveIndexRoute
   '/v1/planning/fund': typeof V1PlanningFundIndexRoute
   '/v1/planning/kpi-assignment-for-du': typeof V1PlanningKpiAssignmentForDuIndexRoute
   '/v1/planning/kpi': typeof V1PlanningKpiIndexRoute
   '/v1/planning/office': typeof V1PlanningOfficeIndexRoute
-  '/v1/planning/opcr': typeof V1PlanningOpcrIndexRoute
   '/v1/planning/wfp-expenditure': typeof V1PlanningWfpExpenditureIndexRoute
   '/v1/planning/wfp-objective': typeof V1PlanningWfpObjectiveIndexRoute
   '/v2/annual-performance-planning': typeof V2planningAnnualPerformancePlanningIndexRoute
   '/v2/app-consolidation': typeof V2planningAppConsolidationIndexRoute
   '/v2/market-scoping': typeof V2planningMarketScopingIndexRoute
+  '/v2/ppmp': typeof V2planningPpmpIndexRoute
   '/v2/uacs-library': typeof V2planningUacsLibraryIndexRoute
   '/v2/wfp-expenditure': typeof V2planningWfpExpenditureIndexRoute
   '/v2/wfp-objective': typeof V2planningWfpObjectiveIndexRoute
@@ -1576,7 +1551,6 @@ export interface FileRoutesByTo {
   '/v2/purchase-requests-pr': typeof V2procurementPurchaseRequestsPrIndexRoute
   '/v2/request-for-quotation-rfq': typeof V2procurementRequestForQuotationRfqIndexRoute
   '/v2/organization': typeof V2PlanningOrganizationIndexRoute
-  '/v2/ppmp/master-office': typeof V2PpmpMasterOfficeIndexRoute
   '/v2/kpi-library/kpi-measurement-configurator': typeof V2KpiLibraryKpiMeasurementConfiguratorIndexLazyRoute
   '/v2/kpi-library/master-kpi': typeof V2KpiLibraryMasterKpiIndexLazyRoute
   '/v2/kpi-library/rating-scales': typeof V2KpiLibraryRatingScalesIndexLazyRoute
@@ -1617,7 +1591,8 @@ export interface FileRoutesByTo {
   '/v2/wfp-expenditure/$wfpObjectiveActivityId': typeof V2planningWfpExpenditureWfpObjectiveActivityIdIndexRoute
   '/v2/wfp-objective/$wfpObjectiveId': typeof V2planningWfpObjectiveWfpObjectiveIdIndexRoute
   '/v2/wfp/$wfpId': typeof V2planningWfpWfpIdIndexRoute
-  '/v2/bidding-documents/$bacResolutionId': typeof V2procurementBiddingDocumentsBacResolutionIdIndexRoute
+  '/v2/bac-resolutions/$resolutionId': typeof V2procurementBacResolutionsResolutionIdIndexRoute
+  '/v2/bac-resolutions/clauses': typeof V2procurementBacResolutionsClausesIndexRoute
   '/v2/manage-noa/$noaId': typeof V2procurementManageNoaNoaIdIndexRoute
   '/v2/notice-of-award-noa/$noaId': typeof V2procurementNoticeOfAwardNoaNoaIdIndexRoute
   '/v2/po/$purchaseOrderId': typeof V2procurementPoPurchaseOrderIdIndexRoute
@@ -1675,8 +1650,6 @@ export interface FileRoutesById {
   '/v2/(planning)/dashboard': typeof V2planningDashboardRoute
   '/v2/(planning)/uacs-library': typeof V2planningUacsLibraryRouteWithChildren
   '/v2/ntp/$ntpId': typeof V2NtpNtpIdRoute
-  '/v2/ppmp/_ppmp-detail': typeof V2PpmpPpmpDetailRoute
-  '/v2/ppmp/catalog': typeof V2PpmpCatalogRoute
   '/v1/finance/': typeof V1FinanceIndexRoute
   '/v1/planning/': typeof V1PlanningIndexRoute
   '/v2/bac/': typeof V2BacIndexRoute
@@ -1684,7 +1657,6 @@ export interface FileRoutesById {
   '/v2/fiscal-year-and-policies/': typeof V2FiscalYearAndPoliciesIndexRoute
   '/v2/kpi-library/': typeof V2KpiLibraryIndexRoute
   '/v2/ntp/': typeof V2NtpIndexRoute
-  '/v2/ppmp/': typeof V2PpmpIndexRoute
   '/v1/planning/fund-receive/$fundSourceId': typeof V1PlanningFundReceiveFundSourceIdRouteWithChildren
   '/v1/planning/fund/$budgetAllocationId': typeof V1PlanningFundBudgetAllocationIdRouteWithChildren
   '/v1/planning/fund/$fundId': typeof V1PlanningFundFundIdRouteWithChildren
@@ -1694,12 +1666,15 @@ export interface FileRoutesById {
   '/v2/(planning)/market-scoping/$id': typeof V2planningMarketScopingIdRoute
   '/v2/(planning)/market-scoping/create': typeof V2planningMarketScopingCreateRoute
   '/v2/(planning)/market-scoping/settings': typeof V2planningMarketScopingSettingsRoute
+  '/v2/(planning)/ppmp/$ppmpId': typeof V2planningPpmpPpmpIdRoute
+  '/v2/(planning)/ppmp/catalog': typeof V2planningPpmpCatalogRoute
   '/v2/(planning)/wfp-expenditure/$wfpObjectiveActivityId': typeof V2planningWfpExpenditureWfpObjectiveActivityIdRouteWithChildren
   '/v2/(planning)/wfp-objective/$wfpObjectiveId': typeof V2planningWfpObjectiveWfpObjectiveIdRouteWithChildren
   '/v2/(planning)/wfp/$wfpId': typeof V2planningWfpWfpIdRouteWithChildren
   '/v2/(procurement)/abstract-of-bids-aob/$aobId': typeof V2procurementAbstractOfBidsAobAobIdRoute
   '/v2/(procurement)/agency-purchase-requests-apr/$aprId': typeof V2procurementAgencyPurchaseRequestsAprAprIdRoute
   '/v2/(procurement)/manage-aob/$aobId': typeof V2procurementManageAobAobIdRoute
+  '/v2/(procurement)/manage-aprs/$aprId': typeof V2procurementManageAprsAprIdRoute
   '/v2/(procurement)/manage-ntp/$ntpId': typeof V2procurementManageNtpNtpIdRoute
   '/v2/(procurement)/manage-supplier-portal/$projectId': typeof V2procurementManageSupplierPortalProjectIdRoute
   '/v2/(procurement)/notice-to-proceed-ntp/$ntpId': typeof V2procurementNoticeToProceedNtpNtpIdRoute
@@ -1707,20 +1682,18 @@ export interface FileRoutesById {
   '/v2/bac/document/$docId': typeof V2BacDocumentDocIdRoute
   '/v2/(procurement)/consolidate-prs/$consolidatedPrId': typeof V2procurementConsolidatePrsConsolidatedPrIdLazyRoute
   '/v2/kpi-library/master-kpi/$kpiId': typeof V2KpiLibraryMasterKpiKpiIdLazyRoute
-  '/v2/ppmp/department-level/$ppmpId': typeof V2PpmpDepartmentLevelPpmpIdLazyRoute
-  '/v2/ppmp/office-level/$ppmpId': typeof V2PpmpOfficeLevelPpmpIdLazyRoute
   '/v1/planning/fiscal-year/': typeof V1PlanningFiscalYearIndexRoute
   '/v1/planning/fund-receive/': typeof V1PlanningFundReceiveIndexRoute
   '/v1/planning/fund/': typeof V1PlanningFundIndexRoute
   '/v1/planning/kpi-assignment-for-du/': typeof V1PlanningKpiAssignmentForDuIndexRoute
   '/v1/planning/kpi/': typeof V1PlanningKpiIndexRoute
   '/v1/planning/office/': typeof V1PlanningOfficeIndexRoute
-  '/v1/planning/opcr/': typeof V1PlanningOpcrIndexRoute
   '/v1/planning/wfp-expenditure/': typeof V1PlanningWfpExpenditureIndexRoute
   '/v1/planning/wfp-objective/': typeof V1PlanningWfpObjectiveIndexRoute
   '/v2/(planning)/annual-performance-planning/': typeof V2planningAnnualPerformancePlanningIndexRoute
   '/v2/(planning)/app-consolidation/': typeof V2planningAppConsolidationIndexRoute
   '/v2/(planning)/market-scoping/': typeof V2planningMarketScopingIndexRoute
+  '/v2/(planning)/ppmp/': typeof V2planningPpmpIndexRoute
   '/v2/(planning)/uacs-library/': typeof V2planningUacsLibraryIndexRoute
   '/v2/(planning)/wfp-expenditure/': typeof V2planningWfpExpenditureIndexRoute
   '/v2/(planning)/wfp-objective/': typeof V2planningWfpObjectiveIndexRoute
@@ -1760,7 +1733,6 @@ export interface FileRoutesById {
   '/v2/(procurement)/purchase-requests-pr/': typeof V2procurementPurchaseRequestsPrIndexRoute
   '/v2/(procurement)/request-for-quotation-rfq/': typeof V2procurementRequestForQuotationRfqIndexRoute
   '/v2/_planning/organization/': typeof V2PlanningOrganizationIndexRoute
-  '/v2/ppmp/master-office/': typeof V2PpmpMasterOfficeIndexRoute
   '/v2/kpi-library/kpi-measurement-configurator/': typeof V2KpiLibraryKpiMeasurementConfiguratorIndexLazyRoute
   '/v2/kpi-library/master-kpi/': typeof V2KpiLibraryMasterKpiIndexLazyRoute
   '/v2/kpi-library/rating-scales/': typeof V2KpiLibraryRatingScalesIndexLazyRoute
@@ -1802,7 +1774,8 @@ export interface FileRoutesById {
   '/v2/(planning)/wfp-expenditure/$wfpObjectiveActivityId/': typeof V2planningWfpExpenditureWfpObjectiveActivityIdIndexRoute
   '/v2/(planning)/wfp-objective/$wfpObjectiveId/': typeof V2planningWfpObjectiveWfpObjectiveIdIndexRoute
   '/v2/(planning)/wfp/$wfpId/': typeof V2planningWfpWfpIdIndexRoute
-  '/v2/(procurement)/bidding-documents/$bacResolutionId/': typeof V2procurementBiddingDocumentsBacResolutionIdIndexRoute
+  '/v2/(procurement)/bac-resolutions/$resolutionId/': typeof V2procurementBacResolutionsResolutionIdIndexRoute
+  '/v2/(procurement)/bac-resolutions/clauses/': typeof V2procurementBacResolutionsClausesIndexRoute
   '/v2/(procurement)/manage-noa/$noaId/': typeof V2procurementManageNoaNoaIdIndexRoute
   '/v2/(procurement)/notice-of-award-noa/$noaId/': typeof V2procurementNoticeOfAwardNoaNoaIdIndexRoute
   '/v2/(procurement)/po/$purchaseOrderId/': typeof V2procurementPoPurchaseOrderIdIndexRoute
@@ -1861,8 +1834,6 @@ export interface FileRouteTypes {
     | '/v2/dashboard'
     | '/v2/uacs-library'
     | '/v2/ntp/$ntpId'
-    | '/v2/ppmp'
-    | '/v2/ppmp/catalog'
     | '/v1/finance/'
     | '/v1/planning/'
     | '/v2/bac/'
@@ -1870,7 +1841,6 @@ export interface FileRouteTypes {
     | '/v2/fiscal-year-and-policies/'
     | '/v2/kpi-library/'
     | '/v2/ntp/'
-    | '/v2/ppmp/'
     | '/v1/planning/fund-receive/$fundSourceId'
     | '/v1/planning/fund/$budgetAllocationId'
     | '/v1/planning/fund/$fundId'
@@ -1880,12 +1850,15 @@ export interface FileRouteTypes {
     | '/v2/market-scoping/$id'
     | '/v2/market-scoping/create'
     | '/v2/market-scoping/settings'
+    | '/v2/ppmp/$ppmpId'
+    | '/v2/ppmp/catalog'
     | '/v2/wfp-expenditure/$wfpObjectiveActivityId'
     | '/v2/wfp-objective/$wfpObjectiveId'
     | '/v2/wfp/$wfpId'
     | '/v2/abstract-of-bids-aob/$aobId'
     | '/v2/agency-purchase-requests-apr/$aprId'
     | '/v2/manage-aob/$aobId'
+    | '/v2/manage-aprs/$aprId'
     | '/v2/manage-ntp/$ntpId'
     | '/v2/manage-supplier-portal/$projectId'
     | '/v2/notice-to-proceed-ntp/$ntpId'
@@ -1893,20 +1866,18 @@ export interface FileRouteTypes {
     | '/v2/bac/document/$docId'
     | '/v2/consolidate-prs/$consolidatedPrId'
     | '/v2/kpi-library/master-kpi/$kpiId'
-    | '/v2/ppmp/department-level/$ppmpId'
-    | '/v2/ppmp/office-level/$ppmpId'
     | '/v1/planning/fiscal-year/'
     | '/v1/planning/fund-receive/'
     | '/v1/planning/fund/'
     | '/v1/planning/kpi-assignment-for-du/'
     | '/v1/planning/kpi/'
     | '/v1/planning/office/'
-    | '/v1/planning/opcr/'
     | '/v1/planning/wfp-expenditure/'
     | '/v1/planning/wfp-objective/'
     | '/v2/annual-performance-planning/'
     | '/v2/app-consolidation/'
     | '/v2/market-scoping/'
+    | '/v2/ppmp/'
     | '/v2/uacs-library/'
     | '/v2/wfp-expenditure/'
     | '/v2/wfp-objective/'
@@ -1946,7 +1917,6 @@ export interface FileRouteTypes {
     | '/v2/purchase-requests-pr/'
     | '/v2/request-for-quotation-rfq/'
     | '/v2/organization/'
-    | '/v2/ppmp/master-office/'
     | '/v2/kpi-library/kpi-measurement-configurator/'
     | '/v2/kpi-library/master-kpi/'
     | '/v2/kpi-library/rating-scales/'
@@ -1988,7 +1958,8 @@ export interface FileRouteTypes {
     | '/v2/wfp-expenditure/$wfpObjectiveActivityId/'
     | '/v2/wfp-objective/$wfpObjectiveId/'
     | '/v2/wfp/$wfpId/'
-    | '/v2/bidding-documents/$bacResolutionId/'
+    | '/v2/bac-resolutions/$resolutionId/'
+    | '/v2/bac-resolutions/clauses/'
     | '/v2/manage-noa/$noaId/'
     | '/v2/notice-of-award-noa/$noaId/'
     | '/v2/po/$purchaseOrderId/'
@@ -2037,8 +2008,6 @@ export interface FileRouteTypes {
     | '/v1/planning/settings'
     | '/v2/dashboard'
     | '/v2/ntp/$ntpId'
-    | '/v2/ppmp'
-    | '/v2/ppmp/catalog'
     | '/v1/finance'
     | '/v1/planning'
     | '/v2/bac'
@@ -2050,9 +2019,12 @@ export interface FileRouteTypes {
     | '/v2/market-scoping/$id'
     | '/v2/market-scoping/create'
     | '/v2/market-scoping/settings'
+    | '/v2/ppmp/$ppmpId'
+    | '/v2/ppmp/catalog'
     | '/v2/abstract-of-bids-aob/$aobId'
     | '/v2/agency-purchase-requests-apr/$aprId'
     | '/v2/manage-aob/$aobId'
+    | '/v2/manage-aprs/$aprId'
     | '/v2/manage-ntp/$ntpId'
     | '/v2/manage-supplier-portal/$projectId'
     | '/v2/notice-to-proceed-ntp/$ntpId'
@@ -2060,20 +2032,18 @@ export interface FileRouteTypes {
     | '/v2/bac/document/$docId'
     | '/v2/consolidate-prs/$consolidatedPrId'
     | '/v2/kpi-library/master-kpi/$kpiId'
-    | '/v2/ppmp/department-level/$ppmpId'
-    | '/v2/ppmp/office-level/$ppmpId'
     | '/v1/planning/fiscal-year'
     | '/v1/planning/fund-receive'
     | '/v1/planning/fund'
     | '/v1/planning/kpi-assignment-for-du'
     | '/v1/planning/kpi'
     | '/v1/planning/office'
-    | '/v1/planning/opcr'
     | '/v1/planning/wfp-expenditure'
     | '/v1/planning/wfp-objective'
     | '/v2/annual-performance-planning'
     | '/v2/app-consolidation'
     | '/v2/market-scoping'
+    | '/v2/ppmp'
     | '/v2/uacs-library'
     | '/v2/wfp-expenditure'
     | '/v2/wfp-objective'
@@ -2113,7 +2083,6 @@ export interface FileRouteTypes {
     | '/v2/purchase-requests-pr'
     | '/v2/request-for-quotation-rfq'
     | '/v2/organization'
-    | '/v2/ppmp/master-office'
     | '/v2/kpi-library/kpi-measurement-configurator'
     | '/v2/kpi-library/master-kpi'
     | '/v2/kpi-library/rating-scales'
@@ -2154,7 +2123,8 @@ export interface FileRouteTypes {
     | '/v2/wfp-expenditure/$wfpObjectiveActivityId'
     | '/v2/wfp-objective/$wfpObjectiveId'
     | '/v2/wfp/$wfpId'
-    | '/v2/bidding-documents/$bacResolutionId'
+    | '/v2/bac-resolutions/$resolutionId'
+    | '/v2/bac-resolutions/clauses'
     | '/v2/manage-noa/$noaId'
     | '/v2/notice-of-award-noa/$noaId'
     | '/v2/po/$purchaseOrderId'
@@ -2211,8 +2181,6 @@ export interface FileRouteTypes {
     | '/v2/(planning)/dashboard'
     | '/v2/(planning)/uacs-library'
     | '/v2/ntp/$ntpId'
-    | '/v2/ppmp/_ppmp-detail'
-    | '/v2/ppmp/catalog'
     | '/v1/finance/'
     | '/v1/planning/'
     | '/v2/bac/'
@@ -2220,7 +2188,6 @@ export interface FileRouteTypes {
     | '/v2/fiscal-year-and-policies/'
     | '/v2/kpi-library/'
     | '/v2/ntp/'
-    | '/v2/ppmp/'
     | '/v1/planning/fund-receive/$fundSourceId'
     | '/v1/planning/fund/$budgetAllocationId'
     | '/v1/planning/fund/$fundId'
@@ -2230,12 +2197,15 @@ export interface FileRouteTypes {
     | '/v2/(planning)/market-scoping/$id'
     | '/v2/(planning)/market-scoping/create'
     | '/v2/(planning)/market-scoping/settings'
+    | '/v2/(planning)/ppmp/$ppmpId'
+    | '/v2/(planning)/ppmp/catalog'
     | '/v2/(planning)/wfp-expenditure/$wfpObjectiveActivityId'
     | '/v2/(planning)/wfp-objective/$wfpObjectiveId'
     | '/v2/(planning)/wfp/$wfpId'
     | '/v2/(procurement)/abstract-of-bids-aob/$aobId'
     | '/v2/(procurement)/agency-purchase-requests-apr/$aprId'
     | '/v2/(procurement)/manage-aob/$aobId'
+    | '/v2/(procurement)/manage-aprs/$aprId'
     | '/v2/(procurement)/manage-ntp/$ntpId'
     | '/v2/(procurement)/manage-supplier-portal/$projectId'
     | '/v2/(procurement)/notice-to-proceed-ntp/$ntpId'
@@ -2243,20 +2213,18 @@ export interface FileRouteTypes {
     | '/v2/bac/document/$docId'
     | '/v2/(procurement)/consolidate-prs/$consolidatedPrId'
     | '/v2/kpi-library/master-kpi/$kpiId'
-    | '/v2/ppmp/department-level/$ppmpId'
-    | '/v2/ppmp/office-level/$ppmpId'
     | '/v1/planning/fiscal-year/'
     | '/v1/planning/fund-receive/'
     | '/v1/planning/fund/'
     | '/v1/planning/kpi-assignment-for-du/'
     | '/v1/planning/kpi/'
     | '/v1/planning/office/'
-    | '/v1/planning/opcr/'
     | '/v1/planning/wfp-expenditure/'
     | '/v1/planning/wfp-objective/'
     | '/v2/(planning)/annual-performance-planning/'
     | '/v2/(planning)/app-consolidation/'
     | '/v2/(planning)/market-scoping/'
+    | '/v2/(planning)/ppmp/'
     | '/v2/(planning)/uacs-library/'
     | '/v2/(planning)/wfp-expenditure/'
     | '/v2/(planning)/wfp-objective/'
@@ -2296,7 +2264,6 @@ export interface FileRouteTypes {
     | '/v2/(procurement)/purchase-requests-pr/'
     | '/v2/(procurement)/request-for-quotation-rfq/'
     | '/v2/_planning/organization/'
-    | '/v2/ppmp/master-office/'
     | '/v2/kpi-library/kpi-measurement-configurator/'
     | '/v2/kpi-library/master-kpi/'
     | '/v2/kpi-library/rating-scales/'
@@ -2338,7 +2305,8 @@ export interface FileRouteTypes {
     | '/v2/(planning)/wfp-expenditure/$wfpObjectiveActivityId/'
     | '/v2/(planning)/wfp-objective/$wfpObjectiveId/'
     | '/v2/(planning)/wfp/$wfpId/'
-    | '/v2/(procurement)/bidding-documents/$bacResolutionId/'
+    | '/v2/(procurement)/bac-resolutions/$resolutionId/'
+    | '/v2/(procurement)/bac-resolutions/clauses/'
     | '/v2/(procurement)/manage-noa/$noaId/'
     | '/v2/(procurement)/notice-of-award-noa/$noaId/'
     | '/v2/(procurement)/po/$purchaseOrderId/'
@@ -2645,27 +2613,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof V2NtpNtpIdRouteImport
       parentRoute: typeof V2Route
     }
-    '/v2/ppmp/': {
-      id: '/v2/ppmp/'
-      path: '/ppmp'
-      fullPath: '/v2/ppmp/'
-      preLoaderRoute: typeof V2PpmpIndexRouteImport
-      parentRoute: typeof V2Route
-    }
-    '/v2/ppmp/_ppmp-detail': {
-      id: '/v2/ppmp/_ppmp-detail'
-      path: '/ppmp'
-      fullPath: '/v2/ppmp'
-      preLoaderRoute: typeof V2PpmpPpmpDetailRouteImport
-      parentRoute: typeof V2Route
-    }
-    '/v2/ppmp/catalog': {
-      id: '/v2/ppmp/catalog'
-      path: '/ppmp/catalog'
-      fullPath: '/v2/ppmp/catalog'
-      preLoaderRoute: typeof V2PpmpCatalogRouteImport
-      parentRoute: typeof V2Route
-    }
     '/v1/planning/fiscal-year/': {
       id: '/v1/planning/fiscal-year/'
       path: '/'
@@ -2728,13 +2675,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/v1/planning/office/'
       preLoaderRoute: typeof V1PlanningOfficeIndexRouteImport
       parentRoute: typeof V1PlanningOfficeRouteRoute
-    }
-    '/v1/planning/opcr/': {
-      id: '/v1/planning/opcr/'
-      path: '/opcr'
-      fullPath: '/v1/planning/opcr/'
-      preLoaderRoute: typeof V1PlanningOpcrIndexRouteImport
-      parentRoute: typeof V1PlanningRouteRoute
     }
     '/v1/planning/wfp-expenditure/': {
       id: '/v1/planning/wfp-expenditure/'
@@ -2811,6 +2751,27 @@ declare module '@tanstack/react-router' {
       path: '/market-scoping/settings'
       fullPath: '/v2/market-scoping/settings'
       preLoaderRoute: typeof V2planningMarketScopingSettingsRouteImport
+      parentRoute: typeof V2Route
+    }
+    '/v2/(planning)/ppmp/': {
+      id: '/v2/(planning)/ppmp/'
+      path: '/ppmp'
+      fullPath: '/v2/ppmp/'
+      preLoaderRoute: typeof V2planningPpmpIndexRouteImport
+      parentRoute: typeof V2Route
+    }
+    '/v2/(planning)/ppmp/$ppmpId': {
+      id: '/v2/(planning)/ppmp/$ppmpId'
+      path: '/ppmp/$ppmpId'
+      fullPath: '/v2/ppmp/$ppmpId'
+      preLoaderRoute: typeof V2planningPpmpPpmpIdRouteImport
+      parentRoute: typeof V2Route
+    }
+    '/v2/(planning)/ppmp/catalog': {
+      id: '/v2/(planning)/ppmp/catalog'
+      path: '/ppmp/catalog'
+      fullPath: '/v2/ppmp/catalog'
+      preLoaderRoute: typeof V2planningPpmpCatalogRouteImport
       parentRoute: typeof V2Route
     }
     '/v2/(planning)/uacs-library/': {
@@ -2979,6 +2940,13 @@ declare module '@tanstack/react-router' {
       path: '/manage-aprs'
       fullPath: '/v2/manage-aprs/'
       preLoaderRoute: typeof V2procurementManageAprsIndexRouteImport
+      parentRoute: typeof V2Route
+    }
+    '/v2/(procurement)/manage-aprs/$aprId': {
+      id: '/v2/(procurement)/manage-aprs/$aprId'
+      path: '/manage-aprs/$aprId'
+      fullPath: '/v2/manage-aprs/$aprId'
+      preLoaderRoute: typeof V2procurementManageAprsAprIdRouteImport
       parentRoute: typeof V2Route
     }
     '/v2/(procurement)/manage-bac-resolutions/': {
@@ -3196,27 +3164,6 @@ declare module '@tanstack/react-router' {
       path: '/kpi-library/rating-scales'
       fullPath: '/v2/kpi-library/rating-scales/'
       preLoaderRoute: typeof V2KpiLibraryRatingScalesIndexLazyRouteImport
-      parentRoute: typeof V2Route
-    }
-    '/v2/ppmp/department-level/$ppmpId': {
-      id: '/v2/ppmp/department-level/$ppmpId'
-      path: '/ppmp/department-level/$ppmpId'
-      fullPath: '/v2/ppmp/department-level/$ppmpId'
-      preLoaderRoute: typeof V2PpmpDepartmentLevelPpmpIdLazyRouteImport
-      parentRoute: typeof V2Route
-    }
-    '/v2/ppmp/master-office/': {
-      id: '/v2/ppmp/master-office/'
-      path: '/ppmp/master-office'
-      fullPath: '/v2/ppmp/master-office/'
-      preLoaderRoute: typeof V2PpmpMasterOfficeIndexRouteImport
-      parentRoute: typeof V2Route
-    }
-    '/v2/ppmp/office-level/$ppmpId': {
-      id: '/v2/ppmp/office-level/$ppmpId'
-      path: '/ppmp/office-level/$ppmpId'
-      fullPath: '/v2/ppmp/office-level/$ppmpId'
-      preLoaderRoute: typeof V2PpmpOfficeLevelPpmpIdLazyRouteImport
       parentRoute: typeof V2Route
     }
     '/v1/planning/$deliveryUnitId/wfp/': {
@@ -3485,11 +3432,18 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof V2planningWfpWfpIdGanttChartRouteImport
       parentRoute: typeof V2planningWfpWfpIdRoute
     }
-    '/v2/(procurement)/bidding-documents/$bacResolutionId/': {
-      id: '/v2/(procurement)/bidding-documents/$bacResolutionId/'
-      path: '/bidding-documents/$bacResolutionId'
-      fullPath: '/v2/bidding-documents/$bacResolutionId/'
-      preLoaderRoute: typeof V2procurementBiddingDocumentsBacResolutionIdIndexRouteImport
+    '/v2/(procurement)/bac-resolutions/$resolutionId/': {
+      id: '/v2/(procurement)/bac-resolutions/$resolutionId/'
+      path: '/bac-resolutions/$resolutionId'
+      fullPath: '/v2/bac-resolutions/$resolutionId/'
+      preLoaderRoute: typeof V2procurementBacResolutionsResolutionIdIndexRouteImport
+      parentRoute: typeof V2Route
+    }
+    '/v2/(procurement)/bac-resolutions/clauses/': {
+      id: '/v2/(procurement)/bac-resolutions/clauses/'
+      path: '/bac-resolutions/clauses'
+      fullPath: '/v2/bac-resolutions/clauses/'
+      preLoaderRoute: typeof V2procurementBacResolutionsClausesIndexRouteImport
       parentRoute: typeof V2Route
     }
     '/v2/(procurement)/manage-noa/$noaId/': {
@@ -3838,7 +3792,6 @@ interface V1PlanningRouteRouteChildren {
   V1PlanningFundReceiveIndexRoute: typeof V1PlanningFundReceiveIndexRoute
   V1PlanningFundIndexRoute: typeof V1PlanningFundIndexRoute
   V1PlanningKpiAssignmentForDuIndexRoute: typeof V1PlanningKpiAssignmentForDuIndexRoute
-  V1PlanningOpcrIndexRoute: typeof V1PlanningOpcrIndexRoute
   V1PlanningWfpExpenditureIndexRoute: typeof V1PlanningWfpExpenditureIndexRoute
   V1PlanningWfpObjectiveIndexRoute: typeof V1PlanningWfpObjectiveIndexRoute
   V1PlanningDeliveryUnitIdWfpWfpIdRoute: typeof V1PlanningDeliveryUnitIdWfpWfpIdRouteWithChildren
@@ -3885,7 +3838,6 @@ const V1PlanningRouteRouteChildren: V1PlanningRouteRouteChildren = {
   V1PlanningFundIndexRoute: V1PlanningFundIndexRoute,
   V1PlanningKpiAssignmentForDuIndexRoute:
     V1PlanningKpiAssignmentForDuIndexRoute,
-  V1PlanningOpcrIndexRoute: V1PlanningOpcrIndexRoute,
   V1PlanningWfpExpenditureIndexRoute: V1PlanningWfpExpenditureIndexRoute,
   V1PlanningWfpObjectiveIndexRoute: V1PlanningWfpObjectiveIndexRoute,
   V1PlanningDeliveryUnitIdWfpWfpIdRoute:
@@ -4089,34 +4041,33 @@ interface V2RouteChildren {
   V2planningDashboardRoute: typeof V2planningDashboardRoute
   V2planningUacsLibraryRoute: typeof V2planningUacsLibraryRouteWithChildren
   V2NtpNtpIdRoute: typeof V2NtpNtpIdRoute
-  V2PpmpPpmpDetailRoute: typeof V2PpmpPpmpDetailRoute
-  V2PpmpCatalogRoute: typeof V2PpmpCatalogRoute
   V2BacIndexRoute: typeof V2BacIndexRoute
   V2CommitmentsIndexRoute: typeof V2CommitmentsIndexRoute
   V2FiscalYearAndPoliciesIndexRoute: typeof V2FiscalYearAndPoliciesIndexRoute
   V2KpiLibraryIndexRoute: typeof V2KpiLibraryIndexRoute
   V2NtpIndexRoute: typeof V2NtpIndexRoute
-  V2PpmpIndexRoute: typeof V2PpmpIndexRoute
   V2planningAppConsolidationAppIdRoute: typeof V2planningAppConsolidationAppIdRoute
   V2planningMarketScopingIdRoute: typeof V2planningMarketScopingIdRoute
   V2planningMarketScopingCreateRoute: typeof V2planningMarketScopingCreateRoute
   V2planningMarketScopingSettingsRoute: typeof V2planningMarketScopingSettingsRoute
+  V2planningPpmpPpmpIdRoute: typeof V2planningPpmpPpmpIdRoute
+  V2planningPpmpCatalogRoute: typeof V2planningPpmpCatalogRoute
   V2planningWfpExpenditureWfpObjectiveActivityIdRoute: typeof V2planningWfpExpenditureWfpObjectiveActivityIdRouteWithChildren
   V2planningWfpObjectiveWfpObjectiveIdRoute: typeof V2planningWfpObjectiveWfpObjectiveIdRouteWithChildren
   V2planningWfpWfpIdRoute: typeof V2planningWfpWfpIdRouteWithChildren
   V2procurementAbstractOfBidsAobAobIdRoute: typeof V2procurementAbstractOfBidsAobAobIdRoute
   V2procurementAgencyPurchaseRequestsAprAprIdRoute: typeof V2procurementAgencyPurchaseRequestsAprAprIdRoute
   V2procurementManageAobAobIdRoute: typeof V2procurementManageAobAobIdRoute
+  V2procurementManageAprsAprIdRoute: typeof V2procurementManageAprsAprIdRoute
   V2procurementManageNtpNtpIdRoute: typeof V2procurementManageNtpNtpIdRoute
   V2procurementManageSupplierPortalProjectIdRoute: typeof V2procurementManageSupplierPortalProjectIdRoute
   V2procurementNoticeToProceedNtpNtpIdRoute: typeof V2procurementNoticeToProceedNtpNtpIdRoute
   V2BacDocumentDocIdRoute: typeof V2BacDocumentDocIdRoute
   V2procurementConsolidatePrsConsolidatedPrIdLazyRoute: typeof V2procurementConsolidatePrsConsolidatedPrIdLazyRoute
   V2KpiLibraryMasterKpiKpiIdLazyRoute: typeof V2KpiLibraryMasterKpiKpiIdLazyRoute
-  V2PpmpDepartmentLevelPpmpIdLazyRoute: typeof V2PpmpDepartmentLevelPpmpIdLazyRoute
-  V2PpmpOfficeLevelPpmpIdLazyRoute: typeof V2PpmpOfficeLevelPpmpIdLazyRoute
   V2planningAppConsolidationIndexRoute: typeof V2planningAppConsolidationIndexRoute
   V2planningMarketScopingIndexRoute: typeof V2planningMarketScopingIndexRoute
+  V2planningPpmpIndexRoute: typeof V2planningPpmpIndexRoute
   V2planningWfpExpenditureIndexRoute: typeof V2planningWfpExpenditureIndexRoute
   V2planningWfpObjectiveIndexRoute: typeof V2planningWfpObjectiveIndexRoute
   V2planningWfpIndexRoute: typeof V2planningWfpIndexRoute
@@ -4154,7 +4105,6 @@ interface V2RouteChildren {
   V2procurementProcurementDashboardIndexRoute: typeof V2procurementProcurementDashboardIndexRoute
   V2procurementPurchaseRequestsPrIndexRoute: typeof V2procurementPurchaseRequestsPrIndexRoute
   V2procurementRequestForQuotationRfqIndexRoute: typeof V2procurementRequestForQuotationRfqIndexRoute
-  V2PpmpMasterOfficeIndexRoute: typeof V2PpmpMasterOfficeIndexRoute
   V2KpiLibraryKpiMeasurementConfiguratorIndexLazyRoute: typeof V2KpiLibraryKpiMeasurementConfiguratorIndexLazyRoute
   V2KpiLibraryMasterKpiIndexLazyRoute: typeof V2KpiLibraryMasterKpiIndexLazyRoute
   V2KpiLibraryRatingScalesIndexLazyRoute: typeof V2KpiLibraryRatingScalesIndexLazyRoute
@@ -4162,7 +4112,8 @@ interface V2RouteChildren {
   V2planningMarketScopingManageActivitiesRoute: typeof V2planningMarketScopingManageActivitiesRoute
   V2planningMarketScopingManageParametersRoute: typeof V2planningMarketScopingManageParametersRoute
   V2planningAppConsolidationSupplementalIndexRoute: typeof V2planningAppConsolidationSupplementalIndexRoute
-  V2procurementBiddingDocumentsBacResolutionIdIndexRoute: typeof V2procurementBiddingDocumentsBacResolutionIdIndexRoute
+  V2procurementBacResolutionsResolutionIdIndexRoute: typeof V2procurementBacResolutionsResolutionIdIndexRoute
+  V2procurementBacResolutionsClausesIndexRoute: typeof V2procurementBacResolutionsClausesIndexRoute
   V2procurementManageNoaNoaIdIndexRoute: typeof V2procurementManageNoaNoaIdIndexRoute
   V2procurementNoticeOfAwardNoaNoaIdIndexRoute: typeof V2procurementNoticeOfAwardNoaNoaIdIndexRoute
   V2procurementPoPurchaseOrderIdIndexRoute: typeof V2procurementPoPurchaseOrderIdIndexRoute
@@ -4184,18 +4135,17 @@ const V2RouteChildren: V2RouteChildren = {
   V2planningDashboardRoute: V2planningDashboardRoute,
   V2planningUacsLibraryRoute: V2planningUacsLibraryRouteWithChildren,
   V2NtpNtpIdRoute: V2NtpNtpIdRoute,
-  V2PpmpPpmpDetailRoute: V2PpmpPpmpDetailRoute,
-  V2PpmpCatalogRoute: V2PpmpCatalogRoute,
   V2BacIndexRoute: V2BacIndexRoute,
   V2CommitmentsIndexRoute: V2CommitmentsIndexRoute,
   V2FiscalYearAndPoliciesIndexRoute: V2FiscalYearAndPoliciesIndexRoute,
   V2KpiLibraryIndexRoute: V2KpiLibraryIndexRoute,
   V2NtpIndexRoute: V2NtpIndexRoute,
-  V2PpmpIndexRoute: V2PpmpIndexRoute,
   V2planningAppConsolidationAppIdRoute: V2planningAppConsolidationAppIdRoute,
   V2planningMarketScopingIdRoute: V2planningMarketScopingIdRoute,
   V2planningMarketScopingCreateRoute: V2planningMarketScopingCreateRoute,
   V2planningMarketScopingSettingsRoute: V2planningMarketScopingSettingsRoute,
+  V2planningPpmpPpmpIdRoute: V2planningPpmpPpmpIdRoute,
+  V2planningPpmpCatalogRoute: V2planningPpmpCatalogRoute,
   V2planningWfpExpenditureWfpObjectiveActivityIdRoute:
     V2planningWfpExpenditureWfpObjectiveActivityIdRouteWithChildren,
   V2planningWfpObjectiveWfpObjectiveIdRoute:
@@ -4206,6 +4156,7 @@ const V2RouteChildren: V2RouteChildren = {
   V2procurementAgencyPurchaseRequestsAprAprIdRoute:
     V2procurementAgencyPurchaseRequestsAprAprIdRoute,
   V2procurementManageAobAobIdRoute: V2procurementManageAobAobIdRoute,
+  V2procurementManageAprsAprIdRoute: V2procurementManageAprsAprIdRoute,
   V2procurementManageNtpNtpIdRoute: V2procurementManageNtpNtpIdRoute,
   V2procurementManageSupplierPortalProjectIdRoute:
     V2procurementManageSupplierPortalProjectIdRoute,
@@ -4215,10 +4166,9 @@ const V2RouteChildren: V2RouteChildren = {
   V2procurementConsolidatePrsConsolidatedPrIdLazyRoute:
     V2procurementConsolidatePrsConsolidatedPrIdLazyRoute,
   V2KpiLibraryMasterKpiKpiIdLazyRoute: V2KpiLibraryMasterKpiKpiIdLazyRoute,
-  V2PpmpDepartmentLevelPpmpIdLazyRoute: V2PpmpDepartmentLevelPpmpIdLazyRoute,
-  V2PpmpOfficeLevelPpmpIdLazyRoute: V2PpmpOfficeLevelPpmpIdLazyRoute,
   V2planningAppConsolidationIndexRoute: V2planningAppConsolidationIndexRoute,
   V2planningMarketScopingIndexRoute: V2planningMarketScopingIndexRoute,
+  V2planningPpmpIndexRoute: V2planningPpmpIndexRoute,
   V2planningWfpExpenditureIndexRoute: V2planningWfpExpenditureIndexRoute,
   V2planningWfpObjectiveIndexRoute: V2planningWfpObjectiveIndexRoute,
   V2planningWfpIndexRoute: V2planningWfpIndexRoute,
@@ -4278,7 +4228,6 @@ const V2RouteChildren: V2RouteChildren = {
     V2procurementPurchaseRequestsPrIndexRoute,
   V2procurementRequestForQuotationRfqIndexRoute:
     V2procurementRequestForQuotationRfqIndexRoute,
-  V2PpmpMasterOfficeIndexRoute: V2PpmpMasterOfficeIndexRoute,
   V2KpiLibraryKpiMeasurementConfiguratorIndexLazyRoute:
     V2KpiLibraryKpiMeasurementConfiguratorIndexLazyRoute,
   V2KpiLibraryMasterKpiIndexLazyRoute: V2KpiLibraryMasterKpiIndexLazyRoute,
@@ -4292,8 +4241,10 @@ const V2RouteChildren: V2RouteChildren = {
     V2planningMarketScopingManageParametersRoute,
   V2planningAppConsolidationSupplementalIndexRoute:
     V2planningAppConsolidationSupplementalIndexRoute,
-  V2procurementBiddingDocumentsBacResolutionIdIndexRoute:
-    V2procurementBiddingDocumentsBacResolutionIdIndexRoute,
+  V2procurementBacResolutionsResolutionIdIndexRoute:
+    V2procurementBacResolutionsResolutionIdIndexRoute,
+  V2procurementBacResolutionsClausesIndexRoute:
+    V2procurementBacResolutionsClausesIndexRoute,
   V2procurementManageNoaNoaIdIndexRoute: V2procurementManageNoaNoaIdIndexRoute,
   V2procurementNoticeOfAwardNoaNoaIdIndexRoute:
     V2procurementNoticeOfAwardNoaNoaIdIndexRoute,

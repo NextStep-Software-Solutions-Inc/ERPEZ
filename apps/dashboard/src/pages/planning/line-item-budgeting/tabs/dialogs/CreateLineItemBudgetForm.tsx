@@ -169,13 +169,25 @@ export default function CreateLineItemBudgetForm({
     queryParams: {},
   })
 
-  // Fetch all source data - OPCR/WFP filtered by office, fiscal year, and office level
+  // Fetch fiscal years first to get selected fiscal year number
+  const { data: fiscalYearsData, isLoading: isFiscalYearsLoading } =
+    useFiscalYears({
+      pathParams: {},
+      queryParams: {
+        pageSize: 100,
+        sorts: 'year==asc',
+      },
+    })
+
+  const selectedFiscalYear = (fiscalYearsData?.data || []).find(
+    (fy: FiscalYear) => fy.id === fiscalYearValue,
+  )
+  const selectedYear = selectedFiscalYear?.year
+
+  // Fetch all source data - OPCR/WFP filtered by office, fiscal year, and status==Approved
   const selectedOffice = (officesData?.data || []).find(
     (o: Office) => o.id === officeIdValue,
   )
-  const selectedOfficeLevel = selectedOffice
-    ? getOfficeLevel(selectedOffice)
-    : null
 
   const { data: opcrs, isLoading: isOpcrsLoading } = useOpcrs({
     pathParams: {},
@@ -187,31 +199,23 @@ export default function CreateLineItemBudgetForm({
     },
   })
 
+  const canFetchWfps = !!fiscalYearValue && !!officeIdValue && !!selectedYear
   const { data: wfps, isLoading: isWfpsLoading } = useWfps({
     pathParams: {},
     queryParams: {
-      ...(officeIdValue &&
-        selectedOfficeLevel && {
-          filters: `status==Approved`,
-        }),
+      ...(canFetchWfps && {
+        filters: `officeId==${officeIdValue},status==Approved`,
+      }),
     },
+    enabled: canFetchWfps,
   })
-
-  const { data: fiscalYearsData, isLoading: isFiscalYearsLoading } =
-    useFiscalYears({
-      pathParams: {},
-      queryParams: {
-        pageSize: 100,
-        sorts: 'year==asc',
-      },
-    })
 
   // Bottom-up mode: all fund sources (no fiscal year filtering required by API, but we fetch them when mode is bottom-up)
   const { data: fundSourcesData, isLoading: isFundSourcesLoading } =
     useFundSources({
       pathParams: {},
       queryParams: {
-        pageSize: 100, // Fetch all available
+        pageSize: 2000,
       },
       enabled: budgetMode === 'bottom-up',
     })
@@ -242,15 +246,19 @@ export default function CreateLineItemBudgetForm({
     .sort((a, b) => a.name - b.name)
 
   // Bottom-up mode: all fund clusters directly from fund sources
-  const formattedAllFundClusters = (fundSourcesData?.data || []).map(
-    (fs: FundSource) => ({
+  const formattedAllFundClusters = (fundSourcesData?.data || [])
+    .map((fs: FundSource) => ({
       id: fs.id, // fundSourceId
       fundSourceId: fs.id,
       code: fs.code,
       name: fs.name,
       label: `${fs.name} (${fs.code})`,
-    }),
-  )
+    }))
+    .sort((a, b) =>
+      (a.label || '').localeCompare(b.label || '', undefined, {
+        sensitivity: 'base',
+      }),
+    )
 
   // Top-down mode: ceilings assigned to this office — extract AMB from each ceiling
   const formattedCeilingOptions = (officeCeilingsData?.data || [])
@@ -277,24 +285,35 @@ export default function CreateLineItemBudgetForm({
       code: opcr.id,
       name: `OPCR - FY ${opcr.fiscalYear}`,
       status: opcr.commitmentStatus === 'Approved' ? 'Approved' : 'Draft',
-      office: opcr.officeName || 'Selected Office',
+      office: opcr.officeName || selectedOffice?.name || 'Selected Office',
       type: 'OPCR',
       fiscalYear: String(opcr.fiscalYear),
     }),
   )
 
-  const formattedWfps: SourceDocument[] = (wfps?.data || []).map(
-    (wfp: WFP) => ({
+  const formattedWfps: SourceDocument[] = (wfps?.data || []).map((wfp: WFP) => {
+    const startYear = wfp.projectStartDate
+      ? new Date(wfp.projectStartDate).getFullYear().toString()
+      : ''
+    const endYear = wfp.projectEndDate
+      ? new Date(wfp.projectEndDate).getFullYear().toString()
+      : ''
+    const fyLabel =
+      startYear && endYear && startYear !== endYear
+        ? `${startYear} - ${endYear}`
+        : startYear || String(selectedYear || '')
+
+    return {
       id: wfp.id,
-      code: wfp.id,
+      code: wfp.id.substring(0, 8).toUpperCase(),
       name: wfp.projectTitle || 'Unnamed WFP',
       status: wfp.status === 'Approved' ? 'Approved' : 'Draft',
-      office: wfp.officeName || 'Selected Office',
+      office: wfp.officeName || selectedOffice?.name || 'Selected Office',
       type: 'WFP',
-      fiscalYear: '',
+      fiscalYear: fyLabel,
       projectName: wfp.projectTitle || 'Unnamed WFP',
-    }),
-  )
+    }
+  })
 
   // Handle budget mode toggle — reset AMB when switching mode
   const handleModeChange = (mode: BudgetMode) => {
@@ -696,7 +715,7 @@ export default function CreateLineItemBudgetForm({
                           }
                         />
                       </SelectTrigger>
-                      <SelectContent>
+                      <SelectContent className="max-h-72 overflow-y-auto">
                         {formattedAllFundClusters.length > 0 ? (
                           formattedAllFundClusters.map(
                             (cluster: { id: string; label: string }) => (

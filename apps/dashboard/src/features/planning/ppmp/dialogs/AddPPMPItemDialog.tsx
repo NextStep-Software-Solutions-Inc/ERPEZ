@@ -41,11 +41,11 @@ export default function AddPPMPItemDialog({
     const payload = {
       ...values,
       ppmpExpenditureItemId,
-      // Format dates back to ISO strings or undefined if empty
-      procurementStartDate: values.procurementStartDate ? new Date(values.procurementStartDate).toISOString() : undefined,
-      procurementEndDate: values.procurementEndDate ? new Date(values.procurementEndDate).toISOString() : undefined,
-      expectedDeliveryStart: values.expectedDeliveryStart ? new Date(values.expectedDeliveryStart).toISOString() : undefined,
-      expectedDeliveryEnd: values.expectedDeliveryEnd ? new Date(values.expectedDeliveryEnd).toISOString() : undefined,
+      // Format dates back to ISO strings or null if empty
+      procurementStartDate: values.procurementStartDate || null,
+      procurementEndDate: values.procurementEndDate || null,
+      expectedDeliveryStart: values.expectedDeliveryStart || null,
+      expectedDeliveryEnd: values.expectedDeliveryEnd || null,
     }
 
     try {
@@ -120,6 +120,7 @@ export default function AddPPMPItemDialog({
     description: itemToEdit?.description ?? '',
     unit: itemToEdit?.unit ?? 'pcs',
     unitPrice: itemToEdit?.unitPrice ?? 0,
+    plannedQuantity: itemToEdit?.plannedQuantity ?? 1,
     procurementModeId: itemToEdit?.procurementModeId ?? '',
     papCode: itemToEdit?.papCode ?? '',
     projectType: (itemToEdit?.projectType as any) ?? 'Goods',

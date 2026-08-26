@@ -32,8 +32,12 @@ export default function FieldInfo({
     .map(getErrorMessage)
     .filter((message): message is string => Boolean(message))
 
+  const hasContent = (shouldShowErrors && errorMessages.length > 0) || isValidating
+
+  if (!hasContent) return null
+
   return (
-    <div className="min-h-4 flex items-center">
+    <div className="pt-1 flex items-center">
       {shouldShowErrors && errorMessages.length > 0 ? (
         <em className="text-destructive text-xs">{errorMessages.join(', ')}</em>
       ) : null}

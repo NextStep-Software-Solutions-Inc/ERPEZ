@@ -1,15 +1,20 @@
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
-import { ArrowLeft, ArrowRight } from 'lucide-react'
+import { ArrowLeft, ArrowRight, Download, Loader2 } from 'lucide-react'
 import { useState } from 'react'
-import { useOPCRById } from '@/features/planning/opcr/hooks/useOPCR'
-import { countKPIsByCategory } from '@/features/planning/opcr/utils/countKPIsByCategory'
+import {
+  useOPCRById,
+  useGenerateOPCRDocument,
+  useDownloadOPCRDocument,
+} from '@/features/planning/opcr'
+import { countKPIsByCategory, normalizeCategory } from '@/features/planning/opcr/utils/countKPIsByCategory'
 import { getCategoryVisuals } from '../utils/functions'
 import { useNavigate, useSearch } from '@tanstack/react-router'
 import { FunctionCategory } from '@/features/planning/master-kpi/types'
 import { getStatusLabel } from '@/utils/formatters'
 import OPCRItemKPIAccordion from '@/features/planning/opcr/components/OPCRItemKPIAccordion'
 import { OPCRItem } from '@/features/planning/opcr/types/type.opcr'
+import { toast } from 'sonner'
 
 interface OPCRDetailPageProps {
   opcrId: string
@@ -36,16 +41,68 @@ export default function OPCRDetailPage({
     pathParams: { id: opcrId },
     queryParams: {},
   })
+  const { mutateAsync: generateOPCRDocument, isPending: isGenerating } =
+    useGenerateOPCRDocument()
+  const { mutateAsync: downloadOPCRDocument, isPending: isDownloading } =
+    useDownloadOPCRDocument()
+
+  const isGeneratingPdf = isGenerating || isDownloading
   const opcrData = opcrResponse?.data
+
+  const handleGeneratePdf = async () => {
+    try {
+      const apiRes = await generateOPCRDocument({
+        pathParams: { opcrId },
+        queryParams: { format: 'Pdf' },
+      })
+      const documentId = typeof apiRes === 'string' ? apiRes : apiRes?.data
+
+      if (!documentId) {
+        throw new Error('No document ID returned from backend generator.')
+      }
+
+      const downloadRes = await downloadOPCRDocument({
+        pathParams: { documentId },
+      })
+
+      const blob = downloadRes?.blob
+      if (!blob) {
+        throw new Error('Failed to retrieve document binary from backend.')
+      }
+
+      const sanitizedName = opcrData?.name?.trim().replace(/\s+/g, '_')
+      const filename = sanitizedName ? `OPCR_${sanitizedName}.pdf` : `OPCR_${opcrId || 'document'}.pdf`
+      const url = URL.createObjectURL(blob)
+
+      try {
+        const anchor = document.createElement('a')
+        anchor.href = url
+        anchor.download = filename
+        document.body.appendChild(anchor)
+        anchor.click()
+        document.body.removeChild(anchor)
+      } finally {
+        URL.revokeObjectURL(url)
+      }
+
+      toast.success('OPCR PDF generated and downloaded successfully.')
+    } catch (error) {
+      console.error('Error generating PDF via API:', error)
+      toast.error('Failed to generate or download the OPCR PDF from backend API.')
+    }
+  }
+
+
 
   // Filter KPIs by selected category
   const filteredKPIs =
     functionCategory && opcrData?.opcrItems
-      ? opcrData.opcrItems.filter(
-          (item) =>
-            item.kpiAssignment?.fyActiveKPI?.functionCategory ===
-            functionCategory,
-        )
+      ? opcrData.opcrItems.filter((item) => {
+          const itemCat =
+            item.functionCategory ||
+            item.kpiAssignment?.fyActiveKPI?.functionCategory
+          return normalizeCategory(itemCat) === normalizeCategory(functionCategory)
+        })
       : []
 
   // Helper to calculate quarterly targets from quarterly values
@@ -103,7 +160,7 @@ export default function OPCRDetailPage({
       )}
 
       {/* Page Title and Description */}
-      <div className="flex items-start justify-between">
+      <div className="flex items-start justify-between flex-wrap gap-4">
         <div className="space-y-3">
           <div>
             <h2 className="text-3xl font-bold text-gray-900">
@@ -117,7 +174,28 @@ export default function OPCRDetailPage({
             Status: {getStatusLabel(opcrData.commitmentStatus ?? 'Unknown')}
           </p>
         </div>
+
+        <div className="flex items-center gap-3">
+          <Button
+            onClick={handleGeneratePdf}
+            disabled={isGeneratingPdf}
+            className="bg-indigo-600 hover:bg-indigo-700 text-white gap-2 font-medium shadow-xs"
+          >
+            {isGeneratingPdf ? (
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
+                Generating...
+              </>
+            ) : (
+              <>
+                <Download className="w-4 h-4" />
+                Generate OPCR
+              </>
+            )}
+          </Button>
+        </div>
       </div>
+
 
       {/* Function Type Cards List */}
       {!functionCategory && (
@@ -190,6 +268,7 @@ export default function OPCRDetailPage({
                 selectedKPIForActivity={selectedKPIForActivity}
                 setSelectedKPIForActivity={setSelectedKPIForActivity}
                 getQuarterlyTargets={getQuarterlyTargets}
+                officeId={opcrData?.office?.id || (opcrData as any)?.officeId}
               />
             ) : (
               <div className="text-center py-10">

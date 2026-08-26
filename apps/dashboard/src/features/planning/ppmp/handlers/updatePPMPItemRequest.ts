@@ -4,7 +4,7 @@ import type {
   QueryParams,
 } from 'erpez-shared-lib'
 import api from '@/services/api'
-import { PPMPItem } from '../types'
+import { PPMPItem, ProcurementProjectType } from '../types'
 
 const endpoint = '/ppmp-items/:id'
 
@@ -18,8 +18,16 @@ export type UpdatePPMPItemPayload = {
   description?: string
   unit?: string
   unitPrice?: number
+  plannedQuantity?: number
   mopOverride?: boolean
   mopJustification?: string
+  projectType?: ProcurementProjectType
+  preProcurementConference?: boolean
+  procurementStartDate?: string | null
+  procurementEndDate?: string | null
+  expectedDeliveryStart?: string | null
+  expectedDeliveryEnd?: string | null
+  remarks?: string
 }
 
 export const updatePPMPItemRequest: MutationBlueprintFromTemplate<

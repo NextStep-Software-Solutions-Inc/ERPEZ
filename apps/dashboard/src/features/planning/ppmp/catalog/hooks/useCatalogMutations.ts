@@ -1,4 +1,4 @@
-﻿/**
+/**
  * @deprecated Use Jotai write atoms from `../atoms/catalogAtoms` instead:
  * `createCatalogItemAtom`, `updateCatalogItemAtom`, `deactivateCatalogItemAtom`.
  * This file will be removed once all consumers are migrated.
@@ -23,7 +23,23 @@ import {
 import type {
   CreateCatalogItemPayload,
   UpdateCatalogItemPayload,
+  NonCseCatalogItem,
 } from '../types'
+import type { NONCSEItem } from '@/features/planning/non-cse-item/types/non-cse.type'
+
+function toNonCseItem(item: NonCseCatalogItem): NONCSEItem {
+  return {
+    id: item.id,
+    name: item.name,
+    description: item.description ?? undefined,
+    uomName: item.unitOfMeasure,
+    currentPrice: item.currentPrice,
+    productCode: item.itemCode,
+    procurementCategoryName: item.category,
+    createdAt: item.createdAt,
+    createdBy: item.createdBy,
+  }
+}
 
 function useCatalogInvalidate() {
   const queryClient = useQueryClient()
@@ -57,7 +73,7 @@ export function useUpdateCatalogItem() {
       payload: UpdateCatalogItemPayload
     }) => updateCatalogItemRequest.fetcher({ itemId, payload }),
     onSuccess: (updated) => {
-      setSelectedData(updated as any)
+      setSelectedData(toNonCseItem(updated))
       invalidate()
       toast.success('Item updated successfully.')
     },
@@ -93,10 +109,9 @@ export function useToggleCatalogItemStatus() {
     mutationFn: (itemId: string) =>
       toggleCatalogItemStatusRequest.fetcher({ itemId }),
     onSuccess: (updated) => {
-      setSelectedData(updated as any)
+      setSelectedData(toNonCseItem(updated))
       invalidate()
-      const label =
-        (updated as any).status === 'active' ? 'activated' : 'deactivated'
+      const label = updated.status === 'active' ? 'activated' : 'deactivated'
       toast.success(`Item ${label}.`)
     },
     onError: (err) => {

@@ -1,82 +1,54 @@
-﻿/**
+/**
  * AdminCatalogTab
- * Master Library management for administrators
- * Features: Full CRUD, bulk operations, price adjustments
+ * Master Catalog management for administrators
+ * Features: Live catalog listing, search, item detail inspection, and soft-delete catalog management
  */
 
 import { useState } from 'react'
-import { useAtomValue, useSetAtom, useAtom } from 'jotai'
-import { Search, Plus, Edit2, Trash2, Eye, EyeOff } from 'lucide-react'
+import { useSetAtom } from 'jotai'
+import { Search, Trash2, Package } from 'lucide-react'
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '@/components/ui/select'
-import { Checkbox } from '@/components/ui/checkbox'
-
 import { UserCatalogDetailPanel } from '../panels/UserCatalogDetailPanel'
 import { catalogDetailSelectedIdAtom } from '../atoms/requestAtoms'
-import { catalogItemsAtom } from '../atoms/catalogAtoms'
-import { useFilteredAdminCatalog } from '../hooks/useRequestFilters'
+import { useNonCSEItems, useDeleteNonCSEItemMutation } from '../hooks/useNonCSEItemQueries'
 import { CostItemMasterPage } from '../components/CostItemMasterPage'
+import type { NONCSEItem } from '@/features/planning/non-cse-item/types/non-cse.type'
+import { formatCurrencyPHP } from '@/utils/formatters'
 import {
-  createItemDialogOpenAtom,
-  editItemDialogOpenAtom,
-  deleteItemDialogOpenAtom,
-  bulkPricingDialogOpenAtom,
-  selectedItemIdsAtom,
-} from '../atoms/catalogDialogAtoms'
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog'
 
 export function AdminCatalogTab() {
   const [adminView, setAdminView] = useState<'catalog' | 'cost-master'>('catalog')
   const [searchTerm, setSearchTerm] = useState('')
-  const [visibilityFilter, setVisibilityFilter] = useState<
-    'All' | 'Active' | 'Inactive'
-  >('All')
-  const [selectedIds, setSelectedIds] = useAtom(selectedItemIdsAtom)
-  const catalogItems = useAtomValue(catalogItemsAtom)
-  const setCatalogItems = useSetAtom(catalogItemsAtom)
+  const [itemToDelete, setItemToDelete] = useState<{ id: string; name: string } | null>(null)
+
   const setSelectedItemId = useSetAtom(catalogDetailSelectedIdAtom)
-  const setCreateDialogOpen = useSetAtom(createItemDialogOpenAtom)
-  const setEditDialogOpen = useSetAtom(editItemDialogOpenAtom)
-  const setDeleteDialogOpen = useSetAtom(deleteItemDialogOpenAtom)
-  const setBulkPricingDialogOpen = useSetAtom(bulkPricingDialogOpenAtom)
 
-  // Filter by search term
-  const filteredBySearch = useFilteredAdminCatalog(searchTerm).items
-
-  // Filter by visibility (Active/Inactive/All)
-  const filteredItems = filteredBySearch.filter((item) => {
-    if (visibilityFilter === 'All') return true
-    if (visibilityFilter === 'Active') return item.isActive === true
-    if (visibilityFilter === 'Inactive') return item.isActive === false
-    return true
+  const filterString = searchTerm ? `Name@=*${searchTerm}|Description@=*${searchTerm}` : undefined
+  const { data, isLoading } = useNonCSEItems({
+    filters: filterString,
+    pageSize: 100,
   })
 
-  const handleSelectAll = () => {
-    if (selectedIds.length === filteredItems.length) {
-      setSelectedIds([])
-    } else {
-      setSelectedIds(filteredItems.map((item) => item.id))
+  const deleteMutation = useDeleteNonCSEItemMutation()
+
+  const items: NONCSEItem[] = data?.data || []
+  const total = data?.totalRows || items.length
+
+  const confirmDelete = () => {
+    if (itemToDelete) {
+      deleteMutation.mutate(itemToDelete.id)
+      setItemToDelete(null)
     }
-  }
-
-  const handleSelectItem = (id: string) => {
-    setSelectedIds((prev) =>
-      prev.includes(id) ? prev.filter((i) => i !== id) : [...prev, id],
-    )
-  }
-
-  const handleToggleVisibility = (itemId: string) => {
-    setCatalogItems((prev) =>
-      prev.map((item) =>
-        item.id === itemId ? { ...item, isActive: !item.isActive } : item,
-      ),
-    )
   }
 
   return (
@@ -88,7 +60,7 @@ export function AdminCatalogTab() {
           className="h-8 px-3"
           onClick={() => setAdminView('catalog')}
         >
-          Item Library
+          Item Catalog
         </Button>
         <Button
           variant={adminView === 'cost-master' ? 'default' : 'ghost'}
@@ -104,203 +76,128 @@ export function AdminCatalogTab() {
         <CostItemMasterPage />
       ) : (
         <>
-      {/* Header */}
-      <div className="flex items-center justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold">Master Library</h2>
-          <p className="text-sm text-muted-foreground">
-            {catalogItems.length} total items
-          </p>
-        </div>
-        <Button
-          size="lg"
-          className="gap-2"
-          onClick={() => setCreateDialogOpen(true)}
-        >
-          <Plus className="h-4 w-4" />
-          Add Item
-        </Button>
-      </div>
-
-      {/* Toolbar */}
-      <div className="grid grid-cols-2 gap-4">
-        <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input
-            placeholder="Search by name, category, specification..."
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-
-        <Select
-          value={visibilityFilter}
-          onValueChange={(v: any) => setVisibilityFilter(v)}
-        >
-          <SelectTrigger>
-            <SelectValue placeholder="Filter by visibility..." />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="All">All Items</SelectItem>
-            <SelectItem value="Active">Active (Visible to Users)</SelectItem>
-            <SelectItem value="Inactive">
-              Inactive (Hidden from Users)
-            </SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
-
-      {/* Bulk Actions */}
-      {selectedIds.length > 0 && (
-        <div className="flex items-center gap-3 p-4 bg-blue-50 border border-blue-200 rounded-lg">
-          <Checkbox
-            checked={
-              selectedIds.length === filteredItems.length &&
-              filteredItems.length > 0
-            }
-            onCheckedChange={handleSelectAll}
-          />
-          <span className="text-sm font-medium">
-            {selectedIds.length} item{selectedIds.length !== 1 ? 's' : ''}{' '}
-            selected
-          </span>
-          <div className="ml-auto flex gap-2">
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setEditDialogOpen(true)}
-            >
-              Bulk Edit
-            </Button>
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => setBulkPricingDialogOpen(true)}
-            >
-              Adjust Prices
-            </Button>
-            <Button
-              variant="destructive"
-              size="sm"
-              className="gap-2"
-              onClick={() => setDeleteDialogOpen(true)}
-            >
-              <Trash2 className="h-3 w-3" />
-              Delete Selected
-            </Button>
-          </div>
-        </div>
-      )}
-
-      {/* Table */}
-      <div className="border rounded-lg">
-        <div className="p-4 border-b bg-muted/50 flex items-center gap-3">
-          <Checkbox
-            checked={
-              selectedIds.length > 0 &&
-              selectedIds.length === filteredItems.length
-            }
-            onCheckedChange={handleSelectAll}
-          />
-          <span className="text-xs font-medium text-muted-foreground uppercase">
-            Select All
-          </span>
-        </div>
-
-        <div className="divide-y max-h-96 overflow-y-auto">
-          {filteredItems.length === 0 ? (
-            <div className="p-8 text-center text-sm text-muted-foreground">
-              No items found matching your filters
+          {/* Header */}
+          <div className="flex items-center justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-bold">Master Catalog</h2>
+              <p className="text-sm text-muted-foreground">
+                {total} items in catalog
+              </p>
             </div>
-          ) : (
-            filteredItems.map((item) => (
-              <div
-                key={item.id}
-                className="p-4 hover:bg-muted/50 flex items-center gap-3 last:border-b-0 transition-colors group cursor-pointer"
-                onClick={() => setSelectedItemId(item.id)}
-              >
-                <Checkbox
-                  checked={selectedIds.includes(item.id)}
-                  onCheckedChange={() => handleSelectItem(item.id)}
-                  onClick={(e) => e.stopPropagation()}
-                />
-                <div className="flex-1 min-w-0">
-                  <p className="font-medium">{item.name}</p>
-                  <p className="text-xs text-muted-foreground">
-                    {item.category} • {item.unitOfMeasure}
-                  </p>
-                </div>
-                <div className="text-right">
-                  <p className="font-semibold text-primary">
-                    ₱
-                    {item.currentPrice.toLocaleString('en-PH', {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
-                  </p>
-                  <p
-                    className={`text-xs font-medium ${
-                      item.isActive === true
-                        ? 'text-green-600'
-                        : 'text-gray-500'
-                    }`}
-                  >
-                    {item.isActive === true ? 'Visible' : 'Hidden'}
-                  </p>
-                </div>
-                <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      handleToggleVisibility(item.id)
-                    }}
-                    title={item.isActive ? 'Hide from users' : 'Show to users'}
-                  >
-                    {item.isActive === true ? (
-                      <Eye className="h-3.5 w-3.5 text-green-600" />
-                    ) : (
-                      <EyeOff className="h-3.5 w-3.5 text-gray-400" />
-                    )}
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setSelectedItemId(item.id)
-                      setEditDialogOpen(true)
-                    }}
-                  >
-                    <Edit2 className="h-3.5 w-3.5" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0 text-destructive hover:text-destructive"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      setSelectedItemId(item.id)
-                      setDeleteDialogOpen(true)
-                    }}
-                  >
-                    <Trash2 className="h-3.5 w-3.5" />
-                  </Button>
-                </div>
-              </div>
-            ))
-          )}
-        </div>
-      </div>
+          </div>
 
-      {/* Detail Panel */}
-      <UserCatalogDetailPanel />
+          {/* Search Toolbar */}
+          <div className="relative">
+            <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+            <Input
+              placeholder="Search master catalog by name or description..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="pl-10"
+            />
+          </div>
+
+          {/* Table Container */}
+          <div className="border border-border rounded-lg overflow-hidden bg-card">
+            {isLoading ? (
+              <div className="space-y-2 p-4">
+                {[...Array(5)].map((_, i) => (
+                  <div key={i} className="h-12 bg-muted/50 rounded animate-pulse" />
+                ))}
+              </div>
+            ) : items.length === 0 ? (
+              <div className="flex flex-col items-center justify-center py-16 text-center border-dashed">
+                <Package className="h-10 w-10 text-muted-foreground/40 mb-3" />
+                <h3 className="font-semibold text-base">No Catalog Items Found</h3>
+                <p className="text-sm text-muted-foreground max-w-sm mt-1">
+                  Approved item requests will automatically appear in this master catalog.
+                </p>
+              </div>
+            ) : (
+              <div className="divide-y divide-border">
+                {items.map((item) => (
+                  <div
+                    key={item.id}
+                    className="p-4 hover:bg-muted/40 flex items-center justify-between gap-4 transition-colors group cursor-pointer"
+                    onClick={() => setSelectedItemId(item.id)}
+                  >
+                    <div className="flex-1 min-w-0 space-y-1">
+                      <div className="flex items-center gap-2">
+                        <p className="font-semibold text-foreground truncate">
+                          {item.name || 'Unnamed Item'}
+                        </p>
+                        {item.productCode && (
+                          <span className="font-mono text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
+                            {item.productCode}
+                          </span>
+                        )}
+                      </div>
+                      <p className="text-xs text-muted-foreground line-clamp-1">
+                        {item.description || 'No specifications'}
+                      </p>
+                    </div>
+
+                    <div className="flex items-center gap-6">
+                      <div className="text-right">
+                        <p className="font-semibold text-primary">
+                          {formatCurrencyPHP(item.currentPrice)}
+                        </p>
+                        <p className="text-xs text-muted-foreground">
+                          {item.procurementCategoryName || 'Goods'} • {item.uomName || 'Unit'}
+                        </p>
+                      </div>
+
+                      <div className="flex items-center gap-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setItemToDelete({ id: item.id, name: item.name || 'Unnamed Item' })
+                          }}
+                          title="Delete catalog item"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
         </>
       )}
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog
+        open={!!itemToDelete}
+        onOpenChange={(open) => {
+          if (!open) setItemToDelete(null)
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Catalog Item?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to remove &quot;{itemToDelete?.name}&quot; from the catalog? This will soft-delete the item so it cannot be selected for future procurement plans.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDelete}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete Item
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Slide-over Detail Panel */}
+      <UserCatalogDetailPanel />
     </div>
   )
 }
