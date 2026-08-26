@@ -22,6 +22,7 @@ import type { OPCRDetails, OPCRItem, OPCRItemRating } from '@/features/planning/
 import type { FYActiveKPIMeasurement } from '@/features/planning/fiscal-year-and-policies/fy-active-kpi/types/types.measurement'
 import { SelfRatingSessionHeader } from './SelfRatingSessionHeader'
 import { SelfRatingKpiAccordion } from './SelfRatingKpiAccordion'
+import { useFunctionConfigs } from '@/features/planning/spms-function-config/handlers/hooks'
 import { usePerformanceCalculation } from '../../hooks/usePerformanceCalculation'
 import { usePerformanceReviewFileUpload } from '../../hooks/usePerformanceReviewFileUpload'
 import { usePerformanceReviewFileUploadStore } from '../../store/performanceReviewFileUploadStore'
@@ -154,14 +155,7 @@ function buildTargetSummary(
   ].join(' · ')
 }
 
-function buildDefaultRating(): QETRating {
-  return {
-    quality: null,
-    efficiency: null,
-    timeliness: null,
-    average: null,
-  }
-}
+
 
 function buildInitialRating(
   ratings: OPCRItemRating[] | undefined,
@@ -486,7 +480,32 @@ export function SelfRatingKpiAccordionTab() {
     [kpiItems, opcr],
   )
 
-  const calc = usePerformanceCalculation(calculationSession)
+  const { data: functionConfigsResponse } = useFunctionConfigs({
+    pathParams: {},
+    queryParams: { pageSize: 100 },
+  })
+
+  const customWeights = useMemo(() => {
+    const configs = functionConfigsResponse?.data ?? []
+    if (!configs.length) return undefined
+    const match = opcr?.fiscalYear?.id
+      ? configs.find((c) => c.fiscalYearId === opcr.fiscalYear.id) ?? configs[0]
+      : configs[0]
+
+    if (!match) return undefined
+
+    const sWeight = match.strategicMinWeight > 1 ? match.strategicMinWeight / 100 : match.strategicMinWeight
+    const cWeight = match.coreFunctionMinWeight > 1 ? match.coreFunctionMinWeight / 100 : match.coreFunctionMinWeight
+    const supWeight = match.supportMinWeight > 1 ? match.supportMinWeight / 100 : match.supportMinWeight
+
+    return {
+      STRATEGIC: sWeight,
+      CORE: cWeight,
+      SUPPORT: supWeight,
+    }
+  }, [functionConfigsResponse, opcr?.fiscalYear?.id])
+
+  const calc = usePerformanceCalculation(calculationSession, customWeights)
   const groupedKPIs = useMemo(() => groupKPIsByCategory(kpiItems), [kpiItems])
   const allCategoriesExpanded = SELF_RATING_CATEGORIES.every((category) =>
     openAccordions.includes(category),
@@ -1041,6 +1060,7 @@ export function SelfRatingKpiAccordionTab() {
         openAccordions={openAccordions}
         setOpenAccordions={setOpenAccordions}
         isReadOnly={isReadOnly}
+        customWeights={customWeights}
         calc={calc}
         onUpdateSelfRating={
           isReadOnly ? noopUpdateSelfRating : conditionalUpdateSelfRating
