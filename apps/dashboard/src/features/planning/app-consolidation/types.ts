@@ -457,6 +457,22 @@ export interface APPItemDetail {
   createdBy?: string
   updatedAt?: string | null
   updatedBy?: string | null
+  isNew?: boolean
+  isRevised?: boolean
+  effectiveStartOfProcurement?: string | null
+  effectiveEndOfProcurement?: string | null
+  startOfProcurementOverride?: string | null
+  endOfProcurementOverride?: string | null
+  estimatedBudgetOverride?: number | null
+  originalPPMPBudget?: number
+  effectiveABC?: number
+  quantity?: number
+  unitCost?: number
+  totalAmount?: number
+  isABCOverridden?: boolean
+  isStartProcurementOverridden?: boolean
+  isEndProcurementOverridden?: boolean
+  unit?: string
   APP?: {
     id: string
     appNumber: string

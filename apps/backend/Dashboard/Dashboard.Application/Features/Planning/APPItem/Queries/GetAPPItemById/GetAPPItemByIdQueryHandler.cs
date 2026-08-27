@@ -13,6 +13,16 @@ public class GetAPPItemByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandle
         var entity = await unitOfWork.APPItemRepository.GetWithDetailsAsync(request.Id, cancellationToken)
             ?? throw new NotFoundException("APP item not found.");
 
+        var allocQty = entity.PPMPItem?.PPMPItemAllocations.Where(a => !a.IsDeleted).Sum(a => a.Quantity) ?? 0;
+        var unitPrice = entity.PPMPItem?.UnitPrice ?? 0;
+        var plannedQty = entity.PPMPItem?.PlannedQuantity ?? 0;
+        var qty = allocQty > 0 ? allocQty : plannedQty;
+        if (qty <= 0 && unitPrice > 0 && entity.EffectiveABC > 0)
+        {
+            qty = (int)Math.Round(entity.EffectiveABC / unitPrice);
+        }
+        if (qty <= 0) qty = 1;
+
         var effectiveStart = entity.StartOfProcurementOverride ?? (entity.PPMPItem?.ProcurementStartDate.HasValue == true ? entity.PPMPItem.ProcurementStartDate.Value.ToDateTime(TimeOnly.MinValue) : null);
         var effectiveEnd = entity.EndOfProcurementOverride ?? (entity.PPMPItem?.ProcurementEndDate.HasValue == true ? entity.PPMPItem.ProcurementEndDate.Value.ToDateTime(TimeOnly.MinValue) : null);
 
@@ -22,6 +32,9 @@ public class GetAPPItemByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandle
             APPId = entity.APPId,
             PPMPItemId = entity.PPMPItemId,
             PPMPItemName = entity.PPMPItem?.Name ?? string.Empty,
+            Quantity = qty,
+            UnitCost = unitPrice,
+            TotalAmount = entity.EffectiveABC,
             ProcurementModeId = entity.ProcurementModeId,
             ProcurementModeName = entity.ProcurementMode?.Name ?? string.Empty,
             FundSourceId = entity.FundSourceId,
@@ -63,7 +76,9 @@ public class GetAPPItemByIdQueryHandler(IUnitOfWork unitOfWork) : IRequestHandle
                 Name = entity.PPMPItem.Name,
                 Description = entity.PPMPItem.Description,
                 Unit = entity.PPMPItem.Unit,
-                UnitPrice = entity.PPMPItem.UnitPrice
+                UnitPrice = entity.PPMPItem.UnitPrice,
+                Quantity = qty,
+                TotalAmount = entity.EffectiveABC
             },
             ProcurementMode = entity.ProcurementMode == null ? null : new APPItemProcurementModeResponse
             {

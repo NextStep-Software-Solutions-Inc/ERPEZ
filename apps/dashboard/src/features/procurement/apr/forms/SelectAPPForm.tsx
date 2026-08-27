@@ -234,28 +234,36 @@ export function SelectAPPForm({
   const appTotalBudget = useMemo(() => {
     if (selectedApps.length === 0) return 0
     return selectedApps.reduce((appSum: number, app: any) => {
-      if (app.bac?.totalBudget) return appSum + app.bac.totalBudget
+      if (app.totalBudget && app.totalBudget > 0) return appSum + app.totalBudget
+      if (app.bac?.totalBudget && app.bac.totalBudget > 0) return appSum + app.bac.totalBudget
+      
+      const items = app.APPItems || app.appItems || app.items || []
+      const itemsTotal = items.reduce(
+        (sum: number, item: any) =>
+          sum +
+          (item.effectiveABC ||
+            item.totalAmount ||
+            item.originalPPMPBudget ||
+            (item.quantity && item.unitCost ? item.quantity * item.unitCost : 0) ||
+            0),
+        0
+      )
+      if (itemsTotal > 0) return appSum + itemsTotal
+
       if (app.APPPPMPs?.[0]?.PPMP?.totalEstimatedBudget) {
         const ppmpTotal = app.APPPPMPs.reduce(
           (sum: number, p: any) => sum + (p.PPMP?.totalEstimatedBudget || 0),
           0
         )
-        return appSum + ppmpTotal
+        if (ppmpTotal > 0) return appSum + ppmpTotal
       }
-      const items = app.APPItems || app.appItems || app.items || []
-      const itemsTotal = items.reduce(
-        (sum: number, item: any) =>
-          sum +
-          (item.totalAmount ||
-            item.quantity * item.unitCost ||
-            item.originalPPMPBudget ||
-            item.effectiveABC ||
-            0),
-        0
-      )
-      return appSum + itemsTotal
+
+      // Fallback: sum all available raw line items for this selected APP
+      const appRawItems = rawLineItems.filter((item: any) => item.sourceAppId === app.id)
+      const rawTotal = appRawItems.reduce((sum: number, item: any) => sum + (item.totalAmount || item.effectiveABC || 0), 0)
+      return appSum + rawTotal
     }, 0)
-  }, [selectedApps])
+  }, [selectedApps, rawLineItems])
 
   const budgetValidation = useMemo(() => {
     if (selectedApps.length === 0) return null
