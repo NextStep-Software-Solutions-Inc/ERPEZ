@@ -5,7 +5,9 @@ using ERPEZ.Application.Features.Planning.MFOPAP.Dtos;
 using ERPEZ.Application.Features.Planning.MFOPAP.Queries.GetMFOPAPById;
 using ERPEZ.Application.Features.Planning.MFOPAP.Queries.GetMFOPAPs;
 using ERPEZ.Domain.Entities.Planning;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -13,11 +15,15 @@ namespace ERPEZ.Api.Controllers
 {
     [Route("mfopaps")]
     [ApiController]
+    [Authorize]
     public class MFOPAPController(ISender mediator) : ControllerBase
     {
         [HttpPost]
+        [HasPermission(Permissions.Finance.uacsManage)]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> CreateMFOPAP([FromBody] CreateMFOPAPCommand command)
         {
             var mfopap = await mediator.Send(command);
@@ -26,7 +32,10 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet]
+        [HasPermission(Permissions.Finance.uacsView)]
         [ProducesResponseType(typeof(PaginatedApiResponse<MFOPAPResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> GetMFOPAPs([FromQuery] GetMFOPAPsQuery query)
         {
             var result = await mediator.Send(query);
@@ -34,8 +43,11 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet("{id}")]
+        [HasPermission(Permissions.Finance.uacsView)]
         [ProducesResponseType(typeof(ApiResponse<MFOPAPDetailedResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> GetMFOPAPById(Guid id)
         {
             var mfopap = await mediator.Send(new GetMFOPAPByIdQuery(id));
@@ -44,9 +56,12 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpPut("{id}")]
+        [HasPermission(Permissions.Finance.uacsManage)]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
         [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> UpdateMFOPAP(Guid id, [FromBody] UpdateMFOPAPRequest updateMFOPAP)
         {
             var request = new UpdateMFOPAPCommand
@@ -60,8 +75,11 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpDelete("{id}")]
+        [HasPermission(Permissions.Finance.uacsManage)]
         [ProducesResponseType(StatusCodes.Status204NoContent)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> DeleteMFOPAP(Guid id)
         {
             var command = new DeleteMFOPAPCommand(id);

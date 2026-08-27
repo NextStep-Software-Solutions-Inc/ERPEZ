@@ -4,7 +4,9 @@ using ERPEZ.Application.Features.Planning.UACSCodeCombinationFiscalYear.Commands
 using ERPEZ.Application.Features.Planning.UACSCodeCombinationFiscalYear.Dtos;
 using ERPEZ.Application.Features.Planning.UACSCodeCombinationFiscalYear.Queries.GetUACSCodeCombinationFiscalYearById;
 using ERPEZ.Application.Features.Planning.UACSCodeCombinationFiscalYear.Queries.GetUACSCodeCombinationFiscalYears;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -15,14 +17,18 @@ namespace ERPEZ.Api.Controllers;
 /// </summary>
 [Route("uacs-code-combination-fiscal-years")]
 [ApiController]
+[Authorize]
 public class UACSCodeCombinationFiscalYearController(ISender mediator) : ControllerBase
 {
     /// <summary>
     /// Creates a new UACS code combination fiscal year association.
     /// </summary>
     [HttpPost]
+    [HasPermission(Permissions.Finance.uacsManage)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> CreateUACSCodeCombinationFiscalYear([FromBody] CreateUACSCodeCombinationFiscalYearCommand command)
     {
         var result = await mediator.Send(command);
@@ -33,7 +39,10 @@ public class UACSCodeCombinationFiscalYearController(ISender mediator) : Control
     /// Retrieves all UACS code combination fiscal year associations with pagination and filtering.
     /// </summary>
     [HttpGet]
+    [HasPermission(Permissions.Finance.uacsView)]
     [ProducesResponseType(typeof(PaginatedApiResponse<UACSCodeCombinationFiscalYearResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetUACSCodeCombinationFiscalYears([FromQuery] GetUACSCodeCombinationFiscalYearsQuery query)
     {
         var result = await mediator.Send(query);
@@ -44,8 +53,11 @@ public class UACSCodeCombinationFiscalYearController(ISender mediator) : Control
     /// Retrieves a single UACS code combination fiscal year association by ID.
     /// </summary>
     [HttpGet("{id}")]
+    [HasPermission(Permissions.Finance.uacsView)]
     [ProducesResponseType(typeof(ApiResponse<UACSCodeCombinationFiscalYearResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetUACSCodeCombinationFiscalYearById(Guid id)
     {
         var result = await mediator.Send(new GetUACSCodeCombinationFiscalYearByIdQuery(id));
@@ -56,9 +68,12 @@ public class UACSCodeCombinationFiscalYearController(ISender mediator) : Control
     /// Updates an existing UACS code combination fiscal year association.
     /// </summary>
     [HttpPut("{id}")]
+    [HasPermission(Permissions.Finance.uacsManage)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> UpdateUACSCodeCombinationFiscalYear(Guid id, [FromBody] UpdateUACSCodeCombinationFiscalYearRequest dto)
     {
         var command = new UpdateUACSCodeCombinationFiscalYearCommand
@@ -75,8 +90,11 @@ public class UACSCodeCombinationFiscalYearController(ISender mediator) : Control
     /// Deletes a UACS code combination fiscal year association.
     /// </summary>
     [HttpDelete("{id}")]
+    [HasPermission(Permissions.Finance.uacsManage)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> DeleteUACSCodeCombinationFiscalYear(Guid id)
     {
         var result = await mediator.Send(new DeleteUACSCodeCombinationFiscalYearCommand(id));

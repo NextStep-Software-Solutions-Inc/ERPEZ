@@ -4,7 +4,9 @@ using ERPEZ.Application.Features.Planning.PMTMember.Commands.UpdatePMTMember;
 using ERPEZ.Application.Features.Planning.PMTMember.Dtos;
 using ERPEZ.Application.Features.Planning.PMTMember.Queries.GetPMTMemberById;
 using ERPEZ.Application.Features.Planning.PMTMember.Queries.GetPMTMembers;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,11 +14,15 @@ namespace ERPEZ.Api.Controllers;
 
 [Route("pmt-members")]
 [ApiController]
+[Authorize]
 public class PMTMemberController(ISender mediator) : ControllerBase
 {
     [HttpPost]
+    [HasPermission(Permissions.Admin.orgStructureManage)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> CreatePMTMember([FromBody] CreatePMTMemberCommand command)
     {
         var result = await mediator.Send(command);
@@ -24,7 +30,10 @@ public class PMTMemberController(ISender mediator) : ControllerBase
     }
 
     [HttpGet]
+    [HasPermission(Permissions.Admin.orgStructureView)]
     [ProducesResponseType(typeof(PaginatedApiResponse<PMTMemberResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetPMTMembers([FromQuery] GetPMTMembersQuery query)
     {
         var result = await mediator.Send(query);
@@ -32,8 +41,11 @@ public class PMTMemberController(ISender mediator) : ControllerBase
     }
 
     [HttpGet("{id}")]
+    [HasPermission(Permissions.Admin.orgStructureView)]
     [ProducesResponseType(typeof(ApiResponse<PMTMemberResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetPMTMemberById(Guid id)
     {
         var result = await mediator.Send(new GetPMTMemberByIdQuery(id));
@@ -41,9 +53,12 @@ public class PMTMemberController(ISender mediator) : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [HasPermission(Permissions.Admin.orgStructureManage)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> UpdatePMTMember(Guid id, [FromBody] UpdatePMTMemberRequest updatePMTMember)
     {
         var request = new UpdatePMTMemberCommand
@@ -57,8 +72,11 @@ public class PMTMemberController(ISender mediator) : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [HasPermission(Permissions.Admin.orgStructureManage)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> DeletePMTMember(Guid id)
     {
         var result = await mediator.Send(new DeletePMTMemberCommand(id));

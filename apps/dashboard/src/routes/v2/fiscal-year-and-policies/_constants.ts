@@ -84,8 +84,8 @@ export const POLICY_TABS: Record<string, PolicyTabConfig> = {
     icon: Percent,
     requiredPermission: {
       anyOf: [
-        PERMISSIONS.Finance.AgencyMasterBudget.Manage,
-        PERMISSIONS.Planning.Dashboard.ViewGlobal,
+        PERMISSIONS.Planning.EconomicIndicators.Manage,
+        PERMISSIONS.Planning.FiscalYear.View,
       ],
     },
   },
@@ -97,6 +97,7 @@ export const POLICY_TABS: Record<string, PolicyTabConfig> = {
     icon: History,
     requiredPermission: {
       anyOf: [
+        PERMISSIONS.Planning.DataMigrations.Manage,
         PERMISSIONS.Admin.Tenants.Manage,
         PERMISSIONS.Admin.Roles.Manage,
       ],
@@ -118,7 +119,12 @@ export const POLICY_TABS: Record<string, PolicyTabConfig> = {
     description: 'Define limits and modes for procurement',
     domain: 'financial-planning',
     icon: Scale,
-    requiredPermission: PERMISSIONS.Procurement.App.Manage,
+    requiredPermission: {
+      anyOf: [
+        PERMISSIONS.Procurement.ProcurementThresholds.Manage,
+        PERMISSIONS.Procurement.ProcurementLibrary.View,
+      ],
+    },
   },
 
   // Governance & Organization
@@ -137,7 +143,12 @@ export const POLICY_TABS: Record<string, PolicyTabConfig> = {
     description: 'Configure weights for performance evaluation',
     domain: 'governance-organization',
     icon: Target,
-    requiredPermission: PERMISSIONS.Planning.Target.Manage,
+    requiredPermission: {
+      anyOf: [
+        PERMISSIONS.Planning.SpmsFunctionWeights.Manage,
+        PERMISSIONS.Planning.Target.Manage,
+      ],
+    },
   },
   'rating-scale': {
     id: 'rating-scale',

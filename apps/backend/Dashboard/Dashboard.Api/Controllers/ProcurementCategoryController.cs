@@ -4,7 +4,9 @@ using ERPEZ.Application.Features.Planning.ProcurementCategory.Commands.UpdatePro
 using ERPEZ.Application.Features.Planning.ProcurementCategory.Dtos;
 using ERPEZ.Application.Features.Planning.ProcurementCategory.Queries.GetProcurementCategories;
 using ERPEZ.Application.Features.Planning.ProcurementCategory.Queries.GetProcurementCategoryById;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 using Sieve.Models;
@@ -13,14 +15,18 @@ namespace ERPEZ.Api.Controllers;
 
 [Route("procurement-categories")]
 [ApiController]
+[Authorize]
 public class ProcurementCategoryController(ISender mediator) : ControllerBase
 {
     /// <summary>
     /// Create a new procurement category
     /// </summary>
     [HttpPost]
+    [HasPermission(Permissions.Procurement.procurementLibraryManage)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> CreateProcurementCategory([FromBody] CreateProcurementCategoryCommand command)
     {
         var result = await mediator.Send(command);
@@ -35,7 +41,10 @@ public class ProcurementCategoryController(ISender mediator) : ControllerBase
     /// Get all procurement categories with filtering, sorting, and pagination
     /// </summary>
     [HttpGet]
+    [HasPermission(Permissions.Procurement.procurementLibraryView)]
     [ProducesResponseType(typeof(PaginatedApiResponse<ProcurementCategoryResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetProcurementCategories([FromQuery] SieveModel sieveModel)
     {
         var query = new GetProcurementCategoriesQuery(sieveModel);
@@ -47,8 +56,11 @@ public class ProcurementCategoryController(ISender mediator) : ControllerBase
     /// Get procurement category by ID
     /// </summary>
     [HttpGet("{id:guid}")]
+    [HasPermission(Permissions.Procurement.procurementLibraryView)]
     [ProducesResponseType(typeof(ApiResponse<ProcurementCategoryResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<ProcurementCategoryResponse>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetProcurementCategoryById(Guid id)
     {
         var query = new GetProcurementCategoryByIdQuery(id);
@@ -60,9 +72,12 @@ public class ProcurementCategoryController(ISender mediator) : ControllerBase
     /// Update an existing procurement category
     /// </summary>
     [HttpPut("{id:guid}")]
+    [HasPermission(Permissions.Procurement.procurementLibraryManage)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> UpdateProcurementCategory(Guid id, [FromBody] UpdateProcurementCategoryCommand command)
     {
         if (id != command.Id)
@@ -78,8 +93,11 @@ public class ProcurementCategoryController(ISender mediator) : ControllerBase
     /// Delete a procurement category
     /// </summary>
     [HttpDelete("{id:guid}")]
+    [HasPermission(Permissions.Procurement.procurementLibraryManage)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status204NoContent)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> DeleteProcurementCategory(Guid id)
     {
         var command = new DeleteProcurementCategoryCommand(id);

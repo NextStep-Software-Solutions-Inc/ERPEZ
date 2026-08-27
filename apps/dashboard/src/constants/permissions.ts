@@ -58,6 +58,21 @@ export const PERMISSIONS = {
     WorkflowMatrix: {
       Manage: 'planning.workflow_matrix.manage',
     },
+    EconomicIndicators: {
+      Manage: 'planning.economic_indicators.manage',
+    },
+    DataMigrations: {
+      Manage: 'planning.data_migrations.manage',
+    },
+    SpmsFunctionWeights: {
+      Manage: 'planning.spms_function_weights.manage',
+    },
+    MarketScoping: {
+      View: 'planning.market_scoping.view',
+      Manage: 'planning.market_scoping.manage',
+      Submit: 'planning.market_scoping.submit',
+      Approve: 'planning.market_scoping.approve',
+    },
   },
   Finance: {
     AgencyMasterBudget: {
@@ -73,6 +88,7 @@ export const PERMISSIONS = {
       LockUnlock: 'finance.fiscal_month.lock_unlock',
     },
     Uacs: {
+      View: 'finance.uacs.view',
       Manage: 'finance.uacs.manage',
     },
     FundSource: {
@@ -108,6 +124,21 @@ export const PERMISSIONS = {
     Po: {
       Manage: 'procurement.po.manage',
     },
+    ProcurementLibrary: {
+      View: 'procurement.procurement_library.view',
+      Manage: 'procurement.procurement_library.manage',
+    },
+    ProcurementThresholds: {
+      Manage: 'procurement.procurement_thresholds.manage',
+    },
+    BiddingDocuments: {
+      View: 'procurement.bidding_documents.view',
+      Manage: 'procurement.bidding_documents.manage',
+    },
+    Supplier: {
+      View: 'procurement.supplier.view',
+      Manage: 'procurement.supplier.manage',
+    },
   },
   Admin: {
     Tenants: {
@@ -123,7 +154,12 @@ export const PERMISSIONS = {
       Manage: 'admin.users.manage',
     },
     OrgStructure: {
+      View: 'admin.org_structure.view',
       Manage: 'admin.org_structure.manage',
+    },
+    SystemAdmin: {
+      View: 'admin.system_admin.view',
+      Manage: 'admin.system_admin.manage',
     },
   },
 } as const
@@ -139,6 +175,10 @@ export type PermissionKey =
   | (typeof PERMISSIONS.Planning.FiscalYear)[keyof typeof PERMISSIONS.Planning.FiscalYear]
   | (typeof PERMISSIONS.Planning.BudgetCall)[keyof typeof PERMISSIONS.Planning.BudgetCall]
   | (typeof PERMISSIONS.Planning.WorkflowMatrix)[keyof typeof PERMISSIONS.Planning.WorkflowMatrix]
+  | (typeof PERMISSIONS.Planning.EconomicIndicators)[keyof typeof PERMISSIONS.Planning.EconomicIndicators]
+  | (typeof PERMISSIONS.Planning.DataMigrations)[keyof typeof PERMISSIONS.Planning.DataMigrations]
+  | (typeof PERMISSIONS.Planning.SpmsFunctionWeights)[keyof typeof PERMISSIONS.Planning.SpmsFunctionWeights]
+  | (typeof PERMISSIONS.Planning.MarketScoping)[keyof typeof PERMISSIONS.Planning.MarketScoping]
   | (typeof PERMISSIONS.Finance.AgencyMasterBudget)[keyof typeof PERMISSIONS.Finance.AgencyMasterBudget]
   | (typeof PERMISSIONS.Finance.BudgetCeiling)[keyof typeof PERMISSIONS.Finance.BudgetCeiling]
   | (typeof PERMISSIONS.Finance.SubOfficeCeiling)[keyof typeof PERMISSIONS.Finance.SubOfficeCeiling]
@@ -152,8 +192,14 @@ export type PermissionKey =
   | (typeof PERMISSIONS.Procurement.Bac)[keyof typeof PERMISSIONS.Procurement.Bac]
   | (typeof PERMISSIONS.Procurement.Aob)[keyof typeof PERMISSIONS.Procurement.Aob]
   | (typeof PERMISSIONS.Procurement.Po)[keyof typeof PERMISSIONS.Procurement.Po]
+  | (typeof PERMISSIONS.Procurement.ProcurementLibrary)[keyof typeof PERMISSIONS.Procurement.ProcurementLibrary]
+  | (typeof PERMISSIONS.Procurement.ProcurementThresholds)[keyof typeof PERMISSIONS.Procurement.ProcurementThresholds]
+  | (typeof PERMISSIONS.Procurement.BiddingDocuments)[keyof typeof PERMISSIONS.Procurement.BiddingDocuments]
+  | (typeof PERMISSIONS.Procurement.Supplier)[keyof typeof PERMISSIONS.Procurement.Supplier]
   | (typeof PERMISSIONS.Admin.Tenants)[keyof typeof PERMISSIONS.Admin.Tenants]
   | (typeof PERMISSIONS.Admin.Members)[keyof typeof PERMISSIONS.Admin.Members]
   | (typeof PERMISSIONS.Admin.Roles)[keyof typeof PERMISSIONS.Admin.Roles]
   | (typeof PERMISSIONS.Admin.Users)[keyof typeof PERMISSIONS.Admin.Users]
   | (typeof PERMISSIONS.Admin.OrgStructure)[keyof typeof PERMISSIONS.Admin.OrgStructure]
+  | (typeof PERMISSIONS.Admin.SystemAdmin)[keyof typeof PERMISSIONS.Admin.SystemAdmin]
+

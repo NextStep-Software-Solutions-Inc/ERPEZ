@@ -13,10 +13,14 @@ namespace ERPEZ.Api.Controllers;
 
 [Route("fiscal-months")]
 [ApiController]
+[Authorize]
 public class FiscalMonthController(ISender mediator) : ControllerBase
 {
     [HttpGet]
+    [HasPermission(Permissions.Planning.fiscalYearView)]
     [ProducesResponseType(typeof(PaginatedApiResponse<FiscalMonthResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetFiscalMonths([FromQuery] GetFiscalMonthsQuery query)
     {
         var result = await mediator.Send(query);
@@ -24,8 +28,11 @@ public class FiscalMonthController(ISender mediator) : ControllerBase
     }
 
     [HttpGet("{id}")]
+    [HasPermission(Permissions.Planning.fiscalYearView)]
     [ProducesResponseType(typeof(ApiResponse<FiscalMonthDetailedResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetFiscalMonthById(Guid id)
     {
         var fiscalMonth = await mediator.Send(new GetFiscalMonthByIdQuery(id));
@@ -37,6 +44,7 @@ public class FiscalMonthController(ISender mediator) : ControllerBase
     [HasPermission(Permissions.Finance.fiscalMonthLockUnlock)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> LockFiscalMonth(Guid id)
     {
@@ -50,6 +58,7 @@ public class FiscalMonthController(ISender mediator) : ControllerBase
     [HasPermission(Permissions.Finance.fiscalMonthLockUnlock)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
     [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> UnlockFiscalMonth(Guid id)
     {

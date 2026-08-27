@@ -20,7 +20,6 @@ import { usePermissions } from '@/hooks/usePermissions'
 import { AccessDeniedFallback } from '@/components/AccessDeniedFallBack'
 import {
   POLICY_DOMAINS,
-  POLICY_TABS,
   getDomainByTab,
   getTabsByDomain,
   isTabPermitted,

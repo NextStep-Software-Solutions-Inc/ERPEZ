@@ -26,4 +26,8 @@
     <ProjectReference Include="..\..\Shared\Shared.csproj" />
   </ItemGroup>
 
+  <ItemGroup>
+    <Using Include="Microsoft.AspNetCore.Authorization" />
+  </ItemGroup>
+
 </Project>

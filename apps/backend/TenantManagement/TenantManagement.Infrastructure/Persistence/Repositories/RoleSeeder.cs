@@ -53,10 +53,22 @@ public static class RoleSeeder
                 Permissions.Planning.fiscalYearManage,
                 Permissions.Planning.budgetCallView,
                 Permissions.Planning.budgetCallManage,
+                Permissions.Planning.workflowMatrixManage,
+                Permissions.Planning.economicIndicatorsManage,
+                Permissions.Planning.dataMigrationsManage,
+                Permissions.Planning.spmsFunctionWeightsManage,
+                Permissions.Planning.marketScopingView,
+                Permissions.Planning.marketScopingManage,
+                Permissions.Planning.marketScopingSubmit,
+                Permissions.Planning.marketScopingApprove,
                 Permissions.Planning.opcrEvaluate,
                 Permissions.Planning.viewGlobalDashboard,
                 Permissions.Planning.libView,
-                Permissions.Planning.wfpView
+                Permissions.Planning.wfpView,
+                Permissions.Admin.orgStructureView,
+                Permissions.Finance.uacsView,
+                Permissions.Procurement.procurementLibraryView,
+                Permissions.Procurement.biddingDocumentsView
             ]
         ),
         new(
@@ -67,11 +79,15 @@ public static class RoleSeeder
                 Permissions.Finance.budgetCeilingAssign,
                 Permissions.Finance.subOfficeCeilingAssign,
                 Permissions.Finance.fiscalMonthLockUnlock,
+                Permissions.Finance.uacsView,
                 Permissions.Finance.uacsManage,
                 Permissions.Finance.fundSourceManage,
+                Permissions.Planning.economicIndicatorsManage,
                 Permissions.Planning.fiscalYearView,
                 Permissions.Planning.fiscalYearManage,
-                Permissions.Planning.viewGlobalDashboard
+                Permissions.Planning.viewGlobalDashboard,
+                Permissions.Admin.orgStructureView,
+                Permissions.Procurement.procurementLibraryView
             ]
         ),
         new(
@@ -87,7 +103,17 @@ public static class RoleSeeder
                 Permissions.Procurement.rfqManage,
                 Permissions.Procurement.bacManage,
                 Permissions.Procurement.aobManage,
-                Permissions.Procurement.poManage
+                Permissions.Procurement.poManage,
+                Permissions.Procurement.procurementLibraryView,
+                Permissions.Procurement.procurementLibraryManage,
+                Permissions.Procurement.procurementThresholdsManage,
+                Permissions.Procurement.biddingDocumentsView,
+                Permissions.Procurement.biddingDocumentsManage,
+                Permissions.Procurement.supplierView,
+                Permissions.Procurement.supplierManage,
+                Permissions.Planning.marketScopingView,
+                Permissions.Admin.orgStructureView,
+                Permissions.Finance.uacsView
             ]
         ),
         new(
@@ -129,12 +155,37 @@ public static class RoleSeeder
                 Permissions.Admin.membersManage,
                 Permissions.Admin.rolesManage,
                 Permissions.Admin.usersManage,
+                Permissions.Admin.orgStructureView,
                 Permissions.Admin.orgStructureManage,
+                Permissions.Admin.systemAdminView,
+                Permissions.Admin.systemAdminManage,
                 Permissions.Planning.fiscalYearView,
                 Permissions.Planning.fiscalYearManage,
                 Permissions.Planning.budgetCallView,
                 Permissions.Planning.budgetCallManage,
                 Permissions.Planning.workflowMatrixManage,
+                Permissions.Planning.economicIndicatorsManage,
+                Permissions.Planning.dataMigrationsManage,
+                Permissions.Planning.spmsFunctionWeightsManage,
+                Permissions.Planning.ratingScaleManage,
+                Permissions.Planning.marketScopingView,
+                Permissions.Planning.marketScopingManage,
+                Permissions.Planning.marketScopingSubmit,
+                Permissions.Planning.marketScopingApprove,
+                Permissions.Finance.agencyMasterBudgetManage,
+                Permissions.Finance.budgetCeilingAssign,
+                Permissions.Finance.subOfficeCeilingAssign,
+                Permissions.Finance.fiscalMonthLockUnlock,
+                Permissions.Finance.uacsView,
+                Permissions.Finance.uacsManage,
+                Permissions.Finance.fundSourceManage,
+                Permissions.Procurement.procurementLibraryView,
+                Permissions.Procurement.procurementLibraryManage,
+                Permissions.Procurement.procurementThresholdsManage,
+                Permissions.Procurement.biddingDocumentsView,
+                Permissions.Procurement.biddingDocumentsManage,
+                Permissions.Procurement.supplierView,
+                Permissions.Procurement.supplierManage,
                 Permissions.Planning.viewGlobalDashboard
             ]
         )

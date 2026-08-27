@@ -4,7 +4,9 @@ using ERPEZ.Application.Features.Planning.Category.Commands.UpdateCategory;
 using ERPEZ.Application.Features.Planning.Category.Dtos;
 using ERPEZ.Application.Features.Planning.Category.Queries.GetCategories;
 using ERPEZ.Application.Features.Planning.Category.Queries.GetCategoryById;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,11 +14,15 @@ namespace ERPEZ.Api.Controllers;
 
 [Route("categories")]
 [ApiController]
+[Authorize]
 public class CategoryController(ISender mediator) : ControllerBase
 {
     [HttpPost]
+    [HasPermission(Permissions.Procurement.procurementLibraryManage)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> CreateCategory([FromBody] CreateCategoryCommand command)
     {
         var result = await mediator.Send(command);
@@ -24,7 +30,10 @@ public class CategoryController(ISender mediator) : ControllerBase
     }
 
     [HttpGet]
+    [HasPermission(Permissions.Procurement.procurementLibraryView)]
     [ProducesResponseType(typeof(PaginatedApiResponse<CategoryResponse>), StatusCodes.Status200OK)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetCategories([FromQuery] GetCategoriesQuery query)
     {
         var result = await mediator.Send(query);
@@ -32,8 +41,11 @@ public class CategoryController(ISender mediator) : ControllerBase
     }
 
     [HttpGet("{id}")]
+    [HasPermission(Permissions.Procurement.procurementLibraryView)]
     [ProducesResponseType(typeof(ApiResponse<CategoryResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetCategoryById(Guid id)
     {
         var result = await mediator.Send(new GetCategoryByIdQuery(id));
@@ -41,9 +53,12 @@ public class CategoryController(ISender mediator) : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [HasPermission(Permissions.Procurement.procurementLibraryManage)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> UpdateCategory(Guid id, [FromBody] UpdateCategoryRequest dto)
     {
         var command = new UpdateCategoryCommand { Id = id, UpdateCategory = dto };
@@ -52,8 +67,11 @@ public class CategoryController(ISender mediator) : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [HasPermission(Permissions.Procurement.procurementLibraryManage)]
     [ProducesResponseType(StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> DeleteCategory(Guid id)
     {
         var result = await mediator.Send(new DeleteCategoryCommand(id));

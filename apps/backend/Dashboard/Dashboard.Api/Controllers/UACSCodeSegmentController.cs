@@ -4,7 +4,9 @@ using ERPEZ.Application.Features.Planning.UACSCodeSegment.Commands.UpdateUACSCod
 using ERPEZ.Application.Features.Planning.UACSCodeSegment.Dtos;
 using ERPEZ.Application.Features.Planning.UACSCodeSegment.Queries.GetUACSCodeSegmentById;
 using ERPEZ.Application.Features.Planning.UACSCodeSegment.Queries.GetUACSCodeSegments;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,11 +14,15 @@ namespace ERPEZ.Api.Controllers
 {
     [Route("uacs-code-segments")]
     [ApiController]
+    [Authorize]
     public class UACSCodeSegmentsController(ISender mediator) : ControllerBase
     {
         [HttpPost]
+        [HasPermission(Permissions.Finance.uacsManage)]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
         [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> CreateUACSCodeSegment([FromBody] CreateUACSCodeSegmentCommand command)
         {
             var response = await mediator.Send(command);
@@ -28,7 +34,10 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet]
+        [HasPermission(Permissions.Finance.uacsView)]
         [ProducesResponseType(typeof(PaginatedApiResponse<UACSCodeSegmentResponse>), StatusCodes.Status200OK)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> GetUACSCodeSegments([FromQuery] GetUACSCodeSegmentsQuery query)
         {
             var result = await mediator.Send(query);
@@ -36,8 +45,11 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpGet("{id}")]
+        [HasPermission(Permissions.Finance.uacsView)]
         [ProducesResponseType(typeof(ApiResponse<UACSCodeSegmentResponse>), StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> GetUACSCodeSegmentById(Guid id)
         {
             var response = await mediator.Send(new GetUACSCodeSegmentByIdQuery(id));
@@ -45,9 +57,12 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpPut("{id}")]
+        [HasPermission(Permissions.Finance.uacsManage)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status400BadRequest)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> UpdateUACSCodeSegment(Guid id, [FromBody] UpdateUACSCodeSegmentRequest updateUACSCodeSegment)
         {
             var request = new UpdateUACSCodeSegmentCommand
@@ -61,8 +76,11 @@ namespace ERPEZ.Api.Controllers
         }
 
         [HttpDelete("{id}")]
+        [HasPermission(Permissions.Finance.uacsManage)]
         [ProducesResponseType(StatusCodes.Status200OK)]
         [ProducesResponseType(StatusCodes.Status404NotFound)]
+        [ProducesResponseType(StatusCodes.Status401Unauthorized)]
+        [ProducesResponseType(StatusCodes.Status403Forbidden)]
         public async Task<IActionResult> DeleteUACSCodeSegment(Guid id)
         {
             var command = new DeleteUACSCodeSegmentCommand(id);
