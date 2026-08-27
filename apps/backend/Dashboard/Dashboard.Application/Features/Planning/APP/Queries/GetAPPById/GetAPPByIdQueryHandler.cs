@@ -56,6 +56,10 @@ public class GetAPPByIdQueryHandler(IUnitOfWork unitOfWork)
                 {
                     Id = item.Id,
                     PPMPItemId = item.PPMPItemId,
+                    CSEItemId = item.PPMPItem?.CSEItemId,
+                    NonCSEItemId = item.PPMPItem?.NonCSEItemId,
+                    IsCSE = item.PPMPItem?.CSEItemId != null || (item.PPMPItem != null && item.PPMPItem.NonCSEItemId == null),
+                    IsNonCSE = item.PPMPItem?.NonCSEItemId != null,
                     PPMPItemName = item.PPMPItem?.Name ?? string.Empty,
                     Description = item.PPMPItem?.Description ?? string.Empty,
                     Unit = item.PPMPItem?.Unit ?? string.Empty,

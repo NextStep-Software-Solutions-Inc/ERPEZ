@@ -16,6 +16,10 @@ import api from '@/services/api'
 export interface APPItemResponse {
   id: string
   ppmpItemId: string
+  cseItemId?: string
+  nonCSEItemId?: string
+  isCSE?: boolean
+  isNonCSE?: boolean
   ppmpItemName: string
   description: string
   unit: string

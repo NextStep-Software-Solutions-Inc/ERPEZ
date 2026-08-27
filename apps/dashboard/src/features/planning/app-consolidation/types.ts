@@ -191,8 +191,10 @@ export interface BACMilestones {
 export interface BACLineItem {
   id: string
   ppmpItemId?: string
+  name?: string
   code?: string // Item code for reference (e.g., "ITEM-001", from delta extraction)
   description: string // Item name/title (e.g., "Office Chairs", "Laptops")
+  itemDescription?: string // Detailed technical specifications/description
   unit: string
   quantity: number
   unitCost: number
@@ -209,7 +211,7 @@ export interface BACLineItem {
   epaRemarks?: string
   startOfProcurementOverride?: string
   endOfProcurementOverride?: string
-  estimatedBudgetOverride?: number
+  estimatedBudgetOverride?: number | null
   effectiveStartOfProcurement?: string
   effectiveEndOfProcurement?: string
   isStartProcurementOverridden?: boolean

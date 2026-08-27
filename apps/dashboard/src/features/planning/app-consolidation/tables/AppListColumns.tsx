@@ -106,7 +106,8 @@ export function createAppListColumns(userRole: UserRole = 'BAC_MEMBER'): ColumnD
           <ProgressBadge
             itemsAdded={itemsAddedCount}
             bacConfigured={itemsAddedCount > 0}
-            signatoriesAdded={false}
+            signatoriesAdded={itemsAddedCount > 0}
+            status={row.original.status}
           />
         )
       },

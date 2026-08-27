@@ -25,12 +25,29 @@ export function AppDetailsHeader({ app }: AppDetailsHeaderProps) {
   }
   const statusLabel = statusLabels[app.status] ?? app.status
   
-  const itemCount = app.aggregationResults?.items?.reduce((sum, item) => sum + item.items.length, 0) || 0
-  const hasSignatories = app.signatories && (
-    (app.signatories.preparedBy?.length ?? 0) > 0 ||
-    (app.signatories.reviewedBy?.length ?? 0) > 0 ||
-    (app.signatories.approvedBy?.length ?? 0) > 0 ||
-    (app.signatories.certifiedBy?.length ?? 0) > 0
+  const itemCount =
+    app.aggregationResults?.items?.reduce((sum, item) => sum + item.items.length, 0) ||
+    app.bac?.lineItems?.length ||
+    app.APPItems?.length ||
+    0
+
+  const hasPpmps =
+    (app.ppmpIds?.length ?? 0) > 0 ||
+    (app.appPpmps?.length ?? 0) > 0 ||
+    itemCount > 0
+
+  const hasBacConfigured =
+    (app.bac?.lineItems?.length ?? 0) > 0 ||
+    (app.APPItems?.length ?? 0) > 0
+
+  const hasSignatories = Boolean(
+    app.signatories &&
+    (
+      (app.signatories.preparedBy?.length ?? 0) > 0 ||
+      (app.signatories.reviewedBy?.length ?? 0) > 0 ||
+      (app.signatories.approvedBy?.length ?? 0) > 0 ||
+      (app.signatories.certifiedBy?.length ?? 0) > 0
+    )
   )
 
   const appTypeStr = app.appType || 'Indicative'
@@ -81,9 +98,10 @@ export function AppDetailsHeader({ app }: AppDetailsHeaderProps) {
                 Code: <span className="font-mono font-bold text-slate-900 bg-slate-100 px-2 py-0.5 rounded border border-slate-200">{app.appCode}</span>
               </p>
               <ProgressBadge 
-                itemsAdded={itemCount}
-                bacConfigured={(app.bac?.lineItems?.length ?? 0) > 0}
+                itemsAdded={hasPpmps ? 1 : 0}
+                bacConfigured={hasBacConfigured}
                 signatoriesAdded={hasSignatories}
+                status={app.status}
               />
             </div>
           </div>

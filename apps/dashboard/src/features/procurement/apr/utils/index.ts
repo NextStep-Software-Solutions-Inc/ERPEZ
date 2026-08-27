@@ -74,3 +74,5 @@ export {
   normalizeAPRStatus,
   matchesAPRStatus,
 } from './normalizeAPRStatus'
+
+export { isCSEItem } from './isCSEItem'

@@ -15,7 +15,7 @@ import { ValidationAlerts } from '../components/ValidationAlerts'
 import { APRItemsPreview } from '../components/APRItemsPreview'
 import { useApprovedAPPs, useAPPById, useAllocatedAPPItemIds } from '../handlers/hooks'
 import { useAPPApprovalValidation } from '../hooks'
-import { convertAppLineItemsToAPRItems, validateBudgetCeiling } from '../utils'
+import { convertAppLineItemsToAPRItems, validateBudgetCeiling, isCSEItem } from '../utils'
 import type { ConsolidatedAPRItem } from '../types'
 
 export type SelectAppFormValues = {
@@ -93,7 +93,7 @@ export function SelectAPPForm({
         if (fy && fy !== fiscalYear) return false
       }
 
-      // Filter out APPs that have no remaining unallocated line items
+      // Filter out APPs that have no remaining unallocated CSE line items
       const directItems = app.APPItems || app.appItems || app.items || []
       if (directItems.length === 0) {
         const appPmps = app.APPPPMPs || app.appppmPs || []
@@ -101,15 +101,16 @@ export function SelectAPPForm({
         const allExtractedIds: string[] = []
         appPmps.forEach((rel: any) => {
           const ppmp = rel.PPMP || rel.ppmp || rel
-          const pItems = ppmp?.PPMPItems || ppmp?.ppmpItems || ppmp?.items || []
+          const pItems = (ppmp?.PPMPItems || ppmp?.ppmpItems || ppmp?.items || []).filter(isCSEItem)
           pItems.forEach((pi: any) => allExtractedIds.push(String(pi.id).toLowerCase()))
         })
         return allExtractedIds.some((id) => !allocatedItemIds.has(id))
       }
 
-      const unallocatedCount = directItems.filter(
-        (item: any) => !allocatedItemIds.has(String(item.id).toLowerCase())
-      ).length
+      const unallocatedCount = directItems
+        .filter(isCSEItem)
+        .filter((item: any) => !allocatedItemIds.has(String(item.id).toLowerCase()))
+        .length
 
       return unallocatedCount > 0
     })
@@ -172,14 +173,21 @@ export function SelectAPPForm({
               fundSourceId: ppmp?.fundSourceId,
               fundSourceName: ppmp?.fundSourceName,
               procurementModeName: pi.modeOfProcurement || pi.procurementModeName,
+              cseItemId: pi.cseItemId,
+              nonCSEItemId: pi.nonCSEItemId,
+              isCSE: pi.cseItemId != null || pi.isCSE === true,
+              isNonCSE: pi.nonCSEItemId != null || pi.isNonCSE === true,
             })
           })
         })
         items = extracted
       }
 
+      // Filter out Non-CSE items: APRs are strictly for CSE items (Common-Use Supplies and Equipment from PS-DBM)
+      const cseItems = items.filter(isCSEItem)
+
       // Filter out items already allocated to another APR
-      const unallocatedItems = items.filter(
+      const unallocatedItems = cseItems.filter(
         (item: any) => !allocatedItemIds.has(String(item.id).toLowerCase())
       )
 
