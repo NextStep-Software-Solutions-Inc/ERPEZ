@@ -46,10 +46,23 @@ public class UpdateAPRCommandHandler(IUnitOfWork unitOfWork)
 
         static (decimal qty, decimal amount) GetTotals(APPItem appItem)
         {
-            var allocations = appItem.PPMPItem?.PPMPItemAllocations ?? [];
-            return allocations.Count == 0
-                ? (0, 0)
-                : (allocations.Sum(a => (decimal)a.Quantity), allocations.Sum(a => a.Amount));
+            var allocations = appItem.PPMPItem?.PPMPItemAllocations?.Where(a => !a.IsDeleted).ToList() ?? [];
+            var allocQty = allocations.Sum(a => (decimal)a.Quantity);
+            var allocAmount = allocations.Sum(a => a.Amount);
+
+            var plannedQty = (decimal)(appItem.PPMPItem?.PlannedQuantity ?? 0);
+            var unitPrice = appItem.PPMPItem?.UnitPrice ?? 0;
+
+            var qty = allocQty > 0 ? allocQty : plannedQty;
+            var amount = appItem.EffectiveABC > 0
+                ? appItem.EffectiveABC
+                : allocAmount > 0
+                    ? allocAmount
+                    : appItem.OriginalPPMPBudget > 0
+                        ? appItem.OriginalPPMPBudget
+                        : (qty * unitPrice);
+
+            return (qty, amount);
         }
 
         var appApprovedBudget = allAppItemsForApp.Sum(ai => GetTotals(ai).amount);
@@ -89,8 +102,12 @@ public class UpdateAPRCommandHandler(IUnitOfWork unitOfWork)
                 return ApiResponse<Guid>.Fail($"Source PPMP item not found for APP item {appItem.Id}.");
 
             var (allocatedQty, _) = GetTotals(appItem);
-            var qty = dto.QuantityRequested ?? allocatedQty;
-            var unitCost = dto.UnitCost ?? appItem.PPMPItem.UnitPrice;
+            var qty = (dto.QuantityRequested.HasValue && dto.QuantityRequested.Value > 0)
+                ? dto.QuantityRequested.Value
+                : (allocatedQty > 0 ? (int)allocatedQty : 1);
+            var unitCost = (dto.UnitCost.HasValue && dto.UnitCost.Value > 0)
+                ? dto.UnitCost.Value
+                : (appItem.PPMPItem.UnitPrice);
 
             if (qty <= 0)
                 return ApiResponse<Guid>.Fail(

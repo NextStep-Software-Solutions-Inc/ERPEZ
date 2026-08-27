@@ -19,7 +19,6 @@ import {
   ModeOfDelivery,
   InsufficientFundsAction,
   type UpdateAPRCommandPayload,
-  type ConsolidatedAPRItem,
 } from '../types'
 import {
   Dialog,
@@ -40,7 +39,7 @@ import {
   SelectValue,
 } from '@/components/ui/select'
 import { Loader2, CheckCircle2, ChevronRight, ArrowLeft, ArrowRight, FileEdit, Check } from 'lucide-react'
-import type { SourceAPP, WizardSelectionState } from './CreateAPRDialog'
+import type { WizardSelectionState } from './CreateAPRDialog'
 
 type Step = 1 | 2 | 3 | 4
 
@@ -163,10 +162,18 @@ export function EditAPRDialog({ open, onOpenChange, apr, onSuccess }: EditAPRDia
           const item = selection.consolidatedItems.find(
             (ci) => ci.appLineItemId === lineItemId || ci.id === lineItemId || ci.appItemId === lineItemId
           )
+          const rawQty = item?.quantity ?? (item as any)?.quantityRequested
+          const unitCost = item?.unitCost ?? (item as any)?.estimatedUnitCost ?? 0
+          const totalAmount = item?.totalAmount ?? (item as any)?.effectiveABC ?? 0
+          const quantity = (rawQty && rawQty > 0)
+            ? rawQty
+            : (unitCost > 0 && totalAmount > 0)
+              ? Math.round(totalAmount / unitCost)
+              : 1
           return {
             appItemId: lineItemId,
-            quantityRequested: item?.quantity ?? (item as any)?.quantityRequested ?? 1,
-            unitCost: item?.unitCost ?? 0,
+            quantityRequested: quantity,
+            unitCost,
           }
         })
 

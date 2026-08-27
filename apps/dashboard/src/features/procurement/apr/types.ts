@@ -157,6 +157,7 @@ export interface ConsolidatedAPRItem {
   sourceMonth?: string
   // APP References (SPMS Compliance)
   appLineItemId: string
+  appItemId?: string
   appBACId?: string
   appApprovedQuantity?: number
   appApprovedBudget?: number
@@ -300,6 +301,7 @@ export interface CreateAPRPayload {
  */
 export interface UpdateAPRCommandPayload {
   id: string
+  appId?: string | null
   agencyControlNumber?: string | null
   agencyAccountCode?: string | null
   requestDate: string
@@ -410,5 +412,24 @@ export interface APRListResponse {
   total: number
   page: number
   pageSize: number
+}
+
+/**
+ * Combined form values for Create and Edit APR wizard
+ */
+export interface APRFormValues {
+  agencyControlNumber: string
+  agencyAccountCode: string
+  description: string
+  requestDate: string
+  fiscalYear: number
+  modeOfDelivery: ModeOfDelivery | string
+  insufficientFundsAction: InsufficientFundsAction | string
+  attachments: {
+    observationReportRequired: boolean
+    collectiveBarterAgreementRequired: boolean
+    completeSpecsRequired: boolean
+  }
+  remarks: string
 }
 

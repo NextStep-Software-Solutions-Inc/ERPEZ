@@ -183,10 +183,20 @@ export function CreateAPRDialog() {
           const item = selection.consolidatedItems.find(
             (ci) => ci.appLineItemId === lineItemId || ci.id === lineItemId
           )
+          const fallbackAppItem = selection.primaryApp?.APPItems?.find((ai: any) => ai.id === lineItemId) || selection.primaryApp?.appItems?.find((ai: any) => ai.id === lineItemId)
+          const unitCost = item?.unitCost || fallbackAppItem?.unitCost || 0
+          const totalAmount = item?.totalAmount || fallbackAppItem?.effectiveABC || fallbackAppItem?.totalAmount || 0
+          const rawQty = item?.quantity || fallbackAppItem?.quantity
+          const quantity = (rawQty && rawQty > 0)
+            ? rawQty
+            : (unitCost > 0 && totalAmount > 0)
+              ? Math.round(totalAmount / unitCost)
+              : 1
+
           return {
             appItemId: lineItemId,
-            quantityRequested: item?.quantity ?? 1,
-            unitCost: item?.unitCost ?? 0,
+            quantityRequested: quantity,
+            unitCost,
           }
         })
 
@@ -471,9 +481,9 @@ export function CreateAPRDialog() {
                       <div>
                         <span className="font-medium">Delivery Mode:</span>{' '}
                         <Badge variant="outline" className="text-[10px]">
-                          {form.state.values.modeOfDelivery === 'DoorToDoor' || form.state.values.modeOfDelivery === 'DOOR_TO_DOOR'
+                          {form.state.values.modeOfDelivery === ModeOfDelivery.DOOR_TO_DOOR
                             ? 'Door-to-Door'
-                            : form.state.values.modeOfDelivery === 'ScheduledPickUp' || form.state.values.modeOfDelivery === 'SCHEDULED_PICKUP'
+                            : form.state.values.modeOfDelivery === ModeOfDelivery.SCHEDULED_PICKUP
                             ? 'Scheduled Pick-up'
                             : 'Fast Lane'}
                         </Badge>
@@ -481,9 +491,9 @@ export function CreateAPRDialog() {
                       <div>
                         <span className="font-medium">Insufficient Funds:</span>{' '}
                         <Badge variant="outline" className="text-[10px]">
-                          {form.state.values.insufficientFundsAction === 'BillUs' || form.state.values.insufficientFundsAction === 'BILL_US'
+                          {form.state.values.insufficientFundsAction === InsufficientFundsAction.BILL_US
                             ? 'Bill Us'
-                            : form.state.values.insufficientFundsAction === 'ChargeToUnutilizedDeposit' || form.state.values.insufficientFundsAction === 'CHARGE_TO_DEPOSIT'
+                            : form.state.values.insufficientFundsAction === InsufficientFundsAction.CHARGE_TO_DEPOSIT
                             ? 'Charge to Unutilized Deposit'
                             : 'Reduce Quantity'}
                         </Badge>
