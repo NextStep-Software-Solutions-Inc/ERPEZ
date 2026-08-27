@@ -166,12 +166,18 @@ export interface ProcessedPPMPItem {
   id: string
   itemId: string
   itemName: string
+  description?: string
   category: string
+  itemCategory?: string
+  uacsCode?: string
   isCse: boolean
   unitOfMeasure: string
   estimatedUnitPrice: number
   totalAmount: number
   fund: string
+  hasMonthlyAllocations?: boolean
+  plannedQuantity?: number
+  availableQuantity?: number
   monthlyAllocations: import('./apiTypes').EligiblePpmpItemMonthAllocation[]
   monthlyQuantities?: Partial<Record<string, number>>
   month?: string
@@ -181,6 +187,7 @@ export interface ProcessedPPMPDoc {
   id: string
   documentName: string
   officeCode: string
+  officeName?: string
   items: ProcessedPPMPItem[]
 }
 

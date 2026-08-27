@@ -1,12 +1,9 @@
-/**
- * Approve PR Modal
- * Dialog for approving a PR with signed PDF upload
- */
-
 import { useState } from 'react'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { useForm } from 'react-hook-form'
 import * as z from 'zod'
+import { createMutationHookFromTemplate } from 'erpez-shared-lib'
+import { createFileRequest } from '@/components/features/planning/file-upload/handlers/createFileRequest'
 import {
   Dialog,
   DialogContent,
@@ -24,6 +21,8 @@ import {
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { CheckCircle, Upload } from 'lucide-react'
+
+const useUploadSignedPrFile = createMutationHookFromTemplate(createFileRequest)
 
 const approvePRSchema = z.object({
   pdfFile: z.instanceof(File, { message: 'PDF file is required' }).refine(
@@ -43,6 +42,7 @@ interface ApprovePRModalProps {
 export function ApprovePRModal({ open, onOpenChange, onApprove }: ApprovePRModalProps) {
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [fileSelected, setFileSelected] = useState<File | null>(null)
+  const uploadFileMutation = useUploadSignedPrFile()
 
   const form = useForm<ApprovePRFormData>({
     resolver: zodResolver(approvePRSchema),
@@ -62,31 +62,23 @@ export function ApprovePRModal({ open, onOpenChange, onApprove }: ApprovePRModal
   const onSubmit = async (data: ApprovePRFormData) => {
     setIsSubmitting(true)
     try {
-      // Revoke any previously created object URL to avoid leaking memory
-      const win = window as any
-      if (win.__approvePR_lastObjectUrl) {
-        try {
-          URL.revokeObjectURL(win.__approvePR_lastObjectUrl)
-        } catch {
-          // ignore if revoke fails
+      let signedPdfUrl = ''
+
+      try {
+        const uploadResult = await uploadFileMutation.mutateAsync({
+          pathParams: {},
+          payload: { file: data.pdfFile },
+        })
+
+        if (uploadResult?.succeeded && uploadResult.data) {
+          signedPdfUrl = uploadResult.data
         }
-        delete win.__approvePR_lastObjectUrl
+      } catch {
+        // Fallback to object URL if server file upload is unavailable
       }
 
-      // Create a new object URL and store it so it can be revoked later
-      const signedPdfUrl = URL.createObjectURL(data.pdfFile)
-      win.__approvePR_lastObjectUrl = signedPdfUrl
-
-      // Expose a helper to allow other parts of the app to revoke the latest URL
-      win.__approvePR_revokePrevious = () => {
-        if (win.__approvePR_lastObjectUrl) {
-          try {
-            URL.revokeObjectURL(win.__approvePR_lastObjectUrl)
-          } catch {
-            // ignore
-          }
-          delete win.__approvePR_lastObjectUrl
-        }
+      if (!signedPdfUrl) {
+        signedPdfUrl = URL.createObjectURL(data.pdfFile)
       }
 
       onApprove(signedPdfUrl)
