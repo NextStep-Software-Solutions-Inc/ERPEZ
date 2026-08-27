@@ -635,10 +635,10 @@ export function DepartmentCeilingTab() {
                             {ceilings.length} dept{ceilings.length !== 1 ? 's' : ''}
                           </span>
                         </TableCell>
-                        <TableCell className="py-3 text-right font-mono text-sm tabular-nums text-foreground">{fmt(totalPS)}</TableCell>
-                        <TableCell className="py-3 text-right font-mono text-sm tabular-nums text-foreground">{fmt(totalMOOE)}</TableCell>
-                        <TableCell className="py-3 text-right font-mono text-sm tabular-nums text-foreground">{fmt(totalCO)}</TableCell>
-                        <TableCell className="py-3 text-right font-mono text-sm font-bold tabular-nums text-foreground">{fmt(total)}</TableCell>
+                        <TableCell className="py-3 text-right text-sm text-foreground">{fmt(totalPS)}</TableCell>
+                        <TableCell className="py-3 text-right text-sm text-foreground">{fmt(totalMOOE)}</TableCell>
+                        <TableCell className="py-3 text-right text-sm text-foreground">{fmt(totalCO)}</TableCell>
+                        <TableCell className="py-3 text-right text-sm font-bold text-foreground">{fmt(total)}</TableCell>
                         <TableCell className="py-3">
                           <span
                             className={`inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium border ${
@@ -696,10 +696,10 @@ export function DepartmentCeilingTab() {
                               <TableCell />
                               <TableCell />
                               <TableCell />
-                              <TableCell className="py-2.5 text-right font-mono text-sm tabular-nums">{fmt(c.psAmount)}</TableCell>
-                              <TableCell className="py-2.5 text-right font-mono text-sm tabular-nums">{fmt(c.mooeAmount)}</TableCell>
-                              <TableCell className="py-2.5 text-right font-mono text-sm tabular-nums">{fmt(c.coAmount)}</TableCell>
-                              <TableCell className="py-2.5 text-right font-mono text-sm font-semibold tabular-nums text-primary">
+                              <TableCell className="py-2.5 text-right text-sm">{fmt(c.psAmount)}</TableCell>
+                              <TableCell className="py-2.5 text-right text-sm">{fmt(c.mooeAmount)}</TableCell>
+                              <TableCell className="py-2.5 text-right text-sm">{fmt(c.coAmount)}</TableCell>
+                              <TableCell className="py-2.5 text-right text-sm font-semibold text-primary">
                                 {fmt(c.psAmount + c.mooeAmount + c.coAmount)}
                               </TableCell>
                               <TableCell className="py-2.5 text-right pr-2">
@@ -775,7 +775,7 @@ export function DepartmentCeilingTab() {
                   <p className="text-xs text-muted-foreground font-semibold uppercase tracking-wider">
                     Office Master Budget
                   </p>
-                  <p className="text-lg font-bold text-gray-900 font-mono">{fmt(masterTotal)}</p>
+                  <p className="text-lg font-bold text-gray-900">{fmt(masterTotal)}</p>
                   <p className="text-[11px] text-muted-foreground">
                     PS {fmt(master.ps)} · MOOE {fmt(master.mooe)} · CO {fmt(master.co)}
                   </p>
@@ -787,14 +787,14 @@ export function DepartmentCeilingTab() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="text-xs text-muted-foreground font-semibold">Allocated</p>
-                      <p className="font-mono text-lg font-bold text-blue-700">{fmt(allocated.total)}</p>
+                      <p className="text-lg font-bold text-blue-700">{fmt(allocated.total)}</p>
                       <p className="text-[11px] text-muted-foreground">
                         PS {fmt(allocated.ps)} · MOOE {fmt(allocated.mooe)} · CO {fmt(allocated.co)}
                       </p>
                     </div>
                     <div className="text-right">
                       <p className="text-xs text-muted-foreground font-semibold">Remaining</p>
-                      <p className={`font-mono text-lg font-bold ${isOverAllocated ? 'text-red-600' : 'text-green-700'}`}>
+                      <p className={`text-lg font-bold ${isOverAllocated ? 'text-red-600' : 'text-green-700'}`}>
                         {fmt(remaining.total)}
                       </p>
                       <p className={`text-[11px] ${isOverAllocated ? 'text-red-500' : 'text-muted-foreground'}`}>
@@ -807,7 +807,7 @@ export function DepartmentCeilingTab() {
                 <div className="w-28 flex-shrink-0 flex flex-col items-center">
                   <div className={`relative w-20 h-20 rounded-full flex items-center justify-center ${isOverAllocated ? 'bg-red-100' : 'bg-green-50'}`}>
                     <div className="absolute inset-0 rounded-full flex items-center justify-center">
-                      <p className={`font-mono font-bold ${isOverAllocated ? 'text-red-600' : 'text-green-700'}`}>{Math.round(allocatedPct)}%</p>
+                      <p className={`font-bold ${isOverAllocated ? 'text-red-600' : 'text-green-700'}`}>{Math.round(allocatedPct)}%</p>
                     </div>
                     <svg viewBox="0 0 36 36" className="w-20 h-20">
                       <path d="M18 2a16 16 0 1 0 0 32 16 16 0 1 0 0-32" fill="none" stroke="#E6E6E6" strokeWidth="4" />
@@ -861,7 +861,7 @@ export function DepartmentCeilingTab() {
                     <div className="flex justify-between text-xs mb-1">
                       <span className="font-semibold text-gray-700">{label}</span>
                       <span
-                        className={`font-mono font-bold ${
+                        className={`font-bold ${
                           over ? 'text-red-600' : 'text-gray-700'
                         }`}
                       >
@@ -904,7 +904,7 @@ export function DepartmentCeilingTab() {
                     setAllocInputs({})
                   }}
                 >
-                  <SelectTrigger className="h-10 w-80 border-gray-200">
+                  <SelectTrigger className="h-10 w-80 border-gray-200 text-left [&>span]:text-left [&>span]:block [&>span]:truncate">
                     <SelectValue placeholder="Select office ceiling…" />
                   </SelectTrigger>
                   <SelectContent>
@@ -1064,7 +1064,7 @@ export function DepartmentCeilingTab() {
                           type="number"
                           min={0}
                           disabled={!isSelected}
-                          className="h-8 w-full font-mono text-sm border-gray-200"
+                          className="h-8 w-full text-sm border-gray-200"
                           placeholder="0"
                           value={alloc.ps || ''}
                           onChange={(e) => updateAlloc(dept.id, 'ps', e.target.value)}
@@ -1075,7 +1075,7 @@ export function DepartmentCeilingTab() {
                           type="number"
                           min={0}
                           disabled={!isSelected}
-                          className="h-8 w-full font-mono text-sm border-gray-200"
+                          className="h-8 w-full text-sm border-gray-200"
                           placeholder="0"
                           value={alloc.mooe || ''}
                           onChange={(e) => updateAlloc(dept.id, 'mooe', e.target.value)}
@@ -1086,14 +1086,14 @@ export function DepartmentCeilingTab() {
                           type="number"
                           min={0}
                           disabled={!isSelected}
-                          className="h-8 w-full font-mono text-sm border-gray-200"
+                          className="h-8 w-full text-sm border-gray-200"
                           placeholder="0"
                           value={alloc.co || ''}
                           onChange={(e) => updateAlloc(dept.id, 'co', e.target.value)}
                         />
                         </TableCell>
                         <TableCell
-                        className={`text-right font-bold font-mono text-sm pr-4 ${
+                        className={`text-right font-bold text-sm pr-4 ${
                           isSelected && rowTotal > 0 ? 'text-blue-700' : 'text-gray-400'
                         }`}
                         >
@@ -1110,7 +1110,7 @@ export function DepartmentCeilingTab() {
                 <p className="text-sm text-muted-foreground">
                   {selectedDepts.size} of {eligibleDepts.length} sub-office(s) selected
                 </p>
-                <div className="flex flex-wrap items-center gap-5 text-sm font-semibold font-mono">
+                <div className="flex flex-wrap items-center gap-5 text-sm font-semibold">
                   <span className="text-muted-foreground">
                     PS:{' '}
                     <span className={allocated.ps > master.ps ? 'text-red-600' : 'text-gray-900'}>

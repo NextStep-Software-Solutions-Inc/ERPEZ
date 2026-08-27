@@ -61,9 +61,6 @@ public class UpdateNonCSEItemCommandHandler(IUnitOfWork unitOfWork)
         if (request.Remarks != null)
             nonCseItem.Remarks = request.Remarks;
 
-        if (request.IsActive.HasValue)
-            nonCseItem.IsActive = request.IsActive.Value;
-
         nonCseItem.UpdatedAt = DateTime.UtcNow;
 
         unitOfWork.NonCSEItemRepository.Update(nonCseItem);

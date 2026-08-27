@@ -1,4 +1,4 @@
-﻿/**
+/**
  * DetailPanelFooter
  * Quick-action buttons at the bottom of the item detail panel.
  * Actions: Activate/Deactivate toggle, Edit, Duplicate, Export, Delete
@@ -6,8 +6,6 @@
 
 import { useAtomValue, useSetAtom } from 'jotai'
 import {
-  CheckCircle,
-  XCircle,
   Trash2,
   Copy,
   Download,
@@ -35,7 +33,6 @@ import {
   itemToDeleteAtom,
 } from '../atoms/catalogDialogAtoms'
 import {
-  useToggleCatalogItemStatus,
   useDuplicateCatalogItem,
 } from '../hooks/useCatalogMutations'
 import { toast } from 'sonner'
@@ -46,20 +43,13 @@ export function DetailPanelFooter() {
   const setItemToEdit = useSetAtom(itemToEditAtom)
   const setDeleteOpen = useSetAtom(deleteItemDialogOpenAtom)
   const setItemToDelete = useSetAtom(itemToDeleteAtom)
-  const toggleStatus = useToggleCatalogItemStatus()
   const duplicate = useDuplicateCatalogItem()
 
   if (!item) return null
 
-  const isActive = item.status === 'Active'
-
   const handleEdit = () => {
     setItemToEdit(item)
     setEditOpen(true)
-  }
-
-  const handleToggleStatus = () => {
-    toggleStatus.mutate(item.id)
   }
 
   const handleDuplicate = () => {
@@ -78,35 +68,6 @@ export function DetailPanelFooter() {
   return (
     <div className="border-t border-border pt-3 flex items-center gap-2 flex-wrap">
       <TooltipProvider delayDuration={300}>
-        {/* Activate / Deactivate */}
-        <TooltipProvider delayDuration={300}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="outline"
-                size="sm"
-                className="h-8 gap-1.5 text-xs"
-                disabled={toggleStatus.isPending}
-                onClick={handleToggleStatus}
-              >
-                {isActive ? (
-                  <>
-                    <XCircle className="h-3.5 w-3.5 text-amber-500" />
-                    Deactivate
-                  </>
-                ) : (
-                  <>
-                    <CheckCircle className="h-3.5 w-3.5 text-green-500" />
-                    Activate
-                  </>
-                )}
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="top" className="text-xs">
-              {isActive ? 'Mark this item inactive' : 'Mark this item active'}
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
 
         {/* Edit */}
         <Tooltip>

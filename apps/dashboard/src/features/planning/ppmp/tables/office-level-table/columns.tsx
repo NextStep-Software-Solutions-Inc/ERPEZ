@@ -23,6 +23,8 @@ import { createMutationHookFromTemplate } from 'erpez-shared-lib'
 import { generatePPMPDocumentRequest } from '../../handlers/generatePPMPDocumentRequest'
 import { downloadLIBDocumentRequest } from '@/features/planning/line-item-budgeting/line-item-budget/handlers/downloadLIBDocumentRequest'
 import { useToast } from '@/components/ui/use-toast'
+import { Badge } from '@/components/ui/badge'
+import { formatCurrencyPHP } from '@/utils/formatters'
 import {
   selectedPpmpForDeleteAtom,
   deletePpmpDialogOpenAtom,
@@ -52,32 +54,68 @@ export const columns: ColumnDef<PPMP>[] = [
     ),
   },
   {
-    accessorKey: 'description',
-    header: 'Description',
-  },
-  {
     accessorKey: 'ppmpNumber',
     header: 'PPMP Number',
+    cell: ({ row }) => (
+      <div className="min-w-0">
+        <span className="font-semibold text-sm text-foreground">
+          {row.getValue('ppmpNumber') || '-'}
+        </span>
+        {row.original.libName && (
+          <div className="text-xs text-muted-foreground mt-0.5 truncate max-w-sm">
+            {row.original.libName}
+          </div>
+        )}
+      </div>
+    ),
   },
   {
     accessorKey: 'fiscalYearName',
     header: 'Fiscal Year',
+    cell: ({ row }) => {
+      const val = row.getValue('fiscalYearName') as string | undefined
+      const fyYear = row.original.fiscalYear?.year
+      return (
+        <span className="text-sm">
+          {val || (fyYear ? `${fyYear}` : '-')}
+        </span>
+      )
+    },
   },
   {
     accessorKey: 'totalEstimatedBudget',
     header: 'Total Estimated Budget',
+    cell: ({ row }) => {
+      const raw = row.getValue('totalEstimatedBudget')
+      const amount = Number(raw) || 0
+      return (
+        <span className="text-sm font-medium">
+          {formatCurrencyPHP(amount)}
+        </span>
+      )
+    },
   },
   {
     accessorKey: 'status',
     header: ({ column }) => {
       return (
         <Button
-          variant="soft"
+          variant="ghost"
+          size="sm"
+          className="-ml-3 h-8"
           onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
         >
           Status
           <ArrowUpDown className="ml-2 h-4 w-4" />
         </Button>
+      )
+    },
+    cell: ({ row }) => {
+      const status = (row.getValue('status') as string) || 'Draft'
+      return (
+        <Badge variant="outline" className="capitalize text-xs">
+          {status}
+        </Badge>
       )
     },
   },

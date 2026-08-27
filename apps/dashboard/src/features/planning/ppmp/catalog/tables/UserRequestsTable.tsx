@@ -1,7 +1,7 @@
-﻿/**
+/**
  * UserRequestsTable
- * TanStack Table for displaying user's item requests
- * Features: status filtering, sorting, row click → detail panel
+ * TanStack Table for displaying item requests
+ * Features: sorting, office & category columns, status badges, row click → detail panel
  */
 
 import { useState, useMemo } from 'react'
@@ -14,7 +14,7 @@ import {
   type ColumnDef,
   type SortingState,
 } from '@tanstack/react-table'
-import { ArrowUpDown, ChevronRight } from 'lucide-react'
+import { ArrowUpDown, ChevronRight, FileQuestion } from 'lucide-react'
 import {
   Table,
   TableBody,
@@ -28,12 +28,13 @@ import { Badge } from '@/components/ui/badge'
 import { requestDetailSelectedIdAtom } from '../atoms/requestAtoms'
 import { STATUS_COLORS } from '../utils/cascadingUacs'
 import type { ItemRequest } from '../types/catalog.types'
+import { formatCurrencyPHP } from '@/utils/formatters'
 
 interface UserRequestsTableProps {
   data: ItemRequest[]
   total?: number
   isLoading?: boolean
-  selectedStatus?: ItemRequest['status']
+  selectedStatus?: ItemRequest['status'] | 'all'
 }
 
 export function UserRequestsTable({
@@ -46,9 +47,9 @@ export function UserRequestsTable({
     { id: 'requestDate', desc: true },
   ])
 
-  // Filter by status if provided
+  // Filter by status if specific status provided
   const filteredData = useMemo(() => {
-    if (!selectedStatus) return data
+    if (!selectedStatus || selectedStatus === 'all') return data
     return data.filter((req) => req.status === selectedStatus)
   }, [data, selectedStatus])
 
@@ -60,28 +61,52 @@ export function UserRequestsTable({
           <Button
             variant="ghost"
             size="sm"
-            className="gap-1"
+            className="-ml-3 h-8 text-xs font-semibold uppercase tracking-wider"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
           >
             Item Name
-            <ArrowUpDown className="h-3 w-3" />
+            <ArrowUpDown className="ml-1.5 h-3 w-3" />
           </Button>
         ),
         cell: ({ row }) => (
-          <button
-            onClick={() => setSelectedRequestId(row.original.id)}
-            className="text-primary hover:underline font-medium truncate"
-          >
-            {row.original.name}
-          </button>
+          <div className="space-y-0.5 max-w-xs">
+            <button
+              onClick={() => setSelectedRequestId(row.original.id)}
+              className="text-left font-medium text-foreground hover:text-primary transition-colors line-clamp-1"
+            >
+              {row.original.name}
+            </button>
+            <p className="text-xs text-muted-foreground line-clamp-1">
+              {row.original.itemCategory}
+            </p>
+          </div>
         ),
       },
       {
         accessorKey: 'procurementCategory',
-        header: 'Procurement Category',
+        header: () => (
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Procurement Category
+          </span>
+        ),
         cell: ({ row }) => (
           <span className="text-sm text-muted-foreground">
-            {row.original.procurementCategory}
+            {row.original.procurementCategoryName ||
+              row.original.procurementCategory ||
+              '—'}
+          </span>
+        ),
+      },
+      {
+        accessorKey: 'office',
+        header: () => (
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Office
+          </span>
+        ),
+        cell: ({ row }) => (
+          <span className="text-sm text-muted-foreground">
+            {row.original.officeName || row.original.requestingOffice || '—'}
           </span>
         ),
       },
@@ -91,31 +116,33 @@ export function UserRequestsTable({
           <Button
             variant="ghost"
             size="sm"
-            className="gap-1"
+            className="-ml-3 h-8 text-xs font-semibold uppercase tracking-wider"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
           >
             Est. Unit Cost
-            <ArrowUpDown className="h-3 w-3" />
+            <ArrowUpDown className="ml-1.5 h-3 w-3" />
           </Button>
         ),
         cell: ({ row }) => (
-          <span className="font-semibold text-primary">
-            ₱
-            {row.original.estimatedUnitCost.toLocaleString('en-PH', {
-              minimumFractionDigits: 2,
-              maximumFractionDigits: 2,
-            })}
+          <span className="font-semibold text-foreground">
+            {formatCurrencyPHP(row.original.estimatedUnitCost)}
           </span>
         ),
       },
       {
         accessorKey: 'status',
-        header: 'Status',
+        header: () => (
+          <span className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
+            Status
+          </span>
+        ),
         cell: ({ row }) => {
           const status = row.original.status
-          const colors = STATUS_COLORS[status] || STATUS_COLORS['Submitted']
+          const colors =
+            (STATUS_COLORS as Record<string, string>)[status] ||
+            STATUS_COLORS['Submitted']
           return (
-            <Badge variant="outline" className={colors}>
+            <Badge variant="outline" className={`font-medium ${colors}`}>
               {status}
             </Badge>
           )
@@ -127,16 +154,20 @@ export function UserRequestsTable({
           <Button
             variant="ghost"
             size="sm"
-            className="gap-1"
+            className="-ml-3 h-8 text-xs font-semibold uppercase tracking-wider"
             onClick={() => column.toggleSorting(column.getIsSorted() === 'asc')}
           >
             Request Date
-            <ArrowUpDown className="h-3 w-3" />
+            <ArrowUpDown className="ml-1.5 h-3 w-3" />
           </Button>
         ),
         cell: ({ row }) => (
-          <span className="text-sm">
-            {new Date(row.original.requestDate).toLocaleDateString('en-PH')}
+          <span className="text-sm text-muted-foreground">
+            {new Date(row.original.requestDate).toLocaleDateString('en-PH', {
+              year: 'numeric',
+              month: 'short',
+              day: 'numeric',
+            })}
           </span>
         ),
       },
@@ -144,15 +175,17 @@ export function UserRequestsTable({
         id: 'actions',
         header: '',
         cell: ({ row }) => (
-          <Button
-            variant="ghost"
-            size="sm"
-            onClick={() => setSelectedRequestId(row.original.id)}
-            className="gap-2"
-          >
-            View
-            <ChevronRight className="h-4 w-4" />
-          </Button>
+          <div className="flex justify-end">
+            <Button
+              variant="ghost"
+              size="sm"
+              onClick={() => setSelectedRequestId(row.original.id)}
+              className="h-8 px-2 text-xs font-medium gap-1 text-muted-foreground hover:text-foreground"
+            >
+              View
+              <ChevronRight className="h-3.5 w-3.5" />
+            </Button>
+          </div>
         ),
       },
     ],
@@ -172,34 +205,53 @@ export function UserRequestsTable({
 
   if (isLoading) {
     return (
-      <div className="space-y-2">
-        {[...Array(5)].map((_, i) => (
-          <div key={i} className="h-12 bg-muted rounded animate-pulse" />
-        ))}
+      <div className="border border-border rounded-lg overflow-hidden bg-card">
+        <div className="p-4 space-y-3">
+          {[...Array(5)].map((_, i) => (
+            <div
+              key={i}
+              className="h-10 bg-muted/60 rounded animate-pulse w-full"
+            />
+          ))}
+        </div>
       </div>
     )
   }
 
   if (filteredData.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center py-12 text-center gap-2">
-        <p className="text-sm text-muted-foreground">
-          {selectedStatus
-            ? `No ${selectedStatus.toLowerCase()} requests.`
-            : 'You have not submitted any requests yet.'}
+      <div className="flex flex-col items-center justify-center py-16 px-4 text-center border border-dashed border-border rounded-lg bg-card/50">
+        <div className="h-10 w-10 rounded-full bg-muted flex items-center justify-center mb-3">
+          <FileQuestion className="h-5 w-5 text-muted-foreground" />
+        </div>
+        <h3 className="text-sm font-semibold text-foreground">
+          {selectedStatus && selectedStatus !== 'all'
+            ? `No ${selectedStatus.toLowerCase()} item requests`
+            : 'No item requests found'}
+        </h3>
+        <p className="text-xs text-muted-foreground max-w-sm mt-1">
+          {selectedStatus === 'Draft'
+            ? 'You have no saved drafts. Create a new request and save it as draft to continue later.'
+            : selectedStatus === 'Submitted'
+              ? 'No requests are currently under Technical Working Group review.'
+              : selectedStatus === 'Approved'
+                ? 'No requests have been approved yet.'
+                : selectedStatus === 'Returned'
+                  ? 'No requests have been returned for revision.'
+                  : 'Items requested from the catalog will appear here.'}
         </p>
       </div>
     )
   }
 
   return (
-    <div className="border border-border rounded-lg overflow-hidden">
+    <div className="border border-border rounded-lg overflow-hidden bg-card shadow-sm">
       <Table>
-        <TableHeader>
+        <TableHeader className="bg-muted/40">
           {table.getHeaderGroups().map((headerGroup) => (
             <TableRow key={headerGroup.id}>
               {headerGroup.headers.map((header) => (
-                <TableHead key={header.id}>
+                <TableHead key={header.id} className="py-3">
                   {header.isPlaceholder
                     ? null
                     : flexRender(
@@ -215,10 +267,11 @@ export function UserRequestsTable({
           {table.getRowModel().rows.map((row) => (
             <TableRow
               key={row.id}
-              className="cursor-pointer hover:bg-muted/50 transition-colors"
+              onClick={() => setSelectedRequestId(row.original.id)}
+              className="cursor-pointer hover:bg-muted/40 transition-colors"
             >
               {row.getVisibleCells().map((cell) => (
-                <TableCell key={cell.id}>
+                <TableCell key={cell.id} className="py-3">
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </TableCell>
               ))}

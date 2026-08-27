@@ -24,11 +24,12 @@ public class GetNonCSEItemByIdQueryHandler(IUnitOfWork unitOfWork)
             Description = nonCseItem.Description,
             UOMId = nonCseItem.UOMId,
             UOMName = nonCseItem.UOM?.Name,
+            ProcurementCategoryId = nonCseItem.ItemRequest?.ProcurementCategoryId,
+            ProcurementCategoryName = nonCseItem.ItemRequest?.ProcurementCategory?.Name ?? (!string.IsNullOrEmpty(nonCseItem.Type) ? nonCseItem.Type : null),
             ItemRequestId = nonCseItem.ItemRequestId,
             ProductCode = nonCseItem.ProductCode,
             CurrentPrice = nonCseItem.CurrentPrice,
             Remarks = nonCseItem.Remarks,
-            IsActive = nonCseItem.IsActive,
             CreatedAt = nonCseItem.CreatedAt,
             CreatedBy = nonCseItem.CreatedBy
         };

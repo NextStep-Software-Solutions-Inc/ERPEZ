@@ -1,11 +1,10 @@
 /**
  * RowCompletionIndicator
  * Compact icon-only badge showing completion status.
- * Three states:
+ * States:
  *   ✓ Fully complete       → CheckCircle2 (green)
- *   ⚠ Details done, no allocations → AlertTriangle (amber)
- *   ✗ Details incomplete   → XCircle (red)
- * Tooltip on hover shows concise breakdown of missing fields/allocations.
+ *   ✗ Incomplete / Invalid → XCircle (red)
+ * Tooltip on hover shows concise breakdown of missing/invalid fields.
  */
 
 import {
@@ -14,7 +13,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/ui/tooltip'
-import { CheckCircle2, AlertTriangle, XCircle } from 'lucide-react'
+import { CheckCircle2, XCircle } from 'lucide-react'
 import { cn } from '@/lib/utils'
 import type { ItemValidationStatus } from '../hooks/useItemValidationStatus'
 
@@ -29,8 +28,6 @@ export function RowCompletionIndicator({
 }: RowCompletionIndicatorProps) {
   const icon = status.isComplete ? (
     <CheckCircle2 className={cn('h-4 w-4 text-emerald-500', className)} />
-  ) : status.isDetailsComplete ? (
-    <AlertTriangle className={cn('h-4 w-4 text-amber-500', className)} />
   ) : (
     <XCircle className={cn('h-4 w-4 text-red-500', className)} />
   )
@@ -45,7 +42,6 @@ export function RowCompletionIndicator({
   }
 
   const hasDetailsMissing = status.missingFields.length > 0
-  const allocationsMissing = !status.hasAllocations
 
   return (
     <TooltipProvider delayDuration={150}>
@@ -53,11 +49,7 @@ export function RowCompletionIndicator({
         <TooltipTrigger asChild>
           <span
             className="inline-flex items-center cursor-default"
-            aria-label={
-              status.isDetailsComplete
-                ? 'Allocations required'
-                : `${status.completionPercentage}% complete`
-            }
+            aria-label={`${status.completionPercentage}% complete`}
           >
             {icon}
           </span>
@@ -67,7 +59,7 @@ export function RowCompletionIndicator({
             {hasDetailsMissing && (
               <div>
                 <p className="text-[11px] font-bold text-default-700 uppercase tracking-wide mb-1">
-                  Missing Fields
+                  Required Fields & Validation
                 </p>
                 <ul className="space-y-0.5">
                   {status.missingFields.map((field) => (
@@ -79,24 +71,6 @@ export function RowCompletionIndicator({
                       <span className="text-default-600">{field}</span>
                     </li>
                   ))}
-                </ul>
-              </div>
-            )}
-            {allocationsMissing && (
-              <div>
-                {hasDetailsMissing && (
-                  <div className="border-t border-default-200 my-1" />
-                )}
-                <p className="text-[11px] font-bold text-default-700 uppercase tracking-wide mb-1">
-                  Missing
-                </p>
-                <ul className="list-none space-y-0.5">
-                  <li className="flex items-center gap-1.5 text-[11px]">
-                    <span className="h-1 w-1 rounded-full bg-amber-500 shrink-0" />
-                    <span className="text-amber-600 font-medium">
-                      Monthly Allocations
-                    </span>
-                  </li>
                 </ul>
               </div>
             )}

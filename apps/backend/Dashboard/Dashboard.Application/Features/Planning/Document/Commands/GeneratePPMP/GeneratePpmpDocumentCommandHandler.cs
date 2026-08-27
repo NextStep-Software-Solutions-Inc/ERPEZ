@@ -62,11 +62,16 @@ public class GeneratePpmpDocumentCommandHandler(
 
     private static PpmpDataDto MapToDataDto(PpmpEntity ppmp)
     {
-        var allItems = ppmp.PPMPActivities
+        var activityItems = ppmp.PPMPActivities
             .Where(a => !a.IsDeleted)
             .SelectMany(a => a.PPMPExpenditureItems.Where(e => !e.IsDeleted))
-            .SelectMany(e => e.PPMPItems.Where(i => !i.IsDeleted))
-            .ToList();
+            .SelectMany(e => e.PPMPItems.Where(i => !i.IsDeleted));
+
+        var projectItems = ppmp.PPMPExpenditureItems
+            .Where(e => !e.IsDeleted && e.PPMPActivityId == null)
+            .SelectMany(e => e.PPMPItems.Where(i => !i.IsDeleted));
+
+        var allItems = activityItems.Concat(projectItems).DistinctBy(i => i.Id).ToList();
 
         var rows        = allItems.Select(item => MapToRow(item, ppmp)).ToList();
         var totalBudget = rows.Sum(r => r.EstimatedBudget);
@@ -88,13 +93,25 @@ public class GeneratePpmpDocumentCommandHandler(
     private static PpmpRowDto MapToRow(PpmpItemEntity item, PpmpEntity ppmp)
     {
         var allocations   = item.PPMPItemAllocations.Where(a => !a.IsDeleted).ToList();
-        var totalQuantity = allocations.Sum(a => a.Quantity);
-        var totalAmount   = allocations.Sum(a => a.Amount);
+        var allocQuantity = allocations.Sum(a => a.Quantity);
+        var allocAmount   = allocations.Sum(a => a.Amount);
 
-        // Col 1 — General Description
-        var description = string.IsNullOrWhiteSpace(item.Description)
-            ? item.Name
-            : $"{item.Name} — {item.Description}";
+        var totalQuantity = allocQuantity > 0
+            ? allocQuantity
+            : (item.PlannedQuantity > 0 ? item.PlannedQuantity : 0);
+
+        var unitPrice = item.UnitPrice > 0
+            ? item.UnitPrice
+            : (item.CSEItem?.ItemPrices?.OrderByDescending(p => p.FiscalYear?.Year ?? 0).FirstOrDefault()?.UnitPrice
+               ?? item.NonCSEItem?.CurrentPrice
+               ?? 0m);
+
+        var totalAmount = allocAmount > 0
+            ? allocAmount
+            : (totalQuantity * unitPrice);
+
+        // Col 1 — General Description and Objective of the Project to be Procured (Name only)
+        var description = item.Name;
 
         // Col 2 — Type of Project (per NGPA PPMP guide)
         var projectType = item.ProjectType switch
@@ -105,8 +122,14 @@ public class GeneratePpmpDocumentCommandHandler(
             _                                             => "Goods"
         };
 
-        // Col 3 — Quantity and Size
-        var quantityAndSize = $"{totalQuantity:N0} {item.Unit}".Trim();
+        // Col 3 — Quantity and Size of the Project to be Procured
+        var baseQuantityAndSize = $"{totalQuantity:N0} {item.Unit}".Trim();
+        var hasDistinctDescription = !string.IsNullOrWhiteSpace(item.Description) &&
+                                     !item.Description.Trim().Equals(item.Name.Trim(), StringComparison.OrdinalIgnoreCase);
+
+        var quantityAndSize = hasDistinctDescription
+            ? $"{baseQuantityAndSize}\n{item.Description!.Trim()}"
+            : baseQuantityAndSize;
 
         // Col 4 — Mode of Procurement
         var procurementMode = item.ProcurementMode?.Name ?? string.Empty;
@@ -132,11 +155,46 @@ public class GeneratePpmpDocumentCommandHandler(
             _                          => string.Empty
         };
 
-        // Col 9 — Source of Funds (PPMP-level)
-        var sourceOfFunds = ppmp.FundSource?.Name ?? string.Empty;
+        // Col 9 — Source of Funds (Authoritatively composed from FundSource, FY, ExpenseClass, and UACS Object)
+        var fundSource = ppmp.FundSource
+                         ?? ppmp.LineItemBudget?.FundSource
+                         ?? item.PPMPExpenditureItem?.PPMPActivity?.LIBActivity?.LineItemBudget?.FundSource;
 
-        // Col 11 — Supporting Documents
-        var supportingDocs = DeriveExpectedSupportingDocs(item.ProcurementMode?.Name);
+        var fundSourceParts = new List<string>();
+        if (fundSource != null && !string.IsNullOrWhiteSpace(fundSource.Name))
+        {
+            fundSourceParts.Add(fundSource.Name.Trim());
+        }
+
+        var fiscalYear = ppmp.FiscalYear
+                         ?? ppmp.LineItemBudget?.FiscalYearEntity
+                         ?? item.PPMPExpenditureItem?.PPMPActivity?.LIBActivity?.LineItemBudget?.FiscalYearEntity;
+
+        if (fiscalYear != null)
+        {
+            fundSourceParts.Add($"FY {fiscalYear.Year}");
+        }
+
+        var activeExpenseClasses = item.PPMPExpenditureItem?.Object?.ObjectExpenseClasses?
+            .Where(oec => oec.IsActive && oec.ExpenseClass != null && oec.ExpenseClass.IsActive)
+            .Select(oec => oec.ExpenseClass!.Code.Trim())
+            .Distinct()
+            .ToList() ?? [];
+
+        if (activeExpenseClasses.Count == 1)
+        {
+            fundSourceParts.Add(activeExpenseClasses[0]);
+        }
+
+        var headerFunding = string.Join(" ", fundSourceParts).Trim();
+        var objectName = item.PPMPExpenditureItem?.Object?.Name?.Trim();
+
+        var sourceOfFunds = !string.IsNullOrWhiteSpace(headerFunding) && !string.IsNullOrWhiteSpace(objectName)
+            ? $"{headerFunding}, {objectName}"
+            : (!string.IsNullOrWhiteSpace(headerFunding) ? headerFunding : (objectName ?? string.Empty));
+
+        // Col 11 — Attached Supporting Documents (Blank when no explicit document is attached; no synthetic values)
+        var supportingDocs = string.Empty;
 
         return new PpmpRowDto
         {
@@ -153,25 +211,6 @@ public class GeneratePpmpDocumentCommandHandler(
             AttachedSupportingDocuments = supportingDocs,
             Remarks                     = item.Remarks ?? string.Empty
         };
-    }
-
-    private static string DeriveExpectedSupportingDocs(string? procurementModeName)
-    {
-        const string marketScoping = "Market Scoping Checklist";
-        const string techSpecs     = "Technical Specifications";
-
-        if (string.IsNullOrWhiteSpace(procurementModeName))
-            return $"{marketScoping}, {techSpecs}";
-
-        var lower = procurementModeName.ToLowerInvariant();
-
-        if (lower.Contains("consulting") || lower.Contains("technical consultant"))
-            return $"{marketScoping}, Terms of Reference";
-
-        if (lower.Contains("infrastructure") || lower.Contains("construction"))
-            return $"{marketScoping}, Scope of Work, Engineering Plan, Feasibility Study";
-
-        return $"{marketScoping}, {techSpecs}";
     }
 
     private static List<SignatoryDto> BuildSignatories(PpmpEntity ppmp)

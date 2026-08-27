@@ -1,7 +1,5 @@
 ﻿import { useMemo } from 'react'
-import { getMockBacResolutionDatabase } from '../../bac-resolution/data/mockBacResolutionData'
 import { useBiddingScheduleStore } from '../../bidding-schedule/store/biddingScheduleStore'
-import { getMockBiddingScheduleDatabase } from '../../bidding-schedule/data/mockBiddingScheduleData'
 import {
   aggregateScheduleEvents,
   applyCalendarFilters,
@@ -17,12 +15,9 @@ export function useBiddingMasterCalendarData(
   const liveSchedules = useBiddingScheduleStore((state) => state.schedules)
 
   return useMemo(() => {
-    const allSchedules =
-      liveSchedules.length > 0
-        ? liveSchedules
-        : getMockBiddingScheduleDatabase()
+    const allSchedules = liveSchedules
     const sourceSchedules = allSchedules
-    const resolutions = getMockBacResolutionDatabase()
+    const resolutions = [] as any[] // Placeholder for resolutions, replace with actual data source if available
     const appBands = buildAppMonthBands(resolutions)
     const events = aggregateScheduleEvents({
       schedules: sourceSchedules,

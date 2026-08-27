@@ -1,3 +1,5 @@
+using System;
+using ERPEZ.Domain.Enums;
 using ERPEZ.Shared.Common;
 using MediatR;
 
@@ -5,15 +7,22 @@ namespace ERPEZ.Application.Features.Procurement.Projects.Commands.CreateProcure
 
 public record CreateProcurementProjectCommand : IRequest<ApiResponse<Guid>>
 {
-    public required string Title { get; init; }
-    public required decimal ABC { get; init; }
-    public string Status { get; init; } = "Draft";
-    public string ResolutionType { get; init; } = "Recommend Mode of Procurement";
+    public ProcurementProjectSourceType SourceType { get; init; } = ProcurementProjectSourceType.ConsolidatedPR;
+    public Guid? APPItemId { get; init; }
+    public Guid? ConsolidatedPRId { get; init; }
+
+    public string? Title { get; init; }
+    public decimal? ABC { get; init; }
+    public string ResolutionType { get; init; } = string.Empty;
     public string ResolutionNumber { get; init; } = string.Empty;
     public DateTime DateResolved { get; init; } = DateTime.UtcNow;
-    public string? WhereasClause { get; init; }
-    public Guid? ConsolidatedPRId { get; init; }
-    public Guid? ProcurementModeId { get; init; }
+    public string? ResolvedLocation { get; init; }
+    public List<WhereasClauseItemInputDto>? WhereasClauses { get; init; }
     public Guid? EndUserRepresentativeId { get; init; }
     public Guid? TechRepresentativeId { get; init; }
+}
+
+public record WhereasClauseItemInputDto(Guid WhereasClauseId, int Order)
+{
+    public WhereasClauseItemInputDto() : this(Guid.Empty, 0) { }
 }

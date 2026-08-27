@@ -46,6 +46,22 @@ public class GetPPMPActivityByIdQueryHandler(IUnitOfWork unitOfWork)
         if (result == null)
             throw new NotFoundException("PPMP Activity not found.");
 
-        return ApiResponse<PPMPActivityResponse>.Success(result);
+        var msf = await unitOfWork.MarketScopingRepository
+            .FindAsync(ms => ms.TargetLineItemBudgetActivityId == result.LIBActivityId && !ms.IsDeleted, cancellationToken);
+
+        var finalResult = result with
+        {
+            LinkedMarketScoping = msf != null
+                ? new PPMPActivityMSFSummary
+                {
+                    Id = msf.Id,
+                    ProjectName = msf.ProjectName,
+                    EstimatedBudget = msf.EstimatedBudget,
+                    Status = msf.Status.ToString(),
+                }
+                : null
+        };
+
+        return ApiResponse<PPMPActivityResponse>.Success(finalResult);
     }
 }

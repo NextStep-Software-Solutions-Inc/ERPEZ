@@ -4,8 +4,10 @@ using ERPEZ.Application.Features.Planning.Budgeting.MarketScoping.Commands.Creat
 using ERPEZ.Application.Features.Planning.Budgeting.MarketScoping.Commands.CreateMarketScopingActivity;
 using ERPEZ.Application.Features.Planning.Budgeting.MarketScoping.Commands.CreateMarketScopingParameter;
 using ERPEZ.Application.Features.Planning.Budgeting.MarketScoping.Commands.DeleteMarketScoping;
+using ERPEZ.Application.Features.Planning.Budgeting.MarketScoping.Commands.LinkMarketScoping;
 using ERPEZ.Application.Features.Planning.Budgeting.MarketScoping.Commands.ReturnMarketScoping;
 using ERPEZ.Application.Features.Planning.Budgeting.MarketScoping.Commands.SubmitMarketScoping;
+using ERPEZ.Application.Features.Planning.Budgeting.MarketScoping.Commands.UnlinkMarketScoping;
 using ERPEZ.Application.Features.Planning.Budgeting.MarketScoping.Commands.UpdateMarketScoping;
 using ERPEZ.Application.Features.Planning.Budgeting.MarketScoping.Dtos;
 using ERPEZ.Application.Features.Planning.Budgeting.MarketScoping.Queries.GetMarketScopingActivities;
@@ -136,6 +138,27 @@ public class MarketScopingController(ISender mediator) : ControllerBase
     {
         request.Id = id;
         var command = new UpdateMarketScopingCommand(request);
+        var result = await mediator.Send(command);
+        return !result.Succeeded ? BadRequest(result) : Ok(result);
+    }
+
+    [HttpPatch("{id}/link")]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status403Forbidden)]
+    public async Task<IActionResult> LinkMarketScoping(Guid id, [FromBody] LinkMarketScopingRequest request)
+    {
+        var command = new LinkMarketScopingCommand(id, request);
+        var result = await mediator.Send(command);
+        return !result.Succeeded ? BadRequest(result) : Ok(result);
+    }
+
+    [HttpPatch("{id}/unlink")]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
+    public async Task<IActionResult> UnlinkMarketScoping(Guid id)
+    {
+        var command = new UnlinkMarketScopingCommand(id);
         var result = await mediator.Send(command);
         return !result.Succeeded ? BadRequest(result) : Ok(result);
     }

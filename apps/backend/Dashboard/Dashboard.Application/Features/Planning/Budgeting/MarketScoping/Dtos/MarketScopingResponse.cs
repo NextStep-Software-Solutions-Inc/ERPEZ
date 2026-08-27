@@ -12,7 +12,12 @@ public record MarketScopingResponse
     public DateTime PeriodFrom { get; set; }
     public DateTime PeriodTo { get; set; }
     public DateTime DeliveryDate { get; set; }
+    // Project-level linkage
+    public Guid? TargetLineItemBudgetId { get; set; }
+    public string? TargetLineItemBudgetNumber { get; set; }
+    // Activity-level linkage
     public Guid? TargetLineItemBudgetActivityId { get; set; }
+    public string? TargetLineItemBudgetActivityName { get; set; }
     public string Status { get; set; } = string.Empty;
     public Guid? SignedDocumentFileId { get; set; }
     public string AgencyName { get; set; } = string.Empty;

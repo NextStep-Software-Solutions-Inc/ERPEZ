@@ -1,21 +1,26 @@
-import type { APIResponse, QueryBlueprintFromTemplate } from 'erpez-shared-lib'
-import type { WhereasClauseTemplate } from '../types'
-import { api } from '@/services/api'
+import {
+  PaginationResponse,
+  QueryBlueprintFromTemplate,
+  QueryKey,
+  QueryParams,
+} from 'erpez-shared-lib'
+import api from '@/services/api'
+import { WhereasClauseTemplate } from '../types'
 
 const endpoint = '/bac-resolution-whereas-clauses'
 
 export const getWhereasClauseTemplatesRequest: QueryBlueprintFromTemplate<
   typeof endpoint,
-  WhereasClauseTemplate[],
-  undefined
+  PaginationResponse<WhereasClauseTemplate>,
+  QueryParams,
+  QueryKey
 > = {
   endpoint,
-  key: ({ url }) => [url] as const,
+  key: ({ url }) => [url],
   fetcher: async ({ finalUrl, signal }) => {
-    const response = await api.get<APIResponse<WhereasClauseTemplate[]>>(finalUrl, {
+    const response = await api.get<PaginationResponse<WhereasClauseTemplate>>(finalUrl, {
       signal,
     })
-
-    return response.data.data
+    return response.data
   },
 }

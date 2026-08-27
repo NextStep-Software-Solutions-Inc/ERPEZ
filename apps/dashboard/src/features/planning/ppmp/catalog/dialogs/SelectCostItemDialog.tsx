@@ -4,7 +4,6 @@
  */
 
 import { useMemo, useState } from 'react'
-import { useAtomValue } from 'jotai'
 import { Search, Loader2 } from 'lucide-react'
 import {
   Dialog,
@@ -16,7 +15,7 @@ import {
 import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Badge } from '@/components/ui/badge'
-import { activeCostMasterItemsAtom } from '../../atoms/costMasterAtoms'
+import { useUnifiedCostMaster } from '../hooks/useUnifiedCostMaster'
 import { formatCurrencyPHP } from '@/utils/formatters'
 import type { CostItemMaster } from '../../types'
 
@@ -34,7 +33,7 @@ export function SelectCostItemDialog({
   onSelect,
 }: SelectCostItemDialogProps) {
   const [search, setSearch] = useState('')
-  const items = useAtomValue(activeCostMasterItemsAtom)
+  const { activeItems: items, isLoading } = useUnifiedCostMaster()
 
   const filteredItems = useMemo(() => {
     const query = search.trim().toLowerCase()
@@ -106,9 +105,19 @@ export function SelectCostItemDialog({
                   >
                     <div className="flex items-center justify-between gap-4 w-full min-w-0">
                       <div className="min-w-0 text-left">
-                        <p className="text-sm font-medium truncate">
-                          {item.costItemName}
-                        </p>
+                        <div className="flex items-center gap-2">
+                          <p className="text-sm font-medium truncate">
+                            {item.costItemName}
+                          </p>
+                          {item.source === 'non-cse' && (
+                            <Badge
+                              variant="outline"
+                              className="text-[10px] px-1.5 py-0 border-blue-200 text-blue-700 bg-blue-50/60 font-medium"
+                            >
+                              Non-CSE
+                            </Badge>
+                          )}
+                        </div>
                         <p className="text-xs text-muted-foreground">
                           {item.category}
                           {item.subcategory ? ` · ${item.subcategory}` : ''}

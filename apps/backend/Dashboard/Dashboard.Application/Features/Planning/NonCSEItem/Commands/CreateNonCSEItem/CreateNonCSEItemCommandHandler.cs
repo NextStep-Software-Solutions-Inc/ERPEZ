@@ -44,7 +44,6 @@ public class CreateNonCSEItemCommandHandler(IUnitOfWork unitOfWork)
             ProductCode = request.ProductCode,
             CurrentPrice = request.CurrentPrice,
             Remarks = request.Remarks,
-            IsActive = request.IsActive,
             CreatedAt = DateTime.UtcNow
         };
 

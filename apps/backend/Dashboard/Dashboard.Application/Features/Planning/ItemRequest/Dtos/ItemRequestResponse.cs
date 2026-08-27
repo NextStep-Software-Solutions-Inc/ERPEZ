@@ -21,6 +21,7 @@ public record ItemRequestResponse
     public string? ReviewedBy { get; init; }
     public DateTime? SubmittedAt { get; init; }
     public DateTime? ReviewedAt { get; init; }
+    public Guid? NonCSEItemId { get; init; }
     public DateTime CreatedAt { get; init; }
     public string CreatedBy { get; init; } = string.Empty;
 }

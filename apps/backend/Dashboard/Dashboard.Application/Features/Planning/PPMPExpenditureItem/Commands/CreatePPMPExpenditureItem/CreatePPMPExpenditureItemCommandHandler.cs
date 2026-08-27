@@ -14,6 +14,9 @@ public class CreatePPMPExpenditureItemCommandHandler(IUnitOfWork unitOfWork)
         var ppmp = await unitOfWork.PPMPRepository.GetByIdAsync(request.PPMPId, cancellationToken)
             ?? throw new NotFoundException("PPMP not found.");
 
+        if (ppmp.Status is StatusEnum.Submitted or StatusEnum.Approved or StatusEnum.ForApproval)
+            throw new BadRequestException($"Cannot add expenditure items when PPMP status is {ppmp.Status}.");
+
         if (!ppmp.LIBId.HasValue)
             throw new ValidationException("This PPMP has no LIB linked.");
 
@@ -25,7 +28,14 @@ public class CreatePPMPExpenditureItemCommandHandler(IUnitOfWork unitOfWork)
             ?? throw new NotFoundException("Object code not found.");
 
         // Validate activity requirement based on LIB scope
-        if (lib.Scope == nameof(BudgetScope.ActivityLevel))
+        var isActivityScope = string.Equals(lib.Scope, "Activity", StringComparison.OrdinalIgnoreCase) ||
+                              string.Equals(lib.Scope, "ActivityLevel", StringComparison.OrdinalIgnoreCase) ||
+                              string.Equals(lib.Scope, nameof(BudgetScope.ActivityLevel), StringComparison.OrdinalIgnoreCase);
+        var isProjectScope = string.Equals(lib.Scope, "Project", StringComparison.OrdinalIgnoreCase) ||
+                             string.Equals(lib.Scope, "ProjectLevel", StringComparison.OrdinalIgnoreCase) ||
+                             string.Equals(lib.Scope, nameof(BudgetScope.ProjectLevel), StringComparison.OrdinalIgnoreCase);
+
+        if (isActivityScope)
         {
             if (!request.PPMPActivityId.HasValue)
                 throw new ValidationException("This LIB requires a PPMP Activity to be selected.");
@@ -46,7 +56,7 @@ public class CreatePPMPExpenditureItemCommandHandler(IUnitOfWork unitOfWork)
             if (objectExistsInActivity == null)
                 throw new BadRequestException("The selected object code does not belong to the selected activity.");
         }
-        else if (lib.Scope == nameof(BudgetScope.ProjectLevel))
+        else if (isProjectScope)
         {
             if (request.PPMPActivityId.HasValue)
                 throw new ValidationException("This LIB is project-level and does not use activities.");

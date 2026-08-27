@@ -1,4 +1,4 @@
-﻿/**
+/**
  * Catalog Mock Data & Core Atoms
  * Jotai atoms for managing catalog items, requests, and RBAC state
  * Session-based state (resets on page reload)
@@ -22,24 +22,11 @@ function generateId(prefix: 'item' | 'req') {
   return `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`
 }
 
-function normalizeCatalogItemStatus(
-  isActive: boolean | undefined,
-  status?: NonCSEItem['status'],
-): NonCSEItem['status'] {
-  if (typeof isActive === 'boolean') {
-    return isActive ? 'Active' : 'Inactive'
-  }
-
-  return status ?? 'Active'
-}
-
 function buildCatalogItem(
   input: CreateCatalogItemInput,
   requestingOffice?: string | null,
   requestingUser?: string | null,
 ): NonCSEItem {
-  const isActive = input.isActive ?? true
-
   return {
     id: generateId('item'),
     name: input.name,
@@ -51,8 +38,6 @@ function buildCatalogItem(
     itemType: input.itemType,
     supplier: input.supplier ?? null,
     imageUrl: input.imageUrl ?? null,
-    status: normalizeCatalogItemStatus(isActive),
-    isActive,
     uacsCode: input.uacsCode ?? null,
     unspscCode: input.unspscCode,
     isCSE: input.isCSE,
@@ -83,8 +68,6 @@ const MOCK_CATALOG_ITEMS: NonCSEItem[] = [
     itemType: 'Goods',
     supplier: 'Dell Philippines',
     imageUrl: null,
-    status: 'Active',
-    isActive: true,
     uacsCode: '30111500-IT-EQP-001',
     unspscCode: '43211503',
     isCSE: false,
@@ -103,8 +86,6 @@ const MOCK_CATALOG_ITEMS: NonCSEItem[] = [
     itemType: 'Goods',
     supplier: 'HP Philippines',
     imageUrl: null,
-    status: 'Active',
-    isActive: true,
     uacsCode: '30111500-IT-EQP-002',
     unspscCode: '43212105',
     isCSE: false,
@@ -123,8 +104,6 @@ const MOCK_CATALOG_ITEMS: NonCSEItem[] = [
     itemType: 'Goods',
     supplier: 'Local Office Furniture Co.',
     imageUrl: null,
-    status: 'Active',
-    isActive: true,
     uacsCode: '30111700-OFF-SUP-001',
     unspscCode: '56101500',
     isCSE: false,
@@ -144,8 +123,6 @@ const MOCK_CATALOG_ITEMS: NonCSEItem[] = [
     itemType: 'Goods',
     supplier: null,
     imageUrl: null,
-    status: 'Active',
-    isActive: true,
     uacsCode: '30111700-OFF-SUP-002',
     unspscCode: '56101504',
     isCSE: false,
@@ -164,8 +141,6 @@ const MOCK_CATALOG_ITEMS: NonCSEItem[] = [
     itemType: 'Goods',
     supplier: 'Xerox Philippines',
     imageUrl: null,
-    status: 'Active',
-    isActive: true,
     uacsCode: '30111700-OFF-SUP-003',
     unspscCode: '14111506',
     isCSE: true,
@@ -184,8 +159,6 @@ const MOCK_CATALOG_ITEMS: NonCSEItem[] = [
     itemType: 'Infra',
     supplier: 'Manila Concrete Supply',
     imageUrl: null,
-    status: 'Active',
-    isActive: true,
     uacsCode: '30211000-INFRA-001',
     unspscCode: '30111601',
     isCSE: false,
@@ -204,8 +177,6 @@ const MOCK_CATALOG_ITEMS: NonCSEItem[] = [
     itemType: 'Infra',
     supplier: 'Philippine Steel Inc.',
     imageUrl: null,
-    status: 'Active',
-    isActive: true,
     uacsCode: '30211000-INFRA-002',
     unspscCode: '30102601',
     isCSE: false,
@@ -224,8 +195,6 @@ const MOCK_CATALOG_ITEMS: NonCSEItem[] = [
     itemType: 'Infra',
     supplier: null,
     imageUrl: null,
-    status: 'Active',
-    isActive: true,
     uacsCode: '30211100-INFRA-003',
     unspscCode: '30121502',
     isCSE: false,
@@ -244,8 +213,6 @@ const MOCK_CATALOG_ITEMS: NonCSEItem[] = [
     itemType: 'Consulting',
     supplier: 'Apex Engineering Consultants',
     imageUrl: null,
-    status: 'Active',
-    isActive: true,
     uacsCode: '30191600-CONS-001',
     unspscCode: '71212100',
     isCSE: false,
@@ -265,8 +232,6 @@ const MOCK_CATALOG_ITEMS: NonCSEItem[] = [
     itemType: 'Goods',
     supplier: 'Microsoft Philippines',
     imageUrl: null,
-    status: 'Active',
-    isActive: true,
     uacsCode: '30111500-IT-EQP-010',
     unspscCode: '43220000',
     isCSE: false,
@@ -517,14 +482,6 @@ export const currentUserAtom = atom<CatalogCurrentUser>({
 /**
  * Derived Catalog Selectors
  */
-export const activeCatalogItemsAtom = atom((get) =>
-  get(catalogItemsAtom).filter((item) => item.isActive),
-)
-
-export const inactiveCatalogItemsAtom = atom((get) =>
-  get(catalogItemsAtom).filter((item) => !item.isActive),
-)
-
 export const catalogRequestSourceMapAtom = atom((get) => {
   const items = get(catalogItemsAtom)
   return new Map(
@@ -601,18 +558,9 @@ export const updateCatalogItemAtom = atom(
           return item
         }
 
-        const nextIsActive =
-          changes.isActive ??
-          (changes.status ? changes.status === 'Active' : item.isActive)
-        const nextStatus =
-          changes.status ??
-          normalizeCatalogItemStatus(nextIsActive, item.status)
-
         return {
           ...item,
           ...changes,
-          isActive: nextIsActive,
-          status: nextStatus,
           lastModified: new Date(),
         }
       }),
@@ -620,21 +568,10 @@ export const updateCatalogItemAtom = atom(
   },
 )
 
-export const deactivateCatalogItemAtom = atom(
+export const deleteCatalogItemAtom = atom(
   null,
   (_get, set, itemId: string) => {
-    set(catalogItemsAtom, (prev) =>
-      prev.map((item) =>
-        item.id === itemId
-          ? {
-              ...item,
-              isActive: false,
-              status: 'Inactive',
-              lastModified: new Date(),
-            }
-          : item,
-      ),
-    )
+    set(catalogItemsAtom, (prev) => prev.filter((item) => item.id !== itemId))
   },
 )
 
@@ -666,7 +603,6 @@ export const approveItemRequestAtom = atom(
     const approvedCatalogItem = buildCatalogItem(
       {
         ...catalogItem,
-        isActive: catalogItem.isActive ?? true,
         sourceRequestId: requestId,
         uacsCode: catalogItem.uacsCode ?? existingRequest.uacsCode ?? null,
         unspscCode: catalogItem.unspscCode || existingRequest.unspscCode || '',
@@ -726,9 +662,3 @@ export const returnItemRequestAtom = atom(
 export const requestStatusFilterAtom = atom<ItemRequest['status'] | 'all'>(
   'all',
 )
-
-/**
- * Filter state for catalog table
- * Used by Admin to filter item status
- */
-export const catalogStatusFilterAtom = atom<NonCSEItem['status'] | 'all'>('all')

@@ -13,7 +13,6 @@ public record NonCSEItemResponse
     public string? ProductCode { get; init; }
     public decimal CurrentPrice { get; init; }
     public string? Remarks { get; init; }
-    public bool IsActive { get; init; }
     public DateTime CreatedAt { get; init; }
     public string CreatedBy { get; init; } = string.Empty;
 }

@@ -130,6 +130,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     private readonly IOPCRConsolidationRepository opcrConsolidationRepository;
     private readonly IProcurementProjectRepository procurementProjectRepository;
     private readonly IBACResolutionRepository bacResolutionRepository;
+    private readonly IRepository<ERPEZ.Domain.Entities.Procurement.BACMember> bacMemberRepository;
     private readonly IBiddingActivityScheduleRepository biddingActivityScheduleRepository;
     private readonly ISupplierBidRepository supplierBidRepository;
     private readonly ISupplierBidItemRepository supplierBidItemRepository;
@@ -280,6 +281,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
         opcrConsolidationRepository = new OPCRConsolidationRepository(context, sieveProcessor);
         procurementProjectRepository = new ProcurementProjectRepository(context, sieveProcessor);
         bacResolutionRepository = new BACResolutionRepository(context, sieveProcessor);
+        bacMemberRepository = new Repository<ERPEZ.Domain.Entities.Procurement.BACMember>(context, sieveProcessor);
         biddingActivityScheduleRepository = new BiddingActivityScheduleRepository(context, sieveProcessor);
         supplierBidRepository = new SupplierBidRepository(context, sieveProcessor);
         supplierBidItemRepository = new SupplierBidItemRepository(context, sieveProcessor);
@@ -424,6 +426,7 @@ public sealed class UnitOfWork : IUnitOfWork, IDisposable
     public IOPCRConsolidationRepository OPCRConsolidationRepository => opcrConsolidationRepository;
     public IProcurementProjectRepository ProcurementProjectRepository => procurementProjectRepository;
     public IBACResolutionRepository BACResolutionRepository => bacResolutionRepository;
+    public IRepository<ERPEZ.Domain.Entities.Procurement.BACMember> BACMemberRepository => bacMemberRepository;
     public IBiddingActivityScheduleRepository BiddingActivityScheduleRepository => biddingActivityScheduleRepository;
     public ISupplierBidRepository SupplierBidRepository => supplierBidRepository;
     public ISupplierBidItemRepository SupplierBidItemRepository => supplierBidItemRepository;

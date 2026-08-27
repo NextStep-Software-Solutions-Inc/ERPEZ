@@ -16,10 +16,30 @@ public class GetProcurementProjectsQueryHandler(IUnitOfWork unitOfWork, ISievePr
         var dbQuery = unitOfWork.ProcurementProjectRepository.Query()
             .Include(p => p.EndUserRepresentative)
             .Include(p => p.TechRepresentative)
+            .Include(p => p.APPItem)
+                .ThenInclude(ai => ai!.APP)
+            .Include(p => p.APPItem)
+                .ThenInclude(ai => ai!.ProcurementMode)
+            .Include(p => p.APPItem)
+                .ThenInclude(ai => ai!.FundSource)
+            .Include(p => p.APPItem)
+                .ThenInclude(ai => ai!.Office)
+            .Include(p => p.APPItem)
+                .ThenInclude(ai => ai!.PPMPItem)
+                    .ThenInclude(pi => pi!.PPMPItemAllocations)
+            .Include(p => p.APPItem)
+                .ThenInclude(ai => ai!.PPMPItem)
+                    .ThenInclude(pi => pi!.ProcurementMode)
+            .Include(p => p.APPItem)
+                .ThenInclude(ai => ai!.PPMPItem)
+                    .ThenInclude(pi => pi!.APPProcurementSchedules)
+                        .ThenInclude(s => s.ProcurementActivityType)
             .Include(p => p.ConsolidatedPR)
                 .ThenInclude(c => c!.ConsolidatedPRItems)
                     .ThenInclude(ci => ci.ProcurementMode)
             .Include(p => p.BACResolutions)
+                .ThenInclude(r => r.WhereasClauseItems)
+                    .ThenInclude(item => item.BACResolutionWhereasClause)
             .Include(p => p.BiddingActivitySchedules)
                 .ThenInclude(s => s.ProcurementActivityType)
             .Where(p => !p.IsDeleted)
@@ -39,10 +59,12 @@ public class GetProcurementProjectsQueryHandler(IUnitOfWork unitOfWork, ISievePr
         var totalCount = await filteredQuery.CountAsync(cancellationToken);
 
         var paginatedQuery = sieveProcessor.Apply(sieveModel, filteredQuery, applyFiltering: false, applySorting: false);
-        var entities = await paginatedQuery.Select(ProcurementProjectResponse.Projection).ToListAsync(cancellationToken);
+        var rawEntities = await paginatedQuery.ToListAsync(cancellationToken);
+        var projectionFunc = ProcurementProjectResponse.Projection.Compile();
+        var entities = rawEntities.Select(projectionFunc).ToList();
 
         return new PaginatedApiResponse<ProcurementProjectResponse>(
-            [.. entities],
+            entities,
             query.PageNumber,
             query.PageSize,
             totalCount);

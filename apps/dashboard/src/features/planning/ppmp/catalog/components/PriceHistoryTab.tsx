@@ -1,4 +1,4 @@
-﻿/**
+/**
  * PriceHistoryTab
  * Displays a 12-month price change timeline using the Timeline UI component.
  */
@@ -104,7 +104,7 @@ export function PriceHistoryTab() {
               <TimelineContent className="pb-5">
                 <div className="flex flex-col gap-0.5">
                   <div className="flex items-center gap-1.5">
-                    <span className="font-mono text-sm font-semibold">
+                    <span className="text-sm font-semibold text-foreground">
                       {formatPrice(entry.price)}
                     </span>
                     <PriceTrend current={entry.price} previous={prevPrice} />

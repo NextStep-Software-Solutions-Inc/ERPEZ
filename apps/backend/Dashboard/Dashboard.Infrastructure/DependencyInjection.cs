@@ -159,6 +159,9 @@ public static class DependencyInjection
         // Budget Modification — PDF
         services.AddScoped<IDocumentRenderer<ERPEZ.Application.Features.Planning.Document.Commands.GenerateLIBAmendment.LibAmendmentDataDto>, LibAmendmentPdfRenderer>();
 
+        // BAC Resolution — PDF
+        services.AddScoped<IDocumentRenderer<ERPEZ.Application.Features.Procurement.Projects.Commands.GenerateBacResolutionDocument.BacResolutionDataDto>, BacResolutionPdfRenderer>();
+
         // ── Hangfire ────────────────────────────────────────────────────────────────
         services.AddHangfire(config => config
             .UseSimpleAssemblyNameTypeSerializer()

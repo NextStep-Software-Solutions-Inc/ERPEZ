@@ -118,6 +118,8 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<ProcurementModeThreshold>? ProcurementModeThresholds { get; set; }
     public DbSet<ProcurementProject>? ProcurementProjects { get; set; }
     public DbSet<BACResolution>? BACResolutions { get; set; }
+    public DbSet<BACResolutionWhereasClauseItem>? BACResolutionWhereasClauseItems { get; set; }
+    public DbSet<BACMember>? BACMembers { get; set; }
     public DbSet<BiddingActivitySchedule>? BiddingActivitySchedules { get; set; }
     public DbSet<SupplierBid>? SupplierBids { get; set; }
     public DbSet<SupplierBidItem>? SupplierBidItems { get; set; }
@@ -1986,11 +1988,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .HasMaxLength(100);
 
         modelBuilder.Entity<NonCSEItem>()
-            .Property(n => n.Status)
-            .IsRequired()
-            .HasMaxLength(50);
-
-        modelBuilder.Entity<NonCSEItem>()
             .Property(n => n.CurrentPrice)
             .HasPrecision(18, 2);
 
@@ -2018,15 +2015,6 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         modelBuilder.Entity<NonCSEItem>()
             .HasIndex(n => n.Type);
-
-        modelBuilder.Entity<NonCSEItem>()
-            .HasIndex(n => n.Status);
-
-        modelBuilder.Entity<NonCSEItem>()
-            .HasIndex(n => n.IsActive);
-
-        modelBuilder.Entity<NonCSEItem>()
-            .HasIndex(n => new { n.Name, n.IsActive });
 
         // APPItem
         modelBuilder.Entity<APPItem>()
@@ -2304,6 +2292,40 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .WithMany(msas => msas.MarketScopingActivities)
             .HasForeignKey(msa => msa.ActivitySettingsId)
             .OnDelete(DeleteBehavior.Restrict);
+
+        // ── MarketScoping target relationship configurations ──────────────────
+
+        // MarketScoping → LineItemBudget (project-level scope FK)
+        modelBuilder.Entity<MarketScoping>()
+            .HasOne(ms => ms.TargetLineItemBudget)
+            .WithMany()
+            .HasForeignKey(ms => ms.TargetLineItemBudgetId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // MarketScoping → LineItemBudgetActivity (activity-level scope FK — previously convention-inferred)
+        modelBuilder.Entity<MarketScoping>()
+            .HasOne(ms => ms.TargetLineItemBudgetActivity)
+            .WithMany()
+            .HasForeignKey(ms => ms.TargetLineItemBudgetActivityId)
+            .OnDelete(DeleteBehavior.Restrict);
+
+        // DB CHECK constraint: mutual exclusivity — an MSF cannot target both a LIB and a LIB Activity simultaneously.
+        modelBuilder.Entity<MarketScoping>()
+            .ToTable(t => t.HasCheckConstraint(
+                "CK_MarketScoping_SingleTarget",
+                "\"TargetLineItemBudgetId\" IS NULL OR \"TargetLineItemBudgetActivityId\" IS NULL"));
+
+        // Filtered unique index: at most 1 active MSF per project-scoped LIB
+        modelBuilder.Entity<MarketScoping>()
+            .HasIndex(ms => ms.TargetLineItemBudgetId)
+            .HasFilter("\"TargetLineItemBudgetId\" IS NOT NULL AND \"IsDeleted\" = false")
+            .IsUnique();
+
+        // Filtered unique index: at most 1 active MSF per LIB Activity
+        modelBuilder.Entity<MarketScoping>()
+            .HasIndex(ms => ms.TargetLineItemBudgetActivityId)
+            .HasFilter("\"TargetLineItemBudgetActivityId\" IS NOT NULL AND \"IsDeleted\" = false")
+            .IsUnique();
 
         modelBuilder.Entity<Agency>(e =>
         {
@@ -2925,6 +2947,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .HasForeignKey<ProcurementProject>(p => p.ConsolidatedPRId)
                 .OnDelete(DeleteBehavior.Restrict);
 
+            e.HasIndex(p => p.APPItemId);
+
+            e.HasOne(p => p.APPItem)
+                .WithMany()
+                .HasForeignKey(p => p.APPItemId)
+                .OnDelete(DeleteBehavior.Restrict);
+
             e.HasOne(p => p.EndUserRepresentative)
                 .WithMany()
                 .HasForeignKey(p => p.EndUserRepresentativeId)
@@ -2934,6 +2963,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
                 .WithMany()
                 .HasForeignKey(p => p.TechRepresentativeId)
                 .OnDelete(DeleteBehavior.SetNull);
+        });
+
+        modelBuilder.Entity<PurchaseRequest>(e =>
+        {
+            e.HasOne(pr => pr.ProcurementProject)
+                .WithMany()
+                .HasForeignKey(pr => pr.ProcurementProjectId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
 
         base.OnModelCreating(modelBuilder);
@@ -3200,6 +3237,22 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
             entity.HasIndex(e => e.StartedAt);
             entity.HasIndex(e => e.Status);
+        });
+
+        // BACResolutionWhereasClauseItem
+        modelBuilder.Entity<BACResolutionWhereasClauseItem>(entity =>
+        {
+            entity.ToTable("BACResolutionWhereasClauseItems", "procurement");
+
+            entity.HasOne(item => item.BACResolution)
+                .WithMany(res => res.WhereasClauseItems)
+                .HasForeignKey(item => item.BACResolutionId)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            entity.HasOne(item => item.BACResolutionWhereasClause)
+                .WithMany()
+                .HasForeignKey(item => item.BACResolutionWhereasClauseId)
+                .OnDelete(DeleteBehavior.Restrict);
         });
     }
 

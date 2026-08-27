@@ -197,6 +197,22 @@ public class DocumentController(IMediator mediator,
         return Ok(result);
     }
 
+    [HttpPost("bac-resolution/{bacResolutionId:guid}/generate")]
+    public async Task<ActionResult<ApiResponse<Guid>>> GenerateBacResolution(
+        Guid bacResolutionId,
+        [FromQuery] ExportFormat format = ExportFormat.Pdf,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new ERPEZ.Application.Features.Procurement.Projects.Commands.GenerateBacResolutionDocument.GenerateBacResolutionDocumentCommand
+        {
+            BacResolutionId = bacResolutionId,
+            Format = format,
+            GeneratedBy = User.Identity?.Name ?? "system"
+        };
+        var result = await mediator.Send(command, cancellationToken);
+        return Ok(result);
+    }
+
     [HttpGet("{documentId:guid}/download")]
     public async Task<IActionResult> Download(
         Guid documentId,

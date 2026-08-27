@@ -10,5 +10,6 @@ public enum DocumentType
     Opcr,
     OpcrRating,
     ConsolidatedOpcr,
-    MarketScoping
+    MarketScoping,
+    BacResolution
 }

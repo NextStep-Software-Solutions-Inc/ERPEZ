@@ -17,7 +17,6 @@ import type {
 } from 'erpez-shared-lib'
 import api from '@/services/api'
 import type { PSDBMCatalogResponse } from '../types'
-import { createFallbackCatalogResponse } from '../utils/psdbmFallback'
 
 const endpoint = '/api/psdbm/items/:mode' as const
 
@@ -41,41 +40,9 @@ export const getPSDBMItemsRequest: QueryBlueprintFromTemplate<
   QueryKey
 > = {
   endpoint,
-  key: ({ finalUrl }) =>
-    [finalUrl] as const,
+  key: ({ url }) => [url] as const,
   fetcher: async ({ finalUrl, signal }) => {
-    try {
-      const response = await api.get<APIResponse<PSDBMCatalogResponse>>(finalUrl, { signal })
-      return response.data
-    } catch (error) {
-      console.warn('[PSDBM Items] API request failed, using mock data fallback', error)
-      
-      if (!import.meta.env.DEV) {
-        return {
-          succeeded: true,
-          message: 'API unavailable',
-          data: {
-            items: [],
-            category: 'All',
-            searchTerm: '',
-            mode: 'main',
-            totalItems: 0,
-            pageNumber: 1,
-            pageSize: 25,
-            totalPages: 1,
-            isMockData: false,
-          },
-          errors: {},
-        } as unknown as APIResponse<PSDBMCatalogResponse>
-      }
-      
-      const fallbackData = await createFallbackCatalogResponse()
-      return {
-        succeeded: true,
-        message: 'Using fallback mock data',
-        data: fallbackData,
-        errors: {},
-      } as unknown as APIResponse<PSDBMCatalogResponse>
-    }
+    const response = await api.get<APIResponse<PSDBMCatalogResponse>>(finalUrl, { signal })
+    return response.data
   },
 }

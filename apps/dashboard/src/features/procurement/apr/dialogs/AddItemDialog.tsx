@@ -97,7 +97,7 @@ export function AddItemDialog({
     usePSDBMCategories({
       pathParams: { mode: catalogMode },
       enabled: open,
-    } as any)
+    })
 
   // Fetch depots
   const { data: depotsData, isLoading: depotsLoading } = usePSDBMDepots({
@@ -142,7 +142,7 @@ export function AddItemDialog({
   )
 
   const { data: itemsData, isLoading: itemsLoading, error: itemsError, refetch: refetchItems } = usePSDBMItems(
-    itemsParams as any
+    itemsParams
   )
 
   // Raw items from API response
@@ -272,7 +272,10 @@ export function AddItemDialog({
     toast.promise(syncPromise, {
       loading: `Connecting to PS-PhilGEPS and synchronizing ${target} warehouse stocks...`,
       success: () => `Successfully synchronized ${target}! Stocks and items updated.`,
-      error: (err: any) => `Sync failed: ${err?.response?.data?.message || err?.message || 'Please check backend logs.'}`,
+      error: (err: unknown) => {
+        const errorObj = err as { response?: { data?: { message?: string } }; message?: string }
+        return `Sync failed: ${errorObj?.response?.data?.message || errorObj?.message || 'Please check backend logs.'}`
+      },
     })
 
     try {
@@ -285,7 +288,7 @@ export function AddItemDialog({
   }, [selectedDepot, catalogMode, refetchItems])
 
   // Handler: Item selection toggle
-  const handleItemSelect = useCallback((item: any, selected: boolean) => {
+  const handleItemSelect = useCallback((item: PSDBMItem, selected: boolean) => {
     if (isItemOutOfStock(item) && selected) return
     setSelectedItems((prev) => {
       const newMap = new Map(prev)
