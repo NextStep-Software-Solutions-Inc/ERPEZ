@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using Microsoft.EntityFrameworkCore.Migrations;
 
 #nullable disable
@@ -18,27 +18,6 @@ namespace ERPEZ.Infrastructure.Migrations
                 type: "text",
                 nullable: false,
                 defaultValue: "");
-
-            migrationBuilder.AddColumn<DateTime>(
-                name: "EvaluatedAt",
-                schema: "procurement",
-                table: "PublicSupplierApplications",
-                type: "timestamp with time zone",
-                nullable: true);
-
-            migrationBuilder.AddColumn<string>(
-                name: "EvaluatedBy",
-                schema: "procurement",
-                table: "PublicSupplierApplications",
-                type: "text",
-                nullable: true);
-
-            migrationBuilder.AddColumn<string>(
-                name: "Remarks",
-                schema: "procurement",
-                table: "PublicSupplierApplications",
-                type: "text",
-                nullable: true);
 
             migrationBuilder.CreateIndex(
                 name: "IX_Users_ExternalIdentityId",
@@ -60,21 +39,6 @@ namespace ERPEZ.Infrastructure.Migrations
                 name: "ExternalIdentityId",
                 schema: "planning",
                 table: "Users");
-
-            migrationBuilder.DropColumn(
-                name: "EvaluatedAt",
-                schema: "procurement",
-                table: "PublicSupplierApplications");
-
-            migrationBuilder.DropColumn(
-                name: "EvaluatedBy",
-                schema: "procurement",
-                table: "PublicSupplierApplications");
-
-            migrationBuilder.DropColumn(
-                name: "Remarks",
-                schema: "procurement",
-                table: "PublicSupplierApplications");
         }
     }
 }
