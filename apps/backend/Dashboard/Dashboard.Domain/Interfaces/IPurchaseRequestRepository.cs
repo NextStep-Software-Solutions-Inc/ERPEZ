@@ -12,7 +12,7 @@ public interface IPurchaseRequestRepository : IRepository<PurchaseRequest>
     Task<PurchaseRequest?> GetPRWithItemsAsync(Guid id, CancellationToken cancellationToken = default);
     Task<List<PurchaseRequest>> GetApprovedPRsWithItemsAsync(CancellationToken cancellationToken = default);
     Task<List<PurchaseRequest>> GetByOfficeAsync(Guid officeId, PRType? prType = null, CancellationToken cancellationToken = default);
-    Task<List<EligiblePPMPItemResult>> GetEligibleNonCSEItemsAsync(Guid officeId, CancellationToken cancellationToken = default);
+    Task<List<EligiblePPMPItemResult>> GetEligibleNonCSEItemsAsync(Guid officeId, Guid? currentPRId = null, CancellationToken cancellationToken = default);
     Task<List<EligibleAPRItemResult>> GetEligibleOutOfStockItemsAsync(Guid officeId, CancellationToken cancellationToken = default);
 
     Task<(IReadOnlyList<PurchaseRequest> Entities, int TotalCount)> GetDetailedPagedAsync(

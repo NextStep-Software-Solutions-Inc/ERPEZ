@@ -93,6 +93,11 @@ public class APPItem : BaseEntity
 
             if (allocSum > 0) return allocSum;
 
+            if (PPMPItem.PlannedQuantity > 0 && resolvedUnitPrice > 0)
+            {
+                return PPMPItem.PlannedQuantity * resolvedUnitPrice;
+            }
+
             return resolvedUnitPrice;
         }
     }

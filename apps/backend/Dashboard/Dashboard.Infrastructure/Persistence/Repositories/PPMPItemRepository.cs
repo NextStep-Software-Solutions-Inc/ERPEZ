@@ -24,6 +24,15 @@ public class PPMPItemRepository : Repository<PPMPItem>, IPPMPItemRepository
 
         return baseQuery
             .Include(item => item.PPMPExpenditureItem)
+                .ThenInclude(expenditure => expenditure.PPMP)
+                    .ThenInclude(ppmp => ppmp.Office)
+            .Include(item => item.PPMPExpenditureItem)
+                .ThenInclude(expenditure => expenditure.PPMP)
+                    .ThenInclude(ppmp => ppmp.FiscalYear)
+            .Include(item => item.PPMPExpenditureItem)
+                .ThenInclude(expenditure => expenditure.PPMP)
+                    .ThenInclude(ppmp => ppmp.FundSource)
+            .Include(item => item.PPMPExpenditureItem)
                 .ThenInclude(expenditure => expenditure.PPMPActivity)
                     .ThenInclude(activity => activity!.PPMP)
                         .ThenInclude(ppmp => ppmp.Office)
@@ -46,6 +55,8 @@ public class PPMPItemRepository : Repository<PPMPItem>, IPPMPItemRepository
                     .ThenInclude(price => price.FiscalYear)
             .Include(item => item.NonCSEItem)
                 .ThenInclude(n => n!.UOM)
+            .Include(item => item.APPItems.Where(ai => !ai.IsDeleted))
+                .ThenInclude(ai => ai.APP)
             .AsSplitQuery();
     }
 
