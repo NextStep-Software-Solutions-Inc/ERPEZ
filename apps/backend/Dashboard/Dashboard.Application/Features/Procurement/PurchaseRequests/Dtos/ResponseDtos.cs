@@ -50,6 +50,10 @@ public record PRItemDetailResponse
     public AllocationMonthEnum RequestedMonth { get; init; }
     public string   Category          { get; init; } = string.Empty;
     public string   Fund              { get; init; } = string.Empty;
+    public Guid?    PPMPId            { get; init; }
+    public string?  PPMPNumber        { get; init; }
+    public string?  Unit              { get; init; }
+    public string?  OfficeName        { get; init; }
 }
 
 public record ApprovalEventResponse(

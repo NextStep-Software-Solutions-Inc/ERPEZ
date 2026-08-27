@@ -39,18 +39,36 @@ public class GetPRByIdQueryHandler(IUnitOfWork unitOfWork)
                     PPMPItemId        = i.PPMPItemId,
                     APRItemId         = i.APRItemId,
                     Name              = i.Name,
-                    Description       = i.Description,
+                    Description       = !string.IsNullOrWhiteSpace(i.Description) 
+                                        ? i.Description 
+                                        : (!string.IsNullOrWhiteSpace(i.PPMPItem?.Description) 
+                                            ? i.PPMPItem.Description 
+                                            : i.PPMPItem?.NonCSEItem?.Description),
                     StockNo           = i.StockNo,
                     IsNonCSE          = i.IsNonCSE,
                     UnitCost          = i.UnitCost,
                     RequestedQuantity = i.RequestedQuantity,
                     Amount            = i.Amount,
                     RequestedMonth    = i.RequestedMonth,
-                    Category          = i.PPMPItem?.CSEItem?.ItemCategory?.Name 
-                                        ?? i.PPMPItem?.NonCSEItem?.ItemCategory?.Name 
+                    Category          = i.PPMPItem?.NonCSEItem?.ItemCategory?.Name 
+                                        ?? i.PPMPItem?.CSEItem?.ItemCategory?.Name 
                                         ?? i.PPMPItem?.ProjectType.ToString() 
                                         ?? string.Empty,
-                    Fund              = pr.FundSource?.Name ?? string.Empty
+                    Fund              = i.PPMPItem?.PPMPExpenditureItem?.PPMP?.FundSource?.Name
+                                        ?? i.PPMPItem?.PPMPExpenditureItem?.PPMPActivity?.PPMP?.FundSource?.Name
+                                        ?? pr.FundSource?.Name 
+                                        ?? string.Empty,
+                    PPMPId            = i.PPMPItem?.PPMPExpenditureItem?.PPMPId 
+                                        ?? i.PPMPItem?.PPMPExpenditureItem?.PPMPActivity?.PPMPId,
+                    PPMPNumber        = i.PPMPItem?.PPMPExpenditureItem?.PPMP?.PPMPNumber 
+                                        ?? i.PPMPItem?.PPMPExpenditureItem?.PPMPActivity?.PPMP?.PPMPNumber,
+                    Unit              = i.PPMPItem?.Unit 
+                                        ?? i.PPMPItem?.NonCSEItem?.UOM?.Name 
+                                        ?? i.PPMPItem?.CSEItem?.UOM?.Name 
+                                        ?? "unit",
+                    OfficeName        = i.PPMPItem?.PPMPExpenditureItem?.PPMP?.Office?.Name
+                                        ?? i.PPMPItem?.PPMPExpenditureItem?.PPMPActivity?.PPMP?.Office?.Name
+                                        ?? pr.Office?.Name
                 }).ToList()
         };
 

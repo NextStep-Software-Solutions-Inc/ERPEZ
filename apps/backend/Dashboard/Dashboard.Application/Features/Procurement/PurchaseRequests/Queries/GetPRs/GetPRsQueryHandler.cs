@@ -31,11 +31,13 @@ public class GetPRsQueryHandler(IUnitOfWork unitOfWork)
                 Status        = pr.Status.ToString(),
                 TotalAmount   = pr.TotalAmount,
                 RequestedDate = pr.RequestedDate,
-                CreatedDate   = DateOnly.FromDateTime(pr.CreatedAt)
+                CreatedDate   = DateOnly.FromDateTime(pr.CreatedAt),
+                OfficeId      = pr.OfficeId,
+                OfficeName    = pr.Office != null ? pr.Office.Name : string.Empty
             };
 
         var (items, totalCount) = await unitOfWork.PurchaseRequestRepository
-            .GetPRsWithDetailsAsync(sieveModel, projection, [], cancellationToken);
+            .GetPRsWithDetailsAsync(sieveModel, projection, [pr => pr.Office], cancellationToken);
 
         return new PaginatedApiResponse<PurchaseRequestSummaryResponse>(
             [.. items],

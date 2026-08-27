@@ -13,18 +13,40 @@ public class GetEligiblePPMPsQueryHandler(IUnitOfWork unitOfWork)
     public async Task<ApiResponse<List<EligiblePPMPResponse>>> Handle(
         GetEligiblePPMPsQuery query, CancellationToken cancellationToken)
     {
-        var pr = await unitOfWork.PurchaseRequestRepository.GetByIdAsync(
-            query.PurchaseRequestId, cancellationToken)
-            ?? throw new NotFoundException(
-                $"Purchase Request with ID {query.PurchaseRequestId} not found.");
+        Guid officeId;
+        Guid? currentPrId = null;
 
-        if (pr.PRType != PRType.NonCSE)
-            throw new ValidationException(
-                "Eligible PPMPs are only applicable to Non-CSE Purchase Requests.");
+        if (query.PurchaseRequestId.HasValue)
+        {
+            var pr = await unitOfWork.PurchaseRequestRepository.GetByIdAsync(
+                query.PurchaseRequestId.Value, cancellationToken)
+                ?? throw new NotFoundException(
+                    $"Purchase Request with ID {query.PurchaseRequestId.Value} not found.");
 
-        // Flat list from repo — already filters out zero-available items
+            if (pr.PRType != PRType.NonCSE)
+                throw new ValidationException(
+                    "Eligible PPMPs are only applicable to Non-CSE Purchase Requests.");
+
+            officeId = pr.OfficeId;
+            currentPrId = pr.Id;
+        }
+        else if (query.OfficeId.HasValue)
+        {
+            _ = await unitOfWork.OfficeRepository.GetByIdAsync(
+                query.OfficeId.Value, cancellationToken)
+                ?? throw new NotFoundException(
+                    $"Office with ID {query.OfficeId.Value} not found.");
+
+            officeId = query.OfficeId.Value;
+        }
+        else
+        {
+            throw new ValidationException("Either OfficeId or PurchaseRequestId must be provided.");
+        }
+
+        // Flat list from repo — already filters by office, approved PPMP, approved APP, and available allocation > 0
         var flatItems = await unitOfWork.PurchaseRequestRepository
-            .GetEligibleNonCSEItemsAsync(pr.OfficeId, cancellationToken);
+            .GetEligibleNonCSEItemsAsync(officeId, currentPrId, cancellationToken);
 
         // Group by PPMP to match the modal's accordion structure (Image 4)
         var result = flatItems
@@ -38,25 +60,41 @@ public class GetEligiblePPMPsQueryHandler(IUnitOfWork unitOfWork)
                 Items: g.GroupBy(item => new { 
                         item.PPMPItemId, 
                         item.ItemName, 
+                        item.Description,
                         item.Category, 
+                        item.ItemCategory,
+                        item.UacsCode,
                         item.Fund, 
                         item.Unit, 
-                        item.UnitPrice 
+                        item.UnitPrice,
+                        item.HasMonthlyAllocations,
+                        item.PlannedQuantity,
+                        item.TotalAvailableQuantity
                     })
                     .Select(ig => new EligiblePPMPItemResponse(
                         PPMPItemId:           ig.Key.PPMPItemId,
                         ItemName:             ig.Key.ItemName,
+                        Description:          ig.Key.Description,
                         Category:             ig.Key.Category,
+                        ItemCategory:         ig.Key.ItemCategory,
+                        UacsCode:             ig.Key.UacsCode,
                         Fund:                 ig.Key.Fund,
                         Unit:                 ig.Key.Unit,
                         UnitPrice:            ig.Key.UnitPrice,
-                        MonthlyAllocations:   ig.Select(m => new EligiblePPMPItemMonthAllocation(
-                            Month:                m.Month,
-                            TotalAllocated:       m.TotalAllocatedQuantity,
-                            AvailableQuantity:    m.AvailableQuantity,
-                            TotalAvailableAmount: m.TotalAvailableAmount
-                        )).ToList(),
-                        TotalAvailableAmount: ig.Sum(m => m.TotalAvailableAmount)
+                        HasMonthlyAllocations:ig.Key.HasMonthlyAllocations,
+                        PlannedQuantity:      ig.Key.PlannedQuantity,
+                        AvailableQuantity:    ig.Key.HasMonthlyAllocations ? ig.Sum(m => m.AvailableQuantity) : ig.Key.TotalAvailableQuantity,
+                        MonthlyAllocations:   ig.Key.HasMonthlyAllocations
+                            ? ig.Where(m => m.Month.HasValue).Select(m => new EligiblePPMPItemMonthAllocation(
+                                Month:                m.Month!.Value,
+                                TotalAllocated:       m.TotalAllocatedQuantity,
+                                AvailableQuantity:    m.AvailableQuantity,
+                                TotalAvailableAmount: m.TotalAvailableAmount
+                            )).ToList()
+                            : new List<EligiblePPMPItemMonthAllocation>(),
+                        TotalAvailableAmount: ig.Key.HasMonthlyAllocations
+                            ? ig.Sum(m => m.TotalAvailableAmount)
+                            : ig.Key.TotalAvailableQuantity * ig.Key.UnitPrice
                     )).ToList()
             ))
             .ToList();
