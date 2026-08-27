@@ -12,7 +12,6 @@ import { toast } from 'sonner'
 import { APPSelectField } from '../components/APPSelectField'
 import { LineItemsSelectField } from '../components/LineItemsSelectField'
 import { ValidationAlerts } from '../components/ValidationAlerts'
-import { APRItemsPreview } from '../components/APRItemsPreview'
 import { useApprovedAPPs, useAPPById, useAllocatedAPPItemIds } from '../handlers/hooks'
 import { useAPPApprovalValidation } from '../hooks'
 import { convertAppLineItemsToAPRItems, validateBudgetCeiling, isCSEItem } from '../utils'
@@ -364,10 +363,6 @@ export function SelectAPPForm({
       </Alert>
     )
   }
-
-  const combinedAppNames = selectedApps
-    .map((a: any) => a.appNumber || a.appCode || a.name)
-    .join(', ')
 
   return (
     <form id={formId} onSubmit={handleFormSubmit} className="space-y-4">

@@ -13,7 +13,9 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu'
-import { MoreVertical, Eye, Check, RotateCcw } from 'lucide-react'
+import { MoreVertical, Eye, Check, RotateCcw, Download } from 'lucide-react'
+import { toast } from 'sonner'
+import { generateAndDownloadAprDocument } from '../handlers/generateAprDocumentRequest'
 import { APRStatusBadge } from '../components/APRStatusBadge'
 import { normalizeAPRStatus } from '../utils'
 
@@ -122,6 +124,26 @@ export function getAdminAPRsTableColumns({
               <DropdownMenuItem onClick={() => onView(apr)}>
                 <Eye className="mr-2 h-4 w-4" />
                 View Details
+              </DropdownMenuItem>
+
+              <DropdownMenuItem
+                onClick={async () => {
+                  try {
+                    toast.loading('Generating APR Form No. 002 PDF...', { id: `export-apr-${apr.id}` })
+                    await generateAndDownloadAprDocument({
+                      aprId: apr.id,
+                      format: 'Pdf',
+                      filename: `APR_${apr.aprNumber || apr.id}.pdf`
+                    })
+                    toast.success('APR Form No. 002 PDF downloaded', { id: `export-apr-${apr.id}` })
+                  } catch (err: unknown) {
+                    const msg = err instanceof Error ? err.message : 'Failed to export APR PDF'
+                    toast.error(msg, { id: `export-apr-${apr.id}` })
+                  }
+                }}
+              >
+                <Download className="mr-2 h-4 w-4 text-blue-600" />
+                Export Form 002 (PDF)
               </DropdownMenuItem>
 
               {canApprove && (

@@ -7,10 +7,11 @@
 
 import { useState } from 'react'
 import { format } from 'date-fns'
-import { Copy, Check, Info, Building2 } from 'lucide-react'
+import { Copy, Check, Info, Building2, Download } from 'lucide-react'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
+import { generateAndDownloadAprDocument } from '../handlers/generateAprDocumentRequest'
 import type { APRMaster } from '../types'
 import { APRStatusBadge } from './APRStatusBadge'
 
@@ -50,28 +51,54 @@ export function APRIdentityBanner({ apr, context = 'user' }: APRHeaderSectionPro
         )}
       </div>
 
-      {/* Top Right ID Box with Copy Button */}
-      {apr.id && (
-        <div className="flex items-center gap-2 flex-shrink-0 bg-white/95 border border-purple-100/90 px-3 py-1.5 rounded-xl shadow-xs z-10">
-          <span className="text-[11px] font-mono text-gray-500 select-all">
-            ID: {apr.id}
-          </span>
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-6 w-6 text-gray-400 hover:text-gray-700"
-            onClick={handleCopyId}
-            aria-label="Copy APR UUID to clipboard"
-            title="Copy UUID"
-          >
-            {copied ? (
-              <Check className="h-3.5 w-3.5 text-green-600" />
-            ) : (
-              <Copy className="h-3.5 w-3.5" />
-            )}
-          </Button>
-        </div>
-      )}
+      {/* Top Right Action & ID Box */}
+      <div className="flex items-center gap-2 flex-shrink-0 z-10">
+        <Button
+          variant="outline"
+          size="sm"
+          className="bg-white/95 border-purple-200 text-purple-700 hover:bg-purple-50 hover:text-purple-800 shadow-xs font-medium text-xs gap-1.5"
+          onClick={async () => {
+            if (!apr.id) return
+            try {
+              toast.loading('Generating APR Form No. 002 PDF...', { id: `export-apr-${apr.id}` })
+              await generateAndDownloadAprDocument({
+                aprId: apr.id,
+                format: 'Pdf',
+                filename: `APR_${apr.aprNumber || apr.id}.pdf`
+              })
+              toast.success('APR Form No. 002 PDF downloaded', { id: `export-apr-${apr.id}` })
+            } catch (err: unknown) {
+              const msg = err instanceof Error ? err.message : 'Failed to export APR PDF'
+              toast.error(msg, { id: `export-apr-${apr.id}` })
+            }
+          }}
+        >
+          <Download className="h-3.5 w-3.5 text-purple-600" />
+          Export Form 002 (PDF)
+        </Button>
+
+        {apr.id && (
+          <div className="flex items-center gap-2 bg-white/95 border border-purple-100/90 px-3 py-1.5 rounded-xl shadow-xs">
+            <span className="text-[11px] font-mono text-gray-500 select-all">
+              ID: {apr.id}
+            </span>
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-6 w-6 text-gray-400 hover:text-gray-700"
+              onClick={handleCopyId}
+              aria-label="Copy APR UUID to clipboard"
+              title="Copy UUID"
+            >
+              {copied ? (
+                <Check className="h-3.5 w-3.5 text-green-600" />
+              ) : (
+                <Copy className="h-3.5 w-3.5" />
+              )}
+            </Button>
+          </div>
+        )}
+      </div>
 
       {/* Subtle decorative background graphic */}
       <div className="absolute right-0 top-0 bottom-0 w-48 pointer-events-none opacity-40 hidden lg:block bg-radial from-purple-200/40 via-transparent to-transparent" />

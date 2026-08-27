@@ -161,6 +161,7 @@ export interface ConsolidatedAPRItem {
   appBACId?: string
   appApprovedQuantity?: number
   appApprovedBudget?: number
+  imageUrl?: string
   // Variance Tracking
   quantityVariance?: number
   quantityVariancePercent?: number
