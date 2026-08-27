@@ -213,6 +213,22 @@ public class DocumentController(IMediator mediator,
         return Ok(result);
     }
 
+    [HttpPost("purchase-request/{purchaseRequestId:guid}/generate")]
+    public async Task<ActionResult<ApiResponse<Guid>>> GeneratePurchaseRequest(
+        Guid purchaseRequestId,
+        [FromQuery] ExportFormat format = ExportFormat.Pdf,
+        CancellationToken cancellationToken = default)
+    {
+        var command = new ERPEZ.Application.Features.Procurement.PurchaseRequests.Commands.GeneratePurchaseRequestDocument.GeneratePurchaseRequestDocumentCommand
+        {
+            PurchaseRequestId = purchaseRequestId,
+            Format = format,
+            GeneratedBy = User.Identity?.Name ?? "system"
+        };
+        var result = await mediator.Send(command, cancellationToken);
+        return Ok(result);
+    }
+
     [HttpGet("{documentId:guid}/download")]
     public async Task<IActionResult> Download(
         Guid documentId,
