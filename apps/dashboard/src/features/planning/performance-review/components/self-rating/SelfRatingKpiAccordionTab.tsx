@@ -46,9 +46,8 @@ import {
   groupKPIsByCategory,
 } from '../../utils/selfRating'
 import type { OpcrItemRating } from '@/services/api/ratings'
-import { patchOPCRSelfEvaluateRequest } from '../../handlers/patchOPCRSelfEvaluateRequest'
 import { patchOPCRReviewStatusRequest } from '../../handlers/patchOPCRReviewStatusRequest'
-import { FYActiveKPIMeasurement } from '@/lib/opcr/types'
+import { patchOPCRSelfEvaluateRequest } from '../../handlers/patchOPCRSelfEvaluateRequest'
 
 const useOPCR = createQueryHookFromTemplate(getOPCRRequest)
 
@@ -120,9 +119,15 @@ const ALL_DIMENSIONS: Array<'quality' | 'efficiency' | 'timeliness'> = [
   'timeliness',
 ]
 
-type OPCRMeasurementLike = FYActiveKPIMeasurement & {
-  dimensions?: string[] | null
+type OPCRMeasurementLike = {
+  id?: string
+  ratingScaleTemplateId?: string
   RatingScaleTemplateId?: string
+  dimensions?: string[] | null
+  dimension?: string[] | string | null
+  moVs?: string[] | null
+  isMOVEditable?: boolean
+  isScaleEditable?: boolean
 }
 
 type OPCRItemMOVData = {
@@ -182,7 +187,7 @@ function getPrimaryMeasurement(item: OPCRItem): OPCRMeasurementLike | null {
     return null
   }
 
-  return measurementSource[0] as OPCRMeasurementLike
+  return (measurementSource[0] as unknown) as OPCRMeasurementLike
 }
 
 function mapDimensionsToTags(
@@ -430,86 +435,7 @@ function deriveFileType(url: string): 'pdf' | 'image' | 'document' {
   return 'document'
 }
 
-type OPCRItemRatingData = {
-  dimension: string
-  selfRating: number
-}
 
-type PatchOPCRSelfEvaluateResponse = {
-  opcrItems?: SubmittedOPCRItem[]
-  [key: string]: unknown
-}
-
-type SubmittedOPCRItem = {
-  id: string
-  opcrItemRatings?: OPCRItemRatingData[]
-  opcrItemMOVs?: OPCRItemMOVData[]
-  actualAccomplishment?: string
-  justification?: string
-}
-
-/**
- * Transform submitted response data to update KPI items with server confirmations
- */
-function transformSubmittedResponseToKpiItems(
-  currentKpiItems: KPILineItem[],
-  submittedOPCRItems: SubmittedOPCRItem[],
-): KPILineItem[] {
-  return currentKpiItems.map((kpiItem) => {
-    const submittedItem = submittedOPCRItems.find(
-      (item: SubmittedOPCRItem) => item.id === kpiItem.id,
-    )
-
-    if (!submittedItem) return kpiItem
-
-    // Transform opcrItemRatings to selfRating object
-    const ratingsByDimension: Record<string, number> = (
-      submittedItem.opcrItemRatings ?? []
-    )
-      .filter(
-        (r: OPCRItemRatingData) =>
-          r.dimension && typeof r.dimension === 'string' && r.dimension.trim(),
-      )
-      .reduce(
-        (acc: Record<string, number>, r: OPCRItemRatingData) => ({
-          ...acc,
-          [r.dimension?.toLowerCase()]: r.selfRating,
-        }),
-        {},
-      )
-
-    const transformedRating: QETRating = {
-      quality: ratingsByDimension['quality'] ?? kpiItem.selfRating.quality,
-      efficiency:
-        ratingsByDimension['efficiency'] ?? kpiItem.selfRating.efficiency,
-      timeliness:
-        ratingsByDimension['timeliness'] ?? kpiItem.selfRating.timeliness,
-      average: null,
-    }
-
-    // Transform opcrItemMOVs to movFiles format
-    const transformedMovFiles = (submittedItem.opcrItemMOVs ?? [])
-      .filter((mov: OPCRItemMOVData) => mov.attachedUrl)
-      .map((mov: OPCRItemMOVData, index: number) => ({
-        id: mov.id,
-        name: mov.requirementName,
-        url: mov.attachedUrl,
-        fileType: deriveFileType(mov.attachedUrl),
-        uploadedAt: mov.uploadedDate || new Date().toISOString(),
-        uploadedBy: mov.createdBy || 'System',
-        configuredMOVIndex: index,
-      }))
-
-    return {
-      ...kpiItem,
-      selfRating: transformedRating,
-      movFiles: transformedMovFiles,
-      actual: submittedItem.actualAccomplishment?.trim() ?? kpiItem.actual,
-      justification:
-        submittedItem.justification?.trim() ?? kpiItem.justification,
-    }
-  })
-}
 
 export function SelfRatingKpiAccordionTab() {
   const navigate = useNavigate({ from: '/v2/performance-review' })
@@ -596,10 +522,12 @@ export function SelfRatingKpiAccordionTab() {
 
       let hasChanges = false
       const nextItems = prevItems.map((item) => {
-        const opcrItemIndex = opcr?.opcrItems?.findIndex((oi) => oi.id === item.id)
+        const opcrItemIndex = opcr?.opcrItems?.findIndex(
+          (oi) => oi.id === item.id,
+        )
         if (opcrItemIndex === -1) return item
 
-        const queryResult = templateQueries[opcrItemIndex]
+        const queryResult = templateQueries[opcrItemIndex || 0]
         if (!queryResult?.data) return item
 
         const {
@@ -926,29 +854,37 @@ export function SelfRatingKpiAccordionTab() {
         })
         .filter((mov) => mov.fyActiveKPIMeasurementId && mov.fileId) // Filter out invalid entries
 
-      // Step 3: Execute patch request for first KPI item for now
-      // In a real scenario, you'd loop through or submit aggregated data
-      if (kpiItems.length > 0) {
-        const firstItem = kpiItems[0]
-        const finalUrl = patchOPCRSelfEvaluateRequest.endpoint.replace(
-          ':id',
-          firstItem.opcrItemId || firstItem.id,
+      // Step 3: Execute patch request for all KPI items
+      for (const item of kpiItems) {
+        const itemId = item.opcrItemId || item.id
+        if (!itemId) continue
+
+        const itemDimensions = dimensionRate.filter(
+          (d) => d.fyActiveKPIMeasurementId === item.fyActiveKPIMeasurementId,
+        )
+        const itemMovs = movArray.filter(
+          (m) => m.fyActiveKPIMeasurementId === item.fyActiveKPIMeasurementId,
         )
 
-        const response = await patchOPCRSelfEvaluateRequest.fetcher({
+        const finalUrl = patchOPCRSelfEvaluateRequest.endpoint.replace(
+          ':id',
+          itemId,
+        )
+
+        await patchOPCRSelfEvaluateRequest.fetcher({
           finalUrl,
           payload: {
-            actualAccomplishment: firstItem.actual,
-            justification: firstItem.justification,
-            dimensionRate: dimensionRate.length > 0 ? dimensionRate : undefined,
-            mov: movArray.length > 0 ? movArray : undefined,
+            actualAccomplishment: item.actual,
+            justification: item.justification,
+            dimensionRate:
+              itemDimensions.length > 0 ? itemDimensions : undefined,
+            mov: itemMovs.length > 0 ? itemMovs : undefined,
           },
         })
+      }
 
-        // Success!
-        console.log('Self-evaluation submitted:', response)
-
-        // Step 4: Update the OPCR review status to Submitted (2)
+      // Step 4: Update the OPCR review status to Submitted
+      if (opcr?.id) {
         try {
           const reviewStatusUrl = patchOPCRReviewStatusRequest.endpoint.replace(
             ':id',
@@ -964,36 +900,24 @@ export function SelfRatingKpiAccordionTab() {
         } catch (statusError) {
           console.error('Failed to update OPCR review status:', statusError)
         }
-
-        // Transform response data and update KPI items
-        const responseData =
-          response as unknown as PatchOPCRSelfEvaluateResponse
-        const submittedOPCRItems = responseData?.opcrItems ?? []
-        if (submittedOPCRItems && submittedOPCRItems.length > 0) {
-          const updatedKpiItems = transformSubmittedResponseToKpiItems(
-            kpiItems,
-            submittedOPCRItems,
-          )
-          setKpiItems(updatedKpiItems)
-        }
-
-        // Clear uploads
-        clearAllUploads()
-
-        // Keep in read-only mode to show submitted values
-        setIsReadOnly(true)
-
-        toast.success('Self-Evaluation Submitted', {
-          description:
-            'Your performance review has been successfully submitted. Review your submission below, then return to the OPCR list.',
-          duration: 4000,
-        })
-
-        // Auto-navigate back after 5 seconds for user convenience
-        setTimeout(() => {
-          handleBack()
-        }, 5000)
       }
+
+      // Clear uploads
+      clearAllUploads()
+
+      // Keep in read-only mode to show submitted values
+      setIsReadOnly(true)
+
+      toast.success('Self-Evaluation Submitted', {
+        description:
+          'Your performance review has been successfully submitted.',
+        duration: 4000,
+      })
+
+      // Auto-navigate back after 3 seconds for user convenience
+      setTimeout(() => {
+        handleBack()
+      }, 3000)
     } catch (error) {
       console.error('Submission failed:', error)
       const errorMessage =
