@@ -56,9 +56,9 @@ public class CreatePPMPItemCommandValidator : AbstractValidator<CreatePPMPItemCo
             .WithMessage("MOP Justification is required when MOP Override is enabled.");
 
         RuleFor(x => x.Description)
-            .MaximumLength(500)
+            .MaximumLength(4000)
             .When(x => !string.IsNullOrEmpty(x.Description))
-            .WithMessage("Description cannot exceed 500 characters.");
+            .WithMessage("Description cannot exceed 4000 characters.");
 
         RuleFor(x => x.ProjectType)
             .IsInEnum()

@@ -23,12 +23,12 @@ describe('LIBApprovalDialog', () => {
       />,
     )
 
-    expect(screen.getByText('Approve LIB?')).toBeDefined()
+    expect(screen.getByText('Approve Line-Item Budget?')).toBeDefined()
     expect(
       screen.getByText(/Are you sure you want to approve "IT Department Operating Budget"/),
     ).toBeDefined()
 
-    const approveButton = screen.getByRole('button', { name: 'Approve' })
+    const approveButton = screen.getByRole('button', { name: 'Approve LIB' })
     fireEvent.click(approveButton)
     expect(onConfirm).toHaveBeenCalledTimes(1)
   })
@@ -48,12 +48,12 @@ describe('LIBApprovalDialog', () => {
       />,
     )
 
-    expect(screen.getByText('Reject LIB?')).toBeDefined()
+    expect(screen.getByText('Return Line-Item Budget?')).toBeDefined()
     expect(
-      screen.getByText(/Are you sure you want to reject "IT Department Operating Budget"/),
+      screen.getByText(/Are you sure you want to return "IT Department Operating Budget"/),
     ).toBeDefined()
 
-    const rejectButton = screen.getByRole('button', { name: 'Reject' })
+    const rejectButton = screen.getByRole('button', { name: 'Return LIB' })
     fireEvent.click(rejectButton)
     expect(onConfirm).toHaveBeenCalledTimes(1)
   })
