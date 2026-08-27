@@ -32,13 +32,17 @@ describe('RBAC Tab Permissions (isTabPermitted)', () => {
   })
 
   it('should allow economic-indicators when user satisfies anyOf requirement', () => {
-    const checkerFinance = createChecker([PERMISSIONS.Finance.AgencyMasterBudget.Manage])
-    const checkerPlanning = createChecker([PERMISSIONS.Planning.Dashboard.ViewGlobal])
+    const checkerManage = createChecker([
+      PERMISSIONS.Planning.EconomicIndicators.Manage,
+    ])
+    const checkerPlanningView = createChecker([
+      PERMISSIONS.Planning.FiscalYear.View,
+    ])
     const checkerUnauthorized = createChecker(['some.random.permission'])
     const tab = POLICY_TABS['economic-indicators']
 
-    expect(isTabPermitted(tab, checkerFinance)).toBe(true)
-    expect(isTabPermitted(tab, checkerPlanning)).toBe(true)
+    expect(isTabPermitted(tab, checkerManage)).toBe(true)
+    expect(isTabPermitted(tab, checkerPlanningView)).toBe(true)
     expect(isTabPermitted(tab, checkerUnauthorized)).toBe(false)
   })
 
@@ -73,8 +77,10 @@ describe('Deterministic Tab Resolver (resolveAccessibleTab)', () => {
   })
 
   it('should resolve to first accessible sibling in the same domain when requested tab is unauthorized', () => {
-    // Procurement Officer has app.manage (procurement-thresholds), but NOT budget_call.view
-    const checker = createChecker([PERMISSIONS.Procurement.App.Manage])
+    // Procurement Officer has ProcurementThresholds.Manage, but NOT budget_call.view
+    const checker = createChecker([
+      PERMISSIONS.Procurement.ProcurementThresholds.Manage,
+    ])
 
     const result = resolveAccessibleTab({
       requestedTab: 'budget-call',

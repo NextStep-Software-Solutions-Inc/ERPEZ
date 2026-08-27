@@ -4,7 +4,9 @@ using ERPEZ.Application.Features.Planning.Attribute.Commands.UpdateAttribute;
 using ERPEZ.Application.Features.Planning.Attribute.Dtos;
 using ERPEZ.Application.Features.Planning.Attribute.Queries.GetAttributeById;
 using ERPEZ.Application.Features.Planning.Attribute.Queries.GetAttributes;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -12,9 +14,13 @@ namespace ERPEZ.Api.Controllers;
 
 [Route("attributes")]
 [ApiController]
+[Authorize]
+[ProducesResponseType(StatusCodes.Status401Unauthorized)]
+[ProducesResponseType(StatusCodes.Status403Forbidden)]
 public class AttributeController(ISender mediator) : ControllerBase
 {
     [HttpPost]
+    [HasPermission(Permissions.Procurement.procurementLibraryManage)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateAttribute([FromBody] CreateAttributeCommand command)
@@ -26,9 +32,10 @@ public class AttributeController(ISender mediator) : ControllerBase
     }
 
     [HttpPut("{id}")]
+    [HasPermission(Permissions.Procurement.procurementLibraryManage)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
+    [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> UpdateAttribute(Guid id, [FromBody] UpdateAttributeCommand command)
     {
         if (id != command.Id)
@@ -41,6 +48,7 @@ public class AttributeController(ISender mediator) : ControllerBase
     }
 
     [HttpDelete("{id}")]
+    [HasPermission(Permissions.Procurement.procurementLibraryManage)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteAttribute(Guid id)
@@ -50,6 +58,7 @@ public class AttributeController(ISender mediator) : ControllerBase
     }
 
     [HttpGet]
+    [HasPermission(Permissions.Procurement.procurementLibraryView)]
     [ProducesResponseType(typeof(PaginatedApiResponse<AttributeResponse>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAttributes([FromQuery] GetAttributesQuery query)
     {
@@ -58,6 +67,7 @@ public class AttributeController(ISender mediator) : ControllerBase
     }
 
     [HttpGet("{id}")]
+    [HasPermission(Permissions.Procurement.procurementLibraryView)]
     [ProducesResponseType(typeof(ApiResponse<AttributeResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<AttributeResponse>), StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetAttributeById(Guid id)

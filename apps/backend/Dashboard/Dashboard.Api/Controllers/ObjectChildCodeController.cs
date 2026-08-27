@@ -4,7 +4,9 @@ using ERPEZ.Application.Features.Planning.ObjectChildCode.Dtos;
 using ERPEZ.Application.Features.Planning.ObjectChildCode.Queries.GetAncestors;
 using ERPEZ.Application.Features.Planning.ObjectChildCode.Queries.GetDescendants;
 using ERPEZ.Application.Features.Planning.ObjectChildCode.Queries.GetObjectHierarchy;
+using ERPEZ.Shared.Authorization;
 using ERPEZ.Shared.Common;
+using ERPEZ.Shared.Constants;
 using MediatR;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -16,12 +18,16 @@ namespace ERPEZ.Api.Controllers;
 /// </summary>
 [Route("objects")]
 [ApiController]
+[Authorize]
+[ProducesResponseType(StatusCodes.Status401Unauthorized)]
+[ProducesResponseType(StatusCodes.Status403Forbidden)]
 public class ObjectChildCodeController(ISender mediator) : ControllerBase
 {
     /// <summary>
     /// Creates a new child code relationship for an object.
     /// </summary>
     [HttpPost("{id}/child-codes")]
+    [HasPermission(Permissions.Finance.uacsManage)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
     public async Task<IActionResult> CreateChildCode(Guid id, [FromBody] CreateObjectChildCodeCommand command)
@@ -39,6 +45,7 @@ public class ObjectChildCodeController(ISender mediator) : ControllerBase
     /// Gets the full hierarchy tree for an object.
     /// </summary>
     [HttpGet("{id}/hierarchy")]
+    [HasPermission(Permissions.Finance.uacsView)]
     [ProducesResponseType(typeof(ApiResponse<ObjectHierarchyNode>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> GetHierarchy(Guid id)
@@ -51,6 +58,7 @@ public class ObjectChildCodeController(ISender mediator) : ControllerBase
     /// Gets all descendants of an object.
     /// </summary>
     [HttpGet("{id}/descendants")]
+    [HasPermission(Permissions.Finance.uacsView)]
     [ProducesResponseType(typeof(ApiResponse<List<ObjectChildCodeResponse>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetDescendants(Guid id)
     {
@@ -62,6 +70,7 @@ public class ObjectChildCodeController(ISender mediator) : ControllerBase
     /// Gets all ancestors (parent chain) of an object.
     /// </summary>
     [HttpGet("{id}/ancestors")]
+    [HasPermission(Permissions.Finance.uacsView)]
     [ProducesResponseType(typeof(ApiResponse<List<ObjectChildCodeResponse>>), StatusCodes.Status200OK)]
     public async Task<IActionResult> GetAncestors(Guid id)
     {
@@ -73,6 +82,7 @@ public class ObjectChildCodeController(ISender mediator) : ControllerBase
     /// Deletes a child code relationship.
     /// </summary>
     [HttpDelete("{id}/child-codes/{childId}")]
+    [HasPermission(Permissions.Finance.uacsManage)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
     public async Task<IActionResult> DeleteChildCode(Guid id, Guid childId)

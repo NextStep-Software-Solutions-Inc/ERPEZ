@@ -14,13 +14,15 @@ namespace ERPEZ.Api.Controllers;
 
 [Route("sub-office-ceilings")]
 [ApiController]
+[Authorize]
+[ProducesResponseType(StatusCodes.Status401Unauthorized)]
+[ProducesResponseType(StatusCodes.Status403Forbidden)]
 public class SubOfficeCeilingController(ISender mediator) : ControllerBase
 {
     [HttpPost]
     [HasPermission(Permissions.Finance.subOfficeCeilingAssign)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> CreateSubOfficeCeiling([FromBody] CreateSubOfficeCeilingRequest request)
     {
         var result = await mediator.Send(new CreateSubOfficeCeilingCommand(request));
@@ -32,7 +34,6 @@ public class SubOfficeCeilingController(ISender mediator) : ControllerBase
     [HttpGet]
     [HasPermission(Permissions.Finance.subOfficeCeilingAssign)]
     [ProducesResponseType(typeof(PaginatedApiResponse<SubOfficeCeilingResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetSubOfficeCeilings([FromQuery] GetSubOfficeCeilingsQuery query)
     {
         var result = await mediator.Send(query);
@@ -43,7 +44,6 @@ public class SubOfficeCeilingController(ISender mediator) : ControllerBase
     [HasPermission(Permissions.Finance.subOfficeCeilingAssign)]
     [ProducesResponseType(typeof(ApiResponse<SubOfficeCeilingResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetSubOfficeCeilingById(Guid id)
     {
         var result = await mediator.Send(new GetSubOfficeCeilingByIdQuery(id));
@@ -55,22 +55,19 @@ public class SubOfficeCeilingController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> UpdateSubOfficeCeiling(Guid id, [FromBody] UpdateSubOfficeCeilingRequest request)
     {
-        var command = new UpdateSubOfficeCeilingCommand(id, request);
-        var result = await mediator.Send(command);
+        var result = await mediator.Send(new UpdateSubOfficeCeilingCommand(id, request));
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 
     [HttpDelete("{id}")]
     [HasPermission(Permissions.Finance.subOfficeCeilingAssign)]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> DeleteSubOfficeCeiling(Guid id)
     {
         var result = await mediator.Send(new DeleteSubOfficeCeilingCommand(id));
-        return result.Succeeded ? NoContent() : NotFound();
+        return result.Succeeded ? Ok(result) : NotFound(result);
     }
 }

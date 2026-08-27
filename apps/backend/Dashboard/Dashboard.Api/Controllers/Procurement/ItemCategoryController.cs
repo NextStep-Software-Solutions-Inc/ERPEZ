@@ -13,7 +13,7 @@ using Sieve.Models;
 namespace ERPEZ.Api.Controllers.Procurement;
 
 [ApiController]
-[Route("api/procurement/item-categories")]
+[Route("item-categories")]
 [Authorize]
 public class ItemCategoryController(IMediator mediator) : ControllerBase
 {

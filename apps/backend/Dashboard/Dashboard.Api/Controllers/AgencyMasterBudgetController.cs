@@ -14,13 +14,15 @@ namespace ERPEZ.Api.Controllers;
 
 [Route("agency-master-budgets")]
 [ApiController]
+[Authorize]
+[ProducesResponseType(StatusCodes.Status401Unauthorized)]
+[ProducesResponseType(StatusCodes.Status403Forbidden)]
 public class AgencyMasterBudgetController(ISender mediator) : ControllerBase
 {
     [HttpPost]
     [HasPermission(Permissions.Finance.agencyMasterBudgetManage)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status201Created)]
     [ProducesResponseType(typeof(ApiResponse<Guid>), StatusCodes.Status400BadRequest)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> CreateAgencyMasterBudget([FromBody] CreateAgencyMasterBudgetRequest request)
     {
         var result = await mediator.Send(new CreateAgencyMasterBudgetCommand(request));
@@ -32,7 +34,6 @@ public class AgencyMasterBudgetController(ISender mediator) : ControllerBase
     [HttpGet]
     [HasPermission(Permissions.Finance.agencyMasterBudgetManage)]
     [ProducesResponseType(typeof(PaginatedApiResponse<AgencyMasterBudgetResponse>), StatusCodes.Status200OK)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetAgencyMasterBudgets([FromQuery] GetAgencyMasterBudgetsQuery query)
     {
         var result = await mediator.Send(query);
@@ -43,7 +44,6 @@ public class AgencyMasterBudgetController(ISender mediator) : ControllerBase
     [HasPermission(Permissions.Finance.agencyMasterBudgetManage)]
     [ProducesResponseType(typeof(ApiResponse<AgencyMasterBudgetResponse>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> GetAgencyMasterBudgetById(Guid id)
     {
         var result = await mediator.Send(new GetAgencyMasterBudgetByIdQuery(id));
@@ -55,22 +55,19 @@ public class AgencyMasterBudgetController(ISender mediator) : ControllerBase
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status400BadRequest)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> UpdateAgencyMasterBudget(Guid id, [FromBody] UpdateAgencyMasterBudgetRequest request)
     {
-        var command = new UpdateAgencyMasterBudgetCommand(id, request);
-        var result = await mediator.Send(command);
+        var result = await mediator.Send(new UpdateAgencyMasterBudgetCommand(id, request));
         return result.Succeeded ? Ok(result) : BadRequest(result);
     }
 
     [HttpDelete("{id}")]
     [HasPermission(Permissions.Finance.agencyMasterBudgetManage)]
-    [ProducesResponseType(StatusCodes.Status204NoContent)]
+    [ProducesResponseType(typeof(ApiResponse<Unit>), StatusCodes.Status200OK)]
     [ProducesResponseType(StatusCodes.Status404NotFound)]
-    [ProducesResponseType(StatusCodes.Status403Forbidden)]
     public async Task<IActionResult> DeleteAgencyMasterBudget(Guid id)
     {
         var result = await mediator.Send(new DeleteAgencyMasterBudgetCommand(id));
-        return result.Succeeded ? NoContent() : NotFound();
+        return result.Succeeded ? Ok(result) : NotFound(result);
     }
 }
