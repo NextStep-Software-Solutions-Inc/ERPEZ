@@ -72,22 +72,12 @@ function parseRatingScaleTemplate(
     template.RatingScaleLevels || template.ratingScaleLevels || []
 
   if (!Array.isArray(rawLevels) || rawLevels.length === 0) {
-    const defaultSPMSLevels: RatingLevel[] = [
-      { level: 5, description: 'Outstanding', min: 4.5, max: 5.0 },
-      { level: 4, description: 'Very Satisfactory', min: 3.5, max: 4.49 },
-      { level: 3, description: 'Satisfactory', min: 2.5, max: 3.49 },
-      { level: 2, description: 'Unsatisfactory', min: 1.5, max: 2.49 },
-      { level: 1, description: 'Poor', min: 1.0, max: 1.49 },
-    ]
     return {
-      ratingLevels: defaultSPMSLevels,
-      ratingScaleLabel:
-        '5 - Outstanding · 4 - Very Satisfactory · 3 - Satisfactory · 2 - Unsatisfactory · 1 - Poor',
+      ratingLevels: [],
+      ratingScaleLabel: '',
       scaleType: template.isFixed ? 'FIXED' : 'NON_FIXED',
-      ratingScaleName: template.name ?? 'SPMS Standard 5-Point Rating Scale',
-      ratingScaleDescription:
-        template.description ??
-        'Standard Strategic Performance Management System Rating Scale (1 to 5)',
+      ratingScaleName: template.name ?? undefined,
+      ratingScaleDescription: template.description ?? undefined,
     }
   }
 
